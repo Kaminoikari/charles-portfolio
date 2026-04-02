@@ -1,0 +1,169 @@
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
+
+interface Firefly {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  size: number
+  opacity: number
+  maxOpacity: number
+  phase: number
+  speed: number
+  color: string
+  glowColor: string
+}
+
+function createFirefly(width: number, height: number): Firefly {
+  const isCyan = Math.random() > 0.6
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    size: 1.5 + Math.random() * 1.5,
+    opacity: 0,
+    maxOpacity: 0.4 + Math.random() * 0.5,
+    phase: Math.random() * Math.PI * 2,
+    speed: 0.005 + Math.random() * 0.015,
+    color: isCyan ? '#00D9FF' : '#ffffff',
+    glowColor: isCyan ? 'rgba(0,217,255,0.4)' : 'rgba(255,255,255,0.3)',
+  }
+}
+
+export default function AboutFirefly() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const photoRef = useRef<HTMLDivElement>(null)
+  const textRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animId: number
+    let width = 0
+    let height = 0
+    const fireflies: Firefly[] = []
+    const FIREFLY_COUNT = 35
+
+    const resize = () => {
+      width = canvas.parentElement?.clientWidth ?? window.innerWidth
+      height = canvas.parentElement?.clientHeight ?? window.innerHeight
+      canvas.width = width * window.devicePixelRatio
+      canvas.height = height * window.devicePixelRatio
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+
+    for (let i = 0; i < FIREFLY_COUNT; i++) {
+      fireflies.push(createFirefly(width, height))
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height)
+
+      for (const f of fireflies) {
+        f.phase += f.speed
+        f.opacity = f.maxOpacity * (0.3 + 0.7 * Math.abs(Math.sin(f.phase)))
+
+        f.x += f.vx
+        f.y += f.vy
+
+        if (f.x < -10) f.x = width + 10
+        if (f.x > width + 10) f.x = -10
+        if (f.y < -10) f.y = height + 10
+        if (f.y > height + 10) f.y = -10
+
+        ctx.save()
+        ctx.globalAlpha = f.opacity
+        ctx.shadowBlur = 6
+        ctx.shadowColor = f.glowColor
+        ctx.fillStyle = f.color
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
+      }
+
+      animId = requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('resize', resize)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!sectionRef.current) return
+
+    // True parallax: photo moves slower than scroll
+    if (photoRef.current) {
+      gsap.fromTo(
+        photoRef.current,
+        { y: 60, opacity: 0 },
+        {
+          y: -40,
+          opacity: 1,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top 80%',
+            end: 'bottom 20%',
+            scrub: 0.5,
+          },
+        },
+      )
+    }
+
+    // Text fade-in
+    if (textRef.current) {
+      gsap.from(textRef.current, {
+        x: 60,
+        opacity: 0,
+        duration: 1,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 70%',
+          toggleActions: 'play none none none',
+        },
+      })
+    }
+  }, [])
+
+  return (
+    <section
+      id="about"
+      ref={sectionRef}
+      className="relative flex min-h-[80vh] items-center overflow-hidden"
+    >
+      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
+      <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
+        <div
+          ref={photoRef}
+          className="flex h-[200px] w-[200px] shrink-0 items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-sm text-text-tertiary"
+        >
+          PHOTO
+        </div>
+        <div ref={textRef}>
+          <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
+          <p className="text-base leading-relaxed text-[#999]">
+            自我介紹文字。包含你的背景、專長、興趣和目標。
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
