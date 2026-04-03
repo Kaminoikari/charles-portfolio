@@ -7,12 +7,12 @@ export interface BlogPlatform {
 export const blogPlatforms: BlogPlatform[] = [
   {
     name: 'Medium',
-    url: 'https://medium.com/',
+    url: 'https://medium.com/@charleschen',
     subtitle: '技術文章和觀點分享',
   },
   {
     name: 'Substack',
-    url: 'https://substack.com/',
+    url: 'https://substack.com/@charlestychen',
     subtitle: '深度思考和長文',
   },
 ]
