@@ -96,7 +96,7 @@ export default function ContactFooter() {
         </div>
       </section>
       <footer className="border-t border-border-hover py-12 text-center text-xs tracking-[1px] text-text-secondary">
-        © 2026 CHARLES. BUILT WITH REACT + CANVAS
+        © 2026 Te-Ying (Charles) Chen. Built with React + Canvas
       </footer>
     </div>
   )

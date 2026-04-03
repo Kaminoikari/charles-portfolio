@@ -29,7 +29,12 @@ export default function Nav() {
       }}
     >
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
-        <div className="text-lg font-bold tracking-widest md:text-xl">CHARLES</div>
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="cursor-pointer border-none bg-transparent text-lg font-bold tracking-widest text-white md:text-xl"
+        >
+          CHARLES CHEN
+        </button>
         <div className="hidden gap-8 md:flex">
           {['about', 'skills', 'experience', 'projects', 'blog'].map((id) => (
             <button
