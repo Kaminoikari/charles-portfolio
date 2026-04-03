@@ -1,23 +1,29 @@
 import { useEffect, useRef } from 'react'
 
 const PARTICLE_COUNT = 350
-const MOUSE_RADIUS = 250
-const MOUSE_PUSH_FORCE = 50
-const TEXT_REPULSE_RADIUS = 300
-const TEXT_REPULSE_STRENGTH = 20
+const MOUSE_RADIUS = 200
+const MOUSE_PUSH_FORCE = 40
+const NOISE_SCALE = 0.002 // How "zoomed in" the flow field is
+const FLOW_STRENGTH = 1.2 // How fast particles follow the field
 
 interface Particle {
   x: number
   y: number
-  originX: number
-  originY: number
-  vx: number
-  vy: number
   size: number
   opacity: number
   phase: number
-  flowSpeed: number
   isCyan: boolean
+}
+
+// --- Simplified Perlin-like noise using sin/cos layering (fast, no lookup table) ---
+function noise2D(x: number, y: number): number {
+  // 4-octave layered sin noise — approximates Perlin at a fraction of the cost
+  return (
+    Math.sin(x * 1.2 + y * 0.9) * 0.5 +
+    Math.sin(x * 0.5 - y * 1.3 + 2.1) * 0.3 +
+    Math.sin(x * 2.1 + y * 0.4 - 1.7) * 0.15 +
+    Math.cos(x * 0.7 + y * 1.8 + 0.5) * 0.05
+  )
 }
 
 export default function ParticleHero() {
@@ -54,16 +60,12 @@ export default function ParticleHero() {
     const initParticles = () => {
       particles.length = 0
       for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const x = Math.random() * width
-        const y = Math.random() * height
         particles.push({
-          x, y,
-          originX: x, originY: y,
-          vx: 0, vy: 0,
+          x: Math.random() * width,
+          y: Math.random() * height,
           size: 1 + Math.random() * 1.8,
           opacity: 0.1 + Math.random() * 0.35,
           phase: Math.random() * Math.PI * 2,
-          flowSpeed: 0.3 + Math.random() * 0.7,
           isCyan: Math.random() < 0.15,
         })
       }
@@ -79,7 +81,7 @@ export default function ParticleHero() {
       mouseRef.current.x = e.clientX
       mouseRef.current.y = e.clientY
 
-      // Text repulsion — direct DOM manipulation, no React re-render
+      // Text repulsion
       if (textRef.current) {
         const rect = textRef.current.getBoundingClientRect()
         const cx = rect.left + rect.width / 2
@@ -87,8 +89,8 @@ export default function ParticleHero() {
         const dx = cx - e.clientX
         const dy = cy - e.clientY
         const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist < TEXT_REPULSE_RADIUS && dist > 0) {
-          const strength = ((1 - dist / TEXT_REPULSE_RADIUS) ** 2) * TEXT_REPULSE_STRENGTH
+        if (dist < 300 && dist > 0) {
+          const strength = ((1 - dist / 300) ** 2) * 20
           textOffsetRef.current.x = (dx / dist) * strength
           textOffsetRef.current.y = (dy / dist) * strength
         }
@@ -101,7 +103,6 @@ export default function ParticleHero() {
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseleave', onMouseLeave)
 
-    // IntersectionObserver — pause animation when off-screen
     const observer = new IntersectionObserver(
       ([entry]) => { visibleRef.current = entry.isIntersecting },
       { threshold: 0.05 },
@@ -111,31 +112,27 @@ export default function ParticleHero() {
     let time = 0
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
-
-      // Skip rendering when not visible
       if (!visibleRef.current) return
 
-      time += 0.016
+      time += 0.003
       ctx.clearRect(0, 0, width, height)
 
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
 
       for (const p of particles) {
-        // Wave-like fluid motion — large amplitude global wave field
-        const waveFreq = 0.004
-        const waveAmp = 40
-        // Global wave: coordinated sine waves create visible ocean-like motion
-        const globalWaveX = Math.sin(p.originY * waveFreq * 2 + time * 0.8) * waveAmp
-            + Math.sin(p.originY * waveFreq * 0.7 + time * 0.5 + 1.5) * waveAmp * 0.6
-        const globalWaveY = Math.cos(p.originX * waveFreq * 1.5 + time * 0.6) * waveAmp * 0.7
-            + Math.cos(p.originX * waveFreq * 0.5 + time * 0.4 + 2.0) * waveAmp * 0.4
-        // Individual micro-oscillation
-        const microX = Math.sin(time * p.flowSpeed + p.phase) * 3
-        const microY = Math.cos(time * p.flowSpeed * 0.8 + p.phase) * 2.5
+        // --- Noise flow field ---
+        // Sample noise at particle position to get flow direction
+        const nx = p.x * NOISE_SCALE + time
+        const ny = p.y * NOISE_SCALE + time * 0.7
 
-        const targetX = p.originX + globalWaveX + microX
-        const targetY = p.originY + globalWaveY + microY
+        const angle = noise2D(nx, ny) * Math.PI * 2
+        const flowX = Math.cos(angle) * FLOW_STRENGTH
+        const flowY = Math.sin(angle) * FLOW_STRENGTH
+
+        // Apply flow
+        p.x += flowX
+        p.y += flowY
 
         // Mouse repulsion
         const dx = p.x - mx
@@ -143,32 +140,25 @@ export default function ParticleHero() {
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist < MOUSE_RADIUS && dist > 1) {
           const force = ((1 - dist / MOUSE_RADIUS) ** 2) * MOUSE_PUSH_FORCE
-          p.vx += (dx / dist) * force
-          p.vy += (dy / dist) * force
+          p.x += (dx / dist) * force
+          p.y += (dy / dist) * force
         }
 
-        // Spring back + friction — fast enough to follow waves
-        p.vx += (targetX - p.x) * 0.05
-        p.vy += (targetY - p.y) * 0.05
-        p.vx *= 0.88
-        p.vy *= 0.88
-        p.x += p.vx
-        p.y += p.vy
+        // Wrap around screen edges
+        if (p.x < -20) p.x += width + 40
+        if (p.x > width + 20) p.x -= width + 40
+        if (p.y < -20) p.y += height + 40
+        if (p.y > height + 20) p.y -= height + 40
 
-        // Prevent teleport streaks — increased range for wave motion
-        const distFromOrigin = Math.abs(p.x - p.originX) + Math.abs(p.y - p.originY)
-        if (distFromOrigin > 500) {
-          p.x = p.originX
-          p.y = p.originY
-          p.vx = 0
-          p.vy = 0
-        }
+        // Bottom fade: particles near bottom of section fade out
+        const bottomFade = 1 - Math.max(0, (p.y - height * 0.75) / (height * 0.25))
+        const pulsedOpacity = p.opacity * bottomFade * (0.6 + 0.4 * Math.sin(time * 80 + p.phase))
 
-        // Draw — single arc per particle, glow only for cyan (15% of particles)
-        const pulsedOpacity = p.opacity * (0.6 + 0.4 * Math.sin(time * 1.5 + p.phase))
+        if (pulsedOpacity < 0.01) continue // skip invisible particles
 
+        // Draw
+        ctx.globalAlpha = pulsedOpacity
         if (p.isCyan) {
-          // Cyan: outer glow + inner core (only ~53 particles)
           ctx.globalAlpha = pulsedOpacity * 0.25
           ctx.fillStyle = '#00D9FF'
           ctx.beginPath()
@@ -179,7 +169,6 @@ export default function ParticleHero() {
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else {
-          // White: single circle only (saves ~300 draw calls/frame)
           ctx.globalAlpha = pulsedOpacity * 0.6
           ctx.fillStyle = '#ffffff'
           ctx.beginPath()
@@ -189,7 +178,7 @@ export default function ParticleHero() {
       }
       ctx.globalAlpha = 1
 
-      // Text offset decay — done in animation loop, not React state
+      // Text offset decay
       const tOff = textOffsetRef.current
       tOff.x *= 0.92
       tOff.y *= 0.92
@@ -219,6 +208,14 @@ export default function ParticleHero() {
       }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
+
+      {/* Bottom gradient fade — blends into About section */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
+        style={{
+          background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)',
+        }}
+      />
 
       <div ref={textRef} className="relative z-10 text-center">
         <h1 className="text-[40px] font-bold tracking-[6px] text-white sm:text-[56px] md:text-[72px] lg:text-[80px]">

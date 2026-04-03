@@ -1,6 +1,25 @@
 import { useEffect, useRef } from 'react'
 import { blogPlatforms } from '../data/blog'
 
+const CTA_FONT_FAMILY =
+  "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace"
+
+function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
+  const positionStyles: Record<string, React.CSSProperties> = {
+    tl: { top: -1, left: -1 },
+    tr: { top: -1, right: -1 },
+    bl: { bottom: -1, left: -1 },
+    br: { bottom: -1, right: -1 },
+  }
+
+  return (
+    <div
+      className="absolute h-[8px] w-[8px] border border-border-highlight bg-surface-light"
+      style={positionStyles[position]}
+    />
+  )
+}
+
 export default function BlogEntries() {
   const sectionRef = useRef<HTMLDivElement>(null)
 
@@ -20,7 +39,6 @@ export default function BlogEntries() {
       { threshold: 0.1 },
     )
     cards.forEach((card) => observer.observe(card))
-    // Safety: if animations haven't triggered after 2s, force show
     const safetyTimeout = setTimeout(() => {
       cards.forEach((card) => card.classList.add('animate-in'))
     }, 2000)
@@ -32,7 +50,7 @@ export default function BlogEntries() {
       <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
         WRITING
       </h2>
-      <div className="mx-auto grid max-w-[800px] grid-cols-1 gap-8 sm:grid-cols-2">
+      <div className="mx-auto flex max-w-[900px] flex-col gap-0 sm:flex-row" style={{ borderTop: '1px solid var(--color-border)' }}>
         {blogPlatforms.map((platform, i) => (
           <a
             key={platform.name}
@@ -40,16 +58,54 @@ export default function BlogEntries() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Read articles on ${platform.name}`}
-            className="blog-card block border border-border bg-bg-primary p-12 text-center no-underline opacity-0 translate-y-6 transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.04] hover:border-border-hover hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
-            style={{ transitionDelay: `${i * 150}ms` }}
+            className={`blog-card group relative flex flex-1 flex-col no-underline opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 ${i > 0 ? 'border-t border-border sm:border-t-0 sm:border-l' : ''}`}
+            style={{ padding: '32px 32px 40px', transitionDelay: `${i * 150}ms` }}
           >
-            <div className="mb-4 font-mono text-3xl text-text-muted">
-              {platform.name === 'Medium' ? 'M' : 'S'}
+            {/* Hover gradient overlay */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
+              style={{
+                background: 'linear-gradient(to bottom, rgba(125,129,135,0.1), transparent)',
+              }}
+            />
+
+            {/* Hover border glow + corner squares */}
+            <div className="pointer-events-none absolute inset-0 border border-border-subtle opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
+              <CornerSquare position="tl" />
+              <CornerSquare position="tr" />
+              <CornerSquare position="bl" />
+              <CornerSquare position="br" />
             </div>
-            <h3 className="mb-2 text-2xl font-semibold text-white">
+
+            {/* Platform name */}
+            <h3 className="text-white" style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>
               {platform.name}
             </h3>
-            <p className="text-sm text-text-tertiary">{platform.subtitle}</p>
+
+            {/* Description */}
+            <p className="text-text-secondary transition-colors duration-300 group-hover:text-white/85" style={{ fontSize: 16, lineHeight: 1.5, marginTop: 12 }}>
+              {platform.subtitle}
+            </p>
+
+            {/* Spacer */}
+            <div className="flex-grow" style={{ minHeight: 80 }} />
+
+            {/* CTA button — centered like xAI */}
+            <div className="flex justify-center">
+              <div
+                className="inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 group-hover:bg-white/[0.08]"
+                style={{
+                  fontFamily: CTA_FONT_FAMILY,
+                  fontSize: 13,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  color: 'white',
+                }}
+              >
+                <span>READ MORE</span>
+                <span className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ fontSize: 13, lineHeight: 1, transform: 'scale(1.4)' }}>↗</span>
+              </div>
+            </div>
           </a>
         ))}
       </div>
