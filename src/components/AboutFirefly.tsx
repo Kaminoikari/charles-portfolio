@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import gsap from 'gsap'
 
 interface Firefly {
   x: number
@@ -120,40 +119,21 @@ export default function AboutFirefly() {
 
   useEffect(() => {
     if (!sectionRef.current) return
-
-    // True parallax: photo moves slower than scroll
-    if (photoRef.current) {
-      gsap.fromTo(
-        photoRef.current,
-        { y: 60, opacity: 0 },
-        {
-          y: -40,
-          opacity: 1,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-            end: 'bottom 20%',
-            scrub: 0.5,
-          },
-        },
-      )
-    }
-
-    // Text fade-in
-    if (textRef.current) {
-      gsap.from(textRef.current, {
-        x: 60,
-        opacity: 0,
-        duration: 1,
-        ease: 'power3.out',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 70%',
-          toggleActions: 'play none none none',
-        },
-      })
-    }
+    const elements = sectionRef.current.querySelectorAll('.reveal')
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-in')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.1 },
+    )
+    elements.forEach((el) => observer.observe(el))
+    const safety = setTimeout(() => elements.forEach((el) => el.classList.add('animate-in')), 2000)
+    return () => { observer.disconnect(); clearTimeout(safety) }
   }, [])
 
   return (
@@ -166,7 +146,7 @@ export default function AboutFirefly() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
           ref={photoRef}
-          className="h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full border border-border-dark"
+          className="reveal h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full border border-border-dark opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
         >
           <img
             src="/assets/charles-profile.jpg"
@@ -175,7 +155,7 @@ export default function AboutFirefly() {
             style={{ objectPosition: '50% 15%' }}
           />
         </div>
-        <div ref={textRef}>
+        <div ref={textRef} className="reveal opacity-0 translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-150">
           <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
           <p className="text-base leading-relaxed text-text-muted">
             Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
