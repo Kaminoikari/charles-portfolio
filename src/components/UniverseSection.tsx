@@ -165,6 +165,8 @@ export default function UniverseSection() {
   const screenPosRef = useRef<ScreenPos[]>(skills.map(() => ({ x: 0, y: 0 })))
   const hoverZoneRefs = useRef<(HTMLDivElement | null)[]>([])
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const textLeftRef = useRef<HTMLSpanElement>(null)
+  const textRightRef = useRef<HTMLSpanElement>(null)
 
   hoveredRef.current = hoveredIndex
 
@@ -301,6 +303,17 @@ export default function UniverseSection() {
           const idx = hoveredRef.current
           tooltipRef.current.style.transform = `translate(${positions[idx].x + 18}px, ${positions[idx].y}px) translateY(-50%)`
         }
+
+        // Scroll-driven text spread — "Understand" pushes left, "What I Do" pushes right
+        const rect = section.getBoundingClientRect()
+        const scrollProgress = Math.max(0, Math.min(1, 1 - rect.bottom / (rect.height + height)))
+        const spread = scrollProgress * 100 // max 100px extra offset
+        if (textLeftRef.current) {
+          textLeftRef.current.style.transform = `translateX(${-spread}px)`
+        }
+        if (textRightRef.current) {
+          textRightRef.current.style.transform = `translateX(${spread}px)`
+        }
       }
     }
 
@@ -367,6 +380,7 @@ export default function UniverseSection() {
       {/* Text overlay */}
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
         <span
+          ref={textLeftRef}
           className="pointer-events-auto absolute right-[calc(50%+30px)] top-[43%] text-[32px] md:right-[calc(50%+140px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
@@ -384,6 +398,7 @@ export default function UniverseSection() {
           Understand
         </span>
         <span
+          ref={textRightRef}
           className="pointer-events-auto absolute left-[calc(50%+30px)] top-[54%] text-[32px] md:left-[calc(50%+140px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
