@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const PARTICLE_COUNT = 350
 const MOUSE_RADIUS = 200
@@ -23,6 +23,92 @@ function noise2D(x: number, y: number): number {
     Math.sin(x * 0.5 - y * 1.3 + 2.1) * 0.3 +
     Math.sin(x * 2.1 + y * 0.4 - 1.7) * 0.15 +
     Math.cos(x * 0.7 + y * 1.8 + 0.5) * 0.05
+  )
+}
+
+const CTA_FONT_FAMILY =
+  "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace"
+
+function TypewriterLine({ text, delay, charSpeed }: { text: string; delay: number; charSpeed: number }) {
+  const [displayed, setDisplayed] = useState('')
+  const [started, setStarted] = useState(false)
+  const [done, setDone] = useState(false)
+  const prefersReduced = useRef(false)
+
+  useEffect(() => {
+    prefersReduced.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced.current) {
+      setDisplayed(text)
+      setStarted(true)
+      setDone(true)
+      return
+    }
+
+    const startTimer = setTimeout(() => setStarted(true), delay)
+    return () => clearTimeout(startTimer)
+  }, [delay, text])
+
+  useEffect(() => {
+    if (!started || prefersReduced.current) return
+    let i = 0
+    const interval = setInterval(() => {
+      i++
+      setDisplayed(text.slice(0, i))
+      if (i >= text.length) {
+        clearInterval(interval)
+        setDone(true)
+      }
+    }, charSpeed)
+    return () => clearInterval(interval)
+  }, [started, text, charSpeed])
+
+  if (!started) return <div className="h-7" />
+
+  return (
+    <div className="font-mono text-sm tracking-wider text-text-muted md:text-base">
+      {displayed}
+      {!done && <span className="ml-0.5 inline-block w-[2px] bg-accent-cyan" style={{ height: '1em', animation: 'cursor-blink 0.8s step-end infinite' }} />}
+    </div>
+  )
+}
+
+function CTAButtons({ showDelay }: { showDelay: number }) {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      setVisible(true)
+      return
+    }
+    const timer = setTimeout(() => setVisible(true), showDelay)
+    return () => clearTimeout(timer)
+  }, [showDelay])
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  return (
+    <div
+      className="mt-10 flex justify-center gap-4 transition-all duration-700"
+      style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(12px)' }}
+    >
+      <button
+        onClick={() => scrollTo('projects')}
+        className="cursor-pointer rounded-full border border-btn-border bg-transparent px-5 py-2.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-white/[0.08] hover:scale-105"
+        style={{ fontFamily: CTA_FONT_FAMILY, fontSize: 13, letterSpacing: '1.5px', textTransform: 'uppercase' }}
+      >
+        VIEW MY WORK ↗
+      </button>
+      <button
+        onClick={() => scrollTo('contact')}
+        className="cursor-pointer rounded-full border border-btn-border bg-white/[0.06] px-5 py-2.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-white/[0.12] hover:scale-105"
+        style={{ fontFamily: CTA_FONT_FAMILY, fontSize: 13, letterSpacing: '1.5px', textTransform: 'uppercase' }}
+      >
+        GET IN TOUCH ↗
+      </button>
+    </div>
   )
 }
 
@@ -217,13 +303,23 @@ export default function ParticleHero() {
         }}
       />
 
-      <div ref={textRef} className="relative z-10 text-center">
+      <div ref={textRef} className="relative z-10 max-w-[700px] px-6 text-center">
         <h1 className="text-[40px] font-bold tracking-[6px] text-white sm:text-[56px] md:text-[72px] lg:text-[80px]">
           CHARLES
         </h1>
-        <p className="mt-3 text-lg tracking-[3px] text-text-muted md:text-xl">
+        <p className="mt-2 text-lg tracking-[3px] text-text-muted md:text-xl">
           AI Product Builder
         </p>
+
+        {/* Impact statements — typewriter animation */}
+        <div className="mt-8 space-y-2">
+          <TypewriterLine text="Shipped products used by millions." delay={800} charSpeed={35} />
+          <TypewriterLine text="Drove 85% of company revenue." delay={2400} charSpeed={35} />
+          <TypewriterLine text="Accelerated team velocity by 40% with AI." delay={3800} charSpeed={35} />
+        </div>
+
+        {/* CTA buttons — fade in after typewriter */}
+        <CTAButtons showDelay={5600} />
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">

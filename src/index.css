@@ -84,6 +84,11 @@ body {
   }
 }
 
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
 @keyframes pulse-fade {
   0%, 100% { opacity: 0.3; transform: translateY(0); }
   50% { opacity: 0.6; transform: translateY(4px); }
