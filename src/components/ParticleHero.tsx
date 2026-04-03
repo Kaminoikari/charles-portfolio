@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-const PARTICLE_COUNT = 350
+const PARTICLE_COUNT = 250
+const VAPOR_COUNT = 40 // large translucent vapor blobs
 const MOUSE_RADIUS = 200
 const MOUSE_PUSH_FORCE = 40
 const NOISE_SCALE = 0.002 // How "zoomed in" the flow field is
@@ -13,6 +14,7 @@ interface Particle {
   opacity: number
   phase: number
   isCyan: boolean
+  isVapor: boolean
 }
 
 // --- Simplified Perlin-like noise using sin/cos layering (fast, no lookup table) ---
@@ -59,14 +61,28 @@ export default function ParticleHero() {
 
     const initParticles = () => {
       particles.length = 0
+      // Regular small particles
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
           size: 1 + Math.random() * 1.8,
-          opacity: 0.1 + Math.random() * 0.35,
+          opacity: 0.1 + Math.random() * 0.3,
           phase: Math.random() * Math.PI * 2,
-          isCyan: Math.random() < 0.15,
+          isCyan: Math.random() < 0.12,
+          isVapor: false,
+        })
+      }
+      // Large vapor blobs — translucent, big radius
+      for (let i = 0; i < VAPOR_COUNT; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: 8 + Math.random() * 12,
+          opacity: 0.02 + Math.random() * 0.04,
+          phase: Math.random() * Math.PI * 2,
+          isCyan: Math.random() < 0.3,
+          isVapor: true,
         })
       }
     }
@@ -115,7 +131,11 @@ export default function ParticleHero() {
       if (!visibleRef.current) return
 
       time += 0.003
-      ctx.clearRect(0, 0, width, height)
+      // Trail effect — semi-transparent fill instead of full clear
+      ctx.globalAlpha = 0.15
+      ctx.fillStyle = '#0A0A0A'
+      ctx.fillRect(0, 0, width, height)
+      ctx.globalAlpha = 1
 
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
@@ -127,8 +147,9 @@ export default function ParticleHero() {
         const ny = p.y * NOISE_SCALE + time * 0.7
 
         const angle = noise2D(nx, ny) * Math.PI * 2
-        const flowX = Math.cos(angle) * FLOW_STRENGTH
-        const flowY = Math.sin(angle) * FLOW_STRENGTH
+        const speed = p.isVapor ? FLOW_STRENGTH * 0.6 : FLOW_STRENGTH
+        const flowX = Math.cos(angle) * speed
+        const flowY = Math.sin(angle) * speed - (p.isVapor ? 0.3 : 0.1) // slight upward drift
 
         // Apply flow
         p.x += flowX
@@ -157,8 +178,15 @@ export default function ParticleHero() {
         if (pulsedOpacity < 0.01) continue // skip invisible particles
 
         // Draw
-        ctx.globalAlpha = pulsedOpacity
-        if (p.isCyan) {
+        if (p.isVapor) {
+          // Large translucent vapor blob
+          ctx.globalAlpha = pulsedOpacity
+          ctx.fillStyle = p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+        } else if (p.isCyan) {
+          // Cyan particle with glow
           ctx.globalAlpha = pulsedOpacity * 0.25
           ctx.fillStyle = '#00D9FF'
           ctx.beginPath()
@@ -169,6 +197,7 @@ export default function ParticleHero() {
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else {
+          // White particle
           ctx.globalAlpha = pulsedOpacity * 0.6
           ctx.fillStyle = '#ffffff'
           ctx.beginPath()
