@@ -166,9 +166,14 @@ export default function AboutFirefly() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
           ref={photoRef}
-          className="flex h-[200px] w-[200px] shrink-0 items-center justify-center rounded-full border border-border-dark bg-bg-tertiary text-sm text-text-tertiary"
+          className="h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full border border-border-dark"
         >
-          PHOTO
+          <img
+            src="/assets/charles-profile.jpg"
+            alt="Charles Chen"
+            className="h-full w-full object-cover object-top"
+            style={{ objectPosition: '50% 15%' }}
+          />
         </div>
         <div ref={textRef}>
           <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
