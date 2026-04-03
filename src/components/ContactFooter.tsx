@@ -30,6 +30,7 @@ export default function ContactFooter() {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`Visit ${link.platform}`}
               className="social-icon flex h-12 w-12 items-center justify-center border text-lg no-underline"
             >
               {link.label}

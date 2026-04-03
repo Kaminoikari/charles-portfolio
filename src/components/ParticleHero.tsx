@@ -1,202 +1,236 @@
-import { useRef, useMemo, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import * as THREE from 'three'
-import vertexShader from '../shaders/particle.vert?raw'
-import fragmentShader from '../shaders/particle.frag?raw'
+import { useEffect, useRef } from 'react'
 
-// ============================================================
-// Constants
-// ============================================================
-const PARTICLE_COUNT = 3000
-const CYAN_PARTICLE_RATIO = 0.15
-const SCATTER_RANGE_X = 10
-const SCATTER_RANGE_Y = 6
-const SCATTER_RANGE_Z = 4
-const TEXT_CANVAS_WIDTH = 1024
-const TEXT_CANVAS_HEIGHT = 512
-const FORMATION_SPEED = 0.008
-const MOUSE_DECAY = 0.05
+const PARTICLE_COUNT = 350
+const MOUSE_RADIUS = 250
+const MOUSE_PUSH_FORCE = 50
+const TEXT_REPULSE_RADIUS = 300
+const TEXT_REPULSE_STRENGTH = 20
 
-// ============================================================
-// Helpers: sample text positions from offscreen Canvas 2D
-// ============================================================
-function sampleTextPositions(count: number): Float32Array {
-  const canvas = document.createElement('canvas')
-  canvas.width = TEXT_CANVAS_WIDTH
-  canvas.height = TEXT_CANVAS_HEIGHT
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return new Float32Array(count * 3)
+interface Particle {
+  x: number
+  y: number
+  originX: number
+  originY: number
+  vx: number
+  vy: number
+  size: number
+  opacity: number
+  phase: number
+  flowSpeed: number
+  isCyan: boolean
+}
 
-  // Clear
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, TEXT_CANVAS_WIDTH, TEXT_CANVAS_HEIGHT)
+export default function ParticleHero() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const sectionRef = useRef<HTMLDivElement>(null)
+  const textRef = useRef<HTMLDivElement>(null)
+  const mouseRef = useRef({ x: -9999, y: -9999 })
+  const textOffsetRef = useRef({ x: 0, y: 0 })
+  const visibleRef = useRef(true)
+  const animIdRef = useRef(0)
 
-  // Draw "CHARLES" large
-  ctx.fillStyle = '#fff'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.font = 'bold 140px Arial, sans-serif'
-  ctx.fillText('CHARLES', TEXT_CANVAS_WIDTH / 2, TEXT_CANVAS_HEIGHT * 0.38)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const section = sectionRef.current
+    if (!canvas || !section) return
 
-  // Draw "AI Product Builder" smaller
-  ctx.font = '400 40px Arial, sans-serif'
-  ctx.fillText('AI Product Builder', TEXT_CANVAS_WIDTH / 2, TEXT_CANVAS_HEIGHT * 0.68)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-  // Read pixel data and collect white pixel positions
-  const imageData = ctx.getImageData(0, 0, TEXT_CANVAS_WIDTH, TEXT_CANVAS_HEIGHT)
-  const pixels = imageData.data
-  const whitePositions: Array<{ x: number; y: number }> = []
+    let width = 0
+    let height = 0
+    const particles: Particle[] = []
 
-  // Sample every N pixels for performance
-  const step = 2
-  for (let y = 0; y < TEXT_CANVAS_HEIGHT; y += step) {
-    for (let x = 0; x < TEXT_CANVAS_WIDTH; x += step) {
-      const i = (y * TEXT_CANVAS_WIDTH + x) * 4
-      if (pixels[i] > 128) {
-        whitePositions.push({ x, y })
+    const resize = () => {
+      width = window.innerWidth
+      height = window.innerHeight
+      canvas.width = width * window.devicePixelRatio
+      canvas.height = height * window.devicePixelRatio
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+    }
+
+    const initParticles = () => {
+      particles.length = 0
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const x = Math.random() * width
+        const y = Math.random() * height
+        particles.push({
+          x, y,
+          originX: x, originY: y,
+          vx: 0, vy: 0,
+          size: 1 + Math.random() * 1.8,
+          opacity: 0.1 + Math.random() * 0.35,
+          phase: Math.random() * Math.PI * 2,
+          flowSpeed: 0.3 + Math.random() * 0.7,
+          isCyan: Math.random() < 0.15,
+        })
       }
     }
-  }
 
-  // Map canvas coords to 3D world coords and fill target array
-  const positions = new Float32Array(count * 3)
-  const scaleX = 10 / TEXT_CANVAS_WIDTH   // map to ~[-5, 5]
-  const scaleY = 6 / TEXT_CANVAS_HEIGHT    // map to ~[-3, 3]
+    resize()
+    initParticles()
 
-  for (let i = 0; i < count; i++) {
-    if (whitePositions.length === 0) {
-      positions[i * 3] = 0
-      positions[i * 3 + 1] = 0
-      positions[i * 3 + 2] = 0
-      continue
-    }
-    const idx = Math.floor(Math.random() * whitePositions.length)
-    const px = whitePositions[idx]
-    // Center and scale to world coordinates
-    positions[i * 3] = (px.x - TEXT_CANVAS_WIDTH / 2) * scaleX
-    positions[i * 3 + 1] = -(px.y - TEXT_CANVAS_HEIGHT / 2) * scaleY
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.3 // slight z variation
-  }
+    const onResize = () => { resize(); initParticles() }
+    window.addEventListener('resize', onResize)
 
-  return positions
-}
-
-// ============================================================
-// Particles component (runs inside R3F Canvas)
-// ============================================================
-function Particles() {
-  const pointsRef = useRef<THREE.Points>(null)
-  const mouseRef = useRef(new THREE.Vector2(0, 0))
-  const smoothMouseRef = useRef(new THREE.Vector2(0, 0))
-  const progressRef = useRef(0)
-  useThree()
-
-  // Build geometry and material once
-  const { geometry, material } = useMemo(() => {
-    // Random initial positions
-    const randomPositions = new Float32Array(PARTICLE_COUNT * 3)
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      randomPositions[i * 3] = (Math.random() - 0.5) * SCATTER_RANGE_X
-      randomPositions[i * 3 + 1] = (Math.random() - 0.5) * SCATTER_RANGE_Y
-      randomPositions[i * 3 + 2] = (Math.random() - 0.5) * SCATTER_RANGE_Z
-    }
-
-    // Target text positions
-    const targetPositions = sampleTextPositions(PARTICLE_COUNT)
-
-    // Color mix attribute (0 = white, 1 = cyan)
-    const colorMix = new Float32Array(PARTICLE_COUNT)
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      colorMix[i] = Math.random() < CYAN_PARTICLE_RATIO ? 1.0 : 0.0
-    }
-
-    const geo = new THREE.BufferGeometry()
-    // Dummy position attribute (required by THREE, actual positions computed in shader)
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(randomPositions, 3))
-    geo.setAttribute('aRandomPos', new THREE.Float32BufferAttribute(randomPositions, 3))
-    geo.setAttribute('aTargetPos', new THREE.Float32BufferAttribute(targetPositions, 3))
-    geo.setAttribute('aColorMix', new THREE.Float32BufferAttribute(colorMix, 1))
-
-    const mat = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        uTime: { value: 0 },
-        uMouse: { value: new THREE.Vector2(0, 0) },
-        uProgress: { value: 0 },
-      },
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    })
-
-    return { geometry: geo, material: mat }
-  }, [])
-
-  // Global pointer listener for mouse tracking
-  useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      mouseRef.current.set(
-        (e.clientX / window.innerWidth) * 2 - 1,
-        -(e.clientY / window.innerHeight) * 2 + 1
-      )
+      mouseRef.current.x = e.clientX
+      mouseRef.current.y = e.clientY
+
+      // Text repulsion — direct DOM manipulation, no React re-render
+      if (textRef.current) {
+        const rect = textRef.current.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const dx = cx - e.clientX
+        const dy = cy - e.clientY
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < TEXT_REPULSE_RADIUS && dist > 0) {
+          const strength = ((1 - dist / TEXT_REPULSE_RADIUS) ** 2) * TEXT_REPULSE_STRENGTH
+          textOffsetRef.current.x = (dx / dist) * strength
+          textOffsetRef.current.y = (dy / dist) * strength
+        }
+      }
+    }
+    const onMouseLeave = () => {
+      mouseRef.current.x = -9999
+      mouseRef.current.y = -9999
     }
     window.addEventListener('mousemove', onMouseMove)
-    return () => window.removeEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseleave', onMouseLeave)
+
+    // IntersectionObserver — pause animation when off-screen
+    const observer = new IntersectionObserver(
+      ([entry]) => { visibleRef.current = entry.isIntersecting },
+      { threshold: 0.05 },
+    )
+    observer.observe(section)
+
+    let time = 0
+    const animate = () => {
+      animIdRef.current = requestAnimationFrame(animate)
+
+      // Skip rendering when not visible
+      if (!visibleRef.current) return
+
+      time += 0.016
+      ctx.clearRect(0, 0, width, height)
+
+      const mx = mouseRef.current.x
+      const my = mouseRef.current.y
+
+      for (const p of particles) {
+        // Wave-like fluid motion — large amplitude global wave field
+        const waveFreq = 0.004
+        const waveAmp = 40
+        // Global wave: coordinated sine waves create visible ocean-like motion
+        const globalWaveX = Math.sin(p.originY * waveFreq * 2 + time * 0.8) * waveAmp
+            + Math.sin(p.originY * waveFreq * 0.7 + time * 0.5 + 1.5) * waveAmp * 0.6
+        const globalWaveY = Math.cos(p.originX * waveFreq * 1.5 + time * 0.6) * waveAmp * 0.7
+            + Math.cos(p.originX * waveFreq * 0.5 + time * 0.4 + 2.0) * waveAmp * 0.4
+        // Individual micro-oscillation
+        const microX = Math.sin(time * p.flowSpeed + p.phase) * 3
+        const microY = Math.cos(time * p.flowSpeed * 0.8 + p.phase) * 2.5
+
+        const targetX = p.originX + globalWaveX + microX
+        const targetY = p.originY + globalWaveY + microY
+
+        // Mouse repulsion
+        const dx = p.x - mx
+        const dy = p.y - my
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < MOUSE_RADIUS && dist > 1) {
+          const force = ((1 - dist / MOUSE_RADIUS) ** 2) * MOUSE_PUSH_FORCE
+          p.vx += (dx / dist) * force
+          p.vy += (dy / dist) * force
+        }
+
+        // Spring back + friction — fast enough to follow waves
+        p.vx += (targetX - p.x) * 0.05
+        p.vy += (targetY - p.y) * 0.05
+        p.vx *= 0.88
+        p.vy *= 0.88
+        p.x += p.vx
+        p.y += p.vy
+
+        // Prevent teleport streaks — increased range for wave motion
+        const distFromOrigin = Math.abs(p.x - p.originX) + Math.abs(p.y - p.originY)
+        if (distFromOrigin > 500) {
+          p.x = p.originX
+          p.y = p.originY
+          p.vx = 0
+          p.vy = 0
+        }
+
+        // Draw — single arc per particle, glow only for cyan (15% of particles)
+        const pulsedOpacity = p.opacity * (0.6 + 0.4 * Math.sin(time * 1.5 + p.phase))
+
+        if (p.isCyan) {
+          // Cyan: outer glow + inner core (only ~53 particles)
+          ctx.globalAlpha = pulsedOpacity * 0.25
+          ctx.fillStyle = '#00D9FF'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.globalAlpha = pulsedOpacity * 0.9
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+        } else {
+          // White: single circle only (saves ~300 draw calls/frame)
+          ctx.globalAlpha = pulsedOpacity * 0.6
+          ctx.fillStyle = '#ffffff'
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+          ctx.fill()
+        }
+      }
+      ctx.globalAlpha = 1
+
+      // Text offset decay — done in animation loop, not React state
+      const tOff = textOffsetRef.current
+      tOff.x *= 0.92
+      tOff.y *= 0.92
+      if (textRef.current) {
+        textRef.current.style.transform = `translate(${tOff.x}px, ${tOff.y}px)`
+      }
+    }
+
+    animate()
+
+    return () => {
+      cancelAnimationFrame(animIdRef.current)
+      observer.disconnect()
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseleave', onMouseLeave)
+    }
   }, [])
 
-  // Animation loop
-  useFrame((state) => {
-    if (!material) return
-
-    // Smooth mouse
-    smoothMouseRef.current.lerp(mouseRef.current, MOUSE_DECAY)
-
-    // Animate progress toward 1 (text formation)
-    progressRef.current += (1 - progressRef.current) * FORMATION_SPEED
-
-    material.uniforms.uTime.value = state.clock.elapsedTime
-    material.uniforms.uMouse.value.copy(smoothMouseRef.current)
-    material.uniforms.uProgress.value = progressRef.current
-  })
-
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      geometry.dispose()
-      material.dispose()
-    }
-  }, [geometry, material])
-
   return (
-    <points
-      ref={pointsRef}
-      geometry={geometry}
-      material={material}
-    />
-  )
-}
+    <section
+      ref={sectionRef}
+      className="relative flex h-screen w-full items-center justify-center overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(ellipse at 50% 80%, rgba(120,70,20,0.35) 0%, rgba(60,30,10,0.2) 40%, #0A0A0A 75%)',
+      }}
+    >
+      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
 
-// ============================================================
-// ParticleHero (exported component)
-// ============================================================
-export default function ParticleHero() {
-  return (
-    <section className="relative h-screen w-full" style={{ background: '#0A0A0A' }}>
-      {/* Three.js Canvas */}
-      <Canvas
-        camera={{ position: [0, 0, 8], fov: 50 }}
-        dpr={[1, 2]}
-        gl={{ antialias: false, alpha: false }}
-        style={{ position: 'absolute', inset: 0 }}
-      >
-        <color attach="background" args={['#0A0A0A']} />
-        <Particles />
-      </Canvas>
+      <div ref={textRef} className="relative z-10 text-center">
+        <h1 className="text-[40px] font-bold tracking-[6px] text-white sm:text-[56px] md:text-[72px] lg:text-[80px]">
+          CHARLES
+        </h1>
+        <p className="mt-3 text-lg tracking-[3px] text-[#999] md:text-xl">
+          AI Product Builder
+        </p>
+      </div>
 
-      {/* Scroll indicator overlay */}
       <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
-        <span className="animate-bounce text-sm tracking-widest text-white/50">
+        <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>
           SCROLL TO EXPLORE ↓
         </span>
       </div>

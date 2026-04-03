@@ -68,7 +68,18 @@ export default function AboutFirefly() {
       fireflies.push(createFirefly(width, height))
     }
 
+    // IntersectionObserver — pause when off-screen
+    let visible = false
+    const observer = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting },
+      { threshold: 0.05 },
+    )
+    if (sectionRef.current) observer.observe(sectionRef.current)
+
     const animate = () => {
+      animId = requestAnimationFrame(animate)
+      if (!visible) return
+
       ctx.clearRect(0, 0, width, height)
 
       for (const f of fireflies) {
@@ -83,24 +94,26 @@ export default function AboutFirefly() {
         if (f.y < -10) f.y = height + 10
         if (f.y > height + 10) f.y = -10
 
-        ctx.save()
-        ctx.globalAlpha = f.opacity
-        ctx.shadowBlur = 6
-        ctx.shadowColor = f.glowColor
+        // Outer glow (cheap, no shadowBlur)
+        ctx.globalAlpha = f.opacity * 0.2
         ctx.fillStyle = f.color
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, f.size * 3, 0, Math.PI * 2)
+        ctx.fill()
+        // Inner core
+        ctx.globalAlpha = f.opacity
         ctx.beginPath()
         ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2)
         ctx.fill()
-        ctx.restore()
       }
-
-      animId = requestAnimationFrame(animate)
+      ctx.globalAlpha = 1
     }
 
     animate()
 
     return () => {
       cancelAnimationFrame(animId)
+      observer.disconnect()
       window.removeEventListener('resize', resize)
     }
   }, [])

@@ -6,19 +6,19 @@ const CTA_FONT_FAMILY =
 
 function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
   const positionStyles: Record<string, React.CSSProperties> = {
-    tl: { top: -4, left: -4 },
-    tr: { top: -4, right: -4 },
-    bl: { bottom: -4, left: -4 },
-    br: { bottom: -4, right: -4 },
+    tl: { top: -1, left: -1 },
+    tr: { top: -1, right: -1 },
+    bl: { bottom: -1, left: -1 },
+    br: { bottom: -1, right: -1 },
   }
 
   return (
     <div
-      className="absolute h-[7px] w-[7px]"
+      className="absolute h-[8px] w-[8px]"
       style={{
         ...positionStyles[position],
-        background: 'rgba(255,255,255,0.15)',
-        border: '1px solid rgba(255,255,255,0.25)',
+        background: 'rgba(255,255,255,0.3)',
+        border: '1px solid rgba(255,255,255,0.5)',
       }}
     />
   )
@@ -28,10 +28,10 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <a
       href={project.ctaUrl}
-      className="group relative flex flex-col"
+      aria-label={project.title}
+      className="group relative flex min-h-0 flex-col no-underline md:min-h-[420px]"
       style={{
-        minHeight: 565,
-        padding: 32,
+        padding: '32px 32px 40px',
         flex: '1 1 0%',
       }}
     >
@@ -47,7 +47,7 @@ function ProjectCard({ project }: { project: Project }) {
       {/* Hover border glow + corner squares */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
-        style={{ border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ border: '1px solid rgba(255,255,255,0.12)' }}
       >
         <CornerSquare position="tl" />
         <CornerSquare position="tr" />
@@ -65,11 +65,10 @@ function ProjectCard({ project }: { project: Project }) {
 
       {/* Description */}
       <p
-        className="transition-colors duration-300 ease-in-out group-hover:text-white/85"
+        className="text-text-secondary transition-colors duration-300 ease-in-out group-hover:text-white/85"
         style={{
           fontSize: 16,
           lineHeight: 1.5,
-          color: 'rgba(255,255,255,0.45)',
           marginTop: 12,
         }}
       >
@@ -79,20 +78,21 @@ function ProjectCard({ project }: { project: Project }) {
       {/* Visual area placeholder */}
       <div className="flex-grow" />
 
-      {/* CTA button */}
-      <div
-        className="inline-flex items-center gap-2 self-start rounded-full px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
-        style={{
-          border: '1px solid rgba(255,255,255,0.25)',
-          fontFamily: CTA_FONT_FAMILY,
-          fontSize: 13,
-          letterSpacing: '1.5px',
-          textTransform: 'uppercase',
-          color: 'white',
-        }}
-      >
-        <span>{project.ctaText}</span>
-        <span style={{ fontSize: 14 }}>&#x2197;</span>
+      {/* CTA button — centered like xAI */}
+      <div className="flex justify-center">
+        <div
+          className="inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
+          style={{
+            fontFamily: CTA_FONT_FAMILY,
+            fontSize: 13,
+            letterSpacing: '1.5px',
+            textTransform: 'uppercase',
+            color: 'white',
+          }}
+        >
+          <span>{project.ctaText}</span>
+          <span style={{ fontSize: 13, lineHeight: 1, display: 'inline-block', transform: 'scale(1.4)', transformOrigin: 'center' }}>↗</span>
+        </div>
       </div>
     </a>
   )

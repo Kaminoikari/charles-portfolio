@@ -20,7 +20,8 @@ function Loading() {
 
 export default function App() {
   useEffect(() => {
-    ScrollTrigger.refresh()
+    const id = setTimeout(() => ScrollTrigger.refresh(), 100)
+    return () => clearTimeout(id)
   }, [])
 
   return (

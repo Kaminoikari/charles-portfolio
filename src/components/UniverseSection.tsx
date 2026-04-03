@@ -1,248 +1,316 @@
-import { useRef, useState, useMemo, useCallback } from 'react'
-import * as THREE from 'three'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
-import type { ThreeEvent } from '@react-three/fiber'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { skills } from '../data/skills'
-import type { Skill } from '../data/skills'
 
 // --- Constants ---
 
-const LINE_COUNT = 36
-const LINE_LENGTH = 12
-const PARTICLE_BASE_SIZE = 0.06
-const HOVER_SCALE = 1.4
+const LINE_COUNT = 180
+// Every line gets an endpoint particle — no separate count needed
+const ROTATION_SPEED = -0.002 // Y-axis rotation speed (negative = reverse direction)
+const FOCAL_LENGTH = 600 // Perspective camera focal length
 const SLOW_MULTIPLIER = 0.3
-const BLOOM_INTENSITY = 1.2
-const BLOOM_LUMINANCE_THRESHOLD = 0.4
 
-const COLOR_MAP: Record<Skill['color'], THREE.Color> = {
-  white: new THREE.Color(160 / 255, 180 / 255, 200 / 255),
-  cyan: new THREE.Color(160 / 255, 200 / 255, 220 / 255),
-  gray: new THREE.Color(100 / 255, 100 / 255, 100 / 255),
+// Max radius in world units (will be scaled to screen)
+const MAX_RADIUS = 400
+
+interface Line {
+  theta: number // polar angle (0~π, angle from Z-axis)
+  phi: number // azimuthal angle (0~2π, angle in XY plane)
+  rho: number // radius in pixels
+  brightness: number
+  alpha: number
+  width: number
 }
 
-const OPACITY_MAP: Record<Skill['color'], number> = {
-  white: 0.55,
-  cyan: 0.65,
-  gray: 0.27,
+interface Particle {
+  theta: number
+  phi: number
+  rho: number
+  size: number
+  colorR: number
+  colorG: number
+  colorB: number
+  alpha: number
+  phase: number // for noise/breathing
+  isSkill: boolean
+  skillIndex: number
 }
 
-const EMISSIVE_MAP: Record<Skill['color'], THREE.Color> = {
-  white: new THREE.Color(0, 0, 0),
-  cyan: new THREE.Color(0.2, 0.6, 0.8),
-  gray: new THREE.Color(0, 0, 0),
-}
+// --- Generate data using spherical coordinates ---
 
-// --- Helpers ---
+function generateLines(): Line[] {
+  const lines: Line[] = []
+  for (let i = 0; i < LINE_COUNT; i++) {
+    // φ: mathematically uniform distribution + tiny jitter for organic feel
+    const phi = (Math.PI * 2 * i) / LINE_COUNT + (Math.random() - 0.5) * 0.02
 
-function generateParticlePositions(count: number): Float32Array {
-  const positions = new Float32Array(count * 3)
-  for (let i = 0; i < count; i++) {
-    const angle = (Math.PI * 2 * Math.random())
-    const radius = 0.5 + Math.random() * (LINE_LENGTH - 1)
-    // Scatter particles along radiating lines with some perpendicular jitter
-    const jitter = (Math.random() - 0.5) * 0.8
-    const cosA = Math.cos(angle)
-    const sinA = Math.sin(angle)
-    positions[i * 3] = cosA * radius + (-sinA) * jitter
-    positions[i * 3 + 1] = sinA * radius + cosA * jitter
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.3
+    // θ: proper spherical uniform distribution
+    const u = Math.random()
+    const theta = Math.acos(1 - 2 * u)
+
+    // ρ: varying lengths
+    const lenRand = Math.random()
+    let rho: number
+    if (lenRand < 0.2) rho = MAX_RADIUS * (0.3 + Math.random() * 0.15)
+    else if (lenRand < 0.5) rho = MAX_RADIUS * (0.45 + Math.random() * 0.2)
+    else rho = MAX_RADIUS * (0.65 + Math.random() * 0.35)
+
+    // Depth illusion: shorter lines are dimmer (farther away), longer lines brighter (closer)
+    const depthBrightness = 60 + (rho / MAX_RADIUS) * 50
+
+    lines.push({
+      theta, phi, rho,
+      brightness: depthBrightness,
+      alpha: 0.15 + (rho / MAX_RADIUS) * 0.25, // farther = more transparent
+      width: 0.8, // slightly thicker
+    })
   }
-  return positions
+  return lines
 }
 
-// --- Sub-components ---
+function generateParticles(lines: Line[]): Particle[] {
+  const particles: Particle[] = []
 
-function RadiatingLines() {
-  const geometry = useMemo(() => {
-    const points: number[] = []
-    const colors: number[] = []
-    for (let i = 0; i < LINE_COUNT; i++) {
-      const angle = (Math.PI * 2 * i) / LINE_COUNT
-      const cos = Math.cos(angle)
-      const sin = Math.sin(angle)
-      // Center point
-      points.push(0, 0, 0)
-      colors.push(0.24, 0.24, 0.24, 0.3)
-      // Outer point
-      points.push(cos * LINE_LENGTH, sin * LINE_LENGTH, 0)
-      colors.push(0.24, 0.24, 0.24, 0)
+  // Skill particles
+  skills.forEach((skill, i) => {
+    const phi = (Math.PI * 2 * i) / skills.length + (Math.random() - 0.5) * 0.3
+    const u = Math.random()
+    const theta = Math.acos(1 - 2 * u)
+    const rho = MAX_RADIUS * (0.2 + Math.random() * 0.7)
+
+    const colorMap = {
+      cyan: { r: 160, g: 215, b: 250 },
+      white: { r: 210, g: 225, b: 240 },
+      gray: { r: 145, g: 155, b: 170 },
     }
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3))
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4))
-    return geo
-  }, [])
+    const c = colorMap[skill.color]
 
-  return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial
-        vertexColors
-        transparent
-        opacity={0.3}
-        depthWrite={false}
-      />
-    </lineSegments>
-  )
-}
+    const sizeRand = Math.random()
+    let size: number
+    if (sizeRand < 0.2) size = 10 + Math.random() * 5
+    else if (sizeRand < 0.55) size = 7 + Math.random() * 3
+    else size = 4 + Math.random() * 3
 
-interface ParticlesProps {
-  speedMultiplier: React.RefObject<number>
-  onHover: (index: number | null, screenPos: { x: number; y: number } | null) => void
-}
-
-const TOTAL_PARTICLES = 24 // ~20 decorative + skill-labeled particles
-
-function Particles({ speedMultiplier, onHover }: ParticlesProps) {
-  const meshRef = useRef<THREE.InstancedMesh>(null)
-  const { camera, size } = useThree()
-  const count = TOTAL_PARTICLES
-  const hoveredRef = useRef<number | null>(null)
-
-  const { basePositions, phases, radii } = useMemo(() => {
-    const positions = generateParticlePositions(count)
-    const ph = new Float32Array(count)
-    const rd = new Float32Array(count)
-    for (let i = 0; i < count; i++) {
-      ph[i] = Math.random() * Math.PI * 2
-      rd[i] = 0.02 + Math.random() * 0.04
-    }
-    return { basePositions: positions, phases: ph, radii: rd }
-  }, [count])
-
-  const dummy = useMemo(() => new THREE.Object3D(), [])
-  const tempColor = useMemo(() => new THREE.Color(), [])
-  const raycaster = useMemo(() => new THREE.Raycaster(), [])
-  const pointerNDC = useRef(new THREE.Vector2(9999, 9999))
-
-  const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
-    pointerNDC.current.set(
-      (e.clientX / size.width) * 2 - 1,
-      -(e.clientY / size.height) * 2 + 1,
-    )
-  }, [size])
-
-  const handlePointerLeave = useCallback(() => {
-    pointerNDC.current.set(9999, 9999)
-    if (hoveredRef.current !== null) {
-      hoveredRef.current = null
-      onHover(null, null)
-    }
-  }, [onHover])
-
-  useFrame(({ clock }) => {
-    const mesh = meshRef.current
-    if (!mesh) return
-
-    const t = clock.getElapsedTime() * (speedMultiplier.current ?? 1)
-
-    // Raycasting for hover detection
-    raycaster.setFromCamera(pointerNDC.current, camera)
-    const intersects = raycaster.intersectObject(mesh)
-    const hitIndex = intersects.length > 0 ? intersects[0].instanceId ?? null : null
-
-    if (hitIndex !== hoveredRef.current) {
-      hoveredRef.current = hitIndex
-      if (hitIndex !== null) {
-        // Project to screen coordinates for tooltip
-        dummy.position.set(
-          basePositions[hitIndex * 3],
-          basePositions[hitIndex * 3 + 1],
-          basePositions[hitIndex * 3 + 2],
-        )
-        dummy.updateMatrixWorld()
-        const projected = dummy.position.clone().project(camera)
-        const screenX = ((projected.x + 1) / 2) * size.width
-        const screenY = ((-projected.y + 1) / 2) * size.height
-        onHover(hitIndex, { x: screenX, y: screenY })
-      } else {
-        onHover(null, null)
-      }
-    }
-
-    for (let i = 0; i < count; i++) {
-      const bx = basePositions[i * 3]
-      const by = basePositions[i * 3 + 1]
-      const bz = basePositions[i * 3 + 2]
-
-      // Floating animation
-      const floatX = Math.sin(t * 0.8 + phases[i]) * radii[i]
-      const floatY = Math.cos(t * 0.6 + phases[i] * 1.3) * radii[i]
-
-      dummy.position.set(bx + floatX, by + floatY, bz)
-
-      // Scale pulsing + hover scale
-      const pulse = 0.8 + 0.2 * Math.sin(t * 1.2 + phases[i] * 2)
-      const isHovered = hoveredRef.current === i
-      const scale = PARTICLE_BASE_SIZE * pulse * (isHovered ? HOVER_SCALE : 1)
-      dummy.scale.set(scale, scale, scale)
-
-      dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
-
-      // Color with opacity pulsing — use skill data if available, otherwise decorative
-      const skill = i < skills.length ? skills[i] : null
-      const colorKey = skill ? skill.color : (['white', 'cyan', 'gray'] as const)[i % 3]
-      const baseColor = COLOR_MAP[colorKey]
-      const baseOpacity = OPACITY_MAP[colorKey]
-      const opacityPulse = baseOpacity + 0.1 * Math.sin(t * 1.5 + phases[i])
-      tempColor.copy(baseColor).multiplyScalar(opacityPulse / baseOpacity)
-      mesh.setColorAt(i, tempColor)
-    }
-    mesh.instanceMatrix.needsUpdate = true
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    particles.push({
+      theta, phi, rho, size,
+      colorR: c.r, colorG: c.g, colorB: c.b,
+      alpha: skill.color === 'cyan' ? 0.9 : skill.color === 'white' ? 0.8 : 0.45,
+      phase: Math.random() * Math.PI * 2,
+      isSkill: true,
+      skillIndex: i,
+    })
   })
 
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[undefined, undefined, TOTAL_PARTICLES]}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-    >
-      <planeGeometry args={[1, 1]} />
-      <meshStandardMaterial
-        transparent
-        opacity={0.7}
-        depthWrite={false}
-        side={THREE.DoubleSide}
-        emissive={EMISSIVE_MAP.cyan}
-        emissiveIntensity={0.5}
-        toneMapped={false}
-      />
-    </instancedMesh>
-  )
+  // Every line gets a small square particle at its endpoint
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const brightness = 120 + Math.random() * 80
+    particles.push({
+      theta: line.theta,
+      phi: line.phi,
+      rho: line.rho,
+      size: 2 + Math.random() * 2.5,
+      colorR: brightness, colorG: brightness + 10, colorB: brightness + 20,
+      alpha: 0.2 + Math.random() * 0.3,
+      phase: Math.random() * Math.PI * 2,
+      isSkill: false,
+      skillIndex: -1,
+    })
+  }
+
+  return particles
 }
 
-// --- Main Component ---
+const LINES = generateLines()
+const PARTICLES = generateParticles(LINES)
+
+// --- Helpers: spherical → 3D → rotated → projected ---
+
+function sphericalToCartesian(rho: number, theta: number, phi: number) {
+  const sinT = Math.sin(theta)
+  return {
+    x: rho * sinT * Math.cos(phi),
+    y: rho * sinT * Math.sin(phi),
+    z: rho * Math.cos(theta),
+  }
+}
+
+function rotateY(x: number, y: number, z: number, cosR: number, sinR: number) {
+  return {
+    x: x * cosR + z * sinR,
+    y: y, // unchanged
+    z: -x * sinR + z * cosR,
+  }
+}
+
+function perspectiveProject(x: number, y: number, z: number, cx: number, cy: number) {
+  const scale = FOCAL_LENGTH / (FOCAL_LENGTH + z)
+  return {
+    screenX: cx + x * scale,
+    screenY: cy + y * scale,
+    scale,
+    z,
+  }
+}
+
+// --- Component ---
+
+interface ScreenPos { x: number; y: number }
 
 export default function UniverseSection() {
-  const [tooltip, setTooltip] = useState<{
-    name: string
-    x: number
-    y: number
-  } | null>(null)
-  const speedRef = useRef(1)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const speedRef = useRef(1)
+  const hoveredRef = useRef<number | null>(null)
+  const screenPosRef = useRef<ScreenPos[]>(skills.map(() => ({ x: 0, y: 0 })))
+  const hoverZoneRefs = useRef<(HTMLDivElement | null)[]>([])
+  const tooltipRef = useRef<HTMLDivElement>(null)
 
-  const handleParticleHover = useCallback(
-    (index: number | null, screenPos: { x: number; y: number } | null) => {
-      if (index !== null && screenPos !== null && index < skills.length) {
-        setTooltip({ name: skills[index].name, ...screenPos })
-      } else {
-        setTooltip(null)
+  hoveredRef.current = hoveredIndex
+
+  const handleTextEnter = useCallback(() => { speedRef.current = SLOW_MULTIPLIER }, [])
+  const handleTextLeave = useCallback(() => { speedRef.current = 1 }, [])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const section = sectionRef.current
+    if (!canvas || !section) return
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animId: number
+    let width = 0
+    let height = 0
+    let rotation = 0
+    let visible = false
+    let frameCount = 0
+
+    const resize = () => {
+      width = section.clientWidth
+      height = section.clientHeight
+      canvas.width = width * window.devicePixelRatio
+      canvas.height = height * window.devicePixelRatio
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+    }
+
+    resize()
+    window.addEventListener('resize', resize)
+
+    const observer = new IntersectionObserver(
+      ([entry]) => { visible = entry.isIntersecting },
+      { threshold: 0.05 },
+    )
+    observer.observe(section)
+
+    // Z range for depth alpha calculation
+    const zMax = MAX_RADIUS
+    const zMin = -MAX_RADIUS
+    const zRange = zMax - zMin
+
+    const animate = () => {
+      animId = requestAnimationFrame(animate)
+      if (!visible) return
+
+      rotation += ROTATION_SPEED * (speedRef.current ?? 1)
+      frameCount++
+      const time = frameCount * 0.016
+
+      const cx = width / 2
+      const cy = height / 2
+      const cosR = Math.cos(rotation)
+      const sinR = Math.sin(rotation)
+
+      ctx.clearRect(0, 0, width, height)
+
+      // --- Draw lines ---
+      for (let i = 0; i < LINES.length; i++) {
+        const line = LINES[i]
+
+        // Dynamic rho with breathing
+        const rho = line.rho + Math.sin(time * 0.2 + i * 0.7) * 5
+
+        // Spherical → Cartesian → Y-rotation → Perspective
+        const cart = sphericalToCartesian(rho, line.theta, line.phi)
+        const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
+        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
+
+        // Depth-based alpha from 3D rotation
+        const depthAlpha = Math.max(0.08, (zMax - rot.z) / zRange)
+        const b = Math.round(line.brightness)
+        const a0 = line.alpha * depthAlpha
+
+        // Gradient: solid at center → transparent at endpoint
+        const grad = ctx.createLinearGradient(cx, cy, proj.screenX, proj.screenY)
+        grad.addColorStop(0, `rgba(${b},${b},${b},${a0})`)
+        grad.addColorStop(0.8, `rgba(${b},${b},${b},${a0 * 0.4})`)
+        grad.addColorStop(1, `rgba(${b},${b},${b},0)`)
+
+        ctx.strokeStyle = grad
+        ctx.lineWidth = line.width
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.lineTo(proj.screenX, proj.screenY)
+        ctx.stroke()
       }
-    },
-    [],
-  )
 
-  const handleTextEnter = useCallback(() => {
-    speedRef.current = SLOW_MULTIPLIER
-  }, [])
+      // --- Draw particles ---
+      const positions = screenPosRef.current
 
-  const handleTextLeave = useCallback(() => {
-    speedRef.current = 1
+      for (let i = 0; i < PARTICLES.length; i++) {
+        const p = PARTICLES[i]
+
+        // Dynamic rho with per-particle breathing
+        const rho = p.rho + Math.sin(time * 0.3 + p.phase) * 8
+
+        const cart = sphericalToCartesian(rho, p.theta, p.phi)
+        const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
+        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
+
+        if (p.isSkill && p.skillIndex >= 0) {
+          positions[p.skillIndex] = { x: proj.screenX, y: proj.screenY }
+        }
+
+        const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
+
+        // Depth alpha + flickering for endpoint particles
+        const depthAlpha = Math.max(0.1, (zMax - rot.z) / zRange)
+        const flickerSpeed = p.isSkill ? 0.6 : 1.5 + Math.sin(p.phase) * 0.8 // endpoint particles flicker faster
+        const flicker = 0.6 + 0.4 * Math.sin(time * flickerSpeed + p.phase * 2)
+        const pulse = p.alpha * depthAlpha * flicker
+        const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
+        const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, proj.scale)
+
+        ctx.globalAlpha = drawAlpha
+        ctx.fillStyle = `rgb(${p.colorR},${p.colorG},${p.colorB})`
+        ctx.fillRect(proj.screenX - drawSize / 2, proj.screenY - drawSize / 2, drawSize, drawSize)
+      }
+      ctx.globalAlpha = 1
+
+      // --- Update hover zones (every 5 frames) ---
+      if (frameCount % 5 === 0) {
+        for (let i = 0; i < skills.length; i++) {
+          const el = hoverZoneRefs.current[i]
+          if (el) {
+            el.style.transform = `translate(${positions[i].x - 22}px, ${positions[i].y - 22}px)`
+          }
+        }
+        if (tooltipRef.current && hoveredRef.current !== null) {
+          const idx = hoveredRef.current
+          tooltipRef.current.style.transform = `translate(${positions[idx].x + 18}px, ${positions[idx].y}px) translateY(-50%)`
+        }
+      }
+    }
+
+    animate()
+
+    return () => {
+      cancelAnimationFrame(animId)
+      observer.disconnect()
+      window.removeEventListener('resize', resize)
+    }
   }, [])
 
   return (
@@ -252,87 +320,86 @@ export default function UniverseSection() {
       className="relative w-full overflow-hidden"
       style={{ height: '100vh', background: '#0A0A0A' }}
     >
-      {/* Three.js Canvas */}
-      <Canvas
-        camera={{ position: [0, 0, 8], fov: 60 }}
-        style={{ position: 'absolute', inset: 0 }}
-        gl={{ antialias: true, alpha: false }}
-      >
-        <color attach="background" args={['#0A0A0A']} />
-        <RadiatingLines />
-        <Particles speedMultiplier={speedRef} onHover={handleParticleHover} />
-        <EffectComposer>
-          <Bloom
-            intensity={BLOOM_INTENSITY}
-            luminanceThreshold={BLOOM_LUMINANCE_THRESHOLD}
-            luminanceSmoothing={0.9}
-            mipmapBlur
-          />
-        </EffectComposer>
-      </Canvas>
+      <canvas ref={canvasRef} className="absolute inset-0" role="presentation" aria-hidden="true" />
 
-      {/* HTML Text Overlay — xAI exact layout: "Understand" left of center, "What I Do" right and below */}
+      {/* Hover zones */}
+      <div className="pointer-events-none absolute inset-0 z-30">
+        {skills.map((skill, i) => (
+          <div
+            key={skill.name}
+            ref={(el) => { hoverZoneRefs.current[i] = el }}
+            className="pointer-events-auto absolute left-0 top-0"
+            style={{ width: 44, height: 44 }}
+            onMouseEnter={() => {
+              setHoveredIndex(i)
+              speedRef.current = SLOW_MULTIPLIER
+            }}
+            onMouseLeave={() => {
+              setHoveredIndex(null)
+              speedRef.current = 1
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Tooltip */}
       <div
-        className="pointer-events-auto absolute inset-0 select-none"
-        onMouseEnter={handleTextEnter}
-        onMouseLeave={handleTextLeave}
+        ref={tooltipRef}
+        className="pointer-events-none absolute left-0 top-0 z-50"
+        style={{
+          opacity: hoveredIndex !== null ? 1 : 0,
+          transition: 'opacity 150ms',
+        }}
       >
         <span
-          className="absolute text-[36px] md:text-[72px]"
           style={{
-            right: 'calc(50% + 20px)',
-            top: '42%',
+            fontFamily: "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace",
+            fontSize: '11px',
+            fontWeight: 500,
+            letterSpacing: '1.5px',
+            color: 'rgba(180, 195, 215, 0.8)',
+          }}
+        >
+          {hoveredIndex !== null ? skills[hoveredIndex].name : ''}
+        </span>
+      </div>
+
+      {/* Text overlay */}
+      <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
+        <span
+          className="pointer-events-auto absolute right-[calc(50%+30px)] top-[43%] text-[32px] md:right-[calc(50%+140px)] md:text-[64px] lg:text-[80px]"
+          onMouseEnter={handleTextEnter}
+          onMouseLeave={handleTextLeave}
+          style={{
             fontWeight: 300,
-            color: 'rgba(200, 210, 220, 0.55)',
             lineHeight: 1,
-            letterSpacing: '2px',
+            letterSpacing: '3px',
             textAlign: 'right',
+            background: 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(200,210,225,0.65) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
           }}
         >
           Understand
         </span>
         <span
-          className="absolute text-[36px] md:text-[72px]"
+          className="pointer-events-auto absolute left-[calc(50%+30px)] top-[54%] text-[32px] md:left-[calc(50%+140px)] md:text-[64px] lg:text-[80px]"
+          onMouseEnter={handleTextEnter}
+          onMouseLeave={handleTextLeave}
           style={{
-            left: 'calc(50% + 20px)',
-            top: '54%',
             fontWeight: 300,
-            color: 'rgba(255, 255, 255, 0.85)',
             lineHeight: 1,
-            letterSpacing: '2px',
+            letterSpacing: '3px',
+            background: 'linear-gradient(90deg, rgba(200,210,225,0.65) 0%, rgba(255,255,255,0.95) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
           }}
         >
           What I Do
         </span>
       </div>
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          className="pointer-events-none absolute z-50"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translate(-50%, -140%)',
-          }}
-        >
-          <div
-            style={{
-              background: 'rgba(20, 20, 25, 0.9)',
-              border: '1px solid rgba(100, 200, 220, 0.3)',
-              borderRadius: '6px',
-              padding: '6px 12px',
-              color: 'rgba(200, 220, 240, 0.9)',
-              fontSize: '13px',
-              fontWeight: 400,
-              whiteSpace: 'nowrap',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            {tooltip.name}
-          </div>
-        </div>
-      )}
     </section>
   )
 }

@@ -13,6 +13,7 @@ export default function BlogEntries() {
             href={platform.url}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`Read articles on ${platform.name}`}
             className="block border border-border bg-bg-primary p-12 text-center no-underline transition-all duration-300 hover:scale-[1.04] hover:border-border-hover hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
           >
             <div className="mb-4 font-mono text-3xl text-[#999]">
