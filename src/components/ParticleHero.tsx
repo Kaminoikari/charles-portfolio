@@ -266,7 +266,7 @@ export default function ParticleHero() {
           </div>
           <div className="h-12 w-px bg-border" />
           <div className="flex-1 pl-8">
-            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">40%</div>
+            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">5x</div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Faster with AI</div>
           </div>
           <div className="h-12 w-px bg-border" />
