@@ -55,7 +55,7 @@ export default function ContactFooter() {
           ))}
         </div>
         <div className="reveal text-base tracking-[1px] text-text-muted opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-600" style={{ transitionDelay: '600ms' }}>
-          hello@charles.dev
+          charlestyc0527@gmail.com
         </div>
       </section>
       <footer className="border-t border-border-hover py-12 text-center text-xs tracking-[1px] text-text-secondary">

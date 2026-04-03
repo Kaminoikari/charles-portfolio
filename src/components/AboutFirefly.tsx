@@ -173,7 +173,7 @@ export default function AboutFirefly() {
         <div ref={textRef}>
           <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
           <p className="text-base leading-relaxed text-text-muted">
-            自我介紹文字。包含你的背景、專長、興趣和目標。
+            Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
           </p>
         </div>
       </div>
