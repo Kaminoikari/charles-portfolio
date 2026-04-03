@@ -36,7 +36,7 @@ export default function Nav() {
               key={id}
               onClick={() => scrollTo(id)}
               aria-label={`Scroll to ${id} section`}
-              className="cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-[#999] transition-colors hover:text-white"
+              className="cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors hover:text-white"
             >
               {id}
             </button>

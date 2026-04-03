@@ -14,12 +14,8 @@ function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 
   return (
     <div
-      className="absolute h-[8px] w-[8px]"
-      style={{
-        ...positionStyles[position],
-        background: 'rgba(255,255,255,0.3)',
-        border: '1px solid rgba(255,255,255,0.5)',
-      }}
+      className="absolute h-[8px] w-[8px] border border-border-highlight bg-surface-light"
+      style={positionStyles[position]}
     />
   )
 }
@@ -46,8 +42,7 @@ function ProjectCard({ project }: { project: Project }) {
 
       {/* Hover border glow + corner squares */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
-        style={{ border: '1px solid rgba(255,255,255,0.12)' }}
+        className="pointer-events-none absolute inset-0 border border-border-subtle opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
       >
         <CornerSquare position="tl" />
         <CornerSquare position="tr" />

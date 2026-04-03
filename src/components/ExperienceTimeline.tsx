@@ -26,9 +26,9 @@ export default function ExperienceTimeline() {
 
   return (
     <section id="experience" className="mx-auto max-w-[1200px] px-12 py-30">
-      <div className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
+      <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
         EXPERIENCE
-      </div>
+      </h2>
       <div ref={containerRef} className="border-l border-border pl-10">
         {experience.map((item, i) => (
           <div key={i} className="tl-item group relative mb-12 last:mb-0">
@@ -41,7 +41,7 @@ export default function ExperienceTimeline() {
               {item.title}
               <span className="text-text-tertiary"> @ {item.organization}</span>
             </div>
-            <div className="mt-1 text-[15px] text-[#999]">{item.description}</div>
+            <div className="mt-1 text-[15px] text-text-muted">{item.description}</div>
           </div>
         ))}
       </div>

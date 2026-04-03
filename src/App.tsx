@@ -26,6 +26,7 @@ export default function App() {
 
   return (
     <>
+      <a href="#about" className="skip-link">Skip to content</a>
       <Nav />
       <ScrollProgress />
       <Suspense fallback={<Loading />}>

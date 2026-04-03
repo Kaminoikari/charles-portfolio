@@ -166,13 +166,13 @@ export default function AboutFirefly() {
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
           ref={photoRef}
-          className="flex h-[200px] w-[200px] shrink-0 items-center justify-center rounded-full border border-[#2A2A2A] bg-[#1A1A1A] text-sm text-text-tertiary"
+          className="flex h-[200px] w-[200px] shrink-0 items-center justify-center rounded-full border border-border-dark bg-bg-tertiary text-sm text-text-tertiary"
         >
           PHOTO
         </div>
         <div ref={textRef}>
           <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
-          <p className="text-base leading-relaxed text-[#999]">
+          <p className="text-base leading-relaxed text-text-muted">
             自我介紹文字。包含你的背景、專長、興趣和目標。
           </p>
         </div>

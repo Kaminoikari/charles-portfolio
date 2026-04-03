@@ -224,7 +224,7 @@ export default function ParticleHero() {
         <h1 className="text-[40px] font-bold tracking-[6px] text-white sm:text-[56px] md:text-[72px] lg:text-[80px]">
           CHARLES
         </h1>
-        <p className="mt-3 text-lg tracking-[3px] text-[#999] md:text-xl">
+        <p className="mt-3 text-lg tracking-[3px] text-text-muted md:text-xl">
           AI Product Builder
         </p>
       </div>
