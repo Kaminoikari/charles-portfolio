@@ -74,6 +74,16 @@ body {
   outline-offset: 2px;
 }
 
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @keyframes pulse-fade {
   0%, 100% { opacity: 0.3; transform: translateY(0); }
   50% { opacity: 0.6; transform: translateY(4px); }

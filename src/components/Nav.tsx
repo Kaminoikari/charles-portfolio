@@ -36,16 +36,17 @@ export default function Nav() {
               key={id}
               onClick={() => scrollTo(id)}
               aria-label={`Scroll to ${id} section`}
-              className="cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors hover:text-white"
+              className="group relative cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
             >
               {id}
+              <span className="absolute -bottom-1 left-0 h-px w-0 bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:w-full" />
             </button>
           ))}
         </div>
         <button
           onClick={() => scrollTo('contact')}
           aria-label="Scroll to contact section"
-          className="cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-colors hover:bg-btn-hover-bg"
+          className="cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
         >
           CONTACT ↗
         </button>
