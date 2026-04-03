@@ -217,27 +217,32 @@ export default function ParticleHero() {
         }}
       />
 
-      <div ref={textRef} className="relative z-10 max-w-[800px] px-6 text-center">
-        {/* Hero headline — the intro IS the title */}
-        <h1 className="text-[28px] font-light leading-snug tracking-wide text-white/90 sm:text-[36px] md:text-[44px] lg:text-[50px]">
-          My name is Charles.<br />
-          <span className="text-white">I'm a Product Manager building products that drive millions of users and mass revenue at scale.</span>
+      <div ref={textRef} className="relative z-10 max-w-[900px] px-6">
+        {/* Hero headline — xAI universe-grade typography */}
+        <h1 className="text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>My name is </span>
+          <span className="font-normal text-white">Charles.</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> I'm a Product Manager building products that drive </span>
+          <span className="font-normal text-white">millions of users</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> and </span>
+          <span className="font-normal text-white">mass revenue</span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> at scale.</span>
         </h1>
 
-        {/* Impact stats — monospace, horizontal rule separated, bold numbers */}
-        <div className="mx-auto mt-12 flex max-w-[700px] items-center justify-center gap-0">
-          <div className="flex-1 text-center">
-            <div className="text-[28px] font-semibold text-accent-cyan md:text-[36px]">85%+</div>
+        {/* Impact stats — bold cyan numbers + monospace labels */}
+        <div className="mt-14 flex items-center justify-start gap-0">
+          <div className="flex-1">
+            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">85%+</div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Revenue Impact</div>
           </div>
-          <div className="h-10 w-px bg-border" />
-          <div className="flex-1 text-center">
-            <div className="text-[28px] font-semibold text-accent-cyan md:text-[36px]">40%</div>
+          <div className="h-12 w-px bg-border" />
+          <div className="flex-1 pl-8">
+            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">40%</div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Faster with AI</div>
           </div>
-          <div className="h-10 w-px bg-border" />
-          <div className="flex-1 text-center">
-            <div className="text-[28px] font-semibold text-accent-cyan md:text-[36px]">M+</div>
+          <div className="h-12 w-px bg-border" />
+          <div className="flex-1 pl-8">
+            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">6M+</div>
             <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Users Reached</div>
           </div>
         </div>
