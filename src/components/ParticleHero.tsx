@@ -226,8 +226,8 @@ export default function ParticleHero() {
         </p>
 
         {/* Elevator pitch */}
-        <p className="mx-auto mt-8 max-w-[560px] text-base font-light leading-relaxed tracking-wide text-white/70 md:text-lg">
-          Building products that drive millions of users and mass revenue at scale — powered by AI.
+        <p className="mx-auto mt-8 max-w-[600px] text-base font-light leading-relaxed tracking-wide text-white/70 md:text-lg">
+          My name is Charles. I'm a Product Manager building products that drive millions of users and mass revenue at scale.
         </p>
 
         {/* Impact stats — lower visual weight */}
