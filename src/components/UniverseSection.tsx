@@ -244,13 +244,7 @@ export default function UniverseSection() {
         const b = Math.round(line.brightness)
         const a0 = line.alpha * depthAlpha
 
-        // Gradient: solid at center → transparent at endpoint
-        const grad = ctx.createLinearGradient(cx, cy, proj.screenX, proj.screenY)
-        grad.addColorStop(0, `rgba(${b},${b},${b},${a0})`)
-        grad.addColorStop(0.8, `rgba(${b},${b},${b},${a0 * 0.4})`)
-        grad.addColorStop(1, `rgba(${b},${b},${b},0)`)
-
-        ctx.strokeStyle = grad
+        ctx.strokeStyle = `rgba(${b},${b},${b + 5},${a0})`
         ctx.lineWidth = line.width
         ctx.beginPath()
         ctx.moveTo(cx, cy)
@@ -296,7 +290,7 @@ export default function UniverseSection() {
         for (let i = 0; i < skills.length; i++) {
           const el = hoverZoneRefs.current[i]
           if (el) {
-            el.style.transform = `translate(${positions[i].x - 22}px, ${positions[i].y - 22}px)`
+            el.style.transform = `translate(${positions[i].x - 24}px, ${positions[i].y - 24}px)`
           }
         }
         if (tooltipRef.current && hoveredRef.current !== null) {
@@ -342,7 +336,7 @@ export default function UniverseSection() {
             key={skill.name}
             ref={(el) => { hoverZoneRefs.current[i] = el }}
             className="pointer-events-auto absolute left-0 top-0"
-            style={{ width: 44, height: 44 }}
+            style={{ width: 48, height: 48 }}
             onMouseEnter={() => {
               setHoveredIndex(i)
               speedRef.current = SLOW_MULTIPLIER

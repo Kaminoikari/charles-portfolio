@@ -91,9 +91,9 @@ export default function ContactFooter() {
             </a>
           ))}
         </div>
-        <div className="reveal text-base tracking-[1px] text-text-muted opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-600" style={{ transitionDelay: '700ms' }}>
+        <a href="mailto:charlestyc0527@gmail.com" className="reveal text-base tracking-[1px] text-text-muted no-underline transition-colors duration-200 hover:text-white opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-600" style={{ transitionDelay: '700ms' }}>
           charlestyc0527@gmail.com
-        </div>
+        </a>
       </section>
       <footer className="border-t border-border-hover py-12 text-center text-xs tracking-[1px] text-text-secondary">
         © 2026 Te-Ying (Charles) Chen. Built with React + Canvas

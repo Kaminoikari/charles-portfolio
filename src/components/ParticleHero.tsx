@@ -258,29 +258,13 @@ export default function ParticleHero() {
           <span style={{ color: 'rgba(255,255,255,0.5)' }}> at scale.</span>
         </h1>
 
-        {/* Impact stats — bold cyan numbers + monospace labels */}
-        <div className="mt-14 flex items-center justify-start gap-0">
-          <div className="flex-1">
-            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">85%+</div>
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Revenue Impact</div>
-          </div>
-          <div className="h-12 w-px bg-border" />
-          <div className="flex-1 pl-8">
-            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">5x</div>
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Faster with AI</div>
-          </div>
-          <div className="h-12 w-px bg-border" />
-          <div className="flex-1 pl-8">
-            <div className="text-[32px] font-semibold tracking-tight text-accent-cyan md:text-[42px]">6M+</div>
-            <div className="mt-1 font-mono text-[10px] uppercase tracking-[2px] text-text-muted">Users Reached</div>
-          </div>
+        <div className="mt-10 font-mono text-[11px] uppercase tracking-[3px] text-text-muted md:text-xs">
+          6M+ Users · 85% Revenue Impact · 5x Faster with AI
         </div>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
-        <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>
-          SCROLL TO EXPLORE ↓
-        </span>
+        <span className="text-sm tracking-widest text-white/20">↓</span>
       </div>
     </section>
   )

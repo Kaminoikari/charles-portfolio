@@ -25,11 +25,11 @@ export default function ExperienceTimeline() {
   }, [])
 
   return (
-    <section id="experience" className="mx-auto max-w-[1200px] px-12 py-30">
+    <section id="experience" className="mx-auto max-w-[1200px] px-6 md:px-12 py-30">
       <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
         EXPERIENCE
       </h2>
-      <div ref={containerRef} className="border-l border-border pl-10">
+      <div ref={containerRef} className="border-l border-border pl-6 md:pl-10">
         {experience.map((item, i) => (
           <div
             key={i}
@@ -37,7 +37,7 @@ export default function ExperienceTimeline() {
             style={{ transitionDelay: `${i * 100}ms` }}
           >
             {/* Square node marker */}
-            <div className="absolute -left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-cyan group-hover:shadow-[0_0_8px_rgba(0,217,255,0.3)]" />
+            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-cyan group-hover:shadow-[0_0_8px_rgba(0,217,255,0.3)]" />
             <div className="mb-1 text-[13px] uppercase tracking-[1.5px] text-text-tertiary">
               {item.dateRange}
             </div>
