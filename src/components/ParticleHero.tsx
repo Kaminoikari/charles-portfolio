@@ -225,15 +225,20 @@ export default function ParticleHero() {
           AI Product Builder
         </p>
 
-        {/* Impact statements — static, gradient opacity like xAI */}
-        <div className="mt-10 space-y-3">
-          <p className="text-base font-light tracking-wide md:text-lg" style={{ color: 'rgba(255,255,255,0.75)' }}>
+        {/* Elevator pitch */}
+        <p className="mx-auto mt-8 max-w-[560px] text-base font-light leading-relaxed tracking-wide text-white/70 md:text-lg">
+          Building products that drive millions of users and mass revenue at scale — powered by AI.
+        </p>
+
+        {/* Impact stats — lower visual weight */}
+        <div className="mt-6 space-y-1.5">
+          <p className="text-sm font-light tracking-wider md:text-base" style={{ color: 'rgba(255,255,255,0.4)' }}>
             Shipped products used by millions.
           </p>
-          <p className="text-base font-light tracking-wide md:text-lg" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          <p className="text-sm font-light tracking-wider md:text-base" style={{ color: 'rgba(255,255,255,0.3)' }}>
             Drove 85% of company revenue.
           </p>
-          <p className="text-base font-light tracking-wide md:text-lg" style={{ color: 'rgba(255,255,255,0.38)' }}>
+          <p className="text-sm font-light tracking-wider md:text-base" style={{ color: 'rgba(255,255,255,0.22)' }}>
             Accelerated team velocity by 40% with AI.
           </p>
         </div>
