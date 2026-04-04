@@ -14,16 +14,16 @@ interface Firefly {
   glowColor: string
 }
 
-function createFirefly(width: number, height: number): Firefly {
-  const isCyan = Math.random() > 0.6
+function createFirefly(width: number, height: number, isHub = false): Firefly {
+  const isCyan = isHub ? true : Math.random() > 0.55
   return {
     x: Math.random() * width,
     y: Math.random() * height,
-    vx: (Math.random() - 0.5) * 0.4,
-    vy: (Math.random() - 0.5) * 0.4,
-    size: 1.5 + Math.random() * 1.5,
+    vx: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
+    vy: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
+    size: isHub ? 3 + Math.random() * 2 : 1.2 + Math.random() * 1.3,
     opacity: 0,
-    maxOpacity: 0.4 + Math.random() * 0.5,
+    maxOpacity: isHub ? 0.7 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4,
     phase: Math.random() * Math.PI * 2,
     speed: 0.005 + Math.random() * 0.015,
     color: isCyan ? '#00D9FF' : '#ffffff',
@@ -48,7 +48,8 @@ export default function AboutFirefly() {
     let width = 0
     let height = 0
     const fireflies: Firefly[] = []
-    const FIREFLY_COUNT = 35
+    const FIREFLY_COUNT = 45 // more nodes for denser network
+const HUB_COUNT = 6 // large hub nodes
 
     const resize = () => {
       width = canvas.parentElement?.clientWidth ?? window.innerWidth
@@ -63,8 +64,13 @@ export default function AboutFirefly() {
     resize()
     window.addEventListener('resize', resize)
 
-    for (let i = 0; i < FIREFLY_COUNT; i++) {
-      fireflies.push(createFirefly(width, height))
+    // Hub nodes — large, bright, slow-moving anchor points
+    for (let i = 0; i < HUB_COUNT; i++) {
+      fireflies.push(createFirefly(width, height, true))
+    }
+    // Regular nodes
+    for (let i = 0; i < FIREFLY_COUNT - HUB_COUNT; i++) {
+      fireflies.push(createFirefly(width, height, false))
     }
 
     // IntersectionObserver — pause when off-screen
@@ -95,21 +101,37 @@ export default function AboutFirefly() {
         if (f.y > height + 10) f.y = -10
       }
 
-      // Draw connection lines between nearby particles
-      const CONNECTION_DIST = 150
-      ctx.lineWidth = 0.5
+      // Draw quantum neural network connections
+      const CONNECTION_DIST = 160
+      const time = Date.now() * 0.001
       for (let i = 0; i < fireflies.length; i++) {
         for (let j = i + 1; j < fireflies.length; j++) {
-          const dx = fireflies[i].x - fireflies[j].x
-          const dy = fireflies[i].y - fireflies[j].y
+          const fi = fireflies[i]
+          const fj = fireflies[j]
+          const dx = fi.x - fj.x
+          const dy = fi.y - fj.y
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < CONNECTION_DIST) {
-            const alpha = (1 - dist / CONNECTION_DIST) * 0.15
-            ctx.globalAlpha = alpha
-            ctx.strokeStyle = '#ffffff'
+            const proximity = 1 - dist / CONNECTION_DIST
+            // Pulsing signal — alpha oscillates per connection
+            const pulse = 0.5 + 0.5 * Math.sin(time * 2 + i * 0.7 + j * 0.3)
+            const alpha = proximity * pulse * 0.2
+
+            // Gradient line: cyan signal flowing from node i to node j
+            const grad = ctx.createLinearGradient(fi.x, fi.y, fj.x, fj.y)
+            const signalPos = (Math.sin(time * 3 + i + j) * 0.5 + 0.5) // 0-1 oscillating position
+            const cyanAlpha = alpha * 1.5
+
+            grad.addColorStop(Math.max(0, signalPos - 0.15), `rgba(255,255,255,${alpha})`)
+            grad.addColorStop(signalPos, `rgba(0,217,255,${cyanAlpha})`)
+            grad.addColorStop(Math.min(1, signalPos + 0.15), `rgba(255,255,255,${alpha})`)
+
+            ctx.globalAlpha = 1
+            ctx.strokeStyle = grad
+            ctx.lineWidth = proximity > 0.6 ? 0.8 : 0.4
             ctx.beginPath()
-            ctx.moveTo(fireflies[i].x, fireflies[i].y)
-            ctx.lineTo(fireflies[j].x, fireflies[j].y)
+            ctx.moveTo(fi.x, fi.y)
+            ctx.lineTo(fj.x, fj.y)
             ctx.stroke()
           }
         }
