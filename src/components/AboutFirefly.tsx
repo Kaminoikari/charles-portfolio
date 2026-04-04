@@ -81,6 +81,7 @@ export default function AboutFirefly() {
 
       ctx.clearRect(0, 0, width, height)
 
+      // Update positions
       for (const f of fireflies) {
         f.phase += f.speed
         f.opacity = f.maxOpacity * (0.3 + 0.7 * Math.abs(Math.sin(f.phase)))
@@ -92,8 +93,31 @@ export default function AboutFirefly() {
         if (f.x > width + 10) f.x = -10
         if (f.y < -10) f.y = height + 10
         if (f.y > height + 10) f.y = -10
+      }
 
-        // Outer glow (cheap, no shadowBlur)
+      // Draw connection lines between nearby particles
+      const CONNECTION_DIST = 150
+      ctx.lineWidth = 0.5
+      for (let i = 0; i < fireflies.length; i++) {
+        for (let j = i + 1; j < fireflies.length; j++) {
+          const dx = fireflies[i].x - fireflies[j].x
+          const dy = fireflies[i].y - fireflies[j].y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < CONNECTION_DIST) {
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.15
+            ctx.globalAlpha = alpha
+            ctx.strokeStyle = '#ffffff'
+            ctx.beginPath()
+            ctx.moveTo(fireflies[i].x, fireflies[i].y)
+            ctx.lineTo(fireflies[j].x, fireflies[j].y)
+            ctx.stroke()
+          }
+        }
+      }
+
+      // Draw particles
+      for (const f of fireflies) {
+        // Outer glow
         ctx.globalAlpha = f.opacity * 0.2
         ctx.fillStyle = f.color
         ctx.beginPath()
