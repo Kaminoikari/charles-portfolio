@@ -25,7 +25,7 @@ export default function ExperienceTimeline() {
   }, [])
 
   return (
-    <section id="experience" className="mx-auto max-w-[1200px] px-6 md:px-12 py-40">
+    <section id="experience" className="mx-auto max-w-[1200px] px-6 md:px-12 py-24">
       <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
         EXPERIENCE
       </h2>
