@@ -6,11 +6,11 @@ import { skills } from '../data/skills'
 const LINE_COUNT = 120 // every line gets a particle
 // Every line gets an endpoint particle — no separate count needed
 const ROTATION_SPEED = -0.002 // Y-axis rotation speed (negative = reverse direction)
-const FOCAL_LENGTH = 600 // Perspective camera focal length
+const FOCAL_LENGTH = 900 // Higher = less perspective distortion, rounder sphere
 const SLOW_MULTIPLIER = 0.3
 
 // Max radius in world units (will be scaled to screen)
-const MAX_RADIUS = 230
+const MAX_RADIUS = 300
 
 interface Line {
   theta: number // polar angle (0~π, angle from Z-axis)
