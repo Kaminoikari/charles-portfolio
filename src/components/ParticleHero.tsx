@@ -73,10 +73,7 @@ export default function ParticleHero() {
     dotCtx.fill()
 
     const onMouseMove = (e: MouseEvent) => {
-      mouseTargetRef.current.x = (e.clientX / window.innerWidth) * 100
-      mouseTargetRef.current.y = (e.clientY / window.innerHeight) * 100
-
-      // Text repulsion
+      // Ring center does NOT follow mouse — only text repulsion
       if (textRef.current) {
         const rect = textRef.current.getBoundingClientRect()
         const cx = rect.left + rect.width / 2
@@ -113,6 +110,9 @@ export default function ParticleHero() {
 
     const onClick = (e: MouseEvent) => {
       ripples.push({ x: e.clientX, y: e.clientY, radius: 0, strength: 1 })
+      // Move ring center to click position — it will ease back to center
+      mouseSmoothRef.current.x = (e.clientX / window.innerWidth) * 100
+      mouseSmoothRef.current.y = (e.clientY / window.innerHeight) * 100
     }
     section.addEventListener('click', onClick)
 
