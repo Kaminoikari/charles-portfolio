@@ -346,7 +346,7 @@ export default function UniverseSection() {
       id="skills"
       ref={sectionRef}
       className="relative w-full overflow-hidden"
-      style={{ height: '100vh', background: '#0A0A0A' }}
+      style={{ height: '80vh', background: '#0A0A0A' }}
     >
       <canvas ref={canvasRef} className="absolute inset-0" role="presentation" aria-hidden="true" />
 

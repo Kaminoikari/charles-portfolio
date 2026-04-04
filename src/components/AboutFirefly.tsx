@@ -187,7 +187,7 @@ const HUB_COUNT = 10 // bright hub nodes
     <section
       id="about"
       ref={sectionRef}
-      className="relative flex min-h-[70vh] items-center overflow-hidden"
+      className="relative flex min-h-[90vh] items-center overflow-hidden"
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
       {/* Bottom gradient fade — smooth blend into Universe section */}
