@@ -70,12 +70,13 @@ function generateLines(): Line[] {
 function generateParticles(lines: Line[]): Particle[] {
   const particles: Particle[] = []
 
-  // Skill particles
+  // Skill particles — attached to line endpoints
+  const shuffledLines = [...lines].sort(() => Math.random() - 0.5)
   skills.forEach((skill, i) => {
-    const phi = (Math.PI * 2 * i) / skills.length + (Math.random() - 0.5) * 0.3
-    const u = Math.random()
-    const theta = Math.acos(1 - 2 * u)
-    const rho = MAX_RADIUS * (0.2 + Math.random() * 0.7)
+    const line = shuffledLines[i % shuffledLines.length]
+    const phi = line.phi
+    const theta = line.theta
+    const rho = line.rho
 
     const colorMap = {
       cyan: { r: 160, g: 215, b: 250 },
