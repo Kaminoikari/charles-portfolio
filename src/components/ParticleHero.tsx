@@ -1,27 +1,30 @@
 import { useEffect, useRef } from 'react'
 
-// --- Antigravity-style ring particle constants ---
-const PARTICLE_COUNT = 1500
-const PARTICLE_ROWS = 25
+// --- Ring particle config (matching bramus/css-houdini-ringparticles) ---
+const INNER_RADIUS = 120
+const THICKNESS = 450
+const NUM_PARTICLES = 80
+const NUM_ROWS = 25
 const PARTICLE_SIZE = 1.5
-const RING_RADIUS_MIN = 150
-const RING_RADIUS_MAX = 250
-const RING_THICKNESS = 500
-const RING_BREATHE_SPEED = 0.001 // 6s full cycle
-const RIPPLE_SPEED = 0.001
-const MOUSE_EASE_SPEED = 0.02 // smooth follow (lower = slower, ~3s to reach target)
+const MIN_ALPHA = 0.05
+const MAX_ALPHA = 1.0
+const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)' // light gray-blue on dark bg
+const ANIMATION_SPEED = 0.008 // controls wave speed
+const MOUSE_EASE = 0.015 // ~3s ease to target
+const SEED = 42
+
+// Wave physics constants (deterministic from seed)
+const W1_FREQ = 4
+const W1_SPEED = 1.5
+const W1_DIR = 1
+const W2_FREQ = 6
+const W2_SPEED = 1
+const W2_DIR = -1
+const ROW_TWIST = 0.5
+const AMPLITUDE = 14
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
 const EASTER_EGG_DURATION_MS = 4000
-
-interface RingParticle {
-  // Static properties (set once)
-  angle: number // angle around ring
-  radiusOffset: number // distance from ring center (within thickness)
-  row: number // which row
-  baseAlpha: number
-  phase: number // for ripple offset
-}
 
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -33,10 +36,8 @@ export default function ParticleHero() {
   const easterEggRef = useRef(false)
   const konamiIndexRef = useRef(0)
 
-  // Mouse tracking with ease
-  const mouseTargetRef = useRef({ x: 0.5, y: 0.5 }) // normalized 0-1
-  const mouseSmoothRef = useRef({ x: 0.5, y: 0.5 })
-  const isMouseOverRef = useRef(false)
+  const mouseTargetRef = useRef({ x: 50, y: 50 }) // percentage 0-100
+  const mouseSmoothRef = useRef({ x: 50, y: 50 })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -48,7 +49,6 @@ export default function ParticleHero() {
 
     let width = 0
     let height = 0
-    const particles: RingParticle[] = []
 
     const resize = () => {
       width = window.innerWidth
@@ -60,30 +60,12 @@ export default function ParticleHero() {
       ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
     }
 
-    const initParticles = () => {
-      particles.length = 0
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const row = Math.floor(Math.random() * PARTICLE_ROWS)
-        particles.push({
-          angle: Math.random() * Math.PI * 2,
-          radiusOffset: Math.random() * RING_THICKNESS,
-          row,
-          baseAlpha: 0.1 + Math.random() * 0.9,
-          phase: Math.random() * Math.PI * 2,
-        })
-      }
-    }
-
     resize()
-    initParticles()
-
-    const onResize = () => { resize(); initParticles() }
-    window.addEventListener('resize', onResize)
+    window.addEventListener('resize', resize)
 
     const onMouseMove = (e: MouseEvent) => {
-      mouseTargetRef.current.x = e.clientX / window.innerWidth
-      mouseTargetRef.current.y = e.clientY / window.innerHeight
-      isMouseOverRef.current = true
+      mouseTargetRef.current.x = (e.clientX / window.innerWidth) * 100
+      mouseTargetRef.current.y = (e.clientY / window.innerHeight) * 100
 
       // Text repulsion
       if (textRef.current) {
@@ -101,9 +83,8 @@ export default function ParticleHero() {
       }
     }
     const onMouseLeave = () => {
-      isMouseOverRef.current = false
-      mouseTargetRef.current.x = 0.5
-      mouseTargetRef.current.y = 0.5
+      mouseTargetRef.current.x = 50
+      mouseTargetRef.current.y = 50
     }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseleave', onMouseLeave)
@@ -114,63 +95,86 @@ export default function ParticleHero() {
     )
     observer.observe(section)
 
-    let time = 0
+    const outerRadius = INNER_RADIUS + THICKNESS
+    const halfThick = THICKNESS / 2
+    let tick = 0
+
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
       if (!visibleRef.current) return
 
-      time += 1
+      tick += ANIMATION_SPEED
       ctx.clearRect(0, 0, width, height)
 
-      // Smooth mouse follow (ease toward target)
+      // Smooth mouse follow
       const ms = mouseSmoothRef.current
       const mt = mouseTargetRef.current
-      ms.x += (mt.x - ms.x) * MOUSE_EASE_SPEED
-      ms.y += (mt.y - ms.y) * MOUSE_EASE_SPEED
+      ms.x += (mt.x - ms.x) * MOUSE_EASE
+      ms.y += (mt.y - ms.y) * MOUSE_EASE
 
       // Ring center in pixels
-      const ringCX = ms.x * width
-      const ringCY = ms.y * height
+      const cx = (width * ms.x) / 100
+      const cy = (height * ms.y) / 100
 
-      // Breathing ring radius
-      const breathe = Math.sin(time * RING_BREATHE_SPEED) * 0.5 + 0.5
-      const ringRadius = RING_RADIUS_MIN + breathe * (RING_RADIUS_MAX - RING_RADIUS_MIN)
-
-      // Ripple phase
-      const rippleTick = (time * RIPPLE_SPEED) % 1
-
+      const t = tick * Math.PI * 2
       const isRainbow = easterEggRef.current
 
-      // Draw particles
-      for (const p of particles) {
-        // Ripple: offset radius based on particle phase + global ripple tick
-        const rippleWave = Math.sin((rippleTick + p.phase) * Math.PI * 2) * 20
+      ctx.fillStyle = PARTICLE_COLOR
 
-        // Final radius for this particle
-        const r = ringRadius + p.radiusOffset + rippleWave
+      for (let r = 0; r < NUM_ROWS; r++) {
+        const rowProgress = NUM_ROWS > 1 ? r / (NUM_ROWS - 1) : 0
+        const currentBaseRadius = INNER_RADIUS + (rowProgress * THICKNESS)
 
-        // Position
-        const x = ringCX + Math.cos(p.angle) * r
-        const y = ringCY + Math.sin(p.angle) * r
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          const angle = (i / NUM_PARTICLES) * Math.PI * 2
 
-        // Skip if off screen
-        if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
+          // --- Wave physics ---
+          const w1 = Math.sin(angle * W1_FREQ + t * W1_SPEED * W1_DIR)
+          const w2 = Math.sin(angle * W2_FREQ + t * W2_SPEED * W2_DIR)
+          const rowOffset = Math.sin(r * ROW_TWIST + t)
+          const waveHeight = w1 + w2 + rowOffset
 
-        // Alpha with subtle pulse
-        const alphaPulse = 0.7 + 0.3 * Math.sin(time * 0.02 + p.phase * 3)
-        const alpha = p.baseAlpha * alphaPulse
+          // Depth alpha from wave height
+          let normalized = (waveHeight + 3) / 6
+          normalized = Math.pow(Math.max(0, normalized), 1.5)
+          let alpha = MIN_ALPHA + (normalized * (MAX_ALPHA - MIN_ALPHA))
 
-        ctx.globalAlpha = alpha
+          // Position
+          const distortion = waveHeight * AMPLITUDE
+          const finalRadius = currentBaseRadius + distortion
+          const x = cx + Math.cos(angle) * finalRadius
+          const y = cy + Math.sin(angle) * finalRadius
 
-        if (isRainbow) {
-          const hue = (time * 2 + p.phase * 57) % 360
-          ctx.fillStyle = `hsl(${hue}, 80%, 60%)`
-        } else {
-          // Light gray/blue on black background
-          ctx.fillStyle = `rgba(180, 190, 210, 1)`
+          // Edge fade — particles near inner/outer edge fade out
+          const distFromInner = finalRadius - INNER_RADIUS
+          const distFromOuter = outerRadius - finalRadius
+          let visibility = Math.min(distFromInner, distFromOuter) / halfThick
+          if (visibility < 0) visibility = 0
+          if (visibility > 1) visibility = 1
+          // Simple ease-in for edge fade
+          visibility = visibility * visibility
+          alpha *= visibility
+
+          if (alpha < 0.01) continue
+
+          // Skip off-screen
+          if (x < -5 || x > width + 5 || y < -5 || y > height + 5) continue
+
+          ctx.globalAlpha = alpha
+
+          if (isRainbow) {
+            const hue = (tick * 200 + r * 15 + i * 4) % 360
+            ctx.fillStyle = `hsl(${hue}, 80%, 60%)`
+            ctx.beginPath()
+            ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+            ctx.fill()
+            ctx.fillStyle = PARTICLE_COLOR // reset for next non-rainbow
+          } else {
+            ctx.beginPath()
+            ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+            ctx.fill()
+          }
         }
-
-        ctx.fillRect(x - PARTICLE_SIZE / 2, y - PARTICLE_SIZE / 2, PARTICLE_SIZE, PARTICLE_SIZE)
       }
       ctx.globalAlpha = 1
 
@@ -188,19 +192,18 @@ export default function ParticleHero() {
     return () => {
       cancelAnimationFrame(animIdRef.current)
       observer.disconnect()
-      window.removeEventListener('resize', onResize)
+      window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
     }
   }, [])
 
-  // Konami code + easter egg listener
+  // Konami code + easter egg
   useEffect(() => {
     const activateEasterEgg = () => {
       easterEggRef.current = true
       setTimeout(() => { easterEggRef.current = false }, EASTER_EGG_DURATION_MS)
     }
-
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === KONAMI_SEQUENCE[konamiIndexRef.current]) {
         konamiIndexRef.current++
@@ -212,10 +215,8 @@ export default function ParticleHero() {
         konamiIndexRef.current = e.key === KONAMI_SEQUENCE[0] ? 1 : 0
       }
     }
-
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('easter-egg', activateEasterEgg)
-
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('easter-egg', activateEasterEgg)
@@ -230,7 +231,6 @@ export default function ParticleHero() {
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
 
-      {/* Bottom gradient fade */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
         style={{ background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)' }}
