@@ -387,7 +387,7 @@ export default function UniverseSection() {
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
         <span
           ref={textLeftRef}
-          className="pointer-events-auto absolute right-[50%] top-[43%] text-[32px] md:right-[50%] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute right-[calc(50%-30px)] top-[44%] text-[32px] md:right-[calc(50%-50px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
@@ -405,7 +405,7 @@ export default function UniverseSection() {
         </span>
         <span
           ref={textRightRef}
-          className="pointer-events-auto absolute left-[50%] top-[54%] text-[32px] md:left-[50%] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute left-[calc(50%-20px)] top-[52%] text-[32px] md:left-[calc(50%-30px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
