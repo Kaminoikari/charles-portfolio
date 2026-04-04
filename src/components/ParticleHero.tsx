@@ -22,7 +22,7 @@ const AMPLITUDE = 14
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
 const EASTER_EGG_DURATION_MS = 5000
-const PHOTO_SAMPLE_SIZE = 300 // higher resolution for better detail
+const PHOTO_SAMPLE_SIZE = 400 // high resolution for face detail
 
 interface ParticleData {
   row: number
@@ -109,7 +109,7 @@ export default function ParticleHero() {
     // Load photo targets async
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.src = '/assets/charles-profile.jpg'
+    img.src = '/assets/charles-face.png'
     img.onload = () => {
       const sampleCanvas = document.createElement('canvas')
       sampleCanvas.width = PHOTO_SAMPLE_SIZE
@@ -123,32 +123,37 @@ export default function ParticleHero() {
       const imageData = sampleCtx.getImageData(0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
       const pixels = imageData.data
 
-      // Get brightness at pixel
-      const getBrightness = (px: number, py: number) => {
+      // Get brightness + alpha at pixel
+      const getPixel = (px: number, py: number) => {
         const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
-        return (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
+        return {
+          b: (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3,
+          a: pixels[idx + 3], // alpha channel — 0 = transparent (outside circle)
+        }
       }
 
-      // Collect pixels using edge detection + brightness weighting
-      // Edge pixels define the silhouette; bright pixels fill the face
+      // Collect face pixels using edge detection + brightness
+      // PNG with circular crop: alpha=0 outside circle, alpha=255 inside
       const pool: Array<{ x: number; y: number; weight: number }> = []
 
       for (let py = 1; py < PHOTO_SAMPLE_SIZE - 1; py += 1) {
         for (let px = 1; px < PHOTO_SAMPLE_SIZE - 1; px += 1) {
-          const b = getBrightness(px, py)
-          // Edge detection: difference from neighbors
-          const edge = Math.abs(b - getBrightness(px - 1, py))
-            + Math.abs(b - getBrightness(px + 1, py))
-            + Math.abs(b - getBrightness(px, py - 1))
-            + Math.abs(b - getBrightness(px, py + 1))
+          const { b, a } = getPixel(px, py)
 
-          // Include pixel if it's an edge OR reasonably bright
-          const isEdge = edge > 40
-          const isBright = b > 80
+          // Skip transparent pixels (outside circular crop)
+          if (a < 128) continue
+
+          // Edge detection
+          const edge = Math.abs(b - getPixel(px - 1, py).b)
+            + Math.abs(b - getPixel(px + 1, py).b)
+            + Math.abs(b - getPixel(px, py - 1).b)
+            + Math.abs(b - getPixel(px, py + 1).b)
+
+          const isEdge = edge > 30
+          const isBright = b > 60
 
           if (isEdge || isBright) {
-            // Weight: edges get higher priority, then by brightness
-            const weight = (isEdge ? 3 : 0) + (b / 255)
+            const weight = (isEdge ? 4 : 0) + (b / 255)
             pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight })
           }
         }
@@ -212,7 +217,7 @@ export default function ParticleHero() {
     let tick = 0
 
     // Photo display area (centered, 300x300)
-    const PHOTO_DISPLAY_SIZE = Math.min(350, height * 0.5) // responsive, up to 350px
+    const PHOTO_DISPLAY_SIZE = Math.min(400, height * 0.55) // larger for face detail
 
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
