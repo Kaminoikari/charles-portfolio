@@ -284,7 +284,7 @@ export default function UniverseSection() {
         } else {
           // Decoration: star-like twinkle — sharp peaks
           const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
-          flicker = 0.15 + Math.max(0, raw) * 0.85 // mostly dim, occasional bright flash
+          flicker = 0.4 + Math.max(0, raw) * 0.6 // never fully disappears, occasional bright flash
         }
         const pulse = p.alpha * depthAlpha * flicker
         const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
