@@ -3,7 +3,7 @@ import { skills } from '../data/skills'
 
 // --- Constants ---
 
-const LINE_COUNT = 180
+const LINE_COUNT = 75 // every line gets a particle
 // Every line gets an endpoint particle — no separate count needed
 const ROTATION_SPEED = -0.002 // Y-axis rotation speed (negative = reverse direction)
 const FOCAL_LENGTH = 600 // Perspective camera focal length
@@ -70,10 +70,14 @@ function generateLines(): Line[] {
 function generateParticles(lines: Line[]): Particle[] {
   const particles: Particle[] = []
 
-  // Skill particles — attached to line endpoints
+  // Shuffle lines, assign first N to skills, rest to decoration
   const shuffledLines = [...lines].sort(() => Math.random() - 0.5)
+  const skillLines = shuffledLines.slice(0, skills.length)
+  const decoLines = shuffledLines.slice(skills.length)
+
+  // Skill particles — attached to line endpoints
   skills.forEach((skill, i) => {
-    const line = shuffledLines[i % shuffledLines.length]
+    const line = skillLines[i]
     const phi = line.phi
     const theta = line.theta
     const rho = line.rho
@@ -101,8 +105,7 @@ function generateParticles(lines: Line[]): Particle[] {
     })
   })
 
-  // 50 decoration particles at random line endpoints
-  const decoLines = [...lines].sort(() => Math.random() - 0.5).slice(0, 50)
+  // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
     const brightness = 120 + Math.random() * 80
@@ -279,10 +282,17 @@ export default function UniverseSection() {
 
         const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
 
-        // Depth alpha + flickering for endpoint particles
+        // Depth alpha + star twinkle for decoration particles
         const depthAlpha = Math.max(0.1, (zMax - rot.z) / zRange)
-        const flickerSpeed = p.isSkill ? 0.6 : 1.5 + Math.sin(p.phase) * 0.8 // endpoint particles flicker faster
-        const flicker = 0.6 + 0.4 * Math.sin(time * flickerSpeed + p.phase * 2)
+        let flicker: number
+        if (p.isSkill) {
+          // Skill particles: gentle pulse
+          flicker = 0.7 + 0.3 * Math.sin(time * 0.6 + p.phase * 2)
+        } else {
+          // Decoration: star-like twinkle — sharp peaks
+          const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
+          flicker = 0.15 + Math.max(0, raw) * 0.85 // mostly dim, occasional bright flash
+        }
         const pulse = p.alpha * depthAlpha * flicker
         const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
         const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, proj.scale)
