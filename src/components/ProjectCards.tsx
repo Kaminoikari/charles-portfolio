@@ -25,7 +25,7 @@ function ProjectCard({ project }: { project: Project }) {
     <a
       href={project.ctaUrl}
       aria-label={project.title}
-      className="group relative flex min-h-0 flex-col no-underline md:min-h-[420px]"
+      className="group relative flex min-h-0 flex-col no-underline transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.01] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] md:min-h-[420px]"
       style={{
         padding: '32px 32px 40px',
         flex: '1 1 0%',
@@ -79,7 +79,7 @@ function ProjectCard({ project }: { project: Project }) {
           className="inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
           style={{
             fontFamily: CTA_FONT_FAMILY,
-            fontSize: 13,
+            fontSize: 12,
             letterSpacing: '1.5px',
             textTransform: 'uppercase',
             color: 'white',

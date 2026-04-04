@@ -25,7 +25,7 @@ export default function ExperienceTimeline() {
   }, [])
 
   return (
-    <section id="experience" className="mx-auto max-w-[1200px] px-6 md:px-12 py-30">
+    <section id="experience" className="mx-auto max-w-[1200px] px-6 md:px-12 py-40">
       <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
         EXPERIENCE
       </h2>
@@ -41,9 +41,11 @@ export default function ExperienceTimeline() {
             <div className="mb-1 text-[13px] uppercase tracking-[1.5px] text-text-tertiary">
               {item.dateRange}
             </div>
-            <div className="text-xl font-semibold">
+            <div className="text-2xl font-semibold text-white">
               {item.title}
-              <span className="text-text-tertiary"> @ {item.organization}</span>
+            </div>
+            <div className="mt-0.5 text-sm text-text-muted">
+              {item.organization}
             </div>
             {item.description && (
               <div className="mt-1 text-[15px] text-text-muted">{item.description}</div>

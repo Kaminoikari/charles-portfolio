@@ -307,7 +307,7 @@ export default function ParticleHero() {
         </h1>
 
         <div className="mt-10 font-mono text-[11px] uppercase tracking-[3px] text-text-muted md:text-xs">
-          6M+ Users · 85% Revenue Impact · 5x Faster with AI
+          <span className="text-accent-cyan">6M+</span> Users · <span className="text-accent-cyan">85%</span> Revenue Impact · <span className="text-accent-cyan">5x</span> Faster with AI
         </div>
       </div>
 

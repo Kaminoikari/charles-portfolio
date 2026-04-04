@@ -39,7 +39,7 @@ export default function BlogEntries() {
   }, [])
 
   return (
-    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1200px] px-12 py-30">
+    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1200px] px-12 py-40">
       {/* Header row — xAI style */}
       <div className="mb-10 flex items-baseline justify-between">
         <div>
@@ -57,7 +57,7 @@ export default function BlogEntries() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Read articles on ${platform.name}`}
-            className={`blog-item group flex flex-col gap-6 border-b border-border py-10 no-underline opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 sm:flex-row sm:items-center sm:gap-12`}
+            className={`blog-item group flex flex-col gap-6 border-b border-border py-10 no-underline transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.01] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 sm:flex-row sm:items-center sm:gap-12`}
             style={{ transitionDelay: `${i * 150}ms` }}
           >
             {/* Left: text content */}
@@ -76,7 +76,7 @@ export default function BlogEntries() {
 
               {/* CTA */}
               <div
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-btn-border px-4 py-2 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:bg-white/[0.06]"
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:bg-white/[0.06]"
                 style={{
                   fontFamily: CTA_FONT_FAMILY,
                   fontSize: 12,
