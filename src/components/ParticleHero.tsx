@@ -55,7 +55,6 @@ export default function ParticleHero() {
     if (!ctx) return
 
     const computedStyle = getComputedStyle(document.documentElement)
-    const bgColor = computedStyle.getPropertyValue('--color-bg-primary').trim() || '#0A0A0A'
     const cyanColor = computedStyle.getPropertyValue('--color-accent-cyan').trim() || '#00D9FF'
 
     let width = 0
