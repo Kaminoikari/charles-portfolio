@@ -219,6 +219,9 @@ export default function UniverseSection() {
     const zMin = -MAX_RADIUS
     const zRange = zMax - zMin
 
+    // Pre-allocate draw order array (reused every frame, no GC)
+    const drawOrder = LINES.map((_, i) => ({ z: 0, idx: i, sx: 0, sy: 0, sc: 1, da: 0 }))
+
     const animate = () => {
       animId = requestAnimationFrame(animate)
       if (!visible) return
@@ -234,67 +237,48 @@ export default function UniverseSection() {
 
       ctx.clearRect(0, 0, width, height)
 
-      // --- Compute all elements with z-depth, then sort back-to-front ---
+      // --- Compute z-depth per element, sort back-to-front each frame ---
       const positions = screenPosRef.current
 
-      interface DrawItem {
-        z: number
-        lineIndex: number // -1 if no line
-        particleIndex: number // -1 if no particle
-        projScreenX: number
-        projScreenY: number
-        projScale: number
-        depthAlpha: number
-        rotZ: number
-      }
-
-      const drawItems: DrawItem[] = []
-
-      // Lines + their attached particles share the same endpoint
       for (let i = 0; i < LINES.length; i++) {
         const line = LINES[i]
         const cart = sphericalToCartesian(line.rho, line.theta, line.phi)
         const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
         const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
         const depthAlpha = Math.max(0.08, (zMax - rot.z) / zRange)
-
-        drawItems.push({
-          z: rot.z,
-          lineIndex: i,
-          particleIndex: i, // particle i maps to line i
-          projScreenX: proj.screenX,
-          projScreenY: proj.screenY,
-          projScale: proj.scale,
-          depthAlpha,
-          rotZ: rot.z,
-        })
+        drawOrder[i].z = rot.z
+        drawOrder[i].idx = i
+        drawOrder[i].sx = proj.screenX
+        drawOrder[i].sy = proj.screenY
+        drawOrder[i].sc = proj.scale
+        drawOrder[i].da = depthAlpha
       }
 
-      // Sort: farthest first (highest z = behind), closest last (drawn on top)
-      drawItems.sort((a, b) => b.z - a.z)
+      // Sort: farthest first (highest z), closest last (drawn on top)
+      drawOrder.sort((a, b) => b.z - a.z)
 
       // Draw in sorted order: line first, then particle on top
-      for (const item of drawItems) {
+      for (const item of drawOrder) {
+        const i = item.idx
+
         // Draw line
-        if (item.lineIndex >= 0) {
-          const line = LINES[item.lineIndex]
-          const b = Math.round(line.brightness)
-          const a0 = line.alpha * item.depthAlpha
+        const line = LINES[i]
+        const b = Math.round(line.brightness)
+        const a0 = line.alpha * item.da
 
-          ctx.strokeStyle = `rgba(${b},${b},${b + 5},${a0})`
-          ctx.lineWidth = line.width
-          ctx.beginPath()
-          ctx.moveTo(cx, cy)
-          ctx.lineTo(item.projScreenX, item.projScreenY)
-          ctx.stroke()
-        }
+        ctx.strokeStyle = `rgba(${b},${b},${b + 5},${a0})`
+        ctx.lineWidth = line.width
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.lineTo(item.sx, item.sy)
+        ctx.stroke()
 
-        // Draw particle
-        if (item.particleIndex >= 0 && item.particleIndex < PARTICLES.length) {
-          const p = PARTICLES[item.particleIndex]
+        // Draw particle (same index — line i has particle i)
+        if (i < PARTICLES.length) {
+          const p = PARTICLES[i]
 
           if (p.isSkill && p.skillIndex >= 0) {
-            positions[p.skillIndex] = { x: item.projScreenX, y: item.projScreenY }
+            positions[p.skillIndex] = { x: item.sx, y: item.sy }
           }
 
           const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
@@ -305,18 +289,18 @@ export default function UniverseSection() {
             const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
             flicker = 0.4 + Math.max(0, raw) * 0.6
           }
-          const pulse = p.alpha * item.depthAlpha * flicker
+          const pulse = p.alpha * item.da * flicker
           const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
-          const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, item.projScale)
+          const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, item.sc)
 
-          // Opaque black background so lines don't show through
+          // Opaque black background
           ctx.globalAlpha = 1
           ctx.fillStyle = '#0A0A0A'
-          ctx.fillRect(item.projScreenX - drawSize / 2, item.projScreenY - drawSize / 2, drawSize, drawSize)
+          ctx.fillRect(item.sx - drawSize / 2, item.sy - drawSize / 2, drawSize, drawSize)
           // Colored particle
           ctx.globalAlpha = drawAlpha
           ctx.fillStyle = `rgb(${p.colorR},${p.colorG},${p.colorB})`
-          ctx.fillRect(item.projScreenX - drawSize / 2, item.projScreenY - drawSize / 2, drawSize, drawSize)
+          ctx.fillRect(item.sx - drawSize / 2, item.sy - drawSize / 2, drawSize, drawSize)
         }
       }
       ctx.globalAlpha = 1
