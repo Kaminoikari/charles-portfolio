@@ -45,12 +45,13 @@ function generateLines(): Line[] {
     const theta = Math.acos(1 - (2 * (i + 0.5)) / LINE_COUNT)
     const phi = goldenAngle * i
 
-    // ρ: varying lengths
+    // ρ: wide range — many short lines near center, fewer long lines at edges
     const lenRand = Math.random()
     let rho: number
-    if (lenRand < 0.2) rho = MAX_RADIUS * (0.3 + Math.random() * 0.15)
-    else if (lenRand < 0.5) rho = MAX_RADIUS * (0.45 + Math.random() * 0.2)
-    else rho = MAX_RADIUS * (0.65 + Math.random() * 0.35)
+    if (lenRand < 0.3) rho = MAX_RADIUS * (0.1 + Math.random() * 0.15)  // very short (center cluster)
+    else if (lenRand < 0.55) rho = MAX_RADIUS * (0.25 + Math.random() * 0.2) // short-medium
+    else if (lenRand < 0.8) rho = MAX_RADIUS * (0.45 + Math.random() * 0.25) // medium-long
+    else rho = MAX_RADIUS * (0.7 + Math.random() * 0.3) // long (edges)
 
     // Depth illusion: shorter lines are dimmer (farther away), longer lines brighter (closer)
     const depthBrightness = 60 + (rho / MAX_RADIUS) * 50
