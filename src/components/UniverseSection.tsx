@@ -189,6 +189,10 @@ export default function UniverseSection() {
     let rotation = 0
     let visible = false
     let frameCount = 0
+    let cachedRect = section.getBoundingClientRect()
+
+    const onScroll = () => { cachedRect = section.getBoundingClientRect() }
+    window.addEventListener('scroll', onScroll, { passive: true })
 
     const resize = () => {
       width = section.clientWidth
@@ -300,9 +304,8 @@ export default function UniverseSection() {
           tooltipRef.current.style.transform = `translate(${positions[idx].x + 18}px, ${positions[idx].y}px) translateY(-50%)`
         }
 
-        // Scroll-driven text spread — "Understand" pushes left, "What I Do" pushes right
-        const rect = section.getBoundingClientRect()
-        const scrollProgress = Math.max(0, Math.min(1, 1 - rect.bottom / (rect.height + height)))
+        // Scroll-driven text spread — uses cached rect (updated on scroll, not per frame)
+        const scrollProgress = Math.max(0, Math.min(1, 1 - cachedRect.bottom / (cachedRect.height + height)))
         const spread = scrollProgress * 100 // max 100px extra offset
         if (textLeftRef.current) {
           textLeftRef.current.style.transform = `translateX(${-spread}px)`
@@ -319,6 +322,7 @@ export default function UniverseSection() {
       cancelAnimationFrame(animId)
       observer.disconnect()
       window.removeEventListener('resize', resize)
+      window.removeEventListener('scroll', onScroll)
     }
   }, [])
 

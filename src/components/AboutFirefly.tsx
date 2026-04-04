@@ -127,9 +127,9 @@ const HUB_COUNT = 10 // bright hub nodes
           const dy = fi.y - fj.y
           const distSq = dx * dx + dy * dy
           if (distSq > CONNECTION_DIST_SQ) continue
-          const dist = Math.sqrt(distSq)
 
-          const proximity = 1 - dist / CONNECTION_DIST
+          // Approximate proximity without sqrt — distSq/maxDistSq gives quadratic falloff
+          const proximity = 1 - distSq / CONNECTION_DIST_SQ
           const alpha = proximity * proximity * 0.3
 
           // Single blue-purple line with subtle pulse
@@ -203,6 +203,7 @@ const HUB_COUNT = 10 // bright hub nodes
           <img
             src="/assets/charles-profile.jpg"
             alt="Charles Chen"
+            loading="lazy"
             className="h-full w-full object-cover object-top"
             style={{ objectPosition: '50% 15%' }}
           />

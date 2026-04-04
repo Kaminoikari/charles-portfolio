@@ -152,6 +152,9 @@ export default function ParticleHero() {
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
 
+      const isRainbow = easterEggRef.current
+      const rainbowBaseHue = isRainbow ? (time * 300) % 360 : 0
+
       for (const p of particles) {
         // --- Noise flow field ---
         // Sample noise at particle position to get flow direction
@@ -190,34 +193,33 @@ export default function ParticleHero() {
 
         if (pulsedOpacity < 0.01) continue // skip invisible particles
 
-        // Rainbow color override — same shape, just different color
-        const isRainbow = easterEggRef.current
-        const hue = (time * 300 + p.phase * 57) % 360
-        const rainbowCyan = `hsl(${hue}, 85%, 60%)`
-        const rainbowWhite = `hsl(${hue}, 70%, 75%)`
-        const rainbowVapor = `hsla(${hue}, 80%, 55%, 0.6)`
-
         // Draw — identical structure for both modes, only fillStyle changes
         if (p.isVapor) {
           ctx.globalAlpha = pulsedOpacity
-          ctx.fillStyle = isRainbow ? rainbowVapor : (p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)')
+          if (isRainbow) {
+            const h = (rainbowBaseHue + p.phase * 57) % 360
+            ctx.fillStyle = `hsla(${h},80%,55%,0.6)`
+          } else {
+            ctx.fillStyle = p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)'
+          }
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else if (p.isCyan) {
+          const color = isRainbow ? `hsl(${(rainbowBaseHue + p.phase * 57) % 360},85%,60%)` : cyanColor
           ctx.globalAlpha = pulsedOpacity * 0.25
-          ctx.fillStyle = isRainbow ? rainbowCyan : cyanColor
+          ctx.fillStyle = color
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
           ctx.fill()
           ctx.globalAlpha = pulsedOpacity * 0.9
-          ctx.fillStyle = isRainbow ? rainbowCyan : cyanColor
+          ctx.fillStyle = color
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else {
           ctx.globalAlpha = pulsedOpacity * 0.6
-          ctx.fillStyle = isRainbow ? rainbowWhite : '#ffffff'
+          ctx.fillStyle = isRainbow ? `hsl(${(rainbowBaseHue + p.phase * 57) % 360},70%,75%)` : '#ffffff'
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
