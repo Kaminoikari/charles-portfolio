@@ -149,12 +149,9 @@ export default function ParticleHero() {
             + Math.abs(b - getPixel(px, py - 1).b)
             + Math.abs(b - getPixel(px, py + 1).b)
 
-          const isEdge = edge > 30
-          const isBright = b > 60
-
-          if (isEdge || isBright) {
-            const weight = (isEdge ? 4 : 0) + (b / 255)
-            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight })
+          // Only edges — creates recognizable silhouette outline, not filled block
+          if (edge > 25) {
+            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight: edge })
           }
         }
       }
