@@ -14,6 +14,18 @@ interface Firefly {
   glowColor: string
 }
 
+function drawHexagon(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
+  ctx.beginPath()
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 3) * i - Math.PI / 6
+    const px = x + r * Math.cos(angle)
+    const py = y + r * Math.sin(angle)
+    if (i === 0) ctx.moveTo(px, py)
+    else ctx.lineTo(px, py)
+  }
+  ctx.closePath()
+}
+
 function createFirefly(width: number, height: number, isHub = false): Firefly {
   const isCyan = isHub ? true : Math.random() > 0.55
   return {
@@ -137,18 +149,33 @@ const HUB_COUNT = 6 // large hub nodes
         }
       }
 
-      // Draw particles
+      // Draw hexagonal nodes
       for (const f of fireflies) {
-        // Outer glow
-        ctx.globalAlpha = f.opacity * 0.2
+        // Outer glow (circular — cheap soft halo)
+        ctx.globalAlpha = f.opacity * 0.15
         ctx.fillStyle = f.color
         ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 3, 0, Math.PI * 2)
+        ctx.arc(f.x, f.y, f.size * 4, 0, Math.PI * 2)
         ctx.fill()
-        // Inner core
+
+        // Hexagon border
+        ctx.globalAlpha = f.opacity * 0.6
+        ctx.strokeStyle = f.color
+        ctx.lineWidth = 0.8
+        drawHexagon(ctx, f.x, f.y, f.size * 2)
+        ctx.stroke()
+
+        // Hexagon filled core (smaller, brighter)
+        ctx.globalAlpha = f.opacity * 0.3
+        ctx.fillStyle = f.color
+        drawHexagon(ctx, f.x, f.y, f.size * 1.2)
+        ctx.fill()
+
+        // Center dot
         ctx.globalAlpha = f.opacity
+        ctx.fillStyle = f.color === '#00D9FF' ? '#00D9FF' : '#ffffff'
         ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2)
+        ctx.arc(f.x, f.y, f.size * 0.4, 0, Math.PI * 2)
         ctx.fill()
       }
       ctx.globalAlpha = 1
