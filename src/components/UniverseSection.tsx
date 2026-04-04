@@ -237,8 +237,7 @@ export default function UniverseSection() {
       for (let i = 0; i < LINES.length; i++) {
         const line = LINES[i]
 
-        // Dynamic rho with breathing
-        const rho = line.rho + Math.sin(time * 0.2 + i * 0.7) * 5
+        const rho = line.rho
 
         // Spherical → Cartesian → Y-rotation → Perspective
         const cart = sphericalToCartesian(rho, line.theta, line.phi)
@@ -264,8 +263,7 @@ export default function UniverseSection() {
       for (let i = 0; i < PARTICLES.length; i++) {
         const p = PARTICLES[i]
 
-        // Dynamic rho with per-particle breathing
-        const rho = p.rho + Math.sin(time * 0.3 + p.phase) * 8
+        const rho = p.rho
 
         const cart = sphericalToCartesian(rho, p.theta, p.phi)
         const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
