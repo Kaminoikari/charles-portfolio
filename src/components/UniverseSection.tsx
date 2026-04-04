@@ -10,7 +10,7 @@ const FOCAL_LENGTH = 600 // Perspective camera focal length
 const SLOW_MULTIPLIER = 0.3
 
 // Max radius in world units (will be scaled to screen)
-const MAX_RADIUS = 400
+const MAX_RADIUS = 320
 
 interface Line {
   theta: number // polar angle (0~π, angle from Z-axis)
