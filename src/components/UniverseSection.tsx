@@ -54,12 +54,12 @@ function generateLines(): Line[] {
     else rho = MAX_RADIUS * (0.7 + Math.random() * 0.3) // long (edges)
 
     // Depth illusion: shorter lines are dimmer (farther away), longer lines brighter (closer)
-    const depthBrightness = 60 + (rho / MAX_RADIUS) * 50
+    const depthBrightness = 90 + (rho / MAX_RADIUS) * 60
 
     lines.push({
       theta, phi, rho,
       brightness: depthBrightness,
-      alpha: 0.15 + (rho / MAX_RADIUS) * 0.25, // farther = more transparent
+      alpha: 0.25 + (rho / MAX_RADIUS) * 0.35,
       width: 0.8, // slightly thicker
     })
   }
@@ -82,9 +82,9 @@ function generateParticles(lines: Line[]): Particle[] {
     const rho = line.rho
 
     const colorMap = {
-      cyan: { r: 140, g: 180, b: 210 },
-      white: { r: 180, g: 190, b: 205 },
-      gray: { r: 130, g: 140, b: 155 },
+      cyan: { r: 170, g: 210, b: 240 },
+      white: { r: 200, g: 210, b: 225 },
+      gray: { r: 155, g: 165, b: 180 },
     }
     const c = colorMap[skill.color]
 
@@ -94,7 +94,7 @@ function generateParticles(lines: Line[]): Particle[] {
     particles.push({
       theta, phi, rho, size,
       colorR: c.r, colorG: c.g, colorB: c.b,
-      alpha: skill.color === 'cyan' ? 0.7 : skill.color === 'white' ? 0.6 : 0.35,
+      alpha: skill.color === 'cyan' ? 0.9 : skill.color === 'white' ? 0.8 : 0.5,
       phase: Math.random() * Math.PI * 2,
       isSkill: true,
       skillIndex: i,
@@ -104,7 +104,7 @@ function generateParticles(lines: Line[]): Particle[] {
   // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
-    const brightness = 120 + Math.random() * 80
+    const brightness = 160 + Math.random() * 80
     particles.push({
       theta: line.theta,
       phi: line.phi,
@@ -401,7 +401,7 @@ export default function UniverseSection() {
             lineHeight: 1,
             letterSpacing: '3px',
             textAlign: 'right',
-            background: 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(200,210,225,0.65) 100%)',
+            background: 'linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(220,225,235,0.75) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -418,7 +418,7 @@ export default function UniverseSection() {
             fontWeight: 300,
             lineHeight: 1,
             letterSpacing: '3px',
-            background: 'linear-gradient(90deg, rgba(200,210,225,0.65) 0%, rgba(255,255,255,0.95) 100%)',
+            background: 'linear-gradient(90deg, rgba(220,225,235,0.75) 0%, rgba(255,255,255,1) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
