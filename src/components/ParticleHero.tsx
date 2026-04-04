@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-// --- Ring particle config (matching bramus/css-houdini-ringparticles) ---
+// --- Ring particle config ---
 const INNER_RADIUS = 120
 const THICKNESS = 450
 const NUM_PARTICLES = 40
@@ -8,21 +8,87 @@ const NUM_ROWS = 15
 const PARTICLE_SIZE = 1.5
 const MIN_ALPHA = 0.05
 const MAX_ALPHA = 1.0
-const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)' // light gray-blue on dark bg
-const ANIMATION_SPEED = 0.003 // controls wave speed (slower pulsation)
-const MOUSE_EASE = 0.015 // ~3s ease to target
-// Wave physics constants (deterministic from seed)
+const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)'
+const ANIMATION_SPEED = 0.003
+const MOUSE_EASE = 0.015
 const W1_FREQ = 4
 const W1_SPEED = 1.5
 const W1_DIR = 1
 const W2_FREQ = 6
 const W2_SPEED = 1
 const W2_DIR = -1
-const ROW_TWIST = 1.5 // multiplied by normalized rowProgress [0,1] × 2π
+const ROW_TWIST = 1.5
 const AMPLITUDE = 14
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
-const EASTER_EGG_DURATION_MS = 4000
+const EASTER_EGG_DURATION_MS = 5000
+const PHOTO_SAMPLE_SIZE = 200 // sample photo at this resolution
+
+interface ParticleData {
+  row: number
+  index: number
+  rowProgress: number
+  angle: number
+  // Photo target (normalized 0-1, mapped to screen at runtime)
+  photoX: number
+  photoY: number
+  hasPhotoTarget: boolean
+}
+
+// Sample photo pixels to get target positions
+function samplePhotoTargets(count: number): Array<{ x: number; y: number }> {
+  const canvas = document.createElement('canvas')
+  canvas.width = PHOTO_SAMPLE_SIZE
+  canvas.height = PHOTO_SAMPLE_SIZE
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return []
+
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.src = '/assets/charles-profile.jpg'
+
+  return new Promise<Array<{ x: number; y: number }>>((resolve) => {
+    img.onload = () => {
+      // Draw image centered and cropped to square
+      const size = Math.min(img.width, img.height)
+      const sx = (img.width - size) / 2
+      const sy = 0 // top-crop for face focus
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
+
+      const imageData = ctx.getImageData(0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
+      const pixels = imageData.data
+      const brightPositions: Array<{ x: number; y: number }> = []
+
+      // Sample pixels, collect bright ones as targets
+      const step = 2
+      for (let py = 0; py < PHOTO_SAMPLE_SIZE; py += step) {
+        for (let px = 0; px < PHOTO_SAMPLE_SIZE; px += step) {
+          const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
+          const brightness = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
+          if (brightness > 60) { // threshold for visible features
+            brightPositions.push({
+              x: px / PHOTO_SAMPLE_SIZE, // normalized 0-1
+              y: py / PHOTO_SAMPLE_SIZE,
+            })
+          }
+        }
+      }
+
+      // Randomly select 'count' positions from the pool
+      const selected: Array<{ x: number; y: number }> = []
+      for (let i = 0; i < count; i++) {
+        if (brightPositions.length === 0) {
+          selected.push({ x: Math.random(), y: Math.random() })
+        } else {
+          const idx = Math.floor(Math.random() * brightPositions.length)
+          selected.push(brightPositions[idx])
+        }
+      }
+      resolve(selected)
+    }
+    img.onerror = () => resolve([])
+  }) as unknown as Array<{ x: number; y: number }>
+}
 
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -32,9 +98,10 @@ export default function ParticleHero() {
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
   const easterEggRef = useRef(false)
+  const easterEggProgressRef = useRef(0) // 0 = ring, 1 = photo
   const konamiIndexRef = useRef(0)
 
-  const mouseTargetRef = useRef({ x: 50, y: 50 }) // percentage 0-100
+  const mouseTargetRef = useRef({ x: 50, y: 50 })
   const mouseSmoothRef = useRef({ x: 50, y: 50 })
 
   useEffect(() => {
@@ -61,7 +128,7 @@ export default function ParticleHero() {
     resize()
     window.addEventListener('resize', resize)
 
-    // Fix #3: pre-render particle dot to OffscreenCanvas for perf
+    // Pre-render dot
     const dotSize = Math.ceil(PARTICLE_SIZE * 2 * window.devicePixelRatio) + 2
     const dotCanvas = document.createElement('canvas')
     dotCanvas.width = dotSize
@@ -72,14 +139,73 @@ export default function ParticleHero() {
     dotCtx.arc(dotSize / 2, dotSize / 2, PARTICLE_SIZE * window.devicePixelRatio, 0, Math.PI * 2)
     dotCtx.fill()
 
+    // Build particle list with pre-computed properties
+    const particles: ParticleData[] = []
+    for (let r = 0; r < NUM_ROWS; r++) {
+      const rowProgress = NUM_ROWS > 1 ? r / (NUM_ROWS - 1) : 0
+      const currentBaseRadius = INNER_RADIUS + (rowProgress * THICKNESS)
+      const circumferenceRatio = currentBaseRadius / INNER_RADIUS
+      const actualNumParticles = Math.max(8, Math.floor(NUM_PARTICLES * circumferenceRatio))
+
+      for (let i = 0; i < actualNumParticles; i++) {
+        particles.push({
+          row: r,
+          index: i,
+          rowProgress,
+          angle: (i / actualNumParticles) * Math.PI * 2,
+          photoX: 0,
+          photoY: 0,
+          hasPhotoTarget: false,
+        })
+      }
+    }
+
+    // Load photo targets async
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.src = '/assets/charles-profile.jpg'
+    img.onload = () => {
+      const sampleCanvas = document.createElement('canvas')
+      sampleCanvas.width = PHOTO_SAMPLE_SIZE
+      sampleCanvas.height = PHOTO_SAMPLE_SIZE
+      const sampleCtx = sampleCanvas.getContext('2d')
+      if (!sampleCtx) return
+
+      const size = Math.min(img.width, img.height)
+      sampleCtx.drawImage(img, (img.width - size) / 2, 0, size, size, 0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
+
+      const imageData = sampleCtx.getImageData(0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
+      const pixels = imageData.data
+      const pool: Array<{ x: number; y: number }> = []
+
+      for (let py = 0; py < PHOTO_SAMPLE_SIZE; py += 2) {
+        for (let px = 0; px < PHOTO_SAMPLE_SIZE; px += 2) {
+          const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
+          const brightness = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
+          if (brightness > 50) {
+            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE })
+          }
+        }
+      }
+
+      // Assign random photo target to each particle
+      for (const p of particles) {
+        if (pool.length > 0) {
+          const target = pool[Math.floor(Math.random() * pool.length)]
+          p.photoX = target.x
+          p.photoY = target.y
+          p.hasPhotoTarget = true
+        }
+      }
+    }
+
     const onMouseMove = (e: MouseEvent) => {
-      // Ring center does NOT follow mouse — only text repulsion
       if (textRef.current) {
         const rect = textRef.current.getBoundingClientRect()
-        const cx = rect.left + rect.width / 2
-        const cy = rect.top + rect.height / 2
-        const dx = cx - e.clientX
-        const dy = cy - e.clientY
+        const tcx = rect.left + rect.width / 2
+        const tcy = rect.top + rect.height / 2
+        const dx = tcx - e.clientX
+        const dy = tcy - e.clientY
         const dist = Math.sqrt(dx * dx + dy * dy)
         if (dist < 300 && dist > 0) {
           const strength = ((1 - dist / 300) ** 2) * 20
@@ -101,13 +227,9 @@ export default function ParticleHero() {
     )
     observer.observe(section)
 
-    // Click ripple system
+    // Click ripple
     interface Ripple { x: number; y: number; radius: number; strength: number }
     const ripples: Ripple[] = []
-    const RIPPLE_EXPAND_SPEED = 4
-    const RIPPLE_MAX_RADIUS = 400
-    const RIPPLE_PUSH = 30
-
     const onClick = (e: MouseEvent) => {
       ripples.push({ x: e.clientX, y: e.clientY, radius: 0, strength: 1 })
     }
@@ -117,6 +239,9 @@ export default function ParticleHero() {
     const halfThick = THICKNESS / 2
     let tick = 0
 
+    // Photo display area (centered, 300x300)
+    const PHOTO_DISPLAY_SIZE = 280
+
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
       if (!visibleRef.current) return
@@ -124,104 +249,103 @@ export default function ParticleHero() {
       tick += ANIMATION_SPEED
       ctx.clearRect(0, 0, width, height)
 
-      // Smooth mouse follow
       const ms = mouseSmoothRef.current
       const mt = mouseTargetRef.current
       ms.x += (mt.x - ms.x) * MOUSE_EASE
       ms.y += (mt.y - ms.y) * MOUSE_EASE
 
-      // Ring center in pixels
-      const cx = (width * ms.x) / 100
-      const cy = (height * ms.y) / 100
-
+      const ringCX = (width * ms.x) / 100
+      const ringCY = (height * ms.y) / 100
       const t = tick * Math.PI * 2
-      const isRainbow = easterEggRef.current
+      const isEasterEgg = easterEggRef.current
+
+      // Easter egg progress: ease toward 1 when active, 0 when not
+      const targetProgress = isEasterEgg ? 1 : 0
+      easterEggProgressRef.current += (targetProgress - easterEggProgressRef.current) * 0.04
+      const eggProgress = easterEggProgressRef.current
 
       // Update ripples
       for (let ri = ripples.length - 1; ri >= 0; ri--) {
         const rip = ripples[ri]
-        rip.radius += RIPPLE_EXPAND_SPEED
-        rip.strength *= 0.97 // fade out
-        if (rip.radius > RIPPLE_MAX_RADIUS || rip.strength < 0.01) {
-          ripples.splice(ri, 1)
-        }
+        rip.radius += 4
+        rip.strength *= 0.97
+        if (rip.radius > 400 || rip.strength < 0.01) ripples.splice(ri, 1)
       }
+
+      // Photo target center
+      const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
+      const photoCY = height / 2 - PHOTO_DISPLAY_SIZE / 2
 
       ctx.fillStyle = PARTICLE_COLOR
 
-      for (let r = 0; r < NUM_ROWS; r++) {
-        const rowProgress = NUM_ROWS > 1 ? r / (NUM_ROWS - 1) : 0
-        const currentBaseRadius = INNER_RADIUS + (rowProgress * THICKNESS)
+      for (const p of particles) {
+        const currentBaseRadius = INNER_RADIUS + (p.rowProgress * THICKNESS)
 
-        // Fix #1: particle count proportional to circumference
-        const circumferenceRatio = currentBaseRadius / INNER_RADIUS
-        const actualNumParticles = Math.max(8, Math.floor(NUM_PARTICLES * circumferenceRatio))
+        // Ring position
+        const w1 = Math.sin(p.angle * W1_FREQ + t * W1_SPEED * W1_DIR)
+        const w2 = Math.sin(p.angle * W2_FREQ + t * W2_SPEED * W2_DIR)
+        const rowOffset = Math.sin(p.rowProgress * ROW_TWIST * Math.PI * 2 + t)
+        const waveHeight = w1 + w2 + rowOffset
 
-        for (let i = 0; i < actualNumParticles; i++) {
-          const angle = (i / actualNumParticles) * Math.PI * 2
+        let normalized = (waveHeight + 3) / 6
+        normalized = Math.pow(Math.max(0, normalized), 1.5)
+        let alpha = MIN_ALPHA + (normalized * (MAX_ALPHA - MIN_ALPHA))
 
-          // --- Wave physics ---
-          const w1 = Math.sin(angle * W1_FREQ + t * W1_SPEED * W1_DIR)
-          const w2 = Math.sin(angle * W2_FREQ + t * W2_SPEED * W2_DIR)
-          // Fix #2: use normalized rowProgress [0,1] instead of raw index
-          const rowOffset = Math.sin(rowProgress * ROW_TWIST * Math.PI * 2 + t)
-          const waveHeight = w1 + w2 + rowOffset
+        const distortion = waveHeight * AMPLITUDE
+        const finalRadius = currentBaseRadius + distortion
+        let ringX = ringCX + Math.cos(p.angle) * finalRadius
+        let ringY = ringCY + Math.sin(p.angle) * finalRadius
 
-          // Depth alpha from wave height
-          let normalized = (waveHeight + 3) / 6
-          normalized = Math.pow(Math.max(0, normalized), 1.5)
-          let alpha = MIN_ALPHA + (normalized * (MAX_ALPHA - MIN_ALPHA))
+        // Edge fade
+        const distFromInner = finalRadius - INNER_RADIUS
+        const distFromOuter = outerRadius - finalRadius
+        let visibility = Math.min(distFromInner, distFromOuter) / halfThick
+        if (visibility < 0) visibility = 0
+        if (visibility > 1) visibility = 1
+        visibility = visibility * visibility
+        alpha *= visibility
 
-          // Position
-          const distortion = waveHeight * AMPLITUDE
-          const finalRadius = currentBaseRadius + distortion
-          let x = cx + Math.cos(angle) * finalRadius
-          let y = cy + Math.sin(angle) * finalRadius
+        // Photo position
+        const photoX = p.hasPhotoTarget ? photoCX + p.photoX * PHOTO_DISPLAY_SIZE : ringX
+        const photoY = p.hasPhotoTarget ? photoCY + p.photoY * PHOTO_DISPLAY_SIZE : ringY
 
-          // Ripple displacement — push particles outward from click point
-          for (const rip of ripples) {
-            const rdx = x - rip.x
-            const rdy = y - rip.y
-            const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
-            // Affect particles near the ripple ring edge
-            const ringDist = Math.abs(rdist - rip.radius)
-            if (ringDist < 60) {
-              const push = (1 - ringDist / 60) * rip.strength * RIPPLE_PUSH
-              if (rdist > 0) {
-                x += (rdx / rdist) * push
-                y += (rdy / rdist) * push
-              }
-            }
+        // Lerp between ring and photo based on easter egg progress
+        let x = ringX + (photoX - ringX) * eggProgress
+        let y = ringY + (photoY - ringY) * eggProgress
+
+        // During easter egg, all particles fully visible
+        if (eggProgress > 0.1) {
+          alpha = Math.max(alpha, eggProgress * 0.8)
+        }
+
+        // Ripple displacement
+        for (const rip of ripples) {
+          const rdx = x - rip.x
+          const rdy = y - rip.y
+          const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
+          const ringDist = Math.abs(rdist - rip.radius)
+          if (ringDist < 60 && rdist > 0) {
+            const push = (1 - ringDist / 60) * rip.strength * 30
+            x += (rdx / rdist) * push
+            y += (rdy / rdist) * push
           }
+        }
 
-          // Edge fade — particles near inner/outer edge fade out
-          const distFromInner = finalRadius - INNER_RADIUS
-          const distFromOuter = outerRadius - finalRadius
-          let visibility = Math.min(distFromInner, distFromOuter) / halfThick
-          if (visibility < 0) visibility = 0
-          if (visibility > 1) visibility = 1
-          // Simple ease-in for edge fade
-          visibility = visibility * visibility
-          alpha *= visibility
+        if (alpha < 0.01) continue
+        if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
 
-          if (alpha < 0.01) continue
+        ctx.globalAlpha = alpha
 
-          // Skip off-screen
-          if (x < -5 || x > width + 5 || y < -5 || y > height + 5) continue
-
-          ctx.globalAlpha = alpha
-
-          if (isRainbow) {
-            const hue = (tick * 200 + r * 15 + i * 4) % 360
-            ctx.fillStyle = `hsl(${hue}, 80%, 60%)`
-            ctx.beginPath()
-            ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
-            ctx.fill()
-            ctx.fillStyle = PARTICLE_COLOR
-          } else {
-            // Use cached dot image instead of arc() — much faster
-            ctx.drawImage(dotCanvas, x - PARTICLE_SIZE, y - PARTICLE_SIZE, PARTICLE_SIZE * 2, PARTICLE_SIZE * 2)
-          }
+        if (isEasterEgg && eggProgress > 0.5) {
+          // Rainbow during photo formation
+          const hue = (tick * 200 + p.row * 15 + p.index * 4) % 360
+          ctx.fillStyle = `hsl(${hue}, 80%, 65%)`
+          ctx.beginPath()
+          ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = PARTICLE_COLOR
+        } else {
+          ctx.drawImage(dotCanvas, x - PARTICLE_SIZE, y - PARTICLE_SIZE, PARTICLE_SIZE * 2, PARTICLE_SIZE * 2)
         }
       }
       ctx.globalAlpha = 1
