@@ -144,27 +144,12 @@ const HUB_COUNT = 10 // bright hub nodes
         }
       }
 
-      // Draw glowing nodes — bright dots with soft glow halos
+      // Draw nodes — simple bright dots, no glow
       for (const f of fireflies) {
-        // Outer glow halo
-        ctx.globalAlpha = f.opacity * 0.12
+        ctx.globalAlpha = f.opacity
         ctx.fillStyle = f.color
         ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 5, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Mid glow
-        ctx.globalAlpha = f.opacity * 0.3
-        ctx.fillStyle = f.color
-        ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 2.5, 0, Math.PI * 2)
-        ctx.fill()
-
-        // Bright core
-        ctx.globalAlpha = f.opacity * 0.9
-        ctx.fillStyle = '#ffffff'
-        ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 0.8, 0, Math.PI * 2)
+        ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2)
         ctx.fill()
       }
       ctx.globalAlpha = 1
