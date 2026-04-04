@@ -22,7 +22,7 @@ const AMPLITUDE = 14
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
 const EASTER_EGG_DURATION_MS = 5000
-const PHOTO_SAMPLE_SIZE = 200 // sample photo at this resolution
+const PHOTO_SAMPLE_SIZE = 300 // higher resolution for better detail
 
 interface ParticleData {
   row: number
@@ -122,25 +122,51 @@ export default function ParticleHero() {
 
       const imageData = sampleCtx.getImageData(0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
       const pixels = imageData.data
-      const pool: Array<{ x: number; y: number }> = []
 
-      for (let py = 0; py < PHOTO_SAMPLE_SIZE; py += 2) {
-        for (let px = 0; px < PHOTO_SAMPLE_SIZE; px += 2) {
-          const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
-          const brightness = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
-          if (brightness > 50) {
-            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE })
+      // Get brightness at pixel
+      const getBrightness = (px: number, py: number) => {
+        const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
+        return (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
+      }
+
+      // Collect pixels using edge detection + brightness weighting
+      // Edge pixels define the silhouette; bright pixels fill the face
+      const pool: Array<{ x: number; y: number; weight: number }> = []
+
+      for (let py = 1; py < PHOTO_SAMPLE_SIZE - 1; py += 1) {
+        for (let px = 1; px < PHOTO_SAMPLE_SIZE - 1; px += 1) {
+          const b = getBrightness(px, py)
+          // Edge detection: difference from neighbors
+          const edge = Math.abs(b - getBrightness(px - 1, py))
+            + Math.abs(b - getBrightness(px + 1, py))
+            + Math.abs(b - getBrightness(px, py - 1))
+            + Math.abs(b - getBrightness(px, py + 1))
+
+          // Include pixel if it's an edge OR reasonably bright
+          const isEdge = edge > 40
+          const isBright = b > 80
+
+          if (isEdge || isBright) {
+            // Weight: edges get higher priority, then by brightness
+            const weight = (isEdge ? 3 : 0) + (b / 255)
+            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight })
           }
         }
       }
 
-      // Assign random photo target to each particle
-      for (const p of particles) {
+      // Sort by weight (edges first) and distribute evenly across particles
+      pool.sort((a, b) => b.weight - a.weight)
+
+      // Assign targets — spread evenly across pool to avoid clustering
+      const totalParticles = particles.length
+      for (let i = 0; i < totalParticles; i++) {
         if (pool.length > 0) {
-          const target = pool[Math.floor(Math.random() * pool.length)]
-          p.photoX = target.x
-          p.photoY = target.y
-          p.hasPhotoTarget = true
+          // Distribute evenly across the sorted pool
+          const poolIdx = Math.floor((i / totalParticles) * pool.length)
+          const target = pool[poolIdx]
+          particles[i].photoX = target.x
+          particles[i].photoY = target.y
+          particles[i].hasPhotoTarget = true
         }
       }
     }
@@ -186,7 +212,7 @@ export default function ParticleHero() {
     let tick = 0
 
     // Photo display area (centered, 300x300)
-    const PHOTO_DISPLAY_SIZE = 280
+    const PHOTO_DISPLAY_SIZE = Math.min(350, height * 0.5) // responsive, up to 350px
 
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
