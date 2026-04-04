@@ -109,7 +109,7 @@ function generateParticles(lines: Line[]): Particle[] {
       theta: line.theta,
       phi: line.phi,
       rho: line.rho,
-      size: 2 + Math.random() * 1.5,
+      size: 3 + Math.random() * 2,
       colorR: brightness, colorG: brightness + 10, colorB: brightness + 20,
       alpha: 0.2 + Math.random() * 0.3,
       phase: Math.random() * Math.PI * 2,
