@@ -3,7 +3,7 @@ import { skills } from '../data/skills'
 
 // --- Constants ---
 
-const LINE_COUNT = 75 // every line gets a particle
+const LINE_COUNT = 120 // every line gets a particle
 // Every line gets an endpoint particle — no separate count needed
 const ROTATION_SPEED = -0.002 // Y-axis rotation speed (negative = reverse direction)
 const FOCAL_LENGTH = 600 // Perspective camera focal length
@@ -81,22 +81,19 @@ function generateParticles(lines: Line[]): Particle[] {
     const rho = line.rho
 
     const colorMap = {
-      cyan: { r: 160, g: 215, b: 250 },
-      white: { r: 210, g: 225, b: 240 },
-      gray: { r: 145, g: 155, b: 170 },
+      cyan: { r: 140, g: 180, b: 210 },
+      white: { r: 180, g: 190, b: 205 },
+      gray: { r: 130, g: 140, b: 155 },
     }
     const c = colorMap[skill.color]
 
-    const sizeRand = Math.random()
-    let size: number
-    if (sizeRand < 0.2) size = 10 + Math.random() * 5
-    else if (sizeRand < 0.55) size = 7 + Math.random() * 3
-    else size = 4 + Math.random() * 3
+    // Smaller, more uniform sizes like xAI
+    const size = 4 + Math.random() * 4
 
     particles.push({
       theta, phi, rho, size,
       colorR: c.r, colorG: c.g, colorB: c.b,
-      alpha: skill.color === 'cyan' ? 0.9 : skill.color === 'white' ? 0.8 : 0.45,
+      alpha: skill.color === 'cyan' ? 0.7 : skill.color === 'white' ? 0.6 : 0.35,
       phase: Math.random() * Math.PI * 2,
       isSkill: true,
       skillIndex: i,
@@ -111,7 +108,7 @@ function generateParticles(lines: Line[]): Particle[] {
       theta: line.theta,
       phi: line.phi,
       rho: line.rho,
-      size: 2 + Math.random() * 2.5,
+      size: 2 + Math.random() * 1.5,
       colorR: brightness, colorG: brightness + 10, colorB: brightness + 20,
       alpha: 0.2 + Math.random() * 0.3,
       phase: Math.random() * Math.PI * 2,
@@ -397,7 +394,7 @@ export default function UniverseSection() {
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
         <span
           ref={textLeftRef}
-          className="pointer-events-auto absolute right-[calc(50%-30px)] top-[44%] text-[32px] md:right-[calc(50%-50px)] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute right-[calc(50%-40px)] top-[46%] text-[32px] md:right-[calc(50%-60px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
@@ -415,7 +412,7 @@ export default function UniverseSection() {
         </span>
         <span
           ref={textRightRef}
-          className="pointer-events-auto absolute left-[calc(50%-20px)] top-[52%] text-[32px] md:left-[calc(50%-30px)] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute left-[calc(50%-30px)] top-[51%] text-[32px] md:left-[calc(50%-40px)] md:text-[64px] lg:text-[80px]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
