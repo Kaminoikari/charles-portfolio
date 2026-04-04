@@ -110,9 +110,14 @@ export default function ParticleHero() {
 
     const onClick = (e: MouseEvent) => {
       ripples.push({ x: e.clientX, y: e.clientY, radius: 0, strength: 1 })
-      // Move ring center to click position — it will ease back to center
-      mouseSmoothRef.current.x = (e.clientX / window.innerWidth) * 100
-      mouseSmoothRef.current.y = (e.clientY / window.innerHeight) * 100
+      // Set target to click position — ring eases toward it, then back to center
+      mouseTargetRef.current.x = (e.clientX / window.innerWidth) * 100
+      mouseTargetRef.current.y = (e.clientY / window.innerHeight) * 100
+      // After 1.5s, reset target to center so ring eases back
+      setTimeout(() => {
+        mouseTargetRef.current.x = 50
+        mouseTargetRef.current.y = 50
+      }, 1500)
     }
     section.addEventListener('click', onClick)
 
