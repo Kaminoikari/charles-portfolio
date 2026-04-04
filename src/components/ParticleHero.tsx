@@ -104,6 +104,18 @@ export default function ParticleHero() {
     )
     observer.observe(section)
 
+    // Click ripple system
+    interface Ripple { x: number; y: number; radius: number; strength: number }
+    const ripples: Ripple[] = []
+    const RIPPLE_EXPAND_SPEED = 4
+    const RIPPLE_MAX_RADIUS = 400
+    const RIPPLE_PUSH = 30
+
+    const onClick = (e: MouseEvent) => {
+      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, strength: 1 })
+    }
+    section.addEventListener('click', onClick)
+
     const outerRadius = INNER_RADIUS + THICKNESS
     const halfThick = THICKNESS / 2
     let tick = 0
@@ -127,6 +139,16 @@ export default function ParticleHero() {
 
       const t = tick * Math.PI * 2
       const isRainbow = easterEggRef.current
+
+      // Update ripples
+      for (let ri = ripples.length - 1; ri >= 0; ri--) {
+        const rip = ripples[ri]
+        rip.radius += RIPPLE_EXPAND_SPEED
+        rip.strength *= 0.97 // fade out
+        if (rip.radius > RIPPLE_MAX_RADIUS || rip.strength < 0.01) {
+          ripples.splice(ri, 1)
+        }
+      }
 
       ctx.fillStyle = PARTICLE_COLOR
 
@@ -156,8 +178,24 @@ export default function ParticleHero() {
           // Position
           const distortion = waveHeight * AMPLITUDE
           const finalRadius = currentBaseRadius + distortion
-          const x = cx + Math.cos(angle) * finalRadius
-          const y = cy + Math.sin(angle) * finalRadius
+          let x = cx + Math.cos(angle) * finalRadius
+          let y = cy + Math.sin(angle) * finalRadius
+
+          // Ripple displacement — push particles outward from click point
+          for (const rip of ripples) {
+            const rdx = x - rip.x
+            const rdy = y - rip.y
+            const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
+            // Affect particles near the ripple ring edge
+            const ringDist = Math.abs(rdist - rip.radius)
+            if (ringDist < 60) {
+              const push = (1 - ringDist / 60) * rip.strength * RIPPLE_PUSH
+              if (rdist > 0) {
+                x += (rdx / rdist) * push
+                y += (rdy / rdist) * push
+              }
+            }
+          }
 
           // Edge fade — particles near inner/outer edge fade out
           const distFromInner = finalRadius - INNER_RADIUS
@@ -205,6 +243,7 @@ export default function ParticleHero() {
     return () => {
       cancelAnimationFrame(animIdRef.current)
       observer.disconnect()
+      section.removeEventListener('click', onClick)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
