@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-const PARTICLE_COUNT = 250
-const VAPOR_COUNT = 40 // large translucent vapor blobs
+const PARTICLE_COUNT = 280
+const VAPOR_COUNT = 60 // large translucent vapor blobs — creates smoke density
 const MOUSE_RADIUS = 200
 const MOUSE_PUSH_FORCE = 40
 const NOISE_SCALE = 0.002 // How "zoomed in" the flow field is
@@ -91,8 +91,8 @@ export default function ParticleHero() {
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height,
-          size: 8 + Math.random() * 12,
-          opacity: 0.02 + Math.random() * 0.04,
+          size: 10 + Math.random() * 20,
+          opacity: 0.015 + Math.random() * 0.035,
           phase: Math.random() * Math.PI * 2,
           isCyan: Math.random() < 0.3,
           isVapor: true,
@@ -144,11 +144,7 @@ export default function ParticleHero() {
       if (!visibleRef.current) return
 
       time += 0.003
-      // Trail effect — semi-transparent fill instead of full clear
-      ctx.globalAlpha = 0.15
-      ctx.fillStyle = bgColor
-      ctx.fillRect(0, 0, width, height)
-      ctx.globalAlpha = 1
+      ctx.clearRect(0, 0, width, height)
 
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
@@ -163,7 +159,7 @@ export default function ParticleHero() {
         const flowMultiplier = easterEggRef.current ? 2 : 1
         const speed = (p.isVapor ? FLOW_STRENGTH * 0.6 : FLOW_STRENGTH) * flowMultiplier
         const flowX = Math.cos(angle) * speed
-        const flowY = Math.sin(angle) * speed - (p.isVapor ? 0.3 : 0.1) // slight upward drift
+        const flowY = Math.sin(angle) * speed
 
         // Apply flow
         p.x += flowX
@@ -179,11 +175,11 @@ export default function ParticleHero() {
           p.y += (dy / dist) * force
         }
 
-        // Wrap around screen edges
-        if (p.x < -20) p.x += width + 40
-        if (p.x > width + 20) p.x -= width + 40
-        if (p.y < -20) p.y += height + 40
-        if (p.y > height + 20) p.y -= height + 40
+        // Wrap around screen edges — tight wrap keeps density uniform
+        if (p.x < -30) p.x = width + 20
+        if (p.x > width + 30) p.x = -20
+        if (p.y < -30) p.y = height + 20
+        if (p.y > height + 30) p.y = -20
 
         // Bottom fade: particles near bottom of section fade out
         const bottomFade = 1 - Math.max(0, (p.y - height * 0.75) / (height * 0.25))
