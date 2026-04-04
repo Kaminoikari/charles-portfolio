@@ -11,8 +11,6 @@ const MAX_ALPHA = 1.0
 const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)' // light gray-blue on dark bg
 const ANIMATION_SPEED = 0.008 // controls wave speed
 const MOUSE_EASE = 0.015 // ~3s ease to target
-const SEED = 42
-
 // Wave physics constants (deterministic from seed)
 const W1_FREQ = 4
 const W1_SPEED = 1.5
