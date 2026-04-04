@@ -10,7 +10,7 @@ const FOCAL_LENGTH = 600 // Perspective camera focal length
 const SLOW_MULTIPLIER = 0.3
 
 // Max radius in world units (will be scaled to screen)
-const MAX_RADIUS = 256
+const MAX_RADIUS = 230
 
 interface Line {
   theta: number // polar angle (0~π, angle from Z-axis)
@@ -101,9 +101,10 @@ function generateParticles(lines: Line[]): Particle[] {
     })
   })
 
-  // Every line gets a small square particle at its endpoint
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
+  // 50 decoration particles at random line endpoints
+  const decoLines = [...lines].sort(() => Math.random() - 0.5).slice(0, 50)
+  for (let i = 0; i < decoLines.length; i++) {
+    const line = decoLines[i]
     const brightness = 120 + Math.random() * 80
     particles.push({
       theta: line.theta,
