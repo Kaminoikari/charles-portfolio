@@ -312,7 +312,7 @@ export default function ParticleHero() {
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
-        <span className="text-sm tracking-widest text-white/20">↓</span>
+        <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL ↓</span>
       </div>
     </section>
   )
