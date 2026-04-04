@@ -151,13 +151,6 @@ const HUB_COUNT = 6 // large hub nodes
 
       // Draw hexagonal nodes
       for (const f of fireflies) {
-        // Outer glow (circular — cheap soft halo)
-        ctx.globalAlpha = f.opacity * 0.15
-        ctx.fillStyle = f.color
-        ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 4, 0, Math.PI * 2)
-        ctx.fill()
-
         // Hexagon border
         ctx.globalAlpha = f.opacity * 0.6
         ctx.strokeStyle = f.color
