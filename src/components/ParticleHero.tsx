@@ -143,16 +143,11 @@ export default function ParticleHero() {
       if (!visibleRef.current) return
 
       time += 0.003
-      if (easterEggRef.current) {
-        // Full clear during rainbow mode so colors pop
-        ctx.clearRect(0, 0, width, height)
-      } else {
-        // Trail effect — vapor/smoke persistence
-        ctx.globalAlpha = 0.12
-        ctx.fillStyle = '#0A0A0A'
-        ctx.fillRect(0, 0, width, height)
-        ctx.globalAlpha = 1
-      }
+      // Trail effect — vapor/smoke persistence (also makes rainbow colors blend beautifully)
+      ctx.globalAlpha = easterEggRef.current ? 0.08 : 0.12
+      ctx.fillStyle = '#0A0A0A'
+      ctx.fillRect(0, 0, width, height)
+      ctx.globalAlpha = 1
 
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
@@ -198,11 +193,19 @@ export default function ParticleHero() {
         // Draw
         const isRainbow = easterEggRef.current
         if (isRainbow) {
-          const rainbowColor = `hsl(${(time * 200 + p.phase * 57) % 360}, 80%, 60%)`
-          ctx.globalAlpha = pulsedOpacity
+          const hue = (time * 300 + p.phase * 57) % 360
+          const rainbowColor = `hsl(${hue}, 85%, 60%)`
+          // Outer glow
+          ctx.globalAlpha = pulsedOpacity * 0.3
+          ctx.fillStyle = `hsl(${hue}, 90%, 50%)`
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 2 : 3.5), 0, Math.PI * 2)
+          ctx.fill()
+          // Core
+          ctx.globalAlpha = pulsedOpacity * (p.isVapor ? 0.6 : 1)
           ctx.fillStyle = rainbowColor
           ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 1 : 1.2), 0, Math.PI * 2)
+          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 1.5 : 1.5), 0, Math.PI * 2)
           ctx.fill()
         } else if (p.isVapor) {
           // Large translucent vapor blob
