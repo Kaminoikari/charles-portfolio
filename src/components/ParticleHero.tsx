@@ -3,13 +3,13 @@ import { useEffect, useRef } from 'react'
 // --- Ring particle config (matching bramus/css-houdini-ringparticles) ---
 const INNER_RADIUS = 120
 const THICKNESS = 450
-const NUM_PARTICLES = 80
-const NUM_ROWS = 25
+const NUM_PARTICLES = 40
+const NUM_ROWS = 15
 const PARTICLE_SIZE = 1.5
 const MIN_ALPHA = 0.05
 const MAX_ALPHA = 1.0
 const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)' // light gray-blue on dark bg
-const ANIMATION_SPEED = 0.008 // controls wave speed
+const ANIMATION_SPEED = 0.003 // controls wave speed (slower pulsation)
 const MOUSE_EASE = 0.015 // ~3s ease to target
 // Wave physics constants (deterministic from seed)
 const W1_FREQ = 4
