@@ -234,71 +234,90 @@ export default function UniverseSection() {
 
       ctx.clearRect(0, 0, width, height)
 
-      // --- Draw lines ---
-      for (let i = 0; i < LINES.length; i++) {
-        const line = LINES[i]
-
-        const rho = line.rho
-
-        // Spherical → Cartesian → Y-rotation → Perspective
-        const cart = sphericalToCartesian(rho, line.theta, line.phi)
-        const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
-        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
-
-        // Depth-based alpha from 3D rotation
-        const depthAlpha = Math.max(0.08, (zMax - rot.z) / zRange)
-        const b = Math.round(line.brightness)
-        const a0 = line.alpha * depthAlpha
-
-        ctx.strokeStyle = `rgba(${b},${b},${b + 5},${a0})`
-        ctx.lineWidth = line.width
-        ctx.beginPath()
-        ctx.moveTo(cx, cy)
-        ctx.lineTo(proj.screenX, proj.screenY)
-        ctx.stroke()
-      }
-
-      // --- Draw particles ---
+      // --- Compute all elements with z-depth, then sort back-to-front ---
       const positions = screenPosRef.current
 
-      for (let i = 0; i < PARTICLES.length; i++) {
-        const p = PARTICLES[i]
+      interface DrawItem {
+        z: number
+        lineIndex: number // -1 if no line
+        particleIndex: number // -1 if no particle
+        projScreenX: number
+        projScreenY: number
+        projScale: number
+        depthAlpha: number
+        rotZ: number
+      }
 
-        const rho = p.rho
+      const drawItems: DrawItem[] = []
 
-        const cart = sphericalToCartesian(rho, p.theta, p.phi)
+      // Lines + their attached particles share the same endpoint
+      for (let i = 0; i < LINES.length; i++) {
+        const line = LINES[i]
+        const cart = sphericalToCartesian(line.rho, line.theta, line.phi)
         const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
         const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
+        const depthAlpha = Math.max(0.08, (zMax - rot.z) / zRange)
 
-        if (p.isSkill && p.skillIndex >= 0) {
-          positions[p.skillIndex] = { x: proj.screenX, y: proj.screenY }
+        drawItems.push({
+          z: rot.z,
+          lineIndex: i,
+          particleIndex: i, // particle i maps to line i
+          projScreenX: proj.screenX,
+          projScreenY: proj.screenY,
+          projScale: proj.scale,
+          depthAlpha,
+          rotZ: rot.z,
+        })
+      }
+
+      // Sort: farthest first (highest z = behind), closest last (drawn on top)
+      drawItems.sort((a, b) => b.z - a.z)
+
+      // Draw in sorted order: line first, then particle on top
+      for (const item of drawItems) {
+        // Draw line
+        if (item.lineIndex >= 0) {
+          const line = LINES[item.lineIndex]
+          const b = Math.round(line.brightness)
+          const a0 = line.alpha * item.depthAlpha
+
+          ctx.strokeStyle = `rgba(${b},${b},${b + 5},${a0})`
+          ctx.lineWidth = line.width
+          ctx.beginPath()
+          ctx.moveTo(cx, cy)
+          ctx.lineTo(item.projScreenX, item.projScreenY)
+          ctx.stroke()
         }
 
-        const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
+        // Draw particle
+        if (item.particleIndex >= 0 && item.particleIndex < PARTICLES.length) {
+          const p = PARTICLES[item.particleIndex]
 
-        // Depth alpha + star twinkle for decoration particles
-        const depthAlpha = Math.max(0.1, (zMax - rot.z) / zRange)
-        let flicker: number
-        if (p.isSkill) {
-          // Skill particles: gentle pulse
-          flicker = 0.7 + 0.3 * Math.sin(time * 0.6 + p.phase * 2)
-        } else {
-          // Decoration: star-like twinkle — sharp peaks
-          const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
-          flicker = 0.4 + Math.max(0, raw) * 0.6 // never fully disappears, occasional bright flash
+          if (p.isSkill && p.skillIndex >= 0) {
+            positions[p.skillIndex] = { x: item.projScreenX, y: item.projScreenY }
+          }
+
+          const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
+          let flicker: number
+          if (p.isSkill) {
+            flicker = 0.7 + 0.3 * Math.sin(time * 0.6 + p.phase * 2)
+          } else {
+            const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
+            flicker = 0.4 + Math.max(0, raw) * 0.6
+          }
+          const pulse = p.alpha * item.depthAlpha * flicker
+          const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
+          const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, item.projScale)
+
+          // Opaque black background so lines don't show through
+          ctx.globalAlpha = 1
+          ctx.fillStyle = '#0A0A0A'
+          ctx.fillRect(item.projScreenX - drawSize / 2, item.projScreenY - drawSize / 2, drawSize, drawSize)
+          // Colored particle
+          ctx.globalAlpha = drawAlpha
+          ctx.fillStyle = `rgb(${p.colorR},${p.colorG},${p.colorB})`
+          ctx.fillRect(item.projScreenX - drawSize / 2, item.projScreenY - drawSize / 2, drawSize, drawSize)
         }
-        const pulse = p.alpha * depthAlpha * flicker
-        const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
-        const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, proj.scale)
-
-        // Opaque black background so lines don't show through
-        ctx.globalAlpha = 1
-        ctx.fillStyle = '#0A0A0A'
-        ctx.fillRect(proj.screenX - drawSize / 2, proj.screenY - drawSize / 2, drawSize, drawSize)
-        // Colored particle on top
-        ctx.globalAlpha = drawAlpha
-        ctx.fillStyle = `rgb(${p.colorR},${p.colorG},${p.colorB})`
-        ctx.fillRect(proj.screenX - drawSize / 2, proj.screenY - drawSize / 2, drawSize, drawSize)
       }
       ctx.globalAlpha = 1
 
