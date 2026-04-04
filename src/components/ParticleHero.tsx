@@ -35,60 +35,6 @@ interface ParticleData {
   hasPhotoTarget: boolean
 }
 
-// Sample photo pixels to get target positions
-function samplePhotoTargets(count: number): Array<{ x: number; y: number }> {
-  const canvas = document.createElement('canvas')
-  canvas.width = PHOTO_SAMPLE_SIZE
-  canvas.height = PHOTO_SAMPLE_SIZE
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return []
-
-  const img = new Image()
-  img.crossOrigin = 'anonymous'
-  img.src = '/assets/charles-profile.jpg'
-
-  return new Promise<Array<{ x: number; y: number }>>((resolve) => {
-    img.onload = () => {
-      // Draw image centered and cropped to square
-      const size = Math.min(img.width, img.height)
-      const sx = (img.width - size) / 2
-      const sy = 0 // top-crop for face focus
-      ctx.drawImage(img, sx, sy, size, size, 0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
-
-      const imageData = ctx.getImageData(0, 0, PHOTO_SAMPLE_SIZE, PHOTO_SAMPLE_SIZE)
-      const pixels = imageData.data
-      const brightPositions: Array<{ x: number; y: number }> = []
-
-      // Sample pixels, collect bright ones as targets
-      const step = 2
-      for (let py = 0; py < PHOTO_SAMPLE_SIZE; py += step) {
-        for (let px = 0; px < PHOTO_SAMPLE_SIZE; px += step) {
-          const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
-          const brightness = (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3
-          if (brightness > 60) { // threshold for visible features
-            brightPositions.push({
-              x: px / PHOTO_SAMPLE_SIZE, // normalized 0-1
-              y: py / PHOTO_SAMPLE_SIZE,
-            })
-          }
-        }
-      }
-
-      // Randomly select 'count' positions from the pool
-      const selected: Array<{ x: number; y: number }> = []
-      for (let i = 0; i < count; i++) {
-        if (brightPositions.length === 0) {
-          selected.push({ x: Math.random(), y: Math.random() })
-        } else {
-          const idx = Math.floor(Math.random() * brightPositions.length)
-          selected.push(brightPositions[idx])
-        }
-      }
-      resolve(selected)
-    }
-    img.onerror = () => resolve([])
-  }) as unknown as Array<{ x: number; y: number }>
-}
 
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
