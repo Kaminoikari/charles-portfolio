@@ -18,7 +18,7 @@ const W1_DIR = 1
 const W2_FREQ = 6
 const W2_SPEED = 1
 const W2_DIR = -1
-const ROW_TWIST = 0.5
+const ROW_TWIST = 1.5 // multiplied by normalized rowProgress [0,1] × 2π
 const AMPLITUDE = 14
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
@@ -60,6 +60,17 @@ export default function ParticleHero() {
 
     resize()
     window.addEventListener('resize', resize)
+
+    // Fix #3: pre-render particle dot to OffscreenCanvas for perf
+    const dotSize = Math.ceil(PARTICLE_SIZE * 2 * window.devicePixelRatio) + 2
+    const dotCanvas = document.createElement('canvas')
+    dotCanvas.width = dotSize
+    dotCanvas.height = dotSize
+    const dotCtx = dotCanvas.getContext('2d')!
+    dotCtx.fillStyle = PARTICLE_COLOR
+    dotCtx.beginPath()
+    dotCtx.arc(dotSize / 2, dotSize / 2, PARTICLE_SIZE * window.devicePixelRatio, 0, Math.PI * 2)
+    dotCtx.fill()
 
     const onMouseMove = (e: MouseEvent) => {
       mouseTargetRef.current.x = (e.clientX / window.innerWidth) * 100
@@ -123,13 +134,18 @@ export default function ParticleHero() {
         const rowProgress = NUM_ROWS > 1 ? r / (NUM_ROWS - 1) : 0
         const currentBaseRadius = INNER_RADIUS + (rowProgress * THICKNESS)
 
-        for (let i = 0; i < NUM_PARTICLES; i++) {
-          const angle = (i / NUM_PARTICLES) * Math.PI * 2
+        // Fix #1: particle count proportional to circumference
+        const circumferenceRatio = currentBaseRadius / INNER_RADIUS
+        const actualNumParticles = Math.max(8, Math.floor(NUM_PARTICLES * circumferenceRatio))
+
+        for (let i = 0; i < actualNumParticles; i++) {
+          const angle = (i / actualNumParticles) * Math.PI * 2
 
           // --- Wave physics ---
           const w1 = Math.sin(angle * W1_FREQ + t * W1_SPEED * W1_DIR)
           const w2 = Math.sin(angle * W2_FREQ + t * W2_SPEED * W2_DIR)
-          const rowOffset = Math.sin(r * ROW_TWIST + t)
+          // Fix #2: use normalized rowProgress [0,1] instead of raw index
+          const rowOffset = Math.sin(rowProgress * ROW_TWIST * Math.PI * 2 + t)
           const waveHeight = w1 + w2 + rowOffset
 
           // Depth alpha from wave height
@@ -166,11 +182,10 @@ export default function ParticleHero() {
             ctx.beginPath()
             ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
             ctx.fill()
-            ctx.fillStyle = PARTICLE_COLOR // reset for next non-rainbow
+            ctx.fillStyle = PARTICLE_COLOR
           } else {
-            ctx.beginPath()
-            ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
-            ctx.fill()
+            // Use cached dot image instead of arc() — much faster
+            ctx.drawImage(dotCanvas, x - PARTICLE_SIZE, y - PARTICLE_SIZE, PARTICLE_SIZE * 2, PARTICLE_SIZE * 2)
           }
         }
       }
