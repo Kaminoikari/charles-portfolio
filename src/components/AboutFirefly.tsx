@@ -33,7 +33,7 @@ function createFirefly(width: number, height: number, isHub = false): Firefly {
     y: Math.random() * height,
     vx: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
     vy: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
-    size: isHub ? 3 + Math.random() * 2 : 1.2 + Math.random() * 1.3,
+    size: isHub ? 5 + Math.random() * 3 : 3 + Math.random() * 2,
     opacity: 0,
     maxOpacity: isHub ? 0.7 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4,
     phase: Math.random() * Math.PI * 2,
@@ -209,6 +209,11 @@ const HUB_COUNT = 6 // large hub nodes
       className="relative flex min-h-[80vh] items-center overflow-hidden"
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
+      {/* Bottom gradient fade — smooth blend into Universe section */}
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
+        style={{ background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)' }}
+      />
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
           ref={photoRef}

@@ -331,6 +331,12 @@ export default function UniverseSection() {
     >
       <canvas ref={canvasRef} className="absolute inset-0" role="presentation" aria-hidden="true" />
 
+      {/* Top gradient fade — smooth blend from About section */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
+        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
+      />
+
       {/* Hover zones */}
       <div className="pointer-events-none absolute inset-0 z-30">
         {skills.map((skill, i) => (
