@@ -1,50 +1,42 @@
 import { useEffect, useRef } from 'react'
 
-const PARTICLE_COUNT = 280
-const VAPOR_COUNT = 60 // large translucent vapor blobs — creates smoke density
-const MOUSE_RADIUS = 200
-const MOUSE_PUSH_FORCE = 40
-const NOISE_SCALE = 0.002 // How "zoomed in" the flow field is
-const FLOW_STRENGTH = 1.2 // How fast particles follow the field
+// --- Antigravity-style ring particle constants ---
+const PARTICLE_COUNT = 1500
+const PARTICLE_ROWS = 25
+const PARTICLE_SIZE = 1.5
+const RING_RADIUS_MIN = 150
+const RING_RADIUS_MAX = 250
+const RING_THICKNESS = 500
+const RING_BREATHE_SPEED = 0.001 // 6s full cycle
+const RIPPLE_SPEED = 0.001
+const MOUSE_EASE_SPEED = 0.02 // smooth follow (lower = slower, ~3s to reach target)
 
-interface Particle {
-  x: number
-  y: number
-  size: number
-  opacity: number
-  phase: number
-  isCyan: boolean
-  isVapor: boolean
-}
-
-// --- Simplified Perlin-like noise using sin/cos layering (fast, no lookup table) ---
-function noise2D(x: number, y: number): number {
-  // 4-octave layered sin noise — approximates Perlin at a fraction of the cost
-  return (
-    Math.sin(x * 1.2 + y * 0.9) * 0.5 +
-    Math.sin(x * 0.5 - y * 1.3 + 2.1) * 0.3 +
-    Math.sin(x * 2.1 + y * 0.4 - 1.7) * 0.15 +
-    Math.cos(x * 0.7 + y * 1.8 + 0.5) * 0.05
-  )
-}
-
-const KONAMI_SEQUENCE = [
-  'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
-  'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
-] as const
-
+const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
 const EASTER_EGG_DURATION_MS = 4000
+
+interface RingParticle {
+  // Static properties (set once)
+  angle: number // angle around ring
+  radiusOffset: number // distance from ring center (within thickness)
+  row: number // which row
+  baseAlpha: number
+  phase: number // for ripple offset
+}
 
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
-  const mouseRef = useRef({ x: -9999, y: -9999 })
   const textOffsetRef = useRef({ x: 0, y: 0 })
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
   const easterEggRef = useRef(false)
   const konamiIndexRef = useRef(0)
+
+  // Mouse tracking with ease
+  const mouseTargetRef = useRef({ x: 0.5, y: 0.5 }) // normalized 0-1
+  const mouseSmoothRef = useRef({ x: 0.5, y: 0.5 })
+  const isMouseOverRef = useRef(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -54,12 +46,9 @@ export default function ParticleHero() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const computedStyle = getComputedStyle(document.documentElement)
-    const cyanColor = computedStyle.getPropertyValue('--color-accent-cyan').trim() || '#00D9FF'
-
     let width = 0
     let height = 0
-    const particles: Particle[] = []
+    const particles: RingParticle[] = []
 
     const resize = () => {
       width = window.innerWidth
@@ -73,28 +62,14 @@ export default function ParticleHero() {
 
     const initParticles = () => {
       particles.length = 0
-      // Regular small particles
       for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const row = Math.floor(Math.random() * PARTICLE_ROWS)
         particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          size: 1 + Math.random() * 1.8,
-          opacity: 0.1 + Math.random() * 0.3,
+          angle: Math.random() * Math.PI * 2,
+          radiusOffset: Math.random() * RING_THICKNESS,
+          row,
+          baseAlpha: 0.1 + Math.random() * 0.9,
           phase: Math.random() * Math.PI * 2,
-          isCyan: Math.random() < 0.12,
-          isVapor: false,
-        })
-      }
-      // Large vapor blobs — translucent, big radius
-      for (let i = 0; i < VAPOR_COUNT; i++) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          size: 10 + Math.random() * 20,
-          opacity: 0.015 + Math.random() * 0.035,
-          phase: Math.random() * Math.PI * 2,
-          isCyan: Math.random() < 0.3,
-          isVapor: true,
         })
       }
     }
@@ -106,8 +81,9 @@ export default function ParticleHero() {
     window.addEventListener('resize', onResize)
 
     const onMouseMove = (e: MouseEvent) => {
-      mouseRef.current.x = e.clientX
-      mouseRef.current.y = e.clientY
+      mouseTargetRef.current.x = e.clientX / window.innerWidth
+      mouseTargetRef.current.y = e.clientY / window.innerHeight
+      isMouseOverRef.current = true
 
       // Text repulsion
       if (textRef.current) {
@@ -125,8 +101,9 @@ export default function ParticleHero() {
       }
     }
     const onMouseLeave = () => {
-      mouseRef.current.x = -9999
-      mouseRef.current.y = -9999
+      isMouseOverRef.current = false
+      mouseTargetRef.current.x = 0.5
+      mouseTargetRef.current.y = 0.5
     }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseleave', onMouseLeave)
@@ -142,88 +119,58 @@ export default function ParticleHero() {
       animIdRef.current = requestAnimationFrame(animate)
       if (!visibleRef.current) return
 
-      time += 0.003
-      // Trail effect — vapor/smoke persistence
-      ctx.globalAlpha = 0.12
-      ctx.fillStyle = '#0A0A0A'
-      ctx.fillRect(0, 0, width, height)
-      ctx.globalAlpha = 1
+      time += 1
+      ctx.clearRect(0, 0, width, height)
 
-      const mx = mouseRef.current.x
-      const my = mouseRef.current.y
+      // Smooth mouse follow (ease toward target)
+      const ms = mouseSmoothRef.current
+      const mt = mouseTargetRef.current
+      ms.x += (mt.x - ms.x) * MOUSE_EASE_SPEED
+      ms.y += (mt.y - ms.y) * MOUSE_EASE_SPEED
+
+      // Ring center in pixels
+      const ringCX = ms.x * width
+      const ringCY = ms.y * height
+
+      // Breathing ring radius
+      const breathe = Math.sin(time * RING_BREATHE_SPEED) * 0.5 + 0.5
+      const ringRadius = RING_RADIUS_MIN + breathe * (RING_RADIUS_MAX - RING_RADIUS_MIN)
+
+      // Ripple phase
+      const rippleTick = (time * RIPPLE_SPEED) % 1
 
       const isRainbow = easterEggRef.current
-      const rainbowBaseHue = isRainbow ? (time * 300) % 360 : 0
 
+      // Draw particles
       for (const p of particles) {
-        // --- Noise flow field ---
-        // Sample noise at particle position to get flow direction
-        const nx = p.x * NOISE_SCALE + time
-        const ny = p.y * NOISE_SCALE + time * 0.7
+        // Ripple: offset radius based on particle phase + global ripple tick
+        const rippleWave = Math.sin((rippleTick + p.phase) * Math.PI * 2) * 20
 
-        const angle = noise2D(nx, ny) * Math.PI * 2
-        const flowMultiplier = easterEggRef.current ? 2 : 1
-        const speed = (p.isVapor ? FLOW_STRENGTH * 0.6 : FLOW_STRENGTH) * flowMultiplier
-        const flowX = Math.cos(angle) * speed
-        const flowY = Math.sin(angle) * speed
+        // Final radius for this particle
+        const r = ringRadius + p.radiusOffset + rippleWave
 
-        // Apply flow
-        p.x += flowX
-        p.y += flowY
+        // Position
+        const x = ringCX + Math.cos(p.angle) * r
+        const y = ringCY + Math.sin(p.angle) * r
 
-        // Mouse repulsion
-        const dx = p.x - mx
-        const dy = p.y - my
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist < MOUSE_RADIUS && dist > 1) {
-          const force = ((1 - dist / MOUSE_RADIUS) ** 2) * MOUSE_PUSH_FORCE
-          p.x += (dx / dist) * force
-          p.y += (dy / dist) * force
-        }
+        // Skip if off screen
+        if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
 
-        // Wrap around screen edges — tight wrap keeps density uniform
-        if (p.x < -30) p.x = width + 20
-        if (p.x > width + 30) p.x = -20
-        if (p.y < -30) p.y = height + 20
-        if (p.y > height + 30) p.y = -20
+        // Alpha with subtle pulse
+        const alphaPulse = 0.7 + 0.3 * Math.sin(time * 0.02 + p.phase * 3)
+        const alpha = p.baseAlpha * alphaPulse
 
-        // Bottom fade: particles near bottom of section fade out
-        const bottomFade = 1 - Math.max(0, (p.y - height * 0.75) / (height * 0.25))
-        const pulsedOpacity = p.opacity * bottomFade * (0.6 + 0.4 * Math.sin(time * 80 + p.phase))
+        ctx.globalAlpha = alpha
 
-        if (pulsedOpacity < 0.01) continue // skip invisible particles
-
-        // Draw — identical structure for both modes, only fillStyle changes
-        if (p.isVapor) {
-          ctx.globalAlpha = pulsedOpacity
-          if (isRainbow) {
-            const h = (rainbowBaseHue + p.phase * 57) % 360
-            ctx.fillStyle = `hsla(${h},80%,55%,0.6)`
-          } else {
-            ctx.fillStyle = p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)'
-          }
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-          ctx.fill()
-        } else if (p.isCyan) {
-          const color = isRainbow ? `hsl(${(rainbowBaseHue + p.phase * 57) % 360},85%,60%)` : cyanColor
-          ctx.globalAlpha = pulsedOpacity * 0.25
-          ctx.fillStyle = color
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
-          ctx.fill()
-          ctx.globalAlpha = pulsedOpacity * 0.9
-          ctx.fillStyle = color
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-          ctx.fill()
+        if (isRainbow) {
+          const hue = (time * 2 + p.phase * 57) % 360
+          ctx.fillStyle = `hsl(${hue}, 80%, 60%)`
         } else {
-          ctx.globalAlpha = pulsedOpacity * 0.6
-          ctx.fillStyle = isRainbow ? `hsl(${(rainbowBaseHue + p.phase * 57) % 360},70%,75%)` : '#ffffff'
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-          ctx.fill()
+          // Light gray/blue on black background
+          ctx.fillStyle = `rgba(180, 190, 210, 1)`
         }
+
+        ctx.fillRect(x - PARTICLE_SIZE / 2, y - PARTICLE_SIZE / 2, PARTICLE_SIZE, PARTICLE_SIZE)
       }
       ctx.globalAlpha = 1
 
@@ -247,7 +194,7 @@ export default function ParticleHero() {
     }
   }, [])
 
-  // Konami code + custom easter-egg event listener
+  // Konami code + easter egg listener
   useEffect(() => {
     const activateEasterEgg = () => {
       easterEggRef.current = true
@@ -279,23 +226,17 @@ export default function ParticleHero() {
     <section
       ref={sectionRef}
       className="relative flex h-screen w-full items-center justify-center overflow-hidden"
-      style={{
-        background:
-          'radial-gradient(ellipse at 50% 80%, rgba(120,70,20,0.35) 0%, rgba(60,30,10,0.2) 40%, #0A0A0A 75%)',
-      }}
+      style={{ background: '#0A0A0A' }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
 
-      {/* Bottom gradient fade — blends into About section */}
+      {/* Bottom gradient fade */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
-        style={{
-          background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)',
-        }}
+        style={{ background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)' }}
       />
 
       <div ref={textRef} className="relative z-10 max-w-[900px] px-6">
-        {/* Hero headline — xAI universe-grade typography */}
         <h1 className="text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
           <span style={{ color: 'rgba(255,255,255,0.5)' }}>My name is </span>
           <span className="font-normal text-white">Charles.</span>
