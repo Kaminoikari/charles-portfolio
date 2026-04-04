@@ -143,8 +143,8 @@ export default function ParticleHero() {
       if (!visibleRef.current) return
 
       time += 0.003
-      // Trail effect — vapor/smoke persistence (also makes rainbow colors blend beautifully)
-      ctx.globalAlpha = easterEggRef.current ? 0.08 : 0.12
+      // Trail effect — vapor/smoke persistence
+      ctx.globalAlpha = 0.12
       ctx.fillStyle = '#0A0A0A'
       ctx.fillRect(0, 0, width, height)
       ctx.globalAlpha = 1
@@ -190,45 +190,34 @@ export default function ParticleHero() {
 
         if (pulsedOpacity < 0.01) continue // skip invisible particles
 
-        // Draw
+        // Rainbow color override — same shape, just different color
         const isRainbow = easterEggRef.current
-        if (isRainbow) {
-          const hue = (time * 300 + p.phase * 57) % 360
-          const rainbowColor = `hsl(${hue}, 85%, 60%)`
-          // Outer glow
-          ctx.globalAlpha = pulsedOpacity * 0.3
-          ctx.fillStyle = `hsl(${hue}, 90%, 50%)`
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 2 : 3.5), 0, Math.PI * 2)
-          ctx.fill()
-          // Core
-          ctx.globalAlpha = pulsedOpacity * (p.isVapor ? 0.6 : 1)
-          ctx.fillStyle = rainbowColor
-          ctx.beginPath()
-          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 1.5 : 1.5), 0, Math.PI * 2)
-          ctx.fill()
-        } else if (p.isVapor) {
-          // Large translucent vapor blob
+        const hue = (time * 300 + p.phase * 57) % 360
+        const rainbowCyan = `hsl(${hue}, 85%, 60%)`
+        const rainbowWhite = `hsl(${hue}, 70%, 75%)`
+        const rainbowVapor = `hsla(${hue}, 80%, 55%, 0.6)`
+
+        // Draw — identical structure for both modes, only fillStyle changes
+        if (p.isVapor) {
           ctx.globalAlpha = pulsedOpacity
-          ctx.fillStyle = p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)'
+          ctx.fillStyle = isRainbow ? rainbowVapor : (p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)')
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else if (p.isCyan) {
-          // Cyan particle with glow
           ctx.globalAlpha = pulsedOpacity * 0.25
-          ctx.fillStyle = cyanColor
+          ctx.fillStyle = isRainbow ? rainbowCyan : cyanColor
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
           ctx.fill()
           ctx.globalAlpha = pulsedOpacity * 0.9
+          ctx.fillStyle = isRainbow ? rainbowCyan : cyanColor
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
         } else {
-          // White particle
           ctx.globalAlpha = pulsedOpacity * 0.6
-          ctx.fillStyle = '#ffffff'
+          ctx.fillStyle = isRainbow ? rainbowWhite : '#ffffff'
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
           ctx.fill()
