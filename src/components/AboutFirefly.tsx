@@ -60,8 +60,8 @@ export default function AboutFirefly() {
     let width = 0
     let height = 0
     const fireflies: Firefly[] = []
-    const FIREFLY_COUNT = 45 // more nodes for denser network
-const HUB_COUNT = 6 // large hub nodes
+    const FIREFLY_COUNT = 60 // dense node network
+const HUB_COUNT = 8 // large hub nodes
 
     const resize = () => {
       width = canvas.parentElement?.clientWidth ?? window.innerWidth
@@ -114,7 +114,7 @@ const HUB_COUNT = 6 // large hub nodes
       }
 
       // Draw quantum neural network connections
-      const CONNECTION_DIST = 160
+      const CONNECTION_DIST = 220
       const time = Date.now() * 0.001
       for (let i = 0; i < fireflies.length; i++) {
         for (let j = i + 1; j < fireflies.length; j++) {
@@ -122,53 +122,72 @@ const HUB_COUNT = 6 // large hub nodes
           const fj = fireflies[j]
           const dx = fi.x - fj.x
           const dy = fi.y - fj.y
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < CONNECTION_DIST) {
-            const proximity = 1 - dist / CONNECTION_DIST
-            // Pulsing signal — alpha oscillates per connection
-            const pulse = 0.5 + 0.5 * Math.sin(time * 2 + i * 0.7 + j * 0.3)
-            const alpha = proximity * pulse * 0.2
+          const distSq = dx * dx + dy * dy
+          if (distSq > CONNECTION_DIST * CONNECTION_DIST) continue
+          const dist = Math.sqrt(distSq)
 
-            // Gradient line: cyan signal flowing from node i to node j
-            const grad = ctx.createLinearGradient(fi.x, fi.y, fj.x, fj.y)
-            const signalPos = (Math.sin(time * 3 + i + j) * 0.5 + 0.5) // 0-1 oscillating position
-            const cyanAlpha = alpha * 1.5
+          const proximity = 1 - dist / CONNECTION_DIST
+          // Pulsing signal — alpha oscillates per connection
+          const pulse = 0.5 + 0.5 * Math.sin(time * 2.5 + i * 0.7 + j * 0.3)
+          const baseAlpha = proximity * proximity * 0.35 // quadratic falloff, brighter
 
-            grad.addColorStop(Math.max(0, signalPos - 0.15), `rgba(255,255,255,${alpha})`)
-            grad.addColorStop(signalPos, `rgba(0,217,255,${cyanAlpha})`)
-            grad.addColorStop(Math.min(1, signalPos + 0.15), `rgba(255,255,255,${alpha})`)
+          // Two-layer connection: base white + flowing cyan signal
+          // Layer 1: constant dim white line
+          ctx.globalAlpha = baseAlpha * 0.4
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = proximity > 0.5 ? 0.6 : 0.3
+          ctx.beginPath()
+          ctx.moveTo(fi.x, fi.y)
+          ctx.lineTo(fj.x, fj.y)
+          ctx.stroke()
 
-            ctx.globalAlpha = 1
-            ctx.strokeStyle = grad
-            ctx.lineWidth = proximity > 0.6 ? 0.8 : 0.4
-            ctx.beginPath()
-            ctx.moveTo(fi.x, fi.y)
-            ctx.lineTo(fj.x, fj.y)
-            ctx.stroke()
-          }
+          // Layer 2: pulsing cyan signal flowing along the line
+          const signalPos = (Math.sin(time * 3.5 + i * 1.1 + j * 0.7) * 0.5 + 0.5)
+          const signalAlpha = baseAlpha * pulse * 0.8
+          const grad = ctx.createLinearGradient(fi.x, fi.y, fj.x, fj.y)
+          const s0 = Math.max(0, signalPos - 0.12)
+          const s1 = Math.min(1, signalPos + 0.12)
+          grad.addColorStop(s0, 'rgba(0,217,255,0)')
+          grad.addColorStop(signalPos, `rgba(0,217,255,${signalAlpha})`)
+          grad.addColorStop(s1, 'rgba(0,217,255,0)')
+
+          ctx.globalAlpha = 1
+          ctx.strokeStyle = grad
+          ctx.lineWidth = proximity > 0.5 ? 1.2 : 0.6
+          ctx.beginPath()
+          ctx.moveTo(fi.x, fi.y)
+          ctx.lineTo(fj.x, fj.y)
+          ctx.stroke()
         }
       }
 
       // Draw hexagonal nodes
       for (const f of fireflies) {
-        // Hexagon border
-        ctx.globalAlpha = f.opacity * 0.6
+        // Hexagon outer border
+        ctx.globalAlpha = f.opacity * 0.8
         ctx.strokeStyle = f.color
-        ctx.lineWidth = 0.8
-        drawHexagon(ctx, f.x, f.y, f.size * 2)
+        ctx.lineWidth = 1
+        drawHexagon(ctx, f.x, f.y, f.size * 2.2)
         ctx.stroke()
 
-        // Hexagon filled core (smaller, brighter)
-        ctx.globalAlpha = f.opacity * 0.3
+        // Hexagon inner fill
+        ctx.globalAlpha = f.opacity * 0.15
         ctx.fillStyle = f.color
-        drawHexagon(ctx, f.x, f.y, f.size * 1.2)
+        drawHexagon(ctx, f.x, f.y, f.size * 2.2)
         ctx.fill()
 
-        // Center dot
+        // Inner hexagon ring
+        ctx.globalAlpha = f.opacity * 0.4
+        ctx.strokeStyle = f.color
+        ctx.lineWidth = 0.5
+        drawHexagon(ctx, f.x, f.y, f.size * 1.2)
+        ctx.stroke()
+
+        // Center bright dot
         ctx.globalAlpha = f.opacity
         ctx.fillStyle = f.color === '#00D9FF' ? '#00D9FF' : '#ffffff'
         ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 0.4, 0, Math.PI * 2)
+        ctx.arc(f.x, f.y, f.size * 0.35, 0, Math.PI * 2)
         ctx.fill()
       }
       ctx.globalAlpha = 1
@@ -227,8 +246,7 @@ const HUB_COUNT = 6 // large hub nodes
           />
         </div>
         <div ref={textRef} className="reveal opacity-0 translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-150">
-          <h2 className="mb-6 text-[40px] font-semibold">About Me</h2>
-          <p className="text-base leading-relaxed text-text-muted">
+          <p className="text-lg leading-relaxed text-text-muted md:text-xl">
             Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
           </p>
         </div>
