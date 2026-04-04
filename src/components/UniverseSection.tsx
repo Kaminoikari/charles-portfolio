@@ -181,6 +181,8 @@ export default function UniverseSection() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    // CSS vars not needed in Universe draw loop (no bg fills or cyan particles)
+
     let animId: number
     let width = 0
     let height = 0

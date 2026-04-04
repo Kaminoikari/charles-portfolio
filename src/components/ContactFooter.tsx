@@ -40,6 +40,16 @@ const SocialIcon = ({ platform }: { platform: string }) => {
 
 export default function ContactFooter() {
   const sectionRef = useRef<HTMLDivElement>(null)
+  const perfRef = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      if (perfRef.current) {
+        const loadTime = Math.round(performance.now())
+        perfRef.current.textContent = String(loadTime)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     if (!sectionRef.current) return
@@ -97,6 +107,9 @@ export default function ContactFooter() {
       </section>
       <footer className="border-t border-border-hover py-12 text-center text-xs tracking-[1px] text-text-secondary">
         © 2026 Te-Ying (Charles) Chen. Built with React + Canvas
+        <div className="mt-2 font-mono text-[10px] tracking-[1px] text-text-tertiary">
+          Rendered in <span ref={perfRef}>—</span>ms · Zero frameworks · Canvas 2D
+        </div>
       </footer>
     </div>
   )

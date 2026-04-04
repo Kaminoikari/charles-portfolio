@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
+const RAPID_CLICK_COUNT = 5
+const RAPID_CLICK_WINDOW_MS = 2000
+
 export default function Nav() {
   const navRef = useRef<HTMLElement>(null)
   const [scrolledPastHero, setScrolledPastHero] = useState(false)
+  const logoClickTimesRef = useRef<number[]>([])
 
   useEffect(() => {
     const onScroll = () => {
@@ -13,7 +17,15 @@ export default function Nav() {
   }, [])
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    const el = document.getElementById(id)
+    if (!el) return
+    if ('startViewTransition' in document) {
+      (document as any).startViewTransition(() => {
+        el.scrollIntoView({ behavior: 'smooth' })
+      })
+    } else {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
   }
 
   return (
@@ -30,7 +42,20 @@ export default function Nav() {
     >
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
         <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+            const now = Date.now()
+            const clicks = logoClickTimesRef.current
+            clicks.push(now)
+            // Keep only clicks within the time window
+            while (clicks.length > 0 && now - clicks[0] > RAPID_CLICK_WINDOW_MS) {
+              clicks.shift()
+            }
+            if (clicks.length >= RAPID_CLICK_COUNT) {
+              clicks.length = 0
+              window.dispatchEvent(new Event('easter-egg'))
+            }
+          }}
           className="cursor-pointer border-none bg-transparent text-lg font-bold tracking-widest text-white md:text-xl"
         >
           CHARLES CHEN

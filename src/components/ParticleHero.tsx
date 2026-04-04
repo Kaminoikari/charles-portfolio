@@ -28,6 +28,13 @@ function noise2D(x: number, y: number): number {
   )
 }
 
+const KONAMI_SEQUENCE = [
+  'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+  'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+] as const
+
+const EASTER_EGG_DURATION_MS = 4000
+
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -36,6 +43,8 @@ export default function ParticleHero() {
   const textOffsetRef = useRef({ x: 0, y: 0 })
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
+  const easterEggRef = useRef(false)
+  const konamiIndexRef = useRef(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -44,6 +53,10 @@ export default function ParticleHero() {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+
+    const computedStyle = getComputedStyle(document.documentElement)
+    const bgColor = computedStyle.getPropertyValue('--color-bg-primary').trim() || '#0A0A0A'
+    const cyanColor = computedStyle.getPropertyValue('--color-accent-cyan').trim() || '#00D9FF'
 
     let width = 0
     let height = 0
@@ -133,7 +146,7 @@ export default function ParticleHero() {
       time += 0.003
       // Trail effect — semi-transparent fill instead of full clear
       ctx.globalAlpha = 0.15
-      ctx.fillStyle = '#0A0A0A'
+      ctx.fillStyle = bgColor
       ctx.fillRect(0, 0, width, height)
       ctx.globalAlpha = 1
 
@@ -147,7 +160,8 @@ export default function ParticleHero() {
         const ny = p.y * NOISE_SCALE + time * 0.7
 
         const angle = noise2D(nx, ny) * Math.PI * 2
-        const speed = p.isVapor ? FLOW_STRENGTH * 0.6 : FLOW_STRENGTH
+        const flowMultiplier = easterEggRef.current ? 2 : 1
+        const speed = (p.isVapor ? FLOW_STRENGTH * 0.6 : FLOW_STRENGTH) * flowMultiplier
         const flowX = Math.cos(angle) * speed
         const flowY = Math.sin(angle) * speed - (p.isVapor ? 0.3 : 0.1) // slight upward drift
 
@@ -178,7 +192,15 @@ export default function ParticleHero() {
         if (pulsedOpacity < 0.01) continue // skip invisible particles
 
         // Draw
-        if (p.isVapor) {
+        const isRainbow = easterEggRef.current
+        if (isRainbow) {
+          const rainbowColor = `hsl(${(time * 200 + p.phase * 57) % 360}, 80%, 60%)`
+          ctx.globalAlpha = pulsedOpacity
+          ctx.fillStyle = rainbowColor
+          ctx.beginPath()
+          ctx.arc(p.x, p.y, p.size * (p.isVapor ? 1 : 1.2), 0, Math.PI * 2)
+          ctx.fill()
+        } else if (p.isVapor) {
           // Large translucent vapor blob
           ctx.globalAlpha = pulsedOpacity
           ctx.fillStyle = p.isCyan ? 'rgba(0,180,220,0.6)' : 'rgba(255,255,255,0.5)'
@@ -188,7 +210,7 @@ export default function ParticleHero() {
         } else if (p.isCyan) {
           // Cyan particle with glow
           ctx.globalAlpha = pulsedOpacity * 0.25
-          ctx.fillStyle = '#00D9FF'
+          ctx.fillStyle = cyanColor
           ctx.beginPath()
           ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2)
           ctx.fill()
@@ -224,6 +246,34 @@ export default function ParticleHero() {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
+    }
+  }, [])
+
+  // Konami code + custom easter-egg event listener
+  useEffect(() => {
+    const activateEasterEgg = () => {
+      easterEggRef.current = true
+      setTimeout(() => { easterEggRef.current = false }, EASTER_EGG_DURATION_MS)
+    }
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === KONAMI_SEQUENCE[konamiIndexRef.current]) {
+        konamiIndexRef.current++
+        if (konamiIndexRef.current === KONAMI_SEQUENCE.length) {
+          konamiIndexRef.current = 0
+          activateEasterEgg()
+        }
+      } else {
+        konamiIndexRef.current = e.key === KONAMI_SEQUENCE[0] ? 1 : 0
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('easter-egg', activateEasterEgg)
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('easter-egg', activateEasterEgg)
     }
   }, [])
 
