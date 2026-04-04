@@ -39,13 +39,11 @@ interface Particle {
 
 function generateLines(): Line[] {
   const lines: Line[] = []
+  // Fibonacci sphere — mathematically optimal uniform distribution on sphere
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5))
   for (let i = 0; i < LINE_COUNT; i++) {
-    // φ: mathematically uniform distribution + tiny jitter for organic feel
-    const phi = (Math.PI * 2 * i) / LINE_COUNT + (Math.random() - 0.5) * 0.02
-
-    // θ: proper spherical uniform distribution
-    const u = Math.random()
-    const theta = Math.acos(1 - 2 * u)
+    const theta = Math.acos(1 - (2 * (i + 0.5)) / LINE_COUNT)
+    const phi = goldenAngle * i
 
     // ρ: varying lengths
     const lenRand = Math.random()
