@@ -14,32 +14,34 @@ interface Firefly {
   glowColor: string
 }
 
-function drawHexagon(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
-  ctx.beginPath()
-  for (let i = 0; i < 6; i++) {
-    const angle = (Math.PI / 3) * i - Math.PI / 6
-    const px = x + r * Math.cos(angle)
-    const py = y + r * Math.sin(angle)
-    if (i === 0) ctx.moveTo(px, py)
-    else ctx.lineTo(px, py)
-  }
-  ctx.closePath()
-}
-
 function createFirefly(width: number, height: number, isHub = false): Firefly {
-  const isCyan = isHub ? true : Math.random() > 0.55
+  // Blue-purple quantum palette
+  const colorRand = Math.random()
+  let color: string
+  let glowColor: string
+  if (colorRand < 0.5) {
+    color = '#6BA3D6' // light blue
+    glowColor = 'rgba(107,163,214,0.5)'
+  } else if (colorRand < 0.8) {
+    color = '#4E8FD4' // medium blue
+    glowColor = 'rgba(78,143,212,0.5)'
+  } else {
+    color = '#8B9FD6' // blue-purple
+    glowColor = 'rgba(139,159,214,0.4)'
+  }
+
   return {
     x: Math.random() * width,
     y: Math.random() * height,
-    vx: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
-    vy: (Math.random() - 0.5) * (isHub ? 0.2 : 0.4),
-    size: isHub ? 5 + Math.random() * 3 : 3 + Math.random() * 2,
+    vx: (Math.random() - 0.5) * (isHub ? 0.15 : 0.35),
+    vy: (Math.random() - 0.5) * (isHub ? 0.15 : 0.35),
+    size: isHub ? 3 + Math.random() * 2 : 1.5 + Math.random() * 1.5,
     opacity: 0,
-    maxOpacity: isHub ? 0.7 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4,
+    maxOpacity: isHub ? 0.8 + Math.random() * 0.2 : 0.4 + Math.random() * 0.4,
     phase: Math.random() * Math.PI * 2,
     speed: 0.005 + Math.random() * 0.015,
-    color: isCyan ? '#00D9FF' : '#ffffff',
-    glowColor: isCyan ? 'rgba(0,217,255,0.4)' : 'rgba(255,255,255,0.3)',
+    color,
+    glowColor,
   }
 }
 
@@ -60,8 +62,8 @@ export default function AboutFirefly() {
     let width = 0
     let height = 0
     const fireflies: Firefly[] = []
-    const FIREFLY_COUNT = 60 // dense node network
-const HUB_COUNT = 8 // large hub nodes
+    const FIREFLY_COUNT = 80 // dense node network
+const HUB_COUNT = 10 // bright hub nodes
 
     const resize = () => {
       width = canvas.parentElement?.clientWidth ?? window.innerWidth
@@ -113,8 +115,9 @@ const HUB_COUNT = 8 // large hub nodes
         if (f.y > height + 10) f.y = -10
       }
 
-      // Draw quantum neural network connections
-      const CONNECTION_DIST = 220
+      // Draw quantum neural network connections — dense, blue-purple
+      const CONNECTION_DIST = 250
+      const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST
       const time = Date.now() * 0.001
       for (let i = 0; i < fireflies.length; i++) {
         for (let j = i + 1; j < fireflies.length; j++) {
@@ -123,37 +126,17 @@ const HUB_COUNT = 8 // large hub nodes
           const dx = fi.x - fj.x
           const dy = fi.y - fj.y
           const distSq = dx * dx + dy * dy
-          if (distSq > CONNECTION_DIST * CONNECTION_DIST) continue
+          if (distSq > CONNECTION_DIST_SQ) continue
           const dist = Math.sqrt(distSq)
 
           const proximity = 1 - dist / CONNECTION_DIST
-          // Pulsing signal — alpha oscillates per connection
-          const pulse = 0.5 + 0.5 * Math.sin(time * 2.5 + i * 0.7 + j * 0.3)
-          const baseAlpha = proximity * proximity * 0.35 // quadratic falloff, brighter
+          const alpha = proximity * proximity * 0.3
 
-          // Two-layer connection: base white + flowing cyan signal
-          // Layer 1: constant dim white line
-          ctx.globalAlpha = baseAlpha * 0.4
-          ctx.strokeStyle = '#ffffff'
-          ctx.lineWidth = proximity > 0.5 ? 0.6 : 0.3
-          ctx.beginPath()
-          ctx.moveTo(fi.x, fi.y)
-          ctx.lineTo(fj.x, fj.y)
-          ctx.stroke()
-
-          // Layer 2: pulsing cyan signal flowing along the line
-          const signalPos = (Math.sin(time * 3.5 + i * 1.1 + j * 0.7) * 0.5 + 0.5)
-          const signalAlpha = baseAlpha * pulse * 0.8
-          const grad = ctx.createLinearGradient(fi.x, fi.y, fj.x, fj.y)
-          const s0 = Math.max(0, signalPos - 0.12)
-          const s1 = Math.min(1, signalPos + 0.12)
-          grad.addColorStop(s0, 'rgba(0,217,255,0)')
-          grad.addColorStop(signalPos, `rgba(0,217,255,${signalAlpha})`)
-          grad.addColorStop(s1, 'rgba(0,217,255,0)')
-
-          ctx.globalAlpha = 1
-          ctx.strokeStyle = grad
-          ctx.lineWidth = proximity > 0.5 ? 1.2 : 0.6
+          // Single blue-purple line with subtle pulse
+          const pulse = 0.7 + 0.3 * Math.sin(time * 2 + i * 0.5 + j * 0.3)
+          ctx.globalAlpha = alpha * pulse
+          ctx.strokeStyle = 'rgba(100,150,220,0.7)'
+          ctx.lineWidth = proximity > 0.5 ? 0.8 : 0.35
           ctx.beginPath()
           ctx.moveTo(fi.x, fi.y)
           ctx.lineTo(fj.x, fj.y)
@@ -161,33 +144,27 @@ const HUB_COUNT = 8 // large hub nodes
         }
       }
 
-      // Draw hexagonal nodes
+      // Draw glowing nodes — bright dots with soft glow halos
       for (const f of fireflies) {
-        // Hexagon outer border
-        ctx.globalAlpha = f.opacity * 0.8
-        ctx.strokeStyle = f.color
-        ctx.lineWidth = 1
-        drawHexagon(ctx, f.x, f.y, f.size * 2.2)
-        ctx.stroke()
-
-        // Hexagon inner fill
-        ctx.globalAlpha = f.opacity * 0.15
+        // Outer glow halo
+        ctx.globalAlpha = f.opacity * 0.12
         ctx.fillStyle = f.color
-        drawHexagon(ctx, f.x, f.y, f.size * 2.2)
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, f.size * 5, 0, Math.PI * 2)
         ctx.fill()
 
-        // Inner hexagon ring
-        ctx.globalAlpha = f.opacity * 0.4
-        ctx.strokeStyle = f.color
-        ctx.lineWidth = 0.5
-        drawHexagon(ctx, f.x, f.y, f.size * 1.2)
-        ctx.stroke()
-
-        // Center bright dot
-        ctx.globalAlpha = f.opacity
-        ctx.fillStyle = f.color === '#00D9FF' ? '#00D9FF' : '#ffffff'
+        // Mid glow
+        ctx.globalAlpha = f.opacity * 0.3
+        ctx.fillStyle = f.color
         ctx.beginPath()
-        ctx.arc(f.x, f.y, f.size * 0.35, 0, Math.PI * 2)
+        ctx.arc(f.x, f.y, f.size * 2.5, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Bright core
+        ctx.globalAlpha = f.opacity * 0.9
+        ctx.fillStyle = '#ffffff'
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, f.size * 0.8, 0, Math.PI * 2)
         ctx.fill()
       }
       ctx.globalAlpha = 1
