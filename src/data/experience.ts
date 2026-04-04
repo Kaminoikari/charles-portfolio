@@ -41,16 +41,4 @@ export const experience: ExperienceItem[] = [
     description:
       'Built product strategies for desktop laser cutters and 3D printers sold worldwide. Boosted market share by 20% and user retention by 30% through website redesign and SEO. Led a team of 10, improving process efficiency by 22% and order fulfillment speed by 35%.',
   },
-  {
-    dateRange: '2010 — 2014',
-    title: 'B.A. International Trade',
-    organization: 'Chinese Culture University',
-    description: '',
-  },
-  {
-    dateRange: '2009 — 2010',
-    title: 'Computer Engineering (Attended)',
-    organization: 'UC Riverside',
-    description: '',
-  },
 ]

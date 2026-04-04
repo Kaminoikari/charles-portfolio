@@ -105,9 +105,11 @@ export default function ContactFooter() {
           charlestyc0527@gmail.com
         </a>
       </section>
-      <footer className="border-t border-border-hover py-12 text-center text-xs tracking-[1px] text-text-secondary">
-        © 2026 Te-Ying (Charles) Chen. Built with React + Canvas
-        <div className="mt-2 font-mono text-[10px] tracking-[1px] text-text-tertiary">
+      <footer className="border-t border-border-hover py-12 text-center">
+        <div className="text-xs tracking-[1px] text-text-secondary">
+          © 2026 Charles Chen. All rights reserved.
+        </div>
+        <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
           Rendered in <span ref={perfRef}>—</span>ms · Zero frameworks · Canvas 2D
         </div>
       </footer>
