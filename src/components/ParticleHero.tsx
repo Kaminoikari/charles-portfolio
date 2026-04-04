@@ -143,7 +143,16 @@ export default function ParticleHero() {
       if (!visibleRef.current) return
 
       time += 0.003
-      ctx.clearRect(0, 0, width, height)
+      if (easterEggRef.current) {
+        // Full clear during rainbow mode so colors pop
+        ctx.clearRect(0, 0, width, height)
+      } else {
+        // Trail effect — vapor/smoke persistence
+        ctx.globalAlpha = 0.12
+        ctx.fillStyle = '#0A0A0A'
+        ctx.fillRect(0, 0, width, height)
+        ctx.globalAlpha = 1
+      }
 
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
