@@ -291,6 +291,11 @@ export default function UniverseSection() {
         const drawAlpha = isHovered ? Math.min(pulse * 1.8, 1) : pulse
         const drawSize = (isHovered ? p.size * 1.5 : p.size) * Math.max(0.4, proj.scale)
 
+        // Opaque black background so lines don't show through
+        ctx.globalAlpha = 1
+        ctx.fillStyle = '#0A0A0A'
+        ctx.fillRect(proj.screenX - drawSize / 2, proj.screenY - drawSize / 2, drawSize, drawSize)
+        // Colored particle on top
         ctx.globalAlpha = drawAlpha
         ctx.fillStyle = `rgb(${p.colorR},${p.colorG},${p.colorB})`
         ctx.fillRect(proj.screenX - drawSize / 2, proj.screenY - drawSize / 2, drawSize, drawSize)
