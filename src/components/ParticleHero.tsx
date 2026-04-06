@@ -148,7 +148,9 @@ export default function ParticleHero() {
           const centerY = PHOTO_SAMPLE_SIZE / 2
           const radius = PHOTO_SAMPLE_SIZE / 2
           const distFromCenter = Math.sqrt((px - centerX) ** 2 + (py - centerY) ** 2)
-          if (distFromCenter > radius * 0.75) continue // skip outer 25% — removes circle + hair edge
+          if (distFromCenter > radius * 0.75) continue // skip outer 25%
+          // Skip top arc — hair/background boundary creates false edge
+          if (py < PHOTO_SAMPLE_SIZE * 0.18) continue
 
           // Edge detection
           const edge = Math.abs(b - getPixel(px - 1, py).b)
