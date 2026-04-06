@@ -143,6 +143,13 @@ export default function ParticleHero() {
           // Skip transparent pixels (outside circular crop)
           if (a < 128) continue
 
+          // Skip pixels near circular crop edge — prevents circle outline
+          const centerX = PHOTO_SAMPLE_SIZE / 2
+          const centerY = PHOTO_SAMPLE_SIZE / 2
+          const radius = PHOTO_SAMPLE_SIZE / 2
+          const distFromCenter = Math.sqrt((px - centerX) ** 2 + (py - centerY) ** 2)
+          if (distFromCenter > radius * 0.92) continue // skip outer 8% ring
+
           // Edge detection
           const edge = Math.abs(b - getPixel(px - 1, py).b)
             + Math.abs(b - getPixel(px + 1, py).b)
