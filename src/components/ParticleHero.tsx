@@ -148,7 +148,7 @@ export default function ParticleHero() {
           const centerY = PHOTO_SAMPLE_SIZE / 2
           const radius = PHOTO_SAMPLE_SIZE / 2
           const distFromCenter = Math.sqrt((px - centerX) ** 2 + (py - centerY) ** 2)
-          if (distFromCenter > radius * 0.92) continue // skip outer 8% ring
+          if (distFromCenter > radius * 0.85) continue // skip outer 15% ring
 
           // Edge detection
           const edge = Math.abs(b - getPixel(px - 1, py).b)
