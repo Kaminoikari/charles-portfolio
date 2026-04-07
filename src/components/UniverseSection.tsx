@@ -82,19 +82,19 @@ function generateParticles(lines: Line[]): Particle[] {
     const rho = line.rho
 
     const colorMap = {
-      cyan: { r: 170, g: 210, b: 240 },
-      white: { r: 200, g: 210, b: 225 },
-      gray: { r: 155, g: 165, b: 180 },
+      cyan: { r: 156, g: 184, b: 221 },
+      white: { r: 156, g: 184, b: 221 },
+      gray: { r: 156, g: 184, b: 221 },
     }
     const c = colorMap[skill.color]
 
     // Smaller, more uniform sizes like xAI
-    const size = 4 + Math.random() * 4
+    const size = 6.4 + Math.random() * 6.4
 
     particles.push({
       theta, phi, rho, size,
       colorR: c.r, colorG: c.g, colorB: c.b,
-      alpha: skill.color === 'cyan' ? 0.9 : skill.color === 'white' ? 0.8 : 0.5,
+      alpha: 1,
       phase: Math.random() * Math.PI * 2,
       isSkill: true,
       skillIndex: i,
@@ -104,13 +104,13 @@ function generateParticles(lines: Line[]): Particle[] {
   // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
-    const brightness = 160 + Math.random() * 80
+    const baseBrightness = 130 + Math.random() * 40
     particles.push({
       theta: line.theta,
       phi: line.phi,
       rho: line.rho,
-      size: 3 + Math.random() * 2,
-      colorR: brightness, colorG: brightness + 10, colorB: brightness + 20,
+      size: 6 + Math.random() * 4,
+      colorR: 156, colorG: 184, colorB: 221,
       alpha: 0.2 + Math.random() * 0.3,
       phase: Math.random() * Math.PI * 2,
       isSkill: false,
@@ -143,11 +143,11 @@ function rotateY(x: number, y: number, z: number, cosR: number, sinR: number) {
   }
 }
 
-function perspectiveProject(x: number, y: number, z: number, cx: number, cy: number) {
+function perspectiveProject(x: number, y: number, z: number, cx: number, cy: number, screenScale: number) {
   const scale = FOCAL_LENGTH / (FOCAL_LENGTH + z)
   return {
-    screenX: cx + x * scale,
-    screenY: cy + y * scale,
+    screenX: cx + x * scale * screenScale,
+    screenY: cy + y * scale * screenScale,
     scale,
     z,
   }
@@ -196,12 +196,10 @@ export default function UniverseSection() {
     window.addEventListener('scroll', onScroll, { passive: true })
 
     const resize = () => {
-      width = section.clientWidth
-      height = section.clientHeight
+      width = canvas.clientWidth
+      height = canvas.clientHeight
       canvas.width = width * window.devicePixelRatio
       canvas.height = height * window.devicePixelRatio
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
       ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
     }
 
@@ -234,6 +232,8 @@ export default function UniverseSection() {
       const cy = height / 2
       const cosR = Math.cos(rotation)
       const sinR = Math.sin(rotation)
+      // Scale sphere to fill square canvas — sphere radius 300 maps to 80% of canvas
+      const screenScale = (width * 0.8) / (MAX_RADIUS * 2)
 
       ctx.clearRect(0, 0, width, height)
 
@@ -244,7 +244,7 @@ export default function UniverseSection() {
         const line = LINES[i]
         const cart = sphericalToCartesian(line.rho, line.theta, line.phi)
         const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
-        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
+        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy, screenScale)
         const depthAlpha = Math.max(0.08, (zMax - rot.z) / zRange)
 
         const b = Math.round(line.brightness)
@@ -262,7 +262,7 @@ export default function UniverseSection() {
         const p = PARTICLES[i]
         const cart = sphericalToCartesian(p.rho, p.theta, p.phi)
         const rot = rotateY(cart.x, cart.y, cart.z, cosR, sinR)
-        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy)
+        const proj = perspectiveProject(rot.x, rot.y, rot.z, cx, cy, screenScale)
         const depthAlpha = Math.max(0.1, (zMax - rot.z) / zRange)
         particleOrder[i].z = rot.z
         particleOrder[i].idx = i
@@ -345,41 +345,37 @@ export default function UniverseSection() {
     <section
       id="skills"
       ref={sectionRef}
-      className="relative w-full overflow-hidden"
-      style={{ height: '80vh', background: '#0A0A0A' }}
+      className="relative flex w-full justify-center overflow-hidden pb-24"
+      style={{ background: '#0A0A0A' }}
     >
-      <canvas ref={canvasRef} className="absolute inset-0" role="presentation" aria-hidden="true" />
+      <div className="relative h-[600px] lg:h-[1000px] xl:h-[1200px]">
+        <div className="absolute left-1/2 top-6 size-[600px] -translate-x-1/2 lg:size-[1000px] xl:size-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
+          <canvas ref={canvasRef} role="presentation" aria-hidden="true" />
 
-      {/* Top gradient fade — smooth blend from About section */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
-      />
+          {/* Hover zones — inside canvas container so coordinates match */}
+          <div className="pointer-events-none absolute inset-0 z-30">
+            {skills.map((skill, i) => (
+              <div
+                key={skill.name}
+                ref={(el) => { hoverZoneRefs.current[i] = el }}
+                className="pointer-events-auto absolute left-0 top-0"
+                style={{ width: 48, height: 48 }}
+                onMouseEnter={() => {
+                  setHoveredIndex(i)
+                  speedRef.current = SLOW_MULTIPLIER
+                }}
+                onMouseLeave={() => {
+                  setHoveredIndex(null)
+                  speedRef.current = 1
+                }}
+              />
+            ))}
+          </div>
 
-      {/* Hover zones */}
-      <div className="pointer-events-none absolute inset-0 z-30">
-        {skills.map((skill, i) => (
+          {/* Tooltip */}
           <div
-            key={skill.name}
-            ref={(el) => { hoverZoneRefs.current[i] = el }}
-            className="pointer-events-auto absolute left-0 top-0"
-            style={{ width: 48, height: 48 }}
-            onMouseEnter={() => {
-              setHoveredIndex(i)
-              speedRef.current = SLOW_MULTIPLIER
-            }}
-            onMouseLeave={() => {
-              setHoveredIndex(null)
-              speedRef.current = 1
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Tooltip */}
-      <div
-        ref={tooltipRef}
-        className="pointer-events-none absolute left-0 top-0 z-50"
+            ref={tooltipRef}
+            className="pointer-events-none absolute left-0 top-0 z-50"
         style={{
           opacity: hoveredIndex !== null ? 1 : 0,
           transition: 'opacity 150ms',
@@ -397,6 +393,14 @@ export default function UniverseSection() {
           {hoveredIndex !== null ? skills[hoveredIndex].name : ''}
         </span>
       </div>
+        </div>
+      </div>
+
+      {/* Top gradient fade — smooth blend from About section */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
+        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
+      />
 
       {/* Text overlay */}
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">

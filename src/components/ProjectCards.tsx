@@ -95,7 +95,7 @@ function ProjectCard({ project }: { project: Project }) {
 
 export default function ProjectCards() {
   return (
-    <section id="projects" className="mx-auto w-full max-w-[1400px] px-12 py-20">
+    <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       {/* Section heading */}
       <h2
         className="text-center text-white"

@@ -39,7 +39,7 @@ export default function BlogEntries() {
   }, [])
 
   return (
-    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1200px] px-12 py-40">
+    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1200px] px-6 md:px-12 py-16 sm:py-32">
       {/* Header row — xAI style */}
       <div className="mb-10 flex items-baseline justify-between">
         <div>

@@ -21,10 +21,10 @@ export default function Nav() {
     if (!el) return
     if ('startViewTransition' in document) {
       (document as any).startViewTransition(() => {
-        el.scrollIntoView({ behavior: 'smooth' })
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       })
     } else {
-      el.scrollIntoView({ behavior: 'smooth' })
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }
 
