@@ -223,7 +223,7 @@ export default function ParticleHero() {
     let tick = 0
 
     // Photo display area (centered, 300x300)
-    const PHOTO_DISPLAY_SIZE = Math.min(400, height * 0.55) // larger for face detail
+    const PHOTO_DISPLAY_SIZE = Math.min(width * 0.45, height * 0.6, 600) // scales with viewport
 
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
