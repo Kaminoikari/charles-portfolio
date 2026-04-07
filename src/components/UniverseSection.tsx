@@ -184,6 +184,7 @@ export default function UniverseSection() {
 
     // CSS vars not needed in Universe draw loop (no bg fills or cyan particles)
 
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let animId: number
     let width = 0
     let height = 0
@@ -224,7 +225,7 @@ export default function UniverseSection() {
       animId = requestAnimationFrame(animate)
       if (!visible) return
 
-      rotation += ROTATION_SPEED * (speedRef.current ?? 1)
+      if (!prefersReduced) rotation += ROTATION_SPEED * (speedRef.current ?? 1)
       frameCount++
       const time = frameCount * 0.016
 
@@ -286,7 +287,7 @@ export default function UniverseSection() {
         const isHovered = p.isSkill && hoveredRef.current === p.skillIndex
         let flicker: number
         if (p.isSkill) {
-          flicker = 0.7 + 0.3 * Math.sin(time * 0.6 + p.phase * 2)
+          flicker = 1 // no flicker for skill particles
         } else {
           const raw = Math.sin(time * (2 + Math.sin(p.phase) * 1.5) + p.phase * 3)
           flicker = 0.4 + Math.max(0, raw) * 0.6
@@ -360,11 +361,22 @@ export default function UniverseSection() {
                 ref={(el) => { hoverZoneRefs.current[i] = el }}
                 className="pointer-events-auto absolute left-0 top-0"
                 style={{ width: 48, height: 48 }}
+                role="button"
+                tabIndex={0}
+                aria-label={skill.name}
                 onMouseEnter={() => {
                   setHoveredIndex(i)
                   speedRef.current = SLOW_MULTIPLIER
                 }}
                 onMouseLeave={() => {
+                  setHoveredIndex(null)
+                  speedRef.current = 1
+                }}
+                onFocus={() => {
+                  setHoveredIndex(i)
+                  speedRef.current = SLOW_MULTIPLIER
+                }}
+                onBlur={() => {
                   setHoveredIndex(null)
                   speedRef.current = 1
                 }}

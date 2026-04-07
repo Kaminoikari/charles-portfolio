@@ -76,7 +76,7 @@ function ProjectCard({ project }: { project: Project }) {
       {/* CTA button — centered like xAI */}
       <div className="flex justify-center">
         <div
-          className="inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
           style={{
             fontFamily: CTA_FONT_FAMILY,
             fontSize: 12,

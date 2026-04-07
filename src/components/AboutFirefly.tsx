@@ -87,6 +87,7 @@ const HUB_COUNT = 10 // bright hub nodes
       fireflies.push(createFirefly(width, height, false))
     }
 
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     // IntersectionObserver — pause when off-screen
     let visible = false
     const observer = new IntersectionObserver(
@@ -101,46 +102,76 @@ const HUB_COUNT = 10 // bright hub nodes
 
       ctx.clearRect(0, 0, width, height)
 
-      // Update positions
-      for (const f of fireflies) {
-        f.phase += f.speed
-        f.opacity = f.maxOpacity * (0.3 + 0.7 * Math.abs(Math.sin(f.phase)))
+      // Update positions (skip if reduced motion)
+      if (!prefersReduced) {
+        for (const f of fireflies) {
+          f.phase += f.speed
+          f.opacity = f.maxOpacity * (0.3 + 0.7 * Math.abs(Math.sin(f.phase)))
 
-        f.x += f.vx
-        f.y += f.vy
+          f.x += f.vx
+          f.y += f.vy
 
-        if (f.x < -10) f.x = width + 10
-        if (f.x > width + 10) f.x = -10
-        if (f.y < -10) f.y = height + 10
-        if (f.y > height + 10) f.y = -10
+          if (f.x < -10) f.x = width + 10
+          if (f.x > width + 10) f.x = -10
+          if (f.y < -10) f.y = height + 10
+          if (f.y > height + 10) f.y = -10
+        }
       }
 
-      // Draw quantum neural network connections — dense, blue-purple
+      // Draw quantum neural network connections — spatial grid for O(n) performance
       const CONNECTION_DIST = 250
       const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST
       const time = Date.now() * 0.001
+
+      // Build spatial grid
+      const grid = new Map<string, number[]>()
       for (let i = 0; i < fireflies.length; i++) {
-        for (let j = i + 1; j < fireflies.length; j++) {
-          const fi = fireflies[i]
-          const fj = fireflies[j]
-          const dx = fi.x - fj.x
-          const dy = fi.y - fj.y
-          const distSq = dx * dx + dy * dy
-          if (distSq > CONNECTION_DIST_SQ) continue
+        const col = Math.floor(fireflies[i].x / CONNECTION_DIST)
+        const row = Math.floor(fireflies[i].y / CONNECTION_DIST)
+        const key = `${col},${row}`
+        const cell = grid.get(key)
+        if (cell) cell.push(i); else grid.set(key, [i])
+      }
 
-          // Approximate proximity without sqrt — distSq/maxDistSq gives quadratic falloff
-          const proximity = 1 - distSq / CONNECTION_DIST_SQ
-          const alpha = proximity * proximity * 0.3
+      // Check only adjacent cells
+      const checked = new Set<string>()
+      for (const [key, cell] of grid) {
+        const [col, row] = key.split(',').map(Number)
+        for (let dc = -1; dc <= 1; dc++) {
+          for (let dr = -1; dr <= 1; dr++) {
+            const neighborKey = `${col + dc},${row + dr}`
+            const neighbor = grid.get(neighborKey)
+            if (!neighbor) continue
+            const pairKey = key < neighborKey ? `${key}|${neighborKey}` : `${neighborKey}|${key}`
+            if (key !== neighborKey && checked.has(pairKey)) continue
+            checked.add(pairKey)
 
-          // Single blue-purple line with subtle pulse
-          const pulse = 0.7 + 0.3 * Math.sin(time * 2 + i * 0.5 + j * 0.3)
-          ctx.globalAlpha = alpha * pulse
-          ctx.strokeStyle = 'rgba(100,150,220,0.7)'
-          ctx.lineWidth = proximity > 0.5 ? 0.8 : 0.35
-          ctx.beginPath()
-          ctx.moveTo(fi.x, fi.y)
-          ctx.lineTo(fj.x, fj.y)
-          ctx.stroke()
+            for (const i of cell) {
+              const startJ = key === neighborKey ? cell.indexOf(i) + 1 : 0
+              const list = key === neighborKey ? cell : neighbor
+              for (let jIdx = startJ; jIdx < list.length; jIdx++) {
+                const j = list[jIdx]
+                if (j <= i && key !== neighborKey) continue
+                const fi = fireflies[i]
+                const fj = fireflies[j]
+                const dx = fi.x - fj.x
+                const dy = fi.y - fj.y
+                const distSq = dx * dx + dy * dy
+                if (distSq > CONNECTION_DIST_SQ) continue
+
+                const proximity = 1 - distSq / CONNECTION_DIST_SQ
+                const alpha = proximity * proximity * 0.3
+                const pulse = 0.7 + 0.3 * Math.sin(time * 2 + i * 0.5 + j * 0.3)
+                ctx.globalAlpha = alpha * pulse
+                ctx.strokeStyle = 'rgba(100,150,220,0.7)'
+                ctx.lineWidth = proximity > 0.5 ? 0.8 : 0.35
+                ctx.beginPath()
+                ctx.moveTo(fi.x, fi.y)
+                ctx.lineTo(fj.x, fj.y)
+                ctx.stroke()
+              }
+            }
+          }
         }
       }
 
@@ -189,7 +220,7 @@ const HUB_COUNT = 10 // bright hub nodes
       ref={sectionRef}
       className="relative flex min-h-[90vh] items-center overflow-hidden"
     >
-      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" />
+      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
       {/* Bottom gradient fade — smooth blend into Universe section */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"

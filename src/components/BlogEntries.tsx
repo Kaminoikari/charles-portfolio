@@ -76,7 +76,7 @@ export default function BlogEntries() {
 
               {/* CTA */}
               <div
-                className="mt-5 inline-flex items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:bg-white/[0.06]"
+                className="mt-5 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:bg-white/[0.06]"
                 style={{
                   fontFamily: CTA_FONT_FAMILY,
                   fontSize: 12,

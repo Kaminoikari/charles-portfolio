@@ -288,6 +288,7 @@ export default function ParticleHero() {
     }
     section.addEventListener('click', onClick)
 
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const outerRadius = INNER_RADIUS + THICKNESS
     const halfThick = THICKNESS / 2
     let tick = 0
@@ -299,7 +300,7 @@ export default function ParticleHero() {
       animIdRef.current = requestAnimationFrame(animate)
       if (!visibleRef.current) return
 
-      tick += ANIMATION_SPEED
+      if (!prefersReduced) tick += ANIMATION_SPEED
       ctx.clearRect(0, 0, width, height)
 
       const ms = mouseSmoothRef.current

@@ -82,7 +82,7 @@ export default function ContactFooter() {
           'linear-gradient(180deg, var(--color-bg-primary) 0%, #1A0E08 30%, #2D1810 55%, #6B3021 80%, #C4501A 95%, var(--color-accent-mars) 100%)',
       }}
     >
-      <section className="mx-auto max-w-[1200px] px-12 pt-40 pb-20 text-center">
+      <section className="mx-auto max-w-[1200px] px-6 md:px-12 pt-40 pb-20 text-center">
         <h2 className="reveal mb-8 text-[40px] font-semibold opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
           Let's Connect
         </h2>
