@@ -19,12 +19,13 @@ export default function Nav() {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
     if (!el) return
+    const navHeight = 72
+    const y = el.getBoundingClientRect().top + window.scrollY - navHeight
+    const doScroll = () => window.scrollTo({ top: y, behavior: 'smooth' })
     if ('startViewTransition' in document) {
-      (document as any).startViewTransition(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
+      (document as any).startViewTransition(doScroll)
     } else {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      doScroll()
     }
   }
 

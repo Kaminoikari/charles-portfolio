@@ -97,11 +97,8 @@ export default function ProjectCards() {
   return (
     <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       {/* Section heading */}
-      <h2
-        className="text-center text-white"
-        style={{ fontSize: 48, fontWeight: 600, marginBottom: 0 }}
-      >
-        Side Projects
+      <h2 className="mb-12 text-xs uppercase tracking-[3px] text-text-tertiary">
+        SIDE PROJECTS
       </h2>
 
       {/* Card grid */}
