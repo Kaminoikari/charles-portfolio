@@ -321,15 +321,16 @@ export default function UniverseSection() {
           tooltipRef.current.style.transform = `translate(${positions[idx].x + 18}px, ${positions[idx].y}px) translateY(-50%)`
         }
 
-        // Scroll-driven text spread — uses cached rect (updated on scroll, not per frame)
-        const scrollProgress = Math.max(0, Math.min(1, 1 - cachedRect.bottom / (cachedRect.height + height)))
-        const spread = scrollProgress * 100 // max 100px extra offset
-        if (textLeftRef.current) {
-          textLeftRef.current.style.transform = `translateX(${-spread}px)`
-        }
-        if (textRightRef.current) {
-          textRightRef.current.style.transform = `translateX(${spread}px)`
-        }
+      }
+
+      // Scroll-driven text spread — every frame for smooth motion
+      const scrollProgress = Math.max(0, Math.min(1, 1 - cachedRect.bottom / (cachedRect.height + height)))
+      const spread = scrollProgress * 100 // max 100px extra offset
+      if (textLeftRef.current) {
+        textLeftRef.current.style.transform = `translateX(${-spread}px)`
+      }
+      if (textRightRef.current) {
+        textRightRef.current.style.transform = `translateX(${spread}px)`
       }
     }
 
