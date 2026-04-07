@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // --- Ring particle config ---
 const INNER_RADIUS = 120
@@ -8,7 +8,7 @@ const NUM_ROWS = 15
 const PARTICLE_SIZE = 1.5
 const MIN_ALPHA = 0.05
 const MAX_ALPHA = 1.0
-const PARTICLE_COLOR = 'rgba(180, 190, 210, 1)'
+const PARTICLE_COLOR = 'rgba(235, 240, 250, 1)'
 const ANIMATION_SPEED = 0.003
 const MOUSE_EASE = 0.015
 const W1_FREQ = 4
@@ -35,6 +35,56 @@ interface ParticleData {
   hasPhotoTarget: boolean
 }
 
+
+const HINT_LINES = ['> click the logo 5 times', '> or try ⬆ ⬆ ⬇ ⬇ ⬅ ⮕ ⬅ ⮕']
+const TYPING_SPEED_MS = 45
+const LINE_PAUSE_MS = 300
+
+function EasterEggHint() {
+  const [text, setText] = useState('')
+  const [showCursor, setShowCursor] = useState(true)
+
+  useEffect(() => {
+    let lineIdx = 0
+    let charIdx = 0
+    let current = ''
+
+    const tick = () => {
+      if (lineIdx >= HINT_LINES.length) {
+        setShowCursor(false)
+        return
+      }
+
+      const line = HINT_LINES[lineIdx]
+      if (charIdx < line.length) {
+        current += line[charIdx]
+        charIdx++
+        setText(current)
+        setTimeout(tick, TYPING_SPEED_MS)
+      } else {
+        lineIdx++
+        if (lineIdx < HINT_LINES.length) {
+          current += '\n'
+          charIdx = 0
+          setTimeout(tick, LINE_PAUSE_MS)
+        } else {
+          setShowCursor(false)
+        }
+      }
+    }
+
+    tick()
+  }, [])
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center"
+      style={{ fontFamily: 'monospace', fontSize: '14px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'pre', lineHeight: 1.8 }}
+    >
+      <span>{text}{showCursor && <span style={{ animation: 'cursor-blink 1s step-end infinite' }}>_</span>}</span>
+    </div>
+  )
+}
 
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -305,7 +355,7 @@ export default function ParticleHero() {
         let visibility = Math.min(distFromInner, distFromOuter) / halfThick
         if (visibility < 0) visibility = 0
         if (visibility > 1) visibility = 1
-        visibility = visibility * visibility
+        visibility = 0.45 + visibility * 0.55 // minimum 45% visibility at edges
         alpha *= visibility
 
         // Photo position
@@ -427,6 +477,8 @@ export default function ParticleHero() {
           <span className="text-accent-cyan">6M+</span> Users · <span className="text-accent-cyan">85%</span> Revenue Impact · <span className="text-accent-cyan">5x</span> Faster with AI
         </div>
       </div>
+
+      <EasterEggHint />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
         <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL ↓</span>
