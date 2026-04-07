@@ -10,7 +10,7 @@ const FOCAL_LENGTH = 900 // Higher = less perspective distortion, rounder sphere
 const SLOW_MULTIPLIER = 0.3
 
 // Max radius in world units (will be scaled to screen)
-const MAX_RADIUS = 300
+const MAX_RADIUS = 450
 
 interface Line {
   theta: number // polar angle (0~π, angle from Z-axis)
@@ -75,18 +75,17 @@ function generateParticles(lines: Line[]): Particle[] {
   const decoLines = shuffledLines.slice(skills.length)
 
   // Skill particles — attached to line endpoints
-  skills.forEach((skill, i) => {
+  skills.forEach((_skill, i) => {
     const line = skillLines[i]
     const phi = line.phi
     const theta = line.theta
     const rho = line.rho
 
-    const colorMap = {
-      cyan: { r: 156, g: 184, b: 221 },
-      white: { r: 156, g: 184, b: 221 },
-      gray: { r: 156, g: 184, b: 221 },
-    }
-    const c = colorMap[skill.color]
+    // ~20% of skill particles get bright blue accent (like xAI highlights)
+    const isBrightAccent = Math.random() < 0.2
+    const c = isBrightAccent
+      ? { r: 120, g: 180, b: 255 }  // bright blue accent
+      : { r: 156, g: 184, b: 221 }  // default muted blue
 
     // Smaller, more uniform sizes like xAI
     const size = 6.4 + Math.random() * 6.4
@@ -104,13 +103,16 @@ function generateParticles(lines: Line[]): Particle[] {
   // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
+    const isBright = Math.random() < 0.1 // 10% bright accent
     particles.push({
       theta: line.theta,
       phi: line.phi,
       rho: line.rho,
       size: 6 + Math.random() * 4,
-      colorR: 156, colorG: 184, colorB: 221,
-      alpha: 0.2 + Math.random() * 0.3,
+      colorR: isBright ? 120 : 156,
+      colorG: isBright ? 180 : 184,
+      colorB: isBright ? 255 : 221,
+      alpha: isBright ? 0.8 : 0.2 + Math.random() * 0.3,
       phase: Math.random() * Math.PI * 2,
       isSkill: false,
       skillIndex: -1,
@@ -417,15 +419,11 @@ export default function UniverseSection() {
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
         <span
           ref={textLeftRef}
-          className="pointer-events-auto absolute right-[calc(50%-40px)] top-[46%] text-[32px] md:right-[calc(50%-60px)] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute right-[calc(50%+20px)] top-[43%] text-4xl leading-[2.25rem] tracking-tight md:right-[calc(50%+80px)] md:top-[37%] md:text-[5rem] md:leading-[5rem] lg:right-[calc(50%+120px)]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
-            fontWeight: 300,
-            lineHeight: 1,
-            letterSpacing: '3px',
-            textAlign: 'right',
-            background: 'linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(220,225,235,0.75) 100%)',
+            background: 'linear-gradient(to left, rgba(255,255,255,0.5), rgba(255,255,255,1))',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
@@ -435,14 +433,11 @@ export default function UniverseSection() {
         </span>
         <span
           ref={textRightRef}
-          className="pointer-events-auto absolute left-[calc(50%-30px)] top-[51%] text-[32px] md:left-[calc(50%-40px)] md:text-[64px] lg:text-[80px]"
+          className="pointer-events-auto absolute left-[calc(50%+20px)] top-[47%] text-4xl leading-[2.25rem] tracking-tight md:left-[calc(50%+80px)] md:top-[53%] md:text-[5rem] md:leading-[5rem] lg:left-[calc(50%+120px)]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
-            fontWeight: 300,
-            lineHeight: 1,
-            letterSpacing: '3px',
-            background: 'linear-gradient(90deg, rgba(220,225,235,0.75) 0%, rgba(255,255,255,1) 100%)',
+            background: 'linear-gradient(to right, rgba(255,255,255,0.5), rgba(255,255,255,1))',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
