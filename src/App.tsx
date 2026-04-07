@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Analytics } from '@vercel/analytics/react'
 import Nav from './components/Nav'
 import ScrollProgress from './components/ScrollProgress'
 
@@ -40,6 +41,7 @@ export default function App() {
         <BlogEntries />
         <ContactFooter />
       </Suspense>
+      <Analytics />
     </>
   )
 }
