@@ -104,7 +104,6 @@ function generateParticles(lines: Line[]): Particle[] {
   // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
-    const baseBrightness = 130 + Math.random() * 40
     particles.push({
       theta: line.theta,
       phi: line.phi,
