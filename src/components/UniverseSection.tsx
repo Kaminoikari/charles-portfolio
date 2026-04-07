@@ -419,7 +419,7 @@ export default function UniverseSection() {
       <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
         <span
           ref={textLeftRef}
-          className="pointer-events-auto absolute right-[calc(50%-10%)] top-[43%] text-4xl leading-[2.25rem] tracking-tight md:right-[calc(50%+80px)] md:top-[37%] md:text-[5rem] md:leading-[5rem] lg:right-[calc(50%+120px)]"
+          className="pointer-events-auto absolute right-[calc(50%-10%)] top-[38%] text-4xl leading-[2.25rem] tracking-tight md:right-[calc(50%+80px)] md:top-[37%] md:text-[5rem] md:leading-[5rem] lg:right-[calc(50%+120px)]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
@@ -433,7 +433,7 @@ export default function UniverseSection() {
         </span>
         <span
           ref={textRightRef}
-          className="pointer-events-auto absolute left-[calc(50%-10%)] top-[47%] text-4xl leading-[2.25rem] tracking-tight md:left-[calc(50%+80px)] md:top-[53%] md:text-[5rem] md:leading-[5rem] lg:left-[calc(50%+120px)]"
+          className="pointer-events-auto absolute left-[calc(50%-10%)] top-[52%] text-4xl leading-[2.25rem] tracking-tight md:left-[calc(50%+80px)] md:top-[53%] md:text-[5rem] md:leading-[5rem] lg:left-[calc(50%+120px)]"
           onMouseEnter={handleTextEnter}
           onMouseLeave={handleTextLeave}
           style={{
