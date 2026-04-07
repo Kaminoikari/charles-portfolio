@@ -5,7 +5,7 @@ import { skills } from '../data/skills'
 
 const LINE_COUNT = 120 // every line gets a particle
 // Every line gets an endpoint particle — no separate count needed
-const ROTATION_SPEED = -0.002 // Y-axis rotation speed (negative = reverse direction)
+const ROTATION_SPEED = -0.001 // Y-axis rotation speed (negative = reverse direction)
 const FOCAL_LENGTH = 900 // Higher = less perspective distortion, rounder sphere
 const SLOW_MULTIPLIER = 0.3
 
@@ -39,28 +39,31 @@ interface Particle {
 
 function generateLines(): Line[] {
   const lines: Line[] = []
-  // Fibonacci sphere — mathematically optimal uniform distribution on sphere
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+
   for (let i = 0; i < LINE_COUNT; i++) {
-    const theta = Math.acos(1 - (2 * (i + 0.5)) / LINE_COUNT)
-    const phi = goldenAngle * i
+    // Organic random direction — uniform on sphere via random sampling
+    // (not Fibonacci which creates visible geometric patterns)
+    const theta = Math.acos(1 - 2 * Math.random()) // uniform polar
+    const phi = Math.random() * Math.PI * 2 // uniform azimuthal
 
-    // ρ: wide range — many short lines near center, fewer long lines at edges
-    const lenRand = Math.random()
-    let rho: number
-    if (lenRand < 0.3) rho = MAX_RADIUS * (0.1 + Math.random() * 0.15)  // very short (center cluster)
-    else if (lenRand < 0.55) rho = MAX_RADIUS * (0.25 + Math.random() * 0.2) // short-medium
-    else if (lenRand < 0.8) rho = MAX_RADIUS * (0.45 + Math.random() * 0.25) // medium-long
-    else rho = MAX_RADIUS * (0.7 + Math.random() * 0.3) // long (edges)
+    // Add organic angular jitter — slight perturbation for natural feel
+    const jitterTheta = theta + (Math.random() - 0.5) * 0.05
+    const jitterPhi = phi + (Math.random() - 0.5) * 0.05
 
-    // Depth illusion: shorter lines are dimmer (farther away), longer lines brighter (closer)
+    // Organic length distribution — smooth exponential falloff
+    // Most lines cluster around medium length, with organic tails
+    const baseLen = Math.random()
+    const organicLen = Math.pow(baseLen, 0.6) // bias toward longer, smooth falloff
+    const jitter = 1 + (Math.random() - 0.5) * 0.2 // ±10% organic variation
+    const rho = MAX_RADIUS * (0.08 + organicLen * 0.92) * jitter
+
     const depthBrightness = 90 + (rho / MAX_RADIUS) * 60
 
     lines.push({
-      theta, phi, rho,
+      theta: jitterTheta, phi: jitterPhi, rho,
       brightness: depthBrightness,
       alpha: 0.25 + (rho / MAX_RADIUS) * 0.35,
-      width: 0.8, // slightly thicker
+      width: 0.8,
     })
   }
   return lines
@@ -169,6 +172,8 @@ export default function UniverseSection() {
   const tooltipRef = useRef<HTMLDivElement>(null)
   const textLeftRef = useRef<HTMLSpanElement>(null)
   const textRightRef = useRef<HTMLSpanElement>(null)
+  const autoLabelRef = useRef<HTMLDivElement>(null)
+  const canvasContainerRef = useRef<HTMLDivElement>(null)
 
   hoveredRef.current = hoveredIndex
 
@@ -192,6 +197,11 @@ export default function UniverseSection() {
     let rotation = 0
     let visible = false
     let frameCount = 0
+    let autoLabelIndex = Math.floor(Math.random() * skills.length)
+    let autoLabelTimer = 0
+    let autoLabelStarted = false
+    const AUTO_LABEL_INTERVAL = 300 // frames (~5 seconds at 60fps)
+    const AUTO_LABEL_FADE = 30 // frames for fade transition
     let cachedRect = section.getBoundingClientRect()
 
     const onScroll = () => { cachedRect = section.getBoundingClientRect() }
@@ -318,9 +328,46 @@ export default function UniverseSection() {
         }
         if (tooltipRef.current && hoveredRef.current !== null) {
           const idx = hoveredRef.current
-          tooltipRef.current.style.transform = `translate(${positions[idx].x + 18}px, ${positions[idx].y}px) translateY(-50%)`
+          const cc = canvasContainerRef.current
+          const sr = section.getBoundingClientRect()
+          const cr = cc ? cc.getBoundingClientRect() : sr
+          const ox = cr.left - sr.left
+          const oy = cr.top - sr.top
+          tooltipRef.current.style.transform = `translate(${positions[idx].x + ox}px, ${positions[idx].y + oy}px) translate(-50%, calc(-100% - 12px))`
         }
 
+      }
+
+      // Auto-cycling skill label — positioned at random skill particle (section-level coords)
+      if (hoveredRef.current === null && autoLabelRef.current) {
+        if (!autoLabelStarted && visible) {
+          autoLabelStarted = true
+          autoLabelTimer = 0
+          autoLabelRef.current.textContent = skills[autoLabelIndex].name
+        }
+        autoLabelTimer++
+        if (autoLabelTimer >= AUTO_LABEL_INTERVAL) {
+          autoLabelTimer = 0
+          let next = Math.floor(Math.random() * skills.length)
+          while (next === autoLabelIndex) next = Math.floor(Math.random() * skills.length)
+          autoLabelIndex = next
+          autoLabelRef.current.textContent = skills[autoLabelIndex].name
+        }
+        const t = autoLabelTimer
+        let opacity: number
+        if (t < AUTO_LABEL_FADE) opacity = t / AUTO_LABEL_FADE
+        else if (t > AUTO_LABEL_INTERVAL - AUTO_LABEL_FADE) opacity = (AUTO_LABEL_INTERVAL - t) / AUTO_LABEL_FADE
+        else opacity = 1
+        autoLabelRef.current.style.opacity = String(opacity)
+        const pos = positions[autoLabelIndex]
+        const cc = canvasContainerRef.current
+        const sr = section.getBoundingClientRect()
+        const cr = cc ? cc.getBoundingClientRect() : sr
+        const ox = cr.left - sr.left
+        const oy = cr.top - sr.top
+        autoLabelRef.current.style.transform = `translate(${pos.x + ox}px, ${pos.y + oy}px) translate(-50%, calc(-100% - 12px))`
+      } else if (autoLabelRef.current) {
+        autoLabelRef.current.style.opacity = '0'
       }
 
       // Scroll-driven text spread — every frame for smooth motion
@@ -352,7 +399,7 @@ export default function UniverseSection() {
       style={{ background: '#0A0A0A' }}
     >
       <div className="relative h-[550px] lg:h-[800px] xl:h-[1000px]">
-        <div className="absolute left-1/2 top-0 h-[550px] w-[600px] -translate-x-1/2 lg:h-[800px] lg:w-[1000px] xl:h-[1000px] xl:w-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
+        <div ref={canvasContainerRef} className="absolute left-1/2 top-0 h-[550px] w-[600px] -translate-x-1/2 lg:h-[800px] lg:w-[1000px] xl:h-[1000px] xl:w-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
           <canvas ref={canvasRef} role="presentation" aria-hidden="true" />
 
           {/* Hover zones — inside canvas container so coordinates match */}
@@ -386,10 +433,19 @@ export default function UniverseSection() {
             ))}
           </div>
 
-          {/* Tooltip */}
-          <div
-            ref={tooltipRef}
-            className="pointer-events-none absolute left-0 top-0 z-50"
+        </div>
+      </div>
+
+      {/* Top gradient fade — smooth blend from About section */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
+        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
+      />
+
+      {/* Tooltip — section level so gradient can't cover it */}
+      <div
+        ref={tooltipRef}
+        className="pointer-events-none absolute left-0 top-0 z-50"
         style={{
           opacity: hoveredIndex !== null ? 1 : 0,
           transition: 'opacity 150ms',
@@ -401,19 +457,28 @@ export default function UniverseSection() {
             fontSize: '11px',
             fontWeight: 500,
             letterSpacing: '1.5px',
-            color: 'rgba(180, 195, 215, 0.8)',
+            textTransform: 'uppercase' as const,
+            color: '#9cb8dd', backgroundColor: 'rgba(10, 10, 10, 0.85)', padding: '2px 6px',
           }}
         >
           {hoveredIndex !== null ? skills[hoveredIndex].name : ''}
         </span>
       </div>
-        </div>
-      </div>
 
-      {/* Top gradient fade — smooth blend from About section */}
+      {/* Auto-cycling skill label — section level */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
+        ref={autoLabelRef}
+        className="pointer-events-none absolute left-0 top-0 z-50"
+        style={{
+          opacity: 0,
+          transition: 'none',
+          fontFamily: "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace",
+          fontSize: '11px',
+          fontWeight: 500,
+          letterSpacing: '1.5px',
+          textTransform: 'uppercase' as const,
+          color: '#9cb8dd', backgroundColor: 'rgba(10, 10, 10, 0.85)', padding: '2px 6px',
+        }}
       />
 
       {/* Text overlay */}
