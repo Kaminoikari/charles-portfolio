@@ -81,7 +81,7 @@ function EasterEggHint() {
       className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center"
       style={{ fontFamily: 'monospace', fontSize: '14px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'pre', lineHeight: 1.8 }}
     >
-      <span>{text}{showCursor && <span style={{ animation: 'cursor-blink 1s step-end infinite' }}>_</span>}</span>
+      <span dangerouslySetInnerHTML={{ __html: text.replace(/[↑↓←→]/g, m => `<span style="font-size:1.4em;line-height:1">${m}</span>`) }} />{showCursor && <span style={{ animation: 'cursor-blink 1s step-end infinite' }}>_</span>}
     </div>
   )
 }
