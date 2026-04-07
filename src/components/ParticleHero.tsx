@@ -36,7 +36,7 @@ interface ParticleData {
 }
 
 
-const HINT_LINES = ['> click the logo 5 times', '> or try ⬆ ⬆ ⬇ ⬇ ⬅ ⮕ ⬅ ⮕']
+const HINT_LINES = ['> click the logo 5 times', '> or try ⬆\uFE0E ⬆\uFE0E ⬇\uFE0E ⬇\uFE0E ⬅\uFE0E ➡\uFE0E ⬅\uFE0E ➡\uFE0E']
 const TYPING_SPEED_MS = 45
 const LINE_PAUSE_MS = 300
 
