@@ -165,6 +165,26 @@ export default function ParticleHero() {
         }
       }
 
+      // Remap coordinates — uniform scale to preserve aspect ratio
+      if (pool.length > 0) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        for (const p of pool) {
+          if (p.x < minX) minX = p.x
+          if (p.x > maxX) maxX = p.x
+          if (p.y < minY) minY = p.y
+          if (p.y > maxY) maxY = p.y
+        }
+        const rangeX = maxX - minX || 1
+        const rangeY = maxY - minY || 1
+        const maxRange = Math.max(rangeX, rangeY)
+        const midX = (minX + maxX) / 2
+        const midY = (minY + maxY) / 2
+        for (const p of pool) {
+          p.x = 0.5 + (p.x - midX) / maxRange
+          p.y = 0.5 + (p.y - midY) / maxRange
+        }
+      }
+
       // Sort by weight (edges first) and distribute evenly across particles
       pool.sort((a, b) => b.weight - a.weight)
 
@@ -223,7 +243,7 @@ export default function ParticleHero() {
     let tick = 0
 
     // Photo display area (centered, 300x300)
-    const PHOTO_DISPLAY_SIZE = Math.min(width * 0.45, height * 0.6, 600) // scales with viewport
+    const PHOTO_DISPLAY_SIZE = Math.min(width * 0.7, height * 0.75, 900) // scales with viewport
 
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
@@ -257,7 +277,7 @@ export default function ParticleHero() {
 
       // Photo target center
       const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
-      const photoCY = height / 2 - PHOTO_DISPLAY_SIZE / 2
+      const photoCY = height * 0.50 - PHOTO_DISPLAY_SIZE / 2
 
       ctx.fillStyle = PARTICLE_COLOR
 
