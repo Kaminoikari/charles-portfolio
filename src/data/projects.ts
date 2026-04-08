@@ -26,11 +26,12 @@ export const projects: Project[] = [
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
   },
   {
-    id: 'project-three',
-    title: 'Project Three',
-    description: 'Experimental side project showcasing technical skills and creative problem-solving.',
+    id: 'product-playbook',
+    title: 'Product Playbook',
+    description:
+      'AI-powered product planning system with 22 frameworks, 6 execution modes, and automated dev handoff — from concept to spec in minutes.',
     ctaText: 'EXPLORE',
-    ctaUrl: '#',
-    tags: ['Python', 'AI/LLM'],
+    ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
+    tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
   },
 ]

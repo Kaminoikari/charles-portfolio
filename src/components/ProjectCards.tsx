@@ -345,6 +345,12 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     tradeDayPhase: 'trading' | 'closing' | 'reset'
     surgeTimer: number
     tradeFadeAlpha: number
+    // Playbook state
+    pbProgress: number
+    pbPhase: 'building' | 'pause' | 'fadeOut'
+    pbPauseTimer: number
+    pbFadeTimer: number
+    pbTime: number
   }>({
     pathT: 0,
     ripples: [],
@@ -361,6 +367,11 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     tradeDayPhase: 'trading',
     surgeTimer: SURGE_INTERVAL,
     tradeFadeAlpha: 1,
+    pbProgress: 0,
+    pbPhase: 'building',
+    pbPauseTimer: 0,
+    pbFadeTimer: 0,
+    pbTime: 0,
   })
 
   const prefersReduced = useRef(false)
@@ -395,6 +406,8 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
           }
         })
         drawTrendLine(ctx, s.candles, CANDLE_START_X, CANDLE_SPACING, 0.5)
+      } else if (id === 'product-playbook') {
+        drawPlaybookStatic(ctx)
       }
     }
 
@@ -689,6 +702,39 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
           ctx.font = '10px monospace'
           ctx.fillText(`${(100 + lastCandle.h * 0.5).toFixed(0)}`, CANVAS_W - 35, lastY - 5)
         }
+      } else if (id === 'product-playbook') {
+        // ── Spec assembly lifecycle: building → pause → fadeOut → reset ──
+        s.pbTime += dt
+
+        if (s.pbPhase === 'building') {
+          const totalDuration = PB_SECTIONS.length * PB_SECTION_FILL_DURATION
+          s.pbProgress = Math.min(1, s.pbProgress + dt / totalDuration)
+          if (s.pbProgress >= 1) {
+            s.pbPhase = 'pause'
+            s.pbPauseTimer = PB_PAUSE_DURATION
+          }
+        } else if (s.pbPhase === 'pause') {
+          s.pbPauseTimer -= dt
+          if (s.pbPauseTimer <= 0) {
+            s.pbPhase = 'fadeOut'
+            s.pbFadeTimer = PB_FADE_DURATION
+          }
+        } else if (s.pbPhase === 'fadeOut') {
+          s.pbFadeTimer -= dt
+          if (s.pbFadeTimer <= 0) {
+            // Reset
+            s.pbProgress = 0
+            s.pbPhase = 'building'
+            s.pbFadeTimer = 0
+            s.pbPauseTimer = 0
+          }
+        }
+
+        const pbFadeAlpha = s.pbPhase === 'fadeOut'
+          ? Math.max(0, s.pbFadeTimer / PB_FADE_DURATION)
+          : 1
+
+        drawPlaybookAnimated(ctx, s.pbProgress, pbFadeAlpha, s.pbTime)
       }
 
       animRef.current = requestAnimationFrame(animate)
@@ -708,37 +754,250 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
   )
 }
 
-/** Static SVG for Project Three (no animation needed) */
-function ProjectThreeIllustration() {
-  const commonClass = 'w-full h-full opacity-[0.3] transition-all duration-500 group-hover:opacity-[0.5]'
-  return (
-    <svg viewBox="0 0 400 280" fill="none" stroke="currentColor" className={commonClass}>
-      {[80, 140, 200].map((y) => (
-        <circle key={`l1-${y}`} cx="60" cy={y} r="8" strokeWidth="1" />
-      ))}
-      {[60, 120, 180, 240].map((y) => (
-        <circle key={`l2-${y}`} cx="160" cy={y} r="6" strokeWidth="1" />
-      ))}
-      {[80, 140, 200].map((y) => (
-        <circle key={`l3-${y}`} cx="260" cy={y} r="6" strokeWidth="1" />
-      ))}
-      <circle cx="350" cy="140" r="10" strokeWidth="1.2" />
-      {[80, 140, 200].map((y1) =>
-        [60, 120, 180, 240].map((y2) => (
-          <line key={`c1-${y1}-${y2}`} x1="68" y1={y1} x2="154" y2={y2} strokeWidth="0.4" opacity="0.3" />
-        )),
-      )}
-      {[60, 120, 180, 240].map((y1) =>
-        [80, 140, 200].map((y2) => (
-          <line key={`c2-${y1}-${y2}`} x1="166" y1={y1} x2="254" y2={y2} strokeWidth="0.4" opacity="0.3" />
-        )),
-      )}
-      {[80, 140, 200].map((y1) => (
-        <line key={`c3-${y1}`} x1="266" y1={y1} x2="340" y2={140} strokeWidth="0.5" opacity="0.4" />
-      ))}
-      <circle cx="350" cy="140" r="18" strokeWidth="0.6" strokeDasharray="5 3" opacity="0.4" />
-    </svg>
-  )
+// ─── Product Playbook: Spec Assembly Animation ───
+const PB_FRAMEWORKS = [
+  { label: 'JTBD', y: 40 },
+  { label: 'Persona', y: 80 },
+  { label: 'PR-FAQ', y: 120 },
+  { label: 'RICE', y: 160 },
+  { label: 'PRD', y: 200 },
+  { label: 'Tickets', y: 240 },
+]
+const PB_BADGE_X = 45
+const PB_DOC_X = 180
+const PB_DOC_Y = 20
+const PB_DOC_W = 195
+const PB_DOC_H = 240
+const PB_SECTIONS = [
+  { label: 'Overview', y: 50, lines: 2 },
+  { label: 'User Stories', y: 100, lines: 3 },
+  { label: 'Architecture', y: 160, lines: 2 },
+  { label: 'Dev Handoff', y: 210, lines: 2 },
+]
+const PB_SECTION_FILL_DURATION = 1.2 // seconds per section
+const PB_PAUSE_DURATION = 1.5
+const PB_FADE_DURATION = 0.5
+
+function drawPlaybookStatic(ctx: CanvasRenderingContext2D) {
+  // Framework badges — dim
+  ctx.font = 'bold 9px monospace'
+  PB_FRAMEWORKS.forEach((fw) => {
+    const tw = ctx.measureText(fw.label).width
+    const bw = tw + 14
+    ctx.globalAlpha = 0.2
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = 0.8
+    ctx.beginPath()
+    ctx.roundRect(PB_BADGE_X - bw / 2, fw.y - 9, bw, 18, 3)
+    ctx.stroke()
+    ctx.globalAlpha = 0.25
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'
+    ctx.fillText(fw.label, PB_BADGE_X - tw / 2, fw.y + 3)
+  })
+
+  // Document outline — dim
+  ctx.globalAlpha = 0.15
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, PB_DOC_H, 4)
+  ctx.stroke()
+
+  // Section placeholders
+  PB_SECTIONS.forEach((sec) => {
+    ctx.globalAlpha = 0.1
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'
+    ctx.font = 'bold 9px monospace'
+    ctx.fillText(sec.label, PB_DOC_X + 12, sec.y)
+    for (let i = 0; i < sec.lines; i++) {
+      ctx.globalAlpha = 0.06
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.beginPath()
+      ctx.roundRect(PB_DOC_X + 12, sec.y + 6 + i * 12, PB_DOC_W - 30 - (i % 2) * 20, 4, 2)
+      ctx.fill()
+    }
+  })
+  ctx.globalAlpha = 1
+}
+
+function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, fadeAlpha: number, time: number) {
+  // progress: 0→1 across all sections
+  const totalSections = PB_SECTIONS.length
+  const activeSectionIndex = Math.min(Math.floor(progress * totalSections), totalSections - 1)
+  const sectionLocalProgress = (progress * totalSections) - activeSectionIndex
+
+  // ── Framework badges ──
+  ctx.font = 'bold 9px monospace'
+  PB_FRAMEWORKS.forEach((fw, fi) => {
+    const tw = ctx.measureText(fw.label).width
+    const bw = tw + 14
+    // Badges light up progressively as sections complete
+    const badgeActive = fi <= activeSectionIndex + 1
+    const pulse = badgeActive ? 0.6 + 0.3 * Math.sin(time * 2.5 + fi * 1.2) : 0
+    const badgeAlpha = (badgeActive ? 0.5 + pulse * 0.3 : 0.15) * fadeAlpha
+
+    // Badge border
+    ctx.globalAlpha = badgeAlpha
+    ctx.strokeStyle = badgeActive
+      ? `rgba(${ACCENT_MARS_RGB},${0.5 + pulse * 0.3})`
+      : 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = badgeActive ? 1 : 0.8
+    ctx.beginPath()
+    ctx.roundRect(PB_BADGE_X - bw / 2, fw.y - 9, bw, 18, 3)
+    ctx.stroke()
+
+    // Badge fill glow when active
+    if (badgeActive) {
+      ctx.globalAlpha = 0.05 * fadeAlpha
+      ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},1)`
+      ctx.fill()
+    }
+
+    // Badge label
+    ctx.globalAlpha = (badgeActive ? 0.85 : 0.2) * fadeAlpha
+    ctx.fillStyle = badgeActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)'
+    ctx.fillText(fw.label, PB_BADGE_X - tw / 2, fw.y + 3)
+
+    // Connection line from badge to document
+    if (badgeActive) {
+      const lineProgress = fi <= activeSectionIndex ? 1 : Math.min(1, sectionLocalProgress * 2)
+      const endX = PB_DOC_X
+      const startX = PB_BADGE_X + bw / 2 + 4
+      const midX = lerp(startX, endX, lineProgress)
+
+      ctx.globalAlpha = 0.2 * fadeAlpha * lineProgress
+      ctx.strokeStyle = `rgba(${ACCENT_MARS_RGB},0.5)`
+      ctx.lineWidth = 0.6
+      ctx.setLineDash([3, 3])
+      ctx.beginPath()
+      ctx.moveTo(startX, fw.y)
+      ctx.lineTo(midX, fw.y)
+      ctx.stroke()
+      ctx.setLineDash([])
+
+      // Small dot at connection end
+      if (lineProgress > 0.8) {
+        ctx.globalAlpha = 0.4 * fadeAlpha
+        ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.8)`
+        ctx.beginPath()
+        ctx.arc(midX, fw.y, 1.5, 0, Math.PI * 2)
+        ctx.fill()
+      }
+    }
+  })
+
+  // ── Document outline ──
+  ctx.globalAlpha = 0.35 * fadeAlpha
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, PB_DOC_H, 4)
+  ctx.stroke()
+
+  // Doc header bar
+  ctx.globalAlpha = 0.08 * fadeAlpha
+  ctx.fillStyle = 'rgba(255,255,255,1)'
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, 22, [4, 4, 0, 0])
+  ctx.fill()
+
+  // Doc title
+  ctx.globalAlpha = 0.5 * fadeAlpha
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.font = 'bold 8px monospace'
+  ctx.fillText('SPEC.md', PB_DOC_X + 8, PB_DOC_Y + 14)
+
+  // Three dots in header
+  for (let d = 0; d < 3; d++) {
+    ctx.globalAlpha = 0.3 * fadeAlpha
+    ctx.fillStyle = d === 0 ? `rgba(${ACCENT_MARS_RGB},0.6)` : 'rgba(255,255,255,0.4)'
+    ctx.beginPath()
+    ctx.arc(PB_DOC_X + PB_DOC_W - 12 - d * 10, PB_DOC_Y + 11, 2.5, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // ── Document sections ──
+  PB_SECTIONS.forEach((sec, si) => {
+    const isComplete = si < activeSectionIndex
+    const isActive = si === activeSectionIndex
+    const sProgress = isComplete ? 1 : isActive ? sectionLocalProgress : 0
+
+    // Section header
+    const headerAlpha = isComplete ? 0.7 : isActive ? 0.3 + sProgress * 0.5 : 0.1
+    ctx.globalAlpha = headerAlpha * fadeAlpha
+    ctx.fillStyle = isComplete ? `rgba(${ACCENT_MARS_RGB},0.8)` : 'rgba(255,255,255,0.8)'
+    ctx.font = 'bold 9px monospace'
+    ctx.fillText(sec.label, PB_DOC_X + 12, sec.y)
+
+    // Completion checkmark
+    if (isComplete) {
+      ctx.globalAlpha = 0.8 * fadeAlpha
+      ctx.strokeStyle = `rgba(${ACCENT_MARS_RGB},0.9)`
+      ctx.lineWidth = 1.5
+      const cx = PB_DOC_X + PB_DOC_W - 20
+      const cy = sec.y - 4
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(cx + 3, cy + 4)
+      ctx.lineTo(cx + 8, cy - 3)
+      ctx.stroke()
+    }
+
+    // Content lines — fill progressively
+    for (let i = 0; i < sec.lines; i++) {
+      const lineT = i / sec.lines
+      const lineProgress = isComplete ? 1 : isActive ? Math.max(0, (sProgress - lineT) * sec.lines) : 0
+      const clampedProgress = Math.min(1, lineProgress)
+      const fullW = PB_DOC_W - 30 - (i % 2) * 20
+      const w = fullW * clampedProgress
+      const ly = sec.y + 6 + i * 12
+
+      // Background placeholder
+      ctx.globalAlpha = 0.04 * fadeAlpha
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.beginPath()
+      ctx.roundRect(PB_DOC_X + 12, ly, fullW, 4, 2)
+      ctx.fill()
+
+      // Filled portion
+      if (clampedProgress > 0) {
+        ctx.globalAlpha = (0.15 + clampedProgress * 0.25) * fadeAlpha
+        ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.6)`
+        ctx.beginPath()
+        ctx.roundRect(PB_DOC_X + 12, ly, w, 4, 2)
+        ctx.fill()
+      }
+
+      // Typing cursor at the end of the active line
+      if (isActive && clampedProgress > 0 && clampedProgress < 1) {
+        const cursorBlink = Math.sin(time * 6) > 0
+        if (cursorBlink) {
+          ctx.globalAlpha = 0.7 * fadeAlpha
+          ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.9)`
+          ctx.beginPath()
+          ctx.rect(PB_DOC_X + 12 + w, ly - 1, 1.5, 6)
+          ctx.fill()
+        }
+      }
+    }
+  })
+
+  // ── Progress bar at bottom of doc ──
+  const barY = PB_DOC_Y + PB_DOC_H - 8
+  const barW = PB_DOC_W - 24
+  ctx.globalAlpha = 0.08 * fadeAlpha
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X + 12, barY, barW, 3, 1.5)
+  ctx.fill()
+
+  ctx.globalAlpha = 0.5 * fadeAlpha
+  ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.7)`
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X + 12, barY, barW * progress, 3, 1.5)
+  ctx.fill()
+
+  ctx.globalAlpha = 1
 }
 
 function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
@@ -847,11 +1106,7 @@ function ProjectCard({ project }: { project: Project }) {
 
       {/* Illustration area */}
       <div className="relative mt-auto flex items-center justify-center pt-8 text-white">
-        {project.id === 'project-three' ? (
-          <ProjectThreeIllustration />
-        ) : (
-          <CanvasIllustration id={project.id} isHovered={isAnimating} />
-        )}
+        <CanvasIllustration id={project.id} isHovered={isAnimating} />
       </div>
 
       {/* CTA button */}
