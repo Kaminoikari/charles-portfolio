@@ -48,7 +48,7 @@ export default function ExperienceTimeline() {
             {item.bullets.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {item.bullets.map((bullet, j) => (
-                  <li key={j} className="text-[15px] leading-relaxed text-text-muted">
+                  <li key={j} className="text-[15px] leading-relaxed text-text-muted before:mr-2 before:inline-block before:text-text-tertiary before:content-['—']">
                     {bullet}
                   </li>
                 ))}
