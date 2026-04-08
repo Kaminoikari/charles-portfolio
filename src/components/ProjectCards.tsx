@@ -759,9 +759,29 @@ function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 
 function ProjectCard({ project }: { project: Project }) {
   const [isHovered, setIsHovered] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const cardRef = useRef<HTMLAnchorElement>(null)
+  const isTouchDevice = useRef(false)
+
+  useEffect(() => {
+    isTouchDevice.current = window.matchMedia('(hover: none)').matches
+  }, [])
+
+  useEffect(() => {
+    if (!cardRef.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => { setIsVisible(entry.isIntersecting) },
+      { threshold: 0.3 },
+    )
+    observer.observe(cardRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  const isAnimating = isTouchDevice.current ? isVisible : isHovered
 
   return (
     <a
+      ref={cardRef}
       href={project.ctaUrl}
       target={project.ctaUrl.startsWith('http') ? '_blank' : undefined}
       rel={project.ctaUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
@@ -830,7 +850,7 @@ function ProjectCard({ project }: { project: Project }) {
         {project.id === 'project-three' ? (
           <ProjectThreeIllustration />
         ) : (
-          <CanvasIllustration id={project.id} isHovered={isHovered} />
+          <CanvasIllustration id={project.id} isHovered={isAnimating} />
         )}
       </div>
 
