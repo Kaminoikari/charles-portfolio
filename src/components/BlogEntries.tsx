@@ -4,13 +4,13 @@ import { blogPlatforms } from '../data/blog'
 const CTA_FONT_FAMILY = 'var(--font-mono)'
 
 const MediumLogo = () => (
-  <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted opacity-40 transition-all duration-300 group-hover:opacity-70 group-hover:scale-105">
+  <svg width="80" height="80" viewBox="0 0 24 24" fill="#FFFFFF" className="opacity-50 transition-all duration-300 group-hover:opacity-90 group-hover:scale-105">
     <path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zm7.42 0c0 3.54-1.51 6.42-3.38 6.42S14.2 15.54 14.2 12s1.52-6.42 3.38-6.42 3.38 2.88 3.38 6.42zM24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/>
   </svg>
 )
 
 const SubstackLogo = () => (
-  <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted opacity-40 transition-all duration-300 group-hover:opacity-70 group-hover:scale-105">
+  <svg width="80" height="80" viewBox="0 0 24 24" fill="#FF6719" className="opacity-50 transition-all duration-300 group-hover:opacity-90 group-hover:scale-105">
     <path d="M22.539 8.242H1.46V5.406L8.857 2.58l6.217 2.29 5.89-2.29v5.662zM1.46 9.856h21.079V21.42H1.46V9.856zM8.857 4.29 3.286 6.383v.271h11.142V6.383L8.857 4.29z"/>
   </svg>
 )
