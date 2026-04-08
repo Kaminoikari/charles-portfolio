@@ -9,21 +9,21 @@ export interface Project {
 
 export const projects: Project[] = [
   {
-    id: 'galgame-engine',
-    title: 'Galgame Engine',
+    id: 'path',
+    title: 'Path',
     description:
-      'Custom TypeScript visual novel engine with KAG script support, Canvas rendering, and branching storyline system.',
-    ctaText: 'PLAY NOW',
-    ctaUrl: '#',
-    tags: ['TypeScript', 'Canvas', 'Vite'],
+      'Offline-first trip planning app with Google Maps integration, transit directions, cost tracking, and drag-and-drop itinerary management.',
+    ctaText: 'TRY IT',
+    ctaUrl: 'https://trip-path.vercel.app/',
+    tags: ['React', 'TypeScript', 'Supabase'],
   },
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: 'Trading platform with real-time market data, strategy backtesting, and automated trading.',
-    ctaText: 'BUILD NOW',
-    ctaUrl: '#',
-    tags: ['React', 'Node.js', 'WebSocket'],
+    description: 'AI-powered Taiwan stock selection platform with real-time quotes, K-line charts, Gemini AI diagnostics, one-tap stock screening, and prediction tracking system.',
+    ctaText: 'TRY IT',
+    ctaUrl: 'https://plutus-trade.fly.dev/',
+    tags: ['Flutter', 'FastAPI', 'Gemini AI'],
   },
   {
     id: 'project-three',
