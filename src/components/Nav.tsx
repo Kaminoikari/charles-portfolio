@@ -89,7 +89,18 @@ export default function Nav() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => {
+              scrollTo('contact')
+              setMenuOpen(false)
+            }}
+            aria-label="Scroll to contact section"
+            className="min-h-[44px] cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
+          >
+            CONTACT ↗
+          </button>
+
+          {/* Hamburger — mobile only, rightmost */}
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
@@ -118,17 +129,6 @@ export default function Nav() {
                 }}
               />
             </div>
-          </button>
-
-          <button
-            onClick={() => {
-              scrollTo('contact')
-              setMenuOpen(false)
-            }}
-            aria-label="Scroll to contact section"
-            className="min-h-[44px] cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
-          >
-            CONTACT ↗
           </button>
         </div>
       </div>

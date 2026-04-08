@@ -257,24 +257,9 @@ const HUB_COUNT = 10 // bright hub nodes
             <p className="mb-4 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
               I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
             </p>
-            <p className="mb-8 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
+            <p className="max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
               Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.
             </p>
-            <a
-              href="#contact"
-              className="group inline-flex items-center gap-2 font-mono text-[13px] uppercase tracking-[1.5px] text-white/70 transition-colors duration-200 hover:text-white"
-              onClick={(e) => {
-                e.preventDefault()
-                const el = document.getElementById('contact')
-                if (el) {
-                  const y = el.getBoundingClientRect().top + window.scrollY - 72
-                  window.scrollTo({ top: y, behavior: 'smooth' })
-                }
-              }}
-            >
-              Let's Connect
-              <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
-            </a>
           </div>
 
           {/* Right: Photo + Annotations */}
