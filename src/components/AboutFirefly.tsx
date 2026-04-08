@@ -255,8 +255,11 @@ const HUB_COUNT = 10 // bright hub nodes
               Hey, I'm{' '}
               <span className="font-semibold text-white">Charles Chen.</span>
             </h3>
+            <p className="mb-4 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
+              I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
+            </p>
             <p className="mb-8 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
-              A product leader with 5+ years of experience building and scaling consumer and SaaS products. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts.
+              Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.
             </p>
             <a
               href="#contact"

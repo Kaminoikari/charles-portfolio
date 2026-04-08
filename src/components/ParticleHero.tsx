@@ -469,18 +469,15 @@ export default function ParticleHero() {
 
       <div ref={textRef} className="relative z-10 max-w-[900px] px-6">
         <h1 className="text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>My name is </span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Hi, I'm </span>
           <span className="font-normal text-white">Charles.</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}> I'm a Product Manager building products that drive </span>
-          <span className="font-normal text-white">millions of users</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}> and </span>
-          <span className="font-normal text-white">mass revenue</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}> at scale.</span>
+          <br />
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>I'm a </span>
+          <span className="font-normal text-white">Senior Product Manager</span>
+          <br />
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>building products at the speed of </span>
+          <span className="font-normal text-white">AI.</span>
         </h1>
-
-        <div className="mt-10 font-mono text-[11px] uppercase tracking-[3px] text-text-muted md:text-xs">
-          <span className="text-accent-cyan">6M+</span> Users · <span className="text-accent-cyan">85%</span> Revenue Impact · <span className="text-accent-cyan">5x</span> Faster with AI
-        </div>
       </div>
 
       <EasterEggHint />
