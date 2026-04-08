@@ -22,7 +22,16 @@ export default function Nav() {
     const el = document.getElementById(id)
     if (!el) return
     const navHeight = navRef.current?.offsetHeight ?? 72
-    const y = el.getBoundingClientRect().top + window.scrollY - navHeight
+    let y: number
+    if (id === 'skills') {
+      // Center the Universe section vertically in viewport
+      const sectionHeight = el.offsetHeight
+      const viewportHeight = window.innerHeight
+      const offset = Math.max(0, (sectionHeight - viewportHeight) / 2)
+      y = el.getBoundingClientRect().top + window.scrollY - navHeight + offset
+    } else {
+      y = el.getBoundingClientRect().top + window.scrollY - navHeight
+    }
     const doScroll = () => window.scrollTo({ top: y, behavior: 'smooth' })
     if ('startViewTransition' in document) {
       (document as any).startViewTransition(doScroll)
