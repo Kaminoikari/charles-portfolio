@@ -251,9 +251,8 @@ const HUB_COUNT = 10 // bright hub nodes
         <div className="flex flex-col items-center gap-12 md:flex-row md:items-start md:gap-16 lg:gap-24">
           {/* Left: Text */}
           <div className="reveal flex-1 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
-            <h3 className="mb-6 text-3xl font-light leading-tight text-white/50 md:text-4xl lg:text-5xl">
-              Hey, I'm{' '}
-              <span className="font-semibold text-white">Charles Chen.</span>
+            <h3 className="mb-6 text-3xl font-semibold leading-tight text-white md:text-4xl lg:text-5xl">
+              What I bring to the table.
             </h3>
             <p className="mb-4 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
               I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
