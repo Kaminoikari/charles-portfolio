@@ -277,48 +277,59 @@ const HUB_COUNT = 10 // bright hub nodes
 
           {/* Right: Photo + Annotations */}
           <div className="reveal relative shrink-0 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-200">
-            {/* Photo */}
-            <div className="relative h-[400px] w-[300px] md:h-[480px] md:w-[360px]">
-              <img
-                src="/assets/charles-hero.jpg"
-                alt="Charles Chen"
-                loading="lazy"
-                className="h-full w-full object-cover object-top"
-                style={{
-                  maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
-                  WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
-                }}
-              />
-            </div>
-
-            {/* Left annotation */}
-            <div className="absolute -left-4 top-[25%] -translate-x-full max-md:hidden">
+            {/* Desktop: photo with annotations on sides */}
+            <div className="hidden md:flex md:items-center md:gap-6">
+              {/* Left annotation */}
               <Annotation number="6M+" label="Users Impacted" side="left" />
-            </div>
 
-            {/* Right annotation */}
-            <div className="absolute -right-4 top-[45%] translate-x-full max-md:hidden">
-              <Annotation number="85%" label="Revenue Impact" side="right" />
-            </div>
-
-            {/* Bottom-right annotation */}
-            <div className="absolute -right-4 top-[65%] translate-x-full max-md:hidden">
-              <Annotation number="5x" label="Faster with AI" side="right" />
-            </div>
-
-            {/* Mobile annotations — horizontal row below photo */}
-            <div className="mt-6 flex justify-center gap-8 md:hidden">
-              <div className="text-center">
-                <div className="font-mono text-xl font-semibold text-white">6M+</div>
-                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Users</div>
+              {/* Photo */}
+              <div className="relative h-[480px] w-[320px] shrink-0">
+                <img
+                  src="/assets/charles-hero.png"
+                  alt="Charles Chen"
+                  loading="lazy"
+                  className="h-full w-full object-contain object-top"
+                  style={{
+                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                  }}
+                />
               </div>
-              <div className="text-center">
-                <div className="font-mono text-xl font-semibold text-white">85%</div>
-                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Revenue</div>
+
+              {/* Right annotations */}
+              <div className="flex flex-col gap-10">
+                <Annotation number="85%" label="Revenue Impact" side="right" />
+                <Annotation number="5x" label="Faster with AI" side="right" />
               </div>
-              <div className="text-center">
-                <div className="font-mono text-xl font-semibold text-white">5x</div>
-                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">AI Speed</div>
+            </div>
+
+            {/* Mobile: photo centered, metrics below */}
+            <div className="flex flex-col items-center md:hidden">
+              <div className="relative h-[360px] w-[260px]">
+                <img
+                  src="/assets/charles-hero.png"
+                  alt="Charles Chen"
+                  loading="lazy"
+                  className="h-full w-full object-contain object-top"
+                  style={{
+                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                  }}
+                />
+              </div>
+              <div className="mt-4 flex gap-8">
+                <div className="text-center">
+                  <div className="font-mono text-xl font-semibold text-white">6M+</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Users</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-mono text-xl font-semibold text-white">85%</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Revenue</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-mono text-xl font-semibold text-white">5x</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">AI Speed</div>
+                </div>
               </div>
             </div>
           </div>
