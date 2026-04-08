@@ -45,11 +45,22 @@ function createFirefly(width: number, height: number, isHub = false): Firefly {
   }
 }
 
+function Annotation({ number, label, side }: { number: string; label: string; side: 'left' | 'right' }) {
+  const isLeft = side === 'left'
+  return (
+    <div className={`flex items-center gap-3 ${isLeft ? 'flex-row-reverse' : ''}`}>
+      <div className="h-px w-10 bg-white/20" />
+      <div className={isLeft ? 'text-right' : ''}>
+        <div className="font-mono text-2xl font-semibold text-white">{number}</div>
+        <div className="font-mono text-[11px] uppercase tracking-[1.5px] text-text-muted">{label}</div>
+      </div>
+    </div>
+  )
+}
+
 export default function AboutFirefly() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
-  const photoRef = useRef<HTMLDivElement>(null)
-  const textRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -222,7 +233,7 @@ const HUB_COUNT = 10 // bright hub nodes
     <section
       id="about"
       ref={sectionRef}
-      className="relative flex min-h-[90vh] items-center overflow-hidden"
+      className="relative overflow-hidden py-24 md:py-32"
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
       {/* Bottom gradient fade — smooth blend into Universe section */}
@@ -230,24 +241,87 @@ const HUB_COUNT = 10 // bright hub nodes
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
         style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
-      <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
-        <div
-          ref={photoRef}
-          className="reveal h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full border border-border-dark opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
-        >
-          <img
-            src="/assets/charles-profile.jpg"
-            alt="Charles Chen"
-            loading="lazy"
-            className="h-full w-full object-cover object-top"
-            style={{ objectPosition: '50% 15%' }}
-          />
-        </div>
-        <div ref={textRef} className="reveal opacity-0 translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-150">
-          <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ ABOUT ]</h2>
-          <p className="text-lg leading-relaxed text-text-muted md:text-xl">
-            Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
-          </p>
+
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
+        {/* Header */}
+        <h2 className="reveal mb-16 font-mono text-xs font-normal tracking-[2px] text-text-tertiary opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
+          [ ABOUT ]
+        </h2>
+
+        <div className="flex flex-col items-center gap-12 md:flex-row md:items-start md:gap-16 lg:gap-24">
+          {/* Left: Text */}
+          <div className="reveal flex-1 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
+            <h3 className="mb-6 text-3xl font-light leading-tight text-white/50 md:text-4xl lg:text-5xl">
+              Hey, I'm{' '}
+              <span className="font-semibold text-white">Charles Chen.</span>
+            </h3>
+            <p className="mb-8 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
+              A product leader with 5+ years of experience building and scaling consumer and SaaS products. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts.
+            </p>
+            <a
+              href="#contact"
+              className="group inline-flex items-center gap-2 font-mono text-[13px] uppercase tracking-[1.5px] text-white/70 transition-colors duration-200 hover:text-white"
+              onClick={(e) => {
+                e.preventDefault()
+                const el = document.getElementById('contact')
+                if (el) {
+                  const y = el.getBoundingClientRect().top + window.scrollY - 72
+                  window.scrollTo({ top: y, behavior: 'smooth' })
+                }
+              }}
+            >
+              Let's Connect
+              <span className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
+            </a>
+          </div>
+
+          {/* Right: Photo + Annotations */}
+          <div className="reveal relative shrink-0 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-200">
+            {/* Photo */}
+            <div className="relative h-[400px] w-[300px] md:h-[480px] md:w-[360px]">
+              <img
+                src="/assets/charles-hero.jpg"
+                alt="Charles Chen"
+                loading="lazy"
+                className="h-full w-full object-cover object-top"
+                style={{
+                  maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                }}
+              />
+            </div>
+
+            {/* Left annotation */}
+            <div className="absolute -left-4 top-[25%] -translate-x-full max-md:hidden">
+              <Annotation number="6M+" label="Users Impacted" side="left" />
+            </div>
+
+            {/* Right annotation */}
+            <div className="absolute -right-4 top-[45%] translate-x-full max-md:hidden">
+              <Annotation number="85%" label="Revenue Impact" side="right" />
+            </div>
+
+            {/* Bottom-right annotation */}
+            <div className="absolute -right-4 top-[65%] translate-x-full max-md:hidden">
+              <Annotation number="5x" label="Faster with AI" side="right" />
+            </div>
+
+            {/* Mobile annotations — horizontal row below photo */}
+            <div className="mt-6 flex justify-center gap-8 md:hidden">
+              <div className="text-center">
+                <div className="font-mono text-xl font-semibold text-white">6M+</div>
+                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Users</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-xl font-semibold text-white">85%</div>
+                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Revenue</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-xl font-semibold text-white">5x</div>
+                <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">AI Speed</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
