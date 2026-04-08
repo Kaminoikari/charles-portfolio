@@ -471,11 +471,9 @@ export default function ParticleHero() {
         <h1 className="text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
           <span style={{ color: 'rgba(255,255,255,0.5)' }}>Hi, I'm </span>
           <span className="font-normal text-white">Charles.</span>
-          <br />
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>I'm a </span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> I'm a </span>
           <span className="font-normal text-white">Senior Product Manager</span>
-          <br />
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>building products at the speed of </span>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}> building products at the speed of </span>
           <span className="font-normal text-white">AI.</span>
         </h1>
       </div>
