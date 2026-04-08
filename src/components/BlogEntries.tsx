@@ -11,7 +11,7 @@ const MediumLogo = () => (
 
 const SubstackLogo = () => (
   <svg width="80" height="80" viewBox="0 0 24 24" fill="#FF6719" className="opacity-50 transition-all duration-300 group-hover:opacity-90 group-hover:scale-105">
-    <path d="M22.539 8.242H1.46V5.406L8.857 2.58l6.217 2.29 5.89-2.29v5.662zM1.46 9.856h21.079V21.42H1.46V9.856zM8.857 4.29 3.286 6.383v.271h11.142V6.383L8.857 4.29z"/>
+    <path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/>
   </svg>
 )
 
