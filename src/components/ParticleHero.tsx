@@ -79,9 +79,13 @@ function EasterEggHint() {
   return (
     <div
       className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center"
-      style={{ fontFamily: "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace", fontSize: '12px', fontWeight: 400, letterSpacing: '2px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre', lineHeight: 1.8, textTransform: 'uppercase' }}
+      style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 400, letterSpacing: '2px', color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre', lineHeight: 1.8, textTransform: 'uppercase' }}
     >
-      <span dangerouslySetInnerHTML={{ __html: text.replace(/[↑↓←→]/g, m => `<span style="font-size:1.4em;line-height:1">${m}</span>`) }} />{showCursor && <span style={{ animation: 'cursor-blink 1s step-end infinite' }}>_</span>}
+      <span>{text.split('').map((ch, i) =>
+        /[↑↓←→]/.test(ch)
+          ? <span key={i} style={{ fontSize: '1.4em', lineHeight: 1 }}>{ch}</span>
+          : <span key={i}>{ch}</span>
+      )}</span>{showCursor && <span style={{ animation: 'cursor-blink 1s step-end infinite' }}>_</span>}
     </div>
   )
 }
@@ -454,13 +458,13 @@ export default function ParticleHero() {
     <section
       ref={sectionRef}
       className="relative flex h-screen w-full items-center justify-center overflow-hidden"
-      style={{ background: '#0A0A0A' }}
+      style={{ background: 'var(--color-bg-primary)' }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
 
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
-        style={{ background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)' }}
+        style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
 
       <div ref={textRef} className="relative z-10 max-w-[900px] px-6">

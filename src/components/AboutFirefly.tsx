@@ -96,6 +96,10 @@ const HUB_COUNT = 10 // bright hub nodes
     )
     if (sectionRef.current) observer.observe(sectionRef.current)
 
+    // Reusable containers for spatial grid — avoid GC pressure from per-frame allocation
+    const grid = new Map<string, number[]>()
+    const checked = new Set<string>()
+
     const animate = () => {
       animId = requestAnimationFrame(animate)
       if (!visible) return
@@ -123,8 +127,8 @@ const HUB_COUNT = 10 // bright hub nodes
       const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST
       const time = Date.now() * 0.001
 
-      // Build spatial grid
-      const grid = new Map<string, number[]>()
+      // Build spatial grid — reuse containers to avoid GC pressure
+      grid.clear()
       for (let i = 0; i < fireflies.length; i++) {
         const col = Math.floor(fireflies[i].x / CONNECTION_DIST)
         const row = Math.floor(fireflies[i].y / CONNECTION_DIST)
@@ -134,7 +138,7 @@ const HUB_COUNT = 10 // bright hub nodes
       }
 
       // Check only adjacent cells
-      const checked = new Set<string>()
+      checked.clear()
       for (const [key, cell] of grid) {
         const [col, row] = key.split(',').map(Number)
         for (let dc = -1; dc <= 1; dc++) {
@@ -224,7 +228,7 @@ const HUB_COUNT = 10 // bright hub nodes
       {/* Bottom gradient fade — smooth blend into Universe section */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to bottom, transparent 0%, #0A0A0A 100%)' }}
+        style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
       <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
@@ -240,6 +244,7 @@ const HUB_COUNT = 10 // bright hub nodes
           />
         </div>
         <div ref={textRef} className="reveal opacity-0 translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-150">
+          <h2 className="sr-only">About</h2>
           <p className="text-lg leading-relaxed text-text-muted md:text-xl">
             Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
           </p>

@@ -8,11 +8,11 @@ export const blogPlatforms: BlogPlatform[] = [
   {
     name: 'Medium',
     url: 'https://medium.com/@charleschen',
-    subtitle: '技術文章和觀點分享',
+    subtitle: 'Technical articles and product insights',
   },
   {
     name: 'Substack',
     url: 'https://substack.com/@charlestychen',
-    subtitle: '深度思考和長文',
+    subtitle: 'Deep dives and long-form thinking',
   },
 ]

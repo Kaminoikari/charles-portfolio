@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { blogPlatforms } from '../data/blog'
 
-const CTA_FONT_FAMILY =
-  "'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace"
+const CTA_FONT_FAMILY = 'var(--font-mono)'
 
 const MediumLogo = () => (
   <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor" className="text-text-muted opacity-40 transition-all duration-300 group-hover:opacity-70 group-hover:scale-105">

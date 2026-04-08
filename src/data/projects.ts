@@ -12,7 +12,7 @@ export const projects: Project[] = [
     id: 'galgame-engine',
     title: 'Galgame Engine',
     description:
-      '自製 TypeScript 視覺小說引擎，支援 KAG script、Canvas 渲染、分支劇情系統。',
+      'Custom TypeScript visual novel engine with KAG script support, Canvas rendering, and branching storyline system.',
     ctaText: 'PLAY NOW',
     ctaUrl: '#',
     tags: ['TypeScript', 'Canvas', 'Vite'],
@@ -20,7 +20,7 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: '交易平台，整合即時行情、策略回測和自動化交易功能。',
+    description: 'Trading platform with real-time market data, strategy backtesting, and automated trading.',
     ctaText: 'BUILD NOW',
     ctaUrl: '#',
     tags: ['React', 'Node.js', 'WebSocket'],
@@ -28,7 +28,7 @@ export const projects: Project[] = [
   {
     id: 'project-three',
     title: 'Project Three',
-    description: '第三個 side project，展示技術能力和創造力。',
+    description: 'Experimental side project showcasing technical skills and creative problem-solving.',
     ctaText: 'EXPLORE',
     ctaUrl: '#',
     tags: ['Python', 'AI/LLM'],

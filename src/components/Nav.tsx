@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
+const NAV_SECTIONS = ['about', 'skills', 'experience', 'projects', 'blog'] as const
 
 export default function Nav() {
   const navRef = useRef<HTMLElement>(null)
   const [scrolledPastHero, setScrolledPastHero] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const logoClickTimesRef = useRef<number[]>([])
 
   useEffect(() => {
@@ -33,9 +35,9 @@ export default function Nav() {
     <nav
       ref={navRef}
       aria-label="Main navigation"
-      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-xl transition-all duration-500"
+      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-all duration-500"
       style={{
-        borderColor: scrolledPastHero ? '#1f2228' : 'transparent',
+        borderColor: scrolledPastHero ? 'var(--color-border)' : 'transparent',
         background: scrolledPastHero
           ? 'rgba(10,10,10,0.92)'
           : 'transparent',
@@ -48,7 +50,6 @@ export default function Nav() {
             const now = Date.now()
             const clicks = logoClickTimesRef.current
             clicks.push(now)
-            // Keep only clicks within the time window
             while (clicks.length > 0 && now - clicks[0] > RAPID_CLICK_WINDOW_MS) {
               clicks.shift()
             }
@@ -57,12 +58,15 @@ export default function Nav() {
               window.dispatchEvent(new Event('easter-egg'))
             }
           }}
+          aria-label="Charles Chen — scroll to top"
           className="cursor-pointer border-none bg-transparent text-lg font-bold tracking-widest text-white md:text-xl"
         >
           CHARLES CHEN
         </button>
+
+        {/* Desktop nav */}
         <div className="hidden gap-8 md:flex">
-          {['about', 'skills', 'experience', 'projects', 'blog'].map((id) => (
+          {NAV_SECTIONS.map((id) => (
             <button
               key={id}
               onClick={() => scrollTo(id)}
@@ -74,13 +78,75 @@ export default function Nav() {
             </button>
           ))}
         </div>
-        <button
-          onClick={() => scrollTo('contact')}
-          aria-label="Scroll to contact section"
-          className="min-h-[44px] cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
-        >
-          CONTACT ↗
-        </button>
+
+        <div className="flex items-center gap-3">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setMenuOpen((prev) => !prev)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-none bg-transparent md:hidden"
+          >
+            <div className="relative h-4 w-5">
+              <span
+                className="absolute left-0 block h-px w-full bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                style={{
+                  top: menuOpen ? '50%' : '0',
+                  transform: menuOpen ? 'rotate(45deg)' : 'none',
+                }}
+              />
+              <span
+                className="absolute left-0 top-1/2 block h-px w-full bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                style={{ opacity: menuOpen ? 0 : 1 }}
+              />
+              <span
+                className="absolute left-0 block h-px w-full bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]"
+                style={{
+                  bottom: menuOpen ? 'auto' : '0',
+                  top: menuOpen ? '50%' : 'auto',
+                  transform: menuOpen ? 'rotate(-45deg)' : 'none',
+                }}
+              />
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              scrollTo('contact')
+              setMenuOpen(false)
+            }}
+            aria-label="Scroll to contact section"
+            className="min-h-[44px] cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
+          >
+            CONTACT ↗
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      <div
+        id="mobile-menu"
+        className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:hidden"
+        style={{
+          maxHeight: menuOpen ? `${NAV_SECTIONS.length * 52}px` : '0',
+          opacity: menuOpen ? 1 : 0,
+        }}
+      >
+        <div className="flex flex-col border-t border-white/10 px-4 py-2">
+          {NAV_SECTIONS.map((id) => (
+            <button
+              key={id}
+              onClick={() => {
+                scrollTo(id)
+                setMenuOpen(false)
+              }}
+              className="min-h-[44px] cursor-pointer border-none bg-transparent text-left text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
+            >
+              {id}
+            </button>
+          ))}
+        </div>
       </div>
     </nav>
   )

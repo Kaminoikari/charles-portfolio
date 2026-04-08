@@ -110,7 +110,7 @@ export default function ContactFooter() {
           © 2026 Charles Chen. All rights reserved.
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
-          Rendered in <span ref={perfRef}>—</span>ms · Zero frameworks · Canvas 2D
+          Rendered in <span ref={perfRef}>—</span>ms · React · Canvas 2D · Tailwind
         </div>
       </footer>
     </div>

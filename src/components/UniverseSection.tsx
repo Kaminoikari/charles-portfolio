@@ -395,9 +395,12 @@ export default function UniverseSection() {
     <section
       id="skills"
       ref={sectionRef}
-      className="relative flex w-full justify-center overflow-hidden pb-0"
+      className="relative flex w-full flex-col items-center overflow-hidden pb-0"
       style={{ background: '#0A0A0A' }}
     >
+      <h2 className="z-10 w-full max-w-[1200px] px-6 pt-16 text-xs uppercase tracking-[3px] text-text-tertiary sm:pt-32 md:px-12">
+        SKILLS
+      </h2>
       <div className="relative h-[550px] lg:h-[800px] xl:h-[1000px]">
         <div ref={canvasContainerRef} className="absolute left-1/2 top-0 h-[550px] w-[600px] -translate-x-1/2 lg:h-[800px] lg:w-[1000px] xl:h-[1000px] xl:w-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
           <canvas ref={canvasRef} role="presentation" aria-hidden="true" />
