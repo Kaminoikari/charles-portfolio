@@ -285,13 +285,13 @@ const HUB_COUNT = 10 // bright hub nodes
               {/* Photo */}
               <div className="relative h-[600px] w-[440px] shrink-0">
                 <img
-                  src="/assets/charles-hero.png"
+                  src="/assets/charles-hero.jpg"
                   alt="Charles Chen"
                   loading="lazy"
-                  className="h-full w-full object-contain object-top"
+                  className="h-full w-full object-cover object-top"
                   style={{
-                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                    maskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
                   }}
                 />
               </div>
@@ -307,13 +307,13 @@ const HUB_COUNT = 10 // bright hub nodes
             <div className="flex flex-col items-center md:hidden">
               <div className="relative h-[360px] w-[260px]">
                 <img
-                  src="/assets/charles-hero.png"
+                  src="/assets/charles-hero.jpg"
                   alt="Charles Chen"
                   loading="lazy"
-                  className="h-full w-full object-contain object-top"
+                  className="h-full w-full object-cover object-top"
                   style={{
-                    maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
-                    WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                    maskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
+                    WebkitMaskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
                   }}
                 />
               </div>
