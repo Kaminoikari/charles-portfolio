@@ -283,7 +283,7 @@ const HUB_COUNT = 10 // bright hub nodes
               <Annotation number="6M+" label="Users Impacted" side="left" />
 
               {/* Photo */}
-              <div className="relative h-[480px] w-[320px] shrink-0">
+              <div className="relative h-[600px] w-[440px] shrink-0">
                 <img
                   src="/assets/charles-hero.png"
                   alt="Charles Chen"
