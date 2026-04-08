@@ -230,7 +230,7 @@ const HUB_COUNT = 10 // bright hub nodes
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
         style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
-      <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
+      <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-center gap-8 px-6 md:flex-row md:gap-16 md:px-12">
         <div
           ref={photoRef}
           className="reveal h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full border border-border-dark opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
@@ -244,7 +244,7 @@ const HUB_COUNT = 10 // bright hub nodes
           />
         </div>
         <div ref={textRef} className="reveal opacity-0 translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-150">
-          <h2 className="sr-only">About</h2>
+          <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ ABOUT ]</h2>
           <p className="text-lg leading-relaxed text-text-muted md:text-xl">
             Charles is a product leader with 5+ years of experience building and scaling consumer and SaaS products across enterprise and startup environments. Proven track record of launching products from 0→1, driving user growth to millions, and delivering measurable business impact in both B2C and B2B contexts. Passionate about AI-driven product development, gamification, and disruptive innovation.
           </p>

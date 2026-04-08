@@ -38,12 +38,12 @@ export default function BlogEntries() {
   }, [])
 
   return (
-    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1200px] px-6 md:px-12 py-16 sm:py-32">
+    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       {/* Header row — xAI style */}
       <div className="mb-10 flex items-baseline justify-between">
         <div>
-          <div className="mb-2 font-mono text-xs tracking-[2px] text-text-tertiary">[ BLOG ]</div>
-          <h2 className="text-[32px] font-semibold text-white">Latest writing</h2>
+          <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ BLOG ]</h2>
+          <p className="text-[32px] font-semibold text-white">Latest writing</p>
         </div>
       </div>
 
