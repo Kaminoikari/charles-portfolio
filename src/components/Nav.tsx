@@ -78,6 +78,7 @@ export default function Nav() {
           onClick={() => {
             if (!isHome) {
               navigate('/')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
               return
             }
             window.scrollTo({ top: 0, behavior: 'smooth' })
