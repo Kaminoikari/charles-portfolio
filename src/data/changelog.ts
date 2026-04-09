@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'playbook-animation-fixes',
+    date: '2026-04-09',
+    title: 'Product Playbook — Connection Line Fixes',
+    tags: ['design', 'technical'],
+    body: [
+      'The orange bezier lines connecting framework badges (JTBD, Persona, RICE, PRD) to SPEC.md sections had three issues. First, they were nearly invisible on the dark background — the effective opacity was only ~18% from stacked alpha values (globalAlpha 0.3 \u00d7 marsA(0.6)). Raised the values to 0.55 and 0.9 respectively, bringing effective visibility to ~50%.',
+      'Second, each line was animating twice per cycle. The root cause was a "peek-ahead" branch in the lineProgress calculation that pre-drew the next line before its section started. When the section index advanced, sectionLocalProgress reset to zero, causing the line to jump from fully drawn back to empty and animate all over again. Removed the peek-ahead branch so each line animates exactly once.',
+      'Third, the Dev Handoff section (the last one) never showed a completion checkmark. The isComplete condition was si < activeSectionIndex, but the last section index equals the maximum activeSectionIndex — so 3 < 3 was always false. Added a progress >= 1 check to handle the final section.',
+    ],
+  },
+  {
     id: 'changelog-page',
     date: '2026-04-09',
     title: 'Changelog — Building in Public',
