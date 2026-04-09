@@ -152,7 +152,7 @@ export function drawPlaybookAnimated(
       const sec = PB_SECTIONS[fw.targetSection]
       const lineProgress = fi < activeSectionIndex ? 1
         : fi === activeSectionIndex ? Math.min(1, sectionLocalProgress * 1.5)
-        : Math.min(1, Math.max(0, sectionLocalProgress - 0.5) * 3)
+        : 0
 
       if (lineProgress > 0) {
         const startX = PB_BADGE_X + bw / 2 + 4
@@ -160,9 +160,9 @@ export function drawPlaybookAnimated(
         const cpX = (startX + endX) / 2 + 10
         const cpY = (fw.y + sec.y) / 2
 
-        ctx.globalAlpha = 0.3 * fadeAlpha * lineProgress
-        ctx.strokeStyle = marsA(0.6)
-        ctx.lineWidth = 0.7
+        ctx.globalAlpha = 0.55 * fadeAlpha * lineProgress
+        ctx.strokeStyle = marsA(0.9)
+        ctx.lineWidth = 1.2
         ctx.setLineDash([3, 3])
         ctx.beginPath()
         const steps = 20
@@ -226,8 +226,8 @@ export function drawPlaybookAnimated(
 
   // ── Sections ──
   PB_SECTIONS.forEach((sec, si) => {
-    const isComplete = si < activeSectionIndex
-    const isActive = si === activeSectionIndex && progress > 0
+    const isComplete = si < activeSectionIndex || (si === activeSectionIndex && progress >= 1)
+    const isActive = !isComplete && si === activeSectionIndex && progress > 0
     const sProgress = isComplete ? 1 : isActive ? sectionLocalProgress : 0
 
     const headerAlpha = isComplete ? 0.75 : isActive ? 0.35 + sProgress * 0.45 : 0.12

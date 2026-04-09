@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { socialLinks } from '../data/social'
 
 const SocialIcon = ({ platform }: { platform: string }) => {
@@ -98,7 +99,8 @@ export default function ContactFooter() {
           © 2026 Charles Chen. All rights reserved.
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
-          Rendered in <span ref={perfRef}>—</span>ms · React · Canvas 2D · Tailwind
+          <Link to="/changelog" className="text-text-muted no-underline transition-colors duration-200 hover:text-white">Changelog</Link>
+          {' · '}Rendered in <span ref={perfRef}>—</span>ms · React · Canvas 2D · Tailwind
         </div>
       </footer>
     </div>

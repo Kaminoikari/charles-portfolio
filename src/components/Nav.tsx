@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
@@ -9,6 +10,9 @@ export default function Nav() {
   const [scrolledPastHero, setScrolledPastHero] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const logoClickTimesRef = useRef<number[]>([])
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isHome = location.pathname === '/'
 
   useEffect(() => {
     const onScroll = () => {
@@ -17,6 +21,23 @@ export default function Nav() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Handle hash-based scroll after navigating back to home
+  useEffect(() => {
+    if (isHome && location.hash) {
+      const id = location.hash.slice(1)
+      // Small delay to let the page render before scrolling
+      const timer = setTimeout(() => {
+        const el = document.getElementById(id)
+        if (el) {
+          const navHeight = navRef.current?.offsetHeight ?? 72
+          const y = el.getBoundingClientRect().top + window.scrollY - navHeight
+          window.scrollTo({ top: y, behavior: 'smooth' })
+        }
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [isHome, location.hash])
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
@@ -55,6 +76,10 @@ export default function Nav() {
       <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
         <button
           onClick={() => {
+            if (!isHome) {
+              navigate('/')
+              return
+            }
             window.scrollTo({ top: 0, behavior: 'smooth' })
             const now = Date.now()
             const clicks = logoClickTimesRef.current
@@ -78,7 +103,13 @@ export default function Nav() {
           {NAV_SECTIONS.map((id) => (
             <button
               key={id}
-              onClick={() => scrollTo(id)}
+              onClick={() => {
+                if (isHome) {
+                  scrollTo(id)
+                } else {
+                  navigate(`/#${id}`)
+                }
+              }}
               aria-label={`Scroll to ${id} section`}
               className="group relative min-h-[44px] cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
             >
@@ -91,7 +122,11 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              scrollTo('contact')
+              if (isHome) {
+                scrollTo('contact')
+              } else {
+                navigate('/#contact')
+              }
               setMenuOpen(false)
             }}
             aria-label="Scroll to contact section"
@@ -147,7 +182,11 @@ export default function Nav() {
             <button
               key={id}
               onClick={() => {
-                scrollTo(id)
+                if (isHome) {
+                  scrollTo(id)
+                } else {
+                  navigate(`/#${id}`)
+                }
                 setMenuOpen(false)
               }}
               className="min-h-[44px] cursor-pointer border-none bg-transparent text-left text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"

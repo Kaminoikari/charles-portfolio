@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react'
-import Nav from './components/Nav'
 
 const ParticleHero = lazy(() => import('./components/ParticleHero'))
 const AboutFirefly = lazy(() => import('./components/AboutFirefly'))
@@ -17,7 +16,6 @@ export default function App() {
   return (
     <>
       <a href="#about" className="skip-link">Skip to content</a>
-      <Nav />
       <Suspense fallback={<Loading />}>
         <ParticleHero />
       </Suspense>
