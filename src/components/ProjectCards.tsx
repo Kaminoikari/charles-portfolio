@@ -347,7 +347,8 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     tradeFadeAlpha: number
     // Playbook state
     pbProgress: number
-    pbPhase: 'building' | 'pause' | 'fadeOut'
+    pbPhase: 'entrance' | 'building' | 'pause' | 'fadeOut'
+    pbEntranceTimer: number
     pbPauseTimer: number
     pbFadeTimer: number
     pbTime: number
@@ -368,7 +369,8 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     surgeTimer: SURGE_INTERVAL,
     tradeFadeAlpha: 1,
     pbProgress: 0,
-    pbPhase: 'building',
+    pbPhase: 'entrance',
+    pbEntranceTimer: 0,
     pbPauseTimer: 0,
     pbFadeTimer: 0,
     pbTime: 0,
@@ -703,10 +705,16 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
           ctx.fillText(`${(100 + lastCandle.h * 0.5).toFixed(0)}`, CANVAS_W - 35, lastY - 5)
         }
       } else if (id === 'product-playbook') {
-        // ── Spec assembly lifecycle: building → pause → fadeOut → reset ──
+        // ── Spec assembly lifecycle: entrance → building → pause → fadeOut → reset ──
         s.pbTime += dt
 
-        if (s.pbPhase === 'building') {
+        if (s.pbPhase === 'entrance') {
+          s.pbEntranceTimer += dt
+          if (s.pbEntranceTimer >= PB_ENTRANCE_DURATION) {
+            s.pbPhase = 'building'
+            s.pbEntranceTimer = PB_ENTRANCE_DURATION
+          }
+        } else if (s.pbPhase === 'building') {
           const totalDuration = PB_SECTIONS.length * PB_SECTION_FILL_DURATION
           s.pbProgress = Math.min(1, s.pbProgress + dt / totalDuration)
           if (s.pbProgress >= 1) {
@@ -722,19 +730,20 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
         } else if (s.pbPhase === 'fadeOut') {
           s.pbFadeTimer -= dt
           if (s.pbFadeTimer <= 0) {
-            // Reset
             s.pbProgress = 0
-            s.pbPhase = 'building'
+            s.pbPhase = 'entrance'
             s.pbFadeTimer = 0
             s.pbPauseTimer = 0
+            s.pbEntranceTimer = 0
           }
         }
 
         const pbFadeAlpha = s.pbPhase === 'fadeOut'
           ? Math.max(0, s.pbFadeTimer / PB_FADE_DURATION)
           : 1
+        const pbEntranceProgress = Math.min(1, s.pbEntranceTimer / PB_ENTRANCE_DURATION)
 
-        drawPlaybookAnimated(ctx, s.pbProgress, pbFadeAlpha, s.pbTime)
+        drawPlaybookAnimated(ctx, s.pbProgress, pbFadeAlpha, s.pbTime, pbEntranceProgress)
       }
 
       animRef.current = requestAnimationFrame(animate)
@@ -756,12 +765,10 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
 
 // ─── Product Playbook: Spec Assembly Animation ───
 const PB_FRAMEWORKS = [
-  { label: 'JTBD', y: 40 },
-  { label: 'Persona', y: 80 },
-  { label: 'PR-FAQ', y: 120 },
-  { label: 'RICE', y: 160 },
-  { label: 'PRD', y: 200 },
-  { label: 'Tickets', y: 240 },
+  { label: 'JTBD', y: 45, targetSection: 0 },
+  { label: 'Persona', y: 108, targetSection: 1 },
+  { label: 'RICE', y: 172, targetSection: 2 },
+  { label: 'PRD', y: 235, targetSection: 3 },
 ]
 const PB_BADGE_X = 45
 const PB_DOC_X = 180
@@ -769,48 +776,94 @@ const PB_DOC_Y = 20
 const PB_DOC_W = 195
 const PB_DOC_H = 240
 const PB_SECTIONS = [
-  { label: 'Overview', y: 50, lines: 2 },
-  { label: 'User Stories', y: 100, lines: 3 },
-  { label: 'Architecture', y: 160, lines: 2 },
-  { label: 'Dev Handoff', y: 210, lines: 2 },
+  { label: 'Overview', y: 52, lines: 2 },
+  { label: 'User Stories', y: 102, lines: 3 },
+  { label: 'Architecture', y: 152, lines: 2 },
+  { label: 'Dev Handoff', y: 202, lines: 2 },
 ]
-const PB_SECTION_FILL_DURATION = 1.2 // seconds per section
+const PB_ENTRANCE_DURATION = 0.8
+const PB_SECTION_FILL_DURATION = 1.2
 const PB_PAUSE_DURATION = 1.5
 const PB_FADE_DURATION = 0.5
 
+// Badge text metrics — computed once, reused every frame
+let _pbBadgeMetrics: { tw: number; bw: number }[] | null = null
+function getPbBadgeMetrics(ctx: CanvasRenderingContext2D) {
+  if (!_pbBadgeMetrics) {
+    ctx.font = 'bold 9px monospace'
+    _pbBadgeMetrics = PB_FRAMEWORKS.map(fw => {
+      const tw = ctx.measureText(fw.label).width
+      return { tw, bw: tw + 14 }
+    })
+  }
+  return _pbBadgeMetrics
+}
+
 function drawPlaybookStatic(ctx: CanvasRenderingContext2D) {
-  // Framework badges — dim
+  const metrics = getPbBadgeMetrics(ctx)
+
+  // Framework badges
   ctx.font = 'bold 9px monospace'
-  PB_FRAMEWORKS.forEach((fw) => {
-    const tw = ctx.measureText(fw.label).width
-    const bw = tw + 14
-    ctx.globalAlpha = 0.2
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+  PB_FRAMEWORKS.forEach((fw, fi) => {
+    const { tw, bw } = metrics[fi]
+    ctx.globalAlpha = 0.35
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'
     ctx.lineWidth = 0.8
     ctx.beginPath()
     ctx.roundRect(PB_BADGE_X - bw / 2, fw.y - 9, bw, 18, 3)
     ctx.stroke()
-    ctx.globalAlpha = 0.25
-    ctx.fillStyle = 'rgba(255,255,255,0.8)'
+    ctx.globalAlpha = 0.4
+    ctx.fillStyle = 'rgba(255,255,255,0.85)'
     ctx.fillText(fw.label, PB_BADGE_X - tw / 2, fw.y + 3)
+
+    // Faint curved connection line
+    const sec = PB_SECTIONS[fw.targetSection]
+    const startX = PB_BADGE_X + bw / 2 + 4
+    const endX = PB_DOC_X
+    const cpX = (startX + endX) / 2 + 10
+    const cpY = (fw.y + sec.y) / 2
+    ctx.globalAlpha = 0.07
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = 0.5
+    ctx.setLineDash([3, 4])
+    ctx.beginPath()
+    for (let s = 0; s <= 20; s++) {
+      const t = s / 20
+      const x = quadBezier(startX, cpX, endX, t)
+      const y = quadBezier(fw.y, cpY, sec.y, t)
+      if (s === 0) { ctx.moveTo(x, y) } else { ctx.lineTo(x, y) }
+    }
+    ctx.stroke()
+    ctx.setLineDash([])
   })
 
-  // Document outline — dim
-  ctx.globalAlpha = 0.15
-  ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+  // Document outline
+  ctx.globalAlpha = 0.25
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, PB_DOC_H, 4)
   ctx.stroke()
 
+  // Doc header
+  ctx.globalAlpha = 0.08
+  ctx.fillStyle = 'rgba(255,255,255,1)'
+  ctx.beginPath()
+  ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, 22, [4, 4, 0, 0])
+  ctx.fill()
+  ctx.globalAlpha = 0.35
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.font = 'bold 8px monospace'
+  ctx.fillText('SPEC.md', PB_DOC_X + 8, PB_DOC_Y + 14)
+
   // Section placeholders
   PB_SECTIONS.forEach((sec) => {
-    ctx.globalAlpha = 0.1
-    ctx.fillStyle = 'rgba(255,255,255,0.6)'
+    ctx.globalAlpha = 0.18
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'
     ctx.font = 'bold 9px monospace'
     ctx.fillText(sec.label, PB_DOC_X + 12, sec.y)
     for (let i = 0; i < sec.lines; i++) {
-      ctx.globalAlpha = 0.06
+      ctx.globalAlpha = 0.08
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.beginPath()
       ctx.roundRect(PB_DOC_X + 12, sec.y + 6 + i * 12, PB_DOC_W - 30 - (i % 2) * 20, 4, 2)
@@ -820,118 +873,153 @@ function drawPlaybookStatic(ctx: CanvasRenderingContext2D) {
   ctx.globalAlpha = 1
 }
 
-function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, fadeAlpha: number, time: number) {
-  // progress: 0→1 across all sections
+function drawPlaybookAnimated(
+  ctx: CanvasRenderingContext2D,
+  progress: number,
+  fadeAlpha: number,
+  time: number,
+  entranceProgress: number,
+) {
+  const metrics = getPbBadgeMetrics(ctx)
   const totalSections = PB_SECTIONS.length
   const activeSectionIndex = Math.min(Math.floor(progress * totalSections), totalSections - 1)
-  const sectionLocalProgress = (progress * totalSections) - activeSectionIndex
+  const sectionLocalProgress = progress * totalSections - activeSectionIndex
+
+  // Doc entrance: fades in from 30-70% of entrance phase
+  const docEntrance = Math.min(1, Math.max(0, (entranceProgress - 0.3) / 0.4))
 
   // ── Framework badges ──
   ctx.font = 'bold 9px monospace'
   PB_FRAMEWORKS.forEach((fw, fi) => {
-    const tw = ctx.measureText(fw.label).width
-    const bw = tw + 14
-    // Badges light up progressively as sections complete
-    const badgeActive = fi <= activeSectionIndex + 1
+    const { tw, bw } = metrics[fi]
+
+    // Entrance stagger: each badge fades in + slides up
+    const badgeEntrance = Math.min(1, Math.max(0, (entranceProgress - fi * 0.12) / 0.2))
+    const offsetY = (1 - badgeEntrance) * 6
+    const byAdj = fw.y + offsetY
+
+    const badgeActive = progress > 0 && fi <= activeSectionIndex + (sectionLocalProgress > 0.1 ? 1 : 0)
     const pulse = badgeActive ? 0.6 + 0.3 * Math.sin(time * 2.5 + fi * 1.2) : 0
-    const badgeAlpha = (badgeActive ? 0.5 + pulse * 0.3 : 0.15) * fadeAlpha
+    const baseAlpha = badgeActive ? 0.55 + pulse * 0.25 : 0.35
+    const alpha = baseAlpha * fadeAlpha * badgeEntrance
 
     // Badge border
-    ctx.globalAlpha = badgeAlpha
+    ctx.globalAlpha = alpha
     ctx.strokeStyle = badgeActive
       ? `rgba(${ACCENT_MARS_RGB},${0.5 + pulse * 0.3})`
-      : 'rgba(255,255,255,0.3)'
+      : 'rgba(255,255,255,0.4)'
     ctx.lineWidth = badgeActive ? 1 : 0.8
     ctx.beginPath()
-    ctx.roundRect(PB_BADGE_X - bw / 2, fw.y - 9, bw, 18, 3)
+    ctx.roundRect(PB_BADGE_X - bw / 2, byAdj - 9, bw, 18, 3)
     ctx.stroke()
 
-    // Badge fill glow when active
+    // Badge fill glow when active (explicit path — no implicit reuse)
     if (badgeActive) {
-      ctx.globalAlpha = 0.05 * fadeAlpha
+      ctx.globalAlpha = 0.06 * fadeAlpha * badgeEntrance
       ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},1)`
+      ctx.beginPath()
+      ctx.roundRect(PB_BADGE_X - bw / 2, byAdj - 9, bw, 18, 3)
       ctx.fill()
     }
 
     // Badge label
-    ctx.globalAlpha = (badgeActive ? 0.85 : 0.2) * fadeAlpha
-    ctx.fillStyle = badgeActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)'
-    ctx.fillText(fw.label, PB_BADGE_X - tw / 2, fw.y + 3)
+    ctx.globalAlpha = (badgeActive ? 0.9 : 0.4) * fadeAlpha * badgeEntrance
+    ctx.fillStyle = badgeActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.7)'
+    ctx.fillText(fw.label, PB_BADGE_X - tw / 2, byAdj + 3)
 
-    // Connection line from badge to document
-    if (badgeActive) {
-      const lineProgress = fi <= activeSectionIndex ? 1 : Math.min(1, sectionLocalProgress * 2)
-      const endX = PB_DOC_X
-      const startX = PB_BADGE_X + bw / 2 + 4
-      const midX = lerp(startX, endX, lineProgress)
+    // Curved connection line to target section
+    if (badgeActive && badgeEntrance >= 1) {
+      const sec = PB_SECTIONS[fw.targetSection]
+      const lineProgress = fi < activeSectionIndex ? 1
+        : fi === activeSectionIndex ? Math.min(1, sectionLocalProgress * 1.5)
+        : Math.min(1, Math.max(0, sectionLocalProgress - 0.5) * 3)
 
-      ctx.globalAlpha = 0.2 * fadeAlpha * lineProgress
-      ctx.strokeStyle = `rgba(${ACCENT_MARS_RGB},0.5)`
-      ctx.lineWidth = 0.6
-      ctx.setLineDash([3, 3])
-      ctx.beginPath()
-      ctx.moveTo(startX, fw.y)
-      ctx.lineTo(midX, fw.y)
-      ctx.stroke()
-      ctx.setLineDash([])
+      if (lineProgress > 0) {
+        const startX = PB_BADGE_X + bw / 2 + 4
+        const endX = PB_DOC_X
+        const cpX = (startX + endX) / 2 + 10
+        const cpY = (fw.y + sec.y) / 2
 
-      // Small dot at connection end
-      if (lineProgress > 0.8) {
-        ctx.globalAlpha = 0.4 * fadeAlpha
-        ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.8)`
+        ctx.globalAlpha = 0.3 * fadeAlpha * lineProgress
+        ctx.strokeStyle = `rgba(${ACCENT_MARS_RGB},0.6)`
+        ctx.lineWidth = 0.7
+        ctx.setLineDash([3, 3])
         ctx.beginPath()
-        ctx.arc(midX, fw.y, 1.5, 0, Math.PI * 2)
-        ctx.fill()
+        const steps = 20
+        const drawSteps = Math.floor(steps * lineProgress)
+        for (let s = 0; s <= drawSteps; s++) {
+          const t = s / steps
+          const x = quadBezier(startX, cpX, endX, t)
+          const y = quadBezier(fw.y, cpY, sec.y, t)
+          if (s === 0) { ctx.moveTo(x, y) } else { ctx.lineTo(x, y) }
+        }
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        // Endpoint dot
+        if (lineProgress > 0.8) {
+          const dotT = lineProgress
+          const dotX = quadBezier(startX, cpX, endX, dotT)
+          const dotY = quadBezier(fw.y, cpY, sec.y, dotT)
+          ctx.globalAlpha = 0.5 * fadeAlpha
+          ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.8)`
+          ctx.beginPath()
+          ctx.arc(dotX, dotY, 1.5, 0, Math.PI * 2)
+          ctx.fill()
+        }
       }
     }
   })
 
-  // ── Document outline ──
-  ctx.globalAlpha = 0.35 * fadeAlpha
+  // ── Document ──
+  const da = docEntrance * fadeAlpha
+
+  // Outline
+  ctx.globalAlpha = 0.4 * da
   ctx.strokeStyle = 'rgba(255,255,255,0.5)'
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, PB_DOC_H, 4)
   ctx.stroke()
 
-  // Doc header bar
-  ctx.globalAlpha = 0.08 * fadeAlpha
+  // Header bar
+  ctx.globalAlpha = 0.08 * da
   ctx.fillStyle = 'rgba(255,255,255,1)'
   ctx.beginPath()
   ctx.roundRect(PB_DOC_X, PB_DOC_Y, PB_DOC_W, 22, [4, 4, 0, 0])
   ctx.fill()
 
-  // Doc title
-  ctx.globalAlpha = 0.5 * fadeAlpha
+  // Title
+  ctx.globalAlpha = 0.55 * da
   ctx.fillStyle = 'rgba(255,255,255,0.9)'
   ctx.font = 'bold 8px monospace'
   ctx.fillText('SPEC.md', PB_DOC_X + 8, PB_DOC_Y + 14)
 
-  // Three dots in header
+  // Header dots
   for (let d = 0; d < 3; d++) {
-    ctx.globalAlpha = 0.3 * fadeAlpha
+    ctx.globalAlpha = 0.35 * da
     ctx.fillStyle = d === 0 ? `rgba(${ACCENT_MARS_RGB},0.6)` : 'rgba(255,255,255,0.4)'
     ctx.beginPath()
     ctx.arc(PB_DOC_X + PB_DOC_W - 12 - d * 10, PB_DOC_Y + 11, 2.5, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  // ── Document sections ──
+  // ── Sections ──
   PB_SECTIONS.forEach((sec, si) => {
     const isComplete = si < activeSectionIndex
-    const isActive = si === activeSectionIndex
+    const isActive = si === activeSectionIndex && progress > 0
     const sProgress = isComplete ? 1 : isActive ? sectionLocalProgress : 0
 
     // Section header
-    const headerAlpha = isComplete ? 0.7 : isActive ? 0.3 + sProgress * 0.5 : 0.1
-    ctx.globalAlpha = headerAlpha * fadeAlpha
-    ctx.fillStyle = isComplete ? `rgba(${ACCENT_MARS_RGB},0.8)` : 'rgba(255,255,255,0.8)'
+    const headerAlpha = isComplete ? 0.75 : isActive ? 0.35 + sProgress * 0.45 : 0.12
+    ctx.globalAlpha = headerAlpha * da
+    ctx.fillStyle = isComplete ? `rgba(${ACCENT_MARS_RGB},0.85)` : 'rgba(255,255,255,0.8)'
     ctx.font = 'bold 9px monospace'
     ctx.fillText(sec.label, PB_DOC_X + 12, sec.y)
 
-    // Completion checkmark
+    // Checkmark
     if (isComplete) {
-      ctx.globalAlpha = 0.8 * fadeAlpha
+      ctx.globalAlpha = 0.85 * da
       ctx.strokeStyle = `rgba(${ACCENT_MARS_RGB},0.9)`
       ctx.lineWidth = 1.5
       const cx = PB_DOC_X + PB_DOC_W - 20
@@ -943,7 +1031,7 @@ function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, f
       ctx.stroke()
     }
 
-    // Content lines — fill progressively
+    // Content lines
     for (let i = 0; i < sec.lines; i++) {
       const lineT = i / sec.lines
       const lineProgress = isComplete ? 1 : isActive ? Math.max(0, (sProgress - lineT) * sec.lines) : 0
@@ -952,8 +1040,8 @@ function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, f
       const w = fullW * clampedProgress
       const ly = sec.y + 6 + i * 12
 
-      // Background placeholder
-      ctx.globalAlpha = 0.04 * fadeAlpha
+      // Placeholder
+      ctx.globalAlpha = 0.05 * da
       ctx.fillStyle = 'rgba(255,255,255,0.5)'
       ctx.beginPath()
       ctx.roundRect(PB_DOC_X + 12, ly, fullW, 4, 2)
@@ -961,18 +1049,17 @@ function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, f
 
       // Filled portion
       if (clampedProgress > 0) {
-        ctx.globalAlpha = (0.15 + clampedProgress * 0.25) * fadeAlpha
+        ctx.globalAlpha = (0.18 + clampedProgress * 0.28) * da
         ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.6)`
         ctx.beginPath()
         ctx.roundRect(PB_DOC_X + 12, ly, w, 4, 2)
         ctx.fill()
       }
 
-      // Typing cursor at the end of the active line
+      // Typing cursor (~0.6Hz blink)
       if (isActive && clampedProgress > 0 && clampedProgress < 1) {
-        const cursorBlink = Math.sin(time * 6) > 0
-        if (cursorBlink) {
-          ctx.globalAlpha = 0.7 * fadeAlpha
+        if (Math.sin(time * 3.7) > 0) {
+          ctx.globalAlpha = 0.75 * da
           ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.9)`
           ctx.beginPath()
           ctx.rect(PB_DOC_X + 12 + w, ly - 1, 1.5, 6)
@@ -982,19 +1069,20 @@ function drawPlaybookAnimated(ctx: CanvasRenderingContext2D, progress: number, f
     }
   })
 
-  // ── Progress bar at bottom of doc ──
+  // ── Progress bar (eased) ──
   const barY = PB_DOC_Y + PB_DOC_H - 8
   const barW = PB_DOC_W - 24
-  ctx.globalAlpha = 0.08 * fadeAlpha
+  ctx.globalAlpha = 0.08 * da
   ctx.fillStyle = 'rgba(255,255,255,0.5)'
   ctx.beginPath()
   ctx.roundRect(PB_DOC_X + 12, barY, barW, 3, 1.5)
   ctx.fill()
 
-  ctx.globalAlpha = 0.5 * fadeAlpha
+  const easedProgress = easeInOutCubic(progress)
+  ctx.globalAlpha = 0.55 * da
   ctx.fillStyle = `rgba(${ACCENT_MARS_RGB},0.7)`
   ctx.beginPath()
-  ctx.roundRect(PB_DOC_X + 12, barY, barW * progress, 3, 1.5)
+  ctx.roundRect(PB_DOC_X + 12, barY, barW * easedProgress, 3, 1.5)
   ctx.fill()
 
   ctx.globalAlpha = 1
