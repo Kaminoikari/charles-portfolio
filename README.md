@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# charles-chen.com
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Personal portfolio site for Charles Chen — product-minded engineer with a focus on interactive visualizations and thoughtful design.
 
-Currently, two official plugins are available:
+**Live:** [charles-chen.com](https://charles-chen.com)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+- **React 19** + **TypeScript** — UI framework
+- **Vite** — build tooling with code-splitting via `React.lazy()`
+- **Tailwind CSS 4** — styling with `@theme` design tokens
+- **Canvas 2D** — interactive animations for hero, skills sphere, project cards
+- **React Router** — SPA routing (`/`, `/changelog`)
+- **Vercel Analytics** — web analytics
+- **Vercel** — hosting with SPA fallback
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Sections
 
-## Expanding the ESLint configuration
+| Section | Description |
+|---------|-------------|
+| **ParticleHero** | Ring-based particle system with click ripple effects |
+| **About** | Profile photo with achievement annotations, neural network background animation |
+| **Universe** | 3D Fibonacci sphere with scroll-driven skill labels |
+| **Experience** | Timeline with staggered reveal animations |
+| **Project Cards** | Canvas-animated cards — Path (route tracer), Plutus Trade (K-line ticker), Product Playbook (spec assembly) |
+| **Blog** | Platform links to external posts |
+| **Contact** | Social links with gradient footer |
+| **Changelog** | Linear-inspired changelog with tag filtering (`/changelog`) |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Features
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Scroll-triggered animations via `IntersectionObserver`
+- Mobile auto-play for canvas animations (`hover: none` detection)
+- `prefers-reduced-motion` support — all animations disabled
+- View Transitions API for smooth navigation
+- Easter egg: rapid-click logo for particle photo reveal
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Development
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev       # local dev server
+npm run build     # type-check + production build
+npm run preview   # preview production build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/          # React components
+│   └── animations/      # Canvas animation modules (path, plutus, playbook)
+├── data/                # Static data (projects, experience, skills, changelog)
+├── App.tsx              # Home page layout
+├── main.tsx             # Router + analytics entry point
+└── index.css            # Tailwind + design tokens
+```
+
+## Deployment
+
+Deployed on Vercel. SPA fallback configured in `vercel.json` to handle client-side routing.
