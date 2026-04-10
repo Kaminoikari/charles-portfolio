@@ -22,7 +22,7 @@ export const projects: Project[] = [
     title: 'Plutus Trade',
     description: 'AI-powered Taiwan stock selection platform with real-time quotes, K-line charts, Gemini AI diagnostics, one-tap stock screening, and prediction tracking system.',
     ctaText: 'TRY IT',
-    ctaUrl: 'https://plutus-trade.fly.dev/',
+    ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
   },
   {
