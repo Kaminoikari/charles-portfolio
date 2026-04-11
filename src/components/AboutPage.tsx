@@ -79,11 +79,11 @@ export default function AboutPage() {
         {/* Product Philosophy */}
         <Section title="Product Philosophy" index={1}>
           <p>I believe the best product managers are builders. The gap between "what should we build" and "here's a working prototype" is where most product ideas die. By closing that gap with AI-powered development, I can test assumptions in hours instead of weeks.</p>
-          <p>My approach combines three things:</p>
           <ul className="mt-4 space-y-3">
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strategy first.</strong> Every product decision starts with JTBD (Jobs to Be Done), RICE prioritization, and user research. Technology is the delivery mechanism, not the starting point.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Outcomes over outputs.</strong> Shipping features isn't the goal — changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong opinions, loosely held.</strong> Product sense means having a clear point of view on what to build and why. But conviction without flexibility is stubbornness — I form strong hypotheses, then let data and user feedback prove me wrong.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong product sense.</strong> The best decisions happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope — that intuition comes from shipping products and watching how real users respond.</span></li>
             <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Build to learn.</strong> Prototypes beat slide decks. I use Claude Code and Cursor to build working products that generate real user feedback — not hypothetical stakeholder opinions.</span></li>
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Ship, measure, iterate.</strong> Data-driven decisions over gut feeling. A/B testing, analytics, and user interviews drive every iteration cycle.</span></li>
           </ul>
         </Section>
 
