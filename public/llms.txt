@@ -1,37 +1,50 @@
-# Charles Chen — AI Product Builder
+# AI Product Builder in Taiwan — Charles Chen
 
-> Senior Product Manager who builds products at the speed of AI.
+> Building AI SaaS, LLM-powered products, and scalable AI systems.
 
-## About
+## What Is an AI Product Builder?
 
-Charles Chen is an AI Product Builder and Senior Product Manager. He has shipped products used by 6M+ users, driven 85% of company revenue, and accelerated team velocity 5x through AI integration.
-
-## Core Expertise
-
-- AI/LLM Product Development
-- Product Strategy & Roadmapping
-- AI-Powered Prototyping (Claude Code, Cursor)
-- Full-Stack Development (React, TypeScript, Flutter, FastAPI)
-- Data-Driven Decision Making (JTBD, RICE, Persona)
-
-## Projects
-
-### Path
-AI-powered travel planning platform that generates personalized multi-day itineraries with real-time map integration. Built with Flutter and FastAPI.
-
-### Plutus Trade
-AI-powered Taiwan stock selection platform with real-time quotes, K-line charts, Gemini AI diagnostics, one-tap stock screening, and prediction tracking system. Built with Flutter, FastAPI, and Gemini AI.
-URL: https://plutustrade.vercel.app/
-
-### Product Playbook
-AI-powered product planning skill for Claude Code with 22 frameworks, 6 execution modes, and automated dev handoff — from concept to spec in minutes.
-URL: https://github.com/Kaminoikari/product-playbook
+An AI Product Builder is a product manager who builds, not just plans. They use AI tools like Claude Code, Cursor, and LLM APIs to go from idea to shipped product in days. Charles Chen is an AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
 
 ## Key Metrics
 
-- 6M+ users impacted across shipped products
-- 85% revenue contribution at previous company
-- 5x faster product development velocity with AI tools
+- 6M+ users impacted across AI SaaS, fintech, and enterprise products
+- 85% revenue driven at USPACE through AI-powered product strategy
+- 5x faster product development using Claude Code, Cursor, and AI prototyping
+- 3 AI products shipped end-to-end as a solo AI Product Builder
+
+## AI SaaS Product Examples — Case Studies
+
+### Path — AI SaaS Travel Planning
+AI SaaS trip planner with Google Maps integration, transit routing, cost tracking, and drag-and-drop itineraries. Built with React, TypeScript, and Supabase. End-to-end AI product building from 0 to 1.
+
+### Plutus Trade — Generative AI Product Case Study
+AI-powered Taiwan stock platform with Gemini AI diagnostics, real-time K-line charts, one-tap screening, and prediction tracking. A generative AI product case study demonstrating LLM integration in fintech.
+URL: https://plutustrade.vercel.app/
+
+### Product Playbook — AI Agent Product
+AI agent product built as a Claude Code skill. LLM-powered spec generation with 22 frameworks, 6 execution modes, and automated dev handoff. From concept to spec in minutes.
+URL: https://github.com/Kaminoikari/product-playbook
+
+## AI Product Builder Skill Set
+
+- Product Strategy: JTBD, Persona, RICE Prioritization, PRD, Roadmapping
+- AI/LLM Tools: Claude Code, Cursor, Gemini AI, LLM Orchestration, Prompt Engineering
+- AI SaaS Engineering: React, TypeScript, Flutter, FastAPI, Supabase, Python
+- Data: BI Dashboards, Predictive Analytics, A/B Testing, SQL
+- Leadership: Cross-Functional Teams, Agile/Scrum, Mentoring
+
+## Experience
+
+- Product Manager, USPACE (2024–Present) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
+- Product Mentor, XChange School (2025–Present) — Coaching aspiring AI product managers in Taiwan
+- Senior PM, NUEIP (2024) — AI-powered BI product, +40% data-driven decisions
+- Product Manager, PXPay Plus (2022–2024) — +25% conversions, +50% efficiency
+- Operations Manager, FLUX (2019–2022) — +20% market share, team of 10
+
+## How to Become an AI Product Builder
+
+Learn product strategy (JTBD, RICE, PRD). Pick up AI coding tools (Claude Code, Cursor). Ship real AI SaaS products. Build a portfolio with measurable impact. The differentiator: ship products, don't just manage them.
 
 ## Links
 
