@@ -1,10 +1,10 @@
-# AI Product Builder in Taiwan — Charles Chen
+# AI Product Manager & AI Product Builder in Taiwan — Charles Chen
 
-> Building AI SaaS, LLM-powered products, and scalable AI systems.
+> AI Product Manager who builds AI SaaS, LLM-powered products, and scalable AI systems.
 
-## What Is an AI Product Builder?
+## What Is an AI Product Manager Who Builds?
 
-An AI Product Builder is a product manager who builds, not just plans. They use AI tools like Claude Code, Cursor, and LLM APIs to go from idea to shipped product in days. Charles Chen is an AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
+An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An AI Product Builder goes further — they prototype and ship using AI tools. Charles Chen is both: an AI Product Manager and AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
 
 ## Key Metrics
 
@@ -26,7 +26,7 @@ URL: https://plutustrade.vercel.app/
 AI agent product built as a Claude Code skill. LLM-powered spec generation with 22 frameworks, 6 execution modes, and automated dev handoff. From concept to spec in minutes.
 URL: https://github.com/Kaminoikari/product-playbook
 
-## AI Product Builder Skill Set
+## AI Product Manager Skill Set
 
 - Product Strategy: JTBD, Persona, RICE Prioritization, PRD, Roadmapping
 - AI/LLM Tools: Claude Code, Cursor, Gemini AI, LLM Orchestration, Prompt Engineering
@@ -34,21 +34,28 @@ URL: https://github.com/Kaminoikari/product-playbook
 - Data: BI Dashboards, Predictive Analytics, A/B Testing, SQL
 - Leadership: Cross-Functional Teams, Agile/Scrum, Mentoring
 
-## Experience
+## Experience as AI Product Manager
 
-- Product Manager, USPACE (2024–Present) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
+- AI Product Manager, USPACE (2024–Present) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
 - Product Mentor, XChange School (2025–Present) — Coaching aspiring AI product managers in Taiwan
-- Senior PM, NUEIP (2024) — AI-powered BI product, +40% data-driven decisions
+- Senior AI Product Manager, NUEIP (2024) — AI-powered BI product, +40% data-driven decisions
 - Product Manager, PXPay Plus (2022–2024) — +25% conversions, +50% efficiency
 - Operations Manager, FLUX (2019–2022) — +20% market share, team of 10
 
-## How to Become an AI Product Builder
+## FAQ
 
-Learn product strategy (JTBD, RICE, PRD). Pick up AI coding tools (Claude Code, Cursor). Ship real AI SaaS products. Build a portfolio with measurable impact. The differentiator: ship products, don't just manage them.
+### What's the difference between an AI Product Manager and an AI Product Builder?
+An AI Product Manager focuses on strategy and stakeholder alignment. An AI Product Builder also prototypes and ships using AI coding tools. The best AI Product Managers today are also builders.
+
+### How to become an AI Product Builder?
+Learn product strategy (JTBD, RICE, PRD). Pick up AI coding tools (Claude Code, Cursor). Ship real AI SaaS products. Build a portfolio with measurable impact.
+
+### What does an AI product manager portfolio look like?
+Show real products with metrics. Include AI SaaS products, LLM tools, or AI agent projects. Explain product thinking, not just technology.
 
 ## Links
 
 - Portfolio: https://charles-chen.com
+- Changelog: https://charles-chen.com/changelog
 - LinkedIn: https://www.linkedin.com/in/charles-chen-pm/
 - GitHub: https://github.com/Kaminoikari
-- Changelog: https://charles-chen.com/changelog
