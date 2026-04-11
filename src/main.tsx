@@ -6,6 +6,7 @@ import './index.css'
 import Nav from './components/Nav'
 import App from './App'
 
+const AboutPage = lazy(() => import('./components/AboutPage'))
 const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
 const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
 
@@ -19,6 +20,11 @@ createRoot(document.getElementById('root')!).render(
       <Nav />
       <Routes>
         <Route path="/" element={<App />} />
+        <Route path="/about" element={
+          <Suspense fallback={<Loading />}>
+            <AboutPage />
+          </Suspense>
+        } />
         <Route path="/changelog" element={
           <Suspense fallback={<Loading />}>
             <ChangelogPage />

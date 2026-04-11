@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { Link } from 'react-router-dom'
 
 interface Firefly {
   x: number
@@ -260,6 +261,12 @@ const HUB_COUNT = 10 // bright hub nodes
             <p className="max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
               Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.
             </p>
+            <Link
+              to="/about"
+              className="mt-6 inline-flex items-center gap-2 font-mono text-[13px] uppercase tracking-[1.5px] text-text-muted no-underline transition-colors duration-200 hover:text-white"
+            >
+              Read more <span aria-hidden="true">↗</span>
+            </Link>
           </div>
 
           {/* Right: Photo + Annotations */}
