@@ -485,9 +485,7 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <a
       ref={cardRef}
-      href={project.ctaUrl}
-      target={project.ctaUrl.startsWith('http') ? '_blank' : undefined}
-      rel={project.ctaUrl.startsWith('http') ? 'noopener noreferrer' : undefined}
+      href={`/projects/${project.id}`}
       aria-label={project.title}
       className="group relative flex min-h-0 flex-col border border-border no-underline transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.01] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] md:min-h-[520px]"
       style={{
@@ -565,8 +563,8 @@ function ProjectCard({ project }: { project: Project }) {
             color: 'white',
           }}
         >
-          <span>{project.ctaText}</span>
-          <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ fontSize: 13, lineHeight: 1, transform: 'scale(1.4)' }}>↗</span>
+          <span>CASE STUDY</span>
+          <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5" style={{ fontSize: 13, lineHeight: 1 }}>→</span>
         </div>
       </div>
     </a>
