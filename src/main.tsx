@@ -7,6 +7,7 @@ import Nav from './components/Nav'
 import App from './App'
 
 const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
+const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
 
 function Loading() {
   return <div className="flex h-screen items-center justify-center bg-bg-primary" />
@@ -21,6 +22,11 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/changelog" element={
           <Suspense fallback={<Loading />}>
             <ChangelogPage />
+          </Suspense>
+        } />
+        <Route path="/projects/:id" element={
+          <Suspense fallback={<Loading />}>
+            <ProjectDetailPage />
           </Suspense>
         } />
       </Routes>
