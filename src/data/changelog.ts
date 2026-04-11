@@ -10,6 +10,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'geo-seo-optimization',
+    date: '2026-04-11',
+    title: 'GEO & SEO — Making the Portfolio Discoverable by AI',
+    tags: ['feature', 'technical'],
+    body: [
+      'The portfolio looked great to humans but was invisible to search engines and AI systems. As a React SPA, the entire page rendered client-side — crawlers that don\'t execute JavaScript saw an empty <div id="root"></div> and nothing else. No structured data, no meta strategy, no sitemap.',
+      'The first layer was mechanical: added JSON-LD structured data (Person, FAQPage, ItemList schemas), Open Graph tags, Twitter Cards, canonical URL, author metadata, and freshness signals (published/modified dates). Created robots.txt explicitly allowing all 14 major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.), a sitemap.xml, and an experimental llms.txt for direct AI consumption.',
+      'The second layer solved the SPA visibility problem. Added a complete HTML fallback inside a <noscript> tag — crawlers that don\'t run JS get full semantic content with proper H1/H2/H3 hierarchy, achievement lists, skill tables, project descriptions, and FAQ sections. React replaces the visible DOM on mount, so users never see the fallback. Initially put the fallback inside #root, which caused a flash of unstyled HTML before React hydrated — moving it to <noscript> fixed that.',
+      'The third layer was keyword strategy. A GEO audit showed the content was structured as "who I am" (brand page) rather than "what problems I solve" (search page). "AI Product Manager" has significantly higher search volume than "AI Product Builder", but appeared only 4 times vs 19. Rebalanced to 15 mentions of "AI Product Manager" across title, JSON-LD, noscript headings, and FAQ content. Added geographic signal "Taiwan" to key positions. The title shifted from name-first (Charles Chen — AI Product Builder) to keyword-first (AI Product Manager | Charles Chen Portfolio).',
+      'Also added X-Robots-Tag headers in vercel.json, internal linking from noscript fallback to /changelog, and a new FAQ targeting long-tail keywords: "how to become an AI product builder", "AI product manager portfolio example", "generative AI product case study", and "difference between AI PM and AI Product Builder".',
+    ],
+  },
+  {
     id: 'playbook-animation-fixes',
     date: '2026-04-09',
     title: 'Product Playbook — Connection Line Fixes',
