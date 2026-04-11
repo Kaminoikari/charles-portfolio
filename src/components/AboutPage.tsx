@@ -72,7 +72,7 @@ export default function AboutPage() {
         {/* Who I Am */}
         <Section title="Who I Am" index={0}>
           <p>I'm Charles Chen (陳德潁), an AI Product Manager based in Taiwan. I build products at the intersection of product strategy and AI-powered execution — not just planning them, but shipping them end-to-end.</p>
-          <p>Over the past 7 years, I've worked across fintech, SaaS, IoT, and e-commerce, impacting 6M+ users and driving 85% of company revenue at USPACE. I currently lead product strategy across parking, subscriptions, and enterprise lines spanning Taiwan and Japan.</p>
+          <p>Over the past 5 years, I've worked across fintech, SaaS, IoT, and e-commerce, impacting 6M+ users and driving 85% of company revenue at USPACE. I currently lead product strategy across parking, subscriptions, and enterprise lines spanning Taiwan and Japan.</p>
           <p>What makes me different: I don't hand off specs and wait. I use AI tools like Claude Code and Cursor to prototype, validate, and ship products myself — achieving 5x faster iteration than traditional PM workflows.</p>
         </Section>
 
@@ -203,7 +203,7 @@ export default function AboutPage() {
           <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ 中文簡介 ]</h2>
           <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]" lang="zh-TW">
             <p>我是陳德潁（Charles Chen），台灣 AI 產品經理。擅長從 0 到 1 打造 AI SaaS 產品，結合產品策略（JTBD、RICE、Persona）與 AI 開發工具（Claude Code、Cursor、Gemini AI），實現從概念到上線的端到端交付。</p>
-            <p>過去 7 年的產品經歷橫跨金融科技、SaaS、IoT 與電商領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車、訂閱、企業三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
+            <p>過去 5 年的產品經歷橫跨金融科技、SaaS、IoT 與電商領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車、訂閱、企業三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
             <p>我相信最好的產品經理是 builder — 不只規劃產品，更能親手用 AI 工具快速打造原型並上線驗證。這種方式讓我的迭代速度比傳統工作流程快 5 倍。</p>
           </div>
         </div>
