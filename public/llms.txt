@@ -1,0 +1,41 @@
+# Charles Chen — AI Product Builder
+
+> Senior Product Manager who builds products at the speed of AI.
+
+## About
+
+Charles Chen is an AI Product Builder and Senior Product Manager. He has shipped products used by 6M+ users, driven 85% of company revenue, and accelerated team velocity 5x through AI integration.
+
+## Core Expertise
+
+- AI/LLM Product Development
+- Product Strategy & Roadmapping
+- AI-Powered Prototyping (Claude Code, Cursor)
+- Full-Stack Development (React, TypeScript, Flutter, FastAPI)
+- Data-Driven Decision Making (JTBD, RICE, Persona)
+
+## Projects
+
+### Path
+AI-powered travel planning platform that generates personalized multi-day itineraries with real-time map integration. Built with Flutter and FastAPI.
+
+### Plutus Trade
+AI-powered Taiwan stock selection platform with real-time quotes, K-line charts, Gemini AI diagnostics, one-tap stock screening, and prediction tracking system. Built with Flutter, FastAPI, and Gemini AI.
+URL: https://plutustrade.vercel.app/
+
+### Product Playbook
+AI-powered product planning skill for Claude Code with 22 frameworks, 6 execution modes, and automated dev handoff — from concept to spec in minutes.
+URL: https://github.com/Kaminoikari/product-playbook
+
+## Key Metrics
+
+- 6M+ users impacted across shipped products
+- 85% revenue contribution at previous company
+- 5x faster product development velocity with AI tools
+
+## Links
+
+- Portfolio: https://charles-chen.com
+- LinkedIn: https://www.linkedin.com/in/charles-chen-pm/
+- GitHub: https://github.com/Kaminoikari
+- Changelog: https://charles-chen.com/changelog

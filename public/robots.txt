@@ -1,0 +1,67 @@
+# robots.txt — AI-optimized
+
+# General crawlers
+User-agent: *
+Allow: /
+
+# === AI Search Crawlers ===
+
+# ChatGPT Search
+User-agent: GPTBot
+Allow: /
+
+# SearchGPT
+User-agent: OAI-SearchBot
+Allow: /
+
+# Claude Search
+User-agent: ClaudeBot
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Gemini / AI Overviews
+User-agent: Google-Extended
+Allow: /
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+
+# Alexa / Rufus
+User-agent: Amazonbot
+Allow: /
+
+# You.com
+User-agent: YouBot
+Allow: /
+
+# Phind
+User-agent: PhindBot
+Allow: /
+
+# Meta AI
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# === Training Crawlers ===
+
+# Common Crawl
+User-agent: CCBot
+Allow: /
+
+# Anthropic
+User-agent: anthropic-ai
+Allow: /
+
+# Cohere
+User-agent: cohere-ai
+Allow: /
+
+# ByteDance
+User-agent: Bytespider
+Allow: /
+
+Sitemap: https://charles-chen.com/sitemap.xml
