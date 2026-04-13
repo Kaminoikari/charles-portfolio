@@ -10,8 +10,11 @@ export default function AboutPage() {
     document.title = 'About Charles Chen — AI Product Manager in Taiwan'
     const metaDesc = document.querySelector('meta[name="description"]')
     if (metaDesc) metaDesc.setAttribute('content', 'About Charles Chen (陳德潁) — AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.')
+    const canonical = document.querySelector('link[rel="canonical"]')
+    if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/about')
     return () => {
       document.title = 'AI Product Manager in Taiwan | Charles Chen Portfolio'
+      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
     }
   }, [])
 

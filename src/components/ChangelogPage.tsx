@@ -21,6 +21,11 @@ export default function ChangelogPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
+    const canonical = document.querySelector('link[rel="canonical"]')
+    if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/changelog')
+    return () => {
+      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
+    }
   }, [])
 
   useEffect(() => {

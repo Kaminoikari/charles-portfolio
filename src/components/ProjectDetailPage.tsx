@@ -24,8 +24,11 @@ export default function ProjectDetailPage() {
     document.title = detail.metaTitle
     const metaDesc = document.querySelector('meta[name="description"]')
     if (metaDesc) metaDesc.setAttribute('content', detail.metaDescription)
+    const canonical = document.querySelector('link[rel="canonical"]')
+    if (canonical) canonical.setAttribute('href', `https://charles-chen.com/projects/${detail.id}`)
     return () => {
-      document.title = 'AI Product Manager | Charles Chen Portfolio'
+      document.title = 'AI Product Manager in Taiwan | Charles Chen Portfolio'
+      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
     }
   }, [detail])
 
