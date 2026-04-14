@@ -29,19 +29,17 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
   return (
     <div className="group relative">
       <div
-        className={`blog-item flex flex-col gap-10 border-b border-border py-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 md:flex-row md:gap-12 ${index === 0 ? 'border-t' : ''}`}
+        className="blog-item flex flex-col gap-10 border-b border-border py-16 first-of-type:border-t last-of-type:border-b-0 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 md:flex-row md:gap-12"
         style={{ transitionDelay: `${index * 100}ms` }}
       >
-        {/* Left: date + title + subtitle + tag + CTA */}
+        {/* Left: date + title + subtitle + tag + READ */}
         <div className="order-2 flex flex-1 flex-col gap-4 md:order-1 md:gap-12 xl:flex-row">
-          {/* Date */}
           <div>
             <p className="font-mono text-xs leading-6 tracking-[1.5px] text-text-tertiary">
               {formatDate(article.date)}
             </p>
           </div>
 
-          {/* Content */}
           <div className="flex flex-1 flex-col space-y-6">
             <div className="block grow space-y-4">
               <a
@@ -60,12 +58,11 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
                   {article.title}
                 </h3>
               </a>
-              <p className="text-balance text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
+              <p className="grow text-balance text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
                 {article.subtitle}
               </p>
             </div>
 
-            {/* Bottom: tag + READ */}
             <div className="flex items-center justify-between gap-3">
               <div>
                 <span className="font-mono text-xs uppercase tracking-[1.5px] text-text-tertiary">
@@ -73,8 +70,9 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
                 </span>
               </div>
               <div>
-                <div
-                  className="pointer-events-none inline-flex items-center gap-2 rounded-full border border-btn-border px-3.5 py-1.5 text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
+                <button
+                  type="button"
+                  className="pointer-events-none inline-flex shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
                   style={{
                     fontFamily: CTA_FONT_FAMILY,
                     fontSize: 12,
@@ -83,27 +81,30 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
                   }}
                 >
                   Read
-                </div>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right: cover image */}
+        {/* Right: cover image as background (xAI style) */}
         <div className="order-1 flex-1 md:order-2 xl:max-w-[500px]">
           <div
             className="flex w-full items-center justify-center bg-[#0C0C0B] duration-150"
-            style={{ aspectRatio: '16 / 10' }}
+            style={{
+              aspectRatio: '16 / 10',
+              ...(article.cover ? {
+                backgroundImage: `url("${article.cover}")`,
+                backgroundSize: 'auto 100%',
+                backgroundPosition: 'center center',
+                backgroundRepeat: 'no-repeat',
+              } : {}),
+            }}
           >
-            {article.cover ? (
-              <img
-                src={article.cover}
-                alt=""
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
+            {!article.cover && (
+              <div className="flex h-full w-full items-center justify-center">
+                {article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />}
+              </div>
             )}
           </div>
         </div>
