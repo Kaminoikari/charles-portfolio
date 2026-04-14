@@ -249,7 +249,7 @@ const HUB_COUNT = 10 // bright hub nodes
           [ ABOUT ]
         </h2>
 
-        <div className="flex flex-col items-center gap-12 md:flex-row md:items-start md:gap-16 lg:gap-24">
+        <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
           {/* Left: Text */}
           <div className="reveal flex-1 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
             <h3 className="mb-6 text-3xl font-semibold leading-tight text-white md:text-4xl lg:text-5xl">
@@ -272,12 +272,12 @@ const HUB_COUNT = 10 // bright hub nodes
           {/* Right: Photo + Annotations */}
           <div className="reveal relative shrink-0 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 [&.animate-in]:delay-200">
             {/* Desktop: photo with annotations on sides */}
-            <div className="hidden md:flex md:items-center md:gap-6">
+            <div className="hidden lg:flex lg:items-center lg:gap-6">
               {/* Left annotation */}
               <Annotation number="6M+" label="Users Impacted" side="left" />
 
               {/* Photo */}
-              <div className="relative h-[600px] w-[440px] shrink-0">
+              <div className="relative h-[480px] w-[350px] shrink-0 xl:h-[600px] xl:w-[440px]">
                 <img
                   src="/assets/charles-hero.jpg"
                   alt="Charles Chen"
@@ -298,7 +298,7 @@ const HUB_COUNT = 10 // bright hub nodes
             </div>
 
             {/* Mobile: photo centered, metrics below */}
-            <div className="flex flex-col items-center md:hidden">
+            <div className="flex flex-col items-center lg:hidden">
               <div className="relative h-[360px] w-[260px]">
                 <img
                   src="/assets/charles-hero.jpg"
