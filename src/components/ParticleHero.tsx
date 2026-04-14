@@ -467,8 +467,8 @@ export default function ParticleHero() {
         style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
 
-      <div ref={textRef} className="relative z-10 max-w-[900px] px-6">
-        <h1 className="text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
+      <div ref={textRef} className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
+        <h1 className="max-w-[900px] text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
           <span style={{ color: 'rgba(255,255,255,0.5)' }}>Hi, I'm </span>
           <span className="font-normal text-white">Charles.</span>
           <span style={{ color: 'rgba(255,255,255,0.5)' }}> I'm a </span>
