@@ -93,7 +93,7 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
             className="break-words flex w-full items-center whitespace-pre-wrap bg-[#0C0C0B] duration-150 aspect-[16/10]"
             style={article.cover ? {
               backgroundImage: `url("${article.cover}")`,
-              backgroundSize: 'auto 100%',
+              backgroundSize: 'cover',
               backgroundPosition: 'center center',
               backgroundRepeat: 'no-repeat',
             } : undefined}
