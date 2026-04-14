@@ -72,9 +72,18 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
         </div>
       </div>
 
-      {/* Right: platform logo */}
+      {/* Right: cover image or platform logo fallback */}
       <div className="flex h-[140px] w-full shrink-0 items-center justify-center overflow-hidden bg-bg-secondary sm:h-[180px] sm:w-[280px]">
-        {article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />}
+        {article.cover ? (
+          <img
+            src={article.cover}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
+        )}
       </div>
     </a>
   )
@@ -110,9 +119,12 @@ export default function BlogEntries() {
         <p className="text-[32px] font-semibold text-white">Latest writing</p>
       </div>
 
-      {/* Articles */}
+      {/* Articles: featured first, then chronological */}
       <div>
-        {blogArticles.map((article, i) => (
+        {[
+          ...blogArticles.filter((a) => a.featured),
+          ...blogArticles.filter((a) => !a.featured).sort((a, b) => b.date.localeCompare(a.date)),
+        ].map((article, i) => (
           <BlogEntry key={article.url} article={article} index={i} />
         ))}
       </div>
