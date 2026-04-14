@@ -10,6 +10,40 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'responsive-layout-fixes',
+    date: '2026-04-14',
+    title: 'Responsive Layout — Hero & About Alignment',
+    tags: ['design', 'technical'],
+    body: [
+      'Two layout consistency issues fixed. The Hero section text container was max-w-[900px] while About used max-w-[1400px] — the left edge of content jumped between sections. Unified Hero to the same max-w-[1400px] px-6 md:px-12 container, with the h1 itself capped at max-w-[900px] to maintain comfortable line length.',
+      'The About section switched to horizontal layout at md (768px), but the photo with side annotations needed ~728px of space. On tablet screens (768-1024px), the text column was crushed to near-zero width. Pushed the horizontal breakpoint from md to lg (1024px), and added responsive photo sizing — 350×480 at lg, expanding to the full 440×600 at xl.',
+    ],
+  },
+  {
+    id: 'blog-xai-redesign',
+    date: '2026-04-13',
+    title: 'Blog Section — xAI-Style Article List',
+    tags: ['feature', 'design'],
+    body: [
+      'The blog section previously showed just two platform buttons (Medium, Substack) — no article titles, no descriptions, no value to visitors or search engines. Redesigned it as a full article list inspired by xAI\'s news page layout.',
+      'Each article now displays as a row with date, title, subtitle, platform tag, cover image, and a READ button. The cover images use background-size: cover in a 16:10 aspect container. Articles without covers show a dimmed platform logo as fallback. The featured article (Uber L4 Offer) gets a mars-colored badge next to the date.',
+      'Subtitles were initially generic one-line summaries. Replaced them with the real Substack subtitles — much more compelling. For example, the CS153 article went from "探討 AI 發展的真正限制與突破方向" to "這堂被戲稱為「AI Coachella」的課，可能是目前全世界最搶手的一堂課。"',
+      'Sorting puts featured articles first, then the rest in reverse chronological order. 13 articles total — 7 from Substack with cover images, 6 from Medium.',
+    ],
+  },
+  {
+    id: 'case-study-pages',
+    date: '2026-04-12',
+    title: 'Case Study Pages — SEO Topic Cluster',
+    tags: ['feature', 'technical'],
+    body: [
+      'Added dedicated case study pages at /projects/path, /projects/plutus-trade, and /projects/product-playbook. Each page has structured sections: Problem, Solution, Tech Stack, Impact, and Learnings — with proper meta titles, descriptions, and dynamic canonical URLs.',
+      'The project cards on the home page now link to these case study pages instead of external URLs. This creates an internal topic cluster for SEO — the home page links to case studies, case studies link back, and each page targets different long-tail keywords.',
+      'Also added a dedicated /about page with full career history, product philosophy (outcomes over outputs, strong opinions loosely held, strong product sense, build to learn), AI workflow breakdown, skill set, and a Chinese bio section with lang="zh-TW" for Taiwan search traffic.',
+      'All new pages use dynamic canonical URLs and structured meta tags. Fixed an issue where Google Search Console flagged subpages as "Alternate page with proper canonical tag" — they were all sharing the hardcoded root canonical.',
+    ],
+  },
+  {
     id: 'geo-seo-optimization',
     date: '2026-04-11',
     title: 'GEO & SEO — Making the Portfolio Discoverable by AI',
