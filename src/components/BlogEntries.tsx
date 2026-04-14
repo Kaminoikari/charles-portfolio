@@ -5,7 +5,7 @@ const CTA_FONT_FAMILY = 'var(--font-mono)'
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' }).toUpperCase()
+  return d.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
 }
 
 const MediumLogo = () => (
@@ -20,72 +20,95 @@ const SubstackLogo = () => (
   </svg>
 )
 
+const sortedArticles = [
+  ...blogArticles.filter((a) => a.featured),
+  ...blogArticles.filter((a) => !a.featured).sort((a, b) => b.date.localeCompare(a.date)),
+]
+
 function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index: number }) {
   return (
-    <a
-      href={article.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={article.title}
-      className={`blog-item group flex flex-col gap-6 border-t border-border py-10 no-underline opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 sm:flex-row sm:gap-10`}
-      style={{ transitionDelay: `${index * 100}ms` }}
-    >
-      {/* Left content */}
-      <div className="flex flex-1 flex-col">
-        {/* Date */}
-        <time className="mb-4 font-mono text-[11px] tracking-[1.5px] text-text-tertiary">
-          {formatDate(article.date)}
-        </time>
+    <div className="group relative">
+      <div
+        className={`blog-item flex flex-col gap-10 border-b border-border py-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 md:flex-row md:gap-12 ${index === 0 ? 'border-t' : ''}`}
+        style={{ transitionDelay: `${index * 100}ms` }}
+      >
+        {/* Left: date + title + subtitle + tag + CTA */}
+        <div className="order-2 flex flex-1 flex-col gap-4 md:order-1 md:gap-12 xl:flex-row">
+          {/* Date */}
+          <div>
+            <p className="font-mono text-xs leading-6 tracking-[1.5px] text-text-tertiary">
+              {formatDate(article.date)}
+            </p>
+          </div>
 
-        {/* Title */}
-        <h3 className="text-xl font-semibold leading-tight text-white transition-colors duration-200 group-hover:text-white">
-          {article.featured && (
-            <span className="mr-2 inline-block rounded bg-accent-mars/15 px-2 py-0.5 align-middle font-mono text-[10px] uppercase tracking-[1px] text-accent-mars">
-              Featured
-            </span>
-          )}
-          {article.title}
-        </h3>
+          {/* Content */}
+          <div className="flex flex-1 flex-col space-y-6">
+            <div className="block grow space-y-4">
+              <a
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="no-underline"
+              >
+                <div className="absolute inset-0" />
+                <h3 className="text-xl leading-6 text-white">
+                  {article.featured && (
+                    <span className="mr-2 inline-block rounded bg-accent-mars/15 px-2 py-0.5 align-middle font-mono text-[10px] uppercase tracking-[1px] text-accent-mars">
+                      Featured
+                    </span>
+                  )}
+                  {article.title}
+                </h3>
+              </a>
+              <p className="text-balance text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
+                {article.subtitle}
+              </p>
+            </div>
 
-        {/* Subtitle */}
-        <p className="mt-2 text-[15px] leading-relaxed text-text-secondary transition-colors duration-200 group-hover:text-text-muted">
-          {article.subtitle}
-        </p>
+            {/* Bottom: tag + READ */}
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="font-mono text-xs uppercase tracking-[1.5px] text-text-tertiary">
+                  {article.platform}
+                </span>
+              </div>
+              <div>
+                <div
+                  className="pointer-events-none inline-flex items-center gap-2 rounded-full border border-btn-border px-3.5 py-1.5 text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
+                  style={{
+                    fontFamily: CTA_FONT_FAMILY,
+                    fontSize: 12,
+                    letterSpacing: '1.5px',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Read
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        {/* Bottom: tag + CTA */}
-        <div className="mt-6 flex items-center gap-4">
-          <span className="font-mono text-[11px] uppercase tracking-[1.5px] text-text-tertiary">
-            {article.platform}
-          </span>
+        {/* Right: cover image */}
+        <div className="order-1 flex-1 md:order-2 xl:max-w-[500px]">
           <div
-            className="inline-flex min-h-[36px] items-center gap-2 rounded-full border border-btn-border px-4 py-1.5 text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:bg-white/[0.06]"
-            style={{
-              fontFamily: CTA_FONT_FAMILY,
-              fontSize: 11,
-              letterSpacing: '1.5px',
-              textTransform: 'uppercase',
-            }}
+            className="flex w-full items-center justify-center bg-[#0C0C0B] duration-150"
+            style={{ aspectRatio: '16 / 10' }}
           >
-            <span>READ</span>
-            <span className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ fontSize: 11, transform: 'scale(1.3)' }}>↗</span>
+            {article.cover ? (
+              <img
+                src={article.cover}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
+            )}
           </div>
         </div>
       </div>
-
-      {/* Right: cover image or platform logo fallback */}
-      <div className="flex h-[140px] w-full shrink-0 items-center justify-center overflow-hidden bg-bg-secondary sm:h-[180px] sm:w-[280px]">
-        {article.cover ? (
-          <img
-            src={article.cover}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
-        )}
-      </div>
-    </a>
+    </div>
   )
 }
 
@@ -112,45 +135,48 @@ export default function BlogEntries() {
   }, [])
 
   return (
-    <section id="blog" ref={sectionRef} className="mx-auto max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
-      {/* Header */}
-      <div className="mb-10">
-        <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ BLOG ]</h2>
-        <p className="text-[32px] font-semibold text-white">Latest writing</p>
-      </div>
+    <section id="blog" ref={sectionRef} className="py-16 sm:py-32">
+      <div className="mx-auto w-full max-w-[1400px] space-y-16 px-6 md:px-12 sm:space-y-32">
+        {/* Header */}
+        <div className="space-y-12">
+          <div>
+            <div className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">
+              [ BLOG ]
+            </div>
+          </div>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="text-balance text-3xl font-semibold tracking-tight md:text-4xl lg:text-5xl text-white">
+                Latest writing
+              </h2>
+            </div>
+            <div className="flex gap-4">
+              <a
+                href={platformLinks.substack}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-4 py-2 font-mono text-sm uppercase tracking-widest text-white no-underline transition-colors duration-200 hover:bg-white/[0.06]"
+              >
+                Substack
+              </a>
+              <a
+                href={platformLinks.medium}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-4 py-2 font-mono text-sm uppercase tracking-widest text-white no-underline transition-colors duration-200 hover:bg-white/[0.06]"
+              >
+                Medium
+              </a>
+            </div>
+          </div>
+        </div>
 
-      {/* Articles: featured first, then chronological */}
-      <div>
-        {[
-          ...blogArticles.filter((a) => a.featured),
-          ...blogArticles.filter((a) => !a.featured).sort((a, b) => b.date.localeCompare(a.date)),
-        ].map((article, i) => (
-          <BlogEntry key={article.url} article={article} index={i} />
-        ))}
-      </div>
-
-      {/* Platform links */}
-      <div className="mt-12 flex flex-wrap gap-4 border-t border-border pt-10">
-        <a
-          href={platformLinks.substack}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 text-white no-underline transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-white/[0.06] hover:scale-105"
-          style={{ fontFamily: CTA_FONT_FAMILY, fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase' }}
-        >
-          <span>More on Substack</span>
-          <span style={{ fontSize: 12, transform: 'scale(1.3)' }}>↗</span>
-        </a>
-        <a
-          href={platformLinks.medium}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 text-white no-underline transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-white/[0.06] hover:scale-105"
-          style={{ fontFamily: CTA_FONT_FAMILY, fontSize: 12, letterSpacing: '1.5px', textTransform: 'uppercase' }}
-        >
-          <span>More on Medium</span>
-          <span style={{ fontSize: 12, transform: 'scale(1.3)' }}>↗</span>
-        </a>
+        {/* Articles */}
+        <div>
+          {sortedArticles.map((article, i) => (
+            <BlogEntry key={article.url} article={article} index={i} />
+          ))}
+        </div>
       </div>
     </section>
   )
