@@ -12,7 +12,7 @@ export const blogArticles: BlogArticle[] = [
   // ── Featured (pinned) ──
   {
     title: '為什麼我拒絕了 Uber L4 Offer？一個 PM 在 AI 浪潮下的職涯覆盤',
-    subtitle: 'AI 時代的產品經理職涯選擇與取捨。',
+    subtitle: '這篇文章記錄我在 AI 浪潮下的職涯反思：當外商大廠光環遇到 AI 變革，我如何做出最艱難的決定。',
     url: 'https://charlestychen.substack.com/p/uber-l4-offer-pm-ai',
     platform: 'Substack',
     date: '2026-04-12',
@@ -22,7 +22,7 @@ export const blogArticles: BlogArticle[] = [
   // ── Chronological (newest first) ──
   {
     title: '打造會自己長大的第二大腦 — Karpathy + Lex Fridman 的 LLM Wiki 完整實戰指南',
-    subtitle: '用 LLM 建構個人知識系統的完整方法論。',
+    subtitle: '用 AI 蓋一座會自己成長的第二大腦：Karpathy LLM Wiki + Obsidian 完整建置攻略',
     url: 'https://charlestychen.substack.com/p/karpathy-lex-fridman-llm-wiki',
     platform: 'Substack',
     date: '2026-04-10',
@@ -30,7 +30,7 @@ export const blogArticles: BlogArticle[] = [
   },
   {
     title: '我從史丹佛 CS153 學到的事：AI 的瓶頸到底在哪裡？',
-    subtitle: '探討 AI 發展的真正限制與突破方向。',
+    subtitle: '這堂被戲稱為「AI Coachella」的課，可能是目前全世界最搶手的一堂課。',
     url: 'https://charlestychen.substack.com/p/cs153-ai',
     platform: 'Substack',
     date: '2026-04-08',
@@ -38,7 +38,7 @@ export const blogArticles: BlogArticle[] = [
   },
   {
     title: 'Claude Code 原始碼深度研究報告：Agent OS 架構與自動化工程實踐的全方位解析',
-    subtitle: '拆解 Claude Code 的核心架構與設計決策。',
+    subtitle: 'Claude Code 原始碼外流，在整個開發圈社群引起軒然大波，並且對 Harness Engineering 的未來產生了深遠影響。',
     url: 'https://charlestychen.substack.com/p/claude-code-agent-os',
     platform: 'Substack',
     date: '2026-04-01',
@@ -46,7 +46,7 @@ export const blogArticles: BlogArticle[] = [
   },
   {
     title: '只有它能在噪音中聽見真相：揭開 Shazam 秒速辨識的數學真相',
-    subtitle: 'Shazam 音樂辨識背後的演算法原理。',
+    subtitle: '從 Avery Wang 的傳奇論文出發，解析「時間對齊直方圖」如何讓手機在噪音中精準讀心',
     url: 'https://charlestychen.substack.com/p/shazam',
     platform: 'Substack',
     date: '2026-03-31',
@@ -70,7 +70,7 @@ export const blogArticles: BlogArticle[] = [
   },
   {
     title: '情勒鳥的 40 億美元豪賭：Duolingo 為何在 2026 年選擇「犧牲利潤」來換取生存？',
-    subtitle: 'Duolingo 的產品策略與商業模式分析。',
+    subtitle: '2026年2月，教育科技巨頭Duolingo投下震撼彈：儘管2025年營收破10億美元，股價卻暴跌超20%，反映創辦人採取的策略轉向。',
     url: 'https://charlestychen.substack.com/p/40-duolingo-2026',
     platform: 'Substack',
     date: '2026-02-28',
