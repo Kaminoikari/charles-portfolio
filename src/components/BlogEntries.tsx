@@ -60,7 +60,7 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
                   {article.title}
                 </h3>
               </a>
-              <p className="grow text-balance text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
+              <p className="grow text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
                 {article.subtitle}
               </p>
             </div>
