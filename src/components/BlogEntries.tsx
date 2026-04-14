@@ -90,22 +90,19 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
         {/* Right: cover image as background (xAI style) */}
         <div className="order-1 flex-1 md:order-2 xl:max-w-[500px]">
           <div
-            className="flex w-full items-center justify-center bg-[#0C0C0B] duration-150"
-            style={{
-              aspectRatio: '16 / 10',
-              ...(article.cover ? {
-                backgroundImage: `url("${article.cover}")`,
-                backgroundSize: 'auto 100%',
-                backgroundPosition: 'center center',
-                backgroundRepeat: 'no-repeat',
-              } : {}),
-            }}
+            className="break-words flex w-full items-center whitespace-pre-wrap bg-[#0C0C0B] duration-150 aspect-[16/10]"
+            style={article.cover ? {
+              backgroundImage: `url("${article.cover}")`,
+              backgroundSize: 'auto 100%',
+              backgroundPosition: 'center center',
+              backgroundRepeat: 'no-repeat',
+            } : undefined}
           >
-            {!article.cover && (
-              <div className="flex h-full w-full items-center justify-center">
-                {article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />}
-              </div>
-            )}
+            <div className="flex h-full w-full items-center justify-center">
+              {!article.cover && (
+                article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
+              )}
+            </div>
           </div>
         </div>
       </div>
