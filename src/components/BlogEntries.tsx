@@ -35,20 +35,18 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
         {/* Left: date + title + subtitle + tag + READ */}
         <div className="order-2 flex flex-1 flex-col gap-4 md:order-1 md:gap-12 xl:flex-row">
           <div>
-            <div className="flex items-center gap-2">
-              <p className="font-mono text-xs leading-6 tracking-[1.5px] text-text-tertiary">
-                {formatDate(article.date)}
-              </p>
+            <p className="font-mono text-xs leading-6 tracking-[1.5px] text-text-tertiary">
+              {formatDate(article.date)}
+            </p>
+          </div>
+
+          <div className="flex flex-1 flex-col space-y-6">
+            <div className="block grow space-y-4">
               {article.featured && (
                 <span className="inline-block rounded bg-accent-mars/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-mars">
                   Featured
                 </span>
               )}
-            </div>
-          </div>
-
-          <div className="flex flex-1 flex-col space-y-6">
-            <div className="block grow space-y-4">
               <a
                 href={article.url}
                 target="_blank"
