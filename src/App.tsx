@@ -8,18 +8,12 @@ const ProjectCards = lazy(() => import('./components/ProjectCards'))
 const BlogEntries = lazy(() => import('./components/BlogEntries'))
 const ContactFooter = lazy(() => import('./components/ContactFooter'))
 
-function Loading() {
-  return <div className="flex h-screen items-center justify-center bg-bg-primary" />
-}
-
 export default function App() {
   return (
     <>
       <a href="#about" className="skip-link">Skip to content</a>
-      <Suspense fallback={<Loading />}>
+      <Suspense fallback={<div className="min-h-screen bg-bg-primary" />}>
         <ParticleHero />
-      </Suspense>
-      <Suspense fallback={<Loading />}>
         <AboutFirefly />
         <UniverseSection />
         <ExperienceTimeline />
