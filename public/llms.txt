@@ -10,7 +10,7 @@ An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An 
 
 - 6M+ users impacted across AI SaaS, fintech, and enterprise products
 - 85% revenue driven at USPACE through AI-powered product strategy
-- 5x faster product development using Claude Code, Cursor, and AI prototyping
+- 5x faster product development using Claude Code, Codex, and AI prototyping
 - 3 AI products shipped end-to-end as a solo AI Product Builder
 
 ## AI SaaS Product Examples — Case Studies
@@ -29,7 +29,7 @@ URL: https://github.com/Kaminoikari/product-playbook
 ## AI Product Manager Skill Set
 
 - Product Strategy: JTBD, Persona, RICE Prioritization, PRD, Roadmapping
-- AI/LLM Tools: Claude Code, Cursor, Gemini AI, LLM Orchestration, Prompt Engineering
+- AI/LLM Tools: Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering
 - AI SaaS Engineering: React, TypeScript, Flutter, FastAPI, Supabase, Python
 - Data: BI Dashboards, Predictive Analytics, A/B Testing, SQL
 - Leadership: Cross-Functional Teams, Agile/Scrum, Mentoring
@@ -48,7 +48,7 @@ URL: https://github.com/Kaminoikari/product-playbook
 An AI Product Manager focuses on strategy and stakeholder alignment. An AI Product Builder also prototypes and ships using AI coding tools. The best AI Product Managers today are also builders.
 
 ### How to become an AI Product Builder?
-Learn product strategy (JTBD, RICE, PRD). Pick up AI coding tools (Claude Code, Cursor). Ship real AI SaaS products. Build a portfolio with measurable impact.
+Learn product strategy (JTBD, RICE, PRD). Pick up AI coding tools (Claude Code, Codex). Ship real AI SaaS products. Build a portfolio with measurable impact.
 
 ### What does an AI product manager portfolio look like?
 Show real products with metrics. Include AI SaaS products, LLM tools, or AI agent projects. Explain product thinking, not just technology.

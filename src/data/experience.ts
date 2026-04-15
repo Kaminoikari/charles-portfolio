@@ -13,7 +13,7 @@ export const experience: ExperienceItem[] = [
     bullets: [
       '85%+ revenue impact — owned product strategy across parking, subscriptions & enterprise lines (TW + JP)',
       '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
-      '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Cursor & Antigravity',
+      '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Codex & Antigravity',
     ],
   },
   {
