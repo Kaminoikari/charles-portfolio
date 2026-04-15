@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'scroll-restoration-fix',
+    date: '2026-04-15',
+    title: 'Scroll Restoration — Fixing the Refresh Problem',
+    tags: ['technical'],
+    body: [
+      'Refreshing the page at any scroll position always jumped to the wrong section — sometimes the About section, sometimes the top. The root cause was lazy loading every homepage section with React.lazy() wrapped in Suspense boundaries.',
+      'Browser scroll restoration works by saving the scroll position and restoring it after the page renders. But with Suspense, the page first renders a compact fallback (a single h-screen div), then expands to its real height when all sections load. By the time the real content appears, the browser has already attempted restoration against the wrong page height — and the position gets clamped to 0.',
+      'The fix was straightforward: remove lazy() from all homepage sections and import them directly. These sections are always visible as the user scrolls — lazy loading them provided no real benefit but broke scroll restoration. Route-level pages (About, Changelog, Case Studies) remain lazy-loaded since visitors may never navigate to them.',
+      'The bundle increased from 233KB to 313KB (gzip 75KB → 102KB), but eliminated 7 separate chunk requests. Net effect on real-world load time is negligible — one larger request is often faster than many small ones due to HTTP round-trip overhead.',
+    ],
+  },
+  {
     id: 'responsive-layout-fixes',
     date: '2026-04-14',
     title: 'Responsive Layout — Hero & About Alignment',
