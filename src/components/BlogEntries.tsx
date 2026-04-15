@@ -51,7 +51,7 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
                 <div className="absolute inset-0" />
                 <h3 className="relative text-xl leading-6 text-white">
                   {article.featured && (
-                    <span className="absolute -top-5 left-0 rounded bg-accent-mars/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-mars">
+                    <span className="absolute -top-7 left-0 rounded bg-accent-mars/15 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-mars">
                       Featured
                     </span>
                   )}
