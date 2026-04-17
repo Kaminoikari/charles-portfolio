@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'footer-portaly-link',
+    date: '2026-04-17',
+    title: 'Footer — Portaly Link Added',
+    tags: ['feature'],
+    body: [
+      'Added Portaly (portaly.cc/charleschen) as a fourth social link in the Contact Footer, alongside LinkedIn, GitHub, and Threads. Portaly is the primary link-in-bio hub, so surfacing it from the portfolio consolidates the cross-platform presence.',
+      'The icon uses the official Portaly brand mark (apple-touch-icon), processed locally to strip the white background and crop tight to the logo edges so it renders cleanly at the 20×20 size used by the other social icons.',
+    ],
+  },
+  {
     id: 'scroll-restoration-fix',
     date: '2026-04-15',
     title: 'Scroll Restoration — Fixing the Refresh Problem',
