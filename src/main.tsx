@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import Nav from './components/Nav'
+import AmbientAudio from './components/AmbientAudio'
 import App from './App'
 
 const AboutPage = lazy(() => import('./components/AboutPage'))
@@ -36,6 +37,7 @@ createRoot(document.getElementById('root')!).render(
           </Suspense>
         } />
       </Routes>
+      <AmbientAudio />
       <Analytics />
     </BrowserRouter>
   </StrictMode>,
