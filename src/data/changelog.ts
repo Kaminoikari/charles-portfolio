@@ -10,6 +10,30 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'ambient-space-audio',
+    date: '2026-04-18',
+    title: 'Ambient Space Audio — Interstellar-Inspired Soundscape',
+    tags: ['feature', 'design'],
+    body: [
+      'Added a cinematic ambient soundtrack that plays quietly in the background while visitors explore the site. The reference was Hans Zimmer\'s Interstellar score — slow-moving pads and sub bass without any rhythmic element, so it sits under the experience instead of demanding attention. Licensed a CC0 "Calm Space Music" track from Pixabay.',
+      'Browser autoplay policies block any audio with sound from starting without user interaction — Chrome and Safari have been strict about this for years, and for good reason. Rather than fighting that, the player waits for the first pointer/keyboard/scroll/touch event, then fades volume from 0 to 0.35 over 1.8 seconds. The transition is slow enough that the audio feels like it was always there.',
+      'A small glassmorphic mute button sits fixed in the bottom-right corner. Clicking it fades the audio out over 0.6 seconds before pausing, and persists the preference to localStorage so muted visitors stay muted on return. The button itself uses a 44×44 hit area for mobile reachability, with the accent-cyan color on hover to match the site\'s existing focus ring treatment.',
+      'The audio element lives once in main.tsx above the router so playback continues uninterrupted when navigating between /, /about, /changelog, and /projects/:id — no re-initialization, no gaps between routes.',
+    ],
+  },
+  {
+    id: 'product-page-refresh-2026-04',
+    date: '2026-04-18',
+    title: 'Product Pages — Tech Stack Refresh',
+    tags: ['technical'],
+    body: [
+      'The three project case study pages were showing stale tech stack tables. Since the products themselves have continued evolving after launch, the portfolio needed to catch up.',
+      'Path now credits its PWA / Service Worker layer in the frontend stack — offline-first is a user-facing promise and should show up in the tech stack that backs it. Plutus Trade\'s data sources were expanded from "FinMind API, Redis" to include Yahoo Finance API for global quotes alongside the Taiwan-specific FinMind feed — the product actually covers both markets but the page didn\'t reflect that.',
+      'Product Playbook got the biggest rewrite, pulled directly from the current GitHub README. The distribution channel was listed as "npm, GitHub" but has since expanded to three delivery surfaces — Claude.ai Custom Skill, Claude Code Plugin, and Claude Code Skill — each meeting users inside a different part of their workflow. The document processing pipeline (Playwright for Chromium PDF rendering, Pandoc for format conversion, pymupdf for text extraction, Tesseract OCR as the fallback layer, pikepdf for bookmarks, Claude Vision for semantic parsing) was missing entirely. Added 6-language internationalization, the MIT license, and the +69% quality improvement benchmark to the Impact section.',
+      'Also renamed the 6 execution modes with their actual production names — Quick, Full, Revision, Custom, Build, Feature Expansion — instead of the vague "from lightweight to comprehensive" description the page carried before.',
+    ],
+  },
+  {
     id: 'footer-portaly-link',
     date: '2026-04-17',
     title: 'Footer — Portaly Link Added',
