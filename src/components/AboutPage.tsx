@@ -105,7 +105,7 @@ export default function AboutPage() {
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Prototyping</td>
-                <td className="py-3 text-text-muted">Claude Code and Codex for rapid full-stack prototyping (React, Flutter, FastAPI)</td>
+                <td className="py-3 text-text-muted">Claude Code and Codex for rapid full-stack prototyping and development (React, Flutter, Node.js, Python with FastAPI, PHP with Laravel)</td>
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">AI Features</td>
@@ -187,7 +187,7 @@ export default function AboutPage() {
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Engineering</td>
-                <td className="py-3 text-text-muted">React, TypeScript, Flutter, FastAPI, Supabase, Canvas 2D, Python</td>
+                <td className="py-3 text-text-muted">React, TypeScript, Flutter, Canvas 2D, Node.js, Python (FastAPI), PHP (Laravel), PostgreSQL, SQLite, Redis, Supabase, Vercel, Fly.io</td>
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Data & Analytics</td>
