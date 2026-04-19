@@ -2,6 +2,7 @@
 
 # General crawlers
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 
 # === AI Search Crawlers ===
