@@ -1,6 +1,6 @@
 # charles-chen.com
 
-Personal portfolio site for Charles Chen — product-minded engineer with a focus on interactive visualizations and thoughtful design.
+Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who builds software products end-to-end with AI tools. Showcases case studies, an AI-built tech stack, and a build-in-public changelog through interactive Canvas animations.
 
 **Live:** [charles-chen.com](https://charles-chen.com)
 
