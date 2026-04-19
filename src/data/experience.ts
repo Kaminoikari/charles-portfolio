@@ -11,7 +11,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '85%+ revenue impact, owning product strategy across parking, enterprise & financial insurance lines (TW + JP)',
+      '85%+ revenue impact, owning product strategy across parking payments, business travel & financial insurance lines (TW + JP)',
       '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
       '5x faster iteration, pioneering AI-driven prototyping with Claude Code, Codex & Antigravity',
     ],

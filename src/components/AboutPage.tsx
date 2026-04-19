@@ -74,8 +74,8 @@ export default function AboutPage() {
 
         {/* Who I Am */}
         <Section title="Who I Am" index={0}>
-          <p>I'm Charles Chen (陳德潁), an AI Product Manager based in Taiwan. I specialize in building SaaS products from 0 to 1, combining product strategy (JTBD, RICE, Persona) with AI development tools (Claude Code, Codex, Gemini AI) to deliver end-to-end from concept to launch.</p>
-          <p>Over the past 5 years, my product experience has spanned creator tools, fintech, SaaS, and MaaS, impacting over 6 million users in total. I currently lead product strategy at USPACE across three product lines (parking, enterprise, and financial insurance) covering both Taiwan and Japan, driving more than 85% of company revenue.</p>
+          <p>I'm Charles Chen (陳德潁), an AI Product Manager based in Taiwan. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.</p>
+          <p>Over the past 5 years, my product experience has spanned creator tools, fintech, SaaS, and MaaS, impacting over 6 million users in total. I currently lead product strategy at USPACE across three product lines (parking payments, business travel, and financial insurance) covering both Taiwan and Japan, driving more than 85% of company revenue.</p>
           <p>I believe the best product managers of the future will be Product Builders. Not just planning products, but personally using AI tools to rapidly build prototypes and validate them in production. This approach lets me iterate 5x faster than traditional PM workflows.</p>
         </Section>
 
@@ -127,7 +127,7 @@ export default function AboutPage() {
               org="USPACE Tech Co., Ltd."
               period="July 2024, Present"
               bullets={[
-                '85%+ revenue impact, owning product strategy across parking, enterprise, and financial insurance lines (Taiwan + Japan)',
+                '85%+ revenue impact, owning product strategy across parking payments, business travel, and financial insurance lines (Taiwan + Japan)',
                 '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
                 '5x faster iteration, pioneered AI-driven prototyping with Claude Code, Codex, and Antigravity',
               ]}
@@ -205,8 +205,8 @@ export default function AboutPage() {
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '400ms' }}>
           <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ 中文簡介 ]</h2>
           <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]" lang="zh-TW">
-            <p>我是陳德潁（Charles Chen），台灣 AI 產品經理。擅長從 0 到 1 打造 SaaS 產品，結合產品策略（JTBD、RICE、Persona）與 AI 開發工具（Claude Code、Codex、Gemini AI），實現從概念到上線的端到端交付。</p>
-            <p>過去 5 年的產品經歷橫跨創作者工具、金融科技、SaaS 與 MaaS 領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車、企業、金融保險三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
+            <p>我是陳德潁（Charles Chen），台灣 AI 產品經理。擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，實現從概念到上線的端到端交付。</p>
+            <p>過去 5 年的產品經歷橫跨創作者工具、金融科技、SaaS 與 MaaS 領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車支付、企業差旅、金融保險三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
             <p>我相信未來最好的產品經理會是 Product Builder 的型態。不只規劃產品，更能親手用 AI 工具快速打造原型並上線驗證。這種方式讓我的迭代速度比傳統工作流程快 5 倍。</p>
           </div>
         </div>
