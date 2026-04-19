@@ -53,7 +53,7 @@ export default function AmbientAudio() {
 
   return (
     <>
-      <audio ref={audioRef} src={AUDIO_SRC} loop preload="auto" aria-hidden="true" />
+      <audio ref={audioRef} src={AUDIO_SRC} loop preload="none" aria-hidden="true" />
       <button
         type="button"
         onClick={toggleMuted}
