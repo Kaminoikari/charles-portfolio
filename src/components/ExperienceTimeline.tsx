@@ -21,7 +21,28 @@ export default function ExperienceTimeline() {
     )
     items.forEach((item) => observer.observe(item))
     const safety = setTimeout(() => items.forEach((item) => item.classList.add('animate-in')), 2000)
-    return () => { observer.disconnect(); clearTimeout(safety) }
+
+    // Touch devices have no hover — light up nodes based on scroll position instead.
+    // Mid-viewport band (top/bottom 40% trimmed) acts as the "current" zone.
+    const isTouch = window.matchMedia('(hover: none)').matches
+    let activeObserver: IntersectionObserver | null = null
+    if (isTouch) {
+      activeObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            entry.target.classList.toggle('is-active', entry.isIntersecting)
+          })
+        },
+        { rootMargin: '-40% 0px -40% 0px', threshold: 0 },
+      )
+      items.forEach((item) => activeObserver!.observe(item))
+    }
+
+    return () => {
+      observer.disconnect()
+      activeObserver?.disconnect()
+      clearTimeout(safety)
+    }
   }, [])
 
   return (
@@ -35,7 +56,7 @@ export default function ExperienceTimeline() {
             style={{ transitionDelay: `${i * 100}ms` }}
           >
             {/* Square node marker */}
-            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-cyan group-hover:shadow-[0_0_8px_rgba(0,217,255,0.3)]" />
+            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-cyan group-hover:shadow-[0_0_8px_rgba(0,217,255,0.3)] group-[.is-active]:border-accent-cyan group-[.is-active]:shadow-[0_0_8px_rgba(0,217,255,0.3)]" />
             <div className="mb-1 text-[13px] uppercase tracking-[1.5px] text-text-tertiary">
               {item.dateRange}
             </div>
