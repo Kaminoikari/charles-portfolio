@@ -4,7 +4,8 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Robots-Tag", "value": "index, follow" }
+        { "key": "X-Robots-Tag", "value": "index, follow" },
+        { "key": "Link", "value": "</about>; rel=\"author\", </sitemap.xml>; rel=\"sitemap\", </llms.txt>; rel=\"describedby\"; type=\"text/plain\"" }
       ]
     }
   ]
