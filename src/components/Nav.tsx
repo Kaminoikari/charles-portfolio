@@ -93,7 +93,7 @@ export default function Nav() {
               window.dispatchEvent(new Event('easter-egg'))
             }
           }}
-          aria-label="Charles Chen — scroll to top"
+          aria-label="Charles Chen, scroll to top"
           className="cursor-pointer border-none bg-transparent text-lg font-bold tracking-widest text-white md:text-xl"
         >
           CHARLES CHEN
@@ -136,7 +136,7 @@ export default function Nav() {
             CONTACT ↗
           </button>
 
-          {/* Hamburger — mobile only, rightmost */}
+          {/* Hamburger, mobile only, rightmost */}
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}

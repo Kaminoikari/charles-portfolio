@@ -7,9 +7,9 @@ export default function AboutPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    document.title = 'About Charles Chen — AI Product Manager in Taiwan'
+    document.title = 'About Charles Chen, AI Product Manager in Taiwan'
     const metaDesc = document.querySelector('meta[name="description"]')
-    if (metaDesc) metaDesc.setAttribute('content', 'About Charles Chen (陳德潁) — AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.')
+    if (metaDesc) metaDesc.setAttribute('content', 'About Charles Chen (陳德潁), AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.')
     const canonical = document.querySelector('link[rel="canonical"]')
     if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/about')
     return () => {
@@ -62,7 +62,7 @@ export default function AboutPage() {
           <div className="relative mx-auto max-w-[400px]">
             <img
               src="/assets/charles-about.jpg"
-              alt="Charles Chen — AI Product Manager"
+              alt="Charles Chen: AI Product Manager"
               className="w-full object-cover object-center"
               style={{
                 maskImage: 'radial-gradient(ellipse 75% 85% at 50% 60%, black 40%, transparent 90%)',
@@ -83,16 +83,16 @@ export default function AboutPage() {
         <Section title="Product Philosophy" index={1}>
           <p>I believe the best product managers are builders. The gap between "what should we build" and "here's a working prototype" is where most product ideas die. By closing that gap with AI-powered development, I can test assumptions in hours instead of weeks.</p>
           <ul className="mt-4 space-y-3">
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Outcomes over outputs.</strong> Shipping features isn't the goal — changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.</span></li>
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong opinions, loosely held.</strong> Product sense means having a clear point of view on what to build and why. But conviction without flexibility is stubbornness — I form strong hypotheses, then let data and user feedback prove me wrong.</span></li>
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong product sense.</strong> The best decisions happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope — that intuition comes from shipping products and watching how real users respond.</span></li>
-            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Build to learn.</strong> Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback — not hypothetical stakeholder opinions.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Outcomes over outputs.</strong> Shipping features isn't the goal, changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong opinions, loosely held.</strong> Product sense means having a clear point of view on what to build and why. But conviction without flexibility is stubbornness, I form strong hypotheses, then let data and user feedback prove me wrong.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Strong product sense.</strong> The best decisions happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope, that intuition comes from shipping products and watching how real users respond.</span></li>
+            <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Build to learn.</strong> Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback, not hypothetical stakeholder opinions.</span></li>
           </ul>
         </Section>
 
         {/* How I Use AI */}
         <Section title="How I Use AI in Product Development" index={2}>
-          <p>AI isn't a feature I add to products — it's how I build them. My AI-powered workflow spans the entire product lifecycle:</p>
+          <p>AI isn't a feature I add to products, it's how I build them. My AI-powered workflow spans the entire product lifecycle:</p>
           <table className="mt-6 w-full text-[15px] leading-[1.8]">
             <tbody>
               <tr className="border-b border-border/50">
@@ -101,7 +101,7 @@ export default function AboutPage() {
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Spec Writing</td>
-                <td className="py-3 text-text-muted">Product Playbook — my own AI agent that generates specs from 22 product frameworks</td>
+                <td className="py-3 text-text-muted">Product Playbook, my own AI agent that generates specs from 22 product frameworks</td>
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Prototyping</td>
@@ -113,7 +113,7 @@ export default function AboutPage() {
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Agentic Workflows</td>
-                <td className="py-3 text-text-muted">Building AI agents that orchestrate multi-step tasks — from spec generation to dev handoff</td>
+                <td className="py-3 text-text-muted">Building AI agents that orchestrate multi-step tasks, from spec generation to dev handoff</td>
               </tr>
             </tbody>
           </table>
@@ -125,17 +125,17 @@ export default function AboutPage() {
             <CareerItem
               title="Product Manager"
               org="USPACE Tech Co., Ltd."
-              period="July 2024 — Present"
+              period="July 2024, Present"
               bullets={[
                 '85%+ revenue impact, owning product strategy across parking, enterprise, and financial insurance lines (Taiwan + Japan)',
                 '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
-                '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Codex, and Antigravity',
+                '5x faster iteration, pioneered AI-driven prototyping with Claude Code, Codex, and Antigravity',
               ]}
             />
             <CareerItem
               title="Product Mentor"
               org="XChange School"
-              period="January 2025 — Present"
+              period="January 2025, Present"
               bullets={[
                 'Mentoring aspiring product managers at Taiwan\'s largest internet professional community',
               ]}
@@ -143,31 +143,31 @@ export default function AboutPage() {
             <CareerItem
               title="Senior Product Manager"
               org="NUEIP Technology Co., Ltd."
-              period="February 2024 — May 2024"
+              period="February 2024, May 2024"
               bullets={[
-                '+40% data-driven decisions — built end-to-end BI product with AI-powered analytics',
-                '+35% forecast accuracy — implemented predictive analytics models for strategic planning',
-                '50% faster reporting — integrated BI dashboards cutting data retrieval time',
+                '+40% data-driven decisions, built end-to-end BI product with AI-powered analytics',
+                '+35% forecast accuracy, implemented predictive analytics models for strategic planning',
+                '50% faster reporting, integrated BI dashboards cutting data retrieval time',
               ]}
             />
             <CareerItem
               title="Product Manager"
               org="PXPay Plus Co., Ltd."
-              period="August 2022 — February 2024"
+              period="August 2022, February 2024"
               bullets={[
-                '+25% transaction conversions — redesigned sign-up and checkout flow in 3 months',
-                '+50% operational efficiency — pioneered reward points system, -40% customer complaints',
+                '+25% transaction conversions, redesigned sign-up and checkout flow in 3 months',
+                '+50% operational efficiency, pioneered reward points system, -40% customer complaints',
                 'Led third-party billing integration for parking, cable TV, pension, and government payments',
               ]}
             />
             <CareerItem
               title="Operations Manager"
               org="FLUX Technology Inc."
-              period="September 2019 — March 2022"
+              period="September 2019, March 2022"
               bullets={[
-                '+20% market share — developed product strategy through competitive analysis',
-                '+30% user retention — redesigned website and SEO for 3-product ecosystem',
-                'Directed team of 10 — +22% process efficiency, +35% order fulfillment speed',
+                '+20% market share, developed product strategy through competitive analysis',
+                '+30% user retention, redesigned website and SEO for 3-product ecosystem',
+                'Directed team of 10, +22% process efficiency, +35% order fulfillment speed',
               ]}
             />
           </div>

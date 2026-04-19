@@ -21,7 +21,7 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
-    title: '打造會自己長大的第二大腦 — Karpathy + Lex Fridman 的 LLM Wiki 完整實戰指南',
+    title: '打造會自己長大的第二大腦: Karpathy + Lex Fridman 的 LLM Wiki 完整實戰指南',
     subtitle: '用 AI 蓋一座會自己成長的第二大腦：Karpathy LLM Wiki + Obsidian 完整建置攻略',
     url: 'https://charlestychen.substack.com/p/karpathy-lex-fridman-llm-wiki',
     platform: 'Substack',
@@ -93,7 +93,7 @@ export const blogArticles: BlogArticle[] = [
     cover: 'https://miro.medium.com/1*ciHZKpKZwrIQXrZBUecslw.jpeg',
   },
   {
-    title: '產品經理 — 不要關注產品交付，而是產品探索',
+    title: '產品經理: 不要關注產品交付，而是產品探索',
     subtitle: 'Discovery over delivery 的產品開發心法。',
     url: 'https://charleschen.medium.com/%E7%94%A2%E5%93%81%E7%B6%93%E7%90%86-%E4%B8%8D%E8%A6%81%E9%97%9C%E6%B3%A8%E7%94%A2%E5%93%81%E4%BA%A4%E4%BB%98-%E8%80%8C%E6%98%AF%E7%94%A2%E5%93%81%E6%8E%A2%E7%B4%A2-953381b1d4eb',
     platform: 'Medium',
