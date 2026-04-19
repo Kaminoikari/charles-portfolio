@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 const AUDIO_SRC = '/assets/ambient-space.mp3'
 const TARGET_VOLUME = 0.35
 const FADE_DURATION_MS = 1800
-const STORAGE_KEY = 'ambient-audio-muted'
 
 function fadeVolume(audio: HTMLAudioElement, from: number, to: number, durationMs: number) {
   const start = performance.now()
@@ -18,12 +17,9 @@ function fadeVolume(audio: HTMLAudioElement, from: number, to: number, durationM
 
 export default function AmbientAudio() {
   const audioRef = useRef<HTMLAudioElement>(null)
-  const [muted, setMuted] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true
-    // Default to muted so the icon matches the browser's autoplay-blocked reality.
-    // Only remember "unmuted" when the user explicitly opted in.
-    return window.localStorage.getItem(STORAGE_KEY) !== '0'
-  })
+  // Always start muted on every page load — no persistence across reloads
+  // or new tabs. Sound is opt-in per session.
+  const [muted, setMuted] = useState(true)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -43,13 +39,7 @@ export default function AmbientAudio() {
     }
   }, [muted])
 
-  const toggleMuted = () => {
-    setMuted((prev) => {
-      const next = !prev
-      window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
-      return next
-    })
-  }
+  const toggleMuted = () => setMuted((prev) => !prev)
 
   return (
     <>
