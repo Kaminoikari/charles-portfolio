@@ -56,7 +56,7 @@ export default function ExperienceTimeline() {
             style={{ transitionDelay: `${i * 100}ms` }}
           >
             {/* Square node marker */}
-            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-cyan group-hover:shadow-[0_0_8px_rgba(0,217,255,0.3)] group-[.is-active]:border-accent-cyan group-[.is-active]:shadow-[0_0_8px_rgba(0,217,255,0.3)]" />
+            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-mars group-hover:shadow-[0_0_8px_rgba(232,101,43,0.35)] group-[.is-active]:border-accent-mars group-[.is-active]:shadow-[0_0_8px_rgba(232,101,43,0.35)]" />
             <div className="mb-1 text-[13px] uppercase tracking-[1.5px] text-text-tertiary">
               {item.dateRange}
             </div>
