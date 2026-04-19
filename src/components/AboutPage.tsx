@@ -179,7 +179,7 @@ export default function AboutPage() {
             <tbody>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">Product Strategy</td>
-                <td className="py-3 text-text-muted">JTBD, Persona, RICE Prioritization, PRD, Roadmapping, Market Research, Competitive Analysis</td>
+                <td className="py-3 text-text-muted">JTBD, Persona, User Journey Map, Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE Prioritization, AARRR (Pirate Metrics), Competitive Analysis</td>
               </tr>
               <tr className="border-b border-border/50">
                 <td className="py-3 pr-6 font-medium text-white whitespace-nowrap">AI / LLM</td>
