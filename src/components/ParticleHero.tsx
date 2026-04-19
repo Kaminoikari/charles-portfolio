@@ -112,8 +112,11 @@ export default function ParticleHero() {
     let height = 0
 
     const resize = () => {
-      width = window.innerWidth
-      height = window.innerHeight
+      // Use section dimensions, not window — on mobile Safari, h-screen (100vh)
+      // includes the URL bar area while window.innerHeight doesn't, so the two
+      // disagree by ~100px and canvas "center" drifts off the visual center.
+      width = section.clientWidth
+      height = section.clientHeight
       canvas.width = width * window.devicePixelRatio
       canvas.height = height * window.devicePixelRatio
       canvas.style.width = `${width}px`
@@ -123,6 +126,8 @@ export default function ParticleHero() {
 
     resize()
     window.addEventListener('resize', resize)
+    const resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(section)
 
     // Pre-render dot
     const dotSize = Math.ceil(PARTICLE_SIZE * 2 * window.devicePixelRatio) + 2
@@ -408,6 +413,7 @@ export default function ParticleHero() {
     return () => {
       cancelAnimationFrame(animIdRef.current)
       observer.disconnect()
+      resizeObserver.disconnect()
       section.removeEventListener('click', onClick)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
