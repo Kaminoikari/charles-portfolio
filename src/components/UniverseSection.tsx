@@ -4,7 +4,7 @@ import { skills } from '../data/skills'
 // --- Constants ---
 
 const LINE_COUNT = 120 // every line gets a particle
-// Every line gets an endpoint particle, no separate count needed
+// Every line gets an endpoint particle — no separate count needed
 const ROTATION_SPEED = -0.001 // Y-axis rotation speed (negative = reverse direction)
 const FOCAL_LENGTH = 900 // Higher = less perspective distortion, rounder sphere
 const SLOW_MULTIPLIER = 0.3
@@ -41,16 +41,16 @@ function generateLines(): Line[] {
   const lines: Line[] = []
 
   for (let i = 0; i < LINE_COUNT; i++) {
-    // Organic random direction, uniform on sphere via random sampling
+    // Organic random direction — uniform on sphere via random sampling
     // (not Fibonacci which creates visible geometric patterns)
     const theta = Math.acos(1 - 2 * Math.random()) // uniform polar
     const phi = Math.random() * Math.PI * 2 // uniform azimuthal
 
-    // Add organic angular jitter, slight perturbation for natural feel
+    // Add organic angular jitter — slight perturbation for natural feel
     const jitterTheta = theta + (Math.random() - 0.5) * 0.05
     const jitterPhi = phi + (Math.random() - 0.5) * 0.05
 
-    // Organic length distribution, smooth exponential falloff
+    // Organic length distribution — smooth exponential falloff
     // Most lines cluster around medium length, with organic tails
     const baseLen = Math.random()
     const organicLen = Math.pow(baseLen, 0.6) // bias toward longer, smooth falloff
@@ -77,7 +77,7 @@ function generateParticles(lines: Line[]): Particle[] {
   const skillLines = shuffledLines.slice(0, skills.length)
   const decoLines = shuffledLines.slice(skills.length)
 
-  // Skill particles, attached to line endpoints
+  // Skill particles — attached to line endpoints
   skills.forEach((_skill, i) => {
     const line = skillLines[i]
     const phi = line.phi
@@ -103,7 +103,7 @@ function generateParticles(lines: Line[]): Particle[] {
     })
   })
 
-  // Decoration particles, one per remaining line (all lines get a particle)
+  // Decoration particles — one per remaining line (all lines get a particle)
   for (let i = 0; i < decoLines.length; i++) {
     const line = decoLines[i]
     const isBright = Math.random() < 0.1 // 10% bright accent
@@ -244,14 +244,14 @@ export default function UniverseSection() {
       const cy = height / 2
       const cosR = Math.cos(rotation)
       const sinR = Math.sin(rotation)
-      // Scale sphere to fill square canvas, sphere radius 300 maps to 80% of canvas
+      // Scale sphere to fill square canvas — sphere radius 300 maps to 80% of canvas
       const screenScale = (width * 0.8) / (MAX_RADIUS * 2)
 
       ctx.clearRect(0, 0, width, height)
 
       const positions = screenPosRef.current
 
-      // --- Draw all lines first (no sorting needed, they all start from center) ---
+      // --- Draw all lines first (no sorting needed — they all start from center) ---
       for (let i = 0; i < LINES.length; i++) {
         const line = LINES[i]
         const cart = sphericalToCartesian(line.rho, line.theta, line.phi)
@@ -338,7 +338,7 @@ export default function UniverseSection() {
 
       }
 
-      // Auto-cycling skill label, positioned at random skill particle (section-level coords)
+      // Auto-cycling skill label — positioned at random skill particle (section-level coords)
       if (hoveredRef.current === null && autoLabelRef.current) {
         if (!autoLabelStarted && visible) {
           autoLabelStarted = true
@@ -370,7 +370,7 @@ export default function UniverseSection() {
         autoLabelRef.current.style.opacity = '0'
       }
 
-      // Scroll-driven text spread, every frame for smooth motion
+      // Scroll-driven text spread — every frame for smooth motion
       const scrollProgress = Math.max(0, Math.min(1, 1 - cachedRect.bottom / (cachedRect.height + height)))
       const spread = scrollProgress * 100 // max 100px extra offset
       if (textLeftRef.current) {
@@ -405,7 +405,7 @@ export default function UniverseSection() {
         <div ref={canvasContainerRef} className="absolute left-1/2 top-0 h-[550px] w-[600px] -translate-x-1/2 lg:h-[800px] lg:w-[1000px] xl:h-[1000px] xl:w-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
           <canvas ref={canvasRef} role="presentation" aria-hidden="true" />
 
-          {/* Hover zones, inside canvas container so coordinates match */}
+          {/* Hover zones — inside canvas container so coordinates match */}
           <div className="pointer-events-none absolute inset-0 z-30">
             {skills.map((skill, i) => (
               <div
@@ -439,13 +439,13 @@ export default function UniverseSection() {
         </div>
       </div>
 
-      {/* Top gradient fade, smooth blend from About section */}
+      {/* Top gradient fade — smooth blend from About section */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
         style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
       />
 
-      {/* Tooltip, section level so gradient can't cover it */}
+      {/* Tooltip — section level so gradient can't cover it */}
       <div
         ref={tooltipRef}
         className="pointer-events-none absolute left-0 top-0 z-50"
@@ -468,7 +468,7 @@ export default function UniverseSection() {
         </span>
       </div>
 
-      {/* Auto-cycling skill label, section level */}
+      {/* Auto-cycling skill label — section level */}
       <div
         ref={autoLabelRef}
         className="pointer-events-none absolute left-0 top-0 z-50"

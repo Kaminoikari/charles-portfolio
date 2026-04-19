@@ -104,7 +104,7 @@ export default function ContactFooter() {
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
           <Link to="/changelog" className="text-text-muted no-underline transition-colors duration-200 hover:text-white">Changelog</Link>
-          {' · '}Rendered in <span ref={perfRef}>,</span>ms · React · Canvas 2D · Tailwind
+          {' · '}Rendered in <span ref={perfRef}>—</span>ms · React · Canvas 2D · Tailwind
         </div>
       </footer>
     </div>

@@ -1,10 +1,10 @@
-# AI Product Manager & AI Product Builder in Taiwan: Charles Chen
+# AI Product Manager & AI Product Builder in Taiwan — Charles Chen
 
 > AI Product Manager who builds AI SaaS, LLM-powered products, and scalable AI systems.
 
 ## What Is an AI Product Manager Who Builds?
 
-An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An AI Product Builder goes further, they prototype and ship using AI tools. Charles Chen is both: an AI Product Manager and AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
+An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An AI Product Builder goes further — they prototype and ship using AI tools. Charles Chen is both: an AI Product Manager and AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
 
 ## Key Metrics
 
@@ -13,16 +13,16 @@ An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An 
 - 5x faster product development using Claude Code, Codex, and AI prototyping
 - 3 AI products shipped end-to-end as a solo AI Product Builder
 
-## AI SaaS Product Examples: Case Studies
+## AI SaaS Product Examples — Case Studies
 
-### Path: AI SaaS Travel Planning
+### Path — AI SaaS Travel Planning
 AI SaaS trip planner with Google Maps integration, transit routing, cost tracking, and drag-and-drop itineraries. Built with React, TypeScript, and Supabase. End-to-end AI product building from 0 to 1.
 
-### Plutus Trade: Generative AI Product Case Study
+### Plutus Trade — Generative AI Product Case Study
 AI-powered Taiwan stock platform with Gemini AI diagnostics, real-time K-line charts, one-tap screening, and prediction tracking. A generative AI product case study demonstrating LLM integration in fintech.
 URL: https://plutustrade.vercel.app/
 
-### Product Playbook: AI Agent Product
+### Product Playbook — AI Agent Product
 AI agent product built as a Claude Code skill. LLM-powered spec generation with 22 frameworks, 6 execution modes, and automated dev handoff. From concept to spec in minutes.
 URL: https://github.com/Kaminoikari/product-playbook
 
@@ -36,11 +36,11 @@ URL: https://github.com/Kaminoikari/product-playbook
 
 ## Experience as AI Product Manager
 
-- AI Product Manager, USPACE (2024–Present), AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
-- Product Mentor, XChange School (2025–Present), Coaching aspiring AI product managers in Taiwan
-- Senior AI Product Manager, NUEIP (2024), AI-powered BI product, +40% data-driven decisions
-- Product Manager, PXPay Plus (2022–2024), +25% conversions, +50% efficiency
-- Operations Manager, FLUX (2019–2022), +20% market share, team of 10
+- AI Product Manager, USPACE (2024–Present) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
+- Product Mentor, XChange School (2025–Present) — Coaching aspiring AI product managers in Taiwan
+- Senior AI Product Manager, NUEIP (2024) — AI-powered BI product, +40% data-driven decisions
+- Product Manager, PXPay Plus (2022–2024) — +25% conversions, +50% efficiency
+- Operations Manager, FLUX (2019–2022) — +20% market share, team of 10
 
 ## FAQ
 

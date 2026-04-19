@@ -1,18 +1,18 @@
 # charles-chen.com
 
-Personal portfolio site for Charles Chen, product-minded engineer with a focus on interactive visualizations and thoughtful design.
+Personal portfolio site for Charles Chen — product-minded engineer with a focus on interactive visualizations and thoughtful design.
 
 **Live:** [charles-chen.com](https://charles-chen.com)
 
 ## Tech Stack
 
-- **React 19** + **TypeScript**, UI framework
-- **Vite**, build tooling with code-splitting via `React.lazy()`
-- **Tailwind CSS 4**, styling with `@theme` design tokens
-- **Canvas 2D**, interactive animations for hero, skills sphere, project cards
-- **React Router**, SPA routing (`/`, `/changelog`)
-- **Vercel Analytics**, web analytics
-- **Vercel**, hosting with SPA fallback
+- **React 19** + **TypeScript** — UI framework
+- **Vite** — build tooling with code-splitting via `React.lazy()`
+- **Tailwind CSS 4** — styling with `@theme` design tokens
+- **Canvas 2D** — interactive animations for hero, skills sphere, project cards
+- **React Router** — SPA routing (`/`, `/changelog`)
+- **Vercel Analytics** — web analytics
+- **Vercel** — hosting with SPA fallback
 
 ## Sections
 
@@ -22,7 +22,7 @@ Personal portfolio site for Charles Chen, product-minded engineer with a focus o
 | **About** | Profile photo with achievement annotations, neural network background animation |
 | **Universe** | 3D Fibonacci sphere with scroll-driven skill labels |
 | **Experience** | Timeline with staggered reveal animations |
-| **Project Cards** | Canvas-animated cards, Path (route tracer), Plutus Trade (K-line ticker), Product Playbook (spec assembly) |
+| **Project Cards** | Canvas-animated cards — Path (route tracer), Plutus Trade (K-line ticker), Product Playbook (spec assembly) |
 | **Blog** | Platform links to external posts |
 | **Contact** | Social links with gradient footer |
 | **Changelog** | Linear-inspired changelog with tag filtering (`/changelog`) |
@@ -31,7 +31,7 @@ Personal portfolio site for Charles Chen, product-minded engineer with a focus o
 
 - Scroll-triggered animations via `IntersectionObserver`
 - Mobile auto-play for canvas animations (`hover: none` detection)
-- `prefers-reduced-motion` support, all animations disabled
+- `prefers-reduced-motion` support — all animations disabled
 - View Transitions API for smooth navigation
 - Easter egg: rapid-click logo for particle photo reveal
 

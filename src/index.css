@@ -59,7 +59,7 @@ body {
   color: #fff;
 }
 
-/* Skip to content link, hidden until focused */
+/* Skip to content link — hidden until focused */
 .skip-link {
   position: absolute;
   top: -100%;
@@ -94,7 +94,7 @@ body {
   }
 }
 
-/* View Transitions API, cinematic section navigation */
+/* View Transitions API — cinematic section navigation */
 ::view-transition-old(root) {
   animation: fade-out 0.3s ease-out;
 }

@@ -112,7 +112,7 @@ export default function ParticleHero() {
     let height = 0
 
     const resize = () => {
-      // Use section dimensions, not window, on mobile Safari, h-screen (100vh)
+      // Use section dimensions, not window — on mobile Safari, h-screen (100vh)
       // includes the URL bar area while window.innerHeight doesn't, so the two
       // disagree by ~100px and canvas "center" drifts off the visual center.
       width = section.clientWidth
@@ -183,7 +183,7 @@ export default function ParticleHero() {
         const idx = (py * PHOTO_SAMPLE_SIZE + px) * 4
         return {
           b: (pixels[idx] + pixels[idx + 1] + pixels[idx + 2]) / 3,
-          a: pixels[idx + 3], // alpha channel, 0 = transparent (outside circle)
+          a: pixels[idx + 3], // alpha channel — 0 = transparent (outside circle)
         }
       }
 
@@ -198,13 +198,13 @@ export default function ParticleHero() {
           // Skip transparent pixels (outside circular crop)
           if (a < 128) continue
 
-          // Skip pixels near circular crop edge, prevents circle outline
+          // Skip pixels near circular crop edge — prevents circle outline
           const centerX = PHOTO_SAMPLE_SIZE / 2
           const centerY = PHOTO_SAMPLE_SIZE / 2
           const radius = PHOTO_SAMPLE_SIZE / 2
           const distFromCenter = Math.sqrt((px - centerX) ** 2 + (py - centerY) ** 2)
           if (distFromCenter > radius * 0.70) continue // skip outer 30%
-          // Skip top region, hair/background boundary creates false arc
+          // Skip top region — hair/background boundary creates false arc
           if (py < PHOTO_SAMPLE_SIZE * 0.28) continue
 
           // Edge detection
@@ -213,14 +213,14 @@ export default function ParticleHero() {
             + Math.abs(b - getPixel(px, py - 1).b)
             + Math.abs(b - getPixel(px, py + 1).b)
 
-          // Only edges, creates recognizable silhouette outline, not filled block
+          // Only edges — creates recognizable silhouette outline, not filled block
           if (edge > 25) {
             pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight: edge })
           }
         }
       }
 
-      // Remap coordinates, uniform scale to preserve aspect ratio
+      // Remap coordinates — uniform scale to preserve aspect ratio
       if (pool.length > 0) {
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
         for (const p of pool) {
@@ -243,7 +243,7 @@ export default function ParticleHero() {
       // Sort by weight (edges first) and distribute evenly across particles
       pool.sort((a, b) => b.weight - a.weight)
 
-      // Assign targets, spread evenly across pool to avoid clustering
+      // Assign targets — spread evenly across pool to avoid clustering
       const totalParticles = particles.length
       for (let i = 0; i < totalParticles; i++) {
         if (pool.length > 0) {

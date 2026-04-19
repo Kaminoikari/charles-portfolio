@@ -22,7 +22,7 @@ export default function ExperienceTimeline() {
     items.forEach((item) => observer.observe(item))
     const safety = setTimeout(() => items.forEach((item) => item.classList.add('animate-in')), 2000)
 
-    // Touch devices have no hover, light up nodes based on scroll position instead.
+    // Touch devices have no hover — light up nodes based on scroll position instead.
     // Mid-viewport band (top/bottom 40% trimmed) acts as the "current" zone.
     const isTouch = window.matchMedia('(hover: none)').matches
     let activeObserver: IntersectionObserver | null = null
@@ -69,7 +69,7 @@ export default function ExperienceTimeline() {
             {item.bullets.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {item.bullets.map((bullet, j) => (
-                  <li key={j} className="text-[15px] leading-relaxed text-text-muted before:mr-2 before:inline-block before:text-text-tertiary before:content-['–']">
+                  <li key={j} className="text-[15px] leading-relaxed text-text-muted before:mr-2 before:inline-block before:text-text-tertiary before:content-['—']">
                     {bullet}
                   </li>
                 ))}

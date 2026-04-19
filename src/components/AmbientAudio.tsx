@@ -17,7 +17,7 @@ function fadeVolume(audio: HTMLAudioElement, from: number, to: number, durationM
 
 export default function AmbientAudio() {
   const audioRef = useRef<HTMLAudioElement>(null)
-  // Always start muted on every page load, no persistence across reloads
+  // Always start muted on every page load — no persistence across reloads
   // or new tabs. Sound is opt-in per session.
   const [muted, setMuted] = useState(true)
 

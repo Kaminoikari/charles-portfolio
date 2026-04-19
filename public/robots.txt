@@ -1,4 +1,4 @@
-# robots.txt: AI-optimized
+# robots.txt — AI-optimized
 
 # General crawlers
 User-agent: *

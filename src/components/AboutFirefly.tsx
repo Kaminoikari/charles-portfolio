@@ -90,7 +90,7 @@ const HUB_COUNT = 10 // bright hub nodes
     resize()
     window.addEventListener('resize', resize)
 
-    // Hub nodes, large, bright, slow-moving anchor points
+    // Hub nodes — large, bright, slow-moving anchor points
     for (let i = 0; i < HUB_COUNT; i++) {
       fireflies.push(createFirefly(width, height, true))
     }
@@ -100,7 +100,7 @@ const HUB_COUNT = 10 // bright hub nodes
     }
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    // IntersectionObserver, pause when off-screen
+    // IntersectionObserver — pause when off-screen
     let visible = false
     const observer = new IntersectionObserver(
       ([entry]) => { visible = entry.isIntersecting },
@@ -108,7 +108,7 @@ const HUB_COUNT = 10 // bright hub nodes
     )
     if (sectionRef.current) observer.observe(sectionRef.current)
 
-    // Reusable containers for spatial grid, avoid GC pressure from per-frame allocation
+    // Reusable containers for spatial grid — avoid GC pressure from per-frame allocation
     const grid = new Map<string, number[]>()
     const checked = new Set<string>()
 
@@ -134,12 +134,12 @@ const HUB_COUNT = 10 // bright hub nodes
         }
       }
 
-      // Draw quantum neural network connections, spatial grid for O(n) performance
+      // Draw quantum neural network connections — spatial grid for O(n) performance
       const CONNECTION_DIST = 250
       const CONNECTION_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST
       const time = Date.now() * 0.001
 
-      // Build spatial grid, reuse containers to avoid GC pressure
+      // Build spatial grid — reuse containers to avoid GC pressure
       grid.clear()
       for (let i = 0; i < fireflies.length; i++) {
         const col = Math.floor(fireflies[i].x / CONNECTION_DIST)
@@ -191,7 +191,7 @@ const HUB_COUNT = 10 // bright hub nodes
         }
       }
 
-      // Draw nodes, simple bright dots, no glow
+      // Draw nodes — simple bright dots, no glow
       for (const f of fireflies) {
         ctx.globalAlpha = f.opacity
         ctx.fillStyle = f.color
@@ -237,7 +237,7 @@ const HUB_COUNT = 10 // bright hub nodes
       className="relative overflow-hidden py-24 md:py-32"
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
-      {/* Bottom gradient fade, smooth blend into Universe section */}
+      {/* Bottom gradient fade — smooth blend into Universe section */}
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[5] h-32"
         style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
@@ -256,10 +256,10 @@ const HUB_COUNT = 10 // bright hub nodes
               What I bring to the table.
             </h3>
             <p className="mb-4 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
-              I help companies turn product vision into reality, from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
+              I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
             </p>
             <p className="max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
-              Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development, I bring the strategy, execution, and cross-functional leadership to make it happen.
+              Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.
             </p>
             <Link
               to="/about"
