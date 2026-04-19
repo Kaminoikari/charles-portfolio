@@ -61,12 +61,12 @@ export default function AboutPage() {
         <div className="reveal mb-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
           <div className="relative mx-auto max-w-[400px]">
             <img
-              src="/assets/charles-hero.jpg"
+              src="/assets/charles-about.jpg"
               alt="Charles Chen — AI Product Manager"
-              className="w-full object-cover object-top"
+              className="w-full object-cover object-center"
               style={{
-                maskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
-                WebkitMaskImage: 'radial-gradient(ellipse 75% 85% at 50% 35%, black 40%, transparent 90%)',
+                maskImage: 'radial-gradient(ellipse 75% 85% at 50% 60%, black 40%, transparent 90%)',
+                WebkitMaskImage: 'radial-gradient(ellipse 75% 85% at 50% 60%, black 40%, transparent 90%)',
               }}
             />
           </div>
