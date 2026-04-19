@@ -10,6 +10,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'ambient-audio-default-muted',
+    date: '2026-04-19',
+    title: 'Ambient Audio — Start Muted by Default',
+    tags: ['design'],
+    body: [
+      'Flipped how the ambient soundtrack starts. The first version defaulted to unmuted and tried to sneak past browser autoplay blocks by waiting for the first click or scroll to sneak the fade-in through. It was clever but dishonest: the speaker icon in the corner showed "sound on" the entire time, while the browser was silently blocking playback. Visitors had no idea the delay was intentional, and anyone who never clicked or scrolled saw a lying icon forever.',
+      'Now the icon starts in the muted state, which matches what the browser is actually doing, and music only begins when the visitor explicitly clicks the speaker. The click itself counts as the user gesture that unlocks autoplay — so a single action both grants the permission and starts the fade-in. No separate "enable audio" step, no icon that disagrees with reality.',
+      'Also tightened the localStorage semantics. The button still remembers the visitor\'s last choice either way, but the default state — if nothing is stored, or if a stored value is somehow corrupted — is muted. Returning visitors who actively unmuted last visit will hear the music again; everyone else gets silence until they ask for it. Treats sound as opt-in, which is the right default for a portfolio.',
+    ],
+  },
+  {
     id: 'ambient-space-audio',
     date: '2026-04-18',
     title: 'Ambient Space Audio — Interstellar-Inspired Soundscape',
