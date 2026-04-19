@@ -10,7 +10,6 @@ const MIN_ALPHA = 0.05
 const MAX_ALPHA = 1.0
 const PARTICLE_COLOR = 'rgba(235, 240, 250, 1)'
 const ANIMATION_SPEED = 0.003
-const MOUSE_EASE = 0.015
 const W1_FREQ = 4
 const W1_SPEED = 1.5
 const W1_DIR = 1
@@ -100,9 +99,6 @@ export default function ParticleHero() {
   const easterEggRef = useRef(false)
   const easterEggProgressRef = useRef(0) // 0 = ring, 1 = photo
   const konamiIndexRef = useRef(0)
-
-  const mouseTargetRef = useRef({ x: 50, y: 50 })
-  const mouseSmoothRef = useRef({ x: 50, y: 50 })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -271,12 +267,7 @@ export default function ParticleHero() {
         }
       }
     }
-    const onMouseLeave = () => {
-      mouseTargetRef.current.x = 50
-      mouseTargetRef.current.y = 50
-    }
     window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseleave', onMouseLeave)
 
     const observer = new IntersectionObserver(
       ([entry]) => { visibleRef.current = entry.isIntersecting },
@@ -297,9 +288,6 @@ export default function ParticleHero() {
     const halfThick = THICKNESS / 2
     let tick = 0
 
-    // Photo display area (centered, 300x300)
-    const PHOTO_DISPLAY_SIZE = Math.min(width * 0.7, height * 0.75, 900) // scales with viewport
-
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
       if (!visibleRef.current) return
@@ -307,13 +295,11 @@ export default function ParticleHero() {
       if (!prefersReduced) tick += ANIMATION_SPEED
       ctx.clearRect(0, 0, width, height)
 
-      const ms = mouseSmoothRef.current
-      const mt = mouseTargetRef.current
-      ms.x += (mt.x - ms.x) * MOUSE_EASE
-      ms.y += (mt.y - ms.y) * MOUSE_EASE
+      // Photo display area scales with current viewport (recomputed each frame for resize)
+      const PHOTO_DISPLAY_SIZE = Math.min(width * 0.7, height * 0.75, 900)
 
-      const ringCX = (width * ms.x) / 100
-      const ringCY = (height * ms.y) / 100
+      const ringCX = width / 2
+      const ringCY = height / 2
       const t = tick * Math.PI * 2
       const isEasterEgg = easterEggRef.current
 
@@ -425,7 +411,6 @@ export default function ParticleHero() {
       section.removeEventListener('click', onClick)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseleave', onMouseLeave)
     }
   }, [])
 
