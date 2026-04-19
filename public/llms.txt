@@ -8,7 +8,7 @@ An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An 
 
 ## Key Metrics
 
-- 6M+ users impacted across AI SaaS, fintech, and enterprise products
+- 6M+ users impacted across creator tools, fintech, SaaS, and MaaS products
 - 85% revenue driven at USPACE through AI-powered product strategy
 - 5x faster product development using Claude Code, Codex, and AI prototyping
 - 3 AI products shipped end-to-end as a solo AI Product Builder
