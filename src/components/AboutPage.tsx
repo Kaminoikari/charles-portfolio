@@ -127,7 +127,7 @@ export default function AboutPage() {
               org="USPACE Tech Co., Ltd."
               period="July 2024 — Present"
               bullets={[
-                '85%+ revenue impact — own product strategy across parking, subscriptions, and enterprise lines (Taiwan + Japan)',
+                '85%+ revenue impact, owning product strategy across parking, enterprise, and financial insurance lines (Taiwan + Japan)',
                 '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
                 '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Codex, and Antigravity',
               ]}
