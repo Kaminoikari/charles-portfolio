@@ -19,24 +19,15 @@ function fadeVolume(audio: HTMLAudioElement, from: number, to: number, durationM
 export default function AmbientAudio() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [muted, setMuted] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return window.localStorage.getItem(STORAGE_KEY) === '1'
+    if (typeof window === 'undefined') return true
+    // Default to muted so the icon matches the browser's autoplay-blocked reality.
+    // Only remember "unmuted" when the user explicitly opted in.
+    return window.localStorage.getItem(STORAGE_KEY) !== '0'
   })
-  const [hasInteracted, setHasInteracted] = useState(false)
-
-  useEffect(() => {
-    if (hasInteracted) return
-    const unlock = () => setHasInteracted(true)
-    const events: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'scroll', 'touchstart']
-    events.forEach((evt) => window.addEventListener(evt, unlock, { once: true, passive: true }))
-    return () => {
-      events.forEach((evt) => window.removeEventListener(evt, unlock))
-    }
-  }, [hasInteracted])
 
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio || !hasInteracted) return
+    if (!audio) return
 
     if (muted) {
       if (!audio.paused) fadeVolume(audio, audio.volume, 0, 600)
@@ -50,7 +41,7 @@ export default function AmbientAudio() {
         .then(() => fadeVolume(audio, 0, TARGET_VOLUME, FADE_DURATION_MS))
         .catch(() => {})
     }
-  }, [hasInteracted, muted])
+  }, [muted])
 
   const toggleMuted = () => {
     setMuted((prev) => {
@@ -58,7 +49,6 @@ export default function AmbientAudio() {
       window.localStorage.setItem(STORAGE_KEY, next ? '1' : '0')
       return next
     })
-    setHasInteracted(true)
   }
 
   return (
