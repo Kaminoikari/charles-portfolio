@@ -21,6 +21,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '接下來的兩年，可能是 PM 史上最混亂的時代',
+    subtitle: '為什麼一半的 PM 會被洗掉，而留在場上的那一半，做對了什麼？Nikhyl Singhal 談 PM 職位的分水嶺、重塑自己的那個門檻，以及我在台灣看到的現場。',
+    url: 'https://charlestychen.substack.com/p/pm',
+    platform: 'Substack',
+    date: '2026-04-19',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/7884d646-fa97-4fd4-bfe1-2fa01cfea1ff_1536x1024.png',
+  },
+  {
     title: '打造會自己長大的第二大腦 — Karpathy + Lex Fridman 的 LLM Wiki 完整實戰指南',
     subtitle: '用 AI 蓋一座會自己成長的第二大腦：Karpathy LLM Wiki + Obsidian 完整建置攻略',
     url: 'https://charlestychen.substack.com/p/karpathy-lex-fridman-llm-wiki',
