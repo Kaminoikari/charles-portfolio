@@ -448,7 +448,7 @@ export default function ParticleHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden"
+      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100dvh]:h-[100dvh]"
       style={{ background: 'var(--color-bg-primary)' }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />

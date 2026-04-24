@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-mobile-vertical-centering',
+    date: '2026-04-21',
+    title: 'Hero Section — Mobile Vertical Centering Fix',
+    tags: ['technical', 'design'],
+    body: [
+      'The hero text on mobile was sitting visibly below the vertical center of the visible viewport. The root cause was 100vh — on mobile browsers this unit represents the viewport with the URL bar collapsed, not the actually-visible area. So the section was taller than what the visitor could see, and "center of 100vh" landed roughly 40-50px below the visual center. The SCROLL ↓ indicator at the bottom was also hidden behind the URL bar for the same reason.',
+      'Switched the hero section to use 100dvh (dynamic viewport height) via a supports-[] variant, so modern browsers size the section to the actually-visible area and fall back to 100vh on older browsers where dvh isn\'t recognized. The canvas already resized off the section\'s clientHeight, so the particle animation center follows the layout automatically — no additional changes needed there.',
+    ],
+  },
+  {
     id: 'ambient-audio-default-muted',
     date: '2026-04-19',
     title: 'Ambient Audio — Start Muted by Default',
