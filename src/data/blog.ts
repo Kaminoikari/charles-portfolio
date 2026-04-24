@@ -21,6 +21,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '當模型每天都在變強，PM 到底該做什麼？',
+    subtitle: 'Anthropic Claude Code 產品負責人 Cat Wu 的 7 個反直覺 PM 洞察。',
+    url: 'https://charlestychen.substack.com/p/pm-b5b',
+    platform: 'Substack',
+    date: '2026-04-24',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/b437e201-2daa-425f-bd54-40c92a4da7a9_1088x1445.png',
+  },
+  {
     title: '打造會自己長大的第二大腦 — Karpathy + Lex Fridman 的 LLM Wiki 完整實戰指南',
     subtitle: '用 AI 蓋一座會自己成長的第二大腦：Karpathy LLM Wiki + Obsidian 完整建置攻略',
     url: 'https://charlestychen.substack.com/p/karpathy-lex-fridman-llm-wiki',
