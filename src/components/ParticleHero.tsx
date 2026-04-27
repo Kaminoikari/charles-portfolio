@@ -185,13 +185,14 @@ export default function ParticleHero() {
 
     let width = 0
     let height = 0
+    let lastDpr = -1
 
     const resize = () => {
       // Use section dimensions, not window — on mobile Safari, h-screen (100vh)
       // includes the URL bar area while window.innerHeight doesn't, so the two
       // disagree by ~100px and canvas "center" drifts off the visual center.
-      width = section.clientWidth
-      height = section.clientHeight
+      const nextWidth = section.clientWidth
+      const nextHeight = section.clientHeight
       // Cap DPR at 2.0. The original 1.5 cap (for idle-loop perf headroom
       // on 3000 drawImages + 1000+ trail strokes) was visibly soft on
       // dpr=3 iPhones — the canvas rendered at half native density, then
@@ -203,12 +204,23 @@ export default function ParticleHero() {
       // safe on modern A14+ devices given the trail-style hoisting, the
       // pre-baked glow sprites that replaced shadowBlur, and the 0.42-alpha
       // gate that skips trails on dim outer-corner particles.
-      const dpr = Math.min(window.devicePixelRatio, 2)
-      canvas.width = width * dpr
-      canvas.height = height * dpr
+      const nextDpr = Math.min(window.devicePixelRatio, 2)
+      // Skip when nothing actually changed. Setting canvas.width/height
+      // clears the bitmap to transparent, so a spurious fire (browser zoom,
+      // accessibility scaling, ResizeObserver init pass) would blank the
+      // canvas for a frame and produce a visible flicker. DPR is part of
+      // the comparison because dragging a window between Retina and non-
+      // Retina displays can change DPR while CSS width/height stay the
+      // same — the canvas backing store still needs the new scale.
+      if (nextWidth === width && nextHeight === height && nextDpr === lastDpr) return
+      width = nextWidth
+      height = nextHeight
+      lastDpr = nextDpr
+      canvas.width = width * nextDpr
+      canvas.height = height * nextDpr
       canvas.style.width = `${width}px`
       canvas.style.height = `${height}px`
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.setTransform(nextDpr, 0, 0, nextDpr, 0, 0)
     }
 
     resize()
@@ -909,7 +921,7 @@ export default function ParticleHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100dvh]:h-[100dvh]"
+      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[100svh]"
       style={{ background: 'var(--color-bg-primary)' }}
     >
       <BlackHoleBackdrop />
