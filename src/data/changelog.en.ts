@@ -10,27 +10,15 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'i18n-changelog-translation',
-    date: '2026-04-28',
-    title: 'Multilingual Changelog — zh-TW + ja Translation Pass',
-    tags: ['feature'],
-    body: [
-      'Closed off the last TODO in the i18n content layer: the changelog itself is now fully translated into Traditional Chinese and Japanese. Every entry — 29 of them, ~3,200 words of running technical narrative covering shader work, animation refactors, scroll restoration, GEO/SEO strategy, the audio system, and so on — reads end-to-end in each locale.',
-      'Followed the same translation policy that governs the rest of the data layer: code identifiers (eggStartRef, lineProgress, sectionLocalProgress), React/browser APIs (useRef, IntersectionObserver, React.lazy, Suspense, localStorage, hreflang, JSON-LD, Open Graph), library names (React, Vite, Tailwind, Vercel, FastAPI, GSAP, Pixabay), file paths (src/..., main.tsx, vercel.json), CSS values (100vh, 100dvh, rgba(), max-w-[1400px]), and section/UI markers that stay English on the live site (Hero, About, Universe, Changelog, [ ABOUT ], CASE STUDY, IMPACT, TECH STACK) all stay in English. Numerical values, file sizes, durations, and units carry over unchanged. The descriptive narrative around them is what gets translated.',
-      'For Japanese the tone matches existing data files — です/ます register, the same product-industry vocabulary kept English the way Japanese tech blogs actually mix languages. For Traditional Chinese it follows Taiwan PM voice — code/library terms left intact, English-Chinese mixed prose where that\'s the natural way to write technical context.',
-      'The whole portfolio is now i18n-complete across all three locales for every page and every data file. Type-checks pass against the canonical English Strings interface, so any future drift between locales surfaces at build time.',
-    ],
-  },
-  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
-    title: 'Multilingual Content — Full zh-TW + ja Translation Pass',
+    title: 'Multilingual Content — Full Translation Pass',
     tags: ['feature'],
     body: [
-      'Filled in all the locale data files that the i18n architecture left as English placeholders. The /zh-TW/ and /ja/ routes now read in their own language end-to-end: the About page (with its Who I Am narrative, Product Philosophy bullets, How I Use AI table, and Skills table), the experience timeline, the three project case studies (Path, Plutus Trade, Product Playbook), and the floating skill names in the universe section.',
-      'Each translation follows an explicit policy documented at the top of every locale file: product names (Path, Plutus Trade, Product Playbook, USPACE), tech stack (React, Flutter, Supabase, etc.), framework names (JTBD, RICE, OKRs, AARRR), and standard product industry vocabulary (B2B SaaS, builder, Product Builder, MaaS) stay English in line with how Taiwan and Japan PMs actually write — translating these would feel forced. Descriptive sentences, problem/solution paragraphs, and bullet titles are translated.',
-      'For the blog section, articles published in Traditional Chinese keep their original titles and subtitles on /zh-TW/ since that matches the published copy. On /ja/, both titles and subtitles are translated to Japanese as descriptions of each article\'s topic, matching how Japanese tech blogs typically summarize foreign-language sources for their readers — the destination is still the original Chinese article on Substack/Medium.',
-      'The only locale data still on TODO markers is the changelog itself — translating ~3,200 words of running technical narrative is a separate effort and is intentionally deferred. The site type-checks against the canonical English Strings interface so any missing key surfaces at build time.',
+      'Filled in every locale data file the i18n architecture left as English placeholder. The /zh-TW/ and /ja/ routes now read in their own language end-to-end: the About page (Who I Am narrative, Product Philosophy bullets, How I Use AI table, Skills table), the experience timeline, the three project case studies (Path, Plutus Trade, Product Playbook), the floating skill names in the universe section, and the full ~3,200-word changelog itself — shader work, animation refactors, scroll restoration, GEO/SEO strategy, the audio system, and so on.',
+      'Each translation follows an explicit policy documented at the top of every locale file. Product names (Path, Plutus Trade, Product Playbook, USPACE), tech stack (React, Flutter, Supabase, FastAPI, etc.), framework names (JTBD, RICE, OKRs, AARRR), industry vocabulary (B2B SaaS, builder, Product Builder, MaaS), code identifiers, React/browser APIs (useRef, IntersectionObserver, localStorage, hreflang), file paths, CSS values, and English UI markers ([ ABOUT ], CASE STUDY, IMPACT, TECH STACK) all stay English in line with how Taiwan and Japan PMs actually write — translating these would feel forced. Descriptive sentences, problem/solution paragraphs, bullet titles, and technical narrative are translated.',
+      'For the blog section, articles published in Traditional Chinese keep their original titles and subtitles on /zh-TW/ since that matches the published copy. On /ja/, both titles and subtitles are translated to Japanese as descriptions of each article\'s topic, matching how Japanese tech blogs typically summarize foreign-language sources — the destination is still the original Chinese article on Substack/Medium.',
+      'Tone-wise, Japanese uses です/ます register matching existing data files; Traditional Chinese follows Taiwan PM voice with natural English-Chinese mixed prose where that\'s how technical context actually gets written. The portfolio is now i18n-complete across all three locales — every page, every data file, no TODO markers left. Type-checks pass against the canonical English Strings interface, so any future drift between locales surfaces at build time.',
     ],
   },
   {
