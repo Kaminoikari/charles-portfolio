@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
-import { experience } from '../data/experience'
+import { useExperience } from '../data'
 
 export default function ExperienceTimeline() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const experience = useExperience()
 
   useEffect(() => {
     if (!containerRef.current) return

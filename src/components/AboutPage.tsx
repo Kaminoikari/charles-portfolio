@@ -1,21 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useDocumentMeta, useLocalePath, useT } from '../i18n'
 import ContactFooter from './ContactFooter'
 
 export default function AboutPage() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const t = useT()
+  const localePath = useLocalePath()
+
+  useDocumentMeta({
+    titleKey: 'about.metaTitle',
+    descriptionKey: 'about.metaDescription',
+    path: '/about',
+  })
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    document.title = 'About Charles Chen — AI Product Manager in Taiwan'
-    const metaDesc = document.querySelector('meta[name="description"]')
-    if (metaDesc) metaDesc.setAttribute('content', 'About Charles Chen (陳德潁) — AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.')
-    const canonical = document.querySelector('link[rel="canonical"]')
-    if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/about')
-    return () => {
-      document.title = 'AI Product Manager in Taiwan | Charles Chen Portfolio'
-      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
-    }
   }, [])
 
   useEffect(() => {
@@ -41,18 +41,18 @@ export default function AboutPage() {
     <div className="min-h-screen bg-bg-primary" ref={containerRef}>
       <header className="mx-auto max-w-[800px] px-6 pt-32 pb-10 md:pt-40 md:pb-14">
         <Link
-          to="/#about"
+          to={localePath('/#about')}
           className="inline-block font-mono text-xs tracking-[2px] text-text-tertiary no-underline transition-colors duration-200 hover:text-white"
         >
-          ← BACK TO PORTFOLIO
+          {t('about.back')}
         </Link>
 
         <h1 className="reveal mt-6 text-3xl font-semibold leading-tight text-white opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 md:text-5xl">
-          About Charles Chen
+          {t('about.heading')}
         </h1>
 
         <p className="reveal mt-4 text-base leading-relaxed text-text-muted opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-600 md:text-lg" style={{ transitionDelay: '100ms' }}>
-          AI Product Manager and AI Product Builder from Taiwan.
+          {t('about.subheading')}
         </p>
       </header>
 
@@ -62,7 +62,7 @@ export default function AboutPage() {
           <div className="relative mx-auto max-w-[400px]">
             <img
               src="/assets/charles-about.jpg"
-              alt="Charles Chen — AI Product Manager"
+              alt={t('about.photoAlt')}
               className="w-full object-cover object-center"
               style={{
                 maskImage: 'radial-gradient(ellipse 75% 85% at 50% 60%, black 40%, transparent 90%)',
@@ -73,14 +73,14 @@ export default function AboutPage() {
         </div>
 
         {/* Who I Am */}
-        <Section title="Who I Am" index={0}>
+        <Section title={t('about.sectionWhoIAm')} index={0}>
           <p>I'm Charles Chen (陳德潁), an AI Product Manager based in Taiwan. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.</p>
           <p>Over the past 5 years, my product experience has spanned creator tools, fintech, SaaS, and MaaS, impacting over 6 million users in total. I currently lead product strategy at USPACE across three product lines (parking payments, business travel, and financial insurance) covering both Taiwan and Japan, driving more than 85% of company revenue.</p>
           <p>I believe the best product managers of the future will be Product Builders. Not just planning products, but personally using AI tools to rapidly build prototypes and validate them in production. This approach lets me iterate 5x faster than traditional PM workflows.</p>
         </Section>
 
         {/* Product Philosophy */}
-        <Section title="Product Philosophy" index={1}>
+        <Section title={t('about.sectionPhilosophy')} index={1}>
           <p>I believe the best product managers are builders. The gap between "what should we build" and "here's a working prototype" is where most product ideas die. By closing that gap with AI-powered development, I can test assumptions in hours instead of weeks.</p>
           <ul className="mt-4 space-y-3">
             <li className="flex items-start gap-3"><span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" /><span><strong className="text-white">Outcomes over outputs.</strong> Shipping features isn't the goal — changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.</span></li>
@@ -91,7 +91,7 @@ export default function AboutPage() {
         </Section>
 
         {/* How I Use AI */}
-        <Section title="How I Use AI in Product Development" index={2}>
+        <Section title={t('about.sectionAi')} index={2}>
           <p>AI isn't a feature I add to products — it's how I build them. My AI-powered workflow spans the entire product lifecycle:</p>
           <table className="mt-6 w-full text-[15px] leading-[1.8]">
             <tbody>
@@ -120,7 +120,7 @@ export default function AboutPage() {
         </Section>
 
         {/* Career */}
-        <Section title="Career" index={3}>
+        <Section title={t('about.sectionCareer')} index={3}>
           <div className="space-y-8">
             <CareerItem
               title="Product Manager"
@@ -174,7 +174,7 @@ export default function AboutPage() {
         </Section>
 
         {/* Skills */}
-        <Section title="Skill Set" index={4}>
+        <Section title={t('about.sectionSkills')} index={4}>
           <table className="mt-6 w-full text-[15px] leading-[1.8]">
             <tbody>
               <tr className="border-b border-border/50">
@@ -203,7 +203,7 @@ export default function AboutPage() {
 
         {/* Chinese */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '400ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ 中文簡介 ]</h2>
+          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('about.sectionChineseBio')} ]</h2>
           <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]" lang="zh-TW">
             <p>我是陳德潁（Charles Chen），台灣 AI 產品經理。擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，實現從概念到上線的端到端交付。</p>
             <p>過去 5 年的產品經歷橫跨創作者工具、金融科技、SaaS 與 MaaS 領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車支付、企業差旅、金融保險三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
@@ -213,16 +213,16 @@ export default function AboutPage() {
 
         {/* Projects link */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '480ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ PROJECTS ]</h2>
-          <p className="mt-5 text-[15px] leading-[1.8] text-text-muted md:text-base">See what I've built:</p>
+          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('about.sectionProjects')} ]</h2>
+          <p className="mt-5 text-[15px] leading-[1.8] text-text-muted md:text-base">{t('about.projectsCtaText')}</p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link to="/projects/path" className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
+            <Link to={localePath('/projects/path')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
               Path <span aria-hidden="true">↗</span>
             </Link>
-            <Link to="/projects/plutus-trade" className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
+            <Link to={localePath('/projects/plutus-trade')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
               Plutus Trade <span aria-hidden="true">↗</span>
             </Link>
-            <Link to="/projects/product-playbook" className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
+            <Link to={localePath('/projects/product-playbook')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
               Product Playbook <span aria-hidden="true">↗</span>
             </Link>
           </div>

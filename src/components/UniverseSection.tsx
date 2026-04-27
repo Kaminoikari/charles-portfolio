@@ -1,5 +1,12 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { skills } from '../data/skills'
+import { useSkills } from '../data'
+// English skills file is also used at module load time for stable particle
+// generation (count is invariant across locales). Display labels come from
+// the locale-aware useSkills() hook inside the component.
+import { skills as EN_SKILLS } from '../data/skills.en'
+import { useT } from '../i18n'
+
+const SKILL_COUNT = EN_SKILLS.length
 
 // --- Constants ---
 
@@ -74,11 +81,11 @@ function generateParticles(lines: Line[]): Particle[] {
 
   // Shuffle lines, assign first N to skills, rest to decoration
   const shuffledLines = [...lines].sort(() => Math.random() - 0.5)
-  const skillLines = shuffledLines.slice(0, skills.length)
-  const decoLines = shuffledLines.slice(skills.length)
+  const skillLines = shuffledLines.slice(0, SKILL_COUNT)
+  const decoLines = shuffledLines.slice(SKILL_COUNT)
 
   // Skill particles — attached to line endpoints
-  skills.forEach((_skill, i) => {
+  EN_SKILLS.forEach((_skill, i) => {
     const line = skillLines[i]
     const phi = line.phi
     const theta = line.theta
@@ -167,7 +174,9 @@ export default function UniverseSection() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const speedRef = useRef(1)
   const hoveredRef = useRef<number | null>(null)
-  const screenPosRef = useRef<ScreenPos[]>(skills.map(() => ({ x: 0, y: 0 })))
+  const skills = useSkills()
+  const t = useT()
+  const screenPosRef = useRef<ScreenPos[]>(EN_SKILLS.map(() => ({ x: 0, y: 0 })))
   const hoverZoneRefs = useRef<(HTMLDivElement | null)[]>([])
   const tooltipRef = useRef<HTMLDivElement>(null)
   const textLeftRef = useRef<HTMLSpanElement>(null)
@@ -197,7 +206,7 @@ export default function UniverseSection() {
     let rotation = 0
     let visible = false
     let frameCount = 0
-    let autoLabelIndex = Math.floor(Math.random() * skills.length)
+    let autoLabelIndex = Math.floor(Math.random() * SKILL_COUNT)
     let autoLabelTimer = 0
     let autoLabelStarted = false
     const AUTO_LABEL_INTERVAL = 300 // frames (~5 seconds at 60fps)
@@ -320,7 +329,7 @@ export default function UniverseSection() {
 
       // --- Update hover zones (every 5 frames) ---
       if (frameCount % 5 === 0) {
-        for (let i = 0; i < skills.length; i++) {
+        for (let i = 0; i < SKILL_COUNT; i++) {
           const el = hoverZoneRefs.current[i]
           if (el) {
             el.style.transform = `translate(${positions[i].x - 24}px, ${positions[i].y - 24}px)`
@@ -348,8 +357,8 @@ export default function UniverseSection() {
         autoLabelTimer++
         if (autoLabelTimer >= AUTO_LABEL_INTERVAL) {
           autoLabelTimer = 0
-          let next = Math.floor(Math.random() * skills.length)
-          while (next === autoLabelIndex) next = Math.floor(Math.random() * skills.length)
+          let next = Math.floor(Math.random() * SKILL_COUNT)
+          while (next === autoLabelIndex) next = Math.floor(Math.random() * SKILL_COUNT)
           autoLabelIndex = next
           autoLabelRef.current.textContent = skills[autoLabelIndex].name
         }
@@ -485,7 +494,7 @@ export default function UniverseSection() {
       />
 
       {/* Text overlay */}
-      <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label="Understand What I Do">
+      <div className="pointer-events-none absolute inset-0 z-20 select-none" aria-label={t('home.universeAriaLabel')}>
         <span
           ref={textLeftRef}
           className="pointer-events-auto absolute right-[calc(50%-10%)] top-[49%] text-4xl leading-[2.25rem] tracking-tight md:right-[calc(50%+80px)] md:top-[37%] md:text-[5rem] md:leading-[5rem] lg:right-[calc(50%+120px)]"
@@ -498,7 +507,7 @@ export default function UniverseSection() {
             backgroundClip: 'text',
           }}
         >
-          Understand
+          {t('home.universeWordLeft')}
         </span>
         <span
           ref={textRightRef}
@@ -512,7 +521,7 @@ export default function UniverseSection() {
             backgroundClip: 'text',
           }}
         >
-          What I Do
+          {t('home.universeWordRight')}
         </span>
       </div>
     </section>

@@ -1,9 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  LOCALES,
+  LOCALE_LABELS,
+  useLocale,
+  useLocalePath,
+  useT,
+  type Locale,
+  type StringKey,
+} from '../i18n'
 
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
 const NAV_SECTIONS = ['about', 'skills', 'experience', 'projects', 'blog'] as const
+const NAV_SECTION_KEY: Record<(typeof NAV_SECTIONS)[number], StringKey> = {
+  about: 'nav.about',
+  skills: 'nav.skills',
+  experience: 'nav.experience',
+  projects: 'nav.projects',
+  blog: 'nav.blog',
+}
 
 export default function Nav() {
   const navRef = useRef<HTMLElement>(null)
@@ -12,7 +28,12 @@ export default function Nav() {
   const logoClickTimesRef = useRef<number[]>([])
   const location = useLocation()
   const navigate = useNavigate()
-  const isHome = location.pathname === '/'
+  const localePath = useLocalePath()
+  const t = useT()
+  const { locale, setLocale } = useLocale()
+  // Home is locale-aware: `/`, `/zh-TW`, `/zh-TW/`, `/ja`, `/ja/` all count.
+  const homeUrl = localePath('/')
+  const isHome = location.pathname === homeUrl || location.pathname === homeUrl + '/'
 
   useEffect(() => {
     const onScroll = () => {
@@ -64,7 +85,7 @@ export default function Nav() {
   return (
     <nav
       ref={navRef}
-      aria-label="Main navigation"
+      aria-label={t('nav.mainAriaLabel')}
       className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-all duration-500"
       style={{
         borderColor: scrolledPastHero ? 'var(--color-border)' : 'transparent',
@@ -77,7 +98,7 @@ export default function Nav() {
         <button
           onClick={() => {
             if (!isHome) {
-              navigate('/')
+              navigate(homeUrl)
               window.scrollTo({ top: 0, behavior: 'smooth' })
               return
             }
@@ -93,10 +114,10 @@ export default function Nav() {
               window.dispatchEvent(new Event('easter-egg'))
             }
           }}
-          aria-label="Charles Chen — scroll to top"
+          aria-label={t('brand.homeAriaLabel')}
           className="cursor-pointer border-none bg-transparent text-lg font-bold tracking-widest text-white md:text-xl"
         >
-          CHARLES CHEN
+          {t('brand.name')}
         </button>
 
         {/* Desktop nav */}
@@ -108,38 +129,58 @@ export default function Nav() {
                 if (isHome) {
                   scrollTo(id)
                 } else {
-                  navigate(`/#${id}`)
+                  navigate(localePath(`/#${id}`))
                 }
               }}
-              aria-label={`Scroll to ${id} section`}
+              aria-label={t('nav.sectionAriaLabel', { section: t(NAV_SECTION_KEY[id]) })}
               className="group relative min-h-[44px] cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
             >
-              {id}
+              {t(NAV_SECTION_KEY[id])}
               <span className="absolute -bottom-1 left-0 h-px w-0 bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:w-full" />
             </button>
           ))}
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Language switcher — desktop */}
+          <div
+            role="group"
+            aria-label={t('nav.languageGroupLabel')}
+            className="hidden items-center gap-1 rounded-full border border-btn-border px-1 py-0.5 md:flex"
+          >
+            {LOCALES.map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                aria-pressed={locale === loc}
+                className={`min-h-[28px] cursor-pointer rounded-full border-none bg-transparent px-2.5 py-1 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${
+                  locale === loc ? 'text-white' : 'text-text-muted hover:text-white'
+                }`}
+              >
+                {LOCALE_LABELS[loc]}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={() => {
               if (isHome) {
                 scrollTo('contact')
               } else {
-                navigate('/#contact')
+                navigate(localePath('/#contact'))
               }
               setMenuOpen(false)
             }}
-            aria-label="Scroll to contact section"
+            aria-label={t('nav.contactAriaLabel')}
             className="min-h-[44px] cursor-pointer rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-[13px] uppercase tracking-[1.5px] text-white transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-btn-hover-bg hover:scale-105"
           >
-            CONTACT ↗
+            {t('nav.contact')}
           </button>
 
           {/* Hamburger — mobile only, rightmost */}
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-none bg-transparent md:hidden"
@@ -174,7 +215,7 @@ export default function Nav() {
         id="mobile-menu"
         className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:hidden"
         style={{
-          maxHeight: menuOpen ? `${NAV_SECTIONS.length * 52}px` : '0',
+          maxHeight: menuOpen ? `${NAV_SECTIONS.length * 52 + 64}px` : '0',
           opacity: menuOpen ? 1 : 0,
         }}
       >
@@ -186,15 +227,40 @@ export default function Nav() {
                 if (isHome) {
                   scrollTo(id)
                 } else {
-                  navigate(`/#${id}`)
+                  navigate(localePath(`/#${id}`))
                 }
                 setMenuOpen(false)
               }}
               className="min-h-[44px] cursor-pointer border-none bg-transparent text-left text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
             >
-              {id}
+              {t(NAV_SECTION_KEY[id])}
             </button>
           ))}
+
+          {/* Language switcher — mobile */}
+          <div
+            role="group"
+            aria-label={t('nav.languageGroupLabel')}
+            className="mt-2 flex gap-1 border-t border-white/10 pt-3 pb-1"
+          >
+            {LOCALES.map((loc: Locale) => (
+              <button
+                key={loc}
+                onClick={() => {
+                  setLocale(loc)
+                  setMenuOpen(false)
+                }}
+                aria-pressed={locale === loc}
+                className={`min-h-[36px] cursor-pointer rounded-full border bg-transparent px-3 py-1 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${
+                  locale === loc
+                    ? 'border-white/40 text-white'
+                    : 'border-white/15 text-text-muted hover:text-white'
+                }`}
+              >
+                {LOCALE_LABELS[loc]}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </nav>

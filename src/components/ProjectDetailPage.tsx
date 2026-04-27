@@ -1,19 +1,27 @@
 import { useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { projectDetails, projects } from '../data/projects'
+import { useProjects, useProjectDetails } from '../data'
+import { useDocumentMeta, useLocalePath, useT } from '../i18n'
 import ContactFooter from './ContactFooter'
-
-const ADJACENT_LABELS = { prev: '← Previous', next: 'Next →' }
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const containerRef = useRef<HTMLDivElement>(null)
+  const t = useT()
+  const localePath = useLocalePath()
+  const projects = useProjects()
+  const projectDetails = useProjectDetails()
 
   const detail = projectDetails.find((p) => p.id === id)
   const card = projects.find((p) => p.id === id)
   const currentIndex = projects.findIndex((p) => p.id === id)
   const prev = currentIndex > 0 ? projects[currentIndex - 1] : null
   const next = currentIndex < projects.length - 1 ? projects[currentIndex + 1] : null
+
+  // Drive document title/description directly off the project detail data so
+  // each project's metaTitle/metaDescription is honored. Hreflang/canonical
+  // for this exact path are still managed by useDocumentMeta.
+  useDocumentMeta({ path: id ? `/projects/${id}` : '/' })
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -24,12 +32,6 @@ export default function ProjectDetailPage() {
     document.title = detail.metaTitle
     const metaDesc = document.querySelector('meta[name="description"]')
     if (metaDesc) metaDesc.setAttribute('content', detail.metaDescription)
-    const canonical = document.querySelector('link[rel="canonical"]')
-    if (canonical) canonical.setAttribute('href', `https://charles-chen.com/projects/${detail.id}`)
-    return () => {
-      document.title = 'AI Product Manager in Taiwan | Charles Chen Portfolio'
-      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
-    }
   }, [detail])
 
   useEffect(() => {
@@ -55,9 +57,9 @@ export default function ProjectDetailPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg-primary text-text-muted">
         <div className="text-center">
-          <p className="text-lg">Project not found.</p>
-          <Link to="/#projects" className="mt-4 inline-block text-accent-mars no-underline hover:underline">
-            ← Back to portfolio
+          <p className="text-lg">{t('projectDetail.notFound')}</p>
+          <Link to={localePath('/#projects')} className="mt-4 inline-block text-accent-mars no-underline hover:underline">
+            {t('projectDetail.backHome')}
           </Link>
         </div>
       </div>
@@ -69,10 +71,10 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <header className="mx-auto max-w-[800px] px-6 pt-32 pb-10 md:pt-40 md:pb-14">
         <Link
-          to="/#projects"
+          to={localePath('/#projects')}
           className="inline-block font-mono text-xs tracking-[2px] text-text-tertiary no-underline transition-colors duration-200 hover:text-white"
         >
-          ← BACK TO PORTFOLIO
+          {t('projectDetail.back')}
         </Link>
 
         <h1 className="reveal mt-6 text-3xl font-semibold leading-tight text-white opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 md:text-5xl">
@@ -99,14 +101,14 @@ export default function ProjectDetailPage() {
       {/* Content */}
       <div className="mx-auto max-w-[800px] px-6 pb-20">
         {/* Problem */}
-        <Section title="Problem" paragraphs={detail.problem} index={0} />
+        <Section title={t('projectDetail.sectionProblem')} paragraphs={detail.problem} index={0} />
 
         {/* Solution */}
-        <Section title="Solution" paragraphs={detail.solution} index={1} />
+        <Section title={t('projectDetail.sectionSolution')} paragraphs={detail.solution} index={1} />
 
         {/* Tech Stack */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '160ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ TECH STACK ]</h2>
+          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionTechStack')} ]</h2>
           <table className="mt-6 w-full text-[15px] leading-[1.8]">
             <tbody>
               {detail.techStack.map((row) => (
@@ -121,7 +123,7 @@ export default function ProjectDetailPage() {
 
         {/* Impact */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '240ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ IMPACT ]</h2>
+          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionImpact')} ]</h2>
           <ul className="mt-6 space-y-3">
             {detail.impact.map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted md:text-base">
@@ -133,7 +135,7 @@ export default function ProjectDetailPage() {
         </div>
 
         {/* Learnings */}
-        <Section title="Learnings" paragraphs={detail.learnings} index={3} />
+        <Section title={t('projectDetail.sectionLearnings')} paragraphs={detail.learnings} index={3} />
 
         {/* Links */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '320ms' }}>
@@ -155,14 +157,14 @@ export default function ProjectDetailPage() {
         {/* Prev / Next navigation */}
         <nav className="mt-20 flex items-center justify-between border-t border-border pt-8">
           {prev ? (
-            <Link to={`/projects/${prev.id}`} className="group text-text-muted no-underline transition-colors duration-200 hover:text-white">
-              <span className="block font-mono text-[10px] uppercase tracking-[1.5px] text-text-tertiary">{ADJACENT_LABELS.prev}</span>
+            <Link to={localePath(`/projects/${prev.id}`)} className="group text-text-muted no-underline transition-colors duration-200 hover:text-white">
+              <span className="block font-mono text-[10px] uppercase tracking-[1.5px] text-text-tertiary">{t('projectDetail.prevLabel')}</span>
               <span className="mt-1 block text-sm">{prev.title}</span>
             </Link>
           ) : <div />}
           {next ? (
-            <Link to={`/projects/${next.id}`} className="group text-right text-text-muted no-underline transition-colors duration-200 hover:text-white">
-              <span className="block font-mono text-[10px] uppercase tracking-[1.5px] text-text-tertiary">{ADJACENT_LABELS.next}</span>
+            <Link to={localePath(`/projects/${next.id}`)} className="group text-right text-text-muted no-underline transition-colors duration-200 hover:text-white">
+              <span className="block font-mono text-[10px] uppercase tracking-[1.5px] text-text-tertiary">{t('projectDetail.nextLabel')}</span>
               <span className="mt-1 block text-sm">{next.title}</span>
             </Link>
           ) : <div />}

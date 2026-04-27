@@ -1,3 +1,6 @@
+// TODO(i18n): translate this file to zh-TW. Until translated, contents
+// are an English copy and the site falls back gracefully.
+
 export type ChangelogTag = 'feature' | 'design' | 'technical'
 
 export interface ChangelogEntry {
@@ -9,6 +12,20 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    id: 'i18n-architecture',
+    date: '2026-04-27',
+    title: 'Multilingual Site — English / 繁中 / 日本語 Architecture',
+    tags: ['feature', 'technical'],
+    body: [
+      'Added i18n architecture so the portfolio can serve English (default at root), Traditional Chinese (under /zh-TW/*), and Japanese (under /ja/*). The English entry stays at the bare URL — no /en/ prefix — so existing inbound links and SEO continue to land where search engines expect. Locale-prefixed branches share the same route table so every page (home, About, project case studies, changelog) exists at the matching path under each locale. The router resolves the locale from the URL prefix; nothing is detected from browser language at first visit.',
+      'Built without an i18n library — react-i18next and react-intl ship features this site does not need (ICU formatting, plural rules, namespace lazy loading) and would add ~50KB. Instead, a small custom layer: a typed strings dictionary per locale (the English file defines the canonical Strings interface; zh-TW and ja must structurally satisfy it, so missing translation keys surface at build time), a useT() hook that pulls a dotted-path string from the active dictionary with simple {{var}} interpolation, and a LocaleProvider that wraps each locale branch and keeps `<html lang>` synced with the active locale.',
+      'Per-locale data architecture mirrors the same pattern: each content file (projects, changelog, experience, blog, skills) was split into .en.ts / .zh-TW.ts / .ja.ts variants. A locale-aware loader (src/data/index.ts) exposes useProjects(), useChangelog(), etc., returning the matching dataset for the active locale and falling back to English if a translation file is missing entries. Translation copies start as English with TODO markers so the site is shippable immediately and translators can fill in incrementally without further architectural work.',
+      'SEO surface is now locale-aware. A useDocumentMeta() helper updates document.title, meta[name=description], the canonical link, and a full set of <link rel="alternate" hreflang> tags (en, zh-TW, ja, x-default) on every route. The hreflang URLs point at the matching path under each locale so Google, Baidu, and other crawlers can present the right version per audience. The static hreflang in index.html that previously pointed every locale at the same English root has been replaced.',
+      'Persistence is opt-in only. There is no browser-language auto-detection on first visit — the unprefixed root always renders English. But once a user clicks the language switcher, the choice is written to localStorage so returning visitors land in their last-chosen locale (the unprefixed root one-time-redirects them to /zh-TW/ or /ja/). Switching back to English clears the redirect.',
+      'Added a compact 3-button language switcher in the nav (desktop: pill group next to the CONTACT button; mobile: inside the hamburger menu, separated by a divider). Switching preserves the current sub-path — /about → /zh-TW/about → /ja/about — so users do not get bounced to the home page when changing language mid-browse.',
+    ],
+  },
   {
     id: 'hero-easter-egg-braam-sfx',
     date: '2026-04-27',

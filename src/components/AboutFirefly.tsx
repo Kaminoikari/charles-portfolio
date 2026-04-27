@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useLocalePath, useT } from '../i18n'
 
 interface Firefly {
   x: number
@@ -62,6 +63,8 @@ function Annotation({ number, label, side }: { number: string; label: string; si
 export default function AboutFirefly() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
+  const t = useT()
+  const localePath = useLocalePath()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -246,26 +249,26 @@ const HUB_COUNT = 10 // bright hub nodes
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
         {/* Header */}
         <h2 className="reveal mb-16 font-mono text-xs font-normal tracking-[2px] text-text-tertiary opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
-          [ ABOUT ]
+          {t('home.aboutMarker')}
         </h2>
 
         <div className="flex flex-col items-center gap-12 lg:flex-row lg:items-start lg:gap-16 xl:gap-24">
           {/* Left: Text */}
           <div className="reveal flex-1 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
             <h3 className="mb-6 text-3xl font-semibold leading-tight text-white md:text-4xl lg:text-5xl">
-              What I bring to the table.
+              {t('home.aboutHeading')}
             </h3>
             <p className="mb-4 max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
-              I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.
+              {t('home.aboutBody1')}
             </p>
             <p className="max-w-[520px] text-base leading-relaxed text-text-muted md:text-lg">
-              Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.
+              {t('home.aboutBody2')}
             </p>
             <Link
-              to="/about"
+              to={localePath('/about')}
               className="mt-6 inline-flex items-center gap-2 font-mono text-[13px] uppercase tracking-[1.5px] text-text-muted no-underline transition-colors duration-200 hover:text-white"
             >
-              Read more <span aria-hidden="true">↗</span>
+              {t('home.aboutReadMore')} <span aria-hidden="true">↗</span>
             </Link>
           </div>
 
@@ -274,7 +277,7 @@ const HUB_COUNT = 10 // bright hub nodes
             {/* Desktop: photo with annotations on sides */}
             <div className="hidden lg:flex lg:items-center lg:gap-6">
               {/* Left annotation */}
-              <Annotation number="6M+" label="Users Impacted" side="left" />
+              <Annotation number="6M+" label={t('home.aboutMetricUsersLabel')} side="left" />
 
               {/* Photo */}
               <div className="relative h-[480px] w-[350px] shrink-0 xl:h-[600px] xl:w-[440px]">
@@ -292,8 +295,8 @@ const HUB_COUNT = 10 // bright hub nodes
 
               {/* Right annotations */}
               <div className="flex flex-col gap-10">
-                <Annotation number="85%" label="Revenue Impact" side="right" />
-                <Annotation number="5x" label="Faster with AI" side="right" />
+                <Annotation number="85%" label={t('home.aboutMetricRevenueLabel')} side="right" />
+                <Annotation number="5x" label={t('home.aboutMetricAiLabel')} side="right" />
               </div>
             </div>
 
@@ -314,15 +317,15 @@ const HUB_COUNT = 10 // bright hub nodes
               <div className="mt-4 flex gap-8">
                 <div className="text-center">
                   <div className="font-mono text-xl font-semibold text-white">6M+</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Users</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricUsersShort')}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-mono text-xl font-semibold text-white">85%</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">Revenue</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricRevenueShort')}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-mono text-xl font-semibold text-white">5x</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">AI Speed</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricAiShort')}</div>
                 </div>
               </div>
             </div>

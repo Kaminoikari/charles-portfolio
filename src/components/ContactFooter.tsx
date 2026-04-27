@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { socialLinks } from '../data/social'
+import { useLocalePath, useT } from '../i18n'
 
 const SocialIcon = ({ platform }: { platform: string }) => {
   switch (platform) {
@@ -34,6 +35,8 @@ const SocialIcon = ({ platform }: { platform: string }) => {
 export default function ContactFooter() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const perfRef = useRef<HTMLSpanElement>(null)
+  const t = useT()
+  const localePath = useLocalePath()
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -77,7 +80,7 @@ export default function ContactFooter() {
     >
       <section className="mx-auto max-w-[1400px] px-6 md:px-12 pt-40 pb-20 text-center">
         <h2 className="reveal mb-8 text-[40px] font-semibold opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
-          Let's Connect
+          {t('footer.letsConnect')}
         </h2>
         <div className="mb-6 flex justify-center gap-8">
           {socialLinks.map((link, i) => (
@@ -86,7 +89,7 @@ export default function ContactFooter() {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`Visit ${link.platform}`}
+              aria-label={t('footer.visitSocial', { platform: link.platform })}
               className="reveal flex h-12 w-12 items-center justify-center border border-border-hover text-text-muted no-underline opacity-0 translate-y-4 transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-500 hover:scale-110 hover:border-accent-mars hover:text-accent-mars hover:shadow-[0_0_16px_rgba(232,101,43,0.3)]"
               style={{ transitionDelay: `${200 + i * 100}ms` }}
             >
@@ -100,11 +103,11 @@ export default function ContactFooter() {
       </section>
       <footer className="border-t border-border-hover py-12 text-center">
         <div className="text-xs tracking-[1px] text-text-secondary">
-          © 2026 Charles Chen. All rights reserved.
+          {t('footer.rights')}
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
-          <Link to="/changelog" className="text-text-muted no-underline transition-colors duration-200 hover:text-white">Changelog</Link>
-          {' · '}Rendered in <span ref={perfRef}>—</span>ms · React · Canvas 2D · Tailwind
+          <Link to={localePath('/changelog')} className="text-text-muted no-underline transition-colors duration-200 hover:text-white">{t('footer.changelogLink')}</Link>
+          {' · Rendered in '}<span ref={perfRef}>—</span>{'ms · React · Canvas 2D · Tailwind'}
         </div>
       </footer>
     </div>

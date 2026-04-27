@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { blogArticles, platformLinks } from '../data/blog'
+import { useEffect, useMemo, useRef } from 'react'
+import { useBlogArticles, platformLinks, type BlogArticle } from '../data'
 
 const CTA_FONT_FAMILY = 'var(--font-mono)'
 
@@ -20,12 +20,7 @@ const SubstackLogo = () => (
   </svg>
 )
 
-const sortedArticles = [
-  ...blogArticles.filter((a) => a.featured),
-  ...blogArticles.filter((a) => !a.featured).sort((a, b) => b.date.localeCompare(a.date)),
-]
-
-function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index: number }) {
+function BlogEntry({ article, index }: { article: BlogArticle; index: number }) {
   return (
     <div className="group relative">
       <div
@@ -112,6 +107,14 @@ function BlogEntry({ article, index }: { article: typeof blogArticles[0]; index:
 
 export default function BlogEntries() {
   const sectionRef = useRef<HTMLDivElement>(null)
+  const blogArticles = useBlogArticles()
+  const sortedArticles = useMemo(
+    () => [
+      ...blogArticles.filter((a) => a.featured),
+      ...blogArticles.filter((a) => !a.featured).sort((a, b) => b.date.localeCompare(a.date)),
+    ],
+    [blogArticles],
+  )
 
   useEffect(() => {
     if (!sectionRef.current) return

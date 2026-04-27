@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Project } from '../data/projects'
-import { projects } from '../data/projects'
+import { type Project, useProjects } from '../data'
+import { useLocalePath, useT } from '../i18n'
 import { CANVAS_W, CANVAS_H, easeInOutCubic, marsA, whiteA } from './animations/shared'
 import {
   ROUTE_POINTS, COMET_TRAIL_LENGTH,
@@ -465,6 +465,8 @@ function ProjectCard({ project }: { project: Project }) {
   const [isVisible, setIsVisible] = useState(false)
   const cardRef = useRef<HTMLAnchorElement>(null)
   const isTouchDevice = useRef(false)
+  const localePath = useLocalePath()
+  const t = useT()
 
   useEffect(() => {
     isTouchDevice.current = window.matchMedia('(hover: none)').matches
@@ -485,7 +487,7 @@ function ProjectCard({ project }: { project: Project }) {
   return (
     <a
       ref={cardRef}
-      href={`/projects/${project.id}`}
+      href={localePath(`/projects/${project.id}`)}
       aria-label={project.title}
       className="group relative flex min-h-0 flex-col border border-border no-underline transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.01] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] md:min-h-[520px]"
       style={{
@@ -563,7 +565,7 @@ function ProjectCard({ project }: { project: Project }) {
             color: 'white',
           }}
         >
-          <span>CASE STUDY</span>
+          <span>{t('home.projectsCaseStudy')}</span>
           <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ fontSize: 13, lineHeight: 1, transform: 'scale(1.4)' }}>↗</span>
         </div>
       </div>
@@ -572,6 +574,7 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export default function ProjectCards() {
+  const projects = useProjects()
   return (
     <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ SIDE PROJECTS ]</h2>
