@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'path-case-study-rewrite',
+    date: '2026-04-28',
+    title: 'Path — Case Study Rewrite Around PWA & Offline-First',
+    tags: ['design'],
+    body: [
+      'Rewrote the Path case study because the original copy positioned the product against the wrong competitor space. The previous narrative framed Path against Booking.com, Agoda, and TripAdvisor — booking platforms and social travel apps — but Path is none of those. Its actual reference points are itinerary planning tools like Wanderlog, Tripit, and 去趣, and the competition isn\'t about deals or reviews but about whether your itinerary still works when the network drops abroad.',
+      'Rewrote across all three locales (en, zh-TW, ja) using only what\'s documented in the Path GitHub repo and its ARCHITECTURE.md — no invented features. The new framing leads with the two load-bearing product decisions: (1) PWA as the architectural answer to "make a web app that works without a network" — installable on iOS/Android home screens, full offline via Service Worker, no app store gate, no native build; and (2) cache-first + background sync as the data strategy — IndexedDB reads for instant render, Supabase background sync for fresh data, optimistic writes with a sync queue that catches edits made offline and replays them when connectivity returns.',
+      'Tech stack section was refreshed to reflect what Path actually ships: React 18 + Vite + TailwindCSS + shadcn/ui (Radix UI), TanStack Query for server state, @dnd-kit for drag-and-drop, IndexedDB via idb, Service Worker, Supabase with Google OAuth and Row Level Security, Zod for client schemas + Postgres CHECK constraints, Vitest for testing. Added GitHub link alongside the live demo so case study readers can verify the implementation themselves.',
+      'Home page card was also retitled — description leads with "Cache-first + background sync — your itinerary, transit routes, and costs stay reachable even when the network drops abroad" and tags shifted from `['React', 'TypeScript', 'Supabase']` to `['PWA', 'React', 'IndexedDB']` to surface the offline angle in the project list itself.',
+    ],
+  },
+  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: 'Multilingual Content — Full Translation Pass',
