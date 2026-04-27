@@ -26,27 +26,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'i18n-changelog-translation',
+    id: 'path-case-study-rewrite',
     date: '2026-04-28',
-    title: '多言語 Changelog — zh-TW + ja 翻訳の仕上げ',
-    tags: ['feature'],
+    title: 'Path — PWA とオフラインファーストを軸にケーススタディを書き直し',
+    tags: ['design'],
     body: [
-      'i18n コンテンツレイヤー最後の TODO を片付けました：changelog 本体が繁体字中国語と日本語に完全翻訳されました。29 件のエントリ——shader の作業、アニメーションのリファクタ、scroll restoration、GEO/SEO 戦略、オーディオシステムなどを含む、約 3,200 語の技術ナラティブ——が各 locale で端から端まで読めるようになりました。',
-      'data layer 全体で一貫した翻訳ポリシーに従いました：コード識別子（eggStartRef、lineProgress、sectionLocalProgress）、React とブラウザの API（useRef、IntersectionObserver、React.lazy、Suspense、localStorage、hreflang、JSON-LD、Open Graph）、ライブラリ名（React、Vite、Tailwind、Vercel、FastAPI、GSAP、Pixabay）、ファイルパス（src/...、main.tsx、vercel.json）、CSS 値（100vh、100dvh、rgba()、max-w-[1400px]）、そして実際のサイトで英語のままの section / UI マーカー（Hero、About、Universe、Changelog、[ ABOUT ]、CASE STUDY、IMPACT、TECH STACK）はすべて英語のまま。数値、ファイルサイズ、時間、単位は変更されずにそのまま渡されます。それらを取り巻く説明的なナラティブが翻訳の対象です。',
-      '日本語のトーンは既存の data ファイルに揃えました——です/ます 体、業界語彙は日本のテックブログが実際に英語を混ぜる仕方に従って英語のまま。繁体字中国語は台湾 PM の声に倣い——コードとライブラリの語彙は触らず、技術的な context を自然に英中混ぜて書くスタイル。',
-      'Portfolio 全体が、すべてのページ、すべてのデータファイルで、3 つの locale すべてに対して i18n 完了になりました。canonical な英語 Strings interface に対する型チェックは通過するため、locale 間の今後のずれは build time で表面化します。',
+      'Path のケーススタディを書き直しました。元の文案がプロダクトを誤った競合空間に置いていたためです。以前のナラティブは Booking.com、Agoda、TripAdvisor を競合に据えていましたが——予約プラットフォームと SNS 系旅行 App——Path はそのどちらでもありません。実際の参照点は Wanderlog、Tripit、去趣 のような旅程プランニングツールであり、競争はディールやレビューではなく「海外で通信が落ちても旅程はまだ動くか」にあります。',
+      '3 つの locale（en、zh-TW、ja）すべてを書き直し、Path GitHub repo と ARCHITECTURE.md に記載されている内容のみを使いました——機能の創作はなし。新しい構成は 2 つの荷重を支えるプロダクト判断を主軸に：（1）PWA は「ネットがなくても動く web app をどう作るか」への構成上の答え——iOS / Android のホーム画面にインストール可能、Service Worker で完全オフライン、app store ゲートなし、native build なし；（2）cache-first + background sync をデータ戦略に採用——IndexedDB の読み取りで即時 render、Supabase へのバックグラウンド同期で最新データ、楽観的書き込みと sync queue がオフライン編集を取りこぼさず接続復帰時にリプレイ。',
+      'Tech stack セクションを Path が実際に出荷している内容に更新：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、server state には TanStack Query、ドラッグ＆ドロップは @dnd-kit、IndexedDB は idb 経由、Service Worker、Supabase は Google OAuth と Row Level Security 付き、クライアント schema は Zod、Postgres CHECK 制約、テストは Vitest。ライブデモの隣に GitHub リンクを追加し、ケーススタディの読者が実装を自分で検証できるように。',
+      'ホームページのカードもタイトルを更新——説明は「Cache-first + background sync——海外でネットが落ちても、旅程・経路・コストにそのまま手が届きます」を先に出し、タグは `['React', 'TypeScript', 'Supabase']` から `['PWA', 'React', 'IndexedDB']` に切り替え、プロジェクト一覧の段階でオフラインの面を表に出しました。',
     ],
   },
   {
     id: 'i18n-content-translation',
     date: '2026-04-28',
-    title: '多言語コンテンツ — zh-TW + ja 全量翻訳の仕上げ',
+    title: '多言語コンテンツ — 全量翻訳の仕上げ',
     tags: ['feature'],
     body: [
-      'i18n アーキテクチャが英語の placeholder のまま残していたすべての locale データファイルを埋めました。/zh-TW/ と /ja/ の経路は、各言語でエンドツーエンドに読める状態になりました：About ページ（Who I Am のナラティブ、Product Philosophy の bullets、How I Use AI テーブル、Skills テーブル）、experience タイムライン、3 つのプロジェクトケーススタディ（Path、Plutus Trade、Product Playbook）、universe section に漂う skill names。',
-      '各翻訳は、すべての locale ファイル冒頭に明記されたポリシーに従っています：プロダクト名（Path、Plutus Trade、Product Playbook、USPACE）、技術スタック（React、Flutter、Supabase など）、フレームワーク名（JTBD、RICE、OKRs、AARRR）、業界標準のプロダクト用語（B2B SaaS、builder、Product Builder、MaaS）は英語のまま——台湾と日本の PM が実際に書くスタイルに合わせており、翻訳すると不自然になります。説明文、problem/solution の段落、bullet 見出しは翻訳済みです。',
+      'i18n アーキテクチャが英語の placeholder のまま残していたすべての locale データファイルを埋めました。/zh-TW/ と /ja/ の経路は各言語でエンドツーエンドに読めます：About ページ（Who I Am のナラティブ、Product Philosophy の bullets、How I Use AI テーブル、Skills テーブル）、experience タイムライン、3 つのプロジェクトケーススタディ（Path、Plutus Trade、Product Playbook）、universe section に漂う skill names、そして約 3,200 語の changelog 本体——shader の作業、アニメーションのリファクタ、scroll restoration、GEO/SEO 戦略、オーディオシステムなど。',
+      '各翻訳は、すべての locale ファイル冒頭に明記されたポリシーに従っています。プロダクト名（Path、Plutus Trade、Product Playbook、USPACE）、技術スタック（React、Flutter、Supabase、FastAPI など）、フレームワーク名（JTBD、RICE、OKRs、AARRR）、業界用語（B2B SaaS、builder、Product Builder、MaaS）、コード識別子、React/browser API（useRef、IntersectionObserver、localStorage、hreflang）、ファイルパス、CSS 値、英語の UI マーカー（[ ABOUT ]、CASE STUDY、IMPACT、TECH STACK）はすべて英語のまま——台湾と日本の PM が実際に書くスタイルに揃えており、翻訳すると不自然になります。説明文、problem/solution の段落、bullet 見出し、技術ナラティブは翻訳されています。',
       'Blog section については、繁体字中国語で公開された記事は /zh-TW/ では原題と原副題をそのまま残しています（公開コピーと一致）。/ja/ では、各記事のトピックを日本語読者向けに説明するため、タイトルと副題を日本語に翻訳しました——日本のテックブログが外国語の記事を読者向けに要約する慣習と同じです。リンク先は依然として Substack/Medium 上の繁体字中国語の原文です。',
-      '残る TODO 標記は changelog のみ——~3,200 語の技術的なナラティブの翻訳は別作業として意図的に後回しにしました。サイトは canonical な英語 Strings interface に対して型チェックされるため、欠落したキーは build time で表面化します。',
+      'トーンは、日本語が既存の data ファイルに揃えた です/ます 体、繁体字中国語は台湾 PM の声で、技術的な context が実際そう書かれる場面では自然に英中を混ぜます。Portfolio 全体が、すべてのページ、すべてのデータファイルで、3 つの locale すべてに対して i18n 完了——TODO 標記は残っていません。canonical な英語 Strings interface に対する型チェックは通過するため、locale 間の今後のずれは build time で表面化します。',
     ],
   },
   {

@@ -25,27 +25,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'i18n-changelog-translation',
+    id: 'path-case-study-rewrite',
     date: '2026-04-28',
-    title: '多語系 Changelog — zh-TW + ja 翻譯收尾',
-    tags: ['feature'],
+    title: 'Path — 圍繞 PWA 與離線優先重寫案例研究',
+    tags: ['design'],
     body: [
-      '把 i18n 內容層最後一個 TODO 收掉：changelog 本身現在完整翻譯到繁體中文與日文。29 筆 entry——約 3,200 字的技術敘事，涵蓋 shader 工程、動畫重構、scroll restoration、GEO/SEO 策略、音訊系統等等——都能在每個 locale 端到端讀完。',
-      '沿用整個 data layer 一致的翻譯政策：程式碼識別子（eggStartRef、lineProgress、sectionLocalProgress）、React 與瀏覽器 API（useRef、IntersectionObserver、React.lazy、Suspense、localStorage、hreflang、JSON-LD、Open Graph）、函式庫名稱（React、Vite、Tailwind、Vercel、FastAPI、GSAP、Pixabay）、檔案路徑（src/...、main.tsx、vercel.json）、CSS 值（100vh、100dvh、rgba()、max-w-[1400px]），以及在實際站點維持英文的 section/UI marker（Hero、About、Universe、Changelog、[ ABOUT ]、CASE STUDY、IMPACT、TECH STACK）通通保留英文。數值、檔案大小、時長、單位原封不動。圍繞它們的描述敘事才被翻譯。',
-      '日文的語氣對齊現有資料檔——です/ます 體，產業詞保留英文，跟日本技術部落格實際的中英混寫方式一致。繁體中文則用台灣 PM 的口吻——程式碼與函式庫詞彙原封不動，自然中英夾雜的技術 context。',
-      '整個 portfolio 現在三個 locale 在每個頁面、每份資料檔都做完 i18n。對 canonical 英文 Strings interface 跑型別檢查通過，未來任何 locale 偏移都會在 build time 浮上來。',
+      '重寫 Path 案例研究，因為原稿把產品擺到錯的競品空間。原本的敘事拿 Booking.com、Agoda、TripAdvisor 當對手——訂房平台跟社群旅遊 App——但 Path 不是這兩種裡的任何一種。它真正的參照點是 Wanderlog、Tripit、去趣這類行程規劃工具，競爭也不在折扣或評論，而在「網路在國外掉了，行程是不是還能用」。',
+      '三個 locale（en、zh-TW、ja）全部重寫，只用 Path GitHub repo 與其 ARCHITECTURE.md 已經寫下的內容——絕不無中生有。新版敘事以兩個承重的產品決策為主軸：（1）PWA 是「做出沒網路也能跑的 web app」這道題的架構解答——iOS / Android 直接從主畫面安裝、Service Worker 拿到完整離線、不用過 app store、沒有 native build；（2）cache-first + background sync 是資料策略——IndexedDB 讓讀取瞬間 render、背景同步 Supabase 取最新資料、寫入 optimistic、sync queue 把離線編輯接住、連線回來再 replay。',
+      '更新 tech stack 段落為 Path 實際出貨的內容：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、TanStack Query 管 server state、@dnd-kit 處理拖拉、IndexedDB 透過 idb、Service Worker、Supabase 配 Google OAuth 與 Row Level Security、Zod client schema + Postgres CHECK 限制、Vitest 測試。同時在 live demo 旁加上 GitHub 連結，讓讀案例的人能自己驗證實作。',
+      '首頁 project card 也順手改了——描述換成「Cache-first + background sync——就算在國外網路掉了，行程、交通路線、花費都還拿得到」，標籤從 `['React', 'TypeScript', 'Supabase']` 換成 `['PWA', 'React', 'IndexedDB']`，把離線那一面在專案列表就拋出來。',
     ],
   },
   {
     id: 'i18n-content-translation',
     date: '2026-04-28',
-    title: '多語系內容 — zh-TW + ja 全量翻譯收尾',
+    title: '多語系內容 — 全量翻譯收尾',
     tags: ['feature'],
     body: [
-      '把 i18n 架構先以英文 placeholder 留下的 locale 資料檔全部補完。/zh-TW/ 與 /ja/ 路由現在都是端到端的母語體驗：About 頁（Who I Am 段落、產品哲學 bullets、AI 工作流表、技能組合表）、experience 時間軸、三份案例研究（Path、Plutus Trade、Product Playbook），以及 universe section 飄浮的 skill names。',
-      '每份翻譯都遵守在檔頭明確寫下的政策：產品名（Path、Plutus Trade、Product Playbook、USPACE）、技術棧（React、Flutter、Supabase 等）、框架名（JTBD、RICE、OKRs、AARRR）、產業標準詞（B2B SaaS、builder、Product Builder、MaaS）保留英文，符合台日 PM 實際的書寫習慣——硬翻反而拗口。描述句、problem/solution 段落、bullet 標題則翻成在地語言。',
-      'Blog section 上，原文就是繁體中文的文章在 /zh-TW/ 維持原文標題與副標。在 /ja/ 上，標題與副標都翻成日文作為「這篇繁中文章在講什麼」的描述——這呼應日本科技部落格慣常的處理方式：對外語來源做日文摘要，但連結仍指向繁中原文 Substack/Medium。',
-      '剩下還在 TODO 標頭的只有 changelog 本身——~3,200 字的技術敘事是另一輪獨立工作，刻意延後。整個 site 對齊 canonical 英文 Strings interface 做型別檢查，任何缺漏的 key 在 build time 都會浮出來。',
+      '把 i18n 架構原本留作英文 placeholder 的所有 locale 資料檔全部補完。/zh-TW/ 與 /ja/ 路由現在都是端到端的母語體驗：About 頁（Who I Am 段落、產品哲學 bullets、AI 工作流表、技能組合表）、experience 時間軸、三份案例研究（Path、Plutus Trade、Product Playbook）、universe section 飄浮的 skill names，以及 ~3,200 字的 changelog 本身——shader 工程、動畫重構、scroll restoration、GEO/SEO 策略、音訊系統等等都涵蓋進去。',
+      '每份翻譯都遵守在檔頭明確寫下的政策。產品名（Path、Plutus Trade、Product Playbook、USPACE）、技術棧（React、Flutter、Supabase、FastAPI 等）、框架名（JTBD、RICE、OKRs、AARRR）、產業標準詞（B2B SaaS、builder、Product Builder、MaaS）、程式碼識別子、React/browser API（useRef、IntersectionObserver、localStorage、hreflang）、檔案路徑、CSS 值，以及英文 UI markers（[ ABOUT ]、CASE STUDY、IMPACT、TECH STACK）一律保留英文，符合台日 PM 實際的書寫習慣——硬翻反而拗口。描述句、problem/solution 段落、bullet 標題、技術敘事則翻成在地語言。',
+      'Blog section 上，原文就是繁體中文的文章在 /zh-TW/ 維持原文標題與副標（與發文一致）。在 /ja/ 上，標題與副標都翻成日文作為「這篇繁中文章在講什麼」的描述——呼應日本科技部落格對外語來源做日文摘要的慣例，連結本身仍指向繁中原文 Substack/Medium。',
+      '語氣上，日文用 です/ます 體對齊現有資料檔；繁體中文用台灣 PM 的口吻，自然中英夾雜在實際會這樣寫的技術 context 處。整個 portfolio 現在三個 locale 在每個頁面、每份資料檔都做完 i18n——無 TODO 殘留。對 canonical 英文 Strings interface 跑型別檢查通過，未來任何 locale 偏移都會在 build time 浮上來。',
     ],
   },
   {
