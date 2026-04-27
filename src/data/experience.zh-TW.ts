@@ -1,5 +1,11 @@
-// TODO(i18n): translate this file to zh-TW. Until translated, contents
-// are an English copy and the site falls back gracefully.
+// Translation policy mirrors src/i18n/strings/zh-TW.ts:
+//   - Job titles (Product Manager / Senior Product Manager / Operations
+//     Manager / Product Mentor) and company names stay English. Date
+//     ranges stay English-style (uppercase month + year) to match the
+//     monospace layout in the timeline rendering.
+//   - Bullet metric phrasing translated to Traditional Chinese, but
+//     standard tech / product terms (B2B SaaS, BI, AI, AI Product
+//     Builder, Claude Code, Codex, Antigravity) stay English.
 
 export interface ExperienceItem {
   dateRange: string
@@ -14,9 +20,9 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '85%+ revenue impact — owned product strategy across parking payments, business travel & financial insurance lines (TW + JP)',
-      '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
-      '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Codex & Antigravity',
+      '85%+ 營收影響——主導停車支付、企業差旅、金融保險三條產品線的策略（台灣 + 日本）',
+      '0→1 推出 USPACE for Business，企業差旅管理 B2B SaaS',
+      '5x 更快的迭代速度——率先以 Claude Code、Codex、Antigravity 推動 AI 驅動的原型開發',
     ],
   },
   {
@@ -24,7 +30,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Mentor',
     organization: 'XChange School',
     bullets: [
-      'Mentoring aspiring PMs at Taiwan\'s largest internet professional community',
+      '在台灣最大的網路專業社群擔任 mentor，輔導有志成為 PM 的學員',
     ],
   },
   {
@@ -32,9 +38,9 @@ export const experience: ExperienceItem[] = [
     title: 'Senior Product Manager',
     organization: 'NUEIP Technology Co., Ltd.',
     bullets: [
-      '+40% data-driven decisions — built end-to-end BI product with advanced analytics & AI',
-      '+35% forecast accuracy — implemented predictive analytics models for strategic planning',
-      '50% faster reporting — integrated BI dashboards cutting data retrieval time',
+      '+40% 資料驅動的決策——打造端到端 BI 產品，整合進階分析與 AI',
+      '+35% 預測準確度——導入預測分析模型支援策略規劃',
+      '50% 更快的報表產出——整合 BI 儀表板，縮短資料取得時間',
     ],
   },
   {
@@ -42,9 +48,9 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'PXPay Plus Co., Ltd.',
     bullets: [
-      '+25% transaction conversions — redesigned sign-up & checkout flow in 3 months',
-      '+50% operational efficiency — pioneered reward points system, -40% customer complaints',
-      'Led third-party billing integration for parking, cable TV, pension & government payments',
+      '+25% 交易轉換率——3 個月內重新設計註冊與結帳流程',
+      '+50% 營運效率——率先導入紅利點數系統，客訴 -40%',
+      '主導第三方代收整合：停車、有線電視、勞退、政府規費',
     ],
   },
   {
@@ -52,9 +58,9 @@ export const experience: ExperienceItem[] = [
     title: 'Operations Manager',
     organization: 'FLUX Technology Inc.',
     bullets: [
-      '+20% market share — developed product strategy through competitive analysis',
-      '+30% user retention — redesigned website & SEO for 3-product ecosystem',
-      'Directed team of 10 — +22% process efficiency, +35% order fulfillment speed',
+      '+20% 市佔——透過競品分析建立產品策略',
+      '+30% 使用者留存——為 3 條產品線重新設計官網與 SEO',
+      '帶領 10 人團隊——流程效率 +22%、出貨速度 +35%',
     ],
   },
 ]
