@@ -192,11 +192,18 @@ export default function ParticleHero() {
       // disagree by ~100px and canvas "center" drifts off the visual center.
       width = section.clientWidth
       height = section.clientHeight
-      // Cap DPR at 1.5 — full Retina (2.0+) doubles pixel work on the
-      // particle canvas (3000 drawImages + 1000+ trail strokes per frame),
-      // which is the dominant cost in the idle loop. 1.5 keeps things crisp
-      // on high-density displays without the GPU paying the full price.
-      const dpr = Math.min(window.devicePixelRatio, 1.5)
+      // Cap DPR at 2.0. The original 1.5 cap (for idle-loop perf headroom
+      // on 3000 drawImages + 1000+ trail strokes) was visibly soft on
+      // dpr=3 iPhones — the canvas rendered at half native density, then
+      // CSS-stretched 2× to fit the layout, blurring every particle edge
+      // and stroke. 2.0 is dpr=3 → 0.67× native on iPhone (vs 0.5× before)
+      // and full native on dpr=2 desktop Retina; the sprite/dot supersampling
+      // already accounts for the higher resolution, so particles render
+      // sharp without further changes. Idle-loop perf headroom is still
+      // safe on modern A14+ devices given the trail-style hoisting, the
+      // pre-baked glow sprites that replaced shadowBlur, and the 0.42-alpha
+      // gate that skips trails on dim outer-corner particles.
+      const dpr = Math.min(window.devicePixelRatio, 2)
       canvas.width = width * dpr
       canvas.height = height * dpr
       canvas.style.width = `${width}px`

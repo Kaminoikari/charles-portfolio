@@ -316,7 +316,12 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     gl.clearColor(0, 0, 0, 0)
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
+    // Match the particle canvas DPR cap. The shader is per-pixel work in
+    // the fragment program, so 1.5 → 2.0 is a 1.78× cost in fragment
+    // invocations, but the lens/halo edges and the gas filaments are the
+    // most visible thing in the hero and they need to be crisp on dpr=3
+    // iPhones where 1.5 was rendering at half native density.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
     const resize = () => {
       const w = parent.clientWidth
