@@ -328,13 +328,11 @@ export default function ParticleHero() {
         }
       }
 
-      // Collect face pixels using edge detection + interior fill.
-      // PNG with circular crop: alpha=0 outside circle, alpha=255 inside.
-      // Edge-only sampling gave a wireframe silhouette with empty interior;
-      // adding a sparse grid fill at lower weight gives the face mass so
-      // five facial features actually render at small (mobile) display sizes.
+      // Wireframe sampling — only edge pixels enter the pool. The portrait
+      // is intentionally drawn as feature lines (eyes, brows, nose, mouth,
+      // jaw, hair) plus a head silhouette outline. No interior fill, so
+      // the face does not read as a textured mass.
       const pool: Array<{ x: number; y: number; weight: number; brightness: number }> = []
-      const FILL_STEP = 5  // every Nth pixel in both axes for interior fill
 
       for (let py = 1; py < PHOTO_SAMPLE_SIZE - 1; py += 1) {
         for (let px = 1; px < PHOTO_SAMPLE_SIZE - 1; px += 1) {
@@ -358,42 +356,30 @@ export default function ParticleHero() {
             + Math.abs(b - getPixel(px, py - 1).b)
             + Math.abs(b - getPixel(px, py + 1).b)
 
-          // Threshold 50 keeps real silhouette and feature edges
-          // (hair-vs-background ≈ 200-300, eye-vs-skin ≈ 150-300, lip-vs-
-          // skin ≈ 80-150) and rejects the weak edges that produced the
-          // scattered halo of dim particles around the head: AA fringes,
-          // hair flyaways, and the photo's background noise/gradient. By
-          // pixel histogram, the silhouette band (50-70% radius) contains
-          // ~600 edges in the 25-49 range that fed those stray particles —
-          // all dropped here.
-          if (edge > 50) {
-            // Strong edges — silhouette, eye/brow/lip outlines. High weight
-            // so they get the brightest particles after sort. Edges keep
-            // their full brightness range so dark hair edges stay readable.
+          // Wireframe-only sampling: only edges enter the pool, no interior
+          // fill. The portrait should read as feature lines (eyes, brows,
+          // nose, mouth, jaw, hair) plus a clean head silhouette — not as
+          // a textured mass.
+          //
+          // Threshold is radius-aware because the same noise level reads
+          // very differently inside the face vs. on the silhouette band:
+          //   - Inner 50% (face core): threshold 30 keeps subtle feature
+          //     transitions (eyelash, lip line, nostril shadow). Histogram
+          //     of this region shows ~7400 edges ≥ 30, all of which trace
+          //     real face anatomy, with none in pure background.
+          //   - 50-70% (silhouette band): threshold 60 keeps only the hard
+          //     head/hair-vs-background transitions (typical edge ≥ 200).
+          //     The 25-60 range here is dominated by AA fringe, hair
+          //     flyaways, and the photo's mid-gray background gradient
+          //     (~600 such edges by histogram) — exactly the noise that
+          //     produced the scattered halo of dim dots on real devices.
+          const inFaceCore = distFromCenter < radius * 0.50
+          const threshold = inFaceCore ? 30 : 60
+          if (edge > threshold) {
             pool.push({
               x: px / PHOTO_SAMPLE_SIZE,
               y: py / PHOTO_SAMPLE_SIZE,
               weight: edge,
-              brightness: b / 255,
-            })
-          } else if (
-            distFromCenter < radius * 0.50
-            && px % FILL_STEP === 0
-            && py % FILL_STEP === 0
-          ) {
-            // Sparse interior fill — only inside the face core (inner 50%
-            // of the sample circle). The 50-70% annulus is the photo's
-            // medium-gray background gradient (b≈100-120 dominant), which
-            // a brightness gate alone can't reject; the radius gate cuts
-            // it cleanly. Sub-pixel jitter (±2px within each 5px cell)
-            // breaks the regular grid so the fill reads as texture, not
-            // as an aliased dot pattern.
-            const jx = (Math.random() - 0.5) * (FILL_STEP - 1)
-            const jy = (Math.random() - 0.5) * (FILL_STEP - 1)
-            pool.push({
-              x: (px + jx) / PHOTO_SAMPLE_SIZE,
-              y: (py + jy) / PHOTO_SAMPLE_SIZE,
-              weight: 6,
               brightness: b / 255,
             })
           }
