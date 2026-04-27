@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-easter-egg-braam-sfx',
+    date: '2026-04-27',
+    title: 'Hero — Easter Egg Cinematic Braam SFX',
+    tags: ['feature', 'design'],
+    body: [
+      'Paired the easter-egg sequence with a cinematic trailer-braam sound effect. The audio is offset on trigger so its iconic 50dB attack transient lands exactly at COLLAPSE_END (egg elapsed ~0.80s) — the moment the singularity reaches maximum compression and the white flash ignites. The braam then swells through the flash and explode phases as the particles converge into the portrait, and the long decay tail rings through the photo-hold and reverse phases.',
+      'Plumbed via a single delayed-play `setTimeout`: the audio sits idle until 0.49s after the egg trigger, then plays from t=0 so the silent pre-attack of the file fills the start of the collapse with tension before the impact lands. Reuses one Audio element across triggers, gates re-trigger on the existing eggStartRef guard, and pauses any in-flight playback on component unmount. Volume capped at 0.55 so the braam reads as dramatic punctuation rather than overwhelming the ambient soundtrack.',
+    ],
+  },
+  {
     id: 'hero-easter-egg-cosmic-photo',
     date: '2026-04-27',
     title: 'Hero — Cosmic Photo Particles & Easter Egg Polish',

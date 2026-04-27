@@ -790,10 +790,36 @@ export default function ParticleHero() {
   // Konami code + easter egg. Konami dispatches the global event so
   // BlackHoleBackdrop's shader phases stay synced with the particle phases.
   useEffect(() => {
+    // SFX paired with the egg animation. Lazily constructed and reused so
+    // browsers cache the file after the first trigger.
+    //
+    // Trailer-braam sync: the source MP3 is a 9s cinematic braam. It is
+    // silent until ~0.26s, attacks sharply (~50dB rise) into the iconic
+    // braam onset at t≈0.31s, swells to peak (~-12dB) at t≈2.3s, then decays
+    // slowly through 9s. We land the braam attack at egg elapsed ~0.80s —
+    // right at COLLAPSE_END, the moment the singularity reaches maximum
+    // compression and the white flash ignites. The braam then swells through
+    // flash/explode and decays through photo-hold and reverse.
+    const SFX_BOOM_TIME = 0.31
+    const SFX_VISUAL_TARGET = 0.80
+    const SFX_DELAY_MS = Math.max(0, (SFX_VISUAL_TARGET - SFX_BOOM_TIME) * 1000)
+    const sfx = new Audio('/assets/easter-egg.mp3')
+    sfx.volume = 0.55
+    sfx.preload = 'auto'
+
+    let sfxTimeoutId: number | null = null
+
     const onEasterEgg = () => {
       // Don't restart if currently active — let the existing run finish
       if (eggStartRef.current === 0) {
         eggStartRef.current = performance.now()
+        if (sfxTimeoutId !== null) clearTimeout(sfxTimeoutId)
+        sfx.pause()
+        sfxTimeoutId = window.setTimeout(() => {
+          sfxTimeoutId = null
+          sfx.currentTime = 0
+          sfx.play().catch(() => {})
+        }, SFX_DELAY_MS)
       }
     }
     const onKeyDown = (e: KeyboardEvent) => {
@@ -812,6 +838,8 @@ export default function ParticleHero() {
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('easter-egg', onEasterEgg)
+      if (sfxTimeoutId !== null) clearTimeout(sfxTimeoutId)
+      sfx.pause()
     }
   }, [])
 
