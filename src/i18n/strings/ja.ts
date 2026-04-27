@@ -1,8 +1,15 @@
 import type { Strings } from './en'
 
-// TODO(i18n): translate to 日本語. Initial values are English fallbacks so
-// the site is fully functional under /ja/* while translations are being
-// authored. The TypeScript type from en.ts guarantees every key is present.
+// Translation policy (mirrors zh-TW.ts):
+//   - Visible navigation labels (ABOUT / SKILLS / [ ABOUT ] / etc.) stay
+//     in English. They are part of the brand's monospace/uppercase design
+//     language and Japanese tech audiences read them natively.
+//   - aria-labels and any descriptive sentence-form copy is translated.
+//   - Product names (Path, Plutus Trade, USPACE) and standard tech terms
+//     (React, B2B SaaS, builder, AI Product Manager) stay in English in
+//     line with how Japanese tech industry actually writes/speaks.
+//   - "All rights reserved." in the footer is kept English by convention —
+//     Japanese tech sites overwhelmingly leave the legal phrase as-is.
 const ja: Strings = {
   brand: {
     name: 'CHARLES CHEN',
@@ -25,72 +32,72 @@ const ja: Strings = {
   home: {
     skipLink: 'コンテンツへスキップ',
     aboutMarker: '[ ABOUT ]',
-    aboutHeading: 'What I bring to the table.',
-    aboutBody1: "I help companies turn product vision into reality — from launching mobile apps to millions of users, to building B2B SaaS from the ground up. Currently at USPACE, I'm pioneering AI-driven prototyping to ship 5x faster than traditional workflows.",
-    aboutBody2: "Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development — I bring the strategy, execution, and cross-functional leadership to make it happen.",
-    aboutReadMore: 'Read more',
-    aboutMetricUsersLabel: 'Users Impacted',
-    aboutMetricRevenueLabel: 'Revenue Impact',
-    aboutMetricAiLabel: 'Faster with AI',
-    aboutMetricUsersShort: 'Users',
-    aboutMetricRevenueShort: 'Revenue',
-    aboutMetricAiShort: 'AI Speed',
-    universeAriaLabel: 'Understand What I Do',
+    aboutHeading: '私が届けられるもの。',
+    aboutBody1: '企業のプロダクトビジョンを実際の成果に変えるお手伝いをしています——数百万人のユーザーに届くモバイル App のローンチから、ゼロからの B2B SaaS 構築まで。現在 USPACE で、従来のワークフローより 5 倍速く届ける AI 駆動プロトタイピングを推進中です。',
+    aboutBody2: 'コンシューマープラットフォームのスケール、エンタープライズプロダクトのローンチ、開発への AI 統合——どれにおいても、形にするための戦略、実行力、そしてクロスファンクショナルなリーダーシップを提供します。',
+    aboutReadMore: 'もっと読む',
+    aboutMetricUsersLabel: '影響したユーザー数',
+    aboutMetricRevenueLabel: '売上インパクト',
+    aboutMetricAiLabel: 'AI による高速化',
+    aboutMetricUsersShort: 'ユーザー',
+    aboutMetricRevenueShort: '売上',
+    aboutMetricAiShort: 'AI 速度',
+    universeAriaLabel: '私の仕事を理解する',
     universeWordLeft: 'Understand',
     universeWordRight: 'What I Do',
     projectsCaseStudy: 'CASE STUDY',
   },
   about: {
-    metaTitle: 'About Charles Chen — AI Product Manager in Taiwan',
-    metaDescription: 'About Charles Chen (陳德潁) — AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.',
-    back: '← BACK TO PORTFOLIO',
-    heading: 'About Charles Chen',
-    subheading: 'AI Product Manager and AI Product Builder from Taiwan.',
+    metaTitle: 'Charles Chen（陳德潁）について — 台湾の AI Product Manager',
+    metaDescription: 'Charles Chen（陳德潁）について — 台湾出身の AI Product Manager / AI Product Builder。プロダクト哲学、AI ツールの活用方針、完全な職歴、スキルセット。',
+    back: '← ポートフォリオに戻る',
+    heading: 'Charles Chen について',
+    subheading: '台湾出身の AI Product Manager / AI Product Builder。',
     photoAlt: 'Charles Chen — AI Product Manager',
-    sectionWhoIAm: 'Who I Am',
-    sectionPhilosophy: 'Product Philosophy',
-    sectionAi: 'How I Use AI in Product Development',
-    sectionCareer: 'Career',
-    sectionSkills: 'Skill Set',
+    sectionWhoIAm: '私について',
+    sectionPhilosophy: 'プロダクト哲学',
+    sectionAi: 'プロダクト開発での AI の使い方',
+    sectionCareer: 'キャリア',
+    sectionSkills: 'スキルセット',
     sectionChineseBio: '中文簡介',
     sectionProjects: 'PROJECTS',
-    projectsCtaText: "See what I've built:",
-    philosophyIntro: 'I believe the best product managers are builders. The gap between "what should we build" and "here\'s a working prototype" is where most product ideas die. By closing that gap with AI-powered development, I can test assumptions in hours instead of weeks.',
-    aiIntro: "AI isn't a feature I add to products — it's how I build them. My AI-powered workflow spans the entire product lifecycle:",
+    projectsCtaText: '私が作ったものを見る：',
+    philosophyIntro: '最高のプロダクトマネージャーは builder だと信じています。「何を作るべきか」と「ここに動くプロトタイプがあります」の間にある距離こそ、ほとんどのプロダクトアイデアが死ぬ場所です。AI 駆動の開発でそのギャップを埋めれば、仮説検証は数週間ではなく数時間でできます。',
+    aiIntro: 'AI は私がプロダクトに加える機能ではなく——プロダクトを作る方法そのものです。私の AI 駆動ワークフローは、プロダクトライフサイクル全体に及びます：',
   },
   changelog: {
-    metaTitle: 'Changelog — Charles Chen Portfolio',
+    metaTitle: '変更履歴 — Charles Chen Portfolio',
     marker: '[ CHANGELOG ]',
-    heading: 'Building in public.',
-    description: 'A record of design decisions, technical iterations, and the thinking behind every pixel of this portfolio.',
+    heading: '公開しながら作る。',
+    description: 'このポートフォリオのすべてのピクセルの裏にある、デザイン判断、技術的なイテレーション、そして思考の記録。',
     filterAriaLabel: 'カテゴリでフィルタ',
     filterAll: 'すべて',
     emptyMessage: '該当するエントリーはありません。',
-    tagFeature: 'Feature',
-    tagDesign: 'Design',
-    tagTechnical: 'Technical',
+    tagFeature: '機能',
+    tagDesign: 'デザイン',
+    tagTechnical: '技術',
   },
   projectDetail: {
     notFound: 'プロジェクトが見つかりません。',
     backHome: '← ポートフォリオに戻る',
-    back: '← BACK TO PORTFOLIO',
-    sectionProblem: 'Problem',
-    sectionSolution: 'Solution',
+    back: '← ポートフォリオに戻る',
+    sectionProblem: '課題',
+    sectionSolution: '解決策',
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
-    sectionLearnings: 'Learnings',
+    sectionLearnings: '学び',
     prevLabel: '← 前へ',
     nextLabel: '次へ →',
   },
   footer: {
-    letsConnect: "Let's Connect",
+    letsConnect: 'お問い合わせ',
     rights: '© 2026 Charles Chen. All rights reserved.',
-    rendered: 'Rendered in {{ms}}ms · React · Canvas 2D · Tailwind',
-    changelogLink: 'Changelog',
+    rendered: '{{ms}} ms でレンダリング · React · Canvas 2D · Tailwind',
+    changelogLink: '変更履歴',
     visitSocial: '{{platform}} へ',
   },
   defaults: {
-    documentTitle: 'AI Product Manager in Taiwan | Charles Chen Portfolio',
+    documentTitle: '台湾の AI Product Manager | Charles Chen Portfolio',
   },
 }
 
