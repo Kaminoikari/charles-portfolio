@@ -34,7 +34,7 @@ export const changelog: ChangelogEntry[] = [
       'Path のケーススタディを書き直しました。元の文案がプロダクトを誤った競合空間に置いていたためです。以前のナラティブは Booking.com、Agoda、TripAdvisor を競合に据えていましたが——予約プラットフォームと SNS 系旅行 App——Path はそのどちらでもありません。実際の参照点は Wanderlog、Tripit、去趣 のような旅程プランニングツールであり、競争はディールやレビューではなく「海外で通信が落ちても旅程はまだ動くか」にあります。',
       '3 つの locale（en、zh-TW、ja）すべてを書き直し、Path GitHub repo と ARCHITECTURE.md に記載されている内容のみを使いました——機能の創作はなし。新しい構成は 2 つの荷重を支えるプロダクト判断を主軸に：（1）PWA は「ネットがなくても動く web app をどう作るか」への構成上の答え——iOS / Android のホーム画面にインストール可能、Service Worker で完全オフライン、app store ゲートなし、native build なし；（2）cache-first + background sync をデータ戦略に採用——IndexedDB の読み取りで即時 render、Supabase へのバックグラウンド同期で最新データ、楽観的書き込みと sync queue がオフライン編集を取りこぼさず接続復帰時にリプレイ。',
       'Tech stack セクションを Path が実際に出荷している内容に更新：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、server state には TanStack Query、ドラッグ＆ドロップは @dnd-kit、IndexedDB は idb 経由、Service Worker、Supabase は Google OAuth と Row Level Security 付き、クライアント schema は Zod、Postgres CHECK 制約、テストは Vitest。ライブデモの隣に GitHub リンクを追加し、ケーススタディの読者が実装を自分で検証できるように。',
-      'ホームページのカードもタイトルを更新——説明は「Cache-first + background sync——海外でネットが落ちても、旅程・経路・コストにそのまま手が届きます」を先に出し、タグは `['React', 'TypeScript', 'Supabase']` から `['PWA', 'React', 'IndexedDB']` に切り替え、プロジェクト一覧の段階でオフラインの面を表に出しました。',
+      'ホームページのカードもタイトルを更新——説明は「Cache-first + background sync——海外でネットが落ちても、旅程・経路・コストにそのまま手が届きます」を先に出し、タグは React / TypeScript / Supabase から PWA / React / IndexedDB に切り替え、プロジェクト一覧の段階でオフラインの面を表に出しました。',
     ],
   },
   {

@@ -33,7 +33,7 @@ export const changelog: ChangelogEntry[] = [
       '重寫 Path 案例研究，因為原稿把產品擺到錯的競品空間。原本的敘事拿 Booking.com、Agoda、TripAdvisor 當對手——訂房平台跟社群旅遊 App——但 Path 不是這兩種裡的任何一種。它真正的參照點是 Wanderlog、Tripit、去趣這類行程規劃工具，競爭也不在折扣或評論，而在「網路在國外掉了，行程是不是還能用」。',
       '三個 locale（en、zh-TW、ja）全部重寫，只用 Path GitHub repo 與其 ARCHITECTURE.md 已經寫下的內容——絕不無中生有。新版敘事以兩個承重的產品決策為主軸：（1）PWA 是「做出沒網路也能跑的 web app」這道題的架構解答——iOS / Android 直接從主畫面安裝、Service Worker 拿到完整離線、不用過 app store、沒有 native build；（2）cache-first + background sync 是資料策略——IndexedDB 讓讀取瞬間 render、背景同步 Supabase 取最新資料、寫入 optimistic、sync queue 把離線編輯接住、連線回來再 replay。',
       '更新 tech stack 段落為 Path 實際出貨的內容：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、TanStack Query 管 server state、@dnd-kit 處理拖拉、IndexedDB 透過 idb、Service Worker、Supabase 配 Google OAuth 與 Row Level Security、Zod client schema + Postgres CHECK 限制、Vitest 測試。同時在 live demo 旁加上 GitHub 連結，讓讀案例的人能自己驗證實作。',
-      '首頁 project card 也順手改了——描述換成「Cache-first + background sync——就算在國外網路掉了，行程、交通路線、花費都還拿得到」，標籤從 `['React', 'TypeScript', 'Supabase']` 換成 `['PWA', 'React', 'IndexedDB']`，把離線那一面在專案列表就拋出來。',
+      '首頁 project card 也順手改了——描述換成「Cache-first + background sync——就算在國外網路掉了，行程、交通路線、花費都還拿得到」，標籤從 React / TypeScript / Supabase 換成 PWA / React / IndexedDB，把離線那一面在專案列表就拋出來。',
     ],
   },
   {
