@@ -370,13 +370,18 @@ export default function ParticleHero() {
               weight: edge,
               brightness: b / 255,
             })
-          } else if (b > 70 && px % FILL_STEP === 0 && py % FILL_STEP === 0) {
-            // Sparse interior fill — only on lit face regions (skin, lit
-            // hair). The brightness gate excludes the dark backdrop within
-            // the circular crop, which would otherwise show up as a regular
-            // grid of dim dots haloing the head on small viewports. A
-            // sub-pixel jitter breaks the perfect 5-px grid so the fill
-            // reads as texture rather than a screen door.
+          } else if (
+            distFromCenter < radius * 0.50
+            && px % FILL_STEP === 0
+            && py % FILL_STEP === 0
+          ) {
+            // Sparse interior fill — only inside the face core (inner 50%
+            // of the sample circle). The 50-70% annulus is the photo's
+            // medium-gray background gradient (b≈100-120 dominant), which
+            // a brightness gate alone can't reject; the radius gate cuts
+            // it cleanly. Sub-pixel jitter (±2px within each 5px cell)
+            // breaks the regular grid so the fill reads as texture, not
+            // as an aliased dot pattern.
             const jx = (Math.random() - 0.5) * (FILL_STEP - 1)
             const jy = (Math.random() - 0.5) * (FILL_STEP - 1)
             pool.push({
