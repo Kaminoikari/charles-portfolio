@@ -226,12 +226,14 @@ export default function ParticleHero() {
     // luminous spot — not a hard dot — and overlapping halos add cleanly
     // into bright areas without blowing out to white.
     //
-    // Display size is intentionally large (22px) so that the halo around
-    // each particle clearly extends ~10-11px from its centre. With ~3000
-    // particles packed into the portrait silhouette, neighbouring halos
-    // overlap heavily and the photo reads as a glowing nebula rather than
-    // a dotted constellation.
-    const GLOW_DISPLAY_PX = 22
+    // Display size scales with viewport. On desktop the 22px halo (~11px
+    // effective radius per particle) creates the intended cosmic-nebula
+    // bleed where ~3000 silhouette particles bloom into a glowing fabric.
+    // On mobile the photo display itself is ~273px so a 22px halo would
+    // bleed proportionally further outward and read as a fuzzy aura
+    // around the head; halving it keeps the same gradient shape but
+    // contains the bleed within the silhouette.
+    const GLOW_DISPLAY_PX = width < 768 ? 13 : 22
     const GLOW_SPRITE_PX = 48
     const makeGlowSprite = (h: number, s: number, l: number) => {
       const dpr = window.devicePixelRatio
