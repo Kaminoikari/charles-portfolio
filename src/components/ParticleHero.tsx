@@ -190,8 +190,15 @@ export default function ParticleHero() {
       // Use section dimensions, not window — on mobile Safari, h-screen (100vh)
       // includes the URL bar area while window.innerHeight doesn't, so the two
       // disagree by ~100px and canvas "center" drifts off the visual center.
-      width = section.clientWidth
-      height = section.clientHeight
+      const nextWidth = section.clientWidth
+      const nextHeight = section.clientHeight
+      // Skip when dimensions are unchanged. Setting canvas.width/height
+      // clears the bitmap to transparent, so a spurious fire (browser zoom,
+      // accessibility scaling, ResizeObserver init pass) would blank the
+      // canvas for a frame and produce a visible flicker.
+      if (nextWidth === width && nextHeight === height) return
+      width = nextWidth
+      height = nextHeight
       // Cap DPR at 2.0. The original 1.5 cap (for idle-loop perf headroom
       // on 3000 drawImages + 1000+ trail strokes) was visibly soft on
       // dpr=3 iPhones — the canvas rendered at half native density, then
@@ -909,7 +916,7 @@ export default function ParticleHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100dvh]:h-[100dvh]"
+      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[100svh]"
       style={{ background: 'var(--color-bg-primary)' }}
     >
       <BlackHoleBackdrop />

@@ -323,9 +323,18 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     // iPhones where 1.5 was rendering at half native density.
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
+    let lastW = -1
+    let lastH = -1
     const resize = () => {
       const w = parent.clientWidth
       const h = parent.clientHeight
+      // Skip when dimensions are unchanged. Setting canvas.width/height
+      // wipes the WebGL framebuffer, so a spurious fire would render the
+      // shader as one transparent frame before the next render() repaints —
+      // visible as a flicker in the lens halo on mobile.
+      if (w === lastW && h === lastH) return
+      lastW = w
+      lastH = h
       canvas.width = Math.max(1, Math.floor(w * dpr))
       canvas.height = Math.max(1, Math.floor(h * dpr))
       canvas.style.width = `${w}px`
