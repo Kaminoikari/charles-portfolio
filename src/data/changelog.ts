@@ -10,6 +10,42 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-easter-egg-braam-sfx',
+    date: '2026-04-27',
+    title: 'Hero — Easter Egg Cinematic Braam SFX',
+    tags: ['feature', 'design'],
+    body: [
+      'Paired the easter-egg sequence with a cinematic trailer-braam sound effect. The audio is offset on trigger so its iconic 50dB attack transient lands exactly at COLLAPSE_END (egg elapsed ~0.80s) — the moment the singularity reaches maximum compression and the white flash ignites. The braam then swells through the flash and explode phases as the particles converge into the portrait, and the long decay tail rings through the photo-hold and reverse phases.',
+      'Plumbed via a single delayed-play `setTimeout`: the audio sits idle until 0.49s after the egg trigger, then plays from t=0 so the silent pre-attack of the file fills the start of the collapse with tension before the impact lands. Reuses one Audio element across triggers, gates re-trigger on the existing eggStartRef guard, and pauses any in-flight playback on component unmount. Volume capped at 0.55 so the braam reads as dramatic punctuation rather than overwhelming the ambient soundtrack.',
+    ],
+  },
+  {
+    id: 'hero-easter-egg-cosmic-photo',
+    date: '2026-04-27',
+    title: 'Hero — Cosmic Photo Particles & Easter Egg Polish',
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      'Reworked the easter-egg portrait phase so the particles forming the photo look like cosmic stardust instead of solid mantra beads. Each particle is now drawn as a pre-rendered radial-gradient sprite (universal warm-white core, tinted halo from a 5-bucket brightness gradient) and composited with additive blending — so neighbouring halos overlap into a continuous luminescent fabric rather than stacking as discrete dots. Roughly a third of the particles also draw a short tangent streak, hinting they only just escaped the orbital ring on their way to the portrait.',
+      'Tuned the photo palette to the shader\'s lens-halo spectrum: brightness 0 maps to flame red-orange (warm gas filaments), brightness 1 maps to cream-white (lens crescent core), with a 12% cyan accent matching the cool gas opposite the warm side. The portrait\'s natural chiaroscuro now reads as a temperature gradient — bright pixels look like hot lensed light, dark pixels like cooling accretion debris — and the cosmic backdrop and the portrait visibly share the same colour DNA.',
+      'Added a real shader-side gravitational collapse during the easter egg. The shader now applies a radial zoom + tightening vortex driven by `u_eggCollapse`, so the lens visibly implodes during the collapse phase instead of just darkening, and a smaller secondary collapse plays during the reverse phase as the particles disperse back to the orbital ring. A `u_photoHide` uniform fades the entire shader to zero across the photo phase (ramps up during the last 0.35s of explode so no lens flashes behind the converging portrait, holds at zero through the portrait, ramps back down for the reverse collapse).',
+      'Reverted the reverse phase to a clean linear dispersal — particles fly straight back to their orbital ring with `easeOutQuart`, no rotation. The earlier CW spiral version read as the photo "rotating" as it dissolved, which felt unnatural; the gravitational atmosphere now lives entirely in the shader\'s secondary collapse, and the particles just disperse and reform.',
+      'Performance work to keep the 3000-particle ring at 60 fps: the canvas DPR is now capped at 1.5 (roughly halves pixel work on Retina displays without a perceptible quality loss), idle-orbit trail stroke styles are hoisted outside the per-frame loop (saved several thousand redundant state changes per frame), and the trail-rendering threshold was raised so dim/slow outer-corner particles skip the stroke entirely. Photo-phase shadowBlur was traded for pre-rendered glow sprites, which is roughly 3-4× cheaper and produces a cleaner halo. Also removed the mousemove-driven text-repulsion effect that was wobbling the hero copy.',
+    ],
+  },
+  {
+    id: 'hero-black-hole-shader-orbital-particles',
+    date: '2026-04-27',
+    title: 'Hero — Black Hole Shader & Orbital Particle System',
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      'Added a WebGL fragment shader behind the hero particles that renders a black-hole-style accretion disk: a bright lensing crescent at the centre with soft gas filaments flowing around it. The shader sits underneath the existing particle ring on its own canvas, so the hero now reads as a layered composition — a glowing event horizon in the foreground, animated gas behind it, and orbiting particles on top — instead of a single flat particle field.',
+      'Replaced the previous wave-modulated, fixed-angle particle model with a Kepler-like orbital system inspired by msurguy\'s blackhole reference. Every particle now genuinely rotates around the centre with a radius-dependent angular velocity (inner orbits fast, outer corners drift slowly), which reads as differential rotation rather than a static decorative ring. Particle count went from 800 in a narrow band to 3000 spread across the full viewport diagonal, so the corners of widescreen displays no longer look empty.',
+      'Click and tap interactions now use a spring-damper physics model: a hit pushes nearby particles outward with an initial radial velocity, then gravity pulls them back through their base orbit and an under-damped oscillation lets them swing past and settle naturally — instead of a hard linear repel-and-snap. The shader itself no longer responds to clicks; only the particle ring does. Keeping the gas backdrop neutral made the click feedback feel like a physical perturbation of the orbit rather than a global "screen shakes" reaction.',
+      'The Konami easter egg was rebuilt as a synchronized big-bang sequence between the shader and the particle ring. All particles collapse toward a singularity, a flash bursts at the centre, a shockwave ripples outward, particles explode out into Charles\'s photo, hold for a moment, then dissolve back into the ring as the shader fades from black-out into normal gas. Both components listen to a shared `easter-egg` window event so their phase boundaries (collapse 0.8s → flash 1.0s → explode 1.6s → photo 3.5s → reverse 5.0s) stay locked together.',
+      'Several smaller fixes along the way: the shader\'s denominator singularities (centre bright spot, diagonal slice through the lens) were replaced with epsilon-stabilised forms; gas rotation uses an exponentially-saturating drift instead of linear winding so the noise pattern doesn\'t accumulate long sweep arcs over time; the hero text gained a layered black text-shadow and slightly higher opacity on the supporting copy so it stays readable when the bright lens crescent passes through it.',
+    ],
+  },
+  {
     id: 'hero-mobile-vertical-centering',
     date: '2026-04-21',
     title: 'Hero Section — Mobile Vertical Centering Fix',
