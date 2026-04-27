@@ -38,6 +38,10 @@ import { skills as skillsEn, type Skill } from './skills.en'
 import { skills as skillsZhTW } from './skills.zh-TW'
 import { skills as skillsJa } from './skills.ja'
 
+import { aboutContent as aboutContentEn, type AboutContent, type AboutBullet, type AboutTableRow } from './aboutContent.en'
+import { aboutContent as aboutContentZhTW } from './aboutContent.zh-TW'
+import { aboutContent as aboutContentJa } from './aboutContent.ja'
+
 const PROJECTS: Record<Locale, Project[]> = {
   'en': projectsEn,
   'zh-TW': projectsZhTW,
@@ -74,6 +78,12 @@ const SKILLS: Record<Locale, Skill[]> = {
   'ja': skillsJa,
 }
 
+const ABOUT_CONTENT: Record<Locale, AboutContent> = {
+  'en': aboutContentEn,
+  'zh-TW': aboutContentZhTW,
+  'ja': aboutContentJa,
+}
+
 export function useProjects(): Project[] {
   const { locale } = useLocale()
   return PROJECTS[locale] ?? PROJECTS['en']
@@ -104,4 +114,12 @@ export function useSkills(): Skill[] {
   return SKILLS[locale] ?? SKILLS['en']
 }
 
-export type { Project, ProjectDetail, ChangelogEntry, ChangelogTag, ExperienceItem, BlogArticle, Skill }
+export function useAboutContent(): AboutContent {
+  const { locale } = useLocale()
+  return ABOUT_CONTENT[locale] ?? ABOUT_CONTENT['en']
+}
+
+export type {
+  Project, ProjectDetail, ChangelogEntry, ChangelogTag, ExperienceItem,
+  BlogArticle, Skill, AboutContent, AboutBullet, AboutTableRow,
+}

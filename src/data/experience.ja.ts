@@ -1,5 +1,11 @@
-// TODO(i18n): translate this file to ja. Until translated, contents
-// are an English copy and the site falls back gracefully.
+// Translation policy mirrors src/i18n/strings/ja.ts:
+//   - Job titles (Product Manager / Senior Product Manager / Operations
+//     Manager / Product Mentor) and company names stay English. Date
+//     ranges stay English-style (uppercase month + year) to match the
+//     monospace layout in the timeline rendering.
+//   - Bullet metric phrasing translated to Japanese, but standard tech /
+//     product terms (B2B SaaS, BI, AI, AI Product Builder, Claude Code,
+//     Codex, Antigravity) stay English.
 
 export interface ExperienceItem {
   dateRange: string
@@ -14,9 +20,9 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '85%+ revenue impact — owned product strategy across parking payments, business travel & financial insurance lines (TW + JP)',
-      '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
-      '5x faster iteration — pioneered AI-driven prototyping with Claude Code, Codex & Antigravity',
+      '85%+ の売上インパクト——駐車場決済・出張・金融保険の 3 つのプロダクトラインの戦略を主導（台湾 + 日本）',
+      '0→1 で USPACE for Business をローンチ。企業の出張管理向け B2B SaaS',
+      '5 倍速いイテレーション——Claude Code、Codex、Antigravity を活用した AI 駆動プロトタイピングを推進',
     ],
   },
   {
@@ -24,7 +30,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Mentor',
     organization: 'XChange School',
     bullets: [
-      'Mentoring aspiring PMs at Taiwan\'s largest internet professional community',
+      '台湾最大のインターネット業界プロフェッショナルコミュニティで、PM を目指す人をメンタリング',
     ],
   },
   {
@@ -32,9 +38,9 @@ export const experience: ExperienceItem[] = [
     title: 'Senior Product Manager',
     organization: 'NUEIP Technology Co., Ltd.',
     bullets: [
-      '+40% data-driven decisions — built end-to-end BI product with advanced analytics & AI',
-      '+35% forecast accuracy — implemented predictive analytics models for strategic planning',
-      '50% faster reporting — integrated BI dashboards cutting data retrieval time',
+      '+40% のデータ駆動の意思決定——高度な分析と AI を統合したエンドツーエンドの BI プロダクトを構築',
+      '+35% の予測精度——戦略立案のための予測分析モデルを導入',
+      '50% 高速なレポーティング——BI ダッシュボードを統合し、データ取得時間を短縮',
     ],
   },
   {
@@ -42,9 +48,9 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'PXPay Plus Co., Ltd.',
     bullets: [
-      '+25% transaction conversions — redesigned sign-up & checkout flow in 3 months',
-      '+50% operational efficiency — pioneered reward points system, -40% customer complaints',
-      'Led third-party billing integration for parking, cable TV, pension & government payments',
+      '+25% の取引コンバージョン率——3 ヶ月でサインアップとチェックアウトのフローを再設計',
+      '+50% のオペレーション効率——リワードポイントシステムを先導、顧客クレーム -40%',
+      '駐車場・ケーブル TV・年金・行政手数料のサードパーティ決済統合をリード',
     ],
   },
   {
@@ -52,9 +58,9 @@ export const experience: ExperienceItem[] = [
     title: 'Operations Manager',
     organization: 'FLUX Technology Inc.',
     bullets: [
-      '+20% market share — developed product strategy through competitive analysis',
-      '+30% user retention — redesigned website & SEO for 3-product ecosystem',
-      'Directed team of 10 — +22% process efficiency, +35% order fulfillment speed',
+      '+20% の市場シェア——競合分析を通じてプロダクト戦略を構築',
+      '+30% のユーザーリテンション——3 つのプロダクトラインの公式サイトと SEO を再設計',
+      '10 人のチームを率いた——プロセス効率 +22%、出荷スピード +35%',
     ],
   },
 ]
