@@ -362,20 +362,26 @@ export default function ParticleHero() {
 
           if (edge > 25) {
             // Strong edges — silhouette, eye/brow/lip outlines. High weight
-            // so they get the brightest particles after sort.
+            // so they get the brightest particles after sort. Edges keep
+            // their full brightness range so dark hair edges stay readable.
             pool.push({
               x: px / PHOTO_SAMPLE_SIZE,
               y: py / PHOTO_SAMPLE_SIZE,
               weight: edge,
               brightness: b / 255,
             })
-          } else if (px % FILL_STEP === 0 && py % FILL_STEP === 0) {
-            // Sparse interior fill — every 5th pixel in the smooth regions
-            // (cheeks, forehead, neck) gets a low-weight particle so the
-            // face reads as a filled portrait rather than a hollow wire.
+          } else if (b > 70 && px % FILL_STEP === 0 && py % FILL_STEP === 0) {
+            // Sparse interior fill — only on lit face regions (skin, lit
+            // hair). The brightness gate excludes the dark backdrop within
+            // the circular crop, which would otherwise show up as a regular
+            // grid of dim dots haloing the head on small viewports. A
+            // sub-pixel jitter breaks the perfect 5-px grid so the fill
+            // reads as texture rather than a screen door.
+            const jx = (Math.random() - 0.5) * (FILL_STEP - 1)
+            const jy = (Math.random() - 0.5) * (FILL_STEP - 1)
             pool.push({
-              x: px / PHOTO_SAMPLE_SIZE,
-              y: py / PHOTO_SAMPLE_SIZE,
+              x: (px + jx) / PHOTO_SAMPLE_SIZE,
+              y: (py + jy) / PHOTO_SAMPLE_SIZE,
               weight: 6,
               brightness: b / 255,
             })
