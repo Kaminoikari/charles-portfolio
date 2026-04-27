@@ -1,41 +1,43 @@
-import { lazy, StrictMode, Suspense } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
-import Nav from './components/Nav'
 import AmbientAudio from './components/AmbientAudio'
-import App from './App'
-
-const AboutPage = lazy(() => import('./components/AboutPage'))
-const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
-const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
-
-function Loading() {
-  return <div className="flex h-screen items-center justify-center bg-bg-primary" />
-}
+import AppRoutes from './AppRoutes'
+import { LocaleProvider } from './i18n'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <Nav />
       <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/about" element={
-          <Suspense fallback={<Loading />}>
-            <AboutPage />
-          </Suspense>
-        } />
-        <Route path="/changelog" element={
-          <Suspense fallback={<Loading />}>
-            <ChangelogPage />
-          </Suspense>
-        } />
-        <Route path="/projects/:id" element={
-          <Suspense fallback={<Loading />}>
-            <ProjectDetailPage />
-          </Suspense>
-        } />
+        {/* Locale-prefixed branches first so '/zh-TW' / '/ja' don't fall
+            through to the English catch-all. */}
+        <Route
+          path="/zh-TW/*"
+          element={
+            <LocaleProvider locale="zh-TW">
+              <AppRoutes />
+            </LocaleProvider>
+          }
+        />
+        <Route
+          path="/ja/*"
+          element={
+            <LocaleProvider locale="ja">
+              <AppRoutes />
+            </LocaleProvider>
+          }
+        />
+        {/* English default — unprefixed catch-all. */}
+        <Route
+          path="/*"
+          element={
+            <LocaleProvider locale="en">
+              <AppRoutes />
+            </LocaleProvider>
+          }
+        />
       </Routes>
       <AmbientAudio />
       <Analytics />

@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { type ChangelogTag, changelog } from '../data/changelog'
+import { type ChangelogTag, useChangelog } from '../data'
+import { useDocumentMeta, useT } from '../i18n'
 import ContactFooter from './ContactFooter'
-
-const TAG_LABELS: Record<ChangelogTag, string> = {
-  feature: 'Feature',
-  design: 'Design',
-  technical: 'Technical',
-}
 
 const ALL_TAGS: ChangelogTag[] = ['feature', 'design', 'technical']
 
@@ -18,14 +13,18 @@ function formatDate(dateStr: string): string {
 export default function ChangelogPage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [activeTag, setActiveTag] = useState<ChangelogTag | null>(null)
+  const t = useT()
+  const changelog = useChangelog()
+  const TAG_LABELS: Record<ChangelogTag, string> = {
+    feature: t('changelog.tagFeature'),
+    design: t('changelog.tagDesign'),
+    technical: t('changelog.tagTechnical'),
+  }
+
+  useDocumentMeta({ titleKey: 'changelog.metaTitle', path: '/changelog' })
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    const canonical = document.querySelector('link[rel="canonical"]')
-    if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/changelog')
-    return () => {
-      if (canonical) canonical.setAttribute('href', 'https://charles-chen.com/')
-    }
   }, [])
 
   useEffect(() => {
@@ -57,17 +56,17 @@ export default function ChangelogPage() {
       {/* Header */}
       <header className="mx-auto max-w-[800px] px-6 pt-32 pb-10 md:pt-40 md:pb-14">
         <div className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">
-          [ CHANGELOG ]
+          {t('changelog.marker')}
         </div>
         <h1 className="mt-5 text-3xl font-semibold leading-tight text-white md:text-5xl">
-          Building in public.
+          {t('changelog.heading')}
         </h1>
         <p className="mt-4 text-base leading-relaxed text-text-muted md:text-lg">
-          A record of design decisions, technical iterations, and the thinking behind every pixel of this portfolio.
+          {t('changelog.description')}
         </p>
 
         {/* Tag filters */}
-        <nav className="mt-10 flex flex-wrap gap-2" aria-label="Filter by category">
+        <nav className="mt-10 flex flex-wrap gap-2" aria-label={t('changelog.filterAriaLabel')}>
           <button
             onClick={() => setActiveTag(null)}
             className={`min-h-[36px] cursor-pointer rounded-full border px-4 py-1.5 font-mono text-[11px] uppercase tracking-[1px] transition-colors duration-200 ${
@@ -76,7 +75,7 @@ export default function ChangelogPage() {
                 : 'border-border text-text-muted hover:text-white hover:border-border-hover'
             }`}
           >
-            All
+            {t('changelog.filterAll')}
           </button>
           {ALL_TAGS.map((tag) => (
             <button
@@ -140,7 +139,7 @@ export default function ChangelogPage() {
 
         {filtered.length === 0 && (
           <div className="py-24 text-center text-text-muted">
-            No entries matching this filter.
+            {t('changelog.emptyMessage')}
           </div>
         )}
       </div>
