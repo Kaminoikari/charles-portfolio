@@ -1,5 +1,9 @@
-// TODO(i18n): translate this file to ja. Until translated, contents
-// are an English copy and the site falls back gracefully.
+// Translation policy: short witty PM-skill names floating in the universe
+// section. The English originals lean on humor (e.g. "SELECT * FROM problems",
+// "Fake it till you ship it"). Aim for Japanese-PM voice — keep playful tone,
+// keep code/SQL jokes verbatim, mix Japanese with the standard English PM
+// vocabulary (PRD / bug / context / production / fake it / release) the same
+// way Japanese tech PMs actually write.
 
 export interface Skill {
   name: string
@@ -7,29 +11,29 @@ export interface Skill {
 }
 
 export const skills: Skill[] = [
-  { name: 'The "why" before the "what"', color: 'cyan' },
-  { name: 'GPS for chaos', color: 'white' },
-  { name: 'Talking to humans, professionally', color: 'cyan' },
-  { name: 'Turning spreadsheets into decisions', color: 'white' },
-  { name: 'Meetings about fewer meetings', color: 'gray' },
-  { name: 'Building brains that don\'t sleep', color: 'cyan' },
-  { name: 'Arguing with data, not opinions', color: 'white' },
-  { name: '50 pages no one reads (jk)', color: 'cyan' },
-  { name: 'What gets measured gets shipped', color: 'gray' },
-  { name: 'Professional cat herding', color: 'white' },
-  { name: 'As a user, I want fewer bugs', color: 'cyan' },
-  { name: 'Fake it till you ship it', color: 'white' },
-  { name: 'Making buttons obvious since 2019', color: 'gray' },
-  { name: 'Whispering to machines', color: 'cyan' },
-  { name: 'Teaching AI to forget bad habits', color: 'white' },
-  { name: 'Wrangling AI into production', color: 'cyan' },
+  { name: 'what より先に why', color: 'cyan' },
+  { name: '混沌のための GPS', color: 'white' },
+  { name: '人間とプロらしく話す', color: 'cyan' },
+  { name: 'スプレッドシートを意思決定に変える', color: 'white' },
+  { name: '会議を減らすための会議', color: 'gray' },
+  { name: '眠らない頭脳を作る', color: 'cyan' },
+  { name: '意見ではなく、データで議論する', color: 'white' },
+  { name: '誰も読まない 50 ページの PRD（嘘です）', color: 'cyan' },
+  { name: '測れるものはリリースされる', color: 'gray' },
+  { name: 'プロの猫の放牧', color: 'white' },
+  { name: 'ユーザーとして、bug を減らしたい', color: 'cyan' },
+  { name: 'リリースするまで fake it', color: 'white' },
+  { name: '2019 年からボタンを分かりやすく', color: 'gray' },
+  { name: '機械にささやく', color: 'cyan' },
+  { name: 'AI に悪い癖を忘れさせる', color: 'white' },
+  { name: 'AI を production に押し込む', color: 'cyan' },
   { name: 'SELECT * FROM problems', color: 'gray' },
-  { name: 'Let the product sell itself', color: 'cyan' },
-  { name: 'Ship it, fix it, ship it again', color: 'white' },
-  { name: 'Feeding AI the right context', color: 'cyan' },
-  { name: 'Grading robots\' homework', color: 'white' },
-  { name: 'Market research, but strategically', color: 'gray' },
-  { name: 'Plugging AI into everything', color: 'cyan' },
-  { name: 'Breaking problems down to atoms', color: 'white' },
-  { name: 'Connecting all the dots', color: 'cyan' },
+  { name: 'プロダクトに自分自身を売らせる', color: 'cyan' },
+  { name: 'リリースして、直して、もう一度リリース', color: 'white' },
+  { name: 'AI に正しい context を与える', color: 'cyan' },
+  { name: 'ロボットの宿題を採点する', color: 'white' },
+  { name: '市場調査、ただし戦略的に', color: 'gray' },
+  { name: 'すべてに AI を差し込む', color: 'cyan' },
+  { name: '問題を原子レベルまで分解する', color: 'white' },
+  { name: 'すべての点を結びつける', color: 'cyan' },
 ]

@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'i18n-content-translation',
+    date: '2026-04-28',
+    title: 'Multilingual Content — Full zh-TW + ja Translation Pass',
+    tags: ['feature'],
+    body: [
+      'Filled in all the locale data files that the i18n architecture left as English placeholders. The /zh-TW/ and /ja/ routes now read in their own language end-to-end: the About page (with its Who I Am narrative, Product Philosophy bullets, How I Use AI table, and Skills table), the experience timeline, the three project case studies (Path, Plutus Trade, Product Playbook), and the floating skill names in the universe section.',
+      'Each translation follows an explicit policy documented at the top of every locale file: product names (Path, Plutus Trade, Product Playbook, USPACE), tech stack (React, Flutter, Supabase, etc.), framework names (JTBD, RICE, OKRs, AARRR), and standard product industry vocabulary (B2B SaaS, builder, Product Builder, MaaS) stay English in line with how Taiwan and Japan PMs actually write — translating these would feel forced. Descriptive sentences, problem/solution paragraphs, and bullet titles are translated.',
+      'For the blog section, articles published in Traditional Chinese keep their original titles and subtitles on /zh-TW/ since that matches the published copy. On /ja/, both titles and subtitles are translated to Japanese as descriptions of each article\'s topic, matching how Japanese tech blogs typically summarize foreign-language sources for their readers — the destination is still the original Chinese article on Substack/Medium.',
+      'The only locale data still on TODO markers is the changelog itself — translating ~3,200 words of running technical narrative is a separate effort and is intentionally deferred. The site type-checks against the canonical English Strings interface so any missing key surfaces at build time.',
+    ],
+  },
+  {
     id: 'hero-easter-egg-mobile-polish',
     date: '2026-04-27',
     title: 'Hero — Easter Egg Mobile Polish',

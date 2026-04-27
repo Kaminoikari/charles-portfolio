@@ -1,5 +1,6 @@
-// TODO(i18n): translate this file to zh-TW. Until translated, contents
-// are an English copy and the site falls back gracefully.
+// Blog articles are external posts on Substack/Medium. The original
+// articles are written in Traditional Chinese, so the Chinese-locale
+// titles + subtitles here match the actual published article copy.
 
 export interface BlogArticle {
   title: string
