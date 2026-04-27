@@ -358,7 +358,15 @@ export default function ParticleHero() {
             + Math.abs(b - getPixel(px, py - 1).b)
             + Math.abs(b - getPixel(px, py + 1).b)
 
-          if (edge > 25) {
+          // Threshold 50 keeps real silhouette and feature edges
+          // (hair-vs-background ≈ 200-300, eye-vs-skin ≈ 150-300, lip-vs-
+          // skin ≈ 80-150) and rejects the weak edges that produced the
+          // scattered halo of dim particles around the head: AA fringes,
+          // hair flyaways, and the photo's background noise/gradient. By
+          // pixel histogram, the silhouette band (50-70% radius) contains
+          // ~600 edges in the 25-49 range that fed those stray particles —
+          // all dropped here.
+          if (edge > 50) {
             // Strong edges — silhouette, eye/brow/lip outlines. High weight
             // so they get the brightest particles after sort. Edges keep
             // their full brightness range so dark hair edges stay readable.
