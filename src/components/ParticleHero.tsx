@@ -163,7 +163,12 @@ function EasterEggHint() {
 export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
-  const textRef = useRef<HTMLDivElement>(null)
+  // Three refs share the same fade so all hero overlays vanish together
+  // during the easter-egg photo phase (the avatar is the only thing on
+  // screen while the portrait holds).
+  const heroTextRef = useRef<HTMLDivElement>(null)
+  const heroHintRef = useRef<HTMLDivElement>(null)
+  const heroScrollRef = useRef<HTMLDivElement>(null)
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
   // performance.now() at egg trigger; 0 = inactive. Drives phased state machine.
@@ -325,9 +330,13 @@ export default function ParticleHero() {
         }
       }
 
-      // Collect face pixels using edge detection + brightness
-      // PNG with circular crop: alpha=0 outside circle, alpha=255 inside
+      // Collect face pixels using edge detection + interior fill.
+      // PNG with circular crop: alpha=0 outside circle, alpha=255 inside.
+      // Edge-only sampling gave a wireframe silhouette with empty interior;
+      // adding a sparse grid fill at lower weight gives the face mass so
+      // five facial features actually render at small (mobile) display sizes.
       const pool: Array<{ x: number; y: number; weight: number; brightness: number }> = []
+      const FILL_STEP = 5  // every Nth pixel in both axes for interior fill
 
       for (let py = 1; py < PHOTO_SAMPLE_SIZE - 1; py += 1) {
         for (let px = 1; px < PHOTO_SAMPLE_SIZE - 1; px += 1) {
@@ -345,18 +354,29 @@ export default function ParticleHero() {
           // Skip top region — hair/background boundary creates false arc
           if (py < PHOTO_SAMPLE_SIZE * 0.28) continue
 
-          // Edge detection
+          // Edge detection (4-direction Laplacian)
           const edge = Math.abs(b - getPixel(px - 1, py).b)
             + Math.abs(b - getPixel(px + 1, py).b)
             + Math.abs(b - getPixel(px, py - 1).b)
             + Math.abs(b - getPixel(px, py + 1).b)
 
-          // Only edges — creates recognizable silhouette outline, not filled block
           if (edge > 25) {
+            // Strong edges — silhouette, eye/brow/lip outlines. High weight
+            // so they get the brightest particles after sort.
             pool.push({
               x: px / PHOTO_SAMPLE_SIZE,
               y: py / PHOTO_SAMPLE_SIZE,
               weight: edge,
+              brightness: b / 255,
+            })
+          } else if (px % FILL_STEP === 0 && py % FILL_STEP === 0) {
+            // Sparse interior fill — every 5th pixel in the smooth regions
+            // (cheeks, forehead, neck) gets a low-weight particle so the
+            // face reads as a filled portrait rather than a hollow wire.
+            pool.push({
+              x: px / PHOTO_SAMPLE_SIZE,
+              y: py / PHOTO_SAMPLE_SIZE,
+              weight: 6,
               brightness: b / 255,
             })
           }
@@ -491,6 +511,29 @@ export default function ParticleHero() {
       const isPhotoFrame =
         (eggReducedJump)
         || (eggActive && eggElapsed >= EGG_EXPLODE_END && eggElapsed < EGG_PHOTO_END)
+
+      // Hero overlay fade — mirrors the shader's photoHide ramp so the
+      // hero text, easter-egg hint, and scroll indicator vanish together
+      // with the lens halo while the portrait holds. Same timings as
+      // BlackHoleBackdrop: ramp out 1.25→1.55s (ends just as the photo
+      // resolves), hold hidden through PHOTO_END, fade back over 0.15s.
+      let heroHide = 0
+      if (eggActive) {
+        const HIDE_RAMP_START = EGG_EXPLODE_END - 0.35
+        const HIDE_RAMP_END = EGG_EXPLODE_END - 0.05
+        const PHOTO_FADE_OUT = 0.15
+        if (eggElapsed >= HIDE_RAMP_START && eggElapsed < HIDE_RAMP_END) {
+          heroHide = (eggElapsed - HIDE_RAMP_START) / (HIDE_RAMP_END - HIDE_RAMP_START)
+        } else if (eggElapsed >= HIDE_RAMP_END && eggElapsed < EGG_PHOTO_END) {
+          heroHide = 1
+        } else if (eggElapsed >= EGG_PHOTO_END && eggElapsed < EGG_PHOTO_END + PHOTO_FADE_OUT) {
+          heroHide = 1 - (eggElapsed - EGG_PHOTO_END) / PHOTO_FADE_OUT
+        }
+      }
+      const heroOpacity = String(1 - heroHide)
+      if (heroTextRef.current) heroTextRef.current.style.opacity = heroOpacity
+      if (heroHintRef.current) heroHintRef.current.style.opacity = heroOpacity
+      if (heroScrollRef.current) heroScrollRef.current.style.opacity = heroOpacity
 
       const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
       const photoCY = height * 0.50 - PHOTO_DISPLAY_SIZE / 2
@@ -857,7 +900,7 @@ export default function ParticleHero() {
         style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
 
-      <div ref={textRef} className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
+      <div ref={heroTextRef} className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
         <h1
           className="mx-auto max-w-[900px] text-center text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]"
           style={{ textShadow: '0 0 14px rgba(0,0,0,0.85), 0 0 28px rgba(0,0,0,0.6), 0 0 48px rgba(0,0,0,0.45)' }}
@@ -871,9 +914,11 @@ export default function ParticleHero() {
         </h1>
       </div>
 
-      <EasterEggHint />
+      <div ref={heroHintRef}>
+        <EasterEggHint />
+      </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
+      <div ref={heroScrollRef} className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
         <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL ↓</span>
       </div>
     </section>

@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-easter-egg-mobile-polish',
+    date: '2026-04-27',
+    title: 'Hero — Easter Egg Mobile Polish',
+    tags: ['design', 'technical'],
+    body: [
+      'Fixed two issues that hurt the easter-egg portrait on mobile. First, the hero text, "click the logo 5 times" hint, and SCROLL indicator stayed at full opacity through the photo phase, overlapping the portrait once it converged on the smaller viewport. Each overlay now has its own ref, and a render-loop fade tied to the egg phase machine ramps them out from egg t=1.25s to t=1.55s (matching the shader\'s photoHide), holds them hidden through the portrait, and fades them back in over 0.15s as the reverse phase begins. The portrait now lands on a clean stage on every screen size.',
+      'Second, the portrait sampler was edge-only — a 4-direction Laplacian on the source PNG kept just the silhouette, eyes, brow, and lip outlines. On mobile that read as a hollow wireframe rather than a face, because the cheek/forehead/neck regions were empty. Added a sparse interior fill: every fifth pixel inside the photo region also enters the particle pool at low weight (6) so it gets the dimmest particles after sort, while strong edges still claim the brightest ones. The face now reads as a filled portrait at small display sizes without losing the clean linework that defined the silhouette at desktop sizes.',
+    ],
+  },
+  {
     id: 'i18n-architecture',
     date: '2026-04-27',
     title: 'Multilingual Site — English / 繁中 / 日本語 Architecture',
