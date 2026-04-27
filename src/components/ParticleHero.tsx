@@ -1,37 +1,64 @@
 import { useEffect, useRef, useState } from 'react'
+import BlackHoleBackdrop from './BlackHoleBackdrop'
 
-// --- Ring particle config ---
-const INNER_RADIUS = 120
-const THICKNESS = 450
-const NUM_PARTICLES = 40
-const NUM_ROWS = 15
-const PARTICLE_SIZE = 1.5
-const MIN_ALPHA = 0.05
-const MAX_ALPHA = 1.0
+// --- Ring particle config (orbital model, inspired by msurguy's blackhole) ---
+// Inner radius keeps particles outside the shader's lens crescents (~p_norm 0.5).
+// Outer radius extends to the viewport's corner so particles cover the full
+// canvas — especially the corners, which look empty if we cap at half-height.
+const INNER_RADIUS_FACTOR = 0.62 // fraction of half-height, > shader lens at 0.5
+const INNER_RADIUS_MIN = 220     // px floor for small viewports
+const OUTER_RADIUS_PADDING = 80  // px past the corner so orbits don't truncate visibly
+const PARTICLE_TOTAL = 3000
+const PARTICLE_SIZE = 1.4
 const PARTICLE_COLOR = 'rgba(235, 240, 250, 1)'
-const ANIMATION_SPEED = 0.003
-const W1_FREQ = 4
-const W1_SPEED = 1.5
-const W1_DIR = 1
-const W2_FREQ = 6
-const W2_SPEED = 1
-const W2_DIR = -1
-const ROW_TWIST = 1.5
-const AMPLITUDE = 14
+// Angular speeds (rad/sec). Wider Kepler-like differential for visible fast/slow shear.
+const SPEED_INNER = 0.55
+const SPEED_OUTER = 0.07
+const SPEED_JITTER = 0.6
+// Tangent line trail behind each particle (px), proportional to linear velocity.
+const TRAIL_MAX = 8
+// Pointer impulse → spring-damper system: outward velocity, gravity pulls back,
+// under-damped so the particle swings past base orbit and oscillates while
+// continuing to rotate (looks like an elliptical perturbation settling back).
+const PUSH_RADIUS = 160
+const PUSH_VELOCITY = 280     // initial radial velocity from a hit (px/sec)
+const PUSH_SPRING_K = 60      // spring stiffness (1/s²) — gravity strength
+const PUSH_DAMPING = 4        // damping coefficient — ζ ≈ 0.26 (under-damped)
 
 const KONAMI_SEQUENCE = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight']
-const EASTER_EGG_DURATION_MS = 5000
-const PHOTO_SAMPLE_SIZE = 400 // high resolution for face detail
+const PHOTO_SAMPLE_SIZE = 400
 
-interface ParticleData {
-  row: number
-  index: number
-  rowProgress: number
-  angle: number
+// Easter-egg phase boundaries (seconds since trigger). Match BlackHoleBackdrop.
+const EGG_COLLAPSE_END = 0.8
+const EGG_FLASH_END = 1.0
+const EGG_EXPLODE_END = 1.6
+const EGG_PHOTO_END = 3.5
+const EGG_REVERSE_END = 5.0
+
+const easeInCubic = (x: number) => x * x * x
+const easeOutQuart = (x: number) => 1 - Math.pow(1 - x, 4)
+const easeOutBack = (x: number, c1 = 1.2) => {
+  const c3 = c1 + 1
+  return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
+}
+
+interface Star {
+  // tNorm 0..1 = inner..outer; orbital + speed computed per-frame from viewport
+  tNorm: number
+  baseAngle: number
+  speedJitter: number
+  baseAlpha: number
+  twinkleRate: number
+  twinklePhase: number
+  // Spring-damper push state
+  pushOffset: number
+  pushVelocity: number
   // Photo target (normalized 0-1, mapped to screen at runtime)
   photoX: number
   photoY: number
   hasPhotoTarget: boolean
+  row: number
+  index: number
 }
 
 
@@ -96,8 +123,8 @@ export default function ParticleHero() {
   const textOffsetRef = useRef({ x: 0, y: 0 })
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
-  const easterEggRef = useRef(false)
-  const easterEggProgressRef = useRef(0) // 0 = ring, 1 = photo
+  // performance.now() at egg trigger; 0 = inactive. Drives phased state machine.
+  const eggStartRef = useRef(0)
   const konamiIndexRef = useRef(0)
 
   useEffect(() => {
@@ -140,25 +167,30 @@ export default function ParticleHero() {
     dotCtx.arc(dotSize / 2, dotSize / 2, PARTICLE_SIZE * window.devicePixelRatio, 0, Math.PI * 2)
     dotCtx.fill()
 
-    // Build particle list with pre-computed properties
-    const particles: ParticleData[] = []
-    for (let r = 0; r < NUM_ROWS; r++) {
-      const rowProgress = NUM_ROWS > 1 ? r / (NUM_ROWS - 1) : 0
-      const currentBaseRadius = INNER_RADIUS + (rowProgress * THICKNESS)
-      const circumferenceRatio = currentBaseRadius / INNER_RADIUS
-      const actualNumParticles = Math.max(8, Math.floor(NUM_PARTICLES * circumferenceRatio))
+    // Weighted random tNorm — biased toward middle of orbital range.
+    const particles: Star[] = []
+    for (let i = 0; i < PARTICLE_TOTAL; i++) {
+      const tNorm = (Math.random() + Math.random()) / 2
 
-      for (let i = 0; i < actualNumParticles; i++) {
-        particles.push({
-          row: r,
-          index: i,
-          rowProgress,
-          angle: (i / actualNumParticles) * Math.PI * 2,
-          photoX: 0,
-          photoY: 0,
-          hasPhotoTarget: false,
-        })
-      }
+      // Brightness peaks at middle (parabolic falloff)
+      const distFromMid = Math.abs(tNorm - 0.5) * 2
+      const baseAlpha = 0.25 + 0.75 * (1 - distFromMid * distFromMid)
+
+      particles.push({
+        tNorm,
+        baseAngle: Math.random() * Math.PI * 2,
+        speedJitter: 1 + (Math.random() - 0.5) * SPEED_JITTER,
+        baseAlpha,
+        twinkleRate: 0.4 + Math.random() * 0.7,
+        twinklePhase: Math.random() * Math.PI * 2,
+        pushOffset: 0,
+        pushVelocity: 0,
+        photoX: 0,
+        photoY: 0,
+        hasPhotoTarget: false,
+        row: Math.floor(i / 60),
+        index: i,
+      })
     }
 
     // Load photo targets async
@@ -274,121 +306,273 @@ export default function ParticleHero() {
     }
     window.addEventListener('mousemove', onMouseMove)
 
+    // Pointer impulse — click or tap gives nearby particles an outward velocity
+    // kick. Spring-damper return (in animate loop) lets them swing back through
+    // their orbit, oscillating a couple times before settling.
+    const onPointerDown = (e: PointerEvent) => {
+      const rect = section.getBoundingClientRect()
+      const px = e.clientX - rect.left
+      const py = e.clientY - rect.top
+      const innerR = geom.innerR
+      const range = Math.max(1, geom.outerR - geom.innerR)
+      for (const p of particles) {
+        const baseOrbital = innerR + p.tNorm * range
+        const speedBase = SPEED_INNER + (SPEED_OUTER - SPEED_INNER) * p.tNorm
+        const speed = speedBase * p.speedJitter
+        const angle = p.baseAngle + currentTime * speed
+        const radius = baseOrbital + p.pushOffset
+        const sx = geom.cx + Math.cos(angle) * radius
+        const sy = geom.cy + Math.sin(angle) * radius
+        const dx = sx - px
+        const dy = sy - py
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < PUSH_RADIUS) {
+          const factor = (1 - dist / PUSH_RADIUS) ** 2
+          p.pushVelocity += PUSH_VELOCITY * factor
+        }
+      }
+    }
+    section.addEventListener('pointerdown', onPointerDown)
+
     const observer = new IntersectionObserver(
       ([entry]) => { visibleRef.current = entry.isIntersecting },
       { threshold: 0.05 },
     )
     observer.observe(section)
 
-    // Click ripple
-    interface Ripple { x: number; y: number; radius: number; strength: number }
-    const ripples: Ripple[] = []
-    const onClick = (e: MouseEvent) => {
-      ripples.push({ x: e.clientX, y: e.clientY, radius: 0, strength: 1 })
-    }
-    section.addEventListener('click', onClick)
-
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const outerRadius = INNER_RADIUS + THICKNESS
-    const halfThick = THICKNESS / 2
-    let tick = 0
+
+    // Time tracking — currentTime advances in seconds, used by orbital rotation.
+    let currentTime = 0
+    let lastFrameTime = performance.now()
+    // Shared geometry between animate loop and pointer handler.
+    const geom = { cx: 0, cy: 0, innerR: 0, outerR: 0 }
 
     const animate = () => {
       animIdRef.current = requestAnimationFrame(animate)
+      const now = performance.now()
+      const dt = Math.min((now - lastFrameTime) / 1000, 0.1)
+      lastFrameTime = now
       if (!visibleRef.current) return
 
-      if (!prefersReduced) tick += ANIMATION_SPEED
+      if (!prefersReduced) currentTime += dt
       ctx.clearRect(0, 0, width, height)
 
-      // Photo display area scales with current viewport (recomputed each frame for resize)
       const PHOTO_DISPLAY_SIZE = Math.min(width * 0.7, height * 0.75, 900)
 
       const ringCX = width / 2
       const ringCY = height / 2
-      const t = tick * Math.PI * 2
-      const isEasterEgg = easterEggRef.current
+      const halfH = height / 2
+      const halfW = width / 2
+      // Dynamic orbital range — INNER stays just outside the shader's lens
+      // crescents, OUTER reaches the viewport corner so particles fill the
+      // whole canvas (corners included), not just a band around the lens.
+      const innerRadius = Math.max(INNER_RADIUS_MIN, halfH * INNER_RADIUS_FACTOR)
+      const outerRadius = Math.hypot(halfW, halfH) + OUTER_RADIUS_PADDING
+      const safeOuter = Math.max(outerRadius, innerRadius + 200)
+      const orbitalRange = safeOuter - innerRadius
+      const halfRange = orbitalRange / 2
+      geom.cx = ringCX
+      geom.cy = ringCY
+      geom.innerR = innerRadius
+      geom.outerR = safeOuter
 
-      // Easter egg progress: ease toward 1 when active, 0 when not
-      const targetProgress = isEasterEgg ? 1 : 0
-      easterEggProgressRef.current += (targetProgress - easterEggProgressRef.current) * 0.04
-      const eggProgress = easterEggProgressRef.current
-
-      // Update ripples
-      for (let ri = ripples.length - 1; ri >= 0; ri--) {
-        const rip = ripples[ri]
-        rip.radius += 4
-        rip.strength *= 0.97
-        if (rip.radius > 400 || rip.strength < 0.01) ripples.splice(ri, 1)
+      // Easter-egg phase machine. eggElapsed = -1 when idle.
+      let eggElapsed = -1
+      if (eggStartRef.current > 0) {
+        eggElapsed = (now - eggStartRef.current) / 1000
+        if (eggElapsed > EGG_REVERSE_END) {
+          eggStartRef.current = 0
+          eggElapsed = -1
+        }
       }
+      const eggActive = eggElapsed >= 0
+      const eggReducedJump = eggActive && prefersReduced
+        && eggElapsed > 0.05 && eggElapsed < EGG_PHOTO_END
 
-      // Photo target center
       const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
       const photoCY = height * 0.50 - PHOTO_DISPLAY_SIZE / 2
 
       ctx.fillStyle = PARTICLE_COLOR
 
       for (const p of particles) {
-        const currentBaseRadius = INNER_RADIUS + (p.rowProgress * THICKNESS)
+        const baseOrbital = innerRadius + p.tNorm * orbitalRange
+        const speedBase = SPEED_INNER + (SPEED_OUTER - SPEED_INNER) * p.tNorm
+        const speed = speedBase * p.speedJitter
 
-        // Ring position
-        const w1 = Math.sin(p.angle * W1_FREQ + t * W1_SPEED * W1_DIR)
-        const w2 = Math.sin(p.angle * W2_FREQ + t * W2_SPEED * W2_DIR)
-        const rowOffset = Math.sin(p.rowProgress * ROW_TWIST * Math.PI * 2 + t)
-        const waveHeight = w1 + w2 + rowOffset
+        // Orbital position — angle advances with currentTime * speed.
+        const angle = p.baseAngle + currentTime * speed
+        const cosA = Math.cos(angle)
+        const sinA = Math.sin(angle)
+        const radius = baseOrbital + p.pushOffset
+        const ringX = ringCX + cosA * radius
+        const ringY = ringCY + sinA * radius
 
-        let normalized = (waveHeight + 3) / 6
-        normalized = Math.pow(Math.max(0, normalized), 1.5)
-        let alpha = MIN_ALPHA + (normalized * (MAX_ALPHA - MIN_ALPHA))
+        // Spring-damper return: gravity pulls back to base orbit, damping
+        // attenuates oscillation. Under-damped (ζ ≈ 0.26) so particle swings
+        // past base, oscillates a couple times, then settles — natural decay.
+        if (p.pushOffset !== 0 || p.pushVelocity !== 0) {
+          const accel = -PUSH_SPRING_K * p.pushOffset - PUSH_DAMPING * p.pushVelocity
+          p.pushVelocity += accel * dt
+          p.pushOffset += p.pushVelocity * dt
+          if (Math.abs(p.pushOffset) < 0.3 && Math.abs(p.pushVelocity) < 1) {
+            p.pushOffset = 0
+            p.pushVelocity = 0
+          }
+        }
 
-        const distortion = waveHeight * AMPLITUDE
-        const finalRadius = currentBaseRadius + distortion
-        let ringX = ringCX + Math.cos(p.angle) * finalRadius
-        let ringY = ringCY + Math.sin(p.angle) * finalRadius
+        // Per-particle twinkle
+        const twinkle = 0.7 + 0.3 * Math.sin(currentTime * p.twinkleRate + p.twinklePhase)
+        let alpha = p.baseAlpha * twinkle
 
-        // Edge fade
-        const distFromInner = finalRadius - INNER_RADIUS
-        const distFromOuter = outerRadius - finalRadius
-        let visibility = Math.min(distFromInner, distFromOuter) / halfThick
+        // Edge fade — particles fade as they approach INNER (absorbed) or OUTER
+        const distFromInner = radius - innerRadius
+        const distFromOuter = safeOuter - radius
+        let visibility = Math.min(distFromInner, distFromOuter) / halfRange
         if (visibility < 0) visibility = 0
         if (visibility > 1) visibility = 1
-        visibility = 0.45 + visibility * 0.55 // minimum 45% visibility at edges
+        visibility = 0.45 + visibility * 0.55
         alpha *= visibility
+
+        // Absorption fade — particles dim sharply when crossing inside lens
+        // (radius < innerRadius), suggesting they're sucked into the event horizon.
+        if (radius < innerRadius) {
+          const overshoot = (innerRadius - radius) / 80
+          alpha *= Math.max(0, 1 - overshoot)
+        }
 
         // Photo position
         const photoX = p.hasPhotoTarget ? photoCX + p.photoX * PHOTO_DISPLAY_SIZE : ringX
         const photoY = p.hasPhotoTarget ? photoCY + p.photoY * PHOTO_DISPLAY_SIZE : ringY
 
-        // Lerp between ring and photo based on easter egg progress
-        let x = ringX + (photoX - ringX) * eggProgress
-        let y = ringY + (photoY - ringY) * eggProgress
+        // Default = idle ring
+        let x = ringX
+        let y = ringY
+        let streakFromX = 0
+        let streakFromY = 0
+        let streakAlpha = 0
+        // 'idle' | 'collapse' | 'flash' | 'explode' | 'photo' | 'reverse'
+        let eggPhase: 'idle' | 'collapse' | 'flash' | 'explode' | 'photo' | 'reverse' = 'idle'
 
-        // During easter egg, all particles fully visible
-        if (eggProgress > 0.1) {
-          alpha = Math.max(alpha, eggProgress * 0.8)
-        }
-
-        // Ripple displacement
-        for (const rip of ripples) {
-          const rdx = x - rip.x
-          const rdy = y - rip.y
-          const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
-          const ringDist = Math.abs(rdist - rip.radius)
-          if (ringDist < 60 && rdist > 0) {
-            const push = (1 - ringDist / 60) * rip.strength * 30
-            x += (rdx / rdist) * push
-            y += (rdy / rdist) * push
+        if (eggReducedJump) {
+          x = photoX
+          y = photoY
+          alpha = 1
+          eggPhase = 'photo'
+        } else if (eggActive) {
+          if (eggElapsed < EGG_COLLAPSE_END) {
+            const k = easeInCubic(eggElapsed / EGG_COLLAPSE_END)
+            x = ringX + (ringCX - ringX) * k
+            y = ringY + (ringCY - ringY) * k
+            alpha = alpha + (1 - alpha) * k
+            eggPhase = 'collapse'
+          } else if (eggElapsed < EGG_FLASH_END) {
+            const fk = (eggElapsed - EGG_COLLAPSE_END) / (EGG_FLASH_END - EGG_COLLAPSE_END)
+            // Tiny jitter at singularity — rotates around center as if compressed
+            const jitterAng = p.baseAngle * 3 + currentTime * 8
+            const jitterR = 6 * (1 - fk)
+            x = ringCX + Math.cos(jitterAng) * jitterR
+            y = ringCY + Math.sin(jitterAng) * jitterR
+            alpha = 1
+            eggPhase = 'flash'
+          } else if (eggElapsed < EGG_EXPLODE_END) {
+            const ek = (eggElapsed - EGG_FLASH_END) / (EGG_EXPLODE_END - EGG_FLASH_END)
+            const k = easeOutBack(ek, 1.2)
+            x = ringCX + (photoX - ringCX) * k
+            y = ringCY + (photoY - ringCY) * k
+            alpha = 1
+            // Speed-line trail behind the particle, peaks mid-explosion
+            const trailK = Math.max(0, k - 0.18)
+            streakFromX = ringCX + (photoX - ringCX) * trailK
+            streakFromY = ringCY + (photoY - ringCY) * trailK
+            streakAlpha = (1 - ek) * 0.85
+            eggPhase = 'explode'
+          } else if (eggElapsed < EGG_PHOTO_END) {
+            x = photoX
+            y = photoY
+            alpha = 1
+            eggPhase = 'photo'
+          } else {
+            // Reverse: 1.5s slow exponential approach back to ring, alpha and
+            // saturation both fade so rainbow particles dissolve into white ring.
+            const rk = (eggElapsed - EGG_PHOTO_END) / (EGG_REVERSE_END - EGG_PHOTO_END)
+            const k = easeOutQuart(rk)
+            x = photoX + (ringX - photoX) * k
+            y = photoY + (ringY - photoY) * k
+            alpha = 1 + (alpha - 1) * k
+            eggPhase = 'reverse'
           }
         }
 
         if (alpha < 0.01) continue
         if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
 
+        // Speed-line streak behind exploding particles (drawn under the dot)
+        if (streakAlpha > 0.01) {
+          ctx.globalAlpha = streakAlpha
+          ctx.strokeStyle = `hsl(${(currentTime * 60 + p.row * 15 + p.index * 4) % 360}, 90%, 75%)`
+          ctx.lineWidth = 1.4
+          ctx.lineCap = 'round'
+          ctx.beginPath()
+          ctx.moveTo(streakFromX, streakFromY)
+          ctx.lineTo(x, y)
+          ctx.stroke()
+        }
+
+        // Idle orbit trail — tangent line behind each star, length scaled to
+        // angular velocity * radius (faster orbits = longer streaks). Skip
+        // dim or slow particles where the streak isn't visually meaningful;
+        // with 3000 particles this saves a meaningful chunk of stroke calls.
+        if (eggPhase === 'idle' && !prefersReduced && alpha > 0.28 && Math.abs(speed) > 0.18) {
+          const motionSign = speed >= 0 ? 1 : -1
+          const tangX = -sinA * motionSign
+          const tangY = cosA * motionSign
+          const trailLen = Math.min(TRAIL_MAX, Math.abs(speed) * radius * 0.28)
+          if (trailLen > 1) {
+            ctx.globalAlpha = alpha * 0.32
+            ctx.strokeStyle = PARTICLE_COLOR
+            ctx.lineWidth = 0.7
+            ctx.lineCap = 'round'
+            ctx.beginPath()
+            ctx.moveTo(x - tangX * trailLen, y - tangY * trailLen)
+            ctx.lineTo(x, y)
+            ctx.stroke()
+          }
+        }
+
         ctx.globalAlpha = alpha
 
-        if (isEasterEgg && eggProgress > 0.5) {
-          // Rainbow during photo formation
-          const hue = (tick * 200 + p.row * 15 + p.index * 4) % 360
+        if (eggPhase === 'flash') {
+          // Hot white core during singularity
+          ctx.fillStyle = 'rgba(255, 245, 230, 1)'
+          ctx.beginPath()
+          ctx.arc(x, y, PARTICLE_SIZE * 1.4, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = PARTICLE_COLOR
+        } else if (eggPhase === 'explode' || eggPhase === 'photo') {
+          // Rainbow during explosion + photo
+          const hue = (currentTime * 60 + p.row * 15 + p.index * 4) % 360
           ctx.fillStyle = `hsl(${hue}, 80%, 65%)`
+          ctx.beginPath()
+          ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = PARTICLE_COLOR
+        } else if (eggPhase === 'collapse') {
+          // Warm tint that brightens as particles compress toward singularity
+          const intensity = eggElapsed / EGG_COLLAPSE_END
+          const hue = 30 + intensity * 30
+          ctx.fillStyle = `hsl(${hue}, 70%, ${65 + intensity * 25}%)`
+          ctx.beginPath()
+          ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.fillStyle = PARTICLE_COLOR
+        } else if (eggPhase === 'reverse') {
+          // Rainbow desaturates back to white as particles return to ring
+          const rk = (eggElapsed - EGG_PHOTO_END) / (EGG_REVERSE_END - EGG_PHOTO_END)
+          const hue = (currentTime * 60 + p.row * 15 + p.index * 4) % 360
+          const sat = 80 * (1 - rk)
+          const lit = 65 + rk * 25
+          ctx.fillStyle = `hsl(${hue}, ${sat}%, ${lit}%)`
           ctx.beginPath()
           ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
           ctx.fill()
@@ -414,34 +598,37 @@ export default function ParticleHero() {
       cancelAnimationFrame(animIdRef.current)
       observer.disconnect()
       resizeObserver.disconnect()
-      section.removeEventListener('click', onClick)
       window.removeEventListener('resize', resize)
       window.removeEventListener('mousemove', onMouseMove)
+      section.removeEventListener('pointerdown', onPointerDown)
     }
   }, [])
 
-  // Konami code + easter egg
+  // Konami code + easter egg. Konami dispatches the global event so
+  // BlackHoleBackdrop's shader phases stay synced with the particle phases.
   useEffect(() => {
-    const activateEasterEgg = () => {
-      easterEggRef.current = true
-      setTimeout(() => { easterEggRef.current = false }, EASTER_EGG_DURATION_MS)
+    const onEasterEgg = () => {
+      // Don't restart if currently active — let the existing run finish
+      if (eggStartRef.current === 0) {
+        eggStartRef.current = performance.now()
+      }
     }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === KONAMI_SEQUENCE[konamiIndexRef.current]) {
         konamiIndexRef.current++
         if (konamiIndexRef.current === KONAMI_SEQUENCE.length) {
           konamiIndexRef.current = 0
-          activateEasterEgg()
+          window.dispatchEvent(new Event('easter-egg'))
         }
       } else {
         konamiIndexRef.current = e.key === KONAMI_SEQUENCE[0] ? 1 : 0
       }
     }
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('easter-egg', activateEasterEgg)
+    window.addEventListener('easter-egg', onEasterEgg)
     return () => {
       window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('easter-egg', activateEasterEgg)
+      window.removeEventListener('easter-egg', onEasterEgg)
     }
   }, [])
 
@@ -451,6 +638,7 @@ export default function ParticleHero() {
       className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100dvh]:h-[100dvh]"
       style={{ background: 'var(--color-bg-primary)' }}
     >
+      <BlackHoleBackdrop />
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0" role="presentation" aria-hidden="true" />
 
       <div
@@ -459,12 +647,15 @@ export default function ParticleHero() {
       />
 
       <div ref={textRef} className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
-        <h1 className="mx-auto max-w-[900px] text-center text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]">
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Hi, I'm </span>
+        <h1
+          className="mx-auto max-w-[900px] text-center text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]"
+          style={{ textShadow: '0 0 14px rgba(0,0,0,0.85), 0 0 28px rgba(0,0,0,0.6), 0 0 48px rgba(0,0,0,0.45)' }}
+        >
+          <span style={{ color: 'rgba(255,255,255,0.7)' }}>Hi, I'm </span>
           <span className="font-normal text-white">Charles.</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}> I'm a </span>
+          <span style={{ color: 'rgba(255,255,255,0.7)' }}> I'm a </span>
           <span className="font-normal text-white">Senior Product Manager</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}> building products at the speed of </span>
+          <span style={{ color: 'rgba(255,255,255,0.7)' }}> building products at the speed of </span>
           <span className="font-normal text-white">AI.</span>
         </h1>
       </div>

@@ -10,6 +10,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-black-hole-shader-orbital-particles',
+    date: '2026-04-27',
+    title: 'Hero — Black Hole Shader & Orbital Particle System',
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      'Added a WebGL fragment shader behind the hero particles that renders a black-hole-style accretion disk: a bright lensing crescent at the centre with soft gas filaments flowing around it. The shader sits underneath the existing particle ring on its own canvas, so the hero now reads as a layered composition — a glowing event horizon in the foreground, animated gas behind it, and orbiting particles on top — instead of a single flat particle field.',
+      'Replaced the previous wave-modulated, fixed-angle particle model with a Kepler-like orbital system inspired by msurguy\'s blackhole reference. Every particle now genuinely rotates around the centre with a radius-dependent angular velocity (inner orbits fast, outer corners drift slowly), which reads as differential rotation rather than a static decorative ring. Particle count went from 800 in a narrow band to 3000 spread across the full viewport diagonal, so the corners of widescreen displays no longer look empty.',
+      'Click and tap interactions now use a spring-damper physics model: a hit pushes nearby particles outward with an initial radial velocity, then gravity pulls them back through their base orbit and an under-damped oscillation lets them swing past and settle naturally — instead of a hard linear repel-and-snap. The shader itself no longer responds to clicks; only the particle ring does. Keeping the gas backdrop neutral made the click feedback feel like a physical perturbation of the orbit rather than a global "screen shakes" reaction.',
+      'The Konami easter egg was rebuilt as a synchronized big-bang sequence between the shader and the particle ring. All particles collapse toward a singularity, a flash bursts at the centre, a shockwave ripples outward, particles explode out into Charles\'s photo, hold for a moment, then dissolve back into the ring as the shader fades from black-out into normal gas. Both components listen to a shared `easter-egg` window event so their phase boundaries (collapse 0.8s → flash 1.0s → explode 1.6s → photo 3.5s → reverse 5.0s) stay locked together.',
+      'Several smaller fixes along the way: the shader\'s denominator singularities (centre bright spot, diagonal slice through the lens) were replaced with epsilon-stabilised forms; gas rotation uses an exponentially-saturating drift instead of linear winding so the noise pattern doesn\'t accumulate long sweep arcs over time; the hero text gained a layered black text-shadow and slightly higher opacity on the supporting copy so it stays readable when the bright lens crescent passes through it.',
+    ],
+  },
+  {
     id: 'hero-mobile-vertical-centering',
     date: '2026-04-21',
     title: 'Hero Section — Mobile Vertical Centering Fix',
