@@ -226,14 +226,10 @@ export default function ParticleHero() {
     // luminous spot — not a hard dot — and overlapping halos add cleanly
     // into bright areas without blowing out to white.
     //
-    // Display size scales with viewport. On desktop the 22px halo (~11px
-    // effective radius per particle) creates the intended cosmic-nebula
-    // bleed where ~3000 silhouette particles bloom into a glowing fabric.
-    // On mobile the photo display itself is ~273px so a 22px halo would
-    // bleed proportionally further outward and read as a fuzzy aura
-    // around the head; halving it keeps the same gradient shape but
-    // contains the bleed within the silhouette.
-    const GLOW_DISPLAY_PX = width < 768 ? 13 : 22
+    // The sprite itself is rendered at a fixed canvas size; its display
+    // size at draw time scales with viewport (see GLOW_DISPLAY_PX in the
+    // animate loop) so the halo stays proportionally tight on mobile
+    // without rebuilding sprites on resize.
     const GLOW_SPRITE_PX = 48
     const makeGlowSprite = (h: number, s: number, l: number) => {
       const dpr = window.devicePixelRatio
@@ -550,6 +546,16 @@ export default function ParticleHero() {
 
       const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
       const photoCY = height * 0.50 - PHOTO_DISPLAY_SIZE / 2
+
+      // Halo display size scales with viewport. On desktop the 22px halo
+      // (~11px effective radius per particle) creates the intended cosmic
+      // nebula bleed across ~3000 silhouette particles. On mobile the
+      // photo display itself is only ~273px wide, so halving the halo
+      // contains the bleed within the silhouette and the face reads as a
+      // sharp constellation rather than a glowing cloud. Recomputed per
+      // frame so rotating a phone or resizing a window across the 768px
+      // breakpoint takes effect immediately.
+      const GLOW_DISPLAY_PX = width < 768 ? 13 : 22
 
       ctx.fillStyle = PARTICLE_COLOR
       // Hoist constant stroke styles (trail width/cap/colour). Setting these
