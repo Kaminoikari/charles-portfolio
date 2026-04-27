@@ -316,25 +316,33 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     gl.clearColor(0, 0, 0, 0)
 
-    // Match the particle canvas DPR cap. The shader is per-pixel work in
-    // the fragment program, so 1.5 → 2.0 is a 1.78× cost in fragment
-    // invocations, but the lens/halo edges and the gas filaments are the
-    // most visible thing in the hero and they need to be crisp on dpr=3
-    // iPhones where 1.5 was rendering at half native density.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-
     let lastW = -1
     let lastH = -1
+    let lastDpr = -1
     const resize = () => {
       const w = parent.clientWidth
       const h = parent.clientHeight
-      // Skip when dimensions are unchanged. Setting canvas.width/height
-      // wipes the WebGL framebuffer, so a spurious fire would render the
-      // shader as one transparent frame before the next render() repaints —
-      // visible as a flicker in the lens halo on mobile.
-      if (w === lastW && h === lastH) return
+      // Cap DPR at 2.0 to match the particle canvas. The shader is per-
+      // pixel work in the fragment program, so 1.5 → 2.0 is a 1.78× cost
+      // in fragment invocations, but the lens/halo edges and the gas
+      // filaments are the most visible thing in the hero and they need
+      // to be crisp on dpr=3 iPhones where 1.5 was rendering at half
+      // native density. Read inside resize() (not at component init) so
+      // that dragging the window between Retina and non-Retina displays
+      // takes effect — devicePixelRatio can change without a layout
+      // reflow.
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // Skip when nothing actually changed. Setting canvas.width/height
+      // wipes the WebGL framebuffer, so a spurious fire (browser zoom,
+      // accessibility scaling, ResizeObserver init pass) would render the
+      // shader as one transparent frame before the next render() repaints
+      // — visible as a flicker in the lens halo on mobile. DPR is part of
+      // the comparison so a Retina ↔ non-Retina drag re-bakes the backing
+      // store even when CSS dimensions stay the same.
+      if (w === lastW && h === lastH && dpr === lastDpr) return
       lastW = w
       lastH = h
+      lastDpr = dpr
       canvas.width = Math.max(1, Math.floor(w * dpr))
       canvas.height = Math.max(1, Math.floor(h * dpr))
       canvas.style.width = `${w}px`
@@ -344,6 +352,11 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     resize()
     const ro = new ResizeObserver(resize)
     ro.observe(parent)
+    // window.resize fires on DPR changes (e.g. dragging the window across
+    // displays of different pixel densities). ResizeObserver alone watches
+    // the content-box in CSS pixels, which doesn't change on DPR-only
+    // events, so it would miss those.
+    window.addEventListener('resize', resize)
 
     const observer = new IntersectionObserver(
       ([entry]) => { visibleRef.current = entry.isIntersecting },
@@ -400,6 +413,7 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
       cancelAnimationFrame(animIdRef.current)
       observer.disconnect()
       ro.disconnect()
+      window.removeEventListener('resize', resize)
       reducedMotion.removeEventListener('change', onMotionChange)
       window.removeEventListener('easter-egg', onEasterEgg)
       gl.deleteBuffer(buffer)
