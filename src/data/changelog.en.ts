@@ -10,6 +10,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'i18n-changelog-translation',
+    date: '2026-04-28',
+    title: 'Multilingual Changelog — zh-TW + ja Translation Pass',
+    tags: ['feature'],
+    body: [
+      'Closed off the last TODO in the i18n content layer: the changelog itself is now fully translated into Traditional Chinese and Japanese. Every entry — 29 of them, ~3,200 words of running technical narrative covering shader work, animation refactors, scroll restoration, GEO/SEO strategy, the audio system, and so on — reads end-to-end in each locale.',
+      'Followed the same translation policy that governs the rest of the data layer: code identifiers (eggStartRef, lineProgress, sectionLocalProgress), React/browser APIs (useRef, IntersectionObserver, React.lazy, Suspense, localStorage, hreflang, JSON-LD, Open Graph), library names (React, Vite, Tailwind, Vercel, FastAPI, GSAP, Pixabay), file paths (src/..., main.tsx, vercel.json), CSS values (100vh, 100dvh, rgba(), max-w-[1400px]), and section/UI markers that stay English on the live site (Hero, About, Universe, Changelog, [ ABOUT ], CASE STUDY, IMPACT, TECH STACK) all stay in English. Numerical values, file sizes, durations, and units carry over unchanged. The descriptive narrative around them is what gets translated.',
+      'For Japanese the tone matches existing data files — です/ます register, the same product-industry vocabulary kept English the way Japanese tech blogs actually mix languages. For Traditional Chinese it follows Taiwan PM voice — code/library terms left intact, English-Chinese mixed prose where that\'s the natural way to write technical context.',
+      'The whole portfolio is now i18n-complete across all three locales for every page and every data file. Type-checks pass against the canonical English Strings interface, so any future drift between locales surfaces at build time.',
+    ],
+  },
+  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: 'Multilingual Content — Full zh-TW + ja Translation Pass',
