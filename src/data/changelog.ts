@@ -10,6 +10,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-easter-egg-cosmic-photo',
+    date: '2026-04-27',
+    title: 'Hero — Cosmic Photo Particles & Easter Egg Polish',
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      'Reworked the easter-egg portrait phase so the particles forming the photo look like cosmic stardust instead of solid mantra beads. Each particle is now drawn as a pre-rendered radial-gradient sprite (universal warm-white core, tinted halo from a 5-bucket brightness gradient) and composited with additive blending — so neighbouring halos overlap into a continuous luminescent fabric rather than stacking as discrete dots. Roughly a third of the particles also draw a short tangent streak, hinting they only just escaped the orbital ring on their way to the portrait.',
+      'Tuned the photo palette to the shader\'s lens-halo spectrum: brightness 0 maps to flame red-orange (warm gas filaments), brightness 1 maps to cream-white (lens crescent core), with a 12% cyan accent matching the cool gas opposite the warm side. The portrait\'s natural chiaroscuro now reads as a temperature gradient — bright pixels look like hot lensed light, dark pixels like cooling accretion debris — and the cosmic backdrop and the portrait visibly share the same colour DNA.',
+      'Added a real shader-side gravitational collapse during the easter egg. The shader now applies a radial zoom + tightening vortex driven by `u_eggCollapse`, so the lens visibly implodes during the collapse phase instead of just darkening, and a smaller secondary collapse plays during the reverse phase as the particles disperse back to the orbital ring. A `u_photoHide` uniform fades the entire shader to zero across the photo phase (ramps up during the last 0.35s of explode so no lens flashes behind the converging portrait, holds at zero through the portrait, ramps back down for the reverse collapse).',
+      'Reverted the reverse phase to a clean linear dispersal — particles fly straight back to their orbital ring with `easeOutQuart`, no rotation. The earlier CW spiral version read as the photo "rotating" as it dissolved, which felt unnatural; the gravitational atmosphere now lives entirely in the shader\'s secondary collapse, and the particles just disperse and reform.',
+      'Performance work to keep the 3000-particle ring at 60 fps: the canvas DPR is now capped at 1.5 (roughly halves pixel work on Retina displays without a perceptible quality loss), idle-orbit trail stroke styles are hoisted outside the per-frame loop (saved several thousand redundant state changes per frame), and the trail-rendering threshold was raised so dim/slow outer-corner particles skip the stroke entirely. Photo-phase shadowBlur was traded for pre-rendered glow sprites, which is roughly 3-4× cheaper and produces a cleaner halo. Also removed the mousemove-driven text-repulsion effect that was wobbling the hero copy.',
+    ],
+  },
+  {
     id: 'hero-black-hole-shader-orbital-particles',
     date: '2026-04-27',
     title: 'Hero — Black Hole Shader & Orbital Particle System',

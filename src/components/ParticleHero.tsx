@@ -34,12 +34,50 @@ const EGG_FLASH_END = 1.0
 const EGG_EXPLODE_END = 1.6
 const EGG_PHOTO_END = 3.5
 const EGG_REVERSE_END = 5.0
+// Reverse splits into spiral-in (gravitational collapse) and re-emergence.
+const REVERSE_COLLAPSE_FRAC = 0.55
 
 const easeInCubic = (x: number) => x * x * x
 const easeOutQuart = (x: number) => 1 - Math.pow(1 - x, 4)
 const easeOutBack = (x: number, c1 = 1.2) => {
   const c3 = c1 + 1
   return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2)
+}
+
+// Stellar plasma palette for the egg's photo phase. Each particle gets a
+// stable slot (white-gold ~60%, mars-orange ~25%, cyan ~15% — site brand
+// accents) plus a per-frame shimmer that drifts hue/lightness slightly so the
+// portrait twinkles like cooling stellar matter. `satScale` < 1 desaturates
+// (used during reverse fade-back); `litBoost` brightens (used early in the
+// explode phase to render newly-ejected particles as still-hot plasma).
+function stellarColor(index: number, time: number, satScale = 1, litBoost = 0): string {
+  const slot = (index * 7919) % 100
+  const shimmer = Math.sin(time * 1.5 + index * 0.13) * 0.5 + 0.5
+  if (slot < 60) {
+    return `hsl(${44 + shimmer * 6}, ${65 * satScale}%, ${82 + shimmer * 10 + litBoost}%)`
+  }
+  if (slot < 85) {
+    return `hsl(${16 + shimmer * 4}, ${85 * satScale}%, ${55 + shimmer * 12 + litBoost}%)`
+  }
+  return `hsl(${188 + shimmer * 6}, ${80 * satScale}%, ${65 + shimmer * 10 + litBoost}%)`
+}
+
+// Photo-phase palette tuned to the shader's lens-halo colour spectrum:
+//  - Brightness 0 → flame red-orange (h=14, s=88, l=42), like warm gas
+//  - Brightness 0.5 → warm amber, like the inner halo
+//  - Brightness 1 → cream-white (h=44, s=22, l=92), like the lens crescent
+// 12% are pulled to a cool cyan accent (h=198) to mirror the cool gas on
+// the opposite side of the lens.
+function photoColor(brightness: number, index: number, time: number): string {
+  const slot = (index * 7919) % 100
+  const shimmer = Math.sin(time * 1.5 + index * 0.13) * 0.5 + 0.5
+  if (slot < 12) {
+    return `hsl(${198 + shimmer * 6}, 72%, ${72 + shimmer * 8}%)`
+  }
+  const hue = 14 + brightness * 30
+  const sat = 88 - brightness * 66
+  const lit = 42 + brightness * 50
+  return `hsl(${hue + shimmer * 4}, ${sat}%, ${lit + shimmer * 5}%)`
 }
 
 interface Star {
@@ -57,6 +95,12 @@ interface Star {
   photoX: number
   photoY: number
   hasPhotoTarget: boolean
+  // Photo target's pixel brightness (0..1), used to drive the cooling-plasma
+  // colour gradient: bright pixels render white-gold, dark pixels deep mars.
+  photoBrightness: number
+  // ~30% of particles are flagged at init to render a short tangent streak
+  // during the photo phase, hinting they just escaped the orbital ring.
+  hasTail: boolean
   row: number
   index: number
 }
@@ -120,7 +164,6 @@ export default function ParticleHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sectionRef = useRef<HTMLDivElement>(null)
   const textRef = useRef<HTMLDivElement>(null)
-  const textOffsetRef = useRef({ x: 0, y: 0 })
   const visibleRef = useRef(true)
   const animIdRef = useRef(0)
   // performance.now() at egg trigger; 0 = inactive. Drives phased state machine.
@@ -144,11 +187,16 @@ export default function ParticleHero() {
       // disagree by ~100px and canvas "center" drifts off the visual center.
       width = section.clientWidth
       height = section.clientHeight
-      canvas.width = width * window.devicePixelRatio
-      canvas.height = height * window.devicePixelRatio
+      // Cap DPR at 1.5 — full Retina (2.0+) doubles pixel work on the
+      // particle canvas (3000 drawImages + 1000+ trail strokes per frame),
+      // which is the dominant cost in the idle loop. 1.5 keeps things crisp
+      // on high-density displays without the GPU paying the full price.
+      const dpr = Math.min(window.devicePixelRatio, 1.5)
+      canvas.width = width * dpr
+      canvas.height = height * dpr
       canvas.style.width = `${width}px`
       canvas.style.height = `${height}px`
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     resize()
@@ -166,6 +214,62 @@ export default function ParticleHero() {
     dotCtx.beginPath()
     dotCtx.arc(dotSize / 2, dotSize / 2, PARTICLE_SIZE * window.devicePixelRatio, 0, Math.PI * 2)
     dotCtx.fill()
+
+    // Pre-rendered glow sprites for the photo phase. Designed for additive
+    // ('lighter') blending: each sprite is a soft fuzzy blob with NO sharp
+    // bright core (max alpha ~0.7), so a single particle reads as a fuzzy
+    // luminous spot — not a hard dot — and overlapping halos add cleanly
+    // into bright areas without blowing out to white.
+    //
+    // Display size is intentionally large (22px) so that the halo around
+    // each particle clearly extends ~10-11px from its centre. With ~3000
+    // particles packed into the portrait silhouette, neighbouring halos
+    // overlap heavily and the photo reads as a glowing nebula rather than
+    // a dotted constellation.
+    const GLOW_DISPLAY_PX = 22
+    const GLOW_SPRITE_PX = 48
+    const makeGlowSprite = (h: number, s: number, l: number) => {
+      const dpr = window.devicePixelRatio
+      const px = Math.ceil(GLOW_SPRITE_PX * dpr)
+      const c = document.createElement('canvas')
+      c.width = px
+      c.height = px
+      const gctx = c.getContext('2d')!
+      const center = px / 2
+      const grad = gctx.createRadialGradient(center, center, 0, center, center, center)
+      // Pure white core (~4% radius) — matches the lens crescent's exact
+      // colour, so every particle reads as a tiny point of the same light
+      // that forms the accretion-disk lens. Halo is tinted by the bucket so
+      // particles transition from white core → tinted shoulder → ambient
+      // halo, mirroring the lens-core → halo → outer-gas falloff in the
+      // shader.
+      grad.addColorStop(0.00, 'hsla(0, 0%, 98%, 1)')
+      grad.addColorStop(0.04, `hsla(${h}, ${Math.min(s + 5, 100)}%, ${Math.min(l + 50, 95)}%, 0.92)`)
+      grad.addColorStop(0.10, `hsla(${h}, ${s}%, ${Math.min(l + 28, 86)}%, 0.55)`)
+      grad.addColorStop(0.26, `hsla(${h}, ${s}%, ${Math.min(l + 14, 78)}%, 0.22)`)
+      grad.addColorStop(0.52, `hsla(${h}, ${s}%, ${l}%, 0.08)`)
+      grad.addColorStop(0.82, `hsla(${h}, ${s}%, ${l}%, 0.02)`)
+      grad.addColorStop(1.00, `hsla(${h}, ${s}%, ${l}%, 0)`)
+      gctx.fillStyle = grad
+      gctx.fillRect(0, 0, px, px)
+      return c
+    }
+    // Brightness curve: matches the shader's halo palette.
+    //  brightness 0 → flame red-orange (h=14, s=88, l=42) — warm gas filament
+    //  brightness 0.5 → warm amber (h=29, s=72, l=66) — inner halo
+    //  brightness 1 → cool cream-white (h=44, s=22, l=92) — lens crescent
+    // Hue and lightness rise together; saturation falls off so the brightest
+    // particles approach pure white instead of saturated yellow.
+    const GLOW_BUCKETS = 5
+    const glowBright: HTMLCanvasElement[] = []
+    for (let i = 0; i < GLOW_BUCKETS; i++) {
+      const b = i / (GLOW_BUCKETS - 1)
+      glowBright.push(makeGlowSprite(14 + b * 30, 88 - b * 66, 42 + b * 50))
+    }
+    // Cool gas accent — h=198 puts it on the cool gas side of the lens (the
+    // bluish filaments opposite the warm orange ones), with high lightness
+    // so it reads as a bright cool highlight rather than a dim blue dot.
+    const glowCyan = makeGlowSprite(198, 72, 72)
 
     // Weighted random tNorm — biased toward middle of orbital range.
     const particles: Star[] = []
@@ -188,6 +292,8 @@ export default function ParticleHero() {
         photoX: 0,
         photoY: 0,
         hasPhotoTarget: false,
+        photoBrightness: 0,
+        hasTail: Math.random() < 0.3,
         row: Math.floor(i / 60),
         index: i,
       })
@@ -221,7 +327,7 @@ export default function ParticleHero() {
 
       // Collect face pixels using edge detection + brightness
       // PNG with circular crop: alpha=0 outside circle, alpha=255 inside
-      const pool: Array<{ x: number; y: number; weight: number }> = []
+      const pool: Array<{ x: number; y: number; weight: number; brightness: number }> = []
 
       for (let py = 1; py < PHOTO_SAMPLE_SIZE - 1; py += 1) {
         for (let px = 1; px < PHOTO_SAMPLE_SIZE - 1; px += 1) {
@@ -247,7 +353,12 @@ export default function ParticleHero() {
 
           // Only edges — creates recognizable silhouette outline, not filled block
           if (edge > 25) {
-            pool.push({ x: px / PHOTO_SAMPLE_SIZE, y: py / PHOTO_SAMPLE_SIZE, weight: edge })
+            pool.push({
+              x: px / PHOTO_SAMPLE_SIZE,
+              y: py / PHOTO_SAMPLE_SIZE,
+              weight: edge,
+              brightness: b / 255,
+            })
           }
         }
       }
@@ -285,26 +396,10 @@ export default function ParticleHero() {
           particles[i].photoX = target.x
           particles[i].photoY = target.y
           particles[i].hasPhotoTarget = true
+          particles[i].photoBrightness = target.brightness
         }
       }
     }
-
-    const onMouseMove = (e: MouseEvent) => {
-      if (textRef.current) {
-        const rect = textRef.current.getBoundingClientRect()
-        const tcx = rect.left + rect.width / 2
-        const tcy = rect.top + rect.height / 2
-        const dx = tcx - e.clientX
-        const dy = tcy - e.clientY
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        if (dist < 300 && dist > 0) {
-          const strength = ((1 - dist / 300) ** 2) * 20
-          textOffsetRef.current.x = (dx / dist) * strength
-          textOffsetRef.current.y = (dy / dist) * strength
-        }
-      }
-    }
-    window.addEventListener('mousemove', onMouseMove)
 
     // Pointer impulse — click or tap gives nearby particles an outward velocity
     // kick. Spring-damper return (in animate loop) lets them swing back through
@@ -390,10 +485,28 @@ export default function ParticleHero() {
       const eggReducedJump = eggActive && prefersReduced
         && eggElapsed > 0.05 && eggElapsed < EGG_PHOTO_END
 
+      // Frame-wide phase flag — all particles share the same egg phase in a
+      // given frame. Used to hoist shadowBlur (expensive to toggle per-arc)
+      // and the post-loop radial glow overlay.
+      const isPhotoFrame =
+        (eggReducedJump)
+        || (eggActive && eggElapsed >= EGG_EXPLODE_END && eggElapsed < EGG_PHOTO_END)
+
       const photoCX = width / 2 - PHOTO_DISPLAY_SIZE / 2
       const photoCY = height * 0.50 - PHOTO_DISPLAY_SIZE / 2
 
       ctx.fillStyle = PARTICLE_COLOR
+      // Hoist constant stroke styles (trail width/cap/colour). Setting these
+      // per-particle was 3 redundant state changes × ~1500 trails = 4500
+      // unnecessary GPU state touches per frame.
+      ctx.strokeStyle = PARTICLE_COLOR
+      ctx.lineWidth = 0.7
+      ctx.lineCap = 'round'
+      // Photo phase uses additive blending so the per-particle halos overlap
+      // into a continuous glowing fabric instead of stacking as discrete
+      // dots. Reset to source-over after the loop so the radial overlay and
+      // subsequent frames behave normally.
+      if (isPhotoFrame) ctx.globalCompositeOperation = 'lighter'
 
       for (const p of particles) {
         const baseOrbital = innerRadius + p.tNorm * orbitalRange
@@ -493,8 +606,11 @@ export default function ParticleHero() {
             alpha = 1
             eggPhase = 'photo'
           } else {
-            // Reverse: 1.5s slow exponential approach back to ring, alpha and
-            // saturation both fade so rainbow particles dissolve into white ring.
+            // Reverse: simple dispersal — particles fly back to their
+            // orbital ring position along a straight line with easeOutQuart
+            // deceleration. No spiral, no rotation. The shader's secondary
+            // collapse plays in parallel for the gravitational atmosphere,
+            // but the particles themselves just disperse and reform.
             const rk = (eggElapsed - EGG_PHOTO_END) / (EGG_REVERSE_END - EGG_PHOTO_END)
             const k = easeOutQuart(rk)
             x = photoX + (ringX - photoX) * k
@@ -507,10 +623,12 @@ export default function ParticleHero() {
         if (alpha < 0.01) continue
         if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
 
-        // Speed-line streak behind exploding particles (drawn under the dot)
+        // Speed-line streak behind exploding particles (drawn under the dot).
+        // Warm white-gold ejecta plume — feels like hot stellar matter being
+        // flung out, matches the cooling-plasma theme of the explode phase.
         if (streakAlpha > 0.01) {
           ctx.globalAlpha = streakAlpha
-          ctx.strokeStyle = `hsl(${(currentTime * 60 + p.row * 15 + p.index * 4) % 360}, 90%, 75%)`
+          ctx.strokeStyle = 'rgba(255, 240, 215, 1)'
           ctx.lineWidth = 1.4
           ctx.lineCap = 'round'
           ctx.beginPath()
@@ -520,19 +638,17 @@ export default function ParticleHero() {
         }
 
         // Idle orbit trail — tangent line behind each star, length scaled to
-        // angular velocity * radius (faster orbits = longer streaks). Skip
-        // dim or slow particles where the streak isn't visually meaningful;
-        // with 3000 particles this saves a meaningful chunk of stroke calls.
-        if (eggPhase === 'idle' && !prefersReduced && alpha > 0.28 && Math.abs(speed) > 0.18) {
+        // angular velocity * radius (faster orbits = longer streaks). Threshold
+        // raised to alpha > 0.42 / |speed| > 0.25 so dim/slow particles skip
+        // the stroke entirely (they contribute no visible motion blur), which
+        // halves stroke count vs the previous threshold.
+        if (eggPhase === 'idle' && !prefersReduced && alpha > 0.42 && Math.abs(speed) > 0.25) {
           const motionSign = speed >= 0 ? 1 : -1
           const tangX = -sinA * motionSign
           const tangY = cosA * motionSign
           const trailLen = Math.min(TRAIL_MAX, Math.abs(speed) * radius * 0.28)
           if (trailLen > 1) {
             ctx.globalAlpha = alpha * 0.32
-            ctx.strokeStyle = PARTICLE_COLOR
-            ctx.lineWidth = 0.7
-            ctx.lineCap = 'round'
             ctx.beginPath()
             ctx.moveTo(x - tangX * trailLen, y - tangY * trailLen)
             ctx.lineTo(x, y)
@@ -549,14 +665,58 @@ export default function ParticleHero() {
           ctx.arc(x, y, PARTICLE_SIZE * 1.4, 0, Math.PI * 2)
           ctx.fill()
           ctx.fillStyle = PARTICLE_COLOR
-        } else if (eggPhase === 'explode' || eggPhase === 'photo') {
-          // Rainbow during explosion + photo
-          const hue = (currentTime * 60 + p.row * 15 + p.index * 4) % 360
-          ctx.fillStyle = `hsl(${hue}, 80%, 65%)`
+        } else if (eggPhase === 'explode') {
+          // Cooling plasma: just-ejected particles render hot (lit boost +
+          // desaturation), settling into the stellar palette as they reach
+          // their photo target.
+          const ek = (eggElapsed - EGG_FLASH_END) / (EGG_EXPLODE_END - EGG_FLASH_END)
+          const heat = Math.max(0, 1 - ek * 1.5)
+          ctx.fillStyle = stellarColor(p.index, currentTime, 1 - heat * 0.45, heat * 14)
           ctx.beginPath()
-          ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
+          ctx.arc(x, y, PARTICLE_SIZE * (1 + heat * 0.35), 0, Math.PI * 2)
           ctx.fill()
           ctx.fillStyle = PARTICLE_COLOR
+        } else if (eggPhase === 'photo') {
+          // Accretion-disk debris: drawImage a pre-baked radial-gradient
+          // glow sprite (one of 5 brightness buckets, plus a cyan accent
+          // sprite for ~15% of particles). One raster op per particle —
+          // shadowBlur was multiple times more expensive and pushed 3000
+          // particles past the GPU's frame budget.
+          const slot = (p.index * 7919) % 100
+          let sprite: HTMLCanvasElement
+          if (slot < 12) {
+            sprite = glowCyan
+          } else {
+            const bucket = Math.min(
+              GLOW_BUCKETS - 1,
+              Math.floor(p.photoBrightness * GLOW_BUCKETS),
+            )
+            sprite = glowBright[bucket]
+          }
+          const shimmer = 0.78 + Math.sin(currentTime * 1.5 + p.index * 0.13) * 0.22
+          ctx.globalAlpha = alpha * shimmer
+          ctx.drawImage(
+            sprite,
+            x - GLOW_DISPLAY_PX / 2,
+            y - GLOW_DISPLAY_PX / 2,
+            GLOW_DISPLAY_PX,
+            GLOW_DISPLAY_PX,
+          )
+          if (p.hasTail) {
+            // Short tangent streak — implies recent escape from the orbital
+            // ring. No shadow on the stroke (it's already a thin line at
+            // 1-3px, which reads cleanly without extra blur).
+            const tailLen = 1.4 + (p.index % 3) * 0.8
+            const color = photoColor(p.photoBrightness, p.index, currentTime)
+            ctx.globalAlpha = alpha * shimmer * 0.55
+            ctx.strokeStyle = color
+            ctx.lineWidth = 0.7
+            ctx.lineCap = 'round'
+            ctx.beginPath()
+            ctx.moveTo(x - Math.cos(p.baseAngle) * tailLen, y - Math.sin(p.baseAngle) * tailLen)
+            ctx.lineTo(x, y)
+            ctx.stroke()
+          }
         } else if (eggPhase === 'collapse') {
           // Warm tint that brightens as particles compress toward singularity
           const intensity = eggElapsed / EGG_COLLAPSE_END
@@ -567,12 +727,23 @@ export default function ParticleHero() {
           ctx.fill()
           ctx.fillStyle = PARTICLE_COLOR
         } else if (eggPhase === 'reverse') {
-          // Rainbow desaturates back to white as particles return to ring
+          // R1 (spiral-in): keep full saturation and brighten as particles
+          // compress — reads as plasma being heated by gravitational pull.
+          // R2 (emerge): desaturate toward white so the portrait colors
+          //   dissolve into the white-gold orbital ring.
           const rk = (eggElapsed - EGG_PHOTO_END) / (EGG_REVERSE_END - EGG_PHOTO_END)
-          const hue = (currentTime * 60 + p.row * 15 + p.index * 4) % 360
-          const sat = 80 * (1 - rk)
-          const lit = 65 + rk * 25
-          ctx.fillStyle = `hsl(${hue}, ${sat}%, ${lit}%)`
+          let satScale: number
+          let litBoost: number
+          if (rk < REVERSE_COLLAPSE_FRAC) {
+            const sk = rk / REVERSE_COLLAPSE_FRAC
+            satScale = 1
+            litBoost = sk * 10
+          } else {
+            const sk = (rk - REVERSE_COLLAPSE_FRAC) / (1 - REVERSE_COLLAPSE_FRAC)
+            satScale = 1 - sk
+            litBoost = 10 + sk * 6
+          }
+          ctx.fillStyle = stellarColor(p.index, currentTime, satScale, litBoost)
           ctx.beginPath()
           ctx.arc(x, y, PARTICLE_SIZE, 0, Math.PI * 2)
           ctx.fill()
@@ -581,15 +752,28 @@ export default function ParticleHero() {
           ctx.drawImage(dotCanvas, x - PARTICLE_SIZE, y - PARTICLE_SIZE, PARTICLE_SIZE * 2, PARTICLE_SIZE * 2)
         }
       }
-      ctx.globalAlpha = 1
 
-      // Text offset decay
-      const tOff = textOffsetRef.current
-      tOff.x *= 0.92
-      tOff.y *= 0.92
-      if (textRef.current) {
-        textRef.current.style.transform = `translate(${tOff.x}px, ${tOff.y}px)`
+      // Photo-phase atmosphere: a very faint warm radial glow centred on the
+      // portrait, additively blended ('lighter') so it lifts the entire
+      // hologram without hiding particles. Reads as residual heat clinging to
+      // matter freshly ejected from the event horizon.
+      if (isPhotoFrame) {
+        const ox = width / 2
+        const oy = height * 0.5
+        const orad = Math.min(width, height) * 0.45
+        const grad = ctx.createRadialGradient(ox, oy, 0, ox, oy, orad)
+        grad.addColorStop(0, 'hsla(38, 70%, 62%, 0.10)')
+        grad.addColorStop(0.45, 'hsla(20, 78%, 52%, 0.05)')
+        grad.addColorStop(0.85, 'hsla(20, 78%, 52%, 0.01)')
+        grad.addColorStop(1, 'hsla(20, 78%, 52%, 0)')
+        ctx.globalCompositeOperation = 'lighter'
+        ctx.globalAlpha = 1
+        ctx.fillStyle = grad
+        ctx.fillRect(0, 0, width, height)
+        ctx.globalCompositeOperation = 'source-over'
       }
+
+      ctx.globalAlpha = 1
     }
 
     animate()
@@ -599,7 +783,6 @@ export default function ParticleHero() {
       observer.disconnect()
       resizeObserver.disconnect()
       window.removeEventListener('resize', resize)
-      window.removeEventListener('mousemove', onMouseMove)
       section.removeEventListener('pointerdown', onPointerDown)
     }
   }, [])

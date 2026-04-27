@@ -16,6 +16,7 @@ uniform float u_eggCollapse;
 uniform float u_eggFlash;
 uniform float u_eggShock;
 uniform float u_maskStrength;
+uniform float u_photoHide;
 
 vec2 myTanh(vec2 x) {
   vec2 ex = exp(x);
@@ -26,7 +27,22 @@ vec2 myTanh(vec2 x) {
 void main() {
   // Normalized half-height coords. Centre = (0,0), top edge = (0, 1).
   vec2 p_norm = (gl_FragCoord.xy * 2.0 - r) / r.y;
-  vec2 p_eff = p_norm;
+
+  // Black hole collapse distortion. Drives both the lens (o_bg) and gas
+  // (o_anim) blocks during the egg's collapse phase so the entire shader
+  // implodes instead of just darkening:
+  //  - radial zoom: scales sample coords outward, which makes the lens ring
+  //    and gas pattern appear to shrink toward the centre (everything is
+  //    being eaten by the singularity).
+  //  - tightening vortex: angle shifts ∝ 1/r, so inner regions spiral CW
+  //    much faster than outer regions — the classic gravitational whirlpool.
+  // When u_eggCollapse = 0 both reduce to identity, so idle look is unchanged.
+  float r_norm = length(p_norm);
+  float collapseScale = 1.0 + u_eggCollapse * 3.5;
+  float swirl = u_eggCollapse * 2.2 / (r_norm + 0.28);
+  float baseAng = atan(p_norm.y, p_norm.x);
+  vec2 p_swirled = vec2(cos(baseAng - swirl), sin(baseAng - swirl)) * r_norm;
+  vec2 p_eff = p_swirled * collapseScale;
 
   vec4 o_bg = vec4(0.0);
   vec4 o_anim = vec4(0.0);
@@ -79,8 +95,10 @@ void main() {
     o_anim += animTerm;
   }
 
-  // Collapse fades the gas to near-black so the singularity core dominates.
-  float gasFade = 1.0 - u_eggCollapse * 0.85;
+  // Light fade during collapse — the spiraling distortion now carries most of
+  // the visual story, so we keep the gas mostly visible (70% at peak) so the
+  // implosion is legible rather than just blacking out.
+  float gasFade = 1.0 - u_eggCollapse * 0.3;
   vec4 raw = mix(o_bg, o_anim, 0.5) * 1.5 * u_intensity * gasFade;
   vec3 rgb = clamp(raw.rgb, 0.0, 1.0);
   float a = clamp(max(rgb.r, max(rgb.g, rgb.b)), 0.0, 1.0);
@@ -111,6 +129,13 @@ void main() {
   float mask = mix(1.0, maskCutout, u_maskStrength);
   rgb *= mask;
   a *= mask;
+
+  // Photo-phase hide: during the portrait the whole shader fades to zero so
+  // the bright lens halo doesn't appear behind the photo. Independent of
+  // maskStrength which only handles the centre pinch in idle/collapse.
+  float photoVisible = 1.0 - u_photoHide;
+  rgb *= photoVisible;
+  a *= photoVisible;
 
   gl_FragColor = vec4(rgb * a, a);
 }
@@ -151,18 +176,25 @@ function link(gl: WebGLRenderingContext, vs: string, fs: string): WebGLProgram |
 const COLLAPSE_END = 0.8
 const FLASH_END = 1.0
 const EXPLODE_END = 1.6
+const PHOTO_END = 3.5
 const REVERSE_END = 5.0
+// Reverse phase splits into a secondary gravitational collapse (REVERSE_COLLAPSE_FRAC
+// of the reverse window) and a release back to idle. Smaller peak than the
+// initial collapse since this one is just the black hole reforming itself.
+const REVERSE_COLLAPSE_FRAC = 0.55
+const REVERSE_PEAK = 0.9
 
 interface EggPhase {
   collapse: number
   flash: number
   shock: number
   maskStrength: number
+  photoHide: number
 }
 
 function eggPhaseFor(elapsed: number): EggPhase {
   if (elapsed <= 0 || elapsed > REVERSE_END) {
-    return { collapse: 0, flash: 0, shock: 0, maskStrength: 1 }
+    return { collapse: 0, flash: 0, shock: 0, maskStrength: 1, photoHide: 0 }
   }
 
   let collapse = 0
@@ -172,6 +204,17 @@ function eggPhaseFor(elapsed: number): EggPhase {
     collapse = 1
   } else if (elapsed < EXPLODE_END) {
     collapse = 1 - (elapsed - FLASH_END) / (EXPLODE_END - FLASH_END)
+  } else if (elapsed < PHOTO_END) {
+    collapse = 0
+  } else {
+    // Reverse: secondary collapse curve that mirrors the original — gravitational
+    // pull builds, peaks near rk=REVERSE_COLLAPSE_FRAC, then releases back to 0.
+    const rk = (elapsed - PHOTO_END) / (REVERSE_END - PHOTO_END)
+    if (rk < REVERSE_COLLAPSE_FRAC) {
+      collapse = Math.pow(rk / REVERSE_COLLAPSE_FRAC, 2) * REVERSE_PEAK
+    } else {
+      collapse = REVERSE_PEAK * (1 - (rk - REVERSE_COLLAPSE_FRAC) / (1 - REVERSE_COLLAPSE_FRAC))
+    }
   }
 
   let flash = 0
@@ -185,16 +228,45 @@ function eggPhaseFor(elapsed: number): EggPhase {
     shock = (elapsed - FLASH_END) / (EXPLODE_END - FLASH_END)
   }
 
-  // Mask opens during collapse → flash, re-closes during shockwave.
-  // Stays closed during photo + reverse so the photo isn't washed out.
+  // Mask logic:
+  //  - Collapse → flash: open from 1 → 0 (reveal the imploding lens).
+  //  - Explode: close 0 → 1 as shockwave pushes outward.
+  //  - Photo: hold fully closed so the portrait is the only visual focus —
+  //    the lens halo doesn't reappear behind the photo.
+  //  - Reverse: open during secondary collapse, close back as it settles.
   let maskStrength = 1
   if (elapsed < FLASH_END) {
     maskStrength = 1 - Math.min(elapsed / COLLAPSE_END, 1)
   } else if (elapsed < EXPLODE_END) {
     maskStrength = (elapsed - FLASH_END) / (EXPLODE_END - FLASH_END)
+  } else if (elapsed < PHOTO_END) {
+    maskStrength = 1
+  } else {
+    const rk = (elapsed - PHOTO_END) / (REVERSE_END - PHOTO_END)
+    if (rk < REVERSE_COLLAPSE_FRAC) {
+      maskStrength = 1 - rk / REVERSE_COLLAPSE_FRAC
+    } else {
+      maskStrength = (rk - REVERSE_COLLAPSE_FRAC) / (1 - REVERSE_COLLAPSE_FRAC)
+    }
   }
 
-  return { collapse, flash, shock, maskStrength }
+  // Photo-phase hide: ramp up DURING the second half of explode phase so the
+  // lens is fully hidden by the time particles arrive at portrait positions.
+  // Previously the ramp started at EXPLODE_END which left a brief 120 ms
+  // window where the bright lens flashed behind the converging photo.
+  const HIDE_RAMP_START = EXPLODE_END - 0.35  // start fading at 1.25s
+  const HIDE_RAMP_END = EXPLODE_END - 0.05    // fully hidden by 1.55s
+  const PHOTO_FADE_OUT = 0.15
+  let photoHide = 0
+  if (elapsed >= HIDE_RAMP_START && elapsed < HIDE_RAMP_END) {
+    photoHide = (elapsed - HIDE_RAMP_START) / (HIDE_RAMP_END - HIDE_RAMP_START)
+  } else if (elapsed >= HIDE_RAMP_END && elapsed < PHOTO_END) {
+    photoHide = 1
+  } else if (elapsed >= PHOTO_END && elapsed < PHOTO_END + PHOTO_FADE_OUT) {
+    photoHide = 1 - (elapsed - PHOTO_END) / PHOTO_FADE_OUT
+  }
+
+  return { collapse, flash, shock, maskStrength, photoHide }
 }
 
 interface Props {
@@ -228,6 +300,7 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     const eggFlashLocation = gl.getUniformLocation(program, 'u_eggFlash')
     const eggShockLocation = gl.getUniformLocation(program, 'u_eggShock')
     const maskStrengthLocation = gl.getUniformLocation(program, 'u_maskStrength')
+    const photoHideLocation = gl.getUniformLocation(program, 'u_photoHide')
 
     const buffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
@@ -286,7 +359,7 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
       const now = performance.now()
       const elapsed = (now - startTime) / 1000
 
-      let phase: EggPhase = { collapse: 0, flash: 0, shock: 0, maskStrength: 1 }
+      let phase: EggPhase = { collapse: 0, flash: 0, shock: 0, maskStrength: 1, photoHide: 0 }
       if (eggStartRef.current > 0) {
         const eggElapsed = (now - eggStartRef.current) / 1000
         if (eggElapsed > REVERSE_END) {
@@ -304,6 +377,7 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
       gl.uniform1f(eggFlashLocation, phase.flash)
       gl.uniform1f(eggShockLocation, phase.shock)
       gl.uniform1f(maskStrengthLocation, phase.maskStrength)
+      gl.uniform1f(photoHideLocation, phase.photoHide)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
     }
     render()
