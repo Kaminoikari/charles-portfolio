@@ -82,6 +82,7 @@ const ja: Strings = {
     back: '← ポートフォリオに戻る',
     sectionProblem: '課題',
     sectionSolution: '解決策',
+    sectionScreens: 'プロダクト画面',
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: '学び',

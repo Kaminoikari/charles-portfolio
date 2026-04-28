@@ -28,6 +28,7 @@ export interface ProjectDetail {
   impact: string[]
   learnings: string[]
   links: { label: string; url: string }[]
+  screenshots?: { src: string; alt: string }[]
 }
 
 export const projects: Project[] = [
@@ -141,6 +142,20 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'Try Plutus Trade', url: 'https://plutustrade.vercel.app/' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/plutus-watchlist.png',
+        alt: 'Plutus Trade 自選股頁面，每張卡片顯示股價、當日漲跌與即時走勢線。股票名稱與代碼已模糊處理。',
+      },
+      {
+        src: '/assets/plutus-ai-winrate.png',
+        alt: 'AI 選股勝率：238 檔已結算推薦勝率 64%、平均 ROI +58.96%、ROI 走勢分布圖、月度勝率拆解。',
+      },
+      {
+        src: '/assets/plutus-holdings-winrate.png',
+        alt: 'Plutus Trade 庫存勝率分析，呈現各檔損益與未實現損益。股票名稱與代碼已模糊處理。',
+      },
     ],
   },
   {

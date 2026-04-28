@@ -29,6 +29,7 @@ export interface ProjectDetail {
   impact: string[]
   learnings: string[]
   links: { label: string; url: string }[]
+  screenshots?: { src: string; alt: string }[]
 }
 
 export const projects: Project[] = [
@@ -142,6 +143,20 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'Try Plutus Trade', url: 'https://plutustrade.vercel.app/' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/plutus-watchlist.png',
+        alt: 'Plutus Trade のウォッチリスト画面。各カードに株価、前日比、当日の値動きが表示されます。銘柄名とコードはデモ用にぼかし処理を施しています。',
+      },
+      {
+        src: '/assets/plutus-ai-winrate.png',
+        alt: 'AI 選股勝率：238 件の決済済み推奨で勝率 64%、平均 ROI +58.96%、ROI の推移分布、月次勝率の内訳。',
+      },
+      {
+        src: '/assets/plutus-holdings-winrate.png',
+        alt: 'Plutus Trade のポートフォリオ勝率分析。各銘柄の損益と未実現損益が表示されます。銘柄名とコードはデモ用にぼかし処理を施しています。',
+      },
     ],
   },
   {

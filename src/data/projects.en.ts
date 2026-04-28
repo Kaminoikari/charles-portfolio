@@ -19,6 +19,7 @@ export interface ProjectDetail {
   impact: string[]
   learnings: string[]
   links: { label: string; url: string }[]
+  screenshots?: { src: string; alt: string }[]
 }
 
 export const projects: Project[] = [
@@ -129,6 +130,20 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'Try Plutus Trade', url: 'https://plutustrade.vercel.app/' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/plutus-watchlist.png',
+        alt: 'Plutus Trade watchlist with stock cards showing prices, daily change, and intraday sparklines. Stock names and tickers are blurred for the demo.',
+      },
+      {
+        src: '/assets/plutus-ai-winrate.png',
+        alt: 'AI screening win-rate analytics: 64% on 238 picks, average ROI +58.96%, ROI distribution chart, monthly breakdown.',
+      },
+      {
+        src: '/assets/plutus-holdings-winrate.png',
+        alt: 'Portfolio win-rate analytics with per-holding returns and unrealized P&L. Stock names and tickers are blurred for the demo.',
+      },
     ],
   },
   {

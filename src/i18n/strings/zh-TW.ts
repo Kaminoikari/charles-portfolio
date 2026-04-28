@@ -79,6 +79,7 @@ const zhTW: Strings = {
     back: '← 返回作品集',
     sectionProblem: '問題',
     sectionSolution: '方案',
+    sectionScreens: '產品截圖',
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: '心得',

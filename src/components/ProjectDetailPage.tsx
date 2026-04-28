@@ -106,6 +106,25 @@ export default function ProjectDetailPage() {
         {/* Solution */}
         <Section title={t('projectDetail.sectionSolution')} paragraphs={detail.solution} index={1} />
 
+        {/* Screenshots */}
+        {detail.screenshots && detail.screenshots.length > 0 && (
+          <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '120ms' }}>
+            <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionScreens').toUpperCase()} ]</h2>
+            <div className="mt-6 space-y-6">
+              {detail.screenshots.map((shot) => (
+                <figure key={shot.src} className="overflow-hidden rounded-lg border border-border bg-bg-secondary">
+                  <img
+                    src={shot.src}
+                    alt={shot.alt}
+                    loading="lazy"
+                    className="block h-auto w-full"
+                  />
+                </figure>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tech Stack */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '160ms' }}>
           <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionTechStack')} ]</h2>

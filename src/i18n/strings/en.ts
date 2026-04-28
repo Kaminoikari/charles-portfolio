@@ -32,7 +32,7 @@ interface Strings {
   }
   projectDetail: {
     notFound: string; backHome: string; back: string
-    sectionProblem: string; sectionSolution: string; sectionTechStack: string
+    sectionProblem: string; sectionSolution: string; sectionScreens: string; sectionTechStack: string
     sectionImpact: string; sectionLearnings: string
     prevLabel: string; nextLabel: string
   }
@@ -115,6 +115,7 @@ const en: Strings = {
     back: '← BACK TO PORTFOLIO',
     sectionProblem: 'Problem',
     sectionSolution: 'Solution',
+    sectionScreens: 'Product Screens',
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: 'Learnings',
