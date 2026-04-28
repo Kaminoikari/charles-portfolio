@@ -33,20 +33,20 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
-      title: '重 outcome、不重 output。',
-      body: '出 feature 不是目標，改變使用者行為、推動商業指標才是。我用「使用者做了什麼不一樣的事」來衡量成功，不是用「關了幾張 ticket」。',
+      title: '重成果，不重產出 (Outcomes over outputs)',
+      body: '單純交付功能並不是目標，改變使用者行為並推動商業指標才是。我衡量成功的標準是「使用者做了什麼不一樣的事」，而不是「有多少張 ticket 可以勾完成」。',
     },
     {
-      title: '立場明確，但隨時可被推翻。',
-      body: 'Product sense 意味著對「要做什麼、為什麼做」有明確觀點。但只有信念、沒有彈性叫做固執。我先建出有立場的假設，再讓資料與使用者回饋來證明我錯。',
+      title: '敏銳的 Product Sense',
+      body: '最好的決策往往發生在數據還不存在的時候。知道哪些問題值得解決、哪些方案能引起共鳴、何時該果斷縮減範疇，這種直覺來自於不斷親手交付產品，並觀察真實使用者的反應。',
     },
     {
-      title: '強 product sense。',
-      body: '最好的決策發生在資料還不存在的時候。知道哪些問題值得解、哪些方案會打中、何時該砍 scope，這種直覺來自親手出產品、看真實使用者怎麼反應。',
+      title: '觀點要堅定，態度要靈活 (Strong opinions, loosely held)',
+      body: '具備 Product sense 意味著對「要做什麼、為什麼做」有清晰的觀點。但只有信念而沒有彈性就是固執。我會建立強而有力的假設，並隨時準備好讓數據與使用者回饋來證明我錯了。',
     },
     {
-      title: '做出來，學到東西。',
-      body: '原型勝過簡報。我用 Claude Code、Codex 直接打造可運作的產品來產生真實的使用者回饋，而不是停留在 stakeholder 的假設意見上。',
+      title: '做中學 (Build to learn)',
+      body: '原型勝過簡報。我使用 Claude Code 與 Codex 打造實際可運作的產品，藉此產生真實的使用者回饋，而不是停留在利害關係人的假設性意見上。',
     },
   ],
   aiTable: [

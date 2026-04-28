@@ -95,7 +95,7 @@ const en: Strings = {
     sectionChineseBio: '中文簡介',
     sectionProjects: 'PROJECTS',
     projectsCtaText: "See what I've built:",
-    philosophyIntro: 'I believe the best product managers are builders. The gap between "what should we build" and "here\'s a working prototype" is where most product ideas die. By closing that gap with AI-powered development, I can test assumptions in hours instead of weeks.',
+    philosophyIntro: 'I believe the best product managers are all Builders. The gap between "what should we build" and "here\'s a working prototype" is where most product ideas die. Once AI-driven development closes that gap, I can validate assumptions in hours, not weeks.',
     aiIntro: "AI isn't a feature I add to products. It's how I build them. My AI-powered workflow spans the entire product lifecycle:",
   },
   changelog: {
