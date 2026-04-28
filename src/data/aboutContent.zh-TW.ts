@@ -56,7 +56,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Spec Writing',
-      body: "我打造了個人專屬 AI Agent 'Product Playbook'。這套 Claude Skills 整合了 22 種產品框架，能針對不同情境產出邏輯嚴密且專業的產品規格文件，將原本需要數天的規劃流程縮短至數小時。",
+      body: '我打造了個人專屬 AI Agent「Product Playbook」。這套 Claude Skills 整合了 22 種產品框架，能針對不同情境產出邏輯嚴密且專業的產品規格文件，將原本需要數天的規劃流程縮短至數小時。',
     },
     {
       label: 'Prototyping',
