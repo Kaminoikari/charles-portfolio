@@ -45,7 +45,7 @@ export const projects: Project[] = [
     id: 'plutus-trade',
     title: 'Plutus Trade',
     description:
-      '単一ユーザー向けの台湾株意思決定支援ツール。Gemini が月次売上、四半期ファンダメンタルズ、機関投資家フロー、テクニカルを統合し、推論つきの BUY/SELL/HOLD 診断に。各推奨は entry context つきで log され、地平で settle され、長期にわたる監査が可能です。',
+      '台湾株向けの AI スマート銘柄選定ツール。リアルタイム株価、ローソク足チャート、財務諸表分析、AI 個別株診断、ワンタップ選定を統合し、パフォーマンス追跡バックテストシステムで AI の精度を継続的に改善します。',
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],

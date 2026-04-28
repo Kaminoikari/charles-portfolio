@@ -34,7 +34,7 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: 'A single-user decision-support tool for Taiwan equities. Gemini synthesizes monthly revenue, quarterly fundamentals, institutional flow, and technical signals into a BUY/SELL/HOLD diagnostic. Every recommendation is logged with entry context and settled at horizon for long-run auditability.',
+    description: 'AI-powered stock-picking tool for Taiwan equities, integrating real-time prices, K-line charts, financial-statement analysis, AI per-name diagnostics, and one-tap screening, with a performance-tracking backtest system that continuously improves AI accuracy.',
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],

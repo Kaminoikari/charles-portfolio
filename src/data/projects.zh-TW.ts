@@ -44,7 +44,7 @@ export const projects: Project[] = [
     id: 'plutus-trade',
     title: 'Plutus Trade',
     description:
-      '單一使用者的台股決策支援工具。Gemini 把月營收、季報基本面、籌碼、技術指標 synthesize 成一段帶推論的 BUY/SELL/HOLD 診斷，每一筆推薦都帶 entry context 寫入 log、到期 settle，建立長期可稽核的決策紀錄。',
+      '台股 AI 智慧選股工具，整合即時股價、K 線圖、財報分析、AI 個股診斷與一鍵選股，並以績效追蹤回測系統持續優化 AI 準確率。',
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
