@@ -98,7 +98,7 @@ export const blogArticles: BlogArticle[] = [
   },
   {
     title: 'Duolingo の 40 億ドルの大博打：なぜ 2026 年に「利益を犠牲」にして生き残りを選んだのか？',
-    subtitle: '2026 年 2 月、エドテック大手 Duolingo が衝撃を放った：2025 年の売上は 10 億ドルを超えたが、株価は 20% 以上急落——創業者が選んだ戦略転換を映し出している。',
+    subtitle: '2026 年 2 月、エドテック大手 Duolingo が衝撃を放った：2025 年の売上は 10 億ドルを超えたが、株価は 20% 以上急落。創業者が選んだ戦略転換を映し出している。',
     url: 'https://charlestychen.substack.com/p/40-duolingo-2026',
     platform: 'Substack',
     date: '2026-02-28',

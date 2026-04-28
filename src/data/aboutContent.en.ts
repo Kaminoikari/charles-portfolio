@@ -29,19 +29,19 @@ export const aboutContent: AboutContent = {
   philosophyBullets: [
     {
       title: 'Outcomes over outputs.',
-      body: "Shipping features isn't the goal — changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.",
+      body: "Shipping features isn't the goal. Changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get closed.",
     },
     {
       title: 'Strong opinions, loosely held.',
-      body: 'Product sense means having a clear point of view on what to build and why. But conviction without flexibility is stubbornness — I form strong hypotheses, then let data and user feedback prove me wrong.',
+      body: 'Product sense means having a clear point of view on what to build and why. But conviction without flexibility is stubbornness. I form strong hypotheses, then let data and user feedback prove me wrong.',
     },
     {
       title: 'Strong product sense.',
-      body: 'The best decisions happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope — that intuition comes from shipping products and watching how real users respond.',
+      body: 'The best decisions happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope: that intuition comes from shipping products and watching how real users respond.',
     },
     {
       title: 'Build to learn.',
-      body: 'Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback — not hypothetical stakeholder opinions.',
+      body: 'Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback, not hypothetical stakeholder opinions.',
     },
   ],
   aiTable: [
@@ -51,7 +51,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook — my own AI agent that generates specs from 22 product frameworks',
+      body: 'Product Playbook, my own AI agent that generates specs from 22 product frameworks',
     },
     {
       label: 'Prototyping',
@@ -63,7 +63,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Agentic Workflows',
-      body: 'Building AI agents that orchestrate multi-step tasks — from spec generation to dev handoff',
+      body: 'Building AI agents that orchestrate multi-step tasks, from spec generation to dev handoff',
     },
   ],
   skillsTable: [
