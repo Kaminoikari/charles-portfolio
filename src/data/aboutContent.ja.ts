@@ -33,15 +33,15 @@ export const aboutContent: AboutContent = {
   philosophyBullets: [
     {
       title: 'output より outcome。',
-      body: 'feature をリリースすることが目的ではない——ユーザー行動を変え、ビジネス指標を動かすことが目的です。「ticket を何枚閉じたか」ではなく「ユーザーが何を変えたか」で成功を測ります。',
+      body: 'feature をリリースすることが目的ではない。ユーザー行動を変え、ビジネス指標を動かすことが目的です。「ticket を何枚閉じたか」ではなく「ユーザーが何を変えたか」で成功を測ります。',
     },
     {
       title: '強い意見、しなやかに手放す。',
-      body: 'Product sense とは「何を作るか、なぜ作るか」に明確な視点を持つこと。ただ柔軟性のない確信は頑固にすぎない——強い仮説を立てた上で、データとユーザーフィードバックに自分の間違いを証明させます。',
+      body: 'Product sense とは「何を作るか、なぜ作るか」に明確な視点を持つこと。ただ柔軟性のない確信は頑固にすぎない。強い仮説を立てた上で、データとユーザーフィードバックに自分の間違いを証明させます。',
     },
     {
       title: '強い product sense。',
-      body: '最高の判断は、データがまだ存在しない時点で起きます。どの問題が解く価値があるか、どの解決策が刺さるか、いつ scope を切るか——その直感は、プロダクトを実際に出して、ユーザーの反応を見続けることで育ちます。',
+      body: '最高の判断は、データがまだ存在しない時点で起きます。どの問題が解く価値があるか、どの解決策が刺さるか、いつ scope を切るか。その直感は、プロダクトを実際に出して、ユーザーの反応を見続けることで育ちます。',
     },
     {
       title: 'Build to learn.',
@@ -55,7 +55,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook——22 個のプロダクトフレームワークから spec を生成する、私自身が作った AI agent',
+      body: 'Product Playbook、22 個のプロダクトフレームワークから spec を生成する、私自身が作った AI agent',
     },
     {
       label: 'Prototyping',
@@ -67,7 +67,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Agentic Workflows',
-      body: '複数ステップのタスクを編成する AI agent の構築——spec 生成から dev handoff まで',
+      body: '複数ステップのタスクを編成する AI agent の構築、spec 生成から dev handoff まで',
     },
   ],
   skillsTable: [

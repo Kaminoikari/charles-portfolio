@@ -34,15 +34,15 @@ export const aboutContent: AboutContent = {
   philosophyBullets: [
     {
       title: '重 outcome、不重 output。',
-      body: '出 feature 不是目標——改變使用者行為、推動商業指標才是。我用「使用者做了什麼不一樣的事」來衡量成功，不是用「關了幾張 ticket」。',
+      body: '出 feature 不是目標，改變使用者行為、推動商業指標才是。我用「使用者做了什麼不一樣的事」來衡量成功，不是用「關了幾張 ticket」。',
     },
     {
       title: '立場明確，但隨時可被推翻。',
-      body: 'Product sense 意味著對「要做什麼、為什麼做」有明確觀點。但只有信念、沒有彈性叫做固執——我先建出有立場的假設，再讓資料與使用者回饋來證明我錯。',
+      body: 'Product sense 意味著對「要做什麼、為什麼做」有明確觀點。但只有信念、沒有彈性叫做固執。我先建出有立場的假設，再讓資料與使用者回饋來證明我錯。',
     },
     {
       title: '強 product sense。',
-      body: '最好的決策發生在資料還不存在的時候。知道哪些問題值得解、哪些方案會打中、何時該砍 scope——這種直覺來自親手出產品、看真實使用者怎麼反應。',
+      body: '最好的決策發生在資料還不存在的時候。知道哪些問題值得解、哪些方案會打中、何時該砍 scope，這種直覺來自親手出產品、看真實使用者怎麼反應。',
     },
     {
       title: '做出來，學到東西。',
@@ -56,7 +56,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook——我自己做的 AI agent，用 22 個產品框架產出完整 spec',
+      body: 'Product Playbook，我自己做的 AI agent，用 22 個產品框架產出完整 spec',
     },
     {
       label: 'Prototyping',
@@ -68,7 +68,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Agentic Workflows',
-      body: '打造能編排多步驟任務的 AI agent——從 spec 產出到 dev handoff',
+      body: '打造能編排多步驟任務的 AI agent，從 spec 產出到 dev handoff',
     },
   ],
   skillsTable: [

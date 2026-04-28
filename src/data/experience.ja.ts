@@ -20,9 +20,9 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '85%+ の売上インパクト——駐車場決済・出張・金融保険の 3 つのプロダクトラインの戦略を主導（台湾 + 日本）',
+      '85%+ の売上インパクト：駐車場決済・出張・金融保険の 3 つのプロダクトラインの戦略を主導（台湾 + 日本）',
       '0→1 で USPACE for Business をローンチ。企業の出張管理向け B2B SaaS',
-      '5 倍速いイテレーション——Claude Code、Codex、Antigravity を活用した AI 駆動プロトタイピングを推進',
+      '5 倍速いイテレーション：Claude Code、Codex、Antigravity を活用した AI 駆動プロトタイピングを推進',
     ],
   },
   {
@@ -38,9 +38,9 @@ export const experience: ExperienceItem[] = [
     title: 'Senior Product Manager',
     organization: 'NUEIP Technology Co., Ltd.',
     bullets: [
-      '+40% のデータ駆動の意思決定——高度な分析と AI を統合したエンドツーエンドの BI プロダクトを構築',
-      '+35% の予測精度——戦略立案のための予測分析モデルを導入',
-      '50% 高速なレポーティング——BI ダッシュボードを統合し、データ取得時間を短縮',
+      '+40% のデータ駆動の意思決定：高度な分析と AI を統合したエンドツーエンドの BI プロダクトを構築',
+      '+35% の予測精度：戦略立案のための予測分析モデルを導入',
+      '50% 高速なレポーティング：BI ダッシュボードを統合し、データ取得時間を短縮',
     ],
   },
   {
@@ -48,8 +48,8 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'PXPay Plus Co., Ltd.',
     bullets: [
-      '+25% の取引コンバージョン率——3 ヶ月でサインアップとチェックアウトのフローを再設計',
-      '+50% のオペレーション効率——リワードポイントシステムを先導、顧客クレーム -40%',
+      '+25% の取引コンバージョン率：3 ヶ月でサインアップとチェックアウトのフローを再設計',
+      '+50% のオペレーション効率：リワードポイントシステムを先導、顧客クレーム -40%',
       '駐車場・ケーブル TV・年金・行政手数料のサードパーティ決済統合をリード',
     ],
   },
@@ -58,9 +58,9 @@ export const experience: ExperienceItem[] = [
     title: 'Operations Manager',
     organization: 'FLUX Technology Inc.',
     bullets: [
-      '+20% の市場シェア——競合分析を通じてプロダクト戦略を構築',
-      '+30% のユーザーリテンション——3 つのプロダクトラインの公式サイトと SEO を再設計',
-      '10 人のチームを率いた——プロセス効率 +22%、出荷スピード +35%',
+      '+20% の市場シェア：競合分析を通じてプロダクト戦略を構築',
+      '+30% のユーザーリテンション：3 つのプロダクトラインの公式サイトと SEO を再設計',
+      '10 人のチームを率いた：プロセス効率 +22%、出荷スピード +35%',
     ],
   },
 ]
