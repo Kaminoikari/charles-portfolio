@@ -62,7 +62,7 @@ export const projectDetails: ProjectDetail[] = [
       'Mobile data abroad is expensive, spotty, or both. Pocket WiFi runs out of battery, eSIM doesn\'t cover every basement station, and group plans bottleneck on whichever phone happens to be doing the routing for everyone. A trip planner that requires the network is the planner that fails at the worst moment.',
     ],
     solution: [
-      'Built Path as an offline-first Progressive Web App. The architectural question wasn\'t "native or web." It was "how do I make a web app that works without a network." PWA answered both: installable on iOS and Android home screens with a single URL, full offline capability through a Service Worker, no app store gate, no native build, no platform tax.',
+      'Built Path as an offline-first Progressive Web App. The real architectural question was "how do I make a web app that works without a network" (the surface-level "native or web" is downstream of that). PWA satisfied both: installable on iOS and Android home screens with a single URL, full offline capability through a Service Worker, no app store gate, no native build, no platform tax.',
       'Adopted a cache-first + background sync data strategy. All reads hit IndexedDB first for instant render, then a background sync to Supabase brings down fresh data and updates the cache. Writes happen optimistically: the UI updates immediately, the change is committed to local cache, and the API call runs in the background. If the network is gone, the change waits in a sync queue and replays when connectivity returns. Travelers never see a loading spinner abroad, and nothing they typed gets lost.',
       'Built the planning experience around that offline guarantee: drag-and-drop multi-day itineraries (@dnd-kit), Google Maps for places and routes (cached after first fetch), Japan/Taiwan-specific transit directions with vehicle icons and walking durations, cost tracking with currency support, photo and document attachments, and frequent-traveler templates for repeat trips. Row Level Security on Supabase isolates each user\'s data on the server.',
     ],
@@ -85,7 +85,7 @@ export const projectDetails: ProjectDetail[] = [
     learnings: [
       'PWA was the load-bearing architecture decision. Going native would have meant two codebases, two app store reviews, and still no good answer for "what happens when the network is gone." The PWA route gave Path everything a native app delivered (home-screen icon, offline support, installability) without the platform tax. The offline story got measurably stronger because Service Worker + IndexedDB are first-class web primitives now.',
       'Cache-first + background sync looks clean in a sequence diagram and gets messy in practice. Reads were straightforward: IndexedDB returns cached data instantly. The hard part was conflicts. A user edits the same trip on two devices both offline, both come back online later. Settled on last-write-wins with timestamp-based merging plus a per-record sync queue. Not perfect, but matches the actual user behaviour (single user, occasional multi-device, rare true conflicts).',
-      'Google Maps API costs scale with route lookups, not user count. Aggressive caching policy: directions cached 24h, geocoded places cached indefinitely, the selected transit polyline stored on the trip itself once chosen. API spend stayed flat while usage grew, without degrading the offline experience. Every cached call is also a call that works without connectivity.',
+      'Google Maps API costs scale with route lookups (independent of user count). Aggressive caching policy: directions cached 24h, geocoded places cached indefinitely, the selected transit polyline stored on the trip itself once chosen. API spend stayed flat while usage grew, without degrading the offline experience. Every cached call is also a call that works without connectivity.',
     ],
     links: [
       { label: 'Try Path', url: 'https://trip-path.vercel.app/' },
@@ -103,9 +103,9 @@ export const projectDetails: ProjectDetail[] = [
       'Available consumer tooling addresses this asymmetrically. Charting apps surface raw data without interpretation; advisory products provide interpretation but treat the user as a passive recipient. Neither serves the use case in between: a domain-literate operator who wants AI-assisted synthesis they can override, audit, and build trust in over time.',
     ],
     solution: [
-      'Plutus Trade is positioned as a single-user decision-support tool, not a consumer product. Gemini 2.5 Flash performs cross-domain synthesis on each name in the watchlist — monthly revenue (YoY/MoM/cumulative), quarterly fundamentals (EPS, gross margin, ROE, dividend policy), institutional flow, and technical signals — and returns a BUY/SELL/HOLD diagnostic with explicit reasoning. Output is framed as analysis, not advice; final decision authority is preserved with the user.',
-      'A guided screening flow translates qualitative investment criteria into an AI-executable contract. A three-step investor profile (risk tolerance, holding horizon, sector preference) parameterizes the screening prompt, returning a curated short-list with per-pick reasoning. This collapses the discovery phase of the workflow — historically the highest-time-cost step — into a single interaction.',
-      'An instrumented prediction layer logs every AI recommendation with its entry context and settles outcomes at horizon, producing a structured record of decision quality (realized ROI, win rate, decision-quality matrix). The intent is durable transparency: the user can interrogate the system\'s historical performance across market regimes and strategy types, rather than trust any single output in isolation.',
+      'Plutus Trade is positioned as a single-user decision-support tool. Gemini 2.5 Flash performs cross-domain synthesis on each name in the watchlist (monthly revenue with YoY/MoM/cumulative views, quarterly fundamentals covering EPS, gross margin, ROE, dividend policy, institutional flow, and technical signals) and returns a BUY/SELL/HOLD diagnostic with explicit reasoning. Output is framed strictly as analysis under disclaimer, and final decision authority stays with the user.',
+      'A guided screening flow translates qualitative investment criteria into an AI-executable contract. A three-step investor profile (risk tolerance, holding horizon, sector preference) parameterizes the screening prompt, returning a curated short-list with per-pick reasoning. The discovery phase of the workflow, historically the highest-time-cost step, collapses into a single interaction.',
+      'An instrumented prediction layer logs every AI recommendation with its entry context and settles outcomes at horizon, producing a structured record of decision quality (realized ROI, win rate, decision-quality matrix). The intent is durable transparency: the user can interrogate the system\'s historical performance across market regimes and strategy types, treating any single output as one data point in a longitudinal track record.',
     ],
     techStack: [
       { category: 'Frontend', items: 'Flutter 3.41+ (Web on Vercel), Riverpod, go_router, fl_chart, Dio' },
@@ -118,15 +118,15 @@ export const projectDetails: ProjectDetail[] = [
     ],
     impact: [
       'Single-user decision-support surface covering 8 integrated modules: market data center, watchlist and portfolio management, AI diagnostics, guided screening, prediction tracking, fundamental analysis, smart notifications, and after-hours daily report',
-      'Instrumented prediction layer logging every AI call with entry context and settled outcome (ROI, win rate, decision-quality matrix), making the system auditable rather than opaque',
+      'Instrumented prediction layer logging every AI call with entry context and settled outcome (ROI, win rate, decision-quality matrix), making the system fully auditable',
       'Three-source data resilience: FinMind → Yahoo Finance → TWSE/TPEX OpenAPI fallback chain with seven-day stale-cache safeguard maintains analytical capability under upstream provider outages',
       'Trading-aware caching policy: five-minute TTL during regular session, cache held until next open after close, weekend cache rolls forward to Monday open',
     ],
     learnings: [
-      'LLM output quality is primarily a function of prompt contract design, not model selection. JSON-schema-constrained prompts with few-shot anchors reduced Gemini hallucination by approximately 60% relative to free-form prompting. Most "we need a stronger model" debates resolve upstream of that: a tighter prompt contract closes the gap before model swapping is justified.',
-      'In financial AI, the line between analysis and advice must be enforced at the product layer. The model will produce recommendations on demand; the product\'s job is to reframe them as analysis under explicit disclaimer. This is a design decision, not a content moderation problem.',
-      'Audience-of-one is a deliberate product constraint, not a fallback. Scoping to a single domain-literate user eliminates the trade-off matrix consumer products inherit (sensible defaults, novice onboarding, error tolerance for the unfamiliar) and frees the design surface to optimize for analytical depth. The constraint is the product strategy.',
-      'For decision-support tools, data source reliability is a first-class product concern, not a backend implementation detail. A multi-tier fallback chain with stale-cache safety net is what keeps the tool useful when an upstream provider degrades — and in this product category, degradation is functionally an outage of the core value proposition.',
+      'LLM output quality is primarily a function of prompt contract design. JSON-schema-constrained prompts with few-shot anchors reduced Gemini hallucination by approximately 60% relative to free-form prompting. Most "we need a stronger model" debates resolve upstream: a tighter prompt contract closes the gap before model swapping is justified.',
+      'In financial AI, the line between analysis and advice must be enforced at the product layer. The model will produce recommendations on demand; the product\'s job is to reframe them as analysis under explicit disclaimer. This is a design decision that lives at the product layer, with content moderation downstream of it.',
+      'Audience-of-one is a deliberate product constraint that doubles as the product strategy. Scoping to a single domain-literate user eliminates the trade-off matrix consumer products inherit (sensible defaults, novice onboarding, error tolerance for the unfamiliar) and frees the design surface to optimize for analytical depth.',
+      'For decision-support tools, data source reliability is a first-class product concern. A multi-tier fallback chain with stale-cache safety net is what keeps the tool useful when an upstream provider degrades; in this product category, degradation is functionally an outage of the core value proposition.',
     ],
     links: [
       { label: 'Try Plutus Trade', url: 'https://plutustrade.vercel.app/' },
@@ -144,7 +144,7 @@ export const projectDetails: ProjectDetail[] = [
     ],
     solution: [
       'Built an AI agent distributed across Claude.ai Custom Skill, Claude Code Plugin, and Claude Code Skill that orchestrates multiple product frameworks into a single spec generation pipeline. Users describe their product idea in one line, select an execution mode, and the agent produces a complete spec document.',
-      'The key architecture decision was using 22 established product frameworks (JTBD, Positioning, PR-FAQ, Pre-mortem, OST, RICE, PRD, etc.) as structured prompts rather than free-form generation. Each framework constrains the AI\'s output to match how experienced PMs actually think across Discovery, Define, Develop, and Deliver phases.',
+      'The key architecture decision was using 22 established product frameworks (JTBD, Positioning, PR-FAQ, Pre-mortem, OST, RICE, PRD, etc.) as structured prompts. Each framework constrains the AI\'s output to match how experienced PMs actually think across Discovery, Define, Develop, and Deliver phases. Free-form generation is what this approach replaces.',
       'Designed 6 execution modes (Quick, Full, Revision, Custom, Build, and Feature Expansion) so PMs can match the tool\'s depth to their stage. You don\'t need a 50-page spec for a feature experiment, but you do need full dev handoff when shipping a new product.',
       'Built a change propagation engine that automatically updates downstream documents when upstream decisions change, plus three-layer PDF parsing (pymupdf text extraction → Claude Vision semantic → Tesseract OCR fallback) so users can upload existing research in PDF/DOCX/PPTX.',
       'The automated dev handoff generates CLAUDE.md, TASKS.md, and TICKETS.md, translating product requirements into technical tasks with acceptance criteria and reducing the PM → engineer communication gap.',
@@ -160,15 +160,15 @@ export const projectDetails: ProjectDetail[] = [
     ],
     impact: [
       'Open source AI agent product used by product managers and developers',
-      'Concept to complete spec in minutes instead of days',
+      'Concept to complete spec in minutes (down from days)',
       '22 product frameworks codified into reusable LLM prompts across Discovery → Deliver phases',
       '6 execution modes (Quick / Full / Revision / Custom / Build / Feature Expansion) for different product development stages',
       '+69% quality improvement measured against baseline Claude responses without the skill',
       'Multi-channel distribution (Claude.ai, Claude Code Plugin, and Claude Code Skill) meeting users inside their existing workflow',
     ],
     learnings: [
-      'LLM orchestration is a product design problem, not just an engineering problem. The order of framework execution matters: running Persona before JTBD produces better output because user context informs job identification. Spent significant time optimizing the pipeline sequence.',
-      'Skill-based distribution (Claude Code ecosystem) turned out to be a strong channel. Users discover the tool inside their existing workflow rather than needing to adopt a new platform.',
+      'LLM orchestration is a product design problem first, with engineering as the implementation layer. The order of framework execution matters: running Persona before JTBD produces better output because user context informs job identification. Spent significant time optimizing the pipeline sequence.',
+      'Skill-based distribution (Claude Code ecosystem) turned out to be a strong channel. Users discover the tool inside their existing workflow, with no new platform adoption required.',
       'The biggest insight as an AI Product Manager building an AI agent: the product value isn\'t in the AI. It\'s in the frameworks. The AI is the delivery mechanism, but the 22 product frameworks are the actual intellectual property. Anyone can call an LLM API; the differentiation is knowing what to ask it.',
     ],
     links: [

@@ -30,11 +30,11 @@ export const changelog: ChangelogEntry[] = [
     title: 'Plutus Trade — 改寫為決策支援工具的案例研究',
     tags: ['design'],
     body: [
-      '以資深 PM 的視角重寫 Plutus Trade 案例研究。先前版本有兩個問題：一、把產品定位成「把法人級分析帶給散戶」的消費型 SaaS，這個 market frame 已不再對應目前正在運行的產品；二、文案偏向個人化、口語化的敘述，而非 recruiter 或業界同儕在案例研究中預期讀到的分析框架。',
-      '新版 problem statement 用產品語言重新框定使用者現實：每天的台股研究是一個 synthesis bottleneck，而非 data availability bottleneck。月營收標準化、季報基本面、三大法人籌碼、K 線技術面，每一項單獨都能處理；成本是在 30–50 檔自選股 watchlist 中累積出來的。市面上的消費型工具回應方式不對稱——看盤 App 給出原始資料但不解讀；投顧型產品提供解讀但把使用者當成被動接收方。Plutus Trade 鎖定中間這道斷層：具備領域素養、希望取得可覆寫且可審計的 AI 綜合分析的操作型使用者。',
-      'Solution 段落現在呈現為三個承重的產品決策，而非功能描述：（1）跨領域 AI synthesis，輸出明確 framed 為 analysis 而非 advice；（2）guided screening flow，把投資人的質性條件翻譯成 AI 可執行的 contract；（3）instrumented prediction layer，每一筆建議都帶 entry context 寫入 log，到期 settle 結果，使整個系統可審計而非黑箱。',
-      'Tech stack 對齊正在運行的 repo，校正過時資訊：Flutter Web 部署於 Vercel（非 iOS）、FastAPI 部署於 Fly.io nrt region、Gemini 2.5 Flash（先前誤植為 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID。同步補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
-      'Learnings 段重寫為四條 PM-voice 結論，對應上述承重設計決策：模型選型之前，prompt contract 設計才是第一個槓桿；任何金融類 AI 必須在產品層強制 analysis-vs-advice 的分界；audience-of-one 是刻意設定的 constraint，能釋放設計面、讓產品專注於分析深度而非轉換率；資料源可靠度對任何決策支援工具都是 first-class 產品議題——這個層次的退化在功能上等同於核心價值主張的 outage。',
+      '以資深 PM 的視角重寫 Plutus Trade 案例研究。先前版本有兩個問題：一、把產品定位成「把法人級分析帶給散戶」的消費型 SaaS，這個 market frame 已不再對應目前正在運行的產品；二、文案偏向個人化、口語化的敘述，與 recruiter、業界同儕在案例研究中預期讀到的分析框架有距離。',
+      '新版 problem statement 用產品語言重新框定使用者現實：每天的台股研究在 synthesis 這一層被卡住。月營收標準化、季報基本面、三大法人籌碼、K 線技術面，每一項單獨都能處理；成本是在 30–50 檔自選股 watchlist 中累積出來的。市面上的消費型工具回應方式不對稱：看盤 App 給出原始資料但不解讀，投顧型產品提供解讀但把使用者當成被動接收方。Plutus Trade 鎖定中間這道斷層，服務具備領域素養、希望取得可覆寫且可審計的 AI 綜合分析的操作型使用者。',
+      'Solution 段落現在呈現為三個承重的產品決策，取代先前的功能描述：（1）跨領域 AI synthesis，輸出嚴格 framed 為附帶免責聲明的分析；（2）guided screening flow，把投資人的質性條件翻譯成 AI 可執行的 contract；（3）instrumented prediction layer，每一筆建議都帶 entry context 寫入 log，到期 settle 結果，讓系統做到完整 auditable。',
+      'Tech stack 對齊正在運行的 repo，校正過時資訊：Flutter Web 部署於 Vercel（先前誤標為 iOS）、FastAPI 部署於 Fly.io nrt region、Gemini 2.5 Flash（先前誤植為 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID。同步補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
+      'Learnings 段重寫為四條 PM-voice 結論，對應上述承重設計決策：模型選型之前，prompt contract 設計才是第一個槓桿；任何金融類 AI 必須在產品層強制分析與建議的分界；audience-of-one 是刻意設定的 constraint，本身就是產品策略，能釋放設計面、讓產品全力為分析深度做最佳化；資料源可靠度對任何決策支援工具都是 first-class 產品議題，因為這個層次的退化在功能上等同於核心價值主張的 outage。',
     ],
   },
   {
@@ -68,7 +68,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['design', 'technical'],
     body: [
       '修了兩個傷害 easter-egg 肖像在手機上呈現的問題。第一，hero text、「click the logo 5 times」hint、SCROLL 指示器在 photo phase 仍維持滿不透明，肖像在較小 viewport 收斂後就被它們覆蓋。每個 overlay 現在各有自己的 ref，render-loop 內依 egg phase machine 做淡出：從 egg t=1.25s 到 t=1.55s（對齊 shader 的 photoHide）淡出，整個肖像期間維持隱藏，再在 reverse phase 開始的 0.15s 內淡回。肖像現在在每種螢幕尺寸都落在乾淨的舞台上。',
-      '第二，肖像 sampler 原本只取邊緣：對來源 PNG 跑 4 方向 Laplacian，只留下輪廓、眼睛、眉毛、嘴唇邊線。手機上看起來像 hollow wireframe 而不是一張臉，因為臉頰、額頭、頸部區域是空的。加上稀疏的內部填充：照片區域內每 5 個 pixel 也以低 weight（6）進入 particle pool，排序後拿到最暗的粒子，強邊則仍然搶下最亮的粒子。臉在小尺寸下現在讀起來是飽滿的肖像，桌機尺寸下也沒失去定義輪廓的乾淨線條。',
+      '第二，肖像 sampler 原本只取邊緣：對來源 PNG 跑 4 方向 Laplacian，只留下輪廓、眼睛、眉毛、嘴唇邊線。手機上看起來像 hollow wireframe，臉部內部空缺，因為臉頰、額頭、頸部區域都是空的。加上稀疏的內部填充：照片區域內每 5 個 pixel 也以低 weight（6）進入 particle pool，排序後拿到最暗的粒子，強邊則仍然搶下最亮的粒子。臉在小尺寸下現在讀起來是飽滿的肖像，桌機尺寸下也沒失去定義輪廓的乾淨線條。',
     ],
   },
   {
@@ -101,7 +101,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Hero — 宇宙塵埃肖像粒子 & Easter Egg 細節',
     tags: ['feature', 'design', 'technical'],
     body: [
-      '重做了 easter-egg 肖像 phase，讓組成照片的粒子像宇宙塵埃，而不是實心唸珠。每顆粒子現在改畫成預先 render 好的 radial-gradient sprite（共用的暖白核心、根據 5 段亮度梯度上色的 halo），用 additive blending 合成，相鄰的 halo 重疊成連綿發光的織物，而不是堆疊成一顆顆獨立的點。約三分之一的粒子還會多畫一條短切線拖尾，暗示它們剛剛從 orbital ring 脫逃、正往肖像移動。',
+      '重做了 easter-egg 肖像 phase，讓組成照片的粒子呈現宇宙塵埃般的質感（取代先前的實心唸珠版本）。每顆粒子現在改畫成預先 render 好的 radial-gradient sprite（共用的暖白核心、根據 5 段亮度梯度上色的 halo），用 additive blending 合成，相鄰的 halo 重疊成連綿發光的織物。先前的版本則是堆疊成一顆顆獨立的點。約三分之一的粒子還會多畫一條短切線拖尾，暗示它們剛剛從 orbital ring 脫逃、正往肖像移動。',
       '把照片的色盤對齊 shader 的 lens-halo 光譜：brightness 0 對到火焰般的紅橘（暖氣絲），brightness 1 對到奶油白（lens 月牙核心），再加 12% 的青色點綴對應冷側氣體。肖像本身的明暗對比現在讀起來像溫度梯度（亮 pixel 像被引力透鏡聚焦的熱光，暗 pixel 像逐漸冷卻的吸積殘骸），宇宙底色與肖像視覺上共享同一組 colour DNA。',
       '在 easter egg 中加入真正的 shader 端引力塌縮。Shader 現在依 `u_eggCollapse` 套上徑向縮放與旋轉漩渦，collapse phase 中 lens 視覺上會塌陷而不只是變暗；reverse phase 中粒子發散回 orbital ring 時，shader 也會跑一段較小的二次塌縮。新增 `u_photoHide` uniform 在 photo phase 期間把整個 shader 淡到 0（explode 最後 0.35s 內逐漸升起，避免 lens 在收斂的肖像背後閃光，整個肖像期間維持為 0，reverse collapse 時再降下來）。',
       'Reverse phase 改回乾淨的線性發散：粒子用 `easeOutQuart` 直接飛回 orbital ring，不旋轉。早先的 CW 螺旋版讀起來像照片在「旋轉著解體」，感覺不自然；引力氛圍現在完全活在 shader 的二次塌縮裡，粒子單純發散重組。',
@@ -114,11 +114,11 @@ export const changelog: ChangelogEntry[] = [
     title: 'Hero — 黑洞 Shader 與 Orbital 粒子系統',
     tags: ['feature', 'design', 'technical'],
     body: [
-      '在 hero 粒子背後加上一支 WebGL fragment shader，render 黑洞風格的吸積盤：中央有亮起來的 lensing 月牙，柔和的氣體絲流動環繞。Shader 在自己的 canvas 上、貼在既有粒子環下層，hero 現在讀起來是分層的構圖（前景發光的 event horizon、後方流動的氣體、最上層的 orbiting 粒子），而不是一片扁平的粒子場。',
-      '把先前波形調變、固定角度的粒子模型換成參考 msurguy blackhole 寫法的 Kepler 式軌道系統。每顆粒子真的繞中心旋轉，角速度依半徑而定（內圈快、外角慢漂），讀起來像差動旋轉，而不是靜態的裝飾環。粒子數從原本窄帶內的 800 顆，提升到貫穿整條 viewport 對角線的 3000 顆，寬螢幕的角落不再空蕩。',
-      '點擊與輕觸互動現在改用 spring-damper 物理模型：擊中時把鄰近粒子用初始徑向速度推開，重力再把它們拉回 base orbit，配上欠阻尼振盪讓它們略微越過再自然安頓，而不是硬性的線性 repel-and-snap。Shader 本身不再回應點擊；只有粒子環會。氣體底色保持中性，讓點擊回饋讀起來像對軌道的物理擾動，而不是全螢幕「shakes」反應。',
+      '在 hero 粒子背後加上一支 WebGL fragment shader，render 黑洞風格的吸積盤：中央有亮起來的 lensing 月牙，柔和的氣體絲流動環繞。Shader 在自己的 canvas 上、貼在既有粒子環下層，hero 現在讀起來是分層的構圖（前景發光的 event horizon、後方流動的氣體、最上層的 orbiting 粒子）。先前的版本是一片扁平的粒子場。',
+      '把先前波形調變、固定角度的粒子模型換成參考 msurguy blackhole 寫法的 Kepler 式軌道系統。每顆粒子真的繞中心旋轉，角速度依半徑而定（內圈快、外角慢漂），讀起來像差動旋轉。先前的觀感則是靜態的裝飾環。粒子數從原本窄帶內的 800 顆，提升到貫穿整條 viewport 對角線的 3000 顆，寬螢幕的角落不再空蕩。',
+      '點擊與輕觸互動現在改用 spring-damper 物理模型：擊中時把鄰近粒子用初始徑向速度推開，重力再把它們拉回 base orbit，配上欠阻尼振盪讓它們略微越過再自然安頓。先前的行為則是硬性的線性 repel-and-snap。Shader 本身不再回應點擊；只有粒子環會。氣體底色保持中性，讓點擊回饋讀起來像對軌道的物理擾動，全螢幕「shakes」反應在這一版被拿掉。',
       'Konami easter egg 重做為 shader 與粒子環同步的 big-bang 序列。所有粒子向奇異點塌縮、中心爆出閃光、衝擊波向外漣漪、粒子炸開拼成 Charles 的肖像、停留片刻、最後溶解回 ring，shader 也從黑出淡回正常氣體。兩個元件聽同一個 `easter-egg` window event，phase 邊界（collapse 0.8s → flash 1.0s → explode 1.6s → photo 3.5s → reverse 5.0s）保持鎖在一起。',
-      '一路上幾個小修：shader 分母奇異點（中心亮點、穿過 lens 的對角斜片）換成 epsilon-stabilised 形式；氣體旋轉改用指數飽和的 drift 而非線性纏繞，noise 圖樣不會隨時間累積出長弧線；hero 文字加上分層黑色 text-shadow，輔助文案的不透明度也略提高，讓亮 lens 月牙穿過時仍可讀。',
+      '一路上幾個小修：shader 分母奇異點（中心亮點、穿過 lens 的對角斜片）換成 epsilon-stabilised 形式；氣體旋轉改用指數飽和的 drift（取代原本的線性纏繞），noise 圖樣不會隨時間累積出長弧線；hero 文字加上分層黑色 text-shadow，輔助文案的不透明度也略提高，讓亮 lens 月牙穿過時仍可讀。',
     ],
   },
   {
@@ -127,7 +127,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Hero Section — 手機垂直置中修正',
     tags: ['technical', 'design'],
     body: [
-      'Hero 文字在手機上明顯坐在可見 viewport 中線下方。根因是 100vh：這個單位在手機瀏覽器代表「URL bar 收起」狀態下的 viewport，不是「目前實際看得到」的範圍。所以 section 比訪客真正能看到的還高，「100vh 中央」就落在視覺中心下方約 40-50px。底部的 SCROLL ↓ 指示器也因此被 URL bar 蓋住。',
+      'Hero 文字在手機上明顯坐在可見 viewport 中線下方。根因是 100vh：這個單位在手機瀏覽器代表「URL bar 收起」狀態下的 viewport（範圍比實際可見區域還大）。所以 section 比訪客真正能看到的還高，「100vh 中央」就落在視覺中心下方約 40-50px。底部的 SCROLL ↓ 指示器也因此被 URL bar 蓋住。',
       '改用 100dvh（dynamic viewport height），透過 supports-[] variant 應用：現代瀏覽器以實際可見區域決定 section 高度，不認得 dvh 的舊瀏覽器則 fallback 到 100vh。Canvas 早就以 section 的 clientHeight 做 resize，粒子動畫中心會自動跟著 layout 走，這邊不用再動。',
     ],
   },
@@ -217,7 +217,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['feature', 'technical'],
     body: [
       '在 /projects/path、/projects/plutus-trade、/projects/product-playbook 加上專屬案例研究頁。每頁有結構化區塊（Problem、Solution、Tech Stack、Impact、Learnings），配上正確的 meta title、description、動態 canonical URL。',
-      '首頁的 project card 現在連到這些案例研究頁，而非外部 URL。這在 SEO 上建出內部 topic cluster：首頁連到案例研究、案例研究互連回首頁，每頁針對不同 long-tail 關鍵字。',
+      '首頁的 project card 現在連到這些案例研究頁（先前則是直接導向外部 URL）。這在 SEO 上建出內部 topic cluster：首頁連到案例研究、案例研究互連回首頁，每頁針對不同 long-tail 關鍵字。',
       '同時新增一個獨立的 /about 頁，含完整職涯經歷、產品哲學（outcomes over outputs、strong opinions loosely held、strong product sense、build to learn）、AI 工作流拆解、技能組合，與一段帶 lang="zh-TW" 的中文簡介，給台灣搜尋流量。',
       '所有新頁面用動態 canonical URL 與結構化 meta tag。修掉 Google Search Console 把子頁面標記為「Alternate page with proper canonical tag」的問題：它們之前共用一條寫死的 root canonical。',
     ],
@@ -231,7 +231,7 @@ export const changelog: ChangelogEntry[] = [
       '對人類來說 portfolio 看起來很好，對搜尋引擎與 AI 系統卻是隱形的。作為 React SPA，整個頁面 client-side render：不執行 JavaScript 的 crawler 看到的只是 <div id="root"></div>，其餘什麼都沒有。沒有 structured data、沒有 meta 策略、沒有 sitemap。',
       '第一層是機械工：加上 JSON-LD structured data（Person、FAQPage、ItemList schema）、Open Graph tag、Twitter Cards、canonical URL、author metadata、freshness signal（published/modified date）。建立 robots.txt 明確允許全部 14 種主要 AI crawler（GPTBot、ClaudeBot、PerplexityBot 等）、一份 sitemap.xml，與一份實驗性的 llms.txt 提供給 AI 直接消化。',
       '第二層解 SPA 可見性問題。在 <noscript> tag 內塞入完整的 HTML fallback：不執行 JS 的 crawler 拿到完整的語意內容，含正確的 H1/H2/H3 階層、成就列表、技能表、專案描述、FAQ section。React mount 後接管可見的 DOM，使用者永遠不會看到 fallback。一開始把 fallback 放在 #root 內，造成 React hydrate 前一閃 unstyled HTML，挪到 <noscript> 修掉了。',
-      '第三層是關鍵字策略。GEO 審計顯示內容是以「我是誰」（品牌頁）的方式組織，而不是「我解決什麼問題」（搜尋頁）。「AI Product Manager」搜尋量明顯高於「AI Product Builder」，但只出現 4 次 vs 19 次。重新平衡到 title、JSON-LD、noscript 標題、FAQ 內容裡共 15 次「AI Product Manager」。把地理訊號「Taiwan」放到關鍵位置。Title 從 name-first（「Charles Chen — AI Product Builder」）切成 keyword-first（「AI Product Manager | Charles Chen Portfolio」）。',
+      '第三層是關鍵字策略。GEO 審計顯示內容是以「我是誰」（品牌頁）的方式組織；搜尋頁應該以「我解決什麼問題」為核心。「AI Product Manager」搜尋量明顯高於「AI Product Builder」，但只出現 4 次 vs 19 次。重新平衡到 title、JSON-LD、noscript 標題、FAQ 內容裡共 15 次「AI Product Manager」。把地理訊號「Taiwan」放到關鍵位置。Title 從 name-first（「Charles Chen — AI Product Builder」）切成 keyword-first（「AI Product Manager | Charles Chen Portfolio」）。',
       '同時在 vercel.json 加上 X-Robots-Tag header、從 noscript fallback 內部連到 /changelog，以及一段針對 long-tail 關鍵字的新 FAQ：「how to become an AI product builder」、「AI product manager portfolio example」、「generative AI product case study」、「difference between AI PM and AI Product Builder」。',
     ],
   },
@@ -252,10 +252,10 @@ export const changelog: ChangelogEntry[] = [
     title: 'Changelog — Building in Public',
     tags: ['feature', 'design'],
     body: [
-      '新增獨立的 /changelog 頁，記錄這個 portfolio 每個部分背後的設計決策、技術迭代、與思考過程。靈感來自 Linear 的 changelog：乾淨單欄 layout、寬鬆的留白、自然的散文敘事，而不是 bullet-point 形式的 changelog。',
+      '新增獨立的 /changelog 頁，記錄這個 portfolio 每個部分背後的設計決策、技術迭代、與思考過程。靈感來自 Linear 的 changelog：乾淨單欄 layout、寬鬆的留白、自然的散文敘事（取代過往 bullet-point 形式的 changelog）。',
       '為此把原本單頁捲動的站點導入 React Router。首頁照舊運作：所有 section 維持垂直捲動、nav 行為不變。Changelog 活在自己的 URL，並對 Vercel 部署設正確的 SPA fallback。',
       'Nav 元件變得 route-aware：在首頁，section 按鈕仍捲動。在 changelog 頁，按鈕會 navigate 回 /#section，頁面載入後自動 scroll-to。Changelog 入口放在 footer：技術 metadata 旁的低調連結，留給想再深入的訪客。',
-      '每篇 entry 寫成自然散文，而不是 release notes。目標是分享決策背後的「為什麼」：為什麼 About section 跑了 5 次背景動畫迭代、為什麼 Fibonacci 分佈解掉了 Universe 球面、為什麼卡片動畫需要完整的 state machine 生命週期。',
+      '每篇 entry 寫成自然散文。目標是分享決策背後的「為什麼」：為什麼 About section 跑了 5 次背景動畫迭代、為什麼 Fibonacci 分佈解掉了 Universe 球面、為什麼卡片動畫需要完整的 state machine 生命週期。Release notes 的格式則是被取代的對象。',
     ],
   },
   {
@@ -278,9 +278,9 @@ export const changelog: ChangelogEntry[] = [
     body: [
       '加上第三張側邊專案卡片：Product Playbook，一個 Claude Code 的 AI 驅動產品規劃 skill。動畫要視覺化它的核心概念：框架進去、完整 spec 出來。',
       '設計上左邊是四個框架 badge（JTBD、Persona、RICE、PRD），透過弧形 bezier 線連到右側文件。隨著每個段落填入（Overview、User Stories、Architecture、Dev Handoff），對應的框架 badge 以 accent-mars 脈衝亮起。',
-      '文件內部，內容行漸進填入，附帶以約 0.6Hz 閃爍的打字 cursor。完成的段落會出現 checkmark。底部進度條用 easeInOutCubic 而非線性增長，質感更精緻。',
+      '文件內部，內容行漸進填入，附帶以約 0.6Hz 閃爍的打字 cursor。完成的段落會出現 checkmark。底部進度條用 easeInOutCubic，質感較先前的線性增長精緻。',
       '進場編排對第一印象很重要：badge 以淡入 + slide-up 交錯出場（120ms 間距），文件外框接著淡入。給動畫一個「揭幕」時刻，這是另外兩張卡一開始沒有的。',
-      '經過多輪審查微調：把框架從 6 個減到 4 個，做出乾淨的 1:1 段落對映；連線改弧形而非平直水平；用分數插值平滑掉部分曲線端點。',
+      '經過多輪審查微調：把框架從 6 個減到 4 個，做出乾淨的 1:1 段落對映；連線從平直水平改成弧形；用分數插值平滑掉部分曲線端點。',
     ],
   },
   {

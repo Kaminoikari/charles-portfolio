@@ -73,7 +73,7 @@ export const projectDetails: ProjectDetail[] = [
       '國外行動數據貴、不穩，常常兩個都中。Pocket WiFi 沒電、eSIM 在地下室收不到訊號、整團人的路線都靠那一支手機在跑。用網路才能跑的旅遊規劃工具，就是會在最糟的時候掛掉的工具。',
     ],
     solution: [
-      '把 Path 蓋成一支離線優先的 Progressive Web App。架構上要回答的不是「該做 native 還是 web」，而是「怎麼做出一支沒網路也能跑的 web app」。PWA 同時回答了兩件事：iOS / Android 都可以從一個 URL 直接安裝到主畫面、用 Service Worker 拿到完整離線能力、不用過 app store、沒有 native build、不付平台稅。',
+      '把 Path 蓋成一支離線優先的 Progressive Web App。架構上真正要回答的問題是「怎麼做出一支沒網路也能跑的 web app」（native vs web 是底下那一層的議題）。PWA 同時解決了多項條件：iOS / Android 都可以從一個 URL 直接安裝到主畫面、用 Service Worker 拿到完整離線能力、不用過 app store、沒有 native build、不付平台稅。',
       '採用 cache-first + background sync 的資料策略。所有讀取都先打 IndexedDB（瞬間 render），背景再向 Supabase 同步取最新資料、更新 cache。寫入用 optimistic：UI 立即更新、變更先寫進本地 cache、API 呼叫在背景跑。沒網路時變更會排進 sync queue，連線回來就 replay。旅人在國外不會看到 loading spinner，也不會有任何輸入掉進虛空。',
       '把規劃體驗整個架在這個離線保證上：拖拉式多日行程（@dnd-kit）、Google Maps 處理景點與路線（首次取回後就快取）、針對日台特化的大眾運輸指引（車種圖示、步行時長、路線顏色）、含幣別的花費追蹤、照片與文件附件、常用旅客樣板（重複行程一鍵帶入）。Supabase 的 Row Level Security 在伺服器端隔離每個使用者的資料。',
     ],
@@ -111,13 +111,13 @@ export const projectDetails: ProjectDetail[] = [
     metaDescription:
       '為主動操作的台股研究工作者打造的單一使用者決策支援工具：Gemini 驅動的跨領域 synthesis、導引式選股、已 instrument 的預測追蹤層。台灣 AI Product Manager Charles Chen 的 generative AI 案例研究。',
     problem: [
-      '對主動操作的台股實務工作者來說，每日研究工作流是一個會持續累積的時間成本：月營收的 YoY/MoM 正規化、季報基本面（EPS、毛利率、ROE）、法人買賣超、K 線上的技術結構。每一個輸入單獨來看都不難處理，瓶頸在於 synthesis。當 watchlist 上有 30–50 檔，分析工作量就會直接超過任何「不是全職坐在交易桌前」的實務工作者所能負擔的時間預算。',
-      '目前消費端的工具回應這個問題的方式是不對稱的。看盤 App 把原始資料攤在你面前但不負責解讀；投顧型產品提供解讀但把使用者當被動接收方。中間這條使用脈絡——具備領域素養、要能自己稽核 AI 輸出、想用 AI 加速 synthesis 並隨時間建立信任——兩者都沒服務到。',
+      '對主動操作的台股實務工作者來說，每日研究工作流是一個會持續累積的時間成本：月營收的 YoY/MoM 正規化、季報基本面（EPS、毛利率、ROE）、法人買賣超、K 線上的技術結構。每一個輸入單獨來看都不難處理，瓶頸在於 synthesis。當 watchlist 上有 30–50 檔，分析工作量就會直接超過任何沒有全職坐在交易桌前的實務工作者所能負擔的時間預算。',
+      '目前消費端的工具回應這個問題的方式是不對稱的。看盤 App 把原始資料攤在你面前但不負責解讀；投顧型產品提供解讀但把使用者當被動接收方。中間這條使用脈絡（具備領域素養、要能自己稽核 AI 輸出、想用 AI 加速 synthesis 並隨時間建立信任）兩端都沒服務到。',
     ],
     solution: [
-      '把 Plutus Trade 定位成單一使用者的決策支援工具，而不是消費型產品。Gemini 2.5 Flash 對 watchlist 上每一檔做跨領域的 synthesis：月營收（YoY/MoM/累計）、季報基本面（EPS、毛利率、ROE、股利政策）、法人籌碼、技術指標，回傳一段帶明確推論的 BUY/SELL/HOLD 診斷。輸出框架是「分析」而非「建議」，最終決策權保留在使用者。',
-      '導引式選股流程把質性的投資條件翻譯成一份 AI 可執行的 contract。3 步驟的投資人 profile（風險偏好、持有區間、產業偏好）參數化選股 prompt，回傳精選短名單與每一支的選股理由。這把工作流中歷史上最耗時的探索階段，收斂成一次互動。',
-      '已 instrument 的預測層在每一個 AI 推薦之上 log 該次的 entry context，到期 settle，產出一份結構化的決策品質紀錄（實際 ROI、勝率、決策品質矩陣）。意圖是建立長期透明度：使用者可以在不同市場 regime 與策略類型下回頭稽核系統的歷史表現，而不是孤立地相信單次輸出。',
+      '把 Plutus Trade 定位成單一使用者的決策支援工具。Gemini 2.5 Flash 對 watchlist 上每一檔做跨領域的 synthesis：月營收（YoY/MoM/累計）、季報基本面（EPS、毛利率、ROE、股利政策）、法人籌碼、技術指標，回傳一段帶明確推論的 BUY/SELL/HOLD 診斷。輸出嚴格 framed 為「分析」並附上免責聲明，最終決策權保留在使用者。',
+      '導引式選股流程把質性的投資條件翻譯成一份 AI 可執行的 contract。3 步驟的投資人 profile（風險偏好、持有區間、產業偏好）參數化選股 prompt，回傳精選短名單與每一支的選股理由。工作流中歷史上最耗時的探索階段，因此收斂成一次互動。',
+      '已 instrument 的預測層在每一個 AI 推薦之上 log 該次的 entry context，到期 settle，產出一份結構化的決策品質紀錄（實際 ROI、勝率、決策品質矩陣）。意圖是建立長期透明度：使用者可以在不同市場 regime 與策略類型下回頭稽核系統的歷史表現，把任何單次輸出當作長期紀錄裡的一個資料點來檢視。',
     ],
     techStack: [
       { category: 'Frontend', items: 'Flutter 3.41+（Web 部署在 Vercel）、Riverpod、go_router、fl_chart、Dio' },
@@ -130,15 +130,15 @@ export const projectDetails: ProjectDetail[] = [
     ],
     impact: [
       '單一使用者的決策支援表面，覆蓋 8 個整合模組：市場數據中心、自選股與投資組合管理、AI 個股診斷、導引式選股、預測追蹤、財報基本面分析、智慧通知、盤後日報',
-      '已 instrument 的預測層：每一次 AI 呼叫都帶 entry context 寫入 log、到期 settle（ROI、勝率、決策品質矩陣），讓系統 auditable 而非 opaque',
+      '已 instrument 的預測層：每一次 AI 呼叫都帶 entry context 寫入 log、到期 settle（ROI、勝率、決策品質矩陣），讓系統做到完整 auditable',
       '三層資料源韌性：FinMind → Yahoo Finance → TWSE/TPEX OpenAPI fallback 鏈，搭配 7 天 stale-cache 安全網，在上游服務退化時仍維持分析能力',
       '盤勢感知的快取策略：盤中 5 分鐘 TTL，收盤後快取持有至下一個開盤，週末快取直接滾到下週一開盤',
     ],
     learnings: [
-      'LLM 輸出品質主要是 prompt contract 設計問題，不是模型選擇問題。以 JSON schema 限制輸出格式 + few-shot anchors 的結構化 prompt，把 Gemini 幻覺率比 free-form 降低約 60%。多數「是不是要換更強的模型」的討論其實上游就能收掉：先把 prompt contract 收緊，多半就不需要 model swap。',
-      '在金融類 AI 產品，「分析」與「建議」的界線必須在產品層強制。模型有求必應；產品的工作是把它重新框架成附帶免責聲明的分析。這是設計決策，不是內容審查問題。',
-      '把 audience 鎖在「一個人」是刻意的產品 constraint，不是退讓。Scope 收斂成單一具備領域素養的使用者後，消費型產品繼承來的權衡矩陣（合理預設、新手 onboarding、針對不熟悉者的容錯）整批消除，把設計表面釋放出來，全力為分析深度做最佳化。Constraint 本身就是產品策略。',
-      '對決策支援工具來說，資料源可靠度是第一順位的產品考量，不是後端實作細節。多層 fallback + stale-cache 安全網才是「上游服務退化時，工具還能用」的保證。在這個產品類別裡，退化等同核心價值主張的 outage。',
+      'LLM 輸出品質主要是 prompt contract 設計問題。以 JSON schema 限制輸出格式 + few-shot anchors 的結構化 prompt，把 Gemini 幻覺率比 free-form 降低約 60%。多數「需要換更強模型」的討論其實上游就能收掉：先把 prompt contract 收緊，多半 model swap 的需求就消失。',
+      '在金融類 AI 產品，「分析」與「建議」的界線必須在產品層強制。模型有求必應；產品的工作是把它重新框架成附帶免責聲明的分析。這是住在產品層的設計決策，內容審查只是下游配套。',
+      '把 audience 鎖在「一個人」是刻意的產品 constraint，本身就構成產品策略。Scope 收斂成單一具備領域素養的使用者後，消費型產品繼承來的權衡矩陣（合理預設、新手 onboarding、針對不熟悉者的容錯）整批消除，把設計表面釋放出來，全力為分析深度做最佳化。',
+      '對決策支援工具來說，資料源可靠度是第一順位的產品考量。多層 fallback + stale-cache 安全網是「上游服務退化時，工具還能用」的保證；在這個產品類別裡，退化等同核心價值主張的 outage。',
     ],
     links: [
       { label: 'Try Plutus Trade', url: 'https://plutustrade.vercel.app/' },
@@ -157,7 +157,7 @@ export const projectDetails: ProjectDetail[] = [
     ],
     solution: [
       '打造一個跨 Claude.ai Custom Skill、Claude Code Plugin、Claude Code Skill 三種發佈管道的 AI agent，將多個產品框架編排成一條 spec 產生 pipeline。使用者用一句話描述產品想法、選擇執行模式，agent 產出一份完整 spec 文件。',
-      '關鍵架構決策是把 22 個成熟的產品框架（JTBD、Positioning、PR-FAQ、Pre-mortem、OST、RICE、PRD 等）當作結構化 prompt，而不是 free-form 生成。每一個框架把 AI 的輸出限制在資深 PM 真實會用的思考模式上，貫穿 Discovery、Define、Develop、Deliver 四個階段。',
+      '關鍵架構決策是把 22 個成熟的產品框架（JTBD、Positioning、PR-FAQ、Pre-mortem、OST、RICE、PRD 等）當作結構化 prompt 來使用。每一個框架把 AI 的輸出限制在資深 PM 真實會用的思考模式上，貫穿 Discovery、Define、Develop、Deliver 四個階段。Free-form 生成就是這個做法所取代的對象。',
       '設計 6 種執行模式（Quick、Full、Revision、Custom、Build、Feature Expansion），讓 PM 能依產品階段挑工具的深度。功能實驗不需要 50 頁 spec，但新產品上線確實需要完整 dev handoff。',
       '建出 change propagation engine，當上游決策改動時自動更新下游文件；再加上三層 PDF 解析（pymupdf 純文字 → Claude Vision 語意 → Tesseract OCR fallback），讓使用者可以直接上傳既有的 PDF/DOCX/PPTX 研究資料。',
       '自動 dev handoff 產出 CLAUDE.md、TASKS.md、TICKETS.md，把產品需求轉成帶驗收條件的技術任務，縮短 PM → 工程師 的溝通落差。',
@@ -180,9 +180,9 @@ export const projectDetails: ProjectDetail[] = [
       '多通路發佈（Claude.ai、Claude Code Plugin、Claude Code Skill），直接在使用者既有工作流裡相遇',
     ],
     learnings: [
-      'LLM orchestration 是產品設計問題，不只是工程問題。框架的執行順序很重要：Persona 在 JTBD 之前跑，輸出會更好，因為使用者脈絡會引導 job 的識別。花了不少時間優化 pipeline 順序。',
-      'Skill-based 發佈（Claude Code 生態系）是非常強的通路。使用者在自己既有的工作流裡發現工具，不需要為了它去採用新平台。',
-      '身為 AI Product Manager 打造 AI agent，最大的洞察是：產品價值不在 AI，而在框架。AI 是交付機制，但 22 個產品框架才是真正的智慧財產。任何人都能呼叫 LLM API，差異在於知道要問它什麼。',
+      'LLM orchestration 在本質上是產品設計問題，工程實作住在它下游。框架的執行順序很重要：Persona 在 JTBD 之前跑，輸出會更好，因為使用者脈絡會引導 job 的識別。花了不少時間優化 pipeline 順序。',
+      'Skill-based 發佈（Claude Code 生態系）是非常強的通路。使用者在自己既有的工作流裡直接接觸工具，無需採用任何新平台。',
+      '身為 AI Product Manager 打造 AI agent，最大的洞察是：產品價值住在框架那一層。AI 只是交付機制，22 個產品框架才是真正的智慧財產。任何人都能呼叫 LLM API，差異在於知道要問它什麼。',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },

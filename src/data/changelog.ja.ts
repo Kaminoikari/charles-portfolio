@@ -31,11 +31,11 @@ export const changelog: ChangelogEntry[] = [
     title: 'Plutus Trade — 意思決定支援ツールとしてケーススタディを書き直し',
     tags: ['design'],
     body: [
-      'シニア PM の視点で Plutus Trade のケーススタディを書き直しました。旧版には 2 つの問題がありました。一つは「機関投資家レベルの分析を個人投資家に届ける」消費者向け SaaS としてポジショニングしていたことで、現在稼働しているプロダクトはこの market frame に対応していません。もう一つはコピーが個人的・逸話的なトーンに寄っており、ケーススタディとして recruiter や同業のプロダクト実務者が期待する分析的フレーミングになっていなかったことです。',
-      '新しい problem statement はユーザー現実をプロダクト用語で再定義します：毎日の台湾株リサーチは synthesis bottleneck であり、data availability bottleneck ではありません。月次売上の正規化、四半期ファンダメンタルズ、機関投資家フロー、K 線テクニカルは個別には対応可能ですが、30–50 銘柄の watchlist 全体ではコストが累積します。市販の消費者向けツールはこの構造に非対称に応答しており、チャート系 App は生データを表示するが解釈はせず、アドバイザリ型プロダクトは解釈を提供するがユーザーを受動的に扱います。Plutus Trade はその間隙に位置する——AI による synthesis を求めつつ、上書きと監査が可能な領域知識を持つ実務型ユーザーを対象にします。',
-      'Solution セクションは機能の羅列ではなく、3 つの荷重を支えるプロダクト判断として再構成しました：（1）クロスドメインの AI synthesis、出力は advice ではなく analysis として明確に framing；（2）guided screening flow、投資家の定性的条件を AI が実行可能な contract に翻訳する仕組み；（3）instrumented prediction layer、すべての推奨は entry context 付きで log され、地平で settle、システムをブラックボックスではなく監査可能な状態にする。',
-      'Tech stack は稼働中の repo に合わせて書き直し、過去の誤記を訂正：Flutter Web を Vercel にデプロイ（iOS ではない）、FastAPI を Fly.io nrt region にデプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID 経由。実際の機能面も同期して追加しました（8 モジュール：データセンター、自選株／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
-      'Learnings 段は 4 つの PM-voice テイクアウェイとして書き直し、上記の荷重設計判断に対応させました：モデル選定の前に prompt contract 設計こそが第一のレバーであること、金融系 AI ではプロダクト層で analysis-vs-advice の境界を強制すべきこと、audience-of-one は意図的な constraint として設計面を解放し、転換率ではなく分析深度に最適化を許すこと、データソースの信頼性はあらゆる意思決定支援ツールにとって first-class のプロダクト課題であること——このレイヤーの劣化は機能的には中核価値の outage に等しいためです。',
+      'シニア PM の視点で Plutus Trade のケーススタディを書き直しました。旧版には 2 つの問題がありました。一つは「機関投資家レベルの分析を個人投資家に届ける」消費者向け SaaS としてのポジショニングで、現在稼働しているプロダクトはこの market frame に対応していません。もう一つはコピーが個人的・逸話的なトーンに寄っており、ケーススタディとして recruiter や同業のプロダクト実務者が期待する分析的フレーミングと距離がありました。',
+      '新しい problem statement はユーザー現実をプロダクト用語で再定義します：毎日の台湾株リサーチは synthesis のレイヤーで詰まっています。月次売上の正規化、四半期ファンダメンタルズ、機関投資家フロー、K 線テクニカルは個別には対応可能ですが、30–50 銘柄の watchlist 全体ではコストが累積します。市販の消費者向けツールはこの構造に非対称に応答しており、チャート系 App は生データを表示するが解釈はせず、アドバイザリ型プロダクトは解釈を提供するがユーザーを受動的に扱います。Plutus Trade はその間隙に位置し、AI による synthesis を求めつつ、上書きと監査が可能な領域知識を持つ実務型ユーザーを対象にします。',
+      'Solution セクションは 3 つの荷重を支えるプロダクト判断として再構成し、先行版の機能羅列を置き換えました：（1）クロスドメインの AI synthesis、出力は免責事項つきで厳密に analysis として framing；（2）guided screening flow、投資家の定性的条件を AI が実行可能な contract に翻訳する仕組み；（3）instrumented prediction layer、すべての推奨は entry context 付きで log され、地平で settle、システムを完全に監査可能な状態にする。',
+      'Tech stack は稼働中の repo に合わせて書き直し、過去の誤記を訂正：Flutter Web を Vercel にデプロイ（旧版では iOS と記載）、FastAPI を Fly.io nrt region にデプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID 経由。実際の機能面も同期して追加しました（8 モジュール：データセンター、自選株／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
+      'Learnings 段は 4 つの PM-voice テイクアウェイとして書き直し、上記の荷重設計判断に対応させました：モデル選定の前に prompt contract 設計こそが第一のレバーであること、金融系 AI ではプロダクト層で分析と助言の境界を強制すべきこと、audience-of-one は意図的な constraint としてそれ自体がプロダクト戦略を構成し、設計面を解放して分析深度に最適化を振り切れること、データソースの信頼性はあらゆる意思決定支援ツールにとって first-class のプロダクト課題であること。このレイヤーの劣化は機能的には中核価値の outage に等しいためです。',
     ],
   },
   {
@@ -44,7 +44,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Path — PWA とオフラインファーストを軸にケーススタディを書き直し',
     tags: ['design'],
     body: [
-      'Path のケーススタディを書き直しました。元の文案がプロダクトを誤った競合空間に置いていたためです。以前のナラティブは Booking.com、Agoda、TripAdvisor（予約プラットフォームと SNS 系旅行 App）を競合に据えていましたが、Path はそのどちらでもありません。実際の参照点は Wanderlog、Tripit、去趣 のような旅程プランニングツールであり、競争はディールやレビューではなく「海外で通信が落ちても旅程はまだ動くか」にあります。',
+      'Path のケーススタディを書き直しました。元の文案がプロダクトを誤った競合空間に置いていたためです。以前のナラティブは Booking.com、Agoda、TripAdvisor（予約プラットフォームと SNS 系旅行 App）を競合に据えていましたが、Path はそのどちらにも属しません。実際の参照点は Wanderlog、Tripit、去趣 のような旅程プランニングツールで、競争の軸は「海外で通信が落ちても旅程はまだ動くか」に置かれます（ディールやレビューはこのカテゴリでは脇の論点です）。',
       '3 つの locale（en、zh-TW、ja）すべてを書き直し、Path GitHub repo と ARCHITECTURE.md に記載されている内容のみを使いました（機能の創作はなし）。新しい構成は 2 つの荷重を支えるプロダクト判断を主軸に：（1）PWA は「ネットがなくても動く web app をどう作るか」への構成上の答えで、iOS / Android のホーム画面にインストール可能、Service Worker で完全オフライン、app store ゲートなし、native build なし；（2）cache-first + background sync をデータ戦略に採用：IndexedDB の読み取りで即時 render、Supabase へのバックグラウンド同期で最新データ、楽観的書き込みと sync queue がオフライン編集を取りこぼさず接続復帰時にリプレイ。',
       'Tech stack セクションを Path が実際に出荷している内容に更新：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、server state には TanStack Query、ドラッグ＆ドロップは @dnd-kit、IndexedDB は idb 経由、Service Worker、Supabase は Google OAuth と Row Level Security 付き、クライアント schema は Zod、Postgres CHECK 制約、テストは Vitest。ライブデモの隣に GitHub リンクを追加し、ケーススタディの読者が実装を自分で検証できるように。',
       'ホームページのカードもタイトルを更新：説明は「Cache-first + background sync で、海外でネットが落ちても、旅程・経路・コストにそのまま手が届きます」を先に出し、タグは React / TypeScript / Supabase から PWA / React / IndexedDB に切り替え、プロジェクト一覧の段階でオフラインの面を表に出しました。',
@@ -69,7 +69,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['design', 'technical'],
     body: [
       'モバイルで easter-egg ポートレートに悪影響を与えていた 2 つの問題を修正。1 つ目、hero text、「click the logo 5 times」hint、SCROLL インジケーターが photo phase 中も完全な不透明度で残り、ポートレートが小さい viewport に収束した時点で重なっていました。各 overlay に専用の ref を持たせ、egg phase machine に連動した render-loop 内のフェードで egg t=1.25s から t=1.55s（shader の photoHide に合わせる）にかけて消し、ポートレート全体の間は隠したまま、reverse phase 開始の 0.15s でフェードイン。ポートレートはどの画面サイズでもクリーンなステージに着地します。',
-      '2 つ目、ポートレートの sampler は edge-only でした：ソース PNG への 4 方向 Laplacian でシルエット、目、眉、口の輪郭線だけを残していました。モバイルではこれが顔ではなく hollow wireframe に見えていました（頬、額、首の領域が空だったため）。スパースな内部塗りを追加：写真領域内 5 ピクセルごとに低 weight（6）で particle pool に入れ、ソート後に最も暗いパーティクルを得る一方、強いエッジは引き続き最も明るいものを獲得します。顔は小さい表示サイズでは肉付きのあるポートレートとして読まれ、デスクトップサイズではシルエットを定義していたクリーンな線画も失われません。',
+      '2 つ目、ポートレートの sampler は edge-only でした：ソース PNG への 4 方向 Laplacian でシルエット、目、眉、口の輪郭線だけを残していました。モバイルでは内側が空の hollow wireframe に見え、顔として読めませんでした（頬、額、首の領域が空だったため）。スパースな内部塗りを追加：写真領域内 5 ピクセルごとに低 weight（6）で particle pool に入れ、ソート後に最も暗いパーティクルを得る一方、強いエッジは引き続き最も明るいものを獲得します。顔は小さい表示サイズでは肉付きのあるポートレートとして読まれ、デスクトップサイズではシルエットを定義していたクリーンな線画も失われません。',
     ],
   },
   {
@@ -102,9 +102,9 @@ export const changelog: ChangelogEntry[] = [
     title: 'Hero — 宇宙塵パーティクルポートレート & Easter Egg 仕上げ',
     tags: ['feature', 'design', 'technical'],
     body: [
-      'Easter-egg ポートレート phase を作り直し、写真を構成するパーティクルを実心の数珠ではなく宇宙塵に見えるようにしました。各パーティクルは事前 render された radial-gradient sprite（汎用の暖白コアと、5 段階の輝度グラデーションでティントされた halo）として描画され、additive blending で合成されます。隣り合う halo は連続した発光ファブリックに重なり、個別のドットとしてはスタックしません。約 3 分の 1 のパーティクルは短い接線ストリークも描き、ポートレートに向かう途上で orbital ring からちょうど抜け出してきたばかりであることを匂わせます。',
+      'Easter-egg ポートレート phase を作り直し、写真を構成するパーティクルが宇宙塵のように見える描画に切り替えました（旧版は実心の数珠のような見え方）。各パーティクルは事前 render された radial-gradient sprite（汎用の暖白コアと、5 段階の輝度グラデーションでティントされた halo）として描画され、additive blending で合成されます。隣り合う halo は連続した発光ファブリックに重なり、個別のドットとしてはスタックしません。約 3 分の 1 のパーティクルは短い接線ストリークも描き、ポートレートに向かう途上で orbital ring からちょうど抜け出してきたばかりであることを匂わせます。',
       '写真のパレットを shader の lens-halo スペクトルに合わせて調整：brightness 0 を炎のような赤橙（暖かいガスフィラメント）、brightness 1 をクリームホワイト（lens の三日月コア）、温色側の反対の冷側ガスに合わせて 12% のシアンアクセントを加えます。ポートレート本来の chiaroscuro は温度勾配として読まれ（明るいピクセルは熱せられた lensed light、暗いピクセルは冷却中の accretion debris のように見え）、宇宙の背景とポートレートが視覚的に同じ color DNA を共有します。',
-      'Easter egg 中に shader 側で実際の重力崩壊を加えました。Shader は `u_eggCollapse` で駆動される radial zoom と引き締まる vortex を適用し、collapse phase で lens は単に暗くなるのではなく、視覚的に implode します。reverse phase ではパーティクルが orbital ring に戻って分散する間、より小さな二次崩壊が再生されます。新しい `u_photoHide` uniform は photo phase 全体で shader を 0 にフェードします（explode の最後 0.35s で立ち上げ、収束しているポートレートの背後で lens がフラッシュしないようにし、ポートレート全体は 0 を保ち、reverse collapse で再び下げる）。',
+      'Easter egg 中に shader 側で実際の重力崩壊を加えました。Shader は `u_eggCollapse` で駆動される radial zoom と引き締まる vortex を適用し、collapse phase で lens は視覚的に implode します（旧版では単に暗くなるだけでした）。reverse phase ではパーティクルが orbital ring に戻って分散する間、より小さな二次崩壊が再生されます。新しい `u_photoHide` uniform は photo phase 全体で shader を 0 にフェードします（explode の最後 0.35s で立ち上げ、収束しているポートレートの背後で lens がフラッシュしないようにし、ポートレート全体は 0 を保ち、reverse collapse で再び下げる）。',
       'Reverse phase をクリーンな線形分散に戻しました：パーティクルは `easeOutQuart` でまっすぐ orbital ring に戻り、回転はしません。以前の CW スパイラル版では、写真が「回転しながら」溶けていくように読まれて不自然でした。重力的な雰囲気は今や shader の二次崩壊にすべて宿っており、パーティクルは単に分散して再形成されます。',
       '3000 個のパーティクルリングを 60 fps で動かすためのパフォーマンス対策：canvas DPR の上限を 1.5 に（Retina ディスプレイでピクセル作業をおおよそ半分に削減、画質の劣化は知覚できないレベル）、idle-orbit trail の stroke style を per-frame ループの外に hoist（フレームごとに数千の冗長な state 切替を節約）、trail render の閾値を上げて、暗い／遅い外角のパーティクルは stroke を完全にスキップ。Photo-phase の shadowBlur を事前 render の glow sprite に置き換え、約 3-4 倍安く、halo もよりクリーンに。hero コピーをぐらつかせていた mousemove 駆動の text-repulsion 効果も削除しました。',
     ],
@@ -116,10 +116,10 @@ export const changelog: ChangelogEntry[] = [
     tags: ['feature', 'design', 'technical'],
     body: [
       'Hero パーティクルの背後に WebGL fragment shader を追加し、ブラックホール風の accretion disk を render：中央に明るい lensing 三日月、周囲を柔らかいガスフィラメントが流れます。Shader は既存のパーティクルリングの下、自前の canvas に乗っているので、hero は階層構成として読まれます（前景に光る event horizon、その背後にアニメーションするガス、最上層に orbiting パーティクル）、平坦な単一のパーティクルフィールドではありません。',
-      '以前の波形変調・固定角度のパーティクルモデルを、msurguy の blackhole リファレンスに着想を得た Kepler 風の orbital システムに置き換えました。各パーティクルは中心の周りを実際に回転し、半径依存の角速度を持ちます（内側軌道は速く、外側コーナーはゆっくり drift）。静的な装飾リングではなく、差動回転として読まれます。パーティクル数は狭いバンド内の 800 個から、viewport 対角線全体に広がる 3000 個になり、ワイドスクリーンディスプレイのコーナーが空っぽに見えなくなりました。',
-      'クリックとタップの相互作用は spring-damper の物理モデルを採用：ヒットは近くのパーティクルを初期 radial velocity で外側に押し、重力が base orbit を通って引き戻し、欠減衰の振動でそれらを行き過ぎさせて自然に落ち着かせます。硬い線形の repel-and-snap ではありません。Shader 自体はクリックに反応せず、パーティクルリングだけが反応します。ガスの背景をニュートラルに保つことで、クリックフィードバックがグローバルな「画面が揺れる」反応ではなく、軌道への物理的な摂動として感じられます。',
+      '以前の波形変調・固定角度のパーティクルモデルを、msurguy の blackhole リファレンスに着想を得た Kepler 風の orbital システムに置き換えました。各パーティクルは中心の周りを実際に回転し、半径依存の角速度を持ちます（内側軌道は速く、外側コーナーはゆっくり drift）。差動回転として読まれます（旧版の見え方は静的な装飾リングでした）。パーティクル数は狭いバンド内の 800 個から、viewport 対角線全体に広がる 3000 個になり、ワイドスクリーンディスプレイのコーナーが空っぽに見えなくなりました。',
+      'クリックとタップの相互作用は spring-damper の物理モデルを採用：ヒットは近くのパーティクルを初期 radial velocity で外側に押し、重力が base orbit を通って引き戻し、欠減衰の振動でそれらを行き過ぎさせて自然に落ち着かせます。旧版の挙動は硬い線形の repel-and-snap でした。Shader 自体はクリックに反応せず、パーティクルリングだけが反応します。ガスの背景をニュートラルに保つことで、クリックフィードバックは軌道への物理的な摂動として感じられ、全画面の「画面が揺れる」反応はこのバージョンで取り除いています。',
       'Konami easter egg は shader とパーティクルリングの同期化された big-bang シーケンスとして再構築。すべてのパーティクルがシンギュラリティに向かって崩壊、中心でフラッシュが弾け、衝撃波が外向きに波及、パーティクルが Charles の写真に爆発、しばし保持、リングに溶け戻り、shader は黒抜けから通常のガスにフェード。両コンポーネントは共有の `easter-egg` window event を聞き、phase 境界（collapse 0.8s → flash 1.0s → explode 1.6s → photo 3.5s → reverse 5.0s）が同期したまま保たれます。',
-      '途中で行ったいくつかの小さな修正：shader の分母特異点（中心の bright spot、lens を貫く対角スライス）を epsilon 安定化形式に置き換え；ガス回転は線形巻き取りではなく指数的に飽和する drift を使うようにし、noise パターンが時間とともに長い sweep arc を蓄積しなくなりました；hero テキストには階層化された黒の text-shadow と支援コピーのわずかに高い不透明度を与え、明るい lens 三日月が通り抜けても読みやすさを保ちます。',
+      '途中で行ったいくつかの小さな修正：shader の分母特異点（中心の bright spot、lens を貫く対角スライス）を epsilon 安定化形式に置き換え；ガス回転は指数的に飽和する drift を使うようにし（旧来の線形巻き取りに替えて）、noise パターンが時間とともに長い sweep arc を蓄積しなくなりました；hero テキストには階層化された黒の text-shadow と支援コピーのわずかに高い不透明度を与え、明るい lens 三日月が通り抜けても読みやすさを保ちます。',
     ],
   },
   {
@@ -138,7 +138,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Ambient Audio — デフォルトでミュート起動',
     tags: ['design'],
     body: [
-      'Ambient サウンドトラックの起動方法を反転しました。最初のバージョンはデフォルトで unmuted で、最初のクリックやスクロールを待ってフェードインを忍ばせることでブラウザの autoplay block をすり抜けようとしていました。賢いが正直ではない：コーナーのスピーカーアイコンは終始「sound on」を表示する一方、ブラウザは静かに再生をブロックしていました。訪問者は遅延が意図的であるとは知りようがなく、クリックもスクロールもしなかった人は永遠に嘘をつくアイコンを見ることになります。',
+      'Ambient サウンドトラックの起動方法を反転しました。最初のバージョンはデフォルトで unmuted で、最初のクリックやスクロールを待ってフェードインを忍ばせることでブラウザの autoplay block をすり抜けようとしていました。賢い裏技でしたが、正直さに欠ける挙動でした：コーナーのスピーカーアイコンは終始「sound on」を表示する一方、ブラウザは静かに再生をブロックしていました。訪問者は遅延が意図的であるとは知りようがなく、クリックもスクロールもしなかった人は永遠に嘘をつくアイコンを見ることになります。',
       '今ではアイコンは muted 状態で起動し、ブラウザが実際に行っていることと一致します。音楽は訪問者が明示的にスピーカーをクリックしたときだけ始まります。クリック自体が autoplay を解除する user gesture としてカウントされ、1 つのアクションが許可を付与し、フェードインを開始します。別の「enable audio」ステップも、現実と矛盾するアイコンもありません。',
       'localStorage のセマンティクスも引き締めました。ボタンはどちらにせよ訪問者の最後の選択を覚えていますが、デフォルト状態（保存値がない、または保存値が何らかの形で破損している場合）は muted です。前回積極的に unmute した再訪者は再び音楽を聞き、それ以外の人は要求するまで沈黙が続きます。サウンドを opt-in として扱う：portfolio にとって正しいデフォルトです。',
     ],
@@ -149,8 +149,8 @@ export const changelog: ChangelogEntry[] = [
     title: 'Ambient Space Audio — Interstellar 風の音響景観',
     tags: ['feature', 'design'],
     body: [
-      '訪問者がサイトを探索する間、背景で静かに流れる映画的な ambient サウンドトラックを追加しました。リファレンスは Hans Zimmer の Interstellar スコア：リズム要素のないゆっくりと動く pad と sub bass で、注意を要求するのではなく体験の下に座ります。Pixabay の CC0「Calm Space Music」トラックをライセンスしました。',
-      'ブラウザの autoplay policy は、ユーザーインタラクションなしで音のあるオーディオを開始することをブロックします。Chrome と Safari はこれに何年も厳格で、それは正当な理由があります。それと戦うのではなく、player は最初の pointer/keyboard/scroll/touch event を待ち、その後 1.8 秒かけて音量を 0 から 0.35 にフェードします。トランジションは十分に遅く、オーディオは最初からそこにあったかのように感じられます。',
+      '訪問者がサイトを探索する間、背景で静かに流れる映画的な ambient サウンドトラックを追加しました。リファレンスは Hans Zimmer の Interstellar スコア：リズム要素のないゆっくりと動く pad と sub bass で、注意を要求せず体験の下に静かに座ります。Pixabay の CC0「Calm Space Music」トラックをライセンスしました。',
+      'ブラウザの autoplay policy は、ユーザーインタラクションなしで音のあるオーディオを開始することをブロックします。Chrome と Safari はこれに何年も厳格で、それは正当な理由があります。policy と戦う代わりに、player は最初の pointer/keyboard/scroll/touch event を待ち、その後 1.8 秒かけて音量を 0 から 0.35 にフェードします。トランジションは十分に遅く、オーディオは最初からそこにあったかのように感じられます。',
       '右下隅に固定された小さな glassmorphic ミュートボタン。クリックで 0.6 秒かけてオーディオをフェードアウトしてから一時停止し、設定を localStorage に保存：ミュートした訪問者は再訪時もミュートのままです。ボタン自体はモバイルの届きやすさを考慮した 44×44 のヒットエリアを使い、hover 時には accent-cyan カラーでサイトの既存の focus ring 処理に揃えています。',
       'オーディオ element は main.tsx の router の上に一度だけ配置され、/、/about、/changelog、/projects/:id 間のナビゲーションでも再生が中断されません。再初期化なし、ルート間の隙間なし。',
     ],
@@ -218,7 +218,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['feature', 'technical'],
     body: [
       '/projects/path、/projects/plutus-trade、/projects/product-playbook に専用のケーススタディページを追加しました。各ページには構造化されたセクションがあります（Problem、Solution、Tech Stack、Impact、Learnings）。適切な meta タイトル、ディスクリプション、動的な canonical URL とともに。',
-      'ホームページのプロジェクトカードは外部 URL ではなくこれらのケーススタディページにリンクするようになりました。これは SEO のための内部 topic cluster を作成します：ホームページがケーススタディにリンクし、ケーススタディがリンクバックし、各ページが異なる long-tail キーワードをターゲットにします。',
+      'ホームページのプロジェクトカードはこれらのケーススタディページにリンクするようになりました（旧版では外部 URL に直接飛んでいました）。これは SEO のための内部 topic cluster を作成します：ホームページがケーススタディにリンクし、ケーススタディがリンクバックし、各ページが異なる long-tail キーワードをターゲットにします。',
       'また、完全な職歴、プロダクト哲学（outcomes over outputs、strong opinions loosely held、strong product sense、build to learn）、AI ワークフローの内訳、スキルセット、台湾の検索トラフィック向けの lang="zh-TW" 付きの中国語簡介セクションを備えた専用の /about ページも追加しました。',
       'すべての新しいページは動的な canonical URL と構造化された meta タグを使用します。Google Search Console がサブページを「Alternate page with proper canonical tag」としてフラグした問題を修正しました：以前はすべてがハードコードされた root canonical を共有していました。',
     ],
@@ -253,10 +253,10 @@ export const changelog: ChangelogEntry[] = [
     title: 'Changelog — Building in Public',
     tags: ['feature', 'design'],
     body: [
-      'この portfolio のすべての部分の背後にある設計判断、技術的反復、考えを記録するための専用 /changelog ページを追加しました。Linear の changelog からの着想：bullet-point の changelog ではなく、寛大な余白と自然な散文を備えたクリーンな単一カラムレイアウト。',
+      'この portfolio のすべての部分の背後にある設計判断、技術的反復、考えを記録するための専用 /changelog ページを追加しました。Linear の changelog からの着想：寛大な余白と自然な散文を備えたクリーンな単一カラムレイアウト（bullet-point の changelog 形式を置き換える形）。',
       'これには、以前は単一ページのスクロールアプリだったものに React Router を導入する必要がありました。ホームページは以前と同じように動作します：すべてのセクションが同じナビ動作で垂直にスクロールします。Changelog は独自の URL に存在し、Vercel デプロイのための適切な SPA フォールバックを備えています。',
       'Nav コンポーネントは route-aware になりました：ホームページではセクションボタンが以前のようにスクロール。Changelog ページではボタンが /#section に navigate し、ページのロード後に自動でスクロール。Changelog のエントリーポイントは footer に存在します：技術的なメタデータと並ぶさりげないリンクで、より深く掘り下げたい訪問者向けです。',
-      '各エントリは release notes ではなく自然な散文として書かれています。目標は決定の背後にある「なぜ」を共有すること：なぜ About セクションが 5 回の背景アニメーション反復を経たのか、なぜ Fibonacci 分布が Universe sphere を解いたのか、なぜカードアニメーションが完全な state machine ライフサイクルを必要としたのか。',
+      '各エントリは自然な散文として書かれています（release notes 形式を置き換える形）。目標は決定の背後にある「なぜ」を共有すること：なぜ About セクションが 5 回の背景アニメーション反復を経たのか、なぜ Fibonacci 分布が Universe sphere を解いたのか、なぜカードアニメーションが完全な state machine ライフサイクルを必要としたのか。',
     ],
   },
   {
@@ -267,7 +267,7 @@ export const changelog: ChangelogEntry[] = [
     body: [
       '3 つのカードアニメーションシステムは単一ファイルで 1,240 行に成長していました。各アニメーション（Path の S 字 bezier ルート、Plutus Trade の K 線 ticker、Product Playbook の spec 組み立て）は独自の定数、state machine、draw 関数を持つ自己完結したシステムでした。それらはたまたま同じファイルに住んでいただけです。',
       'それぞれを専用モジュールに抽出：pathAnimation.ts、plutusAnimation.ts、playbookAnimation.ts、共通ユーティリティ用の shared.ts。ProjectCards.tsx は 1,240 行から 593 行に減少しました。',
-      'またすべてのハードコードされた rgba() 文字列を 2 つのヘルパー関数（whiteA() と marsA()）に集中させ、コードベース全体で 56 箇所を置換しました。アクセントカラーが今後変わる場合、draw 関数を探し回るのではなく、単一の定数更新で済みます。',
+      'またすべてのハードコードされた rgba() 文字列を 2 つのヘルパー関数（whiteA() と marsA()）に集中させ、コードベース全体で 56 箇所を置換しました。アクセントカラーが今後変わる場合は単一の定数更新で完結し、draw 関数を探し回る作業は不要です。',
       'Playbook アニメーションのバッジメトリクス計算は以前モジュールレベルの可変キャッシュでした。コンポーネントスコープの useRef に移動：共有可変状態はもうありません。',
     ],
   },
@@ -279,9 +279,9 @@ export const changelog: ChangelogEntry[] = [
     body: [
       'Claude Code 向けの AI 駆動プロダクト企画 skill である Product Playbook 用に、3 番目のサイドプロジェクトカードを追加しました。アニメーションはコアコンセプトを視覚化する必要がありました：フレームワークが入り、完全な spec が出てくる。',
       'デザインは左に 4 つのフレームワーク badge（JTBD、Persona、RICE、PRD）を表示し、曲線 bezier ラインで右側のドキュメントに繋ぎます。各セクションが埋まるにつれて（Overview、User Stories、Architecture、Dev Handoff）、対応するフレームワーク badge が accent-mars のパルスで点灯します。',
-      'ドキュメント内で、コンテンツ行はタイピングカーソルが約 0.6Hz で点滅しながら段階的に埋まります。完了したセクションは checkmark を取得します。下部の進捗バーは線形成長ではなく easeInOutCubic を使用し、洗練された感じを与えます。',
+      'ドキュメント内で、コンテンツ行はタイピングカーソルが約 0.6Hz で点滅しながら段階的に埋まります。完了したセクションは checkmark を取得します。下部の進捗バーは easeInOutCubic を使用しており、旧来の線形成長より洗練された感触に仕上がります。',
       '入場の振付は第一印象として重要でした：badge は fade + slide-up で時差をつけて入り（120ms 間隔）、続いてドキュメントのアウトラインがフェードイン。これは他の 2 つのカードが当初持っていなかった「reveal」の瞬間をアニメーションに与えます。',
-      '複数の監査サイクルを経て微調整：よりクリーンな 1:1 のセクションマッピングのためにフレームワークを 6 から 4 に削減、平坦な水平線ではなく接続線を曲線にし、分数補間で部分曲線の終点を滑らかにしました。',
+      '複数の監査サイクルを経て微調整：よりクリーンな 1:1 のセクションマッピングのためにフレームワークを 6 から 4 に削減、接続線を平坦な水平線から曲線へ切り替え、分数補間で部分曲線の終点を滑らかにしました。',
     ],
   },
   {
