@@ -32,19 +32,19 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
-      title: 'Outputs より Outcomes。',
+      title: 'Outputs より Outcomes',
       body: '単に feature を出すことが目的ではありません。ユーザー行動を変え、ビジネス指標を動かすことが目的です。「ticket を何枚チェックオフしたか」ではなく「ユーザーが何を変えたか」で成功を測ります。',
     },
     {
-      title: '鋭い product sense。',
+      title: '鋭い product sense',
       body: '最高の判断は、データがまだ存在しない時点で起きることが多いです。どの問題が解く価値があるか、どの解決策が刺さるか、いつ scope を思い切って切るか。その直感は、プロダクトを自ら出し続け、リアルなユーザーの反応を見ることで育ちます。',
     },
     {
-      title: '強い意見、しなやかに手放す (Strong opinions, loosely held)。',
+      title: '強い意見、しなやかに手放す (Strong opinions, loosely held)',
       body: 'Product sense を持つということは、「何を作るか、なぜ作るか」に明確な視点を持つことです。ただし、信念だけで柔軟性のない姿勢は単なる頑固さです。強い仮説を立て、いつでもデータとユーザーフィードバックに自分の間違いを証明させる構えでいます。',
     },
     {
-      title: '作って学ぶ (Build to learn)。',
+      title: '作って学ぶ (Build to learn)',
       body: 'プロトタイプはスライド資料に勝ちます。Claude Code と Codex で実際に動くプロダクトを作り、ステークホルダーの仮定の意見ではなく、本物のユーザーフィードバックを生み出します。',
     },
   ],
