@@ -56,7 +56,6 @@ const zhTW: Strings = {
     sectionAi: '我如何在產品開發中運用 AI',
     sectionCareer: '職涯經歷',
     sectionSkills: '技能組合',
-    sectionChineseBio: '中文簡介',
     sectionProjects: 'PROJECTS',
     projectsCtaText: '看看我打造過的作品：',
     philosophyIntro: '我相信最好的產品經理都是 Builder。「我們該打造什麼」與「這裡有一個可運作的原型」之間的距離，正是大多數產品點子消亡的地方。透過 AI 驅動的開發跨越這道鴻溝後，我能用幾小時、而不是幾週的時間來驗證假設。',

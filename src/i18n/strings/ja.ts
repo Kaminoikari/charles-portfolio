@@ -59,7 +59,6 @@ const ja: Strings = {
     sectionAi: 'プロダクト開発での AI の使い方',
     sectionCareer: 'キャリア',
     sectionSkills: 'スキルセット',
-    sectionChineseBio: '中文簡介',
     sectionProjects: 'PROJECTS',
     projectsCtaText: '私が作ったものを見る：',
     philosophyIntro: '最高のプロダクトマネージャーはみな Builder だと信じています。「何を作るべきか」と「ここに動くプロトタイプがあります」の間にある距離こそ、ほとんどのプロダクトアイデアが死ぬ場所です。AI 駆動の開発でそのギャップを越えれば、仮説検証は数週間ではなく数時間でできます。',

@@ -21,7 +21,7 @@ interface Strings {
     metaTitle: string; metaDescription: string; back: string; heading: string
     subheading: string; photoAlt: string
     sectionWhoIAm: string; sectionPhilosophy: string; sectionAi: string
-    sectionCareer: string; sectionSkills: string; sectionChineseBio: string
+    sectionCareer: string; sectionSkills: string
     sectionProjects: string; projectsCtaText: string
     philosophyIntro: string; aiIntro: string
   }
@@ -92,7 +92,6 @@ const en: Strings = {
     sectionAi: 'How I Use AI in Product Development',
     sectionCareer: 'Career',
     sectionSkills: 'Skill Set',
-    sectionChineseBio: '中文簡介',
     sectionProjects: 'PROJECTS',
     projectsCtaText: "See what I've built:",
     philosophyIntro: 'I believe the best product managers are all Builders. The gap between "what should we build" and "here\'s a working prototype" is where most product ideas die. Once AI-driven development closes that gap, I can validate assumptions in hours, not weeks.',
