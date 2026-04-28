@@ -60,7 +60,7 @@ const zhTW: Strings = {
     sectionProjects: 'PROJECTS',
     projectsCtaText: '看看我打造過的作品：',
     philosophyIntro: '我相信最好的產品經理都是 Builder。「我們該打造什麼」與「這裡有一個可運作的原型」之間的距離，正是大多數產品點子消亡的地方。透過 AI 驅動的開發跨越這道鴻溝後，我能用幾小時、而不是幾週的時間來驗證假設。',
-    aiIntro: 'AI 對我來說不是一個加進產品裡的功能，而是我打造產品的方式。我的 AI 驅動工作流貫穿整個產品生命週期：',
+    aiIntro: 'AI 對我來說不僅是產品中的一項功能，更是我打造產品的核心思維。我的 AI 驅動工作流貫穿了整個產品生命週期，讓創意能以極高的效率轉化為具備商業價值的成果。',
   },
   changelog: {
     metaTitle: '更新日誌 — Charles Chen Portfolio',

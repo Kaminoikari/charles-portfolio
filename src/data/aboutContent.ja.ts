@@ -51,23 +51,23 @@ export const aboutContent: AboutContent = {
   aiTable: [
     {
       label: 'Discovery',
-      body: 'LLM を活用した市場調査、競合分析、ユーザーインタビューの統合',
+      body: 'LLM を活用して、膨大な市場調査、競合分析、インタビュー資料を処理します。断片的な情報を素早く明確な市場インサイトにまとめ、意思決定を支援します。',
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook、22 個のプロダクトフレームワークから spec を生成する、私自身が作った AI agent',
+      body: '私自身が作った AI Agent「Product Playbook」。22 のプロダクトフレームワークを統合した Claude Skills として、状況ごとに論理的で専門性の高いプロダクト仕様書を生成し、従来数日を要した企画プロセスを数時間に短縮します。',
     },
     {
       label: 'Prototyping',
-      body: 'Claude Code と Codex でフルスタックの素早い開発（React、Flutter、Node.js、Python + FastAPI、PHP + Laravel）',
+      body: 'Claude Code と Codex でフルスタックの原型開発を行います。React、Node.js、Python といった技術スタックにわたるプロダクト原型を独力で完成させ、アイデアを数時間で触れるソフトウェアに変換します。',
     },
     {
       label: 'AI Features',
-      body: 'Plutus Trade で Gemini AI を統合し、個別株の診断と予測追跡を提供',
+      body: 'AI を実務に落とし込む経験があります。たとえば Plutus Trade では Gemini Model を深く統合し、複雑なデータを直感的な個別株診断に変換することで、データドリブンな投資判断を実現しています。',
     },
     {
       label: 'Agentic Workflows',
-      body: '複数ステップのタスクを編成する AI agent の構築、spec 生成から dev handoff まで',
+      body: 'タスクを自動で処理できる AI Agent を構築します。仕様作成から開発引き渡しまでの反復作業を AI に任せることで、チーム全体の実行効率を大きく引き上げます。',
     },
   ],
   skillsTable: [

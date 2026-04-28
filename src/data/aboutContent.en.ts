@@ -47,23 +47,23 @@ export const aboutContent: AboutContent = {
   aiTable: [
     {
       label: 'Discovery',
-      body: 'LLM-powered market research, competitive analysis, and user interview synthesis',
+      body: 'I use LLMs to process dense market research, competitive analysis, and interview material, turning fragmented signals into clear market insight that informs decisions.',
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook, my own AI agent that generates specs from 22 product frameworks',
+      body: 'I built my own AI agent, "Product Playbook", a Claude Skills setup integrating 22 product frameworks. It produces rigorous, professional product spec documents tailored to each context, compressing what used to take days of planning into hours.',
     },
     {
       label: 'Prototyping',
-      body: 'Claude Code and Codex for rapid full-stack prototyping and development (React, Flutter, Node.js, Python with FastAPI, PHP with Laravel)',
+      body: 'I use Claude Code and Codex for full-stack prototyping, shipping product prototypes independently across React, Node.js, and Python and turning ideas into tangible software in hours.',
     },
     {
       label: 'AI Features',
-      body: 'Gemini AI integration in Plutus Trade for stock diagnostics and prediction tracking',
+      body: 'I have hands-on experience shipping AI in production. In Plutus Trade I deeply integrated the Gemini Model to turn complex data into intuitive per-stock diagnostics, enabling data-driven investment decisions.',
     },
     {
       label: 'Agentic Workflows',
-      body: 'Building AI agents that orchestrate multi-step tasks, from spec generation to dev handoff',
+      body: "I build AI agents that handle tasks autonomously, delegating repetitive work spanning spec generation through dev handoff to AI and lifting the team's overall execution efficiency.",
     },
   ],
   skillsTable: [

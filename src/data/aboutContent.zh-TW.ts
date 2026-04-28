@@ -52,23 +52,23 @@ export const aboutContent: AboutContent = {
   aiTable: [
     {
       label: 'Discovery',
-      body: '用 LLM 做市場研究、競品分析、使用者訪談的內容彙整',
+      body: '利用 LLM 處理海量的市場研究、競品分析與訪談資料。我能將碎片化的資訊快速整理成清晰的市場洞察，輔助決策。',
     },
     {
       label: 'Spec Writing',
-      body: 'Product Playbook，我自己做的 AI agent，用 22 個產品框架產出完整 spec',
+      body: "我打造了個人專屬 AI Agent 'Product Playbook'。這套 Claude Skills 整合了 22 種產品框架，能針對不同情境產出邏輯嚴密且專業的產品規格文件，將原本需要數天的規劃流程縮短至數小時。",
     },
     {
       label: 'Prototyping',
-      body: '用 Claude Code 與 Codex 快速進行全端原型開發（React、Flutter、Node.js、Python + FastAPI、PHP + Laravel）',
+      body: '運用 Claude Code 與 Codex 進行全端原型開發。我能獨立完成涵蓋 React、Node.js 與 Python 等技術棧的產品原型，讓創意在幾小時內就變換成可觸摸的軟體。',
     },
     {
       label: 'AI Features',
-      body: '在 Plutus Trade 整合 Gemini AI，提供個股診斷與預測追蹤',
+      body: '具備實戰經驗將 AI 落地。例如在 Plutus Trade 深度整合 Gemini Model，將複雜的數據轉化為直覺的個股診斷，實現數據驅動的投資決策。',
     },
     {
       label: 'Agentic Workflows',
-      body: '打造能編排多步驟任務的 AI agent，從 spec 產出到 dev handoff',
+      body: '建立能自動處理任務的 AI Agent。我讓 AI 協助從規格產出到開發交付的重複性工作，大幅提升團隊整體的執行效率。',
     },
   ],
   skillsTable: [

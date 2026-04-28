@@ -96,7 +96,7 @@ const en: Strings = {
     sectionProjects: 'PROJECTS',
     projectsCtaText: "See what I've built:",
     philosophyIntro: 'I believe the best product managers are all Builders. The gap between "what should we build" and "here\'s a working prototype" is where most product ideas die. Once AI-driven development closes that gap, I can validate assumptions in hours, not weeks.',
-    aiIntro: "AI isn't a feature I add to products. It's how I build them. My AI-powered workflow spans the entire product lifecycle:",
+    aiIntro: "AI is more than a feature I add to products. It's core to how I think about building them. My AI-driven workflow spans the entire product lifecycle, turning ideas into commercially valuable outcomes with remarkable efficiency.",
   },
   changelog: {
     metaTitle: 'Changelog — Charles Chen Portfolio',
