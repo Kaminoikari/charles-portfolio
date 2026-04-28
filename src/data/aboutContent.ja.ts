@@ -32,7 +32,7 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
-      title: 'outputs より outcomes。',
+      title: 'Outputs より Outcomes。',
       body: '単に feature を出すことが目的ではありません。ユーザー行動を変え、ビジネス指標を動かすことが目的です。「ticket を何枚チェックオフしたか」ではなく「ユーザーが何を変えたか」で成功を測ります。',
     },
     {

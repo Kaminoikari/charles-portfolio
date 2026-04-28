@@ -28,19 +28,19 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
-      title: 'Outcomes over outputs.',
+      title: 'Outcomes over outputs',
       body: "Shipping features alone isn't the goal. Changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get checked off.",
     },
     {
-      title: 'Sharp product sense.',
+      title: 'Sharp product sense',
       body: 'The best decisions often happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope decisively: that intuition comes from shipping products and watching how real users respond.',
     },
     {
-      title: 'Strong opinions, loosely held.',
+      title: 'Strong opinions, loosely held',
       body: 'Having product sense means holding a clear point of view on what to build and why. But conviction without flexibility is just stubbornness. I form strong hypotheses, then stay ready to let data and user feedback prove me wrong.',
     },
     {
-      title: 'Build to learn.',
+      title: 'Build to learn',
       body: 'Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback, not hypothetical stakeholder opinions.',
     },
   ],
