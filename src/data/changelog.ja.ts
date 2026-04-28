@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-card-pitch-refinement',
+    date: '2026-04-29',
+    title: 'Plutus Trade — トップカード文案をプロダクトピッチに収束',
+    tags: ['design'],
+    body: [
+      'トップページの Plutus Trade カードを「プロダクトピッチ + 機能面」の語りに改訂しました。リアルタイム株価、ローソク足チャート、財務諸表分析、AI 個別株診断、ワンタップ選定、そして AI の精度を継続的に改善するパフォーマンス追跡バックテストシステム。旧版は synthesis の入力を列挙し、BUY/SELL/HOLD という用語を直接書いていましたが、新版はプロダクト機能の語彙に戻しました。',
+      'カードの公開面では「勝率」「ROI」のように規制ラインの近くに来やすい表現を避け、その粒度はケーススタディ詳細ページに残しました。3 つの locale（en、zh-TW、ja）を同時に揃え、コンテンツの drift を防ぎます。',
+    ],
+  },
+  {
     id: 'plutus-trade-case-study-rewrite',
     date: '2026-04-29',
     title: 'Plutus Trade — 意思決定支援ツールとしてケーススタディを書き直し',

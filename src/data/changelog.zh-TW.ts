@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-card-pitch-refinement',
+    date: '2026-04-29',
+    title: 'Plutus Trade — 首頁卡片文案收斂到產品 pitch',
+    tags: ['design'],
+    body: [
+      '把首頁 Plutus Trade 卡片改成「產品 pitch + 功能面」的講法：即時股價、K 線圖、財報分析、AI 個股診斷、一鍵選股，再加上績效追蹤回測系統持續優化 AI 準確率。先前版本把 synthesis 的輸入逐項列出，並直接寫出 BUY/SELL/HOLD 字眼，新版改回到產品功能語彙。',
+      '卡片公開面同步避開「勝率」「ROI」這類在規制紅線旁邊的表述，把這類細節留在 case study 內頁，三個 locale（en、zh-TW、ja）同步更新避免內容偏移。',
+    ],
+  },
+  {
     id: 'plutus-trade-case-study-rewrite',
     date: '2026-04-29',
     title: 'Plutus Trade — 改寫為決策支援工具的案例研究',

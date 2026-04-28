@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-card-pitch-refinement',
+    date: '2026-04-29',
+    title: 'Plutus Trade — Home Card Tightened to Product Pitch',
+    tags: ['design'],
+    body: [
+      'Reframed the home-page Plutus Trade card to lead with the product pitch and integrated feature surface (real-time prices, K-line charts, financial-statement analysis, AI per-name diagnostics, one-tap screening), with a performance-tracking backtest system that continuously improves AI accuracy. Replaces an earlier draft that enumerated synthesis inputs and used explicit BUY/SELL/HOLD wording on the card.',
+      'Card copy now stays in product-feature register and steers around win-rate and ROI phrasing on the public surface to keep clear of regulated-advice exposure. Mirrored across en, zh-TW, ja so the three locales remain in sync.',
+    ],
+  },
+  {
     id: 'plutus-trade-case-study-rewrite',
     date: '2026-04-29',
     title: 'Plutus Trade — Case Study Rewrite as Decision-Support Tool',
