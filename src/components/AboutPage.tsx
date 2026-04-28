@@ -86,13 +86,14 @@ export default function AboutPage() {
         {/* Product Philosophy */}
         <Section title={t('about.sectionPhilosophy')} index={1}>
           <p>{t('about.philosophyIntro')}</p>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-4 space-y-5">
             {aboutContent.philosophyBullets.map((bullet, i) => (
               <li key={i} className="flex items-start gap-3">
                 <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
-                <span>
-                  <strong className="text-white">{bullet.title}</strong> {bullet.body}
-                </span>
+                <div>
+                  <strong className="block text-white">{bullet.title}</strong>
+                  <span className="mt-1 block">{bullet.body}</span>
+                </div>
               </li>
             ))}
           </ul>
