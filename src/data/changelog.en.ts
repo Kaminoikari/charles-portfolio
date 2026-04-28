@@ -10,6 +10,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-case-study-rewrite',
+    date: '2026-04-29',
+    title: 'Plutus Trade — Case Study Rewrite Around Personal AI Co-pilot',
+    tags: ['design'],
+    body: [
+      'Rewrote the Plutus Trade case study because the framing was wrong. The previous copy positioned it as a SaaS that brings institutional-grade analysis to retail investors, with a 3-tier subscription model and Apple In-App Purchase. The current product has the subscriptions ripped out: it\'s a personal AI co-pilot I built for myself, not a consumer product.',
+      'New framing leads with the actual motivation: I didn\'t want to spend hours every day pulling monthly revenue, decoding quarterly EPS and gross margin, watching institutional flow, and scanning K-line for every name in the watchlist. Gemini 2.5 Flash reads all of that in one pass and returns a plain-language BUY/SELL/HOLD diagnostic with reasoning. Compresses an evening of research into a paragraph, but for a single user (me).',
+      'Solution paragraphs now centre on the prediction tracking + after-hours self-review loop, which is the actual moat. Every AI call is logged with entry context, settled at horizon (ROI, win rate, decision quality matrix), and reviewed by the AI itself in the 16:30 daily report. This builds the labelled "AI said X, actual outcome was Y, root cause was Z" history that any future prompt iteration or model fine-tuning will need.',
+      'Tech stack rewritten from the live repo: Flutter 3.41+ on Vercel (Web, not iOS as the page used to claim), FastAPI on Fly.io nrt region, Gemini 2.5 Flash (was 1.5 Pro), Riverpod + go_router + fl_chart + Dio on the frontend, Pydantic v2 + httpx + APScheduler on the backend, three-source data fallback chain (FinMind → Yahoo Finance → TWSE/TPEX OpenAPI) with 7-day stale cache, Web Push via VAPID/pywebpush. Same pass added the actual feature surface (8 modules: data center, watchlist/portfolio, AI diagnostics, one-tap screening, prediction tracking, fundamentals, smart notifications, after-hours daily report).',
+      'Learnings section dropped the SaaS-tier-design lesson (no longer relevant) and added the actual lesson from pulling subscriptions: build constraints come from who you build for, and once "personal tool I trust" became the goal, every "what if a free-tier user does X" trade-off disappeared. Removing the SaaS scaffolding freed the product to optimize for analytical depth instead of upgrade intent.',
+    ],
+  },
+  {
     id: 'path-case-study-rewrite',
     date: '2026-04-28',
     title: 'Path — Case Study Rewrite Around PWA & Offline-First',

@@ -25,6 +25,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-case-study-rewrite',
+    date: '2026-04-29',
+    title: 'Plutus Trade — 改寫為個人 AI 副駕駛敘事',
+    tags: ['design'],
+    body: [
+      '重寫 Plutus Trade 案例研究，因為原本的敘事方向錯了。舊文案把它定位成「把法人級分析帶給散戶」的 SaaS，含三階段訂閱模型與 Apple In-App Purchase。實際的產品已經把訂閱拔掉了：它是我做給自己用的 AI 副駕駛，不是消費型產品。',
+      '新敘事直接從真正的動機切入：我不想每天花好幾個鐘頭拉月營收、解讀季報的 EPS 與毛利率、追三大法人籌碼、掃 watchlist 上每一檔的 K 線。Gemini 2.5 Flash 一次讀完上述所有資料，回傳一段白話的 BUY/SELL/HOLD 診斷與推論。把一個晚上的研究壓縮成一段話，但只服務一個使用者（我自己）。',
+      'Solution 段落現在以預測追蹤 + 盤後自我檢討的回饋迴路為主軸——這才是真正的護城河。每一次 AI 呼叫都帶 entry context 寫入 log、到期 settle（ROI、勝率、決策品質矩陣）、再由 AI 自己在 16:30 的盤後日報裡檢討。這份「AI 當時怎麼說、實際結果如何、根因是什麼」的標註歷史，是未來 prompt 迭代或模型 fine-tune 一定會需要的。',
+      'Tech stack 對齊正在跑的 repo：Flutter 3.41+ 部署在 Vercel（Web，不是頁面原本說的 iOS）、FastAPI 部署在 Fly.io nrt region、Gemini 2.5 Flash（原本寫 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID / pywebpush。同一輪也補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
+      'Learnings 段拔掉「SaaS tier 設計」的舊課題（已經不適用），加上拔訂閱真正帶走的學習：build constraint 來自於你為誰而做。當目標收斂成「我自己信任的工具」，每一條「萬一免費使用者怎樣」的權衡就一起消失。把 SaaS 鷹架移掉後，產品可以單純為分析深度做最佳化，而不是為升級率最佳化。',
+    ],
+  },
+  {
     id: 'path-case-study-rewrite',
     date: '2026-04-28',
     title: 'Path — 圍繞 PWA 與離線優先重寫案例研究',
