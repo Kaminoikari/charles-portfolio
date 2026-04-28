@@ -150,9 +150,9 @@ export default function AboutPage() {
           <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '400ms' }}>
             <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('about.sectionChineseBio')} ]</h2>
             <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]" lang="zh-TW">
-              <p>我是陳德潁（Charles Chen），台灣 AI 產品經理。擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，實現從概念到上線的端到端交付。</p>
-              <p>過去 5 年的產品經歷橫跨創作者工具、金融科技、SaaS 與 MaaS 領域，累計影響超過 600 萬用戶。目前在 USPACE 負責停車支付、企業差旅、金融保險三大產品線的策略，涵蓋台灣與日本市場，驅動 85% 以上的公司營收。</p>
-              <p>我相信未來最好的產品經理會是 Product Builder 的型態。不只規劃產品，更能親手用 AI 工具快速打造原型並上線驗證。這種方式讓我的迭代速度比傳統工作流程快 5 倍。</p>
+              <p>我是陳德潁（Charles Chen），一位來自台灣並深信「實作即驗證」的 Software Product Manager。我擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，完成從概念到上線的端到端交付。</p>
+              <p>過去 5 年，我專注於打造能改變使用者行為的產品，經歷橫跨創作者工具、Fintech、B2B SaaS 與 MaaS（移動服務）。我曾參與影響超過 700 萬人的產品規劃。目前在 USPACE 主導停車支付、企業差旅平台與金融保險三大核心產品線，業務涵蓋台灣與日本市場，並直接貢獻了公司 85% 以上的營收。</p>
+              <p>我深信未來最強大的產品人會是 Product Builder。在我的工作流中，AI 不只是輔助工具，更是開發的核心引擎。這讓我能超越傳統 PM 僅止於收斂需求與撰寫 PRD 的框架，並親手利用 AI 工具快速產出原型、完成上線驗證。這種「Builder 模式」讓我能以比傳統流程快 5 倍的速度進行迭代，確保產品在投入大規模資源前，就已經獲得真實市場的認可。</p>
             </div>
           </div>
         )}

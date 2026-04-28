@@ -22,9 +22,9 @@ export interface AboutContent {
 
 export const aboutContent: AboutContent = {
   whoIAm: [
-    "I'm Charles Chen (陳德潁), an AI Product Manager based in Taiwan. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.",
-    'Over the past 5 years, my product experience has spanned creator tools, fintech, SaaS, and MaaS, impacting over 6 million users in total. I currently lead product strategy at USPACE across three product lines (parking payments, business travel, and financial insurance) covering both Taiwan and Japan, driving more than 85% of company revenue.',
-    'I believe the best product managers of the future will be Product Builders. Not just planning products, but personally using AI tools to rapidly build prototypes and validate them in production. This approach lets me iterate 5x faster than traditional PM workflows.',
+    "I'm Charles Chen (陳德潁), a Taiwan-based Software Product Manager who treats shipping as the truest form of validation. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.",
+    "Over the past 5 years I've focused on building products that change user behavior, with experience spanning creator tools, Fintech, B2B SaaS, and MaaS (Mobility-as-a-Service). I've contributed to product planning that has reached over 7 million people. I currently lead three core product lines at USPACE (parking payments, business travel platform, and financial insurance), covering Taiwan and Japan, and directly contributing more than 85% of company revenue.",
+    "I'm convinced the strongest product people of the future will be Product Builders. In my workflow, AI is the core engine of development. That lets me move past the traditional PM frame of synthesizing requirements and writing PRDs, and personally use AI tools to ship prototypes quickly and validate them in production. This 'Builder mode' lets me iterate 5x faster than traditional workflows, so a product earns real market validation before any large-scale resource commitment.",
   ],
   philosophyBullets: [
     {
