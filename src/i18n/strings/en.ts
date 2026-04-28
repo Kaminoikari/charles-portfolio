@@ -34,6 +34,7 @@ interface Strings {
     notFound: string; backHome: string; back: string
     sectionProblem: string; sectionSolution: string; sectionScreens: string; sectionTechStack: string
     sectionImpact: string; sectionLearnings: string
+    closeLightbox: string
     prevLabel: string; nextLabel: string
   }
   footer: {
@@ -119,6 +120,7 @@ const en: Strings = {
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: 'Learnings',
+    closeLightbox: 'Close image preview',
     prevLabel: '← Previous',
     nextLabel: 'Next →',
   },

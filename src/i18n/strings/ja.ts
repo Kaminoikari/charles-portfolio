@@ -86,6 +86,7 @@ const ja: Strings = {
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: '学び',
+    closeLightbox: '画像プレビューを閉じる',
     prevLabel: '← 前へ',
     nextLabel: '次へ →',
   },

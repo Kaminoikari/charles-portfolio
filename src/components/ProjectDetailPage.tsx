@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useProjects, useProjectDetails } from '../data'
 import { useDocumentMeta, useLocalePath, useT } from '../i18n'
@@ -11,6 +11,24 @@ export default function ProjectDetailPage() {
   const localePath = useLocalePath()
   const projects = useProjects()
   const projectDetails = useProjectDetails()
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const lightboxOpenerRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!lightbox) return
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightbox(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('keydown', onKey)
+      lightboxOpenerRef.current?.focus()
+      lightboxOpenerRef.current = null
+    }
+  }, [lightbox])
 
   const detail = projectDetails.find((p) => p.id === id)
   const card = projects.find((p) => p.id === id)
@@ -113,12 +131,22 @@ export default function ProjectDetailPage() {
             <div className="mt-6 space-y-6">
               {detail.screenshots.map((shot) => (
                 <figure key={shot.src} className="overflow-hidden rounded-lg border border-border bg-bg-secondary">
-                  <img
-                    src={shot.src}
-                    alt={shot.alt}
-                    loading="lazy"
-                    className="block h-auto w-full"
-                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      lightboxOpenerRef.current = e.currentTarget
+                      setLightbox({ src: shot.src, alt: shot.alt })
+                    }}
+                    aria-label={shot.alt}
+                    className="block w-full cursor-zoom-in border-none bg-transparent p-0 transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
+                  >
+                    <img
+                      src={shot.src}
+                      alt={shot.alt}
+                      loading="lazy"
+                      className="block h-auto w-full"
+                    />
+                  </button>
                 </figure>
               ))}
             </div>
@@ -191,6 +219,44 @@ export default function ProjectDetailPage() {
       </div>
 
       <ContactFooter />
+
+      {lightbox && (
+        <Lightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          closeLabel={t('projectDetail.closeLightbox')}
+          onClose={() => setLightbox(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string; closeLabel: string; onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={alt}
+      onClick={onClose}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 px-4 py-12 backdrop-blur-sm"
+    >
+      <img
+        src={src}
+        alt={alt}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-[92vh] max-w-[95vw] cursor-default rounded-lg border border-white/10 object-contain"
+      />
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={closeLabel}
+        className="fixed right-5 top-5 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 backdrop-blur-md transition-all duration-200 hover:border-[var(--color-accent-cyan)] hover:text-[var(--color-accent-cyan)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M6 18L18 6" />
+        </svg>
+      </button>
     </div>
   )
 }

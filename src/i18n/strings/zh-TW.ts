@@ -83,6 +83,7 @@ const zhTW: Strings = {
     sectionTechStack: 'TECH STACK',
     sectionImpact: 'IMPACT',
     sectionLearnings: '心得',
+    closeLightbox: '關閉圖片預覽',
     prevLabel: '← 上一個',
     nextLabel: '下一個 →',
   },
