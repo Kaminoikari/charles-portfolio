@@ -26,41 +26,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'plutus-trade-card-pitch-refinement',
-    date: '2026-04-29',
-    title: 'Plutus Trade — トップカード文案をプロダクトピッチに収束',
-    tags: ['design'],
-    body: [
-      'トップページの Plutus Trade カードを「プロダクトピッチ + 機能面」の語りに改訂しました。リアルタイム株価、ローソク足チャート、財務諸表分析、AI 個別株診断、ワンタップ選定、そして AI の精度を継続的に改善するパフォーマンス追跡バックテストシステム。旧版は synthesis の入力を列挙し、BUY/SELL/HOLD という用語を直接書いていましたが、新版はプロダクト機能の語彙に戻しました。',
-      'カードの公開面では「勝率」「ROI」のように規制ラインの近くに来やすい表現を避け、その粒度はケーススタディ詳細ページに残しました。3 つの locale（en、zh-TW、ja）を同時に揃え、コンテンツの drift を防ぎます。',
-    ],
-  },
-  {
-    id: 'plutus-trade-case-study-rewrite',
-    date: '2026-04-29',
-    title: 'Plutus Trade — 意思決定支援ツールとしてケーススタディを書き直し',
-    tags: ['design'],
-    body: [
-      'シニア PM の視点で Plutus Trade のケーススタディを書き直しました。旧版には 2 つの問題がありました。一つは「機関投資家レベルの分析を個人投資家に届ける」消費者向け SaaS としてのポジショニングで、現在稼働しているプロダクトはこの market frame に対応していません。もう一つはコピーが個人的・逸話的なトーンに寄っており、ケーススタディとして recruiter や同業のプロダクト実務者が期待する分析的フレーミングと距離がありました。',
-      '新しい problem statement はユーザー現実をプロダクト用語で再定義します：毎日の台湾株リサーチは synthesis のレイヤーで詰まっています。月次売上の正規化、四半期ファンダメンタルズ、機関投資家フロー、K 線テクニカルは個別には対応可能ですが、30–50 銘柄の watchlist 全体ではコストが累積します。市販の消費者向けツールはこの構造に非対称に応答しており、チャート系 App は生データを表示するが解釈はせず、アドバイザリ型プロダクトは解釈を提供するがユーザーを受動的に扱います。Plutus Trade はその間隙に位置し、AI による synthesis を求めつつ、上書きと監査が可能な領域知識を持つ実務型ユーザーを対象にします。',
-      'Solution セクションは 3 つの荷重を支えるプロダクト判断として再構成し、先行版の機能羅列を置き換えました：（1）クロスドメインの AI synthesis、出力は免責事項つきで厳密に analysis として framing；（2）guided screening flow、投資家の定性的条件を AI が実行可能な contract に翻訳する仕組み；（3）instrumented prediction layer、すべての推奨は entry context 付きで log され、地平で settle、システムを完全に監査可能な状態にする。',
-      'Tech stack は稼働中の repo に合わせて書き直し、過去の誤記を訂正：Flutter Web を Vercel にデプロイ（旧版では iOS と記載）、FastAPI を Fly.io nrt region にデプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID 経由。実際の機能面も同期して追加しました（8 モジュール：データセンター、自選株／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
-      'Learnings 段は 4 つの PM-voice テイクアウェイとして書き直し、上記の荷重設計判断に対応させました：モデル選定の前に prompt contract 設計こそが第一のレバーであること、金融系 AI ではプロダクト層で分析と助言の境界を強制すべきこと、audience-of-one は意図的な constraint としてそれ自体がプロダクト戦略を構成し、設計面を解放して分析深度に最適化を振り切れること、データソースの信頼性はあらゆる意思決定支援ツールにとって first-class のプロダクト課題であること。このレイヤーの劣化は機能的には中核価値の outage に等しいためです。',
-    ],
-  },
-  {
-    id: 'path-case-study-rewrite',
-    date: '2026-04-28',
-    title: 'Path — PWA とオフラインファーストを軸にケーススタディを書き直し',
-    tags: ['design'],
-    body: [
-      'Path のケーススタディを書き直しました。元の文案がプロダクトを誤った競合空間に置いていたためです。以前のナラティブは Booking.com、Agoda、TripAdvisor（予約プラットフォームと SNS 系旅行 App）を競合に据えていましたが、Path はそのどちらにも属しません。実際の参照点は Wanderlog、Tripit、去趣 のような旅程プランニングツールで、競争の軸は「海外で通信が落ちても旅程はまだ動くか」に置かれます（ディールやレビューはこのカテゴリでは脇の論点です）。',
-      '3 つの locale（en、zh-TW、ja）すべてを書き直し、Path GitHub repo と ARCHITECTURE.md に記載されている内容のみを使いました（機能の創作はなし）。新しい構成は 2 つの荷重を支えるプロダクト判断を主軸に：（1）PWA は「ネットがなくても動く web app をどう作るか」への構成上の答えで、iOS / Android のホーム画面にインストール可能、Service Worker で完全オフライン、app store ゲートなし、native build なし；（2）cache-first + background sync をデータ戦略に採用：IndexedDB の読み取りで即時 render、Supabase へのバックグラウンド同期で最新データ、楽観的書き込みと sync queue がオフライン編集を取りこぼさず接続復帰時にリプレイ。',
-      'Tech stack セクションを Path が実際に出荷している内容に更新：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、server state には TanStack Query、ドラッグ＆ドロップは @dnd-kit、IndexedDB は idb 経由、Service Worker、Supabase は Google OAuth と Row Level Security 付き、クライアント schema は Zod、Postgres CHECK 制約、テストは Vitest。',
-      'ホームページのカードもタイトルを更新：説明は「Cache-first + background sync で、海外でネットが落ちても、旅程・経路・コストにそのまま手が届きます」を先に出し、タグは React / TypeScript / Supabase から PWA / React / IndexedDB に切り替え、プロジェクト一覧の段階でオフラインの面を表に出しました。',
-    ],
-  },
-  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: '多言語コンテンツ — 全量翻訳の仕上げ',

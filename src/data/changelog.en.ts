@@ -10,41 +10,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'plutus-trade-card-pitch-refinement',
-    date: '2026-04-29',
-    title: 'Plutus Trade — Home Card Tightened to Product Pitch',
-    tags: ['design'],
-    body: [
-      'Reframed the home-page Plutus Trade card to lead with the product pitch and integrated feature surface (real-time prices, K-line charts, financial-statement analysis, AI per-name diagnostics, one-tap screening), with a performance-tracking backtest system that continuously improves AI accuracy. Replaces an earlier draft that enumerated synthesis inputs and used explicit BUY/SELL/HOLD wording on the card.',
-      'Card copy now stays in product-feature register and steers around win-rate and ROI phrasing on the public surface to keep clear of regulated-advice exposure. Mirrored across en, zh-TW, ja so the three locales remain in sync.',
-    ],
-  },
-  {
-    id: 'plutus-trade-case-study-rewrite',
-    date: '2026-04-29',
-    title: 'Plutus Trade — Case Study Rewrite as Decision-Support Tool',
-    tags: ['design'],
-    body: [
-      'Rewrote the Plutus Trade case study from a senior PM perspective. The previous draft had two issues: it positioned the product as a consumer SaaS bringing institutional-grade analysis to retail investors (a market frame the live product no longer matches), and the copy leaned on personal anecdote where a recruiter or peer practitioner reading a case study would expect analytical framing.',
-      'New problem statement frames the user reality in product terms: daily Taiwan equity research is bottlenecked at synthesis. Monthly revenue normalization, quarterly fundamentals, institutional flow, and K-line technicals are each individually addressable; the cost compounds across a 30–50 name watchlist. Available consumer tooling responds asymmetrically: charting apps surface raw data without interpretation, advisory products interpret but treat the user as passive. Plutus Trade targets the gap in between, serving domain-literate operators who want AI-assisted synthesis they can override and audit.',
-      'Solution section now reads as three load-bearing product decisions, replacing the previous feature description: (1) cross-domain AI synthesis with output framed strictly as analysis under disclaimer; (2) a guided screening flow that translates qualitative investment criteria into an AI-executable contract; (3) an instrumented prediction layer that logs every recommendation with entry context and settles outcomes at horizon, making the system fully auditable.',
-      'Tech stack rewritten from the live repo to correct stale claims: Flutter Web on Vercel (the previous text said iOS), FastAPI on Fly.io nrt region, Gemini 2.5 Flash (was 1.5 Pro), Riverpod + go_router + fl_chart + Dio, Pydantic v2 + httpx + APScheduler, three-source FinMind → Yahoo → TWSE/TPEX fallback with seven-day stale cache, Web Push via VAPID. Surfaced the actual feature surface (eight modules: market data center, watchlist and portfolio, AI diagnostics, guided screening, prediction tracking, fundamentals, smart notifications, after-hours daily report).',
-      'Learnings rewritten as four PM-voice takeaways covering the load-bearing design decisions: prompt contract design as the first lever ahead of model selection; enforcing the analysis-and-advice line at the product layer for any financial AI; audience-of-one as a deliberate constraint that itself constitutes the product strategy, freeing the design surface to optimize for analytical depth; and data source reliability as a first-class product concern for any decision-support tool, since degradation in this category is functionally an outage of the core value proposition.',
-    ],
-  },
-  {
-    id: 'path-case-study-rewrite',
-    date: '2026-04-28',
-    title: 'Path — Case Study Rewrite Around PWA & Offline-First',
-    tags: ['design'],
-    body: [
-      'Rewrote the Path case study because the original copy positioned the product against the wrong competitor space. The previous narrative framed Path against Booking.com, Agoda, and TripAdvisor (booking platforms and social travel apps), but Path is none of those. Its actual reference points are itinerary planning tools like Wanderlog, Tripit, and 去趣, and the competition isn\'t about deals or reviews but about whether your itinerary still works when the network drops abroad.',
-      'Rewrote across all three locales (en, zh-TW, ja) using only what\'s documented in the Path GitHub repo and its ARCHITECTURE.md, with no invented features. The new framing leads with the two load-bearing product decisions: (1) PWA as the architectural answer to "make a web app that works without a network", installable on iOS/Android home screens, full offline via Service Worker, no app store gate, no native build; and (2) cache-first + background sync as the data strategy: IndexedDB reads for instant render, Supabase background sync for fresh data, optimistic writes with a sync queue that catches edits made offline and replays them when connectivity returns.',
-      'Tech stack section was refreshed to reflect what Path actually ships: React 18 + Vite + TailwindCSS + shadcn/ui (Radix UI), TanStack Query for server state, @dnd-kit for drag-and-drop, IndexedDB via idb, Service Worker, Supabase with Google OAuth and Row Level Security, Zod for client schemas + Postgres CHECK constraints, Vitest for testing.',
-      'Home page card was also retitled. The description now leads with "Cache-first + background sync keeps your itinerary, transit routes, and costs reachable even when the network drops abroad" and tags shifted from React / TypeScript / Supabase to PWA / React / IndexedDB to surface the offline angle in the project list itself.',
-    ],
-  },
-  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: 'Multilingual Content — Full Translation Pass',

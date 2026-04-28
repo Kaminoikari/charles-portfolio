@@ -23,6 +23,7 @@ const NAV_SECTION_KEY: Record<(typeof NAV_SECTIONS)[number], StringKey> = {
 
 export default function Nav() {
   const navRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
   const [scrolledPastHero, setScrolledPastHero] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const logoClickTimesRef = useRef<number[]>([])
@@ -51,7 +52,7 @@ export default function Nav() {
       const timer = setTimeout(() => {
         const el = document.getElementById(id)
         if (el) {
-          const navHeight = navRef.current?.offsetHeight ?? 72
+          const navHeight = headerRef.current?.offsetHeight ?? 72
           const y = el.getBoundingClientRect().top + window.scrollY - navHeight
           window.scrollTo({ top: y, behavior: 'smooth' })
         }
@@ -63,7 +64,7 @@ export default function Nav() {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id)
     if (!el) return
-    const navHeight = navRef.current?.offsetHeight ?? 72
+    const navHeight = headerRef.current?.offsetHeight ?? 72
     let y: number
     if (id === 'skills') {
       // Center the Universe section vertically in viewport
@@ -94,7 +95,7 @@ export default function Nav() {
           : 'transparent',
       }}
     >
-      <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
+      <div ref={headerRef} className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
         <button
           onClick={() => {
             if (!isHome) {

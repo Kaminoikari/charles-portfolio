@@ -25,41 +25,6 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    id: 'plutus-trade-card-pitch-refinement',
-    date: '2026-04-29',
-    title: 'Plutus Trade — 首頁卡片文案收斂到產品 pitch',
-    tags: ['design'],
-    body: [
-      '把首頁 Plutus Trade 卡片改成「產品 pitch + 功能面」的講法：即時股價、K 線圖、財報分析、AI 個股診斷、一鍵選股，再加上績效追蹤回測系統持續優化 AI 準確率。先前版本把 synthesis 的輸入逐項列出，並直接寫出 BUY/SELL/HOLD 字眼，新版改回到產品功能語彙。',
-      '卡片公開面同步避開「勝率」「ROI」這類在規制紅線旁邊的表述，把這類細節留在 case study 內頁，三個 locale（en、zh-TW、ja）同步更新避免內容偏移。',
-    ],
-  },
-  {
-    id: 'plutus-trade-case-study-rewrite',
-    date: '2026-04-29',
-    title: 'Plutus Trade — 改寫為決策支援工具的案例研究',
-    tags: ['design'],
-    body: [
-      '以資深 PM 的視角重寫 Plutus Trade 案例研究。先前版本有兩個問題：一、把產品定位成「把法人級分析帶給散戶」的消費型 SaaS，這個 market frame 已不再對應目前正在運行的產品；二、文案偏向個人化、口語化的敘述，與 recruiter、業界同儕在案例研究中預期讀到的分析框架有距離。',
-      '新版 problem statement 用產品語言重新框定使用者現實：每天的台股研究在 synthesis 這一層被卡住。月營收標準化、季報基本面、三大法人籌碼、K 線技術面，每一項單獨都能處理；成本是在 30–50 檔自選股 watchlist 中累積出來的。市面上的消費型工具回應方式不對稱：看盤 App 給出原始資料但不解讀，投顧型產品提供解讀但把使用者當成被動接收方。Plutus Trade 鎖定中間這道斷層，服務具備領域素養、希望取得可覆寫且可審計的 AI 綜合分析的操作型使用者。',
-      'Solution 段落現在呈現為三個承重的產品決策，取代先前的功能描述：（1）跨領域 AI synthesis，輸出嚴格 framed 為附帶免責聲明的分析；（2）guided screening flow，把投資人的質性條件翻譯成 AI 可執行的 contract；（3）instrumented prediction layer，每一筆建議都帶 entry context 寫入 log，到期 settle 結果，讓系統做到完整 auditable。',
-      'Tech stack 對齊正在運行的 repo，校正過時資訊：Flutter Web 部署於 Vercel（先前誤標為 iOS）、FastAPI 部署於 Fly.io nrt region、Gemini 2.5 Flash（先前誤植為 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID。同步補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
-      'Learnings 段重寫為四條 PM-voice 結論，對應上述承重設計決策：模型選型之前，prompt contract 設計才是第一個槓桿；任何金融類 AI 必須在產品層強制分析與建議的分界；audience-of-one 是刻意設定的 constraint，本身就是產品策略，能釋放設計面、讓產品全力為分析深度做最佳化；資料源可靠度對任何決策支援工具都是 first-class 產品議題，因為這個層次的退化在功能上等同於核心價值主張的 outage。',
-    ],
-  },
-  {
-    id: 'path-case-study-rewrite',
-    date: '2026-04-28',
-    title: 'Path — 圍繞 PWA 與離線優先重寫案例研究',
-    tags: ['design'],
-    body: [
-      '重寫 Path 案例研究，因為原稿把產品擺到錯的競品空間。原本的敘事拿 Booking.com、Agoda、TripAdvisor 當對手（訂房平台跟社群旅遊 App），但 Path 不是這兩種裡的任何一種。它真正的參照點是 Wanderlog、Tripit、去趣這類行程規劃工具，競爭也不在折扣或評論，而在「網路在國外掉了，行程是不是還能用」。',
-      '三個 locale（en、zh-TW、ja）全部重寫，只用 Path GitHub repo 與其 ARCHITECTURE.md 已經寫下的內容，絕不無中生有。新版敘事以兩個承重的產品決策為主軸：（1）PWA 是「做出沒網路也能跑的 web app」這道題的架構解答：iOS / Android 直接從主畫面安裝、Service Worker 拿到完整離線、不用過 app store、沒有 native build；（2）cache-first + background sync 是資料策略：IndexedDB 讓讀取瞬間 render、背景同步 Supabase 取最新資料、寫入 optimistic、sync queue 把離線編輯接住、連線回來再 replay。',
-      '更新 tech stack 段落為 Path 實際出貨的內容：React 18 + Vite + TailwindCSS + shadcn/ui（Radix UI）、TanStack Query 管 server state、@dnd-kit 處理拖拉、IndexedDB 透過 idb、Service Worker、Supabase 配 Google OAuth 與 Row Level Security、Zod client schema + Postgres CHECK 限制、Vitest 測試。',
-      '首頁 project card 也順手改了：描述換成「Cache-first + background sync，就算在國外網路掉了，行程、交通路線、花費都還拿得到」，標籤從 React / TypeScript / Supabase 換成 PWA / React / IndexedDB，把離線那一面在專案列表就拋出來。',
-    ],
-  },
-  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: '多語系內容 — 全量翻譯收尾',
