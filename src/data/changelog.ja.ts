@@ -28,14 +28,14 @@ export const changelog: ChangelogEntry[] = [
   {
     id: 'plutus-trade-case-study-rewrite',
     date: '2026-04-29',
-    title: 'Plutus Trade — 個人 AI 副操縦士の物語に書き直し',
+    title: 'Plutus Trade — 意思決定支援ツールとしてケーススタディを書き直し',
     tags: ['design'],
     body: [
-      'Plutus Trade のケーススタディを書き直しました。以前のフレーミングが間違っていたためです。旧コピーは「機関投資家レベルの分析を個人投資家へ届ける」SaaS としてポジショニングし、3 段階のサブスクリプションモデルと Apple In-App Purchase を含んでいました。現在のプロダクトはサブスクリプションを外し、自分用に作った AI 副操縦士です：消費者向けプロダクトではありません。',
-      '新しいフレーミングは実際の動機から直接入ります：毎日何時間もかけて月次売上を取得し、四半期の EPS と粗利率を解読し、機関投資家フローを追い、watchlist のすべての銘柄の K 線をスキャンする時間を使いたくなかった。Gemini 2.5 Flash は上記すべてを一度に読み、平易な言葉の BUY/SELL/HOLD 診断と推論を返します。一晩のリサーチを 1 段落に圧縮、ただし 1 ユーザー（自分自身）のために。',
-      'Solution の段落は予測トラッキング + 引け後自己レビューのフィードバックループを主軸にしました——これが本当の moat です。各 AI 呼び出しは entry context つきで log され、地平で settle（ROI、勝率、決定品質マトリクス）、16:30 の引け後日報で AI 自身がレビュー。「AI は何と言ったか、実際の結果はどうだったか、根本原因は何か」のラベル付き履歴は、将来の prompt 反復やモデル fine-tune が必ず必要とするものです。',
-      'Tech stack は live の repo に合わせて書き直し：Flutter 3.41+ を Vercel デプロイ（Web、ページが以前主張していた iOS ではない）、FastAPI を Fly.io nrt region デプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID / pywebpush 経由。同じパスで実際の機能面も追加しました（8 モジュール：データセンター、自選股／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
-      'Learnings 段は「SaaS ティア設計」の旧レッスン（もう該当しない）を外し、サブスクリプションを外したことから得た本当の学びを追加：build constraint は誰のために作るかから来る。目標が「自分が信頼できるツール」に収束した瞬間、「無料ティアのユーザーがこうしたら…」というトレードオフはすべて消えます。SaaS の足場を外すことで、プロダクトはアップグレード意向ではなく分析の深さに最適化できるようになりました。',
+      'シニア PM の視点で Plutus Trade のケーススタディを書き直しました。旧版には 2 つの問題がありました。一つは「機関投資家レベルの分析を個人投資家に届ける」消費者向け SaaS としてポジショニングしていたことで、現在稼働しているプロダクトはこの market frame に対応していません。もう一つはコピーが個人的・逸話的なトーンに寄っており、ケーススタディとして recruiter や同業のプロダクト実務者が期待する分析的フレーミングになっていなかったことです。',
+      '新しい problem statement はユーザー現実をプロダクト用語で再定義します：毎日の台湾株リサーチは synthesis bottleneck であり、data availability bottleneck ではありません。月次売上の正規化、四半期ファンダメンタルズ、機関投資家フロー、K 線テクニカルは個別には対応可能ですが、30–50 銘柄の watchlist 全体ではコストが累積します。市販の消費者向けツールはこの構造に非対称に応答しており、チャート系 App は生データを表示するが解釈はせず、アドバイザリ型プロダクトは解釈を提供するがユーザーを受動的に扱います。Plutus Trade はその間隙に位置する——AI による synthesis を求めつつ、上書きと監査が可能な領域知識を持つ実務型ユーザーを対象にします。',
+      'Solution セクションは機能の羅列ではなく、3 つの荷重を支えるプロダクト判断として再構成しました：（1）クロスドメインの AI synthesis、出力は advice ではなく analysis として明確に framing；（2）guided screening flow、投資家の定性的条件を AI が実行可能な contract に翻訳する仕組み；（3）instrumented prediction layer、すべての推奨は entry context 付きで log され、地平で settle、システムをブラックボックスではなく監査可能な状態にする。',
+      'Tech stack は稼働中の repo に合わせて書き直し、過去の誤記を訂正：Flutter Web を Vercel にデプロイ（iOS ではない）、FastAPI を Fly.io nrt region にデプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID 経由。実際の機能面も同期して追加しました（8 モジュール：データセンター、自選株／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
+      'Learnings 段は 4 つの PM-voice テイクアウェイとして書き直し、上記の荷重設計判断に対応させました：モデル選定の前に prompt contract 設計こそが第一のレバーであること、金融系 AI ではプロダクト層で analysis-vs-advice の境界を強制すべきこと、audience-of-one は意図的な constraint として設計面を解放し、転換率ではなく分析深度に最適化を許すこと、データソースの信頼性はあらゆる意思決定支援ツールにとって first-class のプロダクト課題であること——このレイヤーの劣化は機能的には中核価値の outage に等しいためです。',
     ],
   },
   {

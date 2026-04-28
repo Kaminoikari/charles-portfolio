@@ -27,14 +27,14 @@ export const changelog: ChangelogEntry[] = [
   {
     id: 'plutus-trade-case-study-rewrite',
     date: '2026-04-29',
-    title: 'Plutus Trade — 改寫為個人 AI 副駕駛敘事',
+    title: 'Plutus Trade — 改寫為決策支援工具的案例研究',
     tags: ['design'],
     body: [
-      '重寫 Plutus Trade 案例研究，因為原本的敘事方向錯了。舊文案把它定位成「把法人級分析帶給散戶」的 SaaS，含三階段訂閱模型與 Apple In-App Purchase。實際的產品已經把訂閱拔掉了：它是我做給自己用的 AI 副駕駛，不是消費型產品。',
-      '新敘事直接從真正的動機切入：我不想每天花好幾個鐘頭拉月營收、解讀季報的 EPS 與毛利率、追三大法人籌碼、掃 watchlist 上每一檔的 K 線。Gemini 2.5 Flash 一次讀完上述所有資料，回傳一段白話的 BUY/SELL/HOLD 診斷與推論。把一個晚上的研究壓縮成一段話，但只服務一個使用者（我自己）。',
-      'Solution 段落現在以預測追蹤 + 盤後自我檢討的回饋迴路為主軸——這才是真正的護城河。每一次 AI 呼叫都帶 entry context 寫入 log、到期 settle（ROI、勝率、決策品質矩陣）、再由 AI 自己在 16:30 的盤後日報裡檢討。這份「AI 當時怎麼說、實際結果如何、根因是什麼」的標註歷史，是未來 prompt 迭代或模型 fine-tune 一定會需要的。',
-      'Tech stack 對齊正在跑的 repo：Flutter 3.41+ 部署在 Vercel（Web，不是頁面原本說的 iOS）、FastAPI 部署在 Fly.io nrt region、Gemini 2.5 Flash（原本寫 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID / pywebpush。同一輪也補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
-      'Learnings 段拔掉「SaaS tier 設計」的舊課題（已經不適用），加上拔訂閱真正帶走的學習：build constraint 來自於你為誰而做。當目標收斂成「我自己信任的工具」，每一條「萬一免費使用者怎樣」的權衡就一起消失。把 SaaS 鷹架移掉後，產品可以單純為分析深度做最佳化，而不是為升級率最佳化。',
+      '以資深 PM 的視角重寫 Plutus Trade 案例研究。先前版本有兩個問題：一、把產品定位成「把法人級分析帶給散戶」的消費型 SaaS，這個 market frame 已不再對應目前正在運行的產品；二、文案偏向個人化、口語化的敘述，而非 recruiter 或業界同儕在案例研究中預期讀到的分析框架。',
+      '新版 problem statement 用產品語言重新框定使用者現實：每天的台股研究是一個 synthesis bottleneck，而非 data availability bottleneck。月營收標準化、季報基本面、三大法人籌碼、K 線技術面，每一項單獨都能處理；成本是在 30–50 檔自選股 watchlist 中累積出來的。市面上的消費型工具回應方式不對稱——看盤 App 給出原始資料但不解讀；投顧型產品提供解讀但把使用者當成被動接收方。Plutus Trade 鎖定中間這道斷層：具備領域素養、希望取得可覆寫且可審計的 AI 綜合分析的操作型使用者。',
+      'Solution 段落現在呈現為三個承重的產品決策，而非功能描述：（1）跨領域 AI synthesis，輸出明確 framed 為 analysis 而非 advice；（2）guided screening flow，把投資人的質性條件翻譯成 AI 可執行的 contract；（3）instrumented prediction layer，每一筆建議都帶 entry context 寫入 log，到期 settle 結果，使整個系統可審計而非黑箱。',
+      'Tech stack 對齊正在運行的 repo，校正過時資訊：Flutter Web 部署於 Vercel（非 iOS）、FastAPI 部署於 Fly.io nrt region、Gemini 2.5 Flash（先前誤植為 1.5 Pro）、前端 Riverpod + go_router + fl_chart + Dio、後端 Pydantic v2 + httpx + APScheduler、三層資料源 fallback 鏈（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）配 7 天 stale cache、Web Push 透過 VAPID。同步補上實際的功能面（8 大模組：數據中心、自選股／投資組合、AI 個股診斷、一鍵選股、預測追蹤、財報基本面、智慧通知、盤後日報）。',
+      'Learnings 段重寫為四條 PM-voice 結論，對應上述承重設計決策：模型選型之前，prompt contract 設計才是第一個槓桿；任何金融類 AI 必須在產品層強制 analysis-vs-advice 的分界；audience-of-one 是刻意設定的 constraint，能釋放設計面、讓產品專注於分析深度而非轉換率；資料源可靠度對任何決策支援工具都是 first-class 產品議題——這個層次的退化在功能上等同於核心價值主張的 outage。',
     ],
   },
   {
