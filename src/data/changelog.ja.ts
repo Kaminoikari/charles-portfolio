@@ -26,6 +26,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'plutus-trade-case-study-rewrite',
+    date: '2026-04-29',
+    title: 'Plutus Trade — 個人 AI 副操縦士の物語に書き直し',
+    tags: ['design'],
+    body: [
+      'Plutus Trade のケーススタディを書き直しました。以前のフレーミングが間違っていたためです。旧コピーは「機関投資家レベルの分析を個人投資家へ届ける」SaaS としてポジショニングし、3 段階のサブスクリプションモデルと Apple In-App Purchase を含んでいました。現在のプロダクトはサブスクリプションを外し、自分用に作った AI 副操縦士です：消費者向けプロダクトではありません。',
+      '新しいフレーミングは実際の動機から直接入ります：毎日何時間もかけて月次売上を取得し、四半期の EPS と粗利率を解読し、機関投資家フローを追い、watchlist のすべての銘柄の K 線をスキャンする時間を使いたくなかった。Gemini 2.5 Flash は上記すべてを一度に読み、平易な言葉の BUY/SELL/HOLD 診断と推論を返します。一晩のリサーチを 1 段落に圧縮、ただし 1 ユーザー（自分自身）のために。',
+      'Solution の段落は予測トラッキング + 引け後自己レビューのフィードバックループを主軸にしました——これが本当の moat です。各 AI 呼び出しは entry context つきで log され、地平で settle（ROI、勝率、決定品質マトリクス）、16:30 の引け後日報で AI 自身がレビュー。「AI は何と言ったか、実際の結果はどうだったか、根本原因は何か」のラベル付き履歴は、将来の prompt 反復やモデル fine-tune が必ず必要とするものです。',
+      'Tech stack は live の repo に合わせて書き直し：Flutter 3.41+ を Vercel デプロイ（Web、ページが以前主張していた iOS ではない）、FastAPI を Fly.io nrt region デプロイ、Gemini 2.5 Flash（旧 1.5 Pro）、フロントは Riverpod + go_router + fl_chart + Dio、バックエンドは Pydantic v2 + httpx + APScheduler、3 層データソース fallback チェーン（FinMind → Yahoo Finance → TWSE/TPEX OpenAPI）と 7 日 stale cache、Web Push は VAPID / pywebpush 経由。同じパスで実際の機能面も追加しました（8 モジュール：データセンター、自選股／ポートフォリオ、AI 個別株診断、ワンタップ選股、予測トラッキング、ファンダメンタルズ、スマート通知、引け後日報）。',
+      'Learnings 段は「SaaS ティア設計」の旧レッスン（もう該当しない）を外し、サブスクリプションを外したことから得た本当の学びを追加：build constraint は誰のために作るかから来る。目標が「自分が信頼できるツール」に収束した瞬間、「無料ティアのユーザーがこうしたら…」というトレードオフはすべて消えます。SaaS の足場を外すことで、プロダクトはアップグレード意向ではなく分析の深さに最適化できるようになりました。',
+    ],
+  },
+  {
     id: 'path-case-study-rewrite',
     date: '2026-04-28',
     title: 'Path — PWA とオフラインファーストを軸にケーススタディを書き直し',
