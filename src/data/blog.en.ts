@@ -21,6 +21,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '當純軟體不再是護城河：什麼才是今日持久的競爭優勢？',
+    subtitle: 'Snap CEO Evan Spiegel 談：為什麼 15 年來只有兩個 consumer app 活下來、Snapchat 每一個功能都被抄走、硬體才是唯一真正的 moat、以及 distribution 比產品更重要。',
+    url: 'https://charlestychen.substack.com/p/ai-distribution',
+    platform: 'Substack',
+    date: '2026-04-27',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6f3a89a9-97a4-4b89-9d72-0bee47261402_1122x1402.png',
+  },
+  {
     title: '當模型每天都在變強，PM 到底該做什麼？',
     subtitle: 'Anthropic Claude Code 產品負責人 Cat Wu 的 7 個反直覺 PM 洞察。',
     url: 'https://charlestychen.substack.com/p/pm-b5b',

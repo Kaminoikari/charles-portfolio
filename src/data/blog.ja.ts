@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'ソフトウェア単独では堀にならない時代、いま持続する競争優位とは何か？',
+    subtitle: 'Snap CEO Evan Spiegel が語る、この 15 年で生き残った consumer app がわずか 2 つしかない理由、Snapchat の機能がすべて模倣された経緯、ハードウェアこそ唯一の本物の moat である理由、そして distribution がプロダクトより重要であること。',
+    url: 'https://charlestychen.substack.com/p/ai-distribution',
+    platform: 'Substack',
+    date: '2026-04-27',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6f3a89a9-97a4-4b89-9d72-0bee47261402_1122x1402.png',
+  },
+  {
     title: 'モデルが毎日強くなる時代に、PM は一体何をすべきか？',
     subtitle: 'Anthropic Claude Code プロダクト責任者 Cat Wu が語る、7 つの反直感的な PM インサイト。',
     url: 'https://charlestychen.substack.com/p/pm-b5b',
