@@ -89,7 +89,6 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'Try Path', url: 'https://trip-path.vercel.app/' },
-      { label: 'GitHub', url: 'https://github.com/Kaminoikari/path' },
     ],
   },
   {
