@@ -175,6 +175,9 @@ export default function UniverseSection() {
   const speedRef = useRef(1)
   const hoveredRef = useRef<number | null>(null)
   const skills = useSkills()
+  const skillsRef = useRef(skills)
+  skillsRef.current = skills
+  const autoLabelIndexRef = useRef(0)
   const t = useT()
   const screenPosRef = useRef<ScreenPos[]>(EN_SKILLS.map(() => ({ x: 0, y: 0 })))
   const hoverZoneRefs = useRef<(HTMLDivElement | null)[]>([])
@@ -206,7 +209,7 @@ export default function UniverseSection() {
     let rotation = 0
     let visible = false
     let frameCount = 0
-    let autoLabelIndex = Math.floor(Math.random() * SKILL_COUNT)
+    autoLabelIndexRef.current = Math.floor(Math.random() * SKILL_COUNT)
     let autoLabelTimer = 0
     let autoLabelStarted = false
     const AUTO_LABEL_INTERVAL = 300 // frames (~5 seconds at 60fps)
@@ -349,18 +352,19 @@ export default function UniverseSection() {
 
       // Auto-cycling skill label — positioned at random skill particle (section-level coords)
       if (hoveredRef.current === null && autoLabelRef.current) {
+        const currentSkills = skillsRef.current
         if (!autoLabelStarted && visible) {
           autoLabelStarted = true
           autoLabelTimer = 0
-          autoLabelRef.current.textContent = skills[autoLabelIndex].name
+          autoLabelRef.current.textContent = currentSkills[autoLabelIndexRef.current].name
         }
         autoLabelTimer++
         if (autoLabelTimer >= AUTO_LABEL_INTERVAL) {
           autoLabelTimer = 0
           let next = Math.floor(Math.random() * SKILL_COUNT)
-          while (next === autoLabelIndex) next = Math.floor(Math.random() * SKILL_COUNT)
-          autoLabelIndex = next
-          autoLabelRef.current.textContent = skills[autoLabelIndex].name
+          while (next === autoLabelIndexRef.current) next = Math.floor(Math.random() * SKILL_COUNT)
+          autoLabelIndexRef.current = next
+          autoLabelRef.current.textContent = currentSkills[autoLabelIndexRef.current].name
         }
         const t = autoLabelTimer
         let opacity: number
@@ -368,7 +372,7 @@ export default function UniverseSection() {
         else if (t > AUTO_LABEL_INTERVAL - AUTO_LABEL_FADE) opacity = (AUTO_LABEL_INTERVAL - t) / AUTO_LABEL_FADE
         else opacity = 1
         autoLabelRef.current.style.opacity = String(opacity)
-        const pos = positions[autoLabelIndex]
+        const pos = positions[autoLabelIndexRef.current]
         const cc = canvasContainerRef.current
         const sr = section.getBoundingClientRect()
         const cr = cc ? cc.getBoundingClientRect() : sr
@@ -399,6 +403,14 @@ export default function UniverseSection() {
       window.removeEventListener('scroll', onScroll)
     }
   }, [])
+
+  // Refresh the visible auto-label when locale (skills) changes so it
+  // doesn't keep rendering the previous-locale name until the next 5s tick.
+  useEffect(() => {
+    if (autoLabelRef.current && hoveredRef.current === null) {
+      autoLabelRef.current.textContent = skills[autoLabelIndexRef.current].name
+    }
+  }, [skills])
 
   return (
     <section
