@@ -269,7 +269,6 @@ export function drawHouseOpsAnimated(
     if (alpha <= 0) return
 
     const blipFlash = sinceBlip < HO_BLIP_FLASH ? Math.max(0, 1 - sinceBlip / HO_BLIP_FLASH) : 0
-    const scoreWindow = HO_SCORE_VISIBLE + HO_SCORE_FADE
     const showScore = sinceBlip < scoreWindow
     const scoreFadeOut = sinceBlip < HO_SCORE_VISIBLE
       ? 0
