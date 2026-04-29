@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'add-house-ops-personal-project',
+    date: '2026-04-29',
+    title: 'Personal Projects — House Ops Added',
+    tags: ['feature'],
+    body: [
+      'Added House Ops as the fourth personal project: a Node.js (ESM) automation pipeline that scans 591 every morning at 09:00 (via macOS launchd), scores each rental and purchase listing on five weighted dimensions (price reasonableness, space and layout, neighborhood amenities, property condition, risk), and ships an HTML digest by nodemailer over Gmail SMTP. A persisted tracker walks each evaluated property through Scanned → Evaluated → Visit → Signed, and a Claude Code interactive layer adds in-session affordability calculation, upgrade-plan modeling, side-by-side comparison, and visit-day checklists.',
+      'House Ops sits alongside Plutus Trade and Product Playbook as a personal-tool case study: an audience-of-one product where the technical choices (launchd scheduling, weighted dimensional scoring with three decision bands, email digest delivery) follow from how the workflow actually gets used in real mornings. Page lives at /projects/house-ops with two screenshots (daily digest and per-listing evaluation) and the full problem / solution / tech stack / impact / learnings breakdown across all three locales.',
+    ],
+  },
+  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: 'Multilingual Content — Full Translation Pass',

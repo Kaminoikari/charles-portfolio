@@ -49,6 +49,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
   },
+  {
+    id: 'house-ops',
+    title: 'House Ops',
+    description:
+      'Autonomous house-hunting pipeline for the Taiwan rental market. Scans 591 every morning, scores each listing on five weighted dimensions, and delivers a curated email digest before you finish your coffee.',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/house-ops',
+    tags: ['Node.js', 'Agent', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -187,6 +196,56 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },
+    ],
+  },
+  {
+    id: 'house-ops',
+    title: 'House Ops — Autonomous House-Hunting Pipeline for the Taiwan Rental Market',
+    subtitle: 'A scheduled scanner for 591 listings that scores each rental and purchase property on five weighted dimensions and ships an HTML digest at 09:00, with a Claude-powered interactive layer for affordability checks, comparisons, and visit preparation.',
+    metaTitle: 'House Ops — Autonomous House-Hunting Pipeline | Charles Chen Personal Project',
+    metaDescription: 'A Node.js automation pipeline that scrapes 591 daily, scores Taiwan rental and purchase listings on price, space, location, condition, and risk, and delivers an HTML email digest. A personal automation case study by AI Product Manager Charles Chen.',
+    problem: [
+      'Searching for a rental in Taiwan on 591 is a repetitive scan-evaluate-discard loop. Listings come and go within hours, prices shift, the same property reposts under a different agent, and any honest evaluation takes thirty-plus tabs of cross-referencing: MRT distance, school district, building age, layout, agent reputation. For a working professional running this in evenings only, the funnel is wide enough that high-priority listings get buried under noise inside a single day\'s drift.',
+      '591 itself, and most Taiwan rental aggregators, surface raw fields without judgment. They list, they sort, they filter; they don\'t score. A listing\'s reasonableness depends on a contextual blend (rent against district median, layout against household size, building condition, tenancy risk) that the platform does not consolidate. The user is left to do the synthesis manually, every day, on every listing.',
+    ],
+    solution: [
+      'Built House Ops as a Node.js (ESM) automation pipeline driven by macOS launchd. Each morning at 09:00, run-daily.mjs triggers an agent-browser session that scans the configured 591 search regions, deduplicates against data/last-scan.json (cache) and data/scan-history.tsv (long-running record), and writes a delta of new, price-changed, and delisted properties.',
+      'Each listing is scored heuristically across price reasonableness, space and layout, neighborhood amenities, property condition, and risk, weighted into a 0–5 total (rent uses 30/20/25/15/10; purchase uses 35/20/20/15/10). Keyword detection picks up MRT proximity (捷運), school district (學區), elevator availability, balcony, floor, and renovation status. Listings ≥4.0 are flagged as recommend, 3.5–3.9 as worth a cautious look, and below 3.5 as skip.',
+      'Results render into an HTML email through nodemailer over Gmail SMTP and arrive before the morning coffee window. The email contains a new-listings table (score, district, rent, size, layout, warnings, 591 link), price-change rows, delisted entries, and a district breakdown. A second layer lives inside Claude Code: in-session interactive modes for affordability calculation, upgrade-plan modeling, side-by-side property comparison, visit-day checklists, and ad-hoc scan and pipeline commands. The automated pipeline does the funnel; the interactive modes do the human-decision moments around viewings and trade-offs.',
+    ],
+    techStack: [
+      { category: 'Runtime', items: 'Node.js (ESM, .mjs)' },
+      { category: 'Scraping', items: 'agent-browser (591 search and listing page extraction)' },
+      { category: 'Email', items: 'nodemailer over Gmail SMTP (App Password authentication)' },
+      { category: 'Scheduling', items: 'macOS launchd (com.house-ops.daily.plist, daily 09:00)' },
+      { category: 'Persistence', items: 'data/last-scan.json (cache), data/scan-history.tsv (history), data/tracker.md (lifecycle), data/pipeline.md (queue)' },
+      { category: 'Interactive Layer', items: 'Claude Code modes (affordability, upgrade plan, compare, prepare visit, pipeline, scan)' },
+      { category: 'Source', items: '591.com.tw (rentals + purchases)' },
+    ],
+    impact: [
+      'Scheduled scanning: macOS launchd triggers run-daily.mjs every morning at 09:00; results are deduplicated against a persisted scan history (data/last-scan.json cache + data/scan-history.tsv long-running record)',
+      'Five-dimension scoring: each listing is scored on price reasonableness, space and layout, neighborhood amenities, property condition, and risk, weighted to a 0–5 total (rent uses 30/20/25/15/10, purchase uses 35/20/20/15/10)',
+      'Daily email digest: HTML brief via nodemailer over Gmail SMTP covering new listings, price changes, delisted entries, and district breakdown, delivered before the morning coffee window',
+      'Stateful tracker: every evaluated property flows through a Scanned → Evaluated → Visit → Signed lifecycle persisted in data/tracker.md',
+      'Interactive Claude modes: in-session affordability calculator, upgrade-plan modeling, side-by-side property comparison, visit-day checklists, and ad-hoc scan and pipeline commands, layered on top of the automated pipeline',
+    ],
+    learnings: [
+      'launchd is the right scheduling primitive on macOS for tools that depend on a logged-in user session. cron runs detached and inherits a minimal environment, which complicates anything that needs the user\'s keychain (Gmail credentials), GUI subsystems (some headless browser modes), or process supervision. launchd respects pmset wake settings, integrates with the system log, and survives reboot without manual reseeding. For a daily personal automation, the operational ceiling is meaningfully higher.',
+      'A first pass tried hard threshold filters: rent ≤ X, MRT walking distance ≤ Y, building age ≤ Z. The output was unstable as priorities shifted: a cheap reasonable listing got dropped for being one floor above the cap, while a pricier listing that happened to hit every default snuck through. Switching to dimensional weights, with a 0–5 composite and three decision bands (≥4.0 recommend, 3.5–3.9 cautious, <3.5 skip), let the system surface trade-offs without losing borderline candidates that deserved a second look.',
+      'A web dashboard was the obvious-looking interface for a personal tool, then the actual morning routine made the choice. The first thing checked is the phone, before getting out of bed. Email lands in that exact context: scannable on a small screen, archivable as a record, searchable by date. A dashboard would have required deliberate navigation; the email shows up where attention already is.',
+    ],
+    links: [
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/house-ops-daily-report.png',
+        alt: 'House Ops daily email digest: top summary block, new-listings table, price-change and delisted rows, district breakdown.',
+      },
+      {
+        src: '/assets/house-ops-listing-report.png',
+        alt: 'Per-listing five-dimension evaluation report: price reasonableness, space and layout, neighborhood amenities, property condition, and risk scored individually with the 0–5 weighted composite.',
+      },
     ],
   },
 ]

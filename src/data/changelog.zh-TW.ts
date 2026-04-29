@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'add-house-ops-personal-project',
+    date: '2026-04-29',
+    title: 'Personal Projects — 加入 House Ops',
+    tags: ['feature'],
+    body: [
+      '把 House Ops 加進來，成為第四個 personal project：一條 Node.js（ESM）自動化管線，每天 09:00 透過 macOS launchd 掃描 591，把每筆租屋與買房物件依五個加權維度（價格合理度、空間與格局、地段機能、屋況、風險）打分，再用 nodemailer + Gmail SMTP 寄出 HTML 簡報。持久化 tracker 帶著每筆已評估物件走過 Scanned → Evaluated → Visit → Signed，再加上 Claude Code 互動層處理可負擔性試算、升級規劃、物件並排比較、看屋當天 checklist。',
+      'House Ops 跟 Plutus Trade、Product Playbook 站在同一條軸線上：audience-of-one 的個人工具案例，技術選擇（launchd 排程、加權維度評分加三段決策、email 簡報交付）都從「真實的早晨流程怎麼用」往回推。頁面在 /projects/house-ops，附兩張 screenshot（每日簡報與單筆物件評估），三語都有完整 problem / solution / tech stack / impact / learnings 段落。',
+    ],
+  },
+  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: '多語系內容 — 全量翻譯收尾',

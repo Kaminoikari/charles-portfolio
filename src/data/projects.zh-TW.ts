@@ -59,6 +59,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
   },
+  {
+    id: 'house-ops',
+    title: 'House Ops',
+    description:
+      '為台灣租屋市場打造的自動化找房管線。每天早上自動掃描 591、把每筆物件依五個維度加權評分，在你還沒喝完早晨咖啡前就把精選簡報送進信箱。',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/house-ops',
+    tags: ['Node.js', 'Agent', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -200,6 +209,57 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },
+    ],
+  },
+  {
+    id: 'house-ops',
+    title: 'House Ops — 台灣租屋市場的自動化找房管線',
+    subtitle: '排程式 591 掃描器，把每筆租屋與買房物件依五個加權維度打分，每天 09:00 寄出 HTML email 簡報，再加上 Claude 互動層處理可負擔性試算、物件比較與看屋準備。',
+    metaTitle: 'House Ops — 自動化找房管線 | Charles Chen 個人專案',
+    metaDescription:
+      'Node.js 自動化管線。每日掃描 591，把台灣租屋與買房物件依價格、空間、地段、屋況、風險五個維度加權評分，並透過 HTML email 簡報交付。AI Product Manager Charles Chen 的個人自動化案例研究。',
+    problem: [
+      '在 591 上找房是一個重複的「掃描 → 評估 → 丟棄」循環。物件常常只撐幾個小時就消失、價格會變、同一筆物件可能換另一個經紀人重 po，每次認真評估都要開三十幾個分頁互相比對：捷運距離、學區、屋齡、格局、經紀人風評。對只能晚上做這件事的上班族來說，漏斗寬到單日的雜訊就會把高優先序的物件埋掉。',
+      '591 本身、以及大多數台灣租屋彙整網站，攤的是欄位、不負責判斷。它們列、排序、篩選，但不打分。一筆物件合不合理，看的是把租金、行政區中位數、格局與家庭人口、屋況、租賃風險串在一起的脈絡，這層整合平台沒做。使用者只能自己每天、每筆物件人工 synthesis。',
+    ],
+    solution: [
+      '把 House Ops 蓋成一條 Node.js（ESM）自動化管線，由 macOS launchd 驅動。每天 09:00，run-daily.mjs 觸發一個 agent-browser session 掃過設定好的 591 搜尋區域，先和 data/last-scan.json（cache）與 data/scan-history.tsv（長期紀錄）做 dedupe，再寫出一份「新增、降價、下架」的 delta。',
+      '每筆物件用啟發式評分跑過五個維度：價格合理度、空間與格局、地段機能、屋況、風險，加權合成 0–5 分（租屋是 30/20/25/15/10、買房是 35/20/20/15/10）。關鍵字偵測會抓出捷運、學區、電梯、陽台、樓層、整修狀態。≥4.0 標為推薦、3.5–3.9 為謹慎參考、低於 3.5 直接跳過。',
+      '結果透過 nodemailer + Gmail SMTP 渲染成一封 HTML email 寄出，趕在早晨咖啡時間之前抵達。內容含新上架表（分數、行政區、租金、坪數、格局、警示、591 連結）、降價列、下架條目、行政區拆解。另一層住在 Claude Code 裡：in-session 互動模式做可負擔性試算、升級規劃、物件並排比較、看屋當天 checklist，以及 ad-hoc 的 scan / pipeline 指令。自動化管線負責漏斗，互動模式負責看屋與 trade-off 周邊那些需要人類判斷的時刻。',
+    ],
+    techStack: [
+      { category: 'Runtime', items: 'Node.js（ESM, .mjs）' },
+      { category: 'Scraping', items: 'agent-browser（591 搜尋與物件頁抓取）' },
+      { category: 'Email', items: 'nodemailer over Gmail SMTP（App Password 驗證）' },
+      { category: 'Scheduling', items: 'macOS launchd（com.house-ops.daily.plist，每日 09:00）' },
+      { category: 'Persistence', items: 'data/last-scan.json（cache）、data/scan-history.tsv（歷史）、data/tracker.md（生命週期）、data/pipeline.md（佇列）' },
+      { category: 'Interactive Layer', items: 'Claude Code modes（affordability、upgrade plan、compare、prepare visit、pipeline、scan）' },
+      { category: 'Source', items: '591.com.tw（租屋 + 買房）' },
+    ],
+    impact: [
+      'Scheduled scanning：macOS launchd 每天 09:00 觸發 run-daily.mjs，結果與持久化掃描歷史（data/last-scan.json cache + data/scan-history.tsv 長期紀錄）做 dedupe',
+      'Five-dimension scoring：每筆物件依價格合理度、空間與格局、地段機能、屋況、風險五項分別打分，加權合成 0–5 分（租屋 30/20/25/15/10、買房 35/20/20/15/10）',
+      'Daily email digest：透過 nodemailer + Gmail SMTP 寄出 HTML 簡報，內容含新上架、降價、下架、行政區拆解，趕在早晨咖啡時間之前抵達',
+      'Stateful tracker：每筆已評估物件依 Scanned → Evaluated → Visit → Signed 生命週期保存於 data/tracker.md',
+      'Interactive Claude modes：in-session 可負擔性計算機、升級規劃、物件並排比較、看屋當天 checklist，以及 ad-hoc 的 scan / pipeline 指令，疊在自動化管線上面',
+    ],
+    learnings: [
+      'launchd 是 macOS 上「需要登入使用者環境」這類個人自動化的合適排程原語。cron 跑在 detached 狀態、繼承到的環境最小化，跟 keychain（Gmail 密碼）、GUI 子系統（某些 headless browser 模式）、process 監督都會打架。launchd 會尊重 pmset 喚醒設定、整合系統 log、重開機後不用手動 reseed。對日跑型的個人自動化來說，可營運天花板高很多。',
+      '一開始試過硬門檻過濾：租金 ≤ X、捷運步行 ≤ Y、屋齡 ≤ Z。priority 一變整個輸出就抖動：一筆便宜合理的物件因為樓層差一層被踢掉，一筆比較貴只是踩中所有預設值的物件卻溜進候選。改成維度加權、0–5 合成分、三段決策（≥4.0 推薦、3.5–3.9 謹慎、<3.5 跳過）後，邊界候選不會被誤殺，trade-off 也直接攤在分數面上。',
+      '一開始覺得 Web dashboard 是個人工具的標準介面，後來真實的早晨流程做了選擇。第一個被打開的是手機，在還沒下床的時候。Email 直接落在那個情境裡：小螢幕掃得動、可歸檔當紀錄、可依日期搜。Dashboard 要主動去開，Email 直接出現在注意力本來就在的地方。',
+    ],
+    links: [
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/house-ops-daily-report.png',
+        alt: 'House Ops 每日 email 簡報：頂部摘要區塊、新上架物件表、降價與下架條目、行政區拆解。',
+      },
+      {
+        src: '/assets/house-ops-listing-report.png',
+        alt: '單筆物件的五維評估報告：價格合理度、空間與格局、地段機能、屋況、風險五項分別打分，並加權合成為 0–5 分。',
+      },
     ],
   },
 ]

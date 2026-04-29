@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'add-house-ops-personal-project',
+    date: '2026-04-29',
+    title: 'Personal Projects — House Ops を追加',
+    tags: ['feature'],
+    body: [
+      '4 つ目の personal project として House Ops を追加しました。Node.js（ESM）の自動化パイプラインで、macOS launchd 経由で毎朝 09:00 に 591 をスキャンし、各賃貸・購入物件を 5 つの加重次元（価格妥当性、スペースと間取り、周辺環境、物件状態、リスク）で採点し、nodemailer + Gmail SMTP で HTML サマリーを配信します。永続化された tracker が評価済み物件を Scanned → Evaluated → Visit → Signed のライフサイクルで管理し、Claude Code のインタラクティブレイヤーがセッション内の支払い能力試算、買い替えプラン分析、サイドバイサイド比較、内見当日チェックリストを担います。',
+      'House Ops は Plutus Trade、Product Playbook と同じ軸に並ぶ、audience-of-one の個人ツール事例です。技術選択（launchd スケジューリング、加重次元採点と 3 つの決定バンド、メールサマリー配信）は、朝のルーチンで実際にどう使われるかから逆算しています。ページは /projects/house-ops にあり、スクリーンショット 2 枚（日次サマリーと物件別評価）と、完全な problem / solution / tech stack / impact / learnings の構成を 3 言語で提供します。',
+    ],
+  },
+  {
     id: 'i18n-content-translation',
     date: '2026-04-28',
     title: '多言語コンテンツ — 全量翻訳の仕上げ',

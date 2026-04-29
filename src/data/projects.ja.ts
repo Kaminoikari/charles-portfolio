@@ -60,6 +60,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
   },
+  {
+    id: 'house-ops',
+    title: 'House Ops',
+    description:
+      '台湾賃貸市場のための自律型物件探しパイプライン。毎朝 591 を自動スキャンし、各物件を 5 つの加重次元で採点して、朝のコーヒーを飲み終わる前に厳選サマリーをメールでお届けします。',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/house-ops',
+    tags: ['Node.js', 'Agent', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -201,6 +210,57 @@ export const projectDetails: ProjectDetail[] = [
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },
+    ],
+  },
+  {
+    id: 'house-ops',
+    title: 'House Ops — 台湾賃貸市場の自律型物件探しパイプライン',
+    subtitle: 'スケジュール駆動の 591 スキャナー。各賃貸・購入物件を 5 つの加重次元で採点し、毎日 09:00 に HTML メールサマリーをお届けします。さらに Claude のインタラクティブレイヤーが、支払い能力試算、物件比較、内見準備までカバーします。',
+    metaTitle: 'House Ops — 自律型物件探しパイプライン | Charles Chen 個人プロジェクト',
+    metaDescription:
+      'Node.js による自動化パイプライン。毎日 591 をスキャンし、台湾の賃貸・購入物件を価格・スペース・立地・状態・リスクの 5 次元で加重採点し、HTML メールでお届けします。AI Product Manager Charles Chen の個人自動化事例研究。',
+    problem: [
+      '591 で台湾の賃貸を探すのは、繰り返しの「スキャン → 評価 → 棄却」ループです。物件は数時間で出入りし、価格は動き、同じ物件が別のエージェントから再投稿され、誠実な評価には MRT 距離・学区・築年数・間取り・エージェントの評判をクロスリファレンスする 30 タブ以上の作業が必要になります。これを夜だけ回す会社員にとって、ファネルは広すぎて、優先度の高い物件が一日のドリフトの中で雑音に埋もれます。',
+      '591 自体や台湾の賃貸アグリゲーターの大半は、フィールドを並べるだけで判断はしません。リストし、ソートし、フィルターはしますが、採点はしません。物件が妥当かどうかは、賃料と行政区中央値、間取りと世帯人数、建物状態、賃貸リスクを束ねた文脈次第です。プラットフォーム側でそこを統合してくれるわけではないので、ユーザーが毎日、毎物件、自力で synthesis することになります。',
+    ],
+    solution: [
+      'House Ops を Node.js（ESM）の自動化パイプラインとして構築し、macOS launchd で駆動しています。毎朝 09:00 に run-daily.mjs が agent-browser セッションをトリガーし、設定済みの 591 検索エリアをスキャンします。data/last-scan.json（cache）と data/scan-history.tsv（長期記録）と突き合わせて重複排除し、新規・値下げ・削除の差分を書き出します。',
+      '各物件は、価格妥当性、スペースと間取り、周辺環境、物件状態、リスクの 5 次元でヒューリスティック採点を行い、加重して 0–5 点に合成します（賃貸は 30/20/25/15/10、購入は 35/20/20/15/10）。キーワード検出で MRT 近接（捷運）、学区（學區）、エレベーター、バルコニー、階層、リフォーム状況を拾います。≥4.0 はおすすめ、3.5–3.9 は慎重に検討、3.5 未満はスキップに分類されます。',
+      '結果は nodemailer + Gmail SMTP で HTML メールに描画され、朝のコーヒー時間より前に届きます。メールには新着物件テーブル（スコア、行政区、賃料、サイズ、間取り、警告、591 リンク）、値下げ行、削除エントリ、行政区別の集計が入ります。もう一層は Claude Code 内に住んでいます。セッション内のインタラクティブモードで、支払い能力試算、買い替えプラン分析、物件サイドバイサイド比較、内見当日チェックリスト、アドホックな scan / pipeline コマンドが扱えます。自動化パイプラインがファネルを担い、インタラクティブモードが内見やトレードオフ周辺の人間の判断局面を担います。',
+    ],
+    techStack: [
+      { category: 'Runtime', items: 'Node.js（ESM, .mjs）' },
+      { category: 'Scraping', items: 'agent-browser（591 検索と物件ページの取得）' },
+      { category: 'Email', items: 'nodemailer over Gmail SMTP（App Password 認証）' },
+      { category: 'Scheduling', items: 'macOS launchd（com.house-ops.daily.plist、毎日 09:00）' },
+      { category: 'Persistence', items: 'data/last-scan.json（cache）、data/scan-history.tsv（履歴）、data/tracker.md（ライフサイクル）、data/pipeline.md（キュー）' },
+      { category: 'Interactive Layer', items: 'Claude Code modes（affordability、upgrade plan、compare、prepare visit、pipeline、scan）' },
+      { category: 'Source', items: '591.com.tw（賃貸 + 購入）' },
+    ],
+    impact: [
+      'Scheduled scanning：macOS launchd が毎朝 09:00 に run-daily.mjs を起動し、永続化されたスキャン履歴（data/last-scan.json cache + data/scan-history.tsv 長期記録）と重複排除',
+      'Five-dimension scoring：各物件を価格妥当性、スペースと間取り、周辺環境、物件状態、リスクの 5 項目で個別採点し、0–5 点に加重合成（賃貸 30/20/25/15/10、購入 35/20/20/15/10）',
+      'Daily email digest：nodemailer + Gmail SMTP で HTML サマリーを送信。新着、値下げ、削除、行政区別集計を含み、朝のコーヒー時間より前に到着',
+      'Stateful tracker：評価済み物件はすべて Scanned → Evaluated → Visit → Signed のライフサイクルを通過し、data/tracker.md に保存',
+      'Interactive Claude modes：セッション内の支払い能力計算機、買い替えプラン分析、物件サイドバイサイド比較、内見当日チェックリスト、アドホックな scan / pipeline コマンドを、自動化パイプラインの上に重ねる',
+    ],
+    learnings: [
+      'launchd は macOS で「ログイン済みユーザー環境を必要とする」個人自動化に向くスケジューリング原語です。cron は detached で動き、継承する環境も最小限なので、keychain（Gmail 認証）、GUI サブシステム（一部のヘッドレスブラウザモード）、プロセス監督が絡むと相性が悪くなります。launchd は pmset の起動設定を尊重し、システム log と統合され、再起動後の手動再シードも要りません。日次の個人自動化にとって、運用上の天井が明確に高くなります。',
+      '最初のパスはハード閾値フィルタを試しました：賃料 ≤ X、MRT 徒歩 ≤ Y、築年数 ≤ Z。優先順位が変わるたびに出力が振動します。安くて妥当な物件が階数キャップに 1 階差で落ちる一方、デフォルトに当たっただけの高めの物件がそのまま通ってしまうという具合でした。次元加重に切り替え、0–5 の合成スコアと 3 つの決定バンド（≥4.0 おすすめ、3.5–3.9 慎重、<3.5 スキップ）にしてからは、境界線上の候補を取りこぼさず、トレードオフをスコアに直接乗せられるようになりました。',
+      '最初は Web dashboard が個人ツールの自然な UI に見えていましたが、実際の朝ルーチンが選択を決めました。最初に開かれるのはスマホ、しかもベッドから出る前です。メールはまさにその文脈に届きます：小さい画面でも流し読みできて、記録としてアーカイブでき、日付で検索できます。Dashboard なら能動的に開きに行く必要がありますが、メールは注意がもともと向いている場所に出てきます。',
+    ],
+    links: [
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },
+    ],
+    screenshots: [
+      {
+        src: '/assets/house-ops-daily-report.png',
+        alt: 'House Ops の日次メールサマリー：トップのサマリーブロック、新着物件テーブル、値下げと削除エントリ、行政区別集計。',
+      },
+      {
+        src: '/assets/house-ops-listing-report.png',
+        alt: '単一物件の 5 次元評価レポート：価格妥当性、スペースと間取り、周辺環境、物件状態、リスクの 5 項目スコアと、0–5 加重合成。',
+      },
     ],
   },
 ]
