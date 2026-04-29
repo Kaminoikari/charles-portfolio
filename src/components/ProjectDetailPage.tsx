@@ -127,7 +127,7 @@ export default function ProjectDetailPage() {
         {/* Screenshots */}
         {detail.screenshots && detail.screenshots.length > 0 && (
           <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '120ms' }}>
-            <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionScreens').toUpperCase()} ]</h2>
+            <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionScreens').toUpperCase()} ]</h2>
             <div className="mt-6 space-y-6">
               {detail.screenshots.map((shot) => {
                 const isVideo = shot.src.toLowerCase().endsWith('.mp4')
@@ -171,7 +171,7 @@ export default function ProjectDetailPage() {
 
         {/* Tech Stack */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '160ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionTechStack')} ]</h2>
+          <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionTechStack')} ]</h2>
           <table className="mt-6 w-full text-[15px] leading-[1.8]">
             <tbody>
               {detail.techStack.map((row) => (
@@ -186,7 +186,7 @@ export default function ProjectDetailPage() {
 
         {/* Impact */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '240ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionImpact')} ]</h2>
+          <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionImpact')} ]</h2>
           <ul className="mt-6 space-y-3">
             {detail.impact.map((item, i) => (
               <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted md:text-base">
@@ -297,7 +297,7 @@ function Section({ title, paragraphs, index }: { title: string; paragraphs: stri
       className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
       style={{ transitionDelay: `${index * 80}ms` }}
     >
-      <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {title.toUpperCase()} ]</h2>
+      <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {title.toUpperCase()} ]</h2>
       <div className="mt-5 space-y-4">
         {paragraphs.map((p, i) => (
           <p key={i} className="text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">

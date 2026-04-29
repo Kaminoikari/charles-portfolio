@@ -55,7 +55,7 @@ export default function ChangelogPage() {
     <div className="min-h-screen bg-bg-primary">
       {/* Header */}
       <header className="mx-auto max-w-[800px] px-6 pt-32 pb-10 md:pt-40 md:pb-14">
-        <div className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">
+        <div className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">
           {t('changelog.marker')}
         </div>
         <h1 className="mt-5 text-3xl font-semibold leading-tight text-white md:text-5xl">

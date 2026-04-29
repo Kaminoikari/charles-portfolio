@@ -144,7 +144,7 @@ export default function AboutPage() {
 
         {/* Projects link */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '480ms' }}>
-          <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('about.sectionProjects')} ]</h2>
+          <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {t('about.sectionProjects')} ]</h2>
           <p className="mt-5 text-[15px] leading-[1.8] text-text-muted md:text-base">{t('about.projectsCtaText')}</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link to={localePath('/projects/path')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
@@ -171,7 +171,7 @@ function Section({ title, index, children }: { title: string; index: number; chi
       className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
       style={{ transitionDelay: `${index * 80}ms` }}
     >
-      <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {title.toUpperCase()} ]</h2>
+      <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {title.toUpperCase()} ]</h2>
       <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
         {children}
       </div>

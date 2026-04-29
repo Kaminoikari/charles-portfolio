@@ -102,11 +102,11 @@ export default function ContactFooter() {
         </a>
       </section>
       <footer className="border-t border-border-hover py-12 text-center">
-        <div className="text-xs tracking-[1px] text-text-secondary">
+        <div className="text-xs tracking-[1px] text-white/85">
           {t('footer.rights')}
         </div>
-        <div className="mt-3 font-mono text-[10px] tracking-[1px] text-text-muted">
-          <Link to={localePath('/changelog')} className="text-text-muted no-underline transition-colors duration-200 hover:text-white">{t('footer.changelogLink')}</Link>
+        <div className="mt-3 font-mono text-[10px] tracking-[1px] text-white/70">
+          <Link to={localePath('/changelog')} className="text-white/70 no-underline transition-colors duration-200 hover:text-white">{t('footer.changelogLink')}</Link>
           {' · Rendered in '}<span ref={perfRef}>—</span>{'ms · React · Canvas 2D · Tailwind'}
         </div>
       </footer>

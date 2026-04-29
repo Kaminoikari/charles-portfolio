@@ -248,7 +248,7 @@ const HUB_COUNT = 10 // bright hub nodes
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-12">
         {/* Header */}
-        <h2 className="reveal mb-16 font-mono text-xs font-normal tracking-[2px] text-text-tertiary opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
+        <h2 className="reveal mb-16 font-mono text-sm font-medium tracking-[2px] text-text-tertiary opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
           {t('home.aboutMarker')}
         </h2>
 

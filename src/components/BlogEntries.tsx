@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useBlogArticles, platformLinks, type BlogArticle } from '../data'
 
-const CTA_FONT_FAMILY = 'var(--font-mono)'
-
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('en-US', { month: 'long', day: '2-digit', year: 'numeric' })
@@ -53,7 +51,7 @@ function BlogEntry({ article, index }: { article: BlogArticle; index: number }) 
                   {article.title}
                 </h3>
               </a>
-              <p className="grow text-text-secondary" style={{ fontSize: 15, lineHeight: 1.6 }}>
+              <p className="grow text-[15px] leading-[1.6] text-text-secondary">
                 {article.subtitle}
               </p>
             </div>
@@ -67,13 +65,7 @@ function BlogEntry({ article, index }: { article: BlogArticle; index: number }) 
               <div>
                 <button
                   type="button"
-                  className="pointer-events-none inline-flex shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
-                  style={{
-                    fontFamily: CTA_FONT_FAMILY,
-                    fontSize: 12,
-                    letterSpacing: '1.5px',
-                    textTransform: 'uppercase',
-                  }}
+                  className="pointer-events-none inline-flex shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-xs uppercase tracking-[1.5px] text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
                 >
                   Read
                 </button>
@@ -85,7 +77,7 @@ function BlogEntry({ article, index }: { article: BlogArticle; index: number }) 
         {/* Right: cover image as background (xAI style) */}
         <div className="order-1 flex-1 md:order-2 xl:max-w-[500px]">
           <div
-            className="break-words flex w-full items-center whitespace-pre-wrap bg-[#0C0C0B] duration-150 aspect-[16/10]"
+            className="break-words flex w-full items-center whitespace-pre-wrap bg-bg-secondary duration-150 aspect-[16/10]"
             style={article.cover ? {
               backgroundImage: `url("${article.cover}")`,
               backgroundSize: 'cover',
@@ -141,7 +133,7 @@ export default function BlogEntries() {
         {/* Header */}
         <div className="space-y-12">
           <div>
-            <div className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">
+            <div className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">
               [ BLOG ]
             </div>
           </div>

@@ -200,7 +200,9 @@ export default function UniverseSection() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // CSS vars not needed in Universe draw loop (no bg fills or cyan particles)
+    const bgPrimary =
+      getComputedStyle(document.documentElement).getPropertyValue('--color-bg-primary').trim() ||
+      '#0A0A0A'
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let animId: number
@@ -321,7 +323,7 @@ export default function UniverseSection() {
 
         // Opaque black background so lines don't show through
         ctx.globalAlpha = 1
-        ctx.fillStyle = '#0A0A0A'
+        ctx.fillStyle = bgPrimary
         ctx.fillRect(item.sx - drawSize / 2, item.sy - drawSize / 2, drawSize, drawSize)
         // Colored particle
         ctx.globalAlpha = drawAlpha
@@ -417,10 +419,10 @@ export default function UniverseSection() {
       id="skills"
       ref={sectionRef}
       className="relative flex w-full flex-col items-center overflow-hidden pb-0"
-      style={{ background: '#0A0A0A' }}
+      style={{ background: 'var(--color-bg-primary)' }}
     >
       <div className="z-10 w-full max-w-[1400px] px-6 pt-16 sm:pt-32 md:px-12">
-        <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ SKILLS ]</h2>
+        <h2 className="mb-2 font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ SKILLS ]</h2>
       </div>
       <div className="relative h-[550px] lg:h-[800px] xl:h-[1000px]">
         <div ref={canvasContainerRef} className="absolute left-1/2 top-0 h-[550px] w-[600px] -translate-x-1/2 lg:h-[800px] lg:w-[1000px] xl:h-[1000px] xl:w-[1200px] [&>canvas]:!h-full [&>canvas]:!w-full">
@@ -463,7 +465,7 @@ export default function UniverseSection() {
       {/* Top gradient fade — smooth blend from About section */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-32"
-        style={{ background: 'linear-gradient(to top, transparent 0%, #0A0A0A 100%)' }}
+        style={{ background: 'linear-gradient(to top, transparent 0%, var(--color-bg-primary) 100%)' }}
       />
 
       {/* Tooltip — section level so gradient can't cover it */}

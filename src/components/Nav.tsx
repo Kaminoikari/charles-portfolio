@@ -91,7 +91,7 @@ export default function Nav() {
       style={{
         borderColor: scrolledPastHero ? 'var(--color-border)' : 'transparent',
         background: scrolledPastHero
-          ? 'rgba(10,10,10,0.92)'
+          ? 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)'
           : 'transparent',
       }}
     >
@@ -252,7 +252,7 @@ export default function Nav() {
                   setMenuOpen(false)
                 }}
                 aria-pressed={locale === loc}
-                className={`min-h-[36px] cursor-pointer rounded-full border bg-transparent px-3 py-1 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${
+                className={`min-h-[44px] cursor-pointer rounded-full border bg-transparent px-3 py-1 font-mono text-[11px] tracking-[1px] transition-colors duration-200 ${
                   locale === loc
                     ? 'border-white/40 text-white'
                     : 'border-white/15 text-text-muted hover:text-white'

@@ -25,8 +25,6 @@ import {
   drawHouseOpsStatic, drawHouseOpsAnimated,
 } from './animations/houseOpsAnimation'
 
-const CTA_FONT_FAMILY = 'var(--font-mono)'
-
 // ─── Canvas Illustration Component ───
 
 function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean }) {
@@ -543,22 +541,12 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
 
       {/* Title */}
-      <h3
-        className="text-white"
-        style={{ fontSize: 20, fontWeight: 600, margin: 0 }}
-      >
+      <h3 className="m-0 text-xl font-semibold text-white">
         {project.title}
       </h3>
 
       {/* Description */}
-      <p
-        className="text-text-secondary transition-colors duration-300 ease-in-out group-hover:text-white/85"
-        style={{
-          fontSize: 15,
-          lineHeight: 1.6,
-          marginTop: 12,
-        }}
-      >
+      <p className="mt-3 text-[15px] leading-[1.6] text-text-secondary transition-colors duration-300 ease-in-out group-hover:text-white/85">
         {project.description}
       </p>
 
@@ -581,18 +569,9 @@ function ProjectCard({ project }: { project: Project }) {
 
       {/* CTA button */}
       <div className="mt-6 flex justify-center">
-        <div
-          className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]"
-          style={{
-            fontFamily: CTA_FONT_FAMILY,
-            fontSize: 12,
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase',
-            color: 'white',
-          }}
-        >
+        <div className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-xs uppercase tracking-[1.5px] text-white transition-colors duration-300 ease-in-out group-hover:bg-white/[0.08]">
           <span>{t('home.projectsCaseStudy')}</span>
-          <span aria-hidden="true" className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5" style={{ fontSize: 13, lineHeight: 1, transform: 'scale(1.4)' }}>↗</span>
+          <span aria-hidden="true" className="inline-block text-[13px] leading-none scale-[1.4] transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
         </div>
       </div>
     </a>
@@ -603,7 +582,7 @@ export default function ProjectCards() {
   const projects = useProjects()
   return (
     <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
-      <h2 className="mb-2 font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ SIDE PROJECTS ]</h2>
+      <h2 className="mb-2 font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ SIDE PROJECTS ]</h2>
 
       <div className="mt-12 flex flex-col md:flex-row md:gap-0">
         {projects.map((project, index) => (
