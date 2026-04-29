@@ -436,7 +436,6 @@ export default function UniverseSection() {
                 ref={(el) => { hoverZoneRefs.current[i] = el }}
                 className="pointer-events-auto absolute left-0 top-0"
                 style={{ width: 48, height: 48 }}
-                role="button"
                 tabIndex={0}
                 aria-label={skill.name}
                 onMouseEnter={() => {
