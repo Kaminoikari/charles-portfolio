@@ -91,7 +91,7 @@ export function updateListings(
       listings[i] = makeListing(cumTime)
       continue
     }
-    if (l.blipTime > 0) continue
+    // Re-blip each time the arm passes (radar metaphor: target re-pinged per rotation)
     const lNorm = normalizeAngle(l.angle)
     if (arcContainsCW(lNorm, prevSweepNorm, currSweepNorm)) {
       l.blipTime = cumTime > 0 ? cumTime : 0.0001
@@ -254,10 +254,13 @@ export function drawHouseOpsAnimated(
   drawHouseHub(ctx, entranceFade, hubPulse)
 
   // Listings
+  const scoreWindow = HO_SCORE_VISIBLE + HO_SCORE_FADE
   listings.forEach((l) => {
     if (l.blipTime <= 0) return
     const sinceBlip = cumTime - l.blipTime
     if (sinceBlip < 0) return
+    // After the score/flash window, the listing is fully gone (no residual dot)
+    if (sinceBlip > scoreWindow) return
 
     const age = cumTime - l.createdTime
     const tailStart = l.lifetime - HO_LISTING_FADE_OUT
