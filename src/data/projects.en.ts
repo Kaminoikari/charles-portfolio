@@ -53,7 +53,7 @@ export const projects: Project[] = [
     id: 'house-ops',
     title: 'House Ops',
     description:
-      'Autonomous house-hunting pipeline for the Taiwan rental market. Scans 591 every morning, scores each listing on five weighted dimensions, and delivers a curated email digest before you finish your coffee.',
+      '591 data automation + AI decision pipeline. Scrapes Taiwan rental and purchase listings daily, scores them across five weighted dimensions, and hands off affordability, comparison, and visit prep to an AI decision layer.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation'],
@@ -200,9 +200,9 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'house-ops',
-    title: 'House Ops — Autonomous House-Hunting Pipeline for the Taiwan Rental Market',
-    subtitle: 'A scheduled scanner for 591 listings that scores each rental and purchase property on five weighted dimensions and ships an HTML digest at 09:00, with a Claude-powered interactive layer for affordability checks, comparisons, and visit preparation.',
-    metaTitle: 'House Ops — Autonomous House-Hunting Pipeline | Charles Chen Personal Project',
+    title: 'House Ops — 591 Data Automation & AI Decision Pipeline',
+    subtitle: 'A macOS launchd job kicks off a Node.js pipeline at 09:00 daily: scrapes 591, scores each listing 0–5 on five weighted dimensions, ships an HTML digest. A Claude decision layer takes over in-session for affordability checks, side-by-side comparisons, and visit-day checklists.',
+    metaTitle: 'House Ops — 591 Data Automation & AI Decision Pipeline | Charles Chen Personal Project',
     metaDescription: 'A Node.js automation pipeline that scrapes 591 daily, scores Taiwan rental and purchase listings on price, space, location, condition, and risk, and delivers an HTML email digest. A personal automation case study by AI Product Manager Charles Chen.',
     problem: [
       'Searching for a rental in Taiwan on 591 is a repetitive scan-evaluate-discard loop. Listings come and go within hours, prices shift, the same property reposts under a different agent, and any honest evaluation takes thirty-plus tabs of cross-referencing: MRT distance, school district, building age, layout, agent reputation. For a working professional running this in evenings only, the funnel is wide enough that high-priority listings get buried under noise inside a single day\'s drift.',

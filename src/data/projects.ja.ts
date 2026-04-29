@@ -64,7 +64,7 @@ export const projects: Project[] = [
     id: 'house-ops',
     title: 'House Ops',
     description:
-      '台湾賃貸市場のための自律型物件探しパイプライン。毎朝 591 を自動スキャンし、各物件を 5 つの加重次元で採点して、朝のコーヒーを飲み終わる前に厳選サマリーをメールでお届けします。',
+      '591 のデータ自動化 + AI 意思決定パイプライン。台湾の賃貸・購入物件を毎日スキャンし、5 次元で加重採点。AI 意思決定レイヤーが支払い能力試算、物件比較、内見準備までカバー。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation'],
@@ -214,9 +214,9 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'house-ops',
-    title: 'House Ops — 台湾賃貸市場の自律型物件探しパイプライン',
-    subtitle: 'スケジュール駆動の 591 スキャナー。各賃貸・購入物件を 5 つの加重次元で採点し、毎日 09:00 に HTML メールサマリーをお届けします。さらに Claude のインタラクティブレイヤーが、支払い能力試算、物件比較、内見準備までカバーします。',
-    metaTitle: 'House Ops — 自律型物件探しパイプライン | Charles Chen 個人プロジェクト',
+    title: 'House Ops — 591 データ自動化と AI 意思決定 Pipeline',
+    subtitle: 'macOS launchd が毎日 09:00 に Node.js パイプラインを起動：591 をスクレイピング、5 つの加重次元で 0–5 採点、HTML サマリーを送信。Claude の意思決定レイヤーがセッション内で支払い能力試算、物件比較、内見当日のチェックリストを担当。',
+    metaTitle: 'House Ops — 591 データ自動化と AI 意思決定 Pipeline | Charles Chen 個人プロジェクト',
     metaDescription:
       'Node.js による自動化パイプライン。毎日 591 をスキャンし、台湾の賃貸・購入物件を価格・スペース・立地・状態・リスクの 5 次元で加重採点し、HTML メールでお届けします。AI Product Manager Charles Chen の個人自動化事例研究。',
     problem: [

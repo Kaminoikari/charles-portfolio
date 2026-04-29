@@ -63,7 +63,7 @@ export const projects: Project[] = [
     id: 'house-ops',
     title: 'House Ops',
     description:
-      '為台灣租屋市場打造的自動化找房管線。每天早上自動掃描 591、把每筆物件依五個維度加權評分，在你還沒喝完早晨咖啡前就把精選簡報送進信箱。',
+      '591 找房自動化 + AI 決策 pipeline。每日掃描租屋與買房物件、五維加權評分，AI 負責物件比較和決策推薦。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation'],
@@ -213,9 +213,9 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'house-ops',
-    title: 'House Ops — 台灣租屋市場的自動化找房管線',
-    subtitle: '排程式 591 掃描器，把每筆租屋與買房物件依五個加權維度打分，每天 09:00 寄出 HTML email 簡報，再加上 Claude 互動層處理可負擔性試算、物件比較與看屋準備。',
-    metaTitle: 'House Ops — 自動化找房管線 | Charles Chen 個人專案',
+    title: 'House Ops — 591 數據自動化與 AI 決策 Pipeline',
+    subtitle: 'macOS launchd 每天 09:00 啟動 Node.js 管線：抓取 591、五維加權打 0–5 分、寄出 HTML 簡報；Claude 決策層在 session 內接手可負擔性試算、物件比較與看屋 checklist。',
+    metaTitle: 'House Ops — 591 數據自動化與 AI 決策 Pipeline | Charles Chen 個人專案',
     metaDescription:
       'Node.js 自動化管線。每日掃描 591，把台灣租屋與買房物件依價格、空間、地段、屋況、風險五個維度加權評分，並透過 HTML email 簡報交付。AI Product Manager Charles Chen 的個人自動化案例研究。',
     problem: [
