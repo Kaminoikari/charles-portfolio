@@ -15,9 +15,9 @@ export const HO_SWEEP_DURATION = 3.0   // seconds per full rotation
 export const HO_ENTRANCE_FADE = 0.4    // first-hover soft fade-in
 export const HO_LISTING_LIFETIME_MIN = 5.0
 export const HO_LISTING_LIFETIME_MAX = 7.0
-export const HO_BLIP_FLASH = 0.18      // duration of white flash after blip
 export const HO_SCORE_VISIBLE = 0.5    // score visible window after blip
 export const HO_SCORE_FADE = 0.3       // additional fade window
+export const HO_BLIP_FLASH = HO_SCORE_VISIBLE + HO_SCORE_FADE  // synced with score lifecycle
 export const HO_LISTING_FADE_OUT = 0.8 // lifetime tail used to fade listing out
 
 const TWO_PI = Math.PI * 2
