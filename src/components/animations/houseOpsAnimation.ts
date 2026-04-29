@@ -103,8 +103,8 @@ export function updateListings(
 
 function listingStroke(score: number, alpha: number): string {
   if (score >= 4.0) return marsA(alpha)
-  if (score >= 3.5) return whiteA(alpha * 0.7)
-  return whiteA(alpha * 0.25)
+  if (score >= 3.5) return whiteA(alpha * 0.85)
+  return whiteA(alpha * 0.4)
 }
 
 function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
@@ -152,32 +152,48 @@ function drawListing(
   const x = HO_CX + Math.cos(listing.angle) * listing.radius
   const y = HO_CY + Math.sin(listing.angle) * listing.radius
   const isRec = listing.score >= 4.0
-  const dotR = isRec ? 3 + pulse * 0.8 : 2.2
+  const dotR = isRec ? 4 + pulse * 0.8 : 3
 
+  // Recommend halo — tighter and brighter for a crisp blip rather than a fuzzy aura
   if (isRec && blipFlash > 0) {
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, dotR * 3.5)
-    glow.addColorStop(0, marsA(0.45 * alpha * blipFlash))
-    glow.addColorStop(1, marsA(0))
-    ctx.fillStyle = glow
+    const haloR = dotR * 2.2
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, haloR)
+    halo.addColorStop(0, marsA(0.75 * alpha * blipFlash))
+    halo.addColorStop(0.4, marsA(0.3 * alpha * blipFlash))
+    halo.addColorStop(1, marsA(0))
+    ctx.fillStyle = halo
     ctx.beginPath()
-    ctx.arc(x, y, dotR * 3.5, 0, TWO_PI)
+    ctx.arc(x, y, haloR, 0, TWO_PI)
     ctx.fill()
   }
 
+  // Blip flash — small, punchy, sharper falloff
   if (blipFlash > 0) {
-    const flash = ctx.createRadialGradient(x, y, 0, x, y, 14)
-    flash.addColorStop(0, whiteA(0.85 * blipFlash * alpha))
+    const flashR = 10
+    const flash = ctx.createRadialGradient(x, y, 0, x, y, flashR)
+    flash.addColorStop(0, whiteA(0.95 * blipFlash * alpha))
+    flash.addColorStop(0.5, whiteA(0.35 * blipFlash * alpha))
     flash.addColorStop(1, whiteA(0))
     ctx.fillStyle = flash
     ctx.beginPath()
-    ctx.arc(x, y, 14, 0, TWO_PI)
+    ctx.arc(x, y, flashR, 0, TWO_PI)
     ctx.fill()
   }
 
+  // Solid dot
   ctx.fillStyle = listingStroke(listing.score, alpha)
   ctx.beginPath()
   ctx.arc(x, y, dotR, 0, TWO_PI)
   ctx.fill()
+
+  // Bright pinpoint core for visual sharpness — only on RECOMMEND/CAUTIOUS, scaled by band
+  if (listing.score >= 3.5 && alpha > 0) {
+    const coreAlpha = isRec ? 0.95 : 0.65
+    ctx.fillStyle = whiteA(coreAlpha * alpha)
+    ctx.beginPath()
+    ctx.arc(x, y, Math.max(0.8, dotR * 0.32), 0, TWO_PI)
+    ctx.fill()
+  }
 
   if (showScore) {
     const a = (1 - scoreFadeOut) * alpha
