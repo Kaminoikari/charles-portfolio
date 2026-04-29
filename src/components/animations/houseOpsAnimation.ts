@@ -1,88 +1,102 @@
 import { whiteA, marsA } from './shared'
 
-// ─── House Ops: Radar Sweep Animation ───
+// ─── House Ops: Continuous Radar Sweep ───
 // Layout on the 400×280 canvas:
-//   Radar circle: center (130, 140), outer radius 100
-//   Envelope:     (245, 95, 115×90)
+//   Radar circle: center (200, 140), outer radius 120
 
-export const HO_CX = 130
+export const HO_CX = 200
 export const HO_CY = 140
-export const HO_OUTER_R = 100
-export const HO_RINGS = [33, 67, 100]
+export const HO_OUTER_R = 120
+export const HO_RINGS = [40, 80, 120]
 export const HO_LISTING_COUNT = 8
 export const HO_TRAIL_RAD = (60 * Math.PI) / 180
 export const HO_SWEEP_START = -Math.PI / 2
+export const HO_SWEEP_DURATION = 3.0   // seconds per full rotation
+export const HO_ENTRANCE_FADE = 0.4    // first-hover soft fade-in
+export const HO_LISTING_LIFETIME_MIN = 5.0
+export const HO_LISTING_LIFETIME_MAX = 7.0
+export const HO_BLIP_FLASH = 0.18      // duration of white flash after blip
+export const HO_SCORE_VISIBLE = 0.5    // score visible window after blip
+export const HO_SCORE_FADE = 0.3       // additional fade window
+export const HO_LISTING_FADE_OUT = 0.8 // lifetime tail used to fade listing out
 
-export const HO_ENV_X = 245
-export const HO_ENV_Y = 95
-export const HO_ENV_W = 115
-export const HO_ENV_H = 90
-
-export const HO_ENTRANCE_DURATION = 0.4
-export const HO_SWEEP_DURATION = 3.0
-export const HO_SETTLED_DURATION = 0.6
-export const HO_DIGEST_DURATION = 0.7
-export const HO_FADE_DURATION = 0.5
-
-export type HoPhase = 'entrance' | 'sweep' | 'settled' | 'digest' | 'fadeOut'
+const TWO_PI = Math.PI * 2
 
 export type HoListing = {
   angle: number
   radius: number
   score: number
-  blipTime: number  // cumulative time when this listing got blipped (0 = not yet)
+  createdTime: number
+  lifetime: number
+  blipTime: number  // cumulative time when blipped (0 = not yet)
+}
+
+function randomScore(): number {
+  // 3/8 RECOMMEND (4.0–4.7), 3/8 CAUTIOUS (3.5–3.9), 2/8 SKIP (2.0–3.4)
+  const r = Math.random()
+  if (r < 0.375) return 4.0 + Math.random() * 0.7
+  if (r < 0.75) return 3.5 + Math.random() * 0.4
+  return 2.0 + Math.random() * 1.4
+}
+
+export function makeListing(now: number): HoListing {
+  return {
+    angle: Math.random() * TWO_PI,
+    radius: 50 + Math.random() * 65,  // 50–115 (inside HO_OUTER_R = 120)
+    score: randomScore(),
+    createdTime: now,
+    lifetime: HO_LISTING_LIFETIME_MIN + Math.random() * (HO_LISTING_LIFETIME_MAX - HO_LISTING_LIFETIME_MIN),
+    blipTime: 0,
+  }
 }
 
 export function generateListings(): HoListing[] {
-  // 3 RECOMMEND (4.0–4.7) + 3 CAUTIOUS (3.5–3.9) + 2 SKIP (2.0–3.4)
-  const scores = [
-    4.0 + Math.random() * 0.7,
-    4.0 + Math.random() * 0.7,
-    4.0 + Math.random() * 0.7,
-    3.5 + Math.random() * 0.4,
-    3.5 + Math.random() * 0.4,
-    3.5 + Math.random() * 0.4,
-    2.0 + Math.random() * 1.4,
-    2.0 + Math.random() * 1.4,
-  ]
-  for (let i = scores.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[scores[i], scores[j]] = [scores[j], scores[i]]
-  }
-
-  const angles: number[] = []
+  const list: HoListing[] = []
   for (let i = 0; i < HO_LISTING_COUNT; i++) {
-    const base = (i / HO_LISTING_COUNT) * Math.PI * 2
-    const jitter = ((Math.random() - 0.5) * Math.PI * 0.6) / HO_LISTING_COUNT
-    angles.push(base + jitter)
+    const l = makeListing(0)
+    // Stagger their start so they don't all expire at once
+    l.createdTime = -Math.random() * l.lifetime * 0.5
+    list.push(l)
   }
-  angles.sort((a, b) => a - b)
-
-  return angles.map((angle, i) => ({
-    angle,
-    radius: 42 + Math.random() * 50,
-    score: scores[i],
-    blipTime: 0,
-  }))
+  return list
 }
 
-// Sweep starts at HO_SWEEP_START and goes CW.
-// Returns the fraction of a full sweep (0–1) at which the arm reaches `listingAngle`.
-export function listingSweepFraction(listingAngle: number): number {
-  let norm = listingAngle - HO_SWEEP_START
-  while (norm < 0) norm += Math.PI * 2
-  while (norm >= Math.PI * 2) norm -= Math.PI * 2
-  return norm / (Math.PI * 2)
+function normalizeAngle(a: number): number {
+  let n = a - HO_SWEEP_START
+  while (n < 0) n += TWO_PI
+  while (n >= TWO_PI) n -= TWO_PI
+  return n
 }
 
-// Mark any listing whose angle has been swept. Mutates listings in place.
-export function updateBlips(listings: HoListing[], sweepProgress: number, cumTime: number) {
-  listings.forEach((l) => {
-    if (l.blipTime > 0) return
-    if (sweepProgress >= listingSweepFraction(l.angle)) {
+// Returns true if `target` lies in the CW arc (prev, curr] (with wrap support).
+function arcContainsCW(target: number, prev: number, curr: number): boolean {
+  if (curr >= prev) return target > prev && target <= curr
+  // Sweep wrapped past 2π between frames
+  return target > prev || target <= curr
+}
+
+// Mutates `listings` in place. Per frame:
+//   - if a listing's age >= its lifetime, replace it with a fresh one at a new angle/score
+//   - otherwise, if it hasn't blipped yet and the sweep arm crossed its angle this frame, blip it
+export function updateListings(
+  listings: HoListing[],
+  cumTime: number,
+  prevSweepNorm: number,
+  currSweepNorm: number,
+) {
+  for (let i = 0; i < listings.length; i++) {
+    const l = listings[i]
+    const age = cumTime - l.createdTime
+    if (age >= l.lifetime) {
+      listings[i] = makeListing(cumTime)
+      continue
+    }
+    if (l.blipTime > 0) continue
+    const lNorm = normalizeAngle(l.angle)
+    if (arcContainsCW(lNorm, prevSweepNorm, currSweepNorm)) {
       l.blipTime = cumTime > 0 ? cumTime : 0.0001
     }
-  })
+  }
 }
 
 // ── Drawing helpers ──
@@ -98,7 +112,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   ctx.lineWidth = 1
   HO_RINGS.forEach((r) => {
     ctx.beginPath()
-    ctx.arc(HO_CX, HO_CY, r, 0, Math.PI * 2)
+    ctx.arc(HO_CX, HO_CY, r, 0, TWO_PI)
     ctx.stroke()
   })
   ctx.strokeStyle = whiteA(0.06 * alpha)
@@ -126,45 +140,6 @@ function drawHouseHub(ctx: CanvasRenderingContext2D, alpha: number, pulse: numbe
   ctx.fill()
 }
 
-function drawEnvelope(ctx: CanvasRenderingContext2D, alpha: number, active: number) {
-  const x = HO_ENV_X
-  const y = HO_ENV_Y
-  const w = HO_ENV_W
-  const h = HO_ENV_H
-
-  ctx.fillStyle = active > 0.3 ? marsA((0.04 + active * 0.12) * alpha) : whiteA(0.03 * alpha)
-  ctx.beginPath()
-  ctx.roundRect(x, y, w, h, 3)
-  ctx.fill()
-
-  ctx.strokeStyle = active > 0.3 ? marsA((0.4 + active * 0.5) * alpha) : whiteA(0.25 * alpha)
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.roundRect(x, y, w, h, 3)
-  ctx.stroke()
-
-  // Flap V
-  ctx.beginPath()
-  ctx.moveTo(x, y)
-  ctx.lineTo(x + w / 2, y + h * 0.42)
-  ctx.lineTo(x + w, y)
-  ctx.stroke()
-
-  if (active > 0.7) {
-    const sx = x + w - 16
-    const sy = y + h - 14
-    const stampA = (active - 0.7) / 0.3
-    ctx.strokeStyle = marsA(stampA * alpha)
-    ctx.lineWidth = 1.8
-    ctx.beginPath()
-    ctx.moveTo(sx - 3, sy)
-    ctx.lineTo(sx, sy + 3)
-    ctx.lineTo(sx + 5, sy - 3)
-    ctx.stroke()
-    ctx.lineWidth = 1
-  }
-}
-
 function drawListing(
   ctx: CanvasRenderingContext2D,
   listing: HoListing,
@@ -185,7 +160,7 @@ function drawListing(
     glow.addColorStop(1, marsA(0))
     ctx.fillStyle = glow
     ctx.beginPath()
-    ctx.arc(x, y, dotR * 3.5, 0, Math.PI * 2)
+    ctx.arc(x, y, dotR * 3.5, 0, TWO_PI)
     ctx.fill()
   }
 
@@ -195,13 +170,13 @@ function drawListing(
     flash.addColorStop(1, whiteA(0))
     ctx.fillStyle = flash
     ctx.beginPath()
-    ctx.arc(x, y, 14, 0, Math.PI * 2)
+    ctx.arc(x, y, 14, 0, TWO_PI)
     ctx.fill()
   }
 
   ctx.fillStyle = listingStroke(listing.score, alpha)
   ctx.beginPath()
-  ctx.arc(x, y, dotR, 0, Math.PI * 2)
+  ctx.arc(x, y, dotR, 0, TWO_PI)
   ctx.fill()
 
   if (showScore) {
@@ -215,7 +190,6 @@ function drawListing(
 }
 
 function drawSweepArm(ctx: CanvasRenderingContext2D, angle: number, alpha: number) {
-  // Trail wedge — 60° fading behind the arm
   const STEPS = 14
   for (let i = 0; i < STEPS; i++) {
     const t1 = i / STEPS
@@ -243,7 +217,7 @@ function drawSweepArm(ctx: CanvasRenderingContext2D, angle: number, alpha: numbe
   const ty = HO_CY + Math.sin(angle) * HO_OUTER_R
   ctx.fillStyle = marsA(alpha)
   ctx.beginPath()
-  ctx.arc(tx, ty, 2, 0, Math.PI * 2)
+  ctx.arc(tx, ty, 2, 0, TWO_PI)
   ctx.fill()
 }
 
@@ -253,17 +227,16 @@ export function drawHouseOpsStatic(ctx: CanvasRenderingContext2D) {
   const alpha = 0.7
   drawRadarFrame(ctx, alpha)
   drawHouseHub(ctx, alpha, 0)
-  drawEnvelope(ctx, alpha, 0.2)
-  // Deterministic sample so the static state is recognizable as a finished sweep
+  // Deterministic sample dots so the static state reads as a populated radar
   const sample: HoListing[] = [
-    { angle: -Math.PI / 2 + 0.3, radius: 70, score: 4.3, blipTime: 1 },
-    { angle: 0.3, radius: 55, score: 3.7, blipTime: 1 },
-    { angle: 1.0, radius: 85, score: 4.1, blipTime: 1 },
-    { angle: 1.9, radius: 50, score: 2.8, blipTime: 1 },
-    { angle: 2.6, radius: 75, score: 3.6, blipTime: 1 },
-    { angle: 3.4, radius: 60, score: 4.5, blipTime: 1 },
-    { angle: 4.3, radius: 80, score: 3.2, blipTime: 1 },
-    { angle: 5.2, radius: 65, score: 3.8, blipTime: 1 },
+    { angle: -Math.PI / 2 + 0.3, radius: 88, score: 4.3, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 0.3, radius: 70, score: 3.7, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 1.0, radius: 100, score: 4.1, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 1.9, radius: 60, score: 2.8, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 2.6, radius: 92, score: 3.6, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 3.4, radius: 75, score: 4.5, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 4.3, radius: 95, score: 3.2, createdTime: 0, lifetime: 99, blipTime: 1 },
+    { angle: 5.2, radius: 80, score: 3.8, createdTime: 0, lifetime: 99, blipTime: 1 },
   ]
   sample.forEach((l) => drawListing(ctx, l, alpha, 0, false, 1, 0))
   ctx.globalAlpha = 1
@@ -271,66 +244,42 @@ export function drawHouseOpsStatic(ctx: CanvasRenderingContext2D) {
 
 export function drawHouseOpsAnimated(
   ctx: CanvasRenderingContext2D,
-  phase: HoPhase,
-  phaseTimer: number,
   cumTime: number,
   listings: HoListing[],
-  fadeAlpha: number,
+  entranceFade: number,
 ) {
-  const a = fadeAlpha
-  const entranceP = phase === 'entrance' ? Math.min(1, phaseTimer / HO_ENTRANCE_DURATION) : 1
-
-  drawRadarFrame(ctx, a * entranceP)
+  drawRadarFrame(ctx, entranceFade)
 
   const hubPulse = 0.5 + 0.5 * Math.sin(cumTime * 3)
-  drawHouseHub(ctx, a * entranceP, hubPulse)
-
-  let envActive = 0.15
-  if (phase === 'digest') envActive = Math.min(1, phaseTimer / HO_DIGEST_DURATION)
-  else if (phase === 'fadeOut') envActive = 1
-  drawEnvelope(ctx, a * entranceP, envActive)
-
-  // Connection lines first so they sit behind the dots
-  if (phase === 'digest' || phase === 'fadeOut') {
-    const lineT = phase === 'digest' ? Math.min(1, phaseTimer / HO_DIGEST_DURATION) : 1
-    listings.forEach((l) => {
-      if (l.score < 4.0) return
-      const lx = HO_CX + Math.cos(l.angle) * l.radius
-      const ly = HO_CY + Math.sin(l.angle) * l.radius
-      const ex = HO_ENV_X + 4
-      const ey = HO_ENV_Y + HO_ENV_H / 2
-      const drawT = Math.min(1, lineT * 1.4)
-      const dx = lx + (ex - lx) * drawT
-      const dy = ly + (ey - ly) * drawT
-      ctx.strokeStyle = marsA(0.30 * a * lineT)
-      ctx.lineWidth = 0.8
-      ctx.setLineDash([2, 3])
-      ctx.beginPath()
-      ctx.moveTo(lx, ly)
-      ctx.lineTo(dx, dy)
-      ctx.stroke()
-    })
-    ctx.setLineDash([])
-    ctx.lineWidth = 1
-  }
+  drawHouseHub(ctx, entranceFade, hubPulse)
 
   // Listings
   listings.forEach((l) => {
     if (l.blipTime <= 0) return
     const sinceBlip = cumTime - l.blipTime
-    const blipFlash = sinceBlip < 0.18 ? Math.max(0, 1 - sinceBlip / 0.18) : 0
-    const showScore = sinceBlip < 0.8
-    const scoreFadeOut = sinceBlip < 0.5 ? 0 : Math.min(1, (sinceBlip - 0.5) / 0.3)
+    if (sinceBlip < 0) return
+
+    const age = cumTime - l.createdTime
+    const tailStart = l.lifetime - HO_LISTING_FADE_OUT
+    const lifeFade = age > tailStart ? Math.max(0, 1 - (age - tailStart) / HO_LISTING_FADE_OUT) : 1
+    const alpha = entranceFade * lifeFade
+    if (alpha <= 0) return
+
+    const blipFlash = sinceBlip < HO_BLIP_FLASH ? Math.max(0, 1 - sinceBlip / HO_BLIP_FLASH) : 0
+    const scoreWindow = HO_SCORE_VISIBLE + HO_SCORE_FADE
+    const showScore = sinceBlip < scoreWindow
+    const scoreFadeOut = sinceBlip < HO_SCORE_VISIBLE
+      ? 0
+      : Math.min(1, (sinceBlip - HO_SCORE_VISIBLE) / HO_SCORE_FADE)
     const isRec = l.score >= 4.0
     const pulse = isRec ? Math.max(0, Math.sin(cumTime * 3 + l.angle * 1.7) * 0.5 + 0.5) : 0
-    drawListing(ctx, l, a, blipFlash, showScore, scoreFadeOut, pulse)
+
+    drawListing(ctx, l, alpha, blipFlash, showScore, scoreFadeOut, pulse)
   })
 
-  // Sweep arm last so it sits above settled dots
-  if (phase === 'sweep') {
-    const sweepAngle = HO_SWEEP_START + (phaseTimer / HO_SWEEP_DURATION) * Math.PI * 2
-    drawSweepArm(ctx, sweepAngle, a)
-  }
+  // Sweep arm — always drawn, no phase gate
+  const sweepAngle = HO_SWEEP_START + ((cumTime / HO_SWEEP_DURATION) * TWO_PI) % TWO_PI
+  drawSweepArm(ctx, sweepAngle, entranceFade)
 
   ctx.globalAlpha = 1
 }

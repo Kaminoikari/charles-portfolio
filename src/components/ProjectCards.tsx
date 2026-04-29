@@ -19,9 +19,10 @@ import {
   computePbMetrics, drawPlaybookStatic, drawPlaybookAnimated,
 } from './animations/playbookAnimation'
 import {
-  type HoListing, type HoPhase,
-  HO_ENTRANCE_DURATION, HO_SWEEP_DURATION, HO_SETTLED_DURATION, HO_DIGEST_DURATION, HO_FADE_DURATION,
-  generateListings, updateBlips, drawHouseOpsStatic, drawHouseOpsAnimated,
+  type HoListing,
+  HO_SWEEP_DURATION, HO_ENTRANCE_FADE,
+  generateListings, updateListings,
+  drawHouseOpsStatic, drawHouseOpsAnimated,
 } from './animations/houseOpsAnimation'
 
 const CTA_FONT_FAMILY = 'var(--font-mono)'
@@ -58,8 +59,6 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     pbFadeTimer: number
     pbTime: number
     // House Ops state
-    hoPhase: HoPhase
-    hoTimer: number
     hoTime: number
     hoListings: HoListing[]
   }>({
@@ -84,8 +83,6 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     pbPauseTimer: 0,
     pbFadeTimer: 0,
     pbTime: 0,
-    hoPhase: 'entrance',
-    hoTimer: 0,
     hoTime: 0,
     hoListings: [],
   })
@@ -442,49 +439,18 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
 
         drawPlaybookAnimated(ctx, s.pbProgress, pbFadeAlpha, s.pbTime, pbEntranceProgress, pbMetrics)
       } else if (id === 'house-ops') {
-        // ── Radar sweep lifecycle ──
-        s.hoTime += dt
+        // ── Continuous radar sweep ──
         if (s.hoListings.length === 0) {
           s.hoListings = generateListings()
         }
-        s.hoTimer += dt
-
-        if (s.hoPhase === 'entrance') {
-          if (s.hoTimer >= HO_ENTRANCE_DURATION) {
-            s.hoPhase = 'sweep'
-            s.hoTimer = 0
-          }
-        } else if (s.hoPhase === 'sweep') {
-          const sweepProgress = Math.min(1, s.hoTimer / HO_SWEEP_DURATION)
-          updateBlips(s.hoListings, sweepProgress, s.hoTime)
-          if (s.hoTimer >= HO_SWEEP_DURATION) {
-            s.hoListings.forEach((l) => { if (l.blipTime <= 0) l.blipTime = s.hoTime })
-            s.hoPhase = 'settled'
-            s.hoTimer = 0
-          }
-        } else if (s.hoPhase === 'settled') {
-          if (s.hoTimer >= HO_SETTLED_DURATION) {
-            s.hoPhase = 'digest'
-            s.hoTimer = 0
-          }
-        } else if (s.hoPhase === 'digest') {
-          if (s.hoTimer >= HO_DIGEST_DURATION) {
-            s.hoPhase = 'fadeOut'
-            s.hoTimer = 0
-          }
-        } else if (s.hoPhase === 'fadeOut') {
-          if (s.hoTimer >= HO_FADE_DURATION) {
-            s.hoPhase = 'entrance'
-            s.hoTimer = 0
-            s.hoListings = generateListings()
-          }
-        }
-
-        const hoFadeAlpha = s.hoPhase === 'fadeOut'
-          ? Math.max(0, 1 - s.hoTimer / HO_FADE_DURATION)
-          : 1
-
-        drawHouseOpsAnimated(ctx, s.hoPhase, s.hoTimer, s.hoTime, s.hoListings, hoFadeAlpha)
+        const TWO_PI = Math.PI * 2
+        const prevTime = s.hoTime
+        s.hoTime += dt
+        const prevNorm = ((prevTime / HO_SWEEP_DURATION) * TWO_PI) % TWO_PI
+        const currNorm = ((s.hoTime / HO_SWEEP_DURATION) * TWO_PI) % TWO_PI
+        updateListings(s.hoListings, s.hoTime, prevNorm, currNorm)
+        const entranceFade = Math.min(1, s.hoTime / HO_ENTRANCE_FADE)
+        drawHouseOpsAnimated(ctx, s.hoTime, s.hoListings, entranceFade)
       }
 
       animRef.current = requestAnimationFrame(animate)
