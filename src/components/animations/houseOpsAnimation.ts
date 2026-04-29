@@ -108,14 +108,55 @@ function listingStroke(score: number, alpha: number): string {
 }
 
 function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
-  ctx.strokeStyle = whiteA(0.12 * alpha)
+  // Bold outer ring
+  ctx.strokeStyle = marsA(0.6 * alpha)
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(HO_CX, HO_CY, HO_OUTER_R, 0, TWO_PI)
+  ctx.stroke()
   ctx.lineWidth = 1
-  HO_RINGS.forEach((r) => {
+
+  // Inner concentric rings
+  ctx.strokeStyle = marsA(0.2 * alpha)
+  for (let i = 0; i < HO_RINGS.length - 1; i++) {
     ctx.beginPath()
-    ctx.arc(HO_CX, HO_CY, r, 0, TWO_PI)
+    ctx.arc(HO_CX, HO_CY, HO_RINGS[i], 0, TWO_PI)
     ctx.stroke()
-  })
-  ctx.strokeStyle = whiteA(0.06 * alpha)
+  }
+
+  // Rim ticks: every 5° short, every 30° long
+  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.lineWidth = 0.9
+  for (let deg = 0; deg < 360; deg += 5) {
+    const angle = HO_SWEEP_START + (deg / 360) * TWO_PI
+    const isMajor = deg % 30 === 0
+    const tickLen = isMajor ? 6 : 3
+    const x1 = HO_CX + Math.cos(angle) * HO_OUTER_R
+    const y1 = HO_CY + Math.sin(angle) * HO_OUTER_R
+    const x2 = HO_CX + Math.cos(angle) * (HO_OUTER_R - tickLen)
+    const y2 = HO_CY + Math.sin(angle) * (HO_OUTER_R - tickLen)
+    ctx.beginPath()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    ctx.stroke()
+  }
+  ctx.lineWidth = 1
+
+  // Degree numbers every 30° (000, 030, 060 …)
+  ctx.fillStyle = marsA(0.7 * alpha)
+  ctx.font = 'bold 8px monospace'
+  for (let deg = 0; deg < 360; deg += 30) {
+    const angle = HO_SWEEP_START + (deg / 360) * TWO_PI
+    const labelR = HO_OUTER_R + 9
+    const lx = HO_CX + Math.cos(angle) * labelR
+    const ly = HO_CY + Math.sin(angle) * labelR
+    const text = deg.toString().padStart(3, '0')
+    const tw = ctx.measureText(text).width
+    ctx.fillText(text, lx - tw / 2, ly + 3)
+  }
+
+  // Dashed crosshair through center
+  ctx.strokeStyle = marsA(0.18 * alpha)
   ctx.setLineDash([2, 4])
   ctx.beginPath()
   ctx.moveTo(HO_CX - HO_OUTER_R, HO_CY)
@@ -124,18 +165,43 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   ctx.lineTo(HO_CX, HO_CY + HO_OUTER_R)
   ctx.stroke()
   ctx.setLineDash([])
+
+  // Cardinal axis tick clusters: small perpendicular ticks where each ring meets the crosshair
+  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.lineWidth = 1
+  const tickHL = 3
+  HO_RINGS.forEach((r) => {
+    ctx.beginPath()
+    ctx.moveTo(HO_CX - r, HO_CY - tickHL)
+    ctx.lineTo(HO_CX - r, HO_CY + tickHL)
+    ctx.moveTo(HO_CX + r, HO_CY - tickHL)
+    ctx.lineTo(HO_CX + r, HO_CY + tickHL)
+    ctx.moveTo(HO_CX - tickHL, HO_CY - r)
+    ctx.lineTo(HO_CX + tickHL, HO_CY - r)
+    ctx.moveTo(HO_CX - tickHL, HO_CY + r)
+    ctx.lineTo(HO_CX + tickHL, HO_CY + r)
+    ctx.stroke()
+  })
 }
 
 function drawHouseHub(ctx: CanvasRenderingContext2D, alpha: number, pulse: number) {
-  const s = 5
-  ctx.fillStyle = marsA((0.7 + pulse * 0.25) * alpha)
+  // Reticle ring around hub
+  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.arc(HO_CX, HO_CY, 11, 0, TWO_PI)
+  ctx.stroke()
+
+  // House icon (slightly smaller to sit comfortably inside the reticle)
+  const s = 4
+  ctx.fillStyle = marsA((0.78 + pulse * 0.22) * alpha)
   ctx.beginPath()
   ctx.rect(HO_CX - s, HO_CY - 1, s * 2, s + 1)
   ctx.fill()
   ctx.beginPath()
-  ctx.moveTo(HO_CX - s - 1.5, HO_CY - 1)
-  ctx.lineTo(HO_CX, HO_CY - s - 2)
-  ctx.lineTo(HO_CX + s + 1.5, HO_CY - 1)
+  ctx.moveTo(HO_CX - s - 1, HO_CY - 1)
+  ctx.lineTo(HO_CX, HO_CY - s - 1.5)
+  ctx.lineTo(HO_CX + s + 1, HO_CY - 1)
   ctx.closePath()
   ctx.fill()
 }
@@ -212,7 +278,7 @@ function drawSweepArm(ctx: CanvasRenderingContext2D, angle: number, alpha: numbe
     const t2 = (i + 1) / STEPS
     const a1 = angle - HO_TRAIL_RAD * t1
     const a2 = angle - HO_TRAIL_RAD * t2
-    const wedgeAlpha = (1 - t1) * 0.20 * alpha
+    const wedgeAlpha = (1 - t1) * 0.32 * alpha
     ctx.fillStyle = marsA(wedgeAlpha)
     ctx.beginPath()
     ctx.moveTo(HO_CX, HO_CY)
