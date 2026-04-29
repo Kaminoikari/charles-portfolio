@@ -181,11 +181,11 @@ function drawListing(
 
   if (showScore) {
     const a = (1 - scoreFadeOut) * alpha
-    ctx.fillStyle = isRec ? marsA(0.95 * a) : whiteA(0.7 * a)
-    ctx.font = 'bold 9px monospace'
+    ctx.fillStyle = isRec ? marsA(0.95 * a) : whiteA(0.75 * a)
+    ctx.font = 'bold 12px monospace'
     const text = listing.score.toFixed(1)
     const tw = ctx.measureText(text).width
-    ctx.fillText(text, x - tw / 2, y - 10)
+    ctx.fillText(text, x - tw / 2, y - 13)
   }
 }
 
