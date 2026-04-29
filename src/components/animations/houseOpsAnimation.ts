@@ -154,9 +154,9 @@ function drawListing(
   const isRec = listing.score >= 4.0
   const dotR = isRec ? 3 + pulse * 0.8 : 2.2
 
-  if (isRec) {
+  if (isRec && blipFlash > 0) {
     const glow = ctx.createRadialGradient(x, y, 0, x, y, dotR * 3.5)
-    glow.addColorStop(0, marsA(0.45 * alpha))
+    glow.addColorStop(0, marsA(0.45 * alpha * blipFlash))
     glow.addColorStop(1, marsA(0))
     ctx.fillStyle = glow
     ctx.beginPath()
