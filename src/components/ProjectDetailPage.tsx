@@ -90,7 +90,7 @@ export default function ProjectDetailPage() {
       <header className="mx-auto max-w-[800px] px-6 pt-32 pb-10 md:pt-40 md:pb-14">
         <Link
           to={localePath('/#projects')}
-          className="inline-block font-mono text-xs tracking-[2px] text-text-tertiary no-underline transition-colors duration-200 hover:text-white"
+          className="inline-block font-mono text-sm font-medium tracking-[2px] text-text-tertiary no-underline transition-colors duration-200 hover:text-white"
         >
           {t('projectDetail.back')}
         </Link>

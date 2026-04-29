@@ -309,7 +309,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['design'],
     body: [
       'About セクションを再設計し、デスクトップでは両側に成果アノテーションが並ぶ大きなプロフィール写真を中心に据えました。写真は CSS radial gradient mask を使い、暗い背景への自然なエッジフェードを実現：プログラム的な背景除去を試みるよりずっとクリーンです。',
-      'デスクトップレイアウトは写真を中央に配置し、左側に「6M+ Users Impacted」、右側に「85% Revenue Impact」と「5x Faster with AI」を置きます。モバイルではコンパクトなメトリクス行の上に写真を積み重ねます。',
+      'デスクトップレイアウトは写真を中央に配置し、左側に「7M+ Users Impacted」、右側に「85% Revenue Impact」と「5x Faster with AI」を置きます。モバイルではコンパクトなメトリクス行の上に写真を積み重ねます。',
       'コピーは一般的な紹介から「What I bring to the table.」へ洗練：直接的で自信があり、メトリクスをそれと並んで語らせます。',
     ],
   },

@@ -293,7 +293,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['design'],
     body: [
       'Redesigned the About section to feature a large profile photo with achievement annotations flanking it on desktop. The photo uses a CSS radial gradient mask for a natural edge fade into the dark background, much cleaner than attempting programmatic background removal.',
-      'Desktop layout places the photo center with "6M+ Users Impacted" on the left and "85% Revenue Impact" plus "5x Faster with AI" on the right. Mobile stacks the photo above a compact metrics row.',
+      'Desktop layout places the photo center with "7M+ Users Impacted" on the left and "85% Revenue Impact" plus "5x Faster with AI" on the right. Mobile stacks the photo above a compact metrics row.',
       'The copy was refined from a generic introduction to "What I bring to the table.": direct and confident, letting the metrics speak alongside it.',
     ],
   },

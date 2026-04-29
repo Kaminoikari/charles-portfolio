@@ -308,7 +308,7 @@ export const changelog: ChangelogEntry[] = [
     tags: ['design'],
     body: [
       'About section 重新設計，主視覺是大張個人照搭配桌機版兩側的成就標註。照片用 CSS radial gradient mask 自然淡化邊緣融入深底，比嘗試程式去背乾淨許多。',
-      '桌機 layout 把照片放中央，「6M+ Users Impacted」在左側，「85% Revenue Impact」與「5x Faster with AI」在右側。手機上把照片堆在精簡的指標 row 上方。',
+      '桌機 layout 把照片放中央，「7M+ Users Impacted」在左側，「85% Revenue Impact」與「5x Faster with AI」在右側。手機上把照片堆在精簡的指標 row 上方。',
       '文案從制式介紹改成「What I bring to the table.」：直接、有自信，讓指標站在它旁邊一起說話。',
     ],
   },

@@ -277,7 +277,7 @@ const HUB_COUNT = 10 // bright hub nodes
             {/* Desktop: photo with annotations on sides */}
             <div className="hidden lg:flex lg:items-center lg:gap-6">
               {/* Left annotation */}
-              <Annotation number="6M+" label={t('home.aboutMetricUsersLabel')} side="left" />
+              <Annotation number="7M+" label={t('home.aboutMetricUsersLabel')} side="left" />
 
               {/* Photo */}
               <div className="relative h-[480px] w-[350px] shrink-0 xl:h-[600px] xl:w-[440px]">
@@ -316,7 +316,7 @@ const HUB_COUNT = 10 // bright hub nodes
               </div>
               <div className="mt-4 flex gap-8">
                 <div className="text-center">
-                  <div className="font-mono text-xl font-semibold text-white">6M+</div>
+                  <div className="font-mono text-xl font-semibold text-white">7M+</div>
                   <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricUsersShort')}</div>
                 </div>
                 <div className="text-center">
