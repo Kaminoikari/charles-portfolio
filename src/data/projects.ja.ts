@@ -211,6 +211,12 @@ export const projectDetails: ProjectDetail[] = [
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },
     ],
+    screenshots: [
+      {
+        src: '/assets/product-playbook-demo-ja.mp4',
+        alt: 'Product Playbook Build Mode のデモ動画：プロダクト要件を入力すると、AI が既存コードベースをスキャンし、技術スタックを自動検出。PM フレームワークを適用して課題を明確化し、ソリューション設計へと直接進みます。',
+      },
+    ],
   },
   {
     id: 'house-ops',

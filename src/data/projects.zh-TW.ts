@@ -210,6 +210,12 @@ export const projectDetails: ProjectDetail[] = [
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },
     ],
+    screenshots: [
+      {
+        src: '/assets/product-playbook-demo-zh-TW.mp4',
+        alt: 'Product Playbook Build Mode 示範影片：輸入產品需求，AI 掃描現有 codebase、自動偵測技術棧，套用 PM 框架釐清問題後直接進入方案設計。',
+      },
+    ],
   },
   {
     id: 'house-ops',

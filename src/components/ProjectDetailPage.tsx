@@ -129,26 +129,42 @@ export default function ProjectDetailPage() {
           <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '120ms' }}>
             <h2 className="font-mono text-xs font-normal tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionScreens').toUpperCase()} ]</h2>
             <div className="mt-6 space-y-6">
-              {detail.screenshots.map((shot) => (
-                <figure key={shot.src} className="overflow-hidden rounded-lg border border-border bg-bg-secondary">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      lightboxOpenerRef.current = e.currentTarget
-                      setLightbox({ src: shot.src, alt: shot.alt })
-                    }}
-                    aria-label={shot.alt}
-                    className="block w-full cursor-zoom-in border-none bg-transparent p-0 transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
-                  >
-                    <img
-                      src={shot.src}
-                      alt={shot.alt}
-                      loading="lazy"
-                      className="block h-auto w-full"
-                    />
-                  </button>
-                </figure>
-              ))}
+              {detail.screenshots.map((shot) => {
+                const isVideo = shot.src.toLowerCase().endsWith('.mp4')
+                return (
+                  <figure key={shot.src} className="overflow-hidden rounded-lg border border-border bg-bg-secondary">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        lightboxOpenerRef.current = e.currentTarget
+                        setLightbox({ src: shot.src, alt: shot.alt })
+                      }}
+                      aria-label={shot.alt}
+                      className="block w-full cursor-zoom-in border-none bg-transparent p-0 transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
+                    >
+                      {isVideo ? (
+                        <video
+                          src={shot.src}
+                          aria-label={shot.alt}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="block h-auto w-full bg-black"
+                        />
+                      ) : (
+                        <img
+                          src={shot.src}
+                          alt={shot.alt}
+                          loading="lazy"
+                          className="block h-auto w-full"
+                        />
+                      )}
+                    </button>
+                  </figure>
+                )
+              })}
             </div>
           </div>
         )}
@@ -233,6 +249,7 @@ export default function ProjectDetailPage() {
 }
 
 function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string; closeLabel: string; onClose: () => void }) {
+  const isVideo = src.toLowerCase().endsWith('.mp4')
   return (
     <div
       role="dialog"
@@ -241,12 +258,25 @@ function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string;
       onClick={onClose}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-black/85 px-4 py-12 backdrop-blur-sm"
     >
-      <img
-        src={src}
-        alt={alt}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-[92vh] max-w-[95vw] cursor-default rounded-lg border border-white/10 object-contain"
-      />
+      {isVideo ? (
+        <video
+          src={src}
+          aria-label={alt}
+          autoPlay
+          loop
+          controls
+          playsInline
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-[92vh] max-w-[95vw] cursor-default rounded-lg border border-white/10 bg-black object-contain"
+        />
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-[92vh] max-w-[95vw] cursor-default rounded-lg border border-white/10 object-contain"
+        />
+      )}
       <button
         type="button"
         onClick={onClose}
