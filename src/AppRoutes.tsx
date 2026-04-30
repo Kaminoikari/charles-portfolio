@@ -7,6 +7,7 @@ import { useInitialLocaleRestore } from './i18n'
 const AboutPage = lazy(() => import('./components/AboutPage'))
 const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
 const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
+const DysonSpherePrototype = lazy(() => import('./components/DysonSpherePrototype'))
 
 function Loading() {
   return <div className="flex h-screen items-center justify-center bg-bg-primary" />
@@ -46,6 +47,14 @@ export default function AppRoutes() {
           element={
             <Suspense fallback={<Loading />}>
               <ProjectDetailPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/dyson-test"
+          element={
+            <Suspense fallback={<Loading />}>
+              <DysonSpherePrototype />
             </Suspense>
           }
         />
