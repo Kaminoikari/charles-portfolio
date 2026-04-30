@@ -369,11 +369,9 @@ export default function BlackHoleBackdrop({ intensity = 1.0 }: Props) {
     const onMotionChange = (e: MediaQueryListEvent) => { prefersReduced = e.matches }
     reducedMotion.addEventListener('change', onMotionChange)
 
-    const onEasterEgg = () => {
-      if (eggStartRef.current === 0) {
-        eggStartRef.current = performance.now()
-      }
-    }
+    // Superseded by EasterEggSequence (full-screen overlay). Hero shader
+    // stays in idle state during the new egg so the two don't compete.
+    const onEasterEgg = () => {}
     window.addEventListener('easter-egg', onEasterEgg)
 
     const startTime = performance.now()

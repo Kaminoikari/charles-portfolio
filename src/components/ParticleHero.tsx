@@ -884,19 +884,12 @@ export default function ParticleHero() {
 
     let sfxTimeoutId: number | null = null
 
-    const onEasterEgg = () => {
-      // Don't restart if currently active — let the existing run finish
-      if (eggStartRef.current === 0) {
-        eggStartRef.current = performance.now()
-        if (sfxTimeoutId !== null) clearTimeout(sfxTimeoutId)
-        sfx.pause()
-        sfxTimeoutId = window.setTimeout(() => {
-          sfxTimeoutId = null
-          sfx.currentTime = 0
-          sfx.play().catch(() => {})
-        }, SFX_DELAY_MS)
-      }
-    }
+    // Legacy portrait-formation egg is superseded by EasterEggSequence
+    // (full-screen overlay). Listener is a no-op so the two don't compete.
+    void SFX_DELAY_MS
+    void sfx
+    void sfxTimeoutId
+    const onEasterEgg = () => {}
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === KONAMI_SEQUENCE[konamiIndexRef.current]) {
         konamiIndexRef.current++

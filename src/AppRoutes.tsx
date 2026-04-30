@@ -2,12 +2,14 @@ import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import App from './App'
 import Nav from './components/Nav'
+import EasterEggSequence from './components/EasterEggSequence'
 import { useInitialLocaleRestore } from './i18n'
 
 const AboutPage = lazy(() => import('./components/AboutPage'))
 const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
 const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
 const DysonSpherePrototype = lazy(() => import('./components/DysonSpherePrototype'))
+const EasterEggTest = lazy(() => import('./components/EasterEggTest'))
 
 function Loading() {
   return <div className="flex h-screen items-center justify-center bg-bg-primary" />
@@ -24,6 +26,7 @@ export default function AppRoutes() {
   return (
     <>
       <Nav />
+      <EasterEggSequence />
       <Routes>
         <Route path="/" element={<App />} />
         <Route
@@ -55,6 +58,14 @@ export default function AppRoutes() {
           element={
             <Suspense fallback={<Loading />}>
               <DysonSpherePrototype />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/easter-egg-test"
+          element={
+            <Suspense fallback={<Loading />}>
+              <EasterEggTest />
             </Suspense>
           }
         />
