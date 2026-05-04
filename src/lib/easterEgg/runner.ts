@@ -3,6 +3,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
+import { cinematicShader, globalFadeForTime } from './passes/cinematic'
 import {
   createAudioBus,
   disposeAudioBus,
@@ -148,6 +150,18 @@ function startSequence(onDone: () => void): () => void {
     0.78,
   )
   composer.addPass(bloom)
+  // Cinematic finishing pass: vignette, warm/cool grade, grain, plus a
+  // boundary-driven global fade so beat-to-beat transitions read as cuts
+  // rather than abrupt swaps.
+  const cinematicPass = new ShaderPass(cinematicShader)
+  cinematicPass.uniforms.u_resolution.value.set(width, height)
+  // Grain reads heavier on low-DPR mobile screens; ease it back there so the
+  // image stays clean while still benefiting from the grade and vignette.
+  if (isMobile) {
+    cinematicPass.uniforms.u_grainStrength.value = 0.028
+    cinematicPass.uniforms.u_vignetteStrength.value = 0.34
+  }
+  composer.addPass(cinematicPass)
   composer.addPass(new OutputPass())
 
   // ----- audio setup -----
@@ -211,6 +225,7 @@ function startSequence(onDone: () => void): () => void {
     renderer.setSize(w, h)
     composer.setSize(w, h)
     bloom.setSize(w, h)
+    cinematicPass.uniforms.u_resolution.value.set(w, h)
   }
   window.addEventListener('resize', onResize)
 
@@ -248,6 +263,8 @@ function startSequence(onDone: () => void): () => void {
         const scene = ensureScene(idx, t)
         scene.update(t, localT, dt)
       }
+      cinematicPass.uniforms.u_time.value = t
+      cinematicPass.uniforms.u_globalFade.value = globalFadeForTime(t)
       composer.render()
     } catch (err) {
       console.error('[easter-egg] tick error', err)
