@@ -25,6 +25,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '為什麼在 AI 時代，培養 agency 比培養技能更重要',
+    subtitle: '當 AI 把技能瓶頸拿掉之後，真正分出高下的是什麼？Notion 產品負責人 Max Schoening 給的答案是 agency。',
+    url: 'https://charlestychen.substack.com/p/ai-agency',
+    platform: 'Substack',
+    date: '2026-05-05',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/d5925d65-be4b-4606-9938-4adf3df5b724_1536x1024.png',
+  },
+  {
     title: '當純軟體不再是護城河：什麼才是今日持久的競爭優勢？',
     subtitle: 'Snap CEO Evan Spiegel 談：為什麼 15 年來只有兩個 consumer app 活下來、Snapchat 每一個功能都被抄走、硬體才是唯一真正的 moat、以及 distribution 比產品更重要。',
     url: 'https://charlestychen.substack.com/p/ai-distribution',

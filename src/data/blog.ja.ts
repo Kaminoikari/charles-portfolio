@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI 時代に、スキルよりも agency を磨くことが重要な理由',
+    subtitle: 'AI がスキルのボトルネックを取り除いたあと、本当に差をつけるのは何か？Notion プロダクト責任者 Max Schoening の答えは agency。',
+    url: 'https://charlestychen.substack.com/p/ai-agency',
+    platform: 'Substack',
+    date: '2026-05-05',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/d5925d65-be4b-4606-9938-4adf3df5b724_1536x1024.png',
+  },
+  {
     title: 'ソフトウェア単独では堀にならない時代、いま持続する競争優位とは何か？',
     subtitle: 'Snap CEO Evan Spiegel が語る、この 15 年で生き残った consumer app がわずか 2 つしかない理由、Snapchat の機能がすべて模倣された経緯、ハードウェアこそ唯一の本物の moat である理由、そして distribution がプロダクトより重要であること。',
     url: 'https://charlestychen.substack.com/p/ai-distribution',
