@@ -125,7 +125,7 @@ export const blogArticles: BlogArticle[] = [
     subtitle: '2 つのロールの本質的な違いと、キャリアでのポジショニング。',
     url: 'https://charleschen.medium.com/%E6%88%91%E5%BF%83%E4%B8%AD%E7%9A%84%E7%94%A2%E5%93%81%E7%B6%93%E7%90%86-vs-%E5%B0%88%E6%A1%88%E7%B6%93%E7%90%86-7e34fc57ec70',
     platform: 'Medium',
-    date: '2025-06-01',
+    date: '2024-06-27',
     cover: 'https://miro.medium.com/1*McevyyNy8urbJciiN7YwAQ.png',
   },
   {
@@ -133,7 +133,7 @@ export const blogArticles: BlogArticle[] = [
     subtitle: '理論から実践まで、OKR 導入のリアルな経験。',
     url: 'https://charleschen.medium.com/okr%E5%AF%A6%E5%8B%99%E4%B8%8A%E8%A6%81%E5%A6%82%E4%BD%95%E6%88%90%E5%8A%9F%E8%90%BD%E5%9C%B0-fc9890830854',
     platform: 'Medium',
-    date: '2025-05-01',
+    date: '2023-09-03',
     cover: 'https://miro.medium.com/1*ciHZKpKZwrIQXrZBUecslw.jpeg',
   },
   {
@@ -141,7 +141,7 @@ export const blogArticles: BlogArticle[] = [
     subtitle: 'Discovery over delivery というプロダクト開発の心構え。',
     url: 'https://charleschen.medium.com/%E7%94%A2%E5%93%81%E7%B6%93%E7%90%86-%E4%B8%8D%E8%A6%81%E9%97%9C%E6%B3%A8%E7%94%A2%E5%93%81%E4%BA%A4%E4%BB%98-%E8%80%8C%E6%98%AF%E7%94%A2%E5%93%81%E6%8E%A2%E7%B4%A2-953381b1d4eb',
     platform: 'Medium',
-    date: '2025-04-01',
+    date: '2023-08-01',
     cover: 'https://miro.medium.com/1*07FSIHrRmf8KDY65SQ0Fsw.png',
   },
   {
@@ -149,7 +149,7 @@ export const blogArticles: BlogArticle[] = [
     subtitle: '権威と影響力の、本質的な違い。',
     url: 'https://charleschen.medium.com/%E5%8F%8D%E6%80%9D%E7%B3%BB%E5%88%97-%E4%BA%8C-authority-vs-influence-%E6%88%91%E5%BF%83%E7%9B%AE%E4%B8%AD%E7%9A%84%E7%9C%9F%E6%AD%A3%E9%A0%98%E5%B0%8E%E5%8A%9B-6f2bb20f04d1',
     platform: 'Medium',
-    date: '2025-03-01',
+    date: '2022-09-11',
     cover: 'https://miro.medium.com/0*URLUPWfvbuhIc30h',
   },
   {
@@ -157,7 +157,7 @@ export const blogArticles: BlogArticle[] = [
     subtitle: '認知バイアスがプロダクトの意思決定にどう影響するか。',
     url: 'https://charleschen.medium.com/%E4%BC%81%E6%A5%AD%E7%87%9F%E9%81%8B%E5%A4%A7%E6%9C%89%E5%95%8F%E9%A1%8C-%E5%86%8D%E8%81%B0%E6%98%8E%E7%9A%84%E4%BA%BA%E9%83%BD%E7%84%A1%E6%B3%95%E9%81%BF%E5%85%8D%E8%AA%8D%E7%9F%A5%E5%81%8F%E8%AA%A4-d6053d9fdcf6',
     platform: 'Medium',
-    date: '2025-02-01',
+    date: '2022-03-09',
     cover: 'https://miro.medium.com/1*5NCkG52ADLxcDw_etFnWoA.jpeg',
   },
 ]
