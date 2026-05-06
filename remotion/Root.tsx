@@ -2,7 +2,7 @@ import { Composition } from "remotion";
 import { PathDemo } from "./PathDemo";
 
 const FPS = 30;
-const DURATION_SECONDS = 15;
+const DURATION_SECONDS = 30;
 
 export const Root = () => {
   return (

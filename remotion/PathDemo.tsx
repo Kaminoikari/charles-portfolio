@@ -13,22 +13,28 @@ const MARS_ORANGE = "#E8652B";
 const CYAN = "#00D9FF";
 const NAVY_DEEP = "#0A0F1E";
 
-const HERO_LEN = 45;
+const HERO_LEN = 60;
 const FEATURES_LEN = 30;
+const DASHBOARD_LEN = 90;
 const TRIP_LEN = 75;
-const MAP_LEN = 75;
-const COST_LEN = 75;
-const OFFLINE_LEN = 75;
-const LOGO_LEN = 75;
+const DRAG_LEN = 150;
+const MAP_LEN = 90;
+const COST_LEN = 90;
+const RECEIPT_LEN = 120;
+const OFFLINE_LEN = 90;
+const LOGO_LEN = 105;
 
 const SCENES = [
   { id: "hero", from: 0, len: HERO_LEN },
   { id: "features", from: HERO_LEN, len: FEATURES_LEN },
-  { id: "trip", from: HERO_LEN + FEATURES_LEN, len: TRIP_LEN },
-  { id: "map", from: HERO_LEN + FEATURES_LEN + TRIP_LEN, len: MAP_LEN },
-  { id: "cost", from: HERO_LEN + FEATURES_LEN + TRIP_LEN + MAP_LEN, len: COST_LEN },
-  { id: "offline", from: HERO_LEN + FEATURES_LEN + TRIP_LEN + MAP_LEN + COST_LEN, len: OFFLINE_LEN },
-  { id: "logo", from: HERO_LEN + FEATURES_LEN + TRIP_LEN + MAP_LEN + COST_LEN + OFFLINE_LEN, len: LOGO_LEN },
+  { id: "dashboard", from: HERO_LEN + FEATURES_LEN, len: DASHBOARD_LEN },
+  { id: "trip", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN, len: TRIP_LEN },
+  { id: "drag", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN, len: DRAG_LEN },
+  { id: "map", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN + DRAG_LEN, len: MAP_LEN },
+  { id: "cost", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN + DRAG_LEN + MAP_LEN, len: COST_LEN },
+  { id: "receipt", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN + DRAG_LEN + MAP_LEN + COST_LEN, len: RECEIPT_LEN },
+  { id: "offline", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN + DRAG_LEN + MAP_LEN + COST_LEN + RECEIPT_LEN, len: OFFLINE_LEN },
+  { id: "logo", from: HERO_LEN + FEATURES_LEN + DASHBOARD_LEN + TRIP_LEN + DRAG_LEN + MAP_LEN + COST_LEN + RECEIPT_LEN + OFFLINE_LEN, len: LOGO_LEN },
 ] as const;
 
 const CROSSFADE = 12;
@@ -45,12 +51,12 @@ const HeroScene: React.FC = () => {
   });
 
   const tagY = spring({
-    frame: localFrame - 12,
+    frame: localFrame - 18,
     fps,
     config: { damping: 18, stiffness: 90 },
     durationInFrames: 24,
   });
-  const tagOpacity = interpolate(localFrame, [12, 32], [0, 1], {
+  const tagOpacity = interpolate(localFrame, [18, 38], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
@@ -280,6 +286,96 @@ const FeatureSlide: React.FC<FeatureSlideProps> = ({
   );
 };
 
+const DragScene: React.FC = () => {
+  const localFrame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+
+  type Keyframe = { src: string; from: number; to: number };
+  const KEYFRAMES: Keyframe[] = [
+    { src: "path-day.png", from: 0, to: 24 },
+    { src: "path-day-lift.png", from: 18, to: 60 },
+    { src: "path-day-mid.png", from: 54, to: 88 },
+    { src: "path-day-over.png", from: 82, to: 116 },
+    { src: "path-day-drop.png", from: 110, to: DRAG_LEN },
+  ];
+
+  const captionAppear = spring({
+    frame: localFrame - 14,
+    fps,
+    config: { damping: 16, stiffness: 110 },
+    durationInFrames: 24,
+  });
+  const captionOpacity = interpolate(localFrame, [14, 32, DRAG_LEN - 10, DRAG_LEN], [0, 1, 1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const captionShift = (1 - captionAppear) * 20;
+
+  return (
+    <AbsoluteFill style={{ backgroundColor: NAVY_DEEP, overflow: "hidden" }}>
+      {KEYFRAMES.map((kf, i) => {
+        const fadeIn = i === 0 ? 1 : interpolate(localFrame, [kf.from, kf.from + 10], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const next = KEYFRAMES[i + 1];
+        const fadeOut = next ? interpolate(localFrame, [next.from, next.from + 10], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) : 1;
+        const opacity = Math.min(fadeIn, fadeOut);
+        return (
+          <AbsoluteFill key={kf.src} style={{ opacity }}>
+            <Img src={staticFile(kf.src)} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </AbsoluteFill>
+        );
+      })}
+      <AbsoluteFill
+        style={{
+          background: "linear-gradient(180deg, rgba(10,15,30,0) 60%, rgba(10,15,30,0.82) 100%)",
+        }}
+      />
+      <AbsoluteFill
+        style={{
+          alignItems: "center",
+          justifyContent: "flex-end",
+          paddingBottom: 64,
+          opacity: captionOpacity,
+          transform: `translateY(${captionShift}px)`,
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: NAVY_DEEP,
+            color: "white",
+            padding: "18px 32px",
+            borderRadius: 999,
+            fontFamily: "Space Grotesk, system-ui, sans-serif",
+            fontSize: 30,
+            letterSpacing: 1.5,
+            border: `2px solid ${CYAN}`,
+            boxShadow: `0 24px 48px ${CYAN}55`,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          <span style={{ color: CYAN, fontFamily: "SF Mono, ui-monospace, monospace", fontSize: 22, letterSpacing: 3 }}>
+            ●
+          </span>
+          <span>拖拉編排</span>
+          <span
+            style={{
+              fontFamily: "SF Mono, ui-monospace, monospace",
+              fontSize: 18,
+              opacity: 0.7,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              marginLeft: 4,
+            }}
+          >
+            DRAG TO REORDER
+          </span>
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
 const LogoScene: React.FC = () => {
   const localFrame = useCurrentFrame();
   const { fps } = useVideoConfig();
@@ -362,6 +458,8 @@ const sceneOpacity = (frame: number, from: number, len: number) => {
   );
 };
 
+const sceneByIndex = (i: number) => SCENES[i];
+
 export const PathDemo: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -373,12 +471,26 @@ export const PathDemo: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: NAVY_DEEP }}>
-      {wrap("hero", SCENES[0].from, SCENES[0].len, <HeroScene />)}
-      {wrap("features", SCENES[1].from, SCENES[1].len, <FeaturesScene />)}
+      {wrap(sceneByIndex(0).id, sceneByIndex(0).from, sceneByIndex(0).len, <HeroScene />)}
+      {wrap(sceneByIndex(1).id, sceneByIndex(1).from, sceneByIndex(1).len, <FeaturesScene />)}
       {wrap(
-        "trip",
-        SCENES[2].from,
-        SCENES[2].len,
+        sceneByIndex(2).id,
+        sceneByIndex(2).from,
+        sceneByIndex(2).len,
+        <FeatureSlide
+          imageName="path-dashboard.png"
+          caption="旅行統計"
+          subCaption="3 trips · 24 days · 491 km"
+          durationFrames={DASHBOARD_LEN}
+          zoom={{ fromScale: 1.02, toScale: 1.1, originX: "50%", originY: "35%" }}
+          captionPosition="bottom"
+          accent={CYAN}
+        />,
+      )}
+      {wrap(
+        sceneByIndex(3).id,
+        sceneByIndex(3).from,
+        sceneByIndex(3).len,
         <FeatureSlide
           imageName="path-trip.png"
           caption="行程卡片"
@@ -389,10 +501,11 @@ export const PathDemo: React.FC = () => {
           captionPosition="bottom"
         />,
       )}
+      {wrap(sceneByIndex(4).id, sceneByIndex(4).from, sceneByIndex(4).len, <DragScene />)}
       {wrap(
-        "map",
-        SCENES[3].from,
-        SCENES[3].len,
+        sceneByIndex(5).id,
+        sceneByIndex(5).from,
+        sceneByIndex(5).len,
         <FeatureSlide
           imageName="path-map.png"
           caption="地圖模式"
@@ -404,9 +517,9 @@ export const PathDemo: React.FC = () => {
         />,
       )}
       {wrap(
-        "cost",
-        SCENES[4].from,
-        SCENES[4].len,
+        sceneByIndex(6).id,
+        sceneByIndex(6).from,
+        sceneByIndex(6).len,
         <FeatureSlide
           imageName="path-cost.png"
           caption="費用詳情"
@@ -417,9 +530,23 @@ export const PathDemo: React.FC = () => {
         />,
       )}
       {wrap(
-        "offline",
-        SCENES[5].from,
-        SCENES[5].len,
+        sceneByIndex(7).id,
+        sceneByIndex(7).from,
+        sceneByIndex(7).len,
+        <FeatureSlide
+          imageName="path-receipt.png"
+          caption="掃描收據"
+          subCaption="AI auto-extract"
+          durationFrames={RECEIPT_LEN}
+          zoom={{ fromScale: 1.02, toScale: 1.12, originX: "55%", originY: "35%" }}
+          captionPosition="bottom"
+          accent={MARS_ORANGE}
+        />,
+      )}
+      {wrap(
+        sceneByIndex(8).id,
+        sceneByIndex(8).from,
+        sceneByIndex(8).len,
         <FeatureSlide
           imageName="path-offline.png"
           caption="離線模式"
@@ -430,7 +557,7 @@ export const PathDemo: React.FC = () => {
           accent={MARS_ORANGE}
         />,
       )}
-      {wrap("logo", SCENES[6].from, SCENES[6].len, <LogoScene />)}
+      {wrap(sceneByIndex(9).id, sceneByIndex(9).from, sceneByIndex(9).len, <LogoScene />)}
     </AbsoluteFill>
   );
 };

@@ -103,7 +103,7 @@ export const projectDetails: ProjectDetail[] = [
     screenshots: [
       {
         src: '/assets/path-demo.mp4',
-        alt: 'Path demo video walking through six scenes: marketing hero, feature grid, drag-and-drop trip cards, the Asia route map, itemized cost detail, the offline-mode banner over a fully-loaded dashboard, and a closing brand frame.',
+        alt: 'Path 30-second demo video stepping through nine scenes: marketing hero, feature grid, dashboard KPI overview, trip card list, drag-to-reorder day editor, Asia route map, itemized cost breakdown, AI receipt OCR scanner, offline-mode banner over a fully-loaded dashboard, and a closing Path brand frame.',
       },
     ],
   },

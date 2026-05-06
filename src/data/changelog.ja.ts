@@ -28,11 +28,11 @@ export const changelog: ChangelogEntry[] = [
   {
     id: 'path-demo-remotion-pipeline',
     date: '2026-05-06',
-    title: 'Path ケーススタディ：15 秒の Remotion デモ動画',
+    title: 'Path ケーススタディ：30 秒の Remotion デモ動画',
     tags: ['feature', 'technical'],
     body: [
-      'Path 詳細ページ（/projects/path）に 15 秒の autoplay loop デモ動画を追加しました。Path ケーススタディ初の動画であり、リポジトリ初の Remotion レンダリング資産でもあります。1404×1128 / 30fps の動画は 6 つのシーンを通過します：マーケティング hero とブランド雰囲気、4 つの機能グリッドに cyan stagger ハイライト、我的行程 のドラッグ&ドロップ行程カード、アジア路線マップ（3 つの旅行で計 491 km）、費用詳細（合計 NT$95,454 をカテゴリ別に分解）、オフラインモード banner が完全にロードされた dashboard に重なるシーン、最後の 2.5 秒は Path のワードマークに mars-orange の放射光で締めます。',
-      '技術スタック面では、Vite アプリとは別に /remotion/ workspace を新設しました。Composition が PathDemo を 1404×1128 / 30fps で登録し、シーンファイルは Sequence + interpolate + spring で ken-burns パン、stagger カードの pulse、crossfade を構成します。当初は Codex image_gen で静的イラストを生成する予定でしたが、codex exec の非対話モードでは image_gen ツールにアクセスできず、pipeline を Playwright で実際のプロダクト画面をキャプチャする方式に切り替えました（既存のログイン済み Path セッションを駆動し、オフラインシーンでは navigator.onLine をトグル）。レンダリング結果は 3.2MB（CRF 26）、/assets/path-demo.mp4 として配信され、projects.{en,ja,zh-TW}.ts の既存 screenshot schema を継承します。',
+      'Path 詳細ページ（/projects/path）に 30 秒の autoplay loop デモ動画を追加しました。Path ケーススタディ初の動画であり、リポジトリ初の Remotion レンダリング資産でもあります。1404×1128 / 30fps の動画は 9 つのシーンを巡ります：マーケティング hero とブランド雰囲気、4 つの機能グリッドに cyan stagger ハイライト、ダッシュボード KPI 概要（3 TRIPS · 24 DAYS · 491 KM）、我的行程 の行程カード一覧、Day 4 を持ち上げて新しい位置にドロップする drag-to-reorder の Day editor、アジア路線マップ（491 km）、費用詳細（NT$95,454）、AI レシート OCR スキャナ、オフラインモード banner が完全にロードされた dashboard に重なるシーン、最後の Path ワードマークを mars-orange の放射光で締めます。',
+      '技術スタック面では、Vite アプリとは別に /remotion/ workspace を新設しました。Composition が PathDemo を 1404×1128 / 30fps で登録し、シーンファイルは Sequence + interpolate + spring で ken-burns パン、stagger カードの pulse、crossfade を構成します。当初は Codex image_gen で静的イラストを生成する予定でしたが、codex exec の非対話モードでは image_gen ツールにアクセスできず、pipeline を Playwright で実際のプロダクト画面をキャプチャする方式に切り替えました（既存のログイン済み Path セッションを駆動し、オフラインシーンでは navigator.onLine をトグル）。drag-to-reorder のシーンは当初リアルタイム録画で撮る計画でしたが、Playwright MCP には動画録画ツールが組み込まれていないため、Playwright で 5 つの keyframe（静止 / 持ち上げ + cyan border / ドラッグ中 / 新スロットの上にホバー / ドロップ後）を撮影し、Remotion で crossfade して連続的な動きに見えるよう再構成しました。レンダリング結果は 5.6MB（CRF 26）、/assets/path-demo.mp4 として配信され、projects.{en,ja,zh-TW}.ts の既存 screenshot schema を継承します。',
     ],
   },
   {

@@ -27,11 +27,11 @@ export const changelog: ChangelogEntry[] = [
   {
     id: 'path-demo-remotion-pipeline',
     date: '2026-05-06',
-    title: 'Path 案例研究：15 秒 Remotion demo 影片',
+    title: 'Path 案例研究：30 秒 Remotion demo 影片',
     tags: ['feature', 'technical'],
     body: [
-      'Path 詳情頁（/projects/path）加上一支 15 秒 autoplay loop demo 影片，是 Path 案例第一支影片，也是這個 repo 第一個 Remotion 渲出來的資產。影片 1404×1128 / 30fps，走過 6 個場景：行銷 hero 帶 brand 氛圍、四項功能格子搭 cyan stagger 高亮、我的行程拖拉卡片、亞洲路線地圖（3 趟旅程共 491 km）、費用詳情（總額 NT$95,454 分類拆解）、離線模式 banner 蓋在完整載入的 dashboard 上，最後 2.5 秒收在 Path 字標 + mars-orange 放射光。',
-      '技術上開了一個 /remotion/ workspace，跟 Vite app 分開。Composition 把 PathDemo 註冊在 1404×1128 / 30fps；場景檔用 Sequence + interpolate + spring 組 ken-burns pan、stagger 卡片脈動、crossfade。原本想用 Codex image_gen 產靜態插畫，但 codex exec 的非互動模式拿不到 image_gen tool，於是 pipeline 改走 Playwright 抓真實產品畫面（驅動既有已登入的 Path session、為離線場景切 navigator.onLine）。渲染輸出 3.2MB（CRF 26），放在 /assets/path-demo.mp4，沿用 projects.{en,ja,zh-TW}.ts 既有的 screenshot schema。',
+      'Path 詳情頁（/projects/path）加上一支 30 秒 autoplay loop demo 影片，是 Path 案例第一支影片，也是這個 repo 第一個 Remotion 渲出來的資產。影片 1404×1128 / 30fps，走過 9 個場景：行銷 hero 帶 brand 氛圍、四項功能格子搭 cyan stagger 高亮、儀表板 KPI 總覽（3 TRIPS · 24 DAYS · 491 KM）、我的行程卡片列表、單日 Day editor 的 drag-to-reorder（Day 4 被抬起、拖過去、落到新位置）、亞洲路線地圖（491 km）、費用詳情（NT$95,454）、AI 收據 OCR 掃描器、離線模式 banner 蓋在完整載入的 dashboard 上，最後收在 Path 字標 + mars-orange 放射光。',
+      '技術上開了一個 /remotion/ workspace，跟 Vite app 分開。Composition 把 PathDemo 註冊在 1404×1128 / 30fps；場景檔用 Sequence + interpolate + spring 組 ken-burns pan、stagger 卡片脈動、crossfade。原本想用 Codex image_gen 產靜態插畫，但 codex exec 的非互動模式拿不到 image_gen tool，於是 pipeline 改走 Playwright 抓真實產品畫面（驅動既有已登入的 Path session、為離線場景切 navigator.onLine）。drag-to-reorder 段原本想直接錄影，但 Playwright MCP 沒有 video recording tool，最後改用 Playwright 抓 5 張 keyframe（靜止／抬起 + cyan border／拖拉中／懸停在新位置／落下）再交給 Remotion crossfade 接出連續動作的觀感。渲染輸出 5.6MB（CRF 26），放在 /assets/path-demo.mp4，沿用 projects.{en,ja,zh-TW}.ts 既有的 screenshot schema。',
     ],
   },
   {

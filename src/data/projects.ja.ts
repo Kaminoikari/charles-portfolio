@@ -115,7 +115,7 @@ export const projectDetails: ProjectDetail[] = [
     screenshots: [
       {
         src: '/assets/path-demo.mp4',
-        alt: 'Path のデモ動画は 6 つのシーンを巡ります：マーケティング hero、機能グリッド、ドラッグ&ドロップの行程カード、アジア路線マップ、費用詳細、オフラインモード banner が完全にロードされた dashboard 上に重ねられ、最後に Path のブランドフレームで締める。',
+        alt: 'Path の 30 秒デモ動画は 9 シーンを巡ります：マーケティング hero、機能グリッド、ダッシュボード KPI 概要、行程カード一覧、ドラッグで日程を並べ替える Day editor、アジア路線マップ、費用詳細、AI レシート OCR スキャナ、オフラインモード banner が完全にロードされた dashboard に重なり、最後に Path のブランドフレームで締める。',
       },
     ],
   },

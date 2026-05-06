@@ -114,7 +114,7 @@ export const projectDetails: ProjectDetail[] = [
     screenshots: [
       {
         src: '/assets/path-demo.mp4',
-        alt: 'Path demo 影片走過六個場景：行銷 hero、功能格子、拖拉行程卡片、亞洲路線地圖、費用詳情、離線模式 banner 蓋在完整 dashboard 上，最後收在 Path 品牌畫面。',
+        alt: 'Path 30 秒 demo 影片走過 9 個場景：行銷 hero、功能格子、儀表板 KPI 概覽、行程卡片列表、拖拉重排的單日編輯器、亞洲路線地圖、費用詳情、AI 收據 OCR 掃描器、離線模式 banner 蓋在完整 dashboard 上，最後收在 Path 品牌畫面。',
       },
     ],
   },
