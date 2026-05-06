@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'path-demo-remotion-pipeline',
+    date: '2026-05-06',
+    title: 'Path Case Study: 15-Second Remotion Demo Video',
+    tags: ['feature', 'technical'],
+    body: [
+      'Added a 15-second autoplay loop demo video to the Path detail page (/projects/path), the first video on a Path case study and the first Remotion-rendered asset in the repo. The clip walks through six scenes at 1404×1128 / 30fps: marketing hero with brand atmosphere, the four-feature grid with cyan stagger highlights, drag-and-drop trip cards from 我的行程, the Asia route map (3 trips, 491 km), itemized cost detail (NT$95,454 across categories), and the offline-mode banner overlaying a fully-loaded dashboard. The closing 2.5 seconds land on the Path wordmark with a mars-orange radial glow.',
+      'Stack-wise, this introduces a /remotion/ workspace separate from the Vite app. Composition registers PathDemo at 1404×1128 / 30fps; the scene file uses Sequence + interpolate + spring to compose ken-burns pans, stagger card pulses, and crossfades. The original plan called for Codex image_gen to generate static illustrations, but the tool is not exposed in codex exec non-interactive mode, so the pipeline pivoted to capturing real product surfaces via Playwright (driving the existing logged-in Path session and toggling navigator.onLine for the offline scene). Rendered output is 3.2MB at CRF 26, served from /assets/path-demo.mp4 via the existing screenshot schema in projects.{en,ja,zh-TW}.ts.',
+    ],
+  },
+  {
     id: 'add-house-ops-personal-project',
     date: '2026-04-29',
     title: 'Personal Projects — House Ops Added',

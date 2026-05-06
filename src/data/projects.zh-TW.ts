@@ -111,6 +111,12 @@ export const projectDetails: ProjectDetail[] = [
     links: [
       { label: 'Try Path', url: 'https://trip-path.vercel.app/' },
     ],
+    screenshots: [
+      {
+        src: '/assets/path-demo.mp4',
+        alt: 'Path demo 影片走過六個場景：行銷 hero、功能格子、拖拉行程卡片、亞洲路線地圖、費用詳情、離線模式 banner 蓋在完整 dashboard 上，最後收在 Path 品牌畫面。',
+      },
+    ],
   },
   {
     id: 'plutus-trade',

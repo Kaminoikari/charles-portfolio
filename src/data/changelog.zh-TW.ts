@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'path-demo-remotion-pipeline',
+    date: '2026-05-06',
+    title: 'Path 案例研究：15 秒 Remotion demo 影片',
+    tags: ['feature', 'technical'],
+    body: [
+      'Path 詳情頁（/projects/path）加上一支 15 秒 autoplay loop demo 影片，是 Path 案例第一支影片，也是這個 repo 第一個 Remotion 渲出來的資產。影片 1404×1128 / 30fps，走過 6 個場景：行銷 hero 帶 brand 氛圍、四項功能格子搭 cyan stagger 高亮、我的行程拖拉卡片、亞洲路線地圖（3 趟旅程共 491 km）、費用詳情（總額 NT$95,454 分類拆解）、離線模式 banner 蓋在完整載入的 dashboard 上，最後 2.5 秒收在 Path 字標 + mars-orange 放射光。',
+      '技術上開了一個 /remotion/ workspace，跟 Vite app 分開。Composition 把 PathDemo 註冊在 1404×1128 / 30fps；場景檔用 Sequence + interpolate + spring 組 ken-burns pan、stagger 卡片脈動、crossfade。原本想用 Codex image_gen 產靜態插畫，但 codex exec 的非互動模式拿不到 image_gen tool，於是 pipeline 改走 Playwright 抓真實產品畫面（驅動既有已登入的 Path session、為離線場景切 navigator.onLine）。渲染輸出 3.2MB（CRF 26），放在 /assets/path-demo.mp4，沿用 projects.{en,ja,zh-TW}.ts 既有的 screenshot schema。',
+    ],
+  },
+  {
     id: 'add-house-ops-personal-project',
     date: '2026-04-29',
     title: 'Personal Projects — 加入 House Ops',

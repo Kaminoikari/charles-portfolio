@@ -100,6 +100,12 @@ export const projectDetails: ProjectDetail[] = [
     links: [
       { label: 'Try Path', url: 'https://trip-path.vercel.app/' },
     ],
+    screenshots: [
+      {
+        src: '/assets/path-demo.mp4',
+        alt: 'Path demo video walking through six scenes: marketing hero, feature grid, drag-and-drop trip cards, the Asia route map, itemized cost detail, the offline-mode banner over a fully-loaded dashboard, and a closing brand frame.',
+      },
+    ],
   },
   {
     id: 'plutus-trade',

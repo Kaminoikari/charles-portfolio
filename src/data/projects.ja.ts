@@ -112,6 +112,12 @@ export const projectDetails: ProjectDetail[] = [
     links: [
       { label: 'Try Path', url: 'https://trip-path.vercel.app/' },
     ],
+    screenshots: [
+      {
+        src: '/assets/path-demo.mp4',
+        alt: 'Path のデモ動画は 6 つのシーンを巡ります：マーケティング hero、機能グリッド、ドラッグ&ドロップの行程カード、アジア路線マップ、費用詳細、オフラインモード banner が完全にロードされた dashboard 上に重ねられ、最後に Path のブランドフレームで締める。',
+      },
+    ],
   },
   {
     id: 'plutus-trade',
