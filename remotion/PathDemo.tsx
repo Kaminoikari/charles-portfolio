@@ -290,6 +290,13 @@ const DragScene: React.FC = () => {
   const localFrame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  const ROW_X = 673;
+  const ROW_W = 678;
+  const ROW_H = 138;
+  const rowY = (n: number) => 241 + (n - 1) * 150;
+  const SOURCE_Y = rowY(4);
+  const TARGET_Y = rowY(2);
+
   type Keyframe = { src: string; from: number; to: number };
   const KEYFRAMES: Keyframe[] = [
     { src: "path-day.png", from: 0, to: 24 },
@@ -299,16 +306,65 @@ const DragScene: React.FC = () => {
     { src: "path-day-drop.png", from: 110, to: DRAG_LEN },
   ];
 
+  const outlineY = interpolate(
+    localFrame,
+    [0, 18, 54, 82, DRAG_LEN],
+    [SOURCE_Y, SOURCE_Y, SOURCE_Y, TARGET_Y, TARGET_Y],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const outlineOpacity = interpolate(
+    localFrame,
+    [0, 14, DRAG_LEN - 10, DRAG_LEN],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const dropPulse = spring({
+    frame: localFrame - 108,
+    fps,
+    config: { damping: 12, stiffness: 200 },
+    durationInFrames: 18,
+  });
+  const dropScaleBump = interpolate(localFrame, [108, 118, 130], [0, 0.05, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const outlineScale = 1 + dropScaleBump * dropPulse;
+
+  const dashedTargetOpacity = interpolate(
+    localFrame,
+    [40, 60, 105, 120],
+    [0, 0.85, 0.85, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+
+  const trailHeight = SOURCE_Y - TARGET_Y;
+  const trailOpacity = interpolate(
+    localFrame,
+    [40, 60, 100, 124],
+    [0, 0.7, 0.7, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+  const trailX = ROW_X + ROW_W + 16;
+
+  const phase: "rest" | "drag" | "drop" =
+    localFrame < 30 ? "rest" : localFrame < 110 ? "drag" : "drop";
+  const captionMain = phase === "rest" ? "拖拉編排" : phase === "drag" ? "Day 4 → Row 2" : "重排完成";
+  const captionSub = phase === "rest" ? "DRAG TO REORDER" : phase === "drag" ? "MOVING UP" : "DAY 4 NOW AT ROW 2";
+
   const captionAppear = spring({
     frame: localFrame - 14,
     fps,
     config: { damping: 16, stiffness: 110 },
     durationInFrames: 24,
   });
-  const captionOpacity = interpolate(localFrame, [14, 32, DRAG_LEN - 10, DRAG_LEN], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
+  const captionOpacity = interpolate(
+    localFrame,
+    [14, 32, DRAG_LEN - 10, DRAG_LEN],
+    [0, 1, 1, 0],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
   const captionShift = (1 - captionAppear) * 20;
 
   return (
@@ -324,9 +380,93 @@ const DragScene: React.FC = () => {
           </AbsoluteFill>
         );
       })}
+
+      <div
+        style={{
+          position: "absolute",
+          left: ROW_X - 8,
+          top: TARGET_Y - 8,
+          width: ROW_W + 16,
+          height: ROW_H + 16,
+          borderRadius: 18,
+          border: `3px dashed ${CYAN}`,
+          opacity: dashedTargetOpacity,
+          boxShadow: `0 0 24px ${CYAN}66`,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: trailX,
+          top: TARGET_Y + ROW_H / 2,
+          width: 4,
+          height: trailHeight,
+          background: `linear-gradient(180deg, ${CYAN}00 0%, ${CYAN} 30%, ${CYAN} 70%, ${CYAN}33 100%)`,
+          opacity: trailOpacity,
+          boxShadow: `0 0 18px ${CYAN}aa`,
+          borderRadius: 2,
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: trailX - 12,
+          top: TARGET_Y + ROW_H / 2 - 4,
+          width: 0,
+          height: 0,
+          borderLeft: "14px solid transparent",
+          borderRight: "14px solid transparent",
+          borderBottom: `20px solid ${CYAN}`,
+          opacity: trailOpacity,
+          filter: `drop-shadow(0 0 10px ${CYAN}aa)`,
+          pointerEvents: "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: ROW_X - 8,
+          top: outlineY - 8,
+          width: ROW_W + 16,
+          height: ROW_H + 16,
+          borderRadius: 18,
+          border: `5px solid ${CYAN}`,
+          boxShadow: `0 0 32px ${CYAN}cc, 0 0 0 4px ${CYAN}33, inset 0 0 28px ${CYAN}55`,
+          opacity: outlineOpacity,
+          transform: `scale(${outlineScale})`,
+          transformOrigin: "center center",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: ROW_X + 16,
+          top: outlineY - 24,
+          background: CYAN,
+          color: NAVY_DEEP,
+          padding: "6px 18px",
+          borderRadius: 12,
+          fontFamily: "Space Grotesk, system-ui, sans-serif",
+          fontSize: 22,
+          fontWeight: 700,
+          letterSpacing: 3,
+          boxShadow: `0 10px 24px ${CYAN}88`,
+          opacity: outlineOpacity,
+          pointerEvents: "none",
+        }}
+      >
+        DAY 4
+      </div>
+
       <AbsoluteFill
         style={{
           background: "linear-gradient(180deg, rgba(10,15,30,0) 60%, rgba(10,15,30,0.82) 100%)",
+          pointerEvents: "none",
         }}
       />
       <AbsoluteFill
@@ -357,7 +497,7 @@ const DragScene: React.FC = () => {
           <span style={{ color: CYAN, fontFamily: "SF Mono, ui-monospace, monospace", fontSize: 22, letterSpacing: 3 }}>
             ●
           </span>
-          <span>拖拉編排</span>
+          <span>{captionMain}</span>
           <span
             style={{
               fontFamily: "SF Mono, ui-monospace, monospace",
@@ -368,7 +508,7 @@ const DragScene: React.FC = () => {
               marginLeft: 4,
             }}
           >
-            DRAG TO REORDER
+            {captionSub}
           </span>
         </div>
       </AbsoluteFill>
