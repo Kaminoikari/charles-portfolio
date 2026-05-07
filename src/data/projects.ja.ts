@@ -243,7 +243,7 @@ export const projectDetails: ProjectDetail[] = [
       { category: 'LLM Extraction', items: 'Claude API（Haiku 4.5）、自由文の投稿 → 構造化フィールド' },
       { category: 'Email', items: 'Nodemailer + Gmail SMTP（並べ替え / フィルタ可能な HTML サマリー）' },
       { category: 'Scheduling', items: 'macOS launchd（daily run + 専用 Chrome KeepAlive インスタンス）' },
-      { category: 'Persistence', items: 'JSON Cache、TSV History、Markdown Tracker' },
+      { category: 'Persistence', items: 'JSON Cache、TSV スキャン履歴（自動）、Markdown Tracker（Claude Code セッションで対話的に書き込み）' },
       { category: 'Interactive Layer', items: 'Claude Code（Affordability、Upgrade Plan、Compare、Prepare Visit）' },
       { category: 'Sources', items: '591.com.tw（賃貸 / 購入）+ Facebook 公開賃貸グループ' },
     ],

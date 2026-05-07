@@ -228,7 +228,7 @@ export const projectDetails: ProjectDetail[] = [
       { category: 'LLM Extraction', items: 'Claude API (Haiku 4.5), free-form posts → structured fields' },
       { category: 'Email', items: 'Nodemailer + Gmail SMTP (HTML digest with sortable / filterable tables)' },
       { category: 'Scheduling', items: 'macOS launchd (daily run + dedicated Chrome KeepAlive instance)' },
-      { category: 'Persistence', items: 'JSON cache, TSV history, Markdown tracker' },
+      { category: 'Persistence', items: 'JSON cache, TSV scan history (automated), Markdown tracker (written interactively via Claude Code session)' },
       { category: 'Interactive Layer', items: 'Claude Code (Affordability, Upgrade Plan, Compare, Prepare Visit)' },
       { category: 'Sources', items: '591.com.tw (rental / purchase) + Facebook public rental groups' },
     ],
