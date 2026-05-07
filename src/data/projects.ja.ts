@@ -252,7 +252,6 @@ export const projectDetails: ProjectDetail[] = [
       'Scheduled scanning：毎日 09:00 にパイプラインを自動起動し、永続キャッシュと組み合わせて精密な重複排除を実現。',
       'Five-dimension scoring：賃貸族・初購族・住み替え族でペルソナ別に重みを動的調整する定量スコアリングモデル（賃貸は 30/20/25/15/10 など）を実装し、感覚的な印象をデータ指標に変換。',
       'Daily email digest：591 と FB の物件を別セクションで構成した HTML レポートを定刻配信し、値下げ追跡・削除エントリ・行政区分集計を含めて朝の意思決定体験を最適化。',
-      'Stateful tracker：物件のライフサイクル（Scanned → Evaluated → Visit → Signed）を完全追跡し、個人不動産データベースを構築。',
       'Interactive Claude modes：初購族の支払い能力試算、住み替えの財務計画、物件の深い比較をカバーする in-session AI コンサルティングを提供し、ラストマイルの意思決定品質を強化。',
     ],
     learnings: [

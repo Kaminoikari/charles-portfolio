@@ -251,7 +251,6 @@ export const projectDetails: ProjectDetail[] = [
       'Scheduled scanning：每日 09:00 自動觸發管線，結合持久化緩存實現精準去重。',
       'Five-dimension scoring：實作量化評分模型，依租屋族 / 首購族 / 換屋族動態調整權重（如租屋 30/20/25/15/10），將感性觀感轉化為數據指標。',
       'Daily email digest：定時交付結構化 HTML 報告（591 與 FB 物件分區呈現），包含降價追蹤、下架條目與行政區拆解，優化早晨決策體驗。',
-      'Stateful tracker：完整追蹤物件生命週期（Scanned → Evaluated → Visit → Signed），建立個人房產數據庫。',
       'Interactive Claude modes：提供 in-session AI 諮詢，涵蓋首購試算、換屋財務規劃與物件深度對比，強化最後一哩路的決策品質。',
     ],
     learnings: [

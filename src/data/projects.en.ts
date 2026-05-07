@@ -237,7 +237,6 @@ export const projectDetails: ProjectDetail[] = [
       'Scheduled scanning: triggers the pipeline at 09:00 daily, with persistent caching for precise deduplication.',
       'Five-dimension scoring: a quantitative model with persona-tuned weights (e.g., 30/20/25/15/10 for rentals) that converts subjective impressions into data signals across renters, first-time buyers, and upgraders.',
       'Daily email digest: structured HTML reports delivered on schedule with 591 and FB listings as separate sections, including price-drop tracking, delisted rows, and district breakdowns, optimized for the morning decision window.',
-      'Stateful tracker: full lifecycle tracking of every listing (Scanned → Evaluated → Visit → Signed), building a personal property database.',
       'Interactive Claude modes: in-session AI consultation covering first-time-buyer affordability, upgrade financing, and deep listing comparison, sharpening last-mile decision quality.',
     ],
     learnings: [
