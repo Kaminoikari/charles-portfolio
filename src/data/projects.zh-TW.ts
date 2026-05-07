@@ -63,10 +63,10 @@ export const projects: Project[] = [
     id: 'house-ops',
     title: 'House Ops',
     description:
-      '591 找房自動化 + AI 決策 pipeline。每日掃描租屋與買房物件、五維加權評分，AI 負責物件比較和決策推薦。',
+      '台灣看房自動化 pipeline。每日掃 591 與 FB 公開租屋社團，Claude API 把貼文自由文字抽成結構化欄位，五維加權評分後由 Claude Code 接手可負擔試算、換屋規劃與看屋準備。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
-    tags: ['Node.js', 'Agent', 'Automation'],
+    tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
   },
 ]
 
@@ -225,36 +225,39 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'house-ops',
-    title: 'House Ops — 591 數據自動化與 AI 決策 Pipeline',
-    subtitle: 'macOS launchd 每天 09:00 啟動 Node.js 管線：抓取 591、五維加權打 0–5 分、寄出 HTML 簡報；Claude 決策層在 session 內接手可負擔性試算、物件比較與看屋 checklist。',
-    metaTitle: 'House Ops — 591 數據自動化與 AI 決策 Pipeline | Charles Chen 個人專案',
+    title: 'House Ops — 台灣看房自動化與 AI 決策 Pipeline',
+    subtitle: 'macOS launchd 每天 09:00 啟動 Node.js 管線：scan 591 與 FB 公開租屋社團、Claude API（Haiku 4.5）把自由文字貼文抽成結構化欄位、五維加權打 0–5 分、寄出 HTML 簡報；Claude 決策層在 session 內接手可負擔性試算、換屋規劃、物件比較與看屋 checklist。',
+    metaTitle: 'House Ops — 台灣看房自動化與 AI 決策 Pipeline | Charles Chen 個人專案',
     metaDescription:
-      'Node.js 自動化管線。每日掃描 591，把台灣租屋與買房物件依價格、空間、地段、屋況、風險五個維度加權評分，並透過 HTML email 簡報交付。AI Product Manager Charles Chen 的個人自動化案例研究。',
+      'Node.js 自動化管線。每日掃描 591 與 FB 公開租屋社團，由 Claude API 把自由文字貼文抽成結構化欄位，依價格、空間、地段、屋況、風險五個維度加權評分，並透過 HTML email 簡報交付。AI Product Manager Charles Chen 的個人自動化案例研究。',
     problem: [
-      '在 591 平台上尋屋常陷於低效的「掃描 → 評估 → 丟棄」循環。物件具備極高的瞬變性與資訊雜訊，包含重複上架、價格波動與跨平台維度斷裂。使用者往往需同時開啟數十個分頁手動比對捷運、學區、格局與風評，對時間有限的上班族而言，高昂的決策成本與龐大雜訊常導致優質物件被淹沒。現有平台僅提供基礎欄位過濾，缺乏對物件脈絡（租金中位數、空間比例、租賃風險）的綜合診斷，迫使使用者必須每日重複進行低產值的資訊合成。',
+      '台灣租屋與買房物件分散在 591、Facebook 公開社團與長尾論壇，使用者常陷於低效的「掃描 → 評估 → 丟棄」循環。物件具備極高的瞬變性與資訊雜訊：重複上架、價格波動、跨平台格式斷裂，再加上社群貼文是無法被欄位篩選讀懂的自由文字。使用者往往同時開啟數十個分頁手動比對捷運、學區、格局與風評，對時間有限的上班族而言，高昂的決策成本與龐大雜訊常導致優質物件被淹沒。現有平台僅提供基礎欄位過濾，缺乏對物件脈絡（租金中位數、空間比例、租賃風險）的綜合診斷，迫使使用者每日重複進行低產值的資訊合成。',
     ],
     solution: [
-      '本專案開發一套基於 Node.js（ESM）的自動化管線，由 macOS launchd 驅動。每日 09:00 觸發 agent-browser 掃描 591 指定區域，並透過歷史紀錄（JSON / TSV）進行 deduplication，篩選出「新增、降價、下架」的狀態增量。系統對每筆物件執行五維度啟發式評分（價格、空間、地段、屋況、風險），並依租房或買房情境調整加權邏輯。針對 ≥ 4.0 分標的進行優先推薦，並將結果透過 Nodemailer 渲染為視覺化 HTML 簡報寄出。此外，系統整合 Claude Code 作為互動決策層，支援即時的可負擔性試算、跨物件對比與標準化看屋清單準備：管線負責數據漏斗，AI 負責複雜的權衡判斷。',
+      '本專案開發一套基於 Node.js（ESM）的自動化管線，由 macOS launchd 驅動。每日 09:00 同步啟動兩條掃描：agent-browser 抓 591 指定區域；獨立的 Chrome 實例（透過另一支 launchd plist KeepAlive，profile 與日常使用的 Chrome 隔離）使用 Chrome DevTools Protocol 的 `Input.synthesizeScrollGesture` 合成觸控手勢，繞過 Facebook anti-bot lazy-load，抓公開租屋社團最新貼文。FB 自由文字貼文交給 Claude API（Haiku 4.5）抽成 `{price_num, address, district, size, layout, contact, confidence}` 的結構化欄位，與 591 物件統一進入評估佇列。每筆物件執行五維度啟發式評分（價格、空間、地段、屋況、風險），依租屋族 / 首購族 / 換屋族三種情境切換加權邏輯，篩出 ≥ 4.0 分標的後，透過 Nodemailer 渲染成可排序篩選的視覺化 HTML 簡報寄出。Claude Code 互動層在 session 內處理 `affordability`（首購族試算）、`upgrade plan`（換屋的賣舊買新時程與資金缺口）、`compare 001, 003`（並排對比）與 `prepare visit for 001`（看屋清單與議價策略）：管線負責資料漏斗，AI 負責複雜的權衡判斷。',
     ],
     techStack: [
       { category: 'Runtime', items: 'Node.js（ESM, .mjs）' },
-      { category: 'Scraping', items: 'agent-browser（591 數據採集）' },
-      { category: 'Email', items: 'Nodemailer + Gmail SMTP' },
-      { category: 'Scheduling', items: 'macOS launchd（系統級自動化）' },
+      { category: 'Scraping', items: 'agent-browser（591）+ Chrome DevTools Protocol（FB 公開社團，Input.synthesizeScrollGesture 繞過 anti-bot）' },
+      { category: 'LLM Extraction', items: 'Claude API（Haiku 4.5），自由文字貼文 → 結構化欄位' },
+      { category: 'Email', items: 'Nodemailer + Gmail SMTP（HTML 簡報，支援排序與篩選）' },
+      { category: 'Scheduling', items: 'macOS launchd（daily run + 專用 Chrome KeepAlive 實例）' },
       { category: 'Persistence', items: 'JSON Cache、TSV History、Markdown Tracker' },
-      { category: 'Interactive Layer', items: 'Claude Code（Affordability、Compare、Prepare Visit）' },
-      { category: 'Source', items: '591.com.tw（租屋 / 買房）' },
+      { category: 'Interactive Layer', items: 'Claude Code（Affordability、Upgrade Plan、Compare、Prepare Visit）' },
+      { category: 'Sources', items: '591.com.tw（租屋 / 買房）+ Facebook 公開租屋社團' },
     ],
     impact: [
+      'Multi-source ingestion：以 CDP 合成觸控手勢繞過 FB anti-bot lazy-load，搭配 Claude API 抽結構化欄位，把 591 與社群兩條原本割裂的供給管道收斂進同一個評估流程。',
       'Scheduled scanning：每日 09:00 自動觸發管線，結合持久化緩存實現精準去重。',
-      'Five-dimension scoring：實作量化評分模型，依情境動態調整權重（如租屋 30/20/25/15/10），將感性觀感轉化為數據指標。',
-      'Daily email digest：定時交付結構化 HTML 報告，包含物件警告、降價追蹤與行政區拆解，優化早晨決策體驗。',
+      'Five-dimension scoring：實作量化評分模型，依租屋族 / 首購族 / 換屋族動態調整權重（如租屋 30/20/25/15/10），將感性觀感轉化為數據指標。',
+      'Daily email digest：定時交付結構化 HTML 報告（591 與 FB 物件分區呈現），包含降價追蹤、下架條目與行政區拆解，優化早晨決策體驗。',
       'Stateful tracker：完整追蹤物件生命週期（Scanned → Evaluated → Visit → Signed），建立個人房產數據庫。',
-      'Interactive Claude modes：提供 in-session AI 諮詢，涵蓋財務建模與物件深度對比，強化最後一哩路的決策品質。',
+      'Interactive Claude modes：提供 in-session AI 諮詢，涵蓋首購試算、換屋財務規劃與物件深度對比，強化最後一哩路的決策品質。',
     ],
     learnings: [
       '在個人自動化場景中，launchd 是比 cron 更優雅的選擇。它能完整繼承使用者環境、處理 Keychain 驗證並配合系統喚醒設定，大幅提升管線的營運天花板。',
-      '在過濾邏輯上，從「硬門檻（hard filters）」轉向「多維度加權評分」是關鍵突破。硬過濾容易因單一指標誤殺邊界候選標的，加權模型則能容許物件在不同維度間進行 trade-off，更精準地模擬人類決策。最後，交付媒介選 Email 是基於對行為科學的理解：早晨高頻決策時段，Push 推播的資訊到達率與行動裝置閱讀體驗，遠優於 Dashboard 那類 Pull 型介面，讓數據能主動在注意力所在之處發揮價值。',
+      '過濾邏輯從「硬門檻（hard filters）」轉向「多維度加權評分」是關鍵突破。硬過濾容易因單一指標誤殺邊界候選標的，加權模型則能容許物件在不同維度間進行 trade-off，更精準地模擬人類決策。交付媒介選 Email 是基於對行為科學的理解：早晨高頻決策時段，Push 推播的資訊到達率與行動裝置閱讀體驗，遠優於 Dashboard 那類 Pull 型介面，讓數據能主動在注意力所在之處發揮價值。',
+      'FB 整合過程依序試過純 JS scroll、agent-browser scroll、keyboard PageDown、CDP `Input.dispatchMouseEvent`，全都被 anti-bot 攔截、feed 不會 paginate；最後唯一能跑的路徑是 CDP `Input.synthesizeScrollGesture`，因為合成觸控手勢會被 FB 視為實體 trackpad 滾動。同步學到的是：把自由文字社群貼文交給 LLM 抽結構化欄位（每篇成本約 USD 0.001）長期成本低於維護一套規則式 parser，後者面對「月租押金兩個月含管理費可議」這類台式中文表達很快就會崩潰。',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },

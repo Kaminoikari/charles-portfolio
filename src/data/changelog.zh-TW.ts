@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'house-ops-fb-integration',
+    date: '2026-05-07',
+    title: 'House Ops 多源升級 — FB 公開社團 + Claude API 抽取',
+    tags: ['feature', 'technical'],
+    body: [
+      'House Ops 上游從「只爬 591」拓展到「591 + Facebook 公開租屋社團」雙來源。FB 整合採用 Chrome DevTools Protocol 的 `Input.synthesizeScrollGesture` 合成觸控手勢做 pagination（Facebook 的 Graph API Groups endpoint 已於 2024-04 完全 deprecate）。FB 把合成手勢當實體 trackpad 滾動，因此繞過了 anti-bot lazy-load 偵測。專用 Chrome 實例由獨立的 launchd plist（com.house-ops.chrome-debug.plist）KeepAlive 起動，profile 與日常使用的 Chrome 隔離，cookie 在第一次手動登入後就持久化，後續重啟都不用再登入。FB 自由文字貼文交給 Claude API（Haiku 4.5）抽成 `{price_num, address, district, size, layout, contact, confidence}` 結構化欄位（每篇成本約 USD 0.001），與 591 物件一同進入五維加權評分流程，daily HTML 簡報多了 FB 物件分區。',
+      'Portfolio /projects/house-ops 同步刷新：detail title 從「591 Data Automation」拓展為「Taiwan Housing Automation」反映多源範圍，Tech Stack 新增 Browser Automation（CDP）與 LLM Extraction（Claude API）兩列，Sources 改寫成「591 + Facebook 公開租屋社團」。互動 mode 列表加上 `upgrade plan`，把使用者情境從「租屋族 / 首購族」擴成「租屋族 / 首購族 / 換屋族」三類，learnings 補上 FB anti-bot 攻略歷程（純 JS scroll、agent-browser scroll、keyboard PageDown、CDP dispatchMouseEvent 全部失敗，最後靠 synthesized gesture 打通 pagination）。card tags 加入 `Claude API` 標示這次新增的 LLM 抽取能力。',
+    ],
+  },
+  {
     id: 'path-demo-remotion-pipeline',
     date: '2026-05-06',
     title: 'Path 案例研究：30 秒 Remotion demo 影片',

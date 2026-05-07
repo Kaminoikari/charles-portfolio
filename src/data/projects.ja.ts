@@ -64,10 +64,10 @@ export const projects: Project[] = [
     id: 'house-ops',
     title: 'House Ops',
     description:
-      '591 のデータ自動化 + AI 意思決定パイプライン。台湾の賃貸・購入物件を毎日スキャンし、5 次元で加重採点。AI 意思決定レイヤーが支払い能力試算、物件比較、内見準備までカバー。',
+      '台湾住宅探索の自動化パイプライン。591 と Facebook の公開賃貸グループを毎日スキャンし、Claude API が自由文の投稿を構造化フィールドへ抽出。5 次元の加重採点で物件を絞り、Claude Code が支払い能力試算、住み替え計画、内見準備をセッション内で処理します。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
-    tags: ['Node.js', 'Agent', 'Automation'],
+    tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
   },
 ]
 
@@ -226,36 +226,39 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'house-ops',
-    title: 'House Ops — 591 データ自動化と AI 意思決定 Pipeline',
-    subtitle: 'macOS launchd が毎日 09:00 に Node.js パイプラインを起動：591 をスクレイピング、5 つの加重次元で 0–5 採点、HTML サマリーを送信。Claude の意思決定レイヤーがセッション内で支払い能力試算、物件比較、内見当日のチェックリストを担当。',
-    metaTitle: 'House Ops — 591 データ自動化と AI 意思決定 Pipeline | Charles Chen 個人プロジェクト',
+    title: 'House Ops — 台湾住宅探索の自動化と AI 意思決定 Pipeline',
+    subtitle: 'macOS launchd が毎日 09:00 に Node.js パイプラインを起動：591 と Facebook の公開賃貸グループをスキャンし、Claude API（Haiku 4.5）が自由文の投稿を構造化フィールドへ抽出、5 つの加重次元で 0–5 採点して HTML サマリーを送信。Claude の意思決定レイヤーがセッション内で支払い能力試算、住み替え計画、物件比較、内見当日のチェックリストを担当。',
+    metaTitle: 'House Ops — 台湾住宅探索の自動化と AI 意思決定 Pipeline | Charles Chen 個人プロジェクト',
     metaDescription:
-      'Node.js による自動化パイプライン。毎日 591 をスキャンし、台湾の賃貸・購入物件を価格・スペース・立地・状態・リスクの 5 次元で加重採点し、HTML メールでお届けします。AI Product Manager Charles Chen の個人自動化事例研究。',
+      'Node.js による自動化パイプライン。毎日 591 と Facebook の公開賃貸グループをスキャンし、Claude API で自由文の投稿を構造化フィールドへ抽出、台湾の物件を価格・スペース・立地・状態・リスクの 5 次元で加重採点し、HTML メールでお届けします。AI Product Manager Charles Chen の個人自動化事例研究。',
     problem: [
-      '591 で物件を探すのは、効率の悪い「スキャン → 評価 → 棄却」ループに陥りがちです。物件は極めて流動的でノイズも多く、再投稿・価格変動・プラットフォーム横断のデータ断絶が含まれます。ユーザーは数十のタブを同時に開いて MRT 距離、学区、間取り、エージェントの評判を手作業で照合する必要があり、時間に余裕のない会社員にとって、意思決定コストの高さとノイズ量で優良物件が埋もれがちです。既存プラットフォームは基本的なフィールド絞り込みしか提供せず、物件のコンテキスト（家賃の地区中央値、面積比、賃貸リスク）を総合的に診断する機能を欠いており、ユーザーは毎日、低生産性の情報合成を繰り返さざるを得ません。',
+      '台湾の物件探しは 591、Facebook 公開グループ、長い裾野のコミュニティ掲示板に分散しており、効率の悪い「スキャン → 評価 → 棄却」ループに陥りがちです。物件は極めて流動的でノイズも多く、再投稿・価格変動・プラットフォーム横断のデータ断絶、そしてフィールドフィルタでは読めない自由文のソーシャル投稿が含まれます。ユーザーは数十のタブを同時に開いて MRT 距離、学区、間取り、エージェントの評判を手作業で照合する必要があり、時間に余裕のない会社員にとって、意思決定コストの高さとノイズ量で優良物件が埋もれがちです。既存プラットフォームは基本的なフィールド絞り込みしか提供せず、物件のコンテキスト（家賃の地区中央値、面積比、賃貸リスク）を総合的に診断する機能を欠いており、ユーザーは毎日、低生産性の情報合成を繰り返さざるを得ません。',
     ],
     solution: [
-      '本プロジェクトは Node.js（ESM）ベースの自動化パイプラインを構築し、macOS launchd で駆動しています。毎日 09:00 に agent-browser が指定の 591 検索エリアをスキャンし、履歴（JSON / TSV）と照合して重複排除した上で、新着・値下げ・削除の状態差分を抽出します。各物件は 5 次元のヒューリスティック採点（価格・スペース・立地・状態・リスク）を通り、賃貸と購入で加重ロジックを切り替えます。≥ 4.0 点の物件を優先推薦としてフラグ立てし、結果を Nodemailer で視覚化された HTML サマリーとして配信します。さらに Claude Code をインタラクティブ意思決定レイヤーとして統合し、リアルタイムの支払い能力試算、物件横断の比較、標準化された内見準備チェックリストを支援します：パイプラインがデータファネルを担い、AI が複雑なトレードオフ判断を担います。',
+      '本プロジェクトは Node.js（ESM）ベースの自動化パイプラインを構築し、macOS launchd で駆動しています。毎日 09:00 に 2 つのスキャンが並列で走ります：agent-browser が指定の 591 検索エリアにアクセスし、専用の Chrome インスタンス（別の launchd plist で KeepAlive 起動、プロファイルは普段使いの Chrome から隔離）が Chrome DevTools Protocol の `Input.synthesizeScrollGesture` で合成タッチジェスチャを生成し、Facebook anti-bot の lazy-load を回避して公開賃貸グループの最新投稿を取得します。FB の自由文の投稿は Claude API（Haiku 4.5）に渡されて `{price_num, address, district, size, layout, contact, confidence}` の構造化フィールドへ抽出され、591 物件と統合された評価キューに入ります。各物件は 5 次元のヒューリスティック採点（価格・スペース・立地・状態・リスク）を通り、賃貸族・初購族・住み替え族の 3 つのシナリオで加重ロジックを切り替えます。≥ 4.0 点の物件を優先推薦としてフラグ立てし、Nodemailer で並べ替えとフィルタが可能な視覚化 HTML サマリーとして配信します。Claude Code のインタラクティブレイヤーがセッション内の意思決定を担当：`affordability`（初購族の試算）、`upgrade plan`（住み替えの売買タイミングと資金ギャップ分析）、`compare 001, 003`（並列比較）、`prepare visit for 001`（内見当日のチェックリストと交渉戦略）。パイプラインがデータファネルを担い、AI が複雑なトレードオフ判断を担います。',
     ],
     techStack: [
       { category: 'Runtime', items: 'Node.js（ESM, .mjs）' },
-      { category: 'Scraping', items: 'agent-browser（591 データ収集）' },
-      { category: 'Email', items: 'Nodemailer + Gmail SMTP' },
-      { category: 'Scheduling', items: 'macOS launchd（システム級自動化）' },
+      { category: 'Scraping', items: 'agent-browser（591）+ Chrome DevTools Protocol（FB グループ、Input.synthesizeScrollGesture で anti-bot 回避）' },
+      { category: 'LLM Extraction', items: 'Claude API（Haiku 4.5）、自由文の投稿 → 構造化フィールド' },
+      { category: 'Email', items: 'Nodemailer + Gmail SMTP（並べ替え / フィルタ可能な HTML サマリー）' },
+      { category: 'Scheduling', items: 'macOS launchd（daily run + 専用 Chrome KeepAlive インスタンス）' },
       { category: 'Persistence', items: 'JSON Cache、TSV History、Markdown Tracker' },
-      { category: 'Interactive Layer', items: 'Claude Code（Affordability、Compare、Prepare Visit）' },
-      { category: 'Source', items: '591.com.tw（賃貸 / 購入）' },
+      { category: 'Interactive Layer', items: 'Claude Code（Affordability、Upgrade Plan、Compare、Prepare Visit）' },
+      { category: 'Sources', items: '591.com.tw（賃貸 / 購入）+ Facebook 公開賃貸グループ' },
     ],
     impact: [
+      'Multi-source ingestion：CDP の合成ジェスチャで Facebook anti-bot の lazy-load を回避し、Claude API による自由文投稿の構造化抽出と組み合わせて、591 とコミュニティの 2 つの供給ルートを単一の評価キューに収束。',
       'Scheduled scanning：毎日 09:00 にパイプラインを自動起動し、永続キャッシュと組み合わせて精密な重複排除を実現。',
-      'Five-dimension scoring：シナリオごとに重みを動的調整する定量スコアリングモデル（賃貸は 30/20/25/15/10 など）を実装し、感覚的な印象をデータ指標に変換。',
-      'Daily email digest：物件警告・値下げ追跡・行政区分集計を含む構造化 HTML レポートを定刻配信し、朝の意思決定体験を最適化。',
+      'Five-dimension scoring：賃貸族・初購族・住み替え族でペルソナ別に重みを動的調整する定量スコアリングモデル（賃貸は 30/20/25/15/10 など）を実装し、感覚的な印象をデータ指標に変換。',
+      'Daily email digest：591 と FB の物件を別セクションで構成した HTML レポートを定刻配信し、値下げ追跡・削除エントリ・行政区分集計を含めて朝の意思決定体験を最適化。',
       'Stateful tracker：物件のライフサイクル（Scanned → Evaluated → Visit → Signed）を完全追跡し、個人不動産データベースを構築。',
-      'Interactive Claude modes：財務モデリングと物件の深い比較をカバーする in-session AI コンサルティングを提供し、ラストマイルの意思決定品質を強化。',
+      'Interactive Claude modes：初購族の支払い能力試算、住み替えの財務計画、物件の深い比較をカバーする in-session AI コンサルティングを提供し、ラストマイルの意思決定品質を強化。',
     ],
     learnings: [
       '個人自動化のシナリオでは、launchd は cron よりエレガントな選択肢です。ユーザー環境を完全に継承し、Keychain 認証を処理し、システム起動設定にも対応するため、パイプラインの運用上限が大きく引き上がります。',
       'フィルタリングロジックでは、ハードフィルターから多次元加重スコアリングへ移行したことが鍵となるブレイクスルーでした。ハードフィルターは単一指標で境界候補を切り捨てがちですが、加重モデルなら次元間でのトレードオフを許容し、人間の意思決定をより正確に模倣できます。配信メディアを Email にしたのは行動科学に基づく理解からです：朝の高頻度意思決定時間帯では、Push 配信のリーチとモバイル可読性が、Dashboard のような Pull 型インターフェースを大きく上回り、注意がすでにある場所にデータを能動的に届けられます。',
+      'FB のページング攻略では、純 JS scroll、agent-browser scroll、keyboard PageDown、CDP `Input.dispatchMouseEvent` を順に試しましたが、いずれも anti-bot 検出に引っかかり feed が paginate されませんでした。唯一機能したのは CDP `Input.synthesizeScrollGesture` で、Facebook がこれを実機トラックパッドのスクロールとして扱うためです。抽出側では、自由文のソーシャル投稿を LLM に渡す方が（投稿あたり約 USD 0.001）、台湾賃貸特有の表現（「月租押金兩個月含管理費可議」など）に対するルールベースパーサのメンテナンス工数を考えると、長期的に堅牢かつ低コストです。',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },

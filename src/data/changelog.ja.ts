@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'house-ops-fb-integration',
+    date: '2026-05-07',
+    title: 'House Ops マルチソース化 — FB 公開グループ + Claude API 抽出',
+    tags: ['feature', 'technical'],
+    body: [
+      'House Ops の上流が「591 のみ」から「591 + Facebook の公開賃貸グループ」へ拡張されました。FB 統合は Chrome DevTools Protocol の `Input.synthesizeScrollGesture` 合成タッチジェスチャを採用してページングを実現します（Facebook の Graph API Groups エンドポイントは 2024 年 4 月に完全廃止済み）。Facebook はこの合成ジェスチャを実機トラックパッドのスクロールとして扱うため、anti-bot の lazy-load 検出を回避できます。専用 Chrome インスタンスは別の launchd plist（com.house-ops.chrome-debug.plist）で KeepAlive 起動され、プロファイルは普段使いの Chrome と隔離、cookie は初回手動ログイン後に永続化されるので、再起動後もログイン不要です。FB の自由文の投稿は Claude API（Haiku 4.5）で `{price_num, address, district, size, layout, contact, confidence}` に構造化抽出され（投稿あたり約 USD 0.001）、591 物件と同じ 5 次元加重スコアリングに統合され、日次 HTML サマリーには 591 と FB のセクションが並んで配信されるようになりました。',
+      '/projects/house-ops のケーススタディも同時に更新しました：detail title を「591 Data Automation」から「Taiwan Housing Automation」へ拡張してマルチソース範囲を反映し、Tech Stack に Browser Automation（CDP）と LLM Extraction（Claude API）の 2 行を追加、Sources を「591 + Facebook 公開賃貸グループ」に変更しました。インタラクティブモード一覧に `upgrade plan` を追加し、対象ユーザーを「賃貸族 / 初購族」から「賃貸族 / 初購族 / 住み替え族」の 3 シナリオに拡張。learnings には FB anti-bot 攻略の経緯（純 JS scroll、agent-browser scroll、keyboard PageDown、CDP dispatchMouseEvent はすべて失敗し、合成ジェスチャでのみページングが機能した）を反映しました。card tags に `Claude API` を追加し、新たな LLM 抽出能力を明示しています。',
+    ],
+  },
+  {
     id: 'path-demo-remotion-pipeline',
     date: '2026-05-06',
     title: 'Path ケーススタディ：30 秒の Remotion デモ動画',

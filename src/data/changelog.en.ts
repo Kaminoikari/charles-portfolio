@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'house-ops-fb-integration',
+    date: '2026-05-07',
+    title: 'House Ops Multi-Source Upgrade — FB Public Groups + Claude API Extraction',
+    tags: ['feature', 'technical'],
+    body: [
+      'House Ops widened its upstream from "591 only" to "591 + Facebook public rental groups". The FB integration leans on Chrome DevTools Protocol `Input.synthesizeScrollGesture` for pagination (Facebook closed the Graph API Groups endpoint entirely in April 2024). Facebook treats the synthesized gesture as a physical trackpad and lets it through anti-bot lazy-load detection. A dedicated Chrome instance is kept alive by a separate launchd plist (com.house-ops.chrome-debug.plist), with its profile isolated from the user\'s daily Chrome and cookies persisted after a one-time manual login so subsequent restarts skip the login dance. Free-form FB posts are handed to Claude API (Haiku 4.5) for `{price_num, address, district, size, layout, contact, confidence}` extraction at roughly USD 0.001 per post, then merged with 591 listings in the five-dimension scoring pipeline so the daily HTML digest now ships 591 and FB sections side by side.',
+      'The /projects/house-ops case study was refreshed in lockstep: the detail title widens from "591 Data Automation" to "Taiwan Housing Automation" to reflect the multi-source scope, Tech Stack picks up Browser Automation (CDP) and LLM Extraction (Claude API) rows, and Sources reads "591 + Facebook public rental groups". The interactive modes list now includes `upgrade plan`, expanding the user types covered from "renters / first-time buyers" to "renters / first-time buyers / upgraders". Learnings document the FB anti-bot path: plain JS scroll, agent-browser scroll, keyboard PageDown, and CDP dispatchMouseEvent all failed, and only synthesized-gesture scrolling unlocked pagination. Card tags add `Claude API` to flag the new LLM extraction capability.',
+    ],
+  },
+  {
     id: 'path-demo-remotion-pipeline',
     date: '2026-05-06',
     title: 'Path Case Study: 30-Second Remotion Demo Video',
