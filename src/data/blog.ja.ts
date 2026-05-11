@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI Builder の学習ロードマップ：《Beyond LLM》コース完全ノート',
+    subtitle: 'スタンフォード大学教授が講義する本コースは、AI エンジニアと AI Builder の中核スキルを体系的に分解する。LLM の本質的な限界から出発し、Prompt Engineering、RAG、Fine-Tuning、そして高度な Agentic Workflow と Multi-Agent フレームワークまで網羅。AI 技術を実質的なビジネス価値へ転換するための完全な認知体系である。',
+    url: 'https://charlestychen.substack.com/p/ai-builder-beyond-llm',
+    platform: 'Substack',
+    date: '2026-05-11',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/d4a0ae46-a6fc-48b4-ad40-65bae8937f96_1536x1024.png',
+  },
+  {
     title: 'AI 時代に、スキルよりも agency を磨くことが重要な理由',
     subtitle: 'AI がスキルのボトルネックを取り除いたあと、本当に差をつけるのは何か？Notion プロダクト責任者 Max Schoening の答えは agency。',
     url: 'https://charlestychen.substack.com/p/ai-agency',

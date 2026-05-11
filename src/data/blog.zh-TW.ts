@@ -25,6 +25,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI Builder 的學習地圖：《Beyond LLM》課程完整筆記',
+    subtitle: '本課程由史丹佛大學教授授課，系統化拆解 AI 工程師與 AI Builder 核心職能。內容從大型語言模型（LLM）的本質限制出發，一路涵蓋 Prompt Engineering、RAG、Fine-Tuning 到高階的 Agentic Workflow 與 Multi-Agent 框架，這是一套將 AI 技術轉化為實質商業價值的完整認知體系。',
+    url: 'https://charlestychen.substack.com/p/ai-builder-beyond-llm',
+    platform: 'Substack',
+    date: '2026-05-11',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/d4a0ae46-a6fc-48b4-ad40-65bae8937f96_1536x1024.png',
+  },
+  {
     title: '為什麼在 AI 時代，培養 agency 比培養技能更重要',
     subtitle: '當 AI 把技能瓶頸拿掉之後，真正分出高下的是什麼？Notion 產品負責人 Max Schoening 給的答案是 agency。',
     url: 'https://charlestychen.substack.com/p/ai-agency',
