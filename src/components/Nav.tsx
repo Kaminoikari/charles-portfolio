@@ -44,6 +44,15 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const onResize = () => {
+      if (window.innerWidth >= 768) setMenuOpen(false)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [menuOpen])
+
   // Handle hash-based scroll after navigating back to home
   useEffect(() => {
     if (isHome && location.hash) {
@@ -87,12 +96,14 @@ export default function Nav() {
     <nav
       ref={navRef}
       aria-label={t('nav.mainAriaLabel')}
-      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-all duration-500"
+      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-all duration-300"
       style={{
-        borderColor: scrolledPastHero ? 'var(--color-border)' : 'transparent',
-        background: scrolledPastHero
-          ? 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)'
-          : 'transparent',
+        borderColor: scrolledPastHero || menuOpen ? 'var(--color-border)' : 'transparent',
+        background: menuOpen
+          ? 'var(--color-bg-primary)'
+          : scrolledPastHero
+            ? 'color-mix(in srgb, var(--color-bg-primary) 92%, transparent)'
+            : 'transparent',
       }}
     >
       <div ref={headerRef} className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
