@@ -132,12 +132,13 @@ export const projectDetails: ProjectDetail[] = [
     solution: [
       '把 Plutus Trade 定位成單一使用者的決策支援工具。Gemini 2.5 Flash 對 watchlist 上每一檔做跨領域的 synthesis：月營收（YoY/MoM/累計）、季報基本面（EPS、毛利率、ROE、股利政策）、法人籌碼、技術指標，回傳一段帶明確推論的 BUY/SELL/HOLD 診斷。輸出嚴格 framed 為「分析」並附上免責聲明，最終決策權保留在使用者。',
       '導引式選股流程把質性的投資條件翻譯成一份 AI 可執行的 contract。3 步驟的投資人 profile（風險偏好、持有區間、產業偏好）參數化選股 prompt，回傳精選短名單與每一支的選股理由。工作流中歷史上最耗時的探索階段，因此收斂成一次互動。',
+      '導引式選股下面再墊一層 deterministic 的量化動能 layer：APScheduler 每日 14:00 對全市場跑 8 大動能特徵 + 跨市場 percentile rank 加權，把排序好的候選池 snapshot 進 Redis。Gemini 在選股 prompt 階段直接消化這份已排序候選做 narrative synthesis，量化篩選交給 deterministic 的數值排序兜底，讓 LLM 專注在語意層的推論。',
       '已 instrument 的預測層在每一個 AI 推薦之上 log 該次的 entry context，到期 settle，產出一份結構化的決策品質紀錄（實際 ROI、勝率、決策品質矩陣）。意圖是建立長期透明度：使用者可以在不同市場 regime 與策略類型下回頭稽核系統的歷史表現，把任何單次輸出當作長期紀錄裡的一個資料點來檢視。',
     ],
     techStack: [
       { category: 'Frontend', items: 'Flutter 3.41+（Web 部署在 Vercel）、Riverpod、go_router、fl_chart、Dio' },
       { category: 'Backend', items: 'FastAPI（Python 3.11）、Pydantic v2、httpx、APScheduler' },
-      { category: 'AI', items: 'Google Gemini 2.5 Flash' },
+      { category: 'AI', items: 'Google Gemini 2.5 Flash（narrative synthesis）+ 自製動能 scoring 層（8 特徵 + 跨市場 PR 加權，APScheduler 每日 14:00 全市場 snapshot → Redis）' },
       { category: 'Data Sources', items: 'TWSE/TPEX OpenAPI、Yahoo Finance、FinMind（三層 fallback 鏈 + 7 天 stale cache）' },
       { category: 'Database', items: 'Supabase（PostgreSQL）、Redis（Upstash）做 cache' },
       { category: 'Notifications', items: 'Web Push（VAPID / pywebpush），16 種通知 + 12 小時冷卻' },
@@ -146,6 +147,7 @@ export const projectDetails: ProjectDetail[] = [
     impact: [
       '單一使用者的決策支援表面，覆蓋 8 個整合模組：市場數據中心、自選股與投資組合管理、AI 個股診斷、導引式選股、預測追蹤、財報基本面分析、智慧通知、盤後日報',
       '已 instrument 的預測層：每一次 AI 呼叫都帶 entry context 寫入 log、到期 settle（ROI、勝率、決策品質矩陣），讓系統做到完整 auditable',
+      'Hybrid quant + LLM 選股架構：每日 14:00 跑全市場 8 大動能特徵與跨市場 PR 加權 snapshot 進 Redis 做候選排序，Gemini 在這份排序池上做 narrative synthesis，把量化篩選與語意推論兩層各自最擅長的事拆乾淨',
       '三層資料源韌性：FinMind → Yahoo Finance → TWSE/TPEX OpenAPI fallback 鏈，搭配 7 天 stale-cache 安全網，在上游服務退化時仍維持分析能力',
       '盤勢感知的快取策略：盤中 5 分鐘 TTL，收盤後快取持有至下一個開盤，週末快取直接滾到下週一開盤',
     ],

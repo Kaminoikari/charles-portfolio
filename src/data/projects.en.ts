@@ -120,12 +120,13 @@ export const projectDetails: ProjectDetail[] = [
     solution: [
       'Plutus Trade is positioned as a single-user decision-support tool. Gemini 2.5 Flash performs cross-domain synthesis on each name in the watchlist (monthly revenue with YoY/MoM/cumulative views, quarterly fundamentals covering EPS, gross margin, ROE, dividend policy, institutional flow, and technical signals) and returns a BUY/SELL/HOLD diagnostic with explicit reasoning. Output is framed strictly as analysis under disclaimer, and final decision authority stays with the user.',
       'A guided screening flow translates qualitative investment criteria into an AI-executable contract. A three-step investor profile (risk tolerance, holding horizon, sector preference) parameterizes the screening prompt, returning a curated short-list with per-pick reasoning. The discovery phase of the workflow, historically the highest-time-cost step, collapses into a single interaction.',
+      'Underneath the guided screener sits a deterministic momentum layer. APScheduler runs a 14:00 daily job computing eight market-wide momentum features with cross-market percentile-rank weighting, materializing a ranked candidate pool to Redis. Gemini consumes this pre-ranked pool during prompt synthesis, focusing the LLM on narrative interpretation while deterministic numeric ranking handles the quantitative filtering.',
       'An instrumented prediction layer logs every AI recommendation with its entry context and settles outcomes at horizon, producing a structured record of decision quality (realized ROI, win rate, decision-quality matrix). The intent is durable transparency: the user can interrogate the system\'s historical performance across market regimes and strategy types, treating any single output as one data point in a longitudinal track record.',
     ],
     techStack: [
       { category: 'Frontend', items: 'Flutter 3.41+ (Web on Vercel), Riverpod, go_router, fl_chart, Dio' },
       { category: 'Backend', items: 'FastAPI (Python 3.11), Pydantic v2, httpx, APScheduler' },
-      { category: 'AI', items: 'Google Gemini 2.5 Flash' },
+      { category: 'AI', items: 'Google Gemini 2.5 Flash (narrative synthesis) + in-house momentum scorer (8 features with cross-market percentile-rank weighting, snapshotted to Redis daily at 14:00 via APScheduler)' },
       { category: 'Data Sources', items: 'TWSE/TPEX OpenAPI, Yahoo Finance, FinMind (three-source fallback chain + 7-day stale cache)' },
       { category: 'Database', items: 'Supabase (PostgreSQL), Redis (Upstash) for caching' },
       { category: 'Notifications', items: 'Web Push via VAPID/pywebpush, 16 notification types with 12h cooldown' },
@@ -134,6 +135,7 @@ export const projectDetails: ProjectDetail[] = [
     impact: [
       'Single-user decision-support surface covering 8 integrated modules: market data center, watchlist and portfolio management, AI diagnostics, guided screening, prediction tracking, fundamental analysis, smart notifications, and after-hours daily report',
       'Instrumented prediction layer logging every AI call with entry context and settled outcome (ROI, win rate, decision-quality matrix), making the system fully auditable',
+      'Hybrid quant + LLM screening architecture: a daily 14:00 momentum snapshot (eight market-wide features with cross-market percentile-rank weighting, materialized to Redis) handles quantitative ranking, and Gemini performs narrative synthesis on top, cleanly separating where each layer earns its keep',
       'Three-source data resilience: FinMind → Yahoo Finance → TWSE/TPEX OpenAPI fallback chain with seven-day stale-cache safeguard maintains analytical capability under upstream provider outages',
       'Trading-aware caching policy: five-minute TTL during regular session, cache held until next open after close, weekend cache rolls forward to Monday open',
     ],

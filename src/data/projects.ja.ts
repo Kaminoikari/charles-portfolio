@@ -133,12 +133,13 @@ export const projectDetails: ProjectDetail[] = [
     solution: [
       'Plutus Trade を単一ユーザーの意思決定支援ツールとして位置づけました。Gemini 2.5 Flash は watchlist の各銘柄に対してクロスドメインの synthesis を行います：月次売上（YoY/MoM/累計）、四半期ファンダメンタルズ（EPS、粗利率、ROE、配当政策）、機関投資家フロー、テクニカル指標。出力は明示的な推論つきの BUY/SELL/HOLD 診断。免責事項つきで厳密に「分析」として framing し、最終的な意思決定権はユーザーに残ります。',
       'ガイド付きスクリーニング フローは、定性的な投資基準を AI が実行可能な contract に翻訳します。3 ステップの投資家プロファイル（リスク許容度、保有期間、セクター選好）が選股 prompt をパラメーター化し、選定理由つきの精選ショートリストを返します。これによりワークフローのうち、歴史的にもっとも時間がかかる発見フェーズを 1 回のインタラクションに圧縮します。',
+      'ガイド付きスクリーニングの下層に deterministic な定量モメンタム layer を新設しました。APScheduler が毎日 14:00 に全市場の 8 つのモメンタム特徴量と市場横断 percentile rank の加重を計算し、ランク付け済みの候補プールを Redis に snapshot します。Gemini はこの事前ランク付けプールを選股 prompt 段階で消化して narrative synthesis を担当し、定量フィルタリングは deterministic な数値ランキングが受け持つことで、LLM を意味解釈の層に専念させます。',
       'instrument 済みの予測層が、各 AI 推奨に対して entry context を log し、地平で settle して、構造化された意思決定品質の記録を生成します（実 ROI、勝率、決定品質マトリクス）。狙いは持続的な透明性です：ユーザーは異なる市場 regime や戦略タイプ間でシステムの過去のパフォーマンスを監査でき、単回の出力は長期トラックレコードのなかの 1 つのデータポイントとして扱えます。',
     ],
     techStack: [
       { category: 'Frontend', items: 'Flutter 3.41+（Web、Vercel デプロイ）、Riverpod、go_router、fl_chart、Dio' },
       { category: 'Backend', items: 'FastAPI（Python 3.11）、Pydantic v2、httpx、APScheduler' },
-      { category: 'AI', items: 'Google Gemini 2.5 Flash' },
+      { category: 'AI', items: 'Google Gemini 2.5 Flash（narrative synthesis）+ 自製モメンタム scoring 層（8 特徴 + 市場横断 PR 加重、APScheduler が毎日 14:00 に全市場 snapshot → Redis）' },
       { category: 'Data Sources', items: 'TWSE/TPEX OpenAPI、Yahoo Finance、FinMind（3 層 fallback チェーン + 7 日 stale cache 付き）' },
       { category: 'Database', items: 'Supabase（PostgreSQL）、Redis（Upstash）を cache に' },
       { category: 'Notifications', items: 'Web Push（VAPID / pywebpush）、16 種類の通知 + 12 時間クールダウン' },
@@ -147,6 +148,7 @@ export const projectDetails: ProjectDetail[] = [
     impact: [
       '8 つの統合モジュールをカバーする単一ユーザー意思決定支援サーフェス：市場データセンター、自選股／ポートフォリオ管理、AI 個別株診断、ガイド付きスクリーニング、予測トラッキング、ファンダメンタルズ分析、スマート通知、引け後日報',
       'instrument 済みの予測層：各 AI 呼び出しは entry context つきで log され、地平で settle される（ROI、勝率、決定品質マトリクス）。システムを完全に auditable にします',
+      'Hybrid quant + LLM スクリーニング構成：毎日 14:00 に全市場の 8 つのモメンタム特徴量と市場横断 PR 加重を計算して Redis に snapshot し定量ランキングを担い、Gemini はその上で narrative synthesis を行う。各層が最も得意な役割に分業を切り分けました',
       '3 層のデータソース耐性：FinMind → Yahoo Finance → TWSE/TPEX OpenAPI fallback チェーン + 7 日 stale-cache のセーフティネットが、上流プロバイダーの劣化時にも分析能力を維持',
       '相場意識のキャッシュ方針：取引時間中は 5 分 TTL、引け後は次の寄付まで保持、週末キャッシュは月曜の寄付までロールフォワード',
     ],
