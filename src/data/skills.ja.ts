@@ -15,7 +15,7 @@ export const skills: Skill[] = [
   { name: '混沌のための GPS', color: 'white' },
   { name: '人間ともプロらしく対話する', color: 'cyan' },
   { name: 'スプレッドシートを意思決定に変える', color: 'white' },
-  { name: '会議を減らすための会議', color: 'gray' },
+  { name: '会議を減らすための会議を開く', color: 'gray' },
   { name: '眠らない頭脳を作る', color: 'cyan' },
   { name: 'データを持って議論する', color: 'white' },
   { name: '誰も読まない 50 ページの PRD（嘘です）', color: 'cyan' },

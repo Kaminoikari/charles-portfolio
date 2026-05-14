@@ -15,7 +15,7 @@ export const skills: Skill[] = [
   { name: '混亂中的 GPS', color: 'white' },
   { name: '跟人類專業溝通', color: 'cyan' },
   { name: '把試算表變成決策', color: 'white' },
-  { name: '為了減少會議的會議', color: 'gray' },
+  { name: '開為了減少會議的會議', color: 'gray' },
   { name: '打造不睡覺的大腦', color: 'cyan' },
   { name: '帶資料來吵架', color: 'white' },
   { name: '沒人讀的 50 頁 PRD（誤）', color: 'cyan' },
