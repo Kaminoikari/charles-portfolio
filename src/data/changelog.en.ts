@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'job-ops-launch',
+    date: '2026-05-14',
+    title: 'Job Ops Joins the Portfolio — Reverse-ATS for the Candidate Side',
+    tags: ['feature'],
+    body: [
+      'Added Job Ops as the fifth side project. The /projects/job-ops case study covers a Python pipeline that flips HR-side ATS logic onto the candidate side: macOS launchd kicks off a daily 07:00 run that scrapes 104 listings via httpx, hands them to a CV-aware evaluator (cv_reader + archetypes.yml) for weighted scoring, bands the output as RECOMMEND / CAUTIOUS / SKIP, and ships an inline-styled HTML + Markdown digest via Gmail SMTP. The interactive layer mirrors the house-ops pattern with seven Claude Code modes (cv-match, comp-research, legitimacy, level-strategy, interview-prep, personalization, role-summary) handling judgment that needs conversational depth. The repo is private while the pipeline is still being tuned.',
+      'The home-page card animation is new visual language for the portfolio. Vertical token streams of real 104 job-post fragments ("Python", "資深", "90K", "遠端", "Senior", "5y") fall down through the canvas. A mars-orange CV-MATCH scan line sits horizontally at y=150; whenever a CV-matched token crosses it, the glyph flashes mars with a halo. The 07:00 daily digest panel materializes underneath one row at a time, three picks total (Senior AI PM 4.6 / Growth PM 3.8 / Junior Data PM 2.9), each banded by score with mars dots for RECOMMEND and dimmer white for SKIP. Static frame freezes a mid-flight rain plus a fully-populated digest so the card reads as a complete product even without hover.',
+    ],
+  },
+  {
     id: 'house-ops-fb-integration',
     date: '2026-05-07',
     title: 'House Ops Multi-Source Upgrade — FB Public Groups + Claude API Extraction',

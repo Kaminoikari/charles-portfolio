@@ -58,6 +58,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
   },
+  {
+    id: 'job-ops',
+    title: 'Job Ops',
+    description:
+      'Reverse-ATS Python pipeline for personal job search. macOS launchd kicks off a daily 7:00 run that scrapes 104 listings, has a CV-aware evaluator score each role on a candidate-side rubric, and ships an HTML + Markdown digest via Gmail SMTP. Seven interactive Claude Code modes handle legitimacy checks, level strategy, and interview prep in-session.',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/job-ops',
+    tags: ['Python', 'launchd', 'CV-aware', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -258,6 +267,49 @@ export const projectDetails: ProjectDetail[] = [
         src: '/assets/house-ops-listing-report.png',
         alt: 'Per-listing five-dimension evaluation report: price reasonableness, space and layout, neighborhood amenities, property condition, and risk scored individually with the 0–5 weighted composite.',
       },
+    ],
+  },
+  {
+    id: 'job-ops',
+    title: 'Job Ops — Reverse-ATS for the Candidate Side',
+    subtitle: 'A Python pipeline kicked off by macOS launchd at 07:00 daily. It scrapes 104 listings, has a CV-aware evaluator score each role on a candidate-side rubric (cv_reader + archetypes.yml), bands the output into RECOMMEND / CAUTIOUS / SKIP, and ships an HTML plus Markdown digest via Gmail SMTP. Seven interactive Claude Code modes handle legitimacy checks, level strategy, comp research, and interview prep in-session.',
+    metaTitle: 'Job Ops — Reverse-ATS Pipeline for Personal Job Search | Charles Chen Personal Project',
+    metaDescription: 'A CV-aware Python automation that scrapes 104 daily, scores listings on a candidate-side rubric, and ships an HTML plus Markdown digest via Gmail SMTP at 07:00. Paired with seven interactive modes for legitimacy checks, level strategy, and interview prep. A personal job-search OS by AI Product Manager Charles Chen.',
+    problem: [
+      'The HR side of the job-search funnel runs on ATS. A structured rubric scores 100+ candidates daily, ranks them, and trims the tail. The candidate side has no equivalent. Thirty to fifty target listings get read by eye, page by page, with "85K vs 90K, remote vs hybrid, 30-person team vs 5-person team" all held in working memory at once. Triage paralysis sets in fast, and the typical exit is to click whatever sits on top of the recommendation feed. That hands filtering authority straight back to the platform: their ranking becomes your ranking.',
+      'Search filters on 104, LinkedIn, and CakeResume only express hard constraints (salary floor, region, function). They cannot represent weighted preference ("growth > comp > commute"). They cannot match a listing against your specific CV. They cannot shift weights between exploration mode and closing mode within the same search. The candidate is forced to be the matching engine, at a much lower batch size than HR-side ATS runs at.',
+    ],
+    solution: [
+      'Job Ops is a reverse-ATS: the same structured scoring logic HR points at candidates, flipped to point at jobs instead. An asyncio Python pipeline (httpx for the 104 search and detail APIs) is launched by macOS launchd at 07:00. Each fresh listing flows into a CV-aware evaluator that reads the candidate CV via cv_reader, matches it against archetypes defined in archetypes.yml, scores the role, and bands the result as RECOMMEND, CAUTIOUS, or SKIP. report.py then renders inline-styled HTML for the morning Gmail glance and a Markdown twin for the Obsidian archive. Gmail SMTP delivers it before 07:30, while attention is still cheap.',
+      'Scoring weights live in YAML, not Python. The eight dimensions (comp, remote, tech stack, growth, team, brand, location, lifestyle) carry weights set in config/profile.yml. Shifting between exploration mode (growth and team weighted high) and closing mode (comp and commute weighted high) is a one-line edit, no code change required. The YAML file under git becomes a longitudinal record of how the candidate\'s own priorities shifted across the job search.',
+      'A seven-mode interactive layer mirrors the house-ops pattern and runs inside a Claude Code session: cv-match (single-listing CV alignment), comp-research (market comp survey), legitimacy (company and posting due diligence, backed by forum_lookup against community sources), level-strategy (IC vs management track), interview-prep, personalization, and role-summary. The pipeline owns the deterministic work (scrape, dedupe, score, deliver); the interactive modes handle judgment that needs conversational depth. scan-history.tsv carries lifecycle state (price drops, delistings, repostings) so the same job posted three times shows up as one row with diff annotations, not three rows of noise.',
+    ],
+    techStack: [
+      { category: 'Runtime', items: 'Python 3.11+ (asyncio)' },
+      { category: 'Scraping', items: 'httpx (104 search + detail API), UA rotation, RateLimiter' },
+      { category: 'CV Ingestion', items: 'cv_reader parses a markdown CV into structured signals fed to the evaluator' },
+      { category: 'Scoring', items: 'Weighted multi-dimension evaluator + archetypes.yml, banded RECOMMEND / CAUTIOUS / SKIP' },
+      { category: 'Config', items: 'YAML (archetypes, search criteria, personal weights)' },
+      { category: 'Email', items: 'Gmail SMTP + inline-styled HTML + Markdown twin export' },
+      { category: 'Scheduling', items: 'macOS launchd (com.job-ops.daily, 07:00 daily)' },
+      { category: 'Persistence', items: 'TSV scan-history with price-drop and delisting lifecycle, daily MD + HTML reports' },
+      { category: 'Interactive Layer', items: 'Seven modes: cv-match, comp-research, legitimacy, level-strategy, interview-prep, personalization, role-summary' },
+      { category: 'Testing', items: 'pytest, pytest-asyncio' },
+    ],
+    impact: [
+      'Reverse-ATS pipeline collapses 30 to 50 daily 104 listings into a three-band digest (RECOMMEND / CAUTIOUS / SKIP) delivered before 07:30',
+      'CV-aware evaluator reads a markdown CV via cv_reader and matches against candidate archetypes in archetypes.yml, so a single codebase serves multiple job-search stances via config edit',
+      'Seven interactive modes complete the judgment layer: legitimacy via forum_lookup against community sources, IC vs manager track, comp negotiation, and interview prep',
+      'TSV-based lifecycle tracking surfaces price moves and delistings as diff annotations on the same row, avoiding duplicate-noise accumulation across days',
+      'Native macOS launchd scheduling with Gmail App Password auth (no OAuth dance), sharing the same automation family as house-ops',
+    ],
+    learnings: [
+      'Reverse-ATS is a stance shift in product positioning, with the engineering pieces (scraper, evaluator, digest) common to any scoring pipeline. The decision worth defending is who the rubric points at. HR points one rubric at 100 candidates; this points one rubric at 100 jobs. The asymmetry of agency on the candidate side of the funnel is the value proposition the build is justified by.',
+      'Externalizing the eight scoring weights to YAML pays off well beyond the obvious "less code change to tune." Because the weights file is git-tracked, every commit on config/profile.yml is a timestamp of the candidate\'s own priority shift across the job search. That artifact ends up more informative than any individual daily report when reviewing the search end-to-end.',
+      'The pipeline-plus-interactive-modes split, first validated on house-ops, holds for job-ops too. Deterministic work (scrape, dedupe, score, ship email) lives in the pipeline. Conversational judgment (legitimacy reasoning, level strategy, comp talk track) lives in interactive Claude Code modes. Forcing legitimacy reasoning into a Python module bloats the pipeline; forcing daily scraping into a Claude session burns money and adds fragility. Same architectural shape, different domain.',
+    ],
+    links: [
+      { label: 'GitHub (private repo)', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]

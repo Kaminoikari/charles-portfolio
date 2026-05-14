@@ -68,6 +68,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
   },
+  {
+    id: 'job-ops',
+    title: 'Job Ops',
+    description:
+      '把 HR 端 ATS 的結構化評分邏輯反過來給求職者用的 Python pipeline。macOS launchd 每天早上 7:00 自動爬 104 職缺，CV-aware evaluator 對照履歷與候選人原型逐筆評分，銜接 RECOMMEND / CAUTIOUS / SKIP 三段日報透過 Gmail SMTP 寄達；另有 7 個 Claude Code interactive modes 在 session 內處理合法性查核、職等策略、面試準備。',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/job-ops',
+    tags: ['Python', 'launchd', 'CV-aware', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -272,6 +281,49 @@ export const projectDetails: ProjectDetail[] = [
         src: '/assets/house-ops-listing-report.png',
         alt: '單筆物件的五維評估報告：價格合理度、空間與格局、地段機能、屋況、風險五項分別打分，並加權合成為 0–5 分。',
       },
+    ],
+  },
+  {
+    id: 'job-ops',
+    title: 'Job Ops — 把 ATS 反向給求職者用的 Pipeline',
+    subtitle: '每天早上 7:00 由 macOS launchd 觸發的 Python pipeline。爬 104 職缺後，CV-aware evaluator 用 cv_reader 解析履歷、對照 archetypes.yml 的候選人原型逐筆打分，輸出 RECOMMEND / CAUTIOUS / SKIP 三段式日報，透過 Gmail SMTP 在 07:30 前送到手機；另有 7 個 Claude Code interactive modes 在 session 內處理合法性查核、職等策略、薪資調查與面試準備。',
+    metaTitle: 'Job Ops — 把 ATS 反向給求職者用的個人 Pipeline | Charles Chen 個人作品',
+    metaDescription: 'CV-aware 的 Python 自動化每天爬 104，用候選人視角的 rubric 打分，產 HTML + Markdown 日報透過 Gmail SMTP 在 07:00 寄達；搭配 7 個 interactive modes 處理合法性查核、職等策略、面試準備。AI 產品經理 Charles Chen 的個人求職 OS。',
+    problem: [
+      '求職 funnel 的 HR 端有 ATS，每天用同一套結構化規則把 100+ 候選人打分、排序、淘汰；求職者端沒有對應工具。30 到 50 個目標職缺只能靠人眼一頁頁讀，把「85K vs 90K、遠端 vs hybrid、30 人團隊 vs 5 人團隊」這些資訊全部塞進工作記憶試圖比較。triage paralysis 來得很快，多數人最後就點推薦列表的第一個職缺：等於把篩選權交還給平台，他們的排序變成你的排序。',
+      '104、LinkedIn、CakeResume 的搜尋條件只能設 hard filter（薪資下限、地區、職類）。沒辦法表達「我重視成長性 > 薪資 > 通勤」這種權重式偏好；沒辦法用我的 CV 比對職缺敘述；沒辦法依求職階段（探索期 / 收網期）動態調整評估權重。求職者被迫扮演 matching engine 的角色，且 batch size 遠低於 HR 端 ATS 的處理量。',
+    ],
+    solution: [
+      'Job Ops 是 reverse-ATS：把 HR 端那套結構化評分邏輯反過來指向職缺。asyncio Python pipeline（httpx 串 104 search/detail API）由 macOS launchd 在 07:00 觸發。每個新職缺進到 CV-aware evaluator：cv_reader 解析履歷、對照 archetypes.yml 定義的候選人原型逐項評分、把結果分為 RECOMMEND / CAUTIOUS / SKIP 三段。report.py 渲染 inline-styled HTML（手機 Gmail 直接讀）+ Markdown 雙生本（Obsidian 收錄、版本控制、月底回顧）。Gmail SMTP 在 07:30 前送達，趁注意力還便宜的早晨。',
+      '評分權重外接到 YAML，不寫死在 Python。8 個維度（薪資、遠端、技術棧、成長、團隊、品牌、地點、生活）的權重定義在 config/profile.yml，從探索期（成長、團隊吃重）切到收網期（薪資、通勤吃重）一行 edit 就解決，完全不必碰 evaluator 程式碼。這份 YAML 進 git 後，每次 commit 等於記錄自己優先順序的變化，求職結束後拿出來看比任何單日報告更有訊息量。',
+      '7 個 interactive modes 沿用 house-ops 的雙層架構，在 Claude Code session 內觸發：cv-match（單一職缺 CV 對位）、comp-research（市場薪資調查）、legitimacy（公司與職缺合法性查核，由 forum_lookup 串論壇來源）、level-strategy（IC 路線 vs 管理職）、interview-prep、personalization、role-summary。Pipeline 承擔 deterministic 工作（爬、dedupe、評分、寄信），interactive 層處理需要對話深度的判斷。scan-history.tsv 同時負責 lifecycle（價變、下架、重貼），同一職缺貼三次只會顯示一列加上 diff 註記，不會累積成 3 列噪音。',
+    ],
+    techStack: [
+      { category: 'Runtime', items: 'Python 3.11+ (asyncio)' },
+      { category: '爬蟲', items: 'httpx 串 104 search + detail API、UA 輪替、RateLimiter' },
+      { category: 'CV 攝入', items: 'cv_reader 把 markdown 履歷解析為結構化訊號餵進 evaluator' },
+      { category: '評分', items: '多維度加權 evaluator + archetypes.yml，輸出 RECOMMEND / CAUTIOUS / SKIP 三段式' },
+      { category: '設定', items: 'YAML（archetypes、search criteria、個人權重）' },
+      { category: '寄信', items: 'Gmail SMTP + inline-styled HTML + Markdown 雙生本匯出' },
+      { category: '排程', items: 'macOS launchd（com.job-ops.daily，每日 07:00）' },
+      { category: '持久化', items: 'TSV scan-history 追蹤價變與下架 lifecycle，每日 MD + HTML 日報' },
+      { category: '互動層', items: '7 個 modes：cv-match、comp-research、legitimacy、level-strategy、interview-prep、personalization、role-summary' },
+      { category: '測試', items: 'pytest、pytest-asyncio' },
+    ],
+    impact: [
+      'Reverse-ATS pipeline 把每日 30–50 個 104 listings 收斂為三段式日報（RECOMMEND / CAUTIOUS / SKIP），全部在 07:30 前送進早晨手機',
+      'CV-aware evaluator 用 cv_reader 解析 markdown 履歷、對照 archetypes.yml 的候選人原型逐筆評分，同一份程式碼透過 config edit 切換不同求職階段',
+      '7 個 interactive modes 補完判斷層：合法性查核（forum_lookup 串論壇來源）、IC vs 管理職、薪資談判、面試準備',
+      'TSV lifecycle tracking：價變、下架、重貼以 diff 註記呈現在同一列上，避免重複職缺累積成噪音',
+      'macOS launchd 原生排程搭配 Gmail App Password（無 OAuth dance），與 house-ops 共用同一套自動化 family',
+    ],
+    learnings: [
+      'Reverse-ATS 的本質是視角切換，工程組件（scraper、evaluator、digest）和任何評分 pipeline 都一樣。產品決策的重點在於「這把尺指向誰」：HR 端把同一把尺指向 100 個候選人，這個專案把同一把尺指向 100 個職缺。求職 funnel 的雙向不對稱性（HR 端有 ATS、候選人端只有眼睛）本身就是 build 的價值主張。',
+      '8 個維度權重外接 YAML 的收益遠超「少改一點程式碼」這個明面好處。因為 YAML 進 git 後，每次 commit 都是自己在這次求職中優先順序變化的時間戳；探索期偏向成長與團隊、收網期偏向薪資與通勤這類轉變，會被 git history 完整記錄下來。求職結束後拿這份 longitudinal record 出來看，比任何一份單日報告都更有訊息量。',
+      'Pipeline + 互動層的雙層切法，在 house-ops 上驗證過一次，在 job-ops 上又得到一次驗證。Deterministic 工作（爬、dedupe、評分、寄信）放 pipeline、需要對話深度的判斷（合法性推理、職等策略、薪資談判）放 interactive Claude Code modes。把合法性推理塞進 Python 模組會讓 pipeline 變成怪物；把每天的 scraping 塞進 Claude session 會燒錢且不穩。同樣的架構切法在不同領域反覆成立。',
+    ],
+    links: [
+      { label: 'GitHub（private repo）', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]

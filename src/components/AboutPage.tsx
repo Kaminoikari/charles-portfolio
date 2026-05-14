@@ -159,6 +159,9 @@ export default function AboutPage() {
             <Link to={localePath('/projects/house-ops')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
               House Ops <span aria-hidden="true">↗</span>
             </Link>
+            <Link to={localePath('/projects/job-ops')} className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-btn-border px-5 py-2.5 font-mono text-[12px] uppercase tracking-[1.5px] text-white no-underline transition-all duration-200 hover:bg-btn-hover-bg hover:scale-105">
+              Job Ops <span aria-hidden="true">↗</span>
+            </Link>
           </div>
         </div>
       </div>

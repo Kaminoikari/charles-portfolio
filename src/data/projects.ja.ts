@@ -69,6 +69,15 @@ export const projects: Project[] = [
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
   },
+  {
+    id: 'job-ops',
+    title: 'Job Ops',
+    description:
+      'HR 側 ATS の構造化採点ロジックを応募者側へ反転させた Python パイプライン。macOS launchd が毎朝 7:00 に起動して 104 求人を取得し、CV-aware evaluator が履歴書と候補者アーキタイプに照らして採点。RECOMMEND / CAUTIOUS / SKIP の 3 段日報を Gmail SMTP で配信し、合法性チェック、レベル戦略、面接準備は 7 つの Claude Code インタラクティブモードでセッション内に処理します。',
+    ctaText: 'EXPLORE',
+    ctaUrl: 'https://github.com/Kaminoikari/job-ops',
+    tags: ['Python', 'launchd', 'CV-aware', 'Automation'],
+  },
 ]
 
 export const projectDetails: ProjectDetail[] = [
@@ -273,6 +282,49 @@ export const projectDetails: ProjectDetail[] = [
         src: '/assets/house-ops-listing-report.png',
         alt: '単一物件の 5 次元評価レポート：価格妥当性、スペースと間取り、周辺環境、物件状態、リスクの 5 項目スコアと、0–5 加重合成。',
       },
+    ],
+  },
+  {
+    id: 'job-ops',
+    title: 'Job Ops — 応募者側に反転させた ATS パイプライン',
+    subtitle: '毎朝 7:00 に macOS launchd で起動する Python パイプライン。104 の求人を取得し、CV-aware evaluator が cv_reader で履歴書を解析、archetypes.yml の候補者アーキタイプに照らして採点、RECOMMEND / CAUTIOUS / SKIP の 3 段日報を Gmail SMTP で 07:30 までに配信します。合法性チェック、レベル戦略、報酬調査、面接準備は 7 つの Claude Code インタラクティブモードがセッション内で担当。',
+    metaTitle: 'Job Ops — 応募者側に反転させた個人 ATS パイプライン | Charles Chen 個人プロジェクト',
+    metaDescription: 'CV-aware の Python 自動化が毎日 104 をスキャンし、応募者視点のルーブリックで採点、HTML と Markdown の日報を 07:00 に Gmail SMTP で配信。合法性チェック、レベル戦略、面接準備を担う 7 つのインタラクティブモードと組み合わせた、AI プロダクトマネージャー Charles Chen の個人求職 OS。',
+    problem: [
+      '求職ファネルの HR 側には ATS があり、構造化されたルーブリックで毎日 100 人以上の候補者を採点し、ランク付けし、淘汰しています。応募者側にはこれに相当するツールがありません。30–50 件のターゲット求人を目視で 1 ページずつ読み、「85K vs 90K、リモート vs ハイブリッド、30 人チーム vs 5 人チーム」をワーキングメモリに同時に詰め込んで比較します。triage paralysis はすぐに訪れ、多くの人はおすすめフィードの先頭をクリックして終わります。これは結局フィルタリング権限をプラットフォームへ返してしまう行為で、彼らの順序があなたの順序になります。',
+      '104、LinkedIn、CakeResume の検索条件はハードフィルター（給与下限、地域、職種）しか表現できません。「成長 > 報酬 > 通勤」のような加重選好は表現できず、求人内容を自分の CV と照合することもできず、同じ検索内で探索期と収束期で重みを切り替えることもできません。応募者は HR 側 ATS よりはるかに小さなバッチサイズで、自らマッチングエンジンの役割を担わざるを得ません。',
+    ],
+    solution: [
+      'Job Ops は reverse-ATS、つまり HR が候補者に向ける構造化採点ロジックをそのまま求人側に向け直したものです。asyncio Python パイプライン（httpx で 104 の検索・詳細 API を叩く）を macOS launchd が 07:00 に起動。新着求人は CV-aware evaluator へ流れ、cv_reader が履歴書を解析し、archetypes.yml の候補者アーキタイプに照らして採点し、RECOMMEND / CAUTIOUS / SKIP の 3 段に分類します。report.py は inline-styled HTML（朝のスマホ Gmail で直読）と Markdown 双子版（Obsidian のアーカイブとバージョン管理向け）を生成。Gmail SMTP が 07:30 までに配信し、注意力がまだ安価な朝の時間帯に届きます。',
+      '採点の重みは Python に直書きせず YAML 外出しです。8 次元（報酬、リモート、技術スタック、成長、チーム、ブランド、ロケーション、ライフ）の重みは config/profile.yml に定義し、探索期（成長とチーム重視）から収束期（報酬と通勤重視）への切り替えは 1 行編集で済み、コード変更は不要です。git で管理された YAML ファイルは、求職期間を通じて応募者自身の優先順位がどう変化したかの記録になります。',
+      '7 つのインタラクティブモードは house-ops と同じ二層構造で、Claude Code セッション内で起動します：cv-match（単一求人の CV 整合）、comp-research（市場給与調査）、legitimacy（企業と求人の合法性確認、forum_lookup でコミュニティソースを参照）、level-strategy（IC vs マネジメント）、interview-prep、personalization、role-summary。パイプラインが決定論的な仕事（スクレイピング、重複排除、採点、配信）を担い、インタラクティブ層が会話的深さを必要とする判断を担当します。scan-history.tsv は lifecycle 状態（値変動、掲載終了、再掲載）を保持し、同じ求人が 3 回投稿されても 1 行に diff 注釈付きで集約され、3 行のノイズに膨らみません。',
+    ],
+    techStack: [
+      { category: 'ランタイム', items: 'Python 3.11+（asyncio）' },
+      { category: 'スクレイピング', items: 'httpx（104 search + detail API）、UA ローテーション、RateLimiter' },
+      { category: 'CV 取り込み', items: 'cv_reader が markdown 履歴書を構造化シグナルへ解析し evaluator に投入' },
+      { category: '採点', items: '加重多次元 evaluator + archetypes.yml、RECOMMEND / CAUTIOUS / SKIP に分類' },
+      { category: '設定', items: 'YAML（archetypes、検索条件、個人ウェイト）' },
+      { category: 'メール', items: 'Gmail SMTP + inline-styled HTML + Markdown 双子版エクスポート' },
+      { category: 'スケジューリング', items: 'macOS launchd（com.job-ops.daily、毎日 07:00）' },
+      { category: '永続化', items: 'TSV scan-history で値変動と掲載終了の lifecycle を追跡、日次 MD + HTML レポート' },
+      { category: 'インタラクティブ層', items: '7 モード：cv-match、comp-research、legitimacy、level-strategy、interview-prep、personalization、role-summary' },
+      { category: 'テスト', items: 'pytest、pytest-asyncio' },
+    ],
+    impact: [
+      'Reverse-ATS パイプラインが毎日 30–50 件の 104 求人を 3 段階のダイジェスト（RECOMMEND / CAUTIOUS / SKIP）に圧縮し、07:30 までに朝のスマホへ配信',
+      'CV-aware evaluator が cv_reader で markdown 履歴書を解析し、archetypes.yml の候補者アーキタイプに照らして採点。同一コードベースで設定編集のみにより複数の求職スタンスを切り替え可能',
+      '7 つのインタラクティブモードが判断層を補完：forum_lookup によるコミュニティソース横断の合法性確認、IC vs マネジメントトラック、報酬交渉、面接準備',
+      'TSV ベースの lifecycle 追跡により値変動と掲載終了を同一行の diff 注釈として表示、日をまたいでの重複ノイズ蓄積を回避',
+      'macOS launchd ネイティブスケジューリングと Gmail App Password 認証（OAuth ダンス不要）。house-ops と同じ自動化ファミリーを共有',
+    ],
+    learnings: [
+      'Reverse-ATS の本質は視点の切り替えにあります。エンジニアリングのピース（スクレイパー、evaluator、ダイジェスト）はどんな採点パイプラインにも共通です。守るべき意思決定は「ルーブリックを誰に向けるか」です。HR は 1 つのルーブリックを 100 人の候補者へ向けますが、このプロジェクトは 1 つのルーブリックを 100 件の求人へ向けます。求職ファネル上のエージェンシーの非対称性こそが build を正当化する価値主張です',
+      '8 次元の採点ウェイトを YAML に外出しした効果は「コード変更が少ない」という表面的な利点をはるかに上回ります。重みファイルが git で追跡されているため、config/profile.yml への各コミットは応募者自身の優先順位変化のタイムスタンプとして残ります。この成果物は、求職を振り返るとき、どの 1 日のレポートよりも情報量が多くなります',
+      'パイプライン＋インタラクティブモードの分割は、house-ops で一度検証され、job-ops でも改めて成立しました。決定論的な仕事（スクレイピング、重複排除、採点、メール配信）はパイプラインに置き、会話的判断（合法性推論、レベル戦略、報酬交渉のトーク）はインタラクティブな Claude Code モードに置く。合法性推論を Python モジュールに押し込めばパイプラインは肥大化し、毎日のスクレイピングを Claude セッションに押し込めばコストは膨らみ脆くなります。同じアーキテクチャ形状が異なるドメインで再現可能です',
+    ],
+    links: [
+      { label: 'GitHub（private repo）', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]

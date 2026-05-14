@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'job-ops-launch',
+    date: '2026-05-14',
+    title: 'Job Ops 加入 portfolio — 把 ATS 反向給求職者用的 Pipeline',
+    tags: ['feature'],
+    body: [
+      '新增 Job Ops 作為第 5 個 side project。/projects/job-ops 案例介紹的是一條把 HR 端 ATS 邏輯反向指向職缺的 Python pipeline：macOS launchd 每天早上 7:00 觸發，httpx 串 104 search/detail API 抓職缺、CV-aware evaluator（cv_reader 解析履歷、對照 archetypes.yml 的候選人原型）逐筆加權評分，輸出 RECOMMEND / CAUTIOUS / SKIP 三段式日報，透過 Gmail SMTP 寄出 inline-styled HTML + Markdown 雙生本。互動層沿用 house-ops 的雙層架構，提供 7 個 Claude Code modes（cv-match、comp-research、legitimacy、level-strategy、interview-prep、personalization、role-summary）處理需要對話深度的判斷。Repo 在 pipeline 還在調校期間維持 private。',
+      '首頁卡片動畫是 portfolio 新增的視覺語言。垂直字流落下真實 104 職缺片段（「Python」「資深」「90K」「遠端」「Senior」「5y」），y=150 處橫一條 mars 橘色 CV-MATCH 掃描線；當被 CV 標記過的 token 穿越掃描線時，字符會閃出 mars halo。掃描線下方的「07:00 DAILY DIGEST」面板逐列 materialize，總共 3 列（Senior AI PM 4.6 / Growth PM 3.8 / Junior Data PM 2.9），每列按評分分段呈現：RECOMMEND 是 mars 實心圓點、SKIP 則是更淡的白色。靜態 frame 凍結一個半空中的字雨加上完整的日報面板，讓卡片在沒 hover 的時候也能讀作完成態產品。',
+    ],
+  },
+  {
     id: 'house-ops-fb-integration',
     date: '2026-05-07',
     title: 'House Ops 多源升級 — FB 公開社團 + Claude API 抽取',

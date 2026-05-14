@@ -24,6 +24,13 @@ import {
   generateListings, updateListings,
   drawHouseOpsStatic, drawHouseOpsAnimated,
 } from './animations/houseOpsAnimation'
+import {
+  type JoColumn,
+  JO_ENTRANCE_DURATION, JO_RAIN_DURATION, JO_ROW_DURATION, JO_ROW_MATERIALIZE,
+  JO_SETTLE_DURATION, JO_FADEOUT_DURATION,
+  generateColumns, updateColumns,
+  drawJobOpsStatic, drawJobOpsAnimated,
+} from './animations/jobOpsAnimation'
 
 // ─── Canvas Illustration Component ───
 
@@ -59,6 +66,14 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     // House Ops state
     hoTime: number
     hoListings: HoListing[]
+    // Job Ops state
+    joPhase: 'entrance' | 'rain' | 'row1' | 'row2' | 'row3' | 'settle' | 'fadeOut'
+    joPhaseTimer: number
+    joColumns: JoColumn[]
+    joRowAlphas: [number, number, number]
+    joEntranceFade: number
+    joOutFade: number
+    joPulse: number
   }>({
     pathT: 0,
     ripples: [],
@@ -83,6 +98,13 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
     pbTime: 0,
     hoTime: 0,
     hoListings: [],
+    joPhase: 'entrance',
+    joPhaseTimer: 0,
+    joColumns: [],
+    joRowAlphas: [0, 0, 0],
+    joEntranceFade: 0,
+    joOutFade: 1,
+    joPulse: 0,
   })
 
   const prefersReduced = useRef(false)
@@ -127,6 +149,8 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
         drawPlaybookStatic(ctx, pbMetrics)
       } else if (id === 'house-ops') {
         drawHouseOpsStatic(ctx)
+      } else if (id === 'job-ops') {
+        drawJobOpsStatic(ctx)
       }
     }
 
@@ -449,6 +473,81 @@ function CanvasIllustration({ id, isHovered }: { id: string; isHovered: boolean 
         updateListings(s.hoListings, s.hoTime, prevNorm, currNorm)
         const entranceFade = Math.min(1, s.hoTime / HO_ENTRANCE_FADE)
         drawHouseOpsAnimated(ctx, s.hoTime, s.hoListings, entranceFade)
+      } else if (id === 'job-ops') {
+        // ── Rain → CV-match → digest panel lifecycle ──
+        if (s.joColumns.length === 0) {
+          s.joColumns = generateColumns()
+        }
+        updateColumns(s.joColumns, dt)
+        s.joPulse = (Math.sin(time / 600) + 1) / 2
+        s.joPhaseTimer += dt
+
+        switch (s.joPhase) {
+          case 'entrance': {
+            s.joEntranceFade = Math.min(1, s.joPhaseTimer / JO_ENTRANCE_DURATION)
+            if (s.joPhaseTimer >= JO_ENTRANCE_DURATION) {
+              s.joPhase = 'rain'
+              s.joPhaseTimer = 0
+              s.joEntranceFade = 1
+            }
+            break
+          }
+          case 'rain': {
+            if (s.joPhaseTimer >= JO_RAIN_DURATION) {
+              s.joPhase = 'row1'
+              s.joPhaseTimer = 0
+            }
+            break
+          }
+          case 'row1': {
+            s.joRowAlphas[0] = Math.min(1, s.joPhaseTimer / JO_ROW_MATERIALIZE)
+            if (s.joPhaseTimer >= JO_ROW_DURATION) {
+              s.joPhase = 'row2'
+              s.joPhaseTimer = 0
+              s.joRowAlphas[0] = 1
+            }
+            break
+          }
+          case 'row2': {
+            s.joRowAlphas[1] = Math.min(1, s.joPhaseTimer / JO_ROW_MATERIALIZE)
+            if (s.joPhaseTimer >= JO_ROW_DURATION) {
+              s.joPhase = 'row3'
+              s.joPhaseTimer = 0
+              s.joRowAlphas[1] = 1
+            }
+            break
+          }
+          case 'row3': {
+            s.joRowAlphas[2] = Math.min(1, s.joPhaseTimer / JO_ROW_MATERIALIZE)
+            if (s.joPhaseTimer >= JO_ROW_DURATION) {
+              s.joPhase = 'settle'
+              s.joPhaseTimer = 0
+              s.joRowAlphas[2] = 1
+            }
+            break
+          }
+          case 'settle': {
+            if (s.joPhaseTimer >= JO_SETTLE_DURATION) {
+              s.joPhase = 'fadeOut'
+              s.joPhaseTimer = 0
+            }
+            break
+          }
+          case 'fadeOut': {
+            s.joOutFade = Math.max(0, 1 - s.joPhaseTimer / JO_FADEOUT_DURATION)
+            if (s.joPhaseTimer >= JO_FADEOUT_DURATION) {
+              s.joPhase = 'entrance'
+              s.joPhaseTimer = 0
+              s.joRowAlphas = [0, 0, 0]
+              s.joEntranceFade = 0
+              s.joOutFade = 1
+              s.joColumns = generateColumns()
+            }
+            break
+          }
+        }
+
+        drawJobOpsAnimated(ctx, s.joColumns, s.joRowAlphas, s.joEntranceFade, s.joOutFade, s.joPulse)
       }
 
       animRef.current = requestAnimationFrame(animate)
