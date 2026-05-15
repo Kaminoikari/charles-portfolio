@@ -679,12 +679,42 @@ function ProjectCard({ project }: { project: Project }) {
 
 export default function ProjectCards() {
   const projects = useProjects()
+  const rowRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(true)
+
+  useEffect(() => {
+    const el = rowRef.current
+    if (!el) return
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 1)
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [])
+
+  const scrollByCard = (dir: -1 | 1) => {
+    const el = rowRef.current
+    if (!el) return
+    el.scrollBy({ left: dir * (el.clientWidth / 4), behavior: 'smooth' })
+  }
+
   return (
     <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       <h2 className="mb-2 font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ SIDE PROJECTS ]</h2>
 
       <div className="relative mt-12">
-        <div className="flex flex-col md:flex-row md:gap-0 md:overflow-x-auto md:snap-x md:snap-mandatory md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden">
+        <div
+          ref={rowRef}
+          className="flex flex-col md:flex-row md:gap-0 md:overflow-x-auto md:snap-x md:snap-mandatory md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden"
+        >
           {projects.map((project, index) => (
             <div
               key={project.id}
@@ -696,8 +726,28 @@ export default function ProjectCards() {
         </div>
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 hidden w-24 bg-gradient-to-l from-bg-primary to-transparent md:block"
+          className={`pointer-events-none absolute inset-y-0 left-0 hidden w-24 bg-gradient-to-r from-bg-primary to-transparent transition-opacity duration-300 ease-in-out md:block ${canScrollLeft ? 'opacity-100' : 'opacity-0'}`}
         />
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-y-0 right-0 hidden w-24 bg-gradient-to-l from-bg-primary to-transparent transition-opacity duration-300 ease-in-out md:block ${canScrollRight ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <button
+          type="button"
+          aria-label="Scroll projects left"
+          onClick={() => scrollByCard(-1)}
+          className={`group/arrow absolute left-2 top-1/2 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 backdrop-blur-md transition-all duration-300 ease-in-out hover:border-accent-cyan hover:text-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan md:flex ${canScrollLeft ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        >
+          <span aria-hidden="true" className="inline-block text-base leading-none transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover/arrow:-translate-x-0.5">←</span>
+        </button>
+        <button
+          type="button"
+          aria-label="Scroll projects right"
+          onClick={() => scrollByCard(1)}
+          className={`group/arrow absolute right-2 top-1/2 hidden h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/90 backdrop-blur-md transition-all duration-300 ease-in-out hover:border-accent-cyan hover:text-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan md:flex ${canScrollRight ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+        >
+          <span aria-hidden="true" className="inline-block text-base leading-none transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover/arrow:translate-x-0.5">→</span>
+        </button>
       </div>
     </section>
   )
