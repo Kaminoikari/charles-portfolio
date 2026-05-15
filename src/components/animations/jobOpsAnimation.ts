@@ -14,7 +14,12 @@ export const JO_PANEL_H = 100
 export const JO_ROW_START_Y = JO_PANEL_Y + 32
 export const JO_ROW_HEIGHT = 22
 export const JO_COLUMN_COUNT = 7
-export const JO_COLUMN_W = CANVAS_W / JO_COLUMN_COUNT
+// Rain columns are confined to the digest panel's horizontal span (with
+// inner padding) so falling tokens never spill past the panel edges.
+export const JO_RAIN_PAD = 10
+export const JO_RAIN_LEFT = JO_PANEL_X + JO_RAIN_PAD
+export const JO_RAIN_W = JO_PANEL_W - JO_RAIN_PAD * 2
+export const JO_COLUMN_W = JO_RAIN_W / JO_COLUMN_COUNT
 export const JO_GLYPH_H = 17
 export const JO_RAIN_TOP = -40
 export const JO_RAIN_BOTTOM = 148
@@ -29,16 +34,16 @@ export const JO_FADEOUT_DURATION = 0.5
 
 // Token vocabulary drawn from 104 job-post surface area
 const TOKEN_POOL = [
-  'Python', 'AI', 'PM', '資深', '遠端', '90K',
-  '3y', 'Figma', '後端', '前端', 'Senior', '新創',
-  'Hybrid', '中型', '管理職', 'Manager', 'Lead', '5y',
-  '70K', 'Growth', 'Data', 'Product', '台北', '產品',
-  '面議', 'IC', 'Full-stack', 'PdM', 'B2B', 'SaaS',
+  'Python', 'AI', 'PM', 'Senior', 'Remote', '180K',
+  '3y', 'Figma', 'Backend', 'Frontend', 'Lead', 'Startup',
+  'Hybrid', 'Series B', 'Manager', 'B2B', 'SaaS', '5y',
+  '150K', 'Growth', 'Data', 'Product', 'Taipei', 'PdM',
+  'Staff', 'IC', 'Roadmap', 'LLM', 'Agile', 'Platform',
 ]
 
 // Tokens flagged as CV signals; they flash mars when crossing the scan line
 const CV_MATCHED_SET = new Set([
-  'Python', 'AI', 'PM', '遠端', '90K', 'Senior', '5y', 'Lead', 'Product', 'PdM',
+  'Python', 'AI', 'PM', 'Remote', '180K', 'Senior', '5y', 'Lead', 'Product', 'PdM',
 ])
 
 export type JoColumn = {
@@ -59,9 +64,9 @@ export type JoDigestRow = {
 }
 
 export const JO_DIGEST_ROWS: JoDigestRow[] = [
-  { title: 'Senior AI PM',    salary: '90K', dots: 4, score: '4.6', band: 'rec' },
-  { title: 'Growth PM',       salary: '75K', dots: 3, score: '3.8', band: 'cau' },
-  { title: 'Junior Data PM',  salary: '55K', dots: 2, score: '2.9', band: 'skip' },
+  { title: 'Senior AI PM', salary: '180K', dots: 4, score: '4.6', band: 'rec' },
+  { title: 'Growth PM',    salary: '150K', dots: 3, score: '3.8', band: 'cau' },
+  { title: 'Platform PM',  salary: '120K', dots: 2, score: '2.9', band: 'skip' },
 ]
 
 function pickGlyphs(count: number): string[] {
@@ -87,7 +92,7 @@ export function generateColumns(): JoColumn[] {
     const glyphs = pickGlyphs(len)
     const totalH = len * JO_GLYPH_H
     cols.push({
-      x: i * JO_COLUMN_W + JO_COLUMN_W / 2,
+      x: JO_RAIN_LEFT + i * JO_COLUMN_W + JO_COLUMN_W / 2,
       glyphs,
       matchedIdx: collectMatched(glyphs),
       flashTimer: new Map(),
@@ -305,19 +310,19 @@ export function drawJobOpsStatic(ctx: CanvasRenderingContext2D) {
   // Deterministic static rain (frozen mid-flight)
   const staticCols: JoColumn[] = []
   const sampleGlyphsPerCol: string[][] = [
-    ['Senior', 'Python', '90K',    '資深',  'AI',      'PM',     '遠端',  '產品'],
-    ['Figma',  'Hybrid', '70K',    'PdM',   '5y',      '中型',   'PM',    'IC'],
-    ['Manager','後端',   'AI',     '面議',  'Lead',    'Senior', 'B2B',   '台北'],
-    ['Growth', '3y',     '管理職', 'Data',  'Product', '前端',   '新創',  'PM'],
-    ['SaaS',   '90K',    'PM',     'Hybrid','遠端',    'PdM',    '中型',  'IC'],
-    ['Lead',   'Full-stack','Senior','Figma','Python', '面議',   '5y',    'Manager'],
-    ['AI',     'Product','Senior', '70K',   '台北',    'B2B',    '產品',  '90K'],
+    ['Senior',  'Python',  '180K',   'Staff',   'AI',      'PM',       'Remote',  'Product'],
+    ['Figma',   'Hybrid',  '150K',   'PdM',     '5y',      'B2B',      'PM',      'IC'],
+    ['Manager', 'Backend', 'AI',     'Roadmap', 'Lead',    'Senior',   'B2B',     'Taipei'],
+    ['Growth',  '3y',      'Agile',  'Data',    'Product', 'Frontend', 'Startup', 'PM'],
+    ['SaaS',    '180K',    'PM',     'Hybrid',  'Remote',  'PdM',      'LLM',     'IC'],
+    ['Lead',    'Platform','Senior', 'Figma',   'Python',  'Series B', '5y',      'Manager'],
+    ['AI',      'Product', 'Senior', '150K',    'Taipei',  'B2B',      'Roadmap', '180K'],
   ]
   const sampleOffsets = [-12, 8, -22, 14, -4, 22, -18]
   for (let i = 0; i < JO_COLUMN_COUNT; i++) {
     const glyphs = sampleGlyphsPerCol[i]
     staticCols.push({
-      x: i * JO_COLUMN_W + JO_COLUMN_W / 2,
+      x: JO_RAIN_LEFT + i * JO_COLUMN_W + JO_COLUMN_W / 2,
       glyphs,
       matchedIdx: collectMatched(glyphs),
       flashTimer: new Map(),
