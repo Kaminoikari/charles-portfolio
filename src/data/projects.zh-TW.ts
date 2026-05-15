@@ -335,7 +335,7 @@ export const projectDetails: ProjectDetail[] = [
       '最後，這套「Pipeline + 互動模式」的雙層架構展現了極佳的泛用性。將確定性的工作（爬蟲、排序）留給程式，將模糊的判斷（戰略、談判）留給 AI 互動，這種設計模式在我其他的自動化專案（如 house-ops）中同樣適用。',
     ],
     links: [
-      { label: 'GitHub（private repo）', url: 'https://github.com/Kaminoikari/job-ops' },
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]

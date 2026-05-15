@@ -321,7 +321,7 @@ export const projectDetails: ProjectDetail[] = [
       'Finally, the "pipeline + interactive modes" two-layer architecture turned out to generalise unusually well. Deterministic work (scraping, ranking) goes to code; ambiguous judgment (strategy, negotiation) goes to AI conversation. The same pattern applies in my other automation projects (such as house-ops) just as cleanly.',
     ],
     links: [
-      { label: 'GitHub (private repo)', url: 'https://github.com/Kaminoikari/job-ops' },
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]

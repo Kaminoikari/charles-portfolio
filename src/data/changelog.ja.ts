@@ -31,7 +31,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Job Ops が Portfolio に合流 — 応募者側に反転させた ATS パイプライン',
     tags: ['feature'],
     body: [
-      '5 つ目のサイドプロジェクトとして Job Ops を追加しました。/projects/job-ops のケーススタディは、HR 側の ATS ロジックを応募者側に反転させた Python パイプラインを紹介します：macOS launchd が毎朝 07:00 に起動し、httpx で 104 の検索・詳細 API から求人を取得、CV-aware evaluator（cv_reader が履歴書を解析、archetypes.yml の候補者アーキタイプに照合）が加重採点し、RECOMMEND / CAUTIOUS / SKIP の 3 段に分類、inline-styled HTML と Markdown 双子版のダイジェストを Gmail SMTP で配信します。インタラクティブ層は house-ops と同じ二層構造で、7 つの Claude Code モード（cv-match、comp-research、legitimacy、level-strategy、interview-prep、personalization、role-summary）が会話的深さを必要とする判断を担います。リポジトリはパイプラインのチューニング期間中はプライベートです。',
+      '5 つ目のサイドプロジェクトとして Job Ops を追加しました。/projects/job-ops のケーススタディは、HR 側の ATS ロジックを応募者側に反転させた Python パイプラインを紹介します：macOS launchd が毎朝 07:00 に起動し、httpx で 104 の検索・詳細 API から求人を取得、CV-aware evaluator（cv_reader が履歴書を解析、archetypes.yml の候補者アーキタイプに照合）が加重採点し、RECOMMEND / CAUTIOUS / SKIP の 3 段に分類、inline-styled HTML と Markdown 双子版のダイジェストを Gmail SMTP で配信します。インタラクティブ層は house-ops と同じ二層構造で、7 つの Claude Code モード（cv-match、comp-research、legitimacy、level-strategy、interview-prep、personalization、role-summary）が会話的深さを必要とする判断を担います。',
       'ホームのカードアニメーションは Portfolio に新しい視覚言語を追加します。実際の 104 求人由来のトークン（「Python」「資深」「90K」「遠端」「Senior」「5y」）が縦のストリームでキャンバスを落下します。y=150 に mars オレンジの CV-MATCH スキャンラインが横たわり、CV と紐づくトークンが線を横切るたびに glyph が mars ハローと共に閃光します。スキャンラインの下では「07:00 DAILY DIGEST」パネルが 1 行ずつ materialize し、計 3 件（Senior AI PM 4.6 / Growth PM 3.8 / Junior Data PM 2.9）が表示。スコア帯ごとに表現を変え、RECOMMEND は mars の塗り潰しドット、SKIP はより淡い白で示します。静止フレームでは飛行中の雨と満タンのダイジェストを凍結し、ホバーなしでもカードが完成形の製品として読める状態を維持します。',
     ],
   },

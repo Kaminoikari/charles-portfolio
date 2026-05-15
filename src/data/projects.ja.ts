@@ -336,7 +336,7 @@ export const projectDetails: ProjectDetail[] = [
       '最後に、この「パイプライン + インタラクティブモード」の二層アーキテクチャは、非常に高い汎用性を見せました。決定論的な仕事（スクレイピング、ランキング）はコードに任せ、曖昧な判断（戦略、交渉）は AI との対話に任せる。このデザインパターンは、私の他の自動化プロジェクト（house-ops など）でも同様に成立しています。',
     ],
     links: [
-      { label: 'GitHub（private repo）', url: 'https://github.com/Kaminoikari/job-ops' },
+      { label: 'GitHub', url: 'https://github.com/Kaminoikari/job-ops' },
     ],
   },
 ]
