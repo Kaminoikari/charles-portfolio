@@ -683,15 +683,21 @@ export default function ProjectCards() {
     <section id="projects" className="mx-auto w-full max-w-[1400px] px-6 md:px-12 py-16 sm:py-32">
       <h2 className="mb-2 font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ SIDE PROJECTS ]</h2>
 
-      <div className="mt-12 flex flex-col md:flex-row md:gap-0">
-        {projects.map((project, index) => (
-          <div
-            key={project.id}
-            className={`flex flex-1 ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
-          >
-            <ProjectCard project={project} />
-          </div>
-        ))}
+      <div className="relative mt-12">
+        <div className="flex flex-col md:flex-row md:gap-0 md:overflow-x-auto md:snap-x md:snap-mandatory md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden">
+          {projects.map((project, index) => (
+            <div
+              key={project.id}
+              className={`flex md:flex-shrink-0 md:basis-1/4 md:snap-start ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
+            >
+              <ProjectCard project={project} />
+            </div>
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden w-24 bg-gradient-to-l from-bg-primary to-transparent md:block"
+        />
       </div>
     </section>
   )
