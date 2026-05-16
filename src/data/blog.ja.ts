@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'もう闇雲に管理職の梯子を登るのはやめよう：「Hi-C ハイインパクト個人貢献者」の時代の到来と、見落とされてきた Context のデジタル化',
+    subtitle: 'AI はすでに「一人＝一部門」を可能にした。しかしあなたの会社は、あなたに任せる準備ができているだろうか？',
+    url: 'https://charlestychen.substack.com/p/hi-c-context',
+    platform: 'Substack',
+    date: '2026-05-16',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/0d5e29cb-f289-4d7f-823e-70c739972f00_1672x941.png',
+  },
+  {
     title: 'AI Builder の学習ロードマップ：《Beyond LLM》コース完全ノート',
     subtitle: 'スタンフォード大学教授が講義する本コースは、AI エンジニアと AI Builder の中核スキルを体系的に分解する。LLM の本質的な限界から出発し、Prompt Engineering、RAG、Fine-Tuning、そして高度な Agentic Workflow と Multi-Agent フレームワークまで網羅。AI 技術を実質的なビジネス価値へ転換するための完全な認知体系である。',
     url: 'https://charlestychen.substack.com/p/ai-builder-beyond-llm',

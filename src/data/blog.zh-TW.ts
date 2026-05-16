@@ -25,6 +25,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '別再盲目爬管理階梯了：迎來「Hi-C 高影響力獨立貢獻者」時代，與被我們忽視的 Context 數位化',
+    subtitle: 'AI 已經讓「一個人＝一個部門」成為可能，但你的公司，準備好放手讓你做了嗎？',
+    url: 'https://charlestychen.substack.com/p/hi-c-context',
+    platform: 'Substack',
+    date: '2026-05-16',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/0d5e29cb-f289-4d7f-823e-70c739972f00_1672x941.png',
+  },
+  {
     title: 'AI Builder 的學習地圖：《Beyond LLM》課程完整筆記',
     subtitle: '本課程由史丹佛大學教授授課，系統化拆解 AI 工程師與 AI Builder 核心職能。內容從大型語言模型（LLM）的本質限制出發，一路涵蓋 Prompt Engineering、RAG、Fine-Tuning 到高階的 Agentic Workflow 與 Multi-Agent 框架，這是一套將 AI 技術轉化為實質商業價值的完整認知體系。',
     url: 'https://charlestychen.substack.com/p/ai-builder-beyond-llm',
