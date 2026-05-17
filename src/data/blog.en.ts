@@ -21,6 +21,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '為什麼 AI 實驗室開始押注硬體：Caitlin Kalinowski 的觀察',
+    subtitle: '舊金山 AI 圈最近的共識：鍵盤前能做的事遲早飽和，下一波浪潮在物理世界。',
+    url: 'https://charlestychen.substack.com/p/ai-caitlyn-kalinowski',
+    platform: 'Substack',
+    date: '2026-05-17',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/28935939-649f-4cb7-b88f-ac8ca791398c_1717x916.png',
+  },
+  {
     title: '別再盲目爬管理階梯了：迎來「Hi-C 高影響力獨立貢獻者」時代，與被我們忽視的 Context 數位化',
     subtitle: 'AI 已經讓「一個人＝一個部門」成為可能，但你的公司，準備好放手讓你做了嗎？',
     url: 'https://charlestychen.substack.com/p/hi-c-context',

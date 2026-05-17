@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'なぜ AI ラボがハードウェアに賭け始めたのか：Caitlin Kalinowski の観察',
+    subtitle: 'サンフランシスコの AI 界隈で最近広がる共通認識：キーボードの前でできることはいずれ飽和し、次の波は物理世界にある。',
+    url: 'https://charlestychen.substack.com/p/ai-caitlyn-kalinowski',
+    platform: 'Substack',
+    date: '2026-05-17',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/28935939-649f-4cb7-b88f-ac8ca791398c_1717x916.png',
+  },
+  {
     title: 'もう闇雲に管理職の梯子を登るのはやめよう：「Hi-C ハイインパクト個人貢献者」の時代の到来と、見落とされてきた Context のデジタル化',
     subtitle: 'AI はすでに「一人＝一部門」を可能にした。しかしあなたの会社は、あなたに任せる準備ができているだろうか？',
     url: 'https://charlestychen.substack.com/p/hi-c-context',
