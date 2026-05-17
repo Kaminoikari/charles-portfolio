@@ -32,18 +32,23 @@ export const JO_ROW_MATERIALIZE = 0.45
 export const JO_SETTLE_DURATION = 1.4
 export const JO_FADEOUT_DURATION = 0.5
 
-// Token vocabulary drawn from 104 job-post surface area
+// Token vocabulary drawn from 104 job-post surface area. The pool is
+// larger than the rain ever shows at once, so columns can be dealt
+// without replacement and never repeat a token.
 const TOKEN_POOL = [
-  'Python', 'AI', 'PM', 'Senior', 'Remote', '180K',
-  '3y', 'Figma', 'Backend', 'Frontend', 'Lead', 'Startup',
-  'Hybrid', 'Series B', 'Manager', 'B2B', 'SaaS', '5y',
-  '150K', 'Growth', 'Data', 'Product', 'Taipei', 'PdM',
-  'Staff', 'IC', 'Roadmap', 'LLM', 'Agile', 'Platform',
+  'Python', 'SQL', 'AI', 'ML', 'LLM', 'RAG', 'Figma', 'Backend',
+  'Frontend', 'DevOps', 'Cloud', 'API', 'Data', 'Analytics', 'Notion', 'Roadmap',
+  'PM', 'PdM', 'TPM', 'Senior', 'Staff', 'Lead', 'Principal', 'Manager',
+  'Director', 'Architect', 'IC', 'Founder', '3y', '5y', '7y', '10y',
+  '120K', '150K', '180K', '200K', '240K', 'Equity', 'Stock', 'Bonus',
+  'Remote', 'Hybrid', 'Taipei', 'Hsinchu', 'Taoyuan', 'APAC', 'Tokyo', 'Singapore',
+  'Startup', 'Series A', 'Series B', 'Series C', 'Scale-up', 'Unicorn', 'Seed', 'Public',
+  'B2B', 'B2C', 'SaaS', 'Fintech', 'Platform', 'Growth', 'Infra', 'Mobile',
 ]
 
 // Tokens flagged as CV signals; they flash mars when crossing the scan line
 const CV_MATCHED_SET = new Set([
-  'Python', 'AI', 'PM', 'Remote', '180K', 'Senior', '5y', 'Lead', 'Product', 'PdM',
+  'Python', 'AI', 'PM', 'PdM', 'Remote', '180K', 'Senior', 'Lead', '5y', 'LLM',
 ])
 
 export type JoColumn = {
@@ -69,12 +74,23 @@ export const JO_DIGEST_ROWS: JoDigestRow[] = [
   { title: 'Platform PM',  salary: '120K', dots: 2, score: '2.9', band: 'skip' },
 ]
 
-function pickGlyphs(count: number): string[] {
-  const out: string[] = []
-  for (let i = 0; i < count; i++) {
-    out.push(TOKEN_POOL[Math.floor(Math.random() * TOKEN_POOL.length)])
+function shuffled(arr: readonly string[]): string[] {
+  const a = arr.slice()
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = a[i]
+    a[i] = a[j]
+    a[j] = tmp
   }
-  return out
+  return a
+}
+
+// Pick `count` distinct tokens. When `exclude` is given, the result
+// avoids those tokens too, so a recycled column never repeats a token
+// still on screen in another column.
+function pickGlyphs(count: number, exclude?: Set<string>): string[] {
+  const source = exclude ? TOKEN_POOL.filter((t) => !exclude.has(t)) : TOKEN_POOL
+  return shuffled(source).slice(0, count)
 }
 
 function collectMatched(glyphs: string[]): Set<number> {
@@ -86,11 +102,16 @@ function collectMatched(glyphs: string[]): Set<number> {
 }
 
 export function generateColumns(): JoColumn[] {
+  // Deal every column from one shuffled deck so no token repeats
+  // anywhere in the rain.
+  const deck = shuffled(TOKEN_POOL)
+  let cursor = 0
   const cols: JoColumn[] = []
   for (let i = 0; i < JO_COLUMN_COUNT; i++) {
     const len = 7 + Math.floor(Math.random() * 3)
-    const glyphs = pickGlyphs(len)
-    const totalH = len * JO_GLYPH_H
+    const glyphs = deck.slice(cursor, cursor + len)
+    cursor += glyphs.length
+    const totalH = glyphs.length * JO_GLYPH_H
     cols.push({
       x: JO_RAIN_LEFT + i * JO_COLUMN_W + JO_COLUMN_W / 2,
       glyphs,
@@ -105,8 +126,6 @@ export function generateColumns(): JoColumn[] {
 
 export function updateColumns(cols: JoColumn[], dt: number) {
   for (const col of cols) {
-    const totalH = col.glyphs.length * JO_GLYPH_H
-
     col.offsetY += dt * col.speed
 
     if (col.flashTimer.size > 0) {
@@ -125,11 +144,19 @@ export function updateColumns(cols: JoColumn[], dt: number) {
     }
 
     if (col.offsetY > JO_RAIN_BOTTOM + 20) {
+      // Exclude tokens still shown in the other columns so the recycled
+      // column never duplicates anything currently on screen.
+      const inUse = new Set<string>()
+      for (const other of cols) {
+        if (other !== col) {
+          for (const g of other.glyphs) inUse.add(g)
+        }
+      }
       const len = 7 + Math.floor(Math.random() * 3)
-      col.glyphs = pickGlyphs(len)
+      col.glyphs = pickGlyphs(len, inUse)
       col.matchedIdx = collectMatched(col.glyphs)
       col.flashTimer.clear()
-      col.offsetY = JO_RAIN_TOP - totalH * 0.3
+      col.offsetY = JO_RAIN_TOP - col.glyphs.length * JO_GLYPH_H * 0.3
       col.speed = 26 + Math.random() * 18
     }
   }
@@ -309,14 +336,15 @@ export function drawJobOpsStatic(ctx: CanvasRenderingContext2D) {
 
   // Deterministic static rain (frozen mid-flight)
   const staticCols: JoColumn[] = []
+  // 56 distinct tokens — no repeats anywhere in the static frame.
   const sampleGlyphsPerCol: string[][] = [
-    ['Senior',  'Python',  '180K',   'Staff',   'AI',      'PM',       'Remote',  'Product'],
-    ['Figma',   'Hybrid',  '150K',   'PdM',     '5y',      'B2B',      'PM',      'IC'],
-    ['Manager', 'Backend', 'AI',     'Roadmap', 'Lead',    'Senior',   'B2B',     'Taipei'],
-    ['Growth',  '3y',      'Agile',  'Data',    'Product', 'Frontend', 'Startup', 'PM'],
-    ['SaaS',    '180K',    'PM',     'Hybrid',  'Remote',  'PdM',      'LLM',     'IC'],
-    ['Lead',    'Platform','Senior', 'Figma',   'Python',  'Series B', '5y',      'Manager'],
-    ['AI',      'Product', 'Senior', '150K',    'Taipei',  'B2B',      'Roadmap', '180K'],
+    ['Senior',    'Python',   '180K',     'Staff',    'AI',       'Remote',   'Roadmap',  'Platform'],
+    ['Figma',     'Hybrid',   '150K',     'PdM',      '5y',       'B2B',      'Manager',  'IC'],
+    ['Backend',   'ML',       'Director', 'Lead',     'Startup',  'Taipei',   'SaaS',     '3y'],
+    ['Growth',    'API',      'Cloud',    'Data',     'Frontend', 'Series B', 'Founder',  'Mobile'],
+    ['Analytics', '120K',     'DevOps',   'Principal','LLM',      'Architect','APAC',     'Fintech'],
+    ['Series A',  'Equity',   'Tokyo',    'Series C', 'Scale-up', 'B2C',      'Infra',    '10y'],
+    ['Unicorn',   'Stock',    'Hsinchu',  'Singapore','Seed',     'Public',   '200K',     'PM'],
   ]
   const sampleOffsets = [-12, 8, -22, 14, -4, 22, -18]
   for (let i = 0; i < JO_COLUMN_COUNT; i++) {
