@@ -5,7 +5,6 @@ import { Analytics } from '@vercel/analytics/react'
 import './index.css'
 import AmbientAudio from './components/AmbientAudio'
 import AppRoutes from './AppRoutes'
-import { initProticoWidget } from './lib/proticoWidget'
 import {
   DEFAULT_LOCALE,
   LOCALE_URL_PREFIX,
@@ -32,8 +31,6 @@ function LocaleRouter({ children }: { children: ReactNode }) {
   const locale = useMemo(() => detectLocaleFromPath(pathname), [pathname])
   return <LocaleProvider locale={locale}>{children}</LocaleProvider>
 }
-
-initProticoWidget()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
