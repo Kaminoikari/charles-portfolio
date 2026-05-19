@@ -49,7 +49,7 @@ export default function AmbientAudio() {
         onClick={toggleMuted}
         aria-label={muted ? 'Unmute ambient music' : 'Mute ambient music'}
         aria-pressed={!muted}
-        className="fixed bottom-5 right-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/80 backdrop-blur-md transition-all duration-300 hover:border-[var(--color-accent-cyan)] hover:text-[var(--color-accent-cyan)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
+        className="fixed bottom-5 right-5 z-50 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/40 text-white/80 backdrop-blur-md transition-all duration-300 hover:border-[var(--color-accent-cyan)] hover:text-[var(--color-accent-cyan)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent-cyan)]"
       >
         {muted ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
