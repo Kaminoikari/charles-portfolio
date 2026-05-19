@@ -81,7 +81,7 @@ function applyAnchor(anchor: Anchor): void {
 }
 
 function enableDrag(container: HTMLElement): void {
-  let pointerId: number | null = null
+  let activePointerId: number | null = null
   let dragging = false
   let startX = 0
   let startY = 0
@@ -97,28 +97,16 @@ function enableDrag(container: HTMLElement): void {
   const initialRect = container.getBoundingClientRect()
   setAnchor(clampAnchor(currentAnchor, initialRect.width, initialRect.height))
 
-  const onPointerDown = (event: PointerEvent) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return
-    pointerId = event.pointerId
-    dragging = false
-    startX = event.clientX
-    startY = event.clientY
-    const rect = container.getBoundingClientRect()
-    startAnchor = {
-      right: window.innerWidth - rect.right,
-      bottom: window.innerHeight - rect.bottom,
-    }
-    container.setPointerCapture(event.pointerId)
-  }
-
   const onPointerMove = (event: PointerEvent) => {
-    if (pointerId === null || event.pointerId !== pointerId) return
+    if (event.pointerId !== activePointerId) return
     const dx = event.clientX - startX
     const dy = event.clientY - startY
     if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return
-    dragging = true
-    event.preventDefault()
-    document.body.style.cursor = 'grabbing'
+    if (!dragging) {
+      dragging = true
+      document.body.style.cursor = 'grabbing'
+      document.body.style.userSelect = 'none'
+    }
     const rect = container.getBoundingClientRect()
     setAnchor(
       clampAnchor(
@@ -130,17 +118,38 @@ function enableDrag(container: HTMLElement): void {
   }
 
   const endDrag = (event: PointerEvent) => {
-    if (pointerId === null || event.pointerId !== pointerId) return
-    if (container.hasPointerCapture(pointerId)) {
-      container.releasePointerCapture(pointerId)
-    }
-    pointerId = null
+    if (event.pointerId !== activePointerId) return
+    activePointerId = null
     document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    window.removeEventListener('pointermove', onPointerMove)
+    window.removeEventListener('pointerup', endDrag)
+    window.removeEventListener('pointercancel', endDrag)
     if (dragging) saveAnchor(currentAnchor)
   }
 
-  // A drag ends with a synthetic click on the widget's open button; swallow
-  // it during the capture phase so dragging never toggles the lobby.
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    activePointerId = event.pointerId
+    dragging = false
+    startX = event.clientX
+    startY = event.clientY
+    const rect = container.getBoundingClientRect()
+    startAnchor = {
+      right: window.innerWidth - rect.right,
+      bottom: window.innerHeight - rect.bottom,
+    }
+    // Tracking moves on window (rather than capturing the pointer to the
+    // container) keeps the trailing click event targeted at the widget's own
+    // button, so a plain tap still opens the lobby.
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', endDrag)
+    window.addEventListener('pointercancel', endDrag)
+  }
+
+  // A real drag ends with a click on the widget's open button; swallow it
+  // during the capture phase so dragging never toggles the lobby. A plain
+  // click (no drag) leaves `dragging` false and passes straight through.
   const onClickCapture = (event: MouseEvent) => {
     if (dragging) {
       event.stopPropagation()
@@ -150,9 +159,6 @@ function enableDrag(container: HTMLElement): void {
   }
 
   container.addEventListener('pointerdown', onPointerDown)
-  container.addEventListener('pointermove', onPointerMove)
-  container.addEventListener('pointerup', endDrag)
-  container.addEventListener('pointercancel', endDrag)
   container.addEventListener('click', onClickCapture, true)
 
   window.addEventListener('resize', () => {
