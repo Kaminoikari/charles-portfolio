@@ -705,7 +705,9 @@ export default function ProjectCards() {
   const scrollByCard = (dir: -1 | 1) => {
     const el = rowRef.current
     if (!el) return
-    el.scrollBy({ left: dir * (el.clientWidth / 4), behavior: 'smooth' })
+    const firstCard = el.firstElementChild as HTMLElement | null
+    const step = firstCard?.offsetWidth ?? el.clientWidth / 4
+    el.scrollBy({ left: dir * step, behavior: 'smooth' })
   }
 
   return (
@@ -720,7 +722,7 @@ export default function ProjectCards() {
           {projects.map((project, index) => (
             <div
               key={project.id}
-              className={`flex md:flex-shrink-0 md:basis-1/4 md:snap-start ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
+              className={`flex md:w-[507px] md:flex-shrink-0 md:snap-start ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
             >
               <ProjectCard project={project} />
             </div>

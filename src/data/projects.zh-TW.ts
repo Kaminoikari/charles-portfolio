@@ -36,10 +36,8 @@ export const projects: Project[] = [
   {
     id: 'path',
     title: 'Path',
-    description: [
-      '「當網路消失，你的行程不該隨之蒸發。」',
-      '為不穩定網路環境設計的 PWA：採用 Cache-first + 背景同步架構，行程、地圖路線與花費紀錄都能離線使用，一個 URL 即可安裝到 iOS 與 Android 主畫面。',
-    ],
+    description:
+      '離線優先的旅遊行程 PWA。採用 Cache-first 與背景同步架構，即便極端斷網，仍秒級載入地圖路線與記帳，打造零死角的旅遊體驗。',
     ctaText: 'TRY IT',
     ctaUrl: 'https://trip-path.vercel.app/',
     tags: ['PWA', 'React', 'IndexedDB'],
@@ -47,10 +45,8 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: [
-      '「將一整張交易桌的分析戰力，收斂進一次 AI 合成 (Synthesis)。」',
-      '專為單一交易者打造的深度分析工具：整合月營收、基本面、法人籌碼與技術結構由 Gemini AI 跨領域合成診斷，每一筆推薦都經「儀器化」處理長期追蹤勝率與 ROI，底層以量化動能模型篩選候選池確保語意推論建立在紮實數據上。',
-    ],
+    description:
+      '台股深度 AI 分析工具。由 Gemini 跨領域揉合基本、籌碼與技術面，並全面回測、追蹤每筆策略的長期勝率與實質 ROI。',
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
@@ -58,11 +54,8 @@ export const projects: Project[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook',
-    description: [
-      '「讓 AI 擁有資深 PM 的大腦，將靈光乍現轉化為可開發的規格。」',
-      '這是一套基於 LLM 編排的多 Agent 系統。內建 22 款專業產品框架，並透過 3 位專家 Sub-agent 獨立分工，深度執行產品探索、策略批判與風險推演。',
-      '完美嵌入 Claude 生態系工作流，自動產出帶有驗收條件（AC）的開發文件，達成無縫的技術對接（Dev Handoff）。',
-    ],
+    description:
+      '基於 LLM 的 Multi-Agent System。動態調度 3 位專家 Sub-agent 對齊 22 套經典產品框架，將模糊需求自動轉化為具備高可執行性的 PRD 驗收規格。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
@@ -70,10 +63,8 @@ export const projects: Project[] = [
   {
     id: 'house-ops',
     title: 'House Ops',
-    description: [
-      '「在房產資訊的大海中，讓優質物件主動來找你。」',
-      '基於 Node.js 與 AI 的個人化房產決策管線：每日 09:00 自動掃描 591 與 Facebook 租屋社團、Claude API 把混亂貼文抽成結構化數據、五維加權打分把感性看房直覺轉成科學指標，並整合 Claude Code 提供首購試算到換屋規劃的深度顧問模式。',
-    ],
+    description:
+      '自動化房產決策 Pipeline。每日精準掃描 591 與 FB 社團，由 Claude API 瞬時抽取結構化數據，並透過自研五維加權演算法，秒選最優投報房源。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
@@ -81,10 +72,8 @@ export const projects: Project[] = [
   {
     id: 'job-ops',
     title: 'Job Ops',
-    description: [
-      '「把原本對準你的武器，反過來為你所用。」',
-      '自動化的個人求職管線：每天 07:00 從 104 抓新職缺、依你的 Markdown 履歷打分、寄出推薦 / 觀察 / 跳過三段日報。需要深度判斷時（公司合法性、職等策略、面試準備），7 個 Claude Code 互動模式接手。',
-    ],
+    description:
+      '全自動個人求職 Pipeline。每日晨間爬取 104 全新職缺，依照職位描述、產業、薪資、AI 相關分數打分，定時推送「推薦、觀察、跳過」三段式決策日報。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/job-ops',
     tags: ['Python', 'launchd', 'CV-aware', 'Automation'],

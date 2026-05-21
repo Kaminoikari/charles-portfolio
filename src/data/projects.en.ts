@@ -27,10 +27,8 @@ export const projects: Project[] = [
   {
     id: 'path',
     title: 'Path',
-    description: [
-      '"When the network disappears, your itinerary shouldn\'t disappear with it."',
-      'A PWA designed for unstable network environments. A cache-first + background sync architecture keeps itineraries, transit routes, and expenses fully usable offline. A single URL installs straight to iOS and Android home screens.',
-    ],
+    description:
+      'An offline-first trip planning PWA. A Cache-first plus background sync architecture keeps map routes and expense tracking loading in seconds even under extreme network blackouts, delivering a travel experience with zero dead zones.',
     ctaText: 'TRY IT',
     ctaUrl: 'https://trip-path.vercel.app/',
     tags: ['PWA', 'React', 'IndexedDB'],
@@ -38,10 +36,8 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: [
-      '"Take the analytical firepower of an entire trading desk and compress it into a single AI synthesis pass."',
-      'A deep-analysis tool built for a single trader: monthly revenue, fundamentals, institutional flow, and technical structure are cross-domain synthesized by Gemini AI, every recommendation is instrumented for long-run win-rate and ROI tracking, and an underlying quantitative momentum model screens the candidate pool so the semantic reasoning rests on solid data.',
-    ],
+    description:
+      'A deep AI analysis tool for Taiwan equities. Gemini fuses fundamentals, institutional flow, and technicals across domains, with full backtesting that tracks each strategy\'s long-run win rate and realized ROI.',
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
@@ -49,11 +45,8 @@ export const projects: Project[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook',
-    description: [
-      '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs."',
-      'A multi-agent system built on LLM orchestration. 22 product frameworks paired with 3 specialist sub-agents work in parallel on discovery, strategy critique, and pre-mortem.',
-      'Embeds natively into the Claude ecosystem and auto-generates spec documents with acceptance criteria for seamless Dev Handoff.',
-    ],
+    description:
+      'An LLM-based Multi-Agent System. Three specialist sub-agents are dynamically dispatched against 22 classic product frameworks, automatically converting fuzzy requirements into highly executable PRD acceptance specs.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
@@ -61,10 +54,8 @@ export const projects: Project[] = [
   {
     id: 'house-ops',
     title: 'House Ops',
-    description: [
-      '"In an ocean of property listings, let the good ones come to you."',
-      'A personal Node.js + AI pipeline for real-estate decisions: it scans 591 and Facebook rental groups daily at 09:00, has Claude API extract structured data from messy posts, applies five-dimension weighted scoring to turn gut-feel into quantified signals, and integrates Claude Code as a deep advisory layer for everything from first-buyer affordability to upgrade planning.',
-    ],
+    description:
+      'An automated real-estate decision pipeline. Daily precision sweeps of 591 and Facebook groups feed Claude API for instant structured extraction, while a custom five-dimension weighted algorithm picks the best-ROI listings in seconds.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
@@ -72,10 +63,8 @@ export const projects: Project[] = [
   {
     id: 'job-ops',
     title: 'Job Ops',
-    description: [
-      '"Turn the weapon that was aimed at you, back to your own use."',
-      'An automated personal job-search pipeline. Daily 07:00 run pulls fresh 104 listings, scores them against your markdown CV, and emails a three-tier digest (RECOMMEND, CAUTIOUS, SKIP). Seven Claude Code interactive modes pick up the deeper calls: company legitimacy, level strategy, interview prep.',
-    ],
+    description:
+      'A fully automated personal job-search pipeline. Every morning it crawls fresh 104 listings, scores them on job description, industry, salary, and AI relevance, then dispatches a three-tier "Recommend / Watch / Skip" decision digest on a schedule.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/job-ops',
     tags: ['Python', 'launchd', 'CV-aware', 'Automation'],
