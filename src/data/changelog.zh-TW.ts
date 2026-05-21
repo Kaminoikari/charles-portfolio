@@ -25,6 +25,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-multi-agent',
+    date: '2026-05-21',
+    title: 'Product Playbook 升級 — Multi-Agent System 架構',
+    tags: ['feature', 'technical'],
+    body: [
+      'Product Playbook v1.2 推出 3 位專家 Sub-agent（discovery-specialist、strategy-critic、pre-mortem-runner）。每位 Sub-agent 在獨立的 context window 中運作，只攜帶負責的框架知識，工具集嚴格限制為唯讀（Read / Grep / Glob / WebSearch），對於職責外的請求會回傳 `out_of_scope` 並指名正確承接者，再以 structured YAML 交給 main agent 整合。Iteration 5 的 A/B 評測顯示，Sub-agent 層在 Skill 基線之上額外貢獻 +40.9%（assertion 達成率從 59.1% 拉到 100%，兩個 arm 的 token 消耗都維持在約 152K 完全持平）。其中 pre-mortem-runner 是 load-bearing 元件，獨自承擔了 22.2% → 100% 的 +77.8% 跳升。/projects/product-playbook 的案例研究同步在 zh-TW / en / ja 三語系以 Multi-Agent 視角全面改寫。',
+      'Detail page renderer 新增可選的 `features[]` 欄位（label + description），以 4 卡片 hero block 形式顯示在 subtitle 下方。[ 問題 ] / [ 方案 ] / [ IMPACT ] 段落會自動將 `label：content`（英文 `label: content` 也支援）解析為粗體 label 的 bullet row；[ 心得 ] 維持純散文渲染。label 內部出現 40.9% 這類小數點不會誤判。',
+    ],
+  },
+  {
     id: 'job-ops-launch',
     date: '2026-05-14',
     title: 'Job Ops 加入 portfolio — 把 ATS 反向給求職者用的 Pipeline',

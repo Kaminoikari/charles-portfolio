@@ -26,6 +26,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-multi-agent',
+    date: '2026-05-21',
+    title: 'Product Playbook アップグレード — Multi-Agent System アーキテクチャ',
+    tags: ['feature', 'technical'],
+    body: [
+      'Product Playbook v1.2 で 3 名の専門家 Sub-agent（discovery-specialist、strategy-critic、pre-mortem-runner）を投入しました。各 Sub-agent は独立した context window で稼働し、自身が担当するフレームワーク知識のみを携え、ツールセットは読み取り専用（Read / Grep / Glob / WebSearch）に厳格に制限されます。責務外の要求に対しては `out_of_scope` を返却し正しい承継者を指名、結果は structured YAML として main agent に返して統合されます。Iteration 5 の A/B 評価では、Sub-agent レイヤーが Skill ベースラインに対して +40.9% を上乗せ（アサーション通過率が 59.1% から 100% へ、両アームのトークン消費は約 152K で完全に同等）。とりわけ pre-mortem-runner が耐荷重の中核で、22.2% から 100% への +77.8% 跳ね上がりを単独で担います。/projects/product-playbook のケーススタディを zh-TW / en / ja の 3 言語で Multi-Agent 視点に全面書き直ししました。',
+      'ディテールページのレンダラーに optional `features[]` フィールド（label + description）を追加し、サブタイトル直下に 4 枚カードの hero ブロックとして表示します。[ 課題 ] / [ 解決策 ] / [ IMPACT ] のパラグラフは `label：content`（英語の `label: content` も対応）を自動でバレットロウへ変換し、ラベルを太字でハイライト。[ 学び ] は引き続きプローズ表示。ラベル内の 40.9% のような小数点もパーサを誤動作させません。',
+    ],
+  },
+  {
     id: 'job-ops-launch',
     date: '2026-05-14',
     title: 'Job Ops が Portfolio に合流 — 応募者側に反転させた ATS パイプライン',

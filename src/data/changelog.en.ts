@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-multi-agent',
+    date: '2026-05-21',
+    title: 'Product Playbook Upgrade — Multi-Agent System Architecture',
+    tags: ['feature', 'technical'],
+    body: [
+      'Product Playbook v1.2 ships 3 specialist sub-agents (discovery-specialist, strategy-critic, pre-mortem-runner). Each sub-agent runs in its own context window, carries only the frameworks it owns, uses read-only tools (Read / Grep / Glob / WebSearch), returns `out_of_scope` for requests outside its scope while naming the correct handler, and replies in structured YAML for the main agent to integrate. The Iteration 5 A/B benchmark shows the sub-agent layer adds +40.9% on top of the Skill baseline (assertion pass rate climbs from 59.1% to 100%, with token spend held flat at ~152K across both arms). Pre-mortem-runner alone is the load-bearing piece, carrying the +77.8% jump from 22.2% to 100% on its own. The /projects/product-playbook case study is rewritten across zh-TW / en / ja around this Multi-Agent narrative.',
+      'Detail page renderer adds an optional `features[]` field (label + description) shown as a four-card hero block under the subtitle. [ Problem ] / [ Solution ] / [ IMPACT ] paragraphs auto-parse `label：content` (English `label: content` also supported) into bullet rows with bold labels, while [ Learnings ] stays in prose mode. Decimals like 40.9% inside labels no longer trip the parser.',
+    ],
+  },
+  {
     id: 'job-ops-launch',
     date: '2026-05-14',
     title: 'Job Ops Joins the Portfolio — Reverse-ATS for the Candidate Side',
