@@ -318,7 +318,7 @@ function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string;
 
 function parseLabeled(text: string): { label: string; description: string; separator: string } | null {
   const fullColon = text.indexOf('：')
-  const halfColonMatch = text.match(/^[^"'「『（(]{1,30}?: /)
+  const halfColonMatch = text.match(/^[^"'「『（(]{1,60}?: /)
   const halfColon = halfColonMatch ? halfColonMatch[0].length - 2 : -1
 
   let colonIndex = -1
@@ -333,7 +333,7 @@ function parseLabeled(text: string): { label: string; description: string; separ
   if (colonIndex === -1) return null
 
   const label = text.slice(0, colonIndex)
-  if (label.length === 0 || label.length > 30) return null
+  if (label.length === 0 || label.length > 60) return null
   if (/[。？！，,;；\n]|[.!?]\s/.test(label)) return null
 
   const description = text.slice(colonIndex + separator.length).trim()
