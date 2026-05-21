@@ -20,6 +20,7 @@ export interface ProjectDetail {
   id: string
   title: string
   subtitle: string
+  features?: { label: string; description: string }[]
   metaTitle: string
   metaDescription: string
   problem: string[]
@@ -54,10 +55,10 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      '「讓 AI 擁有資深 PM 的大腦，將靈光乍現轉化為可開發的規格。」基於 LLM Orchestration 的 AI Agent：內建 22 種專業產品框架（JTBD、RICE 等）拒絕通用廢話，整合 Claude.ai Custom Skill 與 Claude Code 生態系直接嵌入 PM 工作流，產出帶驗收條件的開發文件達成無縫 Dev Handoff。',
+      '「讓 AI 擁有資深 PM 的大腦，將靈光乍現轉化為可開發的規格。」這是一套基於 LLM 編排的多 Agent 系統。內建 22 款專業產品框架，並透過 3 位專家 Sub-agent 獨立分工，深度執行產品探索、策略批判與風險推演。完美嵌入 Claude 生態系工作流，自動產出帶有驗收條件（AC）的開發文件，達成無縫的技術對接（Dev Handoff）。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
-    tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
+    tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
   },
   {
     id: 'house-ops',
@@ -189,42 +190,55 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'product-playbook',
-    title: 'Product Playbook — 產出 spec 的 AI Agent',
-    subtitle: '「讓 AI 擁有資深 PM 的大腦，將靈光乍現轉化為可開發的規格。」這是一套基於 LLM 編排（Orchestration）的 AI Agent，專為縮短從「點子」到「開發任務」之間的巨大鴻溝而設計：框架導向生成（內建 22 種專業產品框架如 JTBD、RICE，拒絕生成空泛的通用文字）、全通路佈署（整合 Claude.ai Custom Skill 與 Claude Code 生態系，直接嵌入 PM 的現有工作流）、自動化技術對接（生成帶有驗收條件（AC）的開發文件，達成真正的開發無縫交接（Dev Handoff））。',
-    metaTitle: 'Product Playbook — AI Agent 規格產生器 | LLM 產品案例',
+    title: 'Product Playbook — 產出 spec 的 Multi-Agent System',
+    subtitle: '「讓 AI 擁有資深 PM 的大腦，將靈光乍現轉化為可開發的規格。」本系統專為縮短「點子」到「開發任務」的巨大鴻溝而設計，具備四大核心架構：',
+    features: [
+      { label: '框架導向生成', description: '內建 JTBD、RICE 等 22 套產品框架，強迫 AI 以資深 PM 思維深度推論，拒絕通用型的空泛輸出。' },
+      { label: 'Multi-Agent Orchestration', description: '部署 3 位專家 Sub-agent 獨立執行探索與策略批判，將深度判斷從主 Agent 擁擠的 Context 中解放。' },
+      { label: '全通路生態嵌入', description: '整合 Claude.ai Custom Skill 與 Claude Code 終端工具，不改變既有習慣，直接嵌入 PM 現有工作流。' },
+      { label: '自動化技術對接', description: '一鍵轉譯帶驗收條件的規格文件與 CLAUDE.md，達成無縫的技術交接（Dev Handoff）。' },
+    ],
+    metaTitle: 'Product Playbook — Multi-Agent 規格產生系統 | LLM 產品案例',
     metaDescription:
-      '為 Claude Code 打造的 AI agent 產品。22 個產品框架、自動 dev handoff。台灣 AI Product Manager Charles Chen 的 LLM 產品案例研究。',
+      'A Multi-Agent product planning system on Claude Code: 22 PM frameworks orchestrated with 3 specialist sub-agents (discovery, strategy critique, pre-mortem) for automated Dev Handoff. AI PM Charles Chen — LLM orchestration case study.',
     problem: [
-      '在傳統的產品開發流程中，撰寫一份高品質的規格文件（Spec/PRD）往往面臨兩大挑戰。',
-      '時間成本極高：一份及格的 PRD 需要整合用戶研究、競品分析與技術限制，通常需耗時數天，這往往成為開發進度的瓶頸。',
-      '通用型 AI 的侷限：ChatGPT 或 Notion AI 雖然能產出文字，但它們「不懂產品」。它們無法自動進行 JTBD 分析，也不懂如何根據 RICE 模型排序 Backlog，最終產出的往往是無法實踐的通用廢話。',
-      '溝通落差：當 PM 為了趕進度而跳過文件對齊時，後續的開發與重工成本將會成倍增加。',
+      '傳統規格撰寫成本極高：一份及格的產品需求文件（PRD）需整合用戶研究、競品分析與技術限制，通常耗時數天，常成為團隊開發的進度瓶頸。',
+      '通用型 AI 的產品思維侷限：ChatGPT 或 Notion AI 雖能產出文字卻「不懂產品」，無法自動進行 JTBD 分析或依 RICE 模型排序優先級，流於通用廢話。',
+      '單一 Context 的記憶稀釋：若強行讓單一 AI 攜帶所有框架，其分析深度會被龐大的記憶互相干擾。產品探索所需的同理心、策略階段所需的批判性，與風險推演所需的悲觀想像，是三種截然不同的工作模式，難以在同一個對話中並存。',
+      '溝通落差引發重工：當 PM 為了趕進度而跳過文件對齊時，後續的開發誤解與重工成本將成倍增加。',
     ],
     solution: [
-      'Product Playbook 不只是個聊天機器人，它是一個嚴謹的規格生產管線。',
-      '框架驅動的 Orchestration：系統將 22 個成熟的產品框架（從 Discovery 階段的 Positioning 到 Deliver 階段的 PRD）轉化為結構化 Prompt。這強迫 AI 以資深 PM 的思維模式進行思考，確保輸出具備實戰價值。',
-      '靈活的六大模式：針對不同的產品階段提供 Quick、Full、Revision、Build 等 6 種模式。無論是快速的功能實驗還是完整的新產品上線，都能找到對應的輸出深度。',
-      '強大的資料攝入能力：內建三層 PDF 解析引擎（純文字 → 語意辨識 → OCR 備援），支援上傳既有的研調資料，讓 AI 基於真實事實而非憑空想像。',
-      '自動化變動傳播（Change Propagation）：當上游決策修改時，下游文件同步更新。更重要的是，它能自動產出 CLAUDE.md 與 TASKS.md，將產品需求直接轉譯為工程師看得懂的技術任務。',
+      'Multi-Agent 規格管線：Product Playbook 不只是聊天機器人，它是一個嚴謹的規格生產流水線，並在 v1.2 升級為 Multi-Agent 專業分工架構。',
+      '框架驅動的 LLM 編排：將 22 個成熟的產品框架轉化為結構化 Prompt，引導 AI 模擬資深 PM 的思維模式，確保輸出具備實戰價值。',
+      '專家 Sub-agent 獨立運作：3 位專家在獨立環境中各司其職。discovery-specialist 專注於用戶與機會探索；strategy-critic 扮演嚴厲但公正的策略批判者；pre-mortem-runner 則全力投入產品失敗的悲觀推演。主 Agent 自動指派任務，並由 Sub-agent 以結構化 YAML 回傳整合。',
+      '權責專一的工程化設計：每個 Sub-agent 內建拒絕機制（out_of_scope），遇到越權請求時會明確拒絕並指名正確的負責人。工具集嚴格限制為「唯讀」，從底層確保「規劃過程不亂動檔案」，將決策所有權留給主 Agent。',
+      '靈活的六大產品模式：提供 Quick、Full、Revision、Build 等 6 種模式，無論是快速功能實驗還是完整新產品上線，都能找到對應的輸出深度。',
+      '強大的資料攝入：內建三層 PDF 解析引擎（文字 → 語意 → OCR 備援），支援上傳既有研調資料，讓 AI 基於真實素材進行推論。',
+      '變動自動傳播與技術轉譯：上游決策修改時，下游文件同步更新。系統能自動產出 CLAUDE.md 與 TASKS.md，將產品需求直接轉譯為工程師的技術任務。',
     ],
     techStack: [
       { category: 'Platform', items: 'Claude.ai Custom Skill、Claude Code Plugin/Skill' },
       { category: 'AI Engine', items: 'Claude（LLM Orchestration）、Claude Vision（語意文件解析）' },
+      { category: 'Multi-Agent Layer', items: '3 個 Claude Code sub-agent（discovery-specialist / strategy-critic / pre-mortem-runner），唯讀工具集、model: inherit、PROACTIVELY auto-delegate、structured YAML output' },
       { category: 'Frameworks', items: '內建 JTBD、Positioning、PR-FAQ、RICE、OST 等 22 套專業框架' },
       { category: 'Doc Processing', items: 'Playwright（PDF 渲染）、Pandoc（格式轉換）、pymupdf、Tesseract OCR' },
       { category: 'Tooling', items: 'Node.js、Bash、Markdown-based Framework Definition' },
       { category: 'Localization', items: '支援中（繁/簡）、英、日、韓、西等 6 國語言' },
     ],
     impact: [
-      '效率極大化：將原本需要數天的規格撰寫過程，大幅縮短至數分鐘，且品質優於基準測試',
-      '品質提升 69%：相較於未掛載 Skill 的原始模型，在產品思維與邏輯嚴整度上提升了 69%',
-      '工作流無縫融合：透過多通路發佈，使用者無需切換平台，在既有的編輯器或終端機中即可呼叫',
-      '開源社群貢獻：產品以 MIT 協議開源，成為 PM 與工程師共同使用的生產力工具',
+      '開發效率極大化：將原本需要數天的規格撰寫過程大幅縮短至數分鐘，且品質超越基準測試',
+      '品質基線提升 69%：在 Iteration 4 評測中，相較於未掛載核心技術的模型，在產品思維與邏輯嚴整度上大幅提升 69%',
+      'Sub-agent 架構帶來額外 40.9% 增益：Iteration 5 評測顯示，啟用 3 位 Sub-agent 後品質達成率從 59.1% 躍升至 100%，且 Token 消耗幾乎持平，證明專業分工能在不增加成本的前提下大幅提高品質',
+      '關鍵承重元件的驗證：實測證實 pre-mortem-runner 是系統的承重核心。少了它，主 Agent 只能產出單薄的風險清單；補回後，同一項評測的品質從 22.2% 提升到 100%（淨增 77.8%）',
+      '工作流無縫融合：透過多通路發佈，使用者無需切換平台，在既有的編輯器或終端機中即可直接呼叫',
+      '開源社群貢獻：產品以 MIT 協議開源，成為 PM 與工程師跨團隊協作的生產力工具',
     ],
     learnings: [
-      '「在 AI 時代，產品價值住在『框架』那一層，而非『生成』那一層。」作為一名 AI PM，我深刻體會到 LLM 的編排本質上是個產品設計問題。框架的執行順序直接決定了輸出品質——例如：先定義 Persona 再執行 JTBD 分析，AI 才能更精準地識別出真正的用戶痛點。',
-      '此外，選擇 Skill-based 的通路策略帶來了極高的留存。工具不應該強迫使用者適應新平台，而應該去「相遇」使用者本來就在工作的地方。',
-      '最後，我的核心洞察是：任何人都能呼叫 API，但知道如何「問對問題」並「導引思考」才是真正的智慧財產。這 22 個框架就是這套系統的靈魂，AI 只是負責將這些智慧快速交付的機制。',
+      '產品價值住在「框架」那一層：作為 AI PM，我體會到 LLM 的編排本質上是個產品設計問題。生成只是表象，框架的執行順序才是核心：唯有先定義 Persona 再執行 JTBD 分析，AI 才能精準識別出真正的用戶痛點。',
+      '授權專家（Empowered Specialist）是一個核心的工程決策：過去我以為 Sub-agent 只是把長 Prompt 拆短的技術優化，但實作後才發現，「拒絕機制」與「唯讀工具集」才是設計核心。允許專家 Agent 在越權時說「這不是我的工作」並交還決策權，正對應了 Marty Cagan 所說的「自主團隊」概念：專家清楚自己的邊界，反而讓整個系統更穩定。',
+      '架構的演化在於「誠實面對差異」：設計初期我曾想讓所有 Sub-agent 共用一套工整漂亮的 YAML Schema。但實作發現，策略批判需要的是「盲點評分」，而風險推演需要的是「帶有指標的場景模擬」，強行統一規格只會稀釋專業度。最終我採取「共用外殼（Envelope）+ 獨立內核（Body）」的權衡。這讓我學到：一致性的價值在於服務品質目標，當底層問題本質不同時，強行標準化反而是種傷害。',
+      '通路策略決定用戶留存：選擇 Skill-based 的佈署策略帶來了極高的黏著度。好的工具不該強迫使用者適應新平台，而應該去「相遇」使用者原本就在工作的地方。',
+      '核心洞察：任何人都能呼叫 API，但知道如何「問對問題」、「導引思考」並「讓專家在對的時機說話」才是系統真正的壁壘。22 個框架是這套系統的靈魂，3 位 Sub-agent 是專業分工的骨架，而 AI 則是負責將這些智慧快速交付的自動化機制。',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },

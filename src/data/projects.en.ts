@@ -11,6 +11,7 @@ export interface ProjectDetail {
   id: string
   title: string
   subtitle: string
+  features?: { label: string; description: string }[]
   metaTitle: string
   metaDescription: string
   problem: string[]
@@ -44,10 +45,10 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs." An LLM-orchestrated AI agent: 22 professional product frameworks (JTBD, RICE, and more) replace generic boilerplate, native distribution across Claude.ai Custom Skill and the Claude Code ecosystem embeds it straight into the PM\'s existing workflow, and the output is a dev document with acceptance criteria for genuine dev handoff.',
+      '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs." A multi-agent system built on LLM orchestration. 22 product frameworks paired with 3 specialist sub-agents work in parallel on discovery, strategy critique, and pre-mortem. Embeds natively into the Claude ecosystem and auto-generates spec documents with acceptance criteria for seamless Dev Handoff.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
-    tags: ['Claude Code Skill', 'AI/LLM', 'Product'],
+    tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
   },
   {
     id: 'house-ops',
@@ -177,41 +178,54 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'product-playbook',
-    title: 'Product Playbook — AI Agent for Product Specs',
-    subtitle: '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs." An LLM-orchestrated AI agent built to close the enormous gap between "idea" and "buildable task": framework-driven generation (22 professional product frameworks like JTBD and RICE replace vague generic prose), multi-channel distribution (native to Claude.ai Custom Skill and the Claude Code ecosystem, embedded directly into the PM\'s existing workflow), and automated technical handoff (output is a dev document with acceptance criteria, enabling genuine seamless Dev Handoff).',
-    metaTitle: 'Product Playbook — AI Agent Spec Generator | LLM Product Case Study',
-    metaDescription: 'AI agent product for Claude Code with 22 frameworks and automated dev handoff. An LLM product case study by AI Product Manager Charles Chen.',
+    title: 'Product Playbook — Multi-Agent System for Product Specs',
+    subtitle: '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs." The system is built to close the enormous gap between "idea" and "buildable task" with four core capabilities:',
+    features: [
+      { label: 'Framework-driven generation', description: '22 product frameworks like JTBD and RICE force AI to reason with a senior PM mindset, replacing vague boilerplate output.' },
+      { label: 'Multi-Agent Orchestration', description: '3 specialist sub-agents run independent discovery and strategy critique, freeing deep judgement from the crowded main-agent context.' },
+      { label: 'Native ecosystem embed', description: 'Integrates with Claude.ai Custom Skill and the Claude Code CLI, slotting straight into the PM\'s existing workflow.' },
+      { label: 'Automated tech handoff', description: 'One pass produces spec documents with acceptance criteria and a CLAUDE.md for genuine seamless Dev Handoff.' },
+    ],
+    metaTitle: 'Product Playbook — Multi-Agent Spec Generation System | LLM Product Case Study',
+    metaDescription: 'A Multi-Agent product planning system on Claude Code: 22 PM frameworks orchestrated with 3 specialist sub-agents (discovery, strategy critique, pre-mortem) for automated Dev Handoff. AI PM Charles Chen, an LLM orchestration case study.',
     problem: [
-      'In traditional product development, writing a high-quality spec/PRD runs into two structural challenges.',
-      'High time cost: a passable PRD has to integrate user research, competitive analysis, and technical constraints. The work often spans days and becomes a bottleneck for the build.',
-      'Limits of general-purpose AI: ChatGPT or Notion AI can produce prose but they "don\'t understand product." They can\'t automatically run a JTBD analysis or order a backlog by RICE; what they ship is generic boilerplate you can\'t act on.',
-      'Communication gaps: when PMs skip documentation alignment to chase a deadline, the downstream development and rework costs scale up multiplicatively.',
+      'Writing high-quality specs is brutally expensive: a passable PRD has to integrate user research, competitive analysis, and technical constraints. The work often spans days and turns into the build\'s bottleneck.',
+      'General-purpose AI lacks product thinking: ChatGPT and Notion AI produce prose but they "don\'t understand product." They can\'t run a JTBD analysis or order a backlog by RICE; the output is generic boilerplate.',
+      'Single-context memory dilution: forcing one AI to carry every framework at once dilutes its analytical depth. The empathy required for discovery, the criticism required for strategy, and the pessimistic imagination required for pre-mortem are three fundamentally different working modes that struggle to coexist in one conversation.',
+      'Communication gaps cause rework: when PMs skip documentation alignment to chase a deadline, downstream development misunderstanding and rework costs scale up multiplicatively.',
     ],
     solution: [
-      'Product Playbook is not just a chatbot, it is a disciplined spec-production pipeline.',
-      'Framework-driven orchestration: the system turns 22 mature product frameworks (from Positioning in Discovery through PRD in Deliver) into structured prompts. This forces the AI to think the way a senior PM does, so the output carries real practitioner weight.',
-      'Six flexible modes: Quick, Full, Revision, Build, and two more, tuned to different product stages. Whether it is a rapid feature experiment or a full new-product launch, there is a matching output depth.',
-      'Heavy-duty data ingestion: a three-layer PDF parsing engine (plain text → semantic recognition → OCR fallback) lets you upload existing research so the AI reasons from real evidence rather than thin air.',
-      'Automated change propagation: when an upstream decision changes, downstream documents update with it. More importantly, the system auto-generates CLAUDE.md and TASKS.md, translating product requirements straight into engineering tasks an engineer can act on.',
+      'Multi-Agent spec pipeline: Product Playbook operates as a disciplined spec-production pipeline that upgraded to a Multi-Agent specialist architecture in v1.2.',
+      'Framework-driven LLM orchestration: 22 mature product frameworks become structured prompts that lead the AI to reason like a senior PM, so the output carries practitioner weight.',
+      'Independent specialist sub-agents: three specialists run in their own context windows. discovery-specialist owns user and opportunity exploration; strategy-critic plays a tough but fair strategy critic; pre-mortem-runner commits fully to pessimistic scenarios of product failure. The main agent dispatches automatically and integrates results returned as structured YAML.',
+      'Single-responsibility engineering: every sub-agent has a refusal mechanism (out_of_scope) and explicitly hands an out-of-bounds request back to the right owner. Tools are strictly read-only, enforcing "planning never touches files" at the tool layer and keeping decision authority with the main agent.',
+      'Six flexible product modes: Quick, Full, Revision, Build, and two more, tuned to different product stages. Whether it is a fast feature experiment or a complete new-product launch, there is a matching output depth.',
+      'Heavy-duty ingestion: a three-layer PDF parsing engine (text → semantic → OCR fallback) lets you upload existing research so the AI reasons from real material.',
+      'Change propagation and tech translation: when an upstream decision changes, downstream documents update with it. The system auto-generates CLAUDE.md and TASKS.md, translating product requirements straight into engineering tasks.',
     ],
     techStack: [
       { category: 'Platform', items: 'Claude.ai Custom Skill, Claude Code Plugin/Skill' },
       { category: 'AI Engine', items: 'Claude (LLM Orchestration), Claude Vision (semantic document parsing)' },
+      { category: 'Multi-Agent Layer', items: '3 Claude Code sub-agents (discovery-specialist / strategy-critic / pre-mortem-runner), read-only tools, model: inherit, PROACTIVELY auto-delegate, structured YAML output' },
       { category: 'Frameworks', items: '22 professional frameworks (JTBD, Positioning, PR-FAQ, RICE, OST, etc.)' },
       { category: 'Doc Processing', items: 'Playwright (PDF rendering), Pandoc (format conversion), pymupdf, Tesseract OCR' },
       { category: 'Tooling', items: 'Node.js, Bash, Markdown-based framework definitions' },
       { category: 'Localization', items: 'Six languages: Chinese (Traditional/Simplified), English, Japanese, Korean, Spanish' },
     ],
     impact: [
-      'Maximum efficiency: spec writing compressed from days to minutes, with quality beating the baseline benchmark',
-      '+69% quality lift: against the same model without the skill loaded, product thinking and logical rigor improve by 69%',
-      'Seamless workflow integration: multi-channel distribution lets users invoke the tool inside their existing editor or terminal with no platform switching',
+      'Spec writing time collapses: a process that used to take days now finishes in minutes, with quality beating the baseline benchmark',
+      '+69% quality lift on baseline: in Iteration 4 evaluations, product thinking and logical rigor improved by 69% against the same model without the skill loaded',
+      'Sub-agent layer adds another +40.9%: Iteration 5 measured a quality-completion rate jump from 59.1% to 100% after enabling the 3 sub-agents, with token consumption staying flat. Specialization improves quality at no extra cost',
+      'Load-bearing component validation: pre-mortem-runner is the actual load-bearing element of the system. Without it, the main agent only produces thin risk lists; with it, the same assertion set jumps from 22.2% to 100% (+77.8%)',
+      'Seamless workflow embed: multi-channel distribution lets users invoke the tool inside their existing editor or terminal with no platform switching',
       'Open-source contribution: shipped under MIT license, used by PMs and engineers as a shared productivity tool',
     ],
     learnings: [
-      '"In the AI era, product value lives at the framework layer, not at the generation layer." As an AI PM, I came to feel viscerally that LLM orchestration is fundamentally a product-design problem. The execution order of frameworks directly decides output quality, for example, defining Persona before running JTBD analysis lets the AI identify real user pain points far more precisely.',
-      'A skill-based channel strategy also produced unusually high retention. The tool should not force users to adapt to a new platform, it should go and meet them in the surface they already work in.',
-      'My core insight: anyone can call an API, but knowing how to "ask the right question" and "guide the thinking" is the actual intellectual property. The 22 frameworks are the soul of the system; the AI is merely the delivery mechanism that ships that wisdom fast.',
+      'Product value lives at the "framework" layer. As an AI PM, I came to feel viscerally that LLM orchestration is fundamentally a product-design problem. Generation is the surface; the execution order of frameworks is the core. Defining Persona first, then running JTBD analysis, is what lets the AI precisely identify real user pain points.',
+      'Empowered Specialist is a core engineering decision. I used to think sub-agents were merely an optimization that broke long prompts into shorter ones. Implementing v1.2 revealed the actual design core: the refusal mechanism (out_of_scope return path) and the read-only tool set. Letting a specialist agent say "this is not my job" and hand the decision back to the main agent matches Marty Cagan\'s empowered team concept. A specialist who knows their boundary makes the system more stable. Iteration 5 evaluations showed that without pre-mortem-runner, the risk-assessment step collapses to 22.2%, proving this layer of specialization is the system\'s real load-bearing structure.',
+      'Architecture evolves by honestly facing difference. Early on I planned to have all three sub-agents share one tidy four-field YAML schema. Implementation revealed that the strategy critic\'s deliverable is "blind-spot scoring" while pre-mortem\'s deliverable is "scenarios with leading indicators." Forcing them into one mold dilutes precision. I settled on a shared envelope plus per-agent body. The lesson: consistency is in service of quality; when underlying problems differ in kind, forced standardization damages quality.',
+      'Channel strategy decides user retention. A skill-based deployment produced unusually high stickiness. A good tool should not force users to adapt to a new platform, it should go and meet them in the surface they already work in.',
+      'Core insight: anyone can call an API, but knowing how to "ask the right question," "guide the thinking," and "let specialists speak at the right moment" is the actual intellectual property. The 22 frameworks are the soul of the system, the 3 sub-agents are the skeleton of specialization, and AI is merely the automated delivery mechanism.',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/product-playbook' },

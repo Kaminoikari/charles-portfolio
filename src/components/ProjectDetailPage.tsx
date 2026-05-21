@@ -103,6 +103,26 @@ export default function ProjectDetailPage() {
           {detail.subtitle}
         </p>
 
+        {detail.features && detail.features.length > 0 && (
+          <ul
+            className="reveal mt-5 space-y-2.5 opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-600"
+            style={{ transitionDelay: '150ms' }}
+          >
+            {detail.features.map((feature) => (
+              <li
+                key={feature.label}
+                className="flex items-start gap-3 text-[15px] leading-[1.75] text-text-muted md:text-base"
+              >
+                <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
+                <span>
+                  <span className="font-medium text-white">{feature.label}：</span>
+                  {feature.description}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* Tags */}
         <div className="reveal mt-6 flex flex-wrap gap-2 opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-500" style={{ transitionDelay: '200ms' }}>
           {card.tags.map((tag) => (
@@ -187,18 +207,23 @@ export default function ProjectDetailPage() {
         {/* Impact */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '240ms' }}>
           <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {t('projectDetail.sectionImpact')} ]</h2>
-          <ul className="mt-6 space-y-3">
-            {detail.impact.map((item, i) => (
-              <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted md:text-base">
-                <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
-                {item}
-              </li>
-            ))}
-          </ul>
+          <div className="mt-6 space-y-3.5">
+            {detail.impact.map((item, i) => {
+              const labeled = parseLabeled(item)
+              return labeled ? (
+                <LabeledRow key={i} {...labeled} />
+              ) : (
+                <div key={i} className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
+                  <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
+                  <span className="flex-1">{item}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         {/* Learnings */}
-        <Section title={t('projectDetail.sectionLearnings')} paragraphs={detail.learnings} index={3} />
+        <Section title={t('projectDetail.sectionLearnings')} paragraphs={detail.learnings} index={3} mode="prose" />
 
         {/* Links */}
         <div className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700" style={{ transitionDelay: '320ms' }}>
@@ -291,19 +316,64 @@ function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string;
   )
 }
 
-function Section({ title, paragraphs, index }: { title: string; paragraphs: string[]; index: number }) {
+function parseLabeled(text: string): { label: string; description: string; separator: string } | null {
+  const fullColon = text.indexOf('：')
+  const halfColonMatch = text.match(/^[^"'「『（(]{1,30}?: /)
+  const halfColon = halfColonMatch ? halfColonMatch[0].length - 2 : -1
+
+  let colonIndex = -1
+  let separator = ''
+  if (fullColon !== -1 && (halfColon === -1 || fullColon < halfColon)) {
+    colonIndex = fullColon
+    separator = '：'
+  } else if (halfColon !== -1) {
+    colonIndex = halfColon
+    separator = ': '
+  }
+  if (colonIndex === -1) return null
+
+  const label = text.slice(0, colonIndex)
+  if (label.length === 0 || label.length > 30) return null
+  if (/[。？！，,;；\n]|[.!?]\s/.test(label)) return null
+
+  const description = text.slice(colonIndex + separator.length).trim()
+  if (!description) return null
+  return { label, description, separator }
+}
+
+function LabeledRow({ label, description, separator }: { label: string; description: string; separator: string }) {
+  return (
+    <div className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
+      <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
+      <p className="flex-1">
+        <span className="font-medium text-white">{label}{separator.trim()}</span>
+        <span className="ml-1">{description}</span>
+      </p>
+    </div>
+  )
+}
+
+function ProseRow({ text }: { text: string }) {
+  return (
+    <p className="text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
+      {text}
+    </p>
+  )
+}
+
+function Section({ title, paragraphs, index, mode = 'auto' }: { title: string; paragraphs: string[]; index: number; mode?: 'auto' | 'prose' }) {
   return (
     <div
       className="reveal mt-16 border-t border-border pt-16 opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
       style={{ transitionDelay: `${index * 80}ms` }}
     >
       <h2 className="font-mono text-sm font-medium tracking-[2px] text-text-tertiary">[ {title.toUpperCase()} ]</h2>
-      <div className="mt-5 space-y-4">
-        {paragraphs.map((p, i) => (
-          <p key={i} className="text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
-            {p}
-          </p>
-        ))}
+      <div className={mode === 'prose' ? 'mt-5 space-y-4' : 'mt-6 space-y-3.5'}>
+        {paragraphs.map((p, i) => {
+          if (mode === 'prose') return <ProseRow key={i} text={p} />
+          const labeled = parseLabeled(p)
+          return labeled ? <LabeledRow key={i} {...labeled} /> : <ProseRow key={i} text={p} />
+        })}
       </div>
     </div>
   )
