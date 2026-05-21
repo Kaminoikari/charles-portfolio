@@ -1,7 +1,7 @@
 export interface Project {
   id: string
   title: string
-  description: string
+  description: string | string[]
   ctaText: string
   ctaUrl: string
   tags: string[]
@@ -27,8 +27,10 @@ export const projects: Project[] = [
   {
     id: 'path',
     title: 'Path',
-    description:
-      '"When the network disappears, your itinerary shouldn\'t disappear with it." A PWA designed for unstable network environments. A cache-first + background sync architecture keeps itineraries, transit routes, and expenses fully usable offline. A single URL installs straight to iOS and Android home screens.',
+    description: [
+      '"When the network disappears, your itinerary shouldn\'t disappear with it."',
+      'A PWA designed for unstable network environments. A cache-first + background sync architecture keeps itineraries, transit routes, and expenses fully usable offline. A single URL installs straight to iOS and Android home screens.',
+    ],
     ctaText: 'TRY IT',
     ctaUrl: 'https://trip-path.vercel.app/',
     tags: ['PWA', 'React', 'IndexedDB'],
@@ -36,7 +38,10 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description: '"Take the analytical firepower of an entire trading desk and compress it into a single AI synthesis pass." A deep-analysis tool built for a single trader: monthly revenue, fundamentals, institutional flow, and technical structure are cross-domain synthesized by Gemini AI, every recommendation is instrumented for long-run win-rate and ROI tracking, and an underlying quantitative momentum model screens the candidate pool so the semantic reasoning rests on solid data.',
+    description: [
+      '"Take the analytical firepower of an entire trading desk and compress it into a single AI synthesis pass."',
+      'A deep-analysis tool built for a single trader: monthly revenue, fundamentals, institutional flow, and technical structure are cross-domain synthesized by Gemini AI, every recommendation is instrumented for long-run win-rate and ROI tracking, and an underlying quantitative momentum model screens the candidate pool so the semantic reasoning rests on solid data.',
+    ],
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
@@ -44,8 +49,11 @@ export const projects: Project[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook',
-    description:
-      '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs." A multi-agent system built on LLM orchestration. 22 product frameworks paired with 3 specialist sub-agents work in parallel on discovery, strategy critique, and pre-mortem. Embeds natively into the Claude ecosystem and auto-generates spec documents with acceptance criteria for seamless Dev Handoff.',
+    description: [
+      '"Give AI a senior PM\'s brain and turn flashes of inspiration into shippable specs."',
+      'A multi-agent system built on LLM orchestration. 22 product frameworks paired with 3 specialist sub-agents work in parallel on discovery, strategy critique, and pre-mortem.',
+      'Embeds natively into the Claude ecosystem and auto-generates spec documents with acceptance criteria for seamless Dev Handoff.',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
@@ -53,8 +61,10 @@ export const projects: Project[] = [
   {
     id: 'house-ops',
     title: 'House Ops',
-    description:
-      '"In an ocean of property listings, let the good ones come to you." A personal Node.js + AI pipeline for real-estate decisions: it scans 591 and Facebook rental groups daily at 09:00, has Claude API extract structured data from messy posts, applies five-dimension weighted scoring to turn gut-feel into quantified signals, and integrates Claude Code as a deep advisory layer for everything from first-buyer affordability to upgrade planning.',
+    description: [
+      '"In an ocean of property listings, let the good ones come to you."',
+      'A personal Node.js + AI pipeline for real-estate decisions: it scans 591 and Facebook rental groups daily at 09:00, has Claude API extract structured data from messy posts, applies five-dimension weighted scoring to turn gut-feel into quantified signals, and integrates Claude Code as a deep advisory layer for everything from first-buyer affordability to upgrade planning.',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
@@ -62,8 +72,10 @@ export const projects: Project[] = [
   {
     id: 'job-ops',
     title: 'Job Ops',
-    description:
-      '"Turn the weapon that was aimed at you, back to your own use." An automated personal job-search pipeline. Daily 07:00 run pulls fresh 104 listings, scores them against your markdown CV, and emails a three-tier digest (RECOMMEND, CAUTIOUS, SKIP). Seven Claude Code interactive modes pick up the deeper calls: company legitimacy, level strategy, interview prep.',
+    description: [
+      '"Turn the weapon that was aimed at you, back to your own use."',
+      'An automated personal job-search pipeline. Daily 07:00 run pulls fresh 104 listings, scores them against your markdown CV, and emails a three-tier digest (RECOMMEND, CAUTIOUS, SKIP). Seven Claude Code interactive modes pick up the deeper calls: company legitimacy, level strategy, interview prep.',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/job-ops',
     tags: ['Python', 'launchd', 'CV-aware', 'Automation'],

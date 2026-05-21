@@ -645,9 +645,11 @@ function ProjectCard({ project }: { project: Project }) {
       </h3>
 
       {/* Description */}
-      <p className="mt-3 text-[15px] leading-[1.6] text-text-secondary transition-colors duration-300 ease-in-out group-hover:text-white/85">
-        {project.description}
-      </p>
+      <div className="mt-3 space-y-2.5 text-[15px] leading-[1.6] text-text-secondary transition-colors duration-300 ease-in-out group-hover:text-white/85">
+        {(Array.isArray(project.description) ? project.description : [project.description]).map((paragraph, i) => (
+          <p key={i}>{paragraph}</p>
+        ))}
+      </div>
 
       {/* Tags */}
       <div className="mt-3 flex flex-wrap gap-2">

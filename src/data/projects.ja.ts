@@ -11,7 +11,7 @@
 export interface Project {
   id: string
   title: string
-  description: string
+  description: string | string[]
   ctaText: string
   ctaUrl: string
   tags: string[]
@@ -37,8 +37,10 @@ export const projects: Project[] = [
   {
     id: 'path',
     title: 'Path',
-    description:
-      '「ネットワークが消えても、旅程は蒸発しない。」不安定なネットワーク環境のために設計された PWA。Cache-first + 背景同期アーキテクチャにより、旅程、地図ルート、支出記録は完全にオフラインでも使用可能。1 つの URL で iOS にも Android にもホーム画面追加できます。',
+    description: [
+      '「ネットワークが消えても、旅程は蒸発しない。」',
+      '不安定なネットワーク環境のために設計された PWA。Cache-first + 背景同期アーキテクチャにより、旅程、地図ルート、支出記録は完全にオフラインでも使用可能。1 つの URL で iOS にも Android にもホーム画面追加できます。',
+    ],
     ctaText: 'TRY IT',
     ctaUrl: 'https://trip-path.vercel.app/',
     tags: ['PWA', 'React', 'IndexedDB'],
@@ -46,8 +48,10 @@ export const projects: Project[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade',
-    description:
-      '「トレーディングデスク 1 卓ぶんの分析戦力を、AI 合成（Synthesis）1 回ぶんに収斂させる」。単一トレーダーのために設計された深掘り分析ツール：月次売上、ファンダメンタルズ、機関投資家フロー、テクニカル構造を Gemini AI がクロスドメインで合成診断し、各推奨を「Instrumented」処理することで長期にわたる勝率と ROI を追跡し、その下層では量的モメンタムモデルが候補プールを絞り込み、AI の意味解釈が確かなデータに支えられるよう保証します。',
+    description: [
+      '「トレーディングデスク 1 卓ぶんの分析戦力を、AI 合成（Synthesis）1 回ぶんに収斂させる」。',
+      '単一トレーダーのために設計された深掘り分析ツール：月次売上、ファンダメンタルズ、機関投資家フロー、テクニカル構造を Gemini AI がクロスドメインで合成診断し、各推奨を「Instrumented」処理することで長期にわたる勝率と ROI を追跡し、その下層では量的モメンタムモデルが候補プールを絞り込み、AI の意味解釈が確かなデータに支えられるよう保証します。',
+    ],
     ctaText: 'TRY IT',
     ctaUrl: 'https://plutustrade.vercel.app/',
     tags: ['Flutter', 'FastAPI', 'Gemini AI'],
@@ -55,8 +59,11 @@ export const projects: Project[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook',
-    description:
-      '「AI にシニア PM の頭脳を与え、ひらめきを実装可能なスペックへ変換する。」LLM オーケストレーションを基盤とする Multi-Agent System。22 種のプロダクトフレームワークと 3 名の専門家 Sub-agent が独立分業し、ディスカバリー、戦略批判、リスク予測を深掘りする。Claude エコシステムのワークフローに完全に組み込まれ、受け入れ基準（AC）付きの開発ドキュメントを自動生成し、シームレスな技術引き継ぎ（Dev Handoff）を実現する。',
+    description: [
+      '「AI にシニア PM の頭脳を与え、ひらめきを実装可能なスペックへ変換する。」',
+      'LLM オーケストレーションを基盤とする Multi-Agent System。22 種のプロダクトフレームワークと 3 名の専門家 Sub-agent が独立分業し、ディスカバリー、戦略批判、リスク予測を深掘りする。',
+      'Claude エコシステムのワークフローに完全に組み込まれ、受け入れ基準（AC）付きの開発ドキュメントを自動生成し、シームレスな技術引き継ぎ（Dev Handoff）を実現する。',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Multi-Agent', 'Claude Code', 'AI/LLM'],
@@ -64,8 +71,10 @@ export const projects: Project[] = [
   {
     id: 'house-ops',
     title: 'House Ops',
-    description:
-      '「不動産情報の大海原で、優良物件のほうから会いに来てもらう」。Node.js と AI による個人向け不動産意思決定パイプライン：毎日 09:00 に 591 と Facebook 賃貸グループを自動スキャンし、Claude API が混沌とした投稿を構造化データへ抽出、5 次元の加重採点で感覚的な内見直感を科学的指標へ変換、Claude Code と統合して初購試算から住み替え計画までの深いアドバイザリーモードを提供します。',
+    description: [
+      '「不動産情報の大海原で、優良物件のほうから会いに来てもらう」。',
+      'Node.js と AI による個人向け不動産意思決定パイプライン：毎日 09:00 に 591 と Facebook 賃貸グループを自動スキャンし、Claude API が混沌とした投稿を構造化データへ抽出、5 次元の加重採点で感覚的な内見直感を科学的指標へ変換、Claude Code と統合して初購試算から住み替え計画までの深いアドバイザリーモードを提供します。',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/house-ops',
     tags: ['Node.js', 'Agent', 'Automation', 'Claude API'],
@@ -73,8 +82,10 @@ export const projects: Project[] = [
   {
     id: 'job-ops',
     title: 'Job Ops',
-    description:
-      '「もともとあなたに向けられていた武器を、あなた自身のために使う」。自動化された個人向け求職パイプライン。毎日 07:00、104 から新着求人を取得し、Markdown 履歴書に対して採点、RECOMMEND / CAUTIOUS / SKIP の 3 段ダイジェストをメール配信。深い判断（企業の合法性、レベル戦略、面接準備）は 7 つの Claude Code インタラクティブモードが担います。',
+    description: [
+      '「もともとあなたに向けられていた武器を、あなた自身のために使う」。',
+      '自動化された個人向け求職パイプライン。毎日 07:00、104 から新着求人を取得し、Markdown 履歴書に対して採点、RECOMMEND / CAUTIOUS / SKIP の 3 段ダイジェストをメール配信。深い判断（企業の合法性、レベル戦略、面接準備）は 7 つの Claude Code インタラクティブモードが担います。',
+    ],
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/job-ops',
     tags: ['Python', 'launchd', 'CV-aware', 'Automation'],
