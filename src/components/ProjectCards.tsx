@@ -722,7 +722,7 @@ export default function ProjectCards() {
           {projects.map((project, index) => (
             <div
               key={project.id}
-              className={`flex md:w-[clamp(360px,40%,507px)] md:flex-shrink-0 md:snap-start ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
+              className={`flex md:w-[507px] md:flex-shrink-0 md:snap-start ${index > 0 ? '-mt-px md:mt-0 md:-ml-px' : ''}`}
             >
               <ProjectCard project={project} />
             </div>
