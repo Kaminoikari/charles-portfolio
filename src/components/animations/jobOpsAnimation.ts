@@ -13,14 +13,14 @@ export const JO_PANEL_Y = 168
 export const JO_PANEL_H = 100
 export const JO_ROW_START_Y = JO_PANEL_Y + 32
 export const JO_ROW_HEIGHT = 22
-export const JO_COLUMN_COUNT = 7
+export const JO_COLUMN_COUNT = 5
 // Rain columns are confined to the digest panel's horizontal span (with
 // inner padding) so falling tokens never spill past the panel edges.
 export const JO_RAIN_PAD = 10
 export const JO_RAIN_LEFT = JO_PANEL_X + JO_RAIN_PAD
 export const JO_RAIN_W = JO_PANEL_W - JO_RAIN_PAD * 2
 export const JO_COLUMN_W = JO_RAIN_W / JO_COLUMN_COUNT
-export const JO_GLYPH_H = 17
+export const JO_GLYPH_H = 22
 export const JO_RAIN_TOP = -40
 export const JO_RAIN_BOTTOM = 148
 export const JO_FLASH_DURATION = 0.45
@@ -32,23 +32,33 @@ export const JO_ROW_MATERIALIZE = 0.45
 export const JO_SETTLE_DURATION = 1.4
 export const JO_FADEOUT_DURATION = 0.5
 
-// Token vocabulary drawn from 104 job-post surface area. The pool is
-// larger than the rain ever shows at once, so columns can be dealt
-// without replacement and never repeat a token.
-const TOKEN_POOL = [
-  'Python', 'SQL', 'AI', 'ML', 'LLM', 'RAG', 'Figma', 'Backend',
-  'Frontend', 'DevOps', 'Cloud', 'API', 'Data', 'Analytics', 'Notion', 'Roadmap',
-  'PM', 'PdM', 'TPM', 'Senior', 'Staff', 'Lead', 'Principal', 'Manager',
-  'Director', 'Architect', 'IC', 'Founder', '3y', '5y', '7y', '10y',
-  '120K', '150K', '180K', '200K', '240K', 'Equity', 'Stock', 'Bonus',
-  'Remote', 'Hybrid', 'Taipei', 'Hsinchu', 'Taoyuan', 'APAC', 'Tokyo', 'Singapore',
-  'Startup', 'Series A', 'Series B', 'Series C', 'Scale-up', 'Unicorn', 'Seed', 'Public',
-  'B2B', 'B2C', 'SaaS', 'Fintech', 'Platform', 'Growth', 'Infra', 'Mobile',
+// Single shared falling speed so every column drops in parallel
+export const JO_RAIN_SPEED = 34
+
+// Per-column token vocabularies. Each column visually represents one
+// dimension of a 104 listing, so its rain content stays semantically
+// consistent (titles, industry, AI keywords, salary, location).
+const JO_COLUMN_POOLS: string[][] = [
+  // 0 — 職位名稱
+  ['Senior PM', 'Growth PM', 'AI PM', 'TPM', 'Lead PM', 'Staff PM', 'Group PM', 'Principal', 'Director', 'Head PM', 'Sr. PM', 'PdM', 'Manager', 'Architect'],
+  // 1 — 產業
+  ['Fintech', 'SaaS', 'B2B', 'B2C', 'Platform', 'AdTech', 'EdTech', 'HealthTech', 'Crypto', 'Web3', 'Gaming', 'MarTech', 'DevTools', 'Mobility'],
+  // 2 — AI 關鍵字
+  ['AI', 'ML', 'LLM', 'RAG', 'GPT', 'Vision', 'NLP', 'Agent', 'Python', 'PyTorch', 'Embedding', 'Prompt', 'TensorFlow', 'Generative'],
+  // 3 — 薪資
+  ['120K', '150K', '180K', '200K', '240K', '300K', '+Equity', '+Stock', '+Bonus', '150-200K', '180-240K', 'RSU', 'Sign-on'],
+  // 4 — 地點
+  ['Taipei', 'Hsinchu', 'Taoyuan', 'Tokyo', 'Singapore', 'Remote', 'Hybrid', 'APAC', 'Tainan', 'Kaohsiung', 'Seoul', 'Hong Kong', 'Onsite', 'Shanghai'],
 ]
 
-// Tokens flagged as CV signals; they flash mars when crossing the scan line
+// Tokens flagged as CV signals; they flash mars when crossing the scan line.
+// At least one per column so every stream gets a chance to flash.
 const CV_MATCHED_SET = new Set([
-  'Python', 'AI', 'PM', 'PdM', 'Remote', '180K', 'Senior', 'Lead', '5y', 'LLM',
+  'Senior PM', 'AI PM',
+  'Fintech', 'Platform',
+  'AI', 'LLM', 'Agent',
+  '180K', '200K',
+  'Remote', 'Taipei',
 ])
 
 export type JoColumn = {
@@ -85,12 +95,8 @@ function shuffled(arr: readonly string[]): string[] {
   return a
 }
 
-// Pick `count` distinct tokens. When `exclude` is given, the result
-// avoids those tokens too, so a recycled column never repeats a token
-// still on screen in another column.
-function pickGlyphs(count: number, exclude?: Set<string>): string[] {
-  const source = exclude ? TOKEN_POOL.filter((t) => !exclude.has(t)) : TOKEN_POOL
-  return shuffled(source).slice(0, count)
+function pickColumnGlyphs(colIdx: number, count: number): string[] {
+  return shuffled(JO_COLUMN_POOLS[colIdx]).slice(0, count)
 }
 
 function collectMatched(glyphs: string[]): Set<number> {
@@ -102,30 +108,25 @@ function collectMatched(glyphs: string[]): Set<number> {
 }
 
 export function generateColumns(): JoColumn[] {
-  // Deal every column from one shuffled deck so no token repeats
-  // anywhere in the rain.
-  const deck = shuffled(TOKEN_POOL)
-  let cursor = 0
   const cols: JoColumn[] = []
   for (let i = 0; i < JO_COLUMN_COUNT; i++) {
-    const len = 7 + Math.floor(Math.random() * 3)
-    const glyphs = deck.slice(cursor, cursor + len)
-    cursor += glyphs.length
-    const totalH = glyphs.length * JO_GLYPH_H
+    const len = 5 + Math.floor(Math.random() * 3)
+    const glyphs = pickColumnGlyphs(i, len)
     cols.push({
       x: JO_RAIN_LEFT + i * JO_COLUMN_W + JO_COLUMN_W / 2,
       glyphs,
       matchedIdx: collectMatched(glyphs),
       flashTimer: new Map(),
-      speed: 26 + Math.random() * 18,
-      offsetY: JO_RAIN_TOP - Math.random() * totalH,
+      speed: JO_RAIN_SPEED,
+      offsetY: JO_RAIN_TOP,
     })
   }
   return cols
 }
 
 export function updateColumns(cols: JoColumn[], dt: number) {
-  for (const col of cols) {
+  for (let i = 0; i < cols.length; i++) {
+    const col = cols[i]
     col.offsetY += dt * col.speed
 
     if (col.flashTimer.size > 0) {
@@ -144,20 +145,12 @@ export function updateColumns(cols: JoColumn[], dt: number) {
     }
 
     if (col.offsetY > JO_RAIN_BOTTOM + 20) {
-      // Exclude tokens still shown in the other columns so the recycled
-      // column never duplicates anything currently on screen.
-      const inUse = new Set<string>()
-      for (const other of cols) {
-        if (other !== col) {
-          for (const g of other.glyphs) inUse.add(g)
-        }
-      }
-      const len = 7 + Math.floor(Math.random() * 3)
-      col.glyphs = pickGlyphs(len, inUse)
+      const len = 5 + Math.floor(Math.random() * 3)
+      col.glyphs = pickColumnGlyphs(i, len)
       col.matchedIdx = collectMatched(col.glyphs)
       col.flashTimer.clear()
-      col.offsetY = JO_RAIN_TOP - col.glyphs.length * JO_GLYPH_H * 0.3
-      col.speed = 26 + Math.random() * 18
+      col.offsetY = JO_RAIN_TOP
+      col.speed = JO_RAIN_SPEED
     }
   }
 }
@@ -331,40 +324,60 @@ function drawDigestRow(
 
 // ── Public API ──
 
-export function drawJobOpsStatic(ctx: CanvasRenderingContext2D) {
-  const alpha = 0.7
+function drawPanelFramePlaceholder(ctx: CanvasRenderingContext2D, alpha: number) {
+  ctx.strokeStyle = whiteA(0.22 * alpha)
+  ctx.lineWidth = 1
+  ctx.strokeRect(JO_PANEL_X + 0.5, JO_PANEL_Y + 0.5, JO_PANEL_W - 1, JO_PANEL_H - 1)
 
-  // Deterministic static rain (frozen mid-flight)
-  const staticCols: JoColumn[] = []
-  // 56 distinct tokens — no repeats anywhere in the static frame.
-  const sampleGlyphsPerCol: string[][] = [
-    ['Senior',    'Python',   '180K',     'Staff',    'AI',       'Remote',   'Roadmap',  'Platform'],
-    ['Figma',     'Hybrid',   '150K',     'PdM',      '5y',       'B2B',      'Manager',  'IC'],
-    ['Backend',   'ML',       'Director', 'Lead',     'Startup',  'Taipei',   'SaaS',     '3y'],
-    ['Growth',    'API',      'Cloud',    'Data',     'Frontend', 'Series B', 'Founder',  'Mobile'],
-    ['Analytics', '120K',     'DevOps',   'Principal','LLM',      'Architect','APAC',     'Fintech'],
-    ['Series A',  'Equity',   'Tokyo',    'Series C', 'Scale-up', 'B2C',      'Infra',    '10y'],
-    ['Unicorn',   'Stock',    'Hsinchu',  'Singapore','Seed',     'Public',   '200K',     'PM'],
-  ]
-  const sampleOffsets = [-12, 8, -22, 14, -4, 22, -18]
-  for (let i = 0; i < JO_COLUMN_COUNT; i++) {
-    const glyphs = sampleGlyphsPerCol[i]
-    staticCols.push({
-      x: JO_RAIN_LEFT + i * JO_COLUMN_W + JO_COLUMN_W / 2,
-      glyphs,
-      matchedIdx: collectMatched(glyphs),
-      flashTimer: new Map(),
-      speed: 0,
-      offsetY: sampleOffsets[i],
-    })
+  ctx.strokeStyle = whiteA(0.14 * alpha)
+  ctx.beginPath()
+  ctx.moveTo(JO_PANEL_X, JO_PANEL_Y + 18)
+  ctx.lineTo(JO_PANEL_X + JO_PANEL_W, JO_PANEL_Y + 18)
+  ctx.stroke()
+
+  ctx.fillStyle = whiteA(0.5 * alpha)
+  ctx.font = 'bold 8px ui-monospace, "SF Mono", Menlo, monospace'
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('07:00 · DAILY DIGEST', JO_PANEL_X + 8, JO_PANEL_Y + 9)
+
+  ctx.fillStyle = whiteA(0.4 * alpha)
+  ctx.textAlign = 'right'
+  ctx.fillText('— / — LISTINGS', JO_PANEL_X + JO_PANEL_W - 8, JO_PANEL_Y + 9)
+  ctx.textBaseline = 'alphabetic'
+}
+
+function drawDigestRowPlaceholder(ctx: CanvasRenderingContext2D, y: number, alpha: number) {
+  // Title bar
+  ctx.fillStyle = whiteA(0.18 * alpha)
+  ctx.fillRect(JO_PANEL_X + 10, y - 3, 110, 5)
+
+  // Salary chip
+  ctx.fillStyle = whiteA(0.14 * alpha)
+  ctx.fillRect(JO_PANEL_X + 140, y - 3, 32, 5)
+
+  // 5 hollow score dots
+  ctx.strokeStyle = whiteA(0.25 * alpha)
+  ctx.lineWidth = 1
+  for (let i = 0; i < 5; i++) {
+    const cx = JO_PANEL_X + 195 + i * 9
+    ctx.beginPath()
+    ctx.arc(cx, y, 2.6, 0, Math.PI * 2)
+    ctx.stroke()
   }
-  staticCols.forEach((col) => drawColumn(ctx, col, alpha))
 
-  drawScanLine(ctx, alpha)
-  drawPanelFrame(ctx, alpha)
-  JO_DIGEST_ROWS.forEach((row, i) => {
-    drawDigestRow(ctx, row, JO_ROW_START_Y + i * JO_ROW_HEIGHT, 1, alpha, 0.5)
-  })
+  // Score number slot
+  ctx.fillStyle = whiteA(0.16 * alpha)
+  ctx.fillRect(JO_PANEL_X + JO_PANEL_W - 26, y - 3, 14, 5)
+}
+
+export function drawJobOpsStatic(ctx: CanvasRenderingContext2D) {
+  const alpha = 0.5
+
+  drawPanelFramePlaceholder(ctx, alpha)
+  for (let i = 0; i < JO_DIGEST_ROWS.length; i++) {
+    drawDigestRowPlaceholder(ctx, JO_ROW_START_Y + i * JO_ROW_HEIGHT, alpha)
+  }
 
   ctx.globalAlpha = 1
 }

@@ -107,9 +107,11 @@ function listingStroke(score: number, alpha: number): string {
   return whiteA(alpha * 0.4)
 }
 
-function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
+function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number, mono = false) {
+  const accent = mono ? whiteA : marsA
+
   // Bold outer ring
-  ctx.strokeStyle = marsA(0.6 * alpha)
+  ctx.strokeStyle = accent(0.6 * alpha)
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.arc(HO_CX, HO_CY, HO_OUTER_R, 0, TWO_PI)
@@ -117,7 +119,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   ctx.lineWidth = 1
 
   // Inner concentric rings
-  ctx.strokeStyle = marsA(0.2 * alpha)
+  ctx.strokeStyle = accent(0.2 * alpha)
   for (let i = 0; i < HO_RINGS.length - 1; i++) {
     ctx.beginPath()
     ctx.arc(HO_CX, HO_CY, HO_RINGS[i], 0, TWO_PI)
@@ -125,7 +127,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   }
 
   // Rim ticks: every 5° short, every 30° long
-  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.strokeStyle = accent(0.42 * alpha)
   ctx.lineWidth = 0.9
   for (let deg = 0; deg < 360; deg += 5) {
     const angle = HO_SWEEP_START + (deg / 360) * TWO_PI
@@ -143,7 +145,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   ctx.lineWidth = 1
 
   // Degree numbers every 30° (000, 030, 060 …)
-  ctx.fillStyle = marsA(0.7 * alpha)
+  ctx.fillStyle = accent(0.7 * alpha)
   ctx.font = 'bold 8px monospace'
   for (let deg = 0; deg < 360; deg += 30) {
     const angle = HO_SWEEP_START + (deg / 360) * TWO_PI
@@ -156,7 +158,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   }
 
   // Dashed crosshair through center
-  ctx.strokeStyle = marsA(0.18 * alpha)
+  ctx.strokeStyle = accent(0.18 * alpha)
   ctx.setLineDash([2, 4])
   ctx.beginPath()
   ctx.moveTo(HO_CX - HO_OUTER_R, HO_CY)
@@ -167,7 +169,7 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   ctx.setLineDash([])
 
   // Cardinal axis tick clusters: small perpendicular ticks where each ring meets the crosshair
-  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.strokeStyle = accent(0.42 * alpha)
   ctx.lineWidth = 1
   const tickHL = 3
   HO_RINGS.forEach((r) => {
@@ -184,9 +186,11 @@ function drawRadarFrame(ctx: CanvasRenderingContext2D, alpha: number) {
   })
 }
 
-function drawHouseHub(ctx: CanvasRenderingContext2D, alpha: number, pulse: number) {
+function drawHouseHub(ctx: CanvasRenderingContext2D, alpha: number, pulse: number, mono = false) {
+  const accent = mono ? whiteA : marsA
+
   // Reticle ring around hub
-  ctx.strokeStyle = marsA(0.42 * alpha)
+  ctx.strokeStyle = accent(0.42 * alpha)
   ctx.lineWidth = 1
   ctx.beginPath()
   ctx.arc(HO_CX, HO_CY, 11, 0, TWO_PI)
@@ -194,7 +198,7 @@ function drawHouseHub(ctx: CanvasRenderingContext2D, alpha: number, pulse: numbe
 
   // House icon (slightly smaller to sit comfortably inside the reticle)
   const s = 4
-  ctx.fillStyle = marsA((0.78 + pulse * 0.22) * alpha)
+  ctx.fillStyle = accent((0.78 + pulse * 0.22) * alpha)
   ctx.beginPath()
   ctx.rect(HO_CX - s, HO_CY - 1, s * 2, s + 1)
   ctx.fill()
@@ -306,21 +310,9 @@ function drawSweepArm(ctx: CanvasRenderingContext2D, angle: number, alpha: numbe
 // ── Public API ──
 
 export function drawHouseOpsStatic(ctx: CanvasRenderingContext2D) {
-  const alpha = 0.7
-  drawRadarFrame(ctx, alpha)
-  drawHouseHub(ctx, alpha, 0)
-  // Deterministic sample dots so the static state reads as a populated radar
-  const sample: HoListing[] = [
-    { angle: -Math.PI / 2 + 0.3, radius: 88, score: 4.3, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 0.3, radius: 70, score: 3.7, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 1.0, radius: 100, score: 4.1, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 1.9, radius: 60, score: 2.8, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 2.6, radius: 92, score: 3.6, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 3.4, radius: 75, score: 4.5, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 4.3, radius: 95, score: 3.2, createdTime: 0, lifetime: 99, blipTime: 1 },
-    { angle: 5.2, radius: 80, score: 3.8, createdTime: 0, lifetime: 99, blipTime: 1 },
-  ]
-  sample.forEach((l) => drawListing(ctx, l, alpha, 0, false, 1, 0))
+  const alpha = 0.5
+  drawRadarFrame(ctx, alpha, true)
+  drawHouseHub(ctx, alpha, 0, true)
   ctx.globalAlpha = 1
 }
 
