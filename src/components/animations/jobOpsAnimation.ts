@@ -125,8 +125,7 @@ export function generateColumns(): JoColumn[] {
 }
 
 export function updateColumns(cols: JoColumn[], dt: number) {
-  for (let i = 0; i < cols.length; i++) {
-    const col = cols[i]
+  for (const col of cols) {
     col.offsetY += dt * col.speed
 
     if (col.flashTimer.size > 0) {
@@ -142,15 +141,6 @@ export function updateColumns(cols: JoColumn[], dt: number) {
       if (Math.abs(glyphY - JO_SCAN_Y) < 7 && !col.flashTimer.has(idx)) {
         col.flashTimer.set(idx, JO_FLASH_DURATION)
       }
-    }
-
-    if (col.offsetY > JO_RAIN_BOTTOM + 20) {
-      const len = 5 + Math.floor(Math.random() * 3)
-      col.glyphs = pickColumnGlyphs(i, len)
-      col.matchedIdx = collectMatched(col.glyphs)
-      col.flashTimer.clear()
-      col.offsetY = JO_RAIN_TOP
-      col.speed = JO_RAIN_SPEED
     }
   }
 }
