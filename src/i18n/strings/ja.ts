@@ -75,6 +75,12 @@ const ja: Strings = {
     tagFeature: '機能',
     tagDesign: 'デザイン',
     tagTechnical: '技術',
+    paginationAriaLabel: '変更履歴のページ',
+    previousPage: '前へ',
+    nextPage: '次へ',
+    goToPage: 'ページ {{page}} へ',
+    currentPage: '現在のページ、ページ {{page}}',
+    showingRange: '{{start}}–{{end}} 件目を表示 / 全 {{total}} 件',
   },
   projectDetail: {
     notFound: 'プロジェクトが見つかりません。',

@@ -29,6 +29,8 @@ interface Strings {
     metaTitle: string; marker: string; heading: string; description: string
     filterAriaLabel: string; filterAll: string; emptyMessage: string
     tagFeature: string; tagDesign: string; tagTechnical: string
+    paginationAriaLabel: string; previousPage: string; nextPage: string
+    goToPage: string; currentPage: string; showingRange: string
   }
   projectDetail: {
     notFound: string; backHome: string; back: string
@@ -109,6 +111,12 @@ const en: Strings = {
     tagFeature: 'Feature',
     tagDesign: 'Design',
     tagTechnical: 'Technical',
+    paginationAriaLabel: 'Changelog pages',
+    previousPage: 'Prev',
+    nextPage: 'Next',
+    goToPage: 'Go to page {{page}}',
+    currentPage: 'Current page, page {{page}}',
+    showingRange: 'Showing {{start}}–{{end}} of {{total}}',
   },
   projectDetail: {
     notFound: 'Project not found.',

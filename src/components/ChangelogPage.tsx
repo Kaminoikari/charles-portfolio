@@ -1,18 +1,25 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { type ChangelogTag, useChangelog } from '../data'
 import { useDocumentMeta, useT } from '../i18n'
 import ContactFooter from './ContactFooter'
 
 const ALL_TAGS: ChangelogTag[] = ['feature', 'design', 'technical']
+const ENTRIES_PER_PAGE = 10
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
 export default function ChangelogPage() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const entriesTopRef = useRef<HTMLDivElement>(null)
   const [activeTag, setActiveTag] = useState<ChangelogTag | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
   const t = useT()
   const changelog = useChangelog()
   const TAG_LABELS: Record<ChangelogTag, string> = {
@@ -26,6 +33,22 @@ export default function ChangelogPage() {
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
+
+  const filtered = useMemo(
+    () => (activeTag ? changelog.filter((e) => e.tags.includes(activeTag)) : changelog),
+    [activeTag, changelog],
+  )
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ENTRIES_PER_PAGE))
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTag])
+
+  const safePage = Math.min(Math.max(1, currentPage), totalPages)
+  const startIndex = (safePage - 1) * ENTRIES_PER_PAGE
+  const endIndex = Math.min(startIndex + ENTRIES_PER_PAGE, filtered.length)
+  const paginated = filtered.slice(startIndex, endIndex)
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -45,11 +68,20 @@ export default function ChangelogPage() {
     items.forEach((item) => observer.observe(item))
     const safety = setTimeout(() => items.forEach((item) => item.classList.add('animate-in')), 2000)
     return () => { observer.disconnect(); clearTimeout(safety) }
-  }, [activeTag])
+  }, [activeTag, safePage])
 
-  const filtered = activeTag
-    ? changelog.filter((e) => e.tags.includes(activeTag))
-    : changelog
+  const goToPage = (page: number) => {
+    const target = Math.min(Math.max(1, page), totalPages)
+    if (target === safePage) return
+    setCurrentPage(target)
+    const top = entriesTopRef.current?.getBoundingClientRect().top ?? 0
+    const next = top + window.scrollY - 120
+    window.scrollTo({ top: Math.max(0, next), behavior: 'smooth' })
+  }
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
+  const isFirst = safePage === 1
+  const isLast = safePage === totalPages
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -94,8 +126,12 @@ export default function ChangelogPage() {
       </header>
 
       {/* Entries */}
-      <div ref={containerRef} className="mx-auto max-w-[800px] px-6 pb-32">
-        {filtered.map((entry, i) => (
+      <div ref={entriesTopRef} aria-hidden="true" />
+      <div
+        ref={containerRef}
+        className={`mx-auto max-w-[800px] px-6 ${totalPages > 1 ? 'pb-16' : 'pb-32'}`}
+      >
+        {paginated.map((entry, i) => (
           <article
             key={entry.id}
             className={`cl-entry opacity-0 translate-y-6 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 ${
@@ -143,6 +179,83 @@ export default function ChangelogPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mx-auto max-w-[800px] px-6 pb-32">
+          <div className="border-t border-border pt-10">
+            <nav
+              aria-label={t('changelog.paginationAriaLabel')}
+              className="flex flex-wrap items-center justify-center gap-2 sm:gap-3"
+            >
+              <button
+                type="button"
+                onClick={() => goToPage(safePage - 1)}
+                disabled={isFirst}
+                aria-label={t('changelog.previousPage')}
+                className={`group inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-4 py-1.5 font-mono text-[11px] uppercase tracking-[1px] transition-colors duration-200 ${
+                  isFirst
+                    ? 'cursor-not-allowed border-border/40 text-text-tertiary/50'
+                    : 'cursor-pointer border-border text-text-muted hover:text-white hover:border-border-hover'
+                }`}
+              >
+                <span aria-hidden="true">←</span>
+                <span>{t('changelog.previousPage')}</span>
+              </button>
+
+              <ol className="flex items-center gap-1 sm:gap-1.5" role="list">
+                {pageNumbers.map((p) => {
+                  const isActive = p === safePage
+                  return (
+                    <li key={p}>
+                      <button
+                        type="button"
+                        onClick={() => goToPage(p)}
+                        aria-label={
+                          isActive
+                            ? t('changelog.currentPage', { page: pad2(p) })
+                            : t('changelog.goToPage', { page: pad2(p) })
+                        }
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`inline-flex h-9 min-w-[36px] items-center justify-center rounded-full px-2 font-mono text-[12px] tracking-[1px] transition-colors duration-200 ${
+                          isActive
+                            ? 'cursor-default border border-accent-mars/40 bg-accent-mars/10 text-accent-mars'
+                            : 'cursor-pointer border border-transparent text-text-tertiary hover:text-white hover:border-border-hover'
+                        }`}
+                      >
+                        {pad2(p)}
+                      </button>
+                    </li>
+                  )
+                })}
+              </ol>
+
+              <button
+                type="button"
+                onClick={() => goToPage(safePage + 1)}
+                disabled={isLast}
+                aria-label={t('changelog.nextPage')}
+                className={`group inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-4 py-1.5 font-mono text-[11px] uppercase tracking-[1px] transition-colors duration-200 ${
+                  isLast
+                    ? 'cursor-not-allowed border-border/40 text-text-tertiary/50'
+                    : 'cursor-pointer border-border text-text-muted hover:text-white hover:border-border-hover'
+                }`}
+              >
+                <span>{t('changelog.nextPage')}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            </nav>
+
+            <p className="mt-5 text-center font-mono text-[11px] uppercase tracking-[2px] text-text-tertiary">
+              {t('changelog.showingRange', {
+                start: pad2(startIndex + 1),
+                end: pad2(endIndex),
+                total: pad2(filtered.length),
+              })}
+            </p>
+          </div>
+        </div>
+      )}
 
       <ContactFooter />
     </div>

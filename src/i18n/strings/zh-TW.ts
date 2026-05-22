@@ -72,6 +72,12 @@ const zhTW: Strings = {
     tagFeature: '功能',
     tagDesign: '設計',
     tagTechnical: '技術',
+    paginationAriaLabel: '更新日誌分頁',
+    previousPage: '上一頁',
+    nextPage: '下一頁',
+    goToPage: '前往第 {{page}} 頁',
+    currentPage: '目前是第 {{page}} 頁',
+    showingRange: '顯示第 {{start}}–{{end}} 筆，共 {{total}} 筆',
   },
   projectDetail: {
     notFound: '找不到此專案。',
