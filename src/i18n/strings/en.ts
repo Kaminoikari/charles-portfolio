@@ -6,6 +6,7 @@ interface Strings {
   brand: { name: string; homeAriaLabel: string }
   nav: {
     about: string; skills: string; experience: string; projects: string; blog: string
+    changelog: string
     contact: string; contactAriaLabel: string; sectionAriaLabel: string
     openMenu: string; closeMenu: string; mainAriaLabel: string; languageGroupLabel: string
   }
@@ -41,7 +42,7 @@ interface Strings {
   }
   footer: {
     letsConnect: string; rights: string; rendered: string
-    changelogLink: string; visitSocial: string
+    visitSocial: string
   }
   defaults: { documentTitle: string }
 }
@@ -57,6 +58,7 @@ const en: Strings = {
     experience: 'EXPERIENCE',
     projects: 'PROJECTS',
     blog: 'BLOG',
+    changelog: 'CHANGELOG',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'Scroll to contact section',
     sectionAriaLabel: 'Scroll to {{section}} section',
@@ -136,7 +138,6 @@ const en: Strings = {
     letsConnect: "Let's Connect",
     rights: '© 2026 Charles Chen. All rights reserved.',
     rendered: 'Rendered in {{ms}}ms · React · Canvas 2D · Tailwind',
-    changelogLink: 'Changelog',
     visitSocial: 'Visit {{platform}}',
   },
   defaults: {

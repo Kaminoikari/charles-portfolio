@@ -18,6 +18,7 @@ const zhTW: Strings = {
     experience: 'EXPERIENCE',
     projects: 'PROJECTS',
     blog: 'BLOG',
+    changelog: 'CHANGELOG',
     contact: 'CONTACT ↗',
     contactAriaLabel: '前往聯絡資訊',
     sectionAriaLabel: '前往 {{section}} 區段',
@@ -97,7 +98,6 @@ const zhTW: Strings = {
     letsConnect: '聯絡我',
     rights: '© 2026 Charles Chen. 版權所有。',
     rendered: '{{ms}} ms 完成渲染 · React · Canvas 2D · Tailwind',
-    changelogLink: '更新日誌',
     visitSocial: '前往 {{platform}}',
   },
   defaults: {

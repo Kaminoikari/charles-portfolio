@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { socialLinks } from '../data/social'
-import { useLocalePath, useT } from '../i18n'
+import { useT } from '../i18n'
 
 const SocialIcon = ({ platform }: { platform: string }) => {
   switch (platform) {
@@ -36,7 +35,6 @@ export default function ContactFooter() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const perfRef = useRef<HTMLSpanElement>(null)
   const t = useT()
-  const localePath = useLocalePath()
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -106,8 +104,7 @@ export default function ContactFooter() {
           {t('footer.rights')}
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-white/70">
-          <Link to={localePath('/changelog')} className="text-white/70 no-underline transition-colors duration-200 hover:text-white">{t('footer.changelogLink')}</Link>
-          {' · Rendered in '}<span ref={perfRef}>—</span>{'ms · React · Canvas 2D · Tailwind'}
+          {'Rendered in '}<span ref={perfRef}>—</span>{'ms · React · Canvas 2D · Tailwind'}
         </div>
       </footer>
     </div>

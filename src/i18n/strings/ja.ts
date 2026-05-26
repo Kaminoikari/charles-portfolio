@@ -21,6 +21,7 @@ const ja: Strings = {
     experience: 'EXPERIENCE',
     projects: 'PROJECTS',
     blog: 'BLOG',
+    changelog: 'CHANGELOG',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'お問い合わせへスクロール',
     sectionAriaLabel: '{{section}} セクションへスクロール',
@@ -100,7 +101,6 @@ const ja: Strings = {
     letsConnect: 'お問い合わせ',
     rights: '© 2026 Charles Chen. All rights reserved.',
     rendered: '{{ms}} ms でレンダリング · React · Canvas 2D · Tailwind',
-    changelogLink: '変更履歴',
     visitSocial: '{{platform}} へ',
   },
   defaults: {
