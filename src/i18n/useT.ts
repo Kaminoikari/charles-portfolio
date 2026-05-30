@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useLocale } from './LocaleContext'
+import { useLocale } from './locale-context'
 import { STRINGS, type Strings } from './strings'
 
 // All translation keys are derived from the English Strings shape so usage

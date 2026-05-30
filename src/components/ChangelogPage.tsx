@@ -131,9 +131,13 @@ export default function ChangelogPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ENTRIES_PER_PAGE))
 
-  useEffect(() => {
+  // Changing the filter resets pagination to page 1. Done in the event handler
+  // (not an effect) per React guidance — the reset is a consequence of the
+  // user's click, not an external sync.
+  const selectTag = (tag: ChangelogTag | null) => {
+    setActiveTag(tag)
     setCurrentPage(1)
-  }, [activeTag])
+  }
 
   const safePage = Math.min(Math.max(1, currentPage), totalPages)
   const startIndex = (safePage - 1) * ENTRIES_PER_PAGE
@@ -190,7 +194,7 @@ export default function ChangelogPage() {
         {/* Tag filters */}
         <nav className="mt-10 flex flex-wrap gap-2" aria-label={t('changelog.filterAriaLabel')}>
           <button
-            onClick={() => setActiveTag(null)}
+            onClick={() => selectTag(null)}
             className={`min-h-[36px] cursor-pointer rounded-full border px-4 py-1.5 font-mono text-[11px] uppercase tracking-[1px] transition-colors duration-200 ${
               activeTag === null
                 ? 'border-accent-mars/40 bg-accent-mars/10 text-accent-mars'
@@ -202,7 +206,7 @@ export default function ChangelogPage() {
           {ALL_TAGS.map((tag) => (
             <button
               key={tag}
-              onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+              onClick={() => selectTag(activeTag === tag ? null : tag)}
               className={`min-h-[36px] cursor-pointer rounded-full border px-4 py-1.5 font-mono text-[11px] uppercase tracking-[1px] transition-colors duration-200 ${
                 activeTag === tag
                   ? 'border-accent-mars/40 bg-accent-mars/10 text-accent-mars'
