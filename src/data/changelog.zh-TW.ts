@@ -41,7 +41,7 @@ export const changelog: ChangelogEntry[] = [
     body: [
       'Product Playbook v1.2.12 把這個 skill 從「人工手搖」的迭代流程升級成**半自動閉環**：跑一個指令就能完成整圈循環——跑測試 → 找出失敗的規則 → 用 LLM 提出修改 → 同步到 5 個語言 → 衡量改進幅度 → 判斷是否收斂。',
       { kind: 'heading', text: '為什麼要做' },
-      '這個 skill 是橫跨 6 個語言、含 22 個 PM 框架（JTBD、PR-FAQ、OST、Persona…）的外掛。過去每調一條規則，都得手動跑測試、看哪個 eval 退步、改檔案、把翻譯同步到 5 個語系、再跑一次確認——一輪 30–60 分鐘，而且很容易漏掉某個語言。這次 iteration 把整套工作流變成程式碼。',
+      '這個 skill 是橫跨 6 個語言、含 22 個 PM 框架（JTBD、PR-FAQ、OST、Persona…）的外掛。過去每調一條規則，都得手動跑測試、看哪個 eval 退步、改檔案、把翻譯同步到 5 個語系、再跑一次確認——一輪 30–60 分鐘，而且很容易漏掉某個語言。更糟的是，沒有客觀指標告訴我「這次改動到底有沒有讓 skill 變好」。這次 iteration 把整套工作流變成程式碼。',
       { kind: 'heading', text: '新增的核心能力' },
       {
         kind: 'list',
@@ -64,6 +64,16 @@ export const changelog: ChangelogEntry[] = [
           { value: '77', label: '單元測試' },
           { value: '6', label: '支援語言' },
           { value: '0', label: 'CI LLM token 成本' },
+        ],
+      },
+      { kind: 'heading', text: '學到的事' },
+      {
+        kind: 'list',
+        items: [
+          '**「半自動」比「全自動」現實得多** — 每個 LLM stage 都默認 dry-run，下 `--apply` 才動真的；eval 永遠由人下指令，因為 CI 自動跑會把訂閱 quota 燒光。',
+          '**每修一個 bug 就寫一個 unit test** — 15 輪審查能持續挖出新問題，很大原因是測試把已修好的東西鎖住，讓我能放心改下一塊。',
+          '**設定值集中化救命** — `_config.py` + env override 讓「在 CI 用較短 timeout」「在本地測試用 1 秒 timeout」變成一行設定，而不是改程式碼。',
+          '**跨來源一致性要用測試強制** — orchestrator 的 `SEVERITY_WEIGHTS` 和 eval 的必須相等，否則兩邊分數會偏差；現在寫成一條 unit test 把它們鎖死，未來再也不會默默漂移。',
         ],
       },
     ],

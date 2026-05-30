@@ -26,7 +26,7 @@ export const changelog: ChangelogEntry[] = [
     body: [
       'Product Playbook v1.2.12 turns the skill\'s hand-cranked tuning workflow into a **half-automated closed loop**: one command now runs the full cycle — run evals → find the failing rule → propose an LLM edit → mirror it across 5 languages → measure the lift → decide whether it converged.',
       { kind: 'heading', text: 'Why build this' },
-      'The skill is a 22-framework PM plugin (JTBD, PR-FAQ, OST, Persona…) spanning 6 languages. Every rule tweak used to mean manually running evals, spotting the regression, editing the file, mirroring the translation into 5 locales, and re-running — 30–60 minutes a round, with a locale easy to miss. This iteration turns that workflow into code.',
+      'The skill is a 22-framework PM plugin (JTBD, PR-FAQ, OST, Persona…) spanning 6 languages. Every rule tweak used to mean manually running evals, spotting the regression, editing the file, mirroring the translation into 5 locales, and re-running — 30–60 minutes a round, with a locale easy to miss. Worse, nothing objective told me whether a change had actually made the skill better. This iteration turns that workflow into code.',
       { kind: 'heading', text: 'New core capabilities' },
       {
         kind: 'list',
@@ -49,6 +49,16 @@ export const changelog: ChangelogEntry[] = [
           { value: '77', label: 'unit tests' },
           { value: '6', label: 'languages' },
           { value: '0', label: 'LLM token cost / CI' },
+        ],
+      },
+      { kind: 'heading', text: 'What I learned' },
+      {
+        kind: 'list',
+        items: [
+          '**Half-automated beats fully-automated** — every LLM stage defaults to dry-run and only acts on `--apply`; eval always runs on a human command, since auto-running it in CI drains the subscription quota.',
+          '**One bug, one unit test** — 15 review rounds kept surfacing new issues largely because the tests pinned down what was already fixed, so each next change felt safe.',
+          '**Centralized config is a lifesaver** — `_config.py` + env overrides turn "shorter timeout in CI" / "1-second timeout in local tests" into a one-line setting instead of a code change.',
+          '**Cross-source consistency has to be enforced by tests** — the orchestrator\'s `SEVERITY_WEIGHTS` and the eval\'s must stay equal or their scores diverge; a unit test now locks the two together so they can never silently drift.',
         ],
       },
     ],
