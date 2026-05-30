@@ -184,18 +184,26 @@ in Python.
 
 ---
 
-## 7. LangSmith evaluation (the differentiator)
+## 7. LangSmith evaluation (the differentiator) — IMPLEMENTED (`rag/evals/`)
 
 Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
-- **Golden set:** ~25–40 Q&A pairs across single-fact / local / global /
-  out-of-corpus, all three locales.
-- **Metrics:** retrieval `recall@k` + `MRR` (did the right chunk surface?),
-  answer `faithfulness` + `correctness` (LLM-judge in LangSmith).
-- **Ablation arms:** dense-only → +sparse(hybrid) → +RRF → +reranker →
-  +corrective-loop. Report per-layer lift, same as the playbook's "+X%" tables.
-- **Output:** a LangSmith experiment + a markdown table committed to
-  `rag-service/evals/` — the artifact recruiters can read.
+- **Golden set** (`rag/evals/golden.ts`): single-fact / local / global /
+  out-of-corpus questions, each in all three locales, grounded in the real
+  corpus so expected ids and answer facts are verifiable.
+- **Metrics** (`rag/evals/metrics.ts`, unit-tested): `recall@k` + `MRR`
+  (deterministic id matching), `correctness` (golden mustInclude/mustDecline),
+  `faithfulness` (LLM judge in `rag/evals/judge.ts`).
+- **Ablation arms** (`rag/evals/run-eval.ts`): dense-only → +sparse (hybrid +
+  RRF) → +reranker → +corrective-loop. Per-layer Δ-recall column, same "+X%"
+  story as the playbook's tables. `retrieveWith(query, locale, cfg)` makes the
+  layers toggleable from one code path.
+- **Output:** prints a markdown table; `--out` writes it to a committed file.
+  LangSmith tracing turns on via `LANGCHAIN_TRACING_V2` + `LANGCHAIN_API_KEY`
+  (the SDK auto-instruments every run — no code change).
+- **Run:** `npm run rag:eval` (needs secrets + a built index);
+  `npm run rag:test` runs the metric unit tests with no secrets. See
+  `rag/evals/README.md`.
 
 ---
 
@@ -211,12 +219,13 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 ## 9. Build phases
 
-0. Ingestion + chunking + BGE-M3 embed → pgvector (dense-only end-to-end).
-1. Hybrid (+sparse +RRF +reranker) + LangSmith ablation harness.
-2. LangGraph corrective graph (grade → rewrite → generate/fallback).
-3. FastAPI `/chat` SSE + guardrails + logging; deploy to Fly.io.
-4. React widget + retrieval-transparency UI + suggested questions.
-5. (optional) relations.json graph injection; chat-logs insights dashboard.
+0. ✅ Ingestion + chunking + BGE-M3 embed → pgvector (`rag/ingest/`).
+1. ✅ Hybrid (+sparse +RRF +reranker) + LangSmith ablation harness (`rag/evals/`).
+2. ✅ LangGraph corrective graph + language detection + `answer()` entry,
+   stub-tested (`rag/graph.ts`, `rag/nodes.ts`, `rag/language.ts`).
+3. ⬜ `api/chat.ts` Vercel Node SSE + guardrails + logging.
+4. ⬜ React widget + retrieval-transparency UI + suggested questions.
+5. ⬜ (optional) relations.json graph injection; chat-logs insights dashboard.
 
 ---
 

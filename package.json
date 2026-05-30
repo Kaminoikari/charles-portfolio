@@ -11,7 +11,9 @@
     "remotion:preview": "remotion studio remotion/index.ts",
     "remotion:render": "remotion render remotion/index.ts PathDemo public/assets/path-demo.mp4",
     "rag:ingest": "tsx rag/ingest/build-index.ts",
-    "rag:ingest:dry": "tsx rag/ingest/build-index.ts --dry-run"
+    "rag:ingest:dry": "tsx rag/ingest/build-index.ts --dry-run",
+    "rag:eval": "tsx rag/evals/run-eval.ts",
+    "rag:test": "tsx --test rag/*.test.ts rag/**/*.test.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

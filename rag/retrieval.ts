@@ -38,56 +38,99 @@ function rrf(lists: Row[][], k: number): Map<string, { row: Row; score: number }
   return fused
 }
 
-// One round of hybrid retrieval for a single query string.
-export async function hybridRetrieve(query: string, locale: string): Promise<Document[]> {
+// Which retrieval layers are active. The Phase 1 ablation toggles these to
+// measure each layer's marginal lift (dense → +sparse → +rerank). Production
+// uses the default (everything on, mirroring config).
+export interface RetrievalConfig {
+  dense: boolean
+  sparse: boolean
+  rerank: boolean
+}
+
+export const DEFAULT_RETRIEVAL: RetrievalConfig = {
+  dense: true,
+  sparse: true,
+  rerank: config.rerankEnabled,
+}
+
+function toDocument(row: Row, score: number): Document {
+  return new Document({
+    pageContent: row.content,
+    metadata: {
+      id: row.id,
+      parentId: row.parent_id,
+      sourceType: row.source_type,
+      projectId: row.project_id,
+      locale: row.locale,
+      title: row.title,
+      score,
+    },
+  })
+}
+
+// One round of retrieval for a single query string. Layers are configurable so
+// the same code path serves both production (full hybrid) and the ablation.
+export async function retrieveWith(
+  query: string,
+  locale: string,
+  cfg: RetrievalConfig,
+): Promise<Document[]> {
+  if (!cfg.dense && !cfg.sparse) {
+    throw new Error('retrieveWith: at least one of dense/sparse must be enabled')
+  }
+
   const db = supabase()
-  const queryVec = await embedOne(query)
 
-  // Dense + sparse run in parallel via two Postgres RPCs (see schema §5).
-  const [dense, sparse] = await Promise.all([
-    db.rpc('match_chunks_dense', {
-      query_embedding: queryVec,
-      match_count: config.candidateK,
-      filter_locale: locale,
-    }),
-    db.rpc('match_chunks_fts', {
-      query_text: query,
-      match_count: config.candidateK,
-      filter_locale: locale,
-    }),
-  ])
-  if (dense.error) throw dense.error
-  if (sparse.error) throw sparse.error
+  // Only embed when the dense arm is active (saves an API call in sparse-only).
+  const lists: Row[][] = []
+  const calls: Promise<void>[] = []
 
-  const fused = rrf([dense.data as Row[], sparse.data as Row[]], config.rrfK)
+  if (cfg.dense) {
+    calls.push(
+      (async () => {
+        const queryVec = await embedOne(query)
+        const res = await db.rpc('match_chunks_dense', {
+          query_embedding: queryVec,
+          match_count: config.candidateK,
+          filter_locale: locale,
+        })
+        if (res.error) throw res.error
+        lists.push(res.data as Row[])
+      })(),
+    )
+  }
+  if (cfg.sparse) {
+    calls.push(
+      (async () => {
+        const res = await db.rpc('match_chunks_fts', {
+          query_text: query,
+          match_count: config.candidateK,
+          filter_locale: locale,
+        })
+        if (res.error) throw res.error
+        lists.push(res.data as Row[])
+      })(),
+    )
+  }
+  await Promise.all(calls)
+
+  // RRF over whichever lists are present (one list = identity ranking).
+  const fused = rrf(lists, config.rrfK)
   const ordered = [...fused.values()].sort((a, b) => b.score - a.score)
 
-  // Optional cross-encoder rerank over the fused candidates.
-  let finalRows: { row: Row; score: number }[]
-  if (config.rerankEnabled && ordered.length > 0) {
+  if (cfg.rerank && ordered.length > 0) {
     const ranked = await rerank(
       query,
       ordered.map((o) => o.row.content),
       config.topK,
     )
-    finalRows = ranked.map((r) => ({ row: ordered[r.index].row, score: r.score }))
-  } else {
-    finalRows = ordered.slice(0, config.topK)
+    return ranked.map((r) => toDocument(ordered[r.index].row, r.score))
   }
+  return ordered.slice(0, config.topK).map(({ row, score }) => toDocument(row, score))
+}
 
-  return finalRows.map(
-    ({ row, score }) =>
-      new Document({
-        pageContent: row.content,
-        metadata: {
-          id: row.id,
-          parentId: row.parent_id,
-          sourceType: row.source_type,
-          projectId: row.project_id,
-          locale: row.locale,
-          title: row.title,
-          score,
-        },
-      }),
-  )
+// Production entry point: full hybrid retrieval. Used by the graph's retrieve
+// node. Thin wrapper over retrieveWith so there is a single code path.
+export function hybridRetrieve(query: string, locale: string): Promise<Document[]> {
+  return retrieveWith(query, locale, DEFAULT_RETRIEVAL)
 }
