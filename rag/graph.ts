@@ -6,16 +6,29 @@
 //     route == "rewrite" & loops<N -> rewriteQuery -> retrieve  (corrective loop)
 //     otherwise                     -> fallback -> END
 //
-// This file declares only the graph topology so the control flow is readable at
-// a glance. Node implementations live in `nodes.ts`. Requires
-// `@langchain/langgraph` + `@langchain/core` and the runtime secrets in
-// docs/rag-chatbot-design.md §10 to execute.
+// This file declares the graph topology + the public `answer()` entry point.
+// Node implementations live in `nodes.ts`. `buildGraph` accepts node overrides
+// so the control flow can be exercised with stubs (no API keys) in tests.
+// Requires `@langchain/langgraph` + `@langchain/core` and the runtime secrets in
+// docs/rag-chatbot-design.md §10 to actually answer.
 
 import { StateGraph, START, END } from '@langchain/langgraph'
 
 import { config } from './config'
-import { RAGState, type RAGStateType } from './state'
-import { retrieve, gradeDocuments, rewriteQuery, generate, fallback } from './nodes'
+import { detectLanguage } from './language'
+import { RAGState, type RAGStateType, type Source } from './state'
+import * as defaultNodes from './nodes'
+
+// A node is an (async) function from state to a partial state update.
+export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>
+
+export interface NodeSet {
+  retrieve: Node
+  gradeDocuments: Node
+  rewriteQuery: Node
+  generate: Node
+  fallback: Node
+}
 
 // Conditional edge: where to go after grading the retrieved chunks.
 function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fallback' {
@@ -24,13 +37,13 @@ function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fa
   return 'fallback'
 }
 
-export function buildGraph() {
+export function buildGraph(nodes: NodeSet = defaultNodes) {
   return new StateGraph(RAGState)
-    .addNode('retrieve', retrieve)
-    .addNode('gradeDocuments', gradeDocuments)
-    .addNode('rewriteQuery', rewriteQuery)
-    .addNode('generate', generate)
-    .addNode('fallback', fallback)
+    .addNode('retrieve', nodes.retrieve)
+    .addNode('gradeDocuments', nodes.gradeDocuments)
+    .addNode('rewriteQuery', nodes.rewriteQuery)
+    .addNode('generate', nodes.generate)
+    .addNode('fallback', nodes.fallback)
     .addEdge(START, 'retrieve')
     .addEdge('retrieve', 'gradeDocuments')
     .addConditionalEdges('gradeDocuments', routeAfterGrade, {
@@ -46,3 +59,33 @@ export function buildGraph() {
 
 // Module-level singleton so the API route imports a ready-compiled graph.
 export const graph = buildGraph()
+
+export interface AnswerResult {
+  answer: string
+  sources: Source[]
+  language: string
+  loops: number
+}
+
+// Public entry point. Detects the question's language up front (deterministic,
+// so the trace is reproducible) and seeds `queries` with the original question
+// so the first `retrieve` has something to search. LangSmith tracing is enabled
+// automatically when LANGCHAIN_TRACING_V2 + LANGCHAIN_API_KEY are set in the
+// environment — no code change needed.
+export async function answer(
+  question: string,
+  compiled: ReturnType<typeof buildGraph> = graph,
+): Promise<AnswerResult> {
+  const language = detectLanguage(question)
+  const final = await compiled.invoke({
+    question,
+    language,
+    queries: [question],
+  })
+  return {
+    answer: final.answer ?? '',
+    sources: final.sources ?? [],
+    language: final.language ?? language,
+    loops: final.loops ?? 0,
+  }
+}
