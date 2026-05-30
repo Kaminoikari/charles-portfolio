@@ -26,3 +26,6 @@ dist-ssr
 
 # Playwright MCP browser automation artifacts
 .playwright-mcp/
+
+# Local visual-verification screenshots (delivered, not version-controlled)
+docs/shot-*.png
