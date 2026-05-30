@@ -16,11 +16,20 @@
 
 export type ChangelogTag = 'feature' | 'design' | 'technical'
 
+// A body is a list of blocks. A plain string renders as a paragraph; the
+// object forms render as a sub-heading, a bullet list, or a stats grid.
+// Inline `code` (backticks) and **bold** are supported inside any text.
+export type ChangelogBlock =
+  | string
+  | { kind: 'heading'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'stats'; items: { value: string; label: string }[] }
+
 export interface ChangelogEntry {
   id: string
   date: string
   title: string
-  body: string[]
+  body: ChangelogBlock[]
   tags: ChangelogTag[]
 }
 
@@ -31,9 +40,33 @@ export const changelog: ChangelogEntry[] = [
     title: 'Product Playbook v1.2.12 — 閉ループ自己修正システム（Closed-Loop Self-Correction）',
     tags: ['feature', 'technical'],
     body: [
-      'Product Playbook v1.2.12 は、このスキルの手回し式チューニングを半自動の閉ループへと進化させます。スキルは 22 の PM フレームワーク（JTBD、PR-FAQ、OST、Persona…）を 6 言語にわたって搭載していますが、これまでは 1 つのルールを変更するたび——たとえば「JTBD 記述には感情語を含めること」——手動で eval を回し、どれが後退したかを突き止め、ファイルを編集し、翻訳を残り 5 言語へミラーし、再度回して確認する必要がありました。1 周 30〜60 分かかり、しばしばどこかのロケールを取りこぼしていました。新しい orchestrator `loop-tick` は 1 コマンドで全周を回します：Stage 1 debt-report（どの eval が失敗し、重みはいくつか）、Stage 2 patch-proposer（LLM が Hard Gate の修正を提案、--dry-run がデフォルト）、Stage 3 i18n-mirror-apply（5 言語へ同期）、Stage 4 drift-report（ドリフトが残っていないか確認）、Stage 5 loop-history.jsonl に JSON を 1 行追記。各ステージが自身の経過時間を記録するので、ボトルネックが一目で分かります。',
-      '3 つの計測ツールが、その変更が本当に効いたかを教えてくれます。eval-lift-report は 2 回の eval 実行の差分を取り、「本物の硬い改善」とテストセットが緩んだだけの「幻の改善（phantom lift）」を切り分けます。attribution-check は「A ファイルを編集 → eval B が反転するはず」が実際に起きたかを検証し（起きなかった場合は、誤ったファイルを変えた・編集を LLM が見ていない・EVAL_ATTRIBUTION マップの修正が必要、のいずれかを診断します）。loop-summary は複数の tick を横断してトレンドを判定し、converged / improving / stalled / regressing / insufficient-data の 5 つの裁定のいずれかを ASCII sparkline 付きで返します。i18n 側では、i18n-drift-report が英語ソースと 5 ロケール全部を純 Python で比較し（ルール数、Hard Gate 数、fear / anxiety / shame など 10 個の感情キーワード）、i18n-mirror-apply が `claude -p` で新規・変更ルールを 5 言語へ翻訳します（--apply を付けない限り dry-run）。両者で 30 対のファイルの暗黙のドリフトを発見・修正し、その中には一度も同期されたことのない canonical vocab リストも含まれていました。安全ゲートがループを守ります：eval-freshness gate は eval が最後のルール編集より古い場合に実行を拒否し、pair sanity check は patch log が eval より新しいとき警告し、suppress-pair はある file/eval ペアを手調整中とマークして自動化に触らせず、すべての LLM subprocess に timeout を持たせました（以前は単一のハングで CI を 90 分燃やしていました）。',
-      'CI には token コストゼロのゲートが 3 組加わりました：test-closed-loop.yml が PR ごとに 77 個の純 Python 単体テストを実行、debt-check.yml がその PR が影響する見込みの eval を列挙、i18n-drift-check.yml が critical なドリフトを見つけると PR にコメントします——本当に費用のかかる behavioural eval は manual-only に変更しました（自動実行は 5 時間のサブスク quota を焼き尽くしていました）。今回の目玉は品質投資です：77 個の単体テスト（48 closed-loop + 13 install-smoke + 15 eval-score）、15 ラウンドのレビュー、4 つの commit 波にわたって発見・修正した 25 個のバグ——その中には history に score が無いとき NoneType 同士の減算でクラッシュする judge()、Python の lines[-0:] が全件をスライスするために全記録を残してしまう --keep-last 0、CI の i18n 文字列を mojibake させる encoding="utf-8" 未指定の read_text/write_text が 9 箇所、などがありました。今では単体テストが scripts/_config.SEVERITY_WEIGHTS を evals/compute_eval_score.SEVERITY_WEIGHTS と等しく固定するので、orchestrator が見るスコアが eval の出すスコアと黙って乖離することは二度とありません。このイテレーションは 20 時間で 23 commits として着地しました：76 files、+7,787 / −342 lines、CI 実行ごとに LLM token コスト 0。',
+      'Product Playbook v1.2.12 は、このスキルの「手回し式」反復フローを**半自動の閉ループ**へ進化させます：1 つのコマンドで全周——テスト実行 → 失敗したルールを特定 → LLM で修正案を提示 → 5 言語へ同期 → 改善幅を計測 → 収束したか判定——を回せます。',
+      { kind: 'heading', text: 'なぜ作ったか' },
+      'このスキルは 22 の PM フレームワーク（JTBD、PR-FAQ、OST、Persona…）を 6 言語にわたって搭載するプラグインです。これまではルールを 1 つ調整するたびに、手動で eval を回し、どの eval が後退したか確認し、ファイルを編集し、翻訳を 5 ロケールへ同期し、再度回して確認する必要がありました——1 周 30〜60 分かかり、どこかの言語を取りこぼしがちでした。今回の iteration はこのワークフローをコード化します。',
+      { kind: 'heading', text: '追加した中核機能' },
+      {
+        kind: 'list',
+        items: [
+          '**`loop-tick` オーケストレーター** — 1 コマンドで全周：debt-report（どの eval が失敗し、重みはいくつか）→ patch-proposer（LLM が Hard Gate の修正を提案、`--dry-run` がデフォルト）→ i18n-mirror-apply（5 言語へ同期）→ drift-report（ドリフトが残っていないか確認）→ `loop-history.jsonl` に JSON を 1 行追記。各ステージが自身の経過時間を記録します。',
+          '**i18n ドリフト検出 + 自動翻訳** — `i18n-drift-report` は英語ソースと 5 ロケール全部を純 Python で比較し（ルール数、Hard Gate 数、fear / anxiety / shame など 10 個の感情語）、`i18n-mirror-apply` は `claude -p` で新規ルールを 5 言語へ翻訳します。30 対のファイルの暗黙のドリフトを発見・修正し、その中には一度も同期されたことのない canonical vocab リストも含まれていました。',
+          '**改善を計測するツール** — `eval-lift-report` は「本物の硬い改善」とテストセットが緩んだだけの「幻の改善（phantom lift）」を切り分け、`attribution-check` は「A ファイルを編集 → eval B が反転するはず」が実際に起きたかを検証し、`loop-summary` は複数の tick を横断して converged / improving / stalled / regressing / insufficient-data の 5 つの裁定のいずれかを ASCII sparkline 付きで返します。',
+          '**安全ゲート** — eval-freshness gate は eval が最後のルール編集より古い場合に実行を拒否し、`suppress-pair` はある file/eval ペアを手調整中とマークして自動化に触らせず、すべての LLM subprocess に timeout を持たせました（以前は単一のハングで CI を 90 分燃やしていました）。',
+          '**CI 3 つのゲート** — `test-closed-loop.yml` が PR ごとに 77 個の単体テストを実行、`debt-check.yml` がその PR が影響する見込みの eval を列挙、`i18n-drift-check.yml` が critical なドリフトにコメント。費用のかかる behavioural eval は manual-only に変更しました（自動実行はサブスク quota を焼き尽くしていました）。',
+        ],
+      },
+      { kind: 'heading', text: '品質への投資' },
+      '15 ラウンドのレビュー、4 つの commit 波にわたって 25 個のバグを発見・修正しました——その中には history に score が無いとき NoneType の減算でクラッシュする `judge()`、Python の `lines[-0:]` が全件をスライスするため全記録を残してしまう `--keep-last 0`、CI の i18n 文字列を mojibake させる `encoding="utf-8"` 未指定の `read_text`/`write_text` が 9 箇所、などがありました。今では単体テストが `scripts/_config.SEVERITY_WEIGHTS` を `evals/compute_eval_score.SEVERITY_WEIGHTS` と等しく固定するので、orchestrator が見るスコアが eval の出すスコアと黙って乖離することは二度とありません。',
+      {
+        kind: 'stats',
+        items: [
+          { value: '23', label: 'commits / 20 時間' },
+          { value: '76', label: 'files 変更' },
+          { value: '+7,787 / −342', label: 'net lines' },
+          { value: '77', label: '単体テスト' },
+          { value: '6', label: '対応言語' },
+          { value: '0', label: 'CI の LLM token コスト' },
+        ],
+      },
     ],
   },
   {

@@ -1,10 +1,19 @@
 export type ChangelogTag = 'feature' | 'design' | 'technical'
 
+// A body is a list of blocks. A plain string renders as a paragraph; the
+// object forms render as a sub-heading, a bullet list, or a stats grid.
+// Inline `code` (backticks) and **bold** are supported inside any text.
+export type ChangelogBlock =
+  | string
+  | { kind: 'heading'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'stats'; items: { value: string; label: string }[] }
+
 export interface ChangelogEntry {
   id: string
   date: string
   title: string
-  body: string[]        // paragraphs of natural prose
+  body: ChangelogBlock[]
   tags: ChangelogTag[]
 }
 
@@ -15,9 +24,33 @@ export const changelog: ChangelogEntry[] = [
     title: 'Product Playbook v1.2.12 — Closed-Loop Self-Correction System',
     tags: ['feature', 'technical'],
     body: [
-      'Product Playbook v1.2.12 turns the skill\'s hand-cranked tuning workflow into a half-automated closed loop. The skill packs 22 PM frameworks (JTBD, PR-FAQ, OST, Persona…) across 6 languages, and until now every rule change — say, "a JTBD statement must contain an emotional word" — meant manually running evals, spotting which one regressed, editing the file, mirroring the translation into 5 other languages, and re-running to confirm. One round took 30–60 minutes and routinely missed a locale. A new orchestrator, `loop-tick`, runs the whole circle in one command: Stage 1 debt-report (which evals failed and at what weight), Stage 2 patch-proposer (LLM proposes Hard Gate edits, --dry-run by default), Stage 3 i18n-mirror-apply (sync into 5 languages), Stage 4 drift-report (confirm nothing drifted), and Stage 5 appends one JSON line to loop-history.jsonl. Each stage records its own elapsed time so the bottleneck is visible.',
-      'Three measurement tools tell you whether a change actually helped. eval-lift-report diffs two eval runs and separates real hard improvement from "phantom lift" caused by a looser test set; attribution-check verifies that editing file A actually flipped eval B (and, when it did not, diagnoses whether the wrong file changed, the LLM never saw the edit, or the EVAL_ATTRIBUTION map needs fixing); loop-summary reads across multiple ticks and returns one of five verdicts — converged, improving, stalled, regressing, or insufficient-data — with an ASCII sparkline. On the i18n side, i18n-drift-report is a pure-Python compare of the English source against all 5 locales (rule counts, Hard Gate counts, ten emotional keywords like fear / anxiety / shame), and i18n-mirror-apply uses `claude -p` to translate new or changed rules into the 5 languages (dry-run unless --apply); together they found and fixed implicit drift across 30 file pairs, including a canonical vocab list that had never been synced. Safety gates guard the loop: an eval-freshness gate refuses to run when the eval predates the last rule edit, a pair sanity check warns when a patch log is newer than the eval, suppress-pair lets you mark a file/eval pair as hand-tuned so automation leaves it alone, and every LLM subprocess now carries a timeout (a single hang used to burn 90 CI minutes).',
-      'CI got three token-free gates: test-closed-loop.yml runs 77 pure-Python unit tests on every PR, debt-check.yml lists which evals a PR is expected to touch, and i18n-drift-check.yml comments on the PR when it spots critical drift — while the genuinely expensive behavioural eval moved to manual-only (auto-running it had been draining the 5-hour subscription quota). The quality bar was the headline: 77 unit tests (48 closed-loop + 13 install-smoke + 15 eval-score), 15 review rounds, and 25 bugs caught and fixed across 4 commit waves — among them a judge() that crashed on NoneType subtraction when history lacked a score, a --keep-last 0 that kept everything because Python\'s lines[-0:] slices the whole list, and 9 read_text/write_text calls missing encoding="utf-8" that mojibake\'d i18n strings in CI. A unit test now pins scripts/_config.SEVERITY_WEIGHTS equal to evals/compute_eval_score.SEVERITY_WEIGHTS so the orchestrator\'s scores can never silently drift from the eval\'s. The iteration landed in 23 commits over 20 hours: 76 files, +7,787 / −342 lines, 0 LLM token cost on every CI run.',
+      'Product Playbook v1.2.12 turns the skill\'s hand-cranked tuning workflow into a **half-automated closed loop**: one command now runs the full cycle — run evals → find the failing rule → propose an LLM edit → mirror it across 5 languages → measure the lift → decide whether it converged.',
+      { kind: 'heading', text: 'Why build this' },
+      'The skill is a 22-framework PM plugin (JTBD, PR-FAQ, OST, Persona…) spanning 6 languages. Every rule tweak used to mean manually running evals, spotting the regression, editing the file, mirroring the translation into 5 locales, and re-running — 30–60 minutes a round, with a locale easy to miss. This iteration turns that workflow into code.',
+      { kind: 'heading', text: 'New core capabilities' },
+      {
+        kind: 'list',
+        items: [
+          '**`loop-tick` orchestrator** — one command runs the whole loop: debt-report (which evals failed, at what weight) → patch-proposer (LLM proposes Hard Gate edits, `--dry-run` by default) → i18n-mirror-apply (sync to 5 languages) → drift-report (confirm nothing drifted) → append one JSON line to `loop-history.jsonl`. Each stage logs its own elapsed time.',
+          '**i18n drift + auto-translate** — `i18n-drift-report` is a pure-Python compare of the English source against all 5 locales (rule counts, Hard Gate counts, ten emotional keywords like fear / anxiety / shame); `i18n-mirror-apply` uses `claude -p` to translate new rules into the 5 languages. It found and fixed implicit drift across 30 file pairs, including a canonical vocab list that had never synced.',
+          '**Measurement** — `eval-lift-report` separates real hard improvement from "phantom lift" caused by a looser test set; `attribution-check` verifies that editing file A actually flipped eval B; `loop-summary` reads across ticks and returns one of five verdicts (converged / improving / stalled / regressing / insufficient-data) with an ASCII sparkline.',
+          '**Safety gates** — an eval-freshness gate refuses to run when the eval predates the last rule edit; `suppress-pair` marks a file/eval pair as hand-tuned so automation leaves it alone; every LLM subprocess now carries a timeout (a single hang used to burn 90 CI minutes).',
+          '**Three CI gates** — `test-closed-loop.yml` runs 77 unit tests per PR, `debt-check.yml` lists the evals a PR should touch, `i18n-drift-check.yml` comments on critical drift. The expensive behavioural eval moved to manual-only (auto-running it had drained the subscription quota).',
+        ],
+      },
+      { kind: 'heading', text: 'Quality investment' },
+      'Across 15 review rounds, 25 bugs were caught and fixed in 4 commit waves — among them a `judge()` that crashed on NoneType subtraction when history lacked a score, a `--keep-last 0` that kept everything because Python\'s `lines[-0:]` slices the whole list, and 9 `read_text`/`write_text` calls missing `encoding="utf-8"` that mojibake\'d i18n strings in CI. A unit test now pins `scripts/_config.SEVERITY_WEIGHTS` equal to `evals/compute_eval_score.SEVERITY_WEIGHTS` so the orchestrator\'s scores can never silently drift from the eval\'s.',
+      {
+        kind: 'stats',
+        items: [
+          { value: '23', label: 'commits / 20h' },
+          { value: '76', label: 'files changed' },
+          { value: '+7,787 / −342', label: 'net lines' },
+          { value: '77', label: 'unit tests' },
+          { value: '6', label: 'languages' },
+          { value: '0', label: 'LLM token cost / CI' },
+        ],
+      },
     ],
   },
   {

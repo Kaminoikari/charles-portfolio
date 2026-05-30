@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { type ChangelogTag, useChangelog } from '../data'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ChangelogBlock, type ChangelogTag, useChangelog } from '../data'
 import { useDocumentMeta, useT } from '../i18n'
 import ContactFooter from './ContactFooter'
 
@@ -13,6 +13,96 @@ function formatDate(dateStr: string): string {
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0')
+}
+
+// Splits a string on inline `code` (backticks) and **bold** spans, rendering
+// each as the matching element and leaving the rest as plain text.
+function renderInline(text: string): ReactNode {
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g)
+  return parts.map((part, i) => {
+    if (part.length >= 2 && part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code
+          key={i}
+          className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[0.85em] text-accent-cyan/90"
+        >
+          {part.slice(1, -1)}
+        </code>
+      )
+    }
+    if (part.length >= 4 && part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-semibold text-white">
+          {part.slice(2, -2)}
+        </strong>
+      )
+    }
+    return part
+  })
+}
+
+function ChangelogBody({ blocks }: { blocks: ChangelogBlock[] }) {
+  return (
+    <div className="mt-5 space-y-5">
+      {blocks.map((block, j) => {
+        if (typeof block === 'string') {
+          return (
+            <p
+              key={j}
+              className="text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]"
+            >
+              {renderInline(block)}
+            </p>
+          )
+        }
+        if (block.kind === 'heading') {
+          return (
+            <h3
+              key={j}
+              className="flex items-center gap-2.5 pt-2 text-[15px] font-semibold text-white md:text-base"
+            >
+              <span aria-hidden="true" className="h-3.5 w-[3px] rounded-full bg-accent-mars" />
+              {block.text}
+            </h3>
+          )
+        }
+        if (block.kind === 'list') {
+          return (
+            <ul key={j} className="space-y-2.5">
+              {block.items.map((item, k) => (
+                <li
+                  key={k}
+                  className="flex gap-3 text-[15px] leading-[1.75] text-text-muted md:text-base md:leading-[1.8]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mt-[0.7em] h-1 w-1 flex-shrink-0 rounded-full bg-accent-mars/60"
+                  />
+                  <span>{renderInline(item)}</span>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        // stats grid
+        return (
+          <dl
+            key={j}
+            className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3"
+          >
+            {block.items.map((stat, k) => (
+              <div key={k} className="bg-bg-secondary px-4 py-3">
+                <dt className="font-mono text-[10px] uppercase tracking-[1px] text-text-tertiary">
+                  {stat.label}
+                </dt>
+                <dd className="mt-1 text-lg font-semibold text-accent-mars">{stat.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      })}
+    </div>
+  )
 }
 
 export default function ChangelogPage() {
@@ -159,17 +249,8 @@ export default function ChangelogPage() {
               {entry.title}
             </h2>
 
-            {/* Body paragraphs */}
-            <div className="mt-5 space-y-4">
-              {entry.body.map((paragraph, j) => (
-                <p
-                  key={j}
-                  className="text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]"
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            {/* Body blocks */}
+            <ChangelogBody blocks={entry.body} />
           </article>
         ))}
 

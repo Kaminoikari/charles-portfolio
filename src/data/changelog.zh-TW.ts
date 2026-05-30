@@ -15,11 +15,20 @@
 
 export type ChangelogTag = 'feature' | 'design' | 'technical'
 
+// A body is a list of blocks. A plain string renders as a paragraph; the
+// object forms render as a sub-heading, a bullet list, or a stats grid.
+// Inline `code` (backticks) and **bold** are supported inside any text.
+export type ChangelogBlock =
+  | string
+  | { kind: 'heading'; text: string }
+  | { kind: 'list'; items: string[] }
+  | { kind: 'stats'; items: { value: string; label: string }[] }
+
 export interface ChangelogEntry {
   id: string
   date: string
   title: string
-  body: string[]
+  body: ChangelogBlock[]
   tags: ChangelogTag[]
 }
 
@@ -30,9 +39,33 @@ export const changelog: ChangelogEntry[] = [
     title: 'Product Playbook v1.2.12 — 閉環自我修正系統（Closed-Loop Self-Correction）',
     tags: ['feature', 'technical'],
     body: [
-      'Product Playbook v1.2.12 把這個 skill 從「人工手搖」的調校流程升級成半自動閉環。skill 內含 22 個 PM 框架（JTBD、PR-FAQ、OST、Persona…）、橫跨 6 個語言，而在此之前每改一條規則——例如「JTBD 陳述必須包含一個情緒詞」——都得手動跑 eval、找出哪一個退步、改檔案、把翻譯同步到另外 5 個語言、再跑一次確認。一輪要 30–60 分鐘，而且常常漏掉某個語系。新的 orchestrator `loop-tick` 用一個指令跑完整圈：Stage 1 debt-report（哪些 eval 失敗、權重多少）、Stage 2 patch-proposer（LLM 提案 Hard Gate 修改，--dry-run 為預設）、Stage 3 i18n-mirror-apply（同步到 5 個語言）、Stage 4 drift-report（確認沒留下漂移）、Stage 5 寫一行 JSON 到 loop-history.jsonl。每一階段都記錄自己的耗時，瓶頸一目了然。',
-      '三個衡量工具會告訴你這次改動到底有沒有用。eval-lift-report 比對兩次 eval 跑的差距，把「真正的硬性改進」和測試集變鬆造成的「假性改善（phantom lift）」分開；attribution-check 驗證「改了 A 檔案 → eval B 應該翻轉」是否真的發生（沒翻轉時分析原因：改錯檔案、改了但 LLM 沒看到、或 EVAL_ATTRIBUTION 映射需要修正）；loop-summary 跨多個 tick 判斷趨勢，給出 converged、improving、stalled、regressing、insufficient-data 五種裁決之一，並附上 ASCII sparkline 趨勢圖。i18n 這邊，i18n-drift-report 是純 Python 比對英文原始檔和全部 5 個語系（規則數量、Hard Gate 數量、fear / anxiety / shame 等十個情緒關鍵字），i18n-mirror-apply 則用 `claude -p` 把新增或修改的規則翻譯到 5 個語言（沒下 --apply 就是 dry-run）；兩者合力發現並修復了 30 對檔案的隱性漂移，包含一條從未被同步過的 canonical vocab 清單。安全閘門守住整個迴圈：eval-freshness gate 在 eval 比最後一次規則修改還舊時直接拒跑、pair sanity check 在 patch log 比 eval 新時發出警告、suppress-pair 讓你標記某對 file/eval 正在手調請自動化別碰，而且每個 LLM subprocess 現在都帶 timeout（過去單一 hang 就會燒掉 90 分鐘 CI）。',
-      'CI 多了三組零 token 成本的守門：test-closed-loop.yml 每個 PR 跑 77 個純 Python 單元測試、debt-check.yml 列出這個 PR 預計會影響哪些 eval、i18n-drift-check.yml 發現 critical 漂移就在 PR 留言——真正燒錢的 behavioural eval 則改成 manual-only（之前自動跑會把 5 小時訂閱 quota 燒光）。品質投資是這次的重頭戲：77 個單元測試（48 closed-loop + 13 install-smoke + 15 eval-score）、15 輪審查、橫跨 4 個 commit 波次抓出並修掉 25 個 bug——其中包括 judge() 在 history 缺 score 時 NoneType 相減崩潰、--keep-last 0 因為 Python 的 lines[-0:] 切到整份清單反而留下全部紀錄、以及 9 個沒指定 encoding="utf-8" 的 read_text/write_text 會讓 CI 的 i18n 字串 mojibake。現在有一條單元測試把 scripts/_config.SEVERITY_WEIGHTS 釘成等於 evals/compute_eval_score.SEVERITY_WEIGHTS，orchestrator 看到的分數再也不會默默偏離 eval 跑出來的分數。整個 iteration 在 20 小時內以 23 commits 落地：76 files、+7,787 / −342 lines、每次 CI 跑都是 0 LLM token 成本。',
+      'Product Playbook v1.2.12 把這個 skill 從「人工手搖」的迭代流程升級成**半自動閉環**：跑一個指令就能完成整圈循環——跑測試 → 找出失敗的規則 → 用 LLM 提出修改 → 同步到 5 個語言 → 衡量改進幅度 → 判斷是否收斂。',
+      { kind: 'heading', text: '為什麼要做' },
+      '這個 skill 是橫跨 6 個語言、含 22 個 PM 框架（JTBD、PR-FAQ、OST、Persona…）的外掛。過去每調一條規則，都得手動跑測試、看哪個 eval 退步、改檔案、把翻譯同步到 5 個語系、再跑一次確認——一輪 30–60 分鐘，而且很容易漏掉某個語言。這次 iteration 把整套工作流變成程式碼。',
+      { kind: 'heading', text: '新增的核心能力' },
+      {
+        kind: 'list',
+        items: [
+          '**`loop-tick` 編排器** — 一個指令跑完整圈：debt-report（哪些 eval 失敗、權重多少）→ patch-proposer（LLM 提案 Hard Gate 修改，`--dry-run` 為預設）→ i18n-mirror-apply（同步到 5 個語言）→ drift-report（確認沒留下漂移）→ 寫一行 JSON 到 `loop-history.jsonl`。每一階段都記錄自己的耗時。',
+          '**i18n 漂移偵測 + 自動翻譯** — `i18n-drift-report` 純 Python 比對英文原始檔和全部 5 個語系（規則數量、Hard Gate 數量、fear / anxiety / shame 等十個情緒詞）；`i18n-mirror-apply` 用 `claude -p` 把新增規則翻譯到 5 個語言。自動發現並修復了 30 對檔案的隱性漂移，包含一條從未被同步過的 canonical vocab 清單。',
+          '**衡量改進的工具** — `eval-lift-report` 把「真正的硬性改進」和測試集變鬆造成的「假性改善（phantom lift）」分開；`attribution-check` 驗證「改了 A 檔案 → eval B 該翻轉」是否真的發生；`loop-summary` 跨多個 tick 判斷趨勢，給出 converged / improving / stalled / regressing / insufficient-data 五種裁決之一，並附上 ASCII sparkline。',
+          '**安全閘門** — eval-freshness gate 在 eval 比最後一次規則修改還舊時直接拒跑；`suppress-pair` 標記某對 file/eval 正在手調、請自動化別碰；每個 LLM subprocess 現在都帶 timeout（過去單一 hang 就會燒掉 90 分鐘 CI）。',
+          '**CI 三組守門** — `test-closed-loop.yml` 每個 PR 跑 77 個單元測試、`debt-check.yml` 列出這個 PR 預計影響哪些 eval、`i18n-drift-check.yml` 發現 critical 漂移就在 PR 留言。真正燒錢的 behavioural eval 改成 manual-only（之前自動跑會把訂閱 quota 燒光）。',
+        ],
+      },
+      { kind: 'heading', text: '品質投資' },
+      '橫跨 15 輪審查、4 個 commit 波次，抓出並修掉 25 個 bug——其中包括 `judge()` 在 history 缺 score 時 NoneType 相減崩潰、`--keep-last 0` 因為 Python 的 `lines[-0:]` 切到整份清單反而留下全部紀錄、以及 9 個沒指定 `encoding="utf-8"` 的 `read_text`/`write_text` 會讓 CI 的 i18n 字串 mojibake。現在有一條單元測試把 `scripts/_config.SEVERITY_WEIGHTS` 釘成等於 `evals/compute_eval_score.SEVERITY_WEIGHTS`，orchestrator 看到的分數再也不會默默偏離 eval 跑出來的。',
+      {
+        kind: 'stats',
+        items: [
+          { value: '23', label: 'commits / 20 小時' },
+          { value: '76', label: 'files 變更' },
+          { value: '+7,787 / −342', label: 'net lines' },
+          { value: '77', label: '單元測試' },
+          { value: '6', label: '支援語言' },
+          { value: '0', label: 'CI LLM token 成本' },
+        ],
+      },
     ],
   },
   {

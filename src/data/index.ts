@@ -19,7 +19,7 @@ import {
 import { projects as projectsZhTW, projectDetails as projectDetailsZhTW } from './projects.zh-TW'
 import { projects as projectsJa, projectDetails as projectDetailsJa } from './projects.ja'
 
-import { changelog as changelogEn, type ChangelogEntry, type ChangelogTag } from './changelog.en'
+import { changelog as changelogEn, type ChangelogEntry, type ChangelogTag, type ChangelogBlock } from './changelog.en'
 import { changelog as changelogZhTW } from './changelog.zh-TW'
 import { changelog as changelogJa } from './changelog.ja'
 
@@ -120,6 +120,6 @@ export function useAboutContent(): AboutContent {
 }
 
 export type {
-  Project, ProjectDetail, ChangelogEntry, ChangelogTag, ExperienceItem,
+  Project, ProjectDetail, ChangelogEntry, ChangelogTag, ChangelogBlock, ExperienceItem,
   BlogArticle, Skill, AboutContent, AboutBullet, AboutTableRow,
 }
