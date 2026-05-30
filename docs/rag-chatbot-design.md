@@ -25,7 +25,7 @@ operate. Aligns with the existing Vite + React + TS app.
 ```
                          BUILD TIME  (rag/ingest/)  — run locally / CI
   src/data/*.{en,zh-TW,ja}.ts ─┐
-  product-playbook README      ├─► extract ─► semantic split ─► BGE-M3 embed ─► Supabase pgvector
+  product-playbook README      ├─► extract ─► semantic split ─► voyage-3 embed ─► Supabase pgvector
   entities/relations.json      ┘   (parent/child)  (dense+sparse)        (HNSW + FTS + RLS)
 
                          QUERY TIME  (api/chat.ts — Vercel Node fn + LangGraph.js)
@@ -33,7 +33,7 @@ operate. Aligns with the existing Vite + React + TS app.
      │
      ▼
   ┌──────────────────────  LangGraph StateGraph  ──────────────────────┐
-  │  [retrieve] ── LangChain SupabaseVectorStore hybrid + bge-reranker  │
+  │  [retrieve] ── LangChain SupabaseVectorStore hybrid + voyage rerank  │
   │       │                                                             │
   │  [grade_documents] ── LLM grades each chunk's relevance  (CRAG)     │
   │       ├─ relevant ───────────────► [generate] ─► answer + citations │
@@ -53,9 +53,9 @@ operate. Aligns with the existing Vite + React + TS app.
   `POST /api/chat` (SSE streaming) on the same origin (no CORS).
 - **Supabase pgvector** — already in the stack; one Postgres holds vectors +
   full-text index + chat logs.
-- **Embeddings + rerank** — hosted BGE-M3 / bge-reranker-v2-m3 over an
-  OpenAI-compatible HTTP API (no GPU on Vercel, so self-hosting the model is out;
-  the client is swappable via `config.ts`).
+- **Embeddings + rerank** — Voyage AI (voyage-3-large / rerank-2.5) over its
+  HTTP API. US provider, SOTA retrieval, 1024-dim so the schema is unchanged.
+  The client is swappable via `config.ts`.
 
 *Alternative on file:* a persistent Fly.io service (like the Plutus Trade
 backend) if cold starts or long-running eval jobs become a problem. Chosen
@@ -70,9 +70,10 @@ locally / in CI where warm runtime isn't needed.
 |---|---|---|---|
 | Orchestration | **LangGraph** `StateGraph` | corrective loop needs state + branching, not a linear chain | "agentic / corrective RAG, not naive single-shot" |
 | Retrieval primitives | **LangChain** `SupabaseVectorStore`, `RecursiveCharacterTextSplitter`, `Document` | standard interfaces over pgvector + hybrid | "I use the LangChain ecosystem the way teams do" |
-| Embedding | **BGE-M3** (hosted, OpenAI-compatible) | one model covers EN/zh-TW/ja + emits dense **and** sparse → free hybrid | multilingual + hybrid without bolting two models together |
+| Embedding | **voyage-3-large** (Voyage AI, US) | SOTA multilingual retrieval (EN/zh-TW/ja); asymmetric `document`/`query` encoding; 1024-dim fits the schema | US provider, top-tier quality, no data-residency concern |
 | Vector store | **Supabase pgvector** (HNSW) | already in stack; hybrid = one SQL (vector + `tsvector`) | real vector DB, SQL hybrid, RLS |
-| Rerank | **bge-reranker-v2-m3** (hosted) | small corpus makes rerank lift measurable | cross-encoder reranking |
+| Sparse | **Postgres FTS** (`tsvector`) | sparse arm is keyword recall in SQL — no second model needed | hybrid without extra infra |
+| Rerank | **rerank-2.5** (Voyage AI, US) | small corpus makes rerank lift measurable | cross-encoder reranking |
 | Fusion | **RRF** (Reciprocal Rank Fusion) of dense + sparse | robust, no tuning | hybrid fusion |
 | Global-question guard | top-k **+ injected "portfolio map"** (one-line summary of every project/role) | chunking starves "what's his overall style?" questions | knows RAG failure modes |
 | Graph relations | hand-written `entities/relations.json`, injected — **no Neo4j** | the entity graph is ~dozens of edges | **knowing when *not* to use GraphRAG** |
@@ -150,7 +151,7 @@ create table doc_chunks (
   locale      text not null,         -- en|zh-TW|ja
   title       text,
   content     text not null,
-  embedding   vector(1024),          -- BGE-M3 dense
+  embedding   vector(1024),          -- voyage-3-large dense
   fts         tsvector generated always as (to_tsvector('simple', content)) stored
 );
 create index on doc_chunks using hnsw (embedding vector_cosine_ops);
@@ -219,7 +220,7 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 ## 9. Build phases
 
-0. ✅ Ingestion + chunking + BGE-M3 embed → pgvector (`rag/ingest/`).
+0. ✅ Ingestion + chunking + voyage-3 embed → pgvector (`rag/ingest/`).
 1. ✅ Hybrid (+sparse +RRF +reranker) + LangSmith ablation harness (`rag/evals/`).
 2. ✅ LangGraph corrective graph + language detection + `answer()` entry,
    stub-tested (`rag/graph.ts`, `rag/nodes.ts`, `rag/language.ts`).
@@ -231,31 +232,39 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 ## 10. Required secrets (none present in this container)
 
-`ANTHROPIC_API_KEY`, `LANGSMITH_API_KEY`, `EMBEDDING_API_KEY` (SiliconFlow/
-DeepInfra or self-host on Fly), `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`,
+`ANTHROPIC_API_KEY`, `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
+rerank), `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`,
 `UPSTASH_REDIS_*`. Until these exist the pipeline can be built but not run
 end-to-end.
 
 ---
 
-## Directory layout
+## Directory layout (as built — TypeScript)
 
 ```
-rag-service/
-├── pyproject.toml            # langgraph, langchain, langchain-anthropic, supabase, fastapi
-├── app/
-│   ├── main.py               # FastAPI + SSE /chat
-│   ├── graph.py              # LangGraph StateGraph (the spine)
-│   ├── nodes.py              # retrieve / grade / rewrite / generate / fallback
-│   ├── retrieval.py          # hybrid + RRF + rerank over pgvector
-│   ├── embeddings.py         # BGE-M3 client (swappable)
-│   ├── config.py             # central settings + env overrides
-│   └── guardrails.py         # injection filter, faithfulness prompt
+api/
+└── chat.ts                   # Vercel Node serverless fn: rate-limit → SSE → log
+rag/
+├── graph.ts                  # LangGraph StateGraph spine + answer()/streamAnswer()
+├── state.ts                  # Annotation.Root state schema
+├── nodes.ts                  # retrieve / grade / rewrite / generate / fallback
+├── retrieval.ts              # hybrid + RRF + rerank over pgvector (retrieveWith)
+├── embeddings.ts             # Voyage embed + rerank client (swappable)
+├── language.ts               # deterministic en/zh-TW/ja detection
+├── guardrails.ts             # prompt-injection neutralization
+├── portfolio-map.ts          # always-injected global-question rescue
+├── config.ts                 # central settings + env overrides
+├── api-helpers.ts            # request validation, SSE framing, rate limiter
 ├── ingest/
-│   ├── extract_ts.py         # parse src/data/*.ts → records
-│   └── build_index.py        # chunk → embed → upsert pgvector
-├── entities/relations.json   # lightweight entity graph (no Neo4j)
+│   ├── schema.sql            # pgvector tables + FTS + RLS + retrieval RPCs
+│   ├── extract.ts            # parse src/data/*.ts → records (no regex drift)
+│   └── build-index.ts        # chunk → embed → upsert pgvector
 └── evals/
-    ├── golden.jsonl
-    └── run_eval.py           # LangSmith ablation harness
+    ├── golden.ts             # eval set (single-fact/local/global/out-of-corpus)
+    ├── metrics.ts            # recall@k / MRR / correctness (unit-tested)
+    ├── judge.ts              # LLM faithfulness judge
+    └── run-eval.ts           # ablation runner + markdown report
 ```
+
+> `entities/relations.json` (lightweight entity graph, no Neo4j) is deferred to
+> Phase 5.

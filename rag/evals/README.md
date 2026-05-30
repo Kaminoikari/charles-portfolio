@@ -19,7 +19,7 @@ Each arm adds one layer, so the delta column shows what that layer bought:
 
 1. `dense-only` — pgvector HNSW cosine only
 2. `hybrid` — + sparse (Postgres FTS), fused with RRF
-3. `hybrid+rerank` — + bge-reranker-v2-m3 cross-encoder
+3. `hybrid+rerank` — + voyage rerank-2.5 cross-encoder
 4. `corrective` — + the full LangGraph loop (grade → rewrite → generate / fallback)
 
 Arms 1–3 are retrieval-only (no Anthropic key needed). Arm 4 runs the graph and
@@ -37,7 +37,7 @@ npm run rag:test                      # unit tests for the metrics (no secrets)
 
 ## Required env
 
-- Retrieval arms: `EMBEDDING_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
+- Retrieval arms: `VOYAGE_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
   (plus a built index — run `npm run rag:ingest` first).
 - Corrective arm + faithfulness: `ANTHROPIC_API_KEY`.
 - LangSmith tracing (optional): `LANGCHAIN_TRACING_V2=true` + `LANGCHAIN_API_KEY`

@@ -88,7 +88,7 @@ export async function retrieveWith(
   if (cfg.dense) {
     calls.push(
       (async () => {
-        const queryVec = await embedOne(query)
+        const queryVec = await embedOne(query, 'query')
         const res = await db.rpc('match_chunks_dense', {
           query_embedding: queryVec,
           match_count: config.candidateK,

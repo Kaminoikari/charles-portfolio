@@ -29,12 +29,12 @@ export const config = {
   // --- models ---
   modelFast: process.env.RAG_MODEL_FAST ?? 'claude-haiku-4-5-20251001',
   modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-sonnet-4-6',
-  embedModel: process.env.RAG_EMBED_MODEL ?? 'BAAI/bge-m3',
-  rerankModel: process.env.RAG_RERANK_MODEL ?? 'BAAI/bge-reranker-v2-m3',
+  embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',
+  rerankModel: process.env.RAG_RERANK_MODEL ?? 'rerank-2.5',
   embedDim: int('RAG_EMBED_DIM', 1024),
 
   // --- endpoints (secrets read lazily by clients) ---
-  embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.siliconflow.cn/v1',
+  embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.voyageai.com/v1',
   supabaseUrl: process.env.SUPABASE_URL ?? '',
 
   // --- behavior ---

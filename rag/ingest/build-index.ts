@@ -1,4 +1,4 @@
-// Phase 0 index builder: extract corpus → embed with BGE-M3 → upsert into
+// Phase 0 index builder: extract corpus → embed with voyage-3-large → upsert into
 // Supabase pgvector. Run locally / in CI (needs EMBEDDING_API_KEY +
 // SUPABASE_URL + SUPABASE_SERVICE_KEY):
 //
@@ -48,7 +48,8 @@ async function main() {
   const rows: Record<string, unknown>[] = []
   for (let i = 0; i < records.length; i += BATCH) {
     const batch = records.slice(i, i + BATCH)
-    const vectors = await embed(batch.map((r) => r.content))
+    // 'document' side of Voyage's asymmetric encoding (queries use 'query').
+    const vectors = await embed(batch.map((r) => r.content), 'document')
     batch.forEach((r, j) => {
       rows.push({
         id: r.id,

@@ -13,7 +13,7 @@ create table if not exists doc_chunks (
   locale      text not null,        -- en|zh-TW|ja
   title       text,
   content     text not null,
-  embedding   vector(1024),         -- BGE-M3 dense
+  embedding   vector(1024),         -- voyage-3-large dense (1024-dim)
   fts         tsvector generated always as (to_tsvector('simple', content)) stored
 );
 
