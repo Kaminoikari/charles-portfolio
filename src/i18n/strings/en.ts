@@ -44,6 +44,14 @@ interface Strings {
     letsConnect: string; rights: string; rendered: string
     visitSocial: string
   }
+  chat: {
+    launcherLabel: string; launcherLive: string; openAriaLabel: string; closeAriaLabel: string
+    title: string; subtitle: string; emptyMessage: string
+    inputPlaceholder: string; send: string; sendAriaLabel: string
+    thinking: string; sourcesLabel: string; sourcesCount: string
+    errorMessage: string; rateLimited: string
+    suggested1: string; suggested2: string; suggested3: string
+  }
   defaults: { documentTitle: string }
 }
 
@@ -139,6 +147,27 @@ const en: Strings = {
     rights: '© 2026 Charles Chen. All rights reserved.',
     rendered: 'Rendered in {{ms}}ms · React · Canvas 2D · Tailwind',
     visitSocial: 'Visit {{platform}}',
+  },
+  chat: {
+    launcherLabel: 'Ask about Charles',
+    launcherLive: '● live',
+    openAriaLabel: 'Open the AI assistant',
+    closeAriaLabel: 'Close the AI assistant',
+    title: 'Ask about Charles',
+    subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
+    emptyMessage:
+      "Ask me anything about Charles's projects, experience, or how he builds with AI. Answers are grounded in his portfolio — I'll say so if something isn't covered.",
+    inputPlaceholder: 'Ask anything about his work…',
+    send: 'Send',
+    sendAriaLabel: 'Send question',
+    thinking: 'retrieving → grading → answering',
+    sourcesLabel: 'Retrieved context',
+    sourcesCount: '{{count}} chunks',
+    errorMessage: 'Something went wrong. Please try again.',
+    rateLimited: 'Too many questions for now — give it a moment and try again.',
+    suggested1: 'What did he do at USPACE?',
+    suggested2: 'Tell me about Plutus Trade',
+    suggested3: 'How does he use AI?',
   },
   defaults: {
     documentTitle: 'AI Product Manager in Taiwan | Charles Chen Portfolio',
