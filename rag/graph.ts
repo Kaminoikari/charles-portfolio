@@ -89,3 +89,47 @@ export async function answer(
     loops: final.loops ?? 0,
   }
 }
+
+// Streaming entry point for the SSE endpoint. Yields token chunks as the
+// generate/fallback node produces them, then a final event carrying sources +
+// metadata. Uses LangGraph's streamEvents (v2): we forward chat-model token
+// chunks and read the terminal state for sources. Tracing still auto-attaches.
+export type StreamEvent =
+  | { type: 'token'; text: string }
+  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string }
+
+export async function* streamAnswer(
+  question: string,
+  compiled: ReturnType<typeof buildGraph> = graph,
+): AsyncGenerator<StreamEvent> {
+  const language = detectLanguage(question)
+  let answerText = ''
+  let sources: Source[] = []
+  let loops = 0
+
+  const events = compiled.streamEvents(
+    { question, language, queries: [question] },
+    { version: 'v2' },
+  )
+
+  for await (const ev of events) {
+    // Token chunks from any chat model node (generate / fallback uses none).
+    if (ev.event === 'on_chat_model_stream') {
+      const chunk = ev.data?.chunk
+      const text = typeof chunk?.content === 'string' ? chunk.content : ''
+      if (text) {
+        answerText += text
+        yield { type: 'token', text }
+      }
+    }
+    // When a node finishes, capture any state it produced (sources/answer/loops).
+    if (ev.event === 'on_chain_end') {
+      const out = ev.data?.output as Partial<RAGStateType> | undefined
+      if (out?.sources) sources = out.sources
+      if (typeof out?.loops === 'number') loops = out.loops
+      if (typeof out?.answer === 'string' && out.answer) answerText = out.answer
+    }
+  }
+
+  yield { type: 'done', sources, language, loops, answer: answerText }
+}
