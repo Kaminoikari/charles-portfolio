@@ -12,6 +12,7 @@ import { config } from './config'
 import type { RAGStateType, Source } from './state'
 import { hybridRetrieve } from './retrieval'
 import { portfolioMap } from './portfolio-map'
+import { entityContext } from './entities/graph'
 import { sanitize } from './guardrails'
 
 const fast = () => new ChatAnthropic({ model: config.modelFast, temperature: 0 })
@@ -88,16 +89,23 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
   const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(state.question)
   const llm = broad ? strong() : fast()
 
+  // Multi-hop entity relationships for whatever the question references — the
+  // lightweight-graph half of the retrieval (see entities/graph.ts). Empty for
+  // questions that mention no known entity, so generic questions pay nothing.
+  const entities = entityContext(state.question)
+  const entityBlock = entities ? `\n\n${entities}` : ''
+
   const res = await llm.invoke([
     {
       role: 'system',
       content:
         'You answer questions about Charles Chen using ONLY the provided ' +
-        'context and portfolio map. Never invent roles, employers, dates, or ' +
-        'credentials. If the context does not contain the answer, say so ' +
-        'plainly. Cite sources inline as [n]. Reply in the language of the ' +
-        'question.\n\nPortfolio map:\n' +
-        portfolioMap,
+        'context, portfolio map, and entity relationships. Never invent roles, ' +
+        'employers, dates, or credentials. If the context does not contain the ' +
+        'answer, say so plainly. Cite sources inline as [n]. Reply in the ' +
+        'language of the question.\n\nPortfolio map:\n' +
+        portfolioMap +
+        entityBlock,
     },
     { role: 'user', content: `Question: ${sanitize(state.question)}\n\nContext:\n${context}` },
   ])

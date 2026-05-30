@@ -224,9 +224,10 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 1. ✅ Hybrid (+sparse +RRF +reranker) + LangSmith ablation harness (`rag/evals/`).
 2. ✅ LangGraph corrective graph + language detection + `answer()` entry,
    stub-tested (`rag/graph.ts`, `rag/nodes.ts`, `rag/language.ts`).
-3. ⬜ `api/chat.ts` Vercel Node SSE + guardrails + logging.
-4. ⬜ React widget + retrieval-transparency UI + suggested questions.
-5. ⬜ (optional) relations.json graph injection; chat-logs insights dashboard.
+3. ✅ `api/chat.ts` Vercel Node SSE + guardrails + logging.
+4. ✅ React widget + retrieval-transparency UI + suggested questions.
+5. ✅ relations.json entity-graph injection (`rag/entities/`) + chat-logs
+   insights (`rag/insights/report.ts`, `npm run rag:insights`).
 
 ---
 
