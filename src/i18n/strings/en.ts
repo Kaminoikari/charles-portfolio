@@ -46,6 +46,7 @@ interface Strings {
   }
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; closeAriaLabel: string
+    clearLabel: string
     title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
     thinking: string; sourcesLabel: string; sourcesCount: string
@@ -154,7 +155,8 @@ const en: Strings = {
     launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
     closeAriaLabel: 'Close the AI assistant',
-    title: 'Grounded answers',
+    clearLabel: 'Clear this conversation',
+    title: 'Ask about Charles',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       "Ask me anything about Charles's projects, experience, or how he builds with AI. Every answer is grounded in his actual portfolio.",

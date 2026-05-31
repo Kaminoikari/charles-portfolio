@@ -144,5 +144,12 @@ export function useChatStream() {
     [messages, send, status],
   )
 
-  return { messages, status, send, retry }
+  // Reset the conversation: abort any in-flight stream and drop all messages.
+  const clear = useCallback(() => {
+    abortRef.current?.abort()
+    setMessages([])
+    setStatus('idle')
+  }, [])
+
+  return { messages, status, send, retry, clear }
 }

@@ -108,7 +108,8 @@ const ja: Strings = {
     launcherTag: 'RAG',
     openAriaLabel: 'AI アシスタントを開く',
     closeAriaLabel: 'AI アシスタントを閉じる',
-    title: '根拠つきの回答',
+    clearLabel: 'この会話をクリア',
+    title: 'Ask about Charles',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       'Charles のプロジェクト、経歴、AI を使った開発手法など何でも聞いてください。回答はすべて彼の実際のポートフォリオに基づきます。',

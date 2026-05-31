@@ -105,7 +105,8 @@ const zhTW: Strings = {
     launcherTag: 'RAG',
     openAriaLabel: '開啟 AI 助理',
     closeAriaLabel: '關閉 AI 助理',
-    title: '有出處的回答',
+    clearLabel: '清除這段對話',
+    title: 'Ask about Charles',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       '任何關於 Charles 的專案、經歷、或他如何用 AI 打造產品的問題都可以問。每個答案都根據他真實的作品集而來。',

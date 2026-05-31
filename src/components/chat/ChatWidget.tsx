@@ -130,7 +130,7 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const audio = useAmbientAudio()
-  const { messages, status, send, retry } = useChatStream()
+  const { messages, status, send, retry, clear } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
@@ -229,17 +229,16 @@ export default function ChatWidget() {
       aria-label={t('chat.title')}
       className="fixed bottom-5 right-5 z-50 flex h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
     >
-      {/* Header — the tech-stack kicker is the identity ("show, don't tell"); the
-          title below names the value (grounded answers) without repeating the
-          launcher label. */}
+      {/* Header — title leads; the tech-stack line sits under it as a subtitle
+          that still signals the engineering ("show, don't tell"). */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
           <LiveDot />
-          <div className="leading-tight">
-            <div className="font-mono text-[10px] uppercase tracking-[1.5px] text-accent-cyan">
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-[15px] font-semibold text-white">{t('chat.title')}</div>
+            <div className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.5px] text-text-muted">
               {t('chat.subtitle')}
             </div>
-            <div className="text-[14px] font-semibold text-white">{t('chat.title')}</div>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -308,6 +307,17 @@ export default function ChatWidget() {
             </span>
             {t('chat.thinking')}
           </div>
+        )}
+        {messages.length > 0 && status !== 'streaming' && (
+          <button
+            onClick={() => {
+              clear()
+              inputRef.current?.focus()
+            }}
+            className="mt-1 cursor-pointer self-start text-[12px] text-text-tertiary underline decoration-border underline-offset-4 transition-colors hover:text-text-muted hover:decoration-text-muted"
+          >
+            {t('chat.clearLabel')}
+          </button>
         )}
       </div>
 
