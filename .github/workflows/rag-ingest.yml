@@ -16,9 +16,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Branch/ref to check out and run (the RAG code lives on the feature branch, not main)'
+        description: 'Branch/ref to check out and run (defaults to main, where the RAG code lives)'
         type: string
-        default: claude/playbook-closed-loop-v1.2.12-IbE9K
+        default: main
       dry_run:
         description: 'Dry run (extract + report counts, no embeddings, no writes)'
         type: boolean
@@ -28,11 +28,11 @@ jobs:
   ingest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
