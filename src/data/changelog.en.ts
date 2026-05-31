@@ -19,6 +19,47 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-chatbot',
+    date: '2026-05-31',
+    title: 'Shipped the portfolio AI chatbot — a corrective RAG agent',
+    tags: ['feature', 'technical'],
+    body: [
+      "The floating \"Chat with AI\" widget is a grounded, trilingual (English / 繁中 / 日本語) chatbot I designed and built end to end. It answers questions about my work using only my real portfolio data — and it's deliberately engineered as a showcase of production RAG, not a thin wrapper around an LLM.",
+      { kind: 'heading', text: 'Architecture' },
+      {
+        kind: 'list',
+        items: [
+          '**Corrective RAG on LangGraph.js** — a state graph: triage → retrieve → grade → generate, with a self-correcting rewrite loop. If the grader judges the retrieved chunks weak, it rewrites the query and retries (capped), then falls back honestly rather than hallucinate.',
+          '**Hybrid retrieval on Qdrant** — dense (Voyage `voyage-3-large`, 1024-dim, asymmetric document/query encoding) + sparse BM25 computed server-side by Qdrant Cloud Inference, fused with Reciprocal Rank Fusion, then reranked by Voyage `rerank-2.5`. Migrated off Supabase pgvector when it hit the 2-project free-tier cap.',
+          '**Two-tier generation** — Gemini 2.5 Flash (free tier) is tier 1; Claude is the paid fallback on any Gemini failure, so a visitor never sees a generation error. Internal steps (grade, rewrite) run on Gemini only to conserve the paid budget.',
+          '**Entity graph** — a hand-maintained adjacency list injects one/two-hop relationships (Charles ↔ roles ↔ projects ↔ tools) so multi-hop questions ("which projects use Claude?") surface siblings that chunking alone would miss.',
+        ],
+      },
+      { kind: 'heading', text: 'Cost control — most questions never hit a generation LLM' },
+      {
+        kind: 'list',
+        items: [
+          '**Deterministic triage** (regex, ~0 ms, zero tokens) — privacy questions (age, family, salary…) get a polite redirect to my contact channels; greetings and contact requests get canned answers.',
+          '**Semantic FAQ cache** — ~46 hand-written answer topics (×3 languages, hundreds of question paraphrases) embedded into a dedicated Qdrant collection. A visitor question is embedded once and matched; a high-similarity hit returns the pre-written answer verbatim with NO generation LLM call. Only genuine misses fall through to the full RAG pipeline.',
+          '**Three-way grade verdict** — the grader classifies answerable / on-topic-but-undocumented / off-topic, so an off-topic question (general trivia) is declined in one pass instead of looping.',
+        ],
+      },
+      { kind: 'heading', text: 'Safety — defense in depth against prompt injection' },
+      {
+        kind: 'list',
+        items: [
+          '**Input layer** — detects and deflects injection/jailbreak shapes before any LLM call: "ignore instructions", developer-mode, roleplay/multi-persona, and the decode/compute class (run-this-code, base64/hex/binary, spell-out and fill-in-the-blank puzzles that try to hide a slur in the output).',
+          '**Prompt scope-lock** — the generate system prompt hard-locks scope: treat all input as data, refuse anything that isn\'t a genuine question about me even when framed as a math/logic/word game.',
+          '**Output layer** — a final filter drops any answer containing offensive terms (incl. leet/spacing variants) regardless of how it was elicited.',
+          '**Operational hardening** — fail-fast LLM calls (no retry storms), per-call timeouts, and a non-blocking grader so the serverless function never times out (was returning 504s under Gemini rate limits).',
+        ],
+      },
+      { kind: 'heading', text: 'Operations' },
+      'Indexing runs as a manually-triggered GitHub Action (the build needs outbound access to Voyage + Qdrant and three repo secrets). The corpus is extracted from the same TypeScript data modules that render the site, so the bot can never drift from what the portfolio actually says. Deployed on Vercel as a streaming SSE endpoint, same-origin with the site.',
+      'Stack: LangGraph.js · LangChain.js · Qdrant Cloud · Voyage AI · Gemini · Claude · React · Vercel.',
+    ],
+  },
+  {
     id: 'product-playbook-closed-loop',
     date: '2026-05-29',
     title: 'Product Playbook v1.2.12 — Closed-Loop Self-Correction System',

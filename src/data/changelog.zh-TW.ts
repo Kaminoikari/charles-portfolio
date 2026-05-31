@@ -34,6 +34,47 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-chatbot',
+    date: '2026-05-31',
+    title: '上線作品集 AI 聊天機器人 — 一個 corrective RAG agent',
+    tags: ['feature', 'technical'],
+    body: [
+      '右下角的「與 AI 聊聊」浮動視窗,是我從頭到尾親手設計與打造的三語(英文 / 繁中 / 日文)聊天機器人。它只根據我真實的作品集資料回答關於我的問題,並且刻意做成一個展示生產級 RAG 的作品,而不是一個 LLM 的薄包裝。',
+      { kind: 'heading', text: '架構' },
+      {
+        kind: 'list',
+        items: [
+          '**建在 LangGraph.js 上的 corrective RAG** — 一張狀態圖:分流 → 檢索 → 評估 → 生成,並帶有自我修正的重寫迴圈。若評估器判定檢索到的內容不足,它會改寫問題重試(有上限),最後誠實婉拒而非幻覺亂答。',
+          '**Qdrant 混合檢索** — dense(Voyage `voyage-3-large`,1024 維,文件/查詢非對稱編碼)+ 由 Qdrant Cloud Inference 在伺服器端計算的 BM25 sparse,以 RRF 融合,再由 Voyage `rerank-2.5` 重排序。在 Supabase pgvector 撞到免費層兩專案上限後遷移過來。',
+          '**兩層生成** — Gemini 2.5 Flash(免費層)是第一層;Claude 是付費備援,Gemini 任何失敗都會接手,讓訪客永遠不會看到生成錯誤。內部步驟(評估、重寫)只用 Gemini,以節省付費預算。',
+          '**實體圖** — 一份手動維護的鄰接表注入一到兩跳的關係(Charles ↔ 角色 ↔ 專案 ↔ 工具),讓多跳問題(「哪些專案用了 Claude?」)能浮現單純切塊會漏掉的關聯。',
+        ],
+      },
+      { kind: 'heading', text: '成本控制 — 大多數問題完全不打生成 LLM' },
+      {
+        kind: 'list',
+        items: [
+          '**確定性分流**(regex、約 0 毫秒、零 token)— 隱私問題(年齡、家庭、薪資…)會得到禮貌的導向聯繫;打招呼與聯絡請求回固定答案。',
+          '**語意快取** — 約 46 個手寫答案主題(×3 語言、數百個問法變體)embedding 進專屬的 Qdrant collection。訪客問題只 embedding 一次做比對,相似度夠高就「逐字」回傳預寫答案,完全不打生成 LLM。只有真正沒命中的才落到完整 RAG。',
+          '**三分類評估** — 評估器分類「可回答 / 相關但無資料 / 離題」,離題問題(一般常識)一次就婉拒,不繞迴圈。',
+        ],
+      },
+      { kind: 'heading', text: '安全 — 對 prompt injection 的縱深防禦' },
+      {
+        kind: 'list',
+        items: [
+          '**輸入層** — 在任何 LLM 呼叫前就偵測並化解注入/越獄手法:「忽略指令」、開發者模式、角色扮演/多重人格,以及解碼/計算這一類(執行程式碼、base64/hex/二進制、把冒犯字藏在輸出裡的拼字謎與填空謎)。',
+          '**Prompt 範圍鎖** — 生成的 system prompt 硬鎖範圍:把所有輸入當資料,拒絕任何不是真正關於我的問題,即使包裝成數學/邏輯/文字遊戲。',
+          '**輸出層** — 最後一道過濾,無論如何被誘導,只要答案含冒犯詞(含 leet/空格變體)就整段丟棄。',
+          '**運維強化** — LLM 呼叫快速失敗(不重試風暴)、逐呼叫超時、非阻塞評估器,讓 serverless function 永不逾時(先前在 Gemini 限流下會回 504)。',
+        ],
+      },
+      { kind: 'heading', text: '運維' },
+      '索引建置以手動觸發的 GitHub Action 執行(建置需要對外連到 Voyage + Qdrant 與三把 repo secret)。語料從渲染網站的同一批 TypeScript 資料模組抽取,所以機器人永遠不會偏離作品集實際寫的內容。部署在 Vercel 上,是與網站同源的串流 SSE 端點。',
+      '技術棧:LangGraph.js · LangChain.js · Qdrant Cloud · Voyage AI · Gemini · Claude · React · Vercel。',
+    ],
+  },
+  {
     id: 'product-playbook-closed-loop',
     date: '2026-05-29',
     title: 'Product Playbook v1.2.12 — 閉環自我修正系統（Closed-Loop Self-Correction）',

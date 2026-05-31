@@ -88,6 +88,71 @@ export const faqEntries: FaqEntry[] = [
       ja: '私は Charles 本人ではなく、彼が**このポートフォリオのために作った AI アシスタント**で、彼の仕事・プロジェクト・経歴についてお答えします。Charles 自身が設計・実装した corrective RAG チャットボットです(ベースモデルは Claude)。プロジェクト・経歴・スキル・働き方など何でも聞いてください。',
     },
   },
+  {
+    id: 'bot-why-qdrant',
+    questions: {
+      en: ['Why Qdrant?', 'why this vector database?', 'why not pgvector or Pinecone?', 'what vector store does the chatbot use?', 'why did you choose Qdrant?'],
+      'zh-TW': ['為什麼用 Qdrant', '為什麼選這個向量資料庫', '為什麼不用 pgvector 或 Pinecone', 'chatbot 用什麼向量庫', 'Qdrant 的選型理由'],
+      ja: ['なぜ Qdrant', 'なぜこのベクトル DB', 'なぜ pgvector や Pinecone ではない', 'どのベクトルストアを使う'],
+    },
+    answers: {
+      en: 'I started on **Supabase pgvector** but hit its free-tier 2-project cap, so I moved to **Qdrant Cloud** — and used the move to upgrade retrieval. Qdrant gives me true hybrid search: a dense vector + a server-side BM25 sparse vector (computed by Qdrant Cloud Inference, so no sparse encoder ships in my serverless bundle), fused with Reciprocal Rank Fusion in its Query API. Generous free tier, multilingual-friendly, and the server-side fusion keeps the Vercel function lean.',
+      'zh-TW': '我一開始用 **Supabase pgvector**,但撞到它免費層的兩專案上限,於是改用 **Qdrant Cloud**——並趁機升級檢索。Qdrant 給我真正的混合搜尋:dense 向量 + 伺服器端 BM25 sparse 向量(由 Qdrant Cloud Inference 計算,所以我的 serverless bundle 不用打包 sparse 編碼器),在它的 Query API 裡用 RRF 融合。免費額度大方、對多語友善,而且伺服器端融合讓 Vercel function 保持輕量。',
+      ja: '最初は **Supabase pgvector** を使っていましたが、無料枠の 2 プロジェクト上限に達したため **Qdrant Cloud** に移行し、その機に検索を強化しました。Qdrant は真のハイブリッド検索を提供します:dense ベクトル + サーバーサイド BM25 sparse(Qdrant Cloud Inference が計算するので、serverless バンドルに sparse エンコーダを含めない)を Query API 上で RRF 融合。無料枠が寛大で多言語に強く、サーバーサイド融合で Vercel 関数を軽量に保てます。',
+    },
+  },
+  {
+    id: 'bot-cost-control',
+    questions: {
+      en: ['How do you control LLM cost?', 'how is the chatbot cheap to run?', 'how do you avoid calling the LLM every time?', 'cost optimization', 'how does the cache work?', 'semantic cache'],
+      'zh-TW': ['你怎麼控制 LLM 成本', 'chatbot 怎麼省錢', '怎麼避免每次都打 LLM', '成本優化', '快取怎麼運作', '語意快取'],
+      ja: ['LLM コストをどう抑える', 'チャットボットはなぜ安い', '毎回 LLM を呼ばない方法', 'コスト最適化', 'キャッシュの仕組み'],
+    },
+    answers: {
+      en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage** — regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache** — ~46 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss — and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass instead of looping.',
+      'zh-TW': '三層,由便宜到貴,所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流** — regex、約 0 毫秒、零 token:隱私導向、打招呼、聯絡答案。**(2) 語意快取** — 約 46 個預寫答案主題(×3 語言)embedding 進 Qdrant collection;問題只 embedding 一次比對,相似度夠高就「逐字」回傳,完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑——而且即使在那裡,Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒,不繞迴圈。',
+      ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ** — 正規表現、約 0 ms、トークンゼロ:プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ** — 約 46 の事前作成トピック(×3 言語)を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す(生成呼び出しなし)。**(3) 完全な RAG** は本当に外れた時だけ — そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
+    },
+  },
+  {
+    id: 'bot-corrective-loop',
+    questions: {
+      en: ['What is the corrective loop?', 'how does the RAG self-correct?', 'what is CRAG?', 'how does it avoid hallucination?', 'what if retrieval is bad?'],
+      'zh-TW': ['什麼是修正迴圈', 'RAG 怎麼自我修正', '什麼是 corrective RAG', '它怎麼避免幻覺', '檢索不好時怎麼辦'],
+      ja: ['corrective ループとは', 'RAG はどう自己修正する', 'CRAG とは', 'ハルシネーションをどう防ぐ'],
+    },
+    answers: {
+      en: 'After retrieval, a grader LLM judges whether the chunks actually answer the question. If they do → generate. If they\'re weak but on-topic → rewrite the query and retry retrieval (capped at a few loops). If retrieval keeps failing, or the question is off-topic, → an honest fallback that points to my contact info rather than inventing an answer. The generate step is also locked to answer ONLY from retrieved context + a portfolio map, so it can\'t drift from what the portfolio actually says. This is the "corrective RAG" (CRAG) pattern, built as a LangGraph state machine.',
+      'zh-TW': '檢索後,一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索(有幾次上限)。若檢索一直失敗、或問題離題 → 走誠實的 fallback,指向我的聯絡方式而非編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答,所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式,以 LangGraph 狀態機實作。',
+      ja: '検索後、評価器 LLM がチャンクで本当に答えられるか判断します。答えられる → 生成。弱いが関連 → クエリを書き換えて再検索(数回まで)。検索が失敗し続けるか無関係なら → 捏造せず連絡先を案内する正直なフォールバック。生成ステップも「検索した context + portfolio map のみ」で答えるよう固定され、ポートフォリオの実際の記載から逸脱しません。これが corrective RAG(CRAG)パターンで、LangGraph のステートマシンとして実装しています。',
+    },
+  },
+  {
+    id: 'bot-injection-defense',
+    questions: {
+      en: ['How do you handle prompt injection?', 'is the chatbot safe?', 'how do you prevent jailbreaks?', 'what about adversarial prompts?', 'security of the chatbot'],
+      'zh-TW': ['你怎麼處理 prompt injection', 'chatbot 安全嗎', '怎麼防止越獄', '怎麼防對抗式提問', 'chatbot 的安全性'],
+      ja: ['プロンプトインジェクションへの対策', 'チャットボットは安全', '脱獄をどう防ぐ', 'セキュリティ'],
+    },
+    answers: {
+      en: 'Defense in depth, three layers. **Input** — detect and deflect injection/jailbreak shapes before any LLM call: "ignore instructions", developer-mode, roleplay/multi-persona, and the decode/compute class (run-this-code, base64/hex/binary, spell-out and fill-in-the-blank puzzles that try to hide offensive output). **Prompt scope-lock** — the generate system prompt treats all input as data and refuses anything that isn\'t a genuine question about Charles, even when framed as a math/logic/word game. **Output** — a final filter drops any answer containing offensive terms (incl. leet/spacing variants) no matter how it was elicited. Regex can\'t enumerate every attack, so the scope-lock + output filter are the real backstops.',
+      'zh-TW': '縱深防禦,三層。**輸入層** — 在任何 LLM 呼叫前偵測並化解注入/越獄手法:「忽略指令」、開發者模式、角色扮演/多重人格,以及解碼/計算這一類(執行程式碼、base64/hex/二進制、把冒犯輸出藏起來的拼字謎與填空謎)。**Prompt 範圍鎖** — 生成的 system prompt 把所有輸入當資料,拒絕任何不是真正關於 Charles 的問題,即使包裝成數學/邏輯/文字遊戲。**輸出層** — 最後一道過濾,無論如何被誘導,含冒犯詞(含 leet/空格變體)的答案就整段丟棄。regex 無法窮舉所有攻擊,所以範圍鎖 + 輸出過濾才是真正的後盾。',
+      ja: '多層防御、3 層です。**入力** — LLM 呼び出し前にインジェクション/脱獄の形を検出・無害化:「指示を無視」、開発者モード、ロールプレイ/多重人格、デコード/計算系(コード実行、base64/hex/バイナリ、侮蔑的出力を隠す穴埋め・スペルアウトパズル)。**プロンプトのスコープロック** — 生成の system prompt は全入力をデータ扱いし、数学/論理/言葉遊びに偽装されても Charles に関する本当の質問でなければ拒否。**出力** — 最終フィルタが、どう誘導されても侮蔑語(leet/空白の変種含む)を含む回答を破棄。正規表現で全攻撃は列挙できないので、スコープロックと出力フィルタが本当の砦です。',
+    },
+  },
+  {
+    id: 'bot-tech-stack',
+    questions: {
+      en: ["What's the chatbot's tech stack?", 'what is it built with?', 'what technologies power the chatbot?', 'what embeddings / models does it use?', 'LangGraph?'],
+      'zh-TW': ['chatbot 的技術棧', '它用什麼建的', '聊天機器人用了哪些技術', '它用什麼 embedding / 模型', '有用 LangGraph 嗎'],
+      ja: ['チャットボットの技術スタック', '何で作られている', 'どの埋め込み/モデルを使う', 'LangGraph を使う'],
+    },
+    answers: {
+      en: 'Orchestration: **LangGraph.js + LangChain.js** (a corrective RAG state machine). Vector store: **Qdrant Cloud** (hybrid dense + BM25, server-side RRF). Embeddings + rerank: **Voyage AI** (`voyage-3-large`, `rerank-2.5`). Generation: **Gemini 2.5 Flash** (free tier) → **Claude** (paid fallback). Frontend: **React** chat widget with an SSE streaming client. Indexing: a **GitHub Action**. Deployed on **Vercel** as a same-origin streaming endpoint.',
+      'zh-TW': '編排:**LangGraph.js + LangChain.js**(corrective RAG 狀態機)。向量庫:**Qdrant Cloud**(dense + BM25 混合、伺服器端 RRF)。向量與重排序:**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成:**Gemini 2.5 Flash**(免費層)→ **Claude**(付費備援)。前端:**React** 聊天元件 + SSE 串流客戶端。索引:一個 **GitHub Action**。部署在 **Vercel**,是同源串流端點。',
+      ja: 'オーケストレーション:**LangGraph.js + LangChain.js**(corrective RAG ステートマシン)。ベクトルストア:**Qdrant Cloud**(dense + BM25 ハイブリッド、サーバーサイド RRF)。埋め込み+再ランク:**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成:**Gemini 2.5 Flash**(無料枠)→ **Claude**(有料フォールバック)。フロントエンド:**React** チャットウィジェット + SSE ストリーミング。インデックス:**GitHub Action**。**Vercel** に同一オリジンのストリーミングエンドポイントとしてデプロイ。',
+    },
+  },
 
   // ───────────────────────────── projects ─────────────────────────────
   {
