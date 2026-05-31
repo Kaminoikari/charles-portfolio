@@ -40,8 +40,14 @@ function routeAfterTriage(state: RAGStateType): 'answered' | 'retrieve' {
 }
 
 // Conditional edge: where to go after grading the retrieved chunks.
+//   generate    — docs answer the question
+//   off_topic   — question isn't about Charles at all → fall back immediately
+//                 (skip the rewrite loop; rewriting an off-topic question never
+//                 finds Charles data and just burns LLM calls)
+//   else        — on-topic but weak retrieval → rewrite and retry, capped
 function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fallback' {
   if (state.route === 'generate') return 'generate'
+  if (state.route === 'off_topic') return 'fallback'
   if ((state.loops ?? 0) < config.maxLoops) return 'rewriteQuery'
   return 'fallback'
 }

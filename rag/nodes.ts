@@ -65,13 +65,32 @@ export async function retrieve(state: RAGStateType): Promise<Partial<RAGStateTyp
 }
 
 // --- gradeDocuments ------------------------------------------------------
-// CRAG core: an LLM grades whether the retrieved set actually answers the
-// question. Sets `route` to "generate" if good enough, else "rewrite".
+// CRAG core: an LLM grades the retrieved set with a THREE-way verdict, so an
+// off-topic question can be declined immediately (no rewrite loop) while an
+// on-topic-but-weak retrieval still gets a corrective retry:
+//   answerable        — docs can answer it           → generate
+//   on_topic_no_data  — about Charles, but docs weak  → rewrite & retry
+//   off_topic         — not about Charles at all      → fallback now
+// The verdict comes from the LLM (not a similarity threshold), so it separates
+// "off-topic" from "on-topic but undocumented" the way a human would — which is
+// exactly the distinction a score-based gate cannot make reliably.
 const gradeSchema = z.object({
-  relevant: z
-    .boolean()
-    .describe('true if the documents collectively can answer the question'),
+  verdict: z
+    .enum(['answerable', 'on_topic_no_data', 'off_topic'])
+    .describe(
+      'answerable: the documents can answer the question. ' +
+        "on_topic_no_data: the question IS about Charles Chen (his work, projects, " +
+        'experience, skills, background, or this site) but the documents do not ' +
+        'cover it. off_topic: the question is NOT about Charles at all (e.g. general ' +
+        'trivia, math, weather, other people, world facts).',
+    ),
 })
+
+const verdictToRoute: Record<string, string> = {
+  answerable: 'generate',
+  on_topic_no_data: 'rewrite',
+  off_topic: 'off_topic',
+}
 
 export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGStateType>> {
   const docs = state.documents ?? []
@@ -85,22 +104,24 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
   const grader = gemini().withStructuredOutput(gradeSchema, { name: 'grade' })
   const context = docs.map((d, i) => `[${i + 1}] ${d.pageContent}`).join('\n\n')
   try {
-    const { relevant } = await Promise.race([
+    const { verdict } = await Promise.race([
       grader.invoke([
         {
           role: 'system',
           content:
-            'You assess whether retrieved documents can answer a question about ' +
-            "Charles Chen's portfolio. Be lenient — the goal is to filter out " +
-            'clearly off-topic retrievals, not to demand perfection.',
+            "You grade retrieval for Charles Chen's portfolio assistant. Classify " +
+            'the question into exactly one verdict. Be lenient about "answerable" ' +
+            '(the goal is to filter clearly off-topic retrievals, not demand ' +
+            'perfection), but reserve "off_topic" for questions that are genuinely ' +
+            'not about Charles Chen at all.',
         },
         { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
       ]),
-      new Promise<{ relevant: boolean }>((_, reject) =>
+      new Promise<{ verdict: 'answerable' | 'on_topic_no_data' | 'off_topic' }>((_, reject) =>
         setTimeout(() => reject(new Error('grade timed out')), 4000),
       ),
     ])
-    return { graded: docs, route: relevant ? 'generate' : 'rewrite' }
+    return { graded: docs, route: verdictToRoute[verdict] ?? 'generate' }
   } catch (err) {
     console.warn('gradeDocuments failed, passing docs through to generate:', (err as Error).message)
     return { graded: docs, route: 'generate' }

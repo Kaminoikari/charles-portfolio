@@ -14,7 +14,7 @@ import { config } from './config.js'
 
 // A stub node set whose `gradeDocuments` is scripted per-test. Counters let each
 // test assert how many times retrieve / rewrite actually ran.
-function makeNodes(grades: Array<'generate' | 'rewrite'>): {
+function makeNodes(grades: Array<'generate' | 'rewrite' | 'off_topic'>): {
   nodes: NodeSet
   counts: { retrieve: number; rewrite: number; generate: number; fallback: number }
 } {
@@ -83,6 +83,16 @@ test('fallback: keeps failing, capped by maxLoops', async () => {
   // rewrite runs exactly maxLoops times, then routeAfterGrade -> fallback
   assert.equal(counts.rewrite, config.maxLoops)
   assert.equal(counts.retrieve, config.maxLoops + 1)
+})
+
+test('off-topic: declines immediately, no rewrite loop', async () => {
+  const { nodes, counts } = makeNodes(['off_topic'])
+  const res = await answer('What is the capital of Taiwan?', buildGraph(nodes))
+  assert.equal(res.answer, 'no info') // fallback message
+  assert.equal(counts.fallback, 1)
+  assert.equal(counts.generate, 0)
+  assert.equal(counts.rewrite, 0) // crucially: NO rewrite loop for off-topic
+  assert.equal(counts.retrieve, 1) // retrieved once, then straight to fallback
 })
 
 test('language detection seeds state', async () => {
