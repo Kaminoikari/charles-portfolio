@@ -290,6 +290,125 @@ export const faqEntries: FaqEntry[] = [
     },
   },
 
+  // ───────────────────── leadership / blog / metrics / past roles ─────────────────────
+  {
+    id: 'leadership',
+    questions: {
+      en: ['Has he led a team?', 'his leadership experience', 'has he managed people?', 'team management'],
+      'zh-TW': ['他帶過團隊嗎', '他的領導經驗', '他管過人嗎', '帶人經驗'],
+      ja: ['チームを率いた経験は', 'リーダーシップ経験', '人をマネジメントした'],
+    },
+    answers: {
+      en: 'Yes. At **FLUX** he directed a team of **10** (+22% process efficiency, +35% order-fulfillment speed). He also mentors aspiring PMs at **XChange School** (Taiwan\'s largest internet professional community), and his skill set includes cross-functional team leadership, stakeholder management, and Agile/Scrum.',
+      'zh-TW': '有的。在 **FLUX** 他帶領 **10 人**團隊(流程效率 +22%、訂單履行速度 +35%)。他也在 **XChange School**(台灣最大的網路專業社群)擔任產品導師,技能涵蓋跨職能團隊領導、利害關係人管理與 Agile/Scrum。',
+      ja: 'はい。**FLUX** では **10 名**のチームを統括(プロセス効率 +22%、注文処理速度 +35%)。**XChange School**(台湾最大のインターネット専門コミュニティ)で PM 志望者のメンターも務め、スキルには機能横断のチームリーダーシップ・ステークホルダー管理・Agile/Scrum が含まれます。',
+    },
+  },
+  {
+    id: 'mentor',
+    questions: {
+      en: ['Does he mentor?', 'what is XChange School?', 'his teaching experience', 'is he a mentor?'],
+      'zh-TW': ['他有當導師嗎', 'XChange School 是什麼', '他的教學經驗', '他有帶學員嗎'],
+      ja: ['メンターをしている', 'XChange School とは', '指導経験は'],
+    },
+    answers: {
+      en: 'Since 2025 Charles has been a **Product Mentor at XChange School**, Taiwan\'s largest internet professional community, mentoring aspiring product managers.',
+      'zh-TW': '自 2025 年起,Charles 在 **XChange School**(台灣最大的網路專業社群)擔任 **產品導師**,輔導有志成為產品經理的學員。',
+      ja: '2025 年から Charles は台湾最大のインターネット専門コミュニティ **XChange School** で **プロダクトメンター**を務め、PM 志望者を指導しています。',
+    },
+  },
+  {
+    id: 'blog-writing',
+    questions: {
+      en: ['Does he write?', 'his blog', 'does he publish articles?', 'his writing', 'thought leadership', 'his Substack'],
+      'zh-TW': ['他有寫作嗎', '他的部落格', '他有發表文章嗎', '他的寫作', '他的 Substack'],
+      ja: ['執筆活動はある', 'ブログ', '記事を書いている', 'Substack'],
+    },
+    answers: {
+      en: 'Yes — Charles writes prolifically on product and AI (Substack & Medium): 20+ pieces spanning AI-builder skills, product sense, PM career strategy in the AI era, OKRs, and deep technical research (e.g. a Claude Code source-code study, a Shazam algorithm breakdown). You can find his writing linked from the portfolio\'s blog section.',
+      'zh-TW': '有的——Charles 在產品與 AI 領域寫作量豐富(Substack 與 Medium):20 多篇文章,橫跨 AI builder 能力、產品 sense、AI 時代的 PM 職涯策略、OKR,以及深度技術研究(例如 Claude Code 原始碼研究、Shazam 演算法解析)。作品集的部落格區塊有連結。',
+      ja: 'はい——Charles はプロダクトと AI について多数執筆しています(Substack・Medium)。20 本以上で、AI ビルダーのスキル、プロダクトセンス、AI 時代の PM キャリア戦略、OKR、深い技術調査(Claude Code ソースコード研究、Shazam アルゴリズム解説など)に及びます。ポートフォリオのブログ欄からリンクされています。',
+    },
+  },
+  {
+    id: 'metrics-summary',
+    questions: {
+      en: ['What results has he achieved?', 'his key metrics', 'quantified impact', 'his achievements', 'numbers and results'],
+      'zh-TW': ['他做出哪些成果', '他的關鍵數據', '量化成效', '他的成就', '具體數字'],
+      ja: ['どんな成果を出した', '主要な実績', '定量的なインパクト', '数字'],
+    },
+    answers: {
+      en: 'Selected results: **7M+ users reached**; **85%+ of USPACE revenue** owned; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
+      'zh-TW': '精選成果:觸及 **超過 700 萬使用者**;主導 **USPACE 85% 以上營收**;以 AI 原型開發達 **5 倍**迭代速度;在 PXPay **結帳轉換 +25%、客訴 −40%**;在 NUEIP **預測準確度 +35%**;在 FLUX **市佔 +20%**。Product Playbook 方面:產品思維品質 **+69%**,啟用子代理後品質完成率躍升至 **100%**。',
+      ja: '主な成果:**700 万人以上**にリーチ;**USPACE 売上の 85% 以上**を統括;AI プロトタイピングで **5 倍速**の反復;PXPay で **決済コンバージョン +25%・苦情 −40%**;NUEIP で **予測精度 +35%**;FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+    },
+  },
+  {
+    id: 'exp-nueip',
+    questions: {
+      en: ['What did he do at NUEIP?', 'tell me about NUEIP', 'his BI / analytics experience', 'his data work'],
+      'zh-TW': ['他在 NUEIP 做什麼', '介紹 NUEIP', '他的 BI / 分析經驗', '他的數據工作'],
+      ja: ['NUEIP では何をした', 'NUEIP について', 'BI / 分析の経験'],
+    },
+    answers: {
+      en: 'At **NUEIP** (Senior PM, 2024) Charles built an end-to-end BI product with advanced analytics and AI: **+40% data-driven decisions**, **+35% forecast accuracy** via predictive models, and **50% faster reporting** by integrating BI dashboards.',
+      'zh-TW': '在 **NUEIP**(資深產品經理,2024),Charles 打造了結合進階分析與 AI 的端到端 BI 產品:**數據驅動決策 +40%**、以預測模型達成 **預測準確度 +35%**,並透過整合 BI 儀表板讓 **報表速度快 50%**。',
+      ja: '**NUEIP**(シニア PM、2024)で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築:**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
+    },
+  },
+  {
+    id: 'exp-flux',
+    questions: {
+      en: ['What did he do at FLUX?', 'tell me about FLUX', 'his operations experience', 'his earliest role'],
+      'zh-TW': ['他在 FLUX 做什麼', '介紹 FLUX', '他的營運經驗', '他最早的工作'],
+      ja: ['FLUX では何をした', 'FLUX について', 'オペレーションの経験'],
+    },
+    answers: {
+      en: 'At **FLUX** (Operations Manager, 2019–2022) Charles developed product strategy through competitive analysis (**+20% market share**), redesigned the website and SEO for a 3-product ecosystem (**+30% retention**), and directed a team of 10 (**+22% process efficiency, +35% fulfillment speed**).',
+      'zh-TW': '在 **FLUX**(營運經理,2019–2022),Charles 透過競品分析制定產品策略(**市佔 +20%**)、為三產品生態系重新設計網站與 SEO(**留存 +30%**),並帶領 10 人團隊(**流程效率 +22%、履行速度 +35%**)。',
+      ja: '**FLUX**(オペレーションマネージャー、2019–2022)で Charles は競合分析を通じてプロダクト戦略を策定(**市場シェア +20%**)、3 プロダクトのエコシステム向けにサイトと SEO を再設計(**リテンション +30%**)、10 名のチームを統括(**プロセス効率 +22%・処理速度 +35%**)。',
+    },
+  },
+  {
+    id: 'career-reflection',
+    questions: {
+      en: ['Why did he turn down the Uber offer?', 'his career choices', 'why not big tech?', 'his career philosophy'],
+      'zh-TW': ['他為什麼拒絕 Uber offer', '他的職涯選擇', '為什麼不去大廠', '他的職涯觀'],
+      ja: ['なぜ Uber のオファーを断った', 'キャリアの選択', 'なぜ大手に行かない'],
+    },
+    answers: {
+      en: 'Charles has written publicly about turning down a Uber L4 offer — a reflection on PM career choices in the AI era, weighing the prestige of a big-tech badge against where he believes product work is heading (the Product Builder path). The full essay is linked from the portfolio\'s blog section.',
+      'zh-TW': 'Charles 曾公開撰文談他拒絕 Uber L4 offer 的決定——一篇關於 AI 時代 PM 職涯選擇的反思,在「大廠光環」與「他認為產品工作的未來方向(Product Builder 之路)」之間做取捨。完整文章在作品集的部落格區塊有連結。',
+      ja: 'Charles は Uber L4 オファーを断った決断について公に執筆しています。AI 時代の PM キャリア選択についての考察で、大手の肩書きの威信と、彼が考えるプロダクト業務の行く先(Product Builder の道)を天秤にかけたものです。全文はポートフォリオのブログ欄からリンクされています。',
+    },
+  },
+  {
+    id: 'contact-direct',
+    questions: {
+      en: ['What is his email?', 'his LinkedIn', 'his GitHub', 'social links', 'where can I find him online?'],
+      'zh-TW': ['他的 email 是什麼', '他的 LinkedIn', '他的 GitHub', '社群連結', '網路上哪裡找他'],
+      ja: ['メールアドレスは', 'LinkedIn', 'GitHub', 'SNS リンク', 'オンラインでどこ'],
+    },
+    answers: {
+      en: 'You can reach Charles here:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [All links / Portaly](https://portaly.cc/charleschen)',
+      'zh-TW': '你可以透過這些方式聯繫 Charles:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
+      ja: '以下から Charles にご連絡いただけます:\n\n* メール:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
+    },
+  },
+  {
+    id: 'no-data-redirect',
+    questions: {
+      en: ['What is his education?', 'where did he study?', 'his degree', 'where does he live?', 'is he open to remote?', 'will he relocate?', 'what languages does he speak?', 'his expected salary'],
+      'zh-TW': ['他的學歷', '他在哪裡讀書', '他念哪間學校', '他住哪裡', '他接受遠端嗎', '他會 relocate 嗎', '他會說哪些語言', '他的期望薪資'],
+      ja: ['学歴は', 'どこの大学', '住んでいる場所', 'リモートは可能', '話せる言語', '希望給与'],
+    },
+    answers: {
+      en: "That detail isn't covered in the portfolio, and I'd rather not guess. It's best to ask Charles directly:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
+      'zh-TW': '這個細節作品集裡沒有提供,我不想亂猜。建議直接問 Charles 本人:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: 'その詳細はポートフォリオに記載がなく、推測は避けたいです。Charles 本人に直接お尋ねください:\n\n* メール:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+    },
+  },
+
   // ───────────────────────────── meta / cta ─────────────────────────────
   {
     id: 'hiring',
