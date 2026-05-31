@@ -1,22 +1,39 @@
 // Minimal markdown renderer for streamed answers — no dependency, by design
 // (the design system values lean dependencies). It covers exactly the subset
-// the answer model emits: paragraphs, `*`/`-` bullet lists, `**bold**`, inline
+// the answer model emits: paragraphs, `*`/`-`/`1.` lists, `**bold**`, inline
 // `code`, and [n] citation markers (rendered in the accent colour). Anything
 // else falls through as plain text. Safe: we never use dangerouslySetInnerHTML —
 // every node is a real React element built from parsed tokens.
 
 import { Fragment, type ReactNode } from 'react'
 
-// Inline pass: **bold**, `code`, and [n] / [1, 2] citation markers.
+// "Pangu spacing": insert a thin gap between CJK and adjacent half-width
+// alphanumerics so mixed zh/ja + Latin/number text reads cleanly
+// (e.g. "USPACE為Business" → "USPACE 為 Business"). Applied only to plain-text
+// fragments, never inside bold/code/citation tokens. Idempotent: skips where a
+// space (or the boundary itself) already exists.
+const CJK = '\\u2e80-\\u2eff\\u3040-\\u30ff\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff\\uff00-\\uffef'
+const ALNUM = 'A-Za-z0-9'
+const PANGU_AFTER = new RegExp(`([${CJK}])([${ALNUM}@#$%^&*\\-+\\\\=|/])`, 'g')
+const PANGU_BEFORE = new RegExp(`([${ALNUM}!~)\\]}>;:,.?%])([${CJK}])`, 'g')
+
+function pangu(text: string): string {
+  return text.replace(PANGU_AFTER, '$1 $2').replace(PANGU_BEFORE, '$1 $2')
+}
+
+// Inline pass: **bold**, `code`, and [n] / [1, 2] citation markers. Plain-text
+// runs between tokens get pangu spacing; token contents are left untouched.
 function renderInline(text: string): ReactNode[] {
   const out: ReactNode[] = []
-  // Split on the three inline constructs, keeping the delimiters.
   const re = /(\*\*[^*]+\*\*|`[^`]+`|\[\d+(?:,\s*\d+)*\])/g
   let last = 0
   let m: RegExpExecArray | null
   let key = 0
+  const plain = (s: string) => {
+    if (s) out.push(<Fragment key={key++}>{pangu(s)}</Fragment>)
+  }
   while ((m = re.exec(text)) !== null) {
-    if (m.index > last) out.push(<Fragment key={key++}>{text.slice(last, m.index)}</Fragment>)
+    if (m.index > last) plain(text.slice(last, m.index))
     const tok = m[0]
     if (tok.startsWith('**')) {
       out.push(
@@ -43,26 +60,34 @@ function renderInline(text: string): ReactNode[] {
     }
     last = m.index + tok.length
   }
-  if (last < text.length) out.push(<Fragment key={key++}>{text.slice(last)}</Fragment>)
+  if (last < text.length) plain(text.slice(last))
   return out
 }
 
+interface ListItem {
+  marker: ReactNode // bullet dot or "1." style ordinal
+  content: string
+}
+
 export function Markdown({ text }: { text: string }) {
-  // Block pass: group consecutive bullet lines into <ul>, everything else into
-  // <p>. A "bullet" is a line starting with * or - followed by a space.
+  // Block pass: group consecutive list lines (bullets OR "1." ordinals) into a
+  // single list; everything else becomes a <p>. List items keep a hanging
+  // indent (marker column + flex-1 text), so wrapped lines align under the text,
+  // not under the marker.
   const lines = text.split('\n')
   const blocks: ReactNode[] = []
-  let list: string[] = []
+  let list: ListItem[] = []
   let key = 0
 
   const flushList = () => {
     if (list.length === 0) return
+    const items = list
     blocks.push(
       <ul key={key++} className="my-1.5 flex list-none flex-col gap-1.5 pl-1">
-        {list.map((item, i) => (
+        {items.map((item, i) => (
           <li key={i} className="flex gap-2">
-            <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-mars" />
-            <span className="flex-1">{renderInline(item)}</span>
+            {item.marker}
+            <span className="flex-1">{renderInline(item.content)}</span>
           </li>
         ))}
       </ul>,
@@ -70,11 +95,25 @@ export function Markdown({ text }: { text: string }) {
     list = []
   }
 
+  const bulletDot = (
+    <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-accent-mars" />
+  )
+  const ordinal = (n: string) => (
+    <span className="min-w-[1.1em] shrink-0 text-right font-mono text-[12px] text-accent-mars">
+      {n}.
+    </span>
+  )
+
   for (const raw of lines) {
     const line = raw.trimEnd()
     const bullet = /^\s*[*-]\s+(.*)$/.exec(line)
+    const numbered = /^\s*(\d+)\.\s+(.*)$/.exec(line)
     if (bullet) {
-      list.push(bullet[1])
+      list.push({ marker: bulletDot, content: bullet[1] })
+      continue
+    }
+    if (numbered) {
+      list.push({ marker: ordinal(numbered[1]), content: numbered[2] })
       continue
     }
     flushList()
