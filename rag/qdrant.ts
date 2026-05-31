@@ -96,8 +96,14 @@ export async function faqLookup(
     with_payload: true,
   })
   const top = res.points[0]
+  // Diagnostic: always log the best candidate so a near-miss is tunable from
+  // logs (e.g. "score=0.79 id=remote" tells us the threshold is just too high).
+  const payload = (top?.payload ?? {}) as { answer?: string; faq_id?: string }
+  console.log(
+    `[chat] faq probe locale=${locale} hits=${res.points.length} ` +
+      `top=${(top?.score ?? 0).toFixed(3)} id=${payload.faq_id ?? '-'} threshold=${config.faqCacheThreshold}`,
+  )
   if (!top || (top.score ?? 0) < config.faqCacheThreshold) return null
-  const payload = (top.payload ?? {}) as { answer?: string; faq_id?: string }
   if (!payload.answer) return null
   return { answer: payload.answer, id: payload.faq_id ?? '', score: top.score ?? 0 }
 }
