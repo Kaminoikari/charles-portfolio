@@ -32,13 +32,62 @@ function contactBlock(locale: Locale): string {
   return `* Email: ${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [All links / Portaly](${CONTACT.portaly})`
 }
 
+// --- 0. prompt-injection / jailbreak deflection ------------------------------
+// Caught FIRST, before anything else. A public identity-bound bot is a prompt-
+// injection target; rather than let payloads reach the LLM, we detect the common
+// shapes and return a short in-character refusal (no LLM, no cost). This is a
+// usability layer on top of guardrails.sanitize() (defense-in-depth).
+const INJECTION = new RegExp(
+  [
+    'ignore\\s+(all\\s+|your\\s+)?(previous|prior|above|the)\\s+(instructions?|prompts?|rules?)',
+    'disregard\\s+(the\\s+|your\\s+|all\\s+)?(system|above|previous|instructions?|rules?)',
+    'forget\\s+(everything|all|your|the)\\b',
+    'you\\s+are\\s+now\\b', 'act\\s+as\\s+(a|an|if)\\b', 'pretend\\s+(to\\s+be|you)',
+    'roleplay\\s+as', '\\bDAN\\b', 'developer\\s+mode', 'jailbreak',
+    '(reveal|print|repeat|show|tell\\s+me|output|expose)\\s+(me\\s+)?(your\\s+)?(the\\s+)?(system\\s+)?(prompt|instructions?|rules?|configuration|config|guidelines)',
+    'what\\s+(are|is)\\s+your\\s+(system\\s+)?(prompt|instructions?|rules?|api\\s*key|secret)',
+    'repeat\\s+(the\\s+)?(words?|text)\\s+above', 'say\\s+exactly',
+    'bypass\\s+(your|the)', 'override\\s+(your|the|system)',
+    'new\\s+instructions?:', 'system\\s*:',
+    // 中文
+    '忽略.*(指令|指示|以上|先前|規則|提示)', '無視.*(指示|提示|以上|規則)',
+    '忘記.*(指令|指示|規則|以上)', '假裝(你|妳|是)', '扮演(一個|成)',
+    '(顯示|印出|透露|告訴我|重複|洩漏).*(系統)?.*(提示詞|指令|prompt|規則|設定|金鑰)',
+    '你現在是', '開發者模式', '越獄',
+    // 日本語
+    '(以前|上記|これまで)の(指示|プロンプト|ルール).*(無視|忘れ)',
+    '指示を(無視|忘れ)', 'システムプロンプトを(見せ|教え|表示)',
+    'あなたは今', '〜のふりをして', '開発者モード',
+  ].join('|'),
+  'i',
+)
+
+export function injectionRefusal(locale: Locale): string {
+  if (locale === 'zh-TW') {
+    return (
+      '哈，這招對我沒用 😄 我是 Charles 作品集的小助手，只專心做一件事：回答關於他的工作、' +
+      '專案與經歷。有什麼想了解 Charles 的，儘管問！'
+    )
+  }
+  if (locale === 'ja') {
+    return (
+      'なかなかやりますね 😄 でも私は Charles のポートフォリオアシスタント。彼の仕事・' +
+      'プロジェクト・経歴についてお答えすることだけに集中しています。何でも聞いてください!'
+    )
+  }
+  return (
+    "Nice try 😄 I'm just Charles's portfolio assistant — I stay focused on one " +
+    'thing: answering questions about his work, projects, and experience. Ask me anything about Charles!'
+  )
+}
+
 // --- 1. personal / privacy redirect -----------------------------------------
 // Caught up front so curious visitors never spend a token. Replies in-language.
 export function personalRedirect(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
       '這比較屬於個人問題，就留給 Charles 本人回答吧 😊 ' +
-      '如果你想進一步認識他，歡迎直接聯繫:\n\n' +
+      '如果你想進一步認識他，歡迎直接聯繫：\n\n' +
       contactBlock(locale)
     )
   }
@@ -105,7 +154,7 @@ const FAQ: FaqEntry[] = [
     match: /^\s*(hi|hello|hey|yo|greetings|哈囉|你好|妳好|嗨|安安|こんにちは|こんにちわ|はじめまして|やあ)[\s!！。.~]*$/i,
     answer: {
       en: "Hi! 👋 I'm Charles's portfolio assistant. Ask me about his projects, work experience, product philosophy, or how he uses AI in his workflow.",
-      'zh-TW': '嗨!👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念，或他如何在工作流程中運用 AI。',
+      'zh-TW': '嗨！👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念，或他如何在工作流程中運用 AI。',
       ja: 'こんにちは!👋 Charles のポートフォリオアシスタントです。プロジェクト、職務経歴、プロダクトの考え方、AI の活用方法など、お気軽にどうぞ。',
     },
   },
@@ -122,14 +171,16 @@ const FAQ: FaqEntry[] = [
 
 // --- triage entry ------------------------------------------------------------
 export type TriageResult =
+  | { kind: 'injection'; answer: string }
   | { kind: 'personal'; answer: string }
   | { kind: 'canned'; answer: string }
   | { kind: 'pass' }
 
 export function triage(question: string, locale: Locale): TriageResult {
   const q = question.trim()
-  // Privacy first — it's both the most cost-sensitive and the most important to
-  // never hand to the LLM.
+  // Injection / jailbreak first — never let these reach the LLM.
+  if (INJECTION.test(q)) return { kind: 'injection', answer: injectionRefusal(locale) }
+  // Privacy next — cost-sensitive and must never be handed to the LLM.
   if (PERSONAL.test(q)) return { kind: 'personal', answer: personalRedirect(locale) }
   for (const entry of FAQ) {
     if (entry.match.test(q)) return { kind: 'canned', answer: entry.answer[locale] }
@@ -143,7 +194,7 @@ export function genericFallback(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
       '目前作品集裡的資訊不足以準確回答這個問題，我不想亂猜。' +
-      '建議你直接聯繫 Charles 詢問:\n\n' +
+      '建議你直接聯繫 Charles 詢問：\n\n' +
       contactBlock(locale) +
       '\n\n或者你也可以問問他的專案(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、工作經歷，或他如何運用 AI。'
     )

@@ -71,8 +71,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "I'm the **portfolio assistant Charles built himself** — a corrective RAG chatbot, made to showcase his AI engineering. Under the hood: a **LangGraph.js** pipeline (triage → retrieve → grade → generate, with a corrective rewrite loop), **Qdrant** hybrid retrieval (dense + BM25, RRF-fused), **Voyage** embeddings + reranker, a two-tier **Gemini → Claude** generation stack, and a **semantic FAQ cache** that answers common questions with zero generation cost. The base model is Claude, but the whole system around it is Charles's own design.",
-      'zh-TW': '我是 **Charles 親手打造的作品集小助手**——一個 corrective RAG 聊天機器人，專門用來展示他的 AI 工程能力。底層架構:**LangGraph.js** 流程（分流 → 檢索 → 評估 → 生成，含修正式重寫迴圈）、**Qdrant** 混合檢索(dense + BM25,RRF 融合)、**Voyage** 向量與重排序、兩層 **Gemini → Claude** 生成，以及一個**語意快取**讓常見問題零生成成本就能回答。底層模型是 Claude，但外圍整套系統都是 Charles 自己設計的。',
-      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**——彼の AI エンジニアリングを示すための corrective RAG チャットボットです。仕組みは:**LangGraph.js** パイプライン（トリアージ→検索→評価→生成、修正リライトループ付き）、**Qdrant** ハイブリッド検索(dense + BM25、RRF 融合)、**Voyage** の埋め込みとリランカー、二層の **Gemini → Claude** 生成、そして一般的な質問を生成コストゼロで返す**セマンティック FAQ キャッシュ**。ベースモデルは Claude ですが、その周りのシステム全体は Charles 自身の設計です。',
+      'zh-TW': '我是 **Charles 親手打造的作品集小助手**——一個 corrective RAG 聊天機器人，專門用來展示他的 AI 工程能力。底層架構：**LangGraph.js** 流程（分流 → 檢索 → 評估 → 生成，含修正式重寫迴圈）、**Qdrant** 混合檢索(dense + BM25,RRF 融合)、**Voyage** 向量與重排序、兩層 **Gemini → Claude** 生成，以及一個**語意快取**讓常見問題零生成成本就能回答。底層模型是 Claude，但外圍整套系統都是 Charles 自己設計的。',
+      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**——彼の AI エンジニアリングを示すための corrective RAG チャットボットです。仕組みは：**LangGraph.js** パイプライン（トリアージ→検索→評価→生成、修正リライトループ付き）、**Qdrant** ハイブリッド検索(dense + BM25、RRF 融合)、**Voyage** の埋め込みとリランカー、二層の **Gemini → Claude** 生成、そして一般的な質問を生成コストゼロで返す**セマンティック FAQ キャッシュ**。ベースモデルは Claude ですが、その周りのシステム全体は Charles 自身の設計です。',
     },
   },
   {
@@ -177,8 +177,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "Charles has built five showcased projects: **Path** (offline-first travel PWA), **Plutus Trade** (AI stock decision-support), **Product Playbook** (LLM multi-agent spec system), **House Ops** (real-estate automation), and **Job Ops** (candidate-side ATS). Ask about any one for details.",
-      'zh-TW': 'Charles 有五個代表作品:**Path**(離線優先旅遊 PWA)、**Plutus Trade**(AI 選股決策輔助)、**Product Playbook**(LLM 多代理規格系統)、**House Ops**（房產自動化）、**Job Ops**(求職者端 ATS)。想了解哪一個都可以問我。',
-      ja: 'Charles の代表的なプロジェクトは 5 つ:**Path**(オフラインファースト旅行 PWA)、**Plutus Trade**(AI 株式意思決定支援)、**Product Playbook**(LLM マルチエージェント仕様システム)、**House Ops**（不動産自動化）、**Job Ops**(候補者側 ATS)。詳しく知りたいものをどうぞ。',
+      'zh-TW': 'Charles 有五個代表作品：**Path**(離線優先旅遊 PWA)、**Plutus Trade**(AI 選股決策輔助)、**Product Playbook**(LLM 多代理規格系統)、**House Ops**（房產自動化）、**Job Ops**(求職者端 ATS)。想了解哪一個都可以問我。',
+      ja: 'Charles の代表的なプロジェクトは 5 つ：**Path**(オフラインファースト旅行 PWA)、**Plutus Trade**(AI 株式意思決定支援)、**Product Playbook**(LLM マルチエージェント仕様システム)、**House Ops**（不動産自動化）、**Job Ops**(候補者側 ATS)。詳しく知りたいものをどうぞ。',
     },
   },
 
@@ -205,8 +205,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Charles has been: **PM at USPACE** (2024–present), **Product Mentor at XChange School** (2025–present), **Senior PM at NUEIP** (2024, BI + predictive analytics), **PM at PXPay Plus** (2022–2024, payments — +25% conversions), and **Operations Manager at FLUX** (2019–2022, +20% market share, led a team of 10).',
-      'zh-TW': 'Charles 的經歷包括:**USPACE 產品經理**（2024 至今）、**XChange School 產品導師**（2025 至今）、**NUEIP 資深產品經理**(2024,BI + 預測分析)、**PXPay Plus 產品經理**（2022–2024，支付，+25% 轉換率），以及 **FLUX 營運經理**（2019–2022,+20% 市佔、帶領 10 人團隊）。',
-      ja: 'Charles の経歴:**USPACE プロダクトマネージャー**（2024〜現在）、**XChange School プロダクトメンター**（2025〜現在）、**NUEIP シニア PM**(2024、BI+予測分析)、**PXPay Plus PM**（2022–2024、決済、コンバージョン +25%）、**FLUX オペレーションマネージャー**（2019–2022、市場シェア +20%、10 名のチームを統括）。',
+      'zh-TW': 'Charles 的經歷包括：**USPACE 產品經理**（2024 至今）、**XChange School 產品導師**（2025 至今）、**NUEIP 資深產品經理**(2024,BI + 預測分析)、**PXPay Plus 產品經理**（2022–2024，支付，+25% 轉換率），以及 **FLUX 營運經理**（2019–2022,+20% 市佔、帶領 10 人團隊）。',
+      ja: 'Charles の経歴：**USPACE プロダクトマネージャー**（2024〜現在）、**XChange School プロダクトメンター**（2025〜現在）、**NUEIP シニア PM**(2024、BI+予測分析)、**PXPay Plus PM**（2022–2024、決済、コンバージョン +25%）、**FLUX オペレーションマネージャー**（2019–2022、市場シェア +20%、10 名のチームを統括）。',
     },
   },
   {
@@ -246,7 +246,7 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'On engineering: **React, TypeScript, Flutter, Canvas 2D, Node.js, Python (FastAPI), PHP (Laravel)**, with **PostgreSQL, SQLite, Redis, Supabase**, deployed on **Vercel / Fly.io**. He ships full-stack prototypes independently using Claude Code and Codex.',
-      'zh-TW': '工程方面:**React、TypeScript、Flutter、Canvas 2D、Node.js、Python(FastAPI)、PHP(Laravel)**，資料庫有 **PostgreSQL、SQLite、Redis、Supabase**，部署於 **Vercel / Fly.io**。他能用 Claude Code 與 Codex 獨立交付全端原型。',
+      'zh-TW': '工程方面：**React、TypeScript、Flutter、Canvas 2D、Node.js、Python(FastAPI)、PHP(Laravel)**，資料庫有 **PostgreSQL、SQLite、Redis、Supabase**，部署於 **Vercel / Fly.io**。他能用 Claude Code 與 Codex 獨立交付全端原型。',
       ja: 'エンジニアリング面では **React、TypeScript、Flutter、Canvas 2D、Node.js、Python(FastAPI)、PHP(Laravel)**、DB は **PostgreSQL、SQLite、Redis、Supabase**、**Vercel / Fly.io** にデプロイ。Claude Code と Codex でフルスタックのプロトタイプを単独で出荷します。',
     },
   },
@@ -259,8 +259,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'On AI/LLM: **Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, and Agentic Workflows**. He has shipped AI in production (e.g. deep Gemini integration in Plutus Trade) and built his own multi-agent system, Product Playbook.',
-      'zh-TW': 'AI/LLM 方面:**Claude Code、Codex、Gemini AI、LLM 編排、Prompt Engineering、AI Agent 開發，以及 Agentic Workflows**。他有將 AI 落地到生產環境的經驗(例如 Plutus Trade 深度整合 Gemini)，也打造了自己的多代理系統 Product Playbook。',
-      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini AI、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー**。本番環境で AI を出荷した経験があり(例:Plutus Trade での Gemini 深い統合)、自作のマルチエージェントシステム Product Playbook も構築しています。',
+      'zh-TW': 'AI/LLM 方面：**Claude Code、Codex、Gemini AI、LLM 編排、Prompt Engineering、AI Agent 開發，以及 Agentic Workflows**。他有將 AI 落地到生產環境的經驗(例如 Plutus Trade 深度整合 Gemini)，也打造了自己的多代理系統 Product Playbook。',
+      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini AI、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー**。本番環境で AI を出荷した経験があり(例：Plutus Trade での Gemini 深い統合)、自作のマルチエージェントシステム Product Playbook も構築しています。',
     },
   },
   {
@@ -272,7 +272,7 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'On product strategy: **JTBD, Persona, User Journey / Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE prioritization, AARRR, and competitive analysis** — plus cross-functional leadership, stakeholder management, and Agile/Scrum.',
-      'zh-TW': '產品策略方面:**JTBD、Persona、User Journey / Empathy Map、機會解決方案樹(OST)、User Story Mapping、North Star Metric、OKR、RICE 優先級、AARRR，以及競品分析**，另外還有跨職能領導、利害關係人管理與 Agile/Scrum。',
+      'zh-TW': '產品策略方面：**JTBD、Persona、User Journey / Empathy Map、機會解決方案樹(OST)、User Story Mapping、North Star Metric、OKR、RICE 優先級、AARRR，以及競品分析**，另外還有跨職能領導、利害關係人管理與 Agile/Scrum。',
       ja: 'プロダクト戦略面では **JTBD、ペルソナ、ユーザージャーニー/共感マップ、機会解決ツリー(OST)、ユーザーストーリーマッピング、North Star 指標、OKR、RICE 優先順位付け、AARRR、競合分析** に加え、機能横断リーダーシップ・ステークホルダー管理・Agile/Scrum。',
     },
   },
@@ -287,8 +287,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Charles works by four principles: **Outcomes over outputs** (changing user behavior, not shipping features), **sharp product sense** (the best calls happen before the data exists), **strong opinions loosely held**, and **build to learn** (working prototypes beat slide decks). He measures success by what users do differently.',
-      'zh-TW': 'Charles 有四個工作原則:**結果重於產出**（改變使用者行為，而非交付功能）、**敏銳的產品直覺**（最好的決策往往發生在數據出現之前）、**有主見但不固執**，以及 **動手做來學習**（可運作的原型勝過簡報）。他用「使用者行為的改變」來衡量成功。',
-      ja: 'Charles の 4 つの原則:**アウトプットよりアウトカム**（機能の出荷でなくユーザー行動の変化）、**鋭いプロダクトセンス**（最良の判断はデータが揃う前に起きる）、**強い意見を緩く持つ**、**学ぶために作る**（動くプロトタイプはスライドに勝る）。成功は「ユーザーの行動がどう変わったか」で測ります。',
+      'zh-TW': 'Charles 有四個工作原則：**結果重於產出**（改變使用者行為，而非交付功能）、**敏銳的產品直覺**（最好的決策往往發生在數據出現之前）、**有主見但不固執**，以及 **動手做來學習**（可運作的原型勝過簡報）。他用「使用者行為的改變」來衡量成功。',
+      ja: 'Charles の 4 つの原則：**アウトプットよりアウトカム**（機能の出荷でなくユーザー行動の変化）、**鋭いプロダクトセンス**（最良の判断はデータが揃う前に起きる）、**強い意見を緩く持つ**、**学ぶために作る**（動くプロトタイプはスライドに勝る）。成功は「ユーザーの行動がどう変わったか」で測ります。',
     },
   },
   {
@@ -313,8 +313,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'AI is the core engine of his workflow across the whole cycle: **Discovery** (LLMs digest market & interview research), **Spec writing** (his Product Playbook agent), **Prototyping** (Claude Code + Codex for full-stack builds), **AI features** (shipping Gemini in Plutus Trade), and **Agentic workflows** (autonomous agents handling repetitive work end to end).',
-      'zh-TW': 'AI 是他工作流程的核心引擎，貫穿整個週期:**探索**(用 LLM 消化市場與訪談研究)、**規格撰寫**(他的 Product Playbook 代理)、**原型開發**(Claude Code + Codex 做全端)、**AI 功能**(在 Plutus Trade 落地 Gemini)，以及 **Agentic workflows**（自主代理端到端處理重複工作）。',
-      ja: 'AI は彼のワークフローの中核エンジンで、全サイクルにわたります:**ディスカバリー**(LLM で市場・インタビュー調査を消化)、**仕様作成**(自作 Product Playbook エージェント)、**プロトタイピング**(Claude Code + Codex でフルスタック構築)、**AI 機能**(Plutus Trade で Gemini を出荷)、**エージェンティックワークフロー**（自律エージェントが反復作業を端から端まで処理）。',
+      'zh-TW': 'AI 是他工作流程的核心引擎，貫穿整個週期：**探索**(用 LLM 消化市場與訪談研究)、**規格撰寫**(他的 Product Playbook 代理)、**原型開發**(Claude Code + Codex 做全端)、**AI 功能**(在 Plutus Trade 落地 Gemini)，以及 **Agentic workflows**（自主代理端到端處理重複工作）。',
+      ja: 'AI は彼のワークフローの中核エンジンで、全サイクルにわたります：**ディスカバリー**(LLM で市場・インタビュー調査を消化)、**仕様作成**(自作 Product Playbook エージェント)、**プロトタイピング**(Claude Code + Codex でフルスタック構築)、**AI 機能**(Plutus Trade で Gemini を出荷)、**エージェンティックワークフロー**（自律エージェントが反復作業を端から端まで処理）。',
     },
   },
 
@@ -367,8 +367,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Selected results: **7M+ users reached**; **85%+ of USPACE revenue** owned; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
-      'zh-TW': '精選成果:觸及 **超過 700 萬使用者**;主導 **USPACE 85% 以上營收**;以 AI 原型開發達 **5 倍**迭代速度;在 PXPay **結帳轉換 +25%、客訴 −40%**;在 NUEIP **預測準確度 +35%**;在 FLUX **市佔 +20%**。Product Playbook 方面:產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
-      ja: '主な成果:**700 万人以上**にリーチ;**USPACE 売上の 85% 以上**を統括;AI プロトタイピングで **5 倍速**の反復;PXPay で **決済コンバージョン +25%・苦情 −40%**;NUEIP で **予測精度 +35%**;FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**;主導 **USPACE 85% 以上營收**;以 AI 原型開發達 **5 倍**迭代速度;在 PXPay **結帳轉換 +25%、客訴 −40%**;在 NUEIP **預測準確度 +35%**;在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
+      ja: '主な成果：**700 万人以上**にリーチ;**USPACE 売上の 85% 以上**を統括;AI プロトタイピングで **5 倍速**の反復;PXPay で **決済コンバージョン +25%・苦情 −40%**;NUEIP で **予測精度 +35%**;FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
     },
   },
   {
@@ -380,8 +380,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'At **NUEIP** (Senior PM, 2024) Charles built an end-to-end BI product with advanced analytics and AI: **+40% data-driven decisions**, **+35% forecast accuracy** via predictive models, and **50% faster reporting** by integrating BI dashboards.',
-      'zh-TW': '在 **NUEIP**（資深產品經理，2024），Charles 打造了結合進階分析與 AI 的端到端 BI 產品:**數據驅動決策 +40%**、以預測模型達成 **預測準確度 +35%**，並透過整合 BI 儀表板讓 **報表速度快 50%**。',
-      ja: '**NUEIP**(シニア PM、2024)で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築:**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
+      'zh-TW': '在 **NUEIP**（資深產品經理，2024），Charles 打造了結合進階分析與 AI 的端到端 BI 產品：**數據驅動決策 +40%**、以預測模型達成 **預測準確度 +35%**，並透過整合 BI 儀表板讓 **報表速度快 50%**。',
+      ja: '**NUEIP**(シニア PM、2024)で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築：**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
     },
   },
   {
@@ -420,7 +420,7 @@ export const faqEntries: FaqEntry[] = [
     answers: {
       en: 'You can reach Charles here:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [All links / Portaly](https://portaly.cc/charleschen)',
       'zh-TW': '你可以透過這些方式聯繫 Charles:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
-      ja: '以下から Charles にご連絡いただけます:\n\n* メール:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
+      ja: '以下から Charles にご連絡いただけます：\n\n* メール：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
     },
   },
   {
@@ -471,8 +471,157 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "That detail isn't covered in the portfolio, and I'd rather not guess. It's best to ask Charles directly:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
-      'zh-TW': '這個細節作品集裡沒有提供，我不想亂猜。建議直接問 Charles 本人:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
-      ja: 'その詳細はポートフォリオに記載がなく、推測は避けたいです。Charles 本人に直接お尋ねください:\n\n* メール:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      'zh-TW': '這個細節作品集裡沒有提供，我不想亂猜。建議直接問 Charles 本人：\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: 'その詳細はポートフォリオに記載がなく、推測は避けたいです。Charles 本人に直接お尋ねください：\n\n* メール：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+    },
+  },
+
+  // ──────────────── interviewer / HR lens ────────────────
+  {
+    id: 'strengths',
+    questions: {
+      en: ['What are his strengths?', 'what is he good at?', 'his biggest strength', 'why is he a strong PM?', 'what makes him stand out?', 'his superpower'],
+      'zh-TW': ['他的優勢是什麼', '他擅長什麼', '他最強的地方', '他為什麼是強的 PM', '他的亮點是什麼', '他的強項'],
+      ja: ['彼の強みは', '何が得意', '一番の強み', 'なぜ優れた PM なのか', '彼の際立つ点'],
+    },
+    answers: {
+      en: "Charles's core strength is being a **Product Builder** — he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He also brings proven revenue ownership (85%+ at USPACE), 0→1 launch experience, and full-stack AI engineering depth (his own multi-agent system, production Gemini features).",
+      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**——他把敏銳的產品策略(JTBD、RICE、機會框架)與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備實證的營收掌控力(USPACE 85%+)、0→1 上線經驗，以及全端 AI 工程深度(自建多代理系統、生產級 Gemini 功能)。',
+      ja: 'Charles の核となる強みは **Product Builder** であること——鋭いプロダクト戦略(JTBD、RICE、機会フレーミング)と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。実証された売上オーナーシップ(USPACE 85%+)、0→1 のローンチ経験、フルスタックの AI エンジニアリング(自作マルチエージェント、本番 Gemini 機能)も備えます。',
+    },
+  },
+  {
+    id: 'weaknesses',
+    questions: {
+      en: ['What are his weaknesses?', 'his weakness', 'what does he struggle with?', 'areas for growth', 'his blind spots'],
+      'zh-TW': ['他的弱點是什麼', '他的缺點', '他不擅長什麼', '他的成長空間', '他的盲點'],
+      ja: ['彼の弱みは', '弱点', '苦手なこと', '成長の余地'],
+    },
+    answers: {
+      en: "That's best answered by Charles himself — self-assessment of growth areas is a conversation he'd want to have directly. You can reach him here:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
+      'zh-TW': '這個問題最好由 Charles 本人來回答——關於成長空間的自我評估，他會想親自談。你可以這樣聯繫他：\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: 'これは Charles 本人にお尋ねいただくのが一番です——成長領域の自己評価は、直接話したい話題だと思います。こちらからご連絡ください：\n\n* メール： [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+    },
+  },
+  {
+    id: 'achievement',
+    questions: {
+      en: ['What is his biggest achievement?', 'his proudest work', 'his greatest accomplishment', 'what is he most proud of?'],
+      'zh-TW': ['他最大的成就是什麼', '他最自豪的作品', '他最引以為傲的', '他最大的貢獻'],
+      ja: ['一番の成果は', '最も誇れる仕事', '最大の功績'],
+    },
+    answers: {
+      en: "A standout: at USPACE he owns product strategy driving **85%+ of company revenue** across three lines, and 0→1 launched USPACE for Business. On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes — behavior and revenue moved, not features shipped.",
+      'zh-TW': '其中一個亮點：在 USPACE 他主導的產品策略貢獻 **85% 以上的公司營收**（橫跨三條線），並 0→1 推出 USPACE for Business。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功——改變行為與營收，而非交付了多少功能。',
+      ja: '際立つ成果：USPACE で 3 つのラインにまたがり **会社売上の 85% 以上** を牽引するプロダクト戦略を統括し、USPACE for Business を 0→1 でローンチ。エンジニアリング面では、**Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）引き上げました。成功は成果で測ります——機能でなく行動と売上の変化です。',
+    },
+  },
+  {
+    id: 'why-hire',
+    questions: {
+      en: ['Why should I hire him?', 'why hire Charles?', 'what value does he bring?', 'why is he a good fit?', 'what can he do for my company?'],
+      'zh-TW': ['為什麼該錄取他', '為什麼要僱用 Charles', '他能帶來什麼價值', '他為什麼適合', '他能為公司做什麼'],
+      ja: ['なぜ採用すべき', 'なぜ Charles を雇う', 'どんな価値をもたらす', 'なぜ適任'],
+    },
+    answers: {
+      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has owned 85%+ of revenue at USPACE, launched B2B SaaS 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast — not just specs — that combination is rare.',
+      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他在 USPACE 掌控 85%+ 營收、0→1 推出 B2B SaaS、端到端打造生產級 AI 系統。對一個想要「快速取得已驗證成果、而非只拿到規格」的團隊，這種組合很稀有。',
+      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ、AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。USPACE で売上の 85%+ を統括、B2B SaaS を 0→1 でローンチ、本番 AI システムを端から端まで構築。「仕様だけでなく検証済みの成果を速く」求めるチームには稀有な組み合わせです。',
+    },
+  },
+  {
+    id: 'why-product',
+    questions: {
+      en: ['Why did he become a PM?', 'why product management?', 'what drives him?', 'his motivation', 'why does he do this work?'],
+      'zh-TW': ['他為什麼當 PM', '他為什麼做產品', '是什麼驅動他', '他的動機', '他為什麼做這份工作'],
+      ja: ['なぜ PM になった', 'なぜプロダクトマネジメント', '彼の原動力', 'モチベーション'],
+    },
+    answers: {
+      en: 'Charles is driven by shipping — he treats launching as the truest form of validation, and is energized by building products that actually change user behavior. He believes the strongest product people are Builders who close the gap between idea and working product themselves. For the deeper personal "why," he would be glad to talk directly.',
+      'zh-TW': 'Charles 的驅動力來自「交付」——他把上線視為最真實的驗證，並對打造「真正改變使用者行為」的產品充滿熱情。他相信最強的產品人是親手弭平「想法與可運作產品之間距離」的 Builder。更深層的個人「為什麼」，他很樂意親自聊。',
+      ja: 'Charles の原動力は「出荷」です——ローンチを最も真実な検証と捉え、ユーザー行動を実際に変えるプロダクト作りに情熱を注ぎます。最強のプロダクト人材は、アイデアと動くプロダクトの間の距離を自ら埋める Builder だと信じています。より深い個人的な「なぜ」は、直接話すのを歓迎します。',
+    },
+  },
+  {
+    id: 'availability',
+    questions: {
+      en: ['When can he start?', 'his notice period', 'is he available now?', 'how soon can he join?', 'his start date'],
+      'zh-TW': ['他什麼時候能開始', '他的到職時間', '他多快能加入', '他現在有空嗎', '他的 notice period'],
+      ja: ['いつ始められる', '入社可能時期', 'すぐに参加できる', '通知期間'],
+    },
+    answers: {
+      en: "Timing and availability are best discussed with Charles directly — he can speak to his notice period and start date for your specific role:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
+      'zh-TW': '到職時間與檔期最好直接和 Charles 談——他能針對你的職位說明 notice period 與可開始的日期：\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: '時期や空き状況は Charles に直接ご相談ください——ご提示の役割に合わせて通知期間や開始日をお伝えできます：\n\n* メール： [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+    },
+  },
+  {
+    id: 'prioritization',
+    questions: {
+      en: ['How does he prioritize?', 'his prioritization method', 'how does he decide what to build?', 'how does he make product decisions?'],
+      'zh-TW': ['他如何排優先級', '他的優先級方法', '他怎麼決定要做什麼', '他怎麼做產品決策'],
+      ja: ['どう優先順位をつける', '優先順位付けの方法', '何を作るか決める方法'],
+    },
+    answers: {
+      en: 'Charles prioritizes by outcomes over outputs: he frames opportunities (JTBD, Opportunity Solution Tree), scores with RICE, and anchors on a North Star metric. Crucially, he validates by building — using AI to ship a working prototype and get real user signal before committing large resources, rather than debating in the abstract.',
+      'zh-TW': 'Charles 以「結果重於產出」來排優先級：他用 JTBD、機會解決方案樹(OST)框定機會，用 RICE 評分，並錨定 North Star 指標。關鍵是他用「動手做」來驗證——用 AI 交付可運作原型、在投入大量資源前先取得真實使用者訊號，而不是空泛地辯論。',
+      ja: 'Charles は「アウトプットよりアウトカム」で優先順位をつけます：JTBD や機会解決ツリー(OST)で機会を捉え、RICE で採点し、North Star 指標に紐づけます。重要なのは「作って検証する」こと——大きなリソースを投じる前に、AI で動くプロトタイプを出して実ユーザーの反応を得ます。',
+    },
+  },
+
+  // ──────────────── tech-enthusiast lens ────────────────
+  {
+    id: 'tech-why-choices',
+    questions: {
+      en: ['Why did he choose these technologies?', 'his tech stack rationale', 'why Qdrant?', 'why Voyage?', 'why Claude?', 'why these tools?'],
+      'zh-TW': ['他為什麼選這些技術', '他的技術選型理由', '為什麼用 Qdrant', '為什麼用 Voyage', '為什麼選這些工具'],
+      ja: ['なぜこれらの技術を選んだ', '技術選定の理由', 'なぜ Qdrant', 'なぜ Claude'],
+    },
+    answers: {
+      en: "For this chatbot specifically: **Qdrant** (hybrid dense+BM25 with server-side RRF, generous free tier after Supabase's 2-project cap), **Voyage voyage-3-large** (SOTA multilingual embeddings for zh/ja/en), and a **two-tier Gemini→Claude** stack (free-tier first, paid fallback) to control cost. Across projects he favors shipping fast with AI-native tooling (Claude Code, Codex) over heavyweight infrastructure.",
+      'zh-TW': '以這個 chatbot 為例：**Qdrant**(dense+BM25 混合、伺服器端 RRF，在 Supabase 2 專案上限後選它的慷慨免費額度)、**Voyage voyage-3-large**(中日英多語的 SOTA 向量)、以及**兩層 Gemini→Claude** 堆疊（免費層優先、付費備援）來控制成本。跨專案來看，他偏好用 AI 原生工具(Claude Code、Codex)快速交付，而非笨重的基礎設施。',
+      ja: 'このチャットボットの場合：**Qdrant**(dense+BM25 ハイブリッド、サーバーサイド RRF、Supabase の 2 プロジェクト上限後に選んだ寛大な無料枠)、**Voyage voyage-3-large**(zh/ja/en の SOTA 多言語埋め込み)、コスト管理のための**二層 Gemini→Claude**（無料枠優先、有料フォールバック）。プロジェクト全般では、重厚なインフラより AI ネイティブなツール(Claude Code、Codex)での高速出荷を好みます。',
+    },
+  },
+  {
+    id: 'open-source',
+    questions: {
+      en: ['Is it open source?', 'are his projects open source?', 'is the code public?', 'can I see the code?', 'is Product Playbook open source?', 'his GitHub'],
+      'zh-TW': ['這是開源的嗎', '他的專案開源嗎', '程式碼是公開的嗎', '可以看程式碼嗎', 'Product Playbook 開源嗎', '他的 GitHub'],
+      ja: ['オープンソースですか', 'プロジェクトは公開', 'コードは見られる', 'Product Playbook は OSS'],
+    },
+    answers: {
+      en: '**Product Playbook** is open source under the MIT license. Several of his projects have public repos on GitHub ([github.com/Kaminoikari](https://github.com/Kaminoikari)) — including Product Playbook, House Ops, and Job Ops. Path and Plutus Trade are live demos you can try.',
+      'zh-TW': '**Product Playbook** 以 MIT 授權開源。他有數個專案在 GitHub 上有公開 repo([github.com/Kaminoikari](https://github.com/Kaminoikari))——包括 Product Playbook、House Ops 與 Job Ops。Path 和 Plutus Trade 則是可以實際試用的 live demo。',
+      ja: '**Product Playbook** は MIT ライセンスで OSS 公開。GitHub([github.com/Kaminoikari](https://github.com/Kaminoikari))に複数の公開リポジトリがあります——Product Playbook、House Ops、Job Ops など。Path と Plutus Trade は実際に試せるライブデモです。',
+    },
+  },
+
+  // ──────────────── founder / investor lens ────────────────
+  {
+    id: 'zero-to-one',
+    questions: {
+      en: ['Can he build 0 to 1?', 'can he ship a product alone?', 'can he build an MVP?', 'is he a 0 to 1 person?', 'can he build solo?'],
+      'zh-TW': ['他能從 0 到 1 嗎', '他能獨立做出產品嗎', '他能做 MVP 嗎', '他是 0 到 1 的人嗎', '他能單獨開發嗎'],
+      ja: ['0 から 1 を作れる', '一人でプロダクトを出せる', 'MVP を作れる', 'ソロで開発できる'],
+    },
+    answers: {
+      en: 'Yes — that\'s his core mode. Charles 0→1 launched USPACE for Business (B2B SaaS), and independently built and shipped five full products (Path, Plutus Trade, Product Playbook, House Ops, Job Ops) across React, Node.js, Flutter, and Python using AI tooling. He sets the strategy and ships the working product himself.',
+      'zh-TW': '可以——這正是他的核心模式。Charles 0→1 推出了 USPACE for Business(B2B SaaS)，並獨立打造、交付了五個完整產品(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)，橫跨 React、Node.js、Flutter 與 Python，全程用 AI 工具。他既定策略，也親手交付可運作的產品。',
+      ja: 'はい——それが彼の核となるモードです。Charles は USPACE for Business(B2B SaaS)を 0→1 でローンチし、React・Node.js・Flutter・Python にまたがる 5 つの完成プロダクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)を AI ツールで単独構築・出荷しました。戦略を立て、動くプロダクトも自ら出します。',
+    },
+  },
+  {
+    id: 'cofounder',
+    questions: {
+      en: ['Is he open to co-founding?', 'would he join a startup?', 'is he interested in founding?', 'co-founder potential', 'would he be a founder?'],
+      'zh-TW': ['他願意當共同創辦人嗎', '他會加入新創嗎', '他對創業有興趣嗎', '他適合當 founder 嗎', '他想創業嗎'],
+      ja: ['共同創業に興味', 'スタートアップに参加', '創業に興味', '創業者になる'],
+    },
+    answers: {
+      en: "Founding-stage conversations are best had with Charles directly — fit, timing, and vision alignment are personal. Given his Product Builder profile (strategy + 0→1 shipping with AI), it's a natural fit to explore. Reach him:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
+      'zh-TW': '創業階段的對話最好直接和 Charles 談——契合度、時機與願景一致與否都很個人。以他 Product Builder 的特質(策略 + 用 AI 做 0→1)來看，這是值得一聊的方向。聯繫他：\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: '創業フェーズの話は Charles に直接ご相談を——相性・タイミング・ビジョンの一致は個人的なものです。彼の Product Builder の特性(戦略+AI での 0→1 出荷)を踏まえれば、検討する価値のある方向性です。ご連絡先：\n\n* メール： [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
     },
   },
 
@@ -486,8 +635,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "For opportunities, roles, or collaboration, it's best to reach Charles directly — he can speak to fit and availability himself:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [All links / Portaly](https://portaly.cc/charleschen)",
-      'zh-TW': '關於工作機會、職位或合作，最好直接聯繫 Charles 本人，由他親自說明適配與時間:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
-      ja: '機会・ポジション・協業については、Charles 本人に直接ご連絡いただくのが確実です（適性や時期は本人がお答えします）:\n\n* メール:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
+      'zh-TW': '關於工作機會、職位或合作，最好直接聯繫 Charles 本人，由他親自說明適配與時間：\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
+      ja: '機会・ポジション・協業については、Charles 本人に直接ご連絡いただくのが確実です（適性や時期は本人がお答えします）:\n\n* メール：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
     },
   },
 ]
