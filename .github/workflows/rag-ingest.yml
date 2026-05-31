@@ -1,0 +1,46 @@
+name: RAG Ingest
+
+# Manually triggered from the Actions tab. Builds the vector index: extracts the
+# corpus, embeds dense vectors with Voyage, and upserts into Qdrant (which
+# computes the BM25 sparse vector server-side via Cloud Inference).
+#
+# Why a workflow and not a local run: the index needs outbound access to the
+# Voyage and Qdrant APIs plus the three secrets below — this runner has both.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   QDRANT_URL         e.g. https://<id>.us-east-1-1.aws.cloud.qdrant.io
+#   QDRANT_API_KEY     the cluster API key
+#   VOYAGE_API_KEY     Voyage AI key (dense embeddings + rerank)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (extract + report counts, no embeddings, no writes)'
+        type: boolean
+        default: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build index
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run rag:ingest:dry
+          else
+            npm run rag:ingest
+          fi
