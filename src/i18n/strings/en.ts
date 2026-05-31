@@ -157,7 +157,7 @@ const en: Strings = {
     closeAriaLabel: 'Close the AI assistant',
     clearLabel: 'Clear this conversation',
     title: 'Ask about Charles',
-    subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
+    subtitle: 'CRAG · RRF · RECALL@K',
     emptyMessage:
       "Ask me anything about Charles's projects, experience, or how he builds with AI. Every answer is grounded in his actual portfolio.",
     previewLabel: 'Each answer shows the real chunks it retrieved and their relevance scores, like this:',

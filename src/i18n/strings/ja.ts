@@ -110,7 +110,7 @@ const ja: Strings = {
     closeAriaLabel: 'AI アシスタントを閉じる',
     clearLabel: 'この会話をクリア',
     title: 'Ask about Charles',
-    subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
+    subtitle: 'CRAG · RRF · RECALL@K',
     emptyMessage:
       'Charles のプロジェクト、経歴、AI を使った開発手法など何でも聞いてください。回答はすべて彼の実際のポートフォリオに基づきます。',
     previewLabel: '回答には実際に検索したチャンクと関連度スコアが付きます。例:',
