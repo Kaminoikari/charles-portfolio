@@ -70,9 +70,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どうやって作られた', 'どのように構築された', 'このチャットボットの仕組み', 'あなたの RAG システムの仕組み', 'どんな技術で作られている', 'アーキテクチャは', 'あなたは RAG システム', 'Charles があなたを作った'],
     },
     answers: {
-      en: "I'm the **portfolio assistant Charles built himself** — a corrective RAG chatbot, made to showcase his AI engineering. Under the hood: a **LangGraph.js** pipeline (triage → retrieve → grade → generate, with a corrective rewrite loop), **Qdrant** hybrid retrieval (dense + BM25, RRF-fused), **Voyage** embeddings + reranker, a two-tier **Gemini → Claude** generation stack, and a **semantic FAQ cache** that answers common questions with zero generation cost. The base model is Claude, but the whole system around it is Charles's own design.",
-      'zh-TW': '我是 **Charles 親手打造的作品集小助手**——一個 corrective RAG 聊天機器人，專門用來展示他的 AI 工程能力。底層架構：**LangGraph.js** 流程（分流 → 檢索 → 評估 → 生成，含修正式重寫迴圈）、**Qdrant** 混合檢索(dense + BM25,RRF 融合)、**Voyage** 向量與重排序、兩層 **Gemini → Claude** 生成，以及一個**語意快取**讓常見問題零生成成本就能回答。底層模型是 Claude，但外圍整套系統都是 Charles 自己設計的。',
-      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**——彼の AI エンジニアリングを示すための corrective RAG チャットボットです。仕組みは：**LangGraph.js** パイプライン（トリアージ→検索→評価→生成、修正リライトループ付き）、**Qdrant** ハイブリッド検索(dense + BM25、RRF 融合)、**Voyage** の埋め込みとリランカー、二層の **Gemini → Claude** 生成、そして一般的な質問を生成コストゼロで返す**セマンティック FAQ キャッシュ**。ベースモデルは Claude ですが、その周りのシステム全体は Charles 自身の設計です。',
+      en: "I'm the **portfolio assistant Charles built himself**, a corrective RAG chatbot made to showcase his AI engineering. What I fundamentally am is the system he designed: a **LangGraph.js** state machine (triage → retrieve → grade → generate) with a **self-correcting loop** that grades the retrieved context and rewrites the query when it falls short, **Qdrant** hybrid retrieval (dense + BM25, RRF-fused) followed by a **Voyage** cross-encoder reranker, a **semantic FAQ cache** that answers common questions at zero generation cost, and a cost-tiered generation stack (a free model first, a stronger one as paid backup). The language model that writes the wording is just one swappable part inside that system; what defines me is the retrieval, the corrective loop, and the cost tiers Charles engineered.",
+      'zh-TW': '我是 **Charles 親手打造的作品集小助手**,一個 corrective RAG 聊天機器人,專門用來展示他的 AI 工程能力。我本質上就是他設計的這套系統:一個 **LangGraph.js** 狀態機(分流 → 檢索 → 評估 → 生成),帶有會評估檢索結果、不足就改寫重試的**自我矯正迴圈**;**Qdrant** 混合檢索(dense + BM25,RRF 融合)接 **Voyage** cross-encoder 重排序;一個讓常見問題零生成成本就能回答的**語意快取**;以及一個成本分層的生成棧(免費模型先答,較強的模型作為付費備援)。負責生成措辭的語言模型,只是這套系統裡可抽換的一個零件;真正定義我的,是 Charles 親手打造的檢索、矯正迴圈與成本分層。',
+      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**で、彼の AI エンジニアリングを示すための corrective RAG チャットボットです。私の本質は彼が設計したシステムそのものです:**LangGraph.js** のステートマシン(トリアージ → 検索 → 評価 → 生成)と、検索結果を評価し不十分ならクエリを書き換えて再試行する**自己修正ループ**、**Qdrant** のハイブリッド検索(dense + BM25、RRF 融合)に続く **Voyage** の cross-encoder リランカー、一般的な質問を生成コストゼロで返す**セマンティックキャッシュ**、そしてコスト階層型の生成スタック(無料モデルが先に答え、強力なモデルは有料フォールバック)。文章を生成する言語モデルはそのシステム内の交換可能な一部品にすぎず、私を定義するのは Charles が設計した検索・自己修正ループ・コスト階層です。',
     },
   },
   {
@@ -83,9 +83,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['あなたは何', 'あなたは Charles 本人', 'あなたは AI', 'ボットですか', '誰があなたを作った', 'どのモデル'],
     },
     answers: {
-      en: "I'm not Charles — I'm the **AI assistant he built for this portfolio** to answer questions about his work, projects, and experience. I'm a corrective RAG chatbot Charles designed and shipped himself (the base model is Claude). Ask me anything about his projects, background, skills, or how he works.",
-      'zh-TW': '我不是 Charles 本人——我是他**為這個作品集打造的 AI 助手**，用來回答關於他的工作、專案與經歷的問題。我是 Charles 自己設計並交付的 corrective RAG 聊天機器人(底層模型是 Claude)。歡迎問我任何關於他的專案、背景、技能或工作方式的問題。',
-      ja: '私は Charles 本人ではなく、彼が**このポートフォリオのために作った AI アシスタント**で、彼の仕事・プロジェクト・経歴についてお答えします。Charles 自身が設計・実装した corrective RAG チャットボットです(ベースモデルは Claude)。プロジェクト・経歴・スキル・働き方など何でも聞いてください。',
+      en: "I'm not Charles himself. I'm the **AI assistant he built for this portfolio** to answer questions about his work, projects, and experience: a corrective RAG chatbot Charles designed and shipped himself. The model behind my wording is just a swappable detail; what matters is the retrieval-and-correction system he engineered. Ask me anything about his projects, background, skills, or how he works.",
+      'zh-TW': '我不是 Charles 本人。我是他**為這個作品集打造的 AI 助手**,用來回答關於他的工作、專案與經歷的問題,是一個由 Charles 自己設計並交付的 corrective RAG 聊天機器人。背後的語言模型只是可抽換的細節,真正重要的是他打造的檢索與矯正系統。歡迎問我任何關於他的專案、背景、技能或工作方式的問題。',
+      ja: '私は Charles 本人ではありません。彼が**このポートフォリオのために作った AI アシスタント**で、彼の仕事・プロジェクト・経歴についてお答えします。Charles 自身が設計・実装した corrective RAG チャットボットです。背後の言語モデルは交換可能な細部にすぎず、重要なのは彼が作り上げた検索と自己修正のシステムです。プロジェクト・経歴・スキル・働き方など何でも聞いてください。',
     },
   },
   {
