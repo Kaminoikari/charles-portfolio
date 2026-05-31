@@ -40,7 +40,7 @@ function localeFilter(locale: string) {
   return { must: [{ key: 'locale', match: { value: locale } }] }
 }
 
-// The sparse query is raw text; Qdrant Cloud Inference runs SPLADE++ on it.
+// The sparse query is raw text; Qdrant Cloud Inference runs BM25 on it.
 function sparseQuery(query: string) {
   return { text: query, model: config.sparseModel }
 }

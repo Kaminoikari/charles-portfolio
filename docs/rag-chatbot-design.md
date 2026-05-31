@@ -231,7 +231,7 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 `GEMINI_API_KEY` (free-tier generation, tier 1), `ANTHROPIC_API_KEY` (paid
 fallback, tier 2), `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
 rerank), `QDRANT_URL` + `QDRANT_API_KEY` (vector store; Cloud Inference must be
-enabled for the SPLADE++ sparse model), `UPSTASH_REDIS_*`. Until these exist the
+enabled for the BM25 sparse model), `UPSTASH_REDIS_*`. Until these exist the
 pipeline can be built but not run end-to-end.
 
 ---
