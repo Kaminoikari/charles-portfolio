@@ -8,12 +8,25 @@ import { Document } from '@langchain/core/documents'
 import { z } from 'zod'
 
 import { config } from './config.js'
+import type { Locale } from './language.js'
 import type { RAGStateType, Source } from './state.js'
 import { hybridRetrieve } from './retrieval.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
 import { sanitize } from './guardrails.js'
 import { gemini, generateWithFallback } from './llm.js'
+import { triage as classifyQuestion, genericFallback } from './triage.js'
+
+// --- triage --------------------------------------------------------------
+// Deterministic pre-flight (no embed, no LLM). Personal/privacy questions and a
+// small set of canned FAQs are answered here for $0; everything else routes on
+// to retrieval. This is the single biggest cost lever: the never-answerable and
+// the most-common questions never touch Voyage / Gemini / Claude.
+export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>> {
+  const result = classifyQuestion(state.question, (state.language as Locale) ?? 'en')
+  if (result.kind === 'pass') return { route: 'retrieve' }
+  return { answer: result.answer, sources: [], route: 'answered' }
+}
 
 // --- retrieve ------------------------------------------------------------
 // Hybrid (dense+sparse) → RRF → rerank. Uses the latest query (original or the
@@ -122,27 +135,12 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
 
 // --- fallback ------------------------------------------------------------
 // Reached when retrieval keeps failing after maxLoops rewrites. Refusing
-// honestly is the correct behavior for a public, identity-bound bot. Replies in
-// the question's language so an out-of-corpus zh/ja question doesn't get an
-// English refusal.
-const FALLBACK: Record<string, string> = {
-  en:
-    "I couldn't find that in Charles's portfolio. Try asking about his projects " +
-    '(Path, Plutus Trade, Product Playbook, House Ops, Job Ops), his work ' +
-    'experience, or how he uses AI in his product workflow.',
-  'zh-TW':
-    '這個問題在 Charles 的作品集裡找不到答案。你可以問問他的專案' +
-    '(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、' +
-    '工作經歷,或他如何在產品流程中運用 AI。',
-  ja:
-    'その内容は Charles のポートフォリオには見つかりませんでした。彼の' +
-    'プロジェクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、' +
-    '職務経歴、またはプロダクト業務での AI 活用について聞いてみてください。',
-}
-
+// honestly — and pointing the visitor at Charles's contact channels — is the
+// correct behavior for a public, identity-bound bot. Replies in the question's
+// language (see genericFallback in triage.ts).
 export async function fallback(state: RAGStateType): Promise<Partial<RAGStateType>> {
   return {
-    answer: FALLBACK[state.language ?? 'en'] ?? FALLBACK.en,
+    answer: genericFallback((state.language as Locale) ?? 'en'),
     sources: [],
   }
 }

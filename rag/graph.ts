@@ -1,10 +1,12 @@
 // The corrective / agentic RAG pipeline as a LangGraph.js StateGraph.
 //
 // Flow:
-//   START -> retrieve -> gradeDocuments
-//     route == "generate"          -> generate -> END
-//     route == "rewrite" & loops<N -> rewriteQuery -> retrieve  (corrective loop)
-//     otherwise                     -> fallback -> END
+//   START -> triage                              (deterministic, no LLM/embed)
+//     personal / canned FAQ        -> END        (answered for $0)
+//     otherwise                    -> retrieve -> gradeDocuments
+//       route == "generate"          -> generate -> END
+//       route == "rewrite" & loops<N -> rewriteQuery -> retrieve  (corrective loop)
+//       otherwise                     -> fallback -> END
 //
 // This file declares the graph topology + the public `answer()` entry point.
 // Node implementations live in `nodes.ts`. `buildGraph` accepts node overrides
@@ -23,11 +25,18 @@ import * as defaultNodes from './nodes.js'
 export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>
 
 export interface NodeSet {
+  triage: Node
   retrieve: Node
   gradeDocuments: Node
   rewriteQuery: Node
   generate: Node
   fallback: Node
+}
+
+// Conditional edge: triage either answered the question (deterministically, no
+// LLM) or passes it on to retrieval.
+function routeAfterTriage(state: RAGStateType): 'answered' | 'retrieve' {
+  return state.route === 'answered' ? 'answered' : 'retrieve'
 }
 
 // Conditional edge: where to go after grading the retrieved chunks.
@@ -39,12 +48,17 @@ function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fa
 
 export function buildGraph(nodes: NodeSet = defaultNodes) {
   return new StateGraph(RAGState)
+    .addNode('triage', nodes.triage)
     .addNode('retrieve', nodes.retrieve)
     .addNode('gradeDocuments', nodes.gradeDocuments)
     .addNode('rewriteQuery', nodes.rewriteQuery)
     .addNode('generate', nodes.generate)
     .addNode('fallback', nodes.fallback)
-    .addEdge(START, 'retrieve')
+    .addEdge(START, 'triage')
+    .addConditionalEdges('triage', routeAfterTriage, {
+      answered: END,
+      retrieve: 'retrieve',
+    })
     .addEdge('retrieve', 'gradeDocuments')
     .addConditionalEdges('gradeDocuments', routeAfterGrade, {
       generate: 'generate',

@@ -21,11 +21,25 @@ function pangu(text: string): string {
   return text.replace(PANGU_AFTER, '$1 $2').replace(PANGU_BEFORE, '$1 $2')
 }
 
-// Inline pass: **bold**, `code`, and [n] / [1, 2] citation markers. Plain-text
-// runs between tokens get pangu spacing; token contents are left untouched.
+// Inline pass: [text](url) links, **bold**, `code`, [n] citation markers, and
+// bare urls/emails. Plain-text runs between tokens get pangu spacing; token
+// contents are left untouched.
+const LINK_CLASS =
+  'text-accent-cyan underline decoration-accent-cyan/40 underline-offset-2 transition-colors hover:decoration-accent-cyan'
+
+function anchor(href: string, label: ReactNode, key: number): ReactNode {
+  return (
+    <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+      {label}
+    </a>
+  )
+}
+
 function renderInline(text: string): ReactNode[] {
   const out: ReactNode[] = []
-  const re = /(\*\*[^*]+\*\*|`[^`]+`|\[\d+(?:,\s*\d+)*\])/g
+  // Order matters: markdown links before bare-url so [t](u) isn't half-eaten.
+  const re =
+    /(\[[^\]]+\]\([^)]+\)|\*\*[^*]+\*\*|`[^`]+`|\[\d+(?:,\s*\d+)*\]|https?:\/\/[^\s)]+|mailto:[^\s)]+|[\w.+-]+@[\w-]+\.[\w.-]+)/g
   let last = 0
   let m: RegExpExecArray | null
   let key = 0
@@ -35,7 +49,10 @@ function renderInline(text: string): ReactNode[] {
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) plain(text.slice(last, m.index))
     const tok = m[0]
-    if (tok.startsWith('**')) {
+    const link = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok)
+    if (link) {
+      out.push(anchor(link[2], link[1], key++))
+    } else if (tok.startsWith('**')) {
       out.push(
         <strong key={key++} className="font-semibold text-white">
           {tok.slice(2, -2)}
@@ -50,13 +67,18 @@ function renderInline(text: string): ReactNode[] {
           {tok.slice(1, -1)}
         </code>,
       )
-    } else {
+    } else if (/^\[\d/.test(tok)) {
       // Citation marker like [1] or [1, 2].
       out.push(
         <sup key={key++} className="ml-0.5 font-mono text-[10px] text-accent-cyan">
           {tok}
         </sup>,
       )
+    } else if (tok.startsWith('http') || tok.startsWith('mailto:')) {
+      out.push(anchor(tok, tok.replace(/^mailto:/, ''), key++))
+    } else {
+      // Bare email address.
+      out.push(anchor(`mailto:${tok}`, tok, key++))
     }
     last = m.index + tok.length
   }

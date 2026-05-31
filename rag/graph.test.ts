@@ -25,6 +25,9 @@ function makeNodes(grades: Array<'generate' | 'rewrite'>): {
     metadata: { id: 's1', title: 'Stub', score: 1, locale: 'en', sourceType: 'about' },
   })
   const nodes: NodeSet = {
+    // Pass-through triage: always route on to retrieval (the LLM-path tests
+    // exercise retrieve→grade; triage's own logic is unit-tested in triage.test).
+    triage: async () => ({ route: 'retrieve' }),
     retrieve: async () => {
       counts.retrieve++
       return { documents: [doc] }
