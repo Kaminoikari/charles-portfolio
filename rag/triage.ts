@@ -37,8 +37,8 @@ function contactBlock(locale: Locale): string {
 export function personalRedirect(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '這比較屬於個人問題,就留給 Charles 本人回答吧 😊 ' +
-      '如果你想進一步認識他,歡迎直接聯繫:\n\n' +
+      '這比較屬於個人問題，就留給 Charles 本人回答吧 😊 ' +
+      '如果你想進一步認識他，歡迎直接聯繫:\n\n' +
       contactBlock(locale)
     )
   }
@@ -66,7 +66,8 @@ const PERSONAL = new RegExp(
     '\\bmarried\\b', 'marriage', '\\bwife\\b', '\\bhusband\\b', '\\bspouse\\b',
     '\\bgirlfriend\\b', '\\bboyfriend\\b', '\\bdating\\b',
     '(is|are)\\s+(he|you|charles)\\s+single', 'relationship status',
-    '\\bkids\\b', '\\bchildren\\b', '\\bparents\\b',
+    '\\bkids\\b', '\\bchildren\\b', '\\bparents\\b', '\\bfamily\\b',
+    'family background', 'personal life', '\\bsiblings\\b',
     '\\bsalary\\b', 'how much (do|does) (he|you|charles) (earn|make)', '\\bincome\\b',
     'where (do|does) (he|you|charles) live', 'home address', 'phone number',
     '\\breligio', '\\bpolitic',
@@ -74,12 +75,16 @@ const PERSONAL = new RegExp(
     '幾歲', '年齡', '多大', '生日', '出生',
     '結婚', '已婚', '未婚', '老婆', '太太', '老公', '配偶',
     '女朋友', '男朋友', '女友', '男友', '交往', '單身', '獨身', '戀愛', '感情狀態',
-    '小孩', '孩子', '子女', '父母', '家人', '家庭狀況',
+    // family / personal background (NOT '背景' alone — professional background
+    // is a valid FAQ; only family-specific compounds are private)
+    '小孩', '孩子', '子女', '父母', '家人', '家庭', '家世', '家族', '家境',
+    '兄弟', '姊妹', '姐妹', '父親', '母親', '感情生活', '私生活',
     '薪水', '薪資', '年薪', '收入', '賺多少', '住址', '地址', '住哪', '電話', '手機號',
     '宗教信仰', '政治立場',
     // 日本語
     '何歳', '年齢', '誕生日', '結婚', '既婚', '独身', '妻', '配偶', '彼女', '彼氏',
-    '恋愛', '交際', '子供', '子ども', '両親', '家族構成', '給料', '年収', '収入',
+    '恋愛', '交際', '子供', '子ども', '両親', '家族構成', '家族', '家庭', '兄弟',
+    '姉妹', '私生活', '給料', '年収', '収入',
     '住所', '電話番号', '宗教', '政治',
   ].join('|'),
   'i',
@@ -100,7 +105,7 @@ const FAQ: FaqEntry[] = [
     match: /^\s*(hi|hello|hey|yo|greetings|哈囉|你好|妳好|嗨|安安|こんにちは|こんにちわ|はじめまして|やあ)[\s!！。.~]*$/i,
     answer: {
       en: "Hi! 👋 I'm Charles's portfolio assistant. Ask me about his projects, work experience, product philosophy, or how he uses AI in his workflow.",
-      'zh-TW': '嗨!👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念,或他如何在工作流程中運用 AI。',
+      'zh-TW': '嗨!👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念，或他如何在工作流程中運用 AI。',
       ja: 'こんにちは!👋 Charles のポートフォリオアシスタントです。プロジェクト、職務経歴、プロダクトの考え方、AI の活用方法など、お気軽にどうぞ。',
     },
   },
@@ -137,10 +142,10 @@ export function triage(question: string, locale: Locale): TriageResult {
 export function genericFallback(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '目前作品集裡的資訊不足以準確回答這個問題,我不想亂猜。' +
+      '目前作品集裡的資訊不足以準確回答這個問題，我不想亂猜。' +
       '建議你直接聯繫 Charles 詢問:\n\n' +
       contactBlock(locale) +
-      '\n\n或者你也可以問問他的專案(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、工作經歷,或他如何運用 AI。'
+      '\n\n或者你也可以問問他的專案(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、工作經歷，或他如何運用 AI。'
     )
   }
   if (locale === 'ja') {
