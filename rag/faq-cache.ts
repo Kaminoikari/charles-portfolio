@@ -277,9 +277,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'exp-history',
     questions: {
-      en: ['What is his work history?', 'where has he worked?', 'past jobs', 'previous companies', 'career history'],
-      'zh-TW': ['他的工作經歷', '他待過哪些公司', '過去的工作', '以前的公司'],
-      ja: ['職務経歴', 'どこで働いてきた', '過去の勤務先'],
+      en: ['What is his work history?', 'where has he worked?', 'past jobs', 'previous companies', 'career history', 'his resume', 'his CV', 'his PM background', 'his PM experience', 'his career', 'his professional experience', 'how many years of PM experience'],
+      'zh-TW': ['他的工作經歷', '他待過哪些公司', '過去的工作', '以前的公司', '職涯經歷', 'charles 的資歷', '他的資歷', 'PM 資歷', 'charles PM 資歷', '他的 PM 經歷', '他的履歷', '他的職涯', '產品經理經歷', '他做過哪些工作'],
+      ja: ['職務経歴', 'どこで働いてきた', '過去の勤務先', '経歴', 'PM の経歴', '履歴書', 'キャリア'],
     },
     answers: {
       en: 'Charles has been: **PM at USPACE** (2024–present), **Product Mentor at XChange School** (2025–present), **Senior PM at NUEIP** (2024, BI + predictive analytics), **PM at PXPay Plus** (2022–2024, payments — +25% conversions), and **Operations Manager at FLUX** (2019–2022, +20% market share, led a team of 10).',
