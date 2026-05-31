@@ -50,3 +50,15 @@ jobs:
           else
             npm run rag:ingest
           fi
+
+      - name: Build FAQ semantic cache
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            npm run rag:faq:dry
+          else
+            npm run rag:faq
+          fi
