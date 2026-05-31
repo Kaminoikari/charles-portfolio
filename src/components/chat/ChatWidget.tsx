@@ -68,7 +68,6 @@ function Message({ message }: { message: ChatMessage }) {
     <div className="max-w-[88%] self-start text-[14px] leading-[1.7]">
       <div className={message.error ? 'text-text-muted' : 'text-white'}>
         {message.error ? message.text : <Markdown text={message.text} />}
-        {message.text === '' && <span className="text-text-tertiary">…</span>}
       </div>
       <Sources message={message} />
     </div>
@@ -200,7 +199,11 @@ export default function ChatWidget() {
         )}
         {status === 'streaming' && messages[messages.length - 1]?.text === '' && (
           <div className="flex items-center gap-2 self-start font-mono text-[11px] text-text-tertiary">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent-cyan" />
+            <span className="flex gap-1">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent-cyan" />
+            </span>
             {t('chat.thinking')}
           </div>
         )}

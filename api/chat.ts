@@ -81,7 +81,7 @@ export default async function handler(req: IncomingMessage & { method?: string; 
       if (ev.type === 'token') {
         res.write(sse('token', { text: ev.text }))
       } else {
-        res.write(sse('done', { sources: ev.sources, language: ev.language }))
+        res.write(sse('done', { sources: ev.sources, language: ev.language, answer: ev.answer }))
         logChat({
           question: parsed.question,
           language: ev.language,

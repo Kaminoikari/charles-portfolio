@@ -122,14 +122,27 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
 
 // --- fallback ------------------------------------------------------------
 // Reached when retrieval keeps failing after maxLoops rewrites. Refusing
-// honestly is the correct behavior for a public, identity-bound bot.
+// honestly is the correct behavior for a public, identity-bound bot. Replies in
+// the question's language so an out-of-corpus zh/ja question doesn't get an
+// English refusal.
+const FALLBACK: Record<string, string> = {
+  en:
+    "I couldn't find that in Charles's portfolio. Try asking about his projects " +
+    '(Path, Plutus Trade, Product Playbook, House Ops, Job Ops), his work ' +
+    'experience, or how he uses AI in his product workflow.',
+  'zh-TW':
+    '這個問題在 Charles 的作品集裡找不到答案。你可以問問他的專案' +
+    '(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、' +
+    '工作經歷,或他如何在產品流程中運用 AI。',
+  ja:
+    'その内容は Charles のポートフォリオには見つかりませんでした。彼の' +
+    'プロジェクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、' +
+    '職務経歴、またはプロダクト業務での AI 活用について聞いてみてください。',
+}
+
 export async function fallback(state: RAGStateType): Promise<Partial<RAGStateType>> {
-  void state
   return {
-    answer:
-      "I couldn't find that in Charles's portfolio. Try asking about his " +
-      'projects (Path, Plutus Trade, Product Playbook, House Ops, Job Ops), ' +
-      'his work experience, or how he uses AI in his product workflow.',
+    answer: FALLBACK[state.language ?? 'en'] ?? FALLBACK.en,
     sources: [],
   }
 }
