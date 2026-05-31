@@ -50,9 +50,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'best-project',
     questions: {
-      en: ["What's his most impressive project?", 'best project', 'which project shows technical depth?', 'most technical work'],
-      'zh-TW': ['最厲害的專案是哪個', '最有代表性的作品', '哪個專案最能展示技術深度', '技術含量最高的'],
-      ja: ['一番すごいプロジェクトは', '代表作は', '最も技術的なプロジェクト'],
+      en: ["What's his most impressive project?", 'best project', 'which project shows technical depth?', 'most technical work', 'his most famous product', 'his best-known project', 'his best side project', 'his most impressive side project', 'which side project is the best', 'his flagship project', 'his standout work'],
+      'zh-TW': ['最厲害的專案是哪個', '最有代表性的作品', '哪個專案最能展示技術深度', '技術含量最高的', 'charles 最知名的產品', '他最有名的產品', '他最知名的作品', '他最厲害的 side project', '最厲害的 side project', '他最強的副業專案', '他的代表作', '他最值得看的專案'],
+      ja: ['一番すごいプロジェクトは', '代表作は', '最も技術的なプロジェクト', '最も有名なプロダクト', '一番有名な作品', '最高のサイドプロジェクト'],
     },
     answers: {
       en: '**Product Playbook** best shows his technical depth — an LLM Multi-Agent System on Claude Code that orchestrates 3 specialist sub-agents against 22 product frameworks to turn fuzzy ideas into shippable specs. Enabling the sub-agent layer lifted quality-completion from 59.1% to 100% at flat token cost. His **Plutus Trade**, **House Ops**, and **Job Ops** projects also showcase production AI engineering.',

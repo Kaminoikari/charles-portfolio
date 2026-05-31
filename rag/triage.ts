@@ -58,6 +58,23 @@ const INJECTION = new RegExp(
     '(以前|上記|これまで)の(指示|プロンプト|ルール).*(無視|忘れ)',
     '指示を(無視|忘れ)', 'システムプロンプトを(見せ|教え|表示)',
     'あなたは今', '〜のふりをして', '開発者モード',
+    // --- transform / decode / compute / spell-out class -------------------
+    // These hide a forced output inside a "puzzle" (replace letters, run this
+    // code, repeat a word N times, decode this). High-precision markers that
+    // essentially never appear in a genuine question about Charles.
+    'def\\s+\\w+\\s*\\(', 'print\\s*\\(', 'lambda\\b', 'slot_map', 'position_map',
+    'run\\s+(this|the\\s+following|my)\\s+(code|script|python|program|function)',
+    'execute\\s+(this|the)\\b', 'evaluate\\s+(this|the\\s+following)\\b', 'what\\s+(does|is)\\s+.{0,40}\\s+(print|output|return)',
+    'decode', 'encode', 'base64', 'rot13', '\\bcipher\\b', '\\bascii\\b',
+    'replace\\s+(all|every|the)\\b', 'concatenate', 'spell\\s+(out|it)',
+    'repeat\\s+.{0,20}\\s+times', 'say\\s+.{0,30}\\s+times',
+    // 中文(變換/解碼/執行)
+    '說.{0,12}(次|遍)', '重複.{0,12}(次|遍)', '唸.{0,12}(次|遍)',
+    '用.{0,8}(代替|替換|取代)', '(刪掉|刪除|去掉).{0,8}(第|最|所有|全部)',
+    'print.{0,4}的?結果', '解碼', '編碼', '密碼', '拼\\s*出', '組合.{0,6}字',
+    '不要(有)?任何(標點|空格|符號)',
+    // 日本語(変換/デコード)
+    'デコード', 'エンコード', '繰り返(し|して)', '置(き)?換え',
   ].join('|'),
   'i',
 )
