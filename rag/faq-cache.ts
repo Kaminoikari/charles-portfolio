@@ -398,9 +398,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'location',
     questions: {
-      en: ['Where is he based?', 'where does he live?', 'his location', 'where will he work?', 'can he relocate?', 'will he relocate?', 'which locations does he consider?'],
-      'zh-TW': ['他住哪裡', '他在哪個城市', '他的所在地', '他能在哪工作', '他會 relocate 嗎', '他考慮哪些工作地點'],
-      ja: ['どこに住んでいる', '勤務地はどこ', '所在地', '移住は可能', '勤務可能な地域'],
+      en: ['Where is he based?', 'where does he live?', 'where is Charles based?', 'his location', 'where will he work?', 'where can he work?', 'can he relocate?', 'will he relocate?', 'is he willing to relocate?', 'which locations does he consider?', 'what cities does he consider?'],
+      'zh-TW': ['他住哪裡', 'charles 住哪裡', 'charles 在哪', '他在哪個城市', '他的所在地', '他能在哪工作', 'charles 可以在哪工作', '他考慮哪些工作地點', '他願意 relocate 嗎', 'charles 會搬家工作嗎', '他可以去國外工作嗎'],
+      ja: ['どこに住んでいる', 'charles はどこ在住', '勤務地はどこ', '所在地', '移住は可能', '勤務可能な地域', '海外勤務は可能'],
     },
     answers: {
       en: 'Charles is based in the **Greater Taipei area**. For work location he\'s open to **Greater Taipei and Hsinchu**, and — where the company can sponsor a visa — **Northeast Asia, the US, Europe, and Oceania**.',
@@ -411,9 +411,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'remote',
     questions: {
-      en: ['Is he open to remote?', 'does he want remote work?', 'remote or onsite?', 'hybrid?', 'his work arrangement preference'],
-      'zh-TW': ['他接受遠端嗎', '他想遠端工作嗎', '遠端還是進辦公室', 'hybrid 嗎', '他偏好的工作型態'],
-      ja: ['リモートは可能', 'リモート希望', 'ハイブリッド', '勤務形態の希望'],
+      en: ['Is he open to remote?', 'does he want remote work?', 'does he prefer remote?', 'is Charles open to remote work?', 'can he work remotely?', 'remote or onsite?', 'is he open to hybrid?', 'does he prefer hybrid?', 'his work arrangement preference', 'work from home?'],
+      'zh-TW': ['他接受遠端嗎', 'charles 接受遠端嗎', 'charles 能接受遠端嗎', 'charles 偏好遠端嗎', '他偏好遠端嗎', '他想遠端工作嗎', '他可以遠端嗎', '他能遠端工作嗎', '遠端還是進辦公室', '他接受 hybrid 嗎', '他偏好 hybrid 嗎', '他偏好的工作型態', '可以在家工作嗎'],
+      ja: ['リモートは可能', 'リモート希望ですか', 'リモートワークはできますか', 'charles はリモート可能', 'ハイブリッドは可能', 'ハイブリッド希望', '在宅勤務はできますか', '勤務形態の希望'],
     },
     answers: {
       en: 'Charles **prefers remote or hybrid**, but he\'s flexible — on-site works too if that\'s the arrangement.',
@@ -424,9 +424,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'languages',
     questions: {
-      en: ['What languages does he speak?', 'his language skills', 'does he speak English?', 'is he bilingual?', 'his English level', 'TOEIC score'],
-      'zh-TW': ['他會說哪些語言', '他的語言能力', '他的英文程度', '他英文好嗎', '多益成績'],
-      ja: ['話せる言語', '語学力', '英語は話せる', '英語のレベル', 'TOEIC スコア'],
+      en: ['What languages does he speak?', 'his language skills', 'does he speak English?', 'does Charles speak English?', 'is he bilingual?', 'how is his English?', 'his English level', 'is his English good?', 'TOEIC score', 'what is his TOEIC?'],
+      'zh-TW': ['他會說哪些語言', 'charles 會說哪些語言', '他的語言能力', '他的英文程度', '他英文好嗎', 'charles 英文好嗎', '他會說英文嗎', '他英文流利嗎', '他的多益成績', '多益幾分'],
+      ja: ['話せる言語', '何語を話せる', '語学力', '英語は話せる', 'charles は英語が話せる', '英語のレベル', '英語は得意', 'TOEIC スコア', 'TOEIC は何点'],
     },
     answers: {
       en: 'Charles is a **native Chinese (Mandarin)** speaker and **fluent in English** (TOEIC **940/990**).',
