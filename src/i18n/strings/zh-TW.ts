@@ -101,11 +101,11 @@ const zhTW: Strings = {
     visitSocial: '前往 {{platform}}',
   },
   chat: {
-    launcherLabel: '問問關於 Charles',
+    launcherLabel: '與 AI 聊聊',
     launcherLive: '● 線上',
     openAriaLabel: '開啟 AI 助理',
     closeAriaLabel: '關閉 AI 助理',
-    title: '問問關於 Charles',
+    title: '與 AI 聊聊',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       '任何關於 Charles 的專案、經歷、或他如何用 AI 打造產品的問題都可以問。答案都根據他的作品集而來——如果沒有相關資訊我會直接說。',

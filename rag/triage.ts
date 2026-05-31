@@ -16,20 +16,22 @@ export const CONTACT = {
   email: 'charlestyc0527@gmail.com',
   linkedin: 'https://www.linkedin.com/in/charles-chen-809a2043',
   github: 'https://github.com/Kaminoikari',
-  threads: 'https://www.threads.net/@imcharleschen',
+  threads: 'https://www.threads.com/@charles_tychen',
+  substack: 'https://charlestychen.substack.com',
   portaly: 'https://portaly.cc/charleschen',
 }
 
-// Reusable contact block (markdown; the chat renderer linkifies it).
+// Reusable contact block (markdown; the chat renderer linkifies it). Includes
+// Threads + Substack for social reach, plus Portaly as the link-in-bio hub.
 function contactBlock(locale: Locale): string {
   const email = `[${CONTACT.email}](mailto:${CONTACT.email})`
   if (locale === 'zh-TW') {
-    return `* Email:${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [所有連結 / Portaly](${CONTACT.portaly})`
+    return `* Email：${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [Threads](${CONTACT.threads})\n* [Substack](${CONTACT.substack})\n* [所有連結 / Portaly](${CONTACT.portaly})`
   }
   if (locale === 'ja') {
-    return `* メール:${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [すべてのリンク / Portaly](${CONTACT.portaly})`
+    return `* メール：${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [Threads](${CONTACT.threads})\n* [Substack](${CONTACT.substack})\n* [すべてのリンク / Portaly](${CONTACT.portaly})`
   }
-  return `* Email: ${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [All links / Portaly](${CONTACT.portaly})`
+  return `* Email: ${email}\n* [LinkedIn](${CONTACT.linkedin})\n* [Threads](${CONTACT.threads})\n* [Substack](${CONTACT.substack})\n* [All links / Portaly](${CONTACT.portaly})`
 }
 
 // --- 0. prompt-injection / jailbreak deflection ------------------------------

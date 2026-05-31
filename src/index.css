@@ -139,4 +139,13 @@ body {
 .chat-dots > span:nth-child(2) { animation-delay: 0.2s; }
 .chat-dots > span:nth-child(3) { animation-delay: 0.4s; }
 
+/* When the chat panel is open, hide the third-party Protico "lobby" widget so
+   the two floating bottom-corner elements don't overlap / fight for taps. The
+   selectors cover however Protico injects (iframe src, id, or class). */
+body.chat-open iframe[src*="protico"],
+body.chat-open [id*="protico" i],
+body.chat-open [class*="protico" i] {
+  display: none !important;
+}
+
 

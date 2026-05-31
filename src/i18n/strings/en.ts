@@ -150,11 +150,11 @@ const en: Strings = {
     visitSocial: 'Visit {{platform}}',
   },
   chat: {
-    launcherLabel: 'Ask about Charles',
+    launcherLabel: 'Chat with AI',
     launcherLive: '● live',
     openAriaLabel: 'Open the AI assistant',
     closeAriaLabel: 'Close the AI assistant',
-    title: 'Ask about Charles',
+    title: 'Chat with AI',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       "Ask me anything about Charles's projects, experience, or how he builds with AI. Answers are grounded in his portfolio — I'll say so if something isn't covered.",

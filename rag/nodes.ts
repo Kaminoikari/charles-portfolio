@@ -204,7 +204,10 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
           'context, portfolio map, and entity relationships. Never invent roles, ' +
           'employers, dates, or credentials. If the context does not contain the ' +
           'answer, say so plainly and suggest contacting him. Cite sources inline ' +
-          'as [n]. Reply in the language of the question.\n\nPortfolio map:\n' +
+          'as [n]. When you describe a specific project, include its link from the ' +
+          'portfolio map as a markdown link (live demo if it has one, otherwise the ' +
+          'GitHub repo) so the visitor can open it. Reply in the language of the ' +
+          'question.\n\nPortfolio map:\n' +
           portfolioMap +
           entityBlock,
       },

@@ -104,11 +104,11 @@ const ja: Strings = {
     visitSocial: '{{platform}} へ',
   },
   chat: {
-    launcherLabel: 'Charles について聞く',
+    launcherLabel: 'AI とチャット',
     launcherLive: '● オンライン',
     openAriaLabel: 'AI アシスタントを開く',
     closeAriaLabel: 'AI アシスタントを閉じる',
-    title: 'Charles について聞く',
+    title: 'AI とチャット',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
       'Charles のプロジェクト、経歴、AI を使った開発手法など何でも聞いてください。回答はすべて彼のポートフォリオに基づきます——情報がない場合はそう伝えます。',

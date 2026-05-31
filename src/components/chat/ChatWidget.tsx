@@ -103,6 +103,15 @@ export default function ChatWidget() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // While the chat panel is open, hide the third-party Protico "lobby" widget so
+  // the two bottom-corner floating elements don't overlap (the panel is near
+  // full-width on mobile and collides with the lobby pill). CSS in index.css
+  // keys off body.chat-open; we just toggle the class.
+  useEffect(() => {
+    document.body.classList.toggle('chat-open', open)
+    return () => document.body.classList.remove('chat-open')
+  }, [open])
+
   const submit = (question: string) => {
     const q = question.trim()
     if (!q) return
@@ -151,12 +160,7 @@ export default function ChatWidget() {
       <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
         <div className="flex items-center gap-2.5">
           <LiveDot />
-          <div>
-            <div className="text-[15px] font-semibold text-white">{t('chat.title')}</div>
-            <div className="font-mono text-[10px] tracking-[0.5px] text-text-tertiary">
-              {t('chat.subtitle')}
-            </div>
-          </div>
+          <div className="text-[15px] font-semibold text-white">{t('chat.title')}</div>
         </div>
         <div className="flex items-center gap-1">
           <button

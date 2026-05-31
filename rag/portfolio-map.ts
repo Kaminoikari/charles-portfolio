@@ -25,13 +25,18 @@ WORK:
 PROJECTS:
 - Path — offline-first trip-planning PWA (React, IndexedDB, Service Worker,
   Supabase RLS); cache-first + background sync for zero-blackout travel.
+  Live demo: https://trip-path.vercel.app/
 - Plutus Trade — single-user AI decision-support for TW equities (Flutter,
   FastAPI, Gemini 2.5 Flash); cross-domain synthesis + audited predictions.
+  Live demo: https://plutustrade.vercel.app/
 - Product Playbook — Claude Skill / plugin, 22 PM frameworks + 3 specialist
   sub-agents (agentic multi-agent), 6 languages, eval-driven (+69% quality).
+  GitHub: https://github.com/Kaminoikari/product-playbook
 - House Ops — automated real-estate decision pipeline (Node, Claude API,
   5-dimension weighted scoring).
+  GitHub: https://github.com/Kaminoikari/house-ops
 - Job Ops — automated job-search pipeline (Python, launchd, CV-aware scoring).
+  GitHub: https://github.com/Kaminoikari/job-ops
 
 PHILOSOPHY: outcomes over outputs; sharp product sense; strong opinions loosely
 held; build to learn. AI across discovery, spec writing, prototyping, shipping

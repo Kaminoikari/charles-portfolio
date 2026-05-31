@@ -98,9 +98,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト'],
     },
     answers: {
-      en: '**Product Playbook** is an LLM Multi-Agent System built on Claude Code. Three specialist sub-agents (discovery, strategy-critic, pre-mortem) are dispatched against 22 classic product frameworks (JTBD, RICE, etc.) to convert fuzzy requirements into executable PRD specs with acceptance criteria. It ships under MIT license. Enabling the sub-agents lifted quality-completion from 59.1% to 100% at flat token cost.',
-      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 LLM 多代理系統。三個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架(JTBD、RICE 等)，把模糊需求轉成帶驗收標準、可執行的 PRD 規格，並以 MIT 授權開源。啟用子代理後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。',
-      ja: '**Product Playbook** は Claude Code 上に構築された LLM マルチエージェントシステムです。3 つの専門サブエージェント(discovery / strategy-critic / pre-mortem)が 22 の定番プロダクトフレームワーク(JTBD、RICE など)を用い、曖昧な要件を受け入れ基準付きの実行可能な PRD 仕様へ変換します。MIT ライセンスで公開。サブエージェント有効化で品質完了率が 59.1%→100%（トークンコスト据え置き）。',
+      en: '**Product Playbook** is an LLM Multi-Agent System built on Claude Code. Three specialist sub-agents (discovery, strategy-critic, pre-mortem) are dispatched against 22 classic product frameworks (JTBD, RICE, etc.) to convert fuzzy requirements into executable PRD specs with acceptance criteria. It ships under MIT license. Enabling the sub-agents lifted quality-completion from 59.1% to 100% at flat token cost.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 LLM 多代理系統。三個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架(JTBD、RICE 等)，把模糊需求轉成帶驗收標準、可執行的 PRD 規格，並以 MIT 授權開源。啟用子代理後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      ja: '**Product Playbook** は Claude Code 上に構築された LLM マルチエージェントシステムです。3 つの専門サブエージェント(discovery / strategy-critic / pre-mortem)が 22 の定番プロダクトフレームワーク(JTBD、RICE など)を用い、曖昧な要件を受け入れ基準付きの実行可能な PRD 仕様へ変換します。MIT ライセンスで公開。サブエージェント有効化で品質完了率が 59.1%→100%（トークンコスト据え置き）。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
     },
   },
   {
@@ -124,9 +124,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Path とは', 'Path について教えて', 'オフライン旅行アプリ'],
     },
     answers: {
-      en: '**Path** is an offline-first trip-planning PWA for unstable-network travel (think Tokyo subway or rural hot-spring towns). A cache-first + background-sync architecture (React, TypeScript, IndexedDB, Supabase, Service Worker) keeps the itinerary, map routes, and expense tracking 100% usable with no connection. One URL installs to iOS or Android — no app store.',
-      'zh-TW': '**Path** 是一款離線優先(offline-first)的旅遊規劃 PWA，專為網路不穩的旅程設計（像東京地鐵或偏鄉溫泉區）。cache-first + 背景同步架構(React、TypeScript、IndexedDB、Supabase、Service Worker)讓行程、地圖路線、記帳在完全沒網路時也 100% 可用。一個網址就能安裝到 iOS 或 Android，免 app store。',
-      ja: '**Path** はネットワークが不安定な旅（東京の地下鉄や地方の温泉街など）向けのオフラインファースト旅行計画 PWA です。cache-first+バックグラウンド同期(React、TypeScript、IndexedDB、Supabase、Service Worker)で、旅程・地図ルート・経費管理がオフラインでも 100% 使えます。URL 一つで iOS/Android にインストール、アプリストア不要。',
+      en: '**Path** is an offline-first trip-planning PWA for unstable-network travel (think Tokyo subway or rural hot-spring towns). A cache-first + background-sync architecture (React, TypeScript, IndexedDB, Supabase, Service Worker) keeps the itinerary, map routes, and expense tracking 100% usable with no connection. One URL installs to iOS or Android — no app store.\n\n🔗 [Try Path](https://trip-path.vercel.app/)',
+      'zh-TW': '**Path** 是一款離線優先(offline-first)的旅遊規劃 PWA，專為網路不穩的旅程設計（像東京地鐵或偏鄉溫泉區）。cache-first + 背景同步架構(React、TypeScript、IndexedDB、Supabase、Service Worker)讓行程、地圖路線、記帳在完全沒網路時也 100% 可用。一個網址就能安裝到 iOS 或 Android，免 app store。\n\n🔗 [試用 Path](https://trip-path.vercel.app/)',
+      ja: '**Path** はネットワークが不安定な旅（東京の地下鉄や地方の温泉街など）向けのオフラインファースト旅行計画 PWA です。cache-first+バックグラウンド同期(React、TypeScript、IndexedDB、Supabase、Service Worker)で、旅程・地図ルート・経費管理がオフラインでも 100% 使えます。URL 一つで iOS/Android にインストール、アプリストア不要。\n\n🔗 [Path を試す](https://trip-path.vercel.app/)',
     },
   },
   {
@@ -137,9 +137,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Plutus Trade とは', 'Plutus Trade について教えて', '株式分析ツール'],
     },
     answers: {
-      en: '**Plutus Trade** is a personal AI decision-support tool for Taiwan equities. Gemini 2.5 Flash synthesizes fundamentals, institutional flow, and technicals into a BUY/SELL/HOLD diagnostic with explicit reasoning, while a daily quant momentum model pre-screens candidates. Every AI prediction is logged and settled at horizon for auditable win-rate and ROI. Built with Flutter + FastAPI.',
-      'zh-TW': '**Plutus Trade** 是一款針對台股的個人 AI 決策輔助工具。Gemini 2.5 Flash 跨領域整合基本面、籌碼面與技術面，給出帶明確推理的 買/賣/持有 診斷，並由每日量化動能模型先篩選標的。每個 AI 預測都會被記錄並到期結算，提供可稽核的勝率與報酬率。技術棧為 Flutter + FastAPI。',
-      ja: '**Plutus Trade** は台湾株向けの個人 AI 意思決定支援ツールです。Gemini 2.5 Flash がファンダメンタルズ・機関投資家フロー・テクニカルを統合し、根拠付きの 買/売/ホールド 診断を提示。日次のクオンツ・モメンタムモデルが候補を事前選別します。すべての AI 予測は記録され満期で精算、勝率と ROI を監査可能。Flutter + FastAPI 製。',
+      en: '**Plutus Trade** is a personal AI decision-support tool for Taiwan equities. Gemini 2.5 Flash synthesizes fundamentals, institutional flow, and technicals into a BUY/SELL/HOLD diagnostic with explicit reasoning, while a daily quant momentum model pre-screens candidates. Every AI prediction is logged and settled at horizon for auditable win-rate and ROI. Built with Flutter + FastAPI.\n\n🔗 [Try Plutus Trade](https://plutustrade.vercel.app/)',
+      'zh-TW': '**Plutus Trade** 是一款針對台股的個人 AI 決策輔助工具。Gemini 2.5 Flash 跨領域整合基本面、籌碼面與技術面，給出帶明確推理的 買/賣/持有 診斷，並由每日量化動能模型先篩選標的。每個 AI 預測都會被記錄並到期結算，提供可稽核的勝率與報酬率。技術棧為 Flutter + FastAPI。\n\n🔗 [試用 Plutus Trade](https://plutustrade.vercel.app/)',
+      ja: '**Plutus Trade** は台湾株向けの個人 AI 意思決定支援ツールです。Gemini 2.5 Flash がファンダメンタルズ・機関投資家フロー・テクニカルを統合し、根拠付きの 買/売/ホールド 診断を提示。日次のクオンツ・モメンタムモデルが候補を事前選別します。すべての AI 予測は記録され満期で精算、勝率と ROI を監査可能。Flutter + FastAPI 製。\n\n🔗 [Plutus Trade を試す](https://plutustrade.vercel.app/)',
     },
   },
   {
@@ -150,9 +150,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['House Ops とは', 'House Ops について教えて', '不動産の自動化'],
     },
     answers: {
-      en: '**House Ops** is a Node.js + AI pipeline for Taiwan real-estate decisions. It auto-scans 591 and Facebook rental groups daily at 09:00, uses Claude API (Haiku) to extract structured fields from messy posts, scores each listing on five weighted dimensions (price, space, location, condition, risk), and emails an HTML digest. A Claude Code layer adds affordability and upgrade-planning advice.',
-      'zh-TW': '**House Ops** 是一條 Node.js + AI 的台灣房產決策管線。每天 09:00 自動掃描 591 與 Facebook 租屋社團，用 Claude API(Haiku)從雜亂貼文抽取結構化欄位，依五個加權維度（價格、空間、地點、屋況、風險）為每個物件評分，並寄出 HTML 摘要。Claude Code 互動層再補上負擔能力試算與換屋規劃建議。',
-      ja: '**House Ops** は台湾の不動産意思決定のための Node.js + AI パイプラインです。毎朝 09:00 に 591 と Facebook の賃貸グループを自動スキャンし、Claude API(Haiku)で雑多な投稿から構造化フィールドを抽出、5 つの加重次元（価格・広さ・立地・状態・リスク）で採点し、HTML ダイジェストをメール配信。Claude Code 層が支払い能力試算や住み替え計画の助言を追加します。',
+      en: '**House Ops** is a Node.js + AI pipeline for Taiwan real-estate decisions. It auto-scans 591 and Facebook rental groups daily at 09:00, uses Claude API (Haiku) to extract structured fields from messy posts, scores each listing on five weighted dimensions (price, space, location, condition, risk), and emails an HTML digest. A Claude Code layer adds affordability and upgrade-planning advice.\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
+      'zh-TW': '**House Ops** 是一條 Node.js + AI 的台灣房產決策管線。每天 09:00 自動掃描 591 與 Facebook 租屋社團，用 Claude API(Haiku)從雜亂貼文抽取結構化欄位，依五個加權維度（價格、空間、地點、屋況、風險）為每個物件評分，並寄出 HTML 摘要。Claude Code 互動層再補上負擔能力試算與換屋規劃建議。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
+      ja: '**House Ops** は台湾の不動産意思決定のための Node.js + AI パイプラインです。毎朝 09:00 に 591 と Facebook の賃貸グループを自動スキャンし、Claude API(Haiku)で雑多な投稿から構造化フィールドを抽出、5 つの加重次元（価格・広さ・立地・状態・リスク）で採点し、HTML ダイジェストをメール配信。Claude Code 層が支払い能力試算や住み替え計画の助言を追加します。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
     },
   },
   {
@@ -163,9 +163,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Job Ops とは', 'Job Ops について教えて', '求職の自動化'],
     },
     answers: {
-      en: "**Job Ops** is a candidate-side ATS — a Python pipeline that flips the filtering logic companies use onto the jobs instead. A daily 07:00 launchd run scrapes fresh 104 listings, scores each against your Markdown CV and YAML-defined weights (comp, remote, growth), and emails a banded RECOMMEND / CAUTIOUS / SKIP digest. Seven Claude Code modes add interview prep, comp research, and more.",
-      'zh-TW': '**Job Ops** 是一套「求職者端的 ATS」——一條 Python 管線，把企業用來篩人的邏輯反過來套用在職缺上。每天 07:00 由 launchd 啟動，抓取最新的 104 職缺，依你的 Markdown 履歷與 YAML 權重（薪資、遠端、成長）評分，寄出分級的 推薦 / 觀望 / 略過 摘要。七個 Claude Code 模式再補上面試準備、薪資研究等。',
-      ja: '**Job Ops** は「候補者側の ATS」です。企業が候補者を選別するロジックを求人側に反転させた Python パイプラインで、毎朝 07:00 に launchd が起動し最新の 104 求人を取得、Markdown 履歴書と YAML の重み（給与・リモート・成長）で採点し、推奨/様子見/スキップ の段階別ダイジェストをメール。7 つの Claude Code モードが面接準備や給与調査などを補います。',
+      en: "**Job Ops** is a candidate-side ATS — a Python pipeline that flips the filtering logic companies use onto the jobs instead. A daily 07:00 launchd run scrapes fresh 104 listings, scores each against your Markdown CV and YAML-defined weights (comp, remote, growth), and emails a banded RECOMMEND / CAUTIOUS / SKIP digest. Seven Claude Code modes add interview prep, comp research, and more.\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)",
+      'zh-TW': '**Job Ops** 是一套「求職者端的 ATS」——一條 Python 管線，把企業用來篩人的邏輯反過來套用在職缺上。每天 07:00 由 launchd 啟動，抓取最新的 104 職缺，依你的 Markdown 履歷與 YAML 權重（薪資、遠端、成長）評分，寄出分級的 推薦 / 觀望 / 略過 摘要。七個 Claude Code 模式再補上面試準備、薪資研究等。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
+      ja: '**Job Ops** は「候補者側の ATS」です。企業が候補者を選別するロジックを求人側に反転させた Python パイプラインで、毎朝 07:00 に launchd が起動し最新の 104 求人を取得、Markdown 履歴書と YAML の重み（給与・リモート・成長）で採点し、推奨/様子見/スキップ の段階別ダイジェストをメール。7 つの Claude Code モードが面接準備や給与調査などを補います。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
     },
   },
   {
@@ -418,9 +418,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['メールアドレスは', 'LinkedIn', 'GitHub', 'SNS リンク', 'オンラインでどこ'],
     },
     answers: {
-      en: 'You can reach Charles here:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [All links / Portaly](https://portaly.cc/charleschen)',
-      'zh-TW': '你可以透過這些方式聯繫 Charles:\n\n* Email:[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
-      ja: '以下から Charles にご連絡いただけます：\n\n* メール：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
+      en: 'You can reach Charles here:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [Threads](https://www.threads.com/@charles_tychen)\n* [Substack](https://charlestychen.substack.com)\n* [All links / Portaly](https://portaly.cc/charleschen)',
+      'zh-TW': '你可以透過這些方式聯繫 Charles：\n\n* Email：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [Threads](https://www.threads.com/@charles_tychen)\n* [Substack](https://charlestychen.substack.com)\n* [所有連結 / Portaly](https://portaly.cc/charleschen)',
+      ja: '以下から Charles にご連絡いただけます：\n\n* メール：[charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)\n* [GitHub](https://github.com/Kaminoikari)\n* [Threads](https://www.threads.com/@charles_tychen)\n* [Substack](https://charlestychen.substack.com)\n* [すべてのリンク / Portaly](https://portaly.cc/charleschen)',
     },
   },
   {
