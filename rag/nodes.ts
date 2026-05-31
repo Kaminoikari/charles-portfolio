@@ -10,7 +10,9 @@ import { z } from 'zod'
 import { config } from './config.js'
 import type { Locale } from './language.js'
 import type { RAGStateType, Source } from './state.js'
+import { embedOne } from './embeddings.js'
 import { hybridRetrieve } from './retrieval.js'
+import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
 import { sanitize } from './guardrails.js'
@@ -18,14 +20,38 @@ import { gemini, generateWithFallback } from './llm.js'
 import { triage as classifyQuestion, genericFallback } from './triage.js'
 
 // --- triage --------------------------------------------------------------
-// Deterministic pre-flight (no embed, no LLM). Personal/privacy questions and a
-// small set of canned FAQs are answered here for $0; everything else routes on
-// to retrieval. This is the single biggest cost lever: the never-answerable and
-// the most-common questions never touch Voyage / Gemini / Claude.
+// Two cheap tiers before any RAG/generation LLM call — the biggest cost lever:
+//   1. deterministic regex (no embed, no LLM, ~0ms): personal/privacy redirect
+//      + canned greeting/contact answers.
+//   2. semantic FAQ cache (one embed, no generation LLM, ~100-300ms): the query
+//      is embedded and matched against pre-written answers in faq_cache; a
+//      high-similarity hit returns the cached answer verbatim.
+// Anything that misses both falls through to the full RAG pipeline.
 export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>> {
-  const result = classifyQuestion(state.question, (state.language as Locale) ?? 'en')
-  if (result.kind === 'pass') return { route: 'retrieve' }
-  return { answer: result.answer, sources: [], route: 'answered' }
+  const locale = (state.language as Locale) ?? 'en'
+
+  // Tier 1: deterministic.
+  const result = classifyQuestion(state.question, locale)
+  if (result.kind !== 'pass') {
+    return { answer: result.answer, sources: [], route: 'answered' }
+  }
+
+  // Tier 2: semantic FAQ cache. Best-effort — any failure (embed/Qdrant) just
+  // falls through to RAG rather than blocking the answer.
+  if (config.faqCacheEnabled) {
+    try {
+      const vec = await embedOne(state.question, 'query')
+      const hit = await faqLookup(vec, locale)
+      if (hit) {
+        console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)}`)
+        return { answer: hit.answer, sources: [], route: 'answered' }
+      }
+    } catch (err) {
+      console.warn('faq cache lookup failed, falling through to RAG:', (err as Error).message)
+    }
+  }
+
+  return { route: 'retrieve' }
 }
 
 // --- retrieve ------------------------------------------------------------

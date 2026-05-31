@@ -65,4 +65,39 @@ export async function ensureCollections(): Promise<void> {
       vectors: { [DENSE]: { size: 1, distance: 'Cosine' } },
     })
   }
+
+  // Semantic FAQ cache: one dense vector per pre-written question paraphrase.
+  // Dense-only (no sparse) — matching is pure embedding similarity.
+  if (!(await db.collectionExists(config.qdrantFaqCollection)).exists) {
+    await db.createCollection(config.qdrantFaqCollection, {
+      vectors: { [DENSE]: { size: config.embedDim, distance: 'Cosine' } },
+    })
+    await db.createPayloadIndex(config.qdrantFaqCollection, {
+      field_name: 'locale',
+      field_schema: 'keyword',
+    })
+  }
+}
+
+// Look up the closest pre-written FAQ answer for a query embedding. Returns the
+// cached answer when the top hit clears the similarity threshold, else null
+// (caller falls through to RAG). Locale-filtered so each language matches its
+// own paraphrases. Dense-only, single round-trip — no generation LLM involved.
+export async function faqLookup(
+  queryVec: number[],
+  locale: string,
+): Promise<{ answer: string; id: string; score: number } | null> {
+  const db = qdrant()
+  const res = await db.query(config.qdrantFaqCollection, {
+    query: queryVec,
+    using: DENSE,
+    filter: { must: [{ key: 'locale', match: { value: locale } }] },
+    limit: 1,
+    with_payload: true,
+  })
+  const top = res.points[0]
+  if (!top || (top.score ?? 0) < config.faqCacheThreshold) return null
+  const payload = (top.payload ?? {}) as { answer?: string; faq_id?: string }
+  if (!payload.answer) return null
+  return { answer: payload.answer, id: payload.faq_id ?? '', score: top.score ?? 0 }
 }

@@ -49,6 +49,14 @@ export const config = {
   qdrantUrl: process.env.QDRANT_URL ?? '',
   qdrantCollection: process.env.QDRANT_COLLECTION ?? 'doc_chunks',
   qdrantLogsCollection: process.env.QDRANT_LOGS_COLLECTION ?? 'chat_logs',
+  qdrantFaqCollection: process.env.QDRANT_FAQ_COLLECTION ?? 'faq_cache',
+
+  // --- semantic FAQ cache ---
+  // A query whose embedding is at least this cosine-similar to a pre-written FAQ
+  // question is answered from cache with NO generation LLM call. Tuned high so
+  // only genuine matches hit; everything else falls through to RAG.
+  faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
+  faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.82),
 
   // --- behavior ---
   defaultLocale: process.env.RAG_DEFAULT_LOCALE ?? 'en',

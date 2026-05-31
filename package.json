@@ -12,6 +12,8 @@
     "remotion:render": "remotion render remotion/index.ts PathDemo public/assets/path-demo.mp4",
     "rag:ingest": "tsx rag/ingest/build-index.ts",
     "rag:ingest:dry": "tsx rag/ingest/build-index.ts --dry-run",
+    "rag:faq": "tsx rag/ingest/build-faq-cache.ts",
+    "rag:faq:dry": "tsx rag/ingest/build-faq-cache.ts --dry-run",
     "rag:eval": "tsx rag/evals/run-eval.ts",
     "rag:insights": "tsx rag/insights/report.ts",
     "rag:test": "tsx --test rag/*.test.ts rag/**/*.test.ts"
