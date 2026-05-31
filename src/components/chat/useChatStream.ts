@@ -125,5 +125,24 @@ export function useChatStream() {
     [status],
   )
 
-  return { messages, status, send }
+  // Re-run the last question after a failure. Drops the trailing failed pair
+  // (user + error assistant) so send() re-adds a fresh pair instead of leaving a
+  // duplicate question bubble. Both functional updates apply in order.
+  const retry = useCallback(
+    (errorText: string) => {
+      if (status === 'streaming') return
+      const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+      if (!lastUser) return
+      setMessages((prev) => {
+        let end = prev.length
+        if (end > 0 && prev[end - 1].role === 'assistant') end -= 1
+        if (end > 0 && prev[end - 1].role === 'user') end -= 1
+        return prev.slice(0, end)
+      })
+      void send(lastUser.text, errorText)
+    },
+    [messages, send, status],
+  )
+
+  return { messages, status, send, retry }
 }

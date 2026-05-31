@@ -45,11 +45,11 @@ interface Strings {
     visitSocial: string
   }
   chat: {
-    launcherLabel: string; launcherLive: string; openAriaLabel: string; closeAriaLabel: string
-    title: string; subtitle: string; emptyMessage: string
+    launcherLabel: string; launcherTag: string; openAriaLabel: string; closeAriaLabel: string
+    title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
     thinking: string; sourcesLabel: string; sourcesCount: string
-    errorMessage: string; rateLimited: string
+    errorMessage: string; rateLimited: string; retry: string
     suggested1: string; suggested2: string; suggested3: string
     muteMusic: string; unmuteMusic: string
   }
@@ -150,22 +150,24 @@ const en: Strings = {
     visitSocial: 'Visit {{platform}}',
   },
   chat: {
-    launcherLabel: 'Chat with AI',
-    launcherLive: '● live',
+    launcherLabel: 'Ask this portfolio',
+    launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
     closeAriaLabel: 'Close the AI assistant',
-    title: 'Chat with AI',
+    title: 'Grounded answers',
     subtitle: 'AGENTIC RAG · VOYAGE-3 · CLAUDE',
     emptyMessage:
-      "Ask me anything about Charles's projects, experience, or how he builds with AI. Answers are grounded in his portfolio — I'll say so if something isn't covered.",
+      "Ask me anything about Charles's projects, experience, or how he builds with AI. Every answer is grounded in his actual portfolio.",
+    previewLabel: 'Each answer shows the real chunks it retrieved and their relevance scores, like this:',
     inputPlaceholder: 'Ask anything about his work…',
     send: 'Send',
     sendAriaLabel: 'Send question',
-    thinking: 'Thinking…',
+    thinking: 'Retrieving…',
     sourcesLabel: 'Retrieved context',
     sourcesCount: '{{count}} chunks',
-    errorMessage: 'Something went wrong. Please try again.',
+    errorMessage: "That didn't go through. Check your connection and try again.",
     rateLimited: 'Too many questions for now — give it a moment and try again.',
+    retry: 'Retry',
     suggested1: 'What did he do at USPACE?',
     suggested2: 'Tell me about Product Playbook',
     suggested3: 'How does he use AI?',

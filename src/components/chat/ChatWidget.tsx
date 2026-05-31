@@ -56,7 +56,50 @@ function Sources({ message }: { message: ChatMessage }) {
   )
 }
 
-function Message({ message }: { message: ChatMessage }) {
+// A static teaser of the retrieval-transparency UI, rendered in the empty state
+// so the widget's differentiator — real retrieved chunks with relevance scores —
+// is visible before the visitor asks anything ("show, don't tell"). Mirrors the
+// live Sources markup exactly so it's an honest preview, not a mockup.
+const PREVIEW_ROWS = [
+  { title: 'USPACE · Case Study', score: 0.92 },
+  { title: 'Product Playbook', score: 0.78 },
+]
+
+function PreviewScores() {
+  const t = useT()
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-[12px] leading-[1.6] text-text-muted">{t('chat.previewLabel')}</p>
+      <div className="overflow-hidden rounded-lg border border-border">
+        <div className="bg-bg-tertiary px-3 py-2 font-mono text-[11px] uppercase tracking-[0.5px] text-text-muted">
+          {t('chat.sourcesLabel')}
+        </div>
+        <ul>
+          {PREVIEW_ROWS.map((s) => (
+            <li
+              key={s.title}
+              className="flex items-center gap-3 border-t border-border px-3 py-2 text-[12px]"
+            >
+              <span className="flex-1 truncate text-white/90">{s.title}</span>
+              <span className="h-[3px] max-w-[80px] flex-1 rounded-full bg-border">
+                <span
+                  className="block h-full rounded-full bg-accent-mars"
+                  style={{ width: `${Math.round(s.score * 100)}%` }}
+                />
+              </span>
+              <span className="min-w-[38px] text-right font-mono text-[11px] text-accent-cyan">
+                {s.score.toFixed(2)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function Message({ message, onRetry }: { message: ChatMessage; onRetry?: () => void }) {
+  const t = useT()
   if (message.role === 'user') {
     return (
       <div className="max-w-[85%] self-end rounded-[14px_14px_4px_14px] border border-border bg-bg-tertiary px-3.5 py-2.5 text-[14px] leading-[1.7] text-white">
@@ -69,6 +112,14 @@ function Message({ message }: { message: ChatMessage }) {
       <div className={message.error ? 'text-text-muted' : 'text-white'}>
         {message.error ? message.text : <Markdown text={message.text} />}
       </div>
+      {message.error && onRetry && (
+        <button
+          onClick={onRetry}
+          className="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-transparent px-3 py-1 font-mono text-[11px] uppercase tracking-[0.5px] text-accent-cyan transition-colors hover:border-accent-cyan"
+        >
+          ↻ {t('chat.retry')}
+        </button>
+      )}
       <Sources message={message} />
     </div>
   )
@@ -79,25 +130,44 @@ export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
   const audio = useAmbientAudio()
-  const { messages, status, send } = useChatStream()
+  const { messages, status, send, retry } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const launcherRef = useRef<HTMLButtonElement>(null)
+  // Set when the panel is closed via Escape / the close button, so focus returns
+  // to the launcher (which only mounts once the panel is closed) rather than
+  // being lost to <body>.
+  const restoreFocusRef = useRef(false)
 
-  // Auto-scroll to the newest message as tokens stream in.
+  // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
+  // scroll fired on every token fights itself and janks); smooth-scroll only
+  // once the answer settles.
   useEffect(() => {
-    bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: 'smooth' })
-  }, [messages])
+    bodyRef.current?.scrollTo({
+      top: bodyRef.current.scrollHeight,
+      behavior: status === 'streaming' ? 'auto' : 'smooth',
+    })
+  }, [messages, status])
 
-  // Focus the input when the panel opens.
+  // Focus the input when the panel opens; return focus to the launcher when it
+  // closes via keyboard/button so keyboard users aren't dropped onto <body>.
   useEffect(() => {
-    if (open) inputRef.current?.focus()
+    if (open) {
+      inputRef.current?.focus()
+    } else if (restoreFocusRef.current) {
+      launcherRef.current?.focus()
+      restoreFocusRef.current = false
+    }
   }, [open])
 
   // Close on Escape.
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        restoreFocusRef.current = true
+        setOpen(false)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -128,21 +198,24 @@ export default function ChatWidget() {
     // click) with the ambient-music toggle folded in as a secondary icon — so
     // the music control no longer needs its own colliding floating button.
     return (
-      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-1 rounded-full border border-border bg-bg-secondary pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-cyan">
+      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-1 rounded-full border border-border bg-bg-secondary pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan">
         <button
+          ref={launcherRef}
           onClick={() => setOpen(true)}
           aria-label={t('chat.openAriaLabel')}
-          className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-transparent py-3 pl-4 text-[14px] text-white"
+          className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-transparent py-3.5 pl-4 text-[14px] text-white"
         >
           <LiveDot />
           <span>{t('chat.launcherLabel')}</span>
-          <span className="font-mono text-[10.5px] text-accent-cyan">{t('chat.launcherLive')}</span>
+          <span className="rounded bg-accent-cyan/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-cyan">
+            {t('chat.launcherTag')}
+          </span>
         </button>
         <button
           onClick={audio.toggle}
           aria-label={musicLabel}
           aria-pressed={!audio.muted}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:text-accent-cyan"
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-tertiary transition-colors hover:text-accent-cyan"
         >
           <MuteIcon muted={audio.muted} size={15} />
         </button>
@@ -156,42 +229,58 @@ export default function ChatWidget() {
       aria-label={t('chat.title')}
       className="fixed bottom-5 right-5 z-50 flex h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
+      {/* Header — the tech-stack kicker is the identity ("show, don't tell"); the
+          title below names the value (grounded answers) without repeating the
+          launcher label. */}
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2.5">
           <LiveDot />
-          <div className="text-[15px] font-semibold text-white">{t('chat.title')}</div>
+          <div className="leading-tight">
+            <div className="font-mono text-[10px] uppercase tracking-[1.5px] text-accent-cyan">
+              {t('chat.subtitle')}
+            </div>
+            <div className="text-[14px] font-semibold text-white">{t('chat.title')}</div>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={audio.toggle}
             aria-label={musicLabel}
             aria-pressed={!audio.muted}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-accent-cyan"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-accent-cyan"
           >
             <MuteIcon muted={audio.muted} size={15} />
           </button>
           <button
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              restoreFocusRef.current = true
+              setOpen(false)
+            }}
             aria-label={t('chat.closeAriaLabel')}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center border-none bg-transparent text-[18px] leading-none text-text-tertiary transition-colors hover:text-white"
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[18px] leading-none text-text-tertiary transition-colors hover:text-white"
           >
             ✕
           </button>
         </div>
       </div>
 
-      {/* Body */}
-      <div ref={bodyRef} className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+      {/* Body — aria-live so streamed answers reach screen readers. */}
+      <div
+        ref={bodyRef}
+        aria-live="polite"
+        aria-atomic="false"
+        className="flex flex-1 flex-col gap-4 overflow-y-auto p-4"
+      >
         {messages.length === 0 ? (
           <>
-            <p className="text-[14px] leading-[1.7] text-text-muted">{t('chat.emptyMessage')}</p>
+            <p className="text-[14px] leading-[1.7] text-white/85">{t('chat.emptyMessage')}</p>
+            <PreviewScores />
             <div className="flex flex-wrap gap-2">
               {suggestions.map((s) => (
                 <button
                   key={s}
                   onClick={() => submit(s)}
-                  className="cursor-pointer rounded-full border border-border bg-transparent px-3 py-1.5 text-[12px] text-text-muted transition-all hover:border-border-hover hover:text-white"
+                  className="cursor-pointer rounded-full border border-border bg-transparent px-3 py-2 text-[12px] text-text-muted transition-colors hover:border-border-hover hover:text-white"
                 >
                   {s}
                 </button>
@@ -199,10 +288,19 @@ export default function ChatWidget() {
             </div>
           </>
         ) : (
-          messages.map((m, i) => <Message key={i} message={m} />)
+          messages.map((m, i) => (
+            <Message
+              key={i}
+              message={m}
+              onRetry={status !== 'streaming' ? () => retry(t('chat.errorMessage')) : undefined}
+            />
+          ))
         )}
         {status === 'streaming' && messages[messages.length - 1]?.text === '' && (
-          <div className="flex items-center gap-2 self-start font-mono text-[11px] text-text-tertiary">
+          <div
+            role="status"
+            className="flex items-center gap-2 self-start font-mono text-[11px] text-text-muted"
+          >
             <span className="chat-dots flex gap-1">
               <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan" />
               <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan" />
@@ -226,6 +324,7 @@ export default function ChatWidget() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={t('chat.inputPlaceholder')}
+          aria-label={t('chat.inputPlaceholder')}
           maxLength={1000}
           className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[14px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan"
         />
@@ -233,7 +332,7 @@ export default function ChatWidget() {
           type="submit"
           disabled={status === 'streaming' || input.trim() === ''}
           aria-label={t('chat.sendAriaLabel')}
-          className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-white transition-opacity disabled:cursor-default disabled:opacity-40"
+          className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
         >
           {t('chat.send')}
         </button>
