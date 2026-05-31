@@ -199,10 +199,10 @@ export default function ChatWidget() {
         )}
         {status === 'streaming' && messages[messages.length - 1]?.text === '' && (
           <div className="flex items-center gap-2 self-start font-mono text-[11px] text-text-tertiary">
-            <span className="flex gap-1">
+            <span className="chat-dots flex gap-1">
               <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan" />
-              <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan [animation-delay:0.2s]" />
-              <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan [animation-delay:0.4s]" />
+              <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan" />
+              <span className="h-1.5 w-1.5 animate-chat-wave rounded-full bg-accent-cyan" />
             </span>
             {t('chat.thinking')}
           </div>
