@@ -41,7 +41,11 @@ function logChat(payload: Record<string, unknown>): void {
   // rejections — the try/catch only ever caught synchronous throws.
   qdrant()
     .upsert(config.qdrantLogsCollection, {
-      points: [{ id: randomUUID(), vector: { [DENSE]: [0] }, payload: { ...payload, ts: new Date().toISOString() } }],
+      // Dummy vector must be non-zero: chat_logs uses Cosine distance, and the
+      // cosine of an all-zero vector is undefined (norm 0), so Qdrant rejects
+      // [0]. [1] has norm 1 and passes. (chat_logs is only ever scrolled, never
+      // similarity-searched, so the value is irrelevant beyond being valid.)
+      points: [{ id: randomUUID(), vector: { [DENSE]: [1] }, payload: { ...payload, ts: new Date().toISOString() } }],
     })
     .catch((err) => console.warn('chat_logs upsert failed (non-fatal):', (err as Error).message))
 }

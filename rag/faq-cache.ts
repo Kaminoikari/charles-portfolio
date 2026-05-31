@@ -269,9 +269,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['USPACE では何をしている', 'USPACE での役割', '現在の仕事'],
     },
     answers: {
-      en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three lines — parking payments, business travel, and financial insurance (Taiwan + Japan) — driving **85%+ of company revenue**. He 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
-      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條產品線的策略——停車支付、商務差旅、金融保險（台灣 + 日本），貢獻 **85% 以上的公司營收**。他從 0 到 1 推出了 **USPACE for Business**(企業差旅管理的 B2B SaaS)，並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
-      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つのライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括し、**会社売上の 85% 以上**を牽引。法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング(Claude Code・Codex・Antigravity)で **5 倍速**の反復を実現しました。',
+      en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three core lines — parking payments, business travel, and financial insurance (Taiwan + Japan) — driving **85%+ of company revenue**. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
+      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略——停車支付、商務差旅、金融保險（台灣 + 日本），貢獻 **85% 以上的公司營收**。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**(企業差旅管理的 B2B SaaS)，並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
+      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括し、**会社売上の 85% 以上**を牽引。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング(Claude Code・Codex・Antigravity)で **5 倍速**の反復を実現しました。',
     },
   },
   {

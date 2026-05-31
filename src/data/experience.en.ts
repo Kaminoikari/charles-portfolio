@@ -12,7 +12,7 @@ export const experience: ExperienceItem[] = [
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
       '85%+ revenue impact: owned product strategy across parking payments, business travel & financial insurance lines (TW + JP)',
-      '0→1 launched USPACE for Business, a B2B SaaS for corporate travel management',
+      '0→1 launched USPACE for Business (Sep 2025), a B2B SaaS for corporate travel management',
       '5x faster iteration: pioneered AI-driven prototyping with Claude Code, Codex & Antigravity',
     ],
   },
