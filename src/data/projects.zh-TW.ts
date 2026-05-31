@@ -200,7 +200,7 @@ export const projectDetails: ProjectDetail[] = [
     ],
     metaTitle: 'Product Playbook — Multi-Agent 規格產生系統 | LLM 產品案例',
     metaDescription:
-      'A Multi-Agent product planning system on Claude Code: 22 PM frameworks orchestrated with 3 specialist sub-agents (discovery, strategy critique, pre-mortem) for automated Dev Handoff. AI PM Charles Chen — LLM orchestration case study.',
+      'A Multi-Agent product planning system on Claude Code: 22 PM frameworks orchestrated with 3 specialist sub-agents (discovery, strategy critique, pre-mortem) for automated Dev Handoff. AI PM Charles Chen，LLM orchestration case study.',
     problem: [
       '傳統規格撰寫成本極高：一份及格的產品需求文件（PRD）需整合用戶研究、競品分析與技術限制，通常耗時數天，常成為團隊開發的進度瓶頸。',
       '通用型 AI 的產品思維侷限：ChatGPT 或 Notion AI 雖能產出文字卻「不懂產品」，無法自動進行 JTBD 分析或依 RICE 模型排序優先級，流於通用廢話。',
@@ -290,7 +290,7 @@ export const projectDetails: ProjectDetail[] = [
     learnings: [
       '「在自動化的世界裡，交付媒介就是產品本身。」為什麼選 Email 而非 Dashboard？這源於對行為科學的洞察：在早晨的高頻決策時段，「推播（Push）」的資訊到達率遠高於「拉取（Pull）」。數據應主動出現在使用者的注意力所在之處。',
       '技術路徑的權衡：在整合 FB 過程中，我嘗試過各種模擬捲動路徑，最後發現唯有 CDP 的 Input.synthesizeScrollGesture（合成觸控手勢）能被視為實體操作，這讓我學到：在對抗反爬蟲機制時，越接近實體層級的操作越有效。',
-      'LLM 作為解析器的經濟性：使用 LLM 抽樣結構化欄位看似昂貴，但實際上單篇成本極低（約 USD 0.001），且其穩定性遠高於規則式 Parser。面對「月租押金含管費可議」這類變幻莫測的台式中文，AI 展現了人類等級的理解力。最後，從硬篩選轉向加權模型是這個專案的靈魂——它容許物件在不同維度間進行 Trade-off，這才是最符合真實人性的決策模式。',
+      'LLM 作為解析器的經濟性：使用 LLM 抽樣結構化欄位看似昂貴，但實際上單篇成本極低（約 USD 0.001），且其穩定性遠高於規則式 Parser。面對「月租押金含管費可議」這類變幻莫測的台式中文，AI 展現了人類等級的理解力。最後，從硬篩選轉向加權模型是這個專案的靈魂，它容許物件在不同維度間進行 Trade-off，這才是最符合真實人性的決策模式。',
     ],
     links: [
       { label: 'GitHub', url: 'https://github.com/Kaminoikari/house-ops' },

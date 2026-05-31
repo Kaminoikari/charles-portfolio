@@ -47,7 +47,7 @@ const zhTW: Strings = {
   },
   about: {
     metaTitle: '關於陳德潁（Charles Chen）— 台灣 AI Product Manager',
-    metaDescription: '關於陳德潁（Charles Chen）— 來自台灣的 AI Product Manager 與 AI Product Builder。產品哲學、AI 工具運用、完整職涯經歷、技能組合。',
+    metaDescription: '關於陳德潁（Charles Chen），來自台灣的 AI Product Manager 與 AI Product Builder。產品哲學、AI 工具運用、完整職涯經歷、技能組合。',
     back: '← 返回作品集',
     heading: '關於 Charles Chen',
     subheading: '來自台灣的 AI Product Manager 與 AI Product Builder。',

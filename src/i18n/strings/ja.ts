@@ -50,7 +50,7 @@ const ja: Strings = {
   },
   about: {
     metaTitle: 'Charles Chen（陳德潁）について — 台湾の AI Product Manager',
-    metaDescription: 'Charles Chen（陳德潁）について — 台湾出身の AI Product Manager / AI Product Builder。プロダクト哲学、AI ツールの活用方針、完全な職歴、スキルセット。',
+    metaDescription: 'Charles Chen（陳德潁）について、台湾出身の AI Product Manager / AI Product Builder。プロダクト哲学、AI ツールの活用方針、完全な職歴、スキルセット。',
     back: '← ポートフォリオに戻る',
     heading: 'Charles Chen について',
     subheading: '台湾出身の AI Product Manager / AI Product Builder。',

@@ -97,7 +97,7 @@ const en: Strings = {
   },
   about: {
     metaTitle: 'About Charles Chen — AI Product Manager in Taiwan',
-    metaDescription: 'About Charles Chen (陳德潁) — AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.',
+    metaDescription: 'About Charles Chen (陳德潁), AI Product Manager and AI Product Builder from Taiwan. Product philosophy, AI tooling approach, full career history, and skill set.',
     back: '← BACK TO PORTFOLIO',
     heading: 'About Charles Chen',
     subheading: 'AI Product Manager and AI Product Builder from Taiwan.',
@@ -168,7 +168,7 @@ const en: Strings = {
     sourcesLabel: 'Retrieved context',
     sourcesCount: '{{count}} chunks',
     errorMessage: "That didn't go through. Check your connection and try again.",
-    rateLimited: 'Too many questions for now — give it a moment and try again.',
+    rateLimited: 'Too many questions for now, give it a moment and try again.',
     retry: 'Retry',
     suggested1: 'What did he do at USPACE?',
     suggested2: 'Tell me about Product Playbook',
