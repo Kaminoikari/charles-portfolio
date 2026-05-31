@@ -120,15 +120,17 @@ body {
   50% { opacity: 0.6; transform: translateY(4px); }
 }
 
-/* Chat "thinking" dots — a Gemini-style travelling wave: each dot rises and
-   falls in a short window, and staggered delays make the motion ripple across
-   the three dots rather than bounce in unison. */
-@keyframes chat-bounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
-  30% { transform: translateY(-6px); opacity: 1; }
+/* Chat "thinking" dots — a stadium-wave / Mexican-wave ripple: each dot has a
+   NARROW rise window (peaks ~20% of the cycle, then rests for the remaining
+   ~60%), and the three dots are staggered so one clearly lifts and drops before
+   the next — like bouncing pebbles, not a synchronized bounce. */
+@keyframes chat-wave {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  20% { transform: translateY(-7px); opacity: 1; }
+  40% { transform: translateY(0); opacity: 0.3; }
 }
-.animate-chat-bounce {
-  animation: chat-bounce 1.4s ease-in-out infinite;
+.animate-chat-wave {
+  animation: chat-wave 1.2s ease-in-out infinite;
 }
 
 
