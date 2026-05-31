@@ -396,11 +396,50 @@ export const faqEntries: FaqEntry[] = [
     },
   },
   {
+    id: 'location',
+    questions: {
+      en: ['Where is he based?', 'where does he live?', 'his location', 'where will he work?', 'can he relocate?', 'will he relocate?', 'which locations does he consider?'],
+      'zh-TW': ['他住哪裡', '他在哪個城市', '他的所在地', '他能在哪工作', '他會 relocate 嗎', '他考慮哪些工作地點'],
+      ja: ['どこに住んでいる', '勤務地はどこ', '所在地', '移住は可能', '勤務可能な地域'],
+    },
+    answers: {
+      en: 'Charles is based in the **Greater Taipei area**. For work location he\'s open to **Greater Taipei, Hsinchu, Northeast Asia, and — where the company can sponsor a visa — the US, Europe, and Oceania**.',
+      'zh-TW': 'Charles 目前人在 **雙北**。工作地點方面,他可以接受 **雙北、新竹、東北亞,以及(公司能提供簽證的話)美國、歐洲與大洋洲**。',
+      ja: 'Charles は **台北都市圏**を拠点としています。勤務地は **台北都市圏・新竹・東北アジア、そして(会社がビザを提供できる場合)米国・欧州・オセアニア** が対象です。',
+    },
+  },
+  {
+    id: 'remote',
+    questions: {
+      en: ['Is he open to remote?', 'does he want remote work?', 'remote or onsite?', 'hybrid?', 'his work arrangement preference'],
+      'zh-TW': ['他接受遠端嗎', '他想遠端工作嗎', '遠端還是進辦公室', 'hybrid 嗎', '他偏好的工作型態'],
+      ja: ['リモートは可能', 'リモート希望', 'ハイブリッド', '勤務形態の希望'],
+    },
+    answers: {
+      en: 'Charles **prefers remote or hybrid**, but he\'s flexible — on-site works too if that\'s the arrangement.',
+      'zh-TW': 'Charles **偏好遠端或 hybrid**,但很有彈性——如果是進辦公室的型態也沒問題。',
+      ja: 'Charles は **リモートまたはハイブリッドを希望**しますが、柔軟です——オンサイトの形態でも問題ありません。',
+    },
+  },
+  {
+    id: 'languages',
+    questions: {
+      en: ['What languages does he speak?', 'his language skills', 'does he speak English?', 'is he bilingual?', 'his English level', 'TOEIC score'],
+      'zh-TW': ['他會說哪些語言', '他的語言能力', '他的英文程度', '他英文好嗎', '多益成績'],
+      ja: ['話せる言語', '語学力', '英語は話せる', '英語のレベル', 'TOEIC スコア'],
+    },
+    answers: {
+      en: 'Charles is a **native Chinese (Mandarin)** speaker and **fluent in English** (TOEIC **940/990**).',
+      'zh-TW': 'Charles 的母語是 **中文(國語)**,英語 **流利**(多益 **940/990**)。',
+      ja: 'Charles は **中国語(北京語)が母語**で、**英語は流暢**(TOEIC **940/990**)です。',
+    },
+  },
+  {
     id: 'no-data-redirect',
     questions: {
-      en: ['What is his education?', 'where did he study?', 'his degree', 'where does he live?', 'is he open to remote?', 'will he relocate?', 'what languages does he speak?', 'his expected salary'],
-      'zh-TW': ['他的學歷', '他在哪裡讀書', '他念哪間學校', '他住哪裡', '他接受遠端嗎', '他會 relocate 嗎', '他會說哪些語言', '他的期望薪資'],
-      ja: ['学歴は', 'どこの大学', '住んでいる場所', 'リモートは可能', '話せる言語', '希望給与'],
+      en: ['What is his education?', 'where did he study?', 'his degree', 'which university?', 'his expected salary', 'his age'],
+      'zh-TW': ['他的學歷', '他在哪裡讀書', '他念哪間學校', '他的學位', '他的期望薪資'],
+      ja: ['学歴は', 'どこの大学', '学位', '希望給与'],
     },
     answers: {
       en: "That detail isn't covered in the portfolio, and I'd rather not guess. It's best to ask Charles directly:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
