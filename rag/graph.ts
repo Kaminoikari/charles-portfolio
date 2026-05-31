@@ -130,8 +130,13 @@ export async function* streamAnswer(
     // Token chunks from the user-facing answer node ONLY. The grade/rewrite
     // nodes also run chat models (grade emits structured JSON like
     // {"relevant":true}); without this node filter their tokens would leak into
-    // the streamed answer. `langgraph_node` is set on every event's metadata.
-    if (ev.event === 'on_chat_model_stream' && ev.metadata?.langgraph_node === 'generate') {
+    // the streamed answer. `langgraph_node` lives on the event metadata (its key
+    // has varied across langgraph versions — accept the known aliases).
+    const node =
+      ev.metadata?.langgraph_node ??
+      (ev.metadata as Record<string, unknown> | undefined)?.['langgraph_node'] ??
+      ev.name
+    if (ev.event === 'on_chat_model_stream' && node === 'generate') {
       const chunk = ev.data?.chunk
       const text = typeof chunk?.content === 'string' ? chunk.content : ''
       if (text) {
@@ -140,13 +145,21 @@ export async function* streamAnswer(
       }
     }
     // When a node finishes, capture any state it produced (sources/answer/loops).
+    // The terminal answer comes from generate / triage / fallback; this is the
+    // safety net that guarantees a non-empty `answer` on `done` even if token
+    // streaming above matched nothing.
     if (ev.event === 'on_chain_end') {
-      const out = ev.data?.output as Partial<RAGStateType> | undefined
-      if (out?.sources) sources = out.sources
-      if (typeof out?.loops === 'number') loops = out.loops
-      if (typeof out?.answer === 'string' && out.answer) answerText = out.answer
+      const raw = ev.data?.output as unknown
+      const out = (raw && typeof raw === 'object' ? raw : {}) as Partial<RAGStateType>
+      if (Array.isArray(out.sources)) sources = out.sources
+      if (typeof out.loops === 'number') loops = out.loops
+      if (typeof out.answer === 'string' && out.answer) answerText = out.answer
     }
   }
+
+  // Diagnostic: surfaces in Vercel runtime logs so an empty answer is debuggable
+  // without reproducing locally. Cheap (one line per request).
+  console.log(`[chat] done lang=${language} loops=${loops} answerLen=${answerText.length} sources=${sources.length}`)
 
   yield { type: 'done', sources, language, loops, answer: answerText }
 }

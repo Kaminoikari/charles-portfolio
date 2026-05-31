@@ -161,7 +161,7 @@ const en: Strings = {
     inputPlaceholder: 'Ask anything about his work…',
     send: 'Send',
     sendAriaLabel: 'Send question',
-    thinking: 'retrieving → grading → answering',
+    thinking: 'Thinking…',
     sourcesLabel: 'Retrieved context',
     sourcesCount: '{{count}} chunks',
     errorMessage: 'Something went wrong. Please try again.',

@@ -115,7 +115,7 @@ const ja: Strings = {
     inputPlaceholder: '彼の仕事について何でも…',
     send: '送信',
     sendAriaLabel: '質問を送信',
-    thinking: '検索 → 評価 → 回答',
+    thinking: '考え中…',
     sourcesLabel: '検索されたコンテキスト',
     sourcesCount: '{{count}} 件',
     errorMessage: '問題が発生しました。もう一度お試しください。',

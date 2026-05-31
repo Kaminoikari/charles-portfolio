@@ -112,7 +112,7 @@ const zhTW: Strings = {
     inputPlaceholder: '問任何關於他的工作…',
     send: '送出',
     sendAriaLabel: '送出問題',
-    thinking: '檢索 → 評估 → 回答',
+    thinking: '思考中…',
     sourcesLabel: '檢索到的內容',
     sourcesCount: '{{count}} 個片段',
     errorMessage: '出了點問題，請再試一次。',
