@@ -51,20 +51,34 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
   const docs = state.documents ?? []
   if (docs.length === 0) return { graded: [], route: 'rewrite' }
 
+  // Grading is a quality nicety, not a hard gate. If the grader LLM is slow or
+  // rate-limited, DON'T block the answer (and don't trigger a rewrite loop,
+  // which costs another LLM call): degrade gracefully by passing the retrieved
+  // docs straight to generate. We give the grader a tight 4s budget for the
+  // same reason — better a slightly-less-filtered answer than a 504.
   const grader = gemini().withStructuredOutput(gradeSchema, { name: 'grade' })
   const context = docs.map((d, i) => `[${i + 1}] ${d.pageContent}`).join('\n\n')
-  const { relevant } = await grader.invoke([
-    {
-      role: 'system',
-      content:
-        'You assess whether retrieved documents can answer a question about ' +
-        "Charles Chen's portfolio. Be lenient — the goal is to filter out " +
-        'clearly off-topic retrievals, not to demand perfection.',
-    },
-    { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
-  ])
-
-  return { graded: docs, route: relevant ? 'generate' : 'rewrite' }
+  try {
+    const { relevant } = await Promise.race([
+      grader.invoke([
+        {
+          role: 'system',
+          content:
+            'You assess whether retrieved documents can answer a question about ' +
+            "Charles Chen's portfolio. Be lenient — the goal is to filter out " +
+            'clearly off-topic retrievals, not to demand perfection.',
+        },
+        { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
+      ]),
+      new Promise<{ relevant: boolean }>((_, reject) =>
+        setTimeout(() => reject(new Error('grade timed out')), 4000),
+      ),
+    ])
+    return { graded: docs, route: relevant ? 'generate' : 'rewrite' }
+  } catch (err) {
+    console.warn('gradeDocuments failed, passing docs through to generate:', (err as Error).message)
+    return { graded: docs, route: 'generate' }
+  }
 }
 
 // --- rewriteQuery --------------------------------------------------------

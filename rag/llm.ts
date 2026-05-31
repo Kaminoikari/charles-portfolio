@@ -17,12 +17,30 @@ import { config } from './config.js'
 
 const geminiKey = () => process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? ''
 
+// LangChain chat models retry 6× with exponential backoff by default. On Gemini
+// free-tier 429s that means a single call can hang 30s+, and one RAG request
+// makes several — which blows past Vercel's function timeout (the 504s seen in
+// prod). We want fail-fast: one quick attempt, then move on / fall back.
+const MAX_RETRIES = 0
+
+// Wrap any model promise in a hard timeout so a single slow/limited provider
+// can never stall the whole request. Rejects (doesn't hang) past the deadline.
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
+  ])
+}
+
 // Gemini factory — used directly by grade/rewrite, and as tier 1 of generate.
 export function gemini(temperature = 0): ChatGoogleGenerativeAI {
   return new ChatGoogleGenerativeAI({
     model: config.geminiModel,
     temperature,
     apiKey: geminiKey(),
+    maxRetries: MAX_RETRIES,
   })
 }
 
@@ -31,8 +49,14 @@ function claude(strong: boolean, temperature: number): ChatAnthropic {
   return new ChatAnthropic({
     model: strong ? config.modelStrong : config.modelFast,
     temperature,
+    maxRetries: MAX_RETRIES,
   })
 }
+
+// Per-call deadlines (ms). Generous enough for a normal response, tight enough
+// that the whole pipeline stays well under the serverless timeout.
+const GEMINI_TIMEOUT_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
+const CLAUDE_TIMEOUT_MS = Number.parseInt(process.env.RAG_CLAUDE_TIMEOUT_MS ?? '15000', 10)
 
 export interface GenerateResult {
   text: string
@@ -49,11 +73,15 @@ export async function generateWithFallback(
 ): Promise<GenerateResult> {
   const temperature = opts.temperature ?? 0.2
   try {
-    const res = await gemini(temperature).invoke(messages)
+    const res = await withTimeout(gemini(temperature).invoke(messages), GEMINI_TIMEOUT_MS, 'Gemini')
     return { text: String(res.content), provider: 'gemini' }
   } catch (err) {
     console.warn('Gemini generation failed, falling back to Claude:', (err as Error).message)
-    const res = await claude(opts.strong ?? false, temperature).invoke(messages)
+    const res = await withTimeout(
+      claude(opts.strong ?? false, temperature).invoke(messages),
+      CLAUDE_TIMEOUT_MS,
+      'Claude',
+    )
     return { text: String(res.content), provider: 'claude' }
   }
 }
