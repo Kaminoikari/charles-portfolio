@@ -2,16 +2,21 @@
 // most common questions and the never-answerable ones cost $0 (no Voyage embed,
 // no Qdrant query, no Gemini/Claude). This is the cheapest possible tier:
 //
-//   personal/privacy  -> polite redirect to Charles's contact channels
-//   greeting / contact -> canned answer
-//   everything else    -> 'pass' (falls through to the RAG pipeline)
+//   injection/jailbreak -> in-character refusal (checked FIRST; see section 0)
+//   personal/privacy    -> polite redirect to Charles's contact channels
+//   greeting/contact     -> canned answer
+//   everything else      -> 'pass' (falls through to the RAG pipeline)
 //
 // Matching is pure regex on the raw question (case-insensitive). It is meant to
 // be edited freely: add phrasings to the lists, or add new FAQ entries below.
 
 import type { Locale } from './language.js'
 
-// --- contact info (mirror of the site's Contact Footer / src/data/social.ts) -
+// --- contact info -----------------------------------------------------------
+// A curated contact list for the bot. It is a SUPERSET of src/data/social.ts:
+// it intentionally adds Email and Substack (real, in-use channels) on top of the
+// links the site footer renders (LinkedIn/GitHub/Threads/Portaly). Keep the
+// shared links in sync with social.ts by hand.
 export const CONTACT = {
   email: 'charlestyc0527@gmail.com',
   linkedin: 'https://www.linkedin.com/in/charles-chen-809a2043',
@@ -44,7 +49,8 @@ const INJECTION = new RegExp(
     'ignore\\s+(all\\s+|your\\s+)?(previous|prior|above|the)\\s+(instructions?|prompts?|rules?)',
     'disregard\\s+(the\\s+|your\\s+|all\\s+)?(system|above|previous|instructions?|rules?)',
     'forget\\s+(everything|all|your|the)\\b',
-    'you\\s+are\\s+now\\b', 'act\\s+as\\s+(a|an|if)\\b', 'pretend\\s+(to\\s+be|you)',
+    'you\\s+are\\s+now\\b', 'pretend\\s+(to\\s+be|you)',
+    'act\\s+as\\s+(if\\s+you|an?\\s+(ai|assistant|model|chatbot|bot|language\\s+model|dan|unrestricted|jailbroken|uncensored|unfiltered))\\b',
     'roleplay\\s+as', '\\bDAN\\b', 'developer\\s+mode', 'jailbreak',
     '(reveal|print|repeat|show|tell\\s+me|output|expose)\\s+(me\\s+)?(your\\s+)?(the\\s+)?(system\\s+)?(prompt|instructions?|rules?|configuration|config|guidelines)',
     'what\\s+(are|is)\\s+your\\s+(system\\s+)?(prompt|instructions?|rules?|api\\s*key|secret)',
@@ -66,19 +72,30 @@ const INJECTION = new RegExp(
     // essentially never appear in a genuine question about Charles.
     'def\\s+\\w+\\s*\\(', 'print\\s*\\(', 'lambda\\b', 'slot_map', 'position_map',
     'run\\s+(this|the\\s+following|my)\\s+(code|script|python|program|function)',
-    'execute\\s+(this|the)\\b', 'evaluate\\s+(this|the\\s+following)\\b', 'what\\s+(does|is)\\s+.{0,40}\\s+(print|output|return)',
-    'decode', 'encode', 'base64', 'rot13', '\\bcipher\\b', '\\bascii\\b',
-    'replace\\s+(all|every|the)\\b', 'concatenate', 'spell\\s+(out|it)',
+    'execute\\s+(this|the\\s+following|my)\\s+(code|script|python|program|function|command|sql|query)',
+    'evaluate\\s+(this|the\\s+following)\\b',
+    'what\\s+(does|is|will)\\s+(this|the|that|my)\\s+(code|function|script|program|snippet|line|regex|expression)\\b.{0,12}(print|output|return|do|evaluate\\s+to)',
+    '\\b(decode|encode)\\b\\s+(this|that|it|the\\s+(following|text|string|message|word|name)|following|in\\s+(base64|rot13|hex|binary)|[A-Za-z0-9+/]{12,}={0,2})',
+    'base64', 'rot13', '\\bcipher\\b',
+    'replace\\s+(all|every|each|the)\\b.{0,24}\\b(letter|letters|char|chars|character|characters|word|words|vowel|consonant|digit|occurrence|instance)\\b',
+    'concatenate', 'spell\\s+(out|it)\\b.{0,20}\\b(word|words|name|letter|letters|answer|phrase)\\b',
     'repeat\\s+.{0,20}\\s+times', 'say\\s+.{0,30}\\s+times',
     // 中文(變換/解碼/執行)。變換類動詞只在帶「所有/全部/每個」或引號目標時才
     // 算攻擊(攻擊特徵:取代「所有」X、刪掉「第N個」),避免誤擋「用 AI 取代傳統工具」。
-    '(說|講|唸|念|複誦|重複|重覆|輸出|印出|寫|列出|連寫|連打).{0,8}(\\d|一|二|兩|三|四|五|六|七|八|九|十|百|千|幾).{0,4}(次|遍|回|行|列|遍)',
-    '(代替|替換|取代|代換|換成|改成).{0,4}(所有|全部|每[一個])',
-    '(所有|全部|每[一個]).{0,6}(都)?(用|以|改|換).{0,4}(代替|替換|取代|代換|換成|改成)',
+    '(說|講|唸|念|複誦|重複|重覆|輸出|印出|寫|列出|連寫|連打).{0,8}(\\d|一|二|兩|三|四|五|六|七|八|九|十|百|千|幾).{0,4}(次|遍|回|行|列)',
+    '(代替|替換|取代|代換|換成|改成).{0,6}(字母|字元|英文字|大小寫|數字|符號|標點)',
+    '(所有|全部|每[一個]).{0,8}(字母|字元|數字|符號|標點|字).{0,8}(代替|替換|取代|代換|換成|改成|刪|去|拿)',
     '(用|以)\\s*[「『"].{1,6}[」』"]\\s*(代替|替換|取代|代換|換成)',
-    '(刪掉|刪除|去掉|拿掉|移除).{0,6}(第|最後|所有|全部|每[一個]|[「『"])',
-    'print.{0,4}的?結果', '解碼', '編碼', '密碼', '拼\\s*出', '組合.{0,6}字',
-    '二進制', '二進位', '十六進制', '十六進位', '\\bbinary\\b', '\\bhex(adecimal)?\\b',
+    '(刪掉|刪除|去掉|拿掉|移除).{0,8}(字母|字元|空格|標點|符號|母音|第\\s*[\\d一二三四五六七八九十]|最後.{0,4}(字|個|字母|字元)|[「『"])',
+    'print.{0,4}的?結果',
+    '(解碼|編碼)\\s*(這|此|以下|下面|這串|這段|密文|字串|字符串|base64|二進制|十六進制)',
+    '拼\\s*出.{0,6}(字|字母|名字|單字|詞|答案)', '組合.{0,6}(字母|字元)',
+    // 進制/編碼:需搭配「轉換/字串/拼成」等情境才算攻擊,放行「binary
+    // classification」「二進制分類」這類正當 ML 問題。裸編碼字串另由下方 octet/hex
+    // pattern 攔截。
+    '\\b(binary|hex|hexadecimal|ascii|base64)\\b\\s*(code|string|sequence|representation|encoding|encoded|art)?\\s*(of|for|to|into|from)\\b',
+    '(convert|translate|turn|render|express|encode|decode|write|put|spell)\\s+.{0,30}\\b(binary|hex|hexadecimal|ascii|base64|morse)\\b',
+    '(編碼|解碼|拼成|拼出|寫成|表示成).{0,4}(二進制|二進位|十六進制|十六進位|ascii|base64)',
     '[01]{8}[\\s,]+[01]{8}[\\s,]+[01]{8}', // 3+ 組 8-bit 二進制
     '[0-9a-f]{16,}', // 裸 hex 長序列(≥16 字元 = ~2-3 個 UTF-8 中文字的編碼)
     '(\\\\x[0-9a-fA-F]{2}){3,}', // \xNN\xNN... 跳脫序列
@@ -89,7 +106,8 @@ const INJECTION = new RegExp(
     '(翻譯|轉換|轉成|解讀|還原).{0,8}(二進制|二進位|十六進制|binary|hex|編碼|密文|這[串段])',
     '不要(有)?任何(標點|空格|符號)', '只.{0,6}(回答|輸出).{0,6}結果',
     // 日本語(変換/デコード)
-    'デコード', 'エンコード', '繰り返(し|して)', '置(き)?換え',
+    '(これ|この|以下|次の|base64|文字列|テキスト|メッセージ).{0,6}(を)?\\s*(デコード|エンコード)',
+    '\\d+\\s*回.{0,8}繰り返', '(文字|単語|記号|アルファベット).{0,6}(を)?置(き)?換え',
   ].join('|'),
   'i',
 )
@@ -132,7 +150,7 @@ export function personalRedirect(locale: Locale): string {
   }
   return (
     "That's a personal one — I'll leave it for Charles to answer himself 😊 " +
-    'If you’d like to get in touch, reach him directly:\n\n' +
+    "If you'd like to get in touch, reach him directly:\n\n" +
     contactBlock(locale)
   )
 }
@@ -143,7 +161,7 @@ const PERSONAL = new RegExp(
   [
     // English (word-boundaries to avoid false hits like "updating" / "single
     // source of truth"; "single" needs relationship context)
-    'how old', 'his age', 'your age', '\\bage\\b', 'birthday', 'born in',
+    'how old', 'his age', 'your age', 'birthday', 'born in',
     '\\bmarried\\b', 'marriage', '\\bwife\\b', '\\bhusband\\b', '\\bspouse\\b',
     '\\bgirlfriend\\b', '\\bboyfriend\\b', '\\bdating\\b',
     '(is|are)\\s+(he|you|charles)\\s+single', 'relationship status',
