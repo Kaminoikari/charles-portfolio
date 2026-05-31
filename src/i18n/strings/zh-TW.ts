@@ -120,6 +120,8 @@ const zhTW: Strings = {
     suggested1: '他在 USPACE 做了什麼?',
     suggested2: '介紹一下 Plutus Trade',
     suggested3: '他整體的產品風格是什麼?',
+    muteMusic: '關閉背景音樂',
+    unmuteMusic: '播放背景音樂',
   },
   defaults: {
     documentTitle: '台灣 AI Product Manager | Charles Chen Portfolio',

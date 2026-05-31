@@ -123,6 +123,8 @@ const ja: Strings = {
     suggested1: 'USPACE で何をしましたか?',
     suggested2: 'Plutus Trade について教えて',
     suggested3: '彼のプロダクトの哲学は?',
+    muteMusic: 'BGM をミュート',
+    unmuteMusic: 'BGM を再生',
   },
   defaults: {
     documentTitle: '台湾の AI Product Manager | Charles Chen Portfolio',

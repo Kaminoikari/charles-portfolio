@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import './index.css'
-import AmbientAudio from './components/AmbientAudio'
+import { AudioProvider } from './components/audio/AudioProvider'
 import AppRoutes from './AppRoutes'
 import { LocaleRouter } from './LocaleRouter'
 
@@ -11,9 +11,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <LocaleRouter>
-        <AppRoutes />
+        <AudioProvider>
+          <AppRoutes />
+        </AudioProvider>
       </LocaleRouter>
-      <AmbientAudio />
       <Analytics />
     </BrowserRouter>
   </StrictMode>,

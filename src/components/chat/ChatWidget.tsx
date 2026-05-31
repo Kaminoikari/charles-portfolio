@@ -7,6 +7,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../../i18n'
+import { useAmbientAudio } from '../audio/audio-context'
+import { MuteIcon } from '../audio/MuteIcon'
 import { useChatStream, type ChatMessage } from './useChatStream'
 
 function LiveDot() {
@@ -76,6 +78,7 @@ export default function ChatWidget() {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
+  const audio = useAmbientAudio()
   const { messages, status, send } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -109,17 +112,32 @@ export default function ChatWidget() {
 
   const suggestions = [t('chat.suggested1'), t('chat.suggested2'), t('chat.suggested3')]
 
+  const musicLabel = audio.muted ? t('chat.unmuteMusic') : t('chat.muteMusic')
+
   if (!open) {
+    // Single floating element: a pill whose body opens chat (primary CTA, one
+    // click) with the ambient-music toggle folded in as a secondary icon — so
+    // the music control no longer needs its own colliding floating button.
     return (
-      <button
-        onClick={() => setOpen(true)}
-        aria-label={t('chat.openAriaLabel')}
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2.5 rounded-full border border-border bg-bg-secondary px-4 py-3 text-[14px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-cyan"
-      >
-        <LiveDot />
-        <span>{t('chat.launcherLabel')}</span>
-        <span className="font-mono text-[10.5px] text-accent-cyan">{t('chat.launcherLive')}</span>
-      </button>
+      <div className="fixed bottom-5 right-5 z-50 flex items-center gap-1 rounded-full border border-border bg-bg-secondary pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:border-accent-cyan">
+        <button
+          onClick={() => setOpen(true)}
+          aria-label={t('chat.openAriaLabel')}
+          className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-transparent py-3 pl-4 text-[14px] text-white"
+        >
+          <LiveDot />
+          <span>{t('chat.launcherLabel')}</span>
+          <span className="font-mono text-[10.5px] text-accent-cyan">{t('chat.launcherLive')}</span>
+        </button>
+        <button
+          onClick={audio.toggle}
+          aria-label={musicLabel}
+          aria-pressed={!audio.muted}
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:text-accent-cyan"
+        >
+          <MuteIcon muted={audio.muted} size={15} />
+        </button>
+      </div>
     )
   }
 
@@ -140,13 +158,23 @@ export default function ChatWidget() {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          aria-label={t('chat.closeAriaLabel')}
-          className="cursor-pointer border-none bg-transparent text-[18px] leading-none text-text-tertiary transition-colors hover:text-white"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={audio.toggle}
+            aria-label={musicLabel}
+            aria-pressed={!audio.muted}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-accent-cyan"
+          >
+            <MuteIcon muted={audio.muted} size={15} />
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label={t('chat.closeAriaLabel')}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center border-none bg-transparent text-[18px] leading-none text-text-tertiary transition-colors hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       {/* Body */}

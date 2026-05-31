@@ -51,6 +51,7 @@ interface Strings {
     thinking: string; sourcesLabel: string; sourcesCount: string
     errorMessage: string; rateLimited: string
     suggested1: string; suggested2: string; suggested3: string
+    muteMusic: string; unmuteMusic: string
   }
   defaults: { documentTitle: string }
 }
@@ -168,6 +169,8 @@ const en: Strings = {
     suggested1: 'What did he do at USPACE?',
     suggested2: 'Tell me about Plutus Trade',
     suggested3: 'How does he use AI?',
+    muteMusic: 'Mute ambient music',
+    unmuteMusic: 'Play ambient music',
   },
   defaults: {
     documentTitle: 'AI Product Manager in Taiwan | Charles Chen Portfolio',
