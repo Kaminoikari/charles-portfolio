@@ -1,10 +1,9 @@
 // Node implementations for the corrective RAG graph (see graph.ts for topology).
 //
-// Each node takes the current state and returns a partial state update. The
-// LLM-using nodes default to the fast model (Haiku) and only escalate to the
-// strong model (Sonnet) for the final synthesis of a hard question.
+// LLM routing (see llm.ts): grade + rewrite are internal steps and run on
+// Gemini's free tier only; generate (the user-facing answer) runs on Gemini
+// first and falls back to paid Claude on any failure.
 
-import { ChatAnthropic } from '@langchain/anthropic'
 import { Document } from '@langchain/core/documents'
 import { z } from 'zod'
 
@@ -14,9 +13,7 @@ import { hybridRetrieve } from './retrieval'
 import { portfolioMap } from './portfolio-map'
 import { entityContext } from './entities/graph'
 import { sanitize } from './guardrails'
-
-const fast = () => new ChatAnthropic({ model: config.modelFast, temperature: 0 })
-const strong = () => new ChatAnthropic({ model: config.modelStrong, temperature: 0.2 })
+import { gemini, generateWithFallback } from './llm'
 
 // --- retrieve ------------------------------------------------------------
 // Hybrid (dense+sparse) → RRF → rerank. Uses the latest query (original or the
@@ -41,7 +38,7 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
   const docs = state.documents ?? []
   if (docs.length === 0) return { graded: [], route: 'rewrite' }
 
-  const grader = fast().withStructuredOutput(gradeSchema, { name: 'grade' })
+  const grader = gemini().withStructuredOutput(gradeSchema, { name: 'grade' })
   const context = docs.map((d, i) => `[${i + 1}] ${d.pageContent}`).join('\n\n')
   const { relevant } = await grader.invoke([
     {
@@ -61,7 +58,7 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
 // Reformulate the question to retrieve better on the next loop. Increments the
 // loop counter (the graph caps total loops via config.maxLoops).
 export async function rewriteQuery(state: RAGStateType): Promise<Partial<RAGStateType>> {
-  const res = await fast().invoke([
+  const res = await gemini().invoke([
     {
       role: 'system',
       content:
@@ -85,9 +82,8 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
     .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
     .join('\n\n')
 
-  // Escalate to the strong model when the question is broad/synthetic.
+  // Broad/synthetic questions get the stronger model IF we fall back to Claude.
   const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(state.question)
-  const llm = broad ? strong() : fast()
 
   // Multi-hop entity relationships for whatever the question references — the
   // lightweight-graph half of the retrieval (see entities/graph.ts). Empty for
@@ -95,20 +91,24 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
   const entities = entityContext(state.question)
   const entityBlock = entities ? `\n\n${entities}` : ''
 
-  const res = await llm.invoke([
-    {
-      role: 'system',
-      content:
-        'You answer questions about Charles Chen using ONLY the provided ' +
-        'context, portfolio map, and entity relationships. Never invent roles, ' +
-        'employers, dates, or credentials. If the context does not contain the ' +
-        'answer, say so plainly. Cite sources inline as [n]. Reply in the ' +
-        'language of the question.\n\nPortfolio map:\n' +
-        portfolioMap +
-        entityBlock,
-    },
-    { role: 'user', content: `Question: ${sanitize(state.question)}\n\nContext:\n${context}` },
-  ])
+  // Tier 1 Gemini (free) → tier 2 Claude (paid) on any Gemini failure.
+  const { text } = await generateWithFallback(
+    [
+      {
+        role: 'system',
+        content:
+          'You answer questions about Charles Chen using ONLY the provided ' +
+          'context, portfolio map, and entity relationships. Never invent roles, ' +
+          'employers, dates, or credentials. If the context does not contain the ' +
+          'answer, say so plainly. Cite sources inline as [n]. Reply in the ' +
+          'language of the question.\n\nPortfolio map:\n' +
+          portfolioMap +
+          entityBlock,
+      },
+      { role: 'user', content: `Question: ${sanitize(state.question)}\n\nContext:\n${context}` },
+    ],
+    { strong: broad },
+  )
 
   const sources: Source[] = docs.map((d) => ({
     id: d.metadata.id,
@@ -117,7 +117,7 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
     locale: d.metadata.locale,
   }))
 
-  return { answer: String(res.content), sources }
+  return { answer: text, sources }
 }
 
 // --- fallback ------------------------------------------------------------

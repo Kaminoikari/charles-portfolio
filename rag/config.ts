@@ -27,6 +27,10 @@ export const config = {
   gradeThreshold: float('RAG_GRADE_THRESHOLD', 0.5),
 
   // --- models ---
+  // Generation is two-tier: Gemini free-tier first, Anthropic as paid fallback.
+  // grade/rewrite are internal steps → Gemini only (no fallback) to conserve the
+  // paid Claude budget for the user-facing final answer.
+  geminiModel: process.env.RAG_GEMINI_MODEL ?? 'gemini-2.5-flash',
   modelFast: process.env.RAG_MODEL_FAST ?? 'claude-haiku-4-5-20251001',
   modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-sonnet-4-6',
   embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',

@@ -77,7 +77,7 @@ locally / in CI where warm runtime isn't needed.
 | Fusion | **RRF** (Reciprocal Rank Fusion) of dense + sparse | robust, no tuning | hybrid fusion |
 | Global-question guard | top-k **+ injected "portfolio map"** (one-line summary of every project/role) | chunking starves "what's his overall style?" questions | knows RAG failure modes |
 | Graph relations | hand-written `entities/relations.json`, injected — **no Neo4j** | the entity graph is ~dozens of edges | **knowing when *not* to use GraphRAG** |
-| Generation | **Claude** (Haiku default → Sonnet on hard) | multilingual, faithfulness guardrails, streaming | model routing + cost awareness |
+| Generation | **Two-tier: Gemini 2.5 Flash (free) → Claude (paid fallback)** | grade/rewrite ride Gemini's free tier; the user-facing answer tries Gemini, falls back to Claude on any failure | real-world cost tiering: free-first, paid as backstop |
 | Observability / eval | **LangSmith** | tracing + datasets + ablation | the scarce skill: *measuring* RAG, not just building it |
 
 ---
@@ -233,7 +233,8 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 ## 10. Required secrets (none present in this container)
 
-`ANTHROPIC_API_KEY`, `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
+`GEMINI_API_KEY` (free-tier generation, tier 1), `ANTHROPIC_API_KEY` (paid
+fallback, tier 2), `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
 rerank), `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`,
 `UPSTASH_REDIS_*`. Until these exist the pipeline can be built but not run
 end-to-end.
@@ -251,6 +252,7 @@ rag/
 ├── nodes.ts                  # retrieve / grade / rewrite / generate / fallback
 ├── retrieval.ts              # hybrid + RRF + rerank over pgvector (retrieveWith)
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
+├── llm.ts                    # two-tier LLM: Gemini free → Claude paid fallback
 ├── language.ts               # deterministic en/zh-TW/ja detection
 ├── guardrails.ts             # prompt-injection neutralization
 ├── portfolio-map.ts          # always-injected global-question rescue
