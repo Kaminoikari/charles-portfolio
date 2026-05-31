@@ -14,10 +14,11 @@ Charles Chen (陳德潁) — Taiwan-based Software Product Manager, "Product Bui
 core dev engine to prototype and validate in production ~5x faster.
 
 WORK:
-- USPACE (Jul 2024–present) — PM, 3 core product lines (parking payments,
-  business travel, financial insurance), TW+JP, 85%+ of revenue. Launched USPACE
-  for Business (a B2B SaaS for corporate travel) 0→1 in September 2025. (Parking
-  payments is the core line, not a "flagship" — describe it as a core product.)
+- USPACE (Jul 2024–present) — PM; served as USPACE app owner and Product Owner of
+  a cross-functional Scrum team across 3 core product lines (parking payments,
+  business travel, financial insurance), TW+JP. Launched USPACE for Business (a
+  B2B SaaS for corporate travel) 0→1 in September 2025. (Parking payments is the
+  core line, not a "flagship" — describe it as a core product.)
 - XChange School (Jan 2025–present) — Product Mentor.
 - NUEIP (2024) — Senior PM, BI product, +40% data-driven decisions.
 - PXPay Plus (2022–2024) — PM, +25% checkout conversion, rewards system.

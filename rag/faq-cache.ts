@@ -42,9 +42,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['全体の概要', 'Charles は何をしている人', '経歴をまとめて'],
     },
     answers: {
-      en: 'Charles is an AI Product Manager with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS. His work has reached **7M+ people**. He currently leads three product lines at USPACE (Taiwan + Japan) driving **85%+ of company revenue**, and ships AI-built prototypes **5x faster** than traditional workflows.',
-      'zh-TW': 'Charles 是一位 AI 產品經理，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。他目前在 USPACE 主導三條產品線（台灣 + 日本），貢獻 **85% 以上的公司營收**，並以 AI 打造原型，比傳統流程快 **5 倍**。',
-      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた AI プロダクトマネージャーで、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。現在 USPACE で 3 つのプロダクトライン（台湾+日本）を統括し、**会社売上の 85% 以上**を牽引、AI によるプロトタイピングで従来比 **5 倍速**で出荷しています。',
+      en: 'Charles is an AI Product Manager with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS. His work has reached **7M+ people**. He currently leads three product lines at USPACE (Taiwan + Japan), where he served as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, and ships AI-built prototypes **5x faster** than traditional workflows.',
+      'zh-TW': 'Charles 是一位 AI 產品經理，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。他目前在 USPACE 主導三條產品線（台灣 + 日本），曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**，並以 AI 打造原型，比傳統流程快 **5 倍**。',
+      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた AI プロダクトマネージャーで、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。現在 USPACE で 3 つのプロダクトライン（台湾+日本）を統括し、**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、AI によるプロトタイピングで従来比 **5 倍速**で出荷しています。',
     },
   },
   {
@@ -269,9 +269,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['USPACE では何をしている', 'USPACE での役割', '現在の仕事'],
     },
     answers: {
-      en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three core lines, parking payments, business travel, and financial insurance (Taiwan + Japan), driving **85%+ of company revenue**. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
-      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略，停車支付、商務差旅、金融保險（台灣 + 日本），貢獻 **85% 以上的公司營收**。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
-      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括し、**会社売上の 85% 以上**を牽引。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング（Claude Code・Codex・Antigravity）で **5 倍速**の反復を実現しました。',
+      en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three core lines, parking payments, business travel, and financial insurance (Taiwan + Japan). He served as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, aligning engineering, design, and operations. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
+      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略，停車支付、商務差旅、金融保險（台灣 + 日本）。他曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**，協調工程、設計與營運。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
+      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括しています。**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、エンジニアリング・デザイン・オペレーションをまとめました。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング（Claude Code・Codex・Antigravity）で **5 倍速**の反復を実現しました。',
     },
   },
   {
@@ -444,9 +444,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんな成果を出した', '主要な実績', '定量的なインパクト', '数字'],
     },
     answers: {
-      en: 'Selected results: **7M+ users reached**; **85%+ of USPACE revenue** owned; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
-      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；主導 **USPACE 85% 以上營收**；以 AI 原型開發達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
-      ja: '主な成果：**700 万人以上**にリーチ；**USPACE 売上の 85% 以上**を統括；AI プロトタイピングで **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+      en: 'Selected results: **7M+ users reached**; **0→1 USPACE for Business** launched; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
+      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；**0→1 推出 USPACE for Business**；以 AI 原型開發達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
+      ja: '主な成果：**700 万人以上**にリーチ；**USPACE for Business を 0→1** でローンチ；AI プロトタイピングで **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
     },
   },
   {
@@ -563,9 +563,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['彼の強みは', '何が得意', '一番の強み', 'なぜ優れた PM なのか', '彼の際立つ点'],
     },
     answers: {
-      en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He also brings proven revenue ownership (85%+ at USPACE), 0→1 launch experience, and full-stack AI engineering depth (his own multi-agent system, production Gemini features).",
-      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備實證的營收掌控力(USPACE 85%+)、0→1 上線經驗，以及全端 AI 工程深度（自建多代理系統、生產級 Gemini 功能）。',
-      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。実証された売上オーナーシップ(USPACE 85%+)、0→1 のローンチ経験、フルスタックの AI エンジニアリング（自作マルチエージェント、本番 Gemini 機能）も備えます。',
+      en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He also brings ownership as **USPACE app owner and Product Owner of a cross-functional Scrum team**, 0→1 launch experience, and full-stack AI engineering depth (his own multi-agent system, production Gemini features).",
+      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備 **USPACE app 負責人與跨職能 Scrum 團隊 Product Owner** 的歷練、0→1 上線經驗，以及全端 AI 工程深度（自建多代理系統、生產級 Gemini 功能）。',
+      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。**USPACE app のオーナー兼クロスファンクショナルな Scrum チームの Product Owner** としての経験、0→1 のローンチ経験、フルスタックの AI エンジニアリング（自作マルチエージェント、本番 Gemini 機能）も備えます。',
     },
   },
   {
@@ -589,9 +589,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['一番の成果は', '最も誇れる仕事', '最大の功績'],
     },
     answers: {
-      en: "A standout: at USPACE he owns product strategy driving **85%+ of company revenue** across three lines, and 0→1 launched USPACE for Business. On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes, behavior and revenue moved, not features shipped.",
-      'zh-TW': '其中一個亮點：在 USPACE 他主導的產品策略貢獻 **85% 以上的公司營收**（橫跨三條線），並 0→1 推出 USPACE for Business。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功，改變行為與營收，而非交付了多少功能。',
-      ja: '際立つ成果：USPACE で 3 つのラインにまたがり **会社売上の 85% 以上** を牽引するプロダクト戦略を統括し、USPACE for Business を 0→1 でローンチ。エンジニアリング面では、**Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）引き上げました。成功は成果で測ります、機能でなく行動と売上の変化です。',
+      en: "A standout: at USPACE he owns product strategy across three lines as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, and 0→1 launched USPACE for Business. On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes, the user behavior his products move.",
+      'zh-TW': '其中一個亮點：在 USPACE 他以 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner** 的身分主導三條產品線的策略，並 0→1 推出 USPACE for Business。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功，看產品改變了多少使用者行為。',
+      ja: '際立つ成果：USPACE で 3 つのラインにまたがり、**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** としてプロダクト戦略を統括し、USPACE for Business を 0→1 でローンチ。エンジニアリング面では、**Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）引き上げました。成功は成果で、プロダクトが動かしたユーザー行動で測ります。',
     },
   },
   {
@@ -602,9 +602,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜ採用すべき', 'なぜ Charles を雇う', 'どんな価値をもたらす', 'なぜ適任'],
     },
     answers: {
-      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has owned 85%+ of revenue at USPACE, launched B2B SaaS 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast, not just specs, that combination is rare.',
-      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他在 USPACE 掌控 85%+ 營收、0→1 推出 B2B SaaS、端到端打造生產級 AI 系統。對一個想要「快速取得已驗證成果、而非只拿到規格」的團隊，這種組合很稀有。',
-      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ、AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。USPACE で売上の 85%+ を統括、B2B SaaS を 0→1 でローンチ、本番 AI システムを端から端まで構築。「仕様だけでなく検証済みの成果を速く」求めるチームには稀有な組み合わせです。',
+      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has been the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, launched B2B SaaS 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast, that combination is rare.',
+      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**、0→1 推出 B2B SaaS、端到端打造生產級 AI 系統。對一個想要快速取得已驗證成果的團隊，這種組合很稀有。',
+      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ、AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、B2B SaaS を 0→1 でローンチ、本番 AI システムを端から端まで構築。検証済みの成果を速く求めるチームには稀有な組み合わせです。',
     },
   },
   {

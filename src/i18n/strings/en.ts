@@ -13,8 +13,8 @@ interface Strings {
   home: {
     skipLink: string; aboutMarker: string; aboutHeading: string
     aboutBody1: string; aboutBody2: string; aboutReadMore: string
-    aboutMetricUsersLabel: string; aboutMetricRevenueLabel: string; aboutMetricAiLabel: string
-    aboutMetricUsersShort: string; aboutMetricRevenueShort: string; aboutMetricAiShort: string
+    aboutMetricUsersLabel: string; aboutMetricLaunchLabel: string; aboutMetricAiLabel: string
+    aboutMetricUsersShort: string; aboutMetricLaunchShort: string; aboutMetricAiShort: string
     universeAriaLabel: string; universeWordLeft: string; universeWordRight: string
     projectsCaseStudy: string
   }
@@ -85,10 +85,10 @@ const en: Strings = {
     aboutBody2: "Whether it's scaling a consumer platform, launching an enterprise product, or integrating AI into development, I bring the strategy, execution, and cross-functional leadership to make it happen.",
     aboutReadMore: 'Read more',
     aboutMetricUsersLabel: 'Users Impacted',
-    aboutMetricRevenueLabel: 'Revenue Impact',
+    aboutMetricLaunchLabel: 'B2B SaaS Launch',
     aboutMetricAiLabel: 'Faster with AI',
     aboutMetricUsersShort: 'Users',
-    aboutMetricRevenueShort: 'Revenue',
+    aboutMetricLaunchShort: 'B2B SaaS',
     aboutMetricAiShort: 'AI Speed',
     universeAriaLabel: 'Understand What I Do',
     universeWordLeft: 'Understand',

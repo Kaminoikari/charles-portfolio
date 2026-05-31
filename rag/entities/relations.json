@@ -24,7 +24,7 @@
     { "id": "ai-builder", "type": "concept", "label": "Product Builder / AI-driven development" }
   ],
   "relations": [
-    { "from": "charles", "rel": "works_at", "to": "uspace", "note": "Product Manager, 3 product lines, 85%+ revenue, TW+JP" },
+    { "from": "charles", "rel": "works_at", "to": "uspace", "note": "Product Manager; served as USPACE app owner and Product Owner of a cross-functional Scrum team; 3 product lines, TW+JP" },
     { "from": "charles", "rel": "mentors_at", "to": "xchange", "note": "Product Mentor" },
     { "from": "charles", "rel": "worked_at", "to": "nueip", "note": "Senior PM, BI product" },
     { "from": "charles", "rel": "worked_at", "to": "pxpay", "note": "PM, checkout + rewards" },

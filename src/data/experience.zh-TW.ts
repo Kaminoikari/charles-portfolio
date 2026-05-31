@@ -20,7 +20,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '85%+ 營收影響：主導停車支付、企業差旅、金融保險三條產品線的策略（台灣 + 日本）',
+      '曾任 USPACE app 負責人與跨職能 Scrum 團隊 Product Owner：主導停車支付、企業差旅、金融保險三條產品線的策略（台灣 + 日本）',
       '0→1 推出 USPACE for Business（2025 年 9 月），企業差旅管理 B2B SaaS',
       '5x 更快的迭代速度：率先以 Claude Code、Codex、Antigravity 推動 AI 驅動的原型開發',
     ],

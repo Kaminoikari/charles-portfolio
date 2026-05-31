@@ -295,7 +295,7 @@ const HUB_COUNT = 10 // bright hub nodes
 
               {/* Right annotations */}
               <div className="flex flex-col gap-10">
-                <Annotation number="85%" label={t('home.aboutMetricRevenueLabel')} side="right" />
+                <Annotation number="0→1" label={t('home.aboutMetricLaunchLabel')} side="right" />
                 <Annotation number="5x" label={t('home.aboutMetricAiLabel')} side="right" />
               </div>
             </div>
@@ -320,8 +320,8 @@ const HUB_COUNT = 10 // bright hub nodes
                   <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricUsersShort')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-mono text-xl font-semibold text-white">85%</div>
-                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricRevenueShort')}</div>
+                  <div className="font-mono text-xl font-semibold text-white">0→1</div>
+                  <div className="font-mono text-[10px] uppercase tracking-[1px] text-text-muted">{t('home.aboutMetricLaunchShort')}</div>
                 </div>
                 <div className="text-center">
                   <div className="font-mono text-xl font-semibold text-white">5x</div>
