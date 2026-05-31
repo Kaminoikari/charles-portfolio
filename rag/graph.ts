@@ -113,8 +113,11 @@ export async function* streamAnswer(
   )
 
   for await (const ev of events) {
-    // Token chunks from any chat model node (generate / fallback uses none).
-    if (ev.event === 'on_chat_model_stream') {
+    // Token chunks from the user-facing answer node ONLY. The grade/rewrite
+    // nodes also run chat models (grade emits structured JSON like
+    // {"relevant":true}); without this node filter their tokens would leak into
+    // the streamed answer. `langgraph_node` is set on every event's metadata.
+    if (ev.event === 'on_chat_model_stream' && ev.metadata?.langgraph_node === 'generate') {
       const chunk = ev.data?.chunk
       const text = typeof chunk?.content === 'string' ? chunk.content : ''
       if (text) {

@@ -10,6 +10,7 @@ import { useT } from '../../i18n'
 import { useAmbientAudio } from '../audio/audio-context'
 import { MuteIcon } from '../audio/MuteIcon'
 import { useChatStream, type ChatMessage } from './useChatStream'
+import { Markdown } from './Markdown'
 
 function LiveDot() {
   return (
@@ -66,7 +67,7 @@ function Message({ message }: { message: ChatMessage }) {
   return (
     <div className="max-w-[88%] self-start text-[14px] leading-[1.7]">
       <div className={message.error ? 'text-text-muted' : 'text-white'}>
-        {message.text}
+        {message.error ? message.text : <Markdown text={message.text} />}
         {message.text === '' && <span className="text-text-tertiary">…</span>}
       </div>
       <Sources message={message} />

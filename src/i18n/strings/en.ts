@@ -167,7 +167,7 @@ const en: Strings = {
     errorMessage: 'Something went wrong. Please try again.',
     rateLimited: 'Too many questions for now — give it a moment and try again.',
     suggested1: 'What did he do at USPACE?',
-    suggested2: 'Tell me about Plutus Trade',
+    suggested2: 'Tell me about Product Playbook',
     suggested3: 'How does he use AI?',
     muteMusic: 'Mute ambient music',
     unmuteMusic: 'Play ambient music',

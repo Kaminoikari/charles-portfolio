@@ -118,7 +118,7 @@ const zhTW: Strings = {
     errorMessage: '出了點問題，請再試一次。',
     rateLimited: '問題太頻繁了——稍等一下再試。',
     suggested1: '他在 USPACE 做了什麼?',
-    suggested2: '介紹一下 Plutus Trade',
+    suggested2: '介紹一下 Product Playbook',
     suggested3: '他整體的產品風格是什麼?',
     muteMusic: '關閉背景音樂',
     unmuteMusic: '播放背景音樂',

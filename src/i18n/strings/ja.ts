@@ -121,7 +121,7 @@ const ja: Strings = {
     errorMessage: '問題が発生しました。もう一度お試しください。',
     rateLimited: '質問が多すぎます——少し待ってからもう一度お試しください。',
     suggested1: 'USPACE で何をしましたか?',
-    suggested2: 'Plutus Trade について教えて',
+    suggested2: 'Product Playbook について教えて',
     suggested3: '彼のプロダクトの哲学は?',
     muteMusic: 'BGM をミュート',
     unmuteMusic: 'BGM を再生',
