@@ -403,9 +403,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どこに住んでいる', '勤務地はどこ', '所在地', '移住は可能', '勤務可能な地域'],
     },
     answers: {
-      en: 'Charles is based in the **Greater Taipei area**. For work location he\'s open to **Greater Taipei, Hsinchu, Northeast Asia, and — where the company can sponsor a visa — the US, Europe, and Oceania**.',
-      'zh-TW': 'Charles 目前人在 **雙北**。工作地點方面,他可以接受 **雙北、新竹、東北亞,以及(公司能提供簽證的話)美國、歐洲與大洋洲**。',
-      ja: 'Charles は **台北都市圏**を拠点としています。勤務地は **台北都市圏・新竹・東北アジア、そして(会社がビザを提供できる場合)米国・欧州・オセアニア** が対象です。',
+      en: 'Charles is based in the **Greater Taipei area**. For work location he\'s open to **Greater Taipei and Hsinchu**, and — where the company can sponsor a visa — **Northeast Asia, the US, Europe, and Oceania**.',
+      'zh-TW': 'Charles 目前人在 **雙北**。工作地點方面,他可以接受 **雙北與新竹**,以及(公司能提供簽證的話)**東北亞、美國、歐洲與大洋洲**。',
+      ja: 'Charles は **台北都市圏**を拠点としています。勤務地は **台北都市圏・新竹**、そして(会社がビザを提供できる場合)**東北アジア・米国・欧州・オセアニア** が対象です。',
     },
   },
   {
