@@ -2,14 +2,15 @@
 // the corrective LangGraph pipeline runs, then logs the question for analytics.
 //
 // Vercel Node serverless function (same platform as the site, so the widget
-// calls it same-origin — no CORS). Needs ANTHROPIC_API_KEY / EMBEDDING_API_KEY /
-// SUPABASE_* at runtime; see docs/rag-chatbot-design.md §10.
+// calls it same-origin — no CORS). Needs GEMINI_API_KEY / ANTHROPIC_API_KEY /
+// EMBEDDING_API_KEY / QDRANT_* at runtime; see docs/rag-chatbot-design.md §10.
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'node:crypto'
 
 import { streamAnswer } from '../rag/graph'
 import { config } from '../rag/config'
+import { qdrant, DENSE } from '../rag/qdrant'
 import { parseChatRequest, sse, RateLimiter, clientId } from '../rag/api-helpers'
 
 // One limiter per warm instance (see api-helpers note re: Upstash for global).
@@ -30,12 +31,15 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   }
 }
 
-// Fire-and-forget analytics. Never blocks or fails the response.
-function logChat(row: Record<string, unknown>): void {
-  if (!config.supabaseUrl || !process.env.SUPABASE_SERVICE_KEY) return
+// Fire-and-forget analytics. Never blocks or fails the response. The log point
+// carries a size-1 dummy vector (chat_logs is only ever scrolled, not searched)
+// so logging costs no extra embedding call.
+function logChat(payload: Record<string, unknown>): void {
+  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) return
   try {
-    const db = createClient(config.supabaseUrl, process.env.SUPABASE_SERVICE_KEY)
-    void db.from('chat_logs').insert(row)
+    void qdrant().upsert(config.qdrantLogsCollection, {
+      points: [{ id: randomUUID(), vector: { [DENSE]: [0] }, payload: { ...payload, ts: new Date().toISOString() } }],
+    })
   } catch {
     // analytics is best-effort
   }

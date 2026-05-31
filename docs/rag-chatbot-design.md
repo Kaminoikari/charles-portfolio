@@ -25,15 +25,15 @@ operate. Aligns with the existing Vite + React + TS app.
 ```
                          BUILD TIME  (rag/ingest/)  — run locally / CI
   src/data/*.{en,zh-TW,ja}.ts ─┐
-  product-playbook README      ├─► extract ─► semantic split ─► voyage-3 embed ─► Supabase pgvector
-  entities/relations.json      ┘   (parent/child)  (dense+sparse)        (HNSW + FTS + RLS)
+  product-playbook README      ├─► extract ─► semantic split ─► voyage-3 embed ─► Qdrant (hybrid)
+  entities/relations.json      ┘   (parent/child)  (dense)  +  SPLADE++ sparse (Cloud Inference)
 
                          QUERY TIME  (api/chat.ts — Vercel Node fn + LangGraph.js)
   question
      │
      ▼
   ┌──────────────────────  LangGraph StateGraph  ──────────────────────┐
-  │  [retrieve] ── LangChain SupabaseVectorStore hybrid + voyage rerank  │
+  │  [retrieve] ── Qdrant hybrid (dense+sparse, server RRF) + voyage rerank│
   │       │                                                             │
   │  [grade_documents] ── LLM grades each chunk's relevance  (CRAG)     │
   │       ├─ relevant ───────────────► [generate] ─► answer + citations │
@@ -51,11 +51,14 @@ operate. Aligns with the existing Vite + React + TS app.
   site; no extra service to run.
 - **Frontend widget** — React component in the existing Vite app, calls
   `POST /api/chat` (SSE streaming) on the same origin (no CORS).
-- **Supabase pgvector** — already in the stack; one Postgres holds vectors +
-  full-text index + chat logs.
+- **Qdrant Cloud** (free tier) — purpose-built vector DB holding a named dense
+  vector (Voyage) + named sparse vector (SPLADE++). Hybrid fusion (RRF) runs
+  server-side in the Query API; the SPLADE++ model runs on Qdrant Cloud
+  Inference, so no sparse encoder ships in the serverless bundle. A second
+  collection (`chat_logs`) holds append-only analytics.
 - **Embeddings + rerank** — Voyage AI (voyage-3-large / rerank-2.5) over its
-  HTTP API. US provider, SOTA retrieval, 1024-dim so the schema is unchanged.
-  The client is swappable via `config.ts`.
+  HTTP API. US provider, SOTA retrieval, 1024-dim. The client is swappable via
+  `config.ts`.
 
 *Alternative on file:* a persistent Fly.io service (like the Plutus Trade
 backend) if cold starts or long-running eval jobs become a problem. Chosen
@@ -69,12 +72,12 @@ locally / in CI where warm runtime isn't needed.
 | Layer | Choice | Why for this corpus | Showcase point |
 |---|---|---|---|
 | Orchestration | **LangGraph** `StateGraph` | corrective loop needs state + branching, not a linear chain | "agentic / corrective RAG, not naive single-shot" |
-| Retrieval primitives | **LangChain** `SupabaseVectorStore`, `RecursiveCharacterTextSplitter`, `Document` | standard interfaces over pgvector + hybrid | "I use the LangChain ecosystem the way teams do" |
-| Embedding | **voyage-3-large** (Voyage AI, US) | SOTA multilingual retrieval (EN/zh-TW/ja); asymmetric `document`/`query` encoding; 1024-dim fits the schema | US provider, top-tier quality, no data-residency concern |
-| Vector store | **Supabase pgvector** (HNSW) | already in stack; hybrid = one SQL (vector + `tsvector`) | real vector DB, SQL hybrid, RLS |
-| Sparse | **Postgres FTS** (`tsvector`) | sparse arm is keyword recall in SQL — no second model needed | hybrid without extra infra |
+| Retrieval primitives | **Qdrant** `@qdrant/js-client-rest` Query API, LangChain `Document` | hybrid (dense+sparse prefetch + RRF) in one server-side request | "I drive a purpose-built vector DB the way teams do" |
+| Embedding | **voyage-3-large** (Voyage AI, US) | SOTA multilingual retrieval (EN/zh-TW/ja); asymmetric `document`/`query` encoding; 1024-dim dense vector | US provider, top-tier quality, no data-residency concern |
+| Vector store | **Qdrant Cloud** (HNSW, free tier) | named dense + sparse vectors; server-side hybrid fusion; payload filtering by locale | dedicated vector DB, learned-sparse hybrid |
+| Sparse | **SPLADE++** learned-sparse via **Qdrant Cloud Inference** | term-expanding lexical recall (beats `ts_rank`/BM25); model runs on Qdrant, not in our serverless fn | learned sparse, the relevance frontier |
 | Rerank | **rerank-2.5** (Voyage AI, US) | small corpus makes rerank lift measurable | cross-encoder reranking |
-| Fusion | **RRF** (Reciprocal Rank Fusion) of dense + sparse | robust, no tuning | hybrid fusion |
+| Fusion | **RRF** server-side in Qdrant's Query API | robust, no tuning, one round-trip | hybrid fusion without hand-rolling |
 | Global-question guard | top-k **+ injected "portfolio map"** (one-line summary of every project/role) | chunking starves "what's his overall style?" questions | knows RAG failure modes |
 | Graph relations | hand-written `entities/relations.json`, injected — **no Neo4j** | the entity graph is ~dozens of edges | **knowing when *not* to use GraphRAG** |
 | Generation | **Two-tier: Gemini 2.5 Flash (free) → Claude (paid fallback)** | grade/rewrite ride Gemini's free tier; the user-facing answer tries Gemini, falls back to Claude on any failure | real-world cost tiering: free-first, paid as backstop |
@@ -138,36 +141,28 @@ export const RAGState = Annotation.Root({
 
 ---
 
-## 5. Supabase schema
+## 5. Qdrant collections
 
-```sql
-create extension if not exists vector;
+No SQL — collections are created in code by `ensureCollections()` (`rag/qdrant.ts`),
+called at the top of every ingest run (idempotent).
 
-create table doc_chunks (
-  id          text primary key,
-  parent_id   text,
-  source_type text not null,         -- project|about|experience|skill|changelog|blog|playbook
-  project_id  text,
-  locale      text not null,         -- en|zh-TW|ja
-  title       text,
-  content     text not null,
-  embedding   vector(1024),          -- voyage-3-large dense
-  fts         tsvector generated always as (to_tsvector('simple', content)) stored
-);
-create index on doc_chunks using hnsw (embedding vector_cosine_ops);
-create index on doc_chunks using gin (fts);
+```
+doc_chunks                              # the hybrid index
+  vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
+  sparse_vectors: { sparse: {} }                                # SPLADE++ (Cloud Inference)
+  payload index:  locale (keyword)                              # filtered on every query
+  payload:        { chunk_id, parent_id, source_type, project_id, locale, title, content }
+  point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
-create table chat_logs (              -- free product insight: what recruiters ask
-  id uuid default gen_random_uuid() primary key,
-  ts timestamptz default now(),
-  question text, language text,
-  route text, loops int, latency_ms int,
-  sources jsonb
-);
+chat_logs                               # free product insight: what recruiters ask
+  vectors:        { dense: { size: 1, distance: Cosine } }      # dummy — only ever scrolled
+  payload:        { ts, question, language, route, loops, latency_ms, sources }
 ```
 
-Hybrid retrieval = one RPC running cosine (HNSW) + `ts_rank` (FTS), merged by RRF
-in Python.
+Hybrid retrieval = one Query-API request: a dense prefetch (Voyage vector) + a
+sparse prefetch (raw text → SPLADE++ via Cloud Inference), fused by **RRF
+server-side**, then a Voyage cross-encoder rerank in the function. The ablation
+(`retrieveWith`) toggles each arm to measure its marginal lift.
 
 ---
 
@@ -235,9 +230,9 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 `GEMINI_API_KEY` (free-tier generation, tier 1), `ANTHROPIC_API_KEY` (paid
 fallback, tier 2), `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
-rerank), `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`,
-`UPSTASH_REDIS_*`. Until these exist the pipeline can be built but not run
-end-to-end.
+rerank), `QDRANT_URL` + `QDRANT_API_KEY` (vector store; Cloud Inference must be
+enabled for the SPLADE++ sparse model), `UPSTASH_REDIS_*`. Until these exist the
+pipeline can be built but not run end-to-end.
 
 ---
 
@@ -250,7 +245,8 @@ rag/
 ├── graph.ts                  # LangGraph StateGraph spine + answer()/streamAnswer()
 ├── state.ts                  # Annotation.Root state schema
 ├── nodes.ts                  # retrieve / grade / rewrite / generate / fallback
-├── retrieval.ts              # hybrid + RRF + rerank over pgvector (retrieveWith)
+├── retrieval.ts              # Qdrant hybrid (dense+sparse, server RRF) + rerank (retrieveWith)
+├── qdrant.ts                 # Qdrant client + collection bootstrap + point-id hashing
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
 ├── llm.ts                    # two-tier LLM: Gemini free → Claude paid fallback
 ├── language.ts               # deterministic en/zh-TW/ja detection
@@ -259,9 +255,8 @@ rag/
 ├── config.ts                 # central settings + env overrides
 ├── api-helpers.ts            # request validation, SSE framing, rate limiter
 ├── ingest/
-│   ├── schema.sql            # pgvector tables + FTS + RLS + retrieval RPCs
 │   ├── extract.ts            # parse src/data/*.ts → records (no regex drift)
-│   └── build-index.ts        # chunk → embed → upsert pgvector
+│   └── build-index.ts        # chunk → voyage embed → upsert Qdrant (sparse via Cloud Inference)
 └── evals/
     ├── golden.ts             # eval set (single-fact/local/global/out-of-corpus)
     ├── metrics.ts            # recall@k / MRR / correctness (unit-tested)

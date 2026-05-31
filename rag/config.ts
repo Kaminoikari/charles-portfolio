@@ -36,10 +36,16 @@ export const config = {
   embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',
   rerankModel: process.env.RAG_RERANK_MODEL ?? 'rerank-2.5',
   embedDim: int('RAG_EMBED_DIM', 1024),
+  // Learned-sparse model, run server-side by Qdrant Cloud Inference (free tier).
+  // Swap to 'qdrant/bm25' for statistical sparse (then set the IDF modifier in
+  // qdrant.ts) or 'qdrant/minicoil' if your Inference tab lists it as free.
+  sparseModel: process.env.RAG_SPARSE_MODEL ?? 'prithivida/Splade_PP_en_v1',
 
   // --- endpoints (secrets read lazily by clients) ---
   embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.voyageai.com/v1',
-  supabaseUrl: process.env.SUPABASE_URL ?? '',
+  qdrantUrl: process.env.QDRANT_URL ?? '',
+  qdrantCollection: process.env.QDRANT_COLLECTION ?? 'doc_chunks',
+  qdrantLogsCollection: process.env.QDRANT_LOGS_COLLECTION ?? 'chat_logs',
 
   // --- behavior ---
   defaultLocale: process.env.RAG_DEFAULT_LOCALE ?? 'en',

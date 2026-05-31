@@ -17,8 +17,8 @@ isolates each retrieval layer's marginal lift.
 
 Each arm adds one layer, so the delta column shows what that layer bought:
 
-1. `dense-only` — pgvector HNSW cosine only
-2. `hybrid` — + sparse (Postgres FTS), fused with RRF
+1. `dense-only` — Qdrant dense (Voyage voyage-3-large, cosine) only
+2. `hybrid` — + sparse (SPLADE++ learned-sparse via Cloud Inference), fused with RRF server-side
 3. `hybrid+rerank` — + voyage rerank-2.5 cross-encoder
 4. `corrective` — + the full LangGraph loop (grade → rewrite → generate / fallback)
 
@@ -37,7 +37,7 @@ npm run rag:test                      # unit tests for the metrics (no secrets)
 
 ## Required env
 
-- Retrieval arms: `VOYAGE_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
+- Retrieval arms: `VOYAGE_API_KEY`, `QDRANT_URL`, `QDRANT_API_KEY`
   (plus a built index — run `npm run rag:ingest` first).
 - Corrective arm + faithfulness: `ANTHROPIC_API_KEY`.
 - LangSmith tracing (optional): `LANGCHAIN_TRACING_V2=true` + `LANGCHAIN_API_KEY`

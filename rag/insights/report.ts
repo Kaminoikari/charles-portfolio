@@ -2,11 +2,10 @@
 // question hitting /api/chat is logged (see api/chat.ts → chat_logs). This
 // script summarizes them: what recruiters actually ask, language split, how
 // often the bot had to decline (fallback rate = a corpus-coverage signal), and
-// latency. Run:  npx tsx rag/insights/report.ts  (needs SUPABASE_*).
-
-import { createClient } from '@supabase/supabase-js'
+// latency. Run:  npx tsx rag/insights/report.ts  (needs QDRANT_*).
 
 import { config } from '../config'
+import { qdrant } from '../qdrant'
 
 interface LogRow {
   question: string | null
@@ -38,17 +37,25 @@ function median(xs: number[]): number {
 }
 
 async function main() {
-  if (!config.supabaseUrl || !process.env.SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_KEY are required.')
+  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) {
+    throw new Error('QDRANT_URL and QDRANT_API_KEY are required.')
   }
-  const db = createClient(config.supabaseUrl, process.env.SUPABASE_SERVICE_KEY)
-  const { data, error } = await db
-    .from('chat_logs')
-    .select('question, language, route, loops, latency_ms, ts')
-    .order('ts', { ascending: false })
-    .limit(5000)
-  if (error) throw error
-  const rows = (data ?? []) as LogRow[]
+  const db = qdrant()
+  // Scroll the append-only chat_logs collection (payload only — no vectors).
+  const rows: LogRow[] = []
+  let offset: string | number | undefined | null = undefined
+  while (rows.length < 5000) {
+    const res = await db.scroll(config.qdrantLogsCollection, {
+      limit: 256,
+      with_payload: true,
+      with_vector: false,
+      offset: offset ?? undefined,
+    })
+    for (const p of res.points) rows.push((p.payload ?? {}) as unknown as LogRow)
+    offset = res.next_page_offset as string | number | null
+    if (!offset) break
+  }
+  rows.sort((a, b) => (b.ts ?? '').localeCompare(a.ts ?? ''))
 
   if (rows.length === 0) {
     console.log('No chat logs yet.')

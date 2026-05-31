@@ -1,41 +1,24 @@
-// Hybrid retrieval over Supabase pgvector: dense (HNSW cosine) + sparse
-// (Postgres full-text), fused with Reciprocal Rank Fusion, then optionally
-// reranked by a cross-encoder. On a small corpus the marginal lift of each
+// Hybrid retrieval over Qdrant: dense (Voyage voyage-3-large, cosine) + sparse
+// (SPLADE++ learned-sparse via Qdrant Cloud Inference), fused server-side with
+// Reciprocal Rank Fusion in the Query API, then optionally reranked by a
+// cross-encoder (Voyage rerank). On a small corpus the marginal lift of each
 // layer is measurable — that's exactly what the LangSmith ablation quantifies.
 
-import { createClient } from '@supabase/supabase-js'
 import { Document } from '@langchain/core/documents'
 
 import { config } from './config'
 import { embedOne, rerank } from './embeddings'
+import { qdrant, DENSE, SPARSE } from './qdrant'
 
-const supabase = () =>
-  createClient(config.supabaseUrl, process.env.SUPABASE_SERVICE_KEY ?? '')
-
-interface Row {
-  id: string
+// Payload stored per chunk at ingest (see ingest/build-index.ts).
+interface Payload {
+  chunk_id: string
   parent_id: string | null
   source_type: string
   project_id: string | null
   locale: string
   title: string | null
   content: string
-  rank: number
-}
-
-// Reciprocal Rank Fusion: merge multiple ranked lists into one. Robust and
-// tuning-free — an item ranked high in either list floats up.
-function rrf(lists: Row[][], k: number): Map<string, { row: Row; score: number }> {
-  const fused = new Map<string, { row: Row; score: number }>()
-  for (const list of lists) {
-    list.forEach((row, i) => {
-      const prev = fused.get(row.id)
-      const inc = 1 / (k + i + 1)
-      if (prev) prev.score += inc
-      else fused.set(row.id, { row, score: inc })
-    })
-  }
-  return fused
 }
 
 // Which retrieval layers are active. The Phase 1 ablation toggles these to
@@ -53,23 +36,40 @@ export const DEFAULT_RETRIEVAL: RetrievalConfig = {
   rerank: config.rerankEnabled,
 }
 
-function toDocument(row: Row, score: number): Document {
+function localeFilter(locale: string) {
+  return { must: [{ key: 'locale', match: { value: locale } }] }
+}
+
+// The sparse query is raw text; Qdrant Cloud Inference runs SPLADE++ on it.
+function sparseQuery(query: string) {
+  return { text: query, model: config.sparseModel }
+}
+
+interface ScoredPoint {
+  payload?: Record<string, unknown> | null
+  score?: number
+}
+
+function toDocument(p: ScoredPoint): Document {
+  const pl = (p.payload ?? {}) as unknown as Payload
   return new Document({
-    pageContent: row.content,
+    pageContent: pl.content,
     metadata: {
-      id: row.id,
-      parentId: row.parent_id,
-      sourceType: row.source_type,
-      projectId: row.project_id,
-      locale: row.locale,
-      title: row.title,
-      score,
+      id: pl.chunk_id,
+      parentId: pl.parent_id,
+      sourceType: pl.source_type,
+      projectId: pl.project_id,
+      locale: pl.locale,
+      title: pl.title,
+      score: p.score ?? 0,
     },
   })
 }
 
 // One round of retrieval for a single query string. Layers are configurable so
-// the same code path serves both production (full hybrid) and the ablation.
+// the same code path serves both production (full hybrid) and the ablation:
+//   dense+sparse → prefetch both arms, fuse with RRF server-side
+//   dense only / sparse only → a single-arm query (the ablation's isolation)
 export async function retrieveWith(
   query: string,
   locale: string,
@@ -79,54 +79,54 @@ export async function retrieveWith(
     throw new Error('retrieveWith: at least one of dense/sparse must be enabled')
   }
 
-  const db = supabase()
+  const db = qdrant()
+  const filter = localeFilter(locale)
+  let points: ScoredPoint[]
 
-  // Only embed when the dense arm is active (saves an API call in sparse-only).
-  const lists: Row[][] = []
-  const calls: Promise<void>[] = []
-
-  if (cfg.dense) {
-    calls.push(
-      (async () => {
-        const queryVec = await embedOne(query, 'query')
-        const res = await db.rpc('match_chunks_dense', {
-          query_embedding: queryVec,
-          match_count: config.candidateK,
-          filter_locale: locale,
-        })
-        if (res.error) throw res.error
-        lists.push(res.data as Row[])
-      })(),
-    )
+  if (cfg.dense && cfg.sparse) {
+    // Hybrid: both arms prefetched, fused with RRF inside Qdrant.
+    const denseVec = await embedOne(query, 'query')
+    const res = await db.query(config.qdrantCollection, {
+      prefetch: [
+        { query: denseVec, using: DENSE, filter, limit: config.candidateK },
+        { query: sparseQuery(query), using: SPARSE, filter, limit: config.candidateK },
+      ],
+      query: { fusion: 'rrf' },
+      filter,
+      limit: config.candidateK,
+      with_payload: true,
+    })
+    points = res.points
+  } else if (cfg.dense) {
+    const denseVec = await embedOne(query, 'query')
+    const res = await db.query(config.qdrantCollection, {
+      query: denseVec,
+      using: DENSE,
+      filter,
+      limit: config.candidateK,
+      with_payload: true,
+    })
+    points = res.points
+  } else {
+    const res = await db.query(config.qdrantCollection, {
+      query: sparseQuery(query),
+      using: SPARSE,
+      filter,
+      limit: config.candidateK,
+      with_payload: true,
+    })
+    points = res.points
   }
-  if (cfg.sparse) {
-    calls.push(
-      (async () => {
-        const res = await db.rpc('match_chunks_fts', {
-          query_text: query,
-          match_count: config.candidateK,
-          filter_locale: locale,
-        })
-        if (res.error) throw res.error
-        lists.push(res.data as Row[])
-      })(),
-    )
-  }
-  await Promise.all(calls)
 
-  // RRF over whichever lists are present (one list = identity ranking).
-  const fused = rrf(lists, config.rrfK)
-  const ordered = [...fused.values()].sort((a, b) => b.score - a.score)
-
-  if (cfg.rerank && ordered.length > 0) {
+  if (cfg.rerank && points.length > 0) {
     const ranked = await rerank(
       query,
-      ordered.map((o) => o.row.content),
+      points.map((p) => ((p.payload ?? {}) as unknown as Payload).content),
       config.topK,
     )
-    return ranked.map((r) => toDocument(ordered[r.index].row, r.score))
+    return ranked.map((r) => toDocument(points[r.index]))
   }
-  return ordered.slice(0, config.topK).map(({ row, score }) => toDocument(row, score))
+  return points.slice(0, config.topK).map(toDocument)
 }
 
 // Production entry point: full hybrid retrieval. Used by the graph's retrieve

@@ -7,7 +7,7 @@
 //   npx tsx rag/evals/run-eval.ts --arm hybrid    # one arm
 //   npx tsx rag/evals/run-eval.ts --out docs/...   # write markdown report
 //
-// Needs EMBEDDING_API_KEY + SUPABASE_* (retrieval) and ANTHROPIC_API_KEY
+// Needs EMBEDDING_API_KEY + QDRANT_* (retrieval) and ANTHROPIC_API_KEY
 // (corrective arm + faithfulness judge). Retrieval-only arms skip the LLM, so
 // the first three arms run without an Anthropic key.
 //
