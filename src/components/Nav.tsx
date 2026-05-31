@@ -85,8 +85,9 @@ export default function Nav() {
       y = el.getBoundingClientRect().top + window.scrollY - navHeight
     }
     const doScroll = () => window.scrollTo({ top: y, behavior: 'smooth' })
-    if ('startViewTransition' in document) {
-      (document as any).startViewTransition(doScroll)
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => void }
+    if (doc.startViewTransition) {
+      doc.startViewTransition(doScroll)
     } else {
       doScroll()
     }

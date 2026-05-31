@@ -586,14 +586,14 @@ function CornerSquare({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) {
 function ProjectCard({ project }: { project: Project }) {
   const [isHovered, setIsHovered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  // Detect touch (no-hover) devices once at mount via a lazy initializer —
+  // avoids both reading a ref during render and calling setState in an effect.
+  const [isTouchDevice] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches,
+  )
   const cardRef = useRef<HTMLAnchorElement>(null)
-  const isTouchDevice = useRef(false)
   const localePath = useLocalePath()
   const t = useT()
-
-  useEffect(() => {
-    isTouchDevice.current = window.matchMedia('(hover: none)').matches
-  }, [])
 
   useEffect(() => {
     if (!cardRef.current) return
@@ -605,7 +605,7 @@ function ProjectCard({ project }: { project: Project }) {
     return () => observer.disconnect()
   }, [])
 
-  const isAnimating = isTouchDevice.current ? isVisible : isHovered
+  const isAnimating = isTouchDevice ? isVisible : isHovered
 
   return (
     <a

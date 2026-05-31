@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { LOCALES, LOCALE_URL_PREFIX } from './config'
-import { useLocale } from './LocaleContext'
+import { useLocale } from './locale-context'
 import { useT, type StringKey } from './useT'
 
 const SITE_ORIGIN = 'https://charles-chen.com'

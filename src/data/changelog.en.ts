@@ -19,6 +19,49 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-chatbot',
+    date: '2026-05-31',
+    title: 'Shipped the portfolio AI chatbot',
+    tags: ['feature', 'technical'],
+    body: [
+      'The "Chat with AI" button in the corner opens a chatbot I designed and built end to end. It answers questions about my work, in English, 中文, and 日本語, using only my real portfolio data, so it never makes things up. I built it as a working demonstration of production AI engineering, not a thin wrapper around ChatGPT.',
+      { kind: 'heading', text: 'How it answers a question' },
+      'It uses RAG (retrieval-augmented generation): instead of relying on what a language model "remembers", it first looks up the relevant facts from my portfolio, then writes an answer grounded in them. Mine is a "corrective" RAG, meaning it checks its own work:',
+      {
+        kind: 'list',
+        items: [
+          '**Self-correcting pipeline**: built on LangGraph as a series of steps: sort the question → search for relevant content → grade whether that content is good enough → write the answer. If the grade is poor, it rephrases the question and searches again; if it still can\'t find the answer, it says so honestly instead of guessing.',
+          '**Hybrid search (Qdrant)**: every answer is found two ways at once: by meaning (vector embeddings from Voyage AI) and by keyword (BM25), then the results are merged and re-ranked for relevance. This catches both "what\'s his product philosophy?" and exact-term questions. (Moved from Supabase to Qdrant when I hit a free-tier limit.)',
+          '**Two language models, cost-aware**: a fast, free model (Gemini) answers first; a premium model (Claude) automatically takes over only if Gemini fails, so a visitor never sees an error.',
+          '**Relationship graph**: a small hand-built map of how things connect (me ↔ roles ↔ projects ↔ tools) so it can answer questions that span several facts, like "which projects use Claude?".',
+        ],
+      },
+      { kind: 'heading', text: 'Built to run cheaply: most questions never call a paid model' },
+      {
+        kind: 'list',
+        items: [
+          '**Instant rules**: common cases are handled by simple pattern-matching with zero AI cost: privacy questions (age, family, salary…) get a polite "ask Charles directly", and greetings/contact requests get a fixed reply.',
+          '**Answer cache**: about 50 common questions have pre-written answers (in all 3 languages). When a visitor asks something similar, the matching answer is returned directly, with no language model called at all. Only genuinely new questions go through the full pipeline.',
+          '**Smart routing**: the grader tells apart "answerable", "about me but not documented", and "off-topic", so an off-topic question (general trivia) is declined in one step instead of retrying.',
+        ],
+      },
+      { kind: 'heading', text: 'Safety: layered defense against misuse' },
+      'A public chatbot is a target for "prompt injection" (tricking it into ignoring its rules or saying something harmful). I defend in three layers:',
+      {
+        kind: 'list',
+        items: [
+          '**Input check**: catches manipulation attempts before any AI runs: "ignore your instructions", fake "developer mode", roleplay/persona tricks, and puzzles that try to hide a slur inside code, an encoding, or a fill-in-the-blank game.',
+          '**Locked scope**: the model is instructed to treat every message as data, not commands, and to refuse anything that isn\'t a genuine question about me, even when it\'s dressed up as a math or word puzzle.',
+          '**Output check**: a final filter drops any reply containing offensive terms, no matter how it was coaxed out.',
+          '**Reliability**: fast-failing model calls, per-call timeouts, and a non-blocking grader so the service never hangs (it was occasionally timing out under rate limits before).',
+        ],
+      },
+      { kind: 'heading', text: 'How it stays accurate and online' },
+      'The chatbot\'s knowledge is built from the exact same data files that render this site, so it can never contradict what the portfolio actually says. Re-indexing runs as a one-click GitHub Action, and the whole thing is deployed on Vercel alongside the site, streaming each answer word by word as it\'s written.',
+      'Stack: LangGraph.js · LangChain.js · Qdrant · Voyage AI · Gemini · Claude · React · Vercel.',
+    ],
+  },
+  {
     id: 'product-playbook-closed-loop',
     date: '2026-05-29',
     title: 'Product Playbook v1.2.12 — Closed-Loop Self-Correction System',

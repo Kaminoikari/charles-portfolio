@@ -8,7 +8,8 @@ export {
   isLocale,
   type Locale,
 } from './config'
-export { LocaleProvider, useInitialLocaleRestore, useLocale, useLocalePath } from './LocaleContext'
+export { LocaleProvider } from './LocaleContext'
+export { useInitialLocaleRestore, useLocale, useLocalePath } from './locale-context'
 export { useT, type StringKey } from './useT'
 export { useDocumentMeta } from './useDocumentMeta'
 export { STRINGS, type Strings } from './strings'

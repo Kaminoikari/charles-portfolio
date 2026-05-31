@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG Chat Widget — Mockup</title>
+<style>
+  /* Tokens lifted verbatim from src/index.css @theme */
+  :root{
+    --bg:#0A0A0A; --bg2:#111111; --bg3:#1A1A1A;
+    --border:#1f2228; --border-hover:rgba(255,255,255,.1);
+    --text:#fff; --text-muted:#999; --text-tertiary:#666;
+    --mars:#E8652B; --cyan:#00D9FF;
+    --sans:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'SF Mono',SFMono-Regular,Consolas,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);
+    padding:40px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start;
+    background-image:radial-gradient(circle at 20% 10%,rgba(232,101,43,.06),transparent 40%);}
+  h1{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);
+    font-family:var(--mono);font-weight:400;margin-bottom:16px}
+  .col{flex:1;min-width:360px;max-width:440px}
+  .note{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-top:14px;font-family:var(--mono)}
+  .note b{color:var(--mars)}
+
+  /* ── 1. Closed launcher (floating button, bottom-right) ── */
+  .launcher{display:inline-flex;align-items:center;gap:10px;
+    background:var(--bg2);border:1px solid var(--border);border-radius:999px;
+    padding:12px 18px;cursor:pointer;transition:all .2s}
+  .launcher:hover{border-color:var(--cyan);transform:translateY(-1px)}
+  .launcher .dot{width:8px;height:8px;border-radius:50%;background:var(--mars);
+    box-shadow:0 0 8px var(--mars)}
+  .launcher span{font-size:14px}
+  .launcher .hint{font-family:var(--mono);font-size:11px;color:var(--text-tertiary)}
+
+  /* ── 2. Open panel ── */
+  .panel{width:100%;background:var(--bg2);border:1px solid var(--border);
+    border-radius:16px;overflow:hidden;display:flex;flex-direction:column;height:560px;
+    box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .head{display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px;border-bottom:1px solid var(--border);
+    background:color-mix(in srgb,var(--bg2) 90%,transparent);backdrop-filter:blur(8px)}
+  .head .title{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600}
+  .head .dot{width:8px;height:8px;border-radius:50%;background:var(--mars);box-shadow:0 0 8px var(--mars)}
+  .head .sub{font-family:var(--mono);font-size:10px;color:var(--text-tertiary);
+    letter-spacing:.5px;text-transform:uppercase}
+  .head .x{color:var(--text-tertiary);cursor:pointer;font-size:18px;background:none;border:none}
+
+  .body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px}
+
+  /* messages */
+  .msg{max-width:85%;font-size:14px;line-height:1.7}
+  .msg.user{align-self:flex-end;background:var(--bg3);border:1px solid var(--border);
+    border-radius:14px 14px 4px 14px;padding:10px 14px}
+  .msg.bot{align-self:flex-start}
+  .msg.bot .txt{background:transparent;color:var(--text)}
+  .msg.bot .cite{color:var(--cyan);font-family:var(--mono);font-size:12px;cursor:pointer}
+
+  /* retrieval transparency (the showcase) */
+  .sources{margin-top:10px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .sources summary{font-family:var(--mono);font-size:11px;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--text-muted);padding:8px 12px;cursor:pointer;
+    list-style:none;display:flex;justify-content:space-between;align-items:center;
+    background:var(--bg3)}
+  .sources summary::after{content:'▾';color:var(--text-tertiary)}
+  .src{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:8px 12px;border-top:1px solid var(--border);font-size:12px}
+  .src .name{color:var(--text);}
+  .src .type{font-family:var(--mono);font-size:10px;color:var(--text-tertiary);
+    text-transform:uppercase}
+  .src .bar{flex:1;height:3px;background:var(--border);border-radius:2px;
+    position:relative;max-width:90px}
+  .src .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--mars);border-radius:2px}
+  .src .score{font-family:var(--mono);font-size:11px;color:var(--cyan);min-width:38px;text-align:right}
+
+  /* loop indicator (corrective) */
+  .loop{align-self:flex-start;font-family:var(--mono);font-size:11px;color:var(--text-tertiary);
+    display:flex;align-items:center;gap:8px;padding:2px 0}
+  .loop .pulse{width:6px;height:6px;border-radius:50%;background:var(--cyan);
+    animation:p 1.2s infinite}
+  @keyframes p{0%,100%{opacity:.3}50%{opacity:1}}
+
+  /* suggested chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;color:var(--text-muted);border:1px solid var(--border);
+    border-radius:999px;padding:6px 12px;cursor:pointer;transition:all .2s;background:none}
+  .chip:hover{color:var(--text);border-color:var(--border-hover)}
+
+  /* composer */
+  .composer{display:flex;gap:10px;padding:14px 16px;border-top:1px solid var(--border)}
+  .composer input{flex:1;background:var(--bg);border:1px solid var(--border);
+    border-radius:10px;padding:11px 14px;color:var(--text);font-family:var(--sans);font-size:14px;outline:none}
+  .composer input:focus{border-color:var(--cyan)}
+  .composer input::placeholder{color:var(--text-tertiary)}
+  .composer button{background:var(--mars);border:none;border-radius:10px;color:#fff;
+    padding:0 18px;font-weight:600;cursor:pointer;font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="col">
+  <h1>State A — closed launcher</h1>
+  <div class="launcher">
+    <span class="dot"></span>
+    <span>Ask about Charles</span>
+    <span class="hint" style="color:#00D9FF">● live</span>
+  </div>
+  <div class="note">
+    Floating, bottom-right of every page. Pulsing <b>mars dot</b> + cyan
+    <b>● live</b> = a real agent answering now, not a canned FAQ.
+  </div>
+</div>
+
+<div class="col">
+  <h1>State B — open, mid-answer (streaming + transparency)</h1>
+  <div class="panel">
+    <div class="head">
+      <div class="title">
+        <span class="dot"></span>
+        <div>Ask about Charles <div class="sub">Agentic RAG · Voyage-3 · Claude</div></div>
+      </div>
+      <button class="x">✕</button>
+    </div>
+    <div class="body">
+      <div class="msg user">What did Charles do at USPACE?</div>
+
+      <!-- corrective loop indicator (only shows when a rewrite happened) -->
+      <div class="loop"><span class="pulse"></span> retrieving → grading → answering</div>
+
+      <div class="msg bot">
+        <div class="txt">At USPACE, Charles is a <b style="color:#fff">Product Manager</b> owning
+        three product lines — parking payments, business travel, and financial insurance —
+        across Taiwan and Japan, contributing 85%+ of company revenue <span class="cite">[1]</span>.
+        He also launched USPACE for Business, a B2B SaaS, from 0→1 <span class="cite">[2]</span>.▍</div>
+
+        <details class="sources" open>
+          <summary>Retrieved context · 3 chunks <span></span></summary>
+          <div class="src">
+            <span class="name">Product Manager @ USPACE</span>
+            <span class="type">experience</span>
+            <span class="bar"><i style="width:96%"></i></span>
+            <span class="score">0.96</span>
+          </div>
+          <div class="src">
+            <span class="name">USPACE for Business</span>
+            <span class="type">experience</span>
+            <span class="bar"><i style="width:81%"></i></span>
+            <span class="score">0.81</span>
+          </div>
+          <div class="src">
+            <span class="name">How I use AI — Prototyping</span>
+            <span class="type">about</span>
+            <span class="bar"><i style="width:64%"></i></span>
+            <span class="score">0.64</span>
+          </div>
+        </details>
+      </div>
+    </div>
+    <div class="composer">
+      <input placeholder="Ask anything about his work…" />
+      <button>Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <h1>State C — empty state (suggested questions)</h1>
+  <div class="panel" style="height:420px">
+    <div class="head">
+      <div class="title">
+        <span class="dot"></span>
+        <div>Ask about Charles <div class="sub">Agentic RAG · Voyage-3 · Claude</div></div>
+      </div>
+      <button class="x">✕</button>
+    </div>
+    <div class="body">
+      <div class="msg bot"><div class="txt" style="color:var(--text-muted)">
+        Ask me anything about Charles's projects, experience, or how he builds with AI.
+        Answers are grounded in his portfolio — I'll say so if something isn't covered.
+      </div></div>
+      <div class="chips">
+        <button class="chip">What did he do at USPACE?</button>
+        <button class="chip">他整體的產品風格是什麼?</button>
+        <button class="chip">Tell me about Plutus Trade</button>
+        <button class="chip">How does he use AI?</button>
+      </div>
+    </div>
+    <div class="composer">
+      <input placeholder="Ask anything about his work…" />
+      <button>Send</button>
+    </div>
+  </div>
+  <div class="note">
+    <b>Transparency panel</b> is the differentiator: every answer shows which chunks
+    were retrieved, their type, and fused score — the RAG engineering made visible
+    (CLAUDE.md "show, don't tell"). Out-of-corpus questions get an honest decline.
+  </div>
+</div>
+
+</body>
+</html>

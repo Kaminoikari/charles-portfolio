@@ -120,3 +120,32 @@ body {
   50% { opacity: 0.6; transform: translateY(4px); }
 }
 
+/* Chat "thinking" dots — a stadium-wave / Mexican-wave ripple: each dot has a
+   NARROW rise window (peaks ~20% of the cycle, then rests for the remaining
+   ~60%), and the three dots are staggered so one clearly lifts and drops before
+   the next — like bouncing pebbles, not a synchronized bounce. */
+@keyframes chat-wave {
+  0%, 100% { transform: translateY(0); opacity: 0.3; }
+  20% { transform: translateY(-7px); opacity: 1; }
+  40% { transform: translateY(0); opacity: 0.3; }
+}
+.animate-chat-wave {
+  animation: chat-wave 1.2s ease-in-out infinite;
+}
+/* Stagger via nth-child so the delay can't be clobbered by the `animation`
+   shorthand above (shorthand resets animation-delay to 0 — which made all three
+   dots fire in unison). These rules come after, and set delay explicitly. */
+.chat-dots > span:nth-child(1) { animation-delay: 0s; }
+.chat-dots > span:nth-child(2) { animation-delay: 0.2s; }
+.chat-dots > span:nth-child(3) { animation-delay: 0.4s; }
+
+/* When the chat panel is open, hide the third-party Protico "lobby" widget so
+   the two floating bottom-corner elements don't overlap / fight for taps. The
+   selectors cover however Protico injects (iframe src, id, or class). */
+body.chat-open iframe[src*="protico"],
+body.chat-open [id*="protico" i],
+body.chat-open [class*="protico" i] {
+  display: none !important;
+}
+
+

@@ -1,0 +1,171 @@
+// The corrective / agentic RAG pipeline as a LangGraph.js StateGraph.
+//
+// Flow:
+//   START -> triage                              (deterministic, no LLM/embed)
+//     personal / canned FAQ        -> END        (answered for $0)
+//     otherwise                    -> retrieve -> gradeDocuments
+//       route == "generate"          -> generate -> END
+//       route == "rewrite" & loops<N -> rewriteQuery -> retrieve  (corrective loop)
+//       otherwise                     -> fallback -> END
+//
+// This file declares the graph topology + the public `answer()` entry point.
+// Node implementations live in `nodes.ts`. `buildGraph` accepts node overrides
+// so the control flow can be exercised with stubs (no API keys) in tests.
+// Requires `@langchain/langgraph` + `@langchain/core` and the runtime secrets in
+// docs/rag-chatbot-design.md §10 to actually answer.
+
+import { StateGraph, START, END } from '@langchain/langgraph'
+
+import { config } from './config.js'
+import { detectLanguage } from './language.js'
+import { RAGState, type RAGStateType, type Source } from './state.js'
+import * as defaultNodes from './nodes.js'
+
+// A node is an (async) function from state to a partial state update.
+export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>
+
+export interface NodeSet {
+  triage: Node
+  retrieve: Node
+  gradeDocuments: Node
+  rewriteQuery: Node
+  generate: Node
+  fallback: Node
+}
+
+// Conditional edge: triage either answered the question (deterministically, no
+// LLM) or passes it on to retrieval.
+function routeAfterTriage(state: RAGStateType): 'answered' | 'retrieve' {
+  return state.route === 'answered' ? 'answered' : 'retrieve'
+}
+
+// Conditional edge: where to go after grading the retrieved chunks.
+//   generate    — docs answer the question
+//   off_topic   — question isn't about Charles at all → fall back immediately
+//                 (skip the rewrite loop; rewriting an off-topic question never
+//                 finds Charles data and just burns LLM calls)
+//   else        — on-topic but weak retrieval → rewrite and retry, capped
+function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fallback' {
+  if (state.route === 'generate') return 'generate'
+  if (state.route === 'off_topic') return 'fallback'
+  if ((state.loops ?? 0) < config.maxLoops) return 'rewriteQuery'
+  return 'fallback'
+}
+
+export function buildGraph(nodes: NodeSet = defaultNodes) {
+  return new StateGraph(RAGState)
+    .addNode('triage', nodes.triage)
+    .addNode('retrieve', nodes.retrieve)
+    .addNode('gradeDocuments', nodes.gradeDocuments)
+    .addNode('rewriteQuery', nodes.rewriteQuery)
+    .addNode('generate', nodes.generate)
+    .addNode('fallback', nodes.fallback)
+    .addEdge(START, 'triage')
+    .addConditionalEdges('triage', routeAfterTriage, {
+      answered: END,
+      retrieve: 'retrieve',
+    })
+    .addEdge('retrieve', 'gradeDocuments')
+    .addConditionalEdges('gradeDocuments', routeAfterGrade, {
+      generate: 'generate',
+      rewriteQuery: 'rewriteQuery',
+      fallback: 'fallback',
+    })
+    .addEdge('rewriteQuery', 'retrieve') // corrective loop
+    .addEdge('generate', END)
+    .addEdge('fallback', END)
+    .compile()
+}
+
+// Module-level singleton so the API route imports a ready-compiled graph.
+export const graph = buildGraph()
+
+export interface AnswerResult {
+  answer: string
+  sources: Source[]
+  language: string
+  loops: number
+}
+
+// Public entry point. Detects the question's language up front (deterministic,
+// so the trace is reproducible) and seeds `queries` with the original question
+// so the first `retrieve` has something to search. LangSmith tracing is enabled
+// automatically when LANGCHAIN_TRACING_V2 + LANGCHAIN_API_KEY are set in the
+// environment — no code change needed.
+export async function answer(
+  question: string,
+  compiled: ReturnType<typeof buildGraph> = graph,
+): Promise<AnswerResult> {
+  const language = detectLanguage(question)
+  const final = await compiled.invoke({
+    question,
+    language,
+    queries: [question],
+  })
+  return {
+    answer: final.answer ?? '',
+    sources: final.sources ?? [],
+    language: final.language ?? language,
+    loops: final.loops ?? 0,
+  }
+}
+
+// Streaming entry point for the SSE endpoint. Yields token chunks as the
+// generate/fallback node produces them, then a final event carrying sources +
+// metadata. Uses LangGraph's streamEvents (v2): we forward chat-model token
+// chunks and read the terminal state for sources. Tracing still auto-attaches.
+export type StreamEvent =
+  | { type: 'token'; text: string }
+  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string }
+
+export async function* streamAnswer(
+  question: string,
+  compiled: ReturnType<typeof buildGraph> = graph,
+): AsyncGenerator<StreamEvent> {
+  const language = detectLanguage(question)
+  let answerText = ''
+  let sources: Source[] = []
+  let loops = 0
+
+  const events = compiled.streamEvents(
+    { question, language, queries: [question] },
+    { version: 'v2' },
+  )
+
+  for await (const ev of events) {
+    // Token chunks from the user-facing answer node ONLY. The grade/rewrite
+    // nodes also run chat models (grade emits structured JSON like
+    // {"relevant":true}); without this node filter their tokens would leak into
+    // the streamed answer. `langgraph_node` lives on the event metadata (its key
+    // has varied across langgraph versions — accept the known aliases).
+    const node =
+      ev.metadata?.langgraph_node ??
+      (ev.metadata as Record<string, unknown> | undefined)?.['langgraph_node'] ??
+      ev.name
+    if (ev.event === 'on_chat_model_stream' && node === 'generate') {
+      const chunk = ev.data?.chunk
+      const text = typeof chunk?.content === 'string' ? chunk.content : ''
+      if (text) {
+        answerText += text
+        yield { type: 'token', text }
+      }
+    }
+    // When a node finishes, capture any state it produced (sources/answer/loops).
+    // The terminal answer comes from generate / triage / fallback; this is the
+    // safety net that guarantees a non-empty `answer` on `done` even if token
+    // streaming above matched nothing.
+    if (ev.event === 'on_chain_end') {
+      const raw = ev.data?.output as unknown
+      const out = (raw && typeof raw === 'object' ? raw : {}) as Partial<RAGStateType>
+      if (Array.isArray(out.sources)) sources = out.sources
+      if (typeof out.loops === 'number') loops = out.loops
+      if (typeof out.answer === 'string' && out.answer) answerText = out.answer
+    }
+  }
+
+  // Diagnostic: surfaces in Vercel runtime logs so an empty answer is debuggable
+  // without reproducing locally. Cheap (one line per request).
+  console.log(`[chat] done lang=${language} loops=${loops} answerLen=${answerText.length} sources=${sources.length}`)
+
+  yield { type: 'done', sources, language, loops, answer: answerText }
+}
