@@ -56,7 +56,7 @@ export const config = {
   // question is answered from cache with NO generation LLM call. Tuned high so
   // only genuine matches hit; everything else falls through to RAG.
   faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
-  faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.78),
+  faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.74),
 
   // --- behavior ---
   defaultLocale: process.env.RAG_DEFAULT_LOCALE ?? 'en',

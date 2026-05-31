@@ -100,8 +100,8 @@ export async function faqLookup(
   // logs (e.g. "score=0.79 id=remote" tells us the threshold is just too high).
   const payload = (top?.payload ?? {}) as { answer?: string; faq_id?: string }
   console.log(
-    `[chat] faq probe locale=${locale} hits=${res.points.length} ` +
-      `top=${(top?.score ?? 0).toFixed(3)} id=${payload.faq_id ?? '-'} threshold=${config.faqCacheThreshold}`,
+    `[chat] faqprobe score=${(top?.score ?? 0).toFixed(3)} thr=${config.faqCacheThreshold} ` +
+      `id=${payload.faq_id ?? '-'} hits=${res.points.length} locale=${locale}`,
   )
   if (!top || (top.score ?? 0) < config.faqCacheThreshold) return null
   if (!payload.answer) return null

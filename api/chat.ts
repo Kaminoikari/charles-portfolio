@@ -36,13 +36,14 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 // so logging costs no extra embedding call.
 function logChat(payload: Record<string, unknown>): void {
   if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) return
-  try {
-    void qdrant().upsert(config.qdrantLogsCollection, {
+  // Best-effort: attach .catch so a rejected upsert can't surface as an
+  // Unhandled Rejection. A bare `void promise` does NOT swallow async
+  // rejections — the try/catch only ever caught synchronous throws.
+  qdrant()
+    .upsert(config.qdrantLogsCollection, {
       points: [{ id: randomUUID(), vector: { [DENSE]: [0] }, payload: { ...payload, ts: new Date().toISOString() } }],
     })
-  } catch {
-    // analytics is best-effort
-  }
+    .catch((err) => console.warn('chat_logs upsert failed (non-fatal):', (err as Error).message))
 }
 
 export default async function handler(req: IncomingMessage & { method?: string; headers: Record<string, string | string[] | undefined> }, res: ServerResponse) {
