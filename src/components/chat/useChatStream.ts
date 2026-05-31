@@ -102,13 +102,19 @@ export function useChatStream() {
               const t = (ev.data as { text?: string }).text ?? ''
               patchAssistant((m) => ({ ...m, text: m.text + t }))
             } else if (ev.event === 'done') {
-              const sources = (ev.data as { sources?: ChatSource[] }).sources ?? []
-              patchAssistant((m) => ({ ...m, sources }))
+              const data = ev.data as { sources?: ChatSource[]; answer?: string }
+              const sources = data.sources ?? []
+              // Backfill the answer when streaming produced no tokens — e.g. the
+              // fallback node returns a static string (no chat-model stream), so
+              // without this the reply would render as an empty bubble.
+              patchAssistant((m) => ({ ...m, sources, text: m.text || data.answer || '' }))
             } else if (ev.event === 'error') {
               patchAssistant((m) => ({ ...m, text: errorText, error: true }))
             }
           }
         }
+        // Never leave an empty assistant bubble (e.g. an unexpected empty done).
+        patchAssistant((m) => (m.text ? m : { ...m, text: errorText, error: true }))
         setStatus('idle')
       } catch (err) {
         if ((err as Error).name === 'AbortError') return
