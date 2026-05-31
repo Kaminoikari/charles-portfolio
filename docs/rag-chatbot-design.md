@@ -26,7 +26,7 @@ operate. Aligns with the existing Vite + React + TS app.
                          BUILD TIME  (rag/ingest/)  — run locally / CI
   src/data/*.{en,zh-TW,ja}.ts ─┐
   product-playbook README      ├─► extract ─► semantic split ─► voyage-3 embed ─► Qdrant (hybrid)
-  entities/relations.json      ┘   (parent/child)  (dense)  +  SPLADE++ sparse (Cloud Inference)
+  entities/relations.json      ┘   (parent/child)  (dense)  +  BM25 sparse (Cloud Inference)
 
                          QUERY TIME  (api/chat.ts — Vercel Node fn + LangGraph.js)
   question
@@ -52,10 +52,10 @@ operate. Aligns with the existing Vite + React + TS app.
 - **Frontend widget** — React component in the existing Vite app, calls
   `POST /api/chat` (SSE streaming) on the same origin (no CORS).
 - **Qdrant Cloud** (free tier) — purpose-built vector DB holding a named dense
-  vector (Voyage) + named sparse vector (SPLADE++). Hybrid fusion (RRF) runs
-  server-side in the Query API; the SPLADE++ model runs on Qdrant Cloud
-  Inference, so no sparse encoder ships in the serverless bundle. A second
-  collection (`chat_logs`) holds append-only analytics.
+  vector (Voyage) + named sparse vector (BM25). Hybrid fusion (RRF) runs
+  server-side in the Query API; the BM25 model runs on Qdrant Cloud Inference
+  (the free sparse model), so no sparse encoder ships in the serverless bundle.
+  A second collection (`chat_logs`) holds append-only analytics.
 - **Embeddings + rerank** — Voyage AI (voyage-3-large / rerank-2.5) over its
   HTTP API. US provider, SOTA retrieval, 1024-dim. The client is swappable via
   `config.ts`.
@@ -75,7 +75,7 @@ locally / in CI where warm runtime isn't needed.
 | Retrieval primitives | **Qdrant** `@qdrant/js-client-rest` Query API, LangChain `Document` | hybrid (dense+sparse prefetch + RRF) in one server-side request | "I drive a purpose-built vector DB the way teams do" |
 | Embedding | **voyage-3-large** (Voyage AI, US) | SOTA multilingual retrieval (EN/zh-TW/ja); asymmetric `document`/`query` encoding; 1024-dim dense vector | US provider, top-tier quality, no data-residency concern |
 | Vector store | **Qdrant Cloud** (HNSW, free tier) | named dense + sparse vectors; server-side hybrid fusion; payload filtering by locale | dedicated vector DB, learned-sparse hybrid |
-| Sparse | **SPLADE++** learned-sparse via **Qdrant Cloud Inference** | term-expanding lexical recall (beats `ts_rank`/BM25); model runs on Qdrant, not in our serverless fn | learned sparse, the relevance frontier |
+| Sparse | **BM25** (true BM25, server-side IDF) via **Qdrant Cloud Inference** | language-agnostic lexical recall (beats Postgres `ts_rank`); free model, runs on Qdrant not in our serverless fn; no 128-token truncation | real BM25 hybrid, server-side |
 | Rerank | **rerank-2.5** (Voyage AI, US) | small corpus makes rerank lift measurable | cross-encoder reranking |
 | Fusion | **RRF** server-side in Qdrant's Query API | robust, no tuning, one round-trip | hybrid fusion without hand-rolling |
 | Global-question guard | top-k **+ injected "portfolio map"** (one-line summary of every project/role) | chunking starves "what's his overall style?" questions | knows RAG failure modes |
@@ -149,7 +149,7 @@ called at the top of every ingest run (idempotent).
 ```
 doc_chunks                              # the hybrid index
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
-  sparse_vectors: { sparse: {} }                                # SPLADE++ (Cloud Inference)
+  sparse_vectors: { sparse: { modifier: idf } }                 # BM25 (Cloud Inference)
   payload index:  locale (keyword)                              # filtered on every query
   payload:        { chunk_id, parent_id, source_type, project_id, locale, title, content }
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
@@ -160,7 +160,7 @@ chat_logs                               # free product insight: what recruiters 
 ```
 
 Hybrid retrieval = one Query-API request: a dense prefetch (Voyage vector) + a
-sparse prefetch (raw text → SPLADE++ via Cloud Inference), fused by **RRF
+sparse prefetch (raw text → BM25 via Cloud Inference), fused by **RRF
 server-side**, then a Voyage cross-encoder rerank in the function. The ablation
 (`retrieveWith`) toggles each arm to measure its marginal lift.
 

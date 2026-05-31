@@ -2,9 +2,9 @@
 // store is shaped, so retrieval / ingest / logging / insights all agree.
 //
 // Hybrid layout per chunk: a named DENSE vector (Voyage voyage-3-large, cosine)
-// and a named SPARSE vector (SPLADE++ learned-sparse, computed server-side by
-// Qdrant Cloud Inference). Fusion (RRF) also happens server-side in the Query
-// API — see retrieval.ts.
+// and a named SPARSE vector (BM25 lexical, computed server-side by Qdrant Cloud
+// Inference). Fusion (RRF) also happens server-side in the Query API — see
+// retrieval.ts.
 
 import { QdrantClient } from '@qdrant/js-client-rest'
 import { createHash } from 'node:crypto'
@@ -48,8 +48,10 @@ export async function ensureCollections(): Promise<void> {
   if (!(await db.collectionExists(config.qdrantCollection)).exists) {
     await db.createCollection(config.qdrantCollection, {
       vectors: { [DENSE]: { size: config.embedDim, distance: 'Cosine' } },
-      // SPLADE produces its own term weights → no IDF modifier (that's for bm25).
-      sparse_vectors: { [SPARSE]: {} },
+      // BM25 needs server-side IDF → the 'idf' modifier (Cloud Inference emits
+      // term frequencies; Qdrant applies IDF at query time). A learned-sparse
+      // model like SPLADE++ would omit this.
+      sparse_vectors: { [SPARSE]: { modifier: 'idf' } },
     })
     // Locale filter is applied on every query → index the payload key.
     await db.createPayloadIndex(config.qdrantCollection, {

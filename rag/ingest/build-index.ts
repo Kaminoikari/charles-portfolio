@@ -1,5 +1,5 @@
 // Phase 0 index builder: extract corpus → embed dense with voyage-3-large →
-// upsert into Qdrant, where Cloud Inference computes the SPLADE++ sparse vector
+// upsert into Qdrant, where Cloud Inference computes the BM25 sparse vector
 // server-side from each chunk's text. Run locally / in CI (needs
 // EMBEDDING_API_KEY + QDRANT_URL + QDRANT_API_KEY):
 //
@@ -48,7 +48,7 @@ async function main() {
 
   console.log(`\nEmbedding ${records.length} chunks with ${config.embedModel} (batch ${BATCH}) …`)
   // A point's dense vector is the Voyage embedding; its sparse vector is raw
-  // text + model, which Qdrant Cloud Inference turns into SPLADE++ weights on
+  // text + model, which Qdrant Cloud Inference turns into BM25 weights on
   // upsert (so the sparse model never runs in our process).
   type Point = {
     id: string

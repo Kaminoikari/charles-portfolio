@@ -36,10 +36,13 @@ export const config = {
   embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',
   rerankModel: process.env.RAG_RERANK_MODEL ?? 'rerank-2.5',
   embedDim: int('RAG_EMBED_DIM', 1024),
-  // Learned-sparse model, run server-side by Qdrant Cloud Inference (free tier).
-  // Swap to 'qdrant/bm25' for statistical sparse (then set the IDF modifier in
-  // qdrant.ts) or 'qdrant/minicoil' if your Inference tab lists it as free.
-  sparseModel: process.env.RAG_SPARSE_MODEL ?? 'prithivida/Splade_PP_en_v1',
+  // Sparse model, run server-side by Qdrant Cloud Inference (free tier). BM25 is
+  // the free sparse model (SPLADE++ is $0.06/1M tokens); it's true BM25 with
+  // server-side IDF — language-agnostic and no 128-token truncation, which suits
+  // our multilingual, longer-than-128-token chunks. Swap to
+  // 'prithivida/splade-pp-en-v1' for learned sparse (paid; also drop the IDF
+  // modifier in qdrant.ts).
+  sparseModel: process.env.RAG_SPARSE_MODEL ?? 'qdrant/bm25',
 
   // --- endpoints (secrets read lazily by clients) ---
   embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.voyageai.com/v1',

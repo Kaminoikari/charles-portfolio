@@ -18,7 +18,7 @@ isolates each retrieval layer's marginal lift.
 Each arm adds one layer, so the delta column shows what that layer bought:
 
 1. `dense-only` — Qdrant dense (Voyage voyage-3-large, cosine) only
-2. `hybrid` — + sparse (SPLADE++ learned-sparse via Cloud Inference), fused with RRF server-side
+2. `hybrid` — + sparse (BM25 via Cloud Inference), fused with RRF server-side
 3. `hybrid+rerank` — + voyage rerank-2.5 cross-encoder
 4. `corrective` — + the full LangGraph loop (grade → rewrite → generate / fallback)
 

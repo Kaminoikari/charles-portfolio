@@ -1,8 +1,8 @@
 // Hybrid retrieval over Qdrant: dense (Voyage voyage-3-large, cosine) + sparse
-// (SPLADE++ learned-sparse via Qdrant Cloud Inference), fused server-side with
-// Reciprocal Rank Fusion in the Query API, then optionally reranked by a
-// cross-encoder (Voyage rerank). On a small corpus the marginal lift of each
-// layer is measurable — that's exactly what the LangSmith ablation quantifies.
+// (BM25 lexical via Qdrant Cloud Inference), fused server-side with Reciprocal
+// Rank Fusion in the Query API, then optionally reranked by a cross-encoder
+// (Voyage rerank). On a small corpus the marginal lift of each layer is
+// measurable — that's exactly what the LangSmith ablation quantifies.
 
 import { Document } from '@langchain/core/documents'
 
