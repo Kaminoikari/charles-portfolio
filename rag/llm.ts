@@ -45,6 +45,16 @@ export function gemini(temperature = 0): ChatGoogleGenerativeAI {
 }
 
 // Anthropic factory — tier 2 (paid fallback) of generate only.
+//
+// Deliberately NO prompt caching here. Anthropic prompt caching pays off for
+// high-frequency apps that resend a large, fixed prompt prefix within the 5-min
+// cache TTL. This bot is the opposite: Claude is only the tier-2 fallback (most
+// requests are answered by the FAQ cache, triage, or Gemini and never reach
+// Claude at all), portfolio traffic is sparse (consecutive Claude calls are
+// almost always > 5 min apart, so a cached prefix expires before the next hit),
+// and the system prefix is below Opus's 4096-token cache minimum. Adding
+// cache_control here would mostly just incur the 1.25x write premium with ~0
+// reads. Cost is controlled upstream (FAQ cache + Gemini free tier) instead.
 function claude(strong: boolean, temperature: number): ChatAnthropic {
   return new ChatAnthropic({
     model: strong ? config.modelStrong : config.modelFast,
