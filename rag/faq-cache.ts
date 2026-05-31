@@ -71,8 +71,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "I'm the **portfolio assistant Charles built himself**, a corrective RAG chatbot made to showcase his AI engineering. What I fundamentally am is the system he designed: a **LangGraph.js** state machine (triage → retrieve → grade → generate) with a **self-correcting loop** that grades the retrieved context and rewrites the query when it falls short, **Qdrant** hybrid retrieval (dense + BM25, RRF-fused) followed by a **Voyage** cross-encoder reranker, a **semantic FAQ cache** that answers common questions at zero generation cost, and a cost-tiered generation stack (a free model first, a stronger one as paid backup). The language model that writes the wording is just one swappable part inside that system; what defines me is the retrieval, the corrective loop, and the cost tiers Charles engineered.",
-      'zh-TW': '我是 **Charles 親手打造的作品集小助手**，一個 corrective RAG 聊天機器人，專門用來展示他的 AI 工程能力。我本質上就是他設計的這套系統：一個 **LangGraph.js** 狀態機（分流 → 檢索 → 評估 → 生成），帶有會評估檢索結果、不足就改寫重試的**自我矯正迴圈**；**Qdrant** 混合檢索(dense + BM25, RRF 融合)接 **Voyage** cross-encoder 重排序；一個讓常見問題零生成成本就能回答的**語意快取**；以及一個成本分層的生成棧（免費模型先答，較強的模型作為付費備援）。負責生成措辭的語言模型，只是這套系統裡可抽換的一個零件；真正定義我的，是 Charles 親手打造的檢索、矯正迴圈與成本分層。',
-      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**で、彼の AI エンジニアリングを示すための corrective RAG チャットボットです。私の本質は彼が設計したシステムそのものです：**LangGraph.js** のステートマシン（トリアージ → 検索 → 評価 → 生成）と、検索結果を評価し不十分ならクエリを書き換えて再試行する**自己修正ループ**、**Qdrant** のハイブリッド検索(dense + BM25, RRF 融合)に続く **Voyage** の cross-encoder リランカー、一般的な質問を生成コストゼロで返す**セマンティックキャッシュ**、そしてコスト階層型の生成スタック（無料モデルが先に答え、強力なモデルは有料フォールバック）。文章を生成する言語モデルはそのシステム内の交換可能な一部品にすぎず、私を定義するのは Charles が設計した検索・自己修正ループ・コスト階層です。',
+      'zh-TW': '我是 **Charles 親手打造的作品集小助手**，一個 corrective RAG 聊天機器人，專門用來展示他的 AI 工程能力。我本質上就是他設計的這套系統：一個 **LangGraph.js** 狀態機（分流 → 檢索 → 評估 → 生成），帶有會評估檢索結果、不足就改寫重試的**自我矯正迴圈**；**Qdrant** 混合檢索（dense + BM25, RRF 融合）接 **Voyage** cross-encoder 重排序；一個讓常見問題零生成成本就能回答的**語意快取**；以及一個成本分層的生成棧（免費模型先答，較強的模型作為付費備援）。負責生成措辭的語言模型，只是這套系統裡可抽換的一個零件；真正定義我的，是 Charles 親手打造的檢索、矯正迴圈與成本分層。',
+      ja: '私は **Charles 自身が作ったポートフォリオアシスタント**で、彼の AI エンジニアリングを示すための corrective RAG チャットボットです。私の本質は彼が設計したシステムそのものです：**LangGraph.js** のステートマシン（トリアージ → 検索 → 評価 → 生成）と、検索結果を評価し不十分ならクエリを書き換えて再試行する**自己修正ループ**、**Qdrant** のハイブリッド検索（dense + BM25, RRF 融合）に続く **Voyage** の cross-encoder リランカー、一般的な質問を生成コストゼロで返す**セマンティックキャッシュ**、そしてコスト階層型の生成スタック（無料モデルが先に答え、強力なモデルは有料フォールバック）。文章を生成する言語モデルはそのシステム内の交換可能な一部品にすぎず、私を定義するのは Charles が設計した検索・自己修正ループ・コスト階層です。',
     },
   },
   {
@@ -97,8 +97,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'I started on **Supabase pgvector** but hit its free-tier 2-project cap, so I moved to **Qdrant Cloud**, and used the move to upgrade retrieval. Qdrant gives me true hybrid search: a dense vector + a server-side BM25 sparse vector (computed by Qdrant Cloud Inference, so no sparse encoder ships in my serverless bundle), fused with Reciprocal Rank Fusion in its Query API. Generous free tier, multilingual-friendly, and the server-side fusion keeps the Vercel function lean.',
-      'zh-TW': '我一開始用 **Supabase pgvector**,但撞到它免費層的兩專案上限,於是改用 **Qdrant Cloud**，並趁機升級檢索。Qdrant 給我真正的混合搜尋:dense 向量 + 伺服器端 BM25 sparse 向量(由 Qdrant Cloud Inference 計算,所以我的 serverless bundle 不用打包 sparse 編碼器),在它的 Query API 裡用 RRF 融合。免費額度大方、對多語友善,而且伺服器端融合讓 Vercel function 保持輕量。',
-      ja: '最初は **Supabase pgvector** を使っていましたが、無料枠の 2 プロジェクト上限に達したため **Qdrant Cloud** に移行し、その機に検索を強化しました。Qdrant は真のハイブリッド検索を提供します:dense ベクトル + サーバーサイド BM25 sparse(Qdrant Cloud Inference が計算するので、serverless バンドルに sparse エンコーダを含めない)を Query API 上で RRF 融合。無料枠が寛大で多言語に強く、サーバーサイド融合で Vercel 関数を軽量に保てます。',
+      'zh-TW': '我一開始用 **Supabase pgvector**，但撞到它免費層的兩專案上限，於是改用 **Qdrant Cloud**，並趁機升級檢索。Qdrant 給我真正的混合搜尋：dense 向量 + 伺服器端 BM25 sparse 向量（由 Qdrant Cloud Inference 計算，所以我的 serverless bundle 不用打包 sparse 編碼器），在它的 Query API 裡用 RRF 融合。免費額度大方、對多語友善，而且伺服器端融合讓 Vercel function 保持輕量。',
+      ja: '最初は **Supabase pgvector** を使っていましたが、無料枠の 2 プロジェクト上限に達したため **Qdrant Cloud** に移行し、その機に検索を強化しました。Qdrant は真のハイブリッド検索を提供します：dense ベクトル + サーバーサイド BM25 sparse（Qdrant Cloud Inference が計算するので、serverless バンドルに sparse エンコーダを含めない）を Query API 上で RRF 融合。無料枠が寛大で多言語に強く、サーバーサイド融合で Vercel 関数を軽量に保てます。',
     },
   },
   {
@@ -110,8 +110,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage**, regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache**, ~46 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss, and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass instead of looping.',
-      'zh-TW': '三層,由便宜到貴,所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流**，regex、約 0 毫秒、零 token:隱私導向、打招呼、聯絡答案。**(2) 語意快取**，約 46 個預寫答案主題(×3 語言)embedding 進 Qdrant collection;問題只 embedding 一次比對,相似度夠高就「逐字」回傳,完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑，而且即使在那裡,Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒,不繞迴圈。',
-      ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ**、正規表現、約 0 ms、トークンゼロ:プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ**、約 46 の事前作成トピック(×3 言語)を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す(生成呼び出しなし)。**(3) 完全な RAG** は本当に外れた時だけ、そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
+      'zh-TW': '三層，由便宜到貴，所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流**，regex、約 0 毫秒、零 token：隱私導向、打招呼、聯絡答案。**(2) 語意快取**，約 46 個預寫答案主題（×3 語言）embedding 進 Qdrant collection；問題只 embedding 一次比對，相似度夠高就「逐字」回傳，完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑，而且即使在那裡，Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒，不繞迴圈。',
+      ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ**、正規表現、約 0 ms、トークンゼロ：プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ**、約 46 の事前作成トピック（×3 言語）を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す（生成呼び出しなし）。**(3) 完全な RAG** は本当に外れた時だけ、そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
     },
   },
   {
@@ -136,8 +136,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'After retrieval, a grader LLM judges whether the chunks actually answer the question. If they do → generate. If they\'re weak but on-topic → rewrite the query and retry retrieval (capped at a few loops). If retrieval keeps failing, or the question is off-topic, → an honest fallback that points to my contact info rather than inventing an answer. The generate step is also locked to answer ONLY from retrieved context + a portfolio map, so it can\'t drift from what the portfolio actually says. This is the "corrective RAG" (CRAG) pattern, built as a LangGraph state machine.',
-      'zh-TW': '檢索後,一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索(有幾次上限)。若檢索一直失敗、或問題離題 → 走誠實的 fallback,指向我的聯絡方式而非編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答,所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式,以 LangGraph 狀態機實作。',
-      ja: '検索後、評価器 LLM がチャンクで本当に答えられるか判断します。答えられる → 生成。弱いが関連 → クエリを書き換えて再検索(数回まで)。検索が失敗し続けるか無関係なら → 捏造せず連絡先を案内する正直なフォールバック。生成ステップも「検索した context + portfolio map のみ」で答えるよう固定され、ポートフォリオの実際の記載から逸脱しません。これが corrective RAG(CRAG)パターンで、LangGraph のステートマシンとして実装しています。',
+      'zh-TW': '檢索後，一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索（有幾次上限）。若檢索一直失敗、或問題離題 → 走誠實的 fallback，指向我的聯絡方式而非編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答，所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式，以 LangGraph 狀態機實作。',
+      ja: '検索後、評価器 LLM がチャンクで本当に答えられるか判断します。答えられる → 生成。弱いが関連 → クエリを書き換えて再検索（数回まで）。検索が失敗し続けるか無関係なら → 捏造せず連絡先を案内する正直なフォールバック。生成ステップも「検索した context + portfolio map のみ」で答えるよう固定され、ポートフォリオの実際の記載から逸脱しません。これが corrective RAG(CRAG)パターンで、LangGraph のステートマシンとして実装しています。',
     },
   },
   {
@@ -149,8 +149,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Defense in depth, three layers. **Input**, detect and deflect injection/jailbreak shapes before any LLM call: "ignore instructions", developer-mode, roleplay/multi-persona, and the decode/compute class (run-this-code, base64/hex/binary, spell-out and fill-in-the-blank puzzles that try to hide offensive output). **Prompt scope-lock**, the generate system prompt treats all input as data and refuses anything that isn\'t a genuine question about Charles, even when framed as a math/logic/word game. **Output**, a final filter drops any answer containing offensive terms (incl. leet/spacing variants) no matter how it was elicited. Regex can\'t enumerate every attack, so the scope-lock + output filter are the real backstops.',
-      'zh-TW': '縱深防禦,三層。**輸入層**，在任何 LLM 呼叫前偵測並化解注入/越獄手法:「忽略指令」、開發者模式、角色扮演/多重人格,以及解碼/計算這一類(執行程式碼、base64/hex/二進制、把冒犯輸出藏起來的拼字謎與填空謎)。**Prompt 範圍鎖**，生成的 system prompt 把所有輸入當資料,拒絕任何不是真正關於 Charles 的問題,即使包裝成數學/邏輯/文字遊戲。**輸出層**，最後一道過濾,無論如何被誘導,含冒犯詞(含 leet/空格變體)的答案就整段丟棄。regex 無法窮舉所有攻擊,所以範圍鎖 + 輸出過濾才是真正的後盾。',
-      ja: '多層防御、3 層です。**入力**、LLM 呼び出し前にインジェクション/脱獄の形を検出・無害化:「指示を無視」、開発者モード、ロールプレイ/多重人格、デコード/計算系(コード実行、base64/hex/バイナリ、侮蔑的出力を隠す穴埋め・スペルアウトパズル)。**プロンプトのスコープロック**、生成の system prompt は全入力をデータ扱いし、数学/論理/言葉遊びに偽装されても Charles に関する本当の質問でなければ拒否。**出力**、最終フィルタが、どう誘導されても侮蔑語(leet/空白の変種含む)を含む回答を破棄。正規表現で全攻撃は列挙できないので、スコープロックと出力フィルタが本当の砦です。',
+      'zh-TW': '縱深防禦，三層。**輸入層**，在任何 LLM 呼叫前偵測並化解注入/越獄手法：「忽略指令」、開發者模式、角色扮演/多重人格，以及解碼/計算這一類（執行程式碼、base64/hex/二進制、把冒犯輸出藏起來的拼字謎與填空謎）。**Prompt 範圍鎖**，生成的 system prompt 把所有輸入當資料，拒絕任何不是真正關於 Charles 的問題，即使包裝成數學/邏輯/文字遊戲。**輸出層**，最後一道過濾，無論如何被誘導，含冒犯詞（含 leet/空格變體）的答案就整段丟棄。regex 無法窮舉所有攻擊，所以範圍鎖 + 輸出過濾才是真正的後盾。',
+      ja: '多層防御、3 層です。**入力**、LLM 呼び出し前にインジェクション/脱獄の形を検出・無害化：「指示を無視」、開発者モード、ロールプレイ/多重人格、デコード/計算系（コード実行、base64/hex/バイナリ、侮蔑的出力を隠す穴埋め・スペルアウトパズル）。**プロンプトのスコープロック**、生成の system prompt は全入力をデータ扱いし、数学/論理/言葉遊びに偽装されても Charles に関する本当の質問でなければ拒否。**出力**、最終フィルタが、どう誘導されても侮蔑語（leet/空白の変種含む）を含む回答を破棄。正規表現で全攻撃は列挙できないので、スコープロックと出力フィルタが本当の砦です。',
     },
   },
   {
@@ -162,8 +162,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Orchestration: **LangGraph.js + LangChain.js** (a corrective RAG state machine). Vector store: **Qdrant Cloud** (hybrid dense + BM25, server-side RRF). Embeddings + rerank: **Voyage AI** (`voyage-3-large`, `rerank-2.5`). Generation: **Gemini 2.5 Flash** (free tier) → **Claude** (paid fallback). Frontend: **React** chat widget with an SSE streaming client. Indexing: a **GitHub Action**. Deployed on **Vercel** as a same-origin streaming endpoint.',
-      'zh-TW': '編排:**LangGraph.js + LangChain.js**(corrective RAG 狀態機)。向量庫:**Qdrant Cloud**(dense + BM25 混合、伺服器端 RRF)。向量與重排序:**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成:**Gemini 2.5 Flash**(免費層)→ **Claude**(付費備援)。前端:**React** 聊天元件 + SSE 串流客戶端。索引:一個 **GitHub Action**。部署在 **Vercel**,是同源串流端點。',
-      ja: 'オーケストレーション:**LangGraph.js + LangChain.js**(corrective RAG ステートマシン)。ベクトルストア:**Qdrant Cloud**(dense + BM25 ハイブリッド、サーバーサイド RRF)。埋め込み+再ランク:**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成:**Gemini 2.5 Flash**(無料枠)→ **Claude**(有料フォールバック)。フロントエンド:**React** チャットウィジェット + SSE ストリーミング。インデックス:**GitHub Action**。**Vercel** に同一オリジンのストリーミングエンドポイントとしてデプロイ。',
+      'zh-TW': '編排：**LangGraph.js + LangChain.js**（corrective RAG 狀態機）。向量庫：**Qdrant Cloud**（dense + BM25 混合、伺服器端 RRF）。向量與重排序：**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成：**Gemini 2.5 Flash**（免費層）→ **Claude**（付費備援）。前端：**React** 聊天元件 + SSE 串流客戶端。索引：一個 **GitHub Action**。部署在 **Vercel**，是同源串流端點。',
+      ja: 'オーケストレーション：**LangGraph.js + LangChain.js**（corrective RAG ステートマシン）。ベクトルストア：**Qdrant Cloud**（dense + BM25 ハイブリッド、サーバーサイド RRF）。埋め込み+再ランク：**Voyage AI**(`voyage-3-large`、`rerank-2.5`)。生成：**Gemini 2.5 Flash**（無料枠）→ **Claude**（有料フォールバック）。フロントエンド：**React** チャットウィジェット + SSE ストリーミング。インデックス：**GitHub Action**。**Vercel** に同一オリジンのストリーミングエンドポイントとしてデプロイ。',
     },
   },
 
@@ -177,8 +177,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: '**Product Playbook** is an LLM Multi-Agent System built on Claude Code. Three specialist sub-agents (discovery, strategy-critic, pre-mortem) are dispatched against 22 classic product frameworks (JTBD, RICE, etc.) to convert fuzzy requirements into executable PRD specs with acceptance criteria. It ships under MIT license. Enabling the sub-agents lifted quality-completion from 59.1% to 100% at flat token cost.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
-      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 LLM 多代理系統。三個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架(JTBD、RICE 等)，把模糊需求轉成帶驗收標準、可執行的 PRD 規格，並以 MIT 授權開源。啟用子代理後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
-      ja: '**Product Playbook** は Claude Code 上に構築された LLM マルチエージェントシステムです。3 つの専門サブエージェント(discovery / strategy-critic / pre-mortem)が 22 の定番プロダクトフレームワーク(JTBD、RICE など)を用い、曖昧な要件を受け入れ基準付きの実行可能な PRD 仕様へ変換します。MIT ライセンスで公開。サブエージェント有効化で品質完了率が 59.1%→100%（トークンコスト据え置き）。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 LLM 多代理系統。三個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架（JTBD、RICE 等），把模糊需求轉成帶驗收標準、可執行的 PRD 規格，並以 MIT 授權開源。啟用子代理後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      ja: '**Product Playbook** は Claude Code 上に構築された LLM マルチエージェントシステムです。3 つの専門サブエージェント(discovery / strategy-critic / pre-mortem)が 22 の定番プロダクトフレームワーク（JTBD、RICE など）を用い、曖昧な要件を受け入れ基準付きの実行可能な PRD 仕様へ変換します。MIT ライセンスで公開。サブエージェント有効化で品質完了率が 59.1%→100%（トークンコスト据え置き）。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
     },
   },
   {
@@ -190,8 +190,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'It runs as a Claude.ai Custom Skill + Claude Code plugin, with Claude for LLM orchestration and Claude Vision for document parsing. The Multi-Agent layer is 3 Claude Code sub-agents (read-only tools, auto-delegation, structured YAML output). Doc processing uses Playwright, Pandoc, pymupdf, and Tesseract OCR; it supports six languages.',
-      'zh-TW': '它以 Claude.ai Custom Skill + Claude Code plugin 形式運行，用 Claude 做 LLM 編排、Claude Vision 做文件解析。多代理層是 3 個 Claude Code 子代理(唯讀工具、自動委派、結構化 YAML 輸出)。文件處理用 Playwright、Pandoc、pymupdf 與 Tesseract OCR，並支援六種語言。',
-      ja: 'Claude.ai Custom Skill + Claude Code プラグインとして動作し、LLM オーケストレーションに Claude、文書解析に Claude Vision を使用。マルチエージェント層は 3 つの Claude Code サブエージェント(読み取り専用ツール、自動委譲、構造化 YAML 出力)。文書処理は Playwright・Pandoc・pymupdf・Tesseract OCR、6 言語対応です。',
+      'zh-TW': '它以 Claude.ai Custom Skill + Claude Code plugin 形式運行，用 Claude 做 LLM 編排、Claude Vision 做文件解析。多代理層是 3 個 Claude Code 子代理（唯讀工具、自動委派、結構化 YAML 輸出）。文件處理用 Playwright、Pandoc、pymupdf 與 Tesseract OCR，並支援六種語言。',
+      ja: 'Claude.ai Custom Skill + Claude Code プラグインとして動作し、LLM オーケストレーションに Claude、文書解析に Claude Vision を使用。マルチエージェント層は 3 つの Claude Code サブエージェント（読み取り専用ツール、自動委譲、構造化 YAML 出力）。文書処理は Playwright・Pandoc・pymupdf・Tesseract OCR、6 言語対応です。',
     },
   },
   {
@@ -255,8 +255,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "Charles has built five showcased projects: **Path** (offline-first travel PWA), **Plutus Trade** (AI stock decision-support), **Product Playbook** (LLM multi-agent spec system), **House Ops** (real-estate automation), and **Job Ops** (candidate-side ATS). Ask about any one for details.",
-      'zh-TW': 'Charles 有五個代表作品：**Path**(離線優先旅遊 PWA)、**Plutus Trade**(AI 選股決策輔助)、**Product Playbook**(LLM 多代理規格系統)、**House Ops**（房產自動化）、**Job Ops**(求職者端 ATS)。想了解哪一個都可以問我。',
-      ja: 'Charles の代表的なプロジェクトは 5 つ：**Path**(オフラインファースト旅行 PWA)、**Plutus Trade**(AI 株式意思決定支援)、**Product Playbook**(LLM マルチエージェント仕様システム)、**House Ops**（不動産自動化）、**Job Ops**(候補者側 ATS)。詳しく知りたいものをどうぞ。',
+      'zh-TW': 'Charles 有五個代表作品：**Path**（離線優先旅遊 PWA）、**Plutus Trade**（AI 選股決策輔助）、**Product Playbook**（LLM 多代理規格系統）、**House Ops**（房產自動化）、**Job Ops**（求職者端 ATS）。想了解哪一個都可以問我。',
+      ja: 'Charles の代表的なプロジェクトは 5 つ：**Path**（オフラインファースト旅行 PWA）、**Plutus Trade**（AI 株式意思決定支援）、**Product Playbook**（LLM マルチエージェント仕様システム）、**House Ops**（不動産自動化）、**Job Ops**（候補者側 ATS）。詳しく知りたいものをどうぞ。',
     },
   },
 
@@ -270,8 +270,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three core lines, parking payments, business travel, and financial insurance (Taiwan + Japan), driving **85%+ of company revenue**. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
-      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略，停車支付、商務差旅、金融保險（台灣 + 日本），貢獻 **85% 以上的公司營收**。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**(企業差旅管理的 B2B SaaS)，並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
-      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括し、**会社売上の 85% 以上**を牽引。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング(Claude Code・Codex・Antigravity)で **5 倍速**の反復を実現しました。',
+      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略，停車支付、商務差旅、金融保險（台灣 + 日本），貢獻 **85% 以上的公司營收**。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
+      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括し、**会社売上の 85% 以上**を牽引。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング（Claude Code・Codex・Antigravity）で **5 倍速**の反復を実現しました。',
     },
   },
   {
@@ -283,8 +283,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Charles has been: **PM at USPACE** (2024–present), **Product Mentor at XChange School** (2025–present), **Senior PM at NUEIP** (2024, BI + predictive analytics), **PM at PXPay Plus** (2022–2024, payments, +25% conversions), and **Operations Manager at FLUX** (2019–2022, +20% market share, led a team of 10).',
-      'zh-TW': 'Charles 的經歷包括：**USPACE 產品經理**（2024 至今）、**XChange School 產品導師**（2025 至今）、**NUEIP 資深產品經理**(2024,BI + 預測分析)、**PXPay Plus 產品經理**（2022–2024，支付，+25% 轉換率），以及 **FLUX 營運經理**（2019–2022,+20% 市佔、帶領 10 人團隊）。',
-      ja: 'Charles の経歴：**USPACE プロダクトマネージャー**（2024〜現在）、**XChange School プロダクトメンター**（2025〜現在）、**NUEIP シニア PM**(2024、BI+予測分析)、**PXPay Plus PM**（2022–2024、決済、コンバージョン +25%）、**FLUX オペレーションマネージャー**（2019–2022、市場シェア +20%、10 名のチームを統括）。',
+      'zh-TW': 'Charles 的經歷包括：**USPACE 產品經理**（2024 至今）、**XChange School 產品導師**（2025 至今）、**NUEIP 資深產品經理**（2024，BI + 預測分析）、**PXPay Plus 產品經理**（2022–2024，支付，+25% 轉換率），以及 **FLUX 營運經理**（2019–2022，+20% 市佔、帶領 10 人團隊）。',
+      ja: 'Charles の経歴：**USPACE プロダクトマネージャー**（2024〜現在）、**XChange School プロダクトメンター**（2025〜現在）、**NUEIP シニア PM**（2024、BI+予測分析）、**PXPay Plus PM**（2022–2024、決済、コンバージョン +25%）、**FLUX オペレーションマネージャー**（2019–2022、市場シェア +20%、10 名のチームを統括）。',
     },
   },
   {
@@ -309,7 +309,7 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'At **PXPay Plus** (PM, 2022–2024) Charles redesigned the sign-up & checkout flow for **+25% transaction conversions** in 3 months, pioneered a reward-points system (**+50% operational efficiency, −40% complaints**), and led third-party billing integration for parking, cable TV, pension, and government payments.',
-      'zh-TW': '在 **PXPay Plus**（產品經理，2022–2024），Charles 在 3 個月內重新設計註冊與結帳流程，帶來 **+25% 交易轉換率**;首創點數回饋系統（**營運效率 +50%、客訴 −40%**）;並主導停車、有線電視、年金與政府繳費的第三方代收整合。',
+      'zh-TW': '在 **PXPay Plus**（產品經理，2022–2024），Charles 在 3 個月內重新設計註冊與結帳流程，帶來 **+25% 交易轉換率**；首創點數回饋系統（**營運效率 +50%、客訴 −40%**）；並主導停車、有線電視、年金與政府繳費的第三方代收整合。',
       ja: '**PXPay Plus**(PM、2022–2024)で Charles は登録・決済フローを再設計し 3 か月で **取引コンバージョン +25%**、ポイント還元システムを主導（**業務効率 +50%・苦情 −40%**）、駐車場・ケーブル TV・年金・行政支払いの第三者課金統合をリードしました。',
     },
   },
@@ -337,8 +337,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'On AI/LLM: **Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, and Agentic Workflows**. He has shipped AI in production (e.g. deep Gemini integration in Plutus Trade) and built his own multi-agent system, Product Playbook.',
-      'zh-TW': 'AI/LLM 方面：**Claude Code、Codex、Gemini AI、LLM 編排、Prompt Engineering、AI Agent 開發，以及 Agentic Workflows**。他有將 AI 落地到生產環境的經驗(例如 Plutus Trade 深度整合 Gemini)，也打造了自己的多代理系統 Product Playbook。',
-      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini AI、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー**。本番環境で AI を出荷した経験があり(例：Plutus Trade での Gemini 深い統合)、自作のマルチエージェントシステム Product Playbook も構築しています。',
+      'zh-TW': 'AI/LLM 方面：**Claude Code、Codex、Gemini AI、LLM 編排、Prompt Engineering、AI Agent 開發，以及 Agentic Workflows**。他有將 AI 落地到生產環境的經驗（例如 Plutus Trade 深度整合 Gemini），也打造了自己的多代理系統 Product Playbook。',
+      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini AI、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー**。本番環境で AI を出荷した経験があり（例：Plutus Trade での Gemini 深い統合）、自作のマルチエージェントシステム Product Playbook も構築しています。',
     },
   },
   {
@@ -391,8 +391,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'AI is the core engine of his workflow across the whole cycle: **Discovery** (LLMs digest market & interview research), **Spec writing** (his Product Playbook agent), **Prototyping** (Claude Code + Codex for full-stack builds), **AI features** (shipping Gemini in Plutus Trade), and **Agentic workflows** (autonomous agents handling repetitive work end to end).',
-      'zh-TW': 'AI 是他工作流程的核心引擎，貫穿整個週期：**探索**(用 LLM 消化市場與訪談研究)、**規格撰寫**(他的 Product Playbook 代理)、**原型開發**(Claude Code + Codex 做全端)、**AI 功能**(在 Plutus Trade 落地 Gemini)，以及 **Agentic workflows**（自主代理端到端處理重複工作）。',
-      ja: 'AI は彼のワークフローの中核エンジンで、全サイクルにわたります：**ディスカバリー**(LLM で市場・インタビュー調査を消化)、**仕様作成**(自作 Product Playbook エージェント)、**プロトタイピング**(Claude Code + Codex でフルスタック構築)、**AI 機能**(Plutus Trade で Gemini を出荷)、**エージェンティックワークフロー**（自律エージェントが反復作業を端から端まで処理）。',
+      'zh-TW': 'AI 是他工作流程的核心引擎，貫穿整個週期：**探索**（用 LLM 消化市場與訪談研究）、**規格撰寫**（他的 Product Playbook 代理）、**原型開發**（Claude Code + Codex 做全端）、**AI 功能**（在 Plutus Trade 落地 Gemini），以及 **Agentic workflows**（自主代理端到端處理重複工作）。',
+      ja: 'AI は彼のワークフローの中核エンジンで、全サイクルにわたります：**ディスカバリー**（LLM で市場・インタビュー調査を消化）、**仕様作成**（自作 Product Playbook エージェント）、**プロトタイピング**（Claude Code + Codex でフルスタック構築）、**AI 機能**（Plutus Trade で Gemini を出荷）、**エージェンティックワークフロー**（自律エージェントが反復作業を端から端まで処理）。',
     },
   },
 
@@ -432,8 +432,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Yes, Charles writes prolifically on product and AI (Substack & Medium): 20+ pieces spanning AI-builder skills, product sense, PM career strategy in the AI era, OKRs, and deep technical research (e.g. a Claude Code source-code study, a Shazam algorithm breakdown). You can find his writing linked from the portfolio\'s blog section.',
-      'zh-TW': '有的，Charles 在產品與 AI 領域寫作量豐富(Substack 與 Medium):20 多篇文章，橫跨 AI builder 能力、產品 sense、AI 時代的 PM 職涯策略、OKR，以及深度技術研究(例如 Claude Code 原始碼研究、Shazam 演算法解析)。作品集的部落格區塊有連結。',
-      ja: 'はい、Charles はプロダクトと AI について多数執筆しています(Substack・Medium)。20 本以上で、AI ビルダーのスキル、プロダクトセンス、AI 時代の PM キャリア戦略、OKR、深い技術調査(Claude Code ソースコード研究、Shazam アルゴリズム解説など)に及びます。ポートフォリオのブログ欄からリンクされています。',
+      'zh-TW': '有的，Charles 在產品與 AI 領域寫作量豐富（Substack 與 Medium）:20 多篇文章，橫跨 AI builder 能力、產品 sense、AI 時代的 PM 職涯策略、OKR，以及深度技術研究（例如 Claude Code 原始碼研究、Shazam 演算法解析）。作品集的部落格區塊有連結。',
+      ja: 'はい、Charles はプロダクトと AI について多数執筆しています（Substack・Medium）。20 本以上で、AI ビルダーのスキル、プロダクトセンス、AI 時代の PM キャリア戦略、OKR、深い技術調査（Claude Code ソースコード研究、Shazam アルゴリズム解説など）に及びます。ポートフォリオのブログ欄からリンクされています。',
     },
   },
   {
@@ -445,8 +445,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Selected results: **7M+ users reached**; **85%+ of USPACE revenue** owned; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
-      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**;主導 **USPACE 85% 以上營收**;以 AI 原型開發達 **5 倍**迭代速度;在 PXPay **結帳轉換 +25%、客訴 −40%**;在 NUEIP **預測準確度 +35%**;在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
-      ja: '主な成果：**700 万人以上**にリーチ;**USPACE 売上の 85% 以上**を統括;AI プロトタイピングで **5 倍速**の反復;PXPay で **決済コンバージョン +25%・苦情 −40%**;NUEIP で **予測精度 +35%**;FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；主導 **USPACE 85% 以上營收**；以 AI 原型開發達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
+      ja: '主な成果：**700 万人以上**にリーチ；**USPACE 売上の 85% 以上**を統括；AI プロトタイピングで **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
     },
   },
   {
@@ -459,7 +459,7 @@ export const faqEntries: FaqEntry[] = [
     answers: {
       en: 'At **NUEIP** (Senior PM, 2024) Charles built an end-to-end BI product with advanced analytics and AI: **+40% data-driven decisions**, **+35% forecast accuracy** via predictive models, and **50% faster reporting** by integrating BI dashboards.',
       'zh-TW': '在 **NUEIP**（資深產品經理，2024），Charles 打造了結合進階分析與 AI 的端到端 BI 產品：**數據驅動決策 +40%**、以預測模型達成 **預測準確度 +35%**，並透過整合 BI 儀表板讓 **報表速度快 50%**。',
-      ja: '**NUEIP**(シニア PM、2024)で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築：**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
+      ja: '**NUEIP**（シニア PM、2024）で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築：**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
     },
   },
   {
@@ -484,8 +484,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'Charles has written publicly about turning down a Uber L4 offer, a reflection on PM career choices in the AI era, weighing the prestige of a big-tech badge against where he believes product work is heading (the Product Builder path). The full essay is linked from the portfolio\'s blog section.',
-      'zh-TW': 'Charles 曾公開撰文談他拒絕 Uber L4 offer 的決定，一篇關於 AI 時代 PM 職涯選擇的反思，在「大廠光環」與「他認為產品工作的未來方向(Product Builder 之路)」之間做取捨。完整文章在作品集的部落格區塊有連結。',
-      ja: 'Charles は Uber L4 オファーを断った決断について公に執筆しています。AI 時代の PM キャリア選択についての考察で、大手の肩書きの威信と、彼が考えるプロダクト業務の行く先(Product Builder の道)を天秤にかけたものです。全文はポートフォリオのブログ欄からリンクされています。',
+      'zh-TW': 'Charles 曾公開撰文談他拒絕 Uber L4 offer 的決定，一篇關於 AI 時代 PM 職涯選擇的反思，在「大廠光環」與「他認為產品工作的未來方向（Product Builder 之路）」之間做取捨。完整文章在作品集的部落格區塊有連結。',
+      ja: 'Charles は Uber L4 オファーを断った決断について公に執筆しています。AI 時代の PM キャリア選択についての考察で、大手の肩書きの威信と、彼が考えるプロダクト業務の行く先（Product Builder の道）を天秤にかけたものです。全文はポートフォリオのブログ欄からリンクされています。',
     },
   },
   {
@@ -564,8 +564,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He also brings proven revenue ownership (85%+ at USPACE), 0→1 launch experience, and full-stack AI engineering depth (his own multi-agent system, production Gemini features).",
-      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略(JTBD、RICE、機會框架)與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備實證的營收掌控力(USPACE 85%+)、0→1 上線經驗，以及全端 AI 工程深度(自建多代理系統、生產級 Gemini 功能)。',
-      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略(JTBD、RICE、機会フレーミング)と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。実証された売上オーナーシップ(USPACE 85%+)、0→1 のローンチ経験、フルスタックの AI エンジニアリング(自作マルチエージェント、本番 Gemini 機能)も備えます。',
+      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備實證的營收掌控力(USPACE 85%+)、0→1 上線經驗，以及全端 AI 工程深度（自建多代理系統、生產級 Gemini 功能）。',
+      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。実証された売上オーナーシップ(USPACE 85%+)、0→1 のローンチ経験、フルスタックの AI エンジニアリング（自作マルチエージェント、本番 Gemini 機能）も備えます。',
     },
   },
   {
@@ -657,8 +657,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "For this chatbot specifically: **Qdrant** (hybrid dense+BM25 with server-side RRF, generous free tier after Supabase's 2-project cap), **Voyage voyage-3-large** (SOTA multilingual embeddings for zh/ja/en), and a **two-tier Gemini→Claude** stack (free-tier first, paid fallback) to control cost. Across projects he favors shipping fast with AI-native tooling (Claude Code, Codex) over heavyweight infrastructure.",
-      'zh-TW': '以這個 chatbot 為例：**Qdrant**(dense+BM25 混合、伺服器端 RRF，在 Supabase 2 專案上限後選它的慷慨免費額度)、**Voyage voyage-3-large**(中日英多語的 SOTA 向量)、以及**兩層 Gemini→Claude** 堆疊（免費層優先、付費備援）來控制成本。跨專案來看，他偏好用 AI 原生工具(Claude Code、Codex)快速交付，而非笨重的基礎設施。',
-      ja: 'このチャットボットの場合：**Qdrant**(dense+BM25 ハイブリッド、サーバーサイド RRF、Supabase の 2 プロジェクト上限後に選んだ寛大な無料枠)、**Voyage voyage-3-large**(zh/ja/en の SOTA 多言語埋め込み)、コスト管理のための**二層 Gemini→Claude**（無料枠優先、有料フォールバック）。プロジェクト全般では、重厚なインフラより AI ネイティブなツール(Claude Code、Codex)での高速出荷を好みます。',
+      'zh-TW': '以這個 chatbot 為例：**Qdrant**（dense+BM25 混合、伺服器端 RRF，在 Supabase 2 專案上限後選它的慷慨免費額度）、**Voyage voyage-3-large**（中日英多語的 SOTA 向量）、以及**兩層 Gemini→Claude** 堆疊（免費層優先、付費備援）來控制成本。跨專案來看，他偏好用 AI 原生工具(Claude Code、Codex)快速交付，而非笨重的基礎設施。',
+      ja: 'このチャットボットの場合：**Qdrant**（dense+BM25 ハイブリッド、サーバーサイド RRF、Supabase の 2 プロジェクト上限後に選んだ寛大な無料枠）、**Voyage voyage-3-large**（zh/ja/en の SOTA 多言語埋め込み）、コスト管理のための**二層 Gemini→Claude**（無料枠優先、有料フォールバック）。プロジェクト全般では、重厚なインフラより AI ネイティブなツール(Claude Code、Codex)での高速出荷を好みます。',
     },
   },
   {
@@ -698,8 +698,8 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: "Founding-stage conversations are best had with Charles directly, fit, timing, and vision alignment are personal. Given his Product Builder profile (strategy + 0→1 shipping with AI), it's a natural fit to explore. Reach him:\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)",
-      'zh-TW': '創業階段的對話最好直接和 Charles 談，契合度、時機與願景一致與否都很個人。以他 Product Builder 的特質(策略 + 用 AI 做 0→1)來看，這是值得一聊的方向。聯繫他：\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
-      ja: '創業フェーズの話は Charles に直接ご相談を、相性・タイミング・ビジョンの一致は個人的なものです。彼の Product Builder の特性(戦略+AI での 0→1 出荷)を踏まえれば、検討する価値のある方向性です。ご連絡先：\n\n* メール： [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      'zh-TW': '創業階段的對話最好直接和 Charles 談，契合度、時機與願景一致與否都很個人。以他 Product Builder 的特質（策略 + 用 AI 做 0→1）來看，這是值得一聊的方向。聯繫他：\n\n* Email: [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
+      ja: '創業フェーズの話は Charles に直接ご相談を、相性・タイミング・ビジョンの一致は個人的なものです。彼の Product Builder の特性（戦略+AI での 0→1 出荷）を踏まえれば、検討する価値のある方向性です。ご連絡先：\n\n* メール： [charlestyc0527@gmail.com](mailto:charlestyc0527@gmail.com)\n* [LinkedIn](https://www.linkedin.com/in/charles-chen-809a2043)',
     },
   },
 
