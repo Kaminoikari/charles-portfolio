@@ -8,10 +8,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { randomUUID } from 'node:crypto'
 
-import { streamAnswer } from '../rag/graph'
-import { config } from '../rag/config'
-import { qdrant, DENSE } from '../rag/qdrant'
-import { parseChatRequest, sse, RateLimiter, clientId } from '../rag/api-helpers'
+import { streamAnswer } from '../rag/graph.js'
+import { config } from '../rag/config.js'
+import { qdrant, DENSE } from '../rag/qdrant.js'
+import { parseChatRequest, sse, RateLimiter, clientId } from '../rag/api-helpers.js'
 
 // One limiter per warm instance (see api-helpers note re: Upstash for global).
 const limiter = new RateLimiter(

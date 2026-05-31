@@ -14,10 +14,10 @@
 
 import { StateGraph, START, END } from '@langchain/langgraph'
 
-import { config } from './config'
-import { detectLanguage } from './language'
-import { RAGState, type RAGStateType, type Source } from './state'
-import * as defaultNodes from './nodes'
+import { config } from './config.js'
+import { detectLanguage } from './language.js'
+import { RAGState, type RAGStateType, type Source } from './state.js'
+import * as defaultNodes from './nodes.js'
 
 // A node is an (async) function from state to a partial state update.
 export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>

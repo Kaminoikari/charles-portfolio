@@ -9,7 +9,7 @@
 // (Previously BGE-M3 via a CN-hosted inference endpoint; swapped to keep all
 // query + corpus traffic on a US provider.)
 
-import { config } from './config'
+import { config } from './config.js'
 
 const apiKey = () => process.env.VOYAGE_API_KEY ?? process.env.EMBEDDING_API_KEY ?? ''
 

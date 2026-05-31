@@ -8,9 +8,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { buildGraph, answer, type NodeSet } from './graph'
-import { detectLanguage } from './language'
-import { config } from './config'
+import { buildGraph, answer, type NodeSet } from './graph.js'
+import { detectLanguage } from './language.js'
+import { config } from './config.js'
 
 // A stub node set whose `gradeDocuments` is scripted per-test. Counters let each
 // test assert how many times retrieve / rewrite actually ran.

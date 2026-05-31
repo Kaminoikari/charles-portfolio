@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallAtK, reciprocalRank, correctness } from './metrics'
+import { recallAtK, reciprocalRank, correctness } from './metrics.js'
 
 test('recallAtK: hit when a relevant prefix matches', () => {
   assert.equal(recallAtK(['experience:0:en', 'about:ai:1:en'], ['experience:0']), 1)

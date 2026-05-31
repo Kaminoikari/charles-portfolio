@@ -9,7 +9,7 @@
 // embed well, large enough to stay self-contained. Each child chunk carries a
 // parent_id so the generate step could expand context if needed.
 
-import type { Locale } from '../../src/i18n'
+import type { Locale } from '../../src/i18n.js'
 
 export interface ChunkRecord {
   id: string

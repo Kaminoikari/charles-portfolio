@@ -7,13 +7,13 @@
 import { Document } from '@langchain/core/documents'
 import { z } from 'zod'
 
-import { config } from './config'
-import type { RAGStateType, Source } from './state'
-import { hybridRetrieve } from './retrieval'
-import { portfolioMap } from './portfolio-map'
-import { entityContext } from './entities/graph'
-import { sanitize } from './guardrails'
-import { gemini, generateWithFallback } from './llm'
+import { config } from './config.js'
+import type { RAGStateType, Source } from './state.js'
+import { hybridRetrieve } from './retrieval.js'
+import { portfolioMap } from './portfolio-map.js'
+import { entityContext } from './entities/graph.js'
+import { sanitize } from './guardrails.js'
+import { gemini, generateWithFallback } from './llm.js'
 
 // --- retrieve ------------------------------------------------------------
 // Hybrid (dense+sparse) → RRF → rerank. Uses the latest query (original or the

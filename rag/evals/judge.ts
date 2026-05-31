@@ -7,7 +7,7 @@
 import { ChatAnthropic } from '@langchain/anthropic'
 import { z } from 'zod'
 
-import { config } from '../config'
+import { config } from '../config.js'
 
 const faithfulnessSchema = z.object({
   grounded: z

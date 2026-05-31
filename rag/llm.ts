@@ -13,7 +13,7 @@ import { ChatAnthropic } from '@langchain/anthropic'
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import type { BaseMessageLike } from '@langchain/core/messages'
 
-import { config } from './config'
+import { config } from './config.js'
 
 const geminiKey = () => process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? ''
 

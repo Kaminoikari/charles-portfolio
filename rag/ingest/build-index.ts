@@ -9,10 +9,10 @@
 // --dry-run mirrors the product-playbook discipline: see exactly what would be
 // written (chunk counts per source_type / locale) before spending any tokens.
 
-import { config } from '../config'
-import { embed } from '../embeddings'
-import { qdrant, ensureCollections, toPointId, DENSE, SPARSE } from '../qdrant'
-import { extractAll, type ChunkRecord } from './extract'
+import { config } from '../config.js'
+import { embed } from '../embeddings.js'
+import { qdrant, ensureCollections, toPointId, DENSE, SPARSE } from '../qdrant.js'
+import { extractAll, type ChunkRecord } from './extract.js'
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH = 32 // embedding requests per call

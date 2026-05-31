@@ -4,8 +4,8 @@
 // often the bot had to decline (fallback rate = a corpus-coverage signal), and
 // latency. Run:  npx tsx rag/insights/report.ts  (needs QDRANT_*).
 
-import { config } from '../config'
-import { qdrant } from '../qdrant'
+import { config } from '../config.js'
+import { qdrant } from '../qdrant.js'
 
 interface LogRow {
   question: string | null

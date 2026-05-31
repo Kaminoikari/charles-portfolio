@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { entityContext } from './graph'
+import { entityContext } from './graph.js'
 
 test('no recognized entity → empty (generic questions pay nothing)', () => {
   assert.equal(entityContext('What is the weather today?'), '')

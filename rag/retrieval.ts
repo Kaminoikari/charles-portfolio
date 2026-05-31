@@ -6,9 +6,9 @@
 
 import { Document } from '@langchain/core/documents'
 
-import { config } from './config'
-import { embedOne, rerank } from './embeddings'
-import { qdrant, DENSE, SPARSE } from './qdrant'
+import { config } from './config.js'
+import { embedOne, rerank } from './embeddings.js'
+import { qdrant, DENSE, SPARSE } from './qdrant.js'
 
 // Payload stored per chunk at ingest (see ingest/build-index.ts).
 interface Payload {

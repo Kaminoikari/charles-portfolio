@@ -16,18 +16,18 @@
 
 import { writeFileSync } from 'node:fs'
 
-import { retrieveWith, type RetrievalConfig } from '../retrieval'
-import { answer as graphAnswer } from '../graph'
-import { type Locale } from '../language'
-import { GOLDEN } from './golden'
-import { judgeFaithfulness } from './judge'
+import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
+import { answer as graphAnswer } from '../graph.js'
+import { type Locale } from '../language.js'
+import { GOLDEN } from './golden.js'
+import { judgeFaithfulness } from './judge.js'
 import {
   recallAtK,
   reciprocalRank,
   correctness,
   mean,
   type Aggregate,
-} from './metrics'
+} from './metrics.js'
 
 // ── arms ────────────────────────────────────────────────────────────────
 // Each arm is a retrieval config; the final "corrective" arm runs the full

@@ -9,7 +9,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest'
 import { createHash } from 'node:crypto'
 
-import { config } from './config'
+import { config } from './config.js'
 
 // Named-vector keys, referenced by every read/write path.
 export const DENSE = 'dense'

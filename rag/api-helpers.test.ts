@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseChatRequest, sse, RateLimiter, clientId } from './api-helpers'
+import { parseChatRequest, sse, RateLimiter, clientId } from './api-helpers.js'
 
 test('parseChatRequest: accepts and trims a valid question', () => {
   const r = parseChatRequest({ question: '  hello?  ' })
