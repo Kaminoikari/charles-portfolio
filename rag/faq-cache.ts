@@ -115,6 +115,19 @@ export const faqEntries: FaqEntry[] = [
     },
   },
   {
+    id: 'bot-why-designed',
+    questions: {
+      en: ['Why was the chatbot designed this way?', 'why did you design the chatbot like this?', 'why this design?', 'what was the design rationale?', 'why build it as a RAG agent?', 'why not just use ChatGPT?', 'why go to this trouble?', 'what are the design decisions?'],
+      'zh-TW': ['為什麼這樣設計 chatbot', '為什麼當初這樣設計', '為什麼這樣設計這個聊天機器人', '這個設計的理由是什麼', '為什麼做成 RAG agent', '為什麼不直接用 ChatGPT', '為什麼要這麼麻煩', '有哪些設計決策'],
+      ja: ['なぜこのように設計した', 'なぜこの設計', '設計の理由は', 'なぜ RAG エージェントにした', 'なぜ ChatGPT を使わない'],
+    },
+    answers: {
+      en: "Three design goals, each a deliberate trade-off. **(1) Showcase, not wrapper** — it's built as a corrective RAG agent (LangGraph, Qdrant hybrid retrieval, Voyage rerank, entity graph) precisely to demonstrate production AI engineering, not just call an LLM. **(2) Grounded + safe** — it answers ONLY from Charles's real portfolio data with a self-correcting retrieval loop, so it never hallucinates credentials; layered prompt-injection defense keeps a public bot from being coaxed off-topic. **(3) Cheap to run** — a deterministic triage tier and a semantic cache mean most questions never hit a paid LLM, and generation is Gemini-free-tier-first with Claude as fallback. The point: a portfolio about AI product work should itself be a working piece of AI product work.",
+      'zh-TW': '三個設計目標,每個都是刻意的取捨。**(1) 展示而非包裝** — 它做成 corrective RAG agent(LangGraph、Qdrant 混合檢索、Voyage 重排序、實體圖),正是為了展示生產級 AI 工程,而不只是呼叫 LLM。**(2) 有根據且安全** — 它只根據 Charles 真實的作品集資料回答,並有自我修正的檢索迴圈,所以不會幻覺亂編資歷;多層 prompt injection 防禦讓這個公開機器人不會被誘導離題。**(3) 省成本** — 確定性分流層 + 語意快取讓大多數問題不打付費 LLM,生成則是 Gemini 免費層優先、Claude 備援。核心理念:一個關於 AI 產品工作的作品集,本身就該是一件能運作的 AI 產品。',
+      ja: '3 つの設計目標、それぞれ意図的なトレードオフです。**(1) ラッパーでなくショーケース** — corrective RAG エージェント(LangGraph、Qdrant ハイブリッド検索、Voyage 再ランク、エンティティグラフ)として構築し、単に LLM を呼ぶのでなく本番 AI エンジニアリングを示します。**(2) 根拠あり+安全** — Charles の実際のポートフォリオデータのみから回答し、自己修正の検索ループで経歴を捏造しません。多層のプロンプトインジェクション防御で公開ボットが脱線させられないようにします。**(3) 低コスト** — 決定論的トリアージ層とセマンティックキャッシュでほとんどの質問は有料 LLM に届かず、生成は Gemini 無料枠優先・Claude フォールバック。要点:AI プロダクトの仕事についてのポートフォリオは、それ自体が動く AI プロダクトであるべきです。',
+    },
+  },
+  {
     id: 'bot-corrective-loop',
     questions: {
       en: ['What is the corrective loop?', 'how does the RAG self-correct?', 'what is CRAG?', 'how does it avoid hallucination?', 'what if retrieval is bad?'],
