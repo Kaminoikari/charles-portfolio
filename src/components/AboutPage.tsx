@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useDocumentMeta, useLocalePath, useT } from '../i18n'
-import { useAboutContent, useExperience } from '../data'
+import { useAboutContent } from '../data'
+import CareerGallery from './CareerGallery'
 import ContactFooter from './ContactFooter'
 
 export default function AboutPage() {
@@ -9,7 +10,6 @@ export default function AboutPage() {
   const t = useT()
   const localePath = useLocalePath()
   const aboutContent = useAboutContent()
-  const experience = useExperience()
 
   useDocumentMeta({
     titleKey: 'about.metaTitle',
@@ -113,19 +113,9 @@ export default function AboutPage() {
           </table>
         </Section>
 
-        {/* Career — locale-aware data from useExperience() */}
+        {/* Career — GSAP cinematic gallery, locale-aware data via useExperience() */}
         <Section title={t('about.sectionCareer')} index={3}>
-          <div className="space-y-8">
-            {experience.map((item, i) => (
-              <CareerItem
-                key={i}
-                title={item.title}
-                org={item.organization}
-                period={item.dateRange}
-                bullets={item.bullets}
-              />
-            ))}
-          </div>
+          <CareerGallery />
         </Section>
 
         {/* Skills */}
@@ -181,27 +171,6 @@ function Section({ title, index, children }: { title: string; index: number; chi
       <div className="mt-5 space-y-4 text-[15px] leading-[1.8] text-text-muted md:text-base md:leading-[1.85]">
         {children}
       </div>
-    </div>
-  )
-}
-
-function CareerItem({ title, org, period, bullets }: { title: string; org: string; period: string; bullets: string[] }) {
-  return (
-    <div>
-      <h3 className="text-lg font-semibold text-white">{title}</h3>
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px]">
-        <span className="text-text-muted">{org}</span>
-        <span className="text-text-tertiary">·</span>
-        <span className="font-mono tracking-[0.5px] text-text-tertiary">{period}</span>
-      </div>
-      <ul className="mt-3 space-y-2">
-        {bullets.map((b, i) => (
-          <li key={i} className="flex items-start gap-3 text-[15px] leading-[1.8] text-text-muted">
-            <span className="mt-[10px] block h-1.5 w-1.5 shrink-0 rounded-full bg-accent-mars/60" />
-            {b}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
