@@ -173,10 +173,51 @@ server-side**, then a Voyage cross-encoder rerank in the function. The ablation
    LangSmith faithfulness eval.
 2. **Prompt-injection defense** — strip/neutralize "ignore previous
    instructions" style payloads; corpus content is data, not instructions.
-3. **Rate limiting** — Upstash Redis sliding window per IP.
-4. **Cost control** — Haiku default, Sonnet only when `grade` flags a hard
+3. **Input cap** — questions are capped at 50 chars (`MAX_QUESTION_LEN`,
+   `api-helpers.ts`); over-length returns 413. Keeps queries cheap to embed and
+   concise enough for the retriever, and bounds abuse payload size.
+4. **Rate limiting** — per-IP sliding window. Currently in-memory per warm
+   serverless instance (`RateLimiter`, `api-helpers.ts`), so it caps abuse per
+   instance, not globally. Upstash Redis is the global upgrade — see
+   "Upgrade guide: global rate limiting" below.
+5. **Region gate** — requests from blocked countries (default `CN`, env
+   `RAG_BLOCKED_COUNTRIES`) are refused. Geo comes from Vercel's edge header
+   `x-vercel-ip-country` (no datastore, no extra cost). Enforced in `api/chat.ts`
+   (403) so a direct call can't bypass it; `api/geo.ts` exposes the same verdict
+   to the widget, which stays clickable but opens to a disabled
+   "not available in your region" state.
+6. **Cost control** — Haiku default, Sonnet only when `grade` flags a hard
    synthesis question.
-5. **Logging** — every Q → `chat_logs` for retrieval analytics.
+7. **Logging** — every Q → `chat_logs` for retrieval analytics.
+
+### Upgrade guide: global rate limiting (Upstash Redis) — DEFERRED
+
+The in-memory limiter resets on cold start and counts each warm instance
+separately, so a distributed or cold-start-timed flood slips through. The honest
+fix is a shared counter in Upstash Redis. Cost is effectively $0: the free tier
+(500K commands/month ≈ 16K/day, 256 MB) dwarfs portfolio traffic at ~1–2
+commands per check; overage is $0.20/100K commands or a $10/month fixed plan.
+
+Steps when we decide to do it:
+
+1. Create an Upstash Redis database in a region near the Vercel deployment
+   (`iad1` / us-east) to minimize the per-request round trip.
+2. `npm i @upstash/ratelimit @upstash/redis`.
+3. Set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` in Vercel (already
+   reserved as `UPSTASH_REDIS_*` in §10). The client speaks HTTP REST, so there
+   is no connection pool or cold-start connection penalty in serverless.
+4. In `api/chat.ts`, swap the `RateLimiter` for:
+   ```ts
+   const limiter = new Ratelimit({
+     redis: Redis.fromEnv(),
+     limiter: Ratelimit.slidingWindow(20, '60 s'),
+   })
+   const { success, reset } = await limiter.limit(clientId(req.headers))
+   // !success → 429 + Retry-After from `reset`
+   ```
+5. Keep the in-memory `RateLimiter` as a fallback when `UPSTASH_REDIS_*` is
+   absent, so local dev needs no Redis.
+6. Mock Redis in `api-helpers.test.ts` (external dependencies are always mocked).
 
 ---
 
@@ -240,7 +281,8 @@ pipeline can be built but not run end-to-end.
 
 ```
 api/
-└── chat.ts                   # Vercel Node serverless fn: rate-limit → SSE → log
+├── chat.ts                   # Vercel Node serverless fn: region-gate → rate-limit → SSE → log
+└── geo.ts                    # region verdict for the widget (x-vercel-ip-country)
 rag/
 ├── graph.ts                  # LangGraph StateGraph spine + answer()/streamAnswer()
 ├── state.ts                  # Annotation.Root state schema
