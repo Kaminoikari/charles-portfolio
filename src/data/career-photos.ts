@@ -9,30 +9,36 @@
 //
 // Click any photo to open the full-screen lightbox.
 //
-// To add photos: drop landscape (≈4:3) images into public/assets/career/ and
-// list them here. `pos` is an optional object-position (defaults to
-// 'center 30%') to protect faces when a tall/portrait group photo is cropped
-// into the 4:3 frame. Reorder simply by reordering the array.
+// To add photos: run scripts/optimize-career-photos.sh <prefix> <image...> to
+// produce the two-tier WebP set, then paste the line it prints (src/full/w/h)
+// here and fill in `alt`. The rail is a height-driven film strip, so photos of
+// any orientation sit side by side at their natural aspect ratio (no cropping).
+// Reorder simply by reordering the array.
 
 export interface CareerPhoto {
   /** Lightweight rail thumbnail under /public, e.g. '/assets/career/uspace-1.webp'. */
   src: string
   /** High-resolution variant for the full-screen lightbox; falls back to `src`. */
   full?: string
+  /** Natural pixel size of the rail thumbnail (`src`). The film-strip rail is
+   *  height-driven, so this fixes each frame's width via its aspect ratio and
+   *  prevents layout shift before the (lazy) image decodes. */
+  w: number
+  h: number
   /** Short alt text / lightbox caption. */
   alt: string
-  /** Optional object-position for the 4:3 crop, e.g. 'center 35%'. */
+  /** Optional object-position to bias the slight hover/reveal overscan. */
   pos?: string
 }
 
 export const careerPhotos: Record<string, CareerPhoto[]> = {
   'USPACE Tech Co., Ltd.': [
-    { src: '/assets/career/uspace-1.webp', full: '/assets/career/uspace-1-full.webp', alt: 'The team at the USPACE storefront', pos: 'center 30%' },
-    { src: '/assets/career/uspace-5.webp', full: '/assets/career/uspace-5-full.webp', alt: 'Company all-hands in Japan' },
-    { src: '/assets/career/uspace-4.webp', full: '/assets/career/uspace-4-full.webp', alt: 'At the office: WE ARE WHERE YOU GO' },
-    { src: '/assets/career/uspace-3.webp', full: '/assets/career/uspace-3-full.webp', alt: 'The team at the office', pos: 'center 32%' },
-    { src: '/assets/career/uspace-6.webp', full: '/assets/career/uspace-6-full.webp', alt: 'Company offsite in Japan' },
-    { src: '/assets/career/uspace-2.webp', full: '/assets/career/uspace-2-full.webp', alt: 'WE ARE WHERE YOU GO, at the office', pos: 'center 25%' },
+    { src: '/assets/career/uspace-1.webp', full: '/assets/career/uspace-1-full.webp', w: 800, h: 1200, alt: 'The team at the USPACE storefront', pos: 'center 30%' },
+    { src: '/assets/career/uspace-5.webp', full: '/assets/career/uspace-5-full.webp', w: 1200, h: 800, alt: 'Company all-hands in Japan' },
+    { src: '/assets/career/uspace-4.webp', full: '/assets/career/uspace-4-full.webp', w: 1200, h: 900, alt: 'At the office: WE ARE WHERE YOU GO' },
+    { src: '/assets/career/uspace-3.webp', full: '/assets/career/uspace-3-full.webp', w: 800, h: 1200, alt: 'The team at the office', pos: 'center 32%' },
+    { src: '/assets/career/uspace-6.webp', full: '/assets/career/uspace-6-full.webp', w: 1200, h: 900, alt: 'Company offsite in Japan' },
+    { src: '/assets/career/uspace-2.webp', full: '/assets/career/uspace-2-full.webp', w: 900, h: 1200, alt: 'WE ARE WHERE YOU GO, at the office', pos: 'center 25%' },
   ],
   'XChange School': [],
   'NUEIP Technology Co., Ltd.': [],

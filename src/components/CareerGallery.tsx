@@ -57,19 +57,6 @@ export default function CareerGallery() {
             .to(frames, { clipPath: 'inset(0 0 0% 0)', duration: 1.0, stagger: 0.08, ease: 'power3.out' }, 0.15)
             .fromTo(imgs, { scale: 1.16 }, { scale: 1, duration: 1.2, stagger: 0.08, ease: 'power3.out' }, 0.15)
 
-          // Subtle parallax of each oversized image within its frame.
-          imgs.forEach((img) => {
-            gsap.fromTo(
-              img,
-              { yPercent: -5 },
-              {
-                yPercent: 5,
-                ease: 'none',
-                scrollTrigger: { trigger: img, start: 'top bottom', end: 'bottom top', scrub: true },
-              },
-            )
-          })
-
           // Grade to full colour while the chapter sits in the mid-viewport band.
           ScrollTrigger.create({
             trigger: chapter,
@@ -248,13 +235,14 @@ function PhotoRail({
           }
         }}
         onPointerUp={() => { drag.current.down = false }}
-        className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-1 [cursor:grab] active:[cursor:grabbing]"
+        className="no-scrollbar flex h-64 snap-x snap-mandatory gap-4 overflow-x-auto pb-1 [cursor:grab] active:[cursor:grabbing] sm:h-72 md:h-80"
       >
         {photos.map((photo, i) => (
-          <div key={i} className="w-[78%] shrink-0 snap-start sm:w-[58%] md:w-[46%]">
+          <div key={i} className="h-full shrink-0 snap-start">
             <PhotoFrame
               org={org}
               photo={photo}
+              fill
               onClick={() => {
                 // Ignore the click that ends a drag.
                 if (drag.current.moved > DRAG_THRESHOLD) return
@@ -280,10 +268,14 @@ function PhotoFrame({
   org,
   photo,
   onClick,
+  fill = false,
 }: {
   org: string
   photo?: CareerPhoto
   onClick?: () => void
+  /** Film-strip mode: the frame takes the rail's height and its width follows
+   *  the photo's natural aspect ratio, so nothing is cropped. */
+  fill?: boolean
 }) {
   const [failed, setFailed] = useState(false)
   const showImg = photo && !failed
@@ -304,21 +296,32 @@ function PhotoFrame({
             }
           : undefined
       }
-      className={`career-frame group/frame relative aspect-[4/3] overflow-hidden rounded-md border border-border bg-bg-secondary will-change-[clip-path] ${
-        interactive ? 'cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-cyan' : ''
-      }`}
+      className={`career-frame group/frame relative overflow-hidden rounded-md border border-border bg-bg-secondary will-change-[clip-path] ${
+        fill ? 'h-full' : 'aspect-[4/3] w-full'
+      } ${interactive ? 'cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-cyan' : ''}`}
+      // Film strip: the frame's width follows the photo's aspect ratio (from
+      // data, so it's correct before the lazy image decodes — no layout shift).
+      style={fill ? { aspectRatio: `${photo?.w ?? 3} / ${photo?.h ?? 4}` } : undefined}
     >
       {showImg ? (
         <img
           src={photo!.src}
           alt={photo!.alt}
+          width={photo!.w}
+          height={photo!.h}
           loading="lazy"
           decoding="async"
           draggable={false}
           onError={() => setFailed(true)}
           onLoad={() => ScrollTrigger.refresh()}
-          className="career-img absolute left-0 w-full select-none object-cover"
-          style={{ top: '-6%', height: '112%', objectPosition: photo!.pos ?? 'center 30%' }}
+          className={`career-img select-none object-cover ${
+            fill ? 'h-full w-full' : 'absolute left-0 w-full'
+          }`}
+          style={
+            fill
+              ? { objectPosition: photo!.pos ?? 'center 50%' }
+              : { top: '-6%', height: '112%', objectPosition: photo!.pos ?? 'center 30%' }
+          }
         />
       ) : (
         <Placeholder org={org} />
