@@ -125,6 +125,18 @@ export default function CareerGallery() {
   )
 }
 
+// Derive the big mono year anchor from a dateRange like 'AUG 2022 — FEB 2024'.
+// Returns the year span ('2022–2024'), an open-ended span ('2024–PRESENT' when
+// the range still says PRESENT), or a single year when the role starts and ends
+// in the same year. Locale-independent: every dateRange uses these same tokens.
+function yearSpan(period: string): string {
+  const years = period.match(/\d{4}/g) ?? []
+  const start = years[0] ?? ''
+  if (!start) return ''
+  const end = /present/i.test(period) ? 'PRESENT' : years[years.length - 1] ?? start
+  return end === start ? start : `${start}–${end}`
+}
+
 function CareerChapter({
   title,
   org,
@@ -139,8 +151,10 @@ function CareerChapter({
   onOpen: (photos: CareerPhoto[], index: number) => void
 }) {
   const photos = careerPhotosFor(org)
-  // Big year anchor (start year) derived from the period, e.g. 'JULY 2024 — PRESENT'.
-  const year = period.match(/\d{4}/)?.[0] ?? ''
+  // Big year anchor shows the span, not just the start, e.g. 'JULY 2024 — PRESENT'
+  // becomes '2024–PRESENT' and 'AUG 2022 — FEB 2024' becomes '2022–2024'. A
+  // single-year role (start and end in the same year) collapses to just '2024'.
+  const year = yearSpan(period)
 
   return (
     <div className="career-chapter relative">
