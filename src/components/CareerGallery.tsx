@@ -494,7 +494,7 @@ function CrossfadeImage({ src, alt }: { src: string; alt: string }) {
   // reduced motion, where the transition may not fire.
   useEffect(() => {
     if (layers.length <= 1) return
-    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), 560)
+    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), 320)
     return () => clearTimeout(t)
   }, [layers])
 
@@ -524,7 +524,7 @@ function CrossfadeLayer({ src, alt, active }: { src: string; alt: string; active
       alt={alt}
       draggable={false}
       onClick={(e) => e.stopPropagation()}
-      className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
+      className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     />
