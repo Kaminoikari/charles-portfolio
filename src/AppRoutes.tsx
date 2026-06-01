@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import App from './App'
 import Nav from './components/Nav'
 import ChatWidget from './components/chat/ChatWidget'
+import { MusicToggle } from './components/audio/MusicToggle'
 import { LOCALE_URL_PREFIX, useInitialLocaleRestore } from './i18n'
 
 const AboutPage = lazy(() => import('./components/AboutPage'))
@@ -74,6 +75,7 @@ export default function AppRoutes() {
           )),
         )}
       </Routes>
+      <MusicToggle />
       <ChatWidget />
     </>
   )

@@ -1,6 +1,4 @@
-// Speaker / muted-speaker glyph, extracted from the old AmbientAudio button so
-// the chat widget can render the music toggle in both the launcher pill and the
-// panel header.
+// Speaker / muted-speaker glyph, rendered inside the standalone MusicToggle FAB.
 
 export function MuteIcon({ muted, size = 16 }: { muted: boolean; size?: number }) {
   return (

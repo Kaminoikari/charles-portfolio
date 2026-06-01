@@ -1,8 +1,7 @@
-// Ambient-audio mute state, shared via context so both the chat launcher pill
-// and the open-panel header can toggle the same audio (the music control was
-// folded into the chat widget — see the Phase 5 layout decision). Hook + context
-// live here (non-component) so AudioProvider.tsx exports only its component,
-// keeping React Fast Refresh happy.
+// Ambient-audio mute state, shared via context. AudioProvider owns the <audio>
+// element and fade logic; the standalone MusicToggle FAB (bottom-left) reads and
+// flips this state. Hook + context live here (non-component) so AudioProvider.tsx
+// exports only its component, keeping React Fast Refresh happy.
 
 import { createContext, useContext } from 'react'
 
