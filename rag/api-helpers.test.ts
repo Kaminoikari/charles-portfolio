@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseChatRequest, sse, RateLimiter, clientId } from './api-helpers.js'
+import { parseChatRequest, sse, RateLimiter, clientId, clientCountry, isBlockedCountry } from './api-helpers.js'
 
 test('parseChatRequest: accepts and trims a valid question', () => {
   const r = parseChatRequest({ question: '  hello?  ' })
@@ -17,7 +17,9 @@ test('parseChatRequest: rejects non-object, missing, empty, oversize', () => {
   assert.equal(parseChatRequest('nope').ok, false)
   assert.equal(parseChatRequest({}).ok, false)
   assert.equal(parseChatRequest({ question: '   ' }).ok, false)
-  const big = parseChatRequest({ question: 'x'.repeat(1001) })
+  // Limit is 50 chars: 50 passes, 51 is rejected with 413.
+  assert.equal(parseChatRequest({ question: 'x'.repeat(50) }).ok, true)
+  const big = parseChatRequest({ question: 'x'.repeat(51) })
   assert.equal(big.ok, false)
   if (!big.ok) assert.equal(big.status, 413)
 })
@@ -55,4 +57,18 @@ test('clientId: first x-forwarded-for ip, else unknown', () => {
   assert.equal(clientId({ 'x-forwarded-for': '1.2.3.4, 5.6.7.8' }), '1.2.3.4')
   assert.equal(clientId({ 'x-forwarded-for': ['9.9.9.9'] }), '9.9.9.9')
   assert.equal(clientId({}), 'unknown')
+})
+
+test('clientCountry: reads vercel geo header, uppercases, else empty', () => {
+  assert.equal(clientCountry({ 'x-vercel-ip-country': 'cn' }), 'CN')
+  assert.equal(clientCountry({ 'x-vercel-ip-country': ['tw'] }), 'TW')
+  assert.equal(clientCountry({}), '')
+})
+
+test('isBlockedCountry: matches blocklist, ignores case, never blocks unknown', () => {
+  assert.equal(isBlockedCountry('CN', 'CN'), true)
+  assert.equal(isBlockedCountry('cn', 'CN'), true) // case-insensitive on both sides
+  assert.equal(isBlockedCountry('HK', 'CN,HK'), true)
+  assert.equal(isBlockedCountry('TW', 'CN'), false)
+  assert.equal(isBlockedCountry('', 'CN'), false) // unknown origin is never blocked
 })

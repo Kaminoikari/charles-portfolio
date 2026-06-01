@@ -12,7 +12,7 @@ export interface ParseError {
   message: string
 }
 
-const MAX_QUESTION_LEN = 1000
+const MAX_QUESTION_LEN = 50
 
 // Validate and normalize an incoming chat request body.
 export function parseChatRequest(body: unknown): ParsedRequest | ParseError {
@@ -67,4 +67,26 @@ export function clientId(headers: Record<string, string | string[] | undefined>)
   const fwd = headers['x-forwarded-for']
   const raw = Array.isArray(fwd) ? fwd[0] : fwd
   return (raw?.split(',')[0]?.trim()) || 'unknown'
+}
+
+// ISO-3166-1 alpha-2 country of the request, from Vercel's edge geo header
+// (x-vercel-ip-country, set on every request at no extra cost). Returns '' when
+// unknown (local dev, or the header is absent) so an unknown origin is never
+// treated as blocked.
+export function clientCountry(headers: Record<string, string | string[] | undefined>): string {
+  const c = headers['x-vercel-ip-country']
+  const raw = Array.isArray(c) ? c[0] : c
+  return (raw ?? '').trim().toUpperCase()
+}
+
+// Whether a country sits on the comma-separated blocklist (ISO alpha-2 codes,
+// e.g. "CN" or "CN,HK"). An empty/unknown country is never blocked.
+export function isBlockedCountry(country: string, blocklist: string): boolean {
+  const code = country.trim().toUpperCase()
+  if (!code) return false
+  return blocklist
+    .split(',')
+    .map((c) => c.trim().toUpperCase())
+    .filter(Boolean)
+    .includes(code)
 }

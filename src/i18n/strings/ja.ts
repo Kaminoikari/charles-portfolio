@@ -122,6 +122,7 @@ const ja: Strings = {
     sourcesCount: '{{count}} 件',
     errorMessage: '送信できませんでした。接続を確認してもう一度お試しください。',
     rateLimited: '質問が多すぎます。少し待ってからもう一度お試しください。',
+    regionBlocked: 'お住まいの地域ではこの機能をご利用いただけません。',
     retry: '再試行',
     suggested1: 'USPACE で何をしましたか?',
     suggested2: 'Product Playbook について教えて',

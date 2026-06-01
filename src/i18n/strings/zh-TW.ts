@@ -119,6 +119,7 @@ const zhTW: Strings = {
     sourcesCount: '{{count}} 個片段',
     errorMessage: '沒送出去，檢查一下連線再試一次。',
     rateLimited: '問題太頻繁了，稍等一下再試。',
+    regionBlocked: '您所在的區域目前不支援此功能。',
     retry: '重試',
     suggested1: '他在 USPACE 做了什麼?',
     suggested2: '介紹一下 Product Playbook',

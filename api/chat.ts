@@ -11,13 +11,17 @@ import { randomUUID } from 'node:crypto'
 import { streamAnswer } from '../rag/graph.js'
 import { config } from '../rag/config.js'
 import { qdrant, DENSE } from '../rag/qdrant.js'
-import { parseChatRequest, sse, RateLimiter, clientId } from '../rag/api-helpers.js'
+import { parseChatRequest, sse, RateLimiter, clientId, clientCountry, isBlockedCountry } from '../rag/api-helpers.js'
 
 // One limiter per warm instance (see api-helpers note re: Upstash for global).
 const limiter = new RateLimiter(
   Number.parseInt(process.env.RAG_RATE_LIMIT ?? '20', 10),
   Number.parseInt(process.env.RAG_RATE_WINDOW_MS ?? '60000', 10),
 )
+
+// Region gate. Comma-separated ISO alpha-2 codes (default: CN). Enforced here
+// too, not just in the widget, so a direct API call can't bypass the block.
+const BLOCKED_COUNTRIES = process.env.RAG_BLOCKED_COUNTRIES ?? 'CN'
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = []
@@ -55,6 +59,12 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     res.statusCode = 405
     res.setHeader('Allow', 'POST')
     res.end(JSON.stringify({ error: 'Method not allowed' }))
+    return
+  }
+
+  if (isBlockedCountry(clientCountry(req.headers), BLOCKED_COUNTRIES)) {
+    res.statusCode = 403
+    res.end(JSON.stringify({ error: 'region_not_supported' }))
     return
   }
 

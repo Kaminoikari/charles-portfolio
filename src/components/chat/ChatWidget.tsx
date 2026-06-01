@@ -129,6 +129,11 @@ export default function ChatWidget() {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState('')
+  // Region gate: blocked visitors (e.g. CN) can still open the panel, but it
+  // lands in a disabled "not available here" state. Checked once on first open
+  // via /api/geo; any failure leaves the assistant usable (fail open).
+  const [regionBlocked, setRegionBlocked] = useState(false)
+  const geoCheckedRef = useRef(false)
   const audio = useAmbientAudio()
   const { messages, status, send, retry, clear } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -173,6 +178,17 @@ export default function ChatWidget() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // Resolve the visitor's region the first time the panel opens. Kept lazy so a
+  // visitor who never opens chat never triggers the request.
+  useEffect(() => {
+    if (!open || geoCheckedRef.current) return
+    geoCheckedRef.current = true
+    fetch('/api/geo')
+      .then((r) => (r.ok ? r.json() : { blocked: false }))
+      .then((d: { blocked?: boolean }) => setRegionBlocked(Boolean(d.blocked)))
+      .catch(() => setRegionBlocked(false))
+  }, [open])
+
   // While the chat panel is open, hide the third-party Protico "lobby" widget so
   // the two bottom-corner floating elements don't overlap (the panel is near
   // full-width on mobile and collides with the lobby pill). CSS in index.css
@@ -183,6 +199,7 @@ export default function ChatWidget() {
   }, [open])
 
   const submit = (question: string) => {
+    if (regionBlocked) return
     const q = question.trim()
     if (!q) return
     setInput('')
@@ -270,7 +287,9 @@ export default function ChatWidget() {
         aria-atomic="false"
         className="flex flex-1 flex-col gap-4 overflow-y-auto p-4"
       >
-        {messages.length === 0 ? (
+        {regionBlocked ? (
+          <p className="text-[14px] leading-[1.7] text-text-muted">{t('chat.regionBlocked')}</p>
+        ) : messages.length === 0 ? (
           <>
             <p className="text-[14px] leading-[1.7] text-white/85">{t('chat.emptyMessage')}</p>
             <PreviewScores />
@@ -333,14 +352,15 @@ export default function ChatWidget() {
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={t('chat.inputPlaceholder')}
-          aria-label={t('chat.inputPlaceholder')}
-          maxLength={1000}
-          className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[14px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan"
+          placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
+          aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
+          maxLength={50}
+          disabled={regionBlocked}
+          className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[14px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={status === 'streaming' || input.trim() === ''}
+          disabled={status === 'streaming' || input.trim() === '' || regionBlocked}
           aria-label={t('chat.sendAriaLabel')}
           className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
         >

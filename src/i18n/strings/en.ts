@@ -50,7 +50,7 @@ interface Strings {
     title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
     thinking: string; sourcesLabel: string; sourcesCount: string
-    errorMessage: string; rateLimited: string; retry: string
+    errorMessage: string; rateLimited: string; regionBlocked: string; retry: string
     suggested1: string; suggested2: string; suggested3: string
     muteMusic: string; unmuteMusic: string
   }
@@ -169,6 +169,7 @@ const en: Strings = {
     sourcesCount: '{{count}} chunks',
     errorMessage: "That didn't go through. Check your connection and try again.",
     rateLimited: 'Too many questions for now, give it a moment and try again.',
+    regionBlocked: 'This assistant is not available in your region.',
     retry: 'Retry',
     suggested1: 'What did he do at USPACE?',
     suggested2: 'Tell me about Product Playbook',
