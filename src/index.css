@@ -148,4 +148,71 @@ body.chat-open [class*="protico" i] {
   display: none !important;
 }
 
+/* Career gallery photo treatment. Keeps real-world scene photos in the dark,
+   cinematic tone: desaturated + dimmed by default, graded to full colour when
+   the chapter enters the mid-viewport (.is-active, toggled by GSAP) or on
+   hover. A self-contained SVG-turbulence grain adds film texture (no asset). */
+.career-img {
+  filter: grayscale(1) brightness(0.82);
+  transition: filter 0.7s ease, transform 0.5s ease;
+  will-change: transform;
+}
+.career-chapter.is-active .career-img { filter: grayscale(0) brightness(1); }
+.career-frame:hover .career-img { filter: grayscale(0) brightness(1); transform: scale(1.04); }
+
+.career-vignette { opacity: 1; transition: opacity 0.7s ease; }
+.career-chapter.is-active .career-vignette { opacity: 0.4; }
+.career-frame:hover .career-vignette { opacity: 0.3; }
+
+.career-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+}
+
+/* Hide the horizontal film-rail scrollbar (drag/scroll still works). */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Vertical career timeline: a static track with a GSAP-drawn mars->cyan fill,
+   and a diamond node per chapter that lights up while the chapter is active. */
+.career-spine {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+}
+.career-spine-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--color-accent-mars), var(--color-accent-cyan));
+  transform: scaleY(0);
+  transform-origin: top center;
+}
+.career-node {
+  position: absolute;
+  left: -2rem;
+  top: 8px;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--color-text-tertiary);
+  background: var(--color-bg-primary);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.career-chapter.is-active .career-node {
+  border-color: var(--color-accent-mars);
+  box-shadow: 0 0 10px rgba(232, 101, 43, 0.45);
+}
+.career-chapter.is-active .career-year { color: rgba(232, 101, 43, 0.9); }
+@media (min-width: 768px) {
+  .career-node { left: -3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .career-grain { display: none; }
+  .career-img { transition: none; }
+}
+
 

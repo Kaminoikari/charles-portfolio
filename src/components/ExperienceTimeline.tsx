@@ -56,8 +56,8 @@ export default function ExperienceTimeline() {
             className="tl-item group relative mb-12 opacity-0 -translate-x-8 [&.animate-in]:opacity-100 [&.animate-in]:translate-x-0 [&.animate-in]:transition-all [&.animate-in]:duration-700 last:mb-0"
             style={{ transitionDelay: `${i * 100}ms` }}
           >
-            {/* Square node marker */}
-            <div className="absolute -left-[25px] md:-left-[45px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-mars group-hover:shadow-[0_0_8px_rgba(232,101,43,0.35)] group-[.is-active]:border-accent-mars group-[.is-active]:shadow-[0_0_8px_rgba(232,101,43,0.35)]" />
+            {/* Square node marker — centered on the 1px left-border spine */}
+            <div className="absolute -left-[28.5px] md:-left-[44.5px] top-1.5 h-2 w-2 border-[1.5px] border-text-tertiary bg-bg-primary transition-all group-hover:border-accent-mars group-hover:shadow-[0_0_8px_rgba(232,101,43,0.35)] group-[.is-active]:border-accent-mars group-[.is-active]:shadow-[0_0_8px_rgba(232,101,43,0.35)]" />
             <div className="mb-1 text-[13px] uppercase tracking-[1.5px] text-text-tertiary">
               {item.dateRange}
             </div>
