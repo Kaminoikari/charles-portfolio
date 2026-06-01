@@ -119,7 +119,6 @@ export default function CareerGallery() {
           photos={box.photos}
           index={box.index}
           onClose={() => setBox(null)}
-          onIndex={(index) => setBox({ photos: box.photos, index })}
         />
       )}
     </div>
@@ -353,21 +352,34 @@ function Placeholder({ org }: { org: string }) {
   )
 }
 
+// Pointer travel (px) before a press is treated as a swipe rather than a tap.
+const SWIPE_AXIS_LOCK = 8
+
 function Lightbox({
   photos,
-  index,
+  index: initialIndex,
   onClose,
-  onIndex,
 }: {
   photos: CareerPhoto[]
   index: number
   onClose: () => void
-  onIndex: (index: number) => void
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
   const count = photos.length
-  const prev = useCallback(() => onIndex((index - 1 + count) % count), [index, count, onIndex])
-  const next = useCallback(() => onIndex((index + 1) % count), [index, count, onIndex])
+  const [index, setIndex] = useState(initialIndex)
+  const [vw, setVw] = useState(() => window.innerWidth)
+  const [dragDx, setDragDx] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const drag = useRef<{ active: boolean; startX: number; startY: number; axis: 'h' | 'v' | null }>(
+    { active: false, startX: 0, startY: 0, axis: null },
+  )
+  // A swipe ends with a click event; this stops that click from also closing.
+  const swallowClick = useRef(false)
+
+  const goTo = useCallback((i: number) => setIndex(Math.min(count - 1, Math.max(0, i))), [count])
+  const prev = useCallback(() => goTo(index - 1), [goTo, index])
+  const next = useCallback(() => goTo(index + 1), [goTo, index])
 
   // Keyboard nav + body scroll lock.
   useEffect(() => {
@@ -385,9 +397,19 @@ function Lightbox({
     }
   }, [onClose, prev, next])
 
-  // Fade the backdrop in once, on open. Keep it OUT of the per-index effect:
-  // re-running it on every prev/next dropped the overlay to opacity 0 first,
-  // flashing the bright page through the backdrop on each navigation.
+  // Keep the slide width in sync with the viewport (resize / orientation / the
+  // mobile address bar) so the translate offset always lands a slide dead-centre.
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    window.addEventListener('orientationchange', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('orientationchange', onResize)
+    }
+  }, [])
+
+  // Fade the backdrop in once, on open.
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -396,18 +418,46 @@ function Lightbox({
     { dependencies: [] },
   )
 
-  // Warm the cache for the adjacent full-res images so prev/next is instant.
-  useEffect(() => {
-    const warm = (i: number) => {
-      const p = photos[(i + count) % count]
-      if (!p) return
-      const img = new Image()
-      img.src = p.full ?? p.src
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, axis: null }
+  }
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current
+    if (!d.active) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    if (!d.axis) {
+      if (Math.abs(dx) < SWIPE_AXIS_LOCK && Math.abs(dy) < SWIPE_AXIS_LOCK) return
+      d.axis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+      if (d.axis === 'h') {
+        trackRef.current?.setPointerCapture?.(e.pointerId)
+        setDragging(true)
+      }
     }
-    warm(index + 1)
-    warm(index - 1)
-  }, [index, photos, count])
+    if (d.axis === 'h') {
+      // Rubber-band resistance past the first / last slide.
+      const past = (index === 0 && dx > 0) || (index === count - 1 && dx < 0)
+      setDragDx(past ? dx * 0.3 : dx)
+    }
+  }
+  const onPointerUp = (e: React.PointerEvent) => {
+    const d = drag.current
+    drag.current = { active: false, startX: 0, startY: 0, axis: null }
+    if (d.axis !== 'h') return
+    const dx = e.clientX - d.startX
+    const threshold = Math.min(vw * 0.18, 110)
+    let target = index
+    if (dx <= -threshold) target = Math.min(count - 1, index + 1)
+    else if (dx >= threshold) target = Math.max(0, index - 1)
+    swallowClick.current = true
+    setTimeout(() => { swallowClick.current = false }, 0)
+    setDragging(false)
+    setDragDx(0)
+    setIndex(target)
+  }
 
+  const translate = -index * vw + dragDx
   const photo = photos[index]
 
   // Portal to <body>: the gallery lives inside `.reveal` wrappers whose Tailwind
@@ -417,12 +467,52 @@ function Lightbox({
   return createPortal(
     <div
       ref={overlayRef}
-      onClick={onClose}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-bg-primary/92 backdrop-blur-md"
+      onClick={() => {
+        if (swallowClick.current) return
+        onClose()
+      }}
+      className="fixed inset-0 z-[100] overflow-hidden bg-bg-primary/92 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-label="Photo viewer"
     >
+      {/* Swipeable slide track. Each photo gets its own full-width slide and the
+          track translates between them — no opacity blending, so mismatched
+          portrait/landscape photos never leave a ghost of each other. Works with
+          mouse drag and touch swipe; transition is off mid-drag to track 1:1. */}
+      <div
+        className="absolute inset-0 touch-pan-y"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        <div
+          ref={trackRef}
+          className="flex h-full"
+          style={{
+            transform: `translate3d(${translate}px, 0, 0)`,
+            transition: dragging ? 'none' : 'transform 360ms cubic-bezier(0.22, 0.61, 0.36, 1)',
+          }}
+        >
+          {photos.map((p, i) => (
+            <div
+              key={i}
+              className="flex h-full shrink-0 select-none items-center justify-center px-6"
+              style={{ width: `${vw}px` }}
+            >
+              <img
+                src={p.full ?? p.src}
+                alt={p.alt}
+                draggable={false}
+                onClick={(e) => e.stopPropagation()}
+                className="max-h-[82vh] max-w-[92vw] rounded-md object-contain shadow-2xl"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Close */}
       <button
         onClick={onClose}
@@ -431,11 +521,6 @@ function Lightbox({
       >
         <CloseIcon />
       </button>
-
-      {/* Image — crossfading layers (rendered before the controls so the
-          buttons paint on top; the stage itself is click-through except the
-          image, so clicking the backdrop around it still closes). */}
-      <CrossfadeImage src={photo.full ?? photo.src} alt={photo.alt} />
 
       {/* Caption */}
       <figcaption className="pointer-events-none absolute inset-x-0 bottom-6 flex items-center justify-center gap-3 px-6 text-center font-mono text-[12px] tracking-[1px] text-text-muted">
@@ -447,77 +532,27 @@ function Lightbox({
         {photo.alt && <span>{photo.alt}</span>}
       </figcaption>
 
-      {/* Prev / Next */}
-      {count > 1 && (
-        <>
-          <button
-            onClick={(e) => { e.stopPropagation(); prev() }}
-            aria-label="Previous"
-            className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-accent-cyan hover:text-accent-cyan md:left-6"
-          >
-            <ArrowIcon dir="left" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); next() }}
-            aria-label="Next"
-            className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-accent-cyan hover:text-accent-cyan md:right-6"
-          >
-            <ArrowIcon dir="right" />
-          </button>
-        </>
+      {/* Prev / Next — clamped, so each hides at its end of the strip. */}
+      {count > 1 && index > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); prev() }}
+          aria-label="Previous"
+          className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-accent-cyan hover:text-accent-cyan md:left-6"
+        >
+          <ArrowIcon dir="left" />
+        </button>
+      )}
+      {count > 1 && index < count - 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); next() }}
+          aria-label="Next"
+          className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-accent-cyan hover:text-accent-cyan md:right-6"
+        >
+          <ArrowIcon dir="right" />
+        </button>
       )}
     </div>,
     document.body,
-  )
-}
-
-/** Dissolve between successive photos using two persistent layers that ping-pong.
- *  Both layers are always mounted, so flipping which one is in front toggles BOTH
- *  opacities in a single commit — the outgoing and incoming photos cross over in
- *  perfect lockstep. (The earlier mount-then-rAF approach started the outgoing
- *  fade a couple of frames before the incoming one, which read as the old photo
- *  lingering.) Neighbours are preloaded, so the incoming frame is already decoded. */
-function CrossfadeImage({ src, alt }: { src: string; alt: string }) {
-  // Seed both slots with the first photo so each is already committed at its
-  // resting opacity; the very first navigation then has a real 0 -> 1 to animate.
-  const [slots, setSlots] = useState<{ src: string; alt: string }[]>(() => [
-    { src, alt },
-    { src, alt },
-  ])
-  const [front, setFront] = useState(0)
-  const frontRef = useRef(0)
-  const shownSrc = useRef(src)
-
-  useEffect(() => {
-    if (shownSrc.current === src) return
-    shownSrc.current = src
-    const back = 1 - frontRef.current
-    frontRef.current = back
-    // Load the new photo into the back (opacity-0) slot and flip in the same
-    // commit, so both slots transition from their committed opacities at once.
-    setSlots((prev) => {
-      const nextSlots = prev.slice()
-      nextSlots[back] = { src, alt }
-      return nextSlots
-    })
-    setFront(back)
-  }, [src, alt])
-
-  return (
-    <div className="pointer-events-none fixed inset-0 grid place-items-center">
-      {slots.map((slot, i) => (
-        <img
-          key={i}
-          src={slot.src}
-          alt={slot.alt}
-          draggable={false}
-          onClick={(e) => e.stopPropagation()}
-          className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${
-            i === front ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
-      ))}
-    </div>
   )
 }
 
