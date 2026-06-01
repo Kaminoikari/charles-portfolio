@@ -365,7 +365,6 @@ function Lightbox({
   onIndex: (index: number) => void
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
-  const imgRef = useRef<HTMLImageElement>(null)
   const count = photos.length
   const prev = useCallback(() => onIndex((index - 1 + count) % count), [index, count, onIndex])
   const next = useCallback(() => onIndex((index + 1) % count), [index, count, onIndex])
@@ -395,17 +394,6 @@ function Lightbox({
       gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' })
     },
     { dependencies: [] },
-  )
-
-  // Settle each photo in as the index changes. Starting from opacity 0 also
-  // masks the moment the <img> swaps its src; neighbours are preloaded below so
-  // the new frame is already decoded and this reads as a clean fade, not a blank.
-  useGSAP(
-    () => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-      gsap.fromTo(imgRef.current, { scale: 0.985, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' })
-    },
-    { dependencies: [index] },
   )
 
   // Warm the cache for the adjacent full-res images so prev/next is instant.
@@ -444,26 +432,20 @@ function Lightbox({
         <CloseIcon />
       </button>
 
-      {/* Image */}
-      <figure
-        className="mx-auto flex max-h-[86vh] max-w-[90vw] flex-col items-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <img
-          ref={imgRef}
-          src={photo.full ?? photo.src}
-          alt={photo.alt}
-          className="max-h-[78vh] max-w-[90vw] rounded-md object-contain"
-        />
-        <figcaption className="mt-4 flex items-center gap-3 font-mono text-[12px] tracking-[1px] text-text-muted">
-          {count > 1 && (
-            <span className="text-text-tertiary">
-              {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
-            </span>
-          )}
-          {photo.alt && <span>{photo.alt}</span>}
-        </figcaption>
-      </figure>
+      {/* Image — crossfading layers (rendered before the controls so the
+          buttons paint on top; the stage itself is click-through except the
+          image, so clicking the backdrop around it still closes). */}
+      <CrossfadeImage src={photo.full ?? photo.src} alt={photo.alt} />
+
+      {/* Caption */}
+      <figcaption className="pointer-events-none absolute inset-x-0 bottom-6 flex items-center justify-center gap-3 px-6 text-center font-mono text-[12px] tracking-[1px] text-text-muted">
+        {count > 1 && (
+          <span className="text-text-tertiary">
+            {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
+          </span>
+        )}
+        {photo.alt && <span>{photo.alt}</span>}
+      </figcaption>
 
       {/* Prev / Next */}
       {count > 1 && (
@@ -486,6 +468,66 @@ function Lightbox({
       )}
     </div>,
     document.body,
+  )
+}
+
+/** Dissolve between successive photos. Each photo change pushes a new layer that
+ *  fades in over the previous one (both already decoded — neighbours are
+ *  preloaded — so there is no blank gap), then the layers beneath are pruned. */
+function CrossfadeImage({ src, alt }: { src: string; alt: string }) {
+  const [layers, setLayers] = useState<{ id: number; src: string; alt: string }[]>(
+    () => [{ id: 0, src, alt }],
+  )
+  const nextId = useRef(0)
+
+  // Push a new layer whenever the photo changes.
+  useEffect(() => {
+    setLayers((prev) => {
+      if (prev[prev.length - 1].src === src) return prev
+      nextId.current += 1
+      return [...prev, { id: nextId.current, src, alt }]
+    })
+  }, [src, alt])
+
+  // Once the dissolve has settled, drop every layer beneath the newest. The
+  // timeout (rather than transitionend) keeps it correct under rapid clicks and
+  // reduced motion, where the transition may not fire.
+  useEffect(() => {
+    if (layers.length <= 1) return
+    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), 560)
+    return () => clearTimeout(t)
+  }, [layers])
+
+  return (
+    <div className="pointer-events-none fixed inset-0 grid place-items-center">
+      {layers.map((layer, i) => (
+        <CrossfadeLayer key={layer.id} src={layer.src} alt={layer.alt} active={i === layers.length - 1} />
+      ))}
+    </div>
+  )
+}
+
+function CrossfadeLayer({ src, alt, active }: { src: string; alt: string; active: boolean }) {
+  const [entered, setEntered] = useState(false)
+  // Flip on the next frame so the entry opacity transition actually runs.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true))
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  // Visible only while it is the newest layer: the outgoing photo fades out as
+  // the incoming one fades in (a true crossfade, so a narrower photo never
+  // leaves the previous one's edges showing).
+  const visible = entered && active
+  return (
+    <img
+      src={src}
+      alt={alt}
+      draggable={false}
+      onClick={(e) => e.stopPropagation()}
+      className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
+    />
   )
 }
 
