@@ -153,9 +153,13 @@ export default function ChatWidget() {
 
   // Focus the input when the panel opens; return focus to the launcher when it
   // closes via keyboard/button so keyboard users aren't dropped onto <body>.
+  // Autofocus only on fine-pointer (desktop) devices: on touch, focusing the
+  // input pops the soft keyboard before the visitor has chosen to type, covering
+  // the panel. Touch users tap the field when they actually want to type.
   useEffect(() => {
     if (open) {
-      inputRef.current?.focus()
+      const isFinePointer = window.matchMedia('(pointer: fine)').matches
+      if (isFinePointer) inputRef.current?.focus()
     } else if (restoreFocusRef.current) {
       launcherRef.current?.focus()
       restoreFocusRef.current = false
@@ -322,7 +326,10 @@ export default function ChatWidget() {
           aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
           maxLength={50}
           disabled={regionBlocked}
-          className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[14px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
+          // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
+          // zooms whenever a focused input is under 16px); the rest of the widget
+          // keeps its denser 14px scale.
+          className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
         />
         <button
           type="submit"
