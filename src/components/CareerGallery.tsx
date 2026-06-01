@@ -408,7 +408,7 @@ function Lightbox({
       >
         <img
           ref={imgRef}
-          src={photo.src}
+          src={photo.full ?? photo.src}
           alt={photo.alt}
           className="max-h-[78vh] max-w-[90vw] rounded-md object-contain"
         />
