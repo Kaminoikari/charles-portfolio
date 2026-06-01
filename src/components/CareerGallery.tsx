@@ -386,16 +386,39 @@ function Lightbox({
     }
   }, [onClose, prev, next])
 
-  // Animate the overlay + image in (respects reduced motion).
+  // Fade the backdrop in once, on open. Keep it OUT of the per-index effect:
+  // re-running it on every prev/next dropped the overlay to opacity 0 first,
+  // flashing the bright page through the backdrop on each navigation.
   useGSAP(
     () => {
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (reduce) return
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
       gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' })
-      gsap.fromTo(imgRef.current, { scale: 0.96, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.35, ease: 'power3.out' })
+    },
+    { dependencies: [] },
+  )
+
+  // Settle each photo in as the index changes. Starting from opacity 0 also
+  // masks the moment the <img> swaps its src; neighbours are preloaded below so
+  // the new frame is already decoded and this reads as a clean fade, not a blank.
+  useGSAP(
+    () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      gsap.fromTo(imgRef.current, { scale: 0.985, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' })
     },
     { dependencies: [index] },
   )
+
+  // Warm the cache for the adjacent full-res images so prev/next is instant.
+  useEffect(() => {
+    const warm = (i: number) => {
+      const p = photos[(i + count) % count]
+      if (!p) return
+      const img = new Image()
+      img.src = p.full ?? p.src
+    }
+    warm(index + 1)
+    warm(index - 1)
+  }, [index, photos, count])
 
   const photo = photos[index]
 
