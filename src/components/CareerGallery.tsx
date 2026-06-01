@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
@@ -8,6 +9,11 @@ import { careerPhotosFor, type CareerPhoto } from '../data/career-photos'
 gsap.registerPlugin(ScrollTrigger, useGSAP)
 
 type BoxState = { photos: CareerPhoto[]; index: number } | null
+
+// Pointer travel (px) that separates a click-to-open from a drag-to-scroll on
+// the photo rail. Below this we never capture the pointer, so the click reaches
+// the photo button and opens the lightbox; above it we treat it as a drag.
+const DRAG_THRESHOLD = 6
 
 export default function CareerGallery() {
   const root = useRef<HTMLDivElement>(null)
@@ -222,17 +228,24 @@ function PhotoRail({
         ref={railRef}
         onScroll={onScroll}
         onPointerDown={(e) => {
+          // Touch / pen scroll the rail natively; only mouse needs JS drag.
+          if (e.pointerType !== 'mouse') return
           const el = railRef.current
           if (!el) return
           drag.current = { down: true, startX: e.clientX, startLeft: el.scrollLeft, moved: 0 }
-          el.setPointerCapture(e.pointerId)
         }}
         onPointerMove={(e) => {
           const el = railRef.current
           if (!el || !drag.current.down) return
           const dx = e.clientX - drag.current.startX
           drag.current.moved = Math.max(drag.current.moved, Math.abs(dx))
-          el.scrollLeft = drag.current.startLeft - dx
+          // Capture only once it's unmistakably a drag. Capturing on pointerdown
+          // retargets the trailing click to the rail, so the photo button never
+          // receives it and the lightbox can't open.
+          if (drag.current.moved > DRAG_THRESHOLD) {
+            if (!el.hasPointerCapture(e.pointerId)) el.setPointerCapture(e.pointerId)
+            el.scrollLeft = drag.current.startLeft - dx
+          }
         }}
         onPointerUp={() => { drag.current.down = false }}
         className="no-scrollbar flex snap-x snap-mandatory gap-4 overflow-x-auto pb-1 [cursor:grab] active:[cursor:grabbing]"
@@ -244,7 +257,7 @@ function PhotoRail({
               photo={photo}
               onClick={() => {
                 // Ignore the click that ends a drag.
-                if (drag.current.moved > 6) return
+                if (drag.current.moved > DRAG_THRESHOLD) return
                 onOpen(photos, i)
               }}
             />
@@ -383,7 +396,11 @@ function Lightbox({
 
   const photo = photos[index]
 
-  return (
+  // Portal to <body>: the gallery lives inside `.reveal` wrappers whose Tailwind
+  // `translate-y` utilities set the CSS `translate` property, which establishes a
+  // containing block for `position: fixed`. Without the portal the overlay would
+  // anchor to the reveal box (offset down the page) instead of the viewport.
+  return createPortal(
     <div
       ref={overlayRef}
       onClick={onClose}
@@ -441,7 +458,8 @@ function Lightbox({
           </button>
         </>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }
 
