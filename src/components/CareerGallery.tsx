@@ -471,63 +471,53 @@ function Lightbox({
   )
 }
 
-/** Dissolve between successive photos. Each photo change pushes a new layer that
- *  fades in over the previous one (both already decoded — neighbours are
- *  preloaded — so there is no blank gap), then the layers beneath are pruned. */
+/** Dissolve between successive photos using two persistent layers that ping-pong.
+ *  Both layers are always mounted, so flipping which one is in front toggles BOTH
+ *  opacities in a single commit — the outgoing and incoming photos cross over in
+ *  perfect lockstep. (The earlier mount-then-rAF approach started the outgoing
+ *  fade a couple of frames before the incoming one, which read as the old photo
+ *  lingering.) Neighbours are preloaded, so the incoming frame is already decoded. */
 function CrossfadeImage({ src, alt }: { src: string; alt: string }) {
-  const [layers, setLayers] = useState<{ id: number; src: string; alt: string }[]>(
-    () => [{ id: 0, src, alt }],
-  )
-  const nextId = useRef(0)
+  // Seed both slots with the first photo so each is already committed at its
+  // resting opacity; the very first navigation then has a real 0 -> 1 to animate.
+  const [slots, setSlots] = useState<{ src: string; alt: string }[]>(() => [
+    { src, alt },
+    { src, alt },
+  ])
+  const [front, setFront] = useState(0)
+  const frontRef = useRef(0)
+  const shownSrc = useRef(src)
 
-  // Push a new layer whenever the photo changes.
   useEffect(() => {
-    setLayers((prev) => {
-      if (prev[prev.length - 1].src === src) return prev
-      nextId.current += 1
-      return [...prev, { id: nextId.current, src, alt }]
+    if (shownSrc.current === src) return
+    shownSrc.current = src
+    const back = 1 - frontRef.current
+    frontRef.current = back
+    // Load the new photo into the back (opacity-0) slot and flip in the same
+    // commit, so both slots transition from their committed opacities at once.
+    setSlots((prev) => {
+      const nextSlots = prev.slice()
+      nextSlots[back] = { src, alt }
+      return nextSlots
     })
+    setFront(back)
   }, [src, alt])
-
-  // Once the dissolve has settled, drop every layer beneath the newest. The
-  // timeout (rather than transitionend) keeps it correct under rapid clicks and
-  // reduced motion, where the transition may not fire.
-  useEffect(() => {
-    if (layers.length <= 1) return
-    const t = setTimeout(() => setLayers((prev) => prev.slice(-1)), 320)
-    return () => clearTimeout(t)
-  }, [layers])
 
   return (
     <div className="pointer-events-none fixed inset-0 grid place-items-center">
-      {layers.map((layer, i) => (
-        <CrossfadeLayer key={layer.id} src={layer.src} alt={layer.alt} active={i === layers.length - 1} />
+      {slots.map((slot, i) => (
+        <img
+          key={i}
+          src={slot.src}
+          alt={slot.alt}
+          draggable={false}
+          onClick={(e) => e.stopPropagation()}
+          className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${
+            i === front ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
       ))}
     </div>
-  )
-}
-
-function CrossfadeLayer({ src, alt, active }: { src: string; alt: string; active: boolean }) {
-  const [entered, setEntered] = useState(false)
-  // Flip on the next frame so the entry opacity transition actually runs.
-  useEffect(() => {
-    const raf = requestAnimationFrame(() => setEntered(true))
-    return () => cancelAnimationFrame(raf)
-  }, [])
-  // Visible only while it is the newest layer: the outgoing photo fades out as
-  // the incoming one fades in (a true crossfade, so a narrower photo never
-  // leaves the previous one's edges showing).
-  const visible = entered && active
-  return (
-    <img
-      src={src}
-      alt={alt}
-      draggable={false}
-      onClick={(e) => e.stopPropagation()}
-      className={`pointer-events-auto col-start-1 row-start-1 max-h-[80vh] max-w-[92vw] rounded-md object-contain shadow-2xl transition-opacity duration-[250ms] ease-out motion-reduce:transition-none ${
-        visible ? 'opacity-100' : 'opacity-0'
-      }`}
-    />
   )
 }
 
