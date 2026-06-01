@@ -34,11 +34,11 @@ export interface CareerPhoto {
 export const careerPhotos: Record<string, CareerPhoto[]> = {
   'USPACE Tech Co., Ltd.': [
     { src: '/assets/career/uspace-1.webp', full: '/assets/career/uspace-1-full.webp', w: 800, h: 1200, alt: 'The team at the USPACE storefront', pos: 'center 30%' },
-    { src: '/assets/career/uspace-5.webp', full: '/assets/career/uspace-5-full.webp', w: 1200, h: 800, alt: 'Company all-hands in Japan' },
-    { src: '/assets/career/uspace-4.webp', full: '/assets/career/uspace-4-full.webp', w: 1200, h: 900, alt: 'At the office: WE ARE WHERE YOU GO' },
-    { src: '/assets/career/uspace-3.webp', full: '/assets/career/uspace-3-full.webp', w: 800, h: 1200, alt: 'The team at the office', pos: 'center 32%' },
-    { src: '/assets/career/uspace-6.webp', full: '/assets/career/uspace-6-full.webp', w: 1200, h: 900, alt: 'Company offsite in Japan' },
     { src: '/assets/career/uspace-2.webp', full: '/assets/career/uspace-2-full.webp', w: 900, h: 1200, alt: 'WE ARE WHERE YOU GO, at the office', pos: 'center 25%' },
+    { src: '/assets/career/uspace-3.webp', full: '/assets/career/uspace-3-full.webp', w: 800, h: 1200, alt: 'The team at the office', pos: 'center 32%' },
+    { src: '/assets/career/uspace-4.webp', full: '/assets/career/uspace-4-full.webp', w: 1200, h: 900, alt: 'At the office: WE ARE WHERE YOU GO' },
+    { src: '/assets/career/uspace-5.webp', full: '/assets/career/uspace-5-full.webp', w: 1200, h: 800, alt: 'Company all-hands in Japan' },
+    { src: '/assets/career/uspace-6.webp', full: '/assets/career/uspace-6-full.webp', w: 1200, h: 900, alt: 'Company offsite in Japan' },
   ],
   'XChange School': [],
   'NUEIP Technology Co., Ltd.': [],
