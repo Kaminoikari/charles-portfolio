@@ -24,7 +24,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Shipped the portfolio AI chatbot',
     tags: ['feature', 'technical'],
     body: [
-      'The "Chat with AI" button in the corner opens a chatbot I designed and built end to end. It answers questions about my work, in English, 中文, and 日本語, using only my real portfolio data, so it never makes things up. I built it as a working demonstration of production AI engineering, not a thin wrapper around ChatGPT.',
+      'The "Ask this portfolio" button in the corner opens a chatbot I designed and built end to end. It answers questions about my work, in English, 中文, and 日本語, using only my real portfolio data, so it never makes things up. I built it as a working demonstration of production AI engineering, not a thin wrapper around ChatGPT.',
       { kind: 'heading', text: 'How it answers a question' },
       'It uses RAG (retrieval-augmented generation): instead of relying on what a language model "remembers", it first looks up the relevant facts from my portfolio, then writes an answer grounded in them. Mine is a "corrective" RAG, meaning it checks its own work:',
       {

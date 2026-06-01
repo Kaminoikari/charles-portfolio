@@ -35,7 +35,7 @@ Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who 
 | **Blog** | Platform links to external posts |
 | **Contact** | Social links with gradient footer |
 | **Changelog** | Linear-inspired changelog with tag filtering (`/changelog`) |
-| **AI Chatbot** | Floating widget ("與 AI 聊聊") with streaming answers, markdown rendering, and multilingual (en / zh-TW / ja) support |
+| **AI Chatbot** | Floating widget ("Ask this portfolio") with streaming answers, markdown rendering, and multilingual (en / zh-TW / ja) support |
 
 ## Features
 
