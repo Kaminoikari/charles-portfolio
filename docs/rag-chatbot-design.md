@@ -20,6 +20,25 @@ language, one repo, one platform — the whole thing collapses onto **Vercel**
 (the chat endpoint is a Node serverless function), no separate Python service to
 operate. Aligns with the existing Vite + React + TS app.
 
+---
+
+> **Status — shipped (doc updated 2026-06-02).** Live in production behind the
+> "問這個作品集 / Chat with AI" widget. This file began as the design plan; the
+> sections below are reconciled with what actually shipped. Notable points the
+> original plan did not capture:
+> - A **`triage`** node runs first — deterministic regex + a **semantic FAQ
+>   cache** — so most common questions are answered for **$0** (no generation LLM).
+> - Generation is **two-tier Gemini 2.5 Flash → Claude**; grade & rewrite run on
+>   Gemini's free tier only.
+> - `grade_documents` returns a **three-way verdict** (answerable /
+>   on_topic_no_data / off_topic), not a binary relevant/weak.
+> - **Prompt-injection defense is 3 layers** (input regex, generate scope-lock,
+>   output slur filter); plus an input cap and a region gate (§6).
+> - **No API prompt caching** (deliberate — see §11).
+> - The index is built by a **GitHub Action** (`workflow_dispatch`) — the runtime
+>   container has no outbound network. Real index: **309 doc chunks + 755 FAQ
+>   paraphrases across 52 topics**, all in en/zh-TW/ja.
+
 ## 1. Architecture
 
 ```
@@ -29,20 +48,23 @@ operate. Aligns with the existing Vite + React + TS app.
   entities/relations.json      ┘   (parent/child)  (dense)  +  BM25 sparse (Cloud Inference)
 
                          QUERY TIME  (api/chat.ts — Vercel Node fn + LangGraph.js)
-  question
+  question  (region-gate → input-cap → rate-limit in api/chat.ts first)
      │
      ▼
-  ┌──────────────────────  LangGraph StateGraph  ──────────────────────┐
-  │  [retrieve] ── Qdrant hybrid (dense+sparse, server RRF) + voyage rerank│
-  │       │                                                             │
-  │  [grade_documents] ── LLM grades each chunk's relevance  (CRAG)     │
-  │       ├─ relevant ───────────────► [generate] ─► answer + citations │
-  │       └─ weak/off-topic ─► [rewrite_query] ─► retrieve (≤ N loops)  │
-  │                                  └─ still fails ─► [fallback] honest │
-  └────────────────────────────────────────────────────────────────────┘
+  ┌────────────────────────────  LangGraph StateGraph  ───────────────────────────┐
+  │  [triage] ── regex (injection / privacy) + semantic FAQ-cache lookup           │
+  │       ├─ injection / privacy / FAQ hit ──────────────────► answered ($0) ─► END│
+  │       └─ pass ► [retrieve] ── Qdrant hybrid (dense+sparse, server RRF) + rerank │
+  │                      │                                                          │
+  │                 [grade_documents] ── LLM 3-way verdict  (CRAG)                  │
+  │                      ├─ answerable ─────────────────► [generate] ─► answer      │
+  │                      ├─ on_topic_no_data ─► [rewrite_query] ─► retrieve (≤ N)   │
+  │                      └─ off_topic ──────────────────► [fallback] (honest)       │
+  └────────────────────────────────────────────────────────────────────────────────┘
      │
      ▼
-  Claude (streaming) ─► answer + retrieved sources + scores  → React widget
+  generate: Gemini 2.5 Flash → Claude fallback (SSE streaming)
+     ─► answer + retrieved sources + scores  → React widget
 ```
 
 ### Deployment
@@ -107,23 +129,28 @@ export const RAGState = Annotation.Root({
   loops: Annotation<number>({ default: () => 0, reducer: (_, b) => b }),
   answer: Annotation<string>,
   sources: Annotation<Array<{ id: string; title: string; score: number; locale: string }>>,
-  route: Annotation<string>,                    // generate | rewrite | fallback
+  route: Annotation<string>,                    // answered | generate | rewrite | off_topic
 });
 ```
 
 | Node | Does | LLM? |
 |---|---|---|
+| `triage` | regex (injection / personal-privacy) + **semantic FAQ-cache** probe; on a hit sets `route="answered"` and short-circuits to END | no LLM (embed-only for the cache probe) |
 | `retrieve` | hybrid (dense+sparse) → RRF → rerank top-k | embed + rerank API |
-| `grade_documents` | per-chunk relevance grade; sets `route` | yes (Haiku, structured output) |
-| `rewrite_query` | reformulate using what's missing; `loops += 1` | yes (Haiku) |
-| `generate` | answer grounded in `graded` + portfolio map; emit citations | yes (Haiku→Sonnet) |
+| `grade_documents` | grades the set with a **3-way verdict**; sets `route` | yes (Gemini, structured output, 4s timeout, degrades to `generate` on error) |
+| `rewrite_query` | reformulate using what's missing; `loops += 1` | yes (Gemini) |
+| `generate` | answer grounded in `graded` + portfolio map; **scope-locked**; output slur-filtered | yes (Gemini → Claude fallback) |
 | `fallback` | honest "the portfolio doesn't cover that" | no |
 
-**Edges:** `START → retrieve → grade_documents`; conditional from
-`grade_documents`: `route=="generate" → generate`, `route=="rewrite" and loops<MAX → rewrite_query → retrieve`, else `→ fallback`; `generate → END`, `fallback → END`.
+**Edges:** `START → triage`; conditional: `route=="answered" → END` (injection /
+privacy / FAQ, answered for $0), else `→ retrieve → grade_documents`; conditional
+from `grade_documents`: `answerable → generate`,
+`on_topic_no_data and loops<MAX → rewrite_query → retrieve`,
+`off_topic (or loops exhausted) → fallback`; `generate → END`, `fallback → END`.
 
-> Demo trick: ask something the corpus lacks → watch it rewrite, fail, and
-> *honestly decline*. Refusing well is more impressive than answering.
+> Demo trick: ask something the corpus lacks → watch it grade `off_topic` and
+> *honestly decline* immediately (no wasted rewrite loop). Refusing well is more
+> impressive than answering.
 
 ---
 
@@ -147,15 +174,21 @@ No SQL — collections are created in code by `ensureCollections()` (`rag/qdrant
 called at the top of every ingest run (idempotent).
 
 ```
-doc_chunks                              # the hybrid index
+doc_chunks                              # the hybrid index — 309 chunks (en/zh-TW/ja)
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25 (Cloud Inference)
   payload index:  locale (keyword)                              # filtered on every query
   payload:        { chunk_id, parent_id, source_type, project_id, locale, title, content }
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
+faq_cache                               # semantic cache — 755 paraphrases / 52 topics
+  vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large (query-encoded)
+  payload index:  locale (keyword)
+  payload:        { topic_id, locale, question, answer }        # answer is pre-written, returned verbatim
+  matched at:     cosine ≥ 0.7 (RAG_FAQ_THRESHOLD), locale-filtered → 0 generation LLM
+
 chat_logs                               # free product insight: what recruiters ask
-  vectors:        { dense: { size: 1, distance: Cosine } }      # dummy — only ever scrolled
+  vectors:        { dense: { size: 1, distance: Cosine } }      # size-1 dummy [1] — never searched, only scrolled
   payload:        { ts, question, language, route, loops, latency_ms, sources }
 ```
 
@@ -164,31 +197,44 @@ sparse prefetch (raw text → BM25 via Cloud Inference), fused by **RRF
 server-side**, then a Voyage cross-encoder rerank in the function. The ablation
 (`retrieveWith`) toggles each arm to measure its marginal lift.
 
+> `chat_logs` uses the dummy vector `[1]`, not `[0]`: a zero vector has an
+> undefined cosine and Qdrant rejects the upsert. The write is fire-and-forget
+> (`.catch()`), so a logging failure never breaks a reply.
+
 ---
 
 ## 6. Guardrails (public endpoint — also showcase points)
 
-1. **Faithfulness lock** — answer only from retrieved context; never hallucinate
-   roles/credentials; unknown ⇒ say so. Enforced in the `generate` prompt + a
-   LangSmith faithfulness eval.
-2. **Prompt-injection defense** — strip/neutralize "ignore previous
-   instructions" style payloads; corpus content is data, not instructions.
-3. **Input cap** — questions are capped at 50 chars (`MAX_QUESTION_LEN`,
+1. **Faithfulness lock** — the `generate` prompt answers only from retrieved
+   context + the portfolio map; never invents roles/credentials; unknown ⇒
+   decline. Backed by a LangSmith faithfulness eval.
+2. **Prompt-injection defense — 3 layers:** (a) input regex in `triage`
+   (ignore-instructions, dev-mode, roleplay/multi-persona, decode/compute —
+   base64·hex·binary, run-code, repeat-N-times, etc.) → instant refusal;
+   (b) a **scope-lock** system prompt in `generate` that treats all input +
+   context as *data*, never instructions, and refuses code/decoding/puzzles/
+   roleplay/fill-in-the-blank; (c) an **output filter** (`isOffensiveOutput`)
+   that drops any answer containing slurs. Layer (b) is the real backstop.
+3. **Personal / privacy redirect** — family / private-life questions are
+   redirected to contact channels (education is kept deliberately private).
+4. **Input cap** — questions are capped at 50 chars (`MAX_QUESTION_LEN`,
    `api-helpers.ts`); over-length returns 413. Keeps queries cheap to embed and
    concise enough for the retriever, and bounds abuse payload size.
-4. **Rate limiting** — per-IP sliding window. Currently in-memory per warm
+5. **Rate limiting** — per-IP sliding window. Currently in-memory per warm
    serverless instance (`RateLimiter`, `api-helpers.ts`), so it caps abuse per
    instance, not globally. Upstash Redis is the global upgrade — see
    "Upgrade guide: global rate limiting" below.
-5. **Region gate** — requests from blocked countries (default `CN`, env
+6. **Region gate** — requests from blocked countries (default `CN`, env
    `RAG_BLOCKED_COUNTRIES`) are refused. Geo comes from Vercel's edge header
    `x-vercel-ip-country` (no datastore, no extra cost). Enforced in `api/chat.ts`
    (403) so a direct call can't bypass it; `api/geo.ts` exposes the same verdict
    to the widget, which stays clickable but opens to a disabled
    "not available in your region" state.
-6. **Cost control** — Haiku default, Sonnet only when `grade` flags a hard
-   synthesis question.
-7. **Logging** — every Q → `chat_logs` for retrieval analytics.
+7. **Cost control** — three tiers before any paid token (deterministic triage →
+   semantic FAQ cache $0 → Gemini free → Claude paid). **No API prompt caching**
+   — deliberate; see §11.
+8. **Logging** — every Q → `chat_logs` for retrieval analytics
+   (`npm run rag:insights`).
 
 ### Upgrade guide: global rate limiting (Upstash Redis) — DEFERRED
 
@@ -256,7 +302,7 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 ## 9. Build phases
 
-0. ✅ Ingestion + chunking + voyage-3 embed → pgvector (`rag/ingest/`).
+0. ✅ Ingestion + chunking + voyage-3 embed → Qdrant (`rag/ingest/`).
 1. ✅ Hybrid (+sparse +RRF +reranker) + LangSmith ablation harness (`rag/evals/`).
 2. ✅ LangGraph corrective graph + language detection + `answer()` entry,
    stub-tested (`rag/graph.ts`, `rag/nodes.ts`, `rag/language.ts`).
@@ -264,16 +310,57 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 4. ✅ React widget + retrieval-transparency UI + suggested questions.
 5. ✅ relations.json entity-graph injection (`rag/entities/`) + chat-logs
    insights (`rag/insights/report.ts`, `npm run rag:insights`).
+6. ✅ Post-launch hardening (shipped): semantic FAQ cache (`rag/faq-cache.ts`,
+   `rag/triage.ts`, `rag/ingest/build-faq-cache.ts`), 3-way grade verdict,
+   3-layer injection defense + input cap + region gate, two-tier Gemini→Claude
+   generation with per-call timeouts + `maxRetries=0`, and `workflow_dispatch`
+   ingestion (`.github/workflows/rag-ingest.yml`).
 
 ---
 
-## 10. Required secrets (none present in this container)
+## 10. Required secrets
 
-`GEMINI_API_KEY` (free-tier generation, tier 1), `ANTHROPIC_API_KEY` (paid
-fallback, tier 2), `LANGSMITH_API_KEY`, `VOYAGE_API_KEY` (embeddings +
-rerank), `QDRANT_URL` + `QDRANT_API_KEY` (vector store; Cloud Inference must be
-enabled for the BM25 sparse model), `UPSTASH_REDIS_*`. Until these exist the
-pipeline can be built but not run end-to-end.
+`GEMINI_API_KEY` (free-tier generation + grade/rewrite), `ANTHROPIC_API_KEY`
+(paid generation fallback), `VOYAGE_API_KEY` (embeddings + rerank), `QDRANT_URL`
++ `QDRANT_API_KEY` (vector store; Cloud Inference must be enabled for the BM25
+sparse model). Optional: `LANGSMITH_API_KEY` (tracing / eval). `UPSTASH_REDIS_*`
+is reserved but unused — wired only if the §6 global rate-limit upgrade ships.
+
+The index is **not** built in the runtime container (it has no outbound
+network); it's built by the **`rag-ingest` GitHub Action** (`workflow_dispatch`,
+`.github/workflows/rag-ingest.yml`), which runs `npm run rag:ingest` then
+`npm run rag:faq` against the secrets above. Preview and Production share the
+same Qdrant index, so a re-index is not needed per deploy.
+
+---
+
+## 11. Cost control & semantic FAQ cache (as shipped)
+
+The headline post-launch feature. Goal: answer common questions at **zero
+generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
+
+- **Semantic FAQ cache** (`rag/faq-cache.ts`): 52 hand-written topics spanning 5
+  personas (general visitor, PM/HR interviewer, tech enthusiast, red-teamer,
+  founder/investor), expanded to **755 paraphrases** across en/zh-TW/ja. Each
+  question is embedded once at build time (`npm run rag:faq`) into the
+  `faq_cache` collection. At query time `triage` embeds the question, runs a
+  locale-filtered nearest-neighbour lookup, and on **cosine ≥ 0.7** returns the
+  pre-written answer verbatim — no retrieval, no generation LLM. Misses fall
+  through to the full RAG pipeline.
+- **Three-tier cost ladder:** (1) deterministic regex triage (injection /
+  privacy) → canned reply; (2) semantic FAQ cache → pre-written reply ($0);
+  (3) full RAG, where grade/rewrite ride Gemini's free tier and only a hard
+  synthesis question Gemini can't serve falls back to paid Claude.
+- **Three-way grade verdict** lets an off-topic question route straight to
+  `fallback` with no rewrite loop, so declining is both cheap and fast.
+- **No API prompt caching** (`rag/llm.ts`, deliberate): traffic is low and
+  bursty (hits usually > 5 min apart, past the cache TTL), most requests never
+  reach Claude at all, and the system prefix is below the cache minimum — so
+  `cache_control` would mostly incur the 1.25× write premium with ~0 reads.
+- **Two-tier generation** (`generateWithFallback`): Gemini 2.5 Flash first
+  (8s timeout) → Claude on any error (15s timeout); `maxRetries=0` so a provider
+  429 fails over immediately instead of stacking LangChain's default six retries
+  (which had caused intermittent 504s).
 
 ---
 
@@ -286,25 +373,30 @@ api/
 rag/
 ├── graph.ts                  # LangGraph StateGraph spine + answer()/streamAnswer()
 ├── state.ts                  # Annotation.Root state schema
-├── nodes.ts                  # retrieve / grade / rewrite / generate / fallback
+├── nodes.ts                  # triage / retrieve / grade / rewrite / generate / fallback
+├── triage.ts                 # regex injection+privacy detection, canned replies, contact block
+├── faq-cache.ts              # 52 topics / 755 paraphrases (en/zh-TW/ja) + answers
 ├── retrieval.ts              # Qdrant hybrid (dense+sparse, server RRF) + rerank (retrieveWith)
-├── qdrant.ts                 # Qdrant client + collection bootstrap + point-id hashing
+├── qdrant.ts                 # Qdrant client + collection bootstrap + faqLookup + point-id hashing
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
-├── llm.ts                    # two-tier LLM: Gemini free → Claude paid fallback
+├── llm.ts                    # two-tier LLM: Gemini free → Claude paid fallback (+ why no caching)
 ├── language.ts               # deterministic en/zh-TW/ja detection
-├── guardrails.ts             # prompt-injection neutralization
+├── guardrails.ts             # input sanitize + isOffensiveOutput() output filter
 ├── portfolio-map.ts          # always-injected global-question rescue
-├── config.ts                 # central settings + env overrides
-├── api-helpers.ts            # request validation, SSE framing, rate limiter
+├── config.ts                 # central settings + env overrides (incl. faq cache)
+├── api-helpers.ts            # request validation, SSE framing, in-memory rate limiter, input cap
+├── *.test.ts                 # node --test units: triage, faq-cache, faq-audit, graph, api-helpers
+├── entities/
+│   └── relations.json        # lightweight entity graph (no Neo4j), injected at generate
 ├── ingest/
 │   ├── extract.ts            # parse src/data/*.ts → records (no regex drift)
-│   └── build-index.ts        # chunk → voyage embed → upsert Qdrant (sparse via Cloud Inference)
+│   ├── build-index.ts        # chunk → voyage embed → upsert Qdrant (sparse via Cloud Inference)
+│   └── build-faq-cache.ts    # embed FAQ paraphrases → upsert faq_cache collection
+├── insights/
+│   └── report.ts             # chat_logs analytics (npm run rag:insights)
 └── evals/
     ├── golden.ts             # eval set (single-fact/local/global/out-of-corpus)
     ├── metrics.ts            # recall@k / MRR / correctness (unit-tested)
     ├── judge.ts              # LLM faithfulness judge
     └── run-eval.ts           # ablation runner + markdown report
 ```
-
-> `entities/relations.json` (lightweight entity graph, no Neo4j) is deferred to
-> Phase 5.
