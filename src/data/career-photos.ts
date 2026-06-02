@@ -47,9 +47,23 @@ export const careerPhotos: Record<string, CareerPhoto[]> = {
     { src: '/assets/career/xchange-4.webp', full: '/assets/career/xchange-4-full.webp', w: 1200, h: 912, alt: 'Group photo with the PM cohort' },
     { src: '/assets/career/xchange-5.webp', full: '/assets/career/xchange-5-full.webp', w: 1200, h: 900, alt: 'The mentoring cohort after a session' },
   ],
-  'NUEIP Technology Co., Ltd.': [],
-  'PXPay Plus Co., Ltd.': [],
-  'FLUX Technology Inc.': [],
+  'NUEIP Technology Co., Ltd.': [
+    { src: '/assets/career/nueip-1.webp', full: '/assets/career/nueip-1-full.webp', w: 1200, h: 675, alt: 'Product team welcome lunch at NUEIP' },
+  ],
+  'PXPay Plus Co., Ltd.': [
+    { src: '/assets/career/pxpay-1.webp', full: '/assets/career/pxpay-1-full.webp', w: 691, h: 1200, alt: 'With the DAWHO mascot at an expo booth' },
+    { src: '/assets/career/pxpay-2.webp', full: '/assets/career/pxpay-2-full.webp', w: 823, h: 1200, alt: 'PM team dinner' },
+    { src: '/assets/career/pxpay-3.webp', full: '/assets/career/pxpay-3-full.webp', w: 1200, h: 1193, alt: 'Team night out at a yakiniku spot' },
+    { src: '/assets/career/pxpay-4.webp', full: '/assets/career/pxpay-4-full.webp', w: 811, h: 1200, alt: 'Celebrating at the company year-end party' },
+    { src: '/assets/career/pxpay-5.webp', full: '/assets/career/pxpay-5-full.webp', w: 1200, h: 1161, alt: 'Company-wide group photo at an offsite' },
+  ],
+  'FLUX Technology Inc.': [
+    { src: '/assets/career/flux-1.webp', full: '/assets/career/flux-1-full.webp', w: 1080, h: 1080, alt: 'A toast at the company party' },
+    { src: '/assets/career/flux-2.webp', full: '/assets/career/flux-2-full.webp', w: 1200, h: 899, alt: 'Team dinner' },
+    { src: '/assets/career/flux-3.webp', full: '/assets/career/flux-3-full.webp', w: 1080, h: 810, alt: 'Team gathering at the office' },
+    { src: '/assets/career/flux-4.webp', full: '/assets/career/flux-4-full.webp', w: 1026, h: 693, alt: 'Team night out' },
+    { src: '/assets/career/flux-5.webp', full: '/assets/career/flux-5-full.webp', w: 1200, h: 900, alt: 'Team building outing in camo gear' },
+  ],
 }
 
 export function careerPhotosFor(organization: string): CareerPhoto[] {
