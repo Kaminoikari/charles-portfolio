@@ -11,9 +11,10 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      'Served as USPACE app owner and Product Owner of a cross-functional Scrum team, driving product strategy across parking payments, business travel & financial insurance lines (TW + JP)',
-      '0→1 launched USPACE for Business (Sep 2025), a B2B SaaS for corporate travel management',
-      '5x faster iteration: pioneered AI-driven prototyping with Claude Code, Codex & Antigravity',
+      'USPACE app owner leading a 15-person cross-functional Scrum team (PM, dev, design): drove product strategy across parking payments, corporate travel & insurance (TW + JP), doubling release velocity',
+      '0→1 launched USPACE for Business (Sep 2025): a B2B SaaS for corporate travel management, owned end-to-end from sales discovery through spec, launch, payments & reconciliation',
+      '5x faster iteration, zero added engineering headcount: redefined the AI Product Builder role, engineering the full stack via agentic workflows with Claude Code & Codex',
+      "Launched Taiwan's first parking insurance: an FSC sandbox trial with Fubon, pay-as-you-park pricing embedded one-tap for 1M+ members",
     ],
   },
   {

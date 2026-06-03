@@ -20,9 +20,10 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '曾任 USPACE app 負責人與跨職能 Scrum 團隊 Product Owner：主導停車支付、企業差旅、金融保險三條產品線的策略（台灣 + 日本）',
-      '0→1 推出 USPACE for Business（2025 年 9 月），企業差旅管理 B2B SaaS',
-      '5x 更快的迭代速度：率先以 Claude Code、Codex、Antigravity 推動 AI 驅動的原型開發',
+      '帶領 15 人跨職能 Scrum 團隊（PM、開發、設計）的 USPACE app 負責人：主導停車支付、企業差旅、保險三條產品線的策略（台灣 + 日本），釋出速度翻倍',
+      '0→1 推出 USPACE for Business（2025 年 9 月）：企業差旅管理 B2B SaaS，從業務探索、規格、開發測試、上線到金流與財務對帳，全生命週期獨力負責',
+      '5x 更快的迭代、零額外工程人力：重新定義 AI Product Builder 角色，以 Claude Code、Codex 的 agentic workflow 親手打造全端',
+      '推出全台首張停車保險：與富邦合作的 FSC 監理沙盒試辦，pay-as-you-park 用量計價，一鍵嵌入結帳、觸及 100 萬+ 會員',
     ],
   },
   {
