@@ -85,7 +85,7 @@ export const projectDetails: ProjectDetail[] = [
       'The tool\'s own contradiction. An app that needs the network to work is precisely the one that goes down at the worst possible moment (no signal, urgent need to find the way).',
     ],
     solution: [
-      'Path doesn\'t just wrap a website into an app; it redefines a "web app that works without the network" from the architecture up.',
+      'Path redefines a "web app that works without the network" from the architecture up.',
       'PWA as the architectural choice. Going PWA over native solved cross-platform install and offline runtime in the same move. Through a Service Worker we get the same kind of capabilities a native app would, without paying the "platform tax" or waiting on app-store review cycles.',
       'Cache-first strategy. On reads, every request hits a local IndexedDB first to render instantly, while fresh data syncs quietly from Supabase in the background. On writes, we use optimistic UI: the moment the user taps, the UI responds, the edit goes into a sync queue, and the queue replays automatically once connectivity returns.',
       'Specialised for Taiwan-to-Japan travellers. Google Maps integration for places and routes, with dedicated labels for common Japan/Taiwan public transit (vehicle icons, walking durations, line colours), plus multi-currency expense tracking, photo and document attachments, and one-tap apply for frequent-traveller itinerary templates.',
@@ -123,11 +123,11 @@ export const projectDetails: ProjectDetail[] = [
   {
     id: 'plutus-trade',
     title: 'Plutus Trade — Personal AI Decision-Support Tool for Taiwan Equities',
-    subtitle: '"Take the analytical firepower of an entire trading desk and compress it into a single AI synthesis pass." A deep-analysis tool built for a single trader. It does not just display data, it compresses what used to be hours of fundamentals + institutional flow + technical research into one decision recommendation grounded in explicit reasoning: full-spectrum synthesis (monthly revenue, fundamentals, institutional flow, and technical structure all cross-domain diagnosed by Gemini AI), auditable decisions (every AI recommendation is instrumented for long-run win-rate and ROI tracking), and a quantitative foundation (a momentum model pre-screens the candidate pool so the semantic reasoning rests on solid data).',
+    subtitle: '"Take the analytical firepower of an entire trading desk and compress it into a single AI synthesis pass." A deep-analysis tool built for a single trader. It compresses what used to be hours of fundamentals + institutional flow + technical research into one decision recommendation grounded in explicit reasoning: full-spectrum synthesis (monthly revenue, fundamentals, institutional flow, and technical structure all cross-domain diagnosed by Gemini AI), auditable decisions (every AI recommendation is instrumented for long-run win-rate and ROI tracking), and a quantitative foundation (a momentum model pre-screens the candidate pool so the semantic reasoning rests on solid data).',
     metaTitle: 'Plutus Trade — Personal AI Decision-Support Tool for Taiwan Equities | Case Study',
     metaDescription: 'Single-user decision-support tool for active Taiwan equity research. Gemini-powered synthesis, guided screening, and instrumented prediction tracking. A generative AI case study by AI Product Manager Charles Chen.',
     problem: [
-      'For an active Taiwan equity trader, the most expensive cost is not capital, it is research time.',
+      'For an active Taiwan equity trader, the most expensive cost is research time.',
       'Analytical-load explosion: every name demands processing monthly revenue YoY/MoM, quarterly EPS and gross margin, institutional flow, and K-line structure. Once the watchlist reaches 30–50 names, the workload directly blows through the time budget of any non-full-time trader.',
       'A polarized tool market: existing charting apps "lay out the data" without interpretation; advisory products hand out "hot tips" with no transparency underneath.',
       'A trust gap: no tool serves the middle, the domain-literate trader who wants AI-accelerated analysis but also needs to "personally audit the AI\'s reasoning" to build trust over time.',
@@ -225,7 +225,7 @@ export const projectDetails: ProjectDetail[] = [
       'Product value lives at the "framework" layer. As an AI PM, I came to feel viscerally that LLM orchestration is fundamentally a product-design problem. Generation is the surface; the execution order of frameworks is the core. Defining Persona first, then running JTBD analysis, is what lets the AI precisely identify real user pain points.',
       'Empowered Specialist is a core engineering decision. I used to think sub-agents were merely an optimization that broke long prompts into shorter ones. Implementing v1.2 revealed the actual design core: the refusal mechanism (out_of_scope return path) and the read-only tool set. Letting a specialist agent say "this is not my job" and hand the decision back to the main agent matches Marty Cagan\'s empowered team concept. A specialist who knows their boundary makes the system more stable. Iteration 5 evaluations showed that without pre-mortem-runner, the risk-assessment step collapses to 22.2%, proving this layer of specialization is the system\'s real load-bearing structure.',
       'Architecture evolves by honestly facing difference. Early on I planned to have all three sub-agents share one tidy four-field YAML schema. Implementation revealed that the strategy critic\'s deliverable is "blind-spot scoring" while pre-mortem\'s deliverable is "scenarios with leading indicators." Forcing them into one mold dilutes precision. I settled on a shared envelope plus per-agent body. The lesson: consistency is in service of quality; when underlying problems differ in kind, forced standardization damages quality.',
-      'Channel strategy decides user retention. A skill-based deployment produced unusually high stickiness. A good tool should not force users to adapt to a new platform, it should go and meet them in the surface they already work in.',
+      'Channel strategy decides user retention. A skill-based deployment produced unusually high stickiness. A good tool should go and meet users in the surface they already work in.',
       'Core insight: anyone can call an API, but knowing how to "ask the right question," "guide the thinking," and "let specialists speak at the right moment" is the actual intellectual property. The 22 frameworks are the soul of the system, the 3 sub-agents are the skeleton of specialization, and AI is merely the automated delivery mechanism.',
     ],
     links: [
@@ -245,7 +245,7 @@ export const projectDetails: ProjectDetail[] = [
     metaTitle: 'House Ops — Taiwan Housing Automation & AI Decision Pipeline | Charles Chen Personal Project',
     metaDescription: 'A Node.js automation pipeline that scans 591 and Facebook public rental groups daily, uses Claude API to extract structured fields from free-form posts, scores Taiwan listings on price, space, location, condition, and risk, and delivers an HTML email digest. A personal automation case study by AI Product Manager Charles Chen.',
     problem: [
-      'For anyone hunting a rental or a home in Taiwan, the real pain is not "there is nothing to look at," it is "there is no way to look at it all."',
+      'For anyone hunting a rental or a home in Taiwan, the real pain is "there is no way to look at it all."',
       'Extreme information fragmentation: listings are scattered across 591, Facebook private groups, and a long tail of forums. Users are forced to manually cross-reference MRT proximity, layout, and price across dozens of tabs.',
       'High-density noise: FB posts are free-form text that traditional tools cannot filter, paired with repeat postings, price drift, and broken formatting, driving search costs through the roof.',
       'Decision fatigue: the daily scan → evaluate → discard loop repeats, and the good listings are usually gone within the few hours a working professional has free.',
@@ -275,7 +275,7 @@ export const projectDetails: ProjectDetail[] = [
       'Maximum decision efficiency: push-style digest plus AI interaction compresses daily property hunting from "hours" to "minutes"',
     ],
     learnings: [
-      '"In the world of automation, the delivery medium is the product itself." Why email rather than a dashboard? It comes from a behavioral-science insight: during the high-frequency morning decision window, push reach far outperforms pull. Data should appear actively wherever the user\'s attention already is.',
+      '"In the world of automation, the delivery medium is the product itself." Why choose email as that medium? It comes from a behavioral-science insight: during the high-frequency morning decision window, push reach far outperforms pull. Data should appear actively wherever the user\'s attention already is.',
       'Trade-offs on the technical path: integrating FB took experimenting with many scroll-simulation approaches. In the end, only CDP\'s Input.synthesizeScrollGesture (synthesized touch gesture) was treated as physical interaction, which taught me that the closer to a physical-layer operation you get, the more effective you are against anti-bot mechanisms.',
       'The economics of LLM as a parser: using an LLM to extract structured fields looks expensive on paper but the per-post cost is tiny (around USD 0.001) and its stability is far higher than a rule-based parser. Against unpredictable Taiwanese phrasing like "月租押金含管費可議," the AI showed human-level comprehension. Most of all, the shift from hard filtering to a weighted model is the soul of this project, letting listings trade off across dimensions in a way that genuinely mirrors how humans decide.',
     ],

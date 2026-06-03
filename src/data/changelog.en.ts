@@ -24,9 +24,9 @@ export const changelog: ChangelogEntry[] = [
     title: 'Shipped the portfolio AI chatbot',
     tags: ['feature', 'technical'],
     body: [
-      'The "Ask this portfolio" button in the corner opens a chatbot I designed and built end to end. It answers questions about my work, in English, 中文, and 日本語, using only my real portfolio data, so it never makes things up. I built it as a working demonstration of production AI engineering, not a thin wrapper around ChatGPT.',
+      'The "Ask this portfolio" button in the corner opens a chatbot I designed and built end to end. It answers questions about my work, in English, 中文, and 日本語, using only my real portfolio data, so it never makes things up. I built it as a working demonstration of production AI engineering, with every layer of the pipeline designed and built by me.',
       { kind: 'heading', text: 'How it answers a question' },
-      'It uses RAG (retrieval-augmented generation): instead of relying on what a language model "remembers", it first looks up the relevant facts from my portfolio, then writes an answer grounded in them. Mine is a "corrective" RAG, meaning it checks its own work:',
+      'It uses RAG (retrieval-augmented generation): it first looks up the relevant facts from my portfolio, then writes an answer grounded in them, so every reply stands on retrieved evidence. Mine is a "corrective" RAG, meaning it checks its own work:',
       {
         kind: 'list',
         items: [
@@ -51,7 +51,7 @@ export const changelog: ChangelogEntry[] = [
         kind: 'list',
         items: [
           '**Input check**: catches manipulation attempts before any AI runs: "ignore your instructions", fake "developer mode", roleplay/persona tricks, and puzzles that try to hide a slur inside code, an encoding, or a fill-in-the-blank game.',
-          '**Locked scope**: the model is instructed to treat every message as data, not commands, and to refuse anything that isn\'t a genuine question about me, even when it\'s dressed up as a math or word puzzle.',
+          '**Locked scope**: the model is instructed to treat every message as inert data to read, ignoring any instructions hidden inside it, and to refuse anything that isn\'t a genuine question about me, even when it\'s dressed up as a math or word puzzle.',
           '**Output check**: a final filter drops any reply containing offensive terms, no matter how it was coaxed out.',
           '**Reliability**: fast-failing model calls, per-call timeouts, and a non-blocking grader so the service never hangs (it was occasionally timing out under rate limits before).',
         ],
@@ -100,7 +100,7 @@ export const changelog: ChangelogEntry[] = [
         items: [
           '**Half-automated beats fully-automated**: every LLM stage defaults to dry-run and only acts on `--apply`; eval always runs on a human command, since auto-running it in CI drains the subscription quota.',
           '**One bug, one unit test**: 15 review rounds kept surfacing new issues largely because the tests pinned down what was already fixed, so each next change felt safe.',
-          '**Centralized config is a lifesaver**: `_config.py` + env overrides turn "shorter timeout in CI" / "1-second timeout in local tests" into a one-line setting instead of a code change.',
+          '**Centralized config is a lifesaver**: `_config.py` + env overrides turn "shorter timeout in CI" / "1-second timeout in local tests" into a one-line setting.',
           '**Cross-source consistency has to be enforced by tests**: the orchestrator\'s `SEVERITY_WEIGHTS` and the eval\'s must stay equal or their scores diverge; a unit test now locks the two together so they can never silently drift.',
         ],
       },
