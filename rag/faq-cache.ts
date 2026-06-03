@@ -42,9 +42,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['全体の概要', 'Charles は何をしている人', '経歴をまとめて'],
     },
     answers: {
-      en: 'Charles is an AI Product Manager with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS. His work has reached **7M+ people**. He currently leads three product lines at USPACE (Taiwan + Japan), where he served as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, and ships AI-built prototypes **5x faster** than traditional workflows.',
-      'zh-TW': 'Charles 是一位 AI 產品經理，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。他目前在 USPACE 主導三條產品線（台灣 + 日本），曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**，並以 AI 打造原型，比傳統流程快 **5 倍**。',
-      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた AI プロダクトマネージャーで、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。現在 USPACE で 3 つのプロダクトライン（台湾+日本）を統括し、**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、AI によるプロトタイピングで従来比 **5 倍速**で出荷しています。',
+      en: 'Charles is an AI Product Manager with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS. His work has reached **7M+ people**. At USPACE he is the **app owner leading a 15-person cross-functional Scrum team** across Taiwan and Japan (parking payments, corporate travel, insurance), where he doubled release velocity, 0→1 launched **USPACE for Business**, and shipped **Taiwan\'s first parking insurance**. He ships AI-built prototypes **5x faster** than traditional workflows.',
+      'zh-TW': 'Charles 是一位 AI 產品經理，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。在 USPACE，他是 **app 負責人，帶領 15 人跨職能 Scrum 團隊**，業務涵蓋台灣與日本（停車支付、企業差旅、保險），釋出速度翻倍，並 0→1 推出 **USPACE for Business**、推出 **全台首張停車保險**。他以 AI 打造原型，比傳統流程快 **5 倍**。',
+      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた AI プロダクトマネージャーで、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。USPACE では **app のオーナーとして 15 名のクロスファンクショナル Scrum チーム**を台湾と日本で率い（駐車場決済・出張・保険）、リリース速度を倍増、**USPACE for Business** を 0→1 でローンチ、**台湾初の駐車場保険**も投入しました。AI によるプロトタイピングで従来比 **5 倍速**で出荷します。',
     },
   },
   {
@@ -109,9 +109,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['LLM コストをどう抑える', 'チャットボットはなぜ安い', '毎回 LLM を呼ばない方法', 'コスト最適化', 'キャッシュの仕組み'],
     },
     answers: {
-      en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage**, regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache**, ~46 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss, and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass instead of looping.',
-      'zh-TW': '三層，由便宜到貴，所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流**，regex、約 0 毫秒、零 token：隱私導向、打招呼、聯絡答案。**(2) 語意快取**，約 46 個預寫答案主題（×3 語言）embedding 進 Qdrant collection；問題只 embedding 一次比對，相似度夠高就「逐字」回傳，完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑，而且即使在那裡，Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒，不繞迴圈。',
-      ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ**、正規表現、約 0 ms、トークンゼロ：プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ**、約 46 の事前作成トピック（×3 言語）を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す（生成呼び出しなし）。**(3) 完全な RAG** は本当に外れた時だけ、そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
+      en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage**, regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache**, ~52 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss, and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass instead of looping.',
+      'zh-TW': '三層，由便宜到貴，所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流**，regex、約 0 毫秒、零 token：隱私導向、打招呼、聯絡答案。**(2) 語意快取**，約 52 個預寫答案主題（×3 語言）embedding 進 Qdrant collection；問題只 embedding 一次比對，相似度夠高就「逐字」回傳，完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑，而且即使在那裡，Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒，不繞迴圈。',
+      ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ**、正規表現、約 0 ms、トークンゼロ：プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ**、約 52 の事前作成トピック（×3 言語）を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す（生成呼び出しなし）。**(3) 完全な RAG** は本当に外れた時だけ、そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
     },
   },
   {
@@ -122,9 +122,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜこのように設計した', 'なぜこの設計', '設計の理由は', 'なぜ RAG エージェントにした', 'なぜ ChatGPT を使わない'],
     },
     answers: {
-      en: "Three design goals, each a deliberate trade-off:\n\n1. **A demonstration, not a wrapper**, it's built as a self-correcting RAG agent (it looks up facts and checks its own answers), specifically to show real AI engineering rather than just calling ChatGPT.\n2. **Grounded and safe**, it answers only from Charles's real portfolio data and verifies what it finds, so it never invents credentials; a layered defense keeps a public bot from being tricked off-topic.\n3. **Cheap to run**, simple rules and a pre-written answer cache mean most questions never reach a paid model, and a free model answers first with a premium one only as backup.\n\nThe point: a portfolio about AI product work should itself be a working piece of AI product work.",
-      'zh-TW': '三個設計目標，每個都是刻意的取捨：\n\n1. **是展示，不是包裝**，它做成一個會自我修正的 RAG 代理（先查事實、再檢查自己的答案），就是為了展示真正的 AI 工程能力，而不只是呼叫 ChatGPT。\n2. **有根據且安全**，它只根據 Charles 真實的作品集資料回答，並會驗證查到的內容，所以不會亂編資歷；多層防禦讓這個公開機器人不會被誘導離題。\n3. **省成本**，簡單規則加上預寫的答案快取，讓大多數問題根本不會用到付費模型；而且由免費模型先回答，付費模型只在必要時備援。\n\n核心理念：一個關於 AI 產品工作的作品集，本身就該是一件能運作的 AI 產品。',
-      ja: '3 つの設計目標、それぞれ意図的なトレードオフです：\n\n1. **ラッパーではなく実証**、自己修正する RAG エージェント（事実を調べ、自分の答えを確認する）として構築し、単に ChatGPT を呼ぶのではなく本物の AI エンジニアリングを示します。\n2. **根拠があり安全**、Charles の実際のポートフォリオデータのみから答え、調べた内容を検証するので経歴を捏造しません。多層防御で公開ボットが脱線させられるのを防ぎます。\n3. **低コスト**、シンプルなルールと事前作成の回答キャッシュで、ほとんどの質問は有料モデルに届きません。無料モデルがまず答え、有料モデルは必要なときだけ備えます。\n\n要点：AI プロダクトの仕事についてのポートフォリオは、それ自体が動く AI プロダクトであるべきです。',
+      en: "Three design goals, each a deliberate trade-off:\n\n1. **A real demonstration**, it's built as a self-correcting RAG agent (it looks up facts and checks its own answers), specifically to show hands-on AI engineering that goes well beyond a plain ChatGPT call.\n2. **Grounded and safe**, it answers only from Charles's real portfolio data and verifies what it finds, so it never invents credentials; a layered defense keeps a public bot from being tricked off-topic.\n3. **Cheap to run**, simple rules and a pre-written answer cache mean most questions never reach a paid model, and a free model answers first with a premium one only as backup.\n\nThe point: a portfolio about AI product work should itself be a working piece of AI product work.",
+      'zh-TW': '三個設計目標，每個都是刻意的取捨：\n\n1. **真材實料的展示**，它做成一個會自我修正的 RAG 代理（先查事實、再檢查自己的答案），就是為了展示真正動手的 AI 工程能力，遠超過單純呼叫 ChatGPT。\n2. **有根據且安全**，它只根據 Charles 真實的作品集資料回答，並會驗證查到的內容，所以不會亂編資歷；多層防禦讓這個公開機器人不會被誘導離題。\n3. **省成本**，簡單規則加上預寫的答案快取，讓大多數問題根本不會用到付費模型；而且由免費模型先回答，付費模型只在必要時備援。\n\n核心理念：一個關於 AI 產品工作的作品集，本身就該是一件能運作的 AI 產品。',
+      ja: '3 つの設計目標、それぞれ意図的なトレードオフです：\n\n1. **本物の実証**、自己修正する RAG エージェント（事実を調べ、自分の答えを確認する）として構築し、単純な ChatGPT 呼び出しを大きく超える、地に足のついた AI エンジニアリングを示します。\n2. **根拠があり安全**、Charles の実際のポートフォリオデータのみから答え、調べた内容を検証するので経歴を捏造しません。多層防御で公開ボットが脱線させられるのを防ぎます。\n3. **低コスト**、シンプルなルールと事前作成の回答キャッシュで、ほとんどの質問は有料モデルに届きません。無料モデルがまず答え、有料モデルは必要なときだけ備えます。\n\n要点：AI プロダクトの仕事についてのポートフォリオは、それ自体が動く AI プロダクトであるべきです。',
     },
   },
   {
@@ -135,7 +135,7 @@ export const faqEntries: FaqEntry[] = [
       ja: ['corrective ループとは', 'RAG はどう自己修正する', 'CRAG とは', 'ハルシネーションをどう防ぐ'],
     },
     answers: {
-      en: 'After retrieval, a grader LLM judges whether the chunks actually answer the question. If they do → generate. If they\'re weak but on-topic → rewrite the query and retry retrieval (capped at a few loops). If retrieval keeps failing, or the question is off-topic, → an honest fallback that points to my contact info rather than inventing an answer. The generate step is also locked to answer ONLY from retrieved context + a portfolio map, so it can\'t drift from what the portfolio actually says. This is the "corrective RAG" (CRAG) pattern, built as a LangGraph state machine.',
+      en: 'After retrieval, a grader LLM judges whether the chunks actually answer the question. If they do → generate. If they\'re weak but on-topic → rewrite the query and retry retrieval (capped at a few loops). If retrieval keeps failing, or the question is off-topic, → an honest fallback that points to my contact info and never invents an answer. The generate step is also locked to answer ONLY from retrieved context + a portfolio map, so it can\'t drift from what the portfolio actually says. This is the "corrective RAG" (CRAG) pattern, built as a LangGraph state machine.',
       'zh-TW': '檢索後，一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索（有幾次上限）。若檢索一直失敗、或問題離題 → 走誠實的 fallback，指向我的聯絡方式而非編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答，所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式，以 LangGraph 狀態機實作。',
       ja: '検索後、評価器 LLM がチャンクで本当に答えられるか判断します。答えられる → 生成。弱いが関連 → クエリを書き換えて再検索（数回まで）。検索が失敗し続けるか無関係なら → 捏造せず連絡先を案内する正直なフォールバック。生成ステップも「検索した context + portfolio map のみ」で答えるよう固定され、ポートフォリオの実際の記載から逸脱しません。これが corrective RAG(CRAG)パターンで、LangGraph のステートマシンとして実装しています。',
     },
@@ -269,9 +269,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['USPACE では何をしている', 'USPACE での役割', '現在の仕事'],
     },
     answers: {
-      en: 'At **USPACE** (Product Manager, July 2024–present) Charles owns product strategy across three core lines, parking payments, business travel, and financial insurance (Taiwan + Japan). He served as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, aligning engineering, design, and operations. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping (Claude Code, Codex, Antigravity) for **5x faster** iteration.',
-      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 主導三條核心產品線的策略，停車支付、商務差旅、金融保險（台灣 + 日本）。他曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**，協調工程、設計與營運。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先導入 AI 原型開發(Claude Code、Codex、Antigravity)，讓迭代速度快 **5 倍**。',
-      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は 3 つの中核ライン（駐車場決済・出張・金融保険、台湾+日本）のプロダクト戦略を統括しています。**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、エンジニアリング・デザイン・オペレーションをまとめました。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、AI 駆動プロトタイピング（Claude Code・Codex・Antigravity）で **5 倍速**の反復を実現しました。',
+      en: 'At **USPACE** (Product Manager, July 2024–present) Charles is the **USPACE app owner** leading a cross-functional Scrum team across Taiwan and Japan, owning product strategy across three core lines, parking payments, business travel, and insurance, and aligning engineering, design, and operations. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping with **Claude Code and Codex** for **5x faster** iteration.',
+      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 是 **USPACE app 負責人**，帶領跨職能 Scrum 團隊、業務涵蓋台灣與日本，主導停車支付、商務差旅、保險三條核心產品線的策略，並協調工程、設計與營運。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先以 **Claude Code、Codex** 推動 AI 原型開發，讓迭代速度快 **5 倍**。',
+      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は **USPACE app のオーナー** として、台湾と日本にまたがるクロスファンクショナルな Scrum チームを率い、駐車場決済・出張・保険の 3 つの中核ラインのプロダクト戦略を統括し、エンジニアリング・デザイン・オペレーションをまとめています。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、**Claude Code・Codex** で AI 駆動プロトタイピングを推進し、**5 倍速**の反復を実現しました。',
     },
   },
   {
@@ -336,9 +336,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんな AI ツールを使う', 'AI スキル', 'AI / LLM の経験'],
     },
     answers: {
-      en: 'On AI/LLM: **Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, and Agentic Workflows**. He has shipped AI in production (e.g. deep Gemini integration in Plutus Trade) and built his own multi-agent system, Product Playbook.',
-      'zh-TW': 'AI/LLM 方面：**Claude Code、Codex、Gemini AI、LLM 編排、Prompt Engineering、AI Agent 開發，以及 Agentic Workflows**。他有將 AI 落地到生產環境的經驗（例如 Plutus Trade 深度整合 Gemini），也打造了自己的多代理系統 Product Playbook。',
-      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini AI、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー**。本番環境で AI を出荷した経験があり（例：Plutus Trade での Gemini 深い統合）、自作のマルチエージェントシステム Product Playbook も構築しています。',
+      en: 'On AI/LLM: **Claude Code, Codex, Gemini, LLM Orchestration, Prompt Engineering, AI Agent Development, Agentic Workflows, and Multi-Agent Systems**. On AI engineering he has shipped **RAG (corrective RAG), hybrid / vector search, LangGraph / LangChain, vector databases (Qdrant), embeddings (Voyage), LLM evaluation & benchmarking, and prompt-injection defense**, for example this very portfolio chatbot (a corrective-RAG system he built end to end), his own multi-agent system Product Playbook, and production Gemini features in Plutus Trade.',
+      'zh-TW': 'AI/LLM 方面：**Claude Code、Codex、Gemini、LLM 編排、Prompt Engineering、AI Agent 開發、Agentic Workflows，以及 Multi-Agent Systems**。AI 工程方面，他做過 **RAG（corrective RAG）、Hybrid / Vector Search、LangGraph / LangChain、向量資料庫(Qdrant)、Embeddings(Voyage)、LLM Evaluation 與 benchmarking，以及 prompt-injection 防禦**，例如這個作品集 chatbot（他親手端到端打造的 corrective RAG 系統）、他自建的多代理系統 Product Playbook，以及 Plutus Trade 的生產級 Gemini 功能。',
+      ja: 'AI/LLM 面では **Claude Code、Codex、Gemini、LLM オーケストレーション、プロンプトエンジニアリング、AI エージェント開発、エージェンティックワークフロー、マルチエージェントシステム**。AI エンジニアリング面では **RAG（corrective RAG）、ハイブリッド/ベクトル検索、LangGraph / LangChain、ベクトル DB(Qdrant)、埋め込み(Voyage)、LLM 評価・ベンチマーク、プロンプトインジェクション防御** を手がけ、例としてこのポートフォリオの chatbot（彼が端から端まで作った corrective RAG システム）、自作のマルチエージェント Product Playbook、Plutus Trade の本番 Gemini 機能があります。',
     },
   },
   {
@@ -405,9 +405,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['チームを率いた経験は', 'リーダーシップ経験', '人をマネジメントした'],
     },
     answers: {
-      en: 'Yes. At **FLUX** he directed a team of **10** (+22% process efficiency, +35% order-fulfillment speed). He also mentors aspiring PMs at **XChange School** (Taiwan\'s largest internet professional community), and his skill set includes cross-functional team leadership, stakeholder management, and Agile/Scrum.',
-      'zh-TW': '有的。在 **FLUX** 他帶領 **10 人**團隊（流程效率 +22%、訂單履行速度 +35%）。他也在 **XChange School**（台灣最大的網路專業社群）擔任產品導師，技能涵蓋跨職能團隊領導、利害關係人管理與 Agile/Scrum。',
-      ja: 'はい。**FLUX** では **10 名**のチームを統括（プロセス効率 +22%、注文処理速度 +35%）。**XChange School**（台湾最大のインターネット専門コミュニティ）で PM 志望者のメンターも務め、スキルには機能横断のチームリーダーシップ・ステークホルダー管理・Agile/Scrum が含まれます。',
+      en: 'Yes. At **USPACE** he leads a **15-person cross-functional Scrum team** (PM, dev, design) as the app owner, and doubled release velocity. Earlier, at **FLUX**, he directed a team of **10** (+22% process efficiency, +35% order-fulfillment speed). He also mentors aspiring PMs at **XChange School** (Taiwan\'s largest internet professional community).',
+      'zh-TW': '有的。在 **USPACE** 他以 app 負責人身分帶領 **15 人跨職能 Scrum 團隊**（PM、開發、設計），並讓釋出速度翻倍。更早在 **FLUX** 帶領 **10 人**團隊（流程效率 +22%、訂單履行速度 +35%）。他也在 **XChange School**（台灣最大的網路專業社群）擔任產品導師。',
+      ja: 'はい。**USPACE** では app オーナーとして **15 名のクロスファンクショナル Scrum チーム**（PM・開発・デザイン）を率い、リリース速度を倍増。さらに以前 **FLUX** で **10 名**のチームを統括（プロセス効率 +22%、注文処理速度 +35%）。**XChange School**（台湾最大のインターネット専門コミュニティ）で PM 志望者のメンターも務めます。',
     },
   },
   {
@@ -444,9 +444,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんな成果を出した', '主要な実績', '定量的なインパクト', '数字'],
     },
     answers: {
-      en: 'Selected results: **7M+ users reached**; **0→1 USPACE for Business** launched; **5x faster** iteration via AI prototyping; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
-      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；**0→1 推出 USPACE for Business**；以 AI 原型開發達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
-      ja: '主な成果：**700 万人以上**にリーチ；**USPACE for Business を 0→1** でローンチ；AI プロトタイピングで **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+      en: 'Selected results: **7M+ users reached**; at USPACE, **doubled release velocity** leading a 15-person team, **0→1 USPACE for Business** and **Taiwan\'s first parking insurance** (1M+ members), with **5x faster** AI-driven iteration; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
+      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；在 USPACE 帶領 15 人團隊 **釋出速度翻倍**、**0→1 推出 USPACE for Business** 與 **全台首張停車保險**（1M+ 會員），以 AI 驅動達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
+      ja: '主な成果：**700 万人以上**にリーチ；USPACE では 15 名チームを率いて **リリース速度を倍増**、**USPACE for Business を 0→1**、**台湾初の駐車場保険**（100 万人超の会員）を投入し、AI 駆動で **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
     },
   },
   {
@@ -563,9 +563,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['彼の強みは', '何が得意', '一番の強み', 'なぜ優れた PM なのか', '彼の際立つ点'],
     },
     answers: {
-      en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He also brings ownership as **USPACE app owner and Product Owner of a cross-functional Scrum team**, 0→1 launch experience, and full-stack AI engineering depth (his own multi-agent system, production Gemini features).",
-      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他也具備 **USPACE app 負責人與跨職能 Scrum 團隊 Product Owner** 的歷練、0→1 上線經驗，以及全端 AI 工程深度（自建多代理系統、生產級 Gemini 功能）。',
-      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と、AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。**USPACE app のオーナー兼クロスファンクショナルな Scrum チームの Product Owner** としての経験、0→1 のローンチ経験、フルスタックの AI エンジニアリング（自作マルチエージェント、本番 Gemini 機能）も備えます。',
+      en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He brings ownership as the **USPACE app owner leading a 15-person cross-functional Scrum team**, 0→1 launch experience (USPACE for Business, Taiwan's first parking insurance), and full-stack AI engineering depth, his own multi-agent system and this corrective-RAG chatbot, plus production Gemini features.",
+      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他具備 **USPACE app 負責人、帶領 15 人跨職能 Scrum 團隊** 的歷練、0→1 上線經驗（USPACE for Business、全台首張停車保險），以及全端 AI 工程深度（自建多代理系統、這個 corrective RAG 聊天機器人，以及生產級 Gemini 功能）。',
+      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。**USPACE app のオーナーとして 15 名のクロスファンクショナル Scrum チームを率いた**経験、0→1 のローンチ経験（USPACE for Business、台湾初の駐車場保険）、フルスタックの AI エンジニアリング（自作マルチエージェント、この corrective RAG チャットボット、本番 Gemini 機能）を備えます。',
     },
   },
   {
@@ -589,9 +589,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['一番の成果は', '最も誇れる仕事', '最大の功績'],
     },
     answers: {
-      en: "A standout: at USPACE he owns product strategy across three lines as the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, and 0→1 launched USPACE for Business. On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes, the user behavior his products move.",
-      'zh-TW': '其中一個亮點：在 USPACE 他以 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner** 的身分主導三條產品線的策略，並 0→1 推出 USPACE for Business。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功，看產品改變了多少使用者行為。',
-      ja: '際立つ成果：USPACE で 3 つのラインにまたがり、**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** としてプロダクト戦略を統括し、USPACE for Business を 0→1 でローンチ。エンジニアリング面では、**Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）引き上げました。成功は成果で、プロダクトが動かしたユーザー行動で測ります。',
+      en: "A standout: at USPACE he leads a 15-person cross-functional team as the **app owner**, 0→1 launched **USPACE for Business**, and shipped **Taiwan's first parking insurance** (an FSC regulatory-sandbox trial with Fubon, embedded one-tap for 1M+ members). On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes, the user behavior his products move.",
+      'zh-TW': '一個亮點：在 USPACE 他以 **app 負責人** 帶領 15 人跨職能團隊，0→1 推出 **USPACE for Business**，並推出 **全台首張停車保險**（與富邦合作的 FSC 監理沙盒試辦，一鍵嵌入結帳、觸及 1M+ 會員）。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功，看產品改變了多少使用者行為。',
+      ja: '際立つ成果：USPACE で app オーナーとして 15 名のクロスファンクショナルチームを率い、**USPACE for Business** を 0→1 でローンチ、**台湾初の駐車場保険**（富邦との FSC 規制サンドボックス試行、ワンタップで決済に組み込み、100 万人超の会員にリーチ）を投入。エンジニアリング面では **Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）。成功は成果で、プロダクトが動かしたユーザー行動で測ります。',
     },
   },
   {
@@ -602,9 +602,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜ採用すべき', 'なぜ Charles を雇う', 'どんな価値をもたらす', 'なぜ適任'],
     },
     answers: {
-      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has been the **USPACE app owner** and **Product Owner of a cross-functional Scrum team**, launched B2B SaaS 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast, that combination is rare.',
-      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他曾任 **USPACE app 負責人** 與 **跨職能 Scrum 團隊 Product Owner**、0→1 推出 B2B SaaS、端到端打造生產級 AI 系統。對一個想要快速取得已驗證成果的團隊，這種組合很稀有。',
-      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ、AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。**USPACE app のオーナー** 兼 **クロスファンクショナルな Scrum チームの Product Owner** を務め、B2B SaaS を 0→1 でローンチ、本番 AI システムを端から端まで構築。検証済みの成果を速く求めるチームには稀有な組み合わせです。',
+      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has led a **15-person cross-functional team as USPACE app owner**, launched B2B SaaS and Taiwan\'s first parking insurance 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast, that combination is rare.',
+      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他曾以 **USPACE app 負責人帶領 15 人跨職能團隊**、0→1 推出 B2B SaaS 與全台首張停車保險、端到端打造生產級 AI 系統。對一個想要快速取得已驗證成果的團隊，這種組合很稀有。',
+      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。**USPACE app のオーナーとして 15 名のクロスファンクショナルチームを率い**、B2B SaaS と台湾初の駐車場保険を 0→1 でローンチ、本番 AI システムを端から端まで構築しました。検証済みの成果を速く求めるチームには稀有な組み合わせです。',
     },
   },
   {
@@ -641,8 +641,8 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どう優先順位をつける', '優先順位付けの方法', '何を作るか決める方法'],
     },
     answers: {
-      en: 'Charles prioritizes by outcomes over outputs: he frames opportunities (JTBD, Opportunity Solution Tree), scores with RICE, and anchors on a North Star metric. Crucially, he validates by building, using AI to ship a working prototype and get real user signal before committing large resources, rather than debating in the abstract.',
-      'zh-TW': 'Charles 以「結果重於產出」來排優先級：他用 JTBD、機會解決方案樹(OST)框定機會，用 RICE 評分，並錨定 North Star 指標。關鍵是他用「動手做」來驗證，用 AI 交付可運作原型、在投入大量資源前先取得真實使用者訊號，而不是空泛地辯論。',
+      en: 'Charles prioritizes by outcomes over outputs: he frames opportunities (JTBD, Opportunity Solution Tree), scores with RICE, and anchors on a North Star metric. Crucially, he validates by building, using AI to ship a working prototype and get real user signal before committing large resources, keeping decisions grounded in evidence.',
+      'zh-TW': 'Charles 以「結果重於產出」來排優先級：他用 JTBD、機會解決方案樹(OST)框定機會，用 RICE 評分，並錨定 North Star 指標。關鍵是他用「動手做」來驗證，用 AI 交付可運作原型、在投入大量資源前先取得真實使用者訊號，讓決策建立在證據上。',
       ja: 'Charles は「アウトプットよりアウトカム」で優先順位をつけます：JTBD や機会解決ツリー(OST)で機会を捉え、RICE で採点し、North Star 指標に紐づけます。重要なのは「作って検証する」こと、大きなリソースを投じる前に、AI で動くプロトタイプを出して実ユーザーの反応を得ます。',
     },
   },
@@ -684,9 +684,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['0 から 1 を作れる', '一人でプロダクトを出せる', 'MVP を作れる', 'ソロで開発できる'],
     },
     answers: {
-      en: 'Yes, that\'s his core mode. Charles 0→1 launched USPACE for Business (B2B SaaS), and independently built and shipped five full products (Path, Plutus Trade, Product Playbook, House Ops, Job Ops) across React, Node.js, Flutter, and Python using AI tooling. He sets the strategy and ships the working product himself.',
-      'zh-TW': '可以，這正是他的核心模式。Charles 0→1 推出了 USPACE for Business(B2B SaaS)，並獨立打造、交付了五個完整產品(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)，橫跨 React、Node.js、Flutter 與 Python，全程用 AI 工具。他既定策略，也親手交付可運作的產品。',
-      ja: 'はい、それが彼の核となるモードです。Charles は USPACE for Business(B2B SaaS)を 0→1 でローンチし、React・Node.js・Flutter・Python にまたがる 5 つの完成プロダクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)を AI ツールで単独構築・出荷しました。戦略を立て、動くプロダクトも自ら出します。',
+      en: 'Yes, that\'s his core mode. At USPACE he 0→1 launched **USPACE for Business** (B2B SaaS) and **Taiwan\'s first parking insurance**, and independently built and shipped five full products (Path, Plutus Trade, Product Playbook, House Ops, Job Ops) across React, Node.js, Flutter, and Python using AI tooling. He sets the strategy and ships the working product himself.',
+      'zh-TW': '可以，這正是他的核心模式。在 USPACE 他 0→1 推出了 **USPACE for Business**（B2B SaaS）與 **全台首張停車保險**，並獨立打造、交付了五個完整產品(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)，橫跨 React、Node.js、Flutter 與 Python，全程用 AI 工具。他既定策略，也親手交付可運作的產品。',
+      ja: 'はい、それが彼の核となるモードです。USPACE で **USPACE for Business**（B2B SaaS）と **台湾初の駐車場保険** を 0→1 でローンチし、React・Node.js・Flutter・Python にまたがる 5 つの完成プロダクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)を AI ツールで単独構築・出荷しました。戦略を立て、動くプロダクトも自ら出します。',
     },
   },
   {
