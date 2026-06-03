@@ -78,7 +78,11 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'AI / LLM',
-      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows',
+      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems',
+    },
+    {
+      label: 'AI Engineering',
+      body: 'RAG（Retrieval-Augmented Generation）、Hybrid / Vector Search、LangGraph / LangChain、Vector Database（Qdrant）、Embeddings（Voyage AI）、LLM Evaluation & Benchmarking、AI Safety / Prompt-Injection Defense',
     },
     {
       label: 'Engineering',

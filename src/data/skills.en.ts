@@ -29,4 +29,8 @@ export const skills: Skill[] = [
   { name: 'Plugging AI into everything', color: 'cyan' },
   { name: 'Breaking problems down to atoms', color: 'white' },
   { name: 'Connecting all the dots', color: 'cyan' },
+  { name: 'Outsmarting prompt injectors', color: 'cyan' },
+  { name: 'Finding answers by meaning', color: 'white' },
+  { name: 'Production AI that won\'t break the bank', color: 'cyan' },
+  { name: 'AI that marks and fixes its own work', color: 'white' },
 ]

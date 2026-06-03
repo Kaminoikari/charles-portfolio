@@ -36,4 +36,8 @@ export const skills: Skill[] = [
   { name: 'すべてに AI を差し込む', color: 'cyan' },
   { name: '問題を原子レベルまで分解する', color: 'white' },
   { name: 'すべての点を結びつける', color: 'cyan' },
+  { name: 'prompt injection を見抜く', color: 'cyan' },
+  { name: '意味で答えを探し当てる', color: 'white' },
+  { name: '予算を溶かさない production AI', color: 'cyan' },
+  { name: '自分の答案を自分で直す AI', color: 'white' },
 ]

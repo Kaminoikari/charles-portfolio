@@ -36,4 +36,8 @@ export const skills: Skill[] = [
   { name: '把 AI 接進所有東西', color: 'cyan' },
   { name: '把問題拆到不能再拆', color: 'white' },
   { name: '把所有點連起來', color: 'cyan' },
+  { name: '拆穿 prompt injection 的把戲', color: 'cyan' },
+  { name: '用語意搜出答案', color: 'white' },
+  { name: '不燒錢的 production AI', color: 'cyan' },
+  { name: '讓 AI 自己改自己的考卷', color: 'white' },
 ]
