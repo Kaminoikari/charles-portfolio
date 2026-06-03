@@ -1,7 +1,9 @@
 // Pre-written FAQ answers for the portfolio chatbot — the "semantic cache".
 //
 // Every entry is grounded ONLY in the real corpus (src/data/*). Answers are
-// kept short (2-4 sentences) and editable. At ingest time each `questions`
+// written to be substantive and self-contained, and stay editable. Functional
+// redirects (contact, availability, privacy) stay short on purpose. At ingest
+// time each `questions`
 // paraphrase is embedded into the `faq_cache` Qdrant collection (one point per
 // paraphrase, payload carries the answer in all three locales). At query time
 // the visitor's question is embedded and matched; a high-similarity hit returns
@@ -29,9 +31,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['あなたは誰', 'Charles とは誰', '自己紹介して'],
     },
     answers: {
-      en: "I'm the portfolio assistant for **Charles Chen （陳德潁）**, a Taiwan-based Software Product Manager who builds software products from 0 to 1, pairing product strategy with AI development tools to ship end-to-end. Ask me about his projects, work experience, skills, or how he uses AI.",
-      'zh-TW': '我是 **Charles Chen（陳德潁）** 的作品集小助手。他是一位台灣的軟體產品經理，擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具完成端到端交付。你可以問我他的專案、工作經歷、技能，或他如何運用 AI。',
-      ja: '私は **Charles Chen（陳德潁）** のポートフォリオアシスタントです。彼は台湾を拠点とするソフトウェアプロダクトマネージャーで、0 から 1 のプロダクト構築を得意とし、プロダクト戦略と AI 開発ツールを組み合わせてエンドツーエンドで届けます。プロジェクト・職務経歴・スキル・AI 活用などお気軽にどうぞ。',
+      en: "I'm the portfolio assistant for **Charles Chen（陳德潁）**, a Taiwan-based **AI Product Manager** with **5+ years** building software products from 0 to 1. He pairs sharp product strategy (JTBD, RICE, opportunity framing) with hands-on AI engineering, using tools like Claude Code and Codex to build and ship the full stack himself, so ideas reach real users **5x faster**. His work spans creator tools, Fintech, B2B SaaS, and MaaS, and has reached **7M+ people**. Today he is the **USPACE app owner**, leading a 15-person cross-functional team. Ask me about his projects, work experience, skills, product philosophy, or exactly how he puts AI to work.",
+      'zh-TW': '我是 **Charles Chen（陳德潁）** 的作品集小助手。他是一位台灣的 **AI 產品經理**，有 **5 年以上**從 0 到 1 打造軟體產品的經驗。他把敏銳的產品策略（JTBD、RICE、機會框架）與親手做的 AI 工程結合，用 Claude Code、Codex 這類工具自己打造並交付整個全端，讓想法以 **5 倍**速度抵達真實使用者。他的作品橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，觸及 **超過 700 萬人**。目前他是 **USPACE app 負責人**，帶領 15 人跨職能團隊。你可以問我他的專案、工作經歷、技能、產品理念，或他具體如何運用 AI。',
+      ja: '私は **Charles Chen（陳德潁）** のポートフォリオアシスタントです。彼は台湾を拠点とする **AI プロダクトマネージャー**で、0 から 1 のプロダクト構築を **5 年以上**手がけてきました。鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と自ら手を動かす AI エンジニアリングを組み合わせ、Claude Code や Codex でフルスタックを自分で作って出荷し、アイデアを **5 倍速**で実ユーザーへ届けます。仕事はクリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、**700 万人以上**に届いています。現在は **USPACE app のオーナー**として 15 名のクロスファンクショナルチームを率いています。プロジェクト・職務経歴・スキル・プロダクト哲学・AI の活用法など、何でも聞いてください。',
     },
   },
   {
@@ -42,9 +44,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['全体の概要', 'Charles は何をしている人', '経歴をまとめて'],
     },
     answers: {
-      en: 'Charles is an AI Product Manager with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS. His work has reached **7M+ people**. At USPACE he is the **app owner leading a 15-person cross-functional Scrum team** across Taiwan and Japan (parking payments, corporate travel, insurance), where he doubled release velocity, 0→1 launched **USPACE for Business**, and shipped **Taiwan\'s first parking insurance**. He ships AI-built prototypes **5x faster** than traditional workflows.',
-      'zh-TW': 'Charles 是一位 AI 產品經理，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。在 USPACE，他是 **app 負責人，帶領 15 人跨職能 Scrum 團隊**，業務涵蓋台灣與日本（停車支付、企業差旅、保險），釋出速度翻倍，並 0→1 推出 **USPACE for Business**、推出 **全台首張停車保險**。他以 AI 打造原型，比傳統流程快 **5 倍**。',
-      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた AI プロダクトマネージャーで、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。USPACE では **app のオーナーとして 15 名のクロスファンクショナル Scrum チーム**を台湾と日本で率い（駐車場決済・出張・保険）、リリース速度を倍増、**USPACE for Business** を 0→1 でローンチ、**台湾初の駐車場保険**も投入しました。AI によるプロトタイピングで従来比 **5 倍速**で出荷します。',
+      en: 'Charles is an **AI Product Manager** with **5+ years** building products that change user behavior, across creator tools, Fintech, B2B SaaS, and MaaS, with work that has reached **7M+ people**. At **USPACE** he is the **app owner leading a 15-person cross-functional Scrum team** (PM, dev, design) across three product lines, parking payments, corporate travel, and insurance, where he **doubled release velocity**. He 0→1 launched **USPACE for Business** (a B2B SaaS for corporate travel) and shipped **Taiwan\'s first parking insurance**, an FSC regulatory-sandbox trial with Fubon embedded one-tap for 1M+ members. What sets him apart is the **Product Builder** model: he both sets the strategy and personally engineers the prototype with AI (Claude Code, Codex), iterating **5x faster** than a traditional PM-to-engineering handoff. On the side he has shipped five AI products end to end, including his own multi-agent system **Product Playbook** and this corrective-RAG chatbot.',
+      'zh-TW': 'Charles 是一位 **AI 產品經理**，有 **5 年以上**打造「改變使用者行為」產品的經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。在 **USPACE**，他是 **app 負責人，帶領 15 人跨職能 Scrum 團隊**（PM、開發、設計），主導停車支付、企業差旅、保險三條產品線，並讓 **釋出速度翻倍**。他 0→1 推出 **USPACE for Business**（企業差旅的 B2B SaaS），並推出 **全台首張停車保險**，這是與富邦合作的 FSC 監理沙盒試辦，一鍵嵌入結帳、觸及 100 萬+ 會員。他最大的特色是 **Product Builder** 模式：既定產品策略，也親手用 AI（Claude Code、Codex）打造原型，迭代速度比傳統「PM 到工程」的交接快 **5 倍**。工作之餘，他端到端交付了五個 AI 產品，包括自建的多代理系統 **Product Playbook** 與這個 corrective RAG 聊天機器人。',
+      ja: 'Charles は **5 年以上**「ユーザー行動を変える」プロダクトを作ってきた **AI プロダクトマネージャー**で、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。**USPACE** では **app のオーナーとして 15 名のクロスファンクショナル Scrum チーム**（PM・開発・デザイン）を率い、駐車場決済・出張・保険の 3 つのプロダクトラインを統括し、**リリース速度を倍増**させました。**USPACE for Business**（出張管理の B2B SaaS）を 0→1 でローンチし、**台湾初の駐車場保険**（富邦との FSC 規制サンドボックス試行、ワンタップで決済に組み込み、100 万人超の会員にリーチ）も投入。最大の特徴は **Product Builder** モデルです。戦略を立てつつ AI（Claude Code、Codex）で自らプロトタイプを作り、従来の「PM からエンジニアリング」への受け渡しより **5 倍速**で反復します。さらに 5 つの AI プロダクトを端から端まで出荷し、自作のマルチエージェント **Product Playbook** やこの corrective RAG チャットボットも含まれます。',
     },
   },
   {
@@ -55,9 +57,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['一番すごいプロジェクトは', '代表作は', '最も技術的なプロジェクト', '最も有名なプロダクト', '一番有名な作品', '最高のサイドプロジェクト'],
     },
     answers: {
-      en: '**Product Playbook** best shows his technical depth, an LLM Multi-Agent System on Claude Code that orchestrates 3 specialist sub-agents against 22 product frameworks to turn fuzzy ideas into shippable specs. Enabling the sub-agent layer lifted quality-completion from 59.1% to 100% at flat token cost. His **Plutus Trade**, **House Ops**, and **Job Ops** projects also showcase production AI engineering.',
-      'zh-TW': '**Product Playbook** 最能展示他的技術深度，這是一套建在 Claude Code 上的 LLM 多代理系統(Multi-Agent)，用 3 個專家子代理搭配 22 個產品框架，把模糊的想法轉成可交付的規格。啟用子代理層後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。另外 **Plutus Trade**、**House Ops**、**Job Ops** 也都展現了生產級的 AI 工程能力。',
-      ja: '技術的な深さを最もよく示すのは **Product Playbook** です。Claude Code 上の LLM マルチエージェントシステムで、3 つの専門サブエージェントが 22 のプロダクトフレームワークを使い、曖昧なアイデアを出荷可能な仕様へ変換します。サブエージェント層を有効化すると、品質完了率が 59.1% から 100% へ向上（トークンコストは据え置き）。**Plutus Trade**・**House Ops**・**Job Ops** も本番レベルの AI エンジニアリングを示します。',
+      en: "**Product Playbook** best shows his technical depth. It's an **LLM Multi-Agent System** on Claude Code that dispatches 3 specialist sub-agents (discovery, strategy-critic, pre-mortem) against 22 classic product frameworks (JTBD, RICE, OST, and more) to turn fuzzy ideas into shippable PRD specs with acceptance criteria. The results are measured: loading the skill lifted product-thinking quality by **+69%** over the same bare model, and enabling the sub-agent layer pushed quality-completion from **59.1% to 100%** at flat token cost. The pre-mortem agent alone is load-bearing; without it the risk step collapses from 100% to 22.2%. His **Plutus Trade** (production Gemini stock analysis), **House Ops** (Claude-powered real-estate pipeline), and **Job Ops** (candidate-side ATS) round out a portfolio of real, working AI engineering.",
+      'zh-TW': '**Product Playbook** 最能展示他的技術深度。這是一套建在 Claude Code 上的 **LLM 多代理系統(Multi-Agent)**，用 3 個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架（JTBD、RICE、OST 等），把模糊的想法轉成帶驗收標準、可交付的 PRD 規格。成效是量測過的：載入這個 skill 讓產品思維品質比同一個裸模型 **+69%**，啟用子代理層後品質完成率從 **59.1% 提升到 100%**，且 token 成本不變。光是 pre-mortem 子代理就是關鍵支柱，少了它，風險評估步驟會從 100% 掉到 22.2%。另外 **Plutus Trade**（生產級 Gemini 選股分析）、**House Ops**（Claude 驅動的房產管線）與 **Job Ops**（求職者端 ATS）也都展現了真實、能運作的 AI 工程能力。',
+      ja: '技術的な深さを最もよく示すのは **Product Playbook** です。Claude Code 上の **LLM マルチエージェントシステム**で、3 つの専門サブエージェント(discovery、strategy-critic、pre-mortem)が 22 の定番プロダクトフレームワーク（JTBD、RICE、OST など）を使い、曖昧なアイデアを受け入れ基準付きの出荷可能な PRD 仕様へ変換します。成果は計測済みです：スキルを読み込むと製品思考の品質が同一の素のモデル比 **+69%**、サブエージェント層を有効化すると品質完了率が **59.1% から 100%** へ（トークンコストは据え置き）。pre-mortem サブエージェントだけでも要となる存在で、これがないとリスク評価ステップは 100% から 22.2% へ崩れます。**Plutus Trade**（本番 Gemini の株式分析）、**House Ops**（Claude 駆動の不動産パイプライン）、**Job Ops**（候補者側 ATS）も、実際に動く本物の AI エンジニアリングを示します。',
     },
   },
 
@@ -109,7 +111,7 @@ export const faqEntries: FaqEntry[] = [
       ja: ['LLM コストをどう抑える', 'チャットボットはなぜ安い', '毎回 LLM を呼ばない方法', 'コスト最適化', 'キャッシュの仕組み'],
     },
     answers: {
-      en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage**, regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache**, ~52 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss, and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass instead of looping.',
+      en: 'Three tiers, cheapest first, so most questions never reach a generation LLM. **(1) Deterministic triage**, regex, ~0 ms, zero tokens: privacy redirects, greetings, contact answers. **(2) Semantic FAQ cache**, ~52 pre-written answer topics (×3 languages) embedded in a Qdrant collection; a question is embedded once and matched, and a high-similarity hit returns the answer verbatim with NO generation call. **(3) Full RAG** only on a genuine miss, and even there, Gemini free tier is tier 1 with Claude as paid fallback. The grader also declines off-topic questions in one pass, with no rewrite loop.',
       'zh-TW': '三層，由便宜到貴，所以大多數問題完全不會打到生成 LLM。**(1) 確定性分流**，regex、約 0 毫秒、零 token：隱私導向、打招呼、聯絡答案。**(2) 語意快取**，約 52 個預寫答案主題（×3 語言）embedding 進 Qdrant collection；問題只 embedding 一次比對，相似度夠高就「逐字」回傳，完全不打生成 LLM。**(3) 完整 RAG** 只在真正沒命中時才跑，而且即使在那裡，Gemini 免費層是第一層、Claude 才是付費備援。評估器也會把離題問題一次婉拒，不繞迴圈。',
       ja: '安い順に 3 層なので、ほとんどの質問は生成 LLM に届きません。**(1) 決定論的トリアージ**、正規表現、約 0 ms、トークンゼロ：プライバシー誘導・挨拶・連絡回答。**(2) セマンティックキャッシュ**、約 52 の事前作成トピック（×3 言語）を Qdrant に埋め込み、質問を一度だけ埋め込んで照合、高類似度ならそのまま返す（生成呼び出しなし）。**(3) 完全な RAG** は本当に外れた時だけ、そこでも Gemini 無料枠が第 1 層、Claude が有料フォールバック。評価器は無関係な質問もループせず一度で断ります。',
     },
@@ -136,7 +138,7 @@ export const faqEntries: FaqEntry[] = [
     },
     answers: {
       en: 'After retrieval, a grader LLM judges whether the chunks actually answer the question. If they do → generate. If they\'re weak but on-topic → rewrite the query and retry retrieval (capped at a few loops). If retrieval keeps failing, or the question is off-topic, → an honest fallback that points to my contact info and never invents an answer. The generate step is also locked to answer ONLY from retrieved context + a portfolio map, so it can\'t drift from what the portfolio actually says. This is the "corrective RAG" (CRAG) pattern, built as a LangGraph state machine.',
-      'zh-TW': '檢索後，一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索（有幾次上限）。若檢索一直失敗、或問題離題 → 走誠實的 fallback，指向我的聯絡方式而非編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答，所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式，以 LangGraph 狀態機實作。',
+      'zh-TW': '檢索後，一個評估器 LLM 判斷這些片段能不能真的回答問題。能 → 生成。不足但相關 → 改寫問題重新檢索（有幾次上限）。若檢索一直失敗、或問題離題 → 走誠實的 fallback，指向我的聯絡方式，絕不編造答案。生成步驟也被鎖定「只能根據檢索到的 context + 一份 portfolio map」回答，所以不會偏離作品集實際寫的內容。這就是 corrective RAG(CRAG)模式，以 LangGraph 狀態機實作。',
       ja: '検索後、評価器 LLM がチャンクで本当に答えられるか判断します。答えられる → 生成。弱いが関連 → クエリを書き換えて再検索（数回まで）。検索が失敗し続けるか無関係なら → 捏造せず連絡先を案内する正直なフォールバック。生成ステップも「検索した context + portfolio map のみ」で答えるよう固定され、ポートフォリオの実際の記載から逸脱しません。これが corrective RAG(CRAG)パターンで、LangGraph のステートマシンとして実装しています。',
     },
   },
@@ -176,9 +178,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト'],
     },
     answers: {
-      en: '**Product Playbook** is an LLM Multi-Agent System built on Claude Code. Three specialist sub-agents (discovery, strategy-critic, pre-mortem) are dispatched against 22 classic product frameworks (JTBD, RICE, etc.) to convert fuzzy requirements into executable PRD specs with acceptance criteria. It ships under MIT license. Enabling the sub-agents lifted quality-completion from 59.1% to 100% at flat token cost.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
-      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 LLM 多代理系統。三個專家子代理(discovery、strategy-critic、pre-mortem)搭配 22 個經典產品框架（JTBD、RICE 等），把模糊需求轉成帶驗收標準、可執行的 PRD 規格，並以 MIT 授權開源。啟用子代理後，品質完成率從 59.1% 提升到 100%，且 token 成本不變。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
-      ja: '**Product Playbook** は Claude Code 上に構築された LLM マルチエージェントシステムです。3 つの専門サブエージェント(discovery / strategy-critic / pre-mortem)が 22 の定番プロダクトフレームワーク（JTBD、RICE など）を用い、曖昧な要件を受け入れ基準付きの実行可能な PRD 仕様へ変換します。MIT ライセンスで公開。サブエージェント有効化で品質完了率が 59.1%→100%（トークンコスト据え置き）。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      en: '**Product Playbook** is an **LLM Multi-Agent System** built on Claude Code that closes the gap between a fuzzy idea and a buildable spec. Three specialist sub-agents run in their own context windows: discovery-specialist owns user and opportunity exploration, strategy-critic plays a tough but fair strategy critic, and pre-mortem-runner commits fully to imagining how the product fails. The main agent dispatches them automatically against 22 classic product frameworks (JTBD, RICE, OST, PR-FAQ, and more) and integrates the structured YAML they return into an executable PRD with acceptance criteria, plus a CLAUDE.md and TASKS.md for a seamless dev handoff. Six product modes (Quick, Full, Revision, Build, and more) tune the output depth to each stage, and a three-layer PDF engine (text → semantic → OCR) lets you feed in real research. It ships under the MIT license, and enabling the sub-agent layer lifted quality-completion from 59.1% to 100% at flat token cost.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      'zh-TW': '**Product Playbook** 是一套建在 Claude Code 上的 **LLM 多代理系統**，用來弭平「模糊想法」與「可開發規格」之間的距離。三個專家子代理各自在獨立的 context window 運作：discovery-specialist 負責使用者與機會探索、strategy-critic 扮演嚴格但公允的策略批評者、pre-mortem-runner 則全力想像產品如何失敗。主代理會自動派工，搭配 22 個經典產品框架（JTBD、RICE、OST、PR-FAQ 等），並把它們回傳的結構化 YAML 整合成帶驗收標準的可執行 PRD，外加 CLAUDE.md 與 TASKS.md，做到無縫的 dev handoff。六種產品模式（Quick、Full、Revision、Build 等）依不同階段調整輸出深度，三層 PDF 解析引擎（文字 → 語意 → OCR）讓你能餵進真實研究資料。專案以 MIT 授權開源，啟用子代理層後品質完成率從 59.1% 提升到 100%，且 token 成本不變。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
+      ja: '**Product Playbook** は Claude Code 上に構築された **LLM マルチエージェントシステム**で、曖昧なアイデアと構築可能な仕様の間の隔たりを埋めます。3 つの専門サブエージェントがそれぞれ独立した context window で動きます：discovery-specialist はユーザーと機会の探索、strategy-critic は厳しくも公正な戦略批評役、pre-mortem-runner はプロダクトの失敗シナリオを徹底的に想像します。メインエージェントが 22 の定番フレームワーク（JTBD、RICE、OST、PR-FAQ など）に対して自動でディスパッチし、返ってくる構造化 YAML を受け入れ基準付きの実行可能な PRD に統合、CLAUDE.md と TASKS.md も生成してシームレスな dev handoff を実現します。6 つのプロダクトモード（Quick、Full、Revision、Build など）が段階ごとに出力の深さを調整し、3 層 PDF エンジン（テキスト → 意味 → OCR）で実際のリサーチを取り込めます。MIT ライセンスで公開、サブエージェント層を有効化すると品質完了率が 59.1% から 100% へ（トークンコスト据え置き）。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)',
     },
   },
   {
@@ -189,9 +191,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Product Playbook の技術', 'Product Playbook の技術スタック'],
     },
     answers: {
-      en: 'It runs as a Claude.ai Custom Skill + Claude Code plugin, with Claude for LLM orchestration and Claude Vision for document parsing. The Multi-Agent layer is 3 Claude Code sub-agents (read-only tools, auto-delegation, structured YAML output). Doc processing uses Playwright, Pandoc, pymupdf, and Tesseract OCR; it supports six languages.',
-      'zh-TW': '它以 Claude.ai Custom Skill + Claude Code plugin 形式運行，用 Claude 做 LLM 編排、Claude Vision 做文件解析。多代理層是 3 個 Claude Code 子代理（唯讀工具、自動委派、結構化 YAML 輸出）。文件處理用 Playwright、Pandoc、pymupdf 與 Tesseract OCR，並支援六種語言。',
-      ja: 'Claude.ai Custom Skill + Claude Code プラグインとして動作し、LLM オーケストレーションに Claude、文書解析に Claude Vision を使用。マルチエージェント層は 3 つの Claude Code サブエージェント（読み取り専用ツール、自動委譲、構造化 YAML 出力）。文書処理は Playwright・Pandoc・pymupdf・Tesseract OCR、6 言語対応です。',
+      en: 'It runs as a **Claude.ai Custom Skill plus a Claude Code plugin**, using Claude for LLM orchestration and Claude Vision for semantic document parsing. The Multi-Agent layer is 3 Claude Code sub-agents (discovery-specialist, strategy-critic, pre-mortem-runner) with read-only tools, model:inherit, PROACTIVELY auto-delegation, and structured YAML output, so planning never touches files and decision authority stays with the main agent. Each sub-agent has a refusal mechanism (out_of_scope) that hands an out-of-bounds request back to the right owner. Document processing uses Playwright (PDF rendering), Pandoc, pymupdf, and Tesseract OCR, and it localizes into six languages (Traditional/Simplified Chinese, English, Japanese, Korean, Spanish).',
+      'zh-TW': '它以 **Claude.ai Custom Skill 加上 Claude Code plugin** 的形式運行，用 Claude 做 LLM 編排、Claude Vision 做語意文件解析。多代理層是 3 個 Claude Code 子代理(discovery-specialist、strategy-critic、pre-mortem-runner)，採唯讀工具、model:inherit、PROACTIVELY 自動委派與結構化 YAML 輸出，所以規劃階段不會碰檔案，決策權留在主代理。每個子代理都有拒絕機制(out_of_scope)，會把超出職責的請求交回對的負責人。文件處理用 Playwright(PDF 渲染)、Pandoc、pymupdf 與 Tesseract OCR，並在地化支援六種語言（繁中、簡中、英、日、韓、西）。',
+      ja: '**Claude.ai Custom Skill と Claude Code plugin** として動作し、LLM オーケストレーションに Claude、意味的な文書解析に Claude Vision を使用します。マルチエージェント層は 3 つの Claude Code サブエージェント(discovery-specialist、strategy-critic、pre-mortem-runner)で、読み取り専用ツール・model:inherit・PROACTIVELY 自動委譲・構造化 YAML 出力を採用、計画段階はファイルに触れず、決定権はメインエージェントに残ります。各サブエージェントは拒否機構(out_of_scope)を持ち、範囲外の依頼を適切な担当へ戻します。文書処理は Playwright(PDF レンダリング)・Pandoc・pymupdf・Tesseract OCR、6 言語（繁体/簡体中国語・英語・日本語・韓国語・スペイン語）に対応します。',
     },
   },
   {
@@ -202,9 +204,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Path とは', 'Path について教えて', 'オフライン旅行アプリ'],
     },
     answers: {
-      en: '**Path** is an offline-first trip-planning PWA for unstable-network travel (think Tokyo subway or rural hot-spring towns). A cache-first + background-sync architecture (React, TypeScript, IndexedDB, Supabase, Service Worker) keeps the itinerary, map routes, and expense tracking 100% usable with no connection. One URL installs to iOS or Android, no app store.\n\n🔗 [Try Path](https://trip-path.vercel.app/)',
-      'zh-TW': '**Path** 是一款離線優先(offline-first)的旅遊規劃 PWA，專為網路不穩的旅程設計（像東京地鐵或偏鄉溫泉區）。cache-first + 背景同步架構(React、TypeScript、IndexedDB、Supabase、Service Worker)讓行程、地圖路線、記帳在完全沒網路時也 100% 可用。一個網址就能安裝到 iOS 或 Android，免 app store。\n\n🔗 [試用 Path](https://trip-path.vercel.app/)',
-      ja: '**Path** はネットワークが不安定な旅（東京の地下鉄や地方の温泉街など）向けのオフラインファースト旅行計画 PWA です。cache-first+バックグラウンド同期(React、TypeScript、IndexedDB、Supabase、Service Worker)で、旅程・地図ルート・経費管理がオフラインでも 100% 使えます。URL 一つで iOS/Android にインストール、アプリストア不要。\n\n🔗 [Path を試す](https://trip-path.vercel.app/)',
+      en: '**Path** is an **offline-first** trip-planning PWA for unstable-network travel, think the Tokyo subway or a rural hot-spring town. A cache-first plus background-sync architecture (React, TypeScript, IndexedDB, Supabase, Service Worker) keeps the itinerary, map routes, and expense tracking **100% usable with no connection**: reads hit local IndexedDB first to render instantly, while writes use optimistic UI and a sync queue that replays automatically once connectivity returns. Going PWA solved cross-platform install and offline runtime in one move, so a single URL installs straight to iOS or Android with no app store. It is purpose-built for Taiwan-to-Japan travelers, with Google Maps routing labeled for local transit and aggressive caching (places cached indefinitely, directions 24h) that keeps API spend flat and doubles as offline coverage.\n\n🔗 [Try Path](https://trip-path.vercel.app/)',
+      'zh-TW': '**Path** 是一款 **離線優先(offline-first)** 的旅遊規劃 PWA，專為網路不穩的旅程設計，像東京地鐵或偏鄉溫泉區。cache-first 加背景同步架構(React、TypeScript、IndexedDB、Supabase、Service Worker)讓行程、地圖路線、記帳在 **完全沒網路時也 100% 可用**：讀取先打本地 IndexedDB 立即渲染，寫入用 optimistic UI 與同步佇列，連線恢復後自動補送。改走 PWA 一次解決了跨平台安裝與離線執行，一個網址就能直接裝到 iOS 或 Android，免 app store。它為台日旅客量身打造，Google Maps 路線標註在地交通，並用積極快取（地點永久快取、路線 24 小時）讓 API 花費維持平穩，順帶成為離線覆蓋。\n\n🔗 [試用 Path](https://trip-path.vercel.app/)',
+      ja: '**Path** はネットワークが不安定な旅（東京の地下鉄や地方の温泉街など）向けの **オフラインファースト** 旅行計画 PWA です。cache-first とバックグラウンド同期のアーキテクチャ(React、TypeScript、IndexedDB、Supabase、Service Worker)で、旅程・地図ルート・経費管理が **オフラインでも 100% 使えます**：読み取りはまずローカル IndexedDB に当てて即描画、書き込みは optimistic UI と同期キューで、接続回復後に自動で再送します。PWA 採用でクロスプラットフォームのインストールとオフライン実行を一手に解決、URL 一つで iOS/Android に直接インストール、アプリストア不要。台湾・日本間の旅行者向けに作り込まれ、Google Maps のルートを現地交通向けにラベル付けし、積極的なキャッシュ（場所は無期限、経路は 24 時間）で API コストを平準化しつつオフライン対応も兼ねます。\n\n🔗 [Path を試す](https://trip-path.vercel.app/)',
     },
   },
   {
@@ -215,9 +217,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Plutus Trade とは', 'Plutus Trade について教えて', '株式分析ツール'],
     },
     answers: {
-      en: '**Plutus Trade** is a personal AI decision-support tool for Taiwan equities. Gemini 2.5 Flash synthesizes fundamentals, institutional flow, and technicals into a BUY/SELL/HOLD diagnostic with explicit reasoning, while a daily quant momentum model pre-screens candidates. Every AI prediction is logged and settled at horizon for auditable win-rate and ROI. Built with Flutter + FastAPI.\n\n🔗 [Try Plutus Trade](https://plutustrade.vercel.app/)',
-      'zh-TW': '**Plutus Trade** 是一款針對台股的個人 AI 決策輔助工具。Gemini 2.5 Flash 跨領域整合基本面、籌碼面與技術面，給出帶明確推理的 買/賣/持有 診斷，並由每日量化動能模型先篩選標的。每個 AI 預測都會被記錄並到期結算，提供可稽核的勝率與報酬率。技術棧為 Flutter + FastAPI。\n\n🔗 [試用 Plutus Trade](https://plutustrade.vercel.app/)',
-      ja: '**Plutus Trade** は台湾株向けの個人 AI 意思決定支援ツールです。Gemini 2.5 Flash がファンダメンタルズ・機関投資家フロー・テクニカルを統合し、根拠付きの 買/売/ホールド 診断を提示。日次のクオンツ・モメンタムモデルが候補を事前選別します。すべての AI 予測は記録され満期で精算、勝率と ROI を監査可能。Flutter + FastAPI 製。\n\n🔗 [Plutus Trade を試す](https://plutustrade.vercel.app/)',
+      en: "**Plutus Trade** is a personal AI decision-support tool for Taiwan equities, built for a single domain-literate trader. **Gemini 2.5 Flash** synthesizes monthly revenue, fundamentals, institutional flow, and technical structure into a **BUY/SELL/HOLD** diagnostic with explicit reasoning, while a daily 14:00 quant model scores eight market-wide momentum features and pre-orders the candidate pool so the LLM focuses on semantic reasoning. A three-step guided-discovery profile (risk, horizon, sector) returns a curated short-list with per-pick rationale. Every prediction is logged with entry context and settled at horizon into an auditable win-rate and ROI matrix, solving the black-box problem of AI in financial decisions. A JSON-Schema prompt contract with few-shot anchors cut Gemini's hallucination rate by roughly 60%. Built with Flutter and FastAPI, with a three-tier data fallback (FinMind → Yahoo Finance → TWSE).\n\n🔗 [Try Plutus Trade](https://plutustrade.vercel.app/)",
+      'zh-TW': '**Plutus Trade** 是一款針對台股的個人 AI 決策輔助工具，專為一位有領域知識的交易者打造。**Gemini 2.5 Flash** 跨領域整合月營收、基本面、籌碼面與技術結構，給出帶明確推理的 **買/賣/持有** 診斷；每日 14:00 的量化模型計算八個全市場動能特徵並先排序候選池，讓 LLM 專注在語意推理。三步驟的引導式探索（風險、持有期、產業偏好）會回傳帶個別理由的精選清單。每個預測都會連同進場情境被記錄、到期結算成可稽核的勝率與報酬率矩陣，解決 AI 在金融決策中的黑箱問題。用 JSON Schema 的 prompt 契約搭配 few-shot 錨點，把 Gemini 的幻覺率降低約 60%。技術棧為 Flutter 與 FastAPI，資料來源採三層備援(FinMind → Yahoo Finance → 證交所)。\n\n🔗 [試用 Plutus Trade](https://plutustrade.vercel.app/)',
+      ja: '**Plutus Trade** は台湾株向けの個人 AI 意思決定支援ツールで、ドメイン知識を持つ一人のトレーダー向けに作られています。**Gemini 2.5 Flash** が月次売上・ファンダメンタルズ・機関投資家フロー・テクニカル構造を統合し、根拠付きの **買/売/ホールド** 診断を提示。日次 14:00 のクオンツモデルが市場全体の 8 つのモメンタム特徴を採点して候補プールを事前整列し、LLM は意味的推論に集中できます。3 ステップのガイド付きディスカバリー（リスク・保有期間・セクター）が銘柄ごとの根拠付き厳選リストを返します。すべての予測はエントリー文脈とともに記録され、満期で監査可能な勝率・ROI マトリクスに精算、金融判断における AI のブラックボックス問題を解決します。JSON Schema のプロンプト契約と few-shot アンカーで Gemini のハルシネーションを約 60% 削減。Flutter と FastAPI 製、データは 3 層フォールバック(FinMind → Yahoo Finance → 証券取引所)。\n\n🔗 [Plutus Trade を試す](https://plutustrade.vercel.app/)',
     },
   },
   {
@@ -228,9 +230,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['House Ops とは', 'House Ops について教えて', '不動産の自動化'],
     },
     answers: {
-      en: '**House Ops** is a Node.js + AI pipeline for Taiwan real-estate decisions. It auto-scans 591 and Facebook rental groups daily at 09:00, uses Claude API (Haiku) to extract structured fields from messy posts, scores each listing on five weighted dimensions (price, space, location, condition, risk), and emails an HTML digest. A Claude Code layer adds affordability and upgrade-planning advice.\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
-      'zh-TW': '**House Ops** 是一條 Node.js + AI 的台灣房產決策管線。每天 09:00 自動掃描 591 與 Facebook 租屋社團，用 Claude API(Haiku)從雜亂貼文抽取結構化欄位，依五個加權維度（價格、空間、地點、屋況、風險）為每個物件評分，並寄出 HTML 摘要。Claude Code 互動層再補上負擔能力試算與換屋規劃建議。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
-      ja: '**House Ops** は台湾の不動産意思決定のための Node.js + AI パイプラインです。毎朝 09:00 に 591 と Facebook の賃貸グループを自動スキャンし、Claude API(Haiku)で雑多な投稿から構造化フィールドを抽出、5 つの加重次元（価格・広さ・立地・状態・リスク）で採点し、HTML ダイジェストをメール配信。Claude Code 層が支払い能力試算や住み替え計画の助言を追加します。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
+      en: "**House Ops** is a Node.js plus AI pipeline for Taiwan real-estate decisions, built to break the information fragmentation of the housing market. Every day at 09:00 it auto-scans 591 and Facebook rental groups (getting past FB's anti-bot and lazy-load via Chrome DevTools Protocol synthesized touch gestures), then uses **Claude API (Haiku 4.5)** to extract structured fields (price, address, size, layout) from messy free-form posts. A five-dimension weighted model scores each listing on price, space, location, condition, and risk, with weights you can swap between renter, first-time-buyer, and upgrader personas, turning gut feel into concrete 0–5 signals. A visual HTML digest lands in Gmail before 09:30 with price-drop tracking and new-listing alerts, and a Claude Code interactive layer adds the harder calls like affordability simulation and upgrade-plan funding gaps. Using an LLM as the parser costs about USD 0.001 per post and reads messy Taiwanese phrasing at human level.\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)",
+      'zh-TW': '**House Ops** 是一條 Node.js 加 AI 的台灣房產決策管線，用來打破房市的資訊破碎。每天 09:00 自動掃描 591 與 Facebook 租屋社團（透過 Chrome DevTools Protocol 合成觸控手勢，繞過 FB 的反爬與 lazy-load），再用 **Claude API(Haiku 4.5)** 從雜亂的自由格式貼文抽取結構化欄位（價格、地址、坪數、格局）。一個五維加權模型依價格、空間、地點、屋況、風險為每個物件評分，權重可在租屋族、首購族、換屋族之間切換，把感覺化成具體的 0–5 訊號。視覺化 HTML 摘要在 09:30 前寄到 Gmail，附帶降價追蹤與新案通知，Claude Code 互動層再補上較難的判斷，像負擔能力試算與換屋資金缺口。用 LLM 當解析器每篇約 0.001 美元，且能以人類水準讀懂雜亂的台式用語。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
+      ja: '**House Ops** は台湾の不動産意思決定のための Node.js と AI のパイプラインで、住宅市場の情報の分断を打ち破るために作られました。毎日 09:00 に 591 と Facebook の賃貸グループを自動スキャンし（Chrome DevTools Protocol の合成タッチジェスチャで FB のボット対策と遅延読み込みを回避）、**Claude API(Haiku 4.5)** で雑多な自由記述の投稿から構造化フィールド（価格・住所・広さ・間取り）を抽出します。5 次元の加重モデルが価格・広さ・立地・状態・リスクで各物件を採点し、重みは賃貸・初回購入・住み替えのペルソナで切り替え可能、感覚を具体的な 0–5 のシグナルに変えます。視覚的な HTML ダイジェストが 09:30 までに Gmail へ届き、値下げ追跡や新着通知を備え、Claude Code 対話層が支払い能力試算や住み替え資金ギャップといった難しい判断を補います。LLM をパーサーに使うコストは 1 件あたり約 0.001 米ドルで、雑多な台湾語の言い回しも人間並みに読み取ります。\n\n🔗 [GitHub](https://github.com/Kaminoikari/house-ops)',
     },
   },
   {
@@ -241,9 +243,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Job Ops とは', 'Job Ops について教えて', '求職の自動化'],
     },
     answers: {
-      en: "**Job Ops** is a candidate-side ATS, a Python pipeline that flips the filtering logic companies use onto the jobs instead. A daily 07:00 launchd run scrapes fresh 104 listings, scores each against your Markdown CV and YAML-defined weights (comp, remote, growth), and emails a banded RECOMMEND / CAUTIOUS / SKIP digest. Seven Claude Code modes add interview prep, comp research, and more.\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)",
-      'zh-TW': '**Job Ops** 是一套「求職者端的 ATS」，一條 Python 管線，把企業用來篩人的邏輯反過來套用在職缺上。每天 07:00 由 launchd 啟動，抓取最新的 104 職缺，依你的 Markdown 履歷與 YAML 權重（薪資、遠端、成長）評分，寄出分級的 推薦 / 觀望 / 略過 摘要。七個 Claude Code 模式再補上面試準備、薪資研究等。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
-      ja: '**Job Ops** は「候補者側の ATS」です。企業が候補者を選別するロジックを求人側に反転させた Python パイプラインで、毎朝 07:00 に launchd が起動し最新の 104 求人を取得、Markdown 履歴書と YAML の重み（給与・リモート・成長）で採点し、推奨/様子見/スキップ の段階別ダイジェストをメール。7 つの Claude Code モードが面接準備や給与調査などを補います。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
+      en: "**Job Ops** is a candidate-side ATS, a Python pipeline that flips the filtering logic companies run on applicants and points it at the jobs instead. A daily 07:00 launchd run scrapes fresh 104 listings, reads your Markdown CV, matches it against a candidate archetype defined in YAML, and scores each role dimension by dimension into a banded **RECOMMEND / CAUTIOUS / SKIP** digest delivered before 07:30 (HTML for the phone, a Markdown twin synced to Obsidian for retrospectives). Because the scoring weights (comp, remote, growth) live in YAML under git, every commit timestamps how your priorities shifted, turning the search into a replayable timeline. Deterministic work (scraping, dedupe, scoring) goes to code, while seven Claude Code interactive modes handle the judgment calls: company legitimacy, IC-vs-management level strategy, comp negotiation, and interview prep.\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)",
+      'zh-TW': '**Job Ops** 是一套「求職者端的 ATS」，一條 Python 管線，把企業用來篩人的邏輯反過來套在職缺上。每天 07:00 由 launchd 啟動，抓取最新的 104 職缺，讀你的 Markdown 履歷，比對 YAML 定義的「理想候選人輪廓」，逐維度為每個職缺評分，產出分級的 **推薦 / 觀望 / 略過** 摘要，07:30 前送達（HTML 給手機看，另一份 Markdown 同步到 Obsidian 供回顧）。因為評分權重（薪資、遠端、成長）放在 git 控管的 YAML 裡，每次 commit 都標記了你的優先順序如何變化，讓求職變成可回放的時間軸。確定性的工作（爬取、去重、評分）交給程式，七個 Claude Code 互動模式則處理需要判斷的事：公司可信度、IC 與管理職的層級策略、薪資談判與面試準備。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
+      ja: '**Job Ops** は「候補者側の ATS」で、企業が応募者を選別するロジックを反転させて求人側に向けた Python パイプラインです。毎日 07:00 に launchd が起動して最新の 104 求人を取得、Markdown 履歴書を読み、YAML で定義した理想候補者像と照合して各求人を次元ごとに採点、段階別の **推奨 / 様子見 / スキップ** ダイジェストを 07:30 までに配信します（スマホ用の HTML と、振り返り用に Obsidian へ同期する Markdown の二本立て）。採点の重み（給与・リモート・成長）は git 管理下の YAML にあるため、コミットごとに優先順位の変化が記録され、求職活動が再生可能なタイムラインになります。決定論的な作業（取得・重複排除・採点）はコードが担い、7 つの Claude Code 対話モードが判断の要る部分、企業の信頼性、IC か管理職かの層級戦略、給与交渉、面接準備を扱います。\n\n🔗 [GitHub](https://github.com/Kaminoikari/job-ops)',
     },
   },
   {
@@ -254,9 +256,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんなプロジェクトを作った', 'プロジェクト一覧', '彼のサイドプロジェクト'],
     },
     answers: {
-      en: "Charles has built five showcased projects: **Path** (offline-first travel PWA), **Plutus Trade** (AI stock decision-support), **Product Playbook** (LLM multi-agent spec system), **House Ops** (real-estate automation), and **Job Ops** (candidate-side ATS). Ask about any one for details.",
-      'zh-TW': 'Charles 有五個代表作品：**Path**（離線優先旅遊 PWA）、**Plutus Trade**（AI 選股決策輔助）、**Product Playbook**（LLM 多代理規格系統）、**House Ops**（房產自動化）、**Job Ops**（求職者端 ATS）。想了解哪一個都可以問我。',
-      ja: 'Charles の代表的なプロジェクトは 5 つ：**Path**（オフラインファースト旅行 PWA）、**Plutus Trade**（AI 株式意思決定支援）、**Product Playbook**（LLM マルチエージェント仕様システム）、**House Ops**（不動産自動化）、**Job Ops**（候補者側 ATS）。詳しく知りたいものをどうぞ。',
+      en: "Charles has built five showcased AI products end to end: **Path** (an offline-first travel PWA that stays 100% usable with no connection), **Plutus Trade** (an AI stock decision-support tool with auditable win-rate tracking), **Product Playbook** (his open-source LLM multi-agent spec system), **House Ops** (a Claude-powered real-estate scanning and scoring pipeline), and **Job Ops** (a candidate-side ATS that flips hiring filters onto the jobs). Each ships across a different stack, React, Flutter, Node.js, Python, all built solo with AI tooling. Ask about any one for the full story.",
+      'zh-TW': 'Charles 端到端打造了五個代表性的 AI 產品：**Path**（離線優先的旅遊 PWA，沒網路也 100% 可用）、**Plutus Trade**（帶可稽核勝率追蹤的 AI 選股決策工具）、**Product Playbook**（他開源的 LLM 多代理規格系統）、**House Ops**（Claude 驅動的房產掃描與評分管線），以及 **Job Ops**（把徵才篩選反套在職缺上的求職者端 ATS）。每個分別跑在不同技術棧上，React、Flutter、Node.js、Python，全部用 AI 工具獨力完成。想了解哪一個都可以問我。',
+      ja: 'Charles は 5 つの代表的な AI プロダクトを端から端まで作りました：**Path**（オフラインでも 100% 使える旅行 PWA）、**Plutus Trade**（監査可能な勝率追跡付きの AI 株式意思決定支援）、**Product Playbook**（オープンソースの LLM マルチエージェント仕様システム）、**House Ops**（Claude 駆動の不動産スキャン・採点パイプライン）、**Job Ops**（採用フィルタを求人側に反転させた候補者側 ATS）。それぞれ React・Flutter・Node.js・Python と異なるスタックで、すべて AI ツールを使い単独で構築。詳しく知りたいものをどうぞ。',
     },
   },
 
@@ -269,9 +271,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['USPACE では何をしている', 'USPACE での役割', '現在の仕事'],
     },
     answers: {
-      en: 'At **USPACE** (Product Manager, July 2024–present) Charles is the **USPACE app owner** leading a cross-functional Scrum team across Taiwan and Japan, owning product strategy across three core lines, parking payments, business travel, and insurance, and aligning engineering, design, and operations. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel, and pioneered AI-driven prototyping with **Claude Code and Codex** for **5x faster** iteration.',
-      'zh-TW': '在 **USPACE**（產品經理，2024 年 7 月至今），Charles 是 **USPACE app 負責人**，帶領跨職能 Scrum 團隊、業務涵蓋台灣與日本，主導停車支付、商務差旅、保險三條核心產品線的策略，並協調工程、設計與營運。他於 **2025 年 9 月**從 0 到 1 推出了 **USPACE for Business**（企業差旅管理的 B2B SaaS），並率先以 **Claude Code、Codex** 推動 AI 原型開發，讓迭代速度快 **5 倍**。',
-      ja: '**USPACE**（プロダクトマネージャー、2024 年 7 月〜現在）で Charles は **USPACE app のオーナー** として、台湾と日本にまたがるクロスファンクショナルな Scrum チームを率い、駐車場決済・出張・保険の 3 つの中核ラインのプロダクト戦略を統括し、エンジニアリング・デザイン・オペレーションをまとめています。**2025 年 9 月**に法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、**Claude Code・Codex** で AI 駆動プロトタイピングを推進し、**5 倍速**の反復を実現しました。',
+      en: "At **USPACE** (Product Manager, **July 2024–present**) Charles is the **app owner**, leading a **15-person cross-functional Scrum team** (PM, dev, design) and owning product strategy across three core lines, parking payments, corporate travel, and insurance. Running the team on Scrum, he **doubled release velocity**. In **September 2025** he 0→1 launched **USPACE for Business**, a B2B SaaS for corporate travel management, owning the full lifecycle end to end from sales discovery through spec, development and testing, launch, and payments and reconciliation. He redefined the **AI Product Builder** role, engineering the full stack himself with **Claude Code and Codex** for **5x faster** iteration at zero added engineering headcount. He also shipped **Taiwan's first parking insurance**, an FSC regulatory-sandbox trial with **Fubon** that embeds pay-as-you-park pricing one-tap into checkout for **1M+ members**.",
+      'zh-TW': '在 **USPACE**（產品經理，**2024 年 7 月至今**），Charles 是 **app 負責人**，帶領 **15 人跨職能 Scrum 團隊**（PM、開發、設計），主導停車支付、企業差旅、保險三條核心產品線的策略。他以 Scrum 運作團隊，讓 **釋出速度翻倍**。**2025 年 9 月**，他 0→1 推出 **USPACE for Business**（企業差旅管理的 B2B SaaS），從業務探索、規格、開發測試、上線到金流與財務對帳，全生命週期端到端獨力負責。他重新定義了 **AI Product Builder** 角色，用 **Claude Code、Codex** 親手打造全端，在零額外工程人力下達到 **5 倍**迭代速度。他也推出了 **全台首張停車保險**，與 **富邦** 合作的 FSC 監理沙盒試辦，把 pay-as-you-park 用量計價一鍵嵌入結帳、觸及 **100 萬+ 會員**。',
+      ja: '**USPACE**（プロダクトマネージャー、**2024 年 7 月〜現在**）で Charles は **app のオーナー**として **15 名のクロスファンクショナル Scrum チーム**（PM・開発・デザイン）を率い、駐車場決済・出張・保険の 3 つの中核ラインのプロダクト戦略を統括しています。チームを Scrum で運営し、**リリース速度を倍増**させました。**2025 年 9 月**には法人向け出張管理 B2B SaaS **USPACE for Business** を 0→1 でローンチし、営業ディスカバリーから仕様・開発テスト・ローンチ、決済・財務照合まで全ライフサイクルを端から端まで単独で担当。**AI Product Builder** の役割を再定義し、**Claude Code・Codex** でフルスタックを自ら構築、エンジニア増員ゼロで **5 倍速**の反復を実現しました。さらに **台湾初の駐車場保険**、**富邦** との FSC 規制サンドボックス試行を投入し、pay-as-you-park の従量課金をワンタップで決済に組み込み、**100 万人超の会員**にリーチしています。',
     },
   },
   {
@@ -282,9 +284,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['職務経歴', 'どこで働いてきた', '過去の勤務先', '経歴', 'PM の経歴', '履歴書', 'キャリア'],
     },
     answers: {
-      en: 'Charles has been: **PM at USPACE** (2024–present), **Product Mentor at XChange School** (2025–present), **Senior PM at NUEIP** (2024, BI + predictive analytics), **PM at PXPay Plus** (2022–2024, payments, +25% conversions), and **Operations Manager at FLUX** (2019–2022, +20% market share, led a team of 10).',
-      'zh-TW': 'Charles 的經歷包括：**USPACE 產品經理**（2024 至今）、**XChange School 產品導師**（2025 至今）、**NUEIP 資深產品經理**（2024，BI + 預測分析）、**PXPay Plus 產品經理**（2022–2024，支付，+25% 轉換率），以及 **FLUX 營運經理**（2019–2022，+20% 市佔、帶領 10 人團隊）。',
-      ja: 'Charles の経歴：**USPACE プロダクトマネージャー**（2024〜現在）、**XChange School プロダクトメンター**（2025〜現在）、**NUEIP シニア PM**（2024、BI+予測分析）、**PXPay Plus PM**（2022–2024、決済、コンバージョン +25%）、**FLUX オペレーションマネージャー**（2019–2022、市場シェア +20%、10 名のチームを統括）。',
+      en: "Charles's career spans payments, BI, MaaS, and creator tools: **PM at USPACE** (2024–present, MaaS app owner, B2B SaaS and Taiwan's first parking insurance), **Product Mentor at XChange School** (2025–present, Taiwan's largest internet professional community), **Senior PM at NUEIP** (2024, an end-to-end BI product with predictive analytics and AI), **PM at PXPay Plus（全支付）** (2022–2024, consumer payments, +25% conversions and a reward-points system), and **Operations Manager at FLUX** (2019–2022, +20% market share leading a team of 10). The throughline across these roles is shipping products that change user behavior, increasingly by building them himself with AI.",
+      'zh-TW': 'Charles 的職涯橫跨支付、BI、MaaS 與創作者工具：**USPACE 產品經理**（2024 至今，MaaS app 負責人，B2B SaaS 與全台首張停車保險）、**XChange School 產品導師**（2025 至今，台灣最大的網路專業社群）、**NUEIP 資深產品經理**（2024，帶預測分析與 AI 的端到端 BI 產品）、**PXPay Plus（全支付）產品經理**（2022–2024，消費者支付，+25% 轉換率與點數回饋系統），以及 **FLUX 營運經理**（2019–2022，帶領 10 人團隊、市佔 +20%）。貫穿這些職位的主線，是交付「改變使用者行為」的產品，並愈來愈常親手用 AI 把它們做出來。',
+      ja: 'Charles のキャリアは決済・BI・MaaS・クリエイターツールにまたがります：**USPACE プロダクトマネージャー**（2024〜現在、MaaS app オーナー、B2B SaaS と台湾初の駐車場保険）、**XChange School プロダクトメンター**（2025〜現在、台湾最大のインターネット専門コミュニティ）、**NUEIP シニア PM**（2024、予測分析と AI を備えた端から端までの BI プロダクト）、**PXPay Plus（全支付）PM**（2022–2024、消費者向け決済、コンバージョン +25% とポイント還元システム）、**FLUX オペレーションマネージャー**（2019–2022、10 名のチームを率いて市場シェア +20%）。これらに共通する軸は、ユーザー行動を変えるプロダクトを出荷すること、そしてそれを次第に AI で自ら作るようになっていることです。',
     },
   },
   {
@@ -295,9 +297,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['経験は何年', 'PM 歴はどれくらい'],
     },
     answers: {
-      en: 'Charles has **5+ years** of product experience, spanning creator tools, Fintech, B2B SaaS, and MaaS. His work has reached over **7 million people**.',
-      'zh-TW': 'Charles 有 **5 年以上**的產品經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。',
-      ja: 'Charles はプロダクト経験 **5 年以上**で、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。',
+      en: 'Charles has **5+ years** of product experience spanning creator tools, Fintech, B2B SaaS, and MaaS, and his work has reached over **7 million people**. The range matters as much as the tenure: he has shipped consumer payments at scale (PXPay Plus), data and BI (NUEIP), operations and go-to-market (FLUX), and now MaaS as a 15-person-team app owner at USPACE, while building five AI products on the side. In the last two years he has reframed himself as an **AI Product Builder**, pairing that PM depth with hands-on engineering.',
+      'zh-TW': 'Charles 有 **5 年以上**的產品經驗，橫跨創作者工具、Fintech、B2B SaaS 與 MaaS，作品觸及 **超過 700 萬人**。比年資更值得看的是廣度：他做過大規模消費者支付(PXPay Plus)、資料與 BI(NUEIP)、營運與 go-to-market(FLUX)，現在則在 USPACE 以 15 人團隊的 app 負責人身分做 MaaS，同時還做了五個 AI 產品。過去兩年，他把自己重新定位為 **AI Product Builder**，把這份 PM 深度與親手做的工程能力結合起來。',
+      ja: 'Charles はプロダクト経験 **5 年以上**で、クリエイターツール・Fintech・B2B SaaS・MaaS にまたがり、その仕事は **700 万人以上**に届いています。年数以上に重要なのは幅です：大規模な消費者向け決済(PXPay Plus)、データと BI(NUEIP)、オペレーションと go-to-market(FLUX)を手がけ、現在は USPACE で 15 名チームの app オーナーとして MaaS を担当しつつ、5 つの AI プロダクトも作っています。直近 2 年は自らを **AI Product Builder** と再定義し、その PM の深さと自ら手を動かすエンジニアリングを組み合わせています。',
     },
   },
   {
@@ -308,9 +310,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['PXPay では何をした', 'PXPay Plus について'],
     },
     answers: {
-      en: 'At **PXPay Plus** (PM, 2022–2024) Charles redesigned the sign-up & checkout flow for **+25% transaction conversions** in 3 months, pioneered a reward-points system (**+50% operational efficiency, −40% complaints**), and led third-party billing integration for parking, cable TV, pension, and government payments.',
-      'zh-TW': '在 **PXPay Plus**（產品經理，2022–2024），Charles 在 3 個月內重新設計註冊與結帳流程，帶來 **+25% 交易轉換率**；首創點數回饋系統（**營運效率 +50%、客訴 −40%**）；並主導停車、有線電視、年金與政府繳費的第三方代收整合。',
-      ja: '**PXPay Plus**(PM、2022–2024)で Charles は登録・決済フローを再設計し 3 か月で **取引コンバージョン +25%**、ポイント還元システムを主導（**業務効率 +50%・苦情 −40%**）、駐車場・ケーブル TV・年金・行政支払いの第三者課金統合をリードしました。',
+      en: 'At **PXPay Plus（全支付）**, a Taiwan electronic-payment company (PM, **2022–2024**), Charles owned consumer-facing fintech work. He redesigned the sign-up and checkout flow in 3 months for **+25% transaction conversions**, and pioneered a reward-points system that delivered **+50% operational efficiency** while cutting **customer complaints by 40%**. He also led third-party billing integration so users could pay for parking, cable TV, pension, and government fees directly in the app, growing the wallet from a payment tool into an everyday-services hub.',
+      'zh-TW': '在 **PXPay Plus（全支付）**（產品經理，**2022–2024**），Charles 負責面向消費者的 fintech 產品。他在 3 個月內重新設計註冊與結帳流程，帶來 **+25% 交易轉換率**；首創點數回饋系統，帶動 **營運效率 +50%**，同時讓 **客訴下降 40%**。他也主導第三方代收整合，讓使用者能在 app 內直接繳停車、有線電視、勞退與政府規費，把這個錢包從單純的支付工具擴展成日常生活服務的入口。',
+      ja: '**PXPay Plus（全支付）**（PM、**2022–2024**）で Charles は消費者向け fintech プロダクトを担当しました。登録・決済フローを 3 か月で再設計して **取引コンバージョン +25%**、ポイント還元システムを主導して **業務効率 +50%**、同時に **苦情を 40% 削減**。さらに第三者課金統合をリードし、駐車場・ケーブル TV・年金・行政支払いをアプリ内で直接行えるようにして、ウォレットを単なる決済ツールから日常サービスの入口へと広げました。',
     },
   },
 
@@ -323,9 +325,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['何をコーディングできる', 'プログラミングスキル', '技術スタック'],
     },
     answers: {
-      en: 'On engineering: **React, TypeScript, Flutter, Canvas 2D, Node.js, Python (FastAPI), PHP (Laravel)**, with **PostgreSQL, SQLite, Redis, Supabase**, deployed on **Vercel / Fly.io**. He ships full-stack prototypes independently using Claude Code and Codex.',
-      'zh-TW': '工程方面：**React、TypeScript、Flutter、Canvas 2D、Node.js、Python(FastAPI)、PHP(Laravel)**，資料庫有 **PostgreSQL、SQLite、Redis、Supabase**，部署於 **Vercel / Fly.io**。他能用 Claude Code 與 Codex 獨立交付全端原型。',
-      ja: 'エンジニアリング面では **React、TypeScript、Flutter、Canvas 2D、Node.js、Python(FastAPI)、PHP(Laravel)**、DB は **PostgreSQL、SQLite、Redis、Supabase**、**Vercel / Fly.io** にデプロイ。Claude Code と Codex でフルスタックのプロトタイプを単独で出荷します。',
+      en: 'On engineering Charles ships full-stack independently: **React, TypeScript, Flutter, Canvas 2D** on the frontend, **Node.js, Python (FastAPI), PHP (Laravel)** on the backend, with **PostgreSQL, SQLite, Redis, and Supabase** for data, deployed on **Vercel and Fly.io**. He works AI-natively, using Claude Code and Codex to build and ship prototypes end to end without a separate engineering team. The proof is in the side projects: a Flutter plus FastAPI trading tool, an offline-first React PWA, Node.js and Python automation pipelines, and this RAG chatbot, each a different stack, all shipped solo. On the data side he also brings BI dashboards, predictive analytics, A/B testing, and SQL.',
+      'zh-TW': '工程方面，Charles 能獨立交付全端：前端 **React、TypeScript、Flutter、Canvas 2D**，後端 **Node.js、Python(FastAPI)、PHP(Laravel)**，資料層有 **PostgreSQL、SQLite、Redis 與 Supabase**，部署在 **Vercel 與 Fly.io**。他以 AI 原生方式工作，用 Claude Code 與 Codex 端到端打造並交付原型，不需要另外的工程團隊。證據就在副業專案裡：Flutter 加 FastAPI 的交易工具、離線優先的 React PWA、Node.js 與 Python 的自動化管線，以及這個 RAG 聊天機器人，每個都是不同技術棧，全部獨力完成。資料面他也具備 BI 儀表板、預測分析、A/B 測試與 SQL。',
+      ja: 'エンジニアリング面で Charles はフルスタックを単独で出荷できます：フロントは **React、TypeScript、Flutter、Canvas 2D**、バックは **Node.js、Python(FastAPI)、PHP(Laravel)**、データは **PostgreSQL、SQLite、Redis、Supabase**、デプロイは **Vercel と Fly.io**。AI ネイティブに働き、Claude Code と Codex でプロトタイプを端から端まで構築・出荷し、別途のエンジニアチームを必要としません。証拠はサイドプロジェクトにあります：Flutter と FastAPI のトレーディングツール、オフラインファーストの React PWA、Node.js と Python の自動化パイプライン、そしてこの RAG チャットボット、いずれも異なるスタックで、すべて単独で出荷。データ面では BI ダッシュボード、予測分析、A/B テスト、SQL も備えます。',
     },
   },
   {
@@ -349,9 +351,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんなプロダクトフレームワークを知っている', 'プロダクトスキル'],
     },
     answers: {
-      en: 'On product strategy: **JTBD, Persona, User Journey / Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE prioritization, AARRR, and competitive analysis**, plus cross-functional leadership, stakeholder management, and Agile/Scrum.',
-      'zh-TW': '產品策略方面：**JTBD、Persona、User Journey / Empathy Map、機會解決方案樹(OST)、User Story Mapping、North Star Metric、OKR、RICE 優先級、AARRR，以及競品分析**，另外還有跨職能領導、利害關係人管理與 Agile/Scrum。',
-      ja: 'プロダクト戦略面では **JTBD、ペルソナ、ユーザージャーニー/共感マップ、機会解決ツリー(OST)、ユーザーストーリーマッピング、North Star 指標、OKR、RICE 優先順位付け、AARRR、競合分析** に加え、機能横断リーダーシップ・ステークホルダー管理・Agile/Scrum。',
+      en: 'On product strategy Charles works the full discovery-to-delivery arc: **JTBD, Persona, User Journey and Empathy Map, Opportunity Solution Tree, and User Story Mapping** for discovery, **North Star Metric, OKRs, RICE prioritization, and AARRR (pirate metrics)** for focus and measurement, plus **competitive analysis** to position. He pairs that with cross-functional team leadership, stakeholder management, and Agile/Scrum, the same frameworks he encoded into Product Playbook so an AI agent could reason with them. The frameworks earn their place by getting to the real user problem fast and making the bet on what to build a deliberate one.',
+      'zh-TW': '產品策略方面，Charles 走完整的「探索到交付」全程：探索用 **JTBD、Persona、User Journey 與 Empathy Map、機會解決方案樹(OST)、User Story Mapping**；聚焦與衡量用 **North Star Metric、OKR、RICE 優先級、AARRR（海盜指標）**；定位用 **競品分析**。他再搭配跨職能團隊領導、利害關係人管理與 Agile/Scrum，這些正是他寫進 Product Playbook、讓 AI 代理能用來推理的同一套框架。框架的價值在於快速抵達真正的使用者問題，並讓「該做什麼」的下注變得有意識。',
+      ja: 'プロダクト戦略面で Charles はディスカバリーからデリバリーまでの全工程を扱います：探索には **JTBD、ペルソナ、ユーザージャーニーと共感マップ、機会解決ツリー(OST)、ユーザーストーリーマッピング**、焦点と計測には **North Star 指標、OKR、RICE 優先順位付け、AARRR（海賊指標）**、ポジショニングには **競合分析**。さらに機能横断のチームリーダーシップ、ステークホルダー管理、Agile/Scrum を併せ持ち、これらは Product Playbook に組み込んで AI エージェントが推論に使えるようにした同じフレームワーク群です。フレームワークの価値は、本当のユーザー課題に素早く到達し、何を作るかの賭けを意図的にすることにあります。',
     },
   },
 
@@ -364,9 +366,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['プロダクトの哲学は', 'プロダクトへの考え方', 'プロダクトのスタイル'],
     },
     answers: {
-      en: 'Charles works by four principles: **Outcomes over outputs** (changing user behavior, not shipping features), **sharp product sense** (the best calls happen before the data exists), **strong opinions loosely held**, and **build to learn** (working prototypes beat slide decks). He measures success by what users do differently.',
-      'zh-TW': 'Charles 有四個工作原則：**結果重於產出**（改變使用者行為，而非交付功能）、**敏銳的產品直覺**（最好的決策往往發生在數據出現之前）、**有主見但不固執**，以及 **動手做來學習**（可運作的原型勝過簡報）。他用「使用者行為的改變」來衡量成功。',
-      ja: 'Charles の 4 つの原則：**アウトプットよりアウトカム**（機能の出荷でなくユーザー行動の変化）、**鋭いプロダクトセンス**（最良の判断はデータが揃う前に起きる）、**強い意見を緩く持つ**、**学ぶために作る**（動くプロトタイプはスライドに勝る）。成功は「ユーザーの行動がどう変わったか」で測ります。',
+      en: 'Charles works by four principles. **Outcomes over outputs**: success is the user behavior that changed, measured ahead of the feature that shipped. **Sharp product sense**: the best calls often have to be made before the data exists, so taste and judgment matter. **Strong opinions, loosely held**: he commits to a direction but updates fast when evidence pushes back. And **build to learn**: a working prototype teaches you more than a slide deck, which is why he ships one early to get real signal. Taken together, these push him to validate by building, getting real signal before big commitments, and to measure himself by what users do differently after he ships.',
+      'zh-TW': 'Charles 有四個工作原則。**結果重於產出**：成功是「改變了的使用者行為」，比「交付了的功能」更優先被衡量。**敏銳的產品直覺**：最好的決策常常得在數據出現之前就做，所以品味與判斷很重要。**有主見但不固執**：他會對方向下決心，但證據反駁時也更新得很快。以及 **動手做來學習**：可運作的原型教你的，比一份簡報多，所以他會早早做出一個來取得真實訊號。合起來，這些讓他用「動手做」來驗證、在大舉投入前先拿到真實訊號，並用「上線後使用者行為的改變」來衡量自己。',
+      ja: 'Charles の 4 つの原則。**アウトプットよりアウトカム**：成功は「変わったユーザー行動」で、出荷した機能より先にそこを見ます。**鋭いプロダクトセンス**：最良の判断はデータが揃う前に下す必要が多く、ゆえに感性と判断が効きます。**強い意見を緩く持つ**：方向を決め込みつつ、証拠が反論すれば素早く更新します。そして **学ぶために作る**：動くプロトタイプはスライドより多くを教えるので、早めに一つ出して実際のシグナルを得ます。これらが合わさり、彼は「作って検証する」ことで大きな投入の前に実シグナルを得て、出荷後にユーザー行動がどう変わったかで自分を測ります。',
     },
   },
   {
@@ -377,9 +379,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['Product Builder とは', 'なぜ自分を builder と呼ぶ', 'ビルダーモードとは'],
     },
     answers: {
-      en: "Charles believes the strongest future product people are **Product Builders**, PMs who move past just synthesizing requirements and writing PRDs to personally building and shipping prototypes with AI. This 'Builder mode' lets him iterate **5x faster**, so products earn real market validation before any large resource commitment.",
-      'zh-TW': 'Charles 認為未來最強的產品人是 **Product Builder**，不只整理需求、寫 PRD，而是親自用 AI 打造並交付原型的 PM。這種「Builder 模式」讓他迭代快 **5 倍**，讓產品在投入大量資源前就能取得真實的市場驗證。',
-      ja: 'Charles は、これからの最強のプロダクト人材は **Product Builder** だと考えています。要件整理や PRD 作成にとどまらず、AI で自らプロトタイプを作って出荷する PM です。この「ビルダーモード」で **5 倍速**の反復が可能になり、大きなリソース投入の前にプロダクトが実際の市場検証を得られます。',
+      en: "Charles believes the strongest future product people are **Product Builders**: PMs who go past synthesizing requirements and writing PRDs to personally building and shipping prototypes with AI. The traditional PM hands a spec to engineering and waits; a Product Builder closes that gap themselves, setting the strategy and engineering the working product in the same motion. For Charles this 'Builder mode' means iterating **5x faster**, so a product earns real market validation before any large resource commitment. It is the thesis behind how he works at USPACE and across his five solo-shipped projects, and the reason he turned down a big-tech offer to lean into it.",
+      'zh-TW': 'Charles 認為未來最強的產品人是 **Product Builder**：不只整理需求、寫 PRD，而是親自用 AI 打造並交付原型的 PM。傳統 PM 把規格交給工程然後等待；Product Builder 自己弭平那個落差，在同一個動作裡既定策略、也把可運作的產品做出來。對 Charles 來說，這種「Builder 模式」代表迭代快 **5 倍**，讓產品在投入大量資源前就取得真實的市場驗證。這是他在 USPACE 以及五個獨力交付專案背後的核心主張，也是他為此推掉大廠 offer 的原因。',
+      ja: 'Charles は、これからの最強のプロダクト人材は **Product Builder** だと考えています：要件整理や PRD 作成にとどまらず、AI で自らプロトタイプを作って出荷する PM です。従来の PM は仕様をエンジニアに渡して待ちますが、Product Builder はその隔たりを自分で埋め、戦略を立てるのと同じ動きで動くプロダクトを作ります。Charles にとってこの「ビルダーモード」は **5 倍速**の反復を意味し、大きなリソース投入の前にプロダクトが実際の市場検証を得られます。これは USPACE での働き方と 5 つの単独出荷プロジェクトの背後にある主張であり、そのために大手のオファーを断った理由でもあります。',
     },
   },
   {
@@ -390,9 +392,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どのように AI を使う', 'ワークフローでの AI 活用'],
     },
     answers: {
-      en: 'AI is the core engine of his workflow across the whole cycle: **Discovery** (LLMs digest market & interview research), **Spec writing** (his Product Playbook agent), **Prototyping** (Claude Code + Codex for full-stack builds), **AI features** (shipping Gemini in Plutus Trade), and **Agentic workflows** (autonomous agents handling repetitive work end to end).',
-      'zh-TW': 'AI 是他工作流程的核心引擎，貫穿整個週期：**探索**（用 LLM 消化市場與訪談研究）、**規格撰寫**（他的 Product Playbook 代理）、**原型開發**（Claude Code + Codex 做全端）、**AI 功能**（在 Plutus Trade 落地 Gemini），以及 **Agentic workflows**（自主代理端到端處理重複工作）。',
-      ja: 'AI は彼のワークフローの中核エンジンで、全サイクルにわたります：**ディスカバリー**（LLM で市場・インタビュー調査を消化）、**仕様作成**（自作 Product Playbook エージェント）、**プロトタイピング**（Claude Code + Codex でフルスタック構築）、**AI 機能**（Plutus Trade で Gemini を出荷）、**エージェンティックワークフロー**（自律エージェントが反復作業を端から端まで処理）。',
+      en: "AI is the core engine of Charles's workflow across the whole product cycle. In **discovery**, LLMs digest market and interview research into patterns he can act on. In **spec writing**, his Product Playbook multi-agent system turns fuzzy ideas into PRDs with acceptance criteria. In **prototyping**, Claude Code and Codex let him build the full stack himself for 5x faster iteration. In **AI features**, he ships production LLM capabilities into products, like Gemini-powered analysis in Plutus Trade and the corrective-RAG behind this chatbot. And in **agentic workflows**, autonomous agents handle repetitive work end to end, the daily scraping, scoring, and digests in House Ops and Job Ops. The pattern is consistent: deterministic work goes to code, ambiguous judgment goes to AI conversation, and he stays the one steering.",
+      'zh-TW': 'AI 是 Charles 工作流程的核心引擎，貫穿整個產品週期。在 **探索** 階段，用 LLM 把市場與訪談研究消化成可行動的模式。在 **規格撰寫**，他的 Product Playbook 多代理系統把模糊想法轉成帶驗收標準的 PRD。在 **原型開發**，Claude Code 與 Codex 讓他親手做全端，迭代快 5 倍。在 **AI 功能**，他把生產級 LLM 能力做進產品，像 Plutus Trade 裡 Gemini 驅動的分析，以及這個聊天機器人背後的 corrective RAG。在 **Agentic workflows**，自主代理端到端處理重複工作，例如 House Ops 與 Job Ops 每天的爬取、評分與摘要。模式很一致：確定性的工作交給程式，模糊的判斷交給 AI 對話，掌舵的始終是他。',
+      ja: 'AI は Charles のワークフローの中核エンジンで、プロダクトの全サイクルにわたります。**ディスカバリー**では LLM で市場・インタビュー調査を行動可能なパターンへ消化。**仕様作成**では自作 Product Playbook のマルチエージェントが曖昧なアイデアを受け入れ基準付きの PRD に変換。**プロトタイピング**では Claude Code と Codex でフルスタックを自ら作り、5 倍速で反復。**AI 機能**では本番 LLM 機能をプロダクトに搭載、Plutus Trade の Gemini 駆動分析やこのチャットボットの corrective RAG など。**エージェンティックワークフロー**では自律エージェントが反復作業を端から端まで処理、House Ops と Job Ops の毎日の取得・採点・ダイジェストなど。パターンは一貫しています：決定論的な作業はコードへ、曖昧な判断は AI 対話へ、舵を取るのは常に彼自身です。',
     },
   },
 
@@ -405,9 +407,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['チームを率いた経験は', 'リーダーシップ経験', '人をマネジメントした'],
     },
     answers: {
-      en: 'Yes. At **USPACE** he leads a **15-person cross-functional Scrum team** (PM, dev, design) as the app owner, and doubled release velocity. Earlier, at **FLUX**, he directed a team of **10** (+22% process efficiency, +35% order-fulfillment speed). He also mentors aspiring PMs at **XChange School** (Taiwan\'s largest internet professional community).',
-      'zh-TW': '有的。在 **USPACE** 他以 app 負責人身分帶領 **15 人跨職能 Scrum 團隊**（PM、開發、設計），並讓釋出速度翻倍。更早在 **FLUX** 帶領 **10 人**團隊（流程效率 +22%、訂單履行速度 +35%）。他也在 **XChange School**（台灣最大的網路專業社群）擔任產品導師。',
-      ja: 'はい。**USPACE** では app オーナーとして **15 名のクロスファンクショナル Scrum チーム**（PM・開発・デザイン）を率い、リリース速度を倍増。さらに以前 **FLUX** で **10 名**のチームを統括（プロセス効率 +22%、注文処理速度 +35%）。**XChange School**（台湾最大のインターネット専門コミュニティ）で PM 志望者のメンターも務めます。',
+      en: "Yes. At **USPACE** he leads a **15-person cross-functional Scrum team** (PM, dev, design) as the app owner, where running on Scrum doubled release velocity and kept three product lines moving in parallel. Earlier, at **FLUX**, he directed a team of **10**, delivering +22% process efficiency and +35% order-fulfillment speed. He also mentors aspiring PMs at **XChange School** (Taiwan's largest internet professional community). His leadership style is hands-on and outcomes-first: he aligns the team on the user behavior they are trying to move, then clears the path to ship.",
+      'zh-TW': '有的。在 **USPACE** 他以 app 負責人身分帶領 **15 人跨職能 Scrum 團隊**（PM、開發、設計），以 Scrum 運作讓釋出速度翻倍，並讓三條產品線同時推進。更早在 **FLUX** 帶領 **10 人**團隊，做出流程效率 +22%、訂單履行速度 +35%。他也在 **XChange School**（台灣最大的網路專業社群）擔任產品導師。他的領導風格是親力親為、結果優先：先讓團隊對齊「要改變哪個使用者行為」，再把出貨路上的障礙清掉。',
+      ja: 'はい。**USPACE** では app オーナーとして **15 名のクロスファンクショナル Scrum チーム**（PM・開発・デザイン）を率い、Scrum 運営でリリース速度を倍増、3 つのプロダクトラインを並行して前進させています。さらに以前 **FLUX** で **10 名**のチームを統括し、プロセス効率 +22%、注文処理速度 +35% を実現。**XChange School**（台湾最大のインターネット専門コミュニティ）で PM 志望者のメンターも務めます。リーダーシップのスタイルは現場主義で成果優先です：まず「どのユーザー行動を動かすか」でチームを揃え、出荷までの障害を取り除きます。',
     },
   },
   {
@@ -418,9 +420,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['メンターをしている', 'XChange School とは', '指導経験は'],
     },
     answers: {
-      en: 'Since 2025 Charles has been a **Product Mentor at XChange School**, Taiwan\'s largest internet professional community, mentoring aspiring product managers.',
-      'zh-TW': '自 2025 年起，Charles 在 **XChange School**（台灣最大的網路專業社群）擔任 **產品導師**，輔導有志成為產品經理的學員。',
-      ja: '2025 年から Charles は台湾最大のインターネット専門コミュニティ **XChange School** で **プロダクトメンター**を務め、PM 志望者を指導しています。',
+      en: "Since 2025 Charles has been a **Product Mentor at XChange School**, Taiwan's largest internet professional community, where he mentors aspiring product managers. He coaches them on the things that are hard to learn alone: framing the real problem before jumping to features, prioritizing with frameworks like RICE, and increasingly the Product Builder muscle of validating ideas by building. It is how he gives back to the PM community and pressure-tests his own thinking by teaching it.",
+      'zh-TW': '自 2025 年起，Charles 在 **XChange School**（台灣最大的網路專業社群）擔任 **產品導師**，輔導有志成為產品經理的學員。他幫他們練那些一個人很難學會的事：在跳到功能之前先把真正的問題框清楚、用 RICE 這類框架排優先級，以及愈來愈重要的 Product Builder 肌肉，也就是用「動手做」來驗證想法。這是他回饋 PM 社群的方式，也透過教學反覆檢驗自己的思考。',
+      ja: '2025 年から Charles は台湾最大のインターネット専門コミュニティ **XChange School** で **プロダクトメンター**を務め、PM 志望者を指導しています。一人では学びにくいことをコーチします：機能に飛びつく前に本当の問題を捉えること、RICE のようなフレームワークで優先順位をつけること、そして次第に重要になる Product Builder の筋力、つまり「作って検証する」力です。これは PM コミュニティへの恩返しであり、教えることで自身の思考を検証する場でもあります。',
     },
   },
   {
@@ -431,9 +433,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['執筆活動はある', 'ブログ', '記事を書いている', 'Substack'],
     },
     answers: {
-      en: 'Yes, Charles writes prolifically on product and AI (Substack & Medium): 20+ pieces spanning AI-builder skills, product sense, PM career strategy in the AI era, OKRs, and deep technical research (e.g. a Claude Code source-code study, a Shazam algorithm breakdown). You can find his writing linked from the portfolio\'s blog section.',
-      'zh-TW': '有的，Charles 在產品與 AI 領域寫作量豐富（Substack 與 Medium）:20 多篇文章，橫跨 AI builder 能力、產品 sense、AI 時代的 PM 職涯策略、OKR，以及深度技術研究（例如 Claude Code 原始碼研究、Shazam 演算法解析）。作品集的部落格區塊有連結。',
-      ja: 'はい、Charles はプロダクトと AI について多数執筆しています（Substack・Medium）。20 本以上で、AI ビルダーのスキル、プロダクトセンス、AI 時代の PM キャリア戦略、OKR、深い技術調査（Claude Code ソースコード研究、Shazam アルゴリズム解説など）に及びます。ポートフォリオのブログ欄からリンクされています。',
+      en: "Yes, Charles writes prolifically on product and AI across **Substack and Medium**, 20+ pieces in total. The range covers AI-builder skills, product sense, PM career strategy in the AI era, OKRs, and deep technical research, including a study of the Claude Code source code and a breakdown of the Shazam audio-fingerprinting algorithm. The writing doubles as his thinking-in-public: it is where he works out the Product Builder thesis and the engineering ideas that later show up in his projects. You can find it linked from the portfolio's blog section.",
+      'zh-TW': '有的，Charles 在產品與 AI 領域寫作量豐富，橫跨 **Substack 與 Medium**，總共 20 多篇。題材涵蓋 AI builder 能力、產品 sense、AI 時代的 PM 職涯策略、OKR，以及深度技術研究，包括 Claude Code 原始碼研究與 Shazam 音訊指紋演算法的解析。這些寫作也是他「公開思考」的場域：他在這裡把 Product Builder 的主張、以及後來出現在專案裡的工程點子想清楚。作品集的部落格區塊有連結。',
+      ja: 'はい、Charles はプロダクトと AI について **Substack と Medium** で多数執筆しており、合計 20 本以上です。題材は AI ビルダーのスキル、プロダクトセンス、AI 時代の PM キャリア戦略、OKR、そして深い技術調査（Claude Code のソースコード研究、Shazam の音声フィンガープリント解説など）に及びます。執筆は「公開で考える」場でもあり、Product Builder の主張や、後にプロジェクトへ現れるエンジニアリングのアイデアをここで練り上げます。ポートフォリオのブログ欄からリンクされています。',
     },
   },
   {
@@ -444,9 +446,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どんな成果を出した', '主要な実績', '定量的なインパクト', '数字'],
     },
     answers: {
-      en: 'Selected results: **7M+ users reached**; at USPACE, **doubled release velocity** leading a 15-person team, **0→1 USPACE for Business** and **Taiwan\'s first parking insurance** (1M+ members), with **5x faster** AI-driven iteration; **+25% checkout conversions** and **−40% complaints** at PXPay; **+35% forecast accuracy** at NUEIP; **+20% market share** at FLUX. On Product Playbook: **+69%** product-thinking quality and a jump to **100%** quality-completion with sub-agents.',
-      'zh-TW': '精選成果：觸及 **超過 700 萬使用者**；在 USPACE 帶領 15 人團隊 **釋出速度翻倍**、**0→1 推出 USPACE for Business** 與 **全台首張停車保險**（1M+ 會員），以 AI 驅動達 **5 倍**迭代速度；在 PXPay **結帳轉換 +25%、客訴 −40%**；在 NUEIP **預測準確度 +35%**；在 FLUX **市佔 +20%**。Product Playbook 方面：產品思維品質 **+69%**，啟用子代理後品質完成率躍升至 **100%**。',
-      ja: '主な成果：**700 万人以上**にリーチ；USPACE では 15 名チームを率いて **リリース速度を倍増**、**USPACE for Business を 0→1**、**台湾初の駐車場保険**（100 万人超の会員）を投入し、AI 駆動で **5 倍速**の反復；PXPay で **決済コンバージョン +25%・苦情 −40%**；NUEIP で **予測精度 +35%**；FLUX で **市場シェア +20%**。Product Playbook では製品思考の品質 **+69%**、サブエージェントで品質完了率 **100%** へ。',
+      en: "Selected, quantified results across his career; his work has **reached 7M+ users**. At **USPACE**, leading a 15-person team, he **doubled release velocity**, 0→1 launched **USPACE for Business**, and shipped **Taiwan's first parking insurance** (an FSC sandbox trial with Fubon, 1M+ members), all with **5x faster** AI-driven iteration. At **PXPay Plus（全支付）**: **+25% checkout conversions**, **+50% operational efficiency**, and **−40% customer complaints**. At **NUEIP**: **+40% data-driven decisions**, **+35% forecast accuracy**, and **50% faster reporting**. At **FLUX**: **+20% market share**, **+30% user retention**, **+22% process efficiency**, and **+35% fulfillment speed**. On **Product Playbook**: **+69%** product-thinking quality and a jump to **100%** quality-completion (from 59.1%) once the sub-agent layer is enabled, at flat token cost.",
+      'zh-TW': '他職涯中精選、可量化的成果；作品 **觸及超過 700 萬使用者**。在 **USPACE** 帶領 15 人團隊 **釋出速度翻倍**、**0→1 推出 USPACE for Business**，並推出 **全台首張停車保險**（與富邦合作的 FSC 沙盒試辦、1M+ 會員），全程以 AI 驅動達 **5 倍**迭代速度。在 **PXPay Plus（全支付）**：**結帳轉換 +25%**、**營運效率 +50%**、**客訴 −40%**。在 **NUEIP**：**數據驅動決策 +40%**、**預測準確度 +35%**、**報表速度快 50%**。在 **FLUX**：**市佔 +20%**、**使用者留存 +30%**、**流程效率 +22%**、**履行速度 +35%**。**Product Playbook** 方面：產品思維品質 **+69%**，啟用子代理層後品質完成率從 59.1% 躍升至 **100%**，且 token 成本不變。',
+      ja: "キャリアを通じた主な定量成果；仕事は **700 万人以上にリーチ**。**USPACE** では 15 名チームを率いて **リリース速度を倍増**、**USPACE for Business を 0→1**、**台湾初の駐車場保険**（富邦との FSC サンドボックス試行、100 万人超の会員）を投入し、すべて AI 駆動で **5 倍速**の反復。**PXPay Plus（全支付）** では **決済コンバージョン +25%**、**業務効率 +50%**、**苦情 −40%**。**NUEIP** では **データ駆動の意思決定 +40%**、**予測精度 +35%**、**レポート 50% 高速化**。**FLUX** では **市場シェア +20%**、**リテンション +30%**、**プロセス効率 +22%**、**処理速度 +35%**。**Product Playbook** では製品思考の品質 **+69%**、サブエージェント層を有効化すると品質完了率が 59.1% から **100%** へ、トークンコストは据え置き。",
     },
   },
   {
@@ -457,9 +459,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['NUEIP では何をした', 'NUEIP について', 'BI / 分析の経験'],
     },
     answers: {
-      en: 'At **NUEIP** (Senior PM, 2024) Charles built an end-to-end BI product with advanced analytics and AI: **+40% data-driven decisions**, **+35% forecast accuracy** via predictive models, and **50% faster reporting** by integrating BI dashboards.',
-      'zh-TW': '在 **NUEIP**（資深產品經理，2024），Charles 打造了結合進階分析與 AI 的端到端 BI 產品：**數據驅動決策 +40%**、以預測模型達成 **預測準確度 +35%**，並透過整合 BI 儀表板讓 **報表速度快 50%**。',
-      ja: '**NUEIP**（シニア PM、2024）で Charles は高度な分析と AI を備えたエンドツーエンドの BI プロダクトを構築：**データ駆動の意思決定 +40%**、予測モデルで **予測精度 +35%**、BI ダッシュボード統合で **レポート 50% 高速化**。',
+      en: 'At **NUEIP** (Senior PM, 2024) Charles built an end-to-end **BI product** that wove advanced analytics and AI into everyday decision-making. He drove **+40% data-driven decisions** by making the right data reachable, lifted **forecast accuracy by 35%** with predictive analytics models that supported strategic planning, and cut reporting time in half (**50% faster reporting**) by integrating the BI dashboards into one place. The work sat at the intersection of data, AI, and product, turning raw company data into decisions people actually acted on.',
+      'zh-TW': '在 **NUEIP**（資深產品經理，2024），Charles 打造了一個端到端的 **BI 產品**，把進階分析與 AI 織進日常決策。他讓對的資料變得可取得，帶來 **數據驅動決策 +40%**；用支援策略規劃的預測分析模型把 **預測準確度提升 35%**；並透過整合 BI 儀表板把報表時間砍半（**報表速度快 50%**）。這份工作落在資料、AI 與產品的交會點，把公司的原始資料轉成人們真的會採取行動的決策。',
+      ja: '**NUEIP**（シニア PM、2024）で Charles は、高度な分析と AI を日々の意思決定に織り込んだ端から端までの **BI プロダクト** を構築しました。正しいデータに届くようにして **データ駆動の意思決定 +40%**、戦略立案を支える予測分析モデルで **予測精度を 35% 向上**、BI ダッシュボードを統合してレポート時間を半減（**レポート 50% 高速化**）。この仕事はデータ・AI・プロダクトの交差点にあり、会社の生データを人々が実際に行動に移す意思決定へと変えました。',
     },
   },
   {
@@ -470,9 +472,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['FLUX では何をした', 'FLUX について', 'オペレーションの経験'],
     },
     answers: {
-      en: 'At **FLUX** (Operations Manager, 2019–2022) Charles developed product strategy through competitive analysis (**+20% market share**), redesigned the website and SEO for a 3-product ecosystem (**+30% retention**), and directed a team of 10 (**+22% process efficiency, +35% fulfillment speed**).',
-      'zh-TW': '在 **FLUX**（營運經理，2019–2022），Charles 透過競品分析制定產品策略（**市佔 +20%**）、為三產品生態系重新設計網站與 SEO（**留存 +30%**），並帶領 10 人團隊（**流程效率 +22%、履行速度 +35%**）。',
-      ja: '**FLUX**（オペレーションマネージャー、2019–2022）で Charles は競合分析を通じてプロダクト戦略を策定（**市場シェア +20%**）、3 プロダクトのエコシステム向けにサイトと SEO を再設計（**リテンション +30%**）、10 名のチームを統括（**プロセス効率 +22%・処理速度 +35%**）。',
+      en: 'At **FLUX** (Operations Manager, 2019–2022) Charles ran the operational and go-to-market side of a hardware company with three product lines. He developed product strategy through competitive analysis for **+20% market share**, redesigned the website and SEO across the 3-product ecosystem for **+30% user retention**, and directed a team of **10** that delivered **+22% process efficiency** and **+35% order-fulfillment speed**. It was his first leadership role and the foundation of his outcomes-first instinct, owning the full loop from strategy to shipping.',
+      'zh-TW': '在 **FLUX**（營運經理，2019–2022），Charles 負責這家有三條產品線的硬體公司的營運與 go-to-market。他透過競品分析制定產品策略，帶來 **市佔 +20%**；為三產品生態系重新設計官網與 SEO，帶來 **使用者留存 +30%**；並帶領 **10 人**團隊，做出 **流程效率 +22%** 與 **訂單履行速度 +35%**。這是他的第一個領導職，也奠定了他「結果優先」的直覺，從策略到出貨的整個迴圈都由他負責。',
+      ja: '**FLUX**（オペレーションマネージャー、2019–2022）で Charles は、3 つのプロダクトラインを持つハードウェア企業のオペレーションと go-to-market を担いました。競合分析を通じてプロダクト戦略を策定して **市場シェア +20%**、3 プロダクトのエコシステム向けにサイトと SEO を再設計して **リテンション +30%**、**10 名**のチームを率いて **プロセス効率 +22%** と **注文処理速度 +35%** を実現。これは彼の最初のリーダー職であり、戦略から出荷までのループ全体を担うという「成果優先」の直感の土台になりました。',
     },
   },
   {
@@ -483,9 +485,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜ Uber のオファーを断った', 'キャリアの選択', 'なぜ大手に行かない'],
     },
     answers: {
-      en: 'Charles has written publicly about turning down a Uber L4 offer, a reflection on PM career choices in the AI era, weighing the prestige of a big-tech badge against where he believes product work is heading (the Product Builder path). The full essay is linked from the portfolio\'s blog section.',
-      'zh-TW': 'Charles 曾公開撰文談他拒絕 Uber L4 offer 的決定，一篇關於 AI 時代 PM 職涯選擇的反思，在「大廠光環」與「他認為產品工作的未來方向（Product Builder 之路）」之間做取捨。完整文章在作品集的部落格區塊有連結。',
-      ja: 'Charles は Uber L4 オファーを断った決断について公に執筆しています。AI 時代の PM キャリア選択についての考察で、大手の肩書きの威信と、彼が考えるプロダクト業務の行く先（Product Builder の道）を天秤にかけたものです。全文はポートフォリオのブログ欄からリンクされています。',
+      en: "Charles has written publicly about turning down a **Uber L4 offer**, a reflection on what PM careers should optimize for in the AI era. The piece weighs the prestige and stability of a big-tech badge against where he believes product work is heading: the Product Builder path, where a PM sets strategy and ships the product themselves with AI. He concluded that the leverage and learning rate of building beat the safety of the badge, and bet on it. The full essay is linked from the portfolio's blog section.",
+      'zh-TW': 'Charles 曾公開撰文談他拒絕 **Uber L4 offer** 的決定，一篇關於「AI 時代的 PM 職涯該為什麼最佳化」的反思。文章在「大廠光環的威望與穩定」和「他認為產品工作的未來方向」之間做取捨，也就是 Product Builder 之路，PM 既定策略、也親手用 AI 把產品做出來。他的結論是，動手做的槓桿與學習速度勝過光環的安全感，於是押注於此。完整文章在作品集的部落格區塊有連結。',
+      ja: 'Charles は **Uber L4 オファー** を断った決断について公に執筆しています。AI 時代の PM キャリアが何を最適化すべきかについての考察です。大手の肩書きが持つ威信と安定を、彼が考えるプロダクト業務の行く先、つまり PM が戦略を立てつつ AI で自らプロダクトを出荷する Product Builder の道と天秤にかけています。結論は、作ることのレバレッジと学習速度が肩書きの安心に勝るというもので、そこに賭けました。全文はポートフォリオのブログ欄からリンクされています。',
     },
   },
   {
@@ -563,9 +565,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['彼の強みは', '何が得意', '一番の強み', 'なぜ優れた PM なのか', '彼の際立つ点'],
     },
     answers: {
-      en: "Charles's core strength is being a **Product Builder**, he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. He brings ownership as the **USPACE app owner leading a 15-person cross-functional Scrum team**, 0→1 launch experience (USPACE for Business, Taiwan's first parking insurance), and full-stack AI engineering depth, his own multi-agent system and this corrective-RAG chatbot, plus production Gemini features.",
-      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**，他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。他具備 **USPACE app 負責人、帶領 15 人跨職能 Scrum 團隊** 的歷練、0→1 上線經驗（USPACE for Business、全台首張停車保險），以及全端 AI 工程深度（自建多代理系統、這個 corrective RAG 聊天機器人，以及生產級 Gemini 功能）。',
-      ja: 'Charles の核となる強みは **Product Builder** であること、鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。**USPACE app のオーナーとして 15 名のクロスファンクショナル Scrum チームを率いた**経験、0→1 のローンチ経験（USPACE for Business、台湾初の駐車場保険）、フルスタックの AI エンジニアリング（自作マルチエージェント、この corrective RAG チャットボット、本番 Gemini 機能）を備えます。',
+      en: "Charles's core strength is being a **Product Builder**: he pairs sharp product strategy (JTBD, RICE, opportunity framing) with the engineering to ship it himself via AI, iterating 5x faster. Three things back that up. **Ownership**: he is the USPACE app owner leading a 15-person cross-functional Scrum team across three product lines. **0→1 range**: he launched USPACE for Business and Taiwan's first parking insurance, and shipped five solo side projects end to end. **Real AI-engineering depth**: his own multi-agent system Product Playbook, this corrective-RAG chatbot, and production Gemini features, all working systems you can inspect. The rare part is that all three live in one person, so strategy and execution stop being a handoff.",
+      'zh-TW': 'Charles 的核心優勢是身為 **Product Builder**：他把敏銳的產品策略（JTBD、RICE、機會框架）與「親手用 AI 交付」的工程能力結合，迭代快 5 倍。有三件事撐起這點。**當責**：他是 USPACE app 負責人，帶領 15 人跨職能 Scrum 團隊、橫跨三條產品線。**0→1 廣度**：他推出了 USPACE for Business 與全台首張停車保險，也端到端獨力交付了五個副業專案。**真實的 AI 工程深度**：自建的多代理系統 Product Playbook、這個 corrective RAG 聊天機器人，以及生產級 Gemini 功能，全是能檢視的運作系統。最稀有的是這三者同時長在一個人身上，於是策略與執行不再是交接。',
+      ja: 'Charles の核となる強みは **Product Builder** であること：鋭いプロダクト戦略（JTBD、RICE、機会フレーミング）と AI で自ら出荷するエンジニアリングを併せ持ち、5 倍速で反復します。それを 3 つが裏づけます。**オーナーシップ**：USPACE app のオーナーとして 15 名のクロスファンクショナル Scrum チームを率い、3 つのプロダクトラインを横断。**0→1 の幅**：USPACE for Business と台湾初の駐車場保険をローンチし、5 つのサイドプロジェクトを端から端まで単独で出荷。**本物の AI エンジニアリングの深さ**：自作のマルチエージェント Product Playbook、この corrective RAG チャットボット、本番 Gemini 機能、いずれも検証できる動くシステムです。稀有なのは、この 3 つが一人の中に同居していること、ゆえに戦略と実行が受け渡しでなくなります。',
     },
   },
   {
@@ -589,9 +591,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['一番の成果は', '最も誇れる仕事', '最大の功績'],
     },
     answers: {
-      en: "A standout: at USPACE he leads a 15-person cross-functional team as the **app owner**, 0→1 launched **USPACE for Business**, and shipped **Taiwan's first parking insurance** (an FSC regulatory-sandbox trial with Fubon, embedded one-tap for 1M+ members). On the engineering side, his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost. He measures success by outcomes, the user behavior his products move.",
-      'zh-TW': '一個亮點：在 USPACE 他以 **app 負責人** 帶領 15 人跨職能團隊，0→1 推出 **USPACE for Business**，並推出 **全台首張停車保險**（與富邦合作的 FSC 監理沙盒試辦，一鍵嵌入結帳、觸及 1M+ 會員）。工程方面，他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變。他以結果衡量成功，看產品改變了多少使用者行為。',
-      ja: '際立つ成果：USPACE で app オーナーとして 15 名のクロスファンクショナルチームを率い、**USPACE for Business** を 0→1 でローンチ、**台湾初の駐車場保険**（富邦との FSC 規制サンドボックス試行、ワンタップで決済に組み込み、100 万人超の会員にリーチ）を投入。エンジニアリング面では **Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置きで）。成功は成果で、プロダクトが動かしたユーザー行動で測ります。',
+      en: "Two stand out, one product and one engineering. On product: at USPACE, as the **app owner** leading a 15-person cross-functional team, he 0→1 launched **USPACE for Business** and shipped **Taiwan's first parking insurance**, an FSC regulatory-sandbox trial with Fubon that embeds pay-as-you-park pricing one-tap into checkout for 1M+ members. On engineering: his **Product Playbook** multi-agent system lifted spec quality-completion to 100% (from 59.1%) at flat token cost, with the pre-mortem agent proving load-bearing (the risk step collapses to 22.2% without it). Both reflect how he measures success, by the user behavior his products actually move.",
+      'zh-TW': '兩個最突出，一個產品、一個工程。產品面：在 USPACE，他以 **app 負責人** 帶領 15 人跨職能團隊，0→1 推出 **USPACE for Business**，並推出 **全台首張停車保險**，與富邦合作的 FSC 監理沙盒試辦，把 pay-as-you-park 用量計價一鍵嵌入結帳、觸及 1M+ 會員。工程面：他的 **Product Playbook** 多代理系統把規格品質完成率從 59.1% 提升到 100%，且 token 成本不變，其中 pre-mortem 子代理被證明是關鍵支柱（少了它，風險評估步驟會掉到 22.2%）。兩者都反映他衡量成功的方式，看產品真正改變了多少使用者行為。',
+      ja: '最も際立つのは 2 つ、プロダクトとエンジニアリングが 1 つずつ。プロダクト面：USPACE で **app オーナー**として 15 名のクロスファンクショナルチームを率い、**USPACE for Business** を 0→1 でローンチ、**台湾初の駐車場保険**（富邦との FSC 規制サンドボックス試行、pay-as-you-park の従量課金をワンタップで決済に組み込み、100 万人超の会員にリーチ）を投入。エンジニアリング面：**Product Playbook** マルチエージェントが仕様の品質完了率を 59.1% から 100% へ（トークンコスト据え置き）、pre-mortem サブエージェントが要であると実証（これがないとリスク評価ステップは 22.2% へ崩れる）。どちらも、プロダクトが実際に動かしたユーザー行動で成功を測る彼の姿勢を表します。',
     },
   },
   {
@@ -602,9 +604,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜ採用すべき', 'なぜ Charles を雇う', 'どんな価値をもたらす', 'なぜ適任'],
     },
     answers: {
-      en: 'Charles compresses the usual PM→engineering handoff: he sets product strategy AND ships the prototype himself with AI, validating ideas in production 5x faster and cheaper. He has led a **15-person cross-functional team as USPACE app owner**, launched B2B SaaS and Taiwan\'s first parking insurance 0→1, and built production AI systems end to end. For a team that wants validated outcomes fast, that combination is rare.',
-      'zh-TW': 'Charles 壓縮了傳統「PM → 工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。他曾以 **USPACE app 負責人帶領 15 人跨職能團隊**、0→1 推出 B2B SaaS 與全台首張停車保險、端到端打造生產級 AI 系統。對一個想要快速取得已驗證成果的團隊，這種組合很稀有。',
-      ja: 'Charles は従来の「PM→エンジニアリング」の受け渡しを圧縮します：プロダクト戦略を立てつつ AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。**USPACE app のオーナーとして 15 名のクロスファンクショナルチームを率い**、B2B SaaS と台湾初の駐車場保険を 0→1 でローンチ、本番 AI システムを端から端まで構築しました。検証済みの成果を速く求めるチームには稀有な組み合わせです。',
+      en: "Charles compresses the usual PM-to-engineering handoff: he sets product strategy AND ships the prototype himself with AI, so ideas get validated in production 5x faster and cheaper. Concretely, he has led a **15-person cross-functional team as USPACE app owner**, launched B2B SaaS and Taiwan's first parking insurance 0→1, and built production AI systems (a multi-agent spec engine, this corrective-RAG chatbot, Gemini features) end to end. That means fewer expensive handoffs, faster learning loops, and a hire who can both decide what to build and build enough of it to derisk the decision. For a team that wants validated outcomes fast, that combination is rare.",
+      'zh-TW': 'Charles 壓縮了傳統「PM 到工程」的交接：他既定產品策略，又親手用 AI 交付原型，讓想法在生產環境中以 5 倍速、更低成本被驗證。具體來說，他以 **USPACE app 負責人帶領 15 人跨職能團隊**、0→1 推出 B2B SaaS 與全台首張停車保險、端到端打造生產級 AI 系統（多代理規格引擎、這個 corrective RAG 聊天機器人、Gemini 功能）。這代表更少昂貴的交接、更快的學習迴圈，以及一位「既能決定要做什麼、又能把它做到足以降低決策風險」的人。對一個想要快速取得已驗證成果的團隊，這種組合很稀有。',
+      ja: 'Charles は従来の「PM からエンジニアリング」への受け渡しを圧縮します：プロダクト戦略を立てつつ AI で自らプロトタイプを出荷し、本番でアイデアを 5 倍速・低コストで検証します。具体的には、**USPACE app のオーナーとして 15 名のクロスファンクショナルチームを率い**、B2B SaaS と台湾初の駐車場保険を 0→1 でローンチ、本番 AI システム（マルチエージェント仕様エンジン、この corrective RAG チャットボット、Gemini 機能）を端から端まで構築しました。つまり、高コストな受け渡しが減り、学習ループが速くなり、「何を作るか決められて、決定のリスクを下げる程度まで自分で作れる」人材が手に入ります。検証済みの成果を速く求めるチームには稀有な組み合わせです。',
     },
   },
   {
@@ -615,9 +617,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜ PM になった', 'なぜプロダクトマネジメント', '彼の原動力', 'モチベーション'],
     },
     answers: {
-      en: 'Charles is driven by shipping, he treats launching as the truest form of validation, and is energized by building products that actually change user behavior. He believes the strongest product people are Builders who close the gap between idea and working product themselves. For the deeper personal "why," he would be glad to talk directly.',
-      'zh-TW': 'Charles 的驅動力來自「交付」，他把上線視為最真實的驗證，並對打造「真正改變使用者行為」的產品充滿熱情。他相信最強的產品人是親手弭平「想法與可運作產品之間距離」的 Builder。更深層的個人「為什麼」，他很樂意親自聊。',
-      ja: 'Charles の原動力は「出荷」です、ローンチを最も真実な検証と捉え、ユーザー行動を実際に変えるプロダクト作りに情熱を注ぎます。最強のプロダクト人材は、アイデアと動くプロダクトの間の距離を自ら埋める Builder だと信じています。より深い個人的な「なぜ」は、直接話すのを歓迎します。',
+      en: "Charles is driven by shipping: he treats launching as the truest form of validation and gets energized by products that actually change user behavior. He believes the strongest product people are Builders who close the gap between idea and working product themselves, and that conviction is why he reframed his career around AI and turned down a safer big-tech path. The work that excites him is the 0→1 stretch, finding the real problem, betting on a solution, and getting it in front of users fast enough to learn. For the deeper personal why, he would be glad to talk directly.",
+      'zh-TW': 'Charles 的驅動力來自「交付」：他把上線視為最真實的驗證，並對打造「真正改變使用者行為」的產品充滿熱情。他相信最強的產品人是親手弭平「想法與可運作產品之間距離」的 Builder，這份信念正是他把職涯重新繞著 AI 重構、並推掉較安穩大廠路線的原因。最讓他興奮的是 0→1 的那一段：找到真正的問題、對解法下注，並快到足以學習地把它推到使用者面前。更深層的個人「為什麼」，他很樂意親自聊。',
+      ja: 'Charles の原動力は「出荷」です：ローンチを最も真実な検証と捉え、ユーザー行動を実際に変えるプロダクトに情熱を注ぎます。最強のプロダクト人材はアイデアと動くプロダクトの間を自ら埋める Builder だと信じており、その確信こそ、キャリアを AI 中心に再構築し、より安全な大手の道を断った理由です。最も心が躍るのは 0→1 の区間、本当の課題を見つけ、解に賭け、学べるだけの速さでユーザーの前に出すことです。より深い個人的な「なぜ」は、直接話すのを歓迎します。',
     },
   },
   {
@@ -641,9 +643,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['どう優先順位をつける', '優先順位付けの方法', '何を作るか決める方法'],
     },
     answers: {
-      en: 'Charles prioritizes by outcomes over outputs: he frames opportunities (JTBD, Opportunity Solution Tree), scores with RICE, and anchors on a North Star metric. Crucially, he validates by building, using AI to ship a working prototype and get real user signal before committing large resources, keeping decisions grounded in evidence.',
-      'zh-TW': 'Charles 以「結果重於產出」來排優先級：他用 JTBD、機會解決方案樹(OST)框定機會，用 RICE 評分，並錨定 North Star 指標。關鍵是他用「動手做」來驗證，用 AI 交付可運作原型、在投入大量資源前先取得真實使用者訊號，讓決策建立在證據上。',
-      ja: 'Charles は「アウトプットよりアウトカム」で優先順位をつけます：JTBD や機会解決ツリー(OST)で機会を捉え、RICE で採点し、North Star 指標に紐づけます。重要なのは「作って検証する」こと、大きなリソースを投じる前に、AI で動くプロトタイプを出して実ユーザーの反応を得ます。',
+      en: 'Charles prioritizes by outcomes over outputs. He frames the opportunity first (JTBD, Opportunity Solution Tree), scores candidates with **RICE**, and anchors everything on a **North Star metric** so the team optimizes one thing that matters. The part that sets him apart is how he validates: he uses AI to ship a working prototype and get real user signal before committing large resources, so each call rests on evidence. When new signal contradicts the plan, he reprioritizes fast, strong opinions, loosely held.',
+      'zh-TW': 'Charles 以「結果重於產出」來排優先級。他先框定機會（JTBD、機會解決方案樹 OST），用 **RICE** 為候選項評分，並把一切錨定在 **North Star 指標** 上，讓團隊只最佳化一件真正重要的事。他與眾不同的地方在於驗證方式：他用 AI 交付可運作原型、在投入大量資源前先取得真實使用者訊號，讓每個決策都建立在證據上。當新訊號與計畫相牴觸，他會很快重新排序，有主見但不固執。',
+      ja: 'Charles は「アウトプットよりアウトカム」で優先順位をつけます。まず機会を捉え（JTBD、機会解決ツリー OST）、**RICE** で候補を採点し、すべてを **North Star 指標** に紐づけて、チームが本当に重要な一点を最適化するようにします。彼が際立つのは検証の仕方です：AI で動くプロトタイプを出し、大きなリソースを投じる前に実ユーザーの反応を得て、各判断を証拠の上に置きます。新しいシグナルが計画と食い違えば素早く優先順位を組み替えます、強い意見を緩く持って。',
     },
   },
 
@@ -656,9 +658,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['なぜこれらの技術を選んだ', '技術選定の理由', 'なぜ Qdrant', 'なぜ Claude'],
     },
     answers: {
-      en: "For this chatbot specifically: **Qdrant** (hybrid dense+BM25 with server-side RRF, generous free tier after Supabase's 2-project cap), **Voyage voyage-3-large** (SOTA multilingual embeddings for zh/ja/en), and a **two-tier Gemini→Claude** stack (free-tier first, paid fallback) to control cost. Across projects he favors shipping fast with AI-native tooling (Claude Code, Codex) over heavyweight infrastructure.",
-      'zh-TW': '以這個 chatbot 為例：**Qdrant**（dense+BM25 混合、伺服器端 RRF，在 Supabase 2 專案上限後選它的慷慨免費額度）、**Voyage voyage-3-large**（中日英多語的 SOTA 向量）、以及**兩層 Gemini→Claude** 堆疊（免費層優先、付費備援）來控制成本。跨專案來看，他偏好用 AI 原生工具(Claude Code、Codex)快速交付，而非笨重的基礎設施。',
-      ja: 'このチャットボットの場合：**Qdrant**（dense+BM25 ハイブリッド、サーバーサイド RRF、Supabase の 2 プロジェクト上限後に選んだ寛大な無料枠）、**Voyage voyage-3-large**（zh/ja/en の SOTA 多言語埋め込み）、コスト管理のための**二層 Gemini→Claude**（無料枠優先、有料フォールバック）。プロジェクト全般では、重厚なインフラより AI ネイティブなツール(Claude Code、Codex)での高速出荷を好みます。',
+      en: "For this chatbot specifically: **Qdrant** for the vector store (hybrid dense plus BM25 with server-side RRF, and a generous free tier after Supabase's pgvector hit its 2-project cap), **Voyage voyage-3-large** for SOTA multilingual embeddings that handle zh, ja, and en cleanly, **rerank-2.5** as a cross-encoder over the fused results, and a **two-tier Gemini→Claude** generation stack (free tier first, paid fallback) to keep cost near zero. The server-side fusion also keeps the Vercel function lean by shipping no sparse encoder. Across projects the same instinct shows up: ship fast with AI-native tooling (Claude Code, Codex) and lean managed services, and add infrastructure only where it earns its keep.",
+      'zh-TW': '以這個 chatbot 為例：向量庫用 **Qdrant**（dense 加 BM25 混合、伺服器端 RRF，且在 Supabase 的 pgvector 撞到兩專案上限後，它的免費額度很大方）、向量用 **Voyage voyage-3-large**（中日英都處理得乾淨的 SOTA 多語向量）、用 **rerank-2.5** 對融合後的結果做 cross-encoder 重排序、生成則用 **兩層 Gemini→Claude**（免費層先、付費備援）把成本壓到近乎零。伺服器端融合也讓 Vercel function 保持輕量，因為不用打包 sparse 編碼器。跨專案來看，同一個直覺一再出現：用 AI 原生工具(Claude Code、Codex)與輕量託管服務快速交付，只在划算的地方才加基礎設施。',
+      ja: 'このチャットボットの場合：ベクトルストアは **Qdrant**（dense 加 BM25 ハイブリッド、サーバーサイド RRF、Supabase の pgvector が 2 プロジェクト上限に達した後の寛大な無料枠）、埋め込みは **Voyage voyage-3-large**（zh/ja/en をきれいに扱う SOTA 多言語）、融合結果に対して **rerank-2.5** の cross-encoder 再ランク、生成はコストをほぼゼロに抑える **二層 Gemini→Claude**（無料枠が先、有料フォールバック）。サーバーサイド融合は sparse エンコーダを同梱しないので Vercel 関数も軽量に保てます。プロジェクト全般で同じ直感が現れます：AI ネイティブなツール(Claude Code、Codex)と軽量なマネージドサービスで素早く出荷し、見合う場所にだけインフラを足す。',
     },
   },
   {
@@ -669,9 +671,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['オープンソースですか', 'プロジェクトは公開', 'コードは見られる', 'Product Playbook は OSS'],
     },
     answers: {
-      en: '**Product Playbook** is open source under the MIT license. Several of his projects have public repos on GitHub ([github.com/Kaminoikari](https://github.com/Kaminoikari)), including Product Playbook, House Ops, and Job Ops. Path and Plutus Trade are live demos you can try.',
-      'zh-TW': '**Product Playbook** 以 MIT 授權開源。他有數個專案在 GitHub 上有公開 repo([github.com/Kaminoikari](https://github.com/Kaminoikari))，包括 Product Playbook、House Ops 與 Job Ops。Path 和 Plutus Trade 則是可以實際試用的 live demo。',
-      ja: '**Product Playbook** は MIT ライセンスで OSS 公開。GitHub([github.com/Kaminoikari](https://github.com/Kaminoikari))に複数の公開リポジトリがあります、Product Playbook、House Ops、Job Ops など。Path と Plutus Trade は実際に試せるライブデモです。',
+      en: '**Product Playbook** is open source under the **MIT license** and used by PMs and engineers as a shared productivity tool. Several of his projects have public repos on GitHub ([github.com/Kaminoikari](https://github.com/Kaminoikari)), including Product Playbook, House Ops, and Job Ops, so you can read the actual implementation, the sub-agent definitions, the scoring engines, the scrapers. **Path** and **Plutus Trade** are live demos you can try in the browser. Between the repos and the live demos, you can inspect most of his work directly, beyond the description here.',
+      'zh-TW': '**Product Playbook** 以 **MIT 授權** 開源，被 PM 與工程師當成共用的生產力工具。他有數個專案在 GitHub 上有公開 repo([github.com/Kaminoikari](https://github.com/Kaminoikari))，包括 Product Playbook、House Ops 與 Job Ops，所以你能直接讀到實作，像子代理的定義、評分引擎、爬蟲。**Path** 與 **Plutus Trade** 則是可以在瀏覽器裡實際試用的 live demo。靠這些 repo 加上 live demo，他大部分的作品都能被直接檢視，可以親自驗證。',
+      ja: '**Product Playbook** は **MIT ライセンス** で OSS 公開され、PM やエンジニアが共有の生産性ツールとして使っています。GitHub([github.com/Kaminoikari](https://github.com/Kaminoikari))には複数の公開リポジトリがあり、Product Playbook、House Ops、Job Ops を含むので、実装そのもの、サブエージェントの定義、採点エンジン、スクレイパーまで読めます。**Path** と **Plutus Trade** はブラウザで試せるライブデモです。リポジトリとライブデモを合わせると、彼の仕事の大半は実際に検証できます。',
     },
   },
 
@@ -684,9 +686,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['0 から 1 を作れる', '一人でプロダクトを出せる', 'MVP を作れる', 'ソロで開発できる'],
     },
     answers: {
-      en: 'Yes, that\'s his core mode. At USPACE he 0→1 launched **USPACE for Business** (B2B SaaS) and **Taiwan\'s first parking insurance**, and independently built and shipped five full products (Path, Plutus Trade, Product Playbook, House Ops, Job Ops) across React, Node.js, Flutter, and Python using AI tooling. He sets the strategy and ships the working product himself.',
-      'zh-TW': '可以，這正是他的核心模式。在 USPACE 他 0→1 推出了 **USPACE for Business**（B2B SaaS）與 **全台首張停車保險**，並獨立打造、交付了五個完整產品(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)，橫跨 React、Node.js、Flutter 與 Python，全程用 AI 工具。他既定策略，也親手交付可運作的產品。',
-      ja: 'はい、それが彼の核となるモードです。USPACE で **USPACE for Business**（B2B SaaS）と **台湾初の駐車場保険** を 0→1 でローンチし、React・Node.js・Flutter・Python にまたがる 5 つの完成プロダクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)を AI ツールで単独構築・出荷しました。戦略を立て、動くプロダクトも自ら出します。',
+      en: "Yes, that's his core mode. At USPACE he 0→1 launched **USPACE for Business** (a B2B SaaS, owned end to end from sales discovery through spec, launch, and payment reconciliation) and **Taiwan's first parking insurance**. On his own he has built and shipped five complete products, **Path, Plutus Trade, Product Playbook, House Ops, and Job Ops**, across React, Node.js, Flutter, and Python, all with AI tooling and no separate engineering team. The pattern is always the same: he sets the strategy, designs the system, and ships the working product himself, which is exactly what 0→1 in a resource-constrained setting demands.",
+      'zh-TW': '可以，這正是他的核心模式。在 USPACE 他 0→1 推出了 **USPACE for Business**（一個 B2B SaaS，從業務探索、規格、上線到財務對帳全程獨力負責）與 **全台首張停車保險**。他也獨力打造、交付了五個完整產品，**Path、Plutus Trade、Product Playbook、House Ops、Job Ops**，橫跨 React、Node.js、Flutter 與 Python，全程用 AI 工具、沒有另外的工程團隊。模式始終一樣：他既定策略、設計系統，也親手交付可運作的產品，這正是資源受限環境下的 0→1 所需要的。',
+      ja: 'はい、それが彼の核となるモードです。USPACE で **USPACE for Business**（B2B SaaS、営業ディスカバリーから仕様・ローンチ・財務照合まで端から端まで単独担当）と **台湾初の駐車場保険** を 0→1 でローンチ。個人でも 5 つの完成プロダクト、**Path、Plutus Trade、Product Playbook、House Ops、Job Ops** を React・Node.js・Flutter・Python にまたがり、すべて AI ツールで、別途のエンジニアチームなしに構築・出荷しました。パターンは常に同じです：戦略を立て、システムを設計し、動くプロダクトも自ら出荷する、これこそリソース制約下の 0→1 が要求するものです。',
     },
   },
   {
