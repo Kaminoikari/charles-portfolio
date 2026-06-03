@@ -20,7 +20,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      '15 名のクロスファンクショナル Scrum チーム（PM・開発・デザイン）を率いる USPACE app のオーナー：駐車場決済・出張・保険の 3 プロダクトラインの戦略を主導し（台湾 + 日本）、リリース速度を倍増',
+      '台湾と日本にまたがる 15 名のクロスファンクショナル Scrum チーム（PM・開発・デザイン）を率いる USPACE app のオーナー：駐車場決済・出張・保険の 3 プロダクトラインの戦略を主導し、リリース速度を倍増',
       '0→1 で USPACE for Business（2025 年 9 月）をローンチ：企業の出張管理向け B2B SaaS で、営業ディスカバリーから仕様・開発テスト・ローンチ、決済・財務照合まで全ライフサイクルを単独で担当',
       '5 倍速いイテレーション、エンジニア増員ゼロ：AI Product Builder の役割を再定義し、Claude Code と Codex の agentic workflow でフルスタックを自ら構築',
       '台湾初の駐車場保険をローンチ：富邦との FSC 規制サンドボックス試行で、pay-as-you-park の従量課金をワンタップで決済に組み込み、100 万人超の会員にリーチ',
