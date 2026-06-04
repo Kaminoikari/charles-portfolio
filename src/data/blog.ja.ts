@@ -31,6 +31,15 @@ export const blogArticles: BlogArticle[] = [
     featured: true,
     cover: 'https://substack-post-media.s3.amazonaws.com/public/images/781195a1-7e0f-450d-88f1-3e976a22cf3d_1206x968.jpeg',
   },
+  {
+    title: 'LangGraph で「エンタープライズ級」の AI デジタルツインを構築した方法',
+    subtitle: '企業が AI アプリケーションに本当に求める技術要件を語る：セマンティックキャッシュ、ハイブリッド検索から自己修正パイプラインまで、プロダクトマネージャーによる Enterprise-grade RAG の実践。',
+    url: 'https://charlestychen.substack.com/p/langgraph-ai',
+    platform: 'Substack',
+    date: '2026-06-04',
+    featured: true,
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/180e9fdf-9f06-450e-adda-d9d13a0a92f2_1470x980.avif',
+  },
   // ── Chronological (newest first) ──
   {
     title: 'なぜ AI ラボがハードウェアに賭け始めたのか：Caitlin Kalinowski の観察',
