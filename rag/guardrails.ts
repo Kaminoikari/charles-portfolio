@@ -47,3 +47,22 @@ const OFFENSIVE_OUTPUT: RegExp[] = [
 export function isOffensiveOutput(text: string): boolean {
   return OFFENSIVE_OUTPUT.some((re) => re.test(text))
 }
+
+// The answer model is told to cite the NUMBERED context as [n]. The portfolio
+// map and entity relationships are injected without numbers, so when a claim is
+// grounded only on the map the model sometimes invents a descriptive tag like
+// "[Charles Chen description]". That is not a real citation: the UI only renders
+// [n] / [1, 2] markers (see Markdown.tsx), so the tag leaks into the prose as
+// literal text. This strips any bracketed run that is neither a markdown link
+// [t](u) nor a numeric citation, plus a single leading space, so the sentence
+// reads cleanly. The kept-set matches the renderer's citation regex exactly, so
+// strip and render agree on what a real citation is. Defense-in-depth behind the
+// nodes.ts prompt rule that forbids citing the map.
+const NUMERIC_CITATION = /^\d+(?:,\s*\d+)*$/
+const BRACKET_TAG = /\s?\[([^\]\n]+)\](?!\()/g
+
+export function stripInvalidCitations(text: string): string {
+  return text.replace(BRACKET_TAG, (full, inner: string) =>
+    NUMERIC_CITATION.test(inner.trim()) ? full : '',
+  )
+}

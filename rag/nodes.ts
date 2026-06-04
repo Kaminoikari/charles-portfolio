@@ -15,7 +15,7 @@ import { hybridRetrieve } from './retrieval.js'
 import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
-import { sanitize, isOffensiveOutput } from './guardrails.js'
+import { sanitize, isOffensiveOutput, stripInvalidCitations } from './guardrails.js'
 import { gemini, generateWithFallback } from './llm.js'
 import { triage as classifyQuestion, genericFallback } from './triage.js'
 
@@ -215,7 +215,12 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
           'context, portfolio map, and entity relationships. Never invent roles, ' +
           'employers, dates, or credentials. If the context does not contain the ' +
           'answer, say so plainly and suggest contacting him. Cite sources inline ' +
-          'as [n]. When you describe a specific project, include its link from the ' +
+          'as [n], where n is the number of a provided context item. The portfolio ' +
+          'map and entity relationships are background context with no number: ' +
+          'never cite them, and when a statement is supported only by the portfolio ' +
+          'map, state it with no citation at all. A citation is always a number, ' +
+          'never a descriptive tag like [his bio] or [Charles Chen description]. ' +
+          'When you describe a specific project, include its link from the ' +
           'portfolio map as a markdown link (live demo if it has one, otherwise the ' +
           'GitHub repo) so the visitor can open it. Reply in the language of the ' +
           'question.\n\nPortfolio map:\n' +
@@ -251,7 +256,7 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
     locale: d.metadata.locale,
   }))
 
-  return { answer: text, sources }
+  return { answer: stripInvalidCitations(text), sources }
 }
 
 // --- fallback ------------------------------------------------------------
