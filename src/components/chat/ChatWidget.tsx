@@ -324,7 +324,7 @@ export default function ChatWidget() {
           onChange={(e) => setInput(e.target.value)}
           placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
           aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
-          maxLength={50}
+          maxLength={200}
           disabled={regionBlocked}
           // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
           // zooms whenever a focused input is under 16px); the rest of the widget

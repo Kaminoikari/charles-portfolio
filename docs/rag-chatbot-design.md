@@ -217,7 +217,7 @@ server-side**, then a Voyage cross-encoder rerank in the function. The ablation
    that drops any answer containing slurs. Layer (b) is the real backstop.
 3. **Personal / privacy redirect** — family / private-life questions are
    redirected to contact channels (education is kept deliberately private).
-4. **Input cap** — questions are capped at 50 chars (`MAX_QUESTION_LEN`,
+4. **Input cap** — questions are capped at 200 chars (`MAX_QUESTION_LEN`,
    `api-helpers.ts`); over-length returns 413. Keeps queries cheap to embed and
    concise enough for the retriever, and bounds abuse payload size.
 5. **Rate limiting** — per-IP sliding window. Currently in-memory per warm

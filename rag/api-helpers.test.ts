@@ -17,9 +17,9 @@ test('parseChatRequest: rejects non-object, missing, empty, oversize', () => {
   assert.equal(parseChatRequest('nope').ok, false)
   assert.equal(parseChatRequest({}).ok, false)
   assert.equal(parseChatRequest({ question: '   ' }).ok, false)
-  // Limit is 50 chars: 50 passes, 51 is rejected with 413.
-  assert.equal(parseChatRequest({ question: 'x'.repeat(50) }).ok, true)
-  const big = parseChatRequest({ question: 'x'.repeat(51) })
+  // Limit is 200 chars: 200 passes, 201 is rejected with 413.
+  assert.equal(parseChatRequest({ question: 'x'.repeat(200) }).ok, true)
+  const big = parseChatRequest({ question: 'x'.repeat(201) })
   assert.equal(big.ok, false)
   if (!big.ok) assert.equal(big.status, 413)
 })

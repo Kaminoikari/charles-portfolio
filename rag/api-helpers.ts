@@ -12,7 +12,7 @@ export interface ParseError {
   message: string
 }
 
-const MAX_QUESTION_LEN = 50
+const MAX_QUESTION_LEN = 200
 
 // Validate and normalize an incoming chat request body.
 export function parseChatRequest(body: unknown): ParsedRequest | ParseError {
