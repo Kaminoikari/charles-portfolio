@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hero Clone — yutaabe.com reproduction</title>
+  <style>
+    :root { --fg: #f4f4f4; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    body {
+      font-family: "SF Mono", ui-monospace, "Space Grotesk", monospace;
+      color: var(--fg);
+      letter-spacing: 0.08em;
+    }
+    #webgl { position: fixed; inset: 0; z-index: 0; }
+    #webgl canvas { display: block; }
+
+    .ui { position: fixed; z-index: 2; font-size: 13px; pointer-events: none; }
+    .ui.nav-l  { top: 28px; left: 36px; }
+    .ui.nav-r  { top: 28px; right: 36px; }
+    .ui .item  { display: inline-block; margin-right: 32px; opacity: .85; }
+    .ui.nav-r .item { margin-right: 0; margin-left: 32px; }
+    .ui.tempo  { bottom: 38%; left: 36px; line-height: 1.8; opacity: .8; font-size: 12px; }
+    .ui.tag    { bottom: 38%; right: 36px; text-align: right; line-height: 1.8; opacity: .8; font-size: 12px; }
+    .ui.shift  { bottom: 28px; left: 36px; display: flex; align-items: center; gap: 10px; font-size: 12px; opacity: .8; }
+    .ui.shift .sw { width: 34px; height: 16px; border: 1px solid #777; border-radius: 10px; position: relative; }
+    .ui.shift .sw::after { content:""; position:absolute; width:10px; height:10px; border-radius:50%; background:#bbb; top:2px; left:3px; }
+
+    #loading {
+      position: fixed; inset: 0; z-index: 5; display: grid; place-items: center;
+      background: #000; color: #888; font-size: 12px; transition: opacity .6s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="webgl"></div>
+
+  <nav class="ui nav-l"><span class="item">PROJECTS</span><span class="item">ABOUT</span></nav>
+  <nav class="ui nav-r"><span class="item">PLAYGROUND</span><span class="item">CONTACT</span></nav>
+  <div class="ui tempo">7 37 PM TOKYO<br />LIGHT RAIN,100%</div>
+  <div class="ui tag">CATS ARE SO CUTE,<br />AREN'T THEY</div>
+  <div class="ui shift"><span class="sw"></span> SHIFT</div>
+
+  <div id="loading">LOADING…</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+  import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+  import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+  import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+  // ---------------------------------------------------------------------------
+  // Shaders — extracted verbatim from yutaabe.com (index.DTZ4osvG.js)
+  //   ze = vertex shader (with procedural ear wobble)
+  //   tn = head/body fragment shader   (mesh "cat")
+  //   nn = eye fragment shader          (mesh "球")
+  // ---------------------------------------------------------------------------
+  const VERT = `attribute vec3 barycentric;
+varying vec2 vUv;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+varying vec3 vBarycentric;
+varying float vWorldY;
+
+uniform float uTime;
+uniform vec3  uEarLeftTip;
+uniform vec3  uEarRightTip;
+uniform float uEarRadius;
+uniform vec2  uMouse;
+
+void main() {
+    vec3 pos = position;
+
+    float baseY_L = uEarLeftTip.y  - uEarRadius * 0.5;
+    float baseY_R = uEarRightTip.y - uEarRadius * 0.5;
+
+    float hL = smoothstep(baseY_L, baseY_L + uEarRadius * 0.25, pos.y);
+    float hR = smoothstep(baseY_R, baseY_R + uEarRadius * 0.25, pos.y);
+    float xReachL = 1.0 - smoothstep(uEarRadius * 0.45, uEarRadius * 0.9, abs(pos.x - uEarLeftTip.x));
+    float xReachR = 1.0 - smoothstep(uEarRadius * 0.45, uEarRadius * 0.9, abs(pos.x - uEarRightTip.x));
+    float wL = hL * xReachL;
+    float wR = hR * xReachR;
+
+    float tiltL = sin(uTime * 0.71)          * 0.18
+                + sin(uTime * 1.37 + 1.2)    * 0.10
+                + sin(uTime * 2.13 + 2.7)    * 0.06
+                + sin(uTime * 0.29 + 3.1)    * 0.07;
+
+    float tiltR = sin(uTime * 0.71 + 1.9)    * 0.18
+                + sin(uTime * 1.37 + 3.4)    * 0.10
+                + sin(uTime * 2.13 + 5.0)    * 0.06
+                + sin(uTime * 0.29 + 1.3)    * 0.07;
+
+    float cursorTilt = uMouse.x * 0.10;
+    tiltL += cursorTilt;
+    tiltR += cursorTilt;
+
+    vec2 baseL2 = vec2(uEarLeftTip.x,  baseY_L);
+    vec2 baseR2 = vec2(uEarRightTip.x, baseY_R);
+    vec2 vL2    = pos.xy - baseL2;
+    vec2 vR2    = pos.xy - baseR2;
+    float cL = cos(tiltL), sL = sin(tiltL);
+    float cR = cos(tiltR), sR = sin(tiltR);
+    vec2 newL = baseL2 + vec2(cL * vL2.x - sL * vL2.y, sL * vL2.x + cL * vL2.y);
+    vec2 newR = baseR2 + vec2(cR * vR2.x - sR * vR2.y, sR * vR2.x + cR * vR2.y);
+
+    pos.xy = mix(pos.xy, newL, wL);
+    pos.xy = mix(pos.xy, newR, wR);
+
+    vUv = uv;
+    vNormal = normalize(normalMatrix * normal);
+    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+    vViewPosition = mvPosition.xyz;
+    vBarycentric = barycentric;
+    vWorldY = (modelMatrix * vec4(pos, 1.0)).y;
+    gl_Position = projectionMatrix * mvPosition;
+}`;
+
+  const FRAG_HEAD = `uniform vec2 uMouse;
+uniform vec2 uResolution;
+uniform float uSweepY;
+uniform float uSweepReverse;
+uniform float uTime;
+uniform float uIntroRedY;
+uniform float uIntroTransition;
+uniform float uIntroFade;
+uniform float uHideY;
+uniform float uHalftoneFade;
+uniform float uIsTouch;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+varying vec3 vBarycentric;
+varying float vWorldY;
+varying vec2 vUv;
+
+float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash(i),              hash(i + vec2(1.0, 0.0)), f.x),
+        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x),
+        f.y
+    );
+}
+
+void main() {
+    vec3 normal = normalize(vNormal);
+    vec3 viewDir = normalize(-vViewPosition);
+
+    vec3 mouseLight = vec3(uMouse.x * 2.5, uMouse.y * 2.5, 1.5);
+    vec3 autoLight = vec3(sin(uTime * 0.4) * 1.5, cos(uTime * 0.27) * 1.0, 1.5);
+    vec3 lightDir = normalize(mix(mouseLight, autoLight, uIsTouch));
+
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfVec), 0.0), 80.0);
+    float specHard = pow(max(dot(normal, halfVec), 0.0), 200.0);
+    float specular = spec * 0.5 + specHard * 0.8;
+
+    float rim = pow(1.0 - max(dot(viewDir, normal), 0.0), 2.5) * 0.45;
+    float diffuse = max(dot(normal, lightDir), 0.0) * 0.28;
+    float brightness = pow(0.03 + diffuse + rim + specular, 2.75);
+
+    float lightLevel = clamp(diffuse * 1.4 + rim * 0.9 + specular * 3.0, 0.0, 1.0);
+    float lightShaped = smoothstep(0.1, 0.8, lightLevel);
+    float cellSize = 10.0;
+    vec2 cellId = floor(gl_FragCoord.xy / cellSize);
+    vec2 cellLocal = fract(gl_FragCoord.xy / cellSize) - 0.5;
+    float dotDist = length(cellLocal);
+    float cellHash = fract(sin(dot(cellId, vec2(127.1, 311.7))) * 43758.5453);
+    float cellHash2 = fract(sin(dot(cellId, vec2(91.34, 47.71))) * 28471.13);
+    float pulsePrimary = sin(uTime * 2.2 + cellHash * 6.2831) * 0.5 + 0.5;
+    float pulseSecondary = sin(uTime * 1.3 + cellHash2 * 6.2831) * 0.5 + 0.5;
+
+    vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
+    vec2 cellCenterPx = (cellId + 0.5) * cellSize;
+    float cursorDistPx = distance(cellCenterPx, cursorPx);
+    float cursorInfluence = (1.0 - smoothstep(0.0, 220.0, cursorDistPx)) * (1.0 - uIsTouch);
+
+    float dotRadius = lightShaped * 0.6
+        + (pulsePrimary - 0.5) * 0.10 * lightShaped
+        + (pulseSecondary - 0.5) * 0.06 * lightShaped
+        + cursorInfluence * 0.35;
+    dotRadius = max(dotRadius, 0.0);
+    float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
+    vec3 dotColor = vec3(1.0);
+    vec3 cursorColor = vec3(0.0, 0.851, 1.0); // brand cyan #00D9FF
+    vec3 mixedDotColor = mix(dotColor, cursorColor, cursorInfluence);
+    vec3 hotTint = vec3(0.91, 0.45, 0.2) * pow(specular, 1.2) * 2.0 * (1.0 - cursorInfluence); // brand mars orange
+    vec3 halftoneColor = mix(vec3(0.0), mixedDotColor + hotTint, dotMask);
+
+    float minBary = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
+    float wire = 1.0 - smoothstep(0.0, 0.04, minBary);
+
+    float n1 = vnoise(vUv * 5.0  + vec2(uTime * 0.9,  uTime * 0.5));
+    float n2 = vnoise(vUv * 12.0 - vec2(uTime * 1.7,  uTime * 1.1));
+    float n3 = vnoise(vUv * 28.0 + vec2(uTime * 3.2, -uTime * 2.3));
+    float edgeNoise = (n1 * 0.55 + n2 * 0.30 + n3 * 0.15) * 2.0 - 1.0;
+
+    float rawDist = vWorldY - uSweepY;
+    float proximity = exp(-abs(rawDist) * 6.0);
+    float noisyDist = rawDist + edgeNoise * 0.18 * proximity;
+
+    float directedDist = noisyDist * (1.0 - 2.0 * uSweepReverse);
+
+    float inWire = smoothstep(0.07, -0.07, directedDist);
+
+    float wireDiff = max(dot(normal, lightDir), 0.0);
+    float wireSpec = pow(max(dot(normal, halfVec), 0.0), 30.0);
+    float wireBrightness = 0.15 + wireDiff * 0.5 + wireSpec * 2.0;
+
+    vec3 vp = vViewPosition;
+    float travel1 = fract(vp.y * 4.0 - uTime * 0.6);
+    float travel2 = fract(vp.x * 3.0 + uTime * 0.5);
+    float travel3 = fract((vp.x + vp.y) * 3.5 - uTime * 0.7);
+    float pulse1 = pow(1.0 - abs(travel1 - 0.5) * 2.0, 12.0);
+    float pulse2 = pow(1.0 - abs(travel2 - 0.5) * 2.0, 12.0);
+    float pulse3 = pow(1.0 - abs(travel3 - 0.5) * 2.0, 12.0);
+    float travelLight = (pulse1 + pulse2 * 0.7 + pulse3 * 0.5) * wire * inWire;
+
+    vec3 wireColor = mix(vec3(0.0), vec3(wireBrightness), wire);
+    wireColor += vec3(0.91, 0.45, 0.18) * travelLight * 2.5; // brand mars orange flow
+
+    float sweepActive = smoothstep(3.0, 2.4, abs(uSweepY));
+    float d = abs(noisyDist);
+
+    float glow1 = exp(-d * 4.5) * sweepActive;
+    float glow2 = exp(-d * 16.0) * sweepActive;
+    float glow3 = exp(-d * 50.0) * sweepActive;
+
+    float sparkN = vnoise(vUv * 22.0 + vec2(uTime * 4.5, 0.0));
+    float spark  = pow(sparkN, 6.0) * glow2 * 12.0;
+
+    float scan = fract(vUv.x * 1.0 - uTime * 1.8);
+    scan = pow(1.0 - abs(scan - 0.5) * 2.0, 18.0) * glow3 * 6.0;
+
+    float fringe = step(0.0, rawDist) * (1.0 - step(0.25, rawDist));
+    float fringeN = vnoise(vUv * 18.0 - vec2(uTime * 2.0, 0.0));
+    float fringeV = pow(fringeN, 4.0) * (1.0 - rawDist / 0.25) * fringe * sweepActive * 1.5;
+
+    vec3 boundaryColor =
+        vec3(0.91, 0.34, 0.12) * glow1 * 2.5
+      + vec3(1.00, 0.52, 0.20) * glow2 * 5.0
+      + vec3(1.00, 0.95, 0.88) * glow3 * 14.0
+      + vec3(1.00, 0.55, 0.22) * spark
+      + vec3(1.00, 1.00, 1.00) * scan
+      + vec3(0.95, 0.45, 0.18) * fringeV;
+
+    if (uIntroRedY > -900.0) {
+        float effectiveInWire = (uIntroTransition > 0.5) ? 0.0 : inWire;
+        vec3 litColor  = mix(halftoneColor, wireColor, effectiveInWire) + boundaryColor;
+        vec3 darkColor = boundaryColor;
+        gl_FragColor = vec4(mix(darkColor, litColor, uIntroFade), 1.0);
+    } else {
+        float effectiveInWire = (uIntroTransition > 0.5) ? 0.0 : inWire;
+        vec3 finalColor = mix(halftoneColor, wireColor, effectiveInWire) + boundaryColor;
+        gl_FragColor = vec4(finalColor, 1.0);
+    }
+
+    if (uHideY < 990.0) {
+        float hideRawDist   = vWorldY - uHideY;
+        float hideProximity = exp(-abs(hideRawDist) * 6.0);
+        float hideNoisyDist = hideRawDist + edgeNoise * 0.18 * hideProximity;
+        float hideAlpha = smoothstep(0.08, -0.08, -hideNoisyDist);
+
+        float hideD = abs(hideNoisyDist);
+        vec3 hideGlow = vec3(0.15, 0.35, 1.00) * exp(-hideD *  4.5) * 2.5
+                      + vec3(0.20, 0.85, 1.00) * exp(-hideD * 16.0) * 5.0
+                      + vec3(0.85, 0.97, 1.00) * exp(-hideD * 50.0) * 14.0;
+
+        gl_FragColor.rgb += hideGlow * hideAlpha;
+        gl_FragColor.a   *= hideAlpha;
+    }
+}`;
+
+  const FRAG_EYE = `uniform vec2 uMouse;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform float uSweepY;
+uniform float uSweepReverse;
+uniform float uIntroRedY;
+uniform float uIntroTransition;
+uniform float uIntroFade;
+uniform float uHideY;
+uniform float uEyeFade;
+uniform float uHalftoneFade;
+uniform float uIsTouch;
+varying vec3 vNormal;
+varying vec3 vViewPosition;
+varying vec3 vBarycentric;
+varying vec2 vUv;
+varying float vWorldY;
+
+float hash(float n) {
+    return fract(sin(n) * 43758.5453);
+}
+float hash2(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i),               hash2(i + vec2(1.0, 0.0)), f.x),
+        mix(hash2(i + vec2(0.0,1.0)), hash2(i + vec2(1.0,1.0)), f.x),
+        f.y
+    );
+}
+
+void main() {
+    vec3 normal = normalize(vNormal);
+    vec3 viewDir = normalize(-vViewPosition);
+
+    float minBary = min(min(vBarycentric.x, vBarycentric.y), vBarycentric.z);
+    float wire = 1.0 - smoothstep(0.0, 0.04, minBary);
+
+    float sweepDist = vWorldY - uSweepY;
+    float directedDist = sweepDist * (1.0 - 2.0 * uSweepReverse);
+    float inWire = smoothstep(0.05, -0.05, directedDist);
+
+    vec3 dx = dFdx(vViewPosition);
+    vec3 dy = dFdy(vViewPosition);
+    vec3 faceNormal = normalize(cross(dx, dy));
+    vec3 quantized = floor(faceNormal * 2.0 + 0.5);
+    float seed = dot(quantized, vec3(127.1, 311.7, 74.7));
+
+    float timeSlot = floor(uTime * 20.0);
+    float noise = hash(seed * 1000.0 + timeSlot);
+
+    float val;
+    if (noise < 0.33) val = 0.0;
+    else if (noise < 0.66) val = 0.5;
+    else val = 1.0;
+
+    float cycle = mod(uTime, 3.0);
+    float glowOn = smoothstep(0.0, 0.08, cycle) * smoothstep(0.5, 0.35, cycle);
+    glowOn *= (uIntroRedY > -900.0) ? 0.0 : 1.0;
+
+    vec3 mouseLight = vec3(uMouse.x * 2.5, uMouse.y * 2.5, 1.5);
+    vec3 autoLight = vec3(sin(uTime * 0.4) * 1.5, cos(uTime * 0.27) * 1.0, 1.5);
+    vec3 lightDir = normalize(mix(mouseLight, autoLight, uIsTouch));
+    vec3 halfVec = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfVec), 0.0), 80.0);
+    float specHard = pow(max(dot(normal, halfVec), 0.0), 200.0);
+    float specular = spec * 0.5 + specHard * 0.8;
+    float rim = pow(1.0 - max(dot(viewDir, normal), 0.0), 2.5) * 0.35;
+    float diffuse = max(dot(normal, lightDir), 0.0) * 0.12;
+    float base = pow(0.03 + diffuse + rim + specular, 2.0);
+
+    float lightLevel = clamp(diffuse * 3.3 + rim * 1.2 + specular * 3.0, 0.0, 1.0);
+    float lightShaped = smoothstep(0.1, 0.8, lightLevel);
+    float cellSize = 10.0;
+    vec2 cellId = floor(gl_FragCoord.xy / cellSize);
+    vec2 cellLocal = fract(gl_FragCoord.xy / cellSize) - 0.5;
+    float dotDist = length(cellLocal);
+    float cellHash = fract(sin(dot(cellId, vec2(127.1, 311.7))) * 43758.5453);
+    float cellHash2 = fract(sin(dot(cellId, vec2(91.34, 47.71))) * 28471.13);
+    float pulsePrimary = sin(uTime * 2.2 + cellHash * 6.2831) * 0.5 + 0.5;
+    float pulseSecondary = sin(uTime * 1.3 + cellHash2 * 6.2831) * 0.5 + 0.5;
+
+    vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
+    vec2 cellCenterPx = (cellId + 0.5) * cellSize;
+    float cursorDistPx = distance(cellCenterPx, cursorPx);
+    float cursorInfluence = (1.0 - smoothstep(0.0, 220.0, cursorDistPx)) * (1.0 - uIsTouch);
+
+    float dotRadius = lightShaped * 0.6
+        + (pulsePrimary - 0.5) * 0.10 * lightShaped
+        + (pulseSecondary - 0.5) * 0.06 * lightShaped
+        + cursorInfluence * 0.35;
+    dotRadius = max(dotRadius, 0.0);
+    float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
+    vec3 dotColor = vec3(1.0);
+    vec3 cursorColor = vec3(0.0, 0.851, 1.0); // brand cyan #00D9FF
+    vec3 mixedDotColor = mix(dotColor, cursorColor, cursorInfluence);
+    vec3 hotTint = vec3(0.91, 0.45, 0.2) * pow(specular, 1.2) * 2.0 * (1.0 - cursorInfluence); // brand mars orange
+    vec3 halftoneColor = mix(vec3(0.0), mixedDotColor + hotTint, dotMask);
+
+    vec3 normalColor = mix(halftoneColor, vec3(val), glowOn);
+
+    float wireDiff = max(dot(normal, lightDir), 0.0);
+    float wireSpec = pow(max(dot(normal, halfVec), 0.0), 30.0);
+    float wireBrightness = 0.15 + wireDiff * 0.5 + wireSpec * 2.0;
+    vec3 wireColor = mix(vec3(0.0), vec3(wireBrightness), wire);
+
+    vec3 vp = vViewPosition;
+    float travel1 = fract(vp.y * 4.0 - uTime * 0.6);
+    float travel2 = fract(vp.x * 3.0 + uTime * 0.5);
+    float travel3 = fract((vp.x + vp.y) * 3.5 - uTime * 0.7);
+    float pulse1 = pow(1.0 - abs(travel1 - 0.5) * 2.0, 12.0);
+    float pulse2 = pow(1.0 - abs(travel2 - 0.5) * 2.0, 12.0);
+    float pulse3 = pow(1.0 - abs(travel3 - 0.5) * 2.0, 12.0);
+    float travelLight = (pulse1 + pulse2 * 0.7 + pulse3 * 0.5) * wire * inWire;
+    wireColor += vec3(0.91, 0.45, 0.18) * travelLight * 2.5; // brand mars orange flow
+
+    float sweepActive = smoothstep(3.0, 2.6, abs(uSweepY));
+    float distToBoundary = abs(vWorldY - uSweepY);
+    float flare = exp(-distToBoundary * 12.0) * sweepActive;
+    vec3 flareColor = vec3(1.0, 0.62, 0.32) * flare * 3.0; // brand warm flare
+
+    if (uIntroRedY > -900.0) {
+        float isRed    = step(vWorldY, uIntroRedY);
+        float edgeGlow = exp(-abs(vWorldY - uIntroRedY) * 20.0);
+
+        float NdotV   = max(dot(viewDir, normal), 0.0);
+        float fresnel = pow(1.0 - NdotV, 1.0);
+        float corona  = pow(fresnel, 0.3) * 10.0;
+        float inner   = pow(fresnel, 2.5) * 4.0;
+        float hotspot = pow(NdotV, 3.0) * 1.5;
+
+        float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
+
+        vec3 rimGlow  = vec3(40.0, 0.08, 0.04) * corona * pulse;
+        vec3 edgeRing = vec3(24.0, 0.20, 0.05) * inner;
+        vec3 coreGlow = vec3(10.0, 0.15, 0.08) * hotspot;
+        vec3 ambient  = vec3(2.5,  0.03, 0.03);
+
+        vec3 redGlow = (ambient + rimGlow + edgeRing + coreGlow) * isRed;
+
+        redGlow += vec3(18.0, 0.8, 0.0) * edgeGlow * 5.0;
+
+        vec3 darkBody    = flareColor;
+        vec3 eyeLitColor = mix(normalColor, wireColor, inWire) + flareColor;
+        vec3 fromColor   = mix(redGlow + flareColor, darkBody, smoothstep(0.0, 0.15, uIntroFade));
+        gl_FragColor = vec4(mix(fromColor, eyeLitColor, uIntroFade), 1.0);
+    } else {
+        vec3 effectiveWireColor = (uIntroTransition > 0.5) ? vec3(0.75, 0.0, 0.0) : wireColor;
+        vec3 finalColor = mix(normalColor, effectiveWireColor, inWire) + flareColor;
+        gl_FragColor = vec4(finalColor, 1.0);
+    }
+
+    if (uHideY < 990.0) {
+        float hideRawDist = vWorldY - uHideY;
+        float hideAlpha   = smoothstep(0.08, -0.08, -hideRawDist);
+        float hideD       = abs(hideRawDist);
+        vec3  hideGlow    = vec3(0.20, 0.85, 1.00) * exp(-hideD * 16.0) * 5.0
+                          + vec3(0.85, 0.97, 1.00) * exp(-hideD * 50.0) * 14.0;
+        gl_FragColor.rgb += hideGlow * hideAlpha;
+        gl_FragColor.a   *= hideAlpha;
+    }
+
+    gl_FragColor.a *= uEyeFade;
+}`;
+
+  // ---------------------------------------------------------------------------
+  // Scene setup (camera fov 50, z 5; renderer alpha black; cat scale 4.5)
+  // ---------------------------------------------------------------------------
+  const container = document.getElementById("webgl");
+  const loadingEl = document.getElementById("loading");
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 1);
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+  camera.position.z = 5;
+
+  // bloom (equivalent to the site's hand-rolled bright-pass + separable blur)
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(innerWidth, innerHeight),
+    0.5,   // strength (steady state; site pulses to 5 during intro)
+    0.6,   // radius
+    0.35   // threshold (only bright wire/nodes bloom, not the gray dots)
+  );
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+
+  // === swap target here ======================================================
+  // To use your own head: export a head GLB, drop it in ./assets/, point
+  // modelUrl at it, and set earWobble:false (human heads have no pointy ears).
+  const CONFIG = {
+    modelUrl: "./assets/dog_clean.glb",
+    earWobble: false,       // cat-ear tilt in the vertex shader; false for a human head / dog
+    eyeMeshRegex: /球/,     // special eye material; harmless when nothing matches
+    autoFrame: true,        // auto center + scale the model to fit the view
+    frameHeight: 3.1,       // world-units tall when autoFrame is on (sweep spans -3..3)
+    baseY: 0.1,             // resting vertical offset
+    rotDeg: { x: 0, y: 90, z: 0 }, // base orientation so the head faces the camera (dog.glb)
+    offset: { x: 0.2, y: 0 },      // manual screen-position nudge after auto-centering
+    // glowing eyes added on top of the model (this dog has no dedicated eye mesh)
+    eyes: { show: true, x: -0.064, y: -0.026, z: 0.129, r: 0.022, detail: 0 },
+  };
+  // ===========================================================================
+  const SWEEP_PERIOD = 13;
+  const basePos = new THREE.Vector3(0, CONFIG.baseY, 0);
+  const D2R = Math.PI / 180;
+  const baseRot = new THREE.Euler(
+    CONFIG.rotDeg.x * D2R, CONFIG.rotDeg.y * D2R, CONFIG.rotDeg.z * D2R
+  );
+
+  const mouse = { x: 0, y: 0 };
+  const mouseEase = { x: 0, y: 0 };
+  const mouseDiff = { x: 0, y: 0 };
+  const isTouch = matchMedia("(pointer: coarse)").matches;
+
+  let catObj = null;
+  const allMats = [];
+  const eyeMats = [];
+  let eyeL = null, eyeR = null, addedEyeMat = null; // glowing eyes added on top of model
+
+  // --- helpers ------------------------------------------------------------
+  function addBarycentric(geo) {
+    const ng = geo.toNonIndexed();
+    const count = ng.attributes.position.count;
+    const bary = new Float32Array(count * 3);
+    for (let i = 0; i < count; i += 3) {
+      bary.set([1, 0, 0], i * 3);
+      bary.set([0, 1, 0], (i + 1) * 3);
+      bary.set([0, 0, 1], (i + 2) * 3);
+    }
+    ng.setAttribute("barycentric", new THREE.BufferAttribute(bary, 3));
+    return ng;
+  }
+
+  // ear-tip detection (port of _findEarTips): average of the upper verts on
+  // each side, radius = 0.18 * model height
+  function findEarTips(geo) {
+    geo.computeBoundingBox();
+    const bb = geo.boundingBox;
+    const height = bb.max.y - bb.min.y;
+    const threshY = bb.min.y + height * 0.6;
+    const pos = geo.attributes.position;
+    const L = new THREE.Vector3(), R = new THREE.Vector3();
+    let cl = 0, cr = 0;
+    for (let v = 0; v < pos.count; v++) {
+      const y = pos.getY(v);
+      if (y < threshY) continue;
+      const x = pos.getX(v), z = pos.getZ(v);
+      if (x < 0) { L.x += x; L.y += y; L.z += z; cl++; }
+      else       { R.x += x; R.y += y; R.z += z; cr++; }
+    }
+    const earLeft  = cl > 0 ? L.divideScalar(cl) : new THREE.Vector3(-0.15, threshY, 0);
+    const earRight = cr > 0 ? R.divideScalar(cr) : new THREE.Vector3( 0.15, threshY, 0);
+    return { earLeft, earRight, radius: height * 0.18 };
+  }
+
+  function makeUniforms(extra) {
+    return Object.assign({
+      uMouse: { value: new THREE.Vector2(0, 0) },
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uTime: { value: 0 },
+      uSweepY: { value: -3 },
+      uSweepReverse: { value: 0 },
+      uIntroRedY: { value: -999 },
+      uIntroTransition: { value: 0 },
+      uIntroFade: { value: 0 },
+      uHideY: { value: 999 },
+      uHalftoneFade: { value: 0 },
+      uIsTouch: { value: isTouch ? 1 : 0 },
+    }, extra);
+  }
+
+  // --- load model ---------------------------------------------------------
+  const loader = new GLTFLoader();
+  loader.load(CONFIG.modelUrl, (gltf) => {
+    catObj = gltf.scene;
+
+    catObj.traverse((node) => {
+      if (!node.isMesh) return;
+      const geo = addBarycentric(node.geometry);
+      node.geometry = geo;
+
+      const isEye = CONFIG.eyeMeshRegex.test(node.name);
+      if (isEye) {
+        const mat = new THREE.ShaderMaterial({
+          vertexShader: VERT,
+          fragmentShader: FRAG_EYE,
+          transparent: true,
+          uniforms: makeUniforms({
+            uEarLeftTip: { value: new THREE.Vector3() },
+            uEarRightTip: { value: new THREE.Vector3() },
+            uEarRadius: { value: 0 },
+            uEyeFade: { value: 1 },
+          }),
+        });
+        node.material = mat;
+        allMats.push(mat);
+        eyeMats.push(mat);
+      } else {
+        const ears = CONFIG.earWobble
+          ? findEarTips(geo)
+          : { earLeft: new THREE.Vector3(0, 9999, 0), earRight: new THREE.Vector3(0, 9999, 0), radius: 0 };
+        const { earLeft, earRight, radius } = ears;
+        const mat = new THREE.ShaderMaterial({
+          vertexShader: VERT,
+          fragmentShader: FRAG_HEAD,
+          transparent: true,
+          uniforms: makeUniforms({
+            uEarLeftTip: { value: earLeft },
+            uEarRightTip: { value: earRight },
+            uEarRadius: { value: radius },
+          }),
+        });
+        node.material = mat;
+        allMats.push(mat);
+      }
+    });
+
+    // apply orientation FIRST so auto-framing centers the rotated silhouette
+    catObj.rotation.copy(baseRot);
+    catObj.updateMatrixWorld(true);
+    if (CONFIG.autoFrame) {
+      const box = new THREE.Box3().setFromObject(catObj); // includes rotation, scale=1
+      const size = new THREE.Vector3(); box.getSize(size);
+      const center = new THREE.Vector3(); box.getCenter(center);
+      const s = CONFIG.frameHeight / size.y;
+      catObj.scale.setScalar(s);
+      // uniform scale about origin -> rotated center scales linearly
+      basePos.set(-center.x * s, -center.y * s + CONFIG.baseY, -center.z * s);
+    } else {
+      catObj.scale.set(4.5, 4.5, 4.5);
+      basePos.set(0, CONFIG.baseY, 0);
+    }
+    basePos.x += CONFIG.offset.x;
+    basePos.y += CONFIG.offset.y;
+    catObj.position.copy(basePos);
+    scene.add(catObj);
+
+    if (CONFIG.eyes.show) addEyes();
+
+    loadingEl.classList.add("hidden");
+    startIntro();
+  });
+
+  // Dedicated eye meshes — same approach as yuta's cat "球" mesh:
+  // real geometry using the FRAG_EYE shader (blink-glow), added to allMats so it
+  // reveals with the intro sweep and animates in sync. Proper depth, no floating.
+  function makeEyeMaterial() {
+    return new THREE.ShaderMaterial({
+      vertexShader: VERT,
+      fragmentShader: FRAG_EYE,
+      transparent: true,
+      uniforms: makeUniforms({
+        uEarLeftTip: { value: new THREE.Vector3(0, 9999, 0) },
+        uEarRightTip: { value: new THREE.Vector3(0, 9999, 0) },
+        uEarRadius: { value: 0 },
+        uEyeFade: { value: 1 },
+      }),
+    });
+  }
+  function addEyes() {
+    const e = CONFIG.eyes;
+    const build = (zsign) => {
+      const geo = addBarycentric(new THREE.IcosahedronGeometry(e.r, e.detail ?? 0));
+      const mat = makeEyeMaterial();
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(e.x, e.y, zsign * e.z);
+      catObj.add(mesh);
+      allMats.push(mat);    // join normal render path -> intro + sweep + mouse sync
+      eyeMats.push(mat);
+      return mesh;
+    };
+    eyeL = build(1);
+    eyeR = build(-1);
+  }
+
+  // --- intro: red scan up (3s) -> wire sweep down (1.6s) + bloom pulse ----
+  let introPhase = "idle";   // idle | red | settle | done
+  let introT0 = 0;
+  let sweepTimeBase = 0;
+
+  function startIntro() {
+    introPhase = "red";
+    introT0 = clock.getElapsedTime();
+    for (const m of allMats) {
+      m.uniforms.uIntroRedY.value = -4;
+      m.uniforms.uIntroFade.value = 0;
+      m.uniforms.uSweepY.value = -3;
+      m.uniforms.uSweepReverse.value = 0;
+    }
+    bloom.strength = 5;
+  }
+
+  function updateIntro(t) {
+    if (introPhase === "red") {
+      const k = Math.min(1, (t - introT0) / 3);          // 0..1 over 3s
+      const e = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2; // power1.inOut
+      const y = -4 + e * (3.8 - -4);
+      for (const m of allMats) m.uniforms.uIntroRedY.value = y;
+      if (k >= 1) {
+        introPhase = "settle";
+        introT0 = t + 0.5; // 0.5s delay before the wire sweep
+        for (const m of allMats) { m.uniforms.uSweepReverse.value = 0; m.uniforms.uSweepY.value = 3; }
+      }
+    } else if (introPhase === "settle") {
+      if (t < introT0) return;
+      const k = Math.min(1, (t - introT0) / 1.6);
+      const e = k < 0.5 ? 2*k*k : 1 - Math.pow(-2*k+2, 2)/2;
+      const y = 3 + e * (-3 - 3);
+      for (const m of allMats) m.uniforms.uSweepY.value = y;
+      const fade = Math.max(0, Math.min(1, (y <= 0.5) ? (0.5 - y) / 1.0 : 0));
+      for (const m of allMats) m.uniforms.uIntroFade.value = fade;
+      bloom.strength = 0.5 + 4.5 * (1 - fade);
+      if (k >= 1) {
+        introPhase = "done";
+        for (const m of allMats) {
+          m.uniforms.uIntroRedY.value = -999;
+          m.uniforms.uIntroFade.value = 0;
+          m.uniforms.uIntroTransition.value = 0;
+          m.uniforms.uSweepY.value = -3;
+        }
+        bloom.strength = 0.5;
+        sweepTimeBase = t - 2;
+      }
+    }
+  }
+
+  // --- steady-state periodic sweep (port of _calcSweep) -------------------
+  function calcSweep(t) {
+    const i = (((t - sweepTimeBase) % SWEEP_PERIOD) + SWEEP_PERIOD) % SWEEP_PERIOD;
+    const hi = 3, lo = -3;
+    if (i < 1.5)             return lo + 0 + (hi + (i / 1.5) * (lo - hi)) - lo; // hi->lo
+    if (i < 1.5 + 5)         return lo;
+    if (i < 1.5 + 5 + 1.5)   return lo + ((i - 1.5 - 5) / 1.5) * (hi - lo);     // lo->hi
+    return hi;
+  }
+
+  // --- input --------------------------------------------------------------
+  addEventListener("pointermove", (e) => {
+    if (e.pointerType === "touch" && isTouch) {
+      mouse.x = ((e.clientX / innerWidth) * 2 - 1) * 1.4;
+      mouse.y = (-(e.clientY / innerHeight) * 2 + 1) * 1.4;
+    } else {
+      mouse.x = (e.clientX / innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+    }
+  });
+  addEventListener("pointerup", (e) => { if (e.pointerType === "touch") { mouse.x = 0; mouse.y = 0; } });
+
+  addEventListener("resize", () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+    composer.setSize(innerWidth, innerHeight);
+  });
+
+  // --- render loop --------------------------------------------------------
+  // Follow snappiness (per-frame lerp, 0..1). Higher = faster tracking.
+  // 1.0 = instant. Site default felt ~0.025/0.06; bumped for near-instant gaze.
+  const FOLLOW = { gaze: 0.75, head: 0.45 };
+  window.FOLLOW = FOLLOW; // live-tune in console: FOLLOW.gaze = 0.8
+
+  // How far the head turns toward the cursor (radians) + how much it drifts.
+  // yaw/pitch are the big "look at you" levers; site default was a subtle 0.15/0.1.
+  const TURN = { yaw: 0.55, pitch: 0.38, shiftX: 0.3, shiftY: 0.2 };
+  window.TURN = TURN; // live-tune: TURN.yaw = 0.7
+
+  const clock = new THREE.Clock();
+  let blendFrames = 0;
+
+  function frame() {
+    const t = clock.getElapsedTime();
+
+    // mouse easing — drives lighting / gaze hotspot / cursor dots via uMouse
+    const s = FOLLOW.gaze;
+    mouseEase.x += (mouse.x - mouseEase.x) * s;
+    mouseEase.y += (mouse.y - mouseEase.y) * s;
+    mouseDiff.x = mouse.x - mouseEase.x;
+    mouseDiff.y = mouse.y - mouseEase.y;
+
+    if (introPhase !== "done" && introPhase !== "idle") updateIntro(t);
+
+    const dpr = devicePixelRatio || 1;
+    const resX = innerWidth * dpr, resY = innerHeight * dpr;
+
+    const sweepY = introPhase === "done" ? calcSweep(t) : null;
+
+    for (const m of allMats) {
+      const u = m.uniforms;
+      u.uMouse.value.set(mouseEase.x, mouseEase.y);
+      u.uTime.value = t;
+      u.uResolution.value.set(resX, resY);
+      if (sweepY !== null) { u.uSweepY.value = sweepY; u.uSweepReverse.value = 0; }
+    }
+
+    // parallax (port: rotation/position follow eased mouse, blended in)
+    if (catObj && introPhase === "done") {
+      const blend = Math.min(1, blendFrames / 100);
+      const d = blend * blend;
+      blendFrames += 1;
+      const targetRotY = baseRot.y + mouseEase.x * TURN.yaw;
+      const targetRotX = baseRot.x + (-mouseEase.y * TURN.pitch);
+      const targetPosX = basePos.x + mouseEase.x * TURN.shiftX;
+      const targetPosY = basePos.y + mouseEase.y * TURN.shiftY;
+      const y = FOLLOW.head;
+      catObj.rotation.y += (targetRotY - catObj.rotation.y) * y * d;
+      catObj.rotation.x += (targetRotX - catObj.rotation.x) * y * d;
+      catObj.position.x += (targetPosX - catObj.position.x) * y * d;
+      catObj.position.y += (targetPosY - catObj.position.y) * y * d;
+    }
+
+    composer.render();
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  // expose for debugging / screenshotting / live orientation tuning
+  // e.g. in console:  __hero.setRotY(90)   then read __hero.baseRot
+  window.__hero = {
+    bloom, allMats, baseRot, basePos, camera, scene, THREE,
+    get eyes() { return [eyeL, eyeR]; },
+    get phase() { return introPhase; },
+    get obj() { return catObj; },
+    // snap both eyes onto the head surface at given screen fractions (0..1)
+    snapEyesToSurface(sxL, sy, sxR) {
+      const ray = new THREE.Raycaster();
+      const heads = []; catObj.traverse(o => { if (o.isMesh && o !== eyeL && o !== eyeR) heads.push(o); });
+      const place = (mesh, sx) => {
+        ray.setFromCamera(new THREE.Vector2(sx*2-1, -(sy*2-1)), camera);
+        const hit = ray.intersectObjects(heads, true)[0];
+        if (!hit) return false;
+        const local = catObj.worldToLocal(hit.point.clone());
+        // nudge slightly outward toward camera-facing normal so it pokes through
+        mesh.position.copy(local);
+        return true;
+      };
+      return { L: place(eyeL, sxL), R: place(eyeR, sxR) };
+    },
+    setRot(x, y, z) { baseRot.set(x * Math.PI/180, y * Math.PI/180, z * Math.PI/180); },
+    setRotY(deg) { baseRot.y = deg * Math.PI/180; },
+    setRotX(deg) { baseRot.x = deg * Math.PI/180; },
+    setRotZ(deg) { baseRot.z = deg * Math.PI/180; },
+    // size + position tuning (instant)
+    scaleBy(m) { if (catObj) catObj.scale.multiplyScalar(m); },        // >1 bigger, <1 smaller
+    nudge(dx, dy) { basePos.x += dx; basePos.y += dy; },                // shift on screen
+    report() { return { rotDeg: { x: +(baseRot.x*180/Math.PI).toFixed(1), y: +(baseRot.y*180/Math.PI).toFixed(1), z: +(baseRot.z*180/Math.PI).toFixed(1) }, scale: catObj ? +catObj.scale.x.toFixed(3) : null, basePos: { x: +basePos.x.toFixed(3), y: +basePos.y.toFixed(3) }, eyes: eyeL ? { x:+eyeL.position.x.toFixed(3), y:+eyeL.position.y.toFixed(3), z:+Math.abs(eyeL.position.z).toFixed(3), scale:+eyeL.scale.x.toFixed(3) } : null }; },
+    // eye tuning (instant). x=front/back, y=up/down, z=spread
+    setEyes(x, y, z) { if (eyeL&&eyeR){ eyeL.position.set(x,y,z); eyeR.position.set(x,y,-z); } },
+    eyeScale(m) { if (eyeL&&eyeR){ eyeL.scale.multiplyScalar(m); eyeR.scale.multiplyScalar(m); } },
+  };
+  </script>
+</body>
+</html>
