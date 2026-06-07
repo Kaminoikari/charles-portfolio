@@ -490,16 +490,16 @@ void main() {
   // To use your own head: export a head GLB, drop it in ./assets/, point
   // modelUrl at it, and set earWobble:false (human heads have no pointy ears).
   const CONFIG = {
-    modelUrl: "./assets/dog_clean.glb",
-    earWobble: false,       // cat-ear tilt in the vertex shader; false for a human head / dog
-    eyeMeshRegex: /球/,     // special eye material; harmless when nothing matches
+    modelUrl: "./assets/cat.glb",
+    earWobble: true,        // cat-ear tilt in the vertex shader
+    eyeMeshRegex: /球/,     // the cat's dedicated eye mesh is the node named 球
     autoFrame: true,        // auto center + scale the model to fit the view
     frameHeight: 3.1,       // world-units tall when autoFrame is on (sweep spans -3..3)
     baseY: 0.1,             // resting vertical offset
-    rotDeg: { x: 0, y: 90, z: 0 }, // base orientation so the head faces the camera (dog.glb)
-    offset: { x: 0.2, y: 0 },      // manual screen-position nudge after auto-centering
-    // glowing eyes added on top of the model (this dog has no dedicated eye mesh)
-    eyes: { show: true, x: -0.064, y: -0.026, z: 0.129, r: 0.022, detail: 0 },
+    rotDeg: { x: 0, y: 0, z: 0 }, // cat faces +z out of the box, no reorientation needed
+    offset: { x: 0, y: 0 },        // manual screen-position nudge after auto-centering
+    // the cat already has a dedicated eye mesh (球); no synthetic eyes needed
+    eyes: { show: false, x: -0.064, y: -0.026, z: 0.129, r: 0.022, detail: 0 },
   };
   // ===========================================================================
   const SWEEP_PERIOD = 13;

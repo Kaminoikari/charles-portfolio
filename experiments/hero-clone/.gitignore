@@ -1,3 +1,5 @@
 .DS_Store
-# large scratch model, not used by the current build
+# large scratch models, not used by the current build
 assets/corgi.glb
+assets/gundam.glb
+assets/gundam_head.glb
