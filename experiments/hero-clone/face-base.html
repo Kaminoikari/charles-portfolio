@@ -109,7 +109,6 @@
   let firing = false, fireI = 0, charge = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge)
   const eyeWorld = [];                   // eye origins in head-local space (filled in build)
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
-  let impactSprite = null;
   const raycaster = new THREE.Raycaster();
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
@@ -565,8 +564,6 @@
         const mz = new THREE.Sprite(makeGlowSprite());
         mz.visible = false; mz.frustumCulled = false; scene.add(mz); muzzles.push(mz);
       }
-      impactSprite = new THREE.Sprite(makeGlowSprite());
-      impactSprite.visible = false; impactSprite.frustumCulled = false; scene.add(impactSprite);
 
       // wireframe-state eyes: front-surface lines, clipped to the lid opening (back hemisphere culled +
       // aperture mask) so no eyeball lines draw through the head. brought in by the sweep.
@@ -777,26 +774,28 @@
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
         raycaster.ray.intersectPlane(aimPlane, aimTarget);          // pointer -> world point on the aim plane
         camera.getWorldPosition(tmpCam);
+        // one shared aim direction (eyes' midpoint -> pointer) so the two beams fire parallel, never crossing
+        tmpMid.set(0, 0, 0);
+        for (let k = 0; k < 2; k++) { tmpEo.copy(eyeWorld[k]); head.localToWorld(tmpEo); tmpMid.add(tmpEo); }
+        tmpMid.multiplyScalar(0.5);
+        tmpDir.copy(aimTarget).sub(tmpMid).normalize();
         for (let k = 0; k < 2; k++) {
           tmpEo.copy(eyeWorld[k]); head.localToWorld(tmpEo);         // eye origin in world space
-          tmpDir.copy(aimTarget).sub(tmpEo).normalize();             // origin -> through the pointer
-          const len = LASER.length;                                  // overshoot past the pointer to the screen edge
+          const len = LASER.length;                                  // overshoot to the screen edge
           tmpToCam.copy(tmpCam).sub(tmpEo).normalize();
           tmpWidth.crossVectors(tmpDir, tmpToCam).normalize();        // billboard width axis (across screen)
           tmpNormal.crossVectors(tmpWidth, tmpDir).normalize();       // faces the camera
           tmpBasis.makeBasis(tmpDir, tmpWidth, tmpNormal);
           tmpScale.set(len, LASER.width * (0.7 + fireI * 0.4), 1);
           tmpBasis.scale(tmpScale);
-          tmpMid.copy(tmpEo).addScaledVector(tmpDir, len * 0.5);
+          tmpMid.copy(tmpEo).addScaledVector(tmpDir, len * 0.5);      // beam quad centre
           tmpBasis.setPosition(tmpMid);
           const bm = beams[k]; bm.visible = fireI > 0.01; bm.matrix.copy(tmpBasis);
           const mz = muzzles[k]; mz.visible = true; mz.position.copy(tmpEo); mz.scale.setScalar(0.13 * charge);
         }
-        impactSprite.visible = fireI > 0.01; impactSprite.position.copy(aimTarget); impactSprite.scale.setScalar(0.24 * fireI);
       } else if (eyeWorld.length === 2) {
         beams[0].visible = beams[1].visible = false;
         muzzles[0].visible = muzzles[1].visible = false;
-        impactSprite.visible = false;
       }
     }
 
