@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Face Base — male_base.glb wireframe portrait (yutaabe pipeline)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    body { font-family: "SF Mono", ui-monospace, monospace; color: #f4f4f4; letter-spacing: .08em; }
+    #webgl { position: fixed; inset: 0; z-index: 0; }
+    #webgl canvas { display: block; }
+    .ui { position: fixed; z-index: 2; font-size: 12px; opacity: .55; pointer-events: none; }
+    .nav-l { top: 26px; left: 34px; }
+    .nav-r { top: 26px; right: 34px; }
+    .tag  { bottom: 34px; left: 34px; line-height: 1.7; }
+    #dbg  { position: fixed; bottom: 12px; right: 14px; font-size: 11px; opacity: .4; z-index: 3; white-space: pre; text-align: right; }
+    #loading { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: #000; color: #888; font-size: 12px; transition: opacity .6s ease; }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div id="webgl"></div>
+  <div class="ui nav-l">CHARLES CHEN</div>
+  <div class="ui nav-r">AI PRODUCT MANAGER</div>
+  <div class="ui tag">FACE BASE<br/>3D WIREFRAME PORTRAIT</div>
+  <div id="dbg"></div>
+  <div id="loading">LOADING…</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from "three";
+  import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+  import { SimplifyModifier } from "three/addons/modifiers/SimplifyModifier.js";
+  import * as BufferGeometryUtils from "three/addons/utils/BufferGeometryUtils.js";
+  import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+  import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+  import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+  import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+  // === tunables ==============================================================
+  const CONFIG = {
+    glbUrl: "./assets/male_base.glb",
+    imgUrl: "./assets/charles-face.png",
+    headMeshRe: /Head/i,
+    eyeMeshRe: /eye/i,
+
+    // landmark-aligned projection: both photo + model were measured with MediaPipe,
+    // so we map model->photo in the eye frame (origin = eye midpoint, unit = iod).
+    // This lands the real eyes/nose/mouth/chin on the model's matching features.
+    photo: { sw: 374, sh: 512, eyeMidX: 171.5, eyeMidY: 196.5, iod: 41 },
+    model: { eyeMidX: -0.0003, eyeMidY: 0.1769, iod: 0.0638 },
+    frontPow: 1.4,         // normal.z exponent — higher = photo only on the very front
+    // soft face oval (eye-frame units) so neck / hair / ears fade to dark
+    faceMask: { halfW: 1.45, top: -1.05, bot: 2.05, feather: 0.45 },
+
+    fitHeight: 3.0,        // world height the cropped head is scaled to (cat-style head framing)
+    neckCropUnits: 1.6,    // crop the mesh below this many eye-frame units under the eyes — sits just above the shoulders so the full jaw/chin stays but the shoulders are gone
+    intro: 1.6,
+
+    contrast: 1.75, bias: 0.02,   // feature contrast applied to the sampled photo luma
+    headDecimate: 2200,           // target head vertex count (sparser yutaabe-style net)
+    eyeDecimate: 360,             // target eyeball vertex count
+    // render intensities (additive layers; kept low so bloom doesn't blow out)
+    fill: 0.42, line: 0.62, point: 0.8, pointSize: 0.03,
+    eyeBright: 0.34, eyeLine: 0.55, eyePoint: 0.62,
+    travelLine: 2.5, travelPoint: 1.5,   // mars-orange light flowing along the wireframe (post-intro), cat intensity x2.5
+  };
+  const TURN = { yaw: 0.55, pitch: 0.38, shiftX: 0, shiftY: 0 };
+  const FOLLOW = { gaze: 0.75, head: 0.10 };
+  window.TURN = TURN; window.FOLLOW = FOLLOW; window.CONFIG = CONFIG;
+  // ===========================================================================
+
+  function warm(b) {
+    b = Math.min(1, Math.max(0, b));
+    return [ (240 + (255 - 240) * b) / 255, (132 + (246 - 132) * b) / 255, (64 + (216 - 64) * b) / 255 ];
+  }
+
+  const host = document.getElementById("webgl");
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setClearColor(0x000000, 1);
+  host.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+  camera.position.z = 5;
+
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.22, 0.4, 0.55);
+  composer.addPass(bloom);
+  composer.addPass(new OutputPass());
+
+  const head = new THREE.Group();
+  scene.add(head);
+
+  function dotTexture() {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const x = c.getContext("2d");
+    const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.4, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
+    x.fillStyle = g; x.beginPath(); x.arc(32, 32, 32, 0, 7); x.fill();
+    const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+  }
+
+  // drop every triangle that sits entirely below cropY (world space) — removes neck/shoulders.
+  // returns a non-indexed geometry; decimate() welds + reindexes it (no stray vertices left).
+  function cropBelow(geo, cropY) {
+    const pos = geo.getAttribute("position"), idx = geo.getIndex(), tri = idx ? idx.array : null, out = [];
+    const pushV = (i) => out.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+    const n = tri ? tri.length : pos.count;
+    for (let i = 0; i < n; i += 3) {
+      const a = tri ? tri[i] : i, b = tri ? tri[i + 1] : i + 1, c = tri ? tri[i + 2] : i + 2;
+      if (Math.max(pos.getY(a), pos.getY(b), pos.getY(c)) >= cropY) { pushV(a); pushV(b); pushV(c); }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(out, 3));
+    return g;
+  }
+
+  const dbg = document.getElementById("dbg");
+  const allMats = [];
+  const LAYERS = [];       // {attr, base, ny} per render layer — drives the intro sweep reveal
+  let yMin = 0, yMax = 1;  // head vertical bounds (normalized sweep coordinate)
+
+  // --- halftone portrait shader -------------------------------------------------
+  // a dense screen-space dot grid (cat style). each dot's size is driven by the per-vertex
+  // baked photo brightness (aBright), so the dots track the face as the head rotates.
+  // the portrait fades to nothing on the wireframe side of the sweep line (uSweepNy).
+  const halftoneUniforms = {
+    uTime: { value: 0 }, uResolution: { value: new THREE.Vector2(innerWidth, innerHeight) },
+    uSweepNy: { value: 1.15 }, uIntroFade: { value: 0 }, uYMin: { value: 0 }, uYSpan: { value: 1 },
+    uMouse: { value: new THREE.Vector2(0, 0) }, uLightDir: { value: new THREE.Vector3(0, 0, 1) },
+  };
+  const HALFTONE_VERT = `
+    attribute float aBright;
+    varying float vBright; varying float vNy; varying vec3 vNormal; varying vec3 vViewPos;
+    uniform float uYMin, uYSpan;
+    void main() {
+      vBright = aBright;
+      vNy = (position.y - uYMin) / uYSpan;
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0); vViewPos = mv.xyz;
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const HALFTONE_FRAG = `
+    precision highp float;
+    varying float vBright; varying float vNy; varying vec3 vNormal; varying vec3 vViewPos;
+    uniform float uTime, uSweepNy, uIntroFade;
+    uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
+    void main() {
+      float w = smoothstep(uSweepNy - 0.07, uSweepNy + 0.07, vNy);   // 1 = wireframe side
+      float portrait = 1.0 - w;
+      // directional lighting sculpts the form (lit side -> dots, shadow side -> gaps), like cat
+      vec3 N = normalize(vNormal), V = normalize(-vViewPos), L = normalize(uLightDir);
+      float diff = max(dot(N, L), 0.0);
+      float rim = pow(1.0 - max(dot(N, V), 0.0), 2.2);
+      float shade = 0.14 + 0.72 * diff + 0.28 * rim;          // low ambient so shadows read
+      float b = clamp(vBright * shade, 0.0, 1.0);             // photo identity x directional sculpt
+      // --- cat halftone particle math (verbatim), driven by the sculpted brightness ---
+      float lightShaped = smoothstep(0.1, 0.8, b);
+      float cellSize = 10.0;
+      vec2 cellId = floor(gl_FragCoord.xy / cellSize);
+      vec2 cellLocal = fract(gl_FragCoord.xy / cellSize) - 0.5;
+      float dotDist = length(cellLocal);
+      float cellHash = fract(sin(dot(cellId, vec2(127.1, 311.7))) * 43758.5453);
+      float cellHash2 = fract(sin(dot(cellId, vec2(91.34, 47.71))) * 28471.13);
+      float pulsePrimary = sin(uTime * 2.2 + cellHash * 6.2831) * 0.5 + 0.5;
+      float pulseSecondary = sin(uTime * 1.3 + cellHash2 * 6.2831) * 0.5 + 0.5;
+      // cursor interaction (cat verbatim): dots near the cursor grow and turn brand cyan
+      vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
+      vec2 cellCenterPx = (cellId + 0.5) * cellSize;
+      float cursorInfluence = 1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx));
+      float dotRadius = lightShaped * 0.6
+          + (pulsePrimary - 0.5) * 0.10 * lightShaped
+          + (pulseSecondary - 0.5) * 0.06 * lightShaped
+          + cursorInfluence * 0.35;
+      dotRadius = max(dotRadius, 0.0);
+      float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
+      vec3 dotColor = mix(vec3(1.0), vec3(0.0, 0.851, 1.0), cursorInfluence);   // brand cyan #00D9FF near cursor
+      vec3 halftoneColor = dotColor * dotMask;
+      gl_FragColor = vec4(halftoneColor * portrait * uIntroFade, 1.0);
+    }`;
+  function makeHalftoneMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: halftoneUniforms, vertexShader: HALFTONE_VERT, fragmentShader: HALFTONE_FRAG,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: true,
+    });
+  }
+
+  // --- cat-style eyes -----------------------------------------------------------
+  // the eyeballs render as the same halftone dot grid, but their dot size is driven
+  // purely by directional lighting (no photo) so they read as glossy spheres. every
+  // ~3s they fire the cat's blink glow: a quantized random flash across the surface.
+  const EYE_VERT = `
+    attribute vec3 aEyeOff;
+    varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
+    uniform float uYMin, uYSpan;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0); vViewPos = mv.xyz;
+      vNy = (position.y - uYMin) / uYSpan;
+      vEyeOff = aEyeOff;
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const EYE_FRAG = `
+    precision highp float;
+    varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
+    uniform float uTime, uIntroFade, uSweepNy;
+    uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
+    float hash(float n) { return fract(sin(n) * 43758.5453); }
+    void main() {
+      vec3 N = normalize(vNormal), V = normalize(-vViewPos);
+      vec3 L = normalize(vec3(uMouse.x * 2.5, uMouse.y * 2.5, 1.5));   // cat eye light: tracks the cursor for the glossy sheen
+      vec3 H = normalize(L + V);
+      float diff = max(dot(N, L), 0.0) * 0.12;   // cat weight — keeps the lit hemisphere from blowing out
+      float spec = pow(max(dot(N, H), 0.0), 80.0) * 0.5 + pow(max(dot(N, H), 0.0), 200.0) * 0.8;
+      float rim = pow(1.0 - max(dot(V, N), 0.0), 2.5) * 0.35;
+      float lightLevel = clamp(diff * 3.3 + rim * 1.2 + spec * 3.0, 0.0, 1.0);
+      float lightShaped = smoothstep(0.1, 0.8, lightLevel);
+      // cat halftone particle math (cellSize 10 — denser than the face, like cat eyes)
+      float cellSize = 10.0;
+      vec2 cellId = floor(gl_FragCoord.xy / cellSize);
+      vec2 cellLocal = fract(gl_FragCoord.xy / cellSize) - 0.5;
+      float dotDist = length(cellLocal);
+      float cellHash = fract(sin(dot(cellId, vec2(127.1, 311.7))) * 43758.5453);
+      float cellHash2 = fract(sin(dot(cellId, vec2(91.34, 47.71))) * 28471.13);
+      float pulsePrimary = sin(uTime * 2.2 + cellHash * 6.2831) * 0.5 + 0.5;
+      float pulseSecondary = sin(uTime * 1.3 + cellHash2 * 6.2831) * 0.5 + 0.5;
+      vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
+      vec2 cellCenterPx = (cellId + 0.5) * cellSize;
+      float cursorInfluence = 1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx));
+      float dotRadius = lightShaped * 0.6
+          + (pulsePrimary - 0.5) * 0.10 * lightShaped
+          + (pulseSecondary - 0.5) * 0.06 * lightShaped
+          + cursorInfluence * 0.35;
+      dotRadius = max(dotRadius, 0.0);
+      float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
+      vec3 mixedDotColor = mix(vec3(1.0), vec3(0.0, 0.851, 1.0), cursorInfluence);   // brand cyan near cursor
+      vec3 hotTint = vec3(0.91, 0.45, 0.2) * pow(spec, 1.2) * 2.0 * (1.0 - cursorInfluence);   // mars-orange specular
+      vec3 halftoneColor = (mixedDotColor + hotTint) * dotMask;
+      // blink glow (cat verbatim): every 3s, flash quantized random patches across the eyeball
+      vec3 dx = dFdx(vViewPos), dy = dFdy(vViewPos);
+      vec3 faceNormal = normalize(cross(dx, dy));
+      vec3 quantized = floor(faceNormal * 2.0 + 0.5);
+      float seed = dot(quantized, vec3(127.1, 311.7, 74.7));
+      float noise = hash(seed * 1000.0 + floor(uTime * 20.0));
+      float val = noise < 0.33 ? 0.0 : (noise < 0.66 ? 0.5 : 1.0);
+      float cycle = mod(uTime, 3.0);
+      float glowOn = smoothstep(0.0, 0.08, cycle) * smoothstep(0.5, 0.35, cycle);
+      vec3 col = mix(halftoneColor, vec3(val), glowOn);
+      // only the halftone state shows the eyeball; the wireframe side hands off to the dim eye lines
+      float portrait = 1.0 - smoothstep(uSweepNy - 0.07, uSweepNy + 0.07, vNy);
+      // aperture mask: keep only the eye-opening (a lens-shaped ellipse on the front of the eyeball),
+      // so the dots stay inside the lids instead of covering the whole sphere. vEyeOff is normalised to eye radius.
+      float ex = vEyeOff.x / 0.66, ey = vEyeOff.y / 0.34;
+      float aperture = 1.0 - smoothstep(0.72, 1.0, ex * ex + ey * ey);
+      float front = smoothstep(-0.04, 0.14, vEyeOff.z);
+      float eyeMask = aperture * front;
+      gl_FragColor = vec4(col * uIntroFade * portrait * eyeMask, 1.0);
+    }`;
+  function makeEyeMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: halftoneUniforms, vertexShader: EYE_VERT, fragmentShader: EYE_FRAG,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+      side: THREE.FrontSide,   // cull back faces so additive front+back don't double the brightness
+    });
+  }
+
+  // wireframe-state eye lines. a custom material discards back-hemisphere fragments (per-fragment
+  // facing test) so the eyeball reads as a front surface instead of a see-through 3D sphere.
+  const EYE_WIRE_VERT = `
+    attribute vec3 aEyeOff;
+    varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
+    uniform float uYMin, uYSpan;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 mv = modelViewMatrix * vec4(position, 1.0); vViewPos = mv.xyz;
+      vNy = (position.y - uYMin) / uYSpan;
+      vEyeOff = aEyeOff;
+      gl_Position = projectionMatrix * mv;
+    }`;
+  const EYE_WIRE_FRAG = `
+    precision highp float;
+    varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
+    uniform float uSweepNy, uIntroFade;
+    void main() {
+      vec3 N = normalize(vNormal), V = normalize(-vViewPos);
+      float facing = dot(N, V);
+      if (facing < 0.02) discard;            // cull the back hemisphere
+      // clip to the lid opening (same aperture as the halftone eye) so eyeball lines deep in the socket
+      // don't draw over the head — only the surface seen through the opening shows, no see-through.
+      float ex = vEyeOff.x / 0.66, ey = vEyeOff.y / 0.34;
+      float aperture = 1.0 - smoothstep(0.72, 1.0, ex * ex + ey * ey);
+      float front = smoothstep(-0.04, 0.14, vEyeOff.z);
+      float eyeMask = aperture * front;
+      if (eyeMask < 0.01) discard;
+      float w = smoothstep(uSweepNy - 0.07, uSweepNy + 0.07, vNy);    // only on the wireframe side of the sweep
+      float edge = smoothstep(0.0, 0.32, facing);                     // soften the grazing silhouette lines
+      gl_FragColor = vec4(vec3(0.16, 0.12, 0.08) * w * edge * uIntroFade * eyeMask, 1.0);
+    }`;
+  function makeEyeWireMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: halftoneUniforms, vertexShader: EYE_WIRE_VERT, fragmentShader: EYE_WIRE_FRAG,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    });
+  }
+
+  // --- load photo + glb in parallel ----------------------------------------
+  const loadImg = new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.src = CONFIG.imgUrl; });
+  const loadGlb = new Promise((res, rej) => new GLTFLoader().load(CONFIG.glbUrl, (g) => res(g), undefined, rej));
+
+  Promise.all([loadImg, loadGlb]).then(([im, gltf]) => build(im, gltf)).catch((e) => { dbg.textContent = "ERR " + e.message; console.error(e); });
+
+  function build(im, gltf) {
+    // photo luma sampler
+    const { sw, sh } = CONFIG.photo;
+    const oc = document.createElement("canvas"); oc.width = sw; oc.height = sh;
+    const octx = oc.getContext("2d"); octx.drawImage(im, 0, 0, sw, sh);
+    const px = octx.getImageData(0, 0, sw, sh).data;
+    const lumaAt = (x, y) => { const xi = Math.min(sw - 1, Math.max(0, Math.round(x))), yi = Math.min(sh - 1, Math.max(0, Math.round(y))); const i = (yi * sw + xi) * 4; return (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) / 255; };
+
+    // find head + eye meshes
+    let headMesh = null, eyeMesh = null;
+    gltf.scene.traverse((o) => { if (!o.isMesh) return; if (CONFIG.eyeMeshRe.test(o.name)) eyeMesh = o; else if (CONFIG.headMeshRe.test(o.name)) headMesh = o; });
+    if (!headMesh) { dbg.textContent = "no head mesh"; return; }
+
+    headMesh.updateWorldMatrix(true, false);
+    const hgFull = headMesh.geometry.clone(); hgFull.applyMatrix4(headMesh.matrixWorld);
+    // crop below the neck so the framing is head-only; fit then recomputes on the head alone (enlarges the face)
+    const cropY = CONFIG.model.eyeMidY - CONFIG.neckCropUnits * CONFIG.model.iod;
+    const hgW = cropBelow(hgFull, cropY);
+    hgW.computeBoundingBox();
+    const bb = hgW.boundingBox;
+    const ctr = new THREE.Vector3(); bb.getCenter(ctr);
+    const fit = CONFIG.fitHeight / (bb.max.y - bb.min.y);
+
+    // eye-frame model->photo mapping (landmark aligned) + feature contrast
+    const P = CONFIG.photo, M = CONFIG.model, FM = CONFIG.faceMask;
+    const nxOf = (x) => (x - M.eyeMidX) / M.iod;
+    const nyOf = (y) => (M.eyeMidY - y) / M.iod;
+    const mapX = (x) => P.eyeMidX + nxOf(x) * P.iod;
+    const mapY = (y) => P.eyeMidY + nyOf(y) * P.iod;
+    const faceWeight = (nx, ny) => { const cyf = (FM.top + FM.bot) / 2, ryf = (FM.bot - FM.top) / 2; const r = Math.hypot(nx / FM.halfW, (ny - cyf) / ryf); return Math.min(1, Math.max(0, (1 - r) / FM.feather + 0.5)); };
+    const contrast = (b) => Math.min(1, Math.max(0, (b - 0.5) * CONFIG.contrast + 0.5 + CONFIG.bias));
+    const sstep = (e0, e1, v) => { let t = (v - e0) / (e1 - e0); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
+    // fade dots that sit beyond the face width — kills the stray ear dots without touching the silhouette
+    // (1 inside the face oval halfW, 0 past the ears). vertical contour (chin/forehead) is unaffected.
+    const earCut = (nx) => sstep(1.72, 1.45, Math.abs(nx));
+
+    // decimate + weld a world-space geometry down to ~targetVerts
+    function decimate(geoW, targetVerts) {
+      let g = new THREE.BufferGeometry();
+      g.setAttribute("position", geoW.getAttribute("position").clone());
+      if (geoW.getIndex()) g.setIndex(geoW.getIndex().clone());
+      g = BufferGeometryUtils.mergeVertices(g);
+      const remove = Math.max(0, g.getAttribute("position").count - targetVerts);
+      if (remove > 0) g = new SimplifyModifier().modify(g, remove);
+      g = BufferGeometryUtils.mergeVertices(g);
+      g.computeVertexNormals();
+      return g;
+    }
+
+    // build fills + wireframe + nodes for one decimated geometry
+    function buildLayers(g, o) {
+      const pa = g.getAttribute("position"), na = g.getAttribute("normal"), index = g.getIndex();
+      const n = pa.count, pos = new Float32Array(n * 3), bright = new Float32Array(n), nloc = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i);
+        pos[i * 3] = (x - ctr.x) * fit; pos[i * 3 + 1] = (y - ctr.y) * fit; pos[i * 3 + 2] = (z - ctr.z) * fit;
+        bright[i] = o.brightFn(x, y, z, Math.max(0, na.getZ(i)));
+        nloc[i * 3] = na.getX(i); nloc[i * 3 + 1] = na.getY(i); nloc[i * 3 + 2] = na.getZ(i);   // local normal, for cat wireframe lighting
+      }
+      const posAttr = new THREE.BufferAttribute(pos, 3);
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < n; i++) { const y = pos[i * 3 + 1]; if (y < lo) lo = y; if (y > hi) hi = y; }
+      if (o.setBounds) { yMin = lo; yMax = hi; halftoneUniforms.uYMin.value = lo; halftoneUniforms.uYSpan.value = (hi - lo) || 1; }
+      const nySpan = (yMax - yMin) || 1;
+      const ny = new Float32Array(n);
+      for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan;
+      const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
+      // register a color buffer with the post-intro engines. each layer carries the colour it
+      // shows in the two steady states — portrait (halftone dots) and wireframe — plus per-vertex
+      // height (sweep) and world position (travel light). the sweep lerps portrait<->wireframe.
+      const sweepable = o.sweepable !== false;
+      const regCol = (c, kind) => {
+        const attr = new THREE.BufferAttribute(c, 3);
+        const portrait = Float32Array.from(c);
+        let wireTarget = [0, 0, 0], travelK = 0;
+        if (sweepable) {
+          if (kind === "fill") { for (let i = 0; i < portrait.length; i++) portrait[i] *= PORTRAIT_FILL_MUL; }
+          else if (kind === "line") { for (let i = 0; i < portrait.length; i++) portrait[i] *= PORTRAIT_LINE_MUL; wireTarget = WIRE_DIM_LINE; travelK = o.travelLine || 0; }
+          else { for (let i = 0; i < portrait.length; i++) portrait[i] = 0; wireTarget = WIRE_DIM_POINT; travelK = o.travelPoint || 0; }   // point: dark in portrait (halftone shows the dots), dim + travel in wireframe
+        }
+        LAYERS.push({ attr, base: Float32Array.from(c), portrait, wireTarget, travelK, ny, pos, sweepable, kind, nrm: nloc });
+        return attr;
+      };
+      const depthTest = o.depthTest !== false;
+      // depth-only occluder: the front surface writes depth so back-of-head wires can't bleed through (no x-ray look)
+      if (o.occlude) {
+        const go = new THREE.BufferGeometry(); go.setAttribute("position", posAttr); go.setIndex(index);
+        const mo = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide });
+        o.parent.add(new THREE.Mesh(go, mo));
+      }
+      if (o.halftone) {
+        // dense screen-space halftone portrait, dot size driven by baked photo brightness
+        const gf = new THREE.BufferGeometry(); gf.setAttribute("position", posAttr); gf.setIndex(index);
+        gf.setAttribute("normal", na.clone());   // for directional lighting in the halftone shader
+        gf.setAttribute("aBright", new THREE.BufferAttribute(Float32Array.from(bright), 1));
+        o.parent.add(new THREE.Mesh(gf, makeHalftoneMaterial()));   // not CPU-animated; driven by uniforms
+      } else if (o.fillK > 0) {
+        const gf = new THREE.BufferGeometry(); gf.setAttribute("position", posAttr);
+        gf.setAttribute("color", regCol(mkCol((b) => Math.pow(b, 1.3) * o.fillK), "fill")); gf.setIndex(index);
+        const mf = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest, side: THREE.FrontSide });
+        o.parent.add(new THREE.Mesh(gf, mf)); allMats.push(mf);
+      }
+      const ia = index.array, seen = new Set(), eIdx = [];
+      const addE = (a, b) => { const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
+      for (let i = 0; i < ia.length; i += 3) { addE(ia[i], ia[i + 1]); addE(ia[i + 1], ia[i + 2]); addE(ia[i + 2], ia[i]); }
+      const gl = new THREE.BufferGeometry(); gl.setAttribute("position", posAttr);
+      gl.setAttribute("color", regCol(mkCol((b) => 0.04 + Math.pow(b, 1.4) * o.lineK), "line")); gl.setIndex(eIdx);
+      const ml = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest });
+      o.parent.add(new THREE.LineSegments(gl, ml)); allMats.push(ml);
+      const gp = new THREE.BufferGeometry(); gp.setAttribute("position", posAttr);
+      gp.setAttribute("color", regCol(mkCol((b) => Math.pow(b, 1.6) * o.ptK), "point"));
+      const mp = new THREE.PointsMaterial({ size: o.ptSize, map: dotTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest, sizeAttenuation: true });
+      o.parent.add(new THREE.Points(gp, mp)); allMats.push(mp);
+      return { n, edges: eIdx.length / 2 };
+    }
+
+    const headGeo = decimate(hgW, CONFIG.headDecimate);
+    const hStat = buildLayers(headGeo, {
+      parent: head, fillK: CONFIG.fill, lineK: CONFIG.line, ptK: CONFIG.point, ptSize: CONFIG.pointSize,
+      occlude: true, setBounds: true, halftone: true, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
+      brightFn: (x, y, z, nz) => contrast(lumaAt(mapX(x), mapY(y))) * Math.pow(nz, CONFIG.frontPow) * faceWeight(nxOf(x), nyOf(y)) * earCut(nxOf(x)),
+    });
+
+
+
+    // eyes: two states driven by the same sweep as the head.
+    //  - halftone state: a cat-style dot cap, masked to the eye-opening (inside the lids)
+    //  - wireframe state: the original dim eyeball lines (no halftone highlight)
+    let eStat = { n: 0 };
+    if (eyeMesh) {
+      eyeMesh.updateWorldMatrix(true, false);
+      const egW = eyeMesh.geometry.clone(); egW.applyMatrix4(eyeMesh.matrixWorld);
+      const eg = decimate(egW, CONFIG.eyeDecimate);
+      const epa = eg.getAttribute("position"), ena = eg.getAttribute("normal"), en = epa.count, epos = new Float32Array(en * 3);
+      for (let i = 0; i < en; i++) {
+        epos[i * 3] = (epa.getX(i) - ctr.x) * fit; epos[i * 3 + 1] = (epa.getY(i) - ctr.y) * fit; epos[i * 3 + 2] = (epa.getZ(i) - ctr.z) * fit;
+      }
+      const eposAttr = new THREE.BufferAttribute(epos, 3);
+
+      // per-vertex offset from each eye centre (normalised to eye radius) — drives the lid-opening
+      // aperture mask shared by both the halftone and the wireframe eye, so neither draws over the head.
+      let mx = 0; for (let i = 0; i < en; i++) mx += epos[i * 3]; mx /= en;   // split L/R at the mean x
+      const cL = [0, 0, 0], cR = [0, 0, 0]; let nL = 0, nR = 0;
+      for (let i = 0; i < en; i++) { const x = epos[i * 3], y = epos[i * 3 + 1], z = epos[i * 3 + 2]; const c = x < mx ? cL : cR; c[0] += x; c[1] += y; c[2] += z; if (x < mx) nL++; else nR++; }
+      for (let k = 0; k < 3; k++) { cL[k] /= Math.max(1, nL); cR[k] /= Math.max(1, nR); }
+      const off = new Float32Array(en * 3); let R = 0;
+      for (let i = 0; i < en; i++) { const x = epos[i * 3], y = epos[i * 3 + 1], z = epos[i * 3 + 2], c = x < mx ? cL : cR; const dx = x - c[0], dy = y - c[1], dz = z - c[2]; off[i * 3] = dx; off[i * 3 + 1] = dy; off[i * 3 + 2] = dz; R += Math.hypot(dx, dy, dz); }
+      R = (R / en) || 1;
+      for (let i = 0; i < off.length; i++) off[i] /= R;   // eye-radius units
+      const offAttr = new THREE.BufferAttribute(off, 3);
+
+      // wireframe-state eyes: front-surface lines, clipped to the lid opening (back hemisphere culled +
+      // aperture mask) so no eyeball lines draw through the head. brought in by the sweep.
+      const ia = eg.getIndex().array, seen = new Set(), eIdx = [];
+      const addE = (a, b) => { const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
+      for (let i = 0; i < ia.length; i += 3) { addE(ia[i], ia[i + 1]); addE(ia[i + 1], ia[i + 2]); addE(ia[i + 2], ia[i]); }
+      const gw = new THREE.BufferGeometry();
+      gw.setAttribute("position", eposAttr); gw.setAttribute("normal", ena.clone()); gw.setAttribute("aEyeOff", offAttr); gw.setIndex(eIdx);
+      head.add(new THREE.LineSegments(gw, makeEyeWireMaterial()));
+
+      // halftone-state eyes: centred cap, masked to the lid opening, fades out on the wireframe side
+      const ege = new THREE.BufferGeometry();
+      ege.setAttribute("position", eposAttr);
+      ege.setAttribute("normal", ena.clone());
+      ege.setAttribute("aEyeOff", offAttr);
+      ege.setIndex(eg.getIndex());
+      head.add(new THREE.Mesh(ege, makeEyeMaterial()));
+      eStat = { n: en };
+    }
+
+    dbg.textContent = `head ${hStat.n}v ${hStat.edges}e  eye ${eStat.n}v`;
+    document.getElementById("loading").classList.add("hidden");
+    for (const L of LAYERS) { L.attr.array.fill(0); L.attr.needsUpdate = true; }  // start dark; the intro paints the reveal
+    startTime = performance.now();
+  }
+
+  // --- mouse ----------------------------------------------------------------
+  const mouse = { x: 0, y: 0 }, ease = { x: 0, y: 0 };
+  addEventListener("pointermove", (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); });
+  // keep the canvas locked to the current viewport. dragging the window between
+  // monitors with different devicePixelRatio doesn't always fire `resize`, which
+  // would leave the canvas at the old monitor's size — pinned top-left, that pushes
+  // the centred head off to one side. so we re-sync every frame, not just on resize.
+  let lastW = 0, lastH = 0, lastDpr = 0;
+  function syncSize() {
+    if (innerWidth === lastW && innerHeight === lastH && devicePixelRatio === lastDpr) return;
+    lastW = innerWidth; lastH = innerHeight; lastDpr = devicePixelRatio;
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    composer.setSize(innerWidth, innerHeight);
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  }
+  addEventListener("resize", syncSize);
+
+  // --- intro: red scan reading the face top->bottom, then a warm wireframe reveal ----
+  const INTRO = { red: 1.15, sweep: 1.45 };  // seconds per phase
+  const RED = [1.0, 0.12, 0.06];             // scanner red
+  const EDGE = [1.0, 0.82, 0.55];            // warm reveal-front glow
+  let introDone = false;
+  function paint(fn) {
+    for (const L of LAYERS) {
+      const a = L.attr.array, ny = L.ny, n = ny.length;
+      for (let i = 0; i < n; i++) fn(a, i * 3, L, ny[i]);
+      L.attr.needsUpdate = true;
+    }
+  }
+  // returns intro progress 0..1 (used to ease bloom down as the face settles)
+  function updateIntro(t) {
+    if (introDone) return 1;
+    if (t >= INTRO.red + INTRO.sweep) {
+      for (const L of LAYERS) { L.attr.array.set(L.portrait); L.attr.needsUpdate = true; }
+      introDone = true;
+      sweepBase = t;   // start the portrait<->wireframe sweep clock from a full-portrait (dot-matrix) state
+      return 1;
+    }
+    if (t < INTRO.red) {
+      const p = t / INTRO.red, scanY = 1.05 - p * 1.10, band = 0.07;
+      paint((a, o, L, ny) => {
+        const d = ny - scanY, f = d >= 0 ? 0.10 : 0;   // residue above the line, dark ahead of it
+        a[o] = RED[0] * f; a[o + 1] = RED[1] * f; a[o + 2] = RED[2] * f;
+        const ad = Math.abs(d);
+        if (ad < band) { const e = 1 - ad / band; a[o] += RED[0] * e; a[o + 1] += RED[1] * e; a[o + 2] += RED[2] * e; }
+      });
+      return p * 0.4;
+    }
+    const p = (t - INTRO.red) / INTRO.sweep, revY = 1.05 - p * 1.10, band = 0.06;
+    paint((a, o, L, ny) => {
+      const d = ny - revY, pr = L.portrait;
+      if (d >= 0) { a[o] = pr[o]; a[o + 1] = pr[o + 1]; a[o + 2] = pr[o + 2]; }   // revealed into the dot-matrix portrait
+      else { const f = 0.08; a[o] = RED[0] * f; a[o + 1] = RED[1] * f; a[o + 2] = RED[2] * f; }  // still scanned-red
+      const ad = Math.abs(d);
+      if (ad < band) { const e = (1 - ad / band) * 0.8; a[o] += EDGE[0] * e; a[o + 1] += EDGE[1] * e; a[o + 2] += EDGE[2] * e; }
+    });
+    return 0.4 + p * 0.6;
+  }
+
+  // --- steady state: periodic portrait <-> wireframe sweep + travel light ------------
+  // wireframe state drops the photo base colour, leaving dim structural wires + the
+  // mars-orange travel bands. a sweep line travels the figure vertically to morph between.
+  const MARS = [0.91, 0.45, 0.18];
+  const WIRE_DIM_LINE = [0.075, 0.058, 0.042];   // dim structural wire colour in wireframe state
+  const WIRE_DIM_POINT = [0.05, 0.038, 0.028];
+  const PORTRAIT_FILL_MUL = 0.32;   // soft surface underglow behind the halftone dots
+  const PORTRAIT_LINE_MUL = 0.0;    // dot-matrix portrait shows dots, not wireframe lines
+  const frac = (x) => x - Math.floor(x);
+  const band = (x) => { const v = 1 - Math.abs(x - 0.5) * 2; return v <= 0 ? 0 : Math.pow(v, 12); };
+  const SWEEP = { down: 1.5, holdWire: 4.5, up: 1.5, holdPortrait: 6.0 };
+  const SWEEP_FEATHER = 0.07;
+  let sweepBase = 0;  // seconds (t) at which the intro finished — the sweep clock origin
+  // sweep-line height over the figure (ny units, 1.15 = above crown, -0.15 = below collar)
+  function sweepLine(st) {
+    const P = SWEEP.down + SWEEP.holdWire + SWEEP.up + SWEEP.holdPortrait;
+    let i = st % P; if (i < 0) i += P;
+    const TOP = 1.15, BOT = -0.15;
+    if (i < SWEEP.down) return TOP + (i / SWEEP.down) * (BOT - TOP);                 // portrait -> wireframe
+    i -= SWEEP.down;
+    if (i < SWEEP.holdWire) return BOT;                                              // hold wireframe
+    i -= SWEEP.holdWire;
+    if (i < SWEEP.up) return BOT + (i / SWEEP.up) * (TOP - BOT);                     // wireframe -> portrait
+    return TOP;                                                                      // hold portrait
+  }
+  function applyState(st) {
+    const ly = sweepLine(st), fw = SWEEP_FEATHER;
+    // cat wireframe lighting: lit white base + specular sheen. light is view-space (uLightDir);
+    // we rotate each vertex's local normal by the head's current yaw/pitch into view space.
+    const Lv = halftoneUniforms.uLightDir.value, Lx = Lv.x, Ly = Lv.y, Lz = Lv.z;
+    let Hx = Lx, Hy = Ly, Hz = Lz + 1.0; const Hl = Math.hypot(Hx, Hy, Hz) || 1; Hx /= Hl; Hy /= Hl; Hz /= Hl;   // half vector with view dir (0,0,1)
+    const cy = Math.cos(head.rotation.y), sy = Math.sin(head.rotation.y), cx = Math.cos(head.rotation.x), sx = Math.sin(head.rotation.x);
+    for (const L of LAYERS) {
+      if (!L.sweepable) continue;   // static layer (eyes) — handled by their own shaders
+      const a = L.attr.array, port = L.portrait, pos = L.pos, ny = L.ny, n = ny.length, K = L.travelK, nrm = L.nrm;
+      const nodeScale = L.kind === "point" ? 0.7 : 1.0;   // keep wireframe nodes from over-glowing
+      for (let i = 0; i < n; i++) {
+        const o = i * 3;
+        let u = (ny[i] - (ly - fw)) / (2 * fw); u = u < 0 ? 0 : u > 1 ? 1 : u;
+        const w = u * u * (3 - 2 * u);   // 0 = portrait (dots), 1 = wireframe
+        // cat wireBrightness = 0.15 + diffuse*0.5 + specular*2.0 (white lit lines + gloss)
+        let wb = 0.15;
+        if (nrm) {
+          const lnx = nrm[o], lny = nrm[o + 1], lnz = nrm[o + 2];
+          const x1 = cy * lnx + sy * lnz, z1 = -sy * lnx + cy * lnz;   // yaw
+          const Nx = x1, Ny = cx * lny - sx * z1, Nz = sx * lny + cx * z1;   // pitch
+          const ndl = Math.max(0, Nx * Lx + Ny * Ly + Nz * Lz);
+          const ndh = Math.max(0, Nx * Hx + Ny * Hy + Nz * Hz);
+          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale;
+        }
+        let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
+        if (K) {
+          const px = pos[o], py = pos[o + 1];
+          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w;
+          r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
+        }
+        const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
+        if (eg > 0) { r += EDGE[0] * eg * 0.4; g += EDGE[1] * eg * 0.4; b += EDGE[2] * eg * 0.4; }
+        a[o] = r; a[o + 1] = g; a[o + 2] = b;
+      }
+      L.attr.needsUpdate = true;
+    }
+  }
+
+  let startTime = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    syncSize();
+    const t = startTime ? (now - startTime) / 1000 : 0;
+    const introProg = updateIntro(t);
+
+    const st = t - sweepBase;
+    const ly = introDone ? sweepLine(st) : 1.15;
+    halftoneUniforms.uTime.value = t;
+    halftoneUniforms.uSweepNy.value = ly;
+    halftoneUniforms.uIntroFade.value = Math.max(0, Math.min(1, (introProg - 0.4) / 0.6));
+    const pr = renderer.getPixelRatio();
+    halftoneUniforms.uResolution.value.set(innerWidth * pr, innerHeight * pr);   // device px, matches gl_FragCoord
+    // light tracks the cursor (view space) with a slow auto-orbit — sculpts the halftone + drives gaze lighting
+    halftoneUniforms.uLightDir.value.set(ease.x * 1.4 + Math.sin(t * 0.4) * 0.32, ease.y * 1.4 + Math.cos(t * 0.3) * 0.22, 1.5).normalize();
+
+    if (introDone) {
+      ease.x += (mouse.x - ease.x) * FOLLOW.gaze;
+      ease.y += (mouse.y - ease.y) * FOLLOW.gaze;
+      const idle = Math.sin(t * 0.5) * 0.04;
+      head.rotation.y += (ease.x * TURN.yaw + idle - head.rotation.y) * FOLLOW.head;
+      head.rotation.x += (-ease.y * TURN.pitch - head.rotation.x) * FOLLOW.head;
+      head.position.x += (ease.x * TURN.shiftX - head.position.x) * FOLLOW.head;
+      head.position.y += (ease.y * TURN.shiftY - head.position.y) * FOLLOW.head;
+      halftoneUniforms.uMouse.value.set(ease.x, ease.y);
+      applyState(st);
+    }
+
+    for (const m of allMats) m.opacity = 1;
+    bloom.strength = 0.14 + Math.sin(t * 1.1) * 0.045 + (1 - introProg) * 0.7;   // gentle steady-state pulse
+
+    composer.render();
+  }
+  requestAnimationFrame(frame);
+  </script>
+</body>
+</html>
