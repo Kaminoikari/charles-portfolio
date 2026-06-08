@@ -104,6 +104,19 @@
   const head = new THREE.Group();
   scene.add(head);
 
+  // --- eye death-laser (Superman/Cyclops): two beams from the eyes converging on the pointer ---
+  const LASER = { color: [1.0, 0.12, 0.05], width: 0.05, plane: 1.2, extend: 1.15 };
+  let firing = false, fireI = 0;        // fireI = eased 0..1 firing intensity
+  const eyeWorld = [];                   // eye origins in head-local space (filled in build)
+  const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
+  let impactSprite = null;
+  const raycaster = new THREE.Raycaster();
+  const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
+  const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
+  const tmpEo = new THREE.Vector3(), tmpToCam = new THREE.Vector3(), tmpWidth = new THREE.Vector3();
+  const tmpNormal = new THREE.Vector3(), tmpMid = new THREE.Vector3(), tmpScale = new THREE.Vector3();
+  const tmpBasis = new THREE.Matrix4();
+
   function dotTexture() {
     const c = document.createElement("canvas"); c.width = c.height = 64;
     const x = c.getContext("2d");
@@ -335,6 +348,42 @@
     });
   }
 
+  // --- death-laser beam: a camera-facing quad, white-hot core inside a Superman-red sheath ---
+  const BEAM_VERT = `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+  const BEAM_FRAG = `
+    precision highp float;
+    uniform vec3 uColor; uniform float uTime; uniform float uIntensity;
+    varying vec2 vUv;
+    void main() {
+      float across = (vUv.y - 0.5) * 2.0;       // -1..1 across the beam width
+      float along  = vUv.x;                      // 0 (eye) .. 1 (tip)
+      float core   = exp(-across * across * 26.0);   // tight white centre
+      float sheath = exp(-across * across * 4.5);    // soft red halo
+      float taper  = smoothstep(1.0, 0.72, along);   // thin out toward the tip
+      float flick  = 0.85 + 0.15 * sin(uTime * 40.0 + along * 22.0);
+      vec3 col = vec3(1.5) * core + uColor * sheath * 1.7; // thin white core inside a saturated red sheath
+      float env = (core + sheath * 0.6) * taper * flick * uIntensity;
+      gl_FragColor = vec4(col, env);
+    }`;
+  const beamUniforms = {
+    uColor: { value: new THREE.Color(LASER.color[0], LASER.color[1], LASER.color[2]) },
+    uTime: { value: 0 }, uIntensity: { value: 0 },
+  };
+  function makeBeamMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: beamUniforms, vertexShader: BEAM_VERT, fragmentShader: BEAM_FRAG,
+      transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, side: THREE.DoubleSide,
+    });
+  }
+  function makeGlowSprite() {
+    return new THREE.SpriteMaterial({
+      map: dotTexture(), color: new THREE.Color(1.0, 0.22, 0.14),
+      blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true,
+    });
+  }
+
   // --- load photo + glb in parallel ----------------------------------------
   const loadImg = new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.src = CONFIG.imgUrl; });
   const loadGlb = new Promise((res, rej) => new GLTFLoader().load(CONFIG.glbUrl, (g) => res(g), undefined, rej));
@@ -492,6 +541,20 @@
       for (let i = 0; i < off.length; i++) off[i] /= R;   // eye-radius units
       const offAttr = new THREE.BufferAttribute(off, 3);
 
+      // laser muzzles ride the eye centres (nudged forward to the eye surface), in head-local space
+      eyeWorld.push(
+        new THREE.Vector3(cL[0], cL[1], cL[2] + R * 0.9),
+        new THREE.Vector3(cR[0], cR[1], cR[2] + R * 0.9),
+      );
+      for (let k = 0; k < 2; k++) {
+        const bm = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), makeBeamMaterial());
+        bm.visible = false; bm.frustumCulled = false; bm.matrixAutoUpdate = false; scene.add(bm); beams.push(bm);
+        const mz = new THREE.Sprite(makeGlowSprite());
+        mz.visible = false; mz.frustumCulled = false; scene.add(mz); muzzles.push(mz);
+      }
+      impactSprite = new THREE.Sprite(makeGlowSprite());
+      impactSprite.visible = false; impactSprite.frustumCulled = false; scene.add(impactSprite);
+
       // wireframe-state eyes: front-surface lines, clipped to the lid opening (back hemisphere culled +
       // aperture mask) so no eyeball lines draw through the head. brought in by the sweep.
       const ia = eg.getIndex().array, seen = new Set(), eIdx = [];
@@ -519,7 +582,14 @@
 
   // --- mouse ----------------------------------------------------------------
   const mouse = { x: 0, y: 0 }, ease = { x: 0, y: 0 };
-  addEventListener("pointermove", (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); });
+  const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
+  addEventListener("pointermove", setAim);
+  // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
+  addEventListener("pointerdown", (e) => { setAim(e); firing = true; });
+  addEventListener("pointerup", () => { firing = false; });
+  addEventListener("pointercancel", () => { firing = false; });
+  addEventListener("pointerleave", () => { firing = false; });
+  renderer.domElement.style.touchAction = "none";   // let touch-and-hold aim instead of scrolling
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
   // would leave the canvas at the old monitor's size — pinned top-left, that pushes
@@ -681,10 +751,41 @@
       head.position.y += (ease.y * TURN.shiftY - head.position.y) * FOLLOW.head;
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
       applyState(st);
+
+      // death-laser: two beams from the eyes converging on the pointer
+      fireI += ((firing ? 1 : 0) - fireI) * 0.18;
+      beamUniforms.uTime.value = t;
+      beamUniforms.uIntensity.value = fireI;
+      if (fireI > 0.01 && eyeWorld.length === 2) {
+        raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
+        raycaster.ray.intersectPlane(aimPlane, aimTarget);          // pointer -> world point on the aim plane
+        camera.getWorldPosition(tmpCam);
+        for (let k = 0; k < 2; k++) {
+          tmpEo.copy(eyeWorld[k]); head.localToWorld(tmpEo);         // eye origin in world space
+          tmpDir.copy(aimTarget).sub(tmpEo);                          // origin -> target
+          const len = tmpDir.length() * LASER.extend;
+          tmpDir.normalize();
+          tmpToCam.copy(tmpCam).sub(tmpEo).normalize();
+          tmpWidth.crossVectors(tmpDir, tmpToCam).normalize();        // billboard width axis (across screen)
+          tmpNormal.crossVectors(tmpWidth, tmpDir).normalize();       // faces the camera
+          tmpBasis.makeBasis(tmpDir, tmpWidth, tmpNormal);
+          tmpScale.set(len, LASER.width * (0.55 + fireI * 0.6), 1);
+          tmpBasis.scale(tmpScale);
+          tmpMid.copy(tmpEo).addScaledVector(tmpDir, len * 0.5);
+          tmpBasis.setPosition(tmpMid);
+          const bm = beams[k]; bm.visible = true; bm.matrix.copy(tmpBasis);
+          const mz = muzzles[k]; mz.visible = true; mz.position.copy(tmpEo); mz.scale.setScalar(0.16 * fireI);
+        }
+        impactSprite.visible = true; impactSprite.position.copy(aimTarget); impactSprite.scale.setScalar(0.26 * fireI);
+      } else if (eyeWorld.length === 2) {
+        beams[0].visible = beams[1].visible = false;
+        muzzles[0].visible = muzzles[1].visible = false;
+        impactSprite.visible = false;
+      }
     }
 
     for (const m of allMats) m.opacity = 1;
-    bloom.strength = 0.16 + Math.sin(t * 1.1) * 0.04 + (1 - introProg) * 2.4;   // heavy bloom during the red intro, easing to a gentle steady pulse
+    bloom.strength = 0.16 + Math.sin(t * 1.1) * 0.04 + (1 - introProg) * 2.4 + fireI * 0.12;   // heavy bloom during the red intro + a small kick while firing (the beams glow on their own)
 
     composer.render();
   }
