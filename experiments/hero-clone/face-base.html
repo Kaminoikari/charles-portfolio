@@ -111,66 +111,33 @@
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
   const raycaster = new THREE.Raycaster();
 
-  // heat-vision SFX (user-supplied). Web Audio, not <audio>: an AudioBufferSourceNode with
-  // loop=true is sample-accurate gapless, so holding the beam never clicks at the loop point
-  // (the HTMLAudio loop restart was leaving an audible seam). every press fires a one-shot
-  // charge+blast, and a looping sustain that gain-ramps in around the blast so the charge stays
-  // distinct, then carries the hum for as long as the button is held.
-  const SFX = { attack: "./assets/laser-attack.mp3", loop: "./assets/laser-fire.mp3", vol: 0.9, fadeIn: [0.8, 1.4], fadeOut: 0.05 };
-  let actx = null, attackBuf = null, loopBuf = null, sfxUnlocked = false;
-  let curAttack = null, curLoop = null, curGain = null;
+  // heat-vision SFX (user-supplied), split so every press gets the charge+fire attack and then a
+  // seamless sustain: the attack take plays once, and ~when it lands in the beam the looping body
+  // takes over (aligned to the same point in the source, so the handoff is continuous).
+  const laserAttack = new Audio("./assets/laser-attack.mp3");   // charge build + fire blast (~2s)
+  const laserLoop = new Audio("./assets/laser-fire.mp3");       // seamless sustained beam
+  laserAttack.preload = "auto"; laserAttack.volume = 0.9;
+  laserLoop.preload = "auto"; laserLoop.volume = 0.9; laserLoop.loop = true;
+  const ATTACK_TO_LOOP = 1.4;   // seconds: unmute the loop while the attack is still sustaining, so they overlap with no silent gap
+  let loopTimer = 0;
   function setPlaybackSession() {
     // iOS Safari silences audio when the hardware mute switch is on unless the page declares a
     // "playback" audio session (iOS 16.4+). this lets the sound through with the ringer flipped.
     try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
   }
-  function ensureCtx() {
-    if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; try { actx = new AC(); } catch (e) { return null; } }
-    if (actx.state === "suspended") actx.resume().catch(() => {});
-    return actx;
-  }
-  // decodeAudioData is promise-based on modern Safari but callback-only on older iOS — support both.
-  function decodeOne(ctx, ab) {
-    return new Promise((resolve, reject) => { const p = ctx.decodeAudioData(ab, resolve, reject); if (p && p.then) p.then(resolve, reject); });
-  }
-  // pre-decode at load so the first press can play synchronously inside the user gesture (iOS only
-  // unlocks audio when a sound actually starts during the gesture — a deferred play stays silent).
-  (async function preloadSfx() {
-    const ctx = ensureCtx(); if (!ctx) return;
-    try {
-      const [a, b] = await Promise.all([fetch(SFX.attack).then(r => r.arrayBuffer()), fetch(SFX.loop).then(r => r.arrayBuffer())]);
-      attackBuf = await decodeOne(ctx, a); loopBuf = await decodeOne(ctx, b);
-    } catch (e) { /* buffers stay null; a press will retry the decode */ }
-  })();
   function startFireSfx() {
     setPlaybackSession();
-    const ctx = ensureCtx(); if (!ctx) return;
-    if (!sfxUnlocked) {   // iOS unlock: start a silent 1-sample buffer inside the gesture
-      try { const s = ctx.createBufferSource(); s.buffer = ctx.createBuffer(1, 1, 22050); s.connect(ctx.destination); s.start(0); sfxUnlocked = true; } catch (e) {}
-    }
-    if (!attackBuf || !loopBuf) {   // buffers not ready yet (slow load): decode then play if still held
-      Promise.all([fetch(SFX.attack).then(r => r.arrayBuffer()), fetch(SFX.loop).then(r => r.arrayBuffer())])
-        .then(([a, b]) => Promise.all([decodeOne(ctx, a), decodeOne(ctx, b)]))
-        .then(([a, b]) => { attackBuf = a; loopBuf = b; if (firing) startFireSfx(); }).catch(() => {});
-      return;
-    }
-    stopFireSfx();
-    const now = ctx.currentTime;
-    const ag = ctx.createGain(); ag.gain.value = SFX.vol; ag.connect(ctx.destination);
-    curAttack = ctx.createBufferSource(); curAttack.buffer = attackBuf; curAttack.connect(ag); curAttack.start(now);   // charge + fire, one shot
-    curGain = ctx.createGain(); curGain.connect(ctx.destination);
-    curGain.gain.setValueAtTime(0.0001, now);
-    curGain.gain.setValueAtTime(0.0001, now + SFX.fadeIn[0]);
-    curGain.gain.linearRampToValueAtTime(SFX.vol, now + SFX.fadeIn[1]);   // loop fades in as the blast lands, then sustains gaplessly
-    curLoop = ctx.createBufferSource(); curLoop.buffer = loopBuf; curLoop.loop = true; curLoop.connect(curGain); curLoop.start(now);
+    clearTimeout(loopTimer);
+    laserAttack.currentTime = 0; laserAttack.play().catch(() => {});       // charge + fire, every press
+    // start the loop now, inside the gesture, so iOS unlocks it — but muted. iOS blocks a play()
+    // fired later from a timer, yet honours unmuting an already-playing element. unmute at the handoff.
+    laserLoop.muted = true; laserLoop.currentTime = 0; laserLoop.play().catch(() => {});
+    loopTimer = setTimeout(() => { laserLoop.muted = false; }, ATTACK_TO_LOOP * 1000);   // then the sustain becomes audible
   }
   function stopFireSfx() {
-    if (!actx) return;
-    const now = actx.currentTime, a = curAttack, l = curLoop, g = curGain;
-    if (g) { try { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(Math.max(0.0001, g.gain.value), now); g.gain.linearRampToValueAtTime(0.0001, now + SFX.fadeOut); } catch (e) {} }
-    if (l) { try { l.stop(now + SFX.fadeOut + 0.02); } catch (e) {} }
-    if (a) { try { a.stop(now + SFX.fadeOut + 0.02); } catch (e) {} }   // a quick fade avoids a click on release
-    curAttack = null; curLoop = null; curGain = null;
+    clearTimeout(loopTimer);
+    laserAttack.pause(); laserAttack.currentTime = 0;
+    laserLoop.pause(); laserLoop.currentTime = 0; laserLoop.muted = true;   // re-arm muted for the next press
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
