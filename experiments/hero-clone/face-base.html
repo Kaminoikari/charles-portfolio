@@ -506,25 +506,24 @@
       const nySpan = (yMax - yMin) || 1;
       const ny = new Float32Array(n);
       for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan;
-      // per-vertex jaw-open weight: a thin hinge band AT the closed-lip contact line (ny ~0.20). everything
-      // below it (the whole lower lip + jaw + chin) drops as a rigid block, so the lip keeps its own height
-      // and only the seam between the lips opens. a band that sits above the lips just drops both lips
-      // together (a longer philtrum, no opening); a wider band stretches the lower lip taller.
-      const jawW = new Float32Array(n);
-      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.205 - ny[i]) / 0.02; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
-      // lip-ring weight: the lip vertices around the whole mouth (both lips, ny ~0.15-0.235). firing pinches
-      // their x toward the midline so the parted mouth rounds into an O (a roar) — the corners must move IN,
-      // not just the jaw down. lips are isolated from the cheeks by the SURFACE NORMAL: lips face forward
-      // (small lateral normal), cheeks face sideways. that keeps the corners in the ring (so they pinch in)
-      // while leaving the cheeks alone — an x-magnitude gate can't, since corner and cheek overlap in x.
-      const mouthRing = new Float32Array(n);
+      // grim-mouth weights (the heat-vision scowl): firing tenses the CLOSED mouth instead of opening it —
+      // the corners pull DOWN into a frown and the lower lip firms up a touch. lips are isolated from the
+      // cheeks by the SURFACE NORMAL (lips face forward / small lateral normal, cheeks face sideways), so the
+      // deform never drags the cheeks. only y moves, so the mouth stays shut — no jaw opening.
+      let xMax = 1e-6; for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > xMax) xMax = ax; }
+      const lipCornerW = new Float32Array(n);   // lip ring, weighted toward the corners -> the downturn
+      const lowerLipW = new Float32Array(n);    // lower-lip centre -> the firm press
       if (o.jawRig) for (let i = 0; i < n; i++) {
         let bi = (ny[i] - 0.14) / 0.03; bi = bi < 0 ? 0 : bi > 1 ? 1 : bi;
         let bo = (0.235 - ny[i]) / 0.03; bo = bo < 0 ? 0 : bo > 1 ? 1 : bo;
         let band = Math.min(bi, bo); band = band * band * (3 - 2 * band);
         let fz = (nloc[i * 3 + 2] - 0.2) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz;             // faces forward
         let sx = 1 - (Math.abs(nloc[i * 3]) - 0.32) / 0.28; sx = sx < 0 ? 0 : sx > 1 ? 1 : sx;  // not sideways -> lip, not cheek
-        mouthRing[i] = band * fz * sx;
+        const lip = band * fz * sx;
+        let lat = (Math.abs(pos[i * 3]) / xMax - 0.04) / 0.16; lat = lat < 0 ? 0 : lat > 1 ? 1 : lat; lat = lat * lat * (3 - 2 * lat);
+        lipCornerW[i] = lip * lat;                                  // strongest at the mouth corners
+        let low = (0.20 - ny[i]) / 0.04; low = low < 0 ? 0 : low > 1 ? 1 : low;
+        lowerLipW[i] = lip * low * (1 - lat);                       // lower-lip centre only
       }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
@@ -564,9 +563,9 @@
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
       if (o.jawRig) {
-        // firing drops the lower-lip-through-chin block (jawW) away from the fixed upper lip so the mouth
-        // opens (a roar). drives both the halftone and wireframe positions.
-        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight: jawW, ring: mouthRing, span: nySpan, lastOpen: 0 };
+        // firing tenses the closed mouth into a grim scowl (corners down + lower lip pressed up).
+        // drives both the halftone and wireframe positions.
+        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), corner: lipCornerW, lower: lowerLipW, span: nySpan, lastOpen: 0 };
       }
       const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
       // register a color buffer with the post-intro engines. each layer carries the colour it
@@ -878,13 +877,13 @@
       halftoneUniforms.uEyeCharge.value = charge;
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
-      // roar: drop the jaw open while the beam fires + pinch the lip ring inward so it rounds into an O
-      // (drives both the dot and wireframe geometry)
+      // heat-vision scowl: firing tenses the closed mouth — the corners pull down into a frown and the
+      // lower lip firms up. only y moves, so the mouth stays shut. drives both the dot and wireframe geometry.
       if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
-        const open = fireI * 0.085 * jawRig.span;   // downward drop in fitted units (a slight parted-mouth roar, not a gape)
-        const pinch = fireI * 0.6;                   // horizontal squeeze of the lip ring toward the midline -> O shape
-        const w = jawRig.weight, ring = jawRig.ring, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
-        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open, px = 1 - pinch * ring[i]; ha[o] = hb[o] * px; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] - d * 0.18; wa[o] = wb[o] * px; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] - d * 0.18; }
+        const down = fireI * 0.065 * jawRig.span;   // corner downturn (the frown)
+        const press = fireI * 0.02 * jawRig.span;   // lower-lip firm-up
+        const cw = jawRig.corner, lw = jawRig.lower, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = cw.length;
+        for (let i = 0; i < m; i++) { const o = i * 3, dy = lw[i] * press - cw[i] * down; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] + dy; ha[o + 2] = hb[o + 2]; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] + dy; wa[o + 2] = wb[o + 2]; }
         jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
       }
       if (charge > 0.01 && eyeWorld.length === 2) {
