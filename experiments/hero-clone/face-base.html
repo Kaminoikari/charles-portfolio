@@ -113,7 +113,7 @@
 
   // the Superman heat-vision blast (user-supplied SFX): a one-shot fired on each press.
   const laserSfx = new Audio("./assets/laser-fire.mp3");
-  laserSfx.preload = "auto"; laserSfx.volume = 0.9;
+  laserSfx.preload = "auto"; laserSfx.volume = 0.9; laserSfx.loop = true;   // sustain while held; paused the instant the pointer releases
 
   // heat-vision drone, synthesised so it sustains seamlessly for as long as the beam is held
   // (a looped clip seams audibly; an oscillator bed never does). gain follows `charge`, so it
@@ -639,9 +639,10 @@
     setAim(e); firing = true; initAudio();   // gesture unlocks the AudioContext + the SFX
     laserSfx.currentTime = 0; laserSfx.play().catch(() => {});
   });
-  addEventListener("pointerup", () => { firing = false; });
-  addEventListener("pointercancel", () => { firing = false; });
-  addEventListener("pointerleave", () => { firing = false; });
+  const stopFiring = () => { firing = false; laserSfx.pause(); };   // release stops the sound immediately
+  addEventListener("pointerup", stopFiring);
+  addEventListener("pointercancel", stopFiring);
+  addEventListener("pointerleave", stopFiring);
   renderer.domElement.style.touchAction = "none";   // let touch-and-hold aim instead of scrolling
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -814,7 +815,7 @@
       // through the pointer and on to the screen edge.
       // time-based wind-up so the duration is exact: ~0.66s of eye charge before the beam,
       // ~1.2s to full power, then a snappy release.
-      const CHARGE_UP = 1.2, CHARGE_DOWN = 0.35;        // seconds
+      const CHARGE_UP = 1.2, CHARGE_DOWN = 0.16;        // slow wind-up, snappy release (matches the audio stopping on release)
       charge += firing ? dt / CHARGE_UP : -dt / CHARGE_DOWN;
       charge = Math.max(0, Math.min(1, charge));
       const bt = Math.max(0, Math.min(1, (charge - 0.55) / 0.45));   // beam emerges only once the eyes are well lit
