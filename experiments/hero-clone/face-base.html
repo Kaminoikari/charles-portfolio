@@ -115,7 +115,7 @@
   // seamless sustain: the attack take plays once, and ~when it lands in the beam the looping body
   // takes over (aligned to the same point in the source, so the handoff is continuous).
   const laserAttack = new Audio("./assets/laser-attack.mp3");   // charge build + fire blast (~2s)
-  const laserLoop = new Audio("./assets/laser-fire.mp3");       // seamless sustained beam
+  const laserLoop = new Audio("./assets/laser-fire.wav");       // seamless sustained beam (WAV: no mp3 priming-padding gap at the loop point)
   laserAttack.preload = "auto"; laserAttack.volume = 0.9;
   laserLoop.preload = "auto"; laserLoop.volume = 0.9; laserLoop.loop = true;
   const ATTACK_TO_LOOP = 1.4;   // seconds: unmute the loop while the attack is still sustaining, so they overlap with no silent gap
@@ -509,6 +509,14 @@
         for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > xAbsMax) xAbsMax = ax; const z = pos[i * 3 + 2]; if (z < zLo) zLo = z; if (z > zHi) zHi = z; }
         const zSpan = (zHi - zLo) || 1;
         const sb = (e0, e1, v) => { let t = (v - e0) / (e1 - e0); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
+        // ear region: the outermost vertices at ear height (gated tight so it isolates the ears from the cheekbone)
+        const earMask = (i) => sb(0.44, 0.52, ny[i]) * (1 - sb(0.60, 0.70, ny[i])) * sb(0.72, 0.92, Math.abs(pos[i * 3]) / xAbsMax);
+        // pre-pass: per-ear centroid so the ear can be shrunk toward its own centre (smaller + rounder)
+        let eLx = 0, eLy = 0, eLz = 0, eLw = 0, eRx = 0, eRy = 0, eRz = 0, eRw = 0;
+        if (o.earShrink) {
+          for (let i = 0; i < n; i++) { const em = earMask(i); if (em > 0.01) { const x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2]; if (x < 0) { eLx += x * em; eLy += y * em; eLz += z * em; eLw += em; } else { eRx += x * em; eRy += y * em; eRz += z * em; eRw += em; } } }
+          eLw = eLw || 1; eRw = eRw || 1; eLx /= eLw; eLy /= eLw; eLz /= eLw; eRx /= eRw; eRy /= eRw; eRz /= eRw;
+        }
         for (let i = 0; i < n; i++) {
           const x = pos[i * 3], hy = ny[i], nzf = (pos[i * 3 + 2] - zLo) / zSpan;
           // gate by the SURFACE NORMAL: only pull vertices whose surface faces sideways (the silhouette
@@ -520,6 +528,10 @@
           const front = 0.4 + 0.6 * sb(0.35, 0.8, nzf);               // de-emphasise the rear so the ears stay mostly intact
           const profile = Math.min(1.7, cheek + jaw * 1.7);            // combine; jaw pulled harder than the cheek for a pointier chin
           posWire[i * 3] = x * (1 - o.slimCheek * side * front * profile);
+          // narrow the lip line to the portrait's mouth width (front-facing lip vertices only)
+          if (o.mouthNarrow) { const lip = sb(0.12, 0.16, hy) * (1 - sb(0.21, 0.25, hy)); posWire[i * 3] *= (1 - o.mouthNarrow * lip * sb(0.42, 0.8, nzf)); }
+          // shrink + tuck the ears toward their centroid so they read smaller and rounder
+          if (o.earShrink) { const em = earMask(i); if (em > 0.01) { const k = o.earShrink * em; const tx = (x < 0 ? eLx : eRx) * (1 - o.earTuck), ty = (x < 0 ? eLy : eRy), tz = (x < 0 ? eLz : eRz); posWire[i * 3] += (tx - posWire[i * 3]) * k; posWire[i * 3 + 1] += (ty - posWire[i * 3 + 1]) * k; posWire[i * 3 + 2] += (tz - posWire[i * 3 + 2]) * k; } }
         }
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
@@ -576,7 +588,7 @@
     const headGeo = decimate(hgW, CONFIG.headDecimate);
     const hStat = buildLayers(headGeo, {
       parent: head, fillK: CONFIG.fill, lineK: CONFIG.line, ptK: CONFIG.point, ptSize: CONFIG.pointSize,
-      occlude: true, setBounds: true, halftone: true, slimCheek: 0.18, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
+      occlude: true, setBounds: true, halftone: true, slimCheek: 0.18, mouthNarrow: 0.12, earShrink: 0.32, earTuck: 0.14, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
       brightFn: (x, y, z, nz) => contrast(lumaAt(mapX(x), mapY(y))) * Math.pow(nz, CONFIG.frontPow) * faceWeight(nxOf(x), nyOf(y)) * earCut(nxOf(x)),
     });
 
