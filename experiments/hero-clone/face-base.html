@@ -234,7 +234,14 @@
       float dotMask = smoothstep(dotRadius + 0.08, dotRadius - 0.08, dotDist);
       vec3 dotColor = mix(vec3(1.0), vec3(0.0, 0.851, 1.0), cursorInfluence);   // brand cyan #00D9FF near cursor
       vec3 halftoneColor = dotColor * dotMask;
-      gl_FragColor = vec4(halftoneColor * portrait * uIntroFade, 1.0);
+      // transform halo: a pale-cyan energy band riding the sweep line as it morphs the portrait <-> wireframe.
+      // parked off the head (uSweepNy 1.15 / -0.15) during the holds, so it only glows mid-transition.
+      float hd = abs(vNy - uSweepNy);
+      float haloCore = exp(-pow(hd / 0.022, 2.0));
+      float haloSoft = exp(-pow(hd / 0.075, 2.0));
+      float flick = 0.85 + 0.15 * sin(uTime * 26.0 + vNy * 60.0);
+      vec3 halo = (vec3(0.30, 0.85, 1.0) * haloCore * 1.0 + vec3(0.08, 0.55, 1.0) * haloSoft * 0.7) * flick;
+      gl_FragColor = vec4((halftoneColor * portrait + halo) * uIntroFade, 1.0);
     }`;
   function makeHalftoneMaterial() {
     return new THREE.ShaderMaterial({
@@ -499,6 +506,13 @@
       const nySpan = (yMax - yMin) || 1;
       const ny = new Float32Array(n);
       for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan;
+      // bounds + per-vertex jaw-open weight, computed here so both the deform rig and the line builder
+      // (mouth-seam removal) can share them. weight: 0 above the upper lip (held), 1 by the lower lip down.
+      let mAbsX = 1e-6, mzLo = Infinity, mzHi = -Infinity;
+      for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > mAbsX) mAbsX = ax; const z = pos[i * 3 + 2]; if (z < mzLo) mzLo = z; if (z > mzHi) mzHi = z; }
+      const mzSpan = (mzHi - mzLo) || 1;
+      const jawW = new Float32Array(n);
+      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.205 - ny[i]) / 0.06; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
       // dot mesh keeps the untouched posAttr, so the dot state is byte-identical. lines/points are
@@ -537,13 +551,9 @@
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
       if (o.jawRig) {
-        // per-vertex jaw-open weight: 0 above the upper lip (ny >= 0.205, held fixed), ramping to 1 by
-        // the lower lip (ny <= 0.145) and staying 1 through the jaw + chin. firing drops that whole lower
-        // block away from the fixed upper lip, so the mouth genuinely opens (a roar). drives both the
-        // halftone and wireframe positions.
-        const weight = new Float32Array(n);
-        for (let i = 0; i < n; i++) { let s = (0.205 - ny[i]) / 0.06; s = s < 0 ? 0 : s > 1 ? 1 : s; weight[i] = s * s * (3 - 2 * s); }
-        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight, span: nySpan, lastOpen: 0 };
+        // firing drops the lower-lip-through-chin block (jawW) away from the fixed upper lip so the mouth
+        // opens (a roar). drives both the halftone and wireframe positions.
+        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight: jawW, span: nySpan, lastOpen: 0 };
       }
       const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
       // register a color buffer with the post-intro engines. each layer carries the colour it
@@ -582,7 +592,16 @@
         o.parent.add(new THREE.Mesh(gf, mf)); allMats.push(mf);
       }
       const ia = index.array, seen = new Set(), eIdx = [];
-      const addE = (a, b) => { const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
+      // mouth seam: edges that bridge the upper lip (held) and the lower lip (drops) across the central
+      // front mouth. dropping them from the wireframe leaves a clean hollow when the jaw opens instead of
+      // a web of stretched lines spanning the gap.
+      const mouthSeam = (a, b) => {
+        if (!o.jawRig || Math.abs(jawW[a] - jawW[b]) < 0.3) return false;
+        const mx = (pos[a * 3] + pos[b * 3]) * 0.5, mny = (ny[a] + ny[b]) * 0.5;
+        const mz = ((pos[a * 3 + 2] + pos[b * 3 + 2]) * 0.5 - mzLo) / mzSpan;
+        return Math.abs(mx) < 0.34 * mAbsX && mny > 0.11 && mny < 0.235 && mz > 0.6;
+      };
+      const addE = (a, b) => { if (mouthSeam(a, b)) return; const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
       for (let i = 0; i < ia.length; i += 3) { addE(ia[i], ia[i + 1]); addE(ia[i + 1], ia[i + 2]); addE(ia[i + 2], ia[i]); }
       const gl = new THREE.BufferGeometry(); gl.setAttribute("position", posWireAttr);
       gl.setAttribute("color", regCol(mkCol((b) => 0.04 + Math.pow(b, 1.4) * o.lineK), "line")); gl.setIndex(eIdx);
@@ -698,7 +717,7 @@
   // coronas, brief hold, then a top->down sweep reveals the dot-matrix portrait as the red recedes.
   const INTRO = { red: 2.6, pause: 0.4, sweep: 1.5 };  // seconds per beat
   const RED = [1.0, 0.12, 0.06];             // curtain red
-  const EDGE = [1.0, 0.82, 0.55];            // warm reveal-front glow
+  const EDGE = [0.35, 0.9, 1.0];             // pale-cyan transform halo riding the sweep line
   const BAND = 0.06;
   let introDone = false;
   function paint(fn) {
@@ -806,7 +825,7 @@
           r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
         }
         const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
-        if (eg > 0) { r += EDGE[0] * eg * 0.4; g += EDGE[1] * eg * 0.4; b += EDGE[2] * eg * 0.4; }
+        if (eg > 0) { const ek = eg * eg * 1.1; r += EDGE[0] * ek; g += EDGE[1] * ek; b += EDGE[2] * ek; }
         a[o] = r; a[o + 1] = g; a[o + 2] = b;
       }
       L.attr.needsUpdate = true;
@@ -857,9 +876,9 @@
       beamUniforms.uIntensity.value = fireI;
       // roar: drop the jaw open while the beam fires (drives both the dot and wireframe geometry)
       if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
-        const open = fireI * 0.18 * jawRig.span;   // downward drop in fitted units
+        const open = fireI * 0.085 * jawRig.span;   // downward drop in fitted units (a slight parted-mouth roar, not a gape)
         const w = jawRig.weight, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
-        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] + d * 0.3; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] + d * 0.3; }
+        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] - d * 0.18; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] - d * 0.18; }
         jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
       }
       if (charge > 0.01 && eyeWorld.length === 2) {
