@@ -141,6 +141,7 @@
     uTime: { value: 0 }, uResolution: { value: new THREE.Vector2(innerWidth, innerHeight) },
     uSweepNy: { value: 1.15 }, uIntroFade: { value: 0 }, uYMin: { value: 0 }, uYSpan: { value: 1 },
     uMouse: { value: new THREE.Vector2(0, 0) }, uLightDir: { value: new THREE.Vector3(0, 0, 1) },
+    uIntroRed: { value: -999 },   // rising red-curtain line (ny) during the intro; -999 = intro over
   };
   const HALFTONE_VERT = `
     attribute float aBright;
@@ -216,7 +217,7 @@
   const EYE_FRAG = `
     precision highp float;
     varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
-    uniform float uTime, uIntroFade, uSweepNy;
+    uniform float uTime, uIntroFade, uSweepNy, uIntroRed;
     uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
     float hash(float n) { return fract(sin(n) * 43758.5453); }
     void main() {
@@ -267,7 +268,25 @@
       float aperture = 1.0 - smoothstep(0.72, 1.0, ex * ex + ey * ey);
       float front = smoothstep(-0.04, 0.14, vEyeOff.z);
       float eyeMask = aperture * front;
-      gl_FragColor = vec4(col * uIntroFade * portrait * eyeMask, 1.0);
+      vec3 steadyEye = col * portrait * eyeMask;
+      if (uIntroRed > -900.0) {
+        // intro: the whole eyeball ignites as a red corona (the two eye light points), then
+        // dissolves into the steady masked eye as uIntroFade ramps. (cat FRAG_EYE red-glow, verbatim weights)
+        float NdotV = max(dot(V, N), 0.0);
+        float fres = pow(1.0 - NdotV, 1.0);
+        float corona = pow(fres, 0.3) * 10.0;
+        float inner = pow(fres, 2.5) * 4.0;
+        float hotspot = pow(NdotV, 3.0) * 1.5;
+        float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
+        float isRed = step(vNy, uIntroRed);   // ignite once the rising red line reaches the eye
+        vec3 redGlow = (vec3(2.5, 0.03, 0.03)
+            + vec3(40.0, 0.08, 0.04) * corona * pulse
+            + vec3(24.0, 0.20, 0.05) * inner
+            + vec3(10.0, 0.15, 0.08) * hotspot) * isRed;
+        gl_FragColor = vec4(mix(redGlow, steadyEye, uIntroFade), 1.0);
+      } else {
+        gl_FragColor = vec4(steadyEye * uIntroFade, 1.0);
+      }
     }`;
   function makeEyeMaterial() {
     return new THREE.ShaderMaterial({
@@ -516,10 +535,12 @@
   }
   addEventListener("resize", syncSize);
 
-  // --- intro: red scan reading the face top->bottom, then a warm wireframe reveal ----
-  const INTRO = { red: 1.15, sweep: 1.45 };  // seconds per phase
-  const RED = [1.0, 0.12, 0.06];             // scanner red
+  // --- intro (cat opening): red curtain rises bottom->top while the two eyes ignite as red
+  // coronas, brief hold, then a top->down sweep reveals the dot-matrix portrait as the red recedes.
+  const INTRO = { red: 2.6, pause: 0.4, sweep: 1.5 };  // seconds per beat
+  const RED = [1.0, 0.12, 0.06];             // curtain red
   const EDGE = [1.0, 0.82, 0.55];            // warm reveal-front glow
+  const BAND = 0.06;
   let introDone = false;
   function paint(fn) {
     for (const L of LAYERS) {
@@ -531,31 +552,42 @@
   // returns intro progress 0..1 (used to ease bloom down as the face settles)
   function updateIntro(t) {
     if (introDone) return 1;
-    if (t >= INTRO.red + INTRO.sweep) {
+    const Tred = INTRO.red, Tpause = Tred + INTRO.pause, Tend = Tpause + INTRO.sweep;
+    if (t >= Tend) {
       for (const L of LAYERS) { L.attr.array.set(L.portrait); L.attr.needsUpdate = true; }
+      halftoneUniforms.uIntroRed.value = -999;
       introDone = true;
       sweepBase = t;   // start the portrait<->wireframe sweep clock from a full-portrait (dot-matrix) state
       return 1;
     }
-    if (t < INTRO.red) {
-      const p = t / INTRO.red, scanY = 1.05 - p * 1.10, band = 0.07;
+    // beat 1: red curtain rises bottom -> top; eyes ignite as it passes them
+    if (t < Tred) {
+      const p = t / Tred, redLine = -0.15 + p * 1.35;
+      halftoneUniforms.uIntroRed.value = redLine;
       paint((a, o, L, ny) => {
-        const d = ny - scanY, f = d >= 0 ? 0.10 : 0;   // residue above the line, dark ahead of it
+        const f = ny < redLine ? 0.16 : 0.0;   // red glow below the rising line, dark ahead of it
         a[o] = RED[0] * f; a[o + 1] = RED[1] * f; a[o + 2] = RED[2] * f;
-        const ad = Math.abs(d);
-        if (ad < band) { const e = 1 - ad / band; a[o] += RED[0] * e; a[o + 1] += RED[1] * e; a[o + 2] += RED[2] * e; }
+        const ad = Math.abs(ny - redLine);
+        if (ad < BAND) { const e = (1 - ad / BAND) * 0.9; a[o] += RED[0] * e; a[o + 1] += RED[1] * e; a[o + 2] += RED[2] * e; }
       });
-      return p * 0.4;
+      return p * 0.35;
     }
-    const p = (t - INTRO.red) / INTRO.sweep, revY = 1.05 - p * 1.10, band = 0.06;
+    // beat 2: brief hold — whole figure red, eyes blazing
+    if (t < Tpause) {
+      halftoneUniforms.uIntroRed.value = 1.3;
+      return 0.35;
+    }
+    // beat 3: sweep wipes top -> down, revealing the dot-matrix portrait as the red recedes
+    const p = (t - Tpause) / INTRO.sweep, revY = 1.2 - p * 1.35;
+    halftoneUniforms.uIntroRed.value = 1.3;   // keep intro active so the eyes cross-fade via uIntroFade
     paint((a, o, L, ny) => {
-      const d = ny - revY, pr = L.portrait;
-      if (d >= 0) { a[o] = pr[o]; a[o + 1] = pr[o + 1]; a[o + 2] = pr[o + 2]; }   // revealed into the dot-matrix portrait
-      else { const f = 0.08; a[o] = RED[0] * f; a[o + 1] = RED[1] * f; a[o + 2] = RED[2] * f; }  // still scanned-red
-      const ad = Math.abs(d);
-      if (ad < band) { const e = (1 - ad / band) * 0.8; a[o] += EDGE[0] * e; a[o + 1] += EDGE[1] * e; a[o + 2] += EDGE[2] * e; }
+      const pr = L.portrait;
+      if (ny >= revY) { a[o] = pr[o]; a[o + 1] = pr[o + 1]; a[o + 2] = pr[o + 2]; }   // revealed into the dot-matrix portrait
+      else { const f = 0.12; a[o] = RED[0] * f; a[o + 1] = RED[1] * f; a[o + 2] = RED[2] * f; }  // still red below the line
+      const ad = Math.abs(ny - revY);
+      if (ad < BAND) { const e = (1 - ad / BAND) * 0.8; a[o] += EDGE[0] * e; a[o + 1] += EDGE[1] * e; a[o + 2] += EDGE[2] * e; }
     });
-    return 0.4 + p * 0.6;
+    return 0.35 + p * 0.65;
   }
 
   // --- steady state: periodic portrait <-> wireframe sweep + travel light ------------
@@ -652,7 +684,7 @@
     }
 
     for (const m of allMats) m.opacity = 1;
-    bloom.strength = 0.14 + Math.sin(t * 1.1) * 0.045 + (1 - introProg) * 0.7;   // gentle steady-state pulse
+    bloom.strength = 0.16 + Math.sin(t * 1.1) * 0.04 + (1 - introProg) * 2.4;   // heavy bloom during the red intro, easing to a gentle steady pulse
 
     composer.render();
   }
