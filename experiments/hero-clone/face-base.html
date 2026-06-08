@@ -111,6 +111,10 @@
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
   const raycaster = new THREE.Raycaster();
 
+  // the Superman heat-vision blast (user-supplied SFX): a one-shot fired on each press.
+  const laserSfx = new Audio("./assets/laser-fire.mp3");
+  laserSfx.preload = "auto"; laserSfx.volume = 0.9;
+
   // heat-vision drone, synthesised so it sustains seamlessly for as long as the beam is held
   // (a looped clip seams audibly; an oscillator bed never does). gain follows `charge`, so it
   // winds up with the eyes and rides steady while firing, then fades on release.
@@ -625,7 +629,10 @@
   const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
   addEventListener("pointermove", setAim);
   // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
-  addEventListener("pointerdown", (e) => { setAim(e); firing = true; initAudio(); });   // gesture unlocks the AudioContext
+  addEventListener("pointerdown", (e) => {
+    setAim(e); firing = true; initAudio();   // gesture unlocks the AudioContext + the SFX
+    laserSfx.currentTime = 0; laserSfx.play().catch(() => {});
+  });
   addEventListener("pointerup", () => { firing = false; });
   addEventListener("pointercancel", () => { firing = false; });
   addEventListener("pointerleave", () => { firing = false; });
@@ -741,19 +748,23 @@
         let u = (ny[i] - (ly - fw)) / (2 * fw); u = u < 0 ? 0 : u > 1 ? 1 : u;
         const w = u * u * (3 - 2 * u);   // 0 = portrait (dots), 1 = wireframe
         // cat wireBrightness = 0.15 + diffuse*0.5 + specular*2.0 (white lit lines + gloss)
-        let wb = 0.15;
+        let wb = 0.15, frontW = 1;
         if (nrm) {
           const lnx = nrm[o], lny = nrm[o + 1], lnz = nrm[o + 2];
           const x1 = cy * lnx + sy * lnz, z1 = -sy * lnx + cy * lnz;   // yaw
           const Nx = x1, Ny = cx * lny - sx * z1, Nz = sx * lny + cx * z1;   // pitch
           const ndl = Math.max(0, Nx * Lx + Ny * Ly + Nz * Lz);
           const ndh = Math.max(0, Nx * Hx + Ny * Hy + Nz * Hz);
-          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale;
+          // front weight from the camera-facing component: fade the receding side cheeks/jaw so the
+          // wireframe silhouette tapers toward the slimmer dot-state face instead of showing full head width.
+          const fz = Math.max(0, Math.min(1, (Nz - 0.1) / 0.5));
+          frontW = fz * fz * (3 - 2 * fz);
+          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale * (0.1 + 0.9 * frontW);
         }
         let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
         if (K) {
           const px = pos[o], py = pos[o + 1];
-          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w;
+          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w * (0.3 + 0.7 * frontW);
           r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
         }
         const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
@@ -805,7 +816,7 @@
       halftoneUniforms.uEyeCharge.value = charge;
       if (audioCtx) {
         const now2 = audioCtx.currentTime;
-        sfxGain.gain.setTargetAtTime(charge * 0.6, now2, 0.04);               // buzz tracks the charge, steady while held
+        sfxGain.gain.setTargetAtTime(charge * 0.32, now2, 0.04);              // hum sits under the blast as a sustain bed, so a long hold never goes silent
         sfxFilter.frequency.setTargetAtTime(700 + charge * 2200, now2, 0.05); // brighter as it winds up
         const f = 108 + charge * 40;                                         // pitch rise on the wind-up
         sfxOsc[0].frequency.setTargetAtTime(f, now2, 0.05);
