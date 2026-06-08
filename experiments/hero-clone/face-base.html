@@ -119,7 +119,13 @@
   // (a looped clip seams audibly; an oscillator bed never does). gain follows `charge`, so it
   // winds up with the eyes and rides steady while firing, then fades on release.
   let audioCtx = null, sfxGain = null, sfxFilter = null, sfxOsc = [];
+  function setPlaybackSession() {
+    // iOS Safari silences WebAudio + audio elements when the hardware mute switch is on,
+    // unless the page declares a "playback" audio session (iOS 16.4+). this lets sound through.
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
+  }
   function initAudio() {
+    setPlaybackSession();
     if (audioCtx) { audioCtx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
