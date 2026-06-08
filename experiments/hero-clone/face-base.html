@@ -511,7 +511,7 @@
           else if (kind === "line") { for (let i = 0; i < portrait.length; i++) portrait[i] *= PORTRAIT_LINE_MUL; wireTarget = WIRE_DIM_LINE; travelK = o.travelLine || 0; }
           else { for (let i = 0; i < portrait.length; i++) portrait[i] = 0; wireTarget = WIRE_DIM_POINT; travelK = o.travelPoint || 0; }   // point: dark in portrait (halftone shows the dots), dim + travel in wireframe
         }
-        LAYERS.push({ attr, base: Float32Array.from(c), portrait, wireTarget, travelK, ny, pos, sweepable, kind, nrm: nloc, bw: Float32Array.from(bright) });
+        LAYERS.push({ attr, base: Float32Array.from(c), portrait, wireTarget, travelK, ny, pos, sweepable, kind, nrm: nloc });
         return attr;
       };
       const depthTest = o.depthTest !== false;
@@ -741,23 +741,24 @@
         let u = (ny[i] - (ly - fw)) / (2 * fw); u = u < 0 ? 0 : u > 1 ? 1 : u;
         const w = u * u * (3 - 2 * u);   // 0 = portrait (dots), 1 = wireframe
         // cat wireBrightness = 0.15 + diffuse*0.5 + specular*2.0 (white lit lines + gloss)
-        let wb = 0.15, frontW = 1;
+        let wb = 0.15, vis = 1;
         if (nrm) {
           const lnx = nrm[o], lny = nrm[o + 1], lnz = nrm[o + 2];
           const x1 = cy * lnx + sy * lnz, z1 = -sy * lnx + cy * lnz;   // yaw
           const Nx = x1, Ny = cx * lny - sx * z1, Nz = sx * lny + cx * z1;   // pitch
           const ndl = Math.max(0, Nx * Lx + Ny * Ly + Nz * Lz);
           const ndh = Math.max(0, Nx * Hx + Ny * Hy + Nz * Hz);
-          // front weight from the camera-facing component: fade the receding side cheeks/jaw so the
-          // wireframe silhouette tapers toward the slimmer dot-state face instead of showing full head width.
-          const fz = Math.max(0, Math.min(1, (Nz - 0.1) / 0.5));
-          frontW = fz * fz * (3 - 2 * fz);
-          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale * (0.1 + 0.9 * frontW);
+          // pull the front cheekbones/cheeks inward: fade the wireframe as the surface turns away from
+          // camera (lower Nz), so the lit central face stays full while the outward-curving cheek sides
+          // taper to the slimmer dot-state contour. only scales wb (wireframe side), dots untouched.
+          const fz = Math.max(0, Math.min(1, (Nz - 0.4) / 0.42));
+          vis = fz * fz * (3 - 2 * fz);
+          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale * (0.05 + 0.95 * vis);
         }
         let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
         if (K) {
           const px = pos[o], py = pos[o + 1];
-          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w * (0.3 + 0.7 * frontW);
+          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w * (0.3 + 0.7 * vis);
           r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
         }
         const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
