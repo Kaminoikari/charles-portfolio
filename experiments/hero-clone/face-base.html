@@ -128,14 +128,16 @@
   function startFireSfx() {
     setPlaybackSession();
     clearTimeout(loopTimer);
-    laserLoop.pause(); laserLoop.currentTime = 0;
     laserAttack.currentTime = 0; laserAttack.play().catch(() => {});       // charge + fire, every press
-    loopTimer = setTimeout(() => { laserLoop.play().catch(() => {}); }, ATTACK_TO_LOOP * 1000);   // then sustain
+    // start the loop now, inside the gesture, so iOS unlocks it — but muted. iOS blocks a play()
+    // fired later from a timer, yet honours unmuting an already-playing element. unmute at the handoff.
+    laserLoop.muted = true; laserLoop.currentTime = 0; laserLoop.play().catch(() => {});
+    loopTimer = setTimeout(() => { laserLoop.muted = false; }, ATTACK_TO_LOOP * 1000);   // then the sustain becomes audible
   }
   function stopFireSfx() {
     clearTimeout(loopTimer);
     laserAttack.pause(); laserAttack.currentTime = 0;
-    laserLoop.pause();
+    laserLoop.pause(); laserLoop.currentTime = 0; laserLoop.muted = true;   // re-arm muted for the next press
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
@@ -509,7 +511,7 @@
           else if (kind === "line") { for (let i = 0; i < portrait.length; i++) portrait[i] *= PORTRAIT_LINE_MUL; wireTarget = WIRE_DIM_LINE; travelK = o.travelLine || 0; }
           else { for (let i = 0; i < portrait.length; i++) portrait[i] = 0; wireTarget = WIRE_DIM_POINT; travelK = o.travelPoint || 0; }   // point: dark in portrait (halftone shows the dots), dim + travel in wireframe
         }
-        LAYERS.push({ attr, base: Float32Array.from(c), portrait, wireTarget, travelK, ny, pos, sweepable, kind, nrm: nloc });
+        LAYERS.push({ attr, base: Float32Array.from(c), portrait, wireTarget, travelK, ny, pos, sweepable, kind, nrm: nloc, bw: Float32Array.from(bright) });
         return attr;
       };
       const depthTest = o.depthTest !== false;
