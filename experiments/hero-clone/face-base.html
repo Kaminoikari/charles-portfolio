@@ -511,20 +511,20 @@
       // and only the seam between the lips opens. a band that sits above the lips just drops both lips
       // together (a longer philtrum, no opening); a wider band stretches the lower lip taller.
       const jawW = new Float32Array(n);
-      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.215 - ny[i]) / 0.022; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
-      // lip-ring weight: the front-facing vertices around the mouth ONLY (both lips, ny ~0.15-0.235, and
-      // within the mouth's own width). firing pinches their x toward the midline so the parted mouth rounds
-      // into an O (a roar). the width gate is essential: without it the squeeze also drags the cheeks in.
-      let xMax = 1e-6; for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > xMax) xMax = ax; }
+      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.205 - ny[i]) / 0.02; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
+      // lip-ring weight: the lip vertices around the whole mouth (both lips, ny ~0.15-0.235). firing pinches
+      // their x toward the midline so the parted mouth rounds into an O (a roar) — the corners must move IN,
+      // not just the jaw down. lips are isolated from the cheeks by the SURFACE NORMAL: lips face forward
+      // (small lateral normal), cheeks face sideways. that keeps the corners in the ring (so they pinch in)
+      // while leaving the cheeks alone — an x-magnitude gate can't, since corner and cheek overlap in x.
       const mouthRing = new Float32Array(n);
       if (o.jawRig) for (let i = 0; i < n; i++) {
         let bi = (ny[i] - 0.14) / 0.03; bi = bi < 0 ? 0 : bi > 1 ? 1 : bi;
         let bo = (0.235 - ny[i]) / 0.03; bo = bo < 0 ? 0 : bo > 1 ? 1 : bo;
         let band = Math.min(bi, bo); band = band * band * (3 - 2 * band);
-        let fz = (nloc[i * 3 + 2] - 0.1) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz;
-        let xw = (0.30 - Math.abs(pos[i * 3]) / xMax) / 0.12; xw = xw < 0 ? 0 : xw > 1 ? 1 : xw;   // mouth corners in, cheeks out
-        xw = xw * xw * (3 - 2 * xw);
-        mouthRing[i] = band * fz * xw;
+        let fz = (nloc[i * 3 + 2] - 0.2) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz;             // faces forward
+        let sx = 1 - (Math.abs(nloc[i * 3]) - 0.32) / 0.28; sx = sx < 0 ? 0 : sx > 1 ? 1 : sx;  // not sideways -> lip, not cheek
+        mouthRing[i] = band * fz * sx;
       }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
@@ -882,7 +882,7 @@
       // (drives both the dot and wireframe geometry)
       if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
         const open = fireI * 0.085 * jawRig.span;   // downward drop in fitted units (a slight parted-mouth roar, not a gape)
-        const pinch = fireI * 0.5;                   // horizontal squeeze of the lip ring toward the midline -> O shape
+        const pinch = fireI * 0.6;                   // horizontal squeeze of the lip ring toward the midline -> O shape
         const w = jawRig.weight, ring = jawRig.ring, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
         for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open, px = 1 - pinch * ring[i]; ha[o] = hb[o] * px; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] - d * 0.18; wa[o] = wb[o] * px; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] - d * 0.18; }
         jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
