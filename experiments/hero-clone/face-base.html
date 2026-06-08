@@ -121,22 +121,24 @@
     if (!AC) return;
     audioCtx = new AC();
     sfxGain = audioCtx.createGain(); sfxGain.gain.value = 0; sfxGain.connect(audioCtx.destination);
-    sfxFilter = audioCtx.createBiquadFilter(); sfxFilter.type = "lowpass"; sfxFilter.frequency.value = 900; sfxFilter.Q.value = 7;
+    sfxFilter = audioCtx.createBiquadFilter(); sfxFilter.type = "lowpass"; sfxFilter.frequency.value = 1600; sfxFilter.Q.value = 4;
     sfxFilter.connect(sfxGain);
-    // two detuned saws beat against each other for the throbbing hum, plus a sine for body
-    const o1 = audioCtx.createOscillator(); o1.type = "sawtooth"; o1.frequency.value = 82;
-    const o2 = audioCtx.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = 82.6;
-    const sub = audioCtx.createOscillator(); sub.type = "sine"; sub.frequency.value = 55;
-    const subGain = audioCtx.createGain(); subGain.gain.value = 0.5; sub.connect(subGain); subGain.connect(sfxFilter);
+    // two detuned saws beat against each other for the throbbing buzz. base is up in the
+    // audible band (≈120Hz) so its harmonics carry on tiny phone speakers, plus a sine for body.
+    const o1 = audioCtx.createOscillator(); o1.type = "sawtooth"; o1.frequency.value = 120;
+    const o2 = audioCtx.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = 120.9;
+    const sub = audioCtx.createOscillator(); sub.type = "sine"; sub.frequency.value = 78;
+    const subGain = audioCtx.createGain(); subGain.gain.value = 0.35; sub.connect(subGain); subGain.connect(sfxFilter);
     o1.connect(sfxFilter); o2.connect(sfxFilter);
-    // band-passed looping noise adds the sizzle on top of the hum
+    // band-passed looping noise adds the electric sizzle on top of the buzz
     const nb = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
     const nd = nb.getChannelData(0); let seed = 1; for (let i = 0; i < nd.length; i++) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; nd[i] = (seed / 0x40000000) - 1; }
     const noise = audioCtx.createBufferSource(); noise.buffer = nb; noise.loop = true;
-    const bp = audioCtx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 1900; bp.Q.value = 0.7;
-    const ng = audioCtx.createGain(); ng.gain.value = 0.16; noise.connect(bp); bp.connect(ng); ng.connect(sfxGain);
+    const bp = audioCtx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.6;
+    const ng = audioCtx.createGain(); ng.gain.value = 0.22; noise.connect(bp); bp.connect(ng); ng.connect(sfxGain);
     o1.start(); o2.start(); sub.start(); noise.start();
     sfxOsc = [o1, o2, sub];
+    audioCtx.resume();   // iOS/Safari starts the context suspended; resume inside the gesture
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
@@ -708,7 +710,7 @@
   const PORTRAIT_LINE_MUL = 0.0;    // dot-matrix portrait shows dots, not wireframe lines
   const frac = (x) => x - Math.floor(x);
   const band = (x) => { const v = 1 - Math.abs(x - 0.5) * 2; return v <= 0 ? 0 : Math.pow(v, 12); };
-  const SWEEP = { down: 1.5, holdWire: 4.5, up: 1.5, holdPortrait: 6.0 };
+  const SWEEP = { down: 1.5, holdWire: 4.5, up: 1.5, holdPortrait: 6.0, introHold: 5.0 };  // introHold: linger on the dot portrait after the intro before the first sweep
   const SWEEP_FEATHER = 0.07;
   let sweepBase = 0;  // seconds (t) at which the intro finished — the sweep clock origin
   // sweep-line height over the figure (ny units, 1.15 = above crown, -0.15 = below collar)
@@ -770,7 +772,7 @@
     const dt = Math.min(0.05, Math.max(0, t - lastFrameT)); lastFrameT = t;   // clamped frame delta (seconds)
     const introProg = updateIntro(t);
 
-    const st = t - sweepBase;
+    const st = Math.max(0, (t - sweepBase) - SWEEP.introHold);   // hold the dot portrait for introHold seconds, then run the cyclic sweep
     const ly = introDone ? sweepLine(st) : 1.15;
     halftoneUniforms.uTime.value = t;
     halftoneUniforms.uSweepNy.value = ly;
@@ -803,11 +805,11 @@
       halftoneUniforms.uEyeCharge.value = charge;
       if (audioCtx) {
         const now2 = audioCtx.currentTime;
-        sfxGain.gain.setTargetAtTime(charge * 0.42, now2, 0.04);              // hum tracks the charge, steady while held
-        sfxFilter.frequency.setTargetAtTime(420 + charge * 1400, now2, 0.05); // brighter as it winds up
-        const f = 70 + charge * 26;                                          // slight pitch rise on the wind-up
+        sfxGain.gain.setTargetAtTime(charge * 0.6, now2, 0.04);               // buzz tracks the charge, steady while held
+        sfxFilter.frequency.setTargetAtTime(700 + charge * 2200, now2, 0.05); // brighter as it winds up
+        const f = 108 + charge * 40;                                         // pitch rise on the wind-up
         sfxOsc[0].frequency.setTargetAtTime(f, now2, 0.05);
-        sfxOsc[1].frequency.setTargetAtTime(f + 0.6, now2, 0.05);
+        sfxOsc[1].frequency.setTargetAtTime(f + 0.9, now2, 0.05);
       }
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
