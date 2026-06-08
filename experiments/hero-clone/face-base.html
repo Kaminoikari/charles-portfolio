@@ -532,13 +532,16 @@
         const zSpan = (zHi - zLo) || 1;
         const sb = (e0, e1, v) => { let t = (v - e0) / (e1 - e0); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
         for (let i = 0; i < n; i++) {
-          const x = pos[i * 3], hy = ny[i], anx = Math.abs(x) / xAbsMax, nzf = (pos[i * 3 + 2] - zLo) / zSpan;
-          const cheek = sb(0.30, 0.46, hy) * (1 - sb(0.58, 0.72, hy));  // cheek + cheekbone band
-          const jaw = 1 - sb(0.05, 0.46, hy);                          // jaw -> chin: strongest at the bottom, sharpens the point
-          const lat = sb(0.18, 0.92, anx);                             // outer; centre held so the chin keeps a tip while the sides converge
-          const front = 0.35 + 0.65 * sb(0.4, 0.82, nzf);              // emphasise the front face, leave ears mostly alone
-          const profile = Math.min(1.9, cheek + jaw * 2.0);            // combine; jaw pulled much harder than the cheek for a pointier chin
-          posWire[i * 3] = x * (1 - o.slimCheek * lat * front * profile);
+          const x = pos[i * 3], hy = ny[i], nzf = (pos[i * 3 + 2] - zLo) / zSpan;
+          // gate by the SURFACE NORMAL: only pull vertices whose surface faces sideways (the silhouette
+          // edge of the cheek/jaw). front-facing features (lips, mouth, nose) have a small lateral normal,
+          // so they are never moved and stay exactly aligned with the dot-state geometry.
+          const side = sb(0.32, 0.82, Math.abs(nloc[i * 3]));          // 1 = faces sideways (safe to slim), 0 = faces forward (held)
+          const cheek = sb(0.30, 0.46, hy) * (1 - sb(0.58, 0.74, hy)); // cheek + cheekbone band
+          const jaw = 1 - sb(0.05, 0.48, hy);                          // jaw -> chin: strongest at the bottom, sharpens the point
+          const front = 0.4 + 0.6 * sb(0.35, 0.8, nzf);               // de-emphasise the rear so the ears stay mostly intact
+          const profile = Math.min(1.7, cheek + jaw * 1.7);            // combine; jaw pulled harder than the cheek for a pointier chin
+          posWire[i * 3] = x * (1 - o.slimCheek * side * front * profile);
         }
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
