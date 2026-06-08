@@ -109,6 +109,8 @@
   let firing = false, fireI = 0, charge = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge)
   const eyeWorld = [];                   // eye origins in head-local space (filled in build)
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
+  const laserSfx = new Audio("./assets/laser-fire.mp3");  // Superman heat-vision blast (Mixkit, free license)
+  laserSfx.preload = "auto"; laserSfx.loop = true; laserSfx.volume = 0.5;
   const raycaster = new THREE.Raycaster();
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
@@ -595,10 +597,14 @@
   const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
   addEventListener("pointermove", setAim);
   // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
-  addEventListener("pointerdown", (e) => { setAim(e); firing = true; });
-  addEventListener("pointerup", () => { firing = false; });
-  addEventListener("pointercancel", () => { firing = false; });
-  addEventListener("pointerleave", () => { firing = false; });
+  const stopSfx = () => { firing = false; laserSfx.pause(); };
+  addEventListener("pointerdown", (e) => {
+    setAim(e); firing = true;
+    laserSfx.currentTime = 0; laserSfx.play().catch(() => {});   // pointerdown is a user gesture, so playback is allowed
+  });
+  addEventListener("pointerup", stopSfx);
+  addEventListener("pointercancel", stopSfx);
+  addEventListener("pointerleave", stopSfx);
   renderer.domElement.style.touchAction = "none";   // let touch-and-hold aim instead of scrolling
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
