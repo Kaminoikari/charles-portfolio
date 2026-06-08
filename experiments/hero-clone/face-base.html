@@ -111,44 +111,31 @@
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
   const raycaster = new THREE.Raycaster();
 
-  // the Superman heat-vision blast (user-supplied SFX): a one-shot fired on each press.
-  const laserSfx = new Audio("./assets/laser-fire.mp3");
-  laserSfx.preload = "auto"; laserSfx.volume = 0.9; laserSfx.loop = true;   // sustain while held; paused the instant the pointer releases
-
-  // heat-vision drone, synthesised so it sustains seamlessly for as long as the beam is held
-  // (a looped clip seams audibly; an oscillator bed never does). gain follows `charge`, so it
-  // winds up with the eyes and rides steady while firing, then fades on release.
-  let audioCtx = null, sfxGain = null, sfxFilter = null, sfxOsc = [];
+  // heat-vision SFX (user-supplied), split so every press gets the charge+fire attack and then a
+  // seamless sustain: the attack take plays once, and ~when it lands in the beam the looping body
+  // takes over (aligned to the same point in the source, so the handoff is continuous).
+  const laserAttack = new Audio("./assets/laser-attack.mp3");   // charge build + fire blast (~2s)
+  const laserLoop = new Audio("./assets/laser-fire.mp3");       // seamless sustained beam
+  laserAttack.preload = "auto"; laserAttack.volume = 0.9;
+  laserLoop.preload = "auto"; laserLoop.volume = 0.9; laserLoop.loop = true;
+  const ATTACK_TO_LOOP = 1.9;   // seconds: start the loop just before the attack hands off to the beam
+  let loopTimer = 0;
   function setPlaybackSession() {
-    // iOS Safari silences WebAudio + audio elements when the hardware mute switch is on,
-    // unless the page declares a "playback" audio session (iOS 16.4+). this lets sound through.
+    // iOS Safari silences audio when the hardware mute switch is on unless the page declares a
+    // "playback" audio session (iOS 16.4+). this lets the sound through with the ringer flipped.
     try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
   }
-  function initAudio() {
+  function startFireSfx() {
     setPlaybackSession();
-    if (audioCtx) { audioCtx.resume(); return; }
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    audioCtx = new AC();
-    sfxGain = audioCtx.createGain(); sfxGain.gain.value = 0; sfxGain.connect(audioCtx.destination);
-    sfxFilter = audioCtx.createBiquadFilter(); sfxFilter.type = "lowpass"; sfxFilter.frequency.value = 1600; sfxFilter.Q.value = 4;
-    sfxFilter.connect(sfxGain);
-    // two detuned saws beat against each other for the throbbing buzz. base is up in the
-    // audible band (≈120Hz) so its harmonics carry on tiny phone speakers, plus a sine for body.
-    const o1 = audioCtx.createOscillator(); o1.type = "sawtooth"; o1.frequency.value = 120;
-    const o2 = audioCtx.createOscillator(); o2.type = "sawtooth"; o2.frequency.value = 120.9;
-    const sub = audioCtx.createOscillator(); sub.type = "sine"; sub.frequency.value = 78;
-    const subGain = audioCtx.createGain(); subGain.gain.value = 0.35; sub.connect(subGain); subGain.connect(sfxFilter);
-    o1.connect(sfxFilter); o2.connect(sfxFilter);
-    // band-passed looping noise adds the electric sizzle on top of the buzz
-    const nb = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
-    const nd = nb.getChannelData(0); let seed = 1; for (let i = 0; i < nd.length; i++) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; nd[i] = (seed / 0x40000000) - 1; }
-    const noise = audioCtx.createBufferSource(); noise.buffer = nb; noise.loop = true;
-    const bp = audioCtx.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2400; bp.Q.value = 0.6;
-    const ng = audioCtx.createGain(); ng.gain.value = 0.22; noise.connect(bp); bp.connect(ng); ng.connect(sfxGain);
-    o1.start(); o2.start(); sub.start(); noise.start();
-    sfxOsc = [o1, o2, sub];
-    audioCtx.resume();   // iOS/Safari starts the context suspended; resume inside the gesture
+    clearTimeout(loopTimer);
+    laserLoop.pause(); laserLoop.currentTime = 0;
+    laserAttack.currentTime = 0; laserAttack.play().catch(() => {});       // charge + fire, every press
+    loopTimer = setTimeout(() => { laserLoop.play().catch(() => {}); }, ATTACK_TO_LOOP * 1000);   // then sustain
+  }
+  function stopFireSfx() {
+    clearTimeout(loopTimer);
+    laserAttack.pause(); laserAttack.currentTime = 0;
+    laserLoop.pause();
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane);   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3();
@@ -635,11 +622,8 @@
   const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
   addEventListener("pointermove", setAim);
   // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
-  addEventListener("pointerdown", (e) => {
-    setAim(e); firing = true; initAudio();   // gesture unlocks the AudioContext + the SFX
-    laserSfx.currentTime = 0; laserSfx.play().catch(() => {});
-  });
-  const stopFiring = () => { firing = false; laserSfx.pause(); };   // release stops the sound immediately
+  addEventListener("pointerdown", (e) => { setAim(e); firing = true; startFireSfx(); });
+  const stopFiring = () => { firing = false; stopFireSfx(); };   // release stops the sound immediately
   addEventListener("pointerup", stopFiring);
   addEventListener("pointercancel", stopFiring);
   addEventListener("pointerleave", stopFiring);
@@ -821,14 +805,6 @@
       const bt = Math.max(0, Math.min(1, (charge - 0.55) / 0.45));   // beam emerges only once the eyes are well lit
       fireI = bt * bt * (3 - 2 * bt);                    // smoothstep(0.55, 1.0, charge)
       halftoneUniforms.uEyeCharge.value = charge;
-      if (audioCtx) {
-        const now2 = audioCtx.currentTime;
-        sfxGain.gain.setTargetAtTime(charge * 0.32, now2, 0.04);              // hum sits under the blast as a sustain bed, so a long hold never goes silent
-        sfxFilter.frequency.setTargetAtTime(700 + charge * 2200, now2, 0.05); // brighter as it winds up
-        const f = 108 + charge * 40;                                         // pitch rise on the wind-up
-        sfxOsc[0].frequency.setTargetAtTime(f, now2, 0.05);
-        sfxOsc[1].frequency.setTargetAtTime(f + 0.9, now2, 0.05);
-      }
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
       if (charge > 0.01 && eyeWorld.length === 2) {
