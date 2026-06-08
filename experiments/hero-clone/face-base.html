@@ -184,6 +184,7 @@
     uMouse: { value: new THREE.Vector2(0, 0) }, uLightDir: { value: new THREE.Vector3(0, 0, 1) },
     uIntroRed: { value: -999 },   // rising red-curtain line (ny) during the intro; -999 = intro over
     uEyeCharge: { value: 0 },     // 0..1 Superman charge-up: the eyes glow red before the beam fires
+    uCursorActive: { value: 0 },  // 0..1 fade for the cyan cursor highlight; 0 when no pointer so it doesn't park on the face (mobile has no hover)
   };
   const HALFTONE_VERT = `
     attribute float aBright;
@@ -199,7 +200,7 @@
   const HALFTONE_FRAG = `
     precision highp float;
     varying float vBright; varying float vNy; varying vec3 vNormal; varying vec3 vViewPos;
-    uniform float uTime, uSweepNy, uIntroFade;
+    uniform float uTime, uSweepNy, uIntroFade, uCursorActive;
     uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
     void main() {
       float w = smoothstep(uSweepNy - 0.07, uSweepNy + 0.07, vNy);   // 1 = wireframe side
@@ -223,7 +224,7 @@
       // cursor interaction (cat verbatim): dots near the cursor grow and turn brand cyan
       vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
       vec2 cellCenterPx = (cellId + 0.5) * cellSize;
-      float cursorInfluence = 1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx));
+      float cursorInfluence = (1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx))) * uCursorActive;   // gated off when no pointer so it never parks on the face centre
       float dotRadius = lightShaped * 0.6
           + (pulsePrimary - 0.5) * 0.10 * lightShaped
           + (pulseSecondary - 0.5) * 0.06 * lightShaped
@@ -259,7 +260,7 @@
   const EYE_FRAG = `
     precision highp float;
     varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
-    uniform float uTime, uIntroFade, uSweepNy, uIntroRed, uEyeCharge;
+    uniform float uTime, uIntroFade, uSweepNy, uIntroRed, uEyeCharge, uCursorActive;
     uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
     float hash(float n) { return fract(sin(n) * 43758.5453); }
     void main() {
@@ -282,7 +283,7 @@
       float pulseSecondary = sin(uTime * 1.3 + cellHash2 * 6.2831) * 0.5 + 0.5;
       vec2 cursorPx = (uMouse * 0.5 + 0.5) * uResolution;
       vec2 cellCenterPx = (cellId + 0.5) * cellSize;
-      float cursorInfluence = 1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx));
+      float cursorInfluence = (1.0 - smoothstep(0.0, 220.0, distance(cellCenterPx, cursorPx))) * uCursorActive;
       float dotRadius = lightShaped * 0.6
           + (pulsePrimary - 0.5) * 0.10 * lightShaped
           + (pulseSecondary - 0.5) * 0.06 * lightShaped
@@ -646,14 +647,15 @@
 
   // --- mouse ----------------------------------------------------------------
   const mouse = { x: 0, y: 0 }, ease = { x: 0, y: 0 };
+  let cursorActive = 0;   // 1 while a pointer is present; gates the cyan highlight so it never parks on the face when idle (touch has no hover)
   const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
-  addEventListener("pointermove", setAim);
+  addEventListener("pointermove", (e) => { setAim(e); if (e.pointerType !== "touch") cursorActive = 1; });   // desktop hover lights the highlight; touch only lights it while pressed
   // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
-  addEventListener("pointerdown", (e) => { setAim(e); firing = true; startFireSfx(); });
-  const stopFiring = () => { firing = false; stopFireSfx(); };   // release stops the sound immediately
+  addEventListener("pointerdown", (e) => { setAim(e); cursorActive = 1; firing = true; startFireSfx(); });
+  const stopFiring = (e) => { firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") cursorActive = 0; };   // touch release clears the highlight; desktop keeps it for the hovering cursor
   addEventListener("pointerup", stopFiring);
   addEventListener("pointercancel", stopFiring);
-  addEventListener("pointerleave", stopFiring);
+  addEventListener("pointerleave", () => stopFiring());   // cursor left the window — stop firing and drop the highlight (no-arg → clears cursorActive)
   renderer.domElement.style.touchAction = "none";   // let touch-and-hold aim instead of scrolling
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -816,6 +818,7 @@
       head.position.x += (ease.x * TURN.shiftX - head.position.x) * FOLLOW.head;
       head.position.y += (ease.y * TURN.shiftY - head.position.y) * FOLLOW.head;
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
+      halftoneUniforms.uCursorActive.value += (cursorActive - halftoneUniforms.uCursorActive.value) * 0.15;   // ease the highlight in/out so it never pops
       applyState(st);
 
       // death-laser: the eyes charge up red (Superman), then two beams shoot from the eyes
