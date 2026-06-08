@@ -173,6 +173,7 @@
   const allMats = [];
   const LAYERS = [];       // {attr, base, ny} per render layer — drives the intro sweep reveal
   let yMin = 0, yMax = 1;  // head vertical bounds (normalized sweep coordinate)
+  let jawRig = null;       // {half, wire, halfBase, wireBase, weight, span} — drops the jaw open while firing (a roar)
 
   // --- halftone portrait shader -------------------------------------------------
   // a dense screen-space dot grid (cat style). each dot's size is driven by the per-vertex
@@ -535,6 +536,15 @@
         }
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
+      if (o.jawRig) {
+        // per-vertex jaw-open weight: 0 above the upper lip (ny >= 0.205, held fixed), ramping to 1 by
+        // the lower lip (ny <= 0.145) and staying 1 through the jaw + chin. firing drops that whole lower
+        // block away from the fixed upper lip, so the mouth genuinely opens (a roar). drives both the
+        // halftone and wireframe positions.
+        const weight = new Float32Array(n);
+        for (let i = 0; i < n; i++) { let s = (0.205 - ny[i]) / 0.06; s = s < 0 ? 0 : s > 1 ? 1 : s; weight[i] = s * s * (3 - 2 * s); }
+        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight, span: nySpan, lastOpen: 0 };
+      }
       const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
       // register a color buffer with the post-intro engines. each layer carries the colour it
       // shows in the two steady states — portrait (halftone dots) and wireframe — plus per-vertex
@@ -588,7 +598,7 @@
     const headGeo = decimate(hgW, CONFIG.headDecimate);
     const hStat = buildLayers(headGeo, {
       parent: head, fillK: CONFIG.fill, lineK: CONFIG.line, ptK: CONFIG.point, ptSize: CONFIG.pointSize,
-      occlude: true, setBounds: true, halftone: true, slimCheek: 0.18, mouthNarrow: 0.12, earShrink: 0.32, earTuck: 0.14, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
+      occlude: true, setBounds: true, halftone: true, slimCheek: 0.18, mouthNarrow: 0.12, earShrink: 0.32, earTuck: 0.14, jawRig: true, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
       brightFn: (x, y, z, nz) => contrast(lumaAt(mapX(x), mapY(y))) * Math.pow(nz, CONFIG.frontPow) * faceWeight(nxOf(x), nyOf(y)) * earCut(nxOf(x)),
     });
 
@@ -845,6 +855,13 @@
       halftoneUniforms.uEyeCharge.value = charge;
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
+      // roar: drop the jaw open while the beam fires (drives both the dot and wireframe geometry)
+      if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
+        const open = fireI * 0.18 * jawRig.span;   // downward drop in fitted units
+        const w = jawRig.weight, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
+        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] + d * 0.3; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] + d * 0.3; }
+        jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
+      }
       if (charge > 0.01 && eyeWorld.length === 2) {
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
         raycaster.ray.intersectPlane(aimPlane, aimTarget);          // pointer -> world point on the aim plane
