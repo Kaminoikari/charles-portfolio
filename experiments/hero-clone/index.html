@@ -479,9 +479,9 @@ void main() {
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(innerWidth, innerHeight),
-    0.5,   // strength (steady state; site pulses to 5 during intro)
-    0.6,   // radius
-    0.35   // threshold (only bright wire/nodes bloom, not the gray dots)
+    0.3,   // strength (steady state; site pulses to 5 during intro)
+    0.55,  // radius
+    0.5    // threshold (only bright wire/nodes bloom, not the gray dots)
   );
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
@@ -711,7 +711,7 @@ void main() {
       for (const m of allMats) m.uniforms.uSweepY.value = y;
       const fade = Math.max(0, Math.min(1, (y <= 0.5) ? (0.5 - y) / 1.0 : 0));
       for (const m of allMats) m.uniforms.uIntroFade.value = fade;
-      bloom.strength = 0.5 + 4.5 * (1 - fade);
+      bloom.strength = 0.3 + 4.7 * (1 - fade);
       if (k >= 1) {
         introPhase = "done";
         for (const m of allMats) {
@@ -720,7 +720,7 @@ void main() {
           m.uniforms.uIntroTransition.value = 0;
           m.uniforms.uSweepY.value = -3;
         }
-        bloom.strength = 0.5;
+        bloom.strength = 0.3;
         sweepTimeBase = t - 2;
       }
     }
