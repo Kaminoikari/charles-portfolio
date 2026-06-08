@@ -497,6 +497,26 @@
       const nySpan = (yMax - yMin) || 1;
       const ny = new Float32Array(n);
       for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan;
+      // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
+      // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
+      // dot mesh keeps the untouched posAttr, so the dot state is byte-identical. lines/points are
+      // invisible in the dot state (PORTRAIT_LINE_MUL = 0, point portrait = 0), so moving them here
+      // changes nothing about the portrait.
+      const posWire = Float32Array.from(pos);
+      if (o.slimCheek) {
+        let xAbsMax = 1e-6, zLo = Infinity, zHi = -Infinity;
+        for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > xAbsMax) xAbsMax = ax; const z = pos[i * 3 + 2]; if (z < zLo) zLo = z; if (z > zHi) zHi = z; }
+        const zSpan = (zHi - zLo) || 1;
+        const sb = (e0, e1, v) => { let t = (v - e0) / (e1 - e0); t = t < 0 ? 0 : t > 1 ? 1 : t; return t * t * (3 - 2 * t); };
+        for (let i = 0; i < n; i++) {
+          const x = pos[i * 3], hy = ny[i], anx = Math.abs(x) / xAbsMax, nzf = (pos[i * 3 + 2] - zLo) / zSpan;
+          const band = sb(0.32, 0.46, hy) * (1 - sb(0.60, 0.72, hy));   // vertical bump over cheek + cheekbone
+          const lat = sb(0.40, 0.92, anx);                              // outer cheeks only; nose/centre untouched
+          const front = 0.3 + 0.7 * sb(0.4, 0.82, nzf);                 // emphasise the front face, leave ears mostly alone
+          posWire[i * 3] = x * (1 - o.slimCheek * band * lat * front);
+        }
+      }
+      const posWireAttr = new THREE.BufferAttribute(posWire, 3);
       const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
       // register a color buffer with the post-intro engines. each layer carries the colour it
       // shows in the two steady states — portrait (halftone dots) and wireframe — plus per-vertex
@@ -517,7 +537,7 @@
       const depthTest = o.depthTest !== false;
       // depth-only occluder: the front surface writes depth so back-of-head wires can't bleed through (no x-ray look)
       if (o.occlude) {
-        const go = new THREE.BufferGeometry(); go.setAttribute("position", posAttr); go.setIndex(index);
+        const go = new THREE.BufferGeometry(); go.setAttribute("position", posWireAttr); go.setIndex(index);
         const mo = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide });
         o.parent.add(new THREE.Mesh(go, mo));
       }
@@ -536,11 +556,11 @@
       const ia = index.array, seen = new Set(), eIdx = [];
       const addE = (a, b) => { const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
       for (let i = 0; i < ia.length; i += 3) { addE(ia[i], ia[i + 1]); addE(ia[i + 1], ia[i + 2]); addE(ia[i + 2], ia[i]); }
-      const gl = new THREE.BufferGeometry(); gl.setAttribute("position", posAttr);
+      const gl = new THREE.BufferGeometry(); gl.setAttribute("position", posWireAttr);
       gl.setAttribute("color", regCol(mkCol((b) => 0.04 + Math.pow(b, 1.4) * o.lineK), "line")); gl.setIndex(eIdx);
       const ml = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest });
       o.parent.add(new THREE.LineSegments(gl, ml)); allMats.push(ml);
-      const gp = new THREE.BufferGeometry(); gp.setAttribute("position", posAttr);
+      const gp = new THREE.BufferGeometry(); gp.setAttribute("position", posWireAttr);
       gp.setAttribute("color", regCol(mkCol((b) => Math.pow(b, 1.6) * o.ptK), "point"));
       const mp = new THREE.PointsMaterial({ size: o.ptSize, map: dotTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest, sizeAttenuation: true });
       o.parent.add(new THREE.Points(gp, mp)); allMats.push(mp);
@@ -550,7 +570,7 @@
     const headGeo = decimate(hgW, CONFIG.headDecimate);
     const hStat = buildLayers(headGeo, {
       parent: head, fillK: CONFIG.fill, lineK: CONFIG.line, ptK: CONFIG.point, ptSize: CONFIG.pointSize,
-      occlude: true, setBounds: true, halftone: true, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
+      occlude: true, setBounds: true, halftone: true, slimCheek: 0.12, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
       brightFn: (x, y, z, nz) => contrast(lumaAt(mapX(x), mapY(y))) * Math.pow(nz, CONFIG.frontPow) * faceWeight(nxOf(x), nyOf(y)) * earCut(nxOf(x)),
     });
 
@@ -741,24 +761,19 @@
         let u = (ny[i] - (ly - fw)) / (2 * fw); u = u < 0 ? 0 : u > 1 ? 1 : u;
         const w = u * u * (3 - 2 * u);   // 0 = portrait (dots), 1 = wireframe
         // cat wireBrightness = 0.15 + diffuse*0.5 + specular*2.0 (white lit lines + gloss)
-        let wb = 0.15, vis = 1;
+        let wb = 0.15;
         if (nrm) {
           const lnx = nrm[o], lny = nrm[o + 1], lnz = nrm[o + 2];
           const x1 = cy * lnx + sy * lnz, z1 = -sy * lnx + cy * lnz;   // yaw
           const Nx = x1, Ny = cx * lny - sx * z1, Nz = sx * lny + cx * z1;   // pitch
           const ndl = Math.max(0, Nx * Lx + Ny * Ly + Nz * Lz);
           const ndh = Math.max(0, Nx * Hx + Ny * Hy + Nz * Hz);
-          // pull the front cheekbones/cheeks inward: fade the wireframe as the surface turns away from
-          // camera (lower Nz), so the lit central face stays full while the outward-curving cheek sides
-          // taper to the slimmer dot-state contour. only scales wb (wireframe side), dots untouched.
-          const fz = Math.max(0, Math.min(1, (Nz - 0.4) / 0.42));
-          vis = fz * fz * (3 - 2 * fz);
-          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale * (0.05 + 0.95 * vis);
+          wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale;
         }
         let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
         if (K) {
           const px = pos[o], py = pos[o + 1];
-          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w * (0.3 + 0.7 * vis);
+          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w;
           r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
         }
         const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
