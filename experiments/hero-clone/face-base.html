@@ -105,8 +105,8 @@
   scene.add(head);
 
   // --- eye death-laser (Superman/Cyclops): two beams from the eyes converging on the pointer ---
-  const LASER = { color: [1.0, 0.12, 0.05], width: 0.05, plane: 1.2, extend: 1.15 };
-  let firing = false, fireI = 0;        // fireI = eased 0..1 firing intensity
+  const LASER = { color: [1.0, 0.12, 0.05], width: 0.12, plane: 1.2, length: 24 };  // length overshoots the screen edge
+  let firing = false, fireI = 0, charge = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge)
   const eyeWorld = [];                   // eye origins in head-local space (filled in build)
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
   let impactSprite = null;
@@ -155,6 +155,7 @@
     uSweepNy: { value: 1.15 }, uIntroFade: { value: 0 }, uYMin: { value: 0 }, uYSpan: { value: 1 },
     uMouse: { value: new THREE.Vector2(0, 0) }, uLightDir: { value: new THREE.Vector3(0, 0, 1) },
     uIntroRed: { value: -999 },   // rising red-curtain line (ny) during the intro; -999 = intro over
+    uEyeCharge: { value: 0 },     // 0..1 Superman charge-up: the eyes glow red before the beam fires
   };
   const HALFTONE_VERT = `
     attribute float aBright;
@@ -230,7 +231,7 @@
   const EYE_FRAG = `
     precision highp float;
     varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
-    uniform float uTime, uIntroFade, uSweepNy, uIntroRed;
+    uniform float uTime, uIntroFade, uSweepNy, uIntroRed, uEyeCharge;
     uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
     float hash(float n) { return fract(sin(n) * 43758.5453); }
     void main() {
@@ -282,6 +283,18 @@
       float front = smoothstep(-0.04, 0.14, vEyeOff.z);
       float eyeMask = aperture * front;
       vec3 steadyEye = col * portrait * eyeMask;
+      // Superman charge-up: the eyeball ignites red inside the lid opening before the beam fires.
+      // not gated by the portrait factor, so the eyes glow in both the dot and wireframe states.
+      vec3 chargeGlow = vec3(0.0);
+      if (uEyeCharge > 0.001) {
+        float ndv = max(dot(V, N), 0.0);
+        float fres = pow(1.0 - ndv, 1.0);
+        float corona = pow(fres, 0.4) * 6.0;
+        float core = pow(ndv, 2.0) * 2.0;
+        float flick = 0.7 + 0.3 * sin(uTime * 22.0);   // crackle as the charge builds
+        chargeGlow = (vec3(2.0, 0.07, 0.04) + vec3(18.0, 0.10, 0.05) * corona + vec3(8.0, 0.12, 0.06) * core)
+            * uEyeCharge * flick * eyeMask;
+      }
       if (uIntroRed > -900.0) {
         // intro: the whole eyeball ignites as a red corona (the two eye light points), then
         // dissolves into the steady masked eye as uIntroFade ramps. (cat FRAG_EYE red-glow, verbatim weights)
@@ -298,7 +311,7 @@
             + vec3(10.0, 0.15, 0.08) * hotspot) * isRed;
         gl_FragColor = vec4(mix(redGlow, steadyEye, uIntroFade), 1.0);
       } else {
-        gl_FragColor = vec4(steadyEye * uIntroFade, 1.0);
+        gl_FragColor = vec4(steadyEye * uIntroFade + chargeGlow, 1.0);
       }
     }`;
   function makeEyeMaterial() {
@@ -752,31 +765,34 @@
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
       applyState(st);
 
-      // death-laser: two beams from the eyes converging on the pointer
-      fireI += ((firing ? 1 : 0) - fireI) * 0.18;
+      // death-laser: the eyes charge up red (Superman), then two beams shoot from the eyes
+      // through the pointer and on to the screen edge.
+      charge += ((firing ? 1 : 0) - charge) * 0.07;     // gradual charge-up / cool-down
+      const bt = Math.max(0, Math.min(1, (charge - 0.5) / 0.5));   // beam emerges only once the eyes are well lit
+      fireI = bt * bt * (3 - 2 * bt);                    // smoothstep(0.5, 1.0, charge)
+      halftoneUniforms.uEyeCharge.value = charge;
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
-      if (fireI > 0.01 && eyeWorld.length === 2) {
+      if (charge > 0.01 && eyeWorld.length === 2) {
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
         raycaster.ray.intersectPlane(aimPlane, aimTarget);          // pointer -> world point on the aim plane
         camera.getWorldPosition(tmpCam);
         for (let k = 0; k < 2; k++) {
           tmpEo.copy(eyeWorld[k]); head.localToWorld(tmpEo);         // eye origin in world space
-          tmpDir.copy(aimTarget).sub(tmpEo);                          // origin -> target
-          const len = tmpDir.length() * LASER.extend;
-          tmpDir.normalize();
+          tmpDir.copy(aimTarget).sub(tmpEo).normalize();             // origin -> through the pointer
+          const len = LASER.length;                                  // overshoot past the pointer to the screen edge
           tmpToCam.copy(tmpCam).sub(tmpEo).normalize();
           tmpWidth.crossVectors(tmpDir, tmpToCam).normalize();        // billboard width axis (across screen)
           tmpNormal.crossVectors(tmpWidth, tmpDir).normalize();       // faces the camera
           tmpBasis.makeBasis(tmpDir, tmpWidth, tmpNormal);
-          tmpScale.set(len, LASER.width * (0.55 + fireI * 0.6), 1);
+          tmpScale.set(len, LASER.width * (0.7 + fireI * 0.4), 1);
           tmpBasis.scale(tmpScale);
           tmpMid.copy(tmpEo).addScaledVector(tmpDir, len * 0.5);
           tmpBasis.setPosition(tmpMid);
-          const bm = beams[k]; bm.visible = true; bm.matrix.copy(tmpBasis);
-          const mz = muzzles[k]; mz.visible = true; mz.position.copy(tmpEo); mz.scale.setScalar(0.16 * fireI);
+          const bm = beams[k]; bm.visible = fireI > 0.01; bm.matrix.copy(tmpBasis);
+          const mz = muzzles[k]; mz.visible = true; mz.position.copy(tmpEo); mz.scale.setScalar(0.13 * charge);
         }
-        impactSprite.visible = true; impactSprite.position.copy(aimTarget); impactSprite.scale.setScalar(0.26 * fireI);
+        impactSprite.visible = fireI > 0.01; impactSprite.position.copy(aimTarget); impactSprite.scale.setScalar(0.24 * fireI);
       } else if (eyeWorld.length === 2) {
         beams[0].visible = beams[1].visible = false;
         muzzles[0].visible = muzzles[1].visible = false;
@@ -785,7 +801,7 @@
     }
 
     for (const m of allMats) m.opacity = 1;
-    bloom.strength = 0.16 + Math.sin(t * 1.1) * 0.04 + (1 - introProg) * 2.4 + fireI * 0.12;   // heavy bloom during the red intro + a small kick while firing (the beams glow on their own)
+    bloom.strength = 0.16 + Math.sin(t * 1.1) * 0.04 + (1 - introProg) * 2.4 + charge * 0.06 + fireI * 0.12;   // heavy bloom during the red intro + a small kick as the eyes charge and fire
 
     composer.render();
   }
