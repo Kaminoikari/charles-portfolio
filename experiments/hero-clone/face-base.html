@@ -506,16 +506,12 @@
       const nySpan = (yMax - yMin) || 1;
       const ny = new Float32Array(n);
       for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan;
-      // bounds + per-vertex jaw-open weight, computed here so both the deform rig and the line builder
-      // (mouth-seam removal) can share them. the hinge is a thin band AT the closed-lip contact line
-      // (ny ~0.175-0.20): everything below it (the whole lower lip + jaw + chin) drops as a rigid block so
-      // the lip keeps its own height, and only the seam between the lips opens. a wider band would stretch
-      // the lower lip taller, which is wrong.
-      let mAbsX = 1e-6, mzLo = Infinity, mzHi = -Infinity;
-      for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > mAbsX) mAbsX = ax; const z = pos[i * 3 + 2]; if (z < mzLo) mzLo = z; if (z > mzHi) mzHi = z; }
-      const mzSpan = (mzHi - mzLo) || 1;
+      // per-vertex jaw-open weight: a thin hinge band AT the closed-lip contact line (ny ~0.20). everything
+      // below it (the whole lower lip + jaw + chin) drops as a rigid block, so the lip keeps its own height
+      // and only the seam between the lips opens. a band that sits above the lips just drops both lips
+      // together (a longer philtrum, no opening); a wider band stretches the lower lip taller.
       const jawW = new Float32Array(n);
-      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.255 - ny[i]) / 0.025; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
+      if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.215 - ny[i]) / 0.022; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
       // dot mesh keeps the untouched posAttr, so the dot state is byte-identical. lines/points are
@@ -595,16 +591,7 @@
         o.parent.add(new THREE.Mesh(gf, mf)); allMats.push(mf);
       }
       const ia = index.array, seen = new Set(), eIdx = [];
-      // mouth seam: edges that bridge the upper lip (held) and the lower lip (drops) across the central
-      // front mouth. dropping them from the wireframe leaves a clean hollow when the jaw opens instead of
-      // a web of stretched lines spanning the gap.
-      const mouthSeam = (a, b) => {
-        if (!o.jawRig || Math.abs(jawW[a] - jawW[b]) < 0.3) return false;
-        const mx = (pos[a * 3] + pos[b * 3]) * 0.5, mny = (ny[a] + ny[b]) * 0.5;
-        const mz = ((pos[a * 3 + 2] + pos[b * 3 + 2]) * 0.5 - mzLo) / mzSpan;
-        return Math.abs(mx) < 0.34 * mAbsX && mny > 0.20 && mny < 0.30 && mz > 0.6;
-      };
-      const addE = (a, b) => { if (mouthSeam(a, b)) return; const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
+      const addE = (a, b) => { const k = a < b ? a * 1e7 + b : b * 1e7 + a; if (seen.has(k)) return; seen.add(k); eIdx.push(a, b); };
       for (let i = 0; i < ia.length; i += 3) { addE(ia[i], ia[i + 1]); addE(ia[i + 1], ia[i + 2]); addE(ia[i + 2], ia[i]); }
       const gl = new THREE.BufferGeometry(); gl.setAttribute("position", posWireAttr);
       gl.setAttribute("color", regCol(mkCol((b) => 0.04 + Math.pow(b, 1.4) * o.lineK), "line")); gl.setIndex(eIdx);
