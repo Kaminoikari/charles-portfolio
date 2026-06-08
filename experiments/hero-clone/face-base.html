@@ -512,6 +512,17 @@
       // together (a longer philtrum, no opening); a wider band stretches the lower lip taller.
       const jawW = new Float32Array(n);
       if (o.jawRig) for (let i = 0; i < n; i++) { let s = (0.215 - ny[i]) / 0.022; s = s < 0 ? 0 : s > 1 ? 1 : s; jawW[i] = s * s * (3 - 2 * s); }
+      // lip-ring weight: the front-facing vertices around the whole mouth (both lips, ny ~0.15-0.235).
+      // firing pinches their x toward the midline so the parted mouth rounds into an O (a roar) instead of
+      // a wide gash. front-gated by the local normal so it only grabs the lips, not the cheeks behind.
+      const mouthRing = new Float32Array(n);
+      if (o.jawRig) for (let i = 0; i < n; i++) {
+        let bi = (ny[i] - 0.14) / 0.03; bi = bi < 0 ? 0 : bi > 1 ? 1 : bi;
+        let bo = (0.235 - ny[i]) / 0.03; bo = bo < 0 ? 0 : bo > 1 ? 1 : bo;
+        let band = Math.min(bi, bo); band = band * band * (3 - 2 * band);
+        let fz = (nloc[i * 3 + 2] - 0.1) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz;
+        mouthRing[i] = band * fz;
+      }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
       // dot mesh keeps the untouched posAttr, so the dot state is byte-identical. lines/points are
@@ -552,7 +563,7 @@
       if (o.jawRig) {
         // firing drops the lower-lip-through-chin block (jawW) away from the fixed upper lip so the mouth
         // opens (a roar). drives both the halftone and wireframe positions.
-        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight: jawW, span: nySpan, lastOpen: 0 };
+        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), weight: jawW, ring: mouthRing, span: nySpan, lastOpen: 0 };
       }
       const mkCol = (fn) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k; } return c; };
       // register a color buffer with the post-intro engines. each layer carries the colour it
@@ -864,11 +875,13 @@
       halftoneUniforms.uEyeCharge.value = charge;
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
-      // roar: drop the jaw open while the beam fires (drives both the dot and wireframe geometry)
+      // roar: drop the jaw open while the beam fires + pinch the lip ring inward so it rounds into an O
+      // (drives both the dot and wireframe geometry)
       if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
         const open = fireI * 0.085 * jawRig.span;   // downward drop in fitted units (a slight parted-mouth roar, not a gape)
-        const w = jawRig.weight, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
-        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] - d * 0.18; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] - d * 0.18; }
+        const pinch = fireI * 0.5;                   // horizontal squeeze of the lip ring toward the midline -> O shape
+        const w = jawRig.weight, ring = jawRig.ring, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = w.length;
+        for (let i = 0; i < m; i++) { const o = i * 3, d = w[i] * open, px = 1 - pinch * ring[i]; ha[o] = hb[o] * px; ha[o + 1] = hb[o + 1] - d; ha[o + 2] = hb[o + 2] - d * 0.18; wa[o] = wb[o] * px; wa[o + 1] = wb[o + 1] - d; wa[o + 2] = wb[o + 2] - d * 0.18; }
         jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
       }
       if (charge > 0.01 && eyeWorld.length === 2) {
