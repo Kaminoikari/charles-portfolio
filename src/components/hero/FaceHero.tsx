@@ -87,7 +87,7 @@ export default function FaceHero() {
     <section
       ref={sectionRef}
       className="relative flex h-[110vh] w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[110svh]"
-      style={{ background: 'var(--color-bg-primary)', touchAction: 'none' }}
+      style={{ background: 'var(--color-bg-primary)' }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" role="presentation" aria-hidden="true" />
 
@@ -106,7 +106,7 @@ export default function FaceHero() {
       />
 
       <div
-        className="pointer-events-none relative z-10 mx-auto w-full max-w-[1400px] px-6 transition-opacity duration-700 md:px-12"
+        className="relative z-10 mx-auto w-full max-w-[1400px] px-6 transition-opacity duration-700 md:px-12"
         style={{ opacity: heroTextVisible ? 1 : 0 }}
       >
         <h1
