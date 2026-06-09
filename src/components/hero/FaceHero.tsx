@@ -37,7 +37,10 @@ export default function FaceHero() {
   const [phase, setPhase] = useState<Phase>(() => (alreadySeenThisSession() ? 'revealed' : 'loading'))
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
-  const { unmute } = useAmbientAudio()
+  const { unmute, unlock } = useAmbientAudio()
+  const enteredRef = useRef(false)   // true only after a real Enter click, so a same-session skip stays silent
+  const unmuteRef = useRef(unmute)   // keep the init effect off unmute's identity so it still runs once
+  useEffect(() => { unmuteRef.current = unmute }, [unmute])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -49,7 +52,7 @@ export default function FaceHero() {
       reducedMotion: reduced,
       onProgress: (p) => setProgress(p),
       onReady: () => { if (seen) handleRef.current?.startIntro(true); else setPhase('ready') },
-      onIntroComplete: () => setPhase('revealed'),
+      onIntroComplete: () => { setPhase('revealed'); if (enteredRef.current) unmuteRef.current() },   // BGM fades in only after the intro, and only when the visitor actually entered
       onError: () => setFailed(true),
     })
     handleRef.current = handle
@@ -75,8 +78,9 @@ export default function FaceHero() {
 
   const onEnter = () => {
     markSeenThisSession()
+    enteredRef.current = true
     handleRef.current?.startIntro()
-    unmute()
+    unlock()                 // unlock audio inside the click; the track stays silent until the intro ends
     setPhase('running')
   }
 

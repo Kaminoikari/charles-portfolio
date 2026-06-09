@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AmbientAudioContext } from './audio-context'
 
-const AUDIO_SRC = '/assets/ambient-monastery.mp3'
+const AUDIO_SRC = '/assets/ambient-space.mp3'
 const TARGET_VOLUME = 0.35
 const FADE_DURATION_MS = 1800
 
@@ -35,6 +35,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    audio.muted = false   // clear the silent-unlock flag set in unlock()
     audio.volume = 0
     const playPromise = audio.play()
     if (playPromise && typeof playPromise.then === 'function') {
@@ -42,8 +43,17 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [muted])
 
+  // play silently inside the user gesture so a later unmute() (after the hero intro) can produce
+  // sound on iOS, where audio must first be started by a real gesture
+  const unlock = () => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.muted = true
+    audio.play().catch(() => {})
+  }
+
   return (
-    <AmbientAudioContext.Provider value={{ muted, toggle: () => setMuted((p) => !p), unmute: () => setMuted(false) }}>
+    <AmbientAudioContext.Provider value={{ muted, toggle: () => setMuted((p) => !p), unmute: () => setMuted(false), unlock }}>
       <audio ref={audioRef} src={AUDIO_SRC} loop preload="none" aria-hidden="true" />
       {children}
     </AmbientAudioContext.Provider>

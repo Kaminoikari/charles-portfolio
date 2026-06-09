@@ -6,6 +6,7 @@ const startIntro = vi.fn()
 const setActive = vi.fn()
 const dispose = vi.fn()
 const unmute = vi.fn()
+const unlock = vi.fn()
 let lastOpts: import('./faceHero').FaceHeroOptions | null = null
 
 vi.mock('./faceHero', () => ({
@@ -16,13 +17,13 @@ vi.mock('./faceHero', () => ({
 }))
 
 vi.mock('../audio/audio-context', () => ({
-  useAmbientAudio: () => ({ muted: true, toggle: vi.fn(), unmute }),
+  useAmbientAudio: () => ({ muted: true, toggle: vi.fn(), unmute, unlock }),
 }))
 
 import FaceHero from './FaceHero.tsx'
 
 beforeEach(() => {
-  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); lastOpts = null
+  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); unlock.mockClear(); lastOpts = null
   sessionStorage.clear()
   vi.stubGlobal('IntersectionObserver', function IntersectionObserverStub() {
     return { observe: vi.fn(), disconnect: vi.fn() }
@@ -51,12 +52,24 @@ describe('FaceHero shell', () => {
     expect(startIntro).toHaveBeenCalledTimes(1)
   })
 
-  it('unmutes the ambient music when enter is clicked', async () => {
+  it('unlocks audio on enter but holds the music until the intro finishes', async () => {
     const user = userEvent.setup()
     render(<FaceHero />)
     act(() => { lastOpts?.onReady?.() })
     await user.click(screen.getByRole('button', { name: /enter/i }))
+    expect(unlock).toHaveBeenCalledTimes(1)
+    expect(unmute).not.toHaveBeenCalled()
+    act(() => { lastOpts?.onIntroComplete?.() })
     expect(unmute).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not start the music on a same-session skip (no enter click)', () => {
+    sessionStorage.setItem('faceHeroSeen', '1')
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    act(() => { lastOpts?.onIntroComplete?.() })
+    expect(unmute).not.toHaveBeenCalled()
+    expect(unlock).not.toHaveBeenCalled()
   })
 
   it('disposes the engine on unmount', () => {
