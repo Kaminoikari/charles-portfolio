@@ -8,6 +8,7 @@ import { createContext, useContext } from 'react'
 export interface AmbientAudioValue {
   muted: boolean
   toggle: () => void
+  unmute: () => void
 }
 
 export const AmbientAudioContext = createContext<AmbientAudioValue | null>(null)
@@ -15,6 +16,6 @@ export const AmbientAudioContext = createContext<AmbientAudioValue | null>(null)
 export function useAmbientAudio(): AmbientAudioValue {
   const ctx = useContext(AmbientAudioContext)
   // Safe fallback if a consumer mounts outside the provider (shouldn't happen).
-  if (!ctx) return { muted: true, toggle: () => {} }
+  if (!ctx) return { muted: true, toggle: () => {}, unmute: () => {} }
   return ctx
 }

@@ -43,7 +43,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [muted])
 
   return (
-    <AmbientAudioContext.Provider value={{ muted, toggle: () => setMuted((p) => !p) }}>
+    <AmbientAudioContext.Provider value={{ muted, toggle: () => setMuted((p) => !p), unmute: () => setMuted(false) }}>
       <audio ref={audioRef} src={AUDIO_SRC} loop preload="none" aria-hidden="true" />
       {children}
     </AmbientAudioContext.Provider>
