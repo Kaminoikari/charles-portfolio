@@ -109,9 +109,7 @@
   // the wireframe state — shed dust drifting off the head, faint orbital ground rings, brighter star nodes.
   let headWireVerts = null;              // head wireframe vertex positions, captured at build for dust spawn points
   const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward in the wireframe state
-  const ringSys = { update: () => {} };  // faint comet-arc rings orbiting the base of the head
   const DUST = { count: 560, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes — dense, continuous flow
-  const RING = { count: 3, segs: 160, y: 0.10, r0: 0.60, dr: 0.16, gap: 0.05, squash: 0.40, spin: 0.22, opacity: 0.5, col: [0.10, 0.70, 1.0] };
   const CONSTELLATION_GAIN = 1.6;        // brighten the wireframe point nodes so vertices read as stars
 
   // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
@@ -146,29 +144,6 @@
       }
       g.attributes.position.needsUpdate = true; g.attributes.color.needsUpdate = true;
     };
-  }
-  // orbital rings: faint comet-arc loops around the base of the head, slowly spinning, fading with the wireframe state.
-  function setupRings(bbox, ext) {
-    const cx = (bbox.min.x + bbox.max.x) / 2, cz = (bbox.min.z + bbox.max.z) / 2;
-    const baseY = bbox.min.y + (bbox.max.y - bbox.min.y) * RING.y;
-    const grp = new THREE.Group(), rings = [];
-    for (let k = 0; k < RING.count; k++) {
-      const R = ext * (RING.r0 + k * RING.dr), S = RING.segs;
-      const p = new Float32Array(S * 3), c = new Float32Array(S * 3);
-      for (let i = 0; i < S; i++) {
-        const ang = i / S * Math.PI * 2;
-        p[i * 3] = cx + Math.cos(ang) * R; p[i * 3 + 1] = baseY + k * ext * RING.gap; p[i * 3 + 2] = cz + Math.sin(ang) * R * RING.squash;
-        const grad = Math.pow(0.5 + 0.5 * Math.cos(ang), 3.0);   // comet: bright head fading round the loop
-        c[i * 3] = RING.col[0] * grad; c[i * 3 + 1] = RING.col[1] * grad; c[i * 3 + 2] = RING.col[2] * grad;
-      }
-      const g = new THREE.BufferGeometry();
-      g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("color", new THREE.BufferAttribute(c, 3));
-      const m = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
-      const loop = new THREE.LineLoop(g, m); loop.rotation.y = k * 1.7; grp.add(loop);
-      rings.push({ m, base: RING.opacity * (1 - k * 0.22) });
-    }
-    head.add(grp);
-    ringSys.update = (wireAmt, t) => { grp.rotation.y = t * RING.spin; for (const r of rings) r.m.opacity = r.base * wireAmt; };
   }
 
   // --- eye death-laser (Superman/Cyclops): two beams from the eyes converging on the pointer ---
@@ -787,9 +762,8 @@
       eStat = { n: en };
     }
 
-    const _bbox = new THREE.Box3().setFromObject(head);   // measure before adding the dust/rings
+    const _bbox = new THREE.Box3().setFromObject(head);   // measure before adding the dust
     const _ext = Math.max(_bbox.max.x - _bbox.min.x, _bbox.max.z - _bbox.min.z) || 1;
-    setupRings(_bbox, _ext);
     setupDust(_ext);
 
     dbg.textContent = `head ${hStat.n}v ${hStat.edges}e  eye ${eStat.n}v`;
@@ -1008,9 +982,8 @@
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
       halftoneUniforms.uCursorActive.value += (cursorActive - halftoneUniforms.uCursorActive.value) * 0.15;   // ease the highlight in/out so it never pops
       applyState(st);
-      const wireAmt = Math.max(0, Math.min(1, (1.15 - ly) / 1.30));   // 0 = dot portrait, 1 = full wireframe — gates the shed dust + rings
+      const wireAmt = Math.max(0, Math.min(1, (1.15 - ly) / 1.30));   // 0 = dot portrait, 1 = full wireframe — gates the shed dust
       dustSys.update(dt, wireAmt);
-      ringSys.update(wireAmt, t);
 
       // death-laser: the eyes charge up red (Superman), then two beams shoot from the eyes
       // through the pointer and on to the screen edge.
