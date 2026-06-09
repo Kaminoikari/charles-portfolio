@@ -44,6 +44,7 @@ type FaceHeroOptions = {
 }
 type FaceHeroHandle = {
   startIntro: () => void            // called from the Enter click (a real user gesture → audio unlocks)
+  setActive: (active: boolean) => void  // pause/resume the RAF render loop (off-screen / tab-hidden)
   dispose: () => void               // tear down renderer, listeners, RAF, audio
 }
 function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): FaceHeroHandle
@@ -115,7 +116,25 @@ steady state      → periodic sweep: dot portrait ↔ wireframe constellation (
 - WebGL unsupported or GLB load failure: fall back to a static `charles-face.png` + the hero text, so the page never hard-fails. Error handling concentrated at the engine boundary (the GLTFLoader reject path and a WebGL-context check).
 - `dispose()` must fully tear down renderer, RAF loop, event listeners, and audio on unmount to avoid leaks during SPA navigation.
 
-## 10. Testing
+## 10. Performance
+
+Design principle #5 ("Performance is a feature — Canvas pauses off-screen") is a hard requirement. The old `ParticleHero` paused off-screen; the new engine must too.
+
+Already in the engine (carried over):
+
+- `renderer.setPixelRatio(Math.min(devicePixelRatio, 2))` at init and on resize — caps fragment cost (bloom runs full-screen passes, cost scales with DPR²).
+- Geometry decimated via `SimplifyModifier` (head ~2200 verts, eyes ~360).
+- The halftone portrait is a GPU shader; clamped frame delta.
+
+To add this pass:
+
+- **Off-screen pause:** the React shell holds an `IntersectionObserver` on the hero `<section>` and calls `handle.setActive(false)` when it leaves the viewport, `setActive(true)` when it returns. `setActive(false)` cancels the RAF loop and pauses audio; `true` resumes. Mirrors the old hero's pattern.
+- **Tab-hidden pause:** `visibilitychange` → `setActive(!document.hidden)` so a backgrounded tab does no work.
+- **Mobile budget:** the per-frame CPU cost (`applyState` per-vertex recolor + the ~560-mote dust loop) is the main load. On coarse-pointer / small-viewport devices, scale down: fewer dust motes and a lower bloom strength (and optionally a lower DPR cap). Exact thresholds tuned during implementation against a real device.
+
+Known cost, not optimized this pass: `applyState` recolors every head vertex on the CPU each frame (the sweep lerp). It runs at an acceptable frame rate today; moving the portrait↔wireframe lerp fully into the shader is a larger refactor, noted as future work rather than a blocker.
+
+## 11. Testing
 
 The project has no React test harness today (only `tsx --test` for RAG). Automated gate:
 
@@ -132,7 +151,7 @@ Add a minimal `vitest` + `@testing-library/react` setup to cover the shell logic
 
 Visual verification remains manual via the dev server (headless screenshots of the heavy WebGL canvas are unreliable). Verify multiple states (loading, enter, intro, dot portrait, wireframe) and the true default, not a single flattering frame.
 
-## 11. Risks / notes
+## 12. Risks / notes
 
 - Regression risk to the tuned visual is low because the engine logic is ported near-verbatim behind the module boundary rather than rewritten.
 - WebGL context lifecycle under React (StrictMode double-mount in dev) must be handled by `dispose()` + guarded init.
