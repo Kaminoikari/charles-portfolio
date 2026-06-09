@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AmbientAudioContext } from './audio-context'
 
-const AUDIO_SRC = '/assets/ambient-space.mp3'
+const AUDIO_SRC = '/assets/ambient-monastery.mp3'
 const TARGET_VOLUME = 0.35
 const FADE_DURATION_MS = 1800
 
