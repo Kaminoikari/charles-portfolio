@@ -5,8 +5,7 @@
 // This minimal shim is the standard workaround.
 declare module 'vite' {
   interface UserConfig {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    test?: Record<string, any>
+    test?: Record<string, unknown>
   }
 }
 export {}
