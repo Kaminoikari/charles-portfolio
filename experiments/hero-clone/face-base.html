@@ -185,6 +185,7 @@
     uMouse: { value: new THREE.Vector2(0, 0) }, uLightDir: { value: new THREE.Vector3(0, 0, 1) },
     uIntroRed: { value: -999 },   // rising red-curtain line (ny) during the intro; -999 = intro over
     uEyeCharge: { value: 0 },     // 0..1 Superman charge-up: the eyes glow red before the beam fires
+    uEyeIgnite: { value: 0 },     // 0..1 intro eye ignition; stays dark through the whole red scan, blazes only once the scan reaches the top
     uCursorActive: { value: 0 },  // 0..1 fade for the cyan cursor highlight; 0 when no pointer so it doesn't park on the face (mobile has no hover)
   };
   const HALFTONE_VERT = `
@@ -268,7 +269,7 @@
   const EYE_FRAG = `
     precision highp float;
     varying vec3 vNormal; varying vec3 vViewPos; varying float vNy; varying vec3 vEyeOff;
-    uniform float uTime, uIntroFade, uSweepNy, uIntroRed, uEyeCharge, uCursorActive;
+    uniform float uTime, uIntroFade, uSweepNy, uIntroRed, uEyeCharge, uEyeIgnite, uCursorActive;
     uniform vec2 uResolution, uMouse; uniform vec3 uLightDir;
     float hash(float n) { return fract(sin(n) * 43758.5453); }
     void main() {
@@ -341,7 +342,7 @@
         float inner = pow(fres, 2.5) * 4.0;
         float hotspot = pow(NdotV, 3.0) * 1.5;
         float pulse = 0.85 + 0.15 * sin(uTime * 3.0);
-        float isRed = step(vNy, uIntroRed);   // ignite once the rising red line reaches the eye
+        float isRed = uEyeIgnite;   // dark through the whole rising scan; ignites only after the red line clears the top
         vec3 redGlow = (vec3(2.5, 0.03, 0.03)
             + vec3(40.0, 0.08, 0.04) * corona * pulse
             + vec3(24.0, 0.20, 0.05) * inner
@@ -742,6 +743,8 @@
   function updateIntro(t) {
     if (introDone) return 1;
     const Tred = INTRO.red, Tpause = Tred + INTRO.pause, Tend = Tpause + INTRO.sweep;
+    // eyes stay dark for the whole rising scan, then blaze once it reaches the top (t >= Tred)
+    halftoneUniforms.uEyeIgnite.value = t < Tred ? 0 : Math.min(1, (t - Tred) / 0.45);
     if (t >= Tend) {
       for (const L of LAYERS) { L.attr.array.set(L.portrait); L.attr.needsUpdate = true; }
       halftoneUniforms.uIntroRed.value = -999;
