@@ -33,6 +33,19 @@ export default function FaceHero() {
     return () => { handle.dispose(); handleRef.current = null }
   }, [])
 
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const io = new IntersectionObserver(
+      (entries) => { handleRef.current?.setActive(entries[0]?.isIntersecting ?? true) },
+      { threshold: 0 },
+    )
+    io.observe(section)
+    const onVisibility = () => { if (!document.hidden) handleRef.current?.setActive(true); else handleRef.current?.setActive(false) }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
+  }, [])
+
   const onEnter = () => {
     handleRef.current?.startIntro()
     unmute()

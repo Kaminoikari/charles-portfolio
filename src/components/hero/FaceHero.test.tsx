@@ -23,8 +23,11 @@ import FaceHero from './FaceHero.tsx'
 
 beforeEach(() => {
   startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); lastOpts = null
+  vi.stubGlobal('IntersectionObserver', function IntersectionObserverStub() {
+    return { observe: vi.fn(), disconnect: vi.fn() }
+  })
 })
-afterEach(() => { vi.restoreAllMocks() })
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
 describe('FaceHero shell', () => {
   it('always renders the hero heading in the DOM', () => {
@@ -59,5 +62,30 @@ describe('FaceHero shell', () => {
     const { unmount } = render(<FaceHero />)
     unmount()
     expect(dispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('pauses the engine when the hero scrolls off-screen', () => {
+    let ioCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | null = null
+    const observe = vi.fn(); const disconnect = vi.fn()
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) { ioCallback = cb }
+      observe = observe
+      disconnect = disconnect
+    })
+    render(<FaceHero />)
+    act(() => { ioCallback?.([{ isIntersecting: false }]) })
+    expect(setActive).toHaveBeenLastCalledWith(false)
+    act(() => { ioCallback?.([{ isIntersecting: true }]) })
+    expect(setActive).toHaveBeenLastCalledWith(true)
+  })
+
+  it('pauses the engine when the tab is hidden', () => {
+    render(<FaceHero />)
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    expect(setActive).toHaveBeenLastCalledWith(false)
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    expect(setActive).toHaveBeenLastCalledWith(true)
   })
 })
