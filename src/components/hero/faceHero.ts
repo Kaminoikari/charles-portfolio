@@ -145,7 +145,23 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   composer.addPass(new OutputPass())
 
   const head = new THREE.Group()
-  scene.add(head)
+  // mobile shrinks and lifts the whole avatar (head + eyes + shed dust) via this rig so the
+  // headline below never collides with it. the rig wraps head so the per-frame mouse-follow on
+  // head.position stays independent of the responsive scale/offset. only the avatar moves; the
+  // full-viewport canvas background is untouched, so there is no shrunken second layer.
+  const headRig = new THREE.Group()
+  headRig.add(head)
+  scene.add(headRig)
+  const MOBILE_MAX_W = 768           // <= Tailwind md breakpoint: phones get the shrunk framing
+  const MOBILE_HEAD_SCALE = 0.75     // avatar scaled to 0.75 on phones
+  const MOBILE_HEAD_LIFT = 0.4       // world units the avatar centre rises on phones
+  let rigReady = false               // hold off until the head bbox is measured at scale 1
+  function applyHeadRig() {
+    if (!rigReady) return
+    const mobile = window.innerWidth <= MOBILE_MAX_W
+    headRig.scale.setScalar(mobile ? MOBILE_HEAD_SCALE : 1)
+    headRig.position.y = mobile ? MOBILE_HEAD_LIFT : 0
+  }
 
   // --- wireframe-state dynamics (own implementation; references yutaabe's cat-head BEHAVIOUR, not its code) ---
   // brand palette only: cyan #00D9FF primary, mars-orange #E8652B accent. three additive effects layered on
@@ -196,6 +212,14 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const eyeWorld: THREE.Vector3[] = []                   // eye origins in head-local space (filled in build)
   const beams: THREE.Mesh[] = [], muzzles: THREE.Sprite[] = []        // per-eye beam mesh + muzzle sprite
   const raycaster = new THREE.Raycaster()
+  const ndcPointer = new THREE.Vector2()
+  let faceHitMesh: THREE.Mesh | null = null   // the head's depth occluder, reused as the raycast target so touch only acts on the face
+  function pointerOverFace(e: PointerEvent): boolean {
+    if (!faceHitMesh) return false
+    ndcPointer.set((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1))
+    raycaster.setFromCamera(ndcPointer, camera)
+    return raycaster.intersectObject(faceHitMesh, false).length > 0
+  }
 
   // heat-vision SFX (user-supplied), split so every press gets the charge+fire attack and then a
   // seamless sustain: the attack take plays once, and ~when it lands in the beam the looping body
@@ -734,7 +758,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       if (o.occlude) {
         const go = new THREE.BufferGeometry(); go.setAttribute("position", posWireAttr); go.setIndex(index)
         const mo = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide })
-        o.parent.add(new THREE.Mesh(go, mo))
+        faceHitMesh = new THREE.Mesh(go, mo); o.parent.add(faceHitMesh)   // doubles as the raycast target for mobile face-region gating
       }
       if (o.halftone) {
         // dense screen-space halftone portrait, dot size driven by baked photo brightness
@@ -831,6 +855,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     const bbox = new THREE.Box3().setFromObject(head)   // measure before adding the dust
     const ext = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z) || 1
     setupDust(ext)
+    rigReady = true; applyHeadRig()   // bbox is measured; now the responsive scale/offset can take effect
 
     for (const L of LAYERS) { (L.attr.array as Float32Array).fill(0); L.attr.needsUpdate = true }
     assetsReady = true
@@ -847,13 +872,19 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // the page instead: touch-action pan-y lets the browser take a vertical drag as a scroll (it then sends us
   // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
   let holdTimer = 0
+  let touchOnFace = false   // mobile: a touch only fires / turns the head when it began on the face, never on the empty backdrop
   const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx() }   // no firing during the intro (so the first-interaction unlock-replay click is a no-op)
-  const stopFiring = (e?: PointerEvent) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") cursorActive = 0 }   // touch release clears the highlight; desktop keeps it for the hovering cursor
-  const onPointerMove = (e: PointerEvent) => { setAim(e); if (e.pointerType !== 'touch') cursorActive = 1 }
+  const stopFiring = (e?: PointerEvent) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") { cursorActive = 0; touchOnFace = false } }   // touch release clears the highlight; desktop keeps it for the hovering cursor
+  const onPointerMove = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') { if (touchOnFace) setAim(e); return }   // touch turns the head only while the gesture owns the face
+    setAim(e); cursorActive = 1
+  }
   const onPointerDown = (e: PointerEvent) => {
-    setAim(e)
-    if (e.pointerType === 'touch') { clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150) }
-    else beginFire()
+    if (e.pointerType === 'touch') {
+      touchOnFace = pointerOverFace(e)
+      if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
+      setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
+    } else { setAim(e); beginFire() }
   }
   const onPointerUp = (e: PointerEvent) => stopFiring(e)
   const onPointerCancel = (e: PointerEvent) => stopFiring(e)
@@ -876,6 +907,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     renderer.setSize(window.innerWidth, window.innerHeight)
     composer.setSize(window.innerWidth, window.innerHeight)
     camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix()
+    applyHeadRig()   // re-evaluate the mobile/desktop avatar framing when the viewport crosses the breakpoint
   }
   window.addEventListener('resize', syncSize)
 

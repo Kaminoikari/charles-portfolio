@@ -86,31 +86,52 @@ export default function FaceHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-[110vh] w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[110svh]"
+      className="relative w-full"
       style={{ background: 'var(--color-bg-primary)' }}
     >
-      <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" role="presentation" aria-hidden="true" />
-
-      {failed && (
-        <img
-          src="/hero/charles-face.png"
-          alt=""
+      {/* visual hero: the face fills one viewport; overflow-hidden clips the dust + bloom bleed */}
+      <div className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[100svh]">
+        <canvas
+          ref={canvasRef}
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          role="presentation"
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 m-auto h-auto max-h-[70vh] w-auto opacity-80"
         />
-      )}
 
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
-        style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
-      />
+        {failed && (
+          <img
+            src="/hero/charles-face.png"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 m-auto h-auto max-h-[70vh] w-auto opacity-80"
+          />
+        )}
 
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
+          style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
+        />
+
+        {/* scroll cue stays pinned to the bottom safe area of the first screen (svh tracks the
+            mobile viewport so it never slips behind the browser chrome) */}
+        {phase === 'revealed' && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[6svh] z-10 flex justify-center">
+            <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL</span>
+          </div>
+        )}
+      </div>
+
+      {/* breathing room between the hero and the about section; on desktop it also hosts the headline */}
+      <div aria-hidden="true" className="h-[12svh] w-full md:h-[24vh]" />
+
+      {/* headline: mobile keeps it low over the lower hero; desktop drops it into the centre of
+          the hero/about gap */}
       <div
-        className="relative z-10 mx-auto w-full max-w-[1400px] px-6 transition-opacity duration-700 md:px-12"
+        className="pointer-events-none absolute inset-x-0 bottom-[25svh] z-10 flex flex-col items-center px-6 transition-opacity duration-700 md:bottom-auto md:top-[100svh] md:h-[24vh] md:justify-center"
         style={{ opacity: heroTextVisible ? 1 : 0 }}
       >
         <h1
-          className="mx-auto max-w-[900px] text-center text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]"
+          className="max-w-[900px] text-center text-[24px] font-extralight leading-[1.4] tracking-wide sm:text-[32px] md:text-[40px] lg:text-[48px]"
           style={{ textShadow: '0 0 14px rgba(0,0,0,0.85), 0 0 28px rgba(0,0,0,0.6), 0 0 48px rgba(0,0,0,0.45)' }}
         >
           <span style={{ color: 'rgba(255,255,255,0.7)' }}>Hi, I&apos;m </span>
@@ -121,12 +142,6 @@ export default function FaceHero() {
           <span className="font-normal text-white">AI.</span>
         </h1>
       </div>
-
-      {phase === 'revealed' && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center">
-          <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL</span>
-        </div>
-      )}
 
       {gateVisible && createPortal(
         // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,
