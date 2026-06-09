@@ -128,7 +128,7 @@
   const BAAM_LEAD = 0.15;   // seconds the braam starts before the eyes ignite, so its weight lands on the ignition (tentative; tuned at integration)
   const BAAM_VOL = 0.9;     // braam playback volume
   const BAAM_TAIL = 1.4;    // seconds of braam before it fades — the source has a ~13s tail that drags on under the steady state
-  const BAAM_FADE = 0.5;    // fade-out length so the cut is not a hard click
+  const BAAM_FADE = 1.5;    // fade-out length so the cut is not a hard click
   let baamFadeRAF = 0, baamFadeTimer = 0;
   function playBaam() {
     setPlaybackSession();
