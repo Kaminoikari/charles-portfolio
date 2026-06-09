@@ -1,158 +1,158 @@
-# Hero Integration — Design Spec
+# Hero 整合 — 設計 Spec
 
-Date: 2026-06-09
-Branch: `feat/hero-face-base`
-Status: design, pending implementation plan
+日期:2026-06-09
+分支:`feat/hero-face-base`
+狀態:設計階段,待實作計畫
 
-## 1. Goal
+## 1. 目標
 
-Replace the current portfolio hero (Canvas2D particle system + black-hole backdrop + Konami easter egg) with the Three.js face portrait built in `experiments/hero-clone/face-base.html`. The new hero is Charles's photographed face baked into a halftone dot portrait that periodically sweeps between a dot-matrix state and a lit wireframe constellation, fronted by a loading + Enter gate that lets the cinematic intro play with sound.
+把目前的 portfolio hero(Canvas2D 粒子系統 + 黑洞背景 + Konami 彩蛋)換成 `experiments/hero-clone/face-base.html` 裡那套 Three.js 臉部肖像。新 hero 是 Charles 的照片烤成 halftone 點陣肖像,會週期性在「點狀態」與「打光 wireframe 星座」之間 sweep 切換,前面再加一個 loading + Enter 前導頁,讓帶聲音的電影感 intro 能播放。
 
-## 2. Scope
+## 2. 範圍
 
-- Full replacement of the existing hero visual engine. The current particle/black-hole/Konami code is removed, not extended.
-- The original hero is preserved on the `fallback/original-hero` branch (already created and pushed) so it can be restored at any time.
-- The face look itself (halftone bake, sweep, shed-dust field, constellation vertices, snappy scan, intro red curtain + eye ignition + braam, hold-to-fire laser) is already built and tuned in the sandbox; this work ports it into the React app, adds the loading/Enter gate, and lays out the hero text around it.
+- **完全取代**現有 hero 視覺引擎。舊的粒子/黑洞/Konami 程式碼是移除,不是擴充。
+- 原始 hero 已保存在 `fallback/original-hero` 分支(已建立並推上去),隨時可還原。
+- 臉的視覺本身(halftone bake、sweep、點塵剝落、星座頂點、俐落掃描、intro 紅幕 + 眼睛點亮 + braam、按住發射雷射)已經在 sandbox 做好並調過;這次的工作是把它搬進 React app、加上 loading/Enter 前導頁、並把 hero 文字排在它周圍。
 
-Out of scope (this pass): i18n of the hero copy (keep current English line), yutaabe's separate SHIFT/warp mode, an audio mute control.
+**不在這次範圍**:hero 文案的 i18n(維持現有英文那句)、yutaabe 那個獨立的 SHIFT/warp 模式、音訊靜音開關。
 
-## 3. Architecture (approach C — extract module, bundle three, thin React shell)
+## 3. 架構(方案 C — 抽出模組、bundle three、薄 React 殼)
 
-The standalone Three.js module is extracted into a self-contained engine with a small public API, called by a thin React component that owns the DOM, layout, gate, and lifecycle.
+把獨立的 Three.js 模組抽成一個自包含引擎、對外只開一個小 API,由一個薄 React 元件負責 DOM、版面、前導頁與生命週期。
 
 ```
 src/components/hero/
-  faceHero.ts     // the ported Three.js engine (scene, GLB load, halftone+wireframe,
-                  // sweep + dust + constellation, intro, laser, audio). No React.
-  FaceHero.tsx    // React shell: <section>, <canvas>, loading + Enter gate, hero text,
-                  // SCROLL hint. Owns mount/unmount, Enter → startIntro, reduced-motion.
+  faceHero.ts     // 移植過來的 Three.js 引擎(scene、GLB 載入、halftone+wireframe、
+                  // sweep + 點塵 + 星座、intro、雷射、音訊)。不含 React。
+  FaceHero.tsx    // React 殼:<section>、<canvas>、loading + Enter 前導頁、hero 文字、
+                  // SCROLL 提示。負責 mount/unmount、Enter → startIntro、reduced-motion、離屏暫停。
 ```
 
-`three` is added as a bundled npm dependency, version-pinned to `0.183.0` (the version the sandbox uses). Imports change from the CDN importmap to bundled specifiers: `import * as THREE from 'three'` and addons from `three/examples/jsm/...` (GLTFLoader, SimplifyModifier, BufferGeometryUtils, EffectComposer, RenderPass, UnrealBloomPass, OutputPass). TypeScript types: prefer three's bundled types; if they do not resolve at the pinned version, add `@types/three` at the matching version (resolved during implementation).
+`three` 以 bundle 方式加進 npm 依賴,版本鎖 `0.183.0`(sandbox 用的版本)。import 從 CDN importmap 改成 bundle 寫法:`import * as THREE from 'three'`,addons 從 `three/examples/jsm/...` 引入(GLTFLoader、SimplifyModifier、BufferGeometryUtils、EffectComposer、RenderPass、UnrealBloomPass、OutputPass)。型別:優先用 three 自帶型別;若鎖定版本下無法解析,就加對應版本的 `@types/three`(實作時確認)。
 
-Post-extraction, `faceHero.ts` is the canonical source for the engine. `experiments/hero-clone/face-base.html` stays as a reference/dev sandbox but is no longer the deployed code; the two may diverge.
+抽出後,`faceHero.ts` 是引擎的正式來源。`experiments/hero-clone/face-base.html` 留作參考/開發 sandbox,但不再是部署的程式碼,兩者之後可能會分歧。
 
-### Module API
+### 模組 API
 
 ```ts
 type FaceHeroOptions = {
-  assetBase: string                 // e.g. '/hero/'
-  onProgress?: (p: number) => void  // 0..1 real load progress (GLB + texture + audio)
-  onReady?: () => void              // assets loaded, Enter can be enabled
-  onIntroComplete?: () => void      // intro finished, hero text may reveal
-  reducedMotion?: boolean           // skip the animated intro
+  assetBase: string                 // 例如 '/hero/'
+  onProgress?: (p: number) => void  // 0..1 真實載入進度(GLB + 貼圖 + 音訊)
+  onReady?: () => void              // 資產載完,Enter 可啟用
+  onIntroComplete?: () => void      // intro 跑完,hero 文字可淡入
+  reducedMotion?: boolean           // 略過動畫 intro
 }
 type FaceHeroHandle = {
-  startIntro: () => void            // called from the Enter click (a real user gesture → audio unlocks)
-  setActive: (active: boolean) => void  // pause/resume the RAF render loop (off-screen / tab-hidden)
-  dispose: () => void               // tear down renderer, listeners, RAF, audio
+  startIntro: () => void                // 由 Enter 點擊呼叫(真實 user gesture → 解鎖音訊)
+  setActive: (active: boolean) => void  // 暫停/恢復 RAF render loop(離屏 / 分頁隱藏)
+  dispose: () => void                   // 拆掉 renderer、listeners、RAF、音訊
 }
 function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): FaceHeroHandle
 ```
 
-The engine no longer auto-plays the intro on load and no longer needs the sandbox's approach-A "replay on first interaction" workaround — the Enter gate guarantees the gesture. `startIntro()` runs the red-curtain → eye-ignition → braam → sweep-reveal sequence, then steady-state sweep cycling.
+引擎不再於載入時自動播 intro,也不再需要 sandbox 那套 approach-A「首次互動重播」的暫代手法——Enter 前導頁已保證 gesture。`startIntro()` 跑「紅幕 → 眼睛點亮 → braam → sweep reveal」序列,接著進入穩態 sweep 循環。
 
-## 4. Assets
+## 4. 資產
 
-Move the six runtime assets the engine actually uses into `public/hero/` (served at `/hero/...`):
+把引擎實際用到的六個 runtime 資產搬到 `public/hero/`(服務於 `/hero/...`):
 
 - `male_base.glb`
 - `charles-face.png`
-- `intro_scan.mp3`, `intro_baam2.mp3`
-- `laser-attack.mp3`, `laser-fire.wav`
+- `intro_scan.mp3`、`intro_baam2.mp3`
+- `laser-attack.mp3`、`laser-fire.wav`
 
-The engine resolves them via `opts.assetBase`. Unused sandbox assets (`cat.glb`, `dog*.glb`, `intro_baam.mp3`, `laser-fire.mp3`) are not moved. Note: `laser-fire.wav` is ~1.5 MB; kept as WAV for the seamless loop, revisit later if bundle weight matters.
+引擎透過 `opts.assetBase` 組路徑。sandbox 沒用到的資產(`cat.glb`、`dog*.glb`、`intro_baam.mp3`、`laser-fire.mp3`)不搬。註記:`laser-fire.wav` 約 1.5MB,為了無縫 loop 維持 WAV,日後若在意 bundle 體積再處理。
 
-## 5. Loading + Enter gate
+## 5. Loading + Enter 前導頁
 
-A full-screen dark overlay rendered by `FaceHero.tsx`, in the site's own brand language (NOT a clone of any reference site): SF Mono, dark background, cyan primary with mars-orange accent.
+由 `FaceHero.tsx` 渲染的全屏暗色 overlay,用站本身的品牌語言(不是任何參考站的 clone):SF Mono、暗底、cyan 為主、mars-orange 點綴。
 
-- **Loading:** lowercase `loading` with a real percentage counter driven by `onProgress` (GLB + texture + audio). The canvas sits idle/black behind it.
-- **Enter:** once `onReady` fires (100%), the label becomes a bracketed lowercase `[ enter ]` control; Charles's name/handle sits in a corner.
-- **Click `[ enter ]`** (the user gesture): unlock audio, call `handle.startIntro()`, fade the gate out.
+- **Loading**:小寫 `loading` 配一個由 `onProgress` 驅動的真實百分比計數(GLB + 貼圖 + 音訊)。canvas 在後面待命/黑屏。
+- **Enter**:`onReady` 觸發(100%)後,標籤換成方括號小寫 `[ enter ]` 控制項;Charles 的名字/handle 放角落。
+- **點擊 `[ enter ]`**(user gesture):解鎖音訊、呼叫 `handle.startIntro()`、前導頁淡出。
 
-This is the production replacement for the sandbox's approach-A audio workaround.
+這是 sandbox approach-A 音訊暫代手法的正式取代方案。
 
-### Session behavior (D1)
+### Session 行為(D1)
 
-The gate shows once per browser tab session (`sessionStorage` flag). First home visit → gate + full intro with sound. Returning to home via in-app navigation within the same session → skip the gate and show the hero with text already revealed (no forced silent replay).
+前導頁每個瀏覽器分頁 session 出現一次(`sessionStorage` 旗標)。首次進首頁 → 前導頁 + 完整帶聲 intro。同 session 內用站內導覽回到首頁 → 跳過前導頁,直接顯示已 reveal 的 hero(不強制靜音重播)。
 
-### No mute control (D2)
+### 不做靜音開關(D2)
 
-v1 ships without an audio mute toggle. Enter implies consent to sound.
+v1 不附音訊靜音 toggle。按 Enter 即代表同意有聲。
 
-## 6. Choreography (data flow)
+## 6. 編排(data flow)
 
 ```
-/ mounts FaceHero → initFaceHero(canvas) starts loading assets, gate shows "loading %"
-onReady (100%)    → gate shows "[ enter ]"
-click [ enter ]   → unlock audio + startIntro() + gate fades out
-  intro: scan riser + rising red curtain → eyes ignite + braam → sweep reveal of the dot portrait
-onIntroComplete   → hero <h1> fades up from the lower third → SCROLL hint appears
-steady state      → periodic sweep: dot portrait ↔ wireframe constellation (shed-dust field,
-                    twinkling vertices), hold-to-fire eye laser on pointer
+進入 / → FaceHero mount → initFaceHero(canvas) 開始載資產,前導頁顯示 "loading %"
+onReady (100%)    → 前導頁顯示 "[ enter ]"
+點擊 [ enter ]    → 解鎖音訊 + startIntro() + 前導頁淡出
+  intro:scan riser + 紅幕上升 → 眼睛點亮 + braam → 點狀肖像 sweep reveal
+onIntroComplete   → hero <h1> 從下方淡上 → SCROLL 提示出現
+穩態              → 週期 sweep:點狀肖像 ↔ wireframe 星座(點塵場、頂點 twinkle),
+                    游標按住發射眼睛雷射
 ```
 
-## 7. Layout
+## 7. 版面
 
-- Full-bleed face canvas filling the hero `<section>` (`h-screen`, like the current hero).
-- Hero text overlaid in the lower third over a bottom gradient scrim for legibility; preserve the current copy: "Hi, I'm Charles. I'm a Senior Product Manager building products at the speed of AI." (kept in the React tree, faded until the reveal).
-- SCROLL hint pinned bottom-centre, appears last.
-- The head may need to sit slightly higher than dead-centre so the eyes are not behind the text; tuned during implementation.
-- Mobile: text stacks below the face; the hold-to-fire touch behavior already built carries over so vertical swipes still scroll.
+- 滿幅臉部 canvas 填滿 hero `<section>`(`h-screen`,跟現有 hero 一樣)。
+- hero 文字疊在下三分之一、上面加底部漸層 scrim 確保可讀;維持現有文案:「Hi, I'm Charles. I'm a Senior Product Manager building products at the speed of AI.」(保留在 React tree 裡,reveal 前淡出)。
+- SCROLL 提示釘在底部置中,最後出現。
+- 頭部可能要比正中央再高一點,讓眼睛不被文字蓋到;實作時微調。
+- 手機:文字堆在臉下方;已做好的按住發射觸控行為延用,垂直滑動仍可捲動。
 
-## 8. Cleanup
+## 8. 清理
 
-- Delete `src/components/ParticleHero.tsx` (contains the particle system, photo sampling, Konami easter egg, and the inline `EasterEggHint`).
-- Delete `src/components/BlackHoleBackdrop.tsx` (only consumed by `ParticleHero`).
-- `src/App.tsx`: replace `<ParticleHero />` with `<FaceHero />`.
-- `charles-face.png` in `src` is only used by `ParticleHero`; the `public/hero/` copy serves the engine after removal.
-- Changelog data files mention these by name in historical entries — those are text records, left untouched.
+- 刪 `src/components/ParticleHero.tsx`(含粒子系統、照片取樣、Konami 彩蛋,以及內嵌的 `EasterEggHint`)。
+- 刪 `src/components/BlackHoleBackdrop.tsx`(只被 `ParticleHero` 使用)。
+- `src/App.tsx`:`<ParticleHero />` 換成 `<FaceHero />`。
+- `src` 裡的 `charles-face.png` 只被 `ParticleHero` 用;移除後由 `public/hero/` 那份供引擎使用。
+- changelog 資料檔裡有用名字提到這些,屬歷史文字紀錄,保留不動。
 
-## 9. Accessibility, error handling, fallback
+## 9. 無障礙、錯誤處理、fallback
 
-- The hero `<h1>` always exists in the DOM (visually faded until reveal) so crawlers and screen readers get the headline regardless of gate/intro state.
-- `prefers-reduced-motion` (D3): skip the animated intro entirely — show the static face + text immediately. The gate still appears but Enter resolves instantly to the settled state.
-- WebGL unsupported or GLB load failure: fall back to a static `charles-face.png` + the hero text, so the page never hard-fails. Error handling concentrated at the engine boundary (the GLTFLoader reject path and a WebGL-context check).
-- `dispose()` must fully tear down renderer, RAF loop, event listeners, and audio on unmount to avoid leaks during SPA navigation.
+- hero `<h1>` 文字始終存在於 DOM(reveal 前視覺上淡出),讓爬蟲與螢幕閱讀器無論前導頁/intro 狀態都讀得到標題。
+- `prefers-reduced-motion`(D3):完全略過動畫 intro——直接顯示靜態臉 + 文字。前導頁仍出現,但 Enter 立即解析到定格狀態。
+- WebGL 不支援或 GLB 載入失敗:fallback 成靜態 `charles-face.png` + hero 文字,讓頁面永不整個掛掉。錯誤處理集中在引擎邊界(GLTFLoader reject 路徑與 WebGL context 檢查)。
+- `dispose()` 在 unmount 時必須完整拆掉 renderer、RAF loop、event listeners 與音訊,避免 SPA 導覽時記憶體洩漏。
 
-## 10. Performance
+## 10. 效能
 
-Design principle #5 ("Performance is a feature — Canvas pauses off-screen") is a hard requirement. The old `ParticleHero` paused off-screen; the new engine must too.
+設計原則第 5 條(「Performance is a feature — Canvas pauses off-screen」)是硬性要求。舊的 `ParticleHero` 有做離屏暫停,新引擎也必須做。
 
-Already in the engine (carried over):
+引擎已有(延用):
 
-- `renderer.setPixelRatio(Math.min(devicePixelRatio, 2))` at init and on resize — caps fragment cost (bloom runs full-screen passes, cost scales with DPR²).
-- Geometry decimated via `SimplifyModifier` (head ~2200 verts, eyes ~360).
-- The halftone portrait is a GPU shader; clamped frame delta.
+- init 與 resize 都做 `renderer.setPixelRatio(Math.min(devicePixelRatio, 2))`——壓住片元成本(bloom 是全螢幕 pass,成本隨 DPR² 增長)。
+- 幾何經 `SimplifyModifier` decimation(頭 ~2200 頂點、眼 ~360)。
+- halftone 肖像走 GPU shader;frame delta 有 clamp。
 
-To add this pass:
+這次要補的:
 
-- **Off-screen pause:** the React shell holds an `IntersectionObserver` on the hero `<section>` and calls `handle.setActive(false)` when it leaves the viewport, `setActive(true)` when it returns. `setActive(false)` cancels the RAF loop and pauses audio; `true` resumes. Mirrors the old hero's pattern.
-- **Tab-hidden pause:** `visibilitychange` → `setActive(!document.hidden)` so a backgrounded tab does no work.
-- **Mobile budget:** the per-frame CPU cost (`applyState` per-vertex recolor + the ~560-mote dust loop) is the main load. On coarse-pointer / small-viewport devices, scale down: fewer dust motes and a lower bloom strength (and optionally a lower DPR cap). Exact thresholds tuned during implementation against a real device.
+- **離屏暫停**:React 殼在 hero `<section>` 掛 `IntersectionObserver`,離開視窗時呼叫 `handle.setActive(false)`(取消 RAF loop + 暫停音訊),回到視窗時 `setActive(true)` 恢復。對齊舊 hero 的做法。
+- **分頁隱藏暫停**:`visibilitychange` → `setActive(!document.hidden)`,讓背景分頁完全不做事。
+- **mobile budget**:每幀 CPU 成本(`applyState` 逐頂點重算顏色 + ~560 顆點塵迴圈)是主要負載。在 coarse-pointer / 小螢幕裝置上往下降:減少點塵數、降低 bloom 強度(必要時降 DPR 上限)。確切門檻在實作時對著實機調。
 
-Known cost, not optimized this pass: `applyState` recolors every head vertex on the CPU each frame (the sweep lerp). It runs at an acceptable frame rate today; moving the portrait↔wireframe lerp fully into the shader is a larger refactor, noted as future work rather than a blocker.
+已知成本、這次不優化:`applyState` 每幀在 CPU 重算所有頭部頂點顏色(sweep lerp)。目前 frame rate 可接受;把點狀↔wireframe 的 lerp 完全搬進 shader 是較大的重構,列為未來工作而非這次的阻礙。
 
-## 11. Testing
+## 11. 測試
 
-The project has no React test harness today (only `tsx --test` for RAG). Automated gate:
+專案目前沒有 React 測試框架(只有 RAG 用 `tsx --test`)。自動化關卡:
 
-- `tsc -b` typecheck passes (strict; no `any` on the module's public surface).
-- `eslint .` passes.
-- `vite build` succeeds (confirms three + addons bundle correctly).
+- `tsc -b` 型別檢查通過(strict;模組對外 API 不得用 `any`)。
+- `eslint .` 通過。
+- `vite build` 成功(確認 three + addons 正確 bundle)。
 
-Add a minimal `vitest` + `@testing-library/react` setup to cover the shell logic with the engine module mocked:
+加一套最小的 `vitest` + `@testing-library/react`,把引擎模組 mock 掉來測殼層邏輯:
 
-- FaceHero renders; the hero `<h1>` text is present in the DOM before/after the gate.
-- The loading→enter transition flips on `onReady`.
-- Clicking `[ enter ]` calls `startIntro` exactly once and unlocks audio.
-- `prefers-reduced-motion` path skips the intro.
+- FaceHero 有 render;前導頁前後 hero `<h1>` 文字都在 DOM。
+- `onReady` 時 loading→enter 切換。
+- 點擊 `[ enter ]` 恰好呼叫 `startIntro` 一次並解鎖音訊。
+- `prefers-reduced-motion` 路徑略過 intro。
 
-Visual verification remains manual via the dev server (headless screenshots of the heavy WebGL canvas are unreliable). Verify multiple states (loading, enter, intro, dot portrait, wireframe) and the true default, not a single flattering frame.
+視覺驗證仍靠 dev server 人工確認(重 WebGL canvas 的 headless 截圖不可靠)。要驗多個狀態(loading、enter、intro、點狀肖像、wireframe)與真實預設,不能只挑一張好看的。
 
-## 12. Risks / notes
+## 12. 風險 / 註記
 
-- Regression risk to the tuned visual is low because the engine logic is ported near-verbatim behind the module boundary rather than rewritten.
-- WebGL context lifecycle under React (StrictMode double-mount in dev) must be handled by `dispose()` + guarded init.
-- `three` adds meaningful bundle weight; acceptable for a flagship hero, monitored at `vite build`.
+- 對已調好的視覺,regression 風險低,因為引擎邏輯是近乎逐字移植到模組邊界後,而非重寫。
+- React 下的 WebGL context 生命週期(dev 的 StrictMode 會 double-mount)必須由 `dispose()` + 有防護的 init 處理。
+- `three` 會明顯增加 bundle 體積;對旗艦 hero 可接受,在 `vite build` 時監控。
