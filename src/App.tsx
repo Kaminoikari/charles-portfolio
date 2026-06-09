@@ -1,4 +1,4 @@
-import ParticleHero from './components/ParticleHero'
+import FaceHero from './components/hero/FaceHero.tsx'
 import AboutFirefly from './components/AboutFirefly'
 import UniverseSection from './components/UniverseSection'
 import ExperienceTimeline from './components/ExperienceTimeline'
@@ -13,7 +13,7 @@ export default function App() {
   return (
     <>
       <a href="#about" className="skip-link">{t('home.skipLink')}</a>
-      <ParticleHero />
+      <FaceHero />
       <AboutFirefly />
       <UniverseSection />
       <ExperienceTimeline />
