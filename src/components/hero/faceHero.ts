@@ -174,6 +174,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
   // sideways + up), fading in and out over their life, then respawn. persists in both the wireframe and
   // dot states so the field never collapses when the sweep returns to the portrait.
+  const tmpDust = new THREE.Vector3()
   function setupDust(ext: number) {
     if (!headWireVerts || headWireVerts.length < 9) return
     const M = DUST.count, srcN = headWireVerts.length / 3
@@ -181,8 +182,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     const vel = new Float32Array(M * 3), life = new Float32Array(M), age = new Float32Array(M)
     const respawn = (i: number) => {
       const v = (Math.floor(Math.random() * srcN)) * 3, o = i * 3
-      pos[o] = headWireVerts![v]; pos[o + 1] = headWireVerts![v + 1]; pos[o + 2] = headWireVerts![v + 2]
-      const dir = pos[o] >= 0 ? 1 : -1, sp = DUST.speed * ext * (0.5 + Math.random())
+      // spawn on the head surface in world space (head.matrixWorld carries the mobile scale + lift) so the
+      // motes peel off the visible head, then drift at full size below — the field fills the whole screen
+      tmpDust.set(headWireVerts![v], headWireVerts![v + 1], headWireVerts![v + 2]).applyMatrix4(head.matrixWorld)
+      pos[o] = tmpDust.x; pos[o + 1] = tmpDust.y; pos[o + 2] = tmpDust.z
+      const dir = tmpDust.x >= 0 ? 1 : -1, sp = DUST.speed * ext * (0.5 + Math.random())
       vel[o] = dir * sp * (0.7 + 0.6 * Math.random())     // outward, sideways
       vel[o + 1] = sp * (0.15 + 0.5 * Math.random())      // gentle rise
       vel[o + 2] = sp * (Math.random() - 0.3) * 0.4       // slight depth drift
@@ -193,7 +197,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3))
     g.setAttribute("color", new THREE.BufferAttribute(col, 3))
     const mat = new THREE.PointsMaterial({ size: DUST.size, map: squareTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true })
-    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; head.add(pts)
+    // parented to the scene (not the head) so the rig's mobile scale never shrinks the field's reach
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; scene.add(pts)
     dustSys.update = (dt: number) => {
       for (let i = 0; i < M; i++) {
         age[i] += dt; if (age[i] >= life[i]) respawn(i)
@@ -852,10 +857,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       head.add(new THREE.Mesh(ege, makeEyeMaterial()))
     }
 
-    const bbox = new THREE.Box3().setFromObject(head)   // measure before adding the dust
+    const bbox = new THREE.Box3().setFromObject(head)   // measure at scale 1 before the rig kicks in
     const ext = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z) || 1
-    setupDust(ext)
-    rigReady = true; applyHeadRig()   // bbox is measured; now the responsive scale/offset can take effect
+    rigReady = true; applyHeadRig()           // bbox measured; apply the responsive scale/offset now
+    head.updateWorldMatrix(true, false)       // so dust spawns on the scaled head surface, not the unscaled one
+    setupDust(ext)                            // ext stays full size so the field drifts across the whole screen
 
     for (const L of LAYERS) { (L.attr.array as Float32Array).fill(0); L.attr.needsUpdate = true }
     assetsReady = true
