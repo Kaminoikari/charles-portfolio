@@ -62,7 +62,7 @@
     // soft face oval (eye-frame units) so neck / hair / ears fade to dark
     faceMask: { halfW: 1.45, top: -1.05, bot: 2.05, feather: 0.45 },
 
-    fitHeight: 3.0,        // world height the cropped head is scaled to (cat-style head framing)
+    fitHeight: 3.3,        // world height the cropped head is scaled to (cat-style head framing)
     neckCropUnits: 1.6,    // crop the mesh below this many eye-frame units under the eyes — sits just above the shoulders so the full jaw/chin stays but the shoulders are gone
     intro: 1.6,
 
@@ -106,7 +106,7 @@
 
   // --- wireframe-state dynamics (own implementation; references yutaabe's cat-head BEHAVIOUR, not its code) ---
   // brand palette only: cyan #00D9FF primary, mars-orange #E8652B accent. three additive effects layered on
-  // the wireframe state — shed dust drifting off the head, faint orbital ground rings, brighter star nodes.
+  // the wireframe state — shed dust drifting off the head, brighter star nodes.
   let headWireVerts = null;              // head wireframe vertex positions, captured at build for dust spawn points
   const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward in the wireframe state
   const DUST = { count: 560, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes — dense, continuous flow
