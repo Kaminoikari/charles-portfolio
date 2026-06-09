@@ -130,17 +130,22 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  // size from the canvas box, not the window: the canvas is locked to the svh hero via CSS, so the
+  // mobile address bar collapsing on scroll (which grows window.innerHeight) can't resize it and blow
+  // the head up. updateStyle=false keeps the CSS size; only the drawing buffer follows the box.
+  const dispW = () => canvas.clientWidth || window.innerWidth
+  const dispH = () => canvas.clientHeight || window.innerHeight
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setSize(dispW(), dispH(), false)
   renderer.setClearColor(0x000000, 1)
 
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100)
+  const camera = new THREE.PerspectiveCamera(50, dispW() / dispH(), 0.1, 100)
   camera.position.z = 5
 
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
-  const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.22, 0.4, 0.55)
+  const bloom = new UnrealBloomPass(new THREE.Vector2(dispW(), dispH()), 0.22, 0.4, 0.55)
   composer.addPass(bloom)
   composer.addPass(new OutputPass())
 
@@ -919,12 +924,13 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // the centred head off to one side. so we re-sync every frame, not just on resize.
   let lastW = 0, lastH = 0, lastDpr = 0
   function syncSize() {
-    if (window.innerWidth === lastW && window.innerHeight === lastH && window.devicePixelRatio === lastDpr) return
-    lastW = window.innerWidth; lastH = window.innerHeight; lastDpr = window.devicePixelRatio
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    composer.setSize(window.innerWidth, window.innerHeight)
-    camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix()
+    const w = dispW(), h = dispH(), dpr = window.devicePixelRatio
+    if ((w === lastW && h === lastH && dpr === lastDpr) || w === 0 || h === 0) return
+    lastW = w; lastH = h; lastDpr = dpr
+    renderer.setPixelRatio(Math.min(dpr, 2))
+    renderer.setSize(w, h, false)   // false: keep the CSS size; only the drawing buffer tracks the canvas box
+    composer.setSize(w, h)
+    camera.aspect = w / h; camera.updateProjectionMatrix()
     applyHeadRig()   // re-evaluate the mobile/desktop avatar framing when the viewport crosses the breakpoint
   }
   window.addEventListener('resize', syncSize)
@@ -1078,7 +1084,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     halftoneUniforms.uSweepNy.value = ly
     halftoneUniforms.uIntroFade.value = Math.max(0, Math.min(1, (introProg - 0.4) / 0.6))
     const pr = renderer.getPixelRatio()
-    halftoneUniforms.uResolution.value.set(window.innerWidth * pr, window.innerHeight * pr)   // device px, matches gl_FragCoord
+    halftoneUniforms.uResolution.value.set(dispW() * pr, dispH() * pr)   // device px, matches gl_FragCoord
     // light tracks the cursor (view space) with a slow auto-orbit — sculpts the halftone + drives gaze lighting
     halftoneUniforms.uLightDir.value.set(ease.x * 1.4 + Math.sin(t * 0.4) * 0.32, ease.y * 1.4 + Math.cos(t * 0.3) * 0.22, 1.5).normalize()
 
