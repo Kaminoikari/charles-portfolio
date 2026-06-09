@@ -263,7 +263,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     const x = c.getContext("2d")!
     const g = x.createRadialGradient(32, 32, 0, 32, 32, 32)
     g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.4, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)")
-    x.fillStyle = g; x.beginPath(); x.arc(32, 32, 32, 0, 7); x.fill()
+    x.fillStyle = g; x.beginPath(); x.arc(32, 32, 32, 0, Math.PI * 2); x.fill()
     const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t
   }
   function squareTexture() {
@@ -556,7 +556,13 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
 
   // --- load photo + glb in parallel ----------------------------------------
-  const loadImg = new Promise<HTMLImageElement>((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.src = CONFIG.imgUrl })
+  const loadImg = new Promise<HTMLImageElement>((res, rej) => {
+    const im = new Image()
+    im.crossOrigin = "anonymous"
+    im.onload = () => res(im)
+    im.onerror = () => rej(new Error(`hero photo failed to load: ${CONFIG.imgUrl}`))
+    im.src = CONFIG.imgUrl
+  })
   const loadGlb = new Promise<GLTF>((res, rej) =>
     new GLTFLoader().load(
       CONFIG.glbUrl,
@@ -1150,6 +1156,18 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF)
       for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoop]) { a.pause(); a.src = '' }
+      // free GPU resources: geometries, materials and any textures they hold (StrictMode/SPA remounts leak otherwise)
+      scene.traverse((obj) => {
+        const mesh = obj as THREE.Mesh
+        mesh.geometry?.dispose?.()
+        const material = mesh.material
+        const materials = Array.isArray(material) ? material : material ? [material] : []
+        for (const mat of materials) {
+          const withMap = mat as THREE.Material & { map?: THREE.Texture | null }
+          withMap.map?.dispose?.()
+          mat.dispose()
+        }
+      })
       composer.dispose()
       bloom.dispose()
       renderer.dispose()

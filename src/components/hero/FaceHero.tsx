@@ -58,12 +58,16 @@ export default function FaceHero() {
   useEffect(() => {
     const section = sectionRef.current
     if (!section) return
+    // resume the engine only when the hero is BOTH on-screen and in a visible tab; either alone keeps it paused
+    let isOnScreen = true
+    let isTabVisible = !document.hidden
+    const syncActive = () => handleRef.current?.setActive(isOnScreen && isTabVisible)
     const io = new IntersectionObserver(
-      (entries) => { handleRef.current?.setActive(entries[0]?.isIntersecting ?? true) },
+      (entries) => { isOnScreen = entries[0]?.isIntersecting ?? true; syncActive() },
       { threshold: 0 },
     )
     io.observe(section)
-    const onVisibility = () => { if (!document.hidden) handleRef.current?.setActive(true); else handleRef.current?.setActive(false) }
+    const onVisibility = () => { isTabVisible = !document.hidden; syncActive() }
     document.addEventListener('visibilitychange', onVisibility)
     return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [])

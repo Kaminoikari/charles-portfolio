@@ -80,6 +80,21 @@ describe('FaceHero shell', () => {
     expect(setActive).toHaveBeenLastCalledWith(true)
   })
 
+  it('does not resume the engine on tab focus while the hero is off-screen', () => {
+    let ioCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) { ioCallback = cb }
+      observe = vi.fn()
+      disconnect = vi.fn()
+    })
+    render(<FaceHero />)
+    act(() => { ioCallback?.([{ isIntersecting: false }]) })
+    expect(setActive).toHaveBeenLastCalledWith(false)
+    Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    expect(setActive).not.toHaveBeenLastCalledWith(true)
+  })
+
   it('pauses the engine when the tab is hidden', () => {
     render(<FaceHero />)
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
