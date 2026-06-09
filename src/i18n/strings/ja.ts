@@ -100,7 +100,7 @@ const ja: Strings = {
   footer: {
     letsConnect: 'お問い合わせ',
     rights: '© 2026 Charles Chen. All rights reserved.',
-    rendered: '{{ms}} ms でレンダリング · React · Canvas 2D · Tailwind',
+    rendered: '{{ms}} ms でレンダリング · React · WebGL · Tailwind',
     visitSocial: '{{platform}} へ',
   },
   chat: {

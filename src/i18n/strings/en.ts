@@ -147,7 +147,7 @@ const en: Strings = {
   footer: {
     letsConnect: "Let's Connect",
     rights: '© 2026 Charles Chen. All rights reserved.',
-    rendered: 'Rendered in {{ms}}ms · React · Canvas 2D · Tailwind',
+    rendered: 'Rendered in {{ms}}ms · React · WebGL · Tailwind',
     visitSocial: 'Visit {{platform}}',
   },
   chat: {

@@ -104,7 +104,7 @@ export default function ContactFooter() {
           {t('footer.rights')}
         </div>
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-white/70">
-          {'Rendered in '}<span ref={perfRef}>—</span>{'ms · React · Canvas 2D · Tailwind'}
+          {'Rendered in '}<span ref={perfRef}>—</span>{'ms · React · WebGL · Tailwind'}
         </div>
       </footer>
     </div>

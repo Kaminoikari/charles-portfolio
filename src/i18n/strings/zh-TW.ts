@@ -97,7 +97,7 @@ const zhTW: Strings = {
   footer: {
     letsConnect: '聯絡我',
     rights: '© 2026 Charles Chen. 版權所有。',
-    rendered: '{{ms}} ms 完成渲染 · React · Canvas 2D · Tailwind',
+    rendered: '{{ms}} ms 完成渲染 · React · WebGL · Tailwind',
     visitSocial: '前往 {{platform}}',
   },
   chat: {
