@@ -110,7 +110,7 @@
   let headWireVerts = null;              // head wireframe vertex positions, captured at build for dust spawn points
   const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward in the wireframe state
   const ringSys = { update: () => {} };  // faint comet-arc rings orbiting the base of the head
-  const DUST = { count: 240, life: 2.6, speed: 0.22, size: 0.024, bright: 0.95, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes
+  const DUST = { count: 560, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes — dense, continuous flow
   const RING = { count: 3, segs: 160, y: 0.10, r0: 0.60, dr: 0.16, gap: 0.05, squash: 0.40, spin: 0.22, opacity: 0.5, col: [0.10, 0.70, 1.0] };
   const CONSTELLATION_GAIN = 1.6;        // brighten the wireframe point nodes so vertices read as stars
 
@@ -950,7 +950,7 @@
         let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
         if (K) {
           const px = pos[o], py = pos[o + 1];
-          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w;
+          const tl = (band(frac(py * 4.0 - st * 0.6)) + band(frac(px * 3.0 + st * 0.5)) * 0.7 + band(frac((px + py) * 3.5 - st * 0.7)) * 0.5) * K * w * 0.5;   // mars stays an accent, not the dominant tone
           r += MARS[0] * tl; g += MARS[1] * tl; b += MARS[2] * tl;
         }
         const eg = 1 - Math.min(1, Math.abs(ny[i] - ly) / fw);
