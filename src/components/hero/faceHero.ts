@@ -187,12 +187,16 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       tmpDust.set(headWireVerts![v], headWireVerts![v + 1], headWireVerts![v + 2]).applyMatrix4(head.matrixWorld)
       pos[o] = tmpDust.x; pos[o + 1] = tmpDust.y; pos[o + 2] = tmpDust.z
       const dir = tmpDust.x >= 0 ? 1 : -1, sp = DUST.speed * ext * (0.5 + Math.random())
-      vel[o] = dir * sp * (0.7 + 0.6 * Math.random())     // outward, sideways
-      // desktop keeps the gentle upward shed; mobile drifts up AND down so the field reaches the
-      // headline and the lower screen around the small, lifted head instead of only rising past it
-      vel[o + 1] = window.innerWidth <= MOBILE_MAX_W
-        ? sp * (Math.random() - 0.5) * 2.0
-        : sp * (0.15 + 0.5 * Math.random())
+      // desktop sheds up + out into two side plumes; mobile spreads motes in every direction,
+      // including a near-zero-horizontal and bidirectional-vertical cohort, so the column directly
+      // above and below the small lifted head fills in too instead of only the sides
+      const mobile = window.innerWidth <= MOBILE_MAX_W
+      vel[o] = mobile
+        ? dir * sp * Math.random() * 1.2                  // 0..1.2: some motes travel almost straight up/down
+        : dir * sp * (0.7 + 0.6 * Math.random())          // outward, sideways
+      vel[o + 1] = mobile
+        ? sp * (Math.random() - 0.5) * 2.0                // up AND down
+        : sp * (0.15 + 0.5 * Math.random())              // gentle rise
       vel[o + 2] = sp * (Math.random() - 0.3) * 0.4       // slight depth drift
       life[i] = DUST.life * (0.6 + 0.8 * Math.random()); age[i] = Math.random() * life[i]   // stagger so they don't pulse in unison
     }
