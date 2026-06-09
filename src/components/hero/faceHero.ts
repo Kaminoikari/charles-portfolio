@@ -843,27 +843,80 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const mouse = { x: 0, y: 0 }, ease = { x: 0, y: 0 }
   let cursorActive = 0   // 1 while a pointer is present; gates the cyan highlight so it never parks on the face when idle (touch has no hover)
   const setAim = (e: PointerEvent) => { mouse.x = (e.clientX / window.innerWidth) * 2 - 1; mouse.y = -((e.clientY / window.innerHeight) * 2 - 1) }
-  // fire the death-laser. mouse/pen fire on press. touch must HOLD STILL briefly to fire, so a swipe scrolls
-  // the page instead: touch-action pan-y lets the browser take a vertical drag as a scroll (it then sends us
-  // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
+  // fire the death-laser. mouse/pen fire on press. on touch a press and a scroll are
+  // mutually exclusive and each locks for the whole gesture: the hero section sets
+  // touch-action: none so the browser never auto-scrolls here and can never steal a
+  // press mid-gesture. We disambiguate once per touch and stay in that mode until
+  // release: a finger held still past TOUCH_HOLD_MS fires (later movement only aims,
+  // never scrolls); a finger that first travels past TOUCH_SLOP_PX becomes a scroll
+  // (never fires), and we drive the window ourselves with a little release momentum.
   let holdTimer = 0
-  const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx() }   // no firing during the intro (so the first-interaction unlock-replay click is a no-op)
+  const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx() }   // no firing during the intro (so the first-interaction unlock-replay tap is a no-op)
   const stopFiring = (e?: PointerEvent) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") cursorActive = 0 }   // touch release clears the highlight; desktop keeps it for the hovering cursor
-  const onPointerMove = (e: PointerEvent) => { setAim(e); if (e.pointerType !== 'touch') cursorActive = 1 }
+
+  const TOUCH_HOLD_MS = 130       // hold this still to commit to firing
+  const TOUCH_SLOP_PX = 10        // travel this far first to commit to scrolling
+  const MOMENTUM_DECAY = 0.92     // per-frame velocity falloff after a scroll release
+  type TouchMode = 'idle' | 'undecided' | 'scrolling' | 'firing'
+  let touchMode: TouchMode = 'idle'
+  let touchStartX = 0, touchStartY = 0, touchLastY = 0, touchLastT = 0, touchVelY = 0, momentumRAF = 0
+  const cancelMomentum = () => { if (momentumRAF) { cancelAnimationFrame(momentumRAF); momentumRAF = 0 } }
+  const startMomentum = () => {
+    cancelMomentum()
+    if (Math.abs(touchVelY) < 1) return
+    const step = () => {
+      window.scrollBy(0, touchVelY)
+      touchVelY *= MOMENTUM_DECAY
+      momentumRAF = Math.abs(touchVelY) < 0.5 ? 0 : requestAnimationFrame(step)
+    }
+    momentumRAF = requestAnimationFrame(step)
+  }
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      if (touchMode === 'undecided' && Math.hypot(e.clientX - touchStartX, e.clientY - touchStartY) > TOUCH_SLOP_PX) {
+        touchMode = 'scrolling'; clearTimeout(holdTimer)
+      }
+      if (touchMode === 'scrolling') {
+        const now = performance.now(), dy = touchLastY - e.clientY, dt = now - touchLastT
+        window.scrollBy(0, dy)
+        if (dt > 0) touchVelY = (dy / dt) * 16   // px-per-frame estimate for release momentum
+        touchLastY = e.clientY; touchLastT = now
+        return
+      }
+      if (touchMode === 'firing') setAim(e)
+      return
+    }
+    setAim(e); cursorActive = 1
+  }
   const onPointerDown = (e: PointerEvent) => {
     setAim(e)
-    if (e.pointerType === 'touch') { clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150) }
-    else beginFire()
+    if (e.pointerType === 'touch') {
+      cancelMomentum()
+      touchStartX = e.clientX; touchStartY = e.clientY; touchLastY = e.clientY
+      touchLastT = performance.now(); touchVelY = 0; touchMode = 'undecided'
+      clearTimeout(holdTimer)
+      holdTimer = window.setTimeout(() => { if (touchMode === 'undecided') { touchMode = 'firing'; beginFire() } }, TOUCH_HOLD_MS)
+    } else beginFire()
   }
-  const onPointerUp = (e: PointerEvent) => stopFiring(e)
-  const onPointerCancel = (e: PointerEvent) => stopFiring(e)
-  const onPointerLeave = () => stopFiring()
+  const onPointerUp = (e: PointerEvent) => {
+    if (e.pointerType === 'touch') {
+      clearTimeout(holdTimer)
+      if (touchMode === 'scrolling') startMomentum()
+      else if (touchMode === 'firing') stopFiring(e)
+      touchMode = 'idle'
+      return
+    }
+    stopFiring(e)
+  }
+  const onPointerCancel = (e: PointerEvent) => onPointerUp(e)
+  const onPointerLeave = () => { if (touchMode === 'idle') stopFiring() }   // desktop hover-out stops firing; touch is handled by up/cancel
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerdown', onPointerDown)
   window.addEventListener('pointerup', onPointerUp)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
-  renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
+  renderer.domElement.style.touchAction = "none"   // the section owns the gesture; we scroll or fire, the browser does neither
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
   // would leave the canvas at the old monitor's size — pinned top-left, that pushes
@@ -1154,7 +1207,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
-      cancelAnimationFrame(baamFadeRAF)
+      cancelAnimationFrame(baamFadeRAF); cancelMomentum()
       for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoop]) { a.pause(); a.src = '' }
       // free GPU resources: geometries, materials and any textures they hold (StrictMode/SPA remounts leak otherwise)
       scene.traverse((obj) => {

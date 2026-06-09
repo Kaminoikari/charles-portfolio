@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { initFaceHero, type FaceHeroHandle } from './faceHero'
 import { useAmbientAudio } from '../audio/audio-context'
 
@@ -85,8 +86,8 @@ export default function FaceHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[100svh]"
-      style={{ background: 'var(--color-bg-primary)' }}
+      className="relative flex h-[110vh] w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[110svh]"
+      style={{ background: 'var(--color-bg-primary)', touchAction: 'none' }}
     >
       <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 h-full w-full" role="presentation" aria-hidden="true" />
 
@@ -105,7 +106,7 @@ export default function FaceHero() {
       />
 
       <div
-        className="relative z-10 mx-auto w-full max-w-[1400px] px-6 transition-opacity duration-700 md:px-12"
+        className="pointer-events-none relative z-10 mx-auto w-full max-w-[1400px] px-6 transition-opacity duration-700 md:px-12"
         style={{ opacity: heroTextVisible ? 1 : 0 }}
       >
         <h1
@@ -127,13 +128,14 @@ export default function FaceHero() {
         </div>
       )}
 
-      {gateVisible && (
+      {gateVisible && createPortal(
+        // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,
+        // chat launcher, and music toggle (all z-50); the splash stays a clean page with
+        // only the enter control until the visitor chooses to enter.
         <div
-          className="absolute inset-0 z-20 grid place-items-center transition-opacity duration-500"
-          style={{ background: 'var(--color-bg-primary)' }}
+          className="fixed inset-0 z-[100] grid place-items-center"
+          style={{ background: 'var(--color-bg-primary)', touchAction: 'none' }}
         >
-          <div className="absolute left-8 top-7 text-xs tracking-[0.2em] text-white/55">CHARLES CHEN</div>
-          <div className="absolute right-8 top-7 text-xs tracking-[0.2em] text-white/55">AI PRODUCT MANAGER</div>
           {phase === 'loading' ? (
             <div className="font-mono text-xs lowercase tracking-[0.3em] text-white/55">
               loading {Math.round(progress * 100)}%
@@ -147,7 +149,8 @@ export default function FaceHero() {
               [ enter ]
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   )
