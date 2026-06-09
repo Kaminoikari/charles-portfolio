@@ -889,11 +889,15 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const onPointerUp = (e: PointerEvent) => stopFiring(e)
   const onPointerCancel = (e: PointerEvent) => stopFiring(e)
   const onPointerLeave = () => stopFiring()
+  // while actively firing, swallow the scroll so a held press on the face stays a press; when not
+  // firing this is a no-op, so a normal swipe scrolls the page as usual (non-passive to allow preventDefault)
+  const onTouchMove = (e: TouchEvent) => { if (firing) e.preventDefault() }
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerdown', onPointerDown)
   window.addEventListener('pointerup', onPointerUp)
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
+  window.addEventListener('touchmove', onTouchMove, { passive: false })
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -1184,6 +1188,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('pointerleave', onPointerLeave)
+      window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF)
