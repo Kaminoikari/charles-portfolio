@@ -108,12 +108,13 @@
   // brand palette only: cyan #00D9FF primary, mars-orange #E8652B accent. three additive effects layered on
   // the wireframe state — shed dust drifting off the head, brighter star nodes.
   let headWireVerts = null;              // head wireframe vertex positions, captured at build for dust spawn points
-  const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward in the wireframe state
+  const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward, persisting across both states
   const DUST = { count: 560, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes — dense, continuous flow
   const CONSTELLATION_GAIN = 1.6;        // brighten the wireframe point nodes so vertices read as stars
 
   // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
-  // sideways + up), fading in and out over their life, then respawn. only visible in the wireframe state.
+  // sideways + up), fading in and out over their life, then respawn. persists in both the wireframe and
+  // dot states so the field never collapses when the sweep returns to the portrait.
   function setupDust(ext) {
     if (!headWireVerts || headWireVerts.length < 9) return;
     const M = DUST.count, srcN = headWireVerts.length / 3;
@@ -134,12 +135,12 @@
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     const mat = new THREE.PointsMaterial({ size: DUST.size, map: squareTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true });
     const pts = new THREE.Points(g, mat); pts.frustumCulled = false; head.add(pts);
-    dustSys.update = (dt, wireAmt) => {
+    dustSys.update = (dt) => {
       for (let i = 0; i < M; i++) {
         age[i] += dt; if (age[i] >= life[i]) respawn(i);
         const o = i * 3;
         pos[o] += vel[o] * dt; pos[o + 1] += vel[o + 1] * dt; pos[o + 2] += vel[o + 2] * dt;
-        const lf = age[i] / life[i], a = Math.sin(Math.PI * lf) * wireAmt * DUST.bright;   // fade in-out, gated by wireframe-ness
+        const lf = age[i] / life[i], a = Math.sin(Math.PI * lf) * DUST.bright;   // per-mote fade in-out only; no longer gated by sweep state, so the field persists in the dot state
         col[o] = DUST.col[0] * a; col[o + 1] = DUST.col[1] * a; col[o + 2] = DUST.col[2] * a;
       }
       g.attributes.position.needsUpdate = true; g.attributes.color.needsUpdate = true;
@@ -982,8 +983,7 @@
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
       halftoneUniforms.uCursorActive.value += (cursorActive - halftoneUniforms.uCursorActive.value) * 0.15;   // ease the highlight in/out so it never pops
       applyState(st);
-      const wireAmt = Math.max(0, Math.min(1, (1.15 - ly) / 1.30));   // 0 = dot portrait, 1 = full wireframe — gates the shed dust
-      dustSys.update(dt, wireAmt);
+      dustSys.update(dt);   // shed dust runs every frame in both states (persistent field)
 
       // death-laser: the eyes charge up red (Superman), then two beams shoot from the eyes
       // through the pointer and on to the screen edge.

@@ -531,7 +531,7 @@ opts.onIntroComplete?.()
 - `function paint(fn: (a: Float32Array, o: number, L: Layer, ny: number) => void)`
 - `function updateIntro(t: number)`、`function sweepLine(st: number)`、`function applyState(st: number)`
 - `jawRig` 宣告改 `let jawRig: JawRig | null = null`;`LAYERS` 宣告改 `const LAYERS: Layer[] = []`;`eyeWorld`、`beams`、`muzzles`、`allMats` 視 tsc 報錯補 `THREE.Vector3[]` / `THREE.Mesh[]` / `THREE.Sprite[]` / `THREE.Material[]`。
-- `const dustSys: { update: (dt: number, wireAmt: number) => void } = { update: () => {} }`
+- `const dustSys: { update: (dt: number) => void } = { update: () => {} }`(點塵已不再吃 wireAmt,單參數簽名)
 - `let headWireVerts: Float32Array | null = null`
 
 凡 tsc 仍報 implicit any 之處,就近補對應型別;不得用 `any`,真的無法表達時用 `unknown` + 收斂。
@@ -568,9 +568,32 @@ Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 
 殼層負責 `<section>`、`<canvas>`、前導頁、hero 文字、SCROLL 提示與生命週期。測試把引擎模組整個 mock 掉,只驗殼層邏輯。
 
+此任務同時接上背景音樂:使用者決定「按 Enter 同時淡入 BGM」。BGM 由既有的 `src/components/audio/AudioProvider.tsx` 管理(播 `/assets/ambient-monastery.mp3`,`<audio loop>` 無限循環,預設靜音)。需要在 audio context 加一個明確的 `unmute`,讓 hero 在 Enter 時開聲(而非用 `toggle`,以免使用者已開聲時被切回靜音)。
+
 **Files:**
+- Modify: `src/components/audio/audio-context.ts`(加 `unmute` 到型別與 fallback)
+- Modify: `src/components/audio/AudioProvider.tsx`(provider 提供 `unmute: () => setMuted(false)`)
 - Create: `src/components/hero/FaceHero.tsx`
 - Test: `src/components/hero/FaceHero.test.tsx`
+
+- [ ] **Step 0: 在 audio context 加 unmute**
+
+把 `src/components/audio/audio-context.ts` 的 `AmbientAudioValue` 改成:
+```ts
+export interface AmbientAudioValue {
+  muted: boolean
+  toggle: () => void
+  unmute: () => void
+}
+```
+並把 fallback 改成:
+```ts
+  if (!ctx) return { muted: true, toggle: () => {}, unmute: () => {} }
+```
+把 `src/components/audio/AudioProvider.tsx` 的 Provider value 改成:
+```tsx
+    <AmbientAudioContext.Provider value={{ muted, toggle: () => setMuted((p) => !p), unmute: () => setMuted(false) }}>
+```
 
 - [ ] **Step 1: 寫失敗測試(殼層基本行為)**
 
@@ -583,6 +606,7 @@ import userEvent from '@testing-library/user-event'
 const startIntro = vi.fn()
 const setActive = vi.fn()
 const dispose = vi.fn()
+const unmute = vi.fn()
 let lastOpts: import('./faceHero').FaceHeroOptions | null = null
 
 vi.mock('./faceHero', () => ({
@@ -592,10 +616,14 @@ vi.mock('./faceHero', () => ({
   },
 }))
 
+vi.mock('../audio/audio-context', () => ({
+  useAmbientAudio: () => ({ muted: true, toggle: vi.fn(), unmute }),
+}))
+
 import FaceHero from './FaceHero'
 
 beforeEach(() => {
-  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); lastOpts = null
+  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); lastOpts = null
 })
 afterEach(() => { vi.restoreAllMocks() })
 
@@ -620,6 +648,14 @@ describe('FaceHero shell', () => {
     expect(startIntro).toHaveBeenCalledTimes(1)
   })
 
+  it('unmutes the ambient music when enter is clicked', async () => {
+    const user = userEvent.setup()
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    await user.click(screen.getByRole('button', { name: /enter/i }))
+    expect(unmute).toHaveBeenCalledTimes(1)
+  })
+
   it('disposes the engine on unmount', () => {
     const { unmount } = render(<FaceHero />)
     unmount()
@@ -639,6 +675,7 @@ Create `src/components/hero/FaceHero.tsx`:
 ```tsx
 import { useEffect, useRef, useState } from 'react'
 import { initFaceHero, type FaceHeroHandle } from './faceHero'
+import { useAmbientAudio } from '../audio/audio-context'
 
 type Phase = 'loading' | 'ready' | 'running' | 'revealed'
 
@@ -653,6 +690,7 @@ export default function FaceHero() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
+  const { unmute } = useAmbientAudio()
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -672,6 +710,7 @@ export default function FaceHero() {
 
   const onEnter = () => {
     handleRef.current?.startIntro()
+    unmute()
     setPhase('running')
   }
 
