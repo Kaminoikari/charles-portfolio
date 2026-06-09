@@ -38,6 +38,8 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* stop the mobile pull-to-refresh / overscroll bounce at the top of the page */
+  overscroll-behavior-y: none;
 }
 
 ::-webkit-scrollbar {
