@@ -4,6 +4,27 @@ import { useAmbientAudio } from '../audio/audio-context'
 
 type Phase = 'loading' | 'ready' | 'running' | 'revealed'
 
+// the splash gate plays once per browser-tab session; in-site navigation back to
+// the home route within the same session skips the gate and the intro, landing
+// straight on the settled portrait (no forced muted replay).
+const SESSION_KEY = 'faceHeroSeen'
+
+function alreadySeenThisSession(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markSeenThisSession() {
+  try {
+    sessionStorage.setItem(SESSION_KEY, '1')
+  } catch {
+    // sessionStorage can throw in privacy modes; the gate just shows again, which is harmless
+  }
+}
+
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
@@ -12,7 +33,7 @@ export default function FaceHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<FaceHeroHandle | null>(null)
-  const [phase, setPhase] = useState<Phase>('loading')
+  const [phase, setPhase] = useState<Phase>(() => (alreadySeenThisSession() ? 'revealed' : 'loading'))
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
   const { unmute } = useAmbientAudio()
@@ -21,11 +42,12 @@ export default function FaceHero() {
     const canvas = canvasRef.current
     if (!canvas) return
     const reduced = prefersReducedMotion()
+    const seen = alreadySeenThisSession()
     const handle = initFaceHero(canvas, {
       assetBase: '/hero/',
       reducedMotion: reduced,
       onProgress: (p) => setProgress(p),
-      onReady: () => setPhase('ready'),
+      onReady: () => { if (seen) handleRef.current?.startIntro(true); else setPhase('ready') },
       onIntroComplete: () => setPhase('revealed'),
       onError: () => setFailed(true),
     })
@@ -47,6 +69,7 @@ export default function FaceHero() {
   }, [])
 
   const onEnter = () => {
+    markSeenThisSession()
     handleRef.current?.startIntro()
     unmute()
     setPhase('running')

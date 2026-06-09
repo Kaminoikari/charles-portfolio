@@ -23,8 +23,8 @@ export type FaceHeroOptions = {
 }
 
 export type FaceHeroHandle = {
-  /** 由 Enter 點擊呼叫(真實 user gesture → 解鎖音訊 → 跑 intro) */
-  startIntro: () => void
+  /** 由 Enter 點擊呼叫(真實 user gesture → 解鎖音訊 → 跑 intro)。skipIntro 時直接定格在穩態肖像,不播 intro 動畫與音效(同 session 再訪首頁用) */
+  startIntro: (skipIntro?: boolean) => void
   /** 暫停/恢復 render loop 與音訊(離屏 / 分頁隱藏) */
   setActive: (active: boolean) => void
   /** 拆掉 renderer、listeners、RAF、音訊 */
@@ -829,7 +829,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     for (const L of LAYERS) { (L.attr.array as Float32Array).fill(0); L.attr.needsUpdate = true }
     assetsReady = true
     opts.onProgress?.(1)
-    if (pendingStart) doStart()
+    if (pendingStart) doStart(pendingSkip)
     opts.onReady?.()
   }
 
@@ -1005,6 +1005,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   let started = false
   let assetsReady = false
   let pendingStart = false
+  let pendingSkip = false
   let rafId = 0
   let pausedAt = 0
   function frame(now: number) {
@@ -1096,9 +1097,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
   rafId = window.requestAnimationFrame(frame)
 
-  function doStart() {
+  function doStart(skipIntro: boolean) {
     pendingStart = false
-    if (opts.reducedMotion) {
+    if (skipIntro || opts.reducedMotion) {
       for (const L of LAYERS) { (L.attr.array as Float32Array).set(L.portrait); L.attr.needsUpdate = true }
       halftoneUniforms.uIntroRed.value = -999
       halftoneUniforms.uIntroFade.value = 1
@@ -1120,10 +1121,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
 
   const handle: FaceHeroHandle = {
-    startIntro: () => {
+    startIntro: (skipIntro = false) => {
       if (started) return
-      if (assetsReady) doStart()
-      else pendingStart = true
+      if (assetsReady) doStart(skipIntro)
+      else { pendingStart = true; pendingSkip = skipIntro }
     },
     setActive: (active: boolean) => {
       if (active) {

@@ -23,6 +23,7 @@ import FaceHero from './FaceHero.tsx'
 
 beforeEach(() => {
   startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); lastOpts = null
+  sessionStorage.clear()
   vi.stubGlobal('IntersectionObserver', function IntersectionObserverStub() {
     return { observe: vi.fn(), disconnect: vi.fn() }
   })
@@ -105,5 +106,21 @@ describe('FaceHero shell', () => {
     const img = document.querySelector('img[src="/hero/charles-face.png"]')
     expect(img).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toBeVisible()
+  })
+
+  it('skips the enter gate and starts the intro pre-settled when already seen this session', () => {
+    sessionStorage.setItem('faceHeroSeen', '1')
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    expect(screen.queryByRole('button', { name: /enter/i })).not.toBeInTheDocument()
+    expect(startIntro).toHaveBeenCalledWith(true)
+  })
+
+  it('marks the session as seen when enter is clicked', async () => {
+    const user = userEvent.setup()
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    await user.click(screen.getByRole('button', { name: /enter/i }))
+    expect(sessionStorage.getItem('faceHeroSeen')).toBe('1')
   })
 })
