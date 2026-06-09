@@ -88,4 +88,22 @@ describe('FaceHero shell', () => {
     act(() => { document.dispatchEvent(new Event('visibilitychange')) })
     expect(setActive).toHaveBeenLastCalledWith(true)
   })
+
+  it('passes reducedMotion to the engine when the user prefers reduced motion', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: q.includes('reduce'),
+      media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      addListener: vi.fn(), removeListener: vi.fn(), onchange: null, dispatchEvent: vi.fn(),
+    }))
+    render(<FaceHero />)
+    expect(lastOpts?.reducedMotion).toBe(true)
+  })
+
+  it('shows the static fallback image when the engine reports an error', () => {
+    render(<FaceHero />)
+    act(() => { lastOpts?.onError?.(new Error('WebGL unavailable')) })
+    const img = document.querySelector('img[src="/hero/charles-face.png"]')
+    expect(img).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toBeVisible()
+  })
 })
