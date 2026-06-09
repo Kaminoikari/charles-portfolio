@@ -28,6 +28,8 @@
 
 html {
   scroll-behavior: smooth;
+  /* the document scroller is <html>; pin overscroll here too or iOS keeps the pull-to-refresh */
+  overscroll-behavior-y: none;
 }
 
 body {
