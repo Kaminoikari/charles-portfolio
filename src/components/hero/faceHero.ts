@@ -733,8 +733,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
         gf.setAttribute("aBright", new THREE.BufferAttribute(Float32Array.from(bright), 1))
         o.parent.add(new THREE.Mesh(gf, makeHalftoneMaterial()))   // not CPU-animated; driven by uniforms
       } else if (o.fillK && o.fillK > 0) {
+        const fillK = o.fillK
         const gf = new THREE.BufferGeometry(); gf.setAttribute("position", posAttr)
-        gf.setAttribute("color", regCol(mkCol((b) => Math.pow(b, 1.3) * o.fillK!), "fill")); gf.setIndex(index)
+        gf.setAttribute("color", regCol(mkCol((b) => Math.pow(b, 1.3) * fillK), "fill")); gf.setIndex(index)
         const mf = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest, side: THREE.FrontSide })
         o.parent.add(new THREE.Mesh(gf, mf)); allMats.push(mf)
       }
@@ -817,9 +818,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       head.add(new THREE.Mesh(ege, makeEyeMaterial()))
     }
 
-    const _bbox = new THREE.Box3().setFromObject(head)   // measure before adding the dust
-    const _ext = Math.max(_bbox.max.x - _bbox.min.x, _bbox.max.z - _bbox.min.z) || 1
-    setupDust(_ext)
+    const bbox = new THREE.Box3().setFromObject(head)   // measure before adding the dust
+    const ext = Math.max(bbox.max.x - bbox.min.x, bbox.max.z - bbox.min.z) || 1
+    setupDust(ext)
 
     for (const L of LAYERS) { (L.attr.array as Float32Array).fill(0); L.attr.needsUpdate = true }
     assetsReady = true
@@ -1145,6 +1146,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF)
       for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoop]) { a.pause(); a.src = '' }
+      composer.dispose()
+      bloom.dispose()
       renderer.dispose()
     },
   }
