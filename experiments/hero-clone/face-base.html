@@ -106,7 +106,7 @@
 
   // --- eye death-laser (Superman/Cyclops): two beams from the eyes converging on the pointer ---
   const LASER = { color: [1.0, 0.12, 0.05], width: 0.24, plane: 1.2, length: 24 };  // length overshoots the screen edge
-  let firing = false, fireI = 0, charge = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge)
+  let firing = false, fireI = 0, charge = 0, scowl = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge), scowl = fast grim-mouth ramp (snaps with the press, not the beam)
   const eyeWorld = [];                   // eye origins in head-local space (filled in build)
   const beams = [], muzzles = [];        // per-eye beam mesh + muzzle sprite
   const raycaster = new THREE.Raycaster();
@@ -877,14 +877,16 @@
       halftoneUniforms.uEyeCharge.value = charge;
       beamUniforms.uTime.value = t;
       beamUniforms.uIntensity.value = fireI;
-      // heat-vision scowl: firing tenses the closed mouth — the corners pull down into a frown and the
-      // lower lip firms up. only y moves, so the mouth stays shut. drives both the dot and wireframe geometry.
-      if (jawRig && (fireI > 0.001 || jawRig.lastOpen > 0.001)) {
-        const down = fireI * 0.065 * jawRig.span;   // corner downturn (the frown)
-        const press = fireI * 0.02 * jawRig.span;   // lower-lip firm-up
+      // heat-vision scowl: firing tenses the closed mouth — the corners snap down into a frown and the
+      // lower lip firms up. driven by `scowl`, a fast ramp tied to the press (not the slow beam charge), so
+      // the downturn is snappy. only y moves, so the mouth stays shut. drives both the dot + wireframe geometry.
+      scowl += ((firing ? 1 : 0) - scowl) * Math.min(1, dt * 18);   // ~0.12s to snap in / out
+      if (jawRig && (scowl > 0.001 || jawRig.lastOpen > 0.001)) {
+        const down = scowl * 0.065 * jawRig.span;   // corner downturn (the frown)
+        const press = scowl * 0.02 * jawRig.span;   // lower-lip firm-up
         const cw = jawRig.corner, lw = jawRig.lower, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array, wa = jawRig.wire.array, m = cw.length;
         for (let i = 0; i < m; i++) { const o = i * 3, dy = lw[i] * press - cw[i] * down; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] + dy; ha[o + 2] = hb[o + 2]; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] + dy; wa[o + 2] = wb[o + 2]; }
-        jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = fireI;
+        jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = scowl;
       }
       if (charge > 0.01 && eyeWorld.length === 2) {
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
