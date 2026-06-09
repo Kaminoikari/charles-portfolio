@@ -104,6 +104,73 @@
   const head = new THREE.Group();
   scene.add(head);
 
+  // --- wireframe-state dynamics (own implementation; references yutaabe's cat-head BEHAVIOUR, not its code) ---
+  // brand palette only: cyan #00D9FF primary, mars-orange #E8652B accent. three additive effects layered on
+  // the wireframe state — shed dust drifting off the head, faint orbital ground rings, brighter star nodes.
+  let headWireVerts = null;              // head wireframe vertex positions, captured at build for dust spawn points
+  const dustSys = { update: () => {} };  // halftone dots that peel off the head and drift outward in the wireframe state
+  const ringSys = { update: () => {} };  // faint comet-arc rings orbiting the base of the head
+  const DUST = { count: 240, life: 2.6, speed: 0.22, size: 0.024, bright: 0.95, col: [0.30, 0.80, 1.0] };   // cyan-white shed motes
+  const RING = { count: 3, segs: 160, y: 0.10, r0: 0.60, dr: 0.16, gap: 0.05, squash: 0.40, spin: 0.22, opacity: 0.5, col: [0.10, 0.70, 1.0] };
+  const CONSTELLATION_GAIN = 1.6;        // brighten the wireframe point nodes so vertices read as stars
+
+  // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
+  // sideways + up), fading in and out over their life, then respawn. only visible in the wireframe state.
+  function setupDust(ext) {
+    if (!headWireVerts || headWireVerts.length < 9) return;
+    const M = DUST.count, srcN = headWireVerts.length / 3;
+    const pos = new Float32Array(M * 3), col = new Float32Array(M * 3);
+    const vel = new Float32Array(M * 3), life = new Float32Array(M), age = new Float32Array(M);
+    const respawn = (i) => {
+      const v = (Math.floor(Math.random() * srcN)) * 3, o = i * 3;
+      pos[o] = headWireVerts[v]; pos[o + 1] = headWireVerts[v + 1]; pos[o + 2] = headWireVerts[v + 2];
+      const dir = pos[o] >= 0 ? 1 : -1, sp = DUST.speed * ext * (0.5 + Math.random());
+      vel[o] = dir * sp * (0.7 + 0.6 * Math.random());     // outward, sideways
+      vel[o + 1] = sp * (0.15 + 0.5 * Math.random());      // gentle rise
+      vel[o + 2] = sp * (Math.random() - 0.3) * 0.4;       // slight depth drift
+      life[i] = DUST.life * (0.6 + 0.8 * Math.random()); age[i] = Math.random() * life[i];   // stagger so they don't pulse in unison
+    };
+    for (let i = 0; i < M; i++) respawn(i);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const mat = new THREE.PointsMaterial({ size: DUST.size, map: squareTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true });
+    const pts = new THREE.Points(g, mat); pts.frustumCulled = false; head.add(pts);
+    dustSys.update = (dt, wireAmt) => {
+      for (let i = 0; i < M; i++) {
+        age[i] += dt; if (age[i] >= life[i]) respawn(i);
+        const o = i * 3;
+        pos[o] += vel[o] * dt; pos[o + 1] += vel[o + 1] * dt; pos[o + 2] += vel[o + 2] * dt;
+        const lf = age[i] / life[i], a = Math.sin(Math.PI * lf) * wireAmt * DUST.bright;   // fade in-out, gated by wireframe-ness
+        col[o] = DUST.col[0] * a; col[o + 1] = DUST.col[1] * a; col[o + 2] = DUST.col[2] * a;
+      }
+      g.attributes.position.needsUpdate = true; g.attributes.color.needsUpdate = true;
+    };
+  }
+  // orbital rings: faint comet-arc loops around the base of the head, slowly spinning, fading with the wireframe state.
+  function setupRings(bbox, ext) {
+    const cx = (bbox.min.x + bbox.max.x) / 2, cz = (bbox.min.z + bbox.max.z) / 2;
+    const baseY = bbox.min.y + (bbox.max.y - bbox.min.y) * RING.y;
+    const grp = new THREE.Group(), rings = [];
+    for (let k = 0; k < RING.count; k++) {
+      const R = ext * (RING.r0 + k * RING.dr), S = RING.segs;
+      const p = new Float32Array(S * 3), c = new Float32Array(S * 3);
+      for (let i = 0; i < S; i++) {
+        const ang = i / S * Math.PI * 2;
+        p[i * 3] = cx + Math.cos(ang) * R; p[i * 3 + 1] = baseY + k * ext * RING.gap; p[i * 3 + 2] = cz + Math.sin(ang) * R * RING.squash;
+        const grad = Math.pow(0.5 + 0.5 * Math.cos(ang), 3.0);   // comet: bright head fading round the loop
+        c[i * 3] = RING.col[0] * grad; c[i * 3 + 1] = RING.col[1] * grad; c[i * 3 + 2] = RING.col[2] * grad;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+      const m = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+      const loop = new THREE.LineLoop(g, m); loop.rotation.y = k * 1.7; grp.add(loop);
+      rings.push({ m, base: RING.opacity * (1 - k * 0.22) });
+    }
+    head.add(grp);
+    ringSys.update = (wireAmt, t) => { grp.rotation.y = t * RING.spin; for (const r of rings) r.m.opacity = r.base * wireAmt; };
+  }
+
   // --- eye death-laser (Superman/Cyclops): two beams from the eyes converging on the pointer ---
   const LASER = { color: [1.0, 0.12, 0.05], width: 0.24, plane: 1.2, length: 24 };  // length overshoots the screen edge
   let firing = false, fireI = 0, charge = 0, scowl = 0;   // charge = 0..1 eye charge-up, fireI = beam intensity (lags the charge), scowl = fast grim-mouth ramp (snaps with the press, not the beam)
@@ -178,6 +245,14 @@
     const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
     g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.4, "rgba(255,255,255,0.6)"); g.addColorStop(1, "rgba(255,255,255,0)");
     x.fillStyle = g; x.beginPath(); x.arc(32, 32, 32, 0, 7); x.fill();
+    const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
+  }
+  function squareTexture() {
+    // a soft-edged square mote for the shed dust (halftone pixels read square, not round)
+    const c = document.createElement("canvas"); c.width = c.height = 32;
+    const x = c.getContext("2d");
+    x.fillStyle = "rgba(255,255,255,0.35)"; x.fillRect(4, 4, 24, 24);
+    x.fillStyle = "rgba(255,255,255,1)"; x.fillRect(9, 9, 14, 14);
     const t = new THREE.CanvasTexture(c); t.needsUpdate = true; return t;
   }
 
@@ -590,6 +665,7 @@
         }
       }
       const posWireAttr = new THREE.BufferAttribute(posWire, 3);
+      if (o.captureVerts) headWireVerts = Float32Array.from(posWire);   // dust peels off these surface points
       if (o.jawRig) {
         // firing tenses the closed mouth into a grim scowl (corners down + lower lip pressed up).
         // drives both the halftone and wireframe positions.
@@ -648,7 +724,7 @@
     const headGeo = decimate(hgW, CONFIG.headDecimate);
     const hStat = buildLayers(headGeo, {
       parent: head, fillK: CONFIG.fill, lineK: CONFIG.line, ptK: CONFIG.point, ptSize: CONFIG.pointSize,
-      occlude: true, setBounds: true, halftone: true, slimCheek: 0.18, mouthNarrow: 0.12, earShrink: 0.32, earTuck: 0.14, jawRig: true, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
+      occlude: true, setBounds: true, halftone: true, captureVerts: true, slimCheek: 0.18, mouthNarrow: 0.12, earShrink: 0.32, earTuck: 0.14, jawRig: true, travelLine: CONFIG.travelLine, travelPoint: CONFIG.travelPoint,
       brightFn: (x, y, z, nz) => contrast(lumaAt(mapX(x), mapY(y))) * Math.pow(nz, CONFIG.frontPow) * faceWeight(nxOf(x), nyOf(y)) * earCut(nxOf(x)),
     });
 
@@ -710,6 +786,11 @@
       head.add(new THREE.Mesh(ege, makeEyeMaterial()));
       eStat = { n: en };
     }
+
+    const _bbox = new THREE.Box3().setFromObject(head);   // measure before adding the dust/rings
+    const _ext = Math.max(_bbox.max.x - _bbox.min.x, _bbox.max.z - _bbox.min.z) || 1;
+    setupRings(_bbox, _ext);
+    setupDust(_ext);
 
     dbg.textContent = `head ${hStat.n}v ${hStat.edges}e  eye ${eStat.n}v`;
     document.getElementById("loading").classList.add("hidden");
@@ -823,8 +904,8 @@
   const PORTRAIT_LINE_MUL = 0.0;    // dot-matrix portrait shows dots, not wireframe lines
   const frac = (x) => x - Math.floor(x);
   const band = (x) => { const v = 1 - Math.abs(x - 0.5) * 2; return v <= 0 ? 0 : Math.pow(v, 12); };
-  const SWEEP = { down: 1.5, holdWire: 4.5, up: 1.5, holdPortrait: 6.0, introHold: 5.0 };  // introHold: linger on the dot portrait after the intro before the first sweep
-  const SWEEP_FEATHER = 0.07;
+  const SWEEP = { down: 0.85, holdWire: 4.5, up: 0.85, holdPortrait: 6.0, introHold: 5.0 };  // down/up shortened so the scan snaps through like yutaabe; introHold lingers on the dot portrait first
+  const SWEEP_FEATHER = 0.05;   // tighter band = a crisper scan edge
   let sweepBase = 0;  // seconds (t) at which the intro finished — the sweep clock origin
   // sweep-line height over the figure (ny units, 1.15 = above crown, -0.15 = below collar)
   function sweepLine(st) {
@@ -848,7 +929,9 @@
     for (const L of LAYERS) {
       if (!L.sweepable) continue;   // static layer (eyes) — handled by their own shaders
       const a = L.attr.array, port = L.portrait, pos = L.pos, ny = L.ny, n = ny.length, K = L.travelK, nrm = L.nrm;
-      const nodeScale = L.kind === "point" ? 0.7 : 1.0;   // keep wireframe nodes from over-glowing
+      const isPoint = L.kind === "point";
+      const nodeScale = isPoint ? 0.7 : 1.0;   // keep wireframe nodes from over-glowing
+      const twT = halftoneUniforms.uTime.value;
       for (let i = 0; i < n; i++) {
         const o = i * 3;
         let u = (ny[i] - (ly - fw)) / (2 * fw); u = u < 0 ? 0 : u > 1 ? 1 : u;
@@ -862,6 +945,7 @@
           const ndl = Math.max(0, Nx * Lx + Ny * Ly + Nz * Lz);
           const ndh = Math.max(0, Nx * Hx + Ny * Hy + Nz * Hz);
           wb = (0.15 + ndl * 0.5 + Math.pow(ndh, 30) * 2.0) * nodeScale;
+          if (isPoint) { const tw = 0.7 + 0.3 * Math.sin(twT * 3.0 + i * 1.7); wb *= CONSTELLATION_GAIN * tw; }   // star nodes: brighter + gentle per-node twinkle
         }
         let r = port[o] * (1 - w) + wb * w, g = port[o + 1] * (1 - w) + wb * w, b = port[o + 2] * (1 - w) + wb * w;
         if (K) {
@@ -924,6 +1008,9 @@
       halftoneUniforms.uMouse.value.set(ease.x, ease.y);
       halftoneUniforms.uCursorActive.value += (cursorActive - halftoneUniforms.uCursorActive.value) * 0.15;   // ease the highlight in/out so it never pops
       applyState(st);
+      const wireAmt = Math.max(0, Math.min(1, (1.15 - ly) / 1.30));   // 0 = dot portrait, 1 = full wireframe — gates the shed dust + rings
+      dustSys.update(dt, wireAmt);
+      ringSys.update(wireAmt, t);
 
       // death-laser: the eyes charge up red (Superman), then two beams shoot from the eyes
       // through the pointer and on to the screen edge.
