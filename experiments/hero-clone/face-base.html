@@ -694,13 +694,21 @@
   let cursorActive = 0;   // 1 while a pointer is present; gates the cyan highlight so it never parks on the face when idle (touch has no hover)
   const setAim = (e) => { mouse.x = (e.clientX / innerWidth) * 2 - 1; mouse.y = -((e.clientY / innerHeight) * 2 - 1); };
   addEventListener("pointermove", (e) => { setAim(e); if (e.pointerType !== "touch") cursorActive = 1; });   // desktop hover lights the highlight; touch only lights it while pressed
-  // press-and-hold to fire the death-laser — unified for mouse (hold button) and touch (touch-and-hold)
-  addEventListener("pointerdown", (e) => { setAim(e); cursorActive = 1; firing = true; startFireSfx(); });
-  const stopFiring = (e) => { firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") cursorActive = 0; };   // touch release clears the highlight; desktop keeps it for the hovering cursor
+  // fire the death-laser. mouse/pen fire on press. touch must HOLD STILL briefly to fire, so a swipe scrolls
+  // the page instead: touch-action pan-y lets the browser take a vertical drag as a scroll (it then sends us
+  // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
+  let holdTimer = 0;
+  const beginFire = () => { cursorActive = 1; firing = true; startFireSfx(); };
+  addEventListener("pointerdown", (e) => {
+    setAim(e);
+    if (e.pointerType === "touch") { clearTimeout(holdTimer); holdTimer = setTimeout(beginFire, 150); }   // hold-to-fire; a scroll cancels it
+    else beginFire();                                                                                     // mouse/pen: immediate
+  });
+  const stopFiring = (e) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") cursorActive = 0; };   // touch release clears the highlight; desktop keeps it for the hovering cursor
   addEventListener("pointerup", stopFiring);
-  addEventListener("pointercancel", stopFiring);
+  addEventListener("pointercancel", stopFiring);   // browser claimed the gesture for scrolling → cancel the pending hold
   addEventListener("pointerleave", () => stopFiring());   // cursor left the window — stop firing and drop the highlight (no-arg → clears cursorActive)
-  renderer.domElement.style.touchAction = "none";   // let touch-and-hold aim instead of scrolling
+  renderer.domElement.style.touchAction = "pan-y";   // vertical swipe scrolls the page; a still hold fires
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
   // would leave the canvas at the old monitor's size — pinned top-left, that pushes
