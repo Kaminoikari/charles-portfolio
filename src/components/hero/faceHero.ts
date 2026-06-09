@@ -66,7 +66,6 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     halfBase: Float32Array
     wireBase: Float32Array
     corner: Float32Array
-    lower: Float32Array
     span: number
     lastOpen: number
   }
@@ -640,24 +639,29 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       const nySpan = (yMax - yMin) || 1
       const ny = new Float32Array(n)
       for (let i = 0; i < n; i++) ny[i] = (pos[i * 3 + 1] - yMin) / nySpan
-      // grim-mouth weights (the heat-vision scowl): firing tenses the CLOSED mouth instead of opening it —
-      // the corners pull DOWN into a frown and the lower lip firms up a touch. lips are isolated from the
-      // cheeks by the SURFACE NORMAL (lips face forward / small lateral normal, cheeks face sideways), so the
-      // deform never drags the cheeks. only y moves, so the mouth stays shut — no jaw opening.
-      let xMax = 1e-6; for (let i = 0; i < n; i++) { const ax = Math.abs(pos[i * 3]); if (ax > xMax) xMax = ax }
-      const lipCornerW = new Float32Array(n)   // lip ring, weighted toward the corners -> the downturn
-      const lowerLipW = new Float32Array(n)    // lower-lip centre -> the firm press
-      if (o.jawRig) for (let i = 0; i < n; i++) {
-        let bi = (ny[i] - 0.14) / 0.03; bi = bi < 0 ? 0 : bi > 1 ? 1 : bi
-        let bo = (0.235 - ny[i]) / 0.03; bo = bo < 0 ? 0 : bo > 1 ? 1 : bo
-        let band = Math.min(bi, bo); band = band * band * (3 - 2 * band)
-        let fz = (nloc[i * 3 + 2] - 0.2) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz             // faces forward
-        let sx = 1 - (Math.abs(nloc[i * 3]) - 0.32) / 0.28; sx = sx < 0 ? 0 : sx > 1 ? 1 : sx  // not sideways -> lip, not cheek
-        const lip = band * fz * sx
-        let lat = (Math.abs(pos[i * 3]) / xMax - 0.04) / 0.16; lat = lat < 0 ? 0 : lat > 1 ? 1 : lat; lat = lat * lat * (3 - 2 * lat)
-        lipCornerW[i] = lip * lat                                  // strongest at the mouth corners
-        let low = (0.20 - ny[i]) / 0.04; low = low < 0 ? 0 : low > 1 ? 1 : low
-        lowerLipW[i] = lip * low * (1 - lat)                       // lower-lip centre only
+      // grim-mouth weight (the heat-vision scowl): firing curls JUST the two mouth corners (commissures)
+      // down, leaving the rest of the closed mouth still — no broad block dips. the corner sits at the
+      // lateral extreme of the lip region, so pass 1 finds the lip's own max width (data-driven, not the face
+      // width) and pass 2 keeps only the vertices near that extreme, biased to the lower-outer corner. lips
+      // are isolated from the cheeks by the SURFACE NORMAL (lips face forward, cheeks face sideways).
+      const lipCornerW = new Float32Array(n)   // weight peaked on the two mouth corners -> the downturn
+      if (o.jawRig) {
+        const lipW = new Float32Array(n)
+        let lipXMax = 1e-6
+        for (let i = 0; i < n; i++) {
+          let bi = (ny[i] - 0.14) / 0.03; bi = bi < 0 ? 0 : bi > 1 ? 1 : bi
+          let bo = (0.235 - ny[i]) / 0.03; bo = bo < 0 ? 0 : bo > 1 ? 1 : bo
+          let band = Math.min(bi, bo); band = band * band * (3 - 2 * band)
+          let fz = (nloc[i * 3 + 2] - 0.2) / 0.4; fz = fz < 0 ? 0 : fz > 1 ? 1 : fz             // faces forward
+          let sx = 1 - (Math.abs(nloc[i * 3]) - 0.32) / 0.28; sx = sx < 0 ? 0 : sx > 1 ? 1 : sx  // not sideways -> lip, not cheek
+          lipW[i] = band * fz * sx
+          if (lipW[i] > 0.2) { const ax = Math.abs(pos[i * 3]); if (ax > lipXMax) lipXMax = ax }  // lip lateral extent = where the corners are
+        }
+        for (let i = 0; i < n; i++) {
+          let corner = (Math.abs(pos[i * 3]) / lipXMax - 0.72) / 0.26; corner = corner < 0 ? 0 : corner > 1 ? 1 : corner; corner = corner * corner * (3 - 2 * corner)   // only the outer slice of the lip width = the two corner tips
+          let low = (0.205 - ny[i]) / 0.05; low = low < 0 ? 0 : low > 1 ? 1 : low   // bias the curl to the lower-outer corner
+          lipCornerW[i] = lipW[i] * corner * (0.4 + 0.6 * low)
+        }
       }
       // real geometry slimming for the WIREFRAME only — pull the front cheek/cheekbone vertices
       // inward in x so the lit-wire contour actually narrows (not a brightness trick). the halftone
@@ -700,7 +704,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       if (o.jawRig) {
         // firing tenses the closed mouth into a grim scowl (corners down + lower lip pressed up).
         // drives both the halftone and wireframe positions.
-        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), corner: lipCornerW, lower: lowerLipW, span: nySpan, lastOpen: 0 }
+        jawRig = { half: posAttr, wire: posWireAttr, halfBase: Float32Array.from(pos), wireBase: Float32Array.from(posWire), corner: lipCornerW, span: nySpan, lastOpen: 0 }
       }
       const mkCol = (fn: (b: number) => number) => { const c = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const w = warm(bright[i]), k = fn(bright[i]); c[i * 3] = w[0] * k; c[i * 3 + 1] = w[1] * k; c[i * 3 + 2] = w[2] * k } return c }
       // register a color buffer with the post-intro engines. each layer carries the colour it
@@ -1046,15 +1050,14 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       halftoneUniforms.uEyeCharge.value = charge
       beamUniforms.uTime.value = t
       beamUniforms.uIntensity.value = fireI
-      // heat-vision scowl: firing tenses the closed mouth — the corners snap down into a frown and the
-      // lower lip firms up. driven by `scowl`, a fast ramp tied to the press (not the slow beam charge), so
-      // the downturn is snappy. only y moves, so the mouth stays shut. drives both the dot + wireframe geometry.
+      // heat-vision scowl: firing curls the two mouth corners down into a frown. the weight is now peaked on
+      // just the two corner tips, so dropping them reads as a clean downturn in both states (no broad block
+      // dip). applied to both the halftone (dot) and wireframe (line) geometry. only y moves, mouth stays shut.
       scowl += ((firing ? 1 : 0) - scowl) * Math.min(1, dt * 18)   // ~0.12s to snap in / out
       if (jawRig && (scowl > 0.001 || jawRig.lastOpen > 0.001)) {
         const down = scowl * 0.065 * jawRig.span   // corner downturn (the frown)
-        const press = scowl * 0.02 * jawRig.span   // lower-lip firm-up
-        const cw = jawRig.corner, lw = jawRig.lower, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array as Float32Array, wa = jawRig.wire.array as Float32Array, m = cw.length
-        for (let i = 0; i < m; i++) { const o = i * 3, dy = lw[i] * press - cw[i] * down; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] + dy; ha[o + 2] = hb[o + 2]; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] + dy; wa[o + 2] = wb[o + 2] }
+        const cw = jawRig.corner, hb = jawRig.halfBase, wb = jawRig.wireBase, ha = jawRig.half.array as Float32Array, wa = jawRig.wire.array as Float32Array, m = cw.length
+        for (let i = 0; i < m; i++) { const o = i * 3, dy = -cw[i] * down; ha[o] = hb[o]; ha[o + 1] = hb[o + 1] + dy; ha[o + 2] = hb[o + 2]; wa[o] = wb[o]; wa[o + 1] = wb[o + 1] + dy; wa[o + 2] = wb[o + 2] }
         jawRig.half.needsUpdate = true; jawRig.wire.needsUpdate = true; jawRig.lastOpen = scowl
       }
       if (charge > 0.01 && eyeWorld.length === 2) {
