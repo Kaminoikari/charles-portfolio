@@ -86,8 +86,8 @@ export default function FaceHero() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full"
-      style={{ background: 'var(--color-bg-primary)' }}
+      className="relative w-full select-none"
+      style={{ background: 'var(--color-bg-primary)', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
     >
       {/* visual hero: the face fills one viewport; overflow-hidden clips the dust + bloom bleed */}
       <div className="relative flex h-screen w-full items-center justify-center overflow-hidden supports-[height:100svh]:h-[100svh]">
