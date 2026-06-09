@@ -168,7 +168,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // the wireframe state — shed dust drifting off the head, brighter star nodes.
   let headWireVerts: Float32Array | null = null   // head wireframe vertex positions, captured at build for dust spawn points
   const dustSys: { update: (dt: number) => void } = { update: () => {} }   // halftone dots that peel off the head and drift outward, persisting across both states
-  const DUST = { count: 560, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] }   // cyan-white shed motes — dense, continuous flow
+  const DUST = { count: 760, life: 3.4, speed: 0.24, size: 0.02, bright: 1.0, col: [0.30, 0.80, 1.0] }   // cyan-white shed motes — dense, continuous flow
   const CONSTELLATION_GAIN = 1.6        // brighten the wireframe point nodes so vertices read as stars
 
   // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
@@ -188,7 +188,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       pos[o] = tmpDust.x; pos[o + 1] = tmpDust.y; pos[o + 2] = tmpDust.z
       const dir = tmpDust.x >= 0 ? 1 : -1, sp = DUST.speed * ext * (0.5 + Math.random())
       vel[o] = dir * sp * (0.7 + 0.6 * Math.random())     // outward, sideways
-      vel[o + 1] = sp * (0.15 + 0.5 * Math.random())      // gentle rise
+      // desktop keeps the gentle upward shed; mobile drifts up AND down so the field reaches the
+      // headline and the lower screen around the small, lifted head instead of only rising past it
+      vel[o + 1] = window.innerWidth <= MOBILE_MAX_W
+        ? sp * (Math.random() - 0.5) * 2.0
+        : sp * (0.15 + 0.5 * Math.random())
       vel[o + 2] = sp * (Math.random() - 0.3) * 0.4       // slight depth drift
       life[i] = DUST.life * (0.6 + 0.8 * Math.random()); age[i] = Math.random() * life[i]   // stagger so they don't pulse in unison
     }
