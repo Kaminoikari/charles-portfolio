@@ -118,6 +118,14 @@
   const laserLoop = new Audio("./assets/laser-fire.wav");       // seamless sustained beam (WAV: no mp3 priming-padding gap at the loop point)
   laserAttack.preload = "auto"; laserAttack.volume = 0.9;
   laserLoop.preload = "auto"; laserLoop.volume = 0.9; laserLoop.loop = true;
+  // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
+  // playback before the first user gesture — so the very first load may be silent. accepted for
+  // now; the final beat timing + autoplay strategy get locked when this folds into the real hero.
+  const introScanSfx = new Audio("./assets/intro_scan.mp3");    // dark riser under the rising red scan
+  const introBaamSfx = new Audio("./assets/intro_baam2.mp3");   // deep braam impact when the eyes ignite
+  introScanSfx.preload = "auto"; introScanSfx.volume = 0.8;
+  introBaamSfx.preload = "auto"; introBaamSfx.volume = 0.9;
+  const BAAM_LEAD = 0.15;   // seconds the braam starts before the eyes ignite, so its weight lands on the ignition (tentative; tuned at integration)
   const ATTACK_TO_LOOP = 1.4;   // seconds: unmute the loop while the attack is still sustaining, so they overlap with no silent gap
   let loopTimer = 0;
   function setPlaybackSession() {
@@ -731,7 +739,7 @@
   const RED = [1.0, 0.12, 0.06];             // curtain red
   const EDGE = [0.35, 0.9, 1.0];             // pale-cyan transform halo riding the sweep line
   const BAND = 0.06;
-  let introDone = false;
+  let introDone = false, introScanFired = false, introBaamFired = false;   // one-shot guards so each intro SFX plays once
   function paint(fn) {
     for (const L of LAYERS) {
       const a = L.attr.array, ny = L.ny, n = ny.length;
@@ -743,6 +751,9 @@
   function updateIntro(t) {
     if (introDone) return 1;
     const Tred = INTRO.red, Tpause = Tred + INTRO.pause, Tend = Tpause + INTRO.sweep;
+    // intro SFX: the riser kicks in as the scan begins; the braam lands as the eyes ignite (small pre-roll)
+    if (!introScanFired) { introScanFired = true; setPlaybackSession(); introScanSfx.currentTime = 0; introScanSfx.play().catch(() => {}); }
+    if (!introBaamFired && t >= Tred - BAAM_LEAD) { introBaamFired = true; introBaamSfx.currentTime = 0; introBaamSfx.play().catch(() => {}); introScanSfx.pause(); }
     // eyes stay dark for the whole rising scan, then blaze once it reaches the top (t >= Tred)
     halftoneUniforms.uEyeIgnite.value = t < Tred ? 0 : Math.min(1, (t - Tred) / 0.45);
     if (t >= Tend) {
