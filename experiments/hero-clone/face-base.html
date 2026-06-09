@@ -126,6 +126,25 @@
   introScanSfx.preload = "auto"; introScanSfx.volume = 0.8;
   introBaamSfx.preload = "auto"; introBaamSfx.volume = 0.9;
   const BAAM_LEAD = 0.15;   // seconds the braam starts before the eyes ignite, so its weight lands on the ignition (tentative; tuned at integration)
+  const BAAM_VOL = 0.9;     // braam playback volume
+  const BAAM_TAIL = 1.4;    // seconds of braam before it fades — the source has a ~13s tail that drags on under the steady state
+  const BAAM_FADE = 0.5;    // fade-out length so the cut is not a hard click
+  let baamFadeRAF = 0, baamFadeTimer = 0;
+  function playBaam() {
+    setPlaybackSession();
+    clearTimeout(baamFadeTimer); cancelAnimationFrame(baamFadeRAF);
+    introBaamSfx.currentTime = 0; introBaamSfx.volume = BAAM_VOL; introBaamSfx.play().catch(() => {});
+    baamFadeTimer = setTimeout(() => {
+      const t0 = performance.now();
+      const step = () => {
+        const k = (performance.now() - t0) / (BAAM_FADE * 1000);
+        if (k >= 1) { introBaamSfx.pause(); introBaamSfx.volume = BAAM_VOL; return; }   // re-arm at full volume for the next play
+        introBaamSfx.volume = BAAM_VOL * (1 - k);
+        baamFadeRAF = requestAnimationFrame(step);
+      };
+      step();
+    }, BAAM_TAIL * 1000);
+  }
   const ATTACK_TO_LOOP = 1.4;   // seconds: unmute the loop while the attack is still sustaining, so they overlap with no silent gap
   let loopTimer = 0;
   function setPlaybackSession() {
@@ -707,7 +726,7 @@
   // the page instead: touch-action pan-y lets the browser take a vertical drag as a scroll (it then sends us
   // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
   let holdTimer = 0;
-  const beginFire = () => { cursorActive = 1; firing = true; startFireSfx(); };
+  const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx(); };   // no firing during the intro (so the first-interaction unlock-replay click is a no-op)
   addEventListener("pointerdown", (e) => {
     setAim(e);
     if (e.pointerType === "touch") { clearTimeout(holdTimer); holdTimer = setTimeout(beginFire, 150); }   // hold-to-fire; a scroll cancels it
@@ -740,6 +759,7 @@
   const EDGE = [0.35, 0.9, 1.0];             // pale-cyan transform halo riding the sweep line
   const BAND = 0.06;
   let introDone = false, introScanFired = false, introBaamFired = false;   // one-shot guards so each intro SFX plays once
+  let introAudioUnlocked = false;   // set once the browser actually lets the intro audio play (approach A)
   function paint(fn) {
     for (const L of LAYERS) {
       const a = L.attr.array, ny = L.ny, n = ny.length;
@@ -752,8 +772,8 @@
     if (introDone) return 1;
     const Tred = INTRO.red, Tpause = Tred + INTRO.pause, Tend = Tpause + INTRO.sweep;
     // intro SFX: the riser kicks in as the scan begins; the braam lands as the eyes ignite (small pre-roll)
-    if (!introScanFired) { introScanFired = true; setPlaybackSession(); introScanSfx.currentTime = 0; introScanSfx.play().catch(() => {}); }
-    if (!introBaamFired && t >= Tred - BAAM_LEAD) { introBaamFired = true; introBaamSfx.currentTime = 0; introBaamSfx.play().catch(() => {}); introScanSfx.pause(); }
+    if (!introScanFired) { introScanFired = true; setPlaybackSession(); introScanSfx.currentTime = 0; introScanSfx.play().then(() => { introAudioUnlocked = true; }).catch(() => {}); }
+    if (!introBaamFired && t >= Tred - BAAM_LEAD) { introBaamFired = true; playBaam(); introScanSfx.pause(); }
     // eyes stay dark for the whole rising scan, then blaze once it reaches the top (t >= Tred)
     halftoneUniforms.uEyeIgnite.value = t < Tred ? 0 : Math.min(1, (t - Tred) / 0.45);
     if (t >= Tend) {
@@ -858,6 +878,24 @@
   }
 
   let startTime = 0, lastFrameT = 0;
+  // approach A: the first audio play() on load is blocked before any user gesture, so the scan cue
+  // (it fires at intro t=0) is the one that goes unheard. on the first interaction, if audio never
+  // unlocked, replay the whole intro — now from inside a gesture, so the sound comes through.
+  function replayIntroWithSound() {
+    introDone = false; introScanFired = false; introBaamFired = false; lastFrameT = 0;
+    firing = false; charge = 0; fireI = 0; stopFireSfx();   // drop any laser the unlock click started, so no frozen beam survives into the replay
+    if (beams[0]) { beams[0].visible = beams[1].visible = false; muzzles[0].visible = muzzles[1].visible = false; }
+    clearTimeout(baamFadeTimer); cancelAnimationFrame(baamFadeRAF);
+    introScanSfx.pause(); introScanSfx.currentTime = 0;
+    introBaamSfx.pause(); introBaamSfx.currentTime = 0; introBaamSfx.volume = BAAM_VOL;
+    for (const L of LAYERS) { L.attr.array.fill(0); L.attr.needsUpdate = true; }
+    startTime = performance.now();
+  }
+  const introUnlockOnce = () => {
+    removeEventListener("pointerdown", introUnlockOnce); removeEventListener("touchstart", introUnlockOnce); removeEventListener("keydown", introUnlockOnce);
+    if (!introAudioUnlocked) replayIntroWithSound();
+  };
+  addEventListener("pointerdown", introUnlockOnce); addEventListener("touchstart", introUnlockOnce); addEventListener("keydown", introUnlockOnce);
   function frame(now) {
     requestAnimationFrame(frame);
     syncSize();
