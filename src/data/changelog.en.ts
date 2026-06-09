@@ -19,6 +19,33 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-webgl-portrait',
+    date: '2026-06-09',
+    title: 'Rebuilt the hero as a live WebGL portrait',
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      'The landing animation is now a 3D portrait of my own face, rendered live in the browser with three.js and WebGL. It replaces the old Canvas 2D particle hero. Press Enter and a scan line sweeps the face, turning a field of halftone dots into a lit wireframe and back, the way a machine might study someone before it places them.',
+      { kind: 'heading', text: 'What you see' },
+      {
+        kind: 'list',
+        items: [
+          '**A face made of light**: the portrait is drawn as thousands of dots whose brightness comes from a photo baked onto the 3D surface, so the likeness holds up as the head turns with your cursor.',
+          '**A sweep that transforms**: a moving scan line morphs the dots into a shaded wireframe in its wake, then lets them settle back, so the same geometry reads two ways.',
+          '**Small touches of personality**: an opening red scan, a flicker of eye lasers, and a fine dust that keeps drifting after the sweep instead of snapping away.',
+        ],
+      },
+      { kind: 'heading', text: 'How it renders' },
+      {
+        kind: 'list',
+        items: [
+          '**One pipeline, two looks**: the dot portrait runs on the GPU while the wireframe is lit on the CPU, blended by the sweep position so the transition stays smooth.',
+          '**Built to behave**: it pauses when it scrolls off screen or the tab goes to the background, respects reduced-motion preferences, and falls back to a still photo if WebGL is unavailable.',
+          '**Audio that starts on a tap**: the Enter splash exists so the intro sound and ambient track can begin the moment you choose to enter, which browsers only allow after a gesture.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'rag-chatbot',
     date: '2026-05-31',
     title: 'Shipped the portfolio AI chatbot',
