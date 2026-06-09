@@ -115,7 +115,7 @@ export default function FaceHero() {
         {/* scroll cue stays pinned to the bottom safe area of the first screen (svh tracks the
             mobile viewport so it never slips behind the browser chrome) */}
         {phase === 'revealed' && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[6svh] z-10 flex justify-center">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[6svh] z-10 hidden justify-center md:flex">
             <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL</span>
           </div>
         )}
