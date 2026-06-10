@@ -24,12 +24,12 @@ export const changelog: ChangelogEntry[] = [
     title: 'Redesigned the enter loading sequence',
     tags: ['design', 'technical'],
     body: [
-      'The splash that greets you before the hero portrait is now a staged loading sequence in place of a bare percentage counter. A glowing Mobius band tumbles at the centre of a black screen, status copy rotates beneath it, and a hairline progress bar sweeps from zero to full before the Enter control takes the stage. The rhythm borrows from two loaders I admire, sidewave.it and aboutluca.com, rebuilt in this site\'s own visual language.',
+      'The splash that greets you before the hero portrait is now a staged loading sequence in place of a bare percentage counter. A glowing Mobius band tumbles at the centre of a black screen, status copy rotates beneath it, and a hairline progress bar sweeps from zero to full before the Enter control takes the stage.',
       { kind: 'heading', text: 'What changed' },
       {
         kind: 'list',
         items: [
-          '**A live Mobius mark**: the loading symbol is a parametric Mobius band drawn in real time on a small canvas (sidewave ships theirs as a GIF), so it stays crisp on retina screens and speaks the same wireframe-and-glow language as the portrait behind it.',
+          '**A live Mobius mark**: the loading symbol is a parametric Mobius band drawn in real time on a small canvas, so it stays crisp on retina screens and speaks the same wireframe-and-glow language as the portrait behind it.',
           '**A progress bar with a guaranteed story**: the displayed progress is the slower of a fixed two-second sweep and the real download progress, so a cached visit still reads as a deliberate arrival while a slow network stays honest.',
           '**A staged handoff**: when the bar completes it glows for a beat, the status copy and bar fade together, and ENTER blooms into the copy\'s spot as bare glowing text flanked by hairlines. Hovering widens the letter spacing, lights up the lines, and wraps the word in a layered glow.',
         ],
@@ -47,9 +47,8 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'list',
         items: [
-          '**It started as someone else\'s mascot**: the first prototype existed to practice the wireframe-and-bloom look I wanted, hung on stand-in models. A cat came first, then a polygon-decimated corgi, then a robot, each on its own branch. They all looked fine and they all said nothing about me. That realisation set the real brief: it has to be my own face.',
-          '**The flat-face dead end**: the first portrait attempt triangulated my photo into a 2.5D Delaunay relief. Most of the time went into fighting it, masking out the background, filtering spider-web triangles, tightening the silhouette, and the moment the camera moved it still read as a paper cutout. Scrapped wholesale.',
-          '**The keeper**: bake the photo onto a real 3D head, sampling brightness per vertex, then render that one geometry three ways at once, as dots, lines, and a shaded mesh. The dots carry the likeness, the wireframe carries the structure, and the scan line only decides which one you see.',
+          '**It starts with a base head**: the brief was to make the portrait my own face. A generic male_base head mesh supplies the geometry, my photo gets baked onto it with brightness sampled per vertex, and that one geometry renders three ways at once, as dots, lines, and a shaded mesh. The dots carry the likeness, the wireframe carries the structure, and the scan line only decides which one you see.',
+          '**The flat-face detour**: an earlier attempt triangulated the photo into a 2.5D Delaunay relief. Most of the time went into fighting it, masking out the background, filtering spider-web triangles, tightening the silhouette, and the moment the camera moved it still read as a paper cutout. Scrapping it settled the per-vertex bake as the keeper.',
           '**The 2 a.m. scowl**: the eye-laser easter egg originally dropped the jaw into an open roar. Five commits of lip-ring pinching and jaw-hinge work later, the mouth still tore the mesh open, so at two in the morning the roar became a grim closed-mouth scowl. It suits this head far better than the roar ever did.',
           '**The iOS audio war**: the laser sound alone took over a dozen commits. It had to loop gaplessly, stay audible with the silent switch on, and unlock inside the tap gesture, bouncing between Web Audio and HTMLAudio until both the loop and iOS were satisfied.',
           '**From prototype to product**: the approved prototype then had to become a React component. That meant extracting an engine module with a real lifecycle, hunting a GPU memory leak in the bloom pass, adding the Enter gate so the intro audio can start legally, and a long tail of mobile rounds: touch fighting scroll, the zoom jump when the address bar collapses, dust fields thinning out on small screens.',

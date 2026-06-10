@@ -6,7 +6,7 @@ import MobiusLoader from './MobiusLoader'
 
 type Phase = 'loading' | 'ready' | 'running' | 'revealed'
 
-// sidewave.it-style loader copy: rotated every few seconds under the Mobius mark
+// loader status copy: rotated every few seconds under the Mobius mark
 // while assets stream in. The first line keeps the word "loading" so the gate
 // always names its state even if the visitor catches only one message.
 const LOADING_MESSAGES = [
@@ -24,7 +24,7 @@ const GATE_FADE_OUT_MS = 700
 // fast load still reads as a deliberate 2s arrival and a slow load stays honest.
 const MIN_GATE_MS = 2000
 const PROGRESS_TICK_MS = 50
-// the loading→enter handoff (aboutluca.com rhythm): the bar completes and glows,
+// the loading→enter handoff rhythm: the bar completes and glows,
 // a short beat, then the copy and bar fade together while ENTER blooms into the
 // copy's spot; the fading elements unmount once their exit finishes.
 const HANDOFF_HOLD_MS = 400
@@ -183,8 +183,8 @@ export default function FaceHero() {
 
   const gateActive = phase === 'loading' || phase === 'ready'
   // after Enter the overlay stays mounted just long enough to fade out over the
-  // starting intro, mirroring sidewave's loader fadeOut; an engine error drops the
-  // gate immediately so the static fallback underneath is actually reachable.
+  // starting intro; an engine error drops the gate immediately so the static
+  // fallback underneath is actually reachable.
   const gateMounted = (gateActive || phase === 'running') && !gateDismissed && !failed
   const heroTextVisible = phase === 'revealed' || failed
 
@@ -242,9 +242,9 @@ export default function FaceHero() {
 
       {gateMounted && createPortal(
         // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,
-        // chat launcher, and music toggle (all z-50); layout mirrors the sidewave.it
-        // loader: Mobius mark dead-centre, rotating status copy 100px below centre,
-        // and a 1px progress hairline 50px above the bottom edge.
+        // chat launcher, and music toggle (all z-50); loader layout: Mobius mark
+        // dead-centre, rotating status copy 100px below centre, and a 1px
+        // progress hairline 50px above the bottom edge.
         <div
           className="fixed inset-0 z-[100] bg-black"
           style={{

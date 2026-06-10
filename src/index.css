@@ -220,10 +220,10 @@ body.chat-open [class*="protico" i] {
 }
 
 
-/* Hero enter gate — the loading→enter handoff borrows aboutluca.com's loader
-   language: the status copy fades first, then ENTER blooms into the same spot
-   as bare glowing text with hairlines drawing outward from it (echoing the
-   progress line below). No boxed CTA; the text IS the control. */
+/* Hero enter gate — the loading→enter handoff: the status copy fades first,
+   then ENTER blooms into the same spot as bare glowing text with hairlines
+   drawing outward from it (echoing the progress line below). No boxed CTA;
+   the text IS the control. */
 @keyframes gate-enter-reveal {
   from { opacity: 0; letter-spacing: 0.7em; }
   to { opacity: 1; letter-spacing: 0.35em; }

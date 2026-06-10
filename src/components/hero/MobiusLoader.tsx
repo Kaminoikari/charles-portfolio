@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react'
 
-// Replicates the sidewave.it loading mark: a small glowing Mobius band slowly
-// tumbling on black. Theirs is a baked GIF (images/Mobius100.gif); we render the
-// same parametric surface live on a 2D canvas so the asset stays ours and the
-// glow stays crisp on retina screens.
+// The loading mark: a small glowing Mobius band slowly tumbling on black,
+// rendered live as a parametric surface on a 2D canvas so the glow stays
+// crisp on retina screens.
 
 const BAND_RADIUS = 1
 const BAND_HALF_WIDTH = 0.34

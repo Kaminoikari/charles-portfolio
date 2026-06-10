@@ -158,7 +158,7 @@ describe('FaceHero shell', () => {
   })
 })
 
-describe('FaceHero loading gate (sidewave-style loader)', () => {
+describe('FaceHero loading gate', () => {
   it('shows the mobius mark and the progress hairline while loading', () => {
     render(<FaceHero />)
     expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
