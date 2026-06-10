@@ -86,7 +86,7 @@ export const aboutContent: AboutContent = {
     },
     {
       label: 'Engineering',
-      body: 'React、TypeScript、Flutter、Canvas 2D、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io',
+      body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io',
     },
     {
       label: 'Data & Analytics',
