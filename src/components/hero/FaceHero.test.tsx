@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 const startIntro = vi.fn()
@@ -150,5 +150,60 @@ describe('FaceHero shell', () => {
     act(() => { lastOpts?.onReady?.() })
     await user.click(screen.getByRole('button', { name: /enter/i }))
     expect(sessionStorage.getItem('faceHeroSeen')).toBe('1')
+  })
+})
+
+describe('FaceHero loading gate (sidewave-style loader)', () => {
+  it('shows the mobius mark and the progress hairline while loading', () => {
+    render(<FaceHero />)
+    expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+  })
+
+  it('reflects asset progress in the progress bar', () => {
+    render(<FaceHero />)
+    act(() => { lastOpts?.onProgress?.(0.42) })
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '42')
+  })
+
+  it('cycles to the next loading message after the hold and fade delays', () => {
+    vi.useFakeTimers()
+    try {
+      render(<FaceHero />)
+      expect(screen.getByText(/Loading the experience/i)).toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(3000 + 400) })
+      expect(screen.getByText(/Waking the particles/i)).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('hides the progress bar once ready and keeps the mobius mark behind the enter control', () => {
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
+  })
+
+  it('fades the gate out and unmounts it after enter', () => {
+    vi.useFakeTimers()
+    try {
+      render(<FaceHero />)
+      act(() => { lastOpts?.onReady?.() })
+      fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+      // still mounted mid-fade, but inert
+      expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
+      act(() => { vi.advanceTimersByTime(700) })
+      expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('drops the gate when the engine errors so the fallback is reachable', () => {
+    render(<FaceHero />)
+    act(() => { lastOpts?.onError?.(new Error('WebGL unavailable')) })
+    expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
   })
 })

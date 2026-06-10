@@ -2,8 +2,54 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { initFaceHero, type FaceHeroHandle } from './faceHero'
 import { useAmbientAudio } from '../audio/audio-context'
+import MobiusLoader from './MobiusLoader'
 
 type Phase = 'loading' | 'ready' | 'running' | 'revealed'
+
+// sidewave.it-style loader copy: rotated every few seconds under the Mobius mark
+// while assets stream in. The first line keeps the word "loading" so the gate
+// always names its state even if the visitor catches only one message.
+const LOADING_MESSAGES = [
+  'Loading the experience. Good things take a few milliseconds.',
+  'Waking the particles. Each one knows where to go.',
+  'Aligning pixels and code. Almost ready.',
+  'Tuning the ambient soundtrack behind the scenes.',
+  'Finalizing the details. Just a moment more.',
+]
+const MESSAGE_HOLD_MS = 3000
+const MESSAGE_FADE_MS = 400
+const GATE_FADE_OUT_MS = 700
+
+function LoadingMessages({ messages }: { messages: string[] }) {
+  const [index, setIndex] = useState(0)
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    let holdTimer = 0
+    let fadeTimer = 0
+    const cycle = () => {
+      holdTimer = window.setTimeout(() => {
+        setVisible(false)
+        fadeTimer = window.setTimeout(() => {
+          setIndex((i) => (i + 1) % messages.length)
+          setVisible(true)
+          cycle()
+        }, MESSAGE_FADE_MS)
+      }, MESSAGE_HOLD_MS)
+    }
+    cycle()
+    return () => { clearTimeout(holdTimer); clearTimeout(fadeTimer) }
+  }, [messages])
+
+  return (
+    <span
+      className="font-mono text-xs uppercase tracking-[0.08em] text-white"
+      style={{ opacity: visible ? 1 : 0, transition: `opacity ${MESSAGE_FADE_MS}ms` }}
+    >
+      {messages[index]}
+    </span>
+  )
+}
 
 // the splash gate plays once per browser-tab session; in-site navigation back to
 // the home route within the same session skips the gate and the intro, landing
@@ -76,15 +122,24 @@ export default function FaceHero() {
     return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [])
 
+  const [gateDismissed, setGateDismissed] = useState(false)
+  const gateFadeTimer = useRef(0)
+  useEffect(() => () => clearTimeout(gateFadeTimer.current), [])
+
   const onEnter = () => {
     markSeenThisSession()
     enteredRef.current = true
     handleRef.current?.startIntro()
     unlock()                 // unlock audio inside the click; the track stays silent until the intro ends
     setPhase('running')
+    gateFadeTimer.current = window.setTimeout(() => setGateDismissed(true), GATE_FADE_OUT_MS)
   }
 
-  const gateVisible = phase === 'loading' || phase === 'ready'
+  const gateActive = phase === 'loading' || phase === 'ready'
+  // after Enter the overlay stays mounted just long enough to fade out over the
+  // starting intro, mirroring sidewave's loader fadeOut; an engine error drops the
+  // gate immediately so the static fallback underneath is actually reachable.
+  const gateMounted = (gateActive || phase === 'running') && !gateDismissed && !failed
   const heroTextVisible = phase === 'revealed' || failed
 
   return (
@@ -139,26 +194,48 @@ export default function FaceHero() {
         </h1>
       </div>
 
-      {gateVisible && createPortal(
+      {gateMounted && createPortal(
         // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,
-        // chat launcher, and music toggle (all z-50); the splash stays a clean page with
-        // only the enter control until the visitor chooses to enter.
+        // chat launcher, and music toggle (all z-50); layout mirrors the sidewave.it
+        // loader: Mobius mark dead-centre, rotating status copy 100px below centre,
+        // and a 1px progress hairline 50px above the bottom edge.
         <div
-          className="fixed inset-0 z-[100] grid place-items-center"
-          style={{ background: 'var(--color-bg-primary)', touchAction: 'none' }}
+          className="fixed inset-0 z-[100] bg-black"
+          style={{
+            touchAction: 'none',
+            opacity: gateActive ? 1 : 0,
+            transition: `opacity ${GATE_FADE_OUT_MS}ms ease`,
+            pointerEvents: gateActive ? 'auto' : 'none',
+          }}
         >
-          {phase === 'loading' ? (
-            <div className="font-mono text-xs lowercase tracking-[0.3em] text-white/55">
-              loading {Math.round(progress * 100)}%
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onEnter}
-              className="font-mono text-sm lowercase tracking-[0.3em] text-[var(--color-accent-cyan,#00D9FF)] transition-opacity hover:opacity-80"
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <MobiusLoader size={100} />
+          </div>
+
+          <div className="absolute inset-x-2.5 top-1/2 mt-[100px] text-center">
+            {phase === 'loading' ? (
+              <LoadingMessages messages={LOADING_MESSAGES} />
+            ) : (
+              <button
+                type="button"
+                onClick={onEnter}
+                className="pointer-events-auto font-mono text-sm lowercase tracking-[0.3em] text-[var(--color-accent-cyan,#00D9FF)] transition-opacity hover:opacity-80"
+              >
+                [ enter ]
+              </button>
+            )}
+          </div>
+
+          {phase === 'loading' && (
+            <div
+              role="progressbar"
+              aria-valuenow={Math.round(progress * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              className="absolute bottom-[50px] left-1/2 h-px w-[300px] -translate-x-1/2 bg-[#333]"
             >
-              [ enter ]
-            </button>
+              <div className="h-full bg-white" style={{ width: `${Math.round(progress * 100)}%` }} />
+            </div>
           )}
         </div>,
         document.body,
