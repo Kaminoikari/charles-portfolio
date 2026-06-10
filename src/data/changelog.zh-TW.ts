@@ -34,6 +34,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'enter-gate-loader',
+    date: '2026-06-10',
+    title: '重新設計進場 Loading 序列',
+    tags: ['design', 'technical'],
+    body: [
+      '進入首頁人像前的啟動畫面，現在是一段有節奏的 loading 序列，取代了原本單行的百分比文字。黑色畫面中央是一枚發光翻轉的莫比烏斯環，下方輪播載入狀態文案，底部一條髮絲般的進度線從 0 掃到滿之後，Enter 控制項才登場。整體節奏參考了我很喜歡的兩個 loader，sidewave.it 與 aboutluca.com，再以本站自己的視覺語言重建。',
+      { kind: 'heading', text: '改了什麼' },
+      {
+        kind: 'list',
+        items: [
+          '**即時繪製的莫比烏斯環**：載入符號是用小型 canvas 即時繪製的參數化莫比烏斯帶（sidewave 用的是 GIF），在 retina 螢幕上依然銳利，也與背後人像的線框發光語言一致。',
+          '**保證有故事的進度條**：顯示進度取「固定兩秒的掃描」與「真實下載進度」之間較慢的一方，快取秒開的造訪仍會讀到一段從容的抵達，網路慢時進度條也誠實。',
+          '**分段交棒的轉場**：進度線跑滿後先發光停頓一拍，狀態文案與進度線一起淡出，ENTER 以純文字之姿在原位綻放，字距收斂、兩側髮絲線向外展開。滑過時字距張開、線條亮起，文字裹上一層層白色光暈。',
+        ],
+      },
+    ],
+  },
+  {
     id: 'hero-webgl-portrait',
     date: '2026-06-09',
     title: '把首頁主視覺改成即時運算的 WebGL 人像',

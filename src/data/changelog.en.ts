@@ -19,6 +19,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'enter-gate-loader',
+    date: '2026-06-10',
+    title: 'Redesigned the enter loading sequence',
+    tags: ['design', 'technical'],
+    body: [
+      'The splash that greets you before the hero portrait is now a staged loading sequence in place of a bare percentage counter. A glowing Mobius band tumbles at the centre of a black screen, status copy rotates beneath it, and a hairline progress bar sweeps from zero to full before the Enter control takes the stage. The rhythm borrows from two loaders I admire, sidewave.it and aboutluca.com, rebuilt in this site\'s own visual language.',
+      { kind: 'heading', text: 'What changed' },
+      {
+        kind: 'list',
+        items: [
+          '**A live Mobius mark**: the loading symbol is a parametric Mobius band drawn in real time on a small canvas (sidewave ships theirs as a GIF), so it stays crisp on retina screens and speaks the same wireframe-and-glow language as the portrait behind it.',
+          '**A progress bar with a guaranteed story**: the displayed progress is the slower of a fixed two-second sweep and the real download progress, so a cached visit still reads as a deliberate arrival while a slow network stays honest.',
+          '**A staged handoff**: when the bar completes it glows for a beat, the status copy and bar fade together, and ENTER blooms into the copy\'s spot as bare glowing text flanked by hairlines. Hovering widens the letter spacing, lights up the lines, and wraps the word in a layered glow.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'hero-webgl-portrait',
     date: '2026-06-09',
     title: 'Rebuilt the hero as a live WebGL portrait',

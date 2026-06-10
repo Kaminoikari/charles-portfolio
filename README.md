@@ -1,6 +1,6 @@
 # charles-chen.com
 
-Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who builds software products end-to-end with AI tools. Showcases case studies, an AI-built tech stack, a build-in-public changelog, and a retrieval-augmented AI chatbot, all through interactive Canvas animations.
+Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who builds software products end-to-end with AI tools. Showcases case studies, an AI-built tech stack, a build-in-public changelog, and a retrieval-augmented AI chatbot, fronted by a live WebGL portrait hero and interactive Canvas animations.
 
 **Live:** [charles-chen.com](https://charles-chen.com)
 
@@ -9,7 +9,8 @@ Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who 
 - **React 19** + **TypeScript** — UI framework
 - **Vite** — build tooling with code-splitting via `React.lazy()`
 - **Tailwind CSS 4** — styling with `@theme` design tokens
-- **Canvas 2D** — interactive animations for hero, skills sphere, project cards
+- **three.js (WebGL)** — hero portrait: surface-baked point-cloud face, scan-line wireframe transform, UnrealBloom post-processing
+- **Canvas 2D** — interactive animations for the loading gate's Mobius mark, skills sphere, project cards
 - **React Router** — SPA routing (`/`, `/changelog`)
 - **Vercel Analytics** — web analytics
 - **Vercel** — hosting with SPA fallback + serverless function (`/api/chat` SSE streaming)
@@ -27,7 +28,7 @@ Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who 
 
 | Section | Description |
 |---------|-------------|
-| **ParticleHero** | Ring-based particle system with click ripple effects |
+| **FaceHero** | Live WebGL portrait (three.js): a point-cloud face that a scan line morphs into a lit wireframe, behind an enter gate with a real-time Mobius loader, rotating status copy, and a staged loading→ENTER handoff |
 | **About** | Profile photo with achievement annotations, neural network background animation |
 | **Universe** | 3D Fibonacci sphere with scroll-driven skill labels |
 | **Experience** | Timeline with staggered reveal animations |
@@ -70,6 +71,7 @@ The vector index is built via a manual GitHub Action (`rag-ingest.yml`, `workflo
 ```
 src/
 ├── components/          # React components
+│   ├── hero/            # WebGL portrait hero + enter loading gate (FaceHero, MobiusLoader)
 │   ├── animations/      # Canvas modules (path, plutus, playbook, houseOps, jobOps)
 │   └── chat/            # AI chatbot widget, streaming hook, markdown renderer
 ├── data/                # Static data (projects, experience, skills, changelog)
