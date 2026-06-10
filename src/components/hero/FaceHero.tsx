@@ -19,6 +19,11 @@ const LOADING_MESSAGES = [
 const MESSAGE_HOLD_MS = 3000
 const MESSAGE_FADE_MS = 400
 const GATE_FADE_OUT_MS = 700
+// the bar always plays a full 0-to-100 sweep even on instant cache hits: displayed
+// progress is the SLOWER of a fixed-time ramp and the real asset progress, so a
+// fast load still reads as a deliberate 2s arrival and a slow load stays honest.
+const MIN_GATE_MS = 2000
+const PROGRESS_TICK_MS = 50
 
 function LoadingMessages({ messages }: { messages: string[] }) {
   const [index, setIndex] = useState(0)
@@ -81,7 +86,9 @@ export default function FaceHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<FaceHeroHandle | null>(null)
   const [phase, setPhase] = useState<Phase>(() => (alreadySeenThisSession() ? 'revealed' : 'loading'))
-  const [progress, setProgress] = useState(0)
+  const [displayedProgress, setDisplayedProgress] = useState(0)
+  const realProgressRef = useRef(0)
+  const engineReadyRef = useRef(false)
   const [failed, setFailed] = useState(false)
   const { unmute, unlock } = useAmbientAudio()
   const enteredRef = useRef(false)   // true only after a real Enter click, so a same-session skip stays silent
@@ -96,8 +103,8 @@ export default function FaceHero() {
     const handle = initFaceHero(canvas, {
       assetBase: '/hero/',
       reducedMotion: reduced,
-      onProgress: (p) => setProgress(p),
-      onReady: () => { if (seen) handleRef.current?.startIntro(true); else setPhase('ready') },
+      onProgress: (p) => { realProgressRef.current = p },
+      onReady: () => { if (seen) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
       onIntroComplete: () => { setPhase('revealed'); if (enteredRef.current) unmuteRef.current() },   // BGM fades in only after the intro, and only when the visitor actually entered
       onError: () => setFailed(true),
     })
@@ -121,6 +128,21 @@ export default function FaceHero() {
     document.addEventListener('visibilitychange', onVisibility)
     return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [])
+
+  // drive the displayed progress: a steady ramp capped by real progress; the gate
+  // flips to ready only when the bar has actually reached full
+  useEffect(() => {
+    if (phase !== 'loading' || failed) return
+    const startedAt = Date.now()
+    const id = window.setInterval(() => {
+      const timeProgress = Math.min((Date.now() - startedAt) / MIN_GATE_MS, 1)
+      const realProgress = engineReadyRef.current ? 1 : realProgressRef.current
+      const next = Math.min(timeProgress, realProgress)
+      setDisplayedProgress(next)
+      if (next >= 1) setPhase('ready')
+    }, PROGRESS_TICK_MS)
+    return () => clearInterval(id)
+  }, [phase, failed])
 
   const [gateDismissed, setGateDismissed] = useState(false)
   const gateFadeTimer = useRef(0)
@@ -219,9 +241,10 @@ export default function FaceHero() {
               <button
                 type="button"
                 onClick={onEnter}
-                className="pointer-events-auto font-mono text-sm lowercase tracking-[0.3em] text-[var(--color-accent-cyan,#00D9FF)] transition-opacity hover:opacity-80"
+                className="pointer-events-auto border border-white/40 px-10 py-3 font-mono text-xs uppercase tracking-[0.35em] text-white transition-colors duration-300 hover:border-white hover:bg-white hover:text-black"
+                style={{ boxShadow: '0 0 18px rgba(255,255,255,0.22), inset 0 0 10px rgba(255,255,255,0.08)' }}
               >
-                [ enter ]
+                Enter
               </button>
             )}
           </div>
@@ -229,12 +252,18 @@ export default function FaceHero() {
           {phase === 'loading' && (
             <div
               role="progressbar"
-              aria-valuenow={Math.round(progress * 100)}
+              aria-valuenow={Math.round(displayedProgress * 100)}
               aria-valuemin={0}
               aria-valuemax={100}
               className="absolute bottom-[50px] left-1/2 h-px w-[300px] -translate-x-1/2 bg-[#333]"
             >
-              <div className="h-full bg-white" style={{ width: `${Math.round(progress * 100)}%` }} />
+              <div
+                className="h-full bg-white"
+                style={{
+                  width: `${Math.round(displayedProgress * 100)}%`,
+                  transition: `width ${PROGRESS_TICK_MS * 2}ms linear`,
+                }}
+              />
             </div>
           )}
         </div>,

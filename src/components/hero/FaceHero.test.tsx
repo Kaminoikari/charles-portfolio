@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, act, fireEvent } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 
 const startIntro = vi.fn()
 const setActive = vi.fn()
@@ -25,11 +24,20 @@ import FaceHero from './FaceHero.tsx'
 beforeEach(() => {
   startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); unlock.mockClear(); lastOpts = null
   sessionStorage.clear()
+  vi.useFakeTimers()
   vi.stubGlobal('IntersectionObserver', function IntersectionObserverStub() {
     return { observe: vi.fn(), disconnect: vi.fn() }
   })
 })
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
+
+// the gate holds a minimum-duration progress sweep, so "ready" needs both the
+// engine callback and enough fake time for the bar to reach full
+const MIN_GATE_MS = 2000
+function fireReadyAndFinishSweep() {
+  act(() => { lastOpts?.onReady?.() })
+  act(() => { vi.advanceTimersByTime(MIN_GATE_MS + 100) })
+}
 
 describe('FaceHero shell', () => {
   it('always renders the hero heading in the DOM', () => {
@@ -37,26 +45,24 @@ describe('FaceHero shell', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/Senior Product Manager/)
   })
 
-  it('shows loading first, then the enter control once onReady fires', () => {
+  it('shows loading first, then the enter control once ready and the sweep completes', () => {
     render(<FaceHero />)
     expect(screen.getByText(/loading/i)).toBeInTheDocument()
-    act(() => { lastOpts?.onReady?.() })
+    fireReadyAndFinishSweep()
     expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
   })
 
-  it('calls startIntro exactly once when enter is clicked', async () => {
-    const user = userEvent.setup()
+  it('calls startIntro exactly once when enter is clicked', () => {
     render(<FaceHero />)
-    act(() => { lastOpts?.onReady?.() })
-    await user.click(screen.getByRole('button', { name: /enter/i }))
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(startIntro).toHaveBeenCalledTimes(1)
   })
 
-  it('unlocks audio on enter but holds the music until the intro finishes', async () => {
-    const user = userEvent.setup()
+  it('unlocks audio on enter but holds the music until the intro finishes', () => {
     render(<FaceHero />)
-    act(() => { lastOpts?.onReady?.() })
-    await user.click(screen.getByRole('button', { name: /enter/i }))
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(unlock).toHaveBeenCalledTimes(1)
     expect(unmute).not.toHaveBeenCalled()
     act(() => { lastOpts?.onIntroComplete?.() })
@@ -144,11 +150,10 @@ describe('FaceHero shell', () => {
     expect(startIntro).toHaveBeenCalledWith(true)
   })
 
-  it('marks the session as seen when enter is clicked', async () => {
-    const user = userEvent.setup()
+  it('marks the session as seen when enter is clicked', () => {
     render(<FaceHero />)
-    act(() => { lastOpts?.onReady?.() })
-    await user.click(screen.getByRole('button', { name: /enter/i }))
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(sessionStorage.getItem('faceHeroSeen')).toBe('1')
   })
 })
@@ -160,45 +165,48 @@ describe('FaceHero loading gate (sidewave-style loader)', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
-  it('reflects asset progress in the progress bar', () => {
+  it('plays a full minimum-duration sweep even when assets are ready instantly', () => {
+    render(<FaceHero />)
+    act(() => { lastOpts?.onReady?.() })
+    act(() => { vi.advanceTimersByTime(MIN_GATE_MS / 2) })
+    // halfway through the sweep the bar is half full and the gate still loads
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+    expect(screen.queryByRole('button', { name: /enter/i })).not.toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(MIN_GATE_MS / 2 + 100) })
+    expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
+  })
+
+  it('caps the bar at the real asset progress when loading is slow', () => {
     render(<FaceHero />)
     act(() => { lastOpts?.onProgress?.(0.42) })
+    act(() => { vi.advanceTimersByTime(MIN_GATE_MS * 2) })
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '42')
+    expect(screen.queryByRole('button', { name: /enter/i })).not.toBeInTheDocument()
   })
 
   it('cycles to the next loading message after the hold and fade delays', () => {
-    vi.useFakeTimers()
-    try {
-      render(<FaceHero />)
-      expect(screen.getByText(/Loading the experience/i)).toBeInTheDocument()
-      act(() => { vi.advanceTimersByTime(3000 + 400) })
-      expect(screen.getByText(/Waking the particles/i)).toBeInTheDocument()
-    } finally {
-      vi.useRealTimers()
-    }
+    render(<FaceHero />)
+    expect(screen.getByText(/Loading the experience/i)).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(3000 + 400) })
+    expect(screen.getByText(/Waking the particles/i)).toBeInTheDocument()
   })
 
   it('hides the progress bar once ready and keeps the mobius mark behind the enter control', () => {
     render(<FaceHero />)
-    act(() => { lastOpts?.onReady?.() })
+    fireReadyAndFinishSweep()
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
     expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
   })
 
   it('fades the gate out and unmounts it after enter', () => {
-    vi.useFakeTimers()
-    try {
-      render(<FaceHero />)
-      act(() => { lastOpts?.onReady?.() })
-      fireEvent.click(screen.getByRole('button', { name: /enter/i }))
-      // still mounted mid-fade, but inert
-      expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
-      act(() => { vi.advanceTimersByTime(700) })
-      expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
-    } finally {
-      vi.useRealTimers()
-    }
+    render(<FaceHero />)
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    // still mounted mid-fade, but inert
+    expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
+    act(() => { vi.advanceTimersByTime(700) })
+    expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
   })
 
   it('drops the gate when the engine errors so the fallback is reachable', () => {
