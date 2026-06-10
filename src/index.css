@@ -232,20 +232,29 @@ body.chat-open [class*="protico" i] {
   from { width: 0; opacity: 0; }
   to { width: 72px; opacity: 1; }
 }
+/* fill-mode must stay `backwards`: a forwards/both fill would pin the keyframe
+   letter-spacing forever and silently swallow the hover transition below */
 .gate-enter {
-  animation: gate-enter-reveal 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1s both;
-  transition: text-shadow 0.4s ease;
+  cursor: pointer;
+  animation: gate-enter-reveal 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1s backwards;
+  transition:
+    text-shadow 0.4s ease,
+    letter-spacing 0.5s cubic-bezier(0.19, 0.91, 0.36, 0.99);
 }
 .gate-enter:hover {
+  letter-spacing: 0.55em;
   text-shadow:
-    0 0 6px rgba(255, 255, 255, 0.8),
-    0 0 16px rgba(255, 255, 255, 0.45),
-    0 0 32px rgba(255, 255, 255, 0.25);
+    0 0 8px rgba(255, 255, 255, 0.9),
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 40px rgba(255, 255, 255, 0.35);
 }
 .gate-enter-line {
+  width: 72px;
   height: 1px;
-  animation: gate-line-draw 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1.15s both;
-  transition: transform 0.5s cubic-bezier(0.19, 0.91, 0.36, 0.99), opacity 0.4s ease;
+  animation: gate-line-draw 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1.15s backwards;
+  transition:
+    transform 0.5s cubic-bezier(0.19, 0.91, 0.36, 0.99),
+    box-shadow 0.4s ease;
 }
 .gate-enter-line-left {
   background: linear-gradient(to left, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
@@ -255,7 +264,10 @@ body.chat-open [class*="protico" i] {
   background: linear-gradient(to right, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
   transform-origin: left center;
 }
-.gate-enter:hover .gate-enter-line { transform: scaleX(1.4); }
+.gate-enter:hover .gate-enter-line {
+  transform: scaleX(1.5);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .gate-enter, .gate-enter-line { animation-duration: 0.01s; animation-delay: 0s; }
