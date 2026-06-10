@@ -115,14 +115,6 @@ export default function FaceHero() {
           className="pointer-events-none absolute inset-x-0 bottom-0 h-40"
           style={{ background: 'linear-gradient(to bottom, transparent 0%, var(--color-bg-primary) 100%)' }}
         />
-
-        {/* scroll cue stays pinned to the bottom safe area of the first screen (svh tracks the
-            mobile viewport so it never slips behind the browser chrome) */}
-        {phase === 'revealed' && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[6svh] z-10 hidden justify-center md:flex">
-            <span className="text-sm tracking-widest text-white/40" style={{ animation: 'pulse-fade 2s ease-in-out infinite' }}>SCROLL</span>
-          </div>
-        )}
       </div>
 
       {/* breathing room between the hero and the about section; on desktop it also hosts the headline */}
