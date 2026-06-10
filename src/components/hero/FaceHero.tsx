@@ -24,12 +24,23 @@ const GATE_FADE_OUT_MS = 700
 // fast load still reads as a deliberate 2s arrival and a slow load stays honest.
 const MIN_GATE_MS = 2000
 const PROGRESS_TICK_MS = 50
+// the loading→enter handoff (aboutluca.com rhythm): the bar completes and glows,
+// a short beat, then the copy and bar fade together while ENTER blooms into the
+// copy's spot; the fading elements unmount once their exit finishes.
+const HANDOFF_HOLD_MS = 400
+const HANDOFF_FADE_MS = 600
+const HANDOFF_TOTAL_MS = HANDOFF_HOLD_MS + HANDOFF_FADE_MS
+const HANDOFF_EXIT_STYLE = {
+  opacity: 0,
+  transition: `opacity ${HANDOFF_FADE_MS}ms ease ${HANDOFF_HOLD_MS}ms`,
+} as const
 
-function LoadingMessages({ messages }: { messages: string[] }) {
+function LoadingMessages({ messages, frozen = false }: { messages: string[]; frozen?: boolean }) {
   const [index, setIndex] = useState(0)
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
+    if (frozen) return   // the handoff owns the exit fade; stop rotating mid-goodbye
     let holdTimer = 0
     let fadeTimer = 0
     const cycle = () => {
@@ -44,12 +55,16 @@ function LoadingMessages({ messages }: { messages: string[] }) {
     }
     cycle()
     return () => { clearTimeout(holdTimer); clearTimeout(fadeTimer) }
-  }, [messages])
+  }, [messages, frozen])
 
   return (
     <span
       className="font-mono text-xs uppercase tracking-[0.08em] text-white"
-      style={{ opacity: visible ? 1 : 0, transition: `opacity ${MESSAGE_FADE_MS}ms` }}
+      style={
+        frozen
+          ? HANDOFF_EXIT_STYLE
+          : { opacity: visible ? 1 : 0, transition: `opacity ${MESSAGE_FADE_MS}ms` }
+      }
     >
       {messages[index]}
     </span>
@@ -144,6 +159,15 @@ export default function FaceHero() {
     return () => clearInterval(id)
   }, [phase, failed])
 
+  // once ready, hold the loading copy and bar through their exit fade, then drop
+  // them; ENTER is already blooming into the copy's spot during the overlap
+  const [handoffDone, setHandoffDone] = useState(false)
+  useEffect(() => {
+    if (phase !== 'ready') return
+    const id = window.setTimeout(() => setHandoffDone(true), HANDOFF_TOTAL_MS)
+    return () => clearTimeout(id)
+  }, [phase])
+
   const [gateDismissed, setGateDismissed] = useState(false)
   const gateFadeTimer = useRef(0)
   useEffect(() => () => clearTimeout(gateFadeTimer.current), [])
@@ -234,34 +258,41 @@ export default function FaceHero() {
             <MobiusLoader size={100} />
           </div>
 
-          <div className="absolute inset-x-2.5 top-1/2 mt-[100px] text-center">
-            {phase === 'loading' ? (
-              <LoadingMessages messages={LOADING_MESSAGES} />
-            ) : (
+          {!handoffDone && (
+            <div className="absolute inset-x-2.5 top-1/2 mt-[100px] text-center">
+              <LoadingMessages messages={LOADING_MESSAGES} frozen={phase !== 'loading'} />
+            </div>
+          )}
+
+          {phase !== 'loading' && (
+            <div className="absolute inset-x-0 top-1/2 mt-[92px] flex justify-center">
               <button
                 type="button"
                 onClick={onEnter}
-                className="pointer-events-auto border border-white/40 px-10 py-3 font-mono text-xs uppercase tracking-[0.35em] text-white transition-colors duration-300 hover:border-white hover:bg-white hover:text-black"
-                style={{ boxShadow: '0 0 18px rgba(255,255,255,0.22), inset 0 0 10px rgba(255,255,255,0.08)' }}
+                className="gate-enter pointer-events-auto flex items-center gap-5 py-2 font-mono text-xs uppercase tracking-[0.35em] text-white"
               >
+                <span aria-hidden="true" className="gate-enter-line gate-enter-line-left" />
                 Enter
+                <span aria-hidden="true" className="gate-enter-line gate-enter-line-right" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          {phase === 'loading' && (
+          {!handoffDone && (
             <div
               role="progressbar"
               aria-valuenow={Math.round(displayedProgress * 100)}
               aria-valuemin={0}
               aria-valuemax={100}
               className="absolute bottom-[50px] left-1/2 h-px w-[300px] -translate-x-1/2 bg-[#333]"
+              style={phase === 'loading' ? undefined : HANDOFF_EXIT_STYLE}
             >
               <div
                 className="h-full bg-white"
                 style={{
                   width: `${Math.round(displayedProgress * 100)}%`,
-                  transition: `width ${PROGRESS_TICK_MS * 2}ms linear`,
+                  transition: `width ${PROGRESS_TICK_MS * 2}ms linear, box-shadow 400ms ease`,
+                  boxShadow: displayedProgress >= 1 ? '0 0 12px rgba(255,255,255,0.75)' : 'none',
                 }}
               />
             </div>

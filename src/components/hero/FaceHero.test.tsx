@@ -191,10 +191,20 @@ describe('FaceHero loading gate (sidewave-style loader)', () => {
     expect(screen.getByText(/Waking the particles/i)).toBeInTheDocument()
   })
 
-  it('hides the progress bar once ready and keeps the mobius mark behind the enter control', () => {
+  it('overlaps the handoff: enter mounts while the copy and bar are still fading', () => {
     render(<FaceHero />)
     fireReadyAndFinishSweep()
+    expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
+    expect(screen.getByRole('progressbar')).toBeInTheDocument()
+    expect(screen.getByText(/Loading the experience/i)).toBeInTheDocument()
+  })
+
+  it('drops the faded copy and bar once the handoff finishes, keeping the mobius mark', () => {
+    render(<FaceHero />)
+    fireReadyAndFinishSweep()
+    act(() => { vi.advanceTimersByTime(1000) })
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Loading the experience/i)).not.toBeInTheDocument()
     expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
   })

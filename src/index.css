@@ -219,3 +219,44 @@ body.chat-open [class*="protico" i] {
   .career-img { transition: none; }
 }
 
+
+/* Hero enter gate — the loading→enter handoff borrows aboutluca.com's loader
+   language: the status copy fades first, then ENTER blooms into the same spot
+   as bare glowing text with hairlines drawing outward from it (echoing the
+   progress line below). No boxed CTA; the text IS the control. */
+@keyframes gate-enter-reveal {
+  from { opacity: 0; letter-spacing: 0.7em; }
+  to { opacity: 1; letter-spacing: 0.35em; }
+}
+@keyframes gate-line-draw {
+  from { width: 0; opacity: 0; }
+  to { width: 72px; opacity: 1; }
+}
+.gate-enter {
+  animation: gate-enter-reveal 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1s both;
+  transition: text-shadow 0.4s ease;
+}
+.gate-enter:hover {
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.8),
+    0 0 16px rgba(255, 255, 255, 0.45),
+    0 0 32px rgba(255, 255, 255, 0.25);
+}
+.gate-enter-line {
+  height: 1px;
+  animation: gate-line-draw 0.8s cubic-bezier(0.19, 0.91, 0.36, 0.99) 1.15s both;
+  transition: transform 0.5s cubic-bezier(0.19, 0.91, 0.36, 0.99), opacity 0.4s ease;
+}
+.gate-enter-line-left {
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+  transform-origin: right center;
+}
+.gate-enter-line-right {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+  transform-origin: left center;
+}
+.gate-enter:hover .gate-enter-line { transform: scaleX(1.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-enter, .gate-enter-line { animation-duration: 0.01s; animation-delay: 0s; }
+}
