@@ -42,7 +42,19 @@ export const changelog: ChangelogEntry[] = [
     title: 'Rebuilt the hero as a live WebGL portrait',
     tags: ['feature', 'design', 'technical'],
     body: [
-      'The landing animation is now a 3D portrait of my own face, rendered live in the browser with three.js and WebGL. It replaces the old Canvas 2D particle hero. Press Enter and a scan line sweeps the face, turning a field of halftone dots into a lit wireframe and back, the way a machine might study someone before it places them.',
+      'The landing animation is now a 3D portrait of my own face, rendered live in the browser with three.js and WebGL. It replaces the old Canvas 2D particle hero. Press Enter and a scan line sweeps the face, turning a field of halftone dots into a lit wireframe and back, the way a machine might study someone before it places them. What ships today is the survivor of three days and seventy-plus commits of prototyping, and the detours shaped it as much as the plan did.',
+      { kind: 'heading', text: 'The road here' },
+      {
+        kind: 'list',
+        items: [
+          '**It started as someone else\'s mascot**: the first prototype existed to practice the wireframe-and-bloom look I wanted, hung on stand-in models. A cat came first, then a polygon-decimated corgi, then a robot, each on its own branch. They all looked fine and they all said nothing about me. That realisation set the real brief: it has to be my own face.',
+          '**The flat-face dead end**: the first portrait attempt triangulated my photo into a 2.5D Delaunay relief. Most of the time went into fighting it, masking out the background, filtering spider-web triangles, tightening the silhouette, and the moment the camera moved it still read as a paper cutout. Scrapped wholesale.',
+          '**The keeper**: bake the photo onto a real 3D head, sampling brightness per vertex, then render that one geometry three ways at once, as dots, lines, and a shaded mesh. The dots carry the likeness, the wireframe carries the structure, and the scan line only decides which one you see.',
+          '**The 2 a.m. scowl**: the eye-laser easter egg originally dropped the jaw into an open roar. Five commits of lip-ring pinching and jaw-hinge work later, the mouth still tore the mesh open, so at two in the morning the roar became a grim closed-mouth scowl. It suits this head far better than the roar ever did.',
+          '**The iOS audio war**: the laser sound alone took over a dozen commits. It had to loop gaplessly, stay audible with the silent switch on, and unlock inside the tap gesture, bouncing between Web Audio and HTMLAudio until both the loop and iOS were satisfied.',
+          '**From prototype to product**: the approved prototype then had to become a React component. That meant extracting an engine module with a real lifecycle, hunting a GPU memory leak in the bloom pass, adding the Enter gate so the intro audio can start legally, and a long tail of mobile rounds: touch fighting scroll, the zoom jump when the address bar collapses, dust fields thinning out on small screens.',
+        ],
+      },
       { kind: 'heading', text: 'What you see' },
       {
         kind: 'list',
