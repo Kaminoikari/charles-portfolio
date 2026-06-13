@@ -1004,10 +1004,17 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
-  // iOS Web Audio backup unlock: the first real touchend/click anywhere wakes the laser context
-  // (covers the same-session skip path that never shows the Enter gate, and any case the Enter
-  // unlock missed). touchend/click are the gestures iOS Safari honours most reliably.
-  const unlockOnce = () => { ensureLaserCtx(); window.removeEventListener('touchend', unlockOnce); window.removeEventListener('click', unlockOnce) }
+  // iOS Web Audio unlock: iOS Safari only wakes audio from touchstart/touchend/click — NOT pointer
+  // events — so the pointerdown unlock on the face press is ignored there. touchstart fires at the
+  // START of the press, so the context is running by the 1.4s loop handoff even on the very first
+  // hold after a refresh (the skip-intro path never shows the Enter gate). one-shot, then removed.
+  const unlockOnce = () => {
+    ensureLaserCtx()
+    window.removeEventListener('touchstart', unlockOnce)
+    window.removeEventListener('touchend', unlockOnce)
+    window.removeEventListener('click', unlockOnce)
+  }
+  window.addEventListener('touchstart', unlockOnce, { passive: true })
   window.addEventListener('touchend', unlockOnce)
   window.addEventListener('click', unlockOnce)
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
@@ -1303,6 +1310,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchstart', unlockOnce)
       window.removeEventListener('touchend', unlockOnce)
       window.removeEventListener('click', unlockOnce)
       window.removeEventListener('resize', syncSize)
