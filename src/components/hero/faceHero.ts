@@ -1021,20 +1021,17 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
-  // iOS Web Audio unlock: iOS Safari only wakes audio from touchstart/touchend/click — NOT pointer
-  // events — so the pointerdown unlock on the face press is ignored there. touchstart fires at the
-  // START of the press, so the context is running by the 1.4s loop handoff even on the very first
-  // hold after a refresh (the skip-intro path never shows the Enter gate). one-shot, then removed.
-  const unlockOnce = () => {
-    dbg('unlockOnce fired')
-    ensureLaserCtx()
-    window.removeEventListener('touchstart', unlockOnce)
-    window.removeEventListener('touchend', unlockOnce)
-    window.removeEventListener('click', unlockOnce)
+  // iOS Web Audio unlock: iOS resumes a context only from certain gestures (click/touchend — the
+  // tap-COMPLETED events — not touchstart/pointerdown). So keep retrying resume on every gesture type
+  // until the context is genuinely "running", THEN detach. A one-shot would let an early touchstart
+  // (which iOS ignores) consume the single chance before the click/touchend that actually works.
+  const UNLOCK_EVENTS = ['touchend', 'pointerup', 'click', 'touchstart'] as const
+  const tryUnlock = (e: Event) => {
+    const ctx = ensureLaserCtx()
+    dbg('tryUnlock ' + e.type + ' → ' + (ctx ? ctx.state : 'none'))
+    if (ctx && ctx.state === 'running') UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
   }
-  window.addEventListener('touchstart', unlockOnce, { passive: true })
-  window.addEventListener('touchend', unlockOnce)
-  window.addEventListener('click', unlockOnce)
+  UNLOCK_EVENTS.forEach((ev) => window.addEventListener(ev, tryUnlock, { passive: true }))
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -1303,9 +1300,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const handle: FaceHeroHandle = {
     startIntro: (skipIntro = false) => {
       if (started) return
-      // NOTE: do NOT create the laser AudioContext here. On the skip path (refresh), startIntro runs
-      // from onReady — not a user gesture — and iOS permanently locks a context constructed outside a
-      // gesture. The context is constructed only by unlockOnce (first touchstart/click) instead.
+      // Enter is a real click gesture → unlock here (this is what reliably wakes iOS audio). The skip
+      // path (refresh) runs from onReady — NOT a gesture — and iOS permanently locks a context built
+      // off-gesture, so we must NOT construct it there; tryUnlock handles that case on the first tap.
+      if (!skipIntro) ensureLaserCtx()
       if (assetsReady) doStart(skipIntro)
       else { pendingStart = true; pendingSkip = skipIntro }
     },
@@ -1330,9 +1328,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('touchmove', onTouchMove)
-      window.removeEventListener('touchstart', unlockOnce)
-      window.removeEventListener('touchend', unlockOnce)
-      window.removeEventListener('click', unlockOnce)
+      UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF); cancelAnimationFrame(loopFadeRAF)
