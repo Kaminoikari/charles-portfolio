@@ -48,6 +48,17 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     return noop
   }
 
+  // TEMP audio diagnostics — visible only with ?audiodebug=1. Pushes a rolling log to
+  // window.__laserDbg, which FaceHero renders as a small overlay. Remove once the iOS loop is fixed.
+  const AUDIO_DBG = typeof location !== 'undefined' && /[?&]audiodebug=1/.test(location.search)
+  const dbgLog: string[] = []
+  const dbg = (s: string) => {
+    if (!AUDIO_DBG) return
+    dbgLog.push(`${(performance.now() / 1000).toFixed(1)}s ${s}`)
+    if (dbgLog.length > 40) dbgLog.shift()
+    ;(window as unknown as { __laserDbg?: string }).__laserDbg = dbgLog.join('\n')
+  }
+
   type Layer = {
     attr: THREE.BufferAttribute
     base: Float32Array
@@ -261,7 +272,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   function decodeLoop() {
     if (!laserCtx || !laserLoopBytes || laserLoopBuffer) return
     // decodeAudioData detaches its input on some engines — decode a copy so a later retry still has bytes
-    laserCtx.decodeAudioData(laserLoopBytes.slice(0)).then((buf) => { laserLoopBuffer = buf; if (loopWanted) startLoopNow() }).catch(() => {})
+    laserCtx.decodeAudioData(laserLoopBytes.slice(0)).then((buf) => { laserLoopBuffer = buf; dbg('decoded ok'); if (loopWanted) startLoopNow() }).catch((e) => dbg('decode FAIL ' + e))
   }
   // create + resume the context inside a real user gesture (Safari-safe unlock); decode the loop now
   // if its bytes have already arrived.
@@ -277,13 +288,14 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     // non-gesture call (the skip-intro path on refresh) leaves the context suspended, so each later
     // real gesture must get a fresh, genuine unlock attempt until the context is actually running.
     if (laserCtx.state !== "running") {
-      laserCtx.resume().catch(() => {})
+      laserCtx.resume().then(() => dbg('resume→' + laserCtx?.state)).catch((e) => dbg('resume FAIL ' + e))
       try {
         const b = laserCtx.createBuffer(1, 1, 22050)
         const s = laserCtx.createBufferSource()
         s.buffer = b; s.connect(laserCtx.destination); s.start(0)
-      } catch { /* unlock best-effort */ }
-    }
+        dbg('ensure: silentbuf, state=' + laserCtx.state)
+      } catch (e) { dbg('silentbuf FAIL ' + e) }
+    } else dbg('ensure: already running')
     return laserCtx
   }
   // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
@@ -327,9 +339,13 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // start the looping beam and crossfade the attack take into it. safe to call from the handoff
   // timer or from the decode callback (if the buffer landed late); a no-op if already looping.
   function startLoopNow() {
-    if (!loopWanted || laserLoopSrc || !laserCtx || !laserLoopBuffer) return
+    if (!loopWanted || laserLoopSrc || !laserCtx || !laserLoopBuffer) {
+      dbg(`loopNow BAIL want=${loopWanted} src=${!!laserLoopSrc} ctx=${!!laserCtx} buf=${!!laserLoopBuffer}`)
+      return
+    }
     const ctx = laserCtx
     if (ctx.state === "suspended") ctx.resume().catch(() => {})   // iOS may have re-suspended the idle context since the press
+    dbg('loopNow START state=' + ctx.state)
     const src = ctx.createBufferSource()
     src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
     const gain = ctx.createGain(); gain.gain.value = 0
@@ -355,7 +371,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     stopLoopSrc()                                                         // tear down any loop still sustaining from a prior press
     ensureLaserCtx()                                                      // resume the context (also unlocked earlier in pointerdown)
     laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
-    loopTimer = window.setTimeout(() => { loopWanted = true; startLoopNow() }, ATTACK_TO_LOOP * 1000)
+    dbg('fire: ctx=' + (laserCtx ? laserCtx.state : 'none') + ' buf=' + !!laserLoopBuffer)
+    loopTimer = window.setTimeout(() => { loopWanted = true; dbg('handoff'); startLoopNow() }, ATTACK_TO_LOOP * 1000)
   }
   // stop the current looping beam with a tiny release ramp so cutting it never clicks
   function stopLoopSrc() {
@@ -1009,6 +1026,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // START of the press, so the context is running by the 1.4s loop handoff even on the very first
   // hold after a refresh (the skip-intro path never shows the Enter gate). one-shot, then removed.
   const unlockOnce = () => {
+    dbg('unlockOnce fired')
     ensureLaserCtx()
     window.removeEventListener('touchstart', unlockOnce)
     window.removeEventListener('touchend', unlockOnce)
