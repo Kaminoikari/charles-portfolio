@@ -249,26 +249,32 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const laserAttack = new Audio(assetBase + "laser-attack.mp3")   // charge build + fire blast (~2.4s)
   laserAttack.preload = "auto"; laserAttack.volume = 0.9
   let laserCtx: AudioContext | null = null
-  let laserLoopBuffer: AudioBuffer | null = null
+  let laserLoopBytes: ArrayBuffer | null = null   // raw wav, prefetched at load
+  let laserLoopBuffer: AudioBuffer | null = null  // decoded — needs a context, so decoded in-gesture
   let laserLoopSrc: AudioBufferSourceNode | null = null
   let laserLoopGain: GainNode | null = null
   let loopWanted = false   // true between the attack→loop handoff and release; lets a late-decoded buffer still start the beam
-  // build the context + decode the loop up front so the buffer is ready well before the first press.
-  // a context created before a gesture is just "suspended"; startFireSfx resumes it inside the press.
+  // prefetch the loop bytes at load (no AudioContext yet — Safari can't resume a context created
+  // before a gesture, so we defer creation to the first press). decode happens in-gesture, which is
+  // fast since the bytes are already cached.
+  fetch(assetBase + "laser-fire.wav").then((r) => r.arrayBuffer()).then((b) => { laserLoopBytes = b; decodeLoop() }).catch(() => {})
+  function decodeLoop() {
+    if (!laserCtx || !laserLoopBytes || laserLoopBuffer) return
+    // decodeAudioData detaches its input on some engines — decode a copy so a later retry still has bytes
+    laserCtx.decodeAudioData(laserLoopBytes.slice(0)).then((buf) => { laserLoopBuffer = buf; if (loopWanted) startLoopNow() }).catch(() => {})
+  }
+  // create + resume the context inside a real user gesture (Safari-safe unlock); decode the loop now
+  // if its bytes have already arrived.
   function ensureLaserCtx(): AudioContext | null {
     if (!laserCtx) {
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!Ctx) return null
       laserCtx = new Ctx()
-      fetch(assetBase + "laser-fire.wav")
-        .then((r) => r.arrayBuffer())
-        .then((b) => laserCtx!.decodeAudioData(b))
-        .then((buf) => { laserLoopBuffer = buf; if (loopWanted) startLoopNow() })   // still holding when decode lands → start now
-        .catch(() => {})
+      decodeLoop()
     }
+    if (laserCtx.state === "suspended") laserCtx.resume().catch(() => {})
     return laserCtx
   }
-  ensureLaserCtx()   // kick off the fetch/decode at init; the long intro guarantees it finishes before any fire
   // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
   // playback before the first user gesture — so the very first load may be silent. accepted for
   // now; the final beat timing + autoplay strategy get locked when this folds into the real hero.
@@ -335,8 +341,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     setPlaybackSession()
     clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
     stopLoopSrc()                                                         // tear down any loop still sustaining from a prior press
-    const ctx = ensureLaserCtx()
-    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {})    // unlock Web Audio inside the gesture
+    ensureLaserCtx()                                                      // resume the context (also unlocked earlier in pointerdown)
     laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
     loopTimer = window.setTimeout(() => { loopWanted = true; startLoopNow() }, ATTACK_TO_LOOP * 1000)
   }
@@ -971,6 +976,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     if (e.pointerType === 'touch') {
       touchOnFace = pointerOverFace(e)
       if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
+      if (introDone) ensureLaserCtx()     // unlock Web Audio inside the touch gesture — beginFire is deferred 150ms (out of gesture)
       setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
     } else { setAim(e); beginFire() }
   }
