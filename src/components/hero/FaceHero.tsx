@@ -181,17 +181,6 @@ export default function FaceHero() {
     gateFadeTimer.current = window.setTimeout(() => setGateDismissed(true), GATE_FADE_OUT_MS)
   }
 
-  // TEMP audio diagnostics overlay — only with ?audiodebug=1. Remove once the iOS loop is fixed.
-  const audioDebug = typeof window !== 'undefined' && /[?&]audiodebug=1/.test(window.location.search)
-  const [dbgText, setDbgText] = useState('')
-  useEffect(() => {
-    if (!audioDebug) return
-    const id = window.setInterval(() => {
-      setDbgText((window as unknown as { __laserDbg?: string }).__laserDbg ?? '(no events yet)')
-    }, 200)
-    return () => clearInterval(id)
-  }, [audioDebug])
-
   const gateActive = phase === 'loading' || phase === 'ready'
   // after Enter the overlay stays mounted just long enough to fade out over the
   // starting intro; an engine error drops the gate immediately so the static
@@ -250,15 +239,6 @@ export default function FaceHero() {
           <span className="font-normal text-white">AI.</span>
         </h1>
       </div>
-
-      {audioDebug && (
-        <pre
-          className="fixed left-2 top-2 z-[200] max-w-[92vw] whitespace-pre-wrap rounded bg-black/85 p-2 font-mono text-[10px] leading-tight text-[#00D9FF]"
-          style={{ pointerEvents: 'none' }}
-        >
-          {dbgText}
-        </pre>
-      )}
 
       {gateMounted && createPortal(
         // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,

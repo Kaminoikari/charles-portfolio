@@ -48,17 +48,6 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     return noop
   }
 
-  // TEMP audio diagnostics — visible only with ?audiodebug=1. Pushes a rolling log to
-  // window.__laserDbg, which FaceHero renders as a small overlay. Remove once the iOS loop is fixed.
-  const AUDIO_DBG = typeof location !== 'undefined' && /[?&]audiodebug=1/.test(location.search)
-  const dbgLog: string[] = []
-  const dbg = (s: string) => {
-    if (!AUDIO_DBG) return
-    dbgLog.push(`${(performance.now() / 1000).toFixed(1)}s ${s}`)
-    if (dbgLog.length > 40) dbgLog.shift()
-    ;(window as unknown as { __laserDbg?: string }).__laserDbg = dbgLog.join('\n')
-  }
-
   type Layer = {
     attr: THREE.BufferAttribute
     base: Float32Array
@@ -253,63 +242,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // heat-vision SFX (user-supplied), split so every press gets the charge+fire attack and then a
   // seamless sustain: the attack take plays once, and ~when it lands in the beam the looping body
   // takes over (aligned to the same point in the source, so the handoff is continuous).
-  // heat-vision SFX. the charge+fire "attack" take plays once per press through an <audio>
-  // element; the sustained beam loops through the Web Audio API, whose AudioBufferSourceNode
-  // loop is sample-accurate — so the loop seam is truly gapless. (An <audio loop> re-seek
-  // leaves a brief silence at the loop point, audible when the beam is held down.)
-  const laserAttack = new Audio(assetBase + "laser-attack.mp3")   // charge build + fire blast (~2.4s)
+  const laserAttack = new Audio(assetBase + "laser-attack.mp3")   // charge build + fire blast (~2s)
+  const laserLoop = new Audio(assetBase + "laser-fire.wav")       // seamless sustained beam (WAV: no mp3 priming-padding gap at the loop point)
   laserAttack.preload = "auto"; laserAttack.volume = 0.9
-  // iOS cold-start fallback loop: when the Web Audio context can't be unlocked yet (a refresh whose
-  // first action is a press-and-hold — no tap-completed gesture to unlock before the handoff), loop
-  // through this <audio> element instead. HTMLMediaElement is far more lenient than AudioContext on
-  // iOS (the attack take proves it plays here). Its loop seam isn't perfectly gapless, but that only
-  // affects this one cold case; every other path uses the gapless Web Audio loop below.
-  const laserLoopEl = new Audio(assetBase + "laser-fire.wav")
-  laserLoopEl.preload = "auto"; laserLoopEl.loop = true; laserLoopEl.volume = 0
-  let loopUsingEl = false
-  let laserCtx: AudioContext | null = null
-  let laserLoopBytes: ArrayBuffer | null = null   // raw wav, prefetched at load
-  let laserLoopBuffer: AudioBuffer | null = null  // decoded — needs a context, so decoded in-gesture
-  let laserLoopSrc: AudioBufferSourceNode | null = null
-  let laserLoopGain: GainNode | null = null
-  let loopWanted = false   // true between the attack→loop handoff and release; lets a late-decoded buffer still start the beam
-  // prefetch the loop bytes at load (no AudioContext yet — Safari can't resume a context created
-  // before a gesture, so we defer creation to the first press). decode happens in-gesture, which is
-  // fast since the bytes are already cached.
-  fetch(assetBase + "laser-fire.wav").then((r) => r.arrayBuffer()).then((b) => { laserLoopBytes = b; decodeLoop() }).catch(() => {})
-  function decodeLoop() {
-    if (!laserCtx || !laserLoopBytes || laserLoopBuffer) return
-    // decodeAudioData detaches its input on some engines — decode a copy so a later retry still has bytes
-    laserCtx.decodeAudioData(laserLoopBytes.slice(0)).then((buf) => { laserLoopBuffer = buf; dbg('decoded ok'); if (loopWanted) startLoopNow() }).catch((e) => dbg('decode FAIL ' + e))
-  }
-  // create + resume the context inside a real user gesture (Safari-safe unlock); decode the loop now
-  // if its bytes have already arrived.
-  // allowConstruct: only TRUE from a tap-completed gesture (click/touchend/pointerup). iOS Safari
-  // permanently locks a context CONSTRUCTED from touchstart/pointerdown or off-gesture — no later
-  // resume() ever revives it — so every other caller passes false (resume-only, never construct).
-  function ensureLaserCtx(allowConstruct = false): AudioContext | null {
-    if (!laserCtx) {
-      if (!allowConstruct) return null
-      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-      if (!Ctx) return null
-      laserCtx = new Ctx()
-      decodeLoop()
-    }
-    // iOS Safari unlock: resume() alone leaves the audio hardware asleep — it only wakes when a real
-    // buffer source is started inside the gesture. gate on the live state (NOT a one-shot flag): a
-    // non-gesture call (the skip-intro path on refresh) leaves the context suspended, so each later
-    // real gesture must get a fresh, genuine unlock attempt until the context is actually running.
-    if (laserCtx.state !== "running") {
-      laserCtx.resume().then(() => dbg('resume→' + laserCtx?.state)).catch((e) => dbg('resume FAIL ' + e))
-      try {
-        const b = laserCtx.createBuffer(1, 1, 22050)
-        const s = laserCtx.createBufferSource()
-        s.buffer = b; s.connect(laserCtx.destination); s.start(0)
-        dbg('ensure: silentbuf, state=' + laserCtx.state)
-      } catch (e) { dbg('silentbuf FAIL ' + e) }
-    } else dbg('ensure: already running')
-    return laserCtx
-  }
+  laserLoop.preload = "auto"; laserLoop.volume = 0.9; laserLoop.loop = true
   // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
   // playback before the first user gesture — so the very first load may be silent. accepted for
   // now; the final beat timing + autoplay strategy get locked when this folds into the real hero.
@@ -348,86 +284,33 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     // "playback" audio session (iOS 16.4+). this lets the sound through with the ringer flipped.
     try { const nav = navigator as Navigator & { audioSession?: { type: string } }; if (nav.audioSession) nav.audioSession.type = "playback" } catch { /* audioSession unsupported */ }
   }
-  // start the looping beam and crossfade the attack take into it. safe to call from the handoff
-  // timer or from the decode callback (if the buffer landed late); a no-op if already looping.
-  function startLoopNow() {
-    if (!loopWanted || laserLoopSrc || loopUsingEl) return   // already looping (Web Audio src or fallback element)
-    const ctx = laserCtx
-    if (ctx && ctx.state === "running" && laserLoopBuffer) {
-      // preferred path: gapless Web Audio loop (Enter / nav-back / every press after the first unlock)
-      dbg('loopNow START webaudio')
-      laserLoopEl.pause()   // we won't need the primed fallback element
-      const src = ctx.createBufferSource()
-      src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
-      const gain = ctx.createGain(); gain.gain.value = 0
-      src.connect(gain).connect(ctx.destination)
-      src.start()
-      laserLoopSrc = src; laserLoopGain = gain
-      crossfadeAttackInto((k) => { gain.gain.value = LASER_VOL * Math.sin((k * Math.PI) / 2) })
-    } else {
-      // iOS cold-start fallback: Web Audio still locked (a refresh whose first action is this hold).
-      // The element is already rolling muted from startFireSfx — just UNMUTE it (iOS allows that from
-      // a timer) and crossfade its volume up.
-      dbg('loopNow START htmlaudio (ctx=' + (ctx ? ctx.state : 'none') + ' buf=' + !!laserLoopBuffer + ')')
-      loopUsingEl = true
-      laserLoopEl.muted = false; laserLoopEl.volume = 0
-      crossfadeAttackInto((k) => { laserLoopEl.volume = LASER_VOL * Math.sin((k * Math.PI) / 2) })
-    }
-  }
-  // equal-power crossfade: the attack take fades out (cos) while the loop rises (sin, via rampUp), so
-  // the combined energy stays flat — no doubling bump in, no level drop — and the attack is paused
-  // before its hard tail. rampUp drives whichever loop is active (Web Audio gain or element volume).
-  function crossfadeAttackInto(rampUp: (k: number) => void) {
-    const t0 = performance.now()
-    const step = () => {
-      const k = Math.min(1, (performance.now() - t0) / (LASER_XFADE * 1000))
-      rampUp(k)
-      laserAttack.volume = LASER_VOL * Math.cos((k * Math.PI) / 2)
-      if (k >= 1) { laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; return }
-      loopFadeRAF = requestAnimationFrame(step)
-    }
-    step()
-  }
   function startFireSfx() {
     setPlaybackSession()
     clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
-    stopLoopSrc()                                                         // tear down any loop still sustaining from a prior press
-    ensureLaserCtx()                                                      // resume the context (also unlocked earlier in pointerdown)
     laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
-    // prime the fallback <audio> loop now, MUTED — iOS blocks a fresh play() fired later from the
-    // handoff timer, but it honours UNMUTING an already-playing element. So if we end up needing the
-    // fallback (cold start, Web Audio still locked), it's already rolling and we just unmute it.
-    laserLoopEl.muted = true; laserLoopEl.currentTime = 0; laserLoopEl.volume = 0; laserLoopEl.play().catch(() => {})
-    dbg('fire: ctx=' + (laserCtx ? laserCtx.state : 'none') + ' buf=' + !!laserLoopBuffer)
-    loopTimer = window.setTimeout(() => { loopWanted = true; dbg('handoff'); startLoopNow() }, ATTACK_TO_LOOP * 1000)
-  }
-  // stop the current looping beam with a tiny release ramp so cutting it never clicks
-  function stopLoopSrc() {
-    loopWanted = false
-    // Web Audio loop — short release ramp so cutting it never clicks
-    const src = laserLoopSrc, gain = laserLoopGain
-    laserLoopSrc = null; laserLoopGain = null
-    if (src) {
-      if (laserCtx && gain) {
-        const now = laserCtx.currentTime
-        try {
-          gain.gain.cancelScheduledValues(now)
-          gain.gain.setValueAtTime(gain.gain.value, now)
-          gain.gain.linearRampToValueAtTime(0, now + 0.05)
-        } catch { /* param race — fall through to the hard stop */ }
-        try { src.stop(now + 0.06) } catch { /* already stopped */ }
-      } else {
-        try { src.stop() } catch { /* already stopped */ }
+    // start the loop now, inside the gesture, so iOS unlocks it — but silent. iOS blocks a play()
+    // fired later from a timer, yet honours unmuting an already-playing element. fade it in at the handoff.
+    laserLoop.muted = true; laserLoop.currentTime = 0; laserLoop.volume = 0; laserLoop.play().catch(() => {})
+    loopTimer = window.setTimeout(() => {
+      laserLoop.muted = false
+      // equal-power crossfade: as the attack take's sustain bleeds out, the looping beam
+      // rises along sin/cos so the combined energy stays flat — no doubling bump on the way
+      // in and no level drop when the attack ends. the attack is paused before its hard tail.
+      const t0 = performance.now()
+      const step = () => {
+        const k = Math.min(1, (performance.now() - t0) / (LASER_XFADE * 1000))
+        laserLoop.volume = LASER_VOL * Math.sin((k * Math.PI) / 2)
+        laserAttack.volume = LASER_VOL * Math.cos((k * Math.PI) / 2)
+        if (k >= 1) { laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; return }
+        loopFadeRAF = requestAnimationFrame(step)
       }
-    }
-    // HTMLAudio fallback loop — pause + re-mute so the next press can prime it cleanly
-    loopUsingEl = false
-    laserLoopEl.pause(); laserLoopEl.currentTime = 0; laserLoopEl.volume = 0; laserLoopEl.muted = true
+      step()
+    }, ATTACK_TO_LOOP * 1000)
   }
   function stopFireSfx() {
     clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
     laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL
-    stopLoopSrc()
+    laserLoop.pause(); laserLoop.currentTime = 0; laserLoop.muted = true; laserLoop.volume = LASER_VOL   // re-arm silent for the next press
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane)   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3()
@@ -1037,7 +920,6 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     if (e.pointerType === 'touch') {
       touchOnFace = pointerOverFace(e)
       if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
-      if (introDone) ensureLaserCtx()     // resume-only (never constructs on touchstart/pointerdown — iOS would lock it)
       setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
     } else { setAim(e); beginFire() }
   }
@@ -1053,17 +935,6 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
-  // iOS Web Audio unlock: iOS only resumes a context from a tap-COMPLETED gesture (pointerup/
-  // touchend/click), never touchstart/pointerdown. Keep retrying on those until the context is
-  // genuinely "running", then detach. Construction must also happen on one of these (see
-  // ensureLaserCtx) — a context built from a tap-start gesture is permanently locked.
-  const UNLOCK_EVENTS = ['touchend', 'pointerup', 'click'] as const
-  const tryUnlock = (e: Event) => {
-    const ctx = ensureLaserCtx(true)
-    dbg('tryUnlock ' + e.type + ' → ' + (ctx ? ctx.state : 'none'))
-    if (ctx && ctx.state === 'running') UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
-  }
-  UNLOCK_EVENTS.forEach((ev) => window.addEventListener(ev, tryUnlock, { passive: true }))
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -1332,10 +1203,6 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const handle: FaceHeroHandle = {
     startIntro: (skipIntro = false) => {
       if (started) return
-      // Enter is a real click gesture → unlock here (this is what reliably wakes iOS audio). The skip
-      // path (refresh) runs from onReady — NOT a gesture — and iOS permanently locks a context built
-      // off-gesture, so we must NOT construct it there; tryUnlock handles that case on the first tap.
-      if (!skipIntro) ensureLaserCtx(true)
       if (assetsReady) doStart(skipIntro)
       else { pendingStart = true; pendingSkip = skipIntro }
     },
@@ -1349,7 +1216,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       } else {
         if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0 }
         pausedAt = performance.now()
-        introScanSfx.pause(); introBaamSfx.pause(); laserAttack.pause(); stopLoopSrc()
+        introScanSfx.pause(); introBaamSfx.pause(); laserAttack.pause(); laserLoop.pause()
       }
     },
     dispose: () => {
@@ -1360,12 +1227,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('touchmove', onTouchMove)
-      UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF); cancelAnimationFrame(loopFadeRAF)
-      stopLoopSrc(); laserCtx?.close().catch(() => {}); laserCtx = null
-      for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoopEl]) { a.pause(); a.src = '' }
+      for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoop]) { a.pause(); a.src = '' }
       // free GPU resources: geometries, materials and any textures they hold (StrictMode/SPA remounts leak otherwise)
       scene.traverse((obj) => {
         const mesh = obj as THREE.Mesh
