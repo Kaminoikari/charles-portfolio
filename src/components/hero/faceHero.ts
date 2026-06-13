@@ -356,6 +356,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     if (ctx && ctx.state === "running" && laserLoopBuffer) {
       // preferred path: gapless Web Audio loop (Enter / nav-back / every press after the first unlock)
       dbg('loopNow START webaudio')
+      laserLoopEl.pause()   // we won't need the primed fallback element
       const src = ctx.createBufferSource()
       src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
       const gain = ctx.createGain(); gain.gain.value = 0
@@ -364,12 +365,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       laserLoopSrc = src; laserLoopGain = gain
       crossfadeAttackInto((k) => { gain.gain.value = LASER_VOL * Math.sin((k * Math.PI) / 2) })
     } else {
-      // iOS cold-start fallback: the Web Audio context isn't unlocked yet (a refresh whose first
-      // action is this hold), so loop through the <audio> element, which iOS lets play here.
+      // iOS cold-start fallback: Web Audio still locked (a refresh whose first action is this hold).
+      // The element is already rolling muted from startFireSfx — just UNMUTE it (iOS allows that from
+      // a timer) and crossfade its volume up.
       dbg('loopNow START htmlaudio (ctx=' + (ctx ? ctx.state : 'none') + ' buf=' + !!laserLoopBuffer + ')')
       loopUsingEl = true
-      laserLoopEl.currentTime = 0; laserLoopEl.volume = 0
-      laserLoopEl.play().catch(() => {})
+      laserLoopEl.muted = false; laserLoopEl.volume = 0
       crossfadeAttackInto((k) => { laserLoopEl.volume = LASER_VOL * Math.sin((k * Math.PI) / 2) })
     }
   }
@@ -393,6 +394,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     stopLoopSrc()                                                         // tear down any loop still sustaining from a prior press
     ensureLaserCtx()                                                      // resume the context (also unlocked earlier in pointerdown)
     laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
+    // prime the fallback <audio> loop now, MUTED — iOS blocks a fresh play() fired later from the
+    // handoff timer, but it honours UNMUTING an already-playing element. So if we end up needing the
+    // fallback (cold start, Web Audio still locked), it's already rolling and we just unmute it.
+    laserLoopEl.muted = true; laserLoopEl.currentTime = 0; laserLoopEl.volume = 0; laserLoopEl.play().catch(() => {})
     dbg('fire: ctx=' + (laserCtx ? laserCtx.state : 'none') + ' buf=' + !!laserLoopBuffer)
     loopTimer = window.setTimeout(() => { loopWanted = true; dbg('handoff'); startLoopNow() }, ATTACK_TO_LOOP * 1000)
   }
@@ -415,11 +420,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
         try { src.stop() } catch { /* already stopped */ }
       }
     }
-    // HTMLAudio fallback loop
-    if (loopUsingEl) {
-      loopUsingEl = false
-      laserLoopEl.pause(); laserLoopEl.currentTime = 0; laserLoopEl.volume = 0
-    }
+    // HTMLAudio fallback loop — pause + re-mute so the next press can prime it cleanly
+    loopUsingEl = false
+    laserLoopEl.pause(); laserLoopEl.currentTime = 0; laserLoopEl.volume = 0; laserLoopEl.muted = true
   }
   function stopFireSfx() {
     clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
