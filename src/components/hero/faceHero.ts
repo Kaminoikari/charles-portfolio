@@ -265,6 +265,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
   // create + resume the context inside a real user gesture (Safari-safe unlock); decode the loop now
   // if its bytes have already arrived.
+  let laserUnlocked = false
   function ensureLaserCtx(): AudioContext | null {
     if (!laserCtx) {
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -273,6 +274,17 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       decodeLoop()
     }
     if (laserCtx.state === "suspended") laserCtx.resume().catch(() => {})
+    // iOS Safari unlock: resume() alone leaves the audio hardware asleep — it only wakes when a
+    // real buffer source is started inside the gesture. play a one-sample silent buffer once; after
+    // that, sources started later from timers (the loop handoff) are audible.
+    if (!laserUnlocked) {
+      try {
+        const b = laserCtx.createBuffer(1, 1, 22050)
+        const s = laserCtx.createBufferSource()
+        s.buffer = b; s.connect(laserCtx.destination); s.start(0)
+        laserUnlocked = true
+      } catch { /* unlock best-effort */ }
+    }
     return laserCtx
   }
   // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
@@ -318,6 +330,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   function startLoopNow() {
     if (!loopWanted || laserLoopSrc || !laserCtx || !laserLoopBuffer) return
     const ctx = laserCtx
+    if (ctx.state === "suspended") ctx.resume().catch(() => {})   // iOS may have re-suspended the idle context since the press
     const src = ctx.createBufferSource()
     src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
     const gain = ctx.createGain(); gain.gain.value = 0
