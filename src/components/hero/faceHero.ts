@@ -1005,6 +1005,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
+  // iOS Web Audio backup unlock: the first real touchend/click anywhere wakes the laser context
+  // (covers the same-session skip path that never shows the Enter gate, and any case the Enter
+  // unlock missed). touchend/click are the gestures iOS Safari honours most reliably.
+  const unlockOnce = () => { ensureLaserCtx(); window.removeEventListener('touchend', unlockOnce); window.removeEventListener('click', unlockOnce) }
+  window.addEventListener('touchend', unlockOnce)
+  window.addEventListener('click', unlockOnce)
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
@@ -1273,6 +1279,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const handle: FaceHeroHandle = {
     startIntro: (skipIntro = false) => {
       if (started) return
+      ensureLaserCtx()   // unlock Web Audio inside the Enter click — iOS honours a click far more reliably than a later pointerdown
       if (assetsReady) doStart(skipIntro)
       else { pendingStart = true; pendingSkip = skipIntro }
     },
@@ -1297,6 +1304,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('pointercancel', onPointerCancel)
       window.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', unlockOnce)
+      window.removeEventListener('click', unlockOnce)
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
       cancelAnimationFrame(baamFadeRAF); cancelAnimationFrame(loopFadeRAF)
