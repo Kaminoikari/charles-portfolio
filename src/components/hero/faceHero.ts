@@ -1025,15 +1025,32 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointercancel', onPointerCancel)
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
-  // iOS Web Audio unlock: iOS resumes a context only from certain gestures (click/touchend — the
-  // tap-COMPLETED events — not touchstart/pointerdown). So keep retrying resume on every gesture type
-  // until the context is genuinely "running", THEN detach. A one-shot would let an early touchstart
-  // (which iOS ignores) consume the single chance before the click/touchend that actually works.
-  const UNLOCK_EVENTS = ['touchend', 'pointerup', 'click'] as const   // tap-COMPLETED gestures only — see ensureLaserCtx
+  // iOS Web Audio unlock. We attempt construction+resume on the EARLIEST gesture (pointerdown/
+  // touchstart) so a refresh's first press-and-hold can unlock before the 1.4s loop handoff. iOS may
+  // refuse to run a context built from a tap-START gesture, so we SELF-HEAL: if it isn't running
+  // shortly after, discard it (and the decoded buffer tied to it) so the next tap-COMPLETED gesture
+  // (pointerup/touchend/click) rebuilds a clean, resumable one. Detach all once truly running.
+  const UNLOCK_EVENTS = ['pointerdown', 'touchstart', 'pointerup', 'touchend', 'click'] as const
+  let laserHealTimer = 0
   const tryUnlock = (e: Event) => {
+    const hadCtx = !!laserCtx
     const ctx = ensureLaserCtx(true)
     dbg('tryUnlock ' + e.type + ' → ' + (ctx ? ctx.state : 'none'))
-    if (ctx && ctx.state === 'running') UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
+    if (!ctx) return
+    if (ctx.state === 'running') {
+      clearTimeout(laserHealTimer)
+      UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
+      return
+    }
+    if (!hadCtx) {   // this gesture just constructed it — verify iOS actually runs it, else discard
+      clearTimeout(laserHealTimer)
+      laserHealTimer = window.setTimeout(() => {
+        if (laserCtx && laserCtx.state !== 'running') {
+          dbg('heal: discard suspended ctx')
+          laserCtx.close().catch(() => {}); laserCtx = null; laserLoopBuffer = null
+        }
+      }, 500)
+    }
   }
   UNLOCK_EVENTS.forEach((ev) => window.addEventListener(ev, tryUnlock, { passive: true }))
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
@@ -1334,7 +1351,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('touchmove', onTouchMove)
       UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
       window.removeEventListener('resize', syncSize)
-      clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
+      clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer); clearTimeout(laserHealTimer)
       cancelAnimationFrame(baamFadeRAF); cancelAnimationFrame(loopFadeRAF)
       stopLoopSrc(); laserCtx?.close().catch(() => {}); laserCtx = null
       for (const a of [introScanSfx, introBaamSfx, laserAttack]) { a.pause(); a.src = '' }
