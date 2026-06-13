@@ -1303,7 +1303,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const handle: FaceHeroHandle = {
     startIntro: (skipIntro = false) => {
       if (started) return
-      ensureLaserCtx()   // unlock Web Audio inside the Enter click — iOS honours a click far more reliably than a later pointerdown
+      // NOTE: do NOT create the laser AudioContext here. On the skip path (refresh), startIntro runs
+      // from onReady — not a user gesture — and iOS permanently locks a context constructed outside a
+      // gesture. The context is constructed only by unlockOnce (first touchstart/click) instead.
       if (assetsReady) doStart(skipIntro)
       else { pendingStart = true; pendingSkip = skipIntro }
     },
