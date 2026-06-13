@@ -275,8 +275,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       step()
     }, BAAM_TAIL * 1000)
   }
-  const ATTACK_TO_LOOP = 1.4   // seconds: unmute the loop while the attack is still sustaining, so they overlap with no silent gap
-  let loopTimer = 0
+  const ATTACK_TO_LOOP = 1.4   // seconds into the attack take where the sustained beam takes over
+  const LASER_VOL = 0.9        // shared playback volume for attack + loop
+  const LASER_XFADE = 0.6      // equal-power crossfade window (must finish before the ~2.38s attack ends)
+  let loopTimer = 0, loopFadeRAF = 0
   function setPlaybackSession() {
     // iOS Safari silences audio when the hardware mute switch is on unless the page declares a
     // "playback" audio session (iOS 16.4+). this lets the sound through with the ringer flipped.
@@ -284,17 +286,31 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
   function startFireSfx() {
     setPlaybackSession()
-    clearTimeout(loopTimer)
-    laserAttack.currentTime = 0; laserAttack.play().catch(() => {})       // charge + fire, every press
-    // start the loop now, inside the gesture, so iOS unlocks it — but muted. iOS blocks a play()
-    // fired later from a timer, yet honours unmuting an already-playing element. unmute at the handoff.
-    laserLoop.muted = true; laserLoop.currentTime = 0; laserLoop.play().catch(() => {})
-    loopTimer = window.setTimeout(() => { laserLoop.muted = false }, ATTACK_TO_LOOP * 1000)   // then the sustain becomes audible
+    clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
+    laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
+    // start the loop now, inside the gesture, so iOS unlocks it — but silent. iOS blocks a play()
+    // fired later from a timer, yet honours unmuting an already-playing element. fade it in at the handoff.
+    laserLoop.muted = true; laserLoop.currentTime = 0; laserLoop.volume = 0; laserLoop.play().catch(() => {})
+    loopTimer = window.setTimeout(() => {
+      laserLoop.muted = false
+      // equal-power crossfade: as the attack take's sustain bleeds out, the looping beam
+      // rises along sin/cos so the combined energy stays flat — no doubling bump on the way
+      // in and no level drop when the attack ends. the attack is paused before its hard tail.
+      const t0 = performance.now()
+      const step = () => {
+        const k = Math.min(1, (performance.now() - t0) / (LASER_XFADE * 1000))
+        laserLoop.volume = LASER_VOL * Math.sin((k * Math.PI) / 2)
+        laserAttack.volume = LASER_VOL * Math.cos((k * Math.PI) / 2)
+        if (k >= 1) { laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; return }
+        loopFadeRAF = requestAnimationFrame(step)
+      }
+      step()
+    }, ATTACK_TO_LOOP * 1000)
   }
   function stopFireSfx() {
-    clearTimeout(loopTimer)
-    laserAttack.pause(); laserAttack.currentTime = 0
-    laserLoop.pause(); laserLoop.currentTime = 0; laserLoop.muted = true   // re-arm muted for the next press
+    clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
+    laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL
+    laserLoop.pause(); laserLoop.currentTime = 0; laserLoop.muted = true; laserLoop.volume = LASER_VOL   // re-arm silent for the next press
   }
   const aimPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -LASER.plane)   // target plane in front of the face
   const aimTarget = new THREE.Vector3(), tmpDir = new THREE.Vector3(), tmpCam = new THREE.Vector3()
@@ -1213,7 +1229,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('resize', syncSize)
       clearTimeout(holdTimer); clearTimeout(loopTimer); clearTimeout(baamFadeTimer)
-      cancelAnimationFrame(baamFadeRAF)
+      cancelAnimationFrame(baamFadeRAF); cancelAnimationFrame(loopFadeRAF)
       for (const a of [introScanSfx, introBaamSfx, laserAttack, laserLoop]) { a.pause(); a.src = '' }
       // free GPU resources: geometries, materials and any textures they hold (StrictMode/SPA remounts leak otherwise)
       scene.traverse((obj) => {
