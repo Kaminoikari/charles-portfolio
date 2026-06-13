@@ -255,8 +255,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   introBaamSfx.preload = "auto"; introBaamSfx.volume = 0.9
   const BAAM_LEAD = 0.15   // seconds the braam starts before the eyes ignite, so its weight lands on the ignition (tentative; tuned at integration)
   const BAAM_VOL = 0.9     // braam playback volume
-  const BAAM_TAIL = 1.4    // seconds of braam before it fades — the source has a ~13s tail that drags on under the steady state
-  const BAAM_FADE = 2.0    // fade-out length so the cut is not a hard click
+  const BAAM_TAIL = 1.1    // seconds of braam at full volume before it fades — the source has a ~13s tail that drags on under the steady state
+  const BAAM_FADE = 3.2    // fade-out length; long + gentle so the braam dissolves into the BGM rather than cutting
   let baamFadeRAF = 0, baamFadeTimer = 0
   function playBaam() {
     setPlaybackSession()
@@ -265,9 +265,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     baamFadeTimer = window.setTimeout(() => {
       const t0 = performance.now()
       const step = () => {
-        const k = (performance.now() - t0) / (BAAM_FADE * 1000)
+        const k = Math.min(1, (performance.now() - t0) / (BAAM_FADE * 1000))
+        // raised-cosine taper: slope eases to zero at the end so the tail dissolves
+        // into silence (and the rising BGM) instead of a linear yank that reads as a cut
+        introBaamSfx.volume = BAAM_VOL * 0.5 * (1 + Math.cos(Math.PI * k))
         if (k >= 1) { introBaamSfx.pause(); introBaamSfx.volume = BAAM_VOL; return }   // re-arm at full volume for the next play
-        introBaamSfx.volume = BAAM_VOL * (1 - k)
         baamFadeRAF = requestAnimationFrame(step)
       }
       step()
