@@ -252,8 +252,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   let laserLoopBuffer: AudioBuffer | null = null
   let laserLoopSrc: AudioBufferSourceNode | null = null
   let laserLoopGain: GainNode | null = null
-  // create the context lazily on the first press (a real gesture, so iOS unlocks it) and decode
-  // the loop then; the buffer is ready long before the 1.4s attack→loop handoff.
+  let loopWanted = false   // true between the attack→loop handoff and release; lets a late-decoded buffer still start the beam
+  // build the context + decode the loop up front so the buffer is ready well before the first press.
+  // a context created before a gesture is just "suspended"; startFireSfx resumes it inside the press.
   function ensureLaserCtx(): AudioContext | null {
     if (!laserCtx) {
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
@@ -262,11 +263,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       fetch(assetBase + "laser-fire.wav")
         .then((r) => r.arrayBuffer())
         .then((b) => laserCtx!.decodeAudioData(b))
-        .then((buf) => { laserLoopBuffer = buf })
+        .then((buf) => { laserLoopBuffer = buf; if (loopWanted) startLoopNow() })   // still holding when decode lands → start now
         .catch(() => {})
     }
     return laserCtx
   }
+  ensureLaserCtx()   // kick off the fetch/decode at init; the long intro guarantees it finishes before any fire
   // intro SFX (approach A): we attempt autoplay at the intro beats, but browsers block audible
   // playback before the first user gesture — so the very first load may be silent. accepted for
   // now; the final beat timing + autoplay strategy get locked when this folds into the real hero.
@@ -305,6 +307,30 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     // "playback" audio session (iOS 16.4+). this lets the sound through with the ringer flipped.
     try { const nav = navigator as Navigator & { audioSession?: { type: string } }; if (nav.audioSession) nav.audioSession.type = "playback" } catch { /* audioSession unsupported */ }
   }
+  // start the looping beam and crossfade the attack take into it. safe to call from the handoff
+  // timer or from the decode callback (if the buffer landed late); a no-op if already looping.
+  function startLoopNow() {
+    if (!loopWanted || laserLoopSrc || !laserCtx || !laserLoopBuffer) return
+    const ctx = laserCtx
+    const src = ctx.createBufferSource()
+    src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
+    const gain = ctx.createGain(); gain.gain.value = 0
+    src.connect(gain).connect(ctx.destination)
+    src.start()
+    laserLoopSrc = src; laserLoopGain = gain
+    // equal-power crossfade: as the attack take's sustain bleeds out, the looping beam rises
+    // along sin/cos so the combined energy stays flat — no doubling bump on the way in and no
+    // level drop when the attack is cut. the attack is paused before its hard tail.
+    const t0 = performance.now()
+    const step = () => {
+      const k = Math.min(1, (performance.now() - t0) / (LASER_XFADE * 1000))
+      gain.gain.value = LASER_VOL * Math.sin((k * Math.PI) / 2)
+      laserAttack.volume = LASER_VOL * Math.cos((k * Math.PI) / 2)
+      if (k >= 1) { laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; return }
+      loopFadeRAF = requestAnimationFrame(step)
+    }
+    step()
+  }
   function startFireSfx() {
     setPlaybackSession()
     clearTimeout(loopTimer); cancelAnimationFrame(loopFadeRAF)
@@ -312,30 +338,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     const ctx = ensureLaserCtx()
     if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {})    // unlock Web Audio inside the gesture
     laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; laserAttack.play().catch(() => {})   // charge + fire, every press
-    loopTimer = window.setTimeout(() => {
-      if (!ctx || !laserLoopBuffer) return   // buffer not decoded yet — the attack take already carried this press
-      const src = ctx.createBufferSource()
-      src.buffer = laserLoopBuffer; src.loop = true   // sample-accurate, gapless loop seam
-      const gain = ctx.createGain(); gain.gain.value = 0
-      src.connect(gain).connect(ctx.destination)
-      src.start()
-      laserLoopSrc = src; laserLoopGain = gain
-      // equal-power crossfade: as the attack take's sustain bleeds out, the looping beam rises
-      // along sin/cos so the combined energy stays flat — no doubling bump on the way in and no
-      // level drop when the attack is cut. the attack is paused before its hard tail.
-      const t0 = performance.now()
-      const step = () => {
-        const k = Math.min(1, (performance.now() - t0) / (LASER_XFADE * 1000))
-        gain.gain.value = LASER_VOL * Math.sin((k * Math.PI) / 2)
-        laserAttack.volume = LASER_VOL * Math.cos((k * Math.PI) / 2)
-        if (k >= 1) { laserAttack.pause(); laserAttack.currentTime = 0; laserAttack.volume = LASER_VOL; return }
-        loopFadeRAF = requestAnimationFrame(step)
-      }
-      step()
-    }, ATTACK_TO_LOOP * 1000)
+    loopTimer = window.setTimeout(() => { loopWanted = true; startLoopNow() }, ATTACK_TO_LOOP * 1000)
   }
   // stop the current looping beam with a tiny release ramp so cutting it never clicks
   function stopLoopSrc() {
+    loopWanted = false
     const src = laserLoopSrc, gain = laserLoopGain
     laserLoopSrc = null; laserLoopGain = null
     if (!src) return
