@@ -276,8 +276,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   }
   // create + resume the context inside a real user gesture (Safari-safe unlock); decode the loop now
   // if its bytes have already arrived.
-  function ensureLaserCtx(): AudioContext | null {
+  // allowConstruct: only TRUE from a tap-completed gesture (click/touchend/pointerup). iOS Safari
+  // permanently locks a context CONSTRUCTED from touchstart/pointerdown or off-gesture — no later
+  // resume() ever revives it — so every other caller passes false (resume-only, never construct).
+  function ensureLaserCtx(allowConstruct = false): AudioContext | null {
     if (!laserCtx) {
+      if (!allowConstruct) return null
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
       if (!Ctx) return null
       laserCtx = new Ctx()
@@ -1005,7 +1009,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     if (e.pointerType === 'touch') {
       touchOnFace = pointerOverFace(e)
       if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
-      if (introDone) ensureLaserCtx()     // unlock Web Audio inside the touch gesture — beginFire is deferred 150ms (out of gesture)
+      if (introDone) ensureLaserCtx()     // resume-only (never constructs on touchstart/pointerdown — iOS would lock it)
       setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
     } else { setAim(e); beginFire() }
   }
@@ -1025,9 +1029,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // tap-COMPLETED events — not touchstart/pointerdown). So keep retrying resume on every gesture type
   // until the context is genuinely "running", THEN detach. A one-shot would let an early touchstart
   // (which iOS ignores) consume the single chance before the click/touchend that actually works.
-  const UNLOCK_EVENTS = ['touchend', 'pointerup', 'click', 'touchstart'] as const
+  const UNLOCK_EVENTS = ['touchend', 'pointerup', 'click'] as const   // tap-COMPLETED gestures only — see ensureLaserCtx
   const tryUnlock = (e: Event) => {
-    const ctx = ensureLaserCtx()
+    const ctx = ensureLaserCtx(true)
     dbg('tryUnlock ' + e.type + ' → ' + (ctx ? ctx.state : 'none'))
     if (ctx && ctx.state === 'running') UNLOCK_EVENTS.forEach((ev) => window.removeEventListener(ev, tryUnlock))
   }
@@ -1303,7 +1307,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       // Enter is a real click gesture → unlock here (this is what reliably wakes iOS audio). The skip
       // path (refresh) runs from onReady — NOT a gesture — and iOS permanently locks a context built
       // off-gesture, so we must NOT construct it there; tryUnlock handles that case on the first tap.
-      if (!skipIntro) ensureLaserCtx()
+      if (!skipIntro) ensureLaserCtx(true)
       if (assetsReady) doStart(skipIntro)
       else { pendingStart = true; pendingSkip = skipIntro }
     },
