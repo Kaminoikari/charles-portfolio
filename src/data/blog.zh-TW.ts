@@ -34,6 +34,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '我用一星期，建立 Physical AI 的心智模型',
+    subtitle: '從 MockWorld 到 SmolVLA，一場一週的小型實驗如何讓我親身理解 LLM Orchestration 與 Robotics Policy 的真實邊界。',
+    url: 'https://charlestychen.substack.com/p/physical-ai',
+    platform: 'Substack',
+    date: '2026-06-16',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6831e03c-be9f-4e8f-96d9-6ab9012f7da2_1402x1122.png',
+  },
+  {
     title: '為什麼 AI 實驗室開始押注硬體：Caitlin Kalinowski 的觀察',
     subtitle: '舊金山 AI 圈最近的共識：鍵盤前能做的事遲早飽和，下一波浪潮在物理世界。',
     url: 'https://charlestychen.substack.com/p/ai-caitlyn-kalinowski',

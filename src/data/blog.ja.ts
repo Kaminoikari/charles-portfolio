@@ -42,6 +42,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '一週間で Physical AI のメンタルモデルを構築した',
+    subtitle: 'MockWorld から SmolVLA まで、一週間の小さな実験が LLM Orchestration と Robotics Policy の本当の境界を、身をもって理解させてくれた話。',
+    url: 'https://charlestychen.substack.com/p/physical-ai',
+    platform: 'Substack',
+    date: '2026-06-16',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6831e03c-be9f-4e8f-96d9-6ab9012f7da2_1402x1122.png',
+  },
+  {
     title: 'なぜ AI ラボがハードウェアに賭け始めたのか：Caitlin Kalinowski の観察',
     subtitle: 'サンフランシスコの AI 界隈で最近広がる共通認識：キーボードの前でできることはいずれ飽和し、次の波は物理世界にある。',
     url: 'https://charlestychen.substack.com/p/ai-caitlyn-kalinowski',

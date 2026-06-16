@@ -43,6 +43,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'Building a Mental Model of Physical AI in One Week',
+    subtitle:
+      'From MockWorld to SmolVLA, how a one-week mini-experiment let me feel out firsthand the real boundaries between LLM orchestration and robotics policy.',
+    url: 'https://charlestychen.substack.com/p/physical-ai',
+    platform: 'Substack',
+    date: '2026-06-16',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6831e03c-be9f-4e8f-96d9-6ab9012f7da2_1402x1122.png',
+  },
+  {
     title: "Why AI Labs Are Starting to Bet on Hardware: Caitlin Kalinowski's Take",
     subtitle:
       "The emerging consensus in San Francisco's AI scene: what you can do in front of a keyboard will eventually saturate, and the next wave is in the physical world.",
