@@ -924,6 +924,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
   let holdTimer = 0
   let touchOnFace = false   // mobile: a touch only fires / turns the head when it began on the face, never on the empty backdrop
+  // desktop: the listeners live on window, so a click anywhere on the page would otherwise fire the laser. gate it to
+  // the hero viewport. the canvas is absolute inset-0 of the h-screen hero box, so its rect tracks the hero as you scroll.
+  const pointerInHero = (e: PointerEvent) => {
+    const r = renderer.domElement.getBoundingClientRect()
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+  }
   const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx() }   // no firing during the intro (so the first-interaction unlock-replay click is a no-op)
   const stopFiring = (e?: PointerEvent) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") { cursorActive = 0; touchOnFace = false } }   // touch release clears the highlight; desktop keeps it for the hovering cursor
   const onPointerMove = (e: PointerEvent) => {
@@ -935,7 +941,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       touchOnFace = pointerOverFace(e)
       if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
       setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
-    } else { setAim(e); beginFire() }
+    } else { if (!pointerInHero(e)) return; setAim(e); beginFire() }
   }
   const onPointerUp = (e: PointerEvent) => stopFiring(e)
   const onPointerCancel = (e: PointerEvent) => stopFiring(e)
