@@ -13,6 +13,24 @@ name: RAG Ingest
 #   VOYAGE_API_KEY     Voyage AI key (dense embeddings + rerank)
 
 on:
+  # Auto-run on every push to main that touches a content source, so the vector
+  # index and FAQ cache can never drift behind the site. Paths cover everything
+  # the corpus is built from (rag/ingest/extract.ts) plus the hand-written FAQ
+  # cache and the entity/map context. Add new content globs here when a new
+  # source file type is introduced.
+  push:
+    branches: [main]
+    paths:
+      - 'src/data/projects.*.ts'
+      - 'src/data/aboutContent.*.ts'
+      - 'src/data/experience.*.ts'
+      - 'src/data/skills.*.ts'
+      - 'src/data/changelog.*.ts'
+      - 'src/data/blog.*.ts'
+      - 'rag/faq-cache.ts'
+      - 'rag/portfolio-map.ts'
+      - 'rag/entities/**'
+      - 'rag/ingest/**'
   workflow_dispatch:
     inputs:
       ref:
@@ -24,13 +42,21 @@ on:
         type: boolean
         default: false
 
+# One ingest at a time. A newer push supersedes an in-flight run so the index
+# always settles on the latest content instead of racing two upserts into Qdrant.
+concurrency:
+  group: rag-ingest
+  cancel-in-progress: true
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref }}
+          # workflow_dispatch passes an explicit ref; a push has no input, so fall
+          # back to the pushed commit (github.ref) instead of the stale default.
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: actions/setup-node@v6
         with:
