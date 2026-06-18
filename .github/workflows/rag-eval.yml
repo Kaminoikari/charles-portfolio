@@ -1,0 +1,44 @@
+name: RAG Eval
+
+# Manually triggered retrieval-ablation eval against the live Qdrant index.
+# Runs the golden set through the retrieval arms (dense-only → hybrid →
+# hybrid+rerank) and prints recall@k / MRR / Δrecall to the job log. The
+# corrective arm is skipped automatically here because it needs an Anthropic key
+# (not in repo secrets) — the retrieval arms are what measure recall.
+#
+# Why a workflow and not a local run: eval needs outbound access to Voyage and
+# Qdrant plus the secrets below; this runner has both, the runtime container
+# does not.
+#
+# Required repo secrets (same three the ingest workflow uses):
+#   QDRANT_URL · QDRANT_API_KEY · VOYAGE_API_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch/ref to check out and run (defaults to main)'
+        type: string
+        default: main
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run retrieval ablation eval
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+        run: npm run rag:eval

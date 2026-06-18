@@ -127,8 +127,18 @@ async function main() {
   const out = arg('--out')
 
   const locales = onlyLocale ? [onlyLocale] : LOCALES
-  const arms = onlyArm ? ARMS.filter((a) => a.name === onlyArm) : ARMS
+  let arms = onlyArm ? ARMS.filter((a) => a.name === onlyArm) : ARMS
   if (arms.length === 0) throw new Error(`unknown --arm; choose from ${ARMS.map((a) => a.name).join(', ')}`)
+
+  // The corrective arm generates an answer and runs the faithfulness judge, so
+  // it needs an Anthropic key. When none is set (e.g. CI with only the retrieval
+  // secrets), skip it rather than crash — the retrieval arms still report
+  // recall/MRR. An explicit `--arm corrective` overrides this on purpose.
+  if (!process.env.ANTHROPIC_API_KEY && !onlyArm) {
+    const dropped = arms.filter((a) => a.corrective).map((a) => a.name)
+    arms = arms.filter((a) => !a.corrective)
+    if (dropped.length) console.log(`No ANTHROPIC_API_KEY — skipping ${dropped.join(', ')} (retrieval arms only).\n`)
+  }
 
   console.log(`Running ${arms.length} arm(s) × ${GOLDEN.length} questions × ${locales.length} locale(s)…\n`)
   const rows: { arm: string; agg: Aggregate }[] = []
