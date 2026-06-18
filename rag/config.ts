@@ -21,6 +21,11 @@ export const config = {
   candidateK: int('RAG_CANDIDATE_K', 20), // per-retriever before fusion
   rrfK: int('RAG_RRF_K', 60), // RRF damping constant
   rerankEnabled: bool('RAG_RERANK', true),
+  // Bias retrieval toward first-party, curated portfolio content (about /
+  // project / experience / skill / changelog) over blog articles, applied as a
+  // score multiplier before the final top-k cut. The site's own source-of-truth
+  // should outrank tangential blog bodies on the same topic. 1.0 = off.
+  firstPartyBoost: float('RAG_FIRST_PARTY_BOOST', 1.2),
 
   // --- corrective loop ---
   maxLoops: int('RAG_MAX_LOOPS', 2), // query-rewrite attempts

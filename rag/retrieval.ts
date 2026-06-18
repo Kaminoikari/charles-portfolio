@@ -50,6 +50,30 @@ interface ScoredPoint {
   score?: number
 }
 
+// First-party, self-authored portfolio sources. Everything else (i.e. blog) is
+// a third-party article and is left at weight 1 so curated content wins ties.
+const FIRST_PARTY_SOURCES = new Set(['about', 'project', 'experience', 'skill', 'changelog'])
+
+function contentOf(p: ScoredPoint): string {
+  return ((p.payload ?? {}) as unknown as Payload).content
+}
+
+function sourceWeightOf(p: ScoredPoint): number {
+  const st = ((p.payload ?? {}) as unknown as Payload).source_type
+  return FIRST_PARTY_SOURCES.has(st) ? config.firstPartyBoost : 1
+}
+
+// Re-rank a scored candidate set by (base score × source weight) and keep the
+// top-k. With firstPartyBoost = 1 this preserves the incoming order (scores are
+// distinct), so the weighting is inert until the knob is raised.
+function weightAndTrim(scored: { point: ScoredPoint; base: number }[]): Document[] {
+  return scored
+    .map((s) => ({ point: s.point, w: s.base * sourceWeightOf(s.point) }))
+    .sort((a, b) => b.w - a.w)
+    .slice(0, config.topK)
+    .map((s) => toDocument(s.point))
+}
+
 function toDocument(p: ScoredPoint): Document {
   const pl = (p.payload ?? {}) as unknown as Payload
   return new Document({
@@ -119,14 +143,12 @@ export async function retrieveWith(
   }
 
   if (cfg.rerank && points.length > 0) {
-    const ranked = await rerank(
-      query,
-      points.map((p) => ((p.payload ?? {}) as unknown as Payload).content),
-      config.topK,
-    )
-    return ranked.map((r) => toDocument(points[r.index]))
+    // Rerank the full candidate set (not just top-k) so source weighting can
+    // still pull a lower-ranked first-party chunk into the final top-k.
+    const ranked = await rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
+    return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
   }
-  return points.slice(0, config.topK).map(toDocument)
+  return weightAndTrim(points.map((p) => ({ point: p, base: p.score ?? 0 })))
 }
 
 // Production entry point: full hybrid retrieval. Used by the graph's retrieve
