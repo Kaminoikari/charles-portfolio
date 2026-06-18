@@ -15,6 +15,8 @@
     "rag:ingest:dry": "tsx rag/ingest/build-index.ts --dry-run",
     "rag:faq": "tsx rag/ingest/build-faq-cache.ts",
     "rag:faq:dry": "tsx rag/ingest/build-faq-cache.ts --dry-run",
+    "rag:blog": "tsx rag/ingest/fetch-blog-bodies.ts",
+    "rag:blog:dry": "tsx rag/ingest/fetch-blog-bodies.ts --dry-run",
     "rag:eval": "tsx rag/evals/run-eval.ts",
     "rag:insights": "tsx rag/insights/report.ts",
     "rag:test": "tsx --test rag/*.test.ts rag/**/*.test.ts"

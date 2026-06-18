@@ -51,6 +51,16 @@ export const config = {
   qdrantLogsCollection: process.env.QDRANT_LOGS_COLLECTION ?? 'chat_logs',
   qdrantFaqCollection: process.env.QDRANT_FAQ_COLLECTION ?? 'faq_cache',
 
+  // --- blog full-text ---
+  // When on, ingest emits body chunks for blog articles whose full text has been
+  // cached (rag/ingest/blog-bodies.json) by the fetcher. Off / empty cache → only
+  // the title+subtitle chunk is indexed (the prior behaviour), so this is inert
+  // until the cache is populated. Bodies are Traditional Chinese; the multilingual
+  // dense embedding lets en/ja queries still retrieve them.
+  blogBodyEnabled: bool('RAG_BLOG_BODY', true),
+  blogChunkChars: int('RAG_BLOG_CHUNK_CHARS', 900),
+  blogChunkOverlap: int('RAG_BLOG_CHUNK_OVERLAP', 150),
+
   // --- semantic FAQ cache ---
   // A query whose embedding is at least this cosine-similar to a pre-written FAQ
   // question is answered from cache with NO generation LLM call. Tuned high so

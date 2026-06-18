@@ -10,6 +10,9 @@
 // parent_id so the generate step could expand context if needed.
 
 import type { Locale } from '../../src/i18n.js'
+import { config } from '../config.js'
+import { chunkText } from './chunk.js'
+import { getBlogBody } from './blog-bodies.js'
 
 export interface ChunkRecord {
   id: string
@@ -130,10 +133,34 @@ export async function extractAll(): Promise<ChunkRecord[]> {
       out.push({ id: `changelog:${c.id}:${locale}`, parentId: null, sourceType: 'changelog', projectId: null, locale, title: c.title, content: `${c.title} (${c.date})\n${changelogBodyText(c.body)}` }),
     )
 
-    // ── blog (one chunk per article: title + subtitle) ──
-    blog.blogArticles.forEach((b: { title: string; subtitle: string; date: string; url: string }, i: number) =>
-      out.push({ id: `blog:${i}:${locale}`, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}` }),
-    )
+    // ── blog (title+subtitle parent chunk + optional full-text body chunks) ──
+    // The title+subtitle chunk keeps the stable `blog:<i>` id (acts as the parent
+    // for deep-linking and citations). When the article's full text has been
+    // fetched into blog-bodies.json, it's split into `blog:<i>:body:<j>` child
+    // chunks so the bot can answer questions whose answer lives in the body, not
+    // just the headline. Bodies are Traditional Chinese for every locale (the
+    // source articles are written once, in Chinese); the multilingual dense
+    // embedding still lets en/ja queries retrieve them.
+    blog.blogArticles.forEach((b: { title: string; subtitle: string; date: string; url: string }, i: number) => {
+      const parentId = `blog:${i}:${locale}`
+      out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}` })
+
+      if (!config.blogBodyEnabled) return
+      const body = getBlogBody(b.url)
+      if (!body) return
+      const pieces = chunkText(body, { maxChars: config.blogChunkChars, overlap: config.blogChunkOverlap })
+      pieces.forEach((piece, j) =>
+        out.push({
+          id: `blog:${i}:body:${j}:${locale}`,
+          parentId,
+          sourceType: 'blog',
+          projectId: null,
+          locale,
+          title: `${b.title} — part ${j + 1}`,
+          content: piece,
+        }),
+      )
+    })
   }
 
   return out

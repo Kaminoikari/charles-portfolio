@@ -24,6 +24,39 @@ The pipeline already matches the industry baseline on most layers:
 So the eval pipeline best practice is **already done**. The roadmap below is about
 the one high-value gap (Contextual Retrieval) plus targeted extensions.
 
+## Implemented — blog full-text indexing
+
+Previously only each article's **title + subtitle** was indexed (the bodies live
+on Substack/Medium), so the bot couldn't answer questions whose answer is in the
+article body. That is now addressed:
+
+- `rag/ingest/fetch-blog-bodies.ts` (`npm run rag:blog`) fetches each article's
+  full text into `rag/ingest/blog-bodies.json` (committed, keyed by URL). Substack
+  uses the RSS `content:encoded` body with a page fallback; Medium uses the
+  article page. HTML is stripped to text dependency-free.
+- `rag/ingest/chunk.ts` splits long bodies (CJK-aware recursive splitter, default
+  900 chars / 150 overlap — `RAG_BLOG_CHUNK_CHARS` / `RAG_BLOG_CHUNK_OVERLAP`).
+- `rag/ingest/extract.ts` emits `blog:<i>:body:<j>:<locale>` child chunks (parent =
+  the `blog:<i>` title chunk). Inert until the cache is populated, so it never
+  breaks a build.
+
+**Operating it:** `npm run rag:blog` → commit the refreshed JSON → `npm run rag:ingest`.
+
+**Two deliberate decisions:**
+1. **No translation — rely on multilingual embeddings.** Article bodies are
+   Traditional Chinese and are indexed once per locale (same Chinese text). The
+   multilingual Voyage dense embedding lets en/ja queries still retrieve them; the
+   BM25 sparse arm only helps zh-TW queries (different script). Translating bodies
+   per locale would improve en/ja answer fidelity but is costly — revisit only if
+   eval shows a cross-lingual gap.
+2. **Fetch is separated from ingest** so the index is reproducible and a build
+   never depends on a live (rate-limited) fetch.
+
+**Operational dependency — network egress:** in a remote environment with an
+egress allowlist, the fetch step fails with `Host not in allowlist` unless the
+article hosts (`*.substack.com`, `*.medium.com`) are added to the environment's
+network egress settings. Run `npm run rag:blog` locally, or allowlist the hosts.
+
 ## Not recommended for this corpus (and why)
 
 - **GraphRAG / SAG / knowledge-graph retrieval.** These earn their cost only on
