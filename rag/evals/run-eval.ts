@@ -79,8 +79,12 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         // correctness/faithfulness are not applicable (left out of their means).
         const docs = await retrieveWith(question, locale, arm.retrieval!)
         const ids = docs.map((d) => d.metadata.id as string)
-        recall.push(recallAtK(ids, relevant))
+        const r = recallAtK(ids, relevant)
+        recall.push(r)
         mrr.push(reciprocalRank(ids, relevant))
+        // Surface misses so a high aggregate can't hide a specific failing item
+        // (e.g. the blog body-chunk questions we just added).
+        if (r < 1) console.log(`    ✗ miss [${arm.name}/${locale}] ${item.id} — want ${relevant.join(',')}, got ${ids.slice(0, 6).join(',')}`)
       }
     }
   }
