@@ -268,7 +268,10 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 整體的產品哲學是什麼?',
       ja: 'Charles の全体的なプロダクト哲学は何ですか?',
     },
-    relevantIds: ['about:philosophy'],
+    // Global synthesis: the about chunk is canonical, but his product-method
+    // project and product-philosophy articles are equally valid evidence — once
+    // blog bodies are indexed they legitimately rank here, so they count too.
+    relevantIds: ['about:philosophy', 'project:product-playbook:', 'blog:14:'],
     mustInclude: ['outcome'],
   },
   {
@@ -279,7 +282,10 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 如何在工作中運用 AI?',
       ja: 'Charles は仕事でどのように AI を活用していますか?',
     },
-    relevantIds: ['about:ai'],
+    // Global synthesis: beyond the about chunk, the articles where he actually
+    // builds with AI (the LangGraph twin, this RAG chatbot, Claude Code as an
+    // agent OS) are valid evidence for "how he uses AI across his work".
+    relevantIds: ['about:ai', 'blog:1:', 'blog:12:', 'changelog:rag-chatbot:'],
     mustInclude: ['prototyp'],
   },
   {
