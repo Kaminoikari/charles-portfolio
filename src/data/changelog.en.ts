@@ -19,6 +19,24 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-blog-fulltext',
+    date: '2026-06-18',
+    title: 'Taught the AI chatbot to read my full blog articles',
+    tags: ['feature', 'technical'],
+    body: [
+      "The site's AI chatbot can now answer from the full text of my blog posts, not just their titles and summaries. Until now only each article's headline and subtitle were embedded, so a deep question about what an article actually argues had nowhere to land. A new ingest path pulls in each article's body, splits it into passages, and adds them to the retrieval index alongside everything else.",
+      { kind: 'heading', text: 'What changed' },
+      {
+        kind: 'list',
+        items: [
+          '**Full-text retrieval**: a fetcher pulls each post\'s body from Substack and Medium into a committed cache, deliberately separated from indexing so a rebuild never waits on a live (and rate-limited) fetch.',
+          '**Language-aware chunking**: a dependency-free recursive splitter breaks long posts into overlapping passages, honouring Chinese sentence boundaries (。！?) as well as English ones.',
+          '**Multilingual by design**: the articles are written in Chinese, but the multilingual embedding lets English and Japanese questions retrieve them too, so the deeper answers surface in every language.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'enter-gate-loader',
     date: '2026-06-10',
     title: 'Redesigned the enter loading sequence',
