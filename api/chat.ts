@@ -35,15 +35,19 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   }
 }
 
-// Fire-and-forget analytics. Never blocks or fails the response. The log point
-// carries a size-1 dummy vector (chat_logs is only ever scrolled, not searched)
-// so logging costs no extra embedding call.
-function logChat(payload: Record<string, unknown>): void {
-  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) return
+// Best-effort analytics. Never fails the response. The log point carries a
+// size-1 dummy vector (chat_logs is only ever scrolled, not searched) so logging
+// costs no extra embedding call. Returns the in-flight promise so the caller can
+// AWAIT it before ending the response: on Vercel the serverless instance is
+// frozen the moment the handler returns, which severs any still-pending upsert
+// (the cause of the intermittent "chat_logs upsert failed" warnings). The answer
+// is already streamed by then, so awaiting only delays the connection close.
+function logChat(payload: Record<string, unknown>): Promise<void> {
+  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) return Promise.resolve()
   // Best-effort: attach .catch so a rejected upsert can't surface as an
   // Unhandled Rejection. A bare `void promise` does NOT swallow async
   // rejections — the try/catch only ever caught synchronous throws.
-  qdrant()
+  return qdrant()
     .upsert(config.qdrantLogsCollection, {
       // Dummy vector must be non-zero: chat_logs uses Cosine distance, and the
       // cosine of an all-zero vector is undefined (norm 0), so Qdrant rejects
@@ -51,6 +55,7 @@ function logChat(payload: Record<string, unknown>): void {
       // similarity-searched, so the value is irrelevant beyond being valid.)
       points: [{ id: randomUUID(), vector: { [DENSE]: [1] }, payload: { ...payload, ts: new Date().toISOString() } }],
     })
+    .then(() => undefined)
     .catch((err) => console.warn('chat_logs upsert failed (non-fatal):', (err as Error).message))
 }
 
@@ -91,13 +96,16 @@ export default async function handler(req: IncomingMessage & { method?: string; 
   res.setHeader('Connection', 'keep-alive')
 
   const started = Date.now()
+  // Held so we can await the analytics upsert before res.end(): the serverless
+  // instance freezes on return, so a fire-and-forget upsert would be cut off.
+  let logged: Promise<void> = Promise.resolve()
   try {
     for await (const ev of streamAnswer(parsed.question)) {
       if (ev.type === 'token') {
         res.write(sse('token', { text: ev.text }))
       } else {
         res.write(sse('done', { sources: ev.sources, language: ev.language, answer: ev.answer }))
-        logChat({
+        logged = logChat({
           question: parsed.question,
           language: ev.language,
           route: ev.sources.length > 0 ? 'generate' : 'fallback',
@@ -111,6 +119,7 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     res.write(sse('error', { message: 'Generation failed. Please try again.' }))
     console.error('chat handler error:', err)
   } finally {
+    await logged
     res.end()
   }
 }
