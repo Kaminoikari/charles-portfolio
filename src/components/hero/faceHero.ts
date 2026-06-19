@@ -40,6 +40,16 @@ function isWebGLAvailable(): boolean {
   }
 }
 
+// True when a pointer event landed on the hero's own DOM subtree. The laser's
+// pointer listeners live on window (they fire for the whole page), so firing must
+// gate on the real event target — not screen geometry. Geometry is wrong two ways:
+// the canvas is pointer-events-none so overlays (the chat widget, the nav) sit
+// over the hero viewport, and the touch raycast uses viewport NDC ignoring scroll
+// so the face's screen-centre region "hits" anywhere you scrolled to.
+export function eventTargetWithin(target: EventTarget | null, root: Element | null): boolean {
+  return !!(root && target instanceof Node && root.contains(target))
+}
+
 export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): FaceHeroHandle {
   const noop: FaceHeroHandle = { startIntro: () => {}, setActive: () => {}, dispose: () => {} }
 
@@ -924,12 +934,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   // pointercancel, which clears the pending hold), while a stationary press survives the hold timer and fires.
   let holdTimer = 0
   let touchOnFace = false   // mobile: a touch only fires / turns the head when it began on the face, never on the empty backdrop
-  // desktop: the listeners live on window, so a click anywhere on the page would otherwise fire the laser. gate it to
-  // the hero viewport. the canvas is absolute inset-0 of the h-screen hero box, so its rect tracks the hero as you scroll.
-  const pointerInHero = (e: PointerEvent) => {
-    const r = renderer.domElement.getBoundingClientRect()
-    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
-  }
+  // The listeners live on window (whole-page). Gate firing on the click's real DOM
+  // target being inside the hero, so overlay UI (chat widget, nav) and any section
+  // below the hero never trigger the beam. `data-face-hero` marks the hero root.
+  const heroRoot = canvas.closest('[data-face-hero]') ?? canvas.parentElement
   const beginFire = () => { if (!introDone) return; cursorActive = 1; firing = true; startFireSfx() }   // no firing during the intro (so the first-interaction unlock-replay click is a no-op)
   const stopFiring = (e?: PointerEvent) => { clearTimeout(holdTimer); firing = false; stopFireSfx(); if (!e || e.pointerType === "touch") { cursorActive = 0; touchOnFace = false } }   // touch release clears the highlight; desktop keeps it for the hovering cursor
   const onPointerMove = (e: PointerEvent) => {
@@ -937,11 +945,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     setAim(e); cursorActive = 1
   }
   const onPointerDown = (e: PointerEvent) => {
+    if (!eventTargetWithin(e.target, heroRoot)) return   // ignore overlay UI (chat widget, nav) + any section outside the hero
     if (e.pointerType === 'touch') {
       touchOnFace = pointerOverFace(e)
-      if (!touchOnFace) return            // touch on the backdrop: let the page scroll, no fire, no head turn
+      if (!touchOnFace) return            // touch on the hero backdrop: let the page scroll, no fire, no head turn
       setAim(e); clearTimeout(holdTimer); holdTimer = window.setTimeout(beginFire, 150)
-    } else { if (!pointerInHero(e)) return; setAim(e); beginFire() }
+    } else { setAim(e); beginFire() }
   }
   const onPointerUp = (e: PointerEvent) => stopFiring(e)
   const onPointerCancel = (e: PointerEvent) => stopFiring(e)

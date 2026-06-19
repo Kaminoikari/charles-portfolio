@@ -191,6 +191,7 @@ export default function FaceHero() {
   return (
     <section
       ref={sectionRef}
+      data-face-hero
       className="relative w-full select-none"
       style={{ background: 'var(--color-bg-primary)', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
     >
