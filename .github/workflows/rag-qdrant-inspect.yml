@@ -1,0 +1,42 @@
+name: RAG Qdrant Inspect
+
+# One-off diagnostic: print a collection's real vector schema and reproduce the
+# chat_logs analytics upsert to capture the full error. Read-only except for a
+# single dummy point that is deleted again.
+#
+# Required repo secrets: QDRANT_URL, QDRANT_API_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      collection:
+        description: 'Collection to inspect'
+        type: string
+        default: chat_logs
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect collection + reproduce upsert
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          COLLECTION: ${{ inputs.collection }}
+        run: |
+          base="${QDRANT_URL%/}"
+          echo "=== GET /collections/$COLLECTION ==="
+          curl -s "$base/collections/$COLLECTION" -H "api-key: $QDRANT_API_KEY" | head -c 2000; echo
+          echo
+          echo "=== reproduce upsert { dense: [1] } (the chat_logs analytics write) ==="
+          code=$(curl -s -o /tmp/up.json -w "%{http_code}" -X PUT \
+            "$base/collections/$COLLECTION/points" \
+            -H "api-key: $QDRANT_API_KEY" -H "Content-Type: application/json" \
+            -d '{"points":[{"id":"00000000-0000-0000-0000-0000000000ff","vector":{"dense":[1]},"payload":{"diag":true}}]}')
+          echo "HTTP $code"
+          cat /tmp/up.json; echo
+          echo
+          echo "=== clean up the diagnostic point ==="
+          curl -s -X POST "$base/collections/$COLLECTION/points/delete" \
+            -H "api-key: $QDRANT_API_KEY" -H "Content-Type: application/json" \
+            -d '{"points":["00000000-0000-0000-0000-0000000000ff"]}'; echo
