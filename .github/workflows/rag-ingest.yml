@@ -48,6 +48,12 @@ concurrency:
   group: rag-ingest
   cancel-in-progress: true
 
+# Needed so the job can commit the refreshed blog-bodies cache back. Pushes made
+# with GITHUB_TOKEN do not themselves trigger another workflow run, so this can
+# never loop (the [skip ci] in the commit message is a second guard).
+permissions:
+  contents: write
+
 jobs:
   ingest:
     runs-on: ubuntu-latest
@@ -64,6 +70,15 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Fetch new blog bodies
+        if: ${{ inputs.dry_run != 'true' }}
+        # Top up blog-bodies.json with any newly added articles so their full text
+        # is indexed automatically on the same push that adds the article. Only
+        # missing URLs are fetched (cached ones are skipped), and a flaky
+        # third-party fetch must never block the index — failures are non-fatal,
+        # so those articles fall back to the title+subtitle chunk until next run.
+        run: npm run rag:blog || echo "::warning::some blog fetches failed; indexing with cached bodies"
 
       - name: Build index
         env:
@@ -87,4 +102,19 @@ jobs:
             npm run rag:faq:dry
           else
             npm run rag:faq
+          fi
+
+      - name: Persist refreshed blog cache
+        if: ${{ inputs.dry_run != 'true' }}
+        # Commit the topped-up cache back so blog-bodies.json stays the complete,
+        # reproducible source of truth and the same body is never refetched twice.
+        run: |
+          if git diff --quiet -- rag/ingest/blog-bodies.json; then
+            echo "blog cache unchanged — nothing to commit"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add rag/ingest/blog-bodies.json
+            git commit -m "chore(rag): refresh blog-bodies cache [skip ci]"
+            git push
           fi

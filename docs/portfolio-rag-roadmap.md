@@ -40,7 +40,12 @@ article body. That is now addressed:
   the `blog:<i>` title chunk). Inert until the cache is populated, so it never
   breaks a build.
 
-**Operating it:** `npm run rag:blog` → commit the refreshed JSON → `npm run rag:ingest`.
+**Operating it — fully automatic.** Adding an article (a new entry in
+`src/data/blog.*.ts`) is all that's needed: the push to main triggers the `RAG
+Ingest` workflow, which now runs `rag:blog` first to fetch any missing article
+bodies, indexes them as body chunks, then commits the refreshed
+`blog-bodies.json` back. The manual sequence (`npm run rag:blog` → commit →
+`npm run rag:ingest`) still works for local rebuilds, but is no longer required.
 
 **Two deliberate decisions:**
 1. **No translation — rely on multilingual embeddings.** Article bodies are
@@ -49,11 +54,15 @@ article body. That is now addressed:
    BM25 sparse arm only helps zh-TW queries (different script). Translating bodies
    per locale would improve en/ja answer fidelity but is costly — revisit only if
    eval shows a cross-lingual gap.
-2. **Fetch is separated from ingest** so the index is reproducible and a build
-   never depends on a live (rate-limited) fetch.
+2. **Fetch is a separate script, run as a non-fatal CI pre-step.** The committed
+   `blog-bodies.json` stays the reproducible source of truth; CI tops it up for
+   newly added articles. The fetch failing (rate limit, host down) never blocks
+   the index — those articles simply fall back to the title+subtitle chunk until
+   the next run.
 
-**Operational dependency — network egress:** in a remote environment with an
-egress allowlist, the fetch step fails with `Host not in allowlist` unless the
+**Operational dependency — network egress:** the GitHub Actions runner has open
+egress, so the automated fetch works there. In a remote environment with an
+egress allowlist, a local fetch fails with `Host not in allowlist` unless the
 article hosts (`*.substack.com`, `*.medium.com`) are added to the environment's
 network egress settings. Run `npm run rag:blog` locally, or allowlist the hosts.
 
