@@ -32,7 +32,7 @@ export const changelog: ChangelogEntry[] = [
           '**Full-text retrieval**: a fetcher pulls each post\'s body from Substack and Medium into a committed cache, kept separate from indexing so a rebuild never waits on a live, rate-limited fetch.',
           '**Language-aware chunking**: a dependency-free recursive splitter breaks long posts into overlapping passages, honouring Chinese sentence boundaries as well as English ones.',
           '**Multilingual by design**: the articles are written in Chinese, but the multilingual embedding lets English and Japanese questions retrieve them too, so the deeper answers surface in every language.',
-          "**Portfolio content first**: retrieval now weights the site's own curated material (about, projects, experience) above outside articles, so a blog tangent never buries the first-hand account.",
+          "**Portfolio content first**: retrieval now gives the site's own curated material (about, projects, experience) a higher score weight than outside articles, so a blog tangent never buries the first-hand account.",
         ],
       },
     ],
