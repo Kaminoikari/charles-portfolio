@@ -34,35 +34,72 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   ])
 }
 
-// Per-CHUNK deadline for a streaming model, NOT a total-completion deadline. The
-// timer is reset on every chunk, so a healthy stream that keeps producing tokens
-// is allowed to run to completion (broad questions legitimately need far longer
-// than any single fail-fast window), while a provider that hangs or is quota-
-// limited — producing no first token, or stalling mid-stream — still fails over
-// fast. A total-time race here used to kill Gemini mid-stream on every long
-// answer, wasting the work and always paying for the Claude fallback.
-export async function* withStallTimeout<T>(
-  stream: AsyncIterable<T>,
+// Race a single iterator step against a deadline, clearing the timer either way
+// so a settled step never leaves a dangling timeout holding the event loop.
+function raceStep<T>(
+  step: Promise<IteratorResult<T>>,
   ms: number,
-  label: string,
-): AsyncGenerator<T> {
+  message: string,
+): Promise<IteratorResult<T>> {
+  let timer: ReturnType<typeof setTimeout>
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+  return Promise.race([step.finally(() => clearTimeout(timer)), deadline])
+}
+
+// Consume a streamed chat response under a FIRST-TOKEN gate.
+//
+// The fallback decision is made before anything is shown to the user, which is
+// the streaming-UX invariant we want: a provider switch must never replace text
+// already on screen.
+//
+//   Phase 1 (gate): wait for the first NON-EMPTY token within firstTokenMs.
+//     If none arrives — quota/hang/empty — THROW. Nothing has been streamed to
+//     the client yet, so the caller can fall back to Claude with zero perceived
+//     switch. We cancel the stream so a late token can't leak out afterwards.
+//   Phase 2 (committed): a visible token has been emitted, so we never swap it
+//     out. A later stall or error ends the stream with the partial answer (best
+//     effort) instead of throwing — falling back here would replace on-screen
+//     text, the exact artifact we are avoiding.
+export async function consumeGated(
+  stream: AsyncIterable<{ content: unknown }>,
+  opts: { firstTokenMs: number; stallMs: number; label: string },
+): Promise<string> {
   const it = stream[Symbol.asyncIterator]()
+  const asText = (chunk: { content: unknown }): string =>
+    typeof chunk?.content === 'string' ? chunk.content : ''
+  let text = ''
+
+  // Phase 1 — first-token gate. Throwing is safe: nothing visible emitted yet.
   try {
     for (;;) {
-      const res = await Promise.race([
-        it.next(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`${label} stalled (no token in ${ms}ms)`)), ms),
-        ),
-      ])
-      if (res.done) return
-      yield res.value
+      const r = await raceStep(it.next(), opts.firstTokenMs, `${opts.label} produced no first token in ${opts.firstTokenMs}ms`)
+      if (r.done) throw new Error(`${opts.label} produced no output`)
+      const t = asText(r.value)
+      if (t) {
+        text = t
+        break
+      }
     }
+  } catch (err) {
+    await it.return?.()
+    throw err
+  }
+
+  // Phase 2 — committed to this provider. Stall/error ends with partial text.
+  try {
+    for (;;) {
+      const r = await raceStep(it.next(), opts.stallMs, `${opts.label} stalled (no token in ${opts.stallMs}ms)`)
+      if (r.done) break
+      text += asText(r.value)
+    }
+  } catch (err) {
+    console.warn(`${opts.label} stalled after first token, returning partial answer:`, (err as Error).message)
   } finally {
-    // Cancel the upstream stream on timeout/early-exit so the provider connection
-    // is not left dangling for the rest of the serverless invocation.
     await it.return?.()
   }
+  return text
 }
 
 // Gemini factory — used directly by grade/rewrite, and as tier 1 of generate.
@@ -94,11 +131,14 @@ function claude(strong: boolean, temperature: number): ChatAnthropic {
   })
 }
 
-// Per-call deadlines (ms). GEMINI_STALL_MS is a per-chunk stall window (see
-// withStallTimeout), not a cap on total generation — a steadily streaming answer
-// runs to completion regardless of length, staying under the 60s function limit.
-// CLAUDE_TIMEOUT_MS is a total-completion cap on the .invoke fallback.
-const GEMINI_STALL_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
+// Per-call deadlines (ms). Both Gemini windows are per-chunk, not caps on total
+// generation — a steadily streaming answer runs to completion regardless of
+// length, staying under the 60s function limit. GEMINI_FIRST_TOKEN_MS gates the
+// fallback-to-Claude decision (time to the first visible token); GEMINI_STALL_MS
+// bounds an inter-token gap AFTER the stream has committed (ends with the partial
+// answer, never falls back). CLAUDE_TIMEOUT_MS caps the .invoke fallback.
+const GEMINI_FIRST_TOKEN_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
+const GEMINI_STALL_MS = Number.parseInt(process.env.RAG_GEMINI_STALL_MS ?? '8000', 10)
 const CLAUDE_TIMEOUT_MS = Number.parseInt(process.env.RAG_CLAUDE_TIMEOUT_MS ?? '15000', 10)
 
 export interface GenerateResult {
@@ -106,28 +146,29 @@ export interface GenerateResult {
   provider: 'gemini' | 'claude'
 }
 
-// Tier-1 → tier-2 fallback for the final answer. Tries Gemini; on ANY error
-// (quota 429, timeout, 5xx, malformed) falls back to Claude so the visitor
-// never sees a generation failure. `strong` picks Sonnet over Haiku for the
-// fallback when the question is broad/synthetic.
+// Tier-1 → tier-2 fallback for the final answer, under a first-token gate.
+//
+// Gemini streams the answer. The fallback to Claude only fires while Gemini has
+// shown nothing yet (no first token within the gate, a quota/5xx/empty error) —
+// so the visitor never sees one answer get replaced by another. Once Gemini
+// emits a visible token we commit to it; a later stall ends with the partial
+// answer rather than swapping providers. `strong` picks Sonnet over Haiku for
+// the fallback when the question is broad/synthetic.
 export async function generateWithFallback(
   messages: BaseMessageLike[],
   opts: { strong?: boolean; temperature?: number } = {},
 ): Promise<GenerateResult> {
   const temperature = opts.temperature ?? 0.2
   try {
-    // Stream the free tier so the deadline guards token cadence, not total
-    // length: a long but healthy answer finishes on Gemini instead of being
-    // killed mid-stream and re-generated (and re-billed) on Claude.
     const stream = await gemini(temperature).stream(messages)
-    let text = ''
-    for await (const chunk of withStallTimeout(stream, GEMINI_STALL_MS, 'Gemini')) {
-      if (typeof chunk.content === 'string') text += chunk.content
-    }
-    if (!text.trim()) throw new Error('Gemini produced no output')
+    const text = await consumeGated(stream, {
+      firstTokenMs: GEMINI_FIRST_TOKEN_MS,
+      stallMs: GEMINI_STALL_MS,
+      label: 'Gemini',
+    })
     return { text, provider: 'gemini' }
   } catch (err) {
-    console.warn('Gemini generation failed, falling back to Claude:', (err as Error).message)
+    console.warn('Gemini generation failed before first token, falling back to Claude:', (err as Error).message)
     const res = await withTimeout(
       claude(opts.strong ?? false, temperature).invoke(messages),
       CLAUDE_TIMEOUT_MS,
