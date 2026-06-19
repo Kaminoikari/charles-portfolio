@@ -21,17 +21,18 @@ export const changelog: ChangelogEntry[] = [
   {
     id: 'rag-blog-fulltext',
     date: '2026-06-18',
-    title: 'Taught the AI chatbot to read my full blog articles',
+    title: "Extended the AI chatbot's CRAG pipeline with full-text blog retrieval",
     tags: ['feature', 'technical'],
     body: [
-      "The site's AI chatbot can now answer from the full text of my blog posts, not just their titles and summaries. Until now only each article's headline and subtitle were embedded, so a deep question about what an article actually argues had nowhere to land. A new ingest path pulls in each article's body, splits it into passages, and adds them to the retrieval index alongside everything else.",
+      "The site's AI chatbot can now answer from the full text of my blog posts, not only their titles and summaries. Until now only each article's headline and subtitle were embedded, so a question about what a piece actually argues had nowhere to land. A new ingest path pulls in each article's body, splits it into passages, and adds them to the retrieval index alongside everything else.",
       { kind: 'heading', text: 'What changed' },
       {
         kind: 'list',
         items: [
-          '**Full-text retrieval**: a fetcher pulls each post\'s body from Substack and Medium into a committed cache, deliberately separated from indexing so a rebuild never waits on a live (and rate-limited) fetch.',
-          '**Language-aware chunking**: a dependency-free recursive splitter breaks long posts into overlapping passages, honouring Chinese sentence boundaries (。！?) as well as English ones.',
+          '**Full-text retrieval**: a fetcher pulls each post\'s body from Substack and Medium into a committed cache, kept separate from indexing so a rebuild never waits on a live, rate-limited fetch.',
+          '**Language-aware chunking**: a dependency-free recursive splitter breaks long posts into overlapping passages, honouring Chinese sentence boundaries as well as English ones.',
           '**Multilingual by design**: the articles are written in Chinese, but the multilingual embedding lets English and Japanese questions retrieve them too, so the deeper answers surface in every language.',
+          "**Portfolio content first**: retrieval now weights the site's own curated material (about, projects, experience) above outside articles, so a blog tangent never buries the first-hand account.",
         ],
       },
     ],
