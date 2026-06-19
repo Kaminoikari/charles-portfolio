@@ -1,6 +1,7 @@
 // Minimal markdown renderer for streamed answers — no dependency, by design
 // (the design system values lean dependencies). It covers exactly the subset
-// the answer model emits: paragraphs, `*`/`-`/`1.` lists, `**bold**`, inline
+// the answer model emits: paragraphs, `#`..`######` headings (shown as a compact
+// bold line, not oversized <h2>), `*`/`-`/`1.` lists, `**bold**`, inline
 // `code`, and [n] citation markers (rendered in the accent colour). Anything
 // else falls through as plain text. Safe: we never use dangerouslySetInnerHTML —
 // every node is a real React element built from parsed tokens.
@@ -128,6 +129,19 @@ export function Markdown({ text }: { text: string }) {
 
   for (const raw of lines) {
     const line = raw.trimEnd()
+    // ATX heading (`#`..`######`): strip the markers and render a compact bold
+    // line. A chat bubble is too small for real <h2> typography, and showing the
+    // raw `##` reads as clutter.
+    const heading = /^\s*#{1,6}\s+(.*\S)\s*#*$/.exec(line)
+    if (heading) {
+      flushList()
+      blocks.push(
+        <p key={key++} className="mb-1 mt-3 font-semibold text-white first:mt-0">
+          {renderInline(heading[1])}
+        </p>,
+      )
+      continue
+    }
     const bullet = /^\s*[*-]\s+(.*)$/.exec(line)
     const numbered = /^\s*(\d+)\.\s+(.*)$/.exec(line)
     if (bullet) {
