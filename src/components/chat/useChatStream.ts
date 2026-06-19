@@ -104,10 +104,13 @@ export function useChatStream() {
             } else if (ev.event === 'done') {
               const data = ev.data as { sources?: ChatSource[]; answer?: string }
               const sources = data.sources ?? []
-              // Backfill the answer when streaming produced no tokens — e.g. the
-              // fallback node returns a static string (no chat-model stream), so
-              // without this the reply would render as an empty bubble.
-              patchAssistant((m) => ({ ...m, sources, text: m.text || data.answer || '' }))
+              // `done.answer` is the server's single authoritative answer; the
+              // streamed tokens are only an optimistic preview. Reconcile to the
+              // authoritative answer here — otherwise a Gemini→Claude fallback
+              // (which streams BOTH providers' tokens on the generate node) leaves
+              // two answers concatenated in the bubble. Fall back to the streamed
+              // text only if the server somehow sent no answer.
+              patchAssistant((m) => ({ ...m, sources, text: data.answer || m.text || '' }))
             } else if (ev.event === 'error') {
               patchAssistant((m) => ({ ...m, text: errorText, error: true }))
             }
