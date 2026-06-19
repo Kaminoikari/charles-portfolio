@@ -133,18 +133,33 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
 // Reformulate the question to retrieve better on the next loop. Increments the
 // loop counter (the graph caps total loops via config.maxLoops).
 export async function rewriteQuery(state: RAGStateType): Promise<Partial<RAGStateType>> {
-  const res = await gemini().invoke([
-    {
-      role: 'system',
-      content:
-        'Rewrite the user question to improve retrieval against a product ' +
-        "manager's portfolio (projects, work experience, skills, blog). Keep " +
-        'the original language. Return only the rewritten query.',
-    },
-    { role: 'user', content: state.question },
-  ])
-  const rewritten = String(res.content).trim()
-  return { queries: [rewritten], loops: (state.loops ?? 0) + 1 }
+  const loops = (state.loops ?? 0) + 1
+  // Like grade, the rewrite is a quality nicety, not a hard gate. It calls Gemini
+  // with no Claude fallback, so a transient Gemini failure here would otherwise
+  // crash the whole request (surfacing as "Generation failed" to the user) — and
+  // it only fires on the corrective loop, making that error rare and confusing.
+  // Degrade gracefully: on any failure/timeout keep the original query and let
+  // the loop cap route to fallback if retrieval stays weak.
+  try {
+    const res = await Promise.race([
+      gemini().invoke([
+        {
+          role: 'system',
+          content:
+            'Rewrite the user question to improve retrieval against a product ' +
+            "manager's portfolio (projects, work experience, skills, blog). Keep " +
+            'the original language. Return only the rewritten query.',
+        },
+        { role: 'user', content: state.question },
+      ]),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('rewrite timed out')), 6000)),
+    ])
+    const rewritten = String(res.content).trim()
+    return { queries: [rewritten || state.question], loops }
+  } catch (err) {
+    console.warn('rewriteQuery failed, keeping the original query:', (err as Error).message)
+    return { queries: [state.question], loops }
+  }
 }
 
 // --- generate ------------------------------------------------------------
