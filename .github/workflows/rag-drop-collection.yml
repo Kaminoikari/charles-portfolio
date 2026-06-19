@@ -1,0 +1,37 @@
+name: RAG Drop Collection
+
+# Delete a throwaway A/B / experiment Qdrant collection (created via the
+# `collection` override on RAG Ingest). Guarded to refuse the production
+# collections so this maintenance tool can never nuke the live index.
+#
+# Required repo secrets: QDRANT_URL, QDRANT_API_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      collection:
+        description: 'Experiment collection to delete (production names are refused)'
+        type: string
+        required: true
+
+jobs:
+  drop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Drop collection
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          COLLECTION: ${{ inputs.collection }}
+        run: |
+          case "$COLLECTION" in
+            doc_chunks|chat_logs|faq_cache|"")
+              echo "Refusing to drop protected/empty collection: '$COLLECTION'"; exit 1;;
+          esac
+          echo "Deleting collection $COLLECTION …"
+          code=$(curl -s -o /tmp/resp.json -w "%{http_code}" -X DELETE \
+            "${QDRANT_URL%/}/collections/${COLLECTION}" \
+            -H "api-key: ${QDRANT_API_KEY}" -H "Content-Type: application/json")
+          cat /tmp/resp.json; echo
+          echo "HTTP $code"
+          [ "$code" = "200" ] || { echo "delete failed"; exit 1; }
