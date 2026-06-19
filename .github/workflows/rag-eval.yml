@@ -20,6 +20,10 @@ on:
         description: 'Branch/ref to check out and run (defaults to main)'
         type: string
         default: main
+      collection:
+        description: 'Qdrant collection to evaluate (defaults to the production doc_chunks)'
+        type: string
+        default: doc_chunks
 
 jobs:
   eval:
@@ -41,4 +45,5 @@ jobs:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
         run: npm run rag:eval

@@ -41,6 +41,14 @@ on:
         description: 'Dry run (extract + report counts, no embeddings, no writes)'
         type: boolean
         default: false
+      collection:
+        description: 'Qdrant collection to write (defaults to the production doc_chunks)'
+        type: string
+        default: doc_chunks
+      blog_body:
+        description: 'Index blog full-text body chunks (set false for a titles-only baseline)'
+        type: string
+        default: 'true'
 
 # One ingest at a time. A newer push supersedes an in-flight run so the index
 # always settles on the latest content instead of racing two upserts into Qdrant.
@@ -85,6 +93,8 @@ jobs:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
+          RAG_BLOG_BODY: ${{ inputs.blog_body || 'true' }}
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             npm run rag:ingest:dry
@@ -93,6 +103,8 @@ jobs:
           fi
 
       - name: Build FAQ semantic cache
+        # Skip for experiment collections so an A/B ingest never rewrites prod FAQ.
+        if: ${{ (inputs.collection || 'doc_chunks') == 'doc_chunks' }}
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
