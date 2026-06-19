@@ -34,6 +34,37 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   ])
 }
 
+// Per-CHUNK deadline for a streaming model, NOT a total-completion deadline. The
+// timer is reset on every chunk, so a healthy stream that keeps producing tokens
+// is allowed to run to completion (broad questions legitimately need far longer
+// than any single fail-fast window), while a provider that hangs or is quota-
+// limited — producing no first token, or stalling mid-stream — still fails over
+// fast. A total-time race here used to kill Gemini mid-stream on every long
+// answer, wasting the work and always paying for the Claude fallback.
+export async function* withStallTimeout<T>(
+  stream: AsyncIterable<T>,
+  ms: number,
+  label: string,
+): AsyncGenerator<T> {
+  const it = stream[Symbol.asyncIterator]()
+  try {
+    for (;;) {
+      const res = await Promise.race([
+        it.next(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`${label} stalled (no token in ${ms}ms)`)), ms),
+        ),
+      ])
+      if (res.done) return
+      yield res.value
+    }
+  } finally {
+    // Cancel the upstream stream on timeout/early-exit so the provider connection
+    // is not left dangling for the rest of the serverless invocation.
+    await it.return?.()
+  }
+}
+
 // Gemini factory — used directly by grade/rewrite, and as tier 1 of generate.
 export function gemini(temperature = 0): ChatGoogleGenerativeAI {
   return new ChatGoogleGenerativeAI({
@@ -63,9 +94,11 @@ function claude(strong: boolean, temperature: number): ChatAnthropic {
   })
 }
 
-// Per-call deadlines (ms). Generous enough for a normal response, tight enough
-// that the whole pipeline stays well under the serverless timeout.
-const GEMINI_TIMEOUT_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
+// Per-call deadlines (ms). GEMINI_STALL_MS is a per-chunk stall window (see
+// withStallTimeout), not a cap on total generation — a steadily streaming answer
+// runs to completion regardless of length, staying under the 60s function limit.
+// CLAUDE_TIMEOUT_MS is a total-completion cap on the .invoke fallback.
+const GEMINI_STALL_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
 const CLAUDE_TIMEOUT_MS = Number.parseInt(process.env.RAG_CLAUDE_TIMEOUT_MS ?? '15000', 10)
 
 export interface GenerateResult {
@@ -83,8 +116,16 @@ export async function generateWithFallback(
 ): Promise<GenerateResult> {
   const temperature = opts.temperature ?? 0.2
   try {
-    const res = await withTimeout(gemini(temperature).invoke(messages), GEMINI_TIMEOUT_MS, 'Gemini')
-    return { text: String(res.content), provider: 'gemini' }
+    // Stream the free tier so the deadline guards token cadence, not total
+    // length: a long but healthy answer finishes on Gemini instead of being
+    // killed mid-stream and re-generated (and re-billed) on Claude.
+    const stream = await gemini(temperature).stream(messages)
+    let text = ''
+    for await (const chunk of withStallTimeout(stream, GEMINI_STALL_MS, 'Gemini')) {
+      if (typeof chunk.content === 'string') text += chunk.content
+    }
+    if (!text.trim()) throw new Error('Gemini produced no output')
+    return { text, provider: 'gemini' }
   } catch (err) {
     console.warn('Gemini generation failed, falling back to Claude:', (err as Error).message)
     const res = await withTimeout(
