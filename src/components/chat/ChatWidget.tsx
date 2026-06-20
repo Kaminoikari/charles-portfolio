@@ -198,7 +198,15 @@ export default function ChatWidget() {
     void send(q, t('chat.errorMessage'))
   }
 
-  const suggestions = [t('chat.suggested1'), t('chat.suggested2'), t('chat.suggested3')]
+  const suggestions = [
+    t('chat.suggested1'),
+    t('chat.suggested2'),
+    t('chat.suggested3'),
+    t('chat.suggested4'),
+    t('chat.suggested5'),
+    t('chat.suggested6'),
+    t('chat.suggested7'),
+  ]
 
   if (!open) {
     // Single floating CTA (bottom-right): one click opens chat. The ambient-music
