@@ -170,6 +170,12 @@ const PERSONAL = new RegExp(
     '\\bsalary\\b', 'how much (do|does) (he|you|charles) (earn|make)', '\\bincome\\b',
     'where (do|does) (he|you|charles) live', 'home address', 'phone number',
     '\\breligio', '\\bpolitic',
+    // education / schooling — alma mater, degree, where he studied. Private
+    // background Charles fields himself (his domains aren't edtech, so bare
+    // university/college rarely collides with a content question).
+    'high school', '\\bgraduat', 'alma mater', '\\buniversity\\b', '\\bcollege\\b',
+    '(which|what)\\s+school', 'where (did|does|do)?\\s*(he|you|charles)?\\s*(study|studied)',
+    '(his|your)\\s+(degree|education|major)', '\\bdiploma\\b',
     // 繁中
     '幾歲', '年齡', '多大', '生日', '出生',
     '結婚', '已婚', '未婚', '老婆', '太太', '老公', '配偶',
@@ -180,11 +186,15 @@ const PERSONAL = new RegExp(
     '兄弟', '姊妹', '姐妹', '父親', '母親', '感情生活', '私生活',
     '薪水', '薪資', '年薪', '收入', '賺多少', '住址', '地址', '住哪', '電話', '手機號',
     '宗教信仰', '政治立場',
+    // 學經歷（學校 / 學位 / 畢業）— 個人背景，導向本人
+    '大學', '高中', '研究所', '碩士', '學士', '學歷', '畢業', '主修', '科系', '母校', '就讀',
     // 日本語
     '何歳', '年齢', '誕生日', '結婚', '既婚', '独身', '妻', '配偶', '彼女', '彼氏',
     '恋愛', '交際', '子供', '子ども', '両親', '家族構成', '家族', '家庭', '兄弟',
     '姉妹', '私生活', '給料', '年収', '収入',
     '住所', '電話番号', '宗教', '政治',
+    // 学歴 / 学校
+    '学歴', '大学', '高校', '卒業', '大学院', '専攻', '出身校', '学位',
   ].join('|'),
   'i',
 )

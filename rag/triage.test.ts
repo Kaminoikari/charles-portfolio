@@ -23,6 +23,37 @@ test('personal/privacy questions are redirected, not passed to RAG', () => {
   }
 })
 
+test('education / schooling questions are redirected to Charles, not RAG-fallback', () => {
+  // Alma mater, degree, where he studied — private background Charles handles
+  // himself. These previously fell through to a generic fallback.
+  for (const q of [
+    'what high school does he go to',
+    'where did he graduate?',
+    'which university did he attend?',
+    'what is his alma mater',
+    "what's his degree?",
+    '他念哪間大學',
+    '他高中讀哪',
+    '他的學歷是什麼',
+    '他大學主修什麼',
+    '彼の学歴は?',
+    'どこの大学を卒業しましたか',
+  ]) {
+    assert.equal(triage(q, 'en').kind, 'personal', `expected personal for: ${q}`)
+  }
+})
+
+test('education match does not swallow skill / learning content questions', () => {
+  for (const q of [
+    'What skills did he learn?',
+    'Tell me about his machine learning projects',
+    '他學了哪些技能',
+    '他怎麼自學 AI 工程',
+  ]) {
+    assert.equal(triage(q, 'en').kind, 'pass', `expected pass for: ${q}`)
+  }
+})
+
 test('personal redirect replies in the question language and includes contact', () => {
   assert.match(triage('他單身嗎', 'zh-TW').kind === 'personal' ? personalRedirect('zh-TW') : '', /Email/)
   const ja = personalRedirect('ja')
