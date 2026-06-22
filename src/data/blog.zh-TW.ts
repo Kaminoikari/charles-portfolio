@@ -34,6 +34,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '如何打造全世界最 AI 化的工程團隊',
+    subtitle: 'Claude Code 與 Cowork 負責人 Fiona Fung 的一線觀察。當每季產出暴增八倍、角色界線全面模糊、agent 無所不在，她怎麼帶團隊、又怎麼守住文化。',
+    url: 'https://charlestychen.substack.com/p/ai',
+    platform: 'Substack',
+    date: '2026-06-22',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/bd16fff7-a139-421f-8316-72b1c2b6048f_1672x941.png',
+  },
+  {
     title: '我用一星期，建立 Physical AI 的心智模型',
     subtitle: '從 MockWorld 到 SmolVLA，一場一週的小型實驗如何讓我親身理解 LLM Orchestration 與 Robotics Policy 的真實邊界。',
     url: 'https://charlestychen.substack.com/p/physical-ai',

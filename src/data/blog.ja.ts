@@ -42,6 +42,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '世界で最も AI 化されたエンジニアリングチームの作り方',
+    subtitle: 'Claude Code と Cowork を率いる Fiona Fung の最前線の観察。四半期ごとの成果が8倍に跳ね上がり、役割の境界が完全に曖昧になり、agent がどこにでもいる中で、彼女はどうチームを率い、どう文化を守るのか。',
+    url: 'https://charlestychen.substack.com/p/ai',
+    platform: 'Substack',
+    date: '2026-06-22',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/bd16fff7-a139-421f-8316-72b1c2b6048f_1672x941.png',
+  },
+  {
     title: '一週間で Physical AI のメンタルモデルを構築した',
     subtitle: 'MockWorld から SmolVLA まで、一週間の小さな実験が LLM Orchestration と Robotics Policy の本当の境界を、身をもって理解させてくれた話。',
     url: 'https://charlestychen.substack.com/p/physical-ai',

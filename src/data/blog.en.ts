@@ -43,6 +43,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'How to Build the Most AI-Native Engineering Team in the World',
+    subtitle:
+      'Frontline observations from Fiona Fung, who leads Claude Code and Cowork. When quarterly output jumps eightfold, role boundaries blur completely, and agents are everywhere, how she leads the team and keeps the culture intact.',
+    url: 'https://charlestychen.substack.com/p/ai',
+    platform: 'Substack',
+    date: '2026-06-22',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/bd16fff7-a139-421f-8316-72b1c2b6048f_1672x941.png',
+  },
+  {
     title: 'Building a Mental Model of Physical AI in One Week',
     subtitle:
       'From MockWorld to SmolVLA, how a one-week mini-experiment let me feel out firsthand the real boundaries between LLM orchestration and robotics policy.',
