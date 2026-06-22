@@ -6,11 +6,9 @@
 // EMBEDDING_API_KEY / QDRANT_* at runtime; see docs/rag-chatbot-design.md §10.
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { randomUUID } from 'node:crypto'
 
 import { streamAnswer } from '../rag/graph.js'
-import { config } from '../rag/config.js'
-import { qdrant, DENSE } from '../rag/qdrant.js'
+import { logChatEvent } from '../rag/chatlog.js'
 import { parseChatRequest, sse, RateLimiter, clientId, clientCountry, isBlockedCountry } from '../rag/api-helpers.js'
 
 // One limiter per warm instance (see api-helpers note re: Upstash for global).
@@ -33,30 +31,6 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
   } catch {
     return null
   }
-}
-
-// Best-effort analytics. Never fails the response. The log point carries a
-// size-1 dummy vector (chat_logs is only ever scrolled, not searched) so logging
-// costs no extra embedding call. Returns the in-flight promise so the caller can
-// AWAIT it before ending the response: on Vercel the serverless instance is
-// frozen the moment the handler returns, which severs any still-pending upsert
-// (the cause of the intermittent "chat_logs upsert failed" warnings). The answer
-// is already streamed by then, so awaiting only delays the connection close.
-function logChat(payload: Record<string, unknown>): Promise<void> {
-  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) return Promise.resolve()
-  // Best-effort: attach .catch so a rejected upsert can't surface as an
-  // Unhandled Rejection. A bare `void promise` does NOT swallow async
-  // rejections — the try/catch only ever caught synchronous throws.
-  return qdrant()
-    .upsert(config.qdrantLogsCollection, {
-      // Dummy vector must be non-zero: chat_logs uses Cosine distance, and the
-      // cosine of an all-zero vector is undefined (norm 0), so Qdrant rejects
-      // [0]. [1] has norm 1 and passes. (chat_logs is only ever scrolled, never
-      // similarity-searched, so the value is irrelevant beyond being valid.)
-      points: [{ id: randomUUID(), vector: { [DENSE]: [1] }, payload: { ...payload, ts: new Date().toISOString() } }],
-    })
-    .then(() => undefined)
-    .catch((err) => console.warn('chat_logs upsert failed (non-fatal):', (err as Error).message))
 }
 
 export default async function handler(req: IncomingMessage & { method?: string; headers: Record<string, string | string[] | undefined> }, res: ServerResponse) {
@@ -105,7 +79,8 @@ export default async function handler(req: IncomingMessage & { method?: string; 
         res.write(sse('token', { text: ev.text }))
       } else {
         res.write(sse('done', { sources: ev.sources, language: ev.language, answer: ev.answer }))
-        logged = logChat({
+        logged = logChatEvent({
+          type: 'question',
           question: parsed.question,
           language: ev.language,
           route: ev.sources.length > 0 ? 'generate' : 'fallback',

@@ -8,6 +8,7 @@ import { config } from '../config.js'
 import { qdrant } from '../qdrant.js'
 
 interface LogRow {
+  type: 'open' | 'question' | null
   question: string | null
   language: string | null
   route: string | null
@@ -63,41 +64,53 @@ async function main() {
     return
   }
 
-  const fallbacks = rows.filter((r) => r.route === 'fallback').length
-  const corrective = rows.filter((r) => (r.loops ?? 0) > 0).length
-  const latencies = rows.map((r) => r.latency_ms).filter((x): x is number => x != null)
+  // chat_logs holds two event types: 'open' (the widget panel was opened) and
+  // 'question' (something was actually asked). Rows from before the `type` field
+  // existed have none and are questions, so anything not explicitly 'open' counts
+  // as a question.
+  const openRows = rows.filter((r) => r.type === 'open')
+  const questionRows = rows.filter((r) => r.type !== 'open')
+  const distinct = (rs: LogRow[]) => new Set(rs.map((r) => r.visitor_id).filter(Boolean)).size
 
-  // Unique-visitor count: rows carrying a visitor_id (logged since the analytics
-  // upgrade) deduped by that id. Rows from before the upgrade have none and are
-  // reported separately so the split stays honest rather than inflating "people".
-  const identified = rows.filter((r) => r.visitor_id)
-  const uniqueVisitors = new Set(identified.map((r) => r.visitor_id)).size
-  const perVisitor = uniqueVisitors > 0 ? (identified.length / uniqueVisitors).toFixed(1) : '—'
+  const uniqueOpeners = distinct(openRows)
+  const uniqueAskers = distinct(questionRows)
+  const conversion =
+    uniqueOpeners > 0 ? `${((uniqueAskers / uniqueOpeners) * 100).toFixed(0)}%` : '—'
+  const perAsker = uniqueAskers > 0 ? (questionRows.length / uniqueAskers).toFixed(1) : '—'
+  const preUpgrade = questionRows.filter((r) => !r.visitor_id).length
 
-  console.log(`# Chat Insights  (${rows.length} questions)\n`)
+  const fallbacks = questionRows.filter((r) => r.route === 'fallback').length
+  const corrective = questionRows.filter((r) => (r.loops ?? 0) > 0).length
+  const latencies = questionRows.map((r) => r.latency_ms).filter((x): x is number => x != null)
+  const qCount = questionRows.length || 1 // avoid /0 in the percentages below
 
-  console.log('## People')
-  console.log(`- Unique visitors who asked: ${uniqueVisitors}`)
-  console.log(`- Questions per visitor: ${perVisitor}`)
-  console.log(`- Questions with no visitor id (pre-upgrade logs): ${rows.length - identified.length}\n`)
+  console.log(`# Chat Insights  (${questionRows.length} questions, ${openRows.length} opens)\n`)
+
+  console.log('## People (the funnel)')
+  console.log(`- Opened the chat: ${openRows.length} times, ${uniqueOpeners} unique visitors`)
+  console.log(`- Asked a question: ${questionRows.length} times, ${uniqueAskers} unique visitors`)
+  console.log(`- Open → ask conversion (unique visitors): ${conversion}`)
+  console.log(`- Questions per asker: ${perAsker}`)
+  if (preUpgrade > 0) console.log(`- Questions with no visitor id (pre-upgrade logs): ${preUpgrade}`)
+  console.log()
 
   console.log('## Coverage')
-  console.log(`- Fallback (no answer found): ${fallbacks} (${((fallbacks / rows.length) * 100).toFixed(1)}%)`)
-  console.log(`- Needed a corrective rewrite: ${corrective} (${((corrective / rows.length) * 100).toFixed(1)}%)`)
+  console.log(`- Fallback (no answer found): ${fallbacks} (${((fallbacks / qCount) * 100).toFixed(1)}%)`)
+  console.log(`- Needed a corrective rewrite: ${corrective} (${((corrective / qCount) * 100).toFixed(1)}%)`)
   console.log(`- Median latency: ${median(latencies)} ms\n`)
 
   console.log('## Language split')
-  for (const [lang, n] of topN(tally(rows, (r) => r.language), 5)) {
-    console.log(`- ${lang}: ${n} (${((n / rows.length) * 100).toFixed(0)}%)`)
+  for (const [lang, n] of topN(tally(questionRows, (r) => r.language), 5)) {
+    console.log(`- ${lang}: ${n} (${((n / qCount) * 100).toFixed(0)}%)`)
   }
 
   console.log('\n## Most-asked questions')
-  for (const [q, n] of topN(tally(rows, (r) => r.question?.trim().toLowerCase() ?? null), 15)) {
+  for (const [q, n] of topN(tally(questionRows, (r) => r.question?.trim().toLowerCase() ?? null), 15)) {
     console.log(`- ${n}× ${q}`)
   }
 
   console.log('\n## Questions that hit fallback (corpus gaps to consider filling)')
-  const gaps = rows.filter((r) => r.route === 'fallback' && r.question)
+  const gaps = questionRows.filter((r) => r.route === 'fallback' && r.question)
   for (const [q, n] of topN(tally(gaps, (r) => r.question?.trim().toLowerCase() ?? null), 10)) {
     console.log(`- ${n}× ${q}`)
   }

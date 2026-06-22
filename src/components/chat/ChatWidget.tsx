@@ -6,9 +6,9 @@
 // the visitor's locale and the backend answers in the question's language.
 
 import { useEffect, useRef, useState } from 'react'
-import { track } from '@vercel/analytics'
 import { useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
+import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 
 function LiveDot() {
@@ -181,24 +181,23 @@ export default function ChatWidget() {
   }, [open])
 
   // Resolve the visitor's region the first time the panel opens. Kept lazy so a
-  // visitor who never opens chat never triggers the request.
+  // visitor who never opens chat never triggers the request. This fires exactly
+  // once per page session on first open, so it doubles as the "chat opened"
+  // analytics beacon — the visitor id lets the backend count opens (and unique
+  // openers) without any third-party analytics plan.
   useEffect(() => {
     if (!open || geoCheckedRef.current) return
     geoCheckedRef.current = true
-    fetch('/api/geo')
+    fetch(`/api/geo?vid=${encodeURIComponent(getVisitorId())}`)
       .then((r) => (r.ok ? r.json() : { blocked: false }))
       .then((d: { blocked?: boolean }) => setRegionBlocked(Boolean(d.blocked)))
       .catch(() => setRegionBlocked(false))
   }, [open])
 
-  const submit = (question: string, via: 'composer' | 'suggestion' = 'composer') => {
+  const submit = (question: string) => {
     if (regionBlocked) return
     const q = question.trim()
     if (!q) return
-    // Analytics: a real question being asked (after the empty/region guards), so
-    // the funnel separates "opened the widget" from "actually asked something".
-    // `via` distinguishes a typed question from a tapped suggestion chip.
-    track('chat_question_submitted', { via })
     setInput('')
     void send(q, t('chat.errorMessage'))
   }
@@ -220,10 +219,7 @@ export default function ChatWidget() {
     return (
       <button
         ref={launcherRef}
-        onClick={() => {
-          track('chat_opened')
-          setOpen(true)
-        }}
+        onClick={() => setOpen(true)}
         aria-label={t('chat.openAriaLabel')}
         className="fixed bottom-5 right-5 z-50 inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-border bg-bg-secondary py-3.5 pl-4 pr-4 text-[14px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan"
       >
@@ -283,7 +279,7 @@ export default function ChatWidget() {
               {suggestions.map((s) => (
                 <button
                   key={s}
-                  onClick={() => submit(s, 'suggestion')}
+                  onClick={() => submit(s)}
                   className="cursor-pointer rounded-full border border-border bg-transparent px-3 py-2 text-[12px] text-text-muted transition-colors hover:border-border-hover hover:text-white"
                 >
                   {s}
