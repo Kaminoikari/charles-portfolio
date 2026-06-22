@@ -57,9 +57,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['5 倍はどう計算したのか', '5 倍速はどこから来るのか', 'なぜ 5 倍なのか', '5 倍の効率はどう算出した'],
     },
     answers: {
-      en: 'The **5x** is grounded in end-to-end delivery time. A standard engineering estimate for a feature bundles scheduling, requirement alignment, development, the wait for code review, the wait for QA, and deployment coordination, which often adds up to roughly **5 days**. Working as a one-person team, Charles owns that whole pipeline himself and ships the same scope in about **1 day**. The gain is structural: a radically flattened setup with a single accountable builder removes the handoffs and queue time that slow most teams, so the **5x** measures real overhead he eliminated end to end.',
-      'zh-TW': '**5 倍**是用端到端的交付時間回推出來的。一個功能在傳統工程估時裡，會把排程、需求對齊、開發、等 code review、等 QA、安排部署全部算進去，往往加起來大約 **5 天**。Charles 以一人團隊的方式親自扛下整條 pipeline，同樣的範圍大約 **1 天**就能交付。這個提升來自結構：把組織極度精簡成單一、全權負責的 builder，消除了拖慢多數團隊的交接與排隊等待，所以這 **5 倍**衡量的是他實打實砍掉的端到端開銷。',
-      ja: '**5 倍**はエンドツーエンドの納期から逆算した数字です。ある機能を従来のエンジニア見積もりで出すと、スケジュール調整・要件のすり合わせ・開発・コードレビュー待ち・QA 待ち・デプロイ調整まで含め、合計でおよそ **5 日**になりがちです。Charles は一人チームとしてそのパイプライン全体を自ら担い、同じ範囲を約 **1 日**で出荷します。この向上は構造によるもので、組織を単一の全責任を持つ builder まで極限まで簡素化し、多くのチームを遅らせる受け渡しと待ち時間を取り除いた結果、**5 倍**は彼が端から端まで実際に削った無駄を表しています。',
+      en: 'The **5x** is grounded in end-to-end delivery time. Take a single feature: a full engineering estimate has to bundle scheduling, requirement alignment, development, the wait for code review, the wait for QA, and deployment coordination. As an illustration, suppose that adds up to **5 days**. Working as a one-person team, Charles owns that whole pipeline himself and ships the same scope in about **1 day**. The exact ratio varies by task, and the gain is structural: a radically flattened setup with a single accountable builder removes the handoffs and queue time that slow most teams, so the **5x** reflects real overhead he eliminated end to end.',
+      'zh-TW': '**5 倍**是用端到端的交付時間回推出來的。以單一功能為例，傳統工程估時得把排程、需求對齊、開發、等 code review、等 QA、安排部署全部算進去。舉例來說，假設這樣加起來是 **5 天**，而 Charles 以一人團隊的方式親自扛下整條 pipeline，同樣範圍大約 **1 天**就能交付。實際倍率會依任務而異，而這個提升來自結構：把組織極度精簡成單一、全權負責的 builder，消除了拖慢多數團隊的交接與排隊等待，所以這 **5 倍**反映的是他實打實砍掉的端到端開銷。',
+      ja: '**5 倍**はエンドツーエンドの納期から逆算した数字です。ある機能を例にとると、従来のエンジニア見積もりはスケジュール調整・要件のすり合わせ・開発・コードレビュー待ち・QA 待ち・デプロイ調整をすべて含める必要があります。たとえば、それが **5 日**になると仮定しましょう。Charles は一人チームとしてそのパイプライン全体を自ら担い、同じ範囲を約 **1 日**で出荷します。実際の倍率はタスクによって変わり、この向上は構造によるものです。組織を単一の全責任を持つ builder まで極限まで簡素化し、多くのチームを遅らせる受け渡しと待ち時間を取り除いた結果、**5 倍**は彼が端から端まで実際に削った無駄を表しています。',
     },
   },
   {
