@@ -24,6 +24,23 @@ test('parseChatRequest: rejects non-object, missing, empty, oversize', () => {
   if (!big.ok) assert.equal(big.status, 413)
 })
 
+test('parseChatRequest: keeps a sane visitorId, drops bad ones, never rejects', () => {
+  const ok = parseChatRequest({ question: 'hi', visitorId: '  abc-123  ' })
+  assert.equal(ok.ok, true)
+  if (ok.ok) assert.equal(ok.visitorId, 'abc-123') // trimmed
+
+  const none = parseChatRequest({ question: 'hi' })
+  assert.equal(none.ok, true)
+  if (none.ok) assert.equal(none.visitorId, undefined)
+
+  // Bad values are dropped, not fatal: the request still parses ok.
+  for (const bad of [123, '', '   ', 'x'.repeat(65)]) {
+    const r = parseChatRequest({ question: 'hi', visitorId: bad })
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.visitorId, undefined)
+  }
+})
+
 test('sse: frames event + json data with blank-line terminator', () => {
   assert.equal(sse('token', { t: 'hi' }), 'event: token\ndata: {"t":"hi"}\n\n')
 })

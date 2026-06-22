@@ -4,6 +4,7 @@
 // than using EventSource because EventSource is GET-only.
 
 import { useCallback, useRef, useState } from 'react'
+import { getVisitorId } from './visitorId'
 
 export interface ChatSource {
   id: string
@@ -81,7 +82,7 @@ export function useChatStream() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q }),
+          body: JSON.stringify({ question: q, visitorId: getVisitorId() }),
           signal: ctrl.signal,
         })
         if (!res.ok || !res.body) throw new Error(`chat request failed: ${res.status}`)

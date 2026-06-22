@@ -5,6 +5,10 @@
 export interface ParsedRequest {
   ok: true
   question: string
+  // Anonymous client id (see src/components/chat/visitorId.ts), used only to
+  // distinguish unique visitors from raw question counts in chat_logs. Optional:
+  // an old client or a bad value simply omits it — it never fails the request.
+  visitorId?: string
 }
 export interface ParseError {
   ok: false
@@ -13,6 +17,16 @@ export interface ParseError {
 }
 
 const MAX_QUESTION_LEN = 200
+const MAX_VISITOR_ID_LEN = 64
+
+// Accept a client-supplied visitor id only if it is a plausibly-sane string
+// (a UUID is 36 chars); anything else is dropped rather than logged verbatim.
+function sanitizeVisitorId(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined
+  const trimmed = raw.trim()
+  if (trimmed.length === 0 || trimmed.length > MAX_VISITOR_ID_LEN) return undefined
+  return trimmed
+}
 
 // Validate and normalize an incoming chat request body.
 export function parseChatRequest(body: unknown): ParsedRequest | ParseError {
@@ -30,7 +44,7 @@ export function parseChatRequest(body: unknown): ParsedRequest | ParseError {
   if (trimmed.length > MAX_QUESTION_LEN) {
     return { ok: false, status: 413, message: `Question exceeds ${MAX_QUESTION_LEN} characters.` }
   }
-  return { ok: true, question: trimmed }
+  return { ok: true, question: trimmed, visitorId: sanitizeVisitorId((body as Record<string, unknown>).visitorId) }
 }
 
 // Server-Sent Events frame. Each event is `event: <name>\ndata: <json>\n\n`.

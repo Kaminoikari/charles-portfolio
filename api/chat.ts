@@ -112,6 +112,7 @@ export default async function handler(req: IncomingMessage & { method?: string; 
           loops: ev.loops,
           latency_ms: Date.now() - started,
           sources: ev.sources,
+          visitor_id: parsed.visitorId ?? null,
         })
       }
     }

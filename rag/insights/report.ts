@@ -13,6 +13,7 @@ interface LogRow {
   route: string | null
   loops: number | null
   latency_ms: number | null
+  visitor_id: string | null
   ts: string
 }
 
@@ -66,7 +67,19 @@ async function main() {
   const corrective = rows.filter((r) => (r.loops ?? 0) > 0).length
   const latencies = rows.map((r) => r.latency_ms).filter((x): x is number => x != null)
 
+  // Unique-visitor count: rows carrying a visitor_id (logged since the analytics
+  // upgrade) deduped by that id. Rows from before the upgrade have none and are
+  // reported separately so the split stays honest rather than inflating "people".
+  const identified = rows.filter((r) => r.visitor_id)
+  const uniqueVisitors = new Set(identified.map((r) => r.visitor_id)).size
+  const perVisitor = uniqueVisitors > 0 ? (identified.length / uniqueVisitors).toFixed(1) : '—'
+
   console.log(`# Chat Insights  (${rows.length} questions)\n`)
+
+  console.log('## People')
+  console.log(`- Unique visitors who asked: ${uniqueVisitors}`)
+  console.log(`- Questions per visitor: ${perVisitor}`)
+  console.log(`- Questions with no visitor id (pre-upgrade logs): ${rows.length - identified.length}\n`)
 
   console.log('## Coverage')
   console.log(`- Fallback (no answer found): ${fallbacks} (${((fallbacks / rows.length) * 100).toFixed(1)}%)`)
