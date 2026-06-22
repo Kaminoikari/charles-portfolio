@@ -223,7 +223,7 @@ const FAQ: FaqEntry[] = [
     match: /(how (can|do) i (contact|reach)|contact (info|details|him|charles)|get in touch|reach (him|charles|charles chen)|email address|聯繫方式|聯絡方式|怎麼聯|如何聯|怎麼找他|連絡先|問い合わせ|連絡方法)/i,
     answer: {
       en: 'You can reach Charles directly here:\n\n' + contactBlock('en'),
-      'zh-TW': '你可以直接透過這些方式聯繫 Charles:\n\n' + contactBlock('zh-TW'),
+      'zh-TW': '你可以直接透過這些方式聯繫 Charles：\n\n' + contactBlock('zh-TW'),
       ja: '以下から直接 Charles にご連絡いただけます:\n\n' + contactBlock('ja'),
     },
   },
@@ -256,7 +256,7 @@ export function genericFallback(locale: Locale): string {
       '目前作品集裡的資訊不足以準確回答這個問題，我不想亂猜。' +
       '建議你直接聯繫 Charles 詢問：\n\n' +
       contactBlock(locale) +
-      '\n\n或者你也可以問問他的專案(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、工作經歷，或他如何運用 AI。'
+      '\n\n或者你也可以問問他的專案（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）、工作經歷，或他如何運用 AI。'
     )
   }
   if (locale === 'ja') {
