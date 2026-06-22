@@ -43,11 +43,11 @@ function makeNodes(grades: Array<'generate' | 'rewrite' | 'off_topic'>): {
     },
     generate: async () => {
       counts.generate++
-      return { answer: 'stub answer', sources: [{ id: 's1', title: 'Stub', score: 1, locale: 'en' }] }
+      return { answer: 'stub answer', sources: [{ id: 's1', title: 'Stub', score: 1, locale: 'en' }], outcome: 'generate' }
     },
     fallback: async () => {
       counts.fallback++
-      return { answer: 'no info', sources: [] }
+      return { answer: 'no info', sources: [], outcome: 'fallback' }
     },
   }
   return { nodes, counts }
@@ -62,6 +62,7 @@ test('happy path: grade says generate on first try', async () => {
   assert.equal(counts.generate, 1)
   assert.equal(counts.fallback, 0)
   assert.equal(res.sources.length, 1)
+  assert.equal(res.outcome, 'generate')
 })
 
 test('corrective loop: rewrite once, then generate', async () => {
@@ -78,6 +79,7 @@ test('fallback: keeps failing, capped by maxLoops', async () => {
   const { nodes, counts } = makeNodes(['rewrite']) // always rewrite
   const res = await answer('unanswerable', buildGraph(nodes))
   assert.equal(res.answer, 'no info')
+  assert.equal(res.outcome, 'fallback')
   assert.equal(counts.fallback, 1)
   assert.equal(counts.generate, 0)
   // rewrite runs exactly maxLoops times, then routeAfterGrade -> fallback
@@ -93,6 +95,21 @@ test('off-topic: declines immediately, no rewrite loop', async () => {
   assert.equal(counts.generate, 0)
   assert.equal(counts.rewrite, 0) // crucially: NO rewrite loop for off-topic
   assert.equal(counts.retrieve, 1) // retrieved once, then straight to fallback
+})
+
+test('triage-answered question reports its outcome, not a sources-derived fallback', async () => {
+  // Regression: canned/FAQ answers legitimately carry sources: [], so the old
+  // `sources.length > 0 ? generate : fallback` logging mislabeled every one of
+  // them as a fallback. The terminal node's own `outcome` is the source of truth.
+  const { nodes, counts } = makeNodes(['generate'])
+  nodes.triage = async () => ({ answer: 'I am Charles.', sources: [], route: 'answered', outcome: 'canned' })
+  const res = await answer('你是誰?', buildGraph(nodes))
+  assert.equal(res.answer, 'I am Charles.')
+  assert.equal(res.sources.length, 0) // no sources, yet...
+  assert.equal(res.outcome, 'canned') // ...NOT a fallback
+  assert.equal(counts.retrieve, 0) // never touched RAG
+  assert.equal(counts.generate, 0)
+  assert.equal(counts.fallback, 0)
 })
 
 test('language detection seeds state', async () => {

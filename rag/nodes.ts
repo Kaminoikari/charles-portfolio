@@ -33,7 +33,7 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
   // Tier 1: deterministic.
   const result = classifyQuestion(state.question, locale)
   if (result.kind !== 'pass') {
-    return { answer: result.answer, sources: [], route: 'answered' }
+    return { answer: result.answer, sources: [], route: 'answered', outcome: 'canned' }
   }
 
   // Tier 2: semantic FAQ cache. Best-effort — any failure (embed/Qdrant) just
@@ -44,7 +44,7 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
       const hit = await faqLookup(vec, locale)
       if (hit) {
         console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)}`)
-        return { answer: hit.answer, sources: [], route: 'answered' }
+        return { answer: hit.answer, sources: [], route: 'answered', outcome: 'faq' }
       }
     } catch (err) {
       console.warn('faq cache lookup failed, falling through to RAG:', (err as Error).message)
@@ -261,6 +261,7 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
             ? 'Charles の仕事や経歴に関するご質問にのみお答えできます。プロジェクトや経歴、AI の活用についてどうぞ。'
             : "I can only help with questions about Charles's work and background. Ask me about his projects, experience, or how he uses AI.",
       sources: [],
+      outcome: 'blocked',
     }
   }
 
@@ -271,7 +272,7 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
     locale: d.metadata.locale,
   }))
 
-  return { answer: stripInvalidCitations(text), sources }
+  return { answer: stripInvalidCitations(text), sources, outcome: 'generate' }
 }
 
 // --- fallback ------------------------------------------------------------
@@ -283,6 +284,7 @@ export async function fallback(state: RAGStateType): Promise<Partial<RAGStateTyp
   return {
     answer: genericFallback((state.language as Locale) ?? 'en'),
     sources: [],
+    outcome: 'fallback',
   }
 }
 

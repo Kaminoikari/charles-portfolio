@@ -83,7 +83,10 @@ export default async function handler(req: IncomingMessage & { method?: string; 
           type: 'question',
           question: parsed.question,
           language: ev.language,
-          route: ev.sources.length > 0 ? 'generate' : 'fallback',
+          // The graph's own terminal outcome (canned | faq | generate | blocked
+          // | fallback) — NOT re-derived from sources.length, which mislabeled
+          // every canned/FAQ answer (sources: []) as a fallback.
+          route: ev.outcome,
           loops: ev.loops,
           latency_ms: Date.now() - started,
           sources: ev.sources,

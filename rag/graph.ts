@@ -18,7 +18,7 @@ import { StateGraph, START, END } from '@langchain/langgraph'
 
 import { config } from './config.js'
 import { detectLanguage } from './language.js'
-import { RAGState, type RAGStateType, type Source } from './state.js'
+import { RAGState, type RAGStateType, type Source, type Outcome } from './state.js'
 import * as defaultNodes from './nodes.js'
 
 // A node is an (async) function from state to a partial state update.
@@ -85,6 +85,7 @@ export interface AnswerResult {
   sources: Source[]
   language: string
   loops: number
+  outcome: Outcome
 }
 
 // Public entry point. Detects the question's language up front (deterministic,
@@ -107,6 +108,7 @@ export async function answer(
     sources: final.sources ?? [],
     language: final.language ?? language,
     loops: final.loops ?? 0,
+    outcome: final.outcome ?? 'fallback',
   }
 }
 
@@ -116,7 +118,7 @@ export async function answer(
 // chunks and read the terminal state for sources. Tracing still auto-attaches.
 export type StreamEvent =
   | { type: 'token'; text: string }
-  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string }
+  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome }
 
 export async function* streamAnswer(
   question: string,
@@ -126,6 +128,7 @@ export async function* streamAnswer(
   let answerText = ''
   let sources: Source[] = []
   let loops = 0
+  let outcome: Outcome = 'fallback'
 
   const events = compiled.streamEvents(
     { question, language, queries: [question] },
@@ -160,12 +163,13 @@ export async function* streamAnswer(
       if (Array.isArray(out.sources)) sources = out.sources
       if (typeof out.loops === 'number') loops = out.loops
       if (typeof out.answer === 'string' && out.answer) answerText = out.answer
+      if (out.outcome) outcome = out.outcome
     }
   }
 
   // Diagnostic: surfaces in Vercel runtime logs so an empty answer is debuggable
   // without reproducing locally. Cheap (one line per request).
-  console.log(`[chat] done lang=${language} loops=${loops} answerLen=${answerText.length} sources=${sources.length}`)
+  console.log(`[chat] done lang=${language} loops=${loops} outcome=${outcome} answerLen=${answerText.length} sources=${sources.length}`)
 
-  yield { type: 'done', sources, language, loops, answer: answerText }
+  yield { type: 'done', sources, language, loops, answer: answerText, outcome }
 }

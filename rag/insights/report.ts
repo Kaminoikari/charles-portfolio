@@ -84,6 +84,13 @@ async function main() {
   const latencies = questionRows.map((r) => r.latency_ms).filter((x): x is number => x != null)
   const qCount = questionRows.length || 1 // avoid /0 in the percentages below
 
+  // How each question was answered. `route` now carries the graph's true terminal
+  // outcome (canned | faq | generate | blocked | fallback). The richer
+  // canned/faq/blocked labels only appear on rows logged after that fix; older
+  // rows only ever say 'generate' or 'fallback', and their 'fallback' over-counts
+  // (canned/FAQ answers, which carry no sources, were mislabeled as fallback).
+  const newSchema = questionRows.some((r) => r.route === 'canned' || r.route === 'faq' || r.route === 'blocked')
+
   console.log(`# Chat Insights  (${questionRows.length} questions, ${openRows.length} opens)\n`)
 
   console.log('## People (the funnel)')
@@ -92,6 +99,15 @@ async function main() {
   console.log(`- Open → ask conversion (unique visitors): ${conversion}`)
   console.log(`- Questions per asker: ${perAsker}`)
   if (preUpgrade > 0) console.log(`- Questions with no visitor id (pre-upgrade logs): ${preUpgrade}`)
+  console.log()
+
+  console.log('## How questions were answered')
+  for (const [outcome, n] of topN(tally(questionRows, (r) => r.route), 6)) {
+    console.log(`- ${outcome}: ${n} (${((n / qCount) * 100).toFixed(1)}%)`)
+  }
+  if (!newSchema) {
+    console.log('  (legacy logs: only generate/fallback recorded, and fallback over-counts — re-check after new traffic lands)')
+  }
   console.log()
 
   console.log('## Coverage')
