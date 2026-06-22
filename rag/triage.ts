@@ -122,7 +122,7 @@ export function injectionRefusal(locale: Locale): string {
   if (locale === 'ja') {
     return (
       'なかなかやりますね 😄 でも私は Charles のポートフォリオアシスタント。彼の仕事・' +
-      'プロジェクト・経歴についてお答えすることだけに集中しています。何でも聞いてください!'
+      'プロジェクト・経歴についてお答えすることだけに集中しています。何でも聞いてください！'
     )
   }
   return (
@@ -144,7 +144,7 @@ export function personalRedirect(locale: Locale): string {
   if (locale === 'ja') {
     return (
       'こちらは個人的なご質問なので、Charles 本人にお任せしますね 😊 ' +
-      '直接ご連絡いただけたら嬉しいです:\n\n' +
+      '直接ご連絡いただけたら嬉しいです：\n\n' +
       contactBlock(locale)
     )
   }
@@ -215,7 +215,7 @@ const FAQ: FaqEntry[] = [
     answer: {
       en: "Hi! 👋 I'm Charles's portfolio assistant. Ask me about his projects, work experience, product philosophy, or how he uses AI in his workflow.",
       'zh-TW': '嗨！👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念，或他如何在工作流程中運用 AI。',
-      ja: 'こんにちは!👋 Charles のポートフォリオアシスタントです。プロジェクト、職務経歴、プロダクトの考え方、AI の活用方法など、お気軽にどうぞ。',
+      ja: 'こんにちは！👋 Charles のポートフォリオアシスタントです。プロジェクト、職務経歴、プロダクトの考え方、AI の活用方法など、お気軽にどうぞ。',
     },
   },
   // How to contact
@@ -224,7 +224,7 @@ const FAQ: FaqEntry[] = [
     answer: {
       en: 'You can reach Charles directly here:\n\n' + contactBlock('en'),
       'zh-TW': '你可以直接透過這些方式聯繫 Charles：\n\n' + contactBlock('zh-TW'),
-      ja: '以下から直接 Charles にご連絡いただけます:\n\n' + contactBlock('ja'),
+      ja: '以下から直接 Charles にご連絡いただけます：\n\n' + contactBlock('ja'),
     },
   },
 ]
@@ -262,9 +262,9 @@ export function genericFallback(locale: Locale): string {
   if (locale === 'ja') {
     return (
       'ポートフォリオ内の情報だけでは正確にお答えできませんでした。' +
-      '推測は避けたいので、直接 Charles にお問い合わせください:\n\n' +
+      '推測は避けたいので、直接 Charles にお問い合わせください：\n\n' +
       contactBlock(locale) +
-      '\n\nまた、彼のプロジェクト(Path、Plutus Trade、Product Playbook、House Ops、Job Ops)、職務経歴、AI の活用についてもお気軽にどうぞ。'
+      '\n\nまた、彼のプロジェクト（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）、職務経歴、AI の活用についてもお気軽にどうぞ。'
     )
   }
   return (
