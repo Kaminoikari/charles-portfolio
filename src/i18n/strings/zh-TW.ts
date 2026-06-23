@@ -104,7 +104,7 @@ const zhTW: Strings = {
   mentoring: {
     eyebrow: '一對一指導',
     heading: '在 ADPList 預約跟我聊聊',
-    body: '我指導 PM 從 0 到 1 打造產品、轉職進入產品管理，以及成為 AI 原生的 Product Builder。在下方挑一個有空的時段。',
+    body: '我指導 PM 從 0 到 1 打造產品、轉職進入產品管理職位，以及成為 AI 原生 Product Builder。請在下方挑選一個有空的時段。',
     sessionTitle: '一對一指導',
     sessionMeta: '免費 · 30 至 45 分鐘 · 線上',
     viewHours: '查看可預約時段',
