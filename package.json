@@ -19,6 +19,7 @@
     "rag:blog:dry": "tsx rag/ingest/fetch-blog-bodies.ts --dry-run",
     "rag:eval": "tsx rag/evals/run-eval.ts",
     "rag:insights": "tsx rag/insights/report.ts",
+    "rag:insights:by-day": "tsx rag/insights/by-day.ts",
     "rag:test": "tsx --test rag/*.test.ts rag/**/*.test.ts"
   },
   "dependencies": {
