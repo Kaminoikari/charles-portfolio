@@ -41,7 +41,11 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     return
   }
 
-  if (isBlockedCountry(clientCountry(req.headers), BLOCKED_COUNTRIES)) {
+  // Captured once: gates blocked regions AND is logged on each question event so
+  // the by-day insights view can show where every asker came from (open events
+  // are too rare to join against — most questions carry no visitor_id at all).
+  const country = clientCountry(req.headers)
+  if (isBlockedCountry(country, BLOCKED_COUNTRIES)) {
     res.statusCode = 403
     res.end(JSON.stringify({ error: 'region_not_supported' }))
     return
@@ -91,6 +95,10 @@ export default async function handler(req: IncomingMessage & { method?: string; 
           latency_ms: Date.now() - started,
           sources: ev.sources,
           visitor_id: parsed.visitorId ?? null,
+          country: country || null,
+          // `id` is the client IP (clientId = first x-forwarded-for hop), already
+          // computed above for rate-limiting. 'unknown' in local dev → null.
+          ip: id === 'unknown' ? null : id,
         })
       }
     }

@@ -22,6 +22,7 @@ interface LogRow {
   route: string | null
   visitor_id: string | null
   country: string | null
+  ip: string | null
   blocked: boolean | null
   ts: string
 }
@@ -115,8 +116,9 @@ async function main() {
     // Opens: who opened the panel and from where.
     for (const o of opens.sort((a, b) => a.ts.localeCompare(b.ts))) {
       const where = o.country ?? '?'
+      const ip = o.ip ?? '?'
       const flags = o.blocked ? ' [blocked region]' : ''
-      console.log(`- ${clockTime(o.ts)}  opened · ${shortVid(o.visitor_id)} · ${where}${flags}`)
+      console.log(`- ${clockTime(o.ts)}  opened · ${shortVid(o.visitor_id)} · ${where} · ${ip}${flags}`)
     }
 
     // Questions grouped by visitor, each visitor's questions in time order.
@@ -130,8 +132,16 @@ async function main() {
 
     for (const [id, qs] of visitors) {
       const realId = id === '∅anonymous' ? null : id
-      const where = realId ? (countryByVisitor.get(realId) ?? '?') : '—'
-      console.log(`\n  ▸ ${shortVid(realId)} · ${where} · ${qs.length} question${qs.length > 1 ? 's' : ''}`)
+      // Prefer a country recorded directly on the question (newer logs); fall back
+      // to one joined from this visitor's open event; '?' if neither exists.
+      const where =
+        qs.find((q) => q.country)?.country ??
+        (realId ? (countryByVisitor.get(realId) ?? '?') : '?')
+      const ips = [...new Set(qs.map((q) => q.ip).filter(Boolean))]
+      const ipLabel = ips.length ? ips.join(', ') : '?'
+      console.log(
+        `\n  ▸ ${shortVid(realId)} · ${where} · ${ipLabel} · ${qs.length} question${qs.length > 1 ? 's' : ''}`,
+      )
       for (const q of qs.sort((a, b) => a.ts.localeCompare(b.ts))) {
         const meta = [q.language, q.route].filter(Boolean).join(' · ')
         console.log(`    ${clockTime(q.ts)}  [${meta}]  ${q.question}`)

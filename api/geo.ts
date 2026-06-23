@@ -15,7 +15,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-import { clientCountry, isBlockedCountry } from '../rag/api-helpers.js'
+import { clientCountry, clientId, isBlockedCountry } from '../rag/api-helpers.js'
 import { logChatEvent } from '../rag/chatlog.js'
 
 const BLOCKED_COUNTRIES = process.env.RAG_BLOCKED_COUNTRIES ?? 'CN'
@@ -48,10 +48,12 @@ export default async function handler(
 
   // Log the open event best-effort. Awaited before res.end() because the Vercel
   // instance freezes on return, which would sever a still-pending upsert.
+  const ip = clientId(req.headers)
   const logged = logChatEvent({
     type: 'open',
     visitor_id: visitorIdFromUrl(req.url) ?? null,
     country: country || null,
+    ip: ip === 'unknown' ? null : ip,
     blocked,
   })
 
