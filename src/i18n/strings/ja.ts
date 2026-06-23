@@ -111,6 +111,7 @@ const ja: Strings = {
     sessionTitle: '1:1 メンタリングセッション',
     sessionMeta: '無料 · 30〜45 分 · オンライン',
     viewHours: '空き時間を見る',
+    bookOnAdplist: 'ADPList で予約する ↗',
   },
   chat: {
     launcherLabel: 'このポートフォリオに質問',

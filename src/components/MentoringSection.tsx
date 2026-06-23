@@ -4,12 +4,20 @@ import { useT } from '../i18n'
 const ADPLIST_BOOKING_URL =
   'https://adplist.org/widgets/booking?src=charlestyc0527gmailcom-mqpe4u0m'
 
+// The embedded widget can preview live availability, but its in-frame
+// "Book Session" is a dead end for anyone not already logged into ADPList:
+// the login/OAuth step cannot fire inside a cross-origin iframe. The real
+// booking flow lives on the full profile page, so the actual booking action
+// opens that in a new tab where ADPList handles sign-in then confirmation.
+const ADPLIST_PROFILE_URL =
+  'https://adplist.org/mentors/charlestyc0527gmailcom-mqpe4u0m'
+
 // Rendered only after the user taps "View available hours", which happens
 // long after MentoringSection's mount-time IntersectionObserver has already
 // scanned for .reveal elements. So this widget cannot rely on .animate-in to
 // fade in (the observer never sees it) — it drives its own entrance instead,
 // otherwise it would stay stuck at opacity-0 and the iframe would be invisible.
-const BookingWidget = ({ title }: { title: string }) => {
+const BookingWidget = ({ title, bookLabel }: { title: string; bookLabel: string }) => {
   const [shown, setShown] = useState(false)
 
   useEffect(() => {
@@ -19,26 +27,38 @@ const BookingWidget = ({ title }: { title: string }) => {
 
   return (
     <div
-      className="transition-all duration-700"
+      className="flex w-full max-w-[650px] flex-col items-center gap-6 transition-all duration-700"
       style={{
-        height: 496,
-        boxShadow: 'rgba(142, 151, 158, 0.15) 0px 4px 19px 0px',
-        borderRadius: 16,
-        overflow: 'hidden',
-        width: '100%',
-        maxWidth: 650,
         opacity: shown ? 1 : 0,
         transform: shown ? 'translateY(0)' : 'translateY(20px)',
       }}
     >
-      <iframe
-        src={ADPLIST_BOOKING_URL}
-        title={title}
-        width="100%"
-        height="100%"
-        loading="lazy"
-        style={{ border: 0 }}
-      />
+      <div
+        style={{
+          height: 496,
+          boxShadow: 'rgba(142, 151, 158, 0.15) 0px 4px 19px 0px',
+          borderRadius: 16,
+          overflow: 'hidden',
+          width: '100%',
+        }}
+      >
+        <iframe
+          src={ADPLIST_BOOKING_URL}
+          title={title}
+          width="100%"
+          height="100%"
+          loading="lazy"
+          style={{ border: 0 }}
+        />
+      </div>
+      <a
+        href={ADPLIST_PROFILE_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full max-w-md rounded-full bg-accent-mars py-3 text-center text-sm font-semibold text-white no-underline transition-all duration-200 hover:shadow-[0_0_24px_rgba(232,101,43,0.45)]"
+      >
+        {bookLabel}
+      </a>
     </div>
   )
 }
@@ -85,7 +105,7 @@ export default function MentoringSection() {
           {t('mentoring.body')}
         </p>
         {showWidget ? (
-          <BookingWidget title={t('mentoring.heading')} />
+          <BookingWidget title={t('mentoring.heading')} bookLabel={t('mentoring.bookOnAdplist')} />
         ) : (
           <div className="reveal flex w-full max-w-md flex-col items-center gap-6 rounded-2xl border border-border-subtle bg-bg-secondary p-10 opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700">
             <div className="text-center">

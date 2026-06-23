@@ -108,6 +108,7 @@ const zhTW: Strings = {
     sessionTitle: '一對一指導',
     sessionMeta: '免費 · 30 至 45 分鐘 · 線上',
     viewHours: '查看可預約時段',
+    bookOnAdplist: '前往 ADPList 預約 ↗',
   },
   chat: {
     launcherLabel: '問這個作品集',

@@ -46,7 +46,7 @@ interface Strings {
   }
   mentoring: {
     eyebrow: string; heading: string; body: string
-    sessionTitle: string; sessionMeta: string; viewHours: string
+    sessionTitle: string; sessionMeta: string; viewHours: string; bookOnAdplist: string
   }
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; closeAriaLabel: string
@@ -163,6 +163,7 @@ const en: Strings = {
     sessionTitle: '1:1 Mentoring Session',
     sessionMeta: 'Free · 30 to 45 minutes · Remote',
     viewHours: 'View available hours',
+    bookOnAdplist: 'Book on ADPList ↗',
   },
   chat: {
     launcherLabel: 'Ask this portfolio',
