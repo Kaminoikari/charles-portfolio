@@ -4,28 +4,44 @@ import { useT } from '../i18n'
 const ADPLIST_BOOKING_URL =
   'https://adplist.org/widgets/booking?src=charlestyc0527gmailcom-mqpe4u0m'
 
-const BookingWidget = ({ title }: { title: string }) => (
-  <div
-    className="reveal opacity-0 translate-y-5 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-700"
-    style={{
-      height: 496,
-      boxShadow: 'rgba(142, 151, 158, 0.15) 0px 4px 19px 0px',
-      borderRadius: 16,
-      overflow: 'hidden',
-      width: '100%',
-      maxWidth: 650,
-    }}
-  >
-    <iframe
-      src={ADPLIST_BOOKING_URL}
-      title={title}
-      width="100%"
-      height="100%"
-      loading="lazy"
-      style={{ border: 0 }}
-    />
-  </div>
-)
+// Rendered only after the user taps "View available hours", which happens
+// long after MentoringSection's mount-time IntersectionObserver has already
+// scanned for .reveal elements. So this widget cannot rely on .animate-in to
+// fade in (the observer never sees it) — it drives its own entrance instead,
+// otherwise it would stay stuck at opacity-0 and the iframe would be invisible.
+const BookingWidget = ({ title }: { title: string }) => {
+  const [shown, setShown] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  return (
+    <div
+      className="transition-all duration-700"
+      style={{
+        height: 496,
+        boxShadow: 'rgba(142, 151, 158, 0.15) 0px 4px 19px 0px',
+        borderRadius: 16,
+        overflow: 'hidden',
+        width: '100%',
+        maxWidth: 650,
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'translateY(0)' : 'translateY(20px)',
+      }}
+    >
+      <iframe
+        src={ADPLIST_BOOKING_URL}
+        title={title}
+        width="100%"
+        height="100%"
+        loading="lazy"
+        style={{ border: 0 }}
+      />
+    </div>
+  )
+}
 
 export default function MentoringSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
