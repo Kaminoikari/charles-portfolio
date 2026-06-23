@@ -19,6 +19,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'adplist-mentorship',
+    date: '2026-06-23',
+    title: 'Added an ADPList mentorship section',
+    tags: ['feature', 'design'],
+    body: [
+      "I joined ADPList as a mentor, so the homepage now has a place to book time with me. A new Mentorship section sits between the writing and the contact footer, and the navigation and footer were updated to point people toward it.",
+      { kind: 'heading', text: 'What changed' },
+      {
+        kind: 'list',
+        items: [
+          '**A Mentorship section**: a dark call-to-action card that stays on theme until you ask for more, then loads the live ADPList booking widget in place so you can pick an open slot without leaving the page.',
+          '**A nav anchor**: a MENTORSHIP link joins the desktop and mobile menus and smooth-scrolls to the new section.',
+          "**A profile icon in the footer**: the official ADPList mark joins the social row, drawn through a colour mask so it picks up the same muted grey and mars-orange hover as the other icons.",
+          '**A snappier footer hover**: the social icons used to inherit their entrance stagger delay on hover, so the colour shift lagged behind the cursor. Hover feedback now fires instantly while the staggered entrance is kept.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'rag-blog-fulltext',
     date: '2026-06-18',
     title: "Extended the AI chatbot's CRAG pipeline with full-text blog retrieval",

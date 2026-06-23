@@ -6,7 +6,7 @@ interface Strings {
   brand: { name: string; homeAriaLabel: string }
   nav: {
     about: string; skills: string; experience: string; projects: string; blog: string
-    changelog: string
+    mentoring: string; changelog: string
     contact: string; contactAriaLabel: string; sectionAriaLabel: string
     openMenu: string; closeMenu: string; mainAriaLabel: string; languageGroupLabel: string
   }
@@ -44,6 +44,10 @@ interface Strings {
     letsConnect: string; rights: string; rendered: string
     visitSocial: string
   }
+  mentoring: {
+    eyebrow: string; heading: string; body: string
+    sessionTitle: string; sessionMeta: string; viewHours: string
+  }
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; closeAriaLabel: string
     clearLabel: string
@@ -69,6 +73,7 @@ const en: Strings = {
     experience: 'EXPERIENCE',
     projects: 'PROJECTS',
     blog: 'BLOG',
+    mentoring: 'MENTORSHIP',
     changelog: 'CHANGELOG',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'Scroll to contact section',
@@ -150,6 +155,14 @@ const en: Strings = {
     rights: '© 2026 Charles Chen. All rights reserved.',
     rendered: 'Rendered in {{ms}}ms · React · WebGL · Tailwind',
     visitSocial: 'Visit {{platform}}',
+  },
+  mentoring: {
+    eyebrow: 'Mentoring',
+    heading: 'Book time with me on ADPList',
+    body: 'I mentor PMs on building products from 0 to 1, breaking into Product Management, and becoming AI-native Product Builders. Grab an open slot below.',
+    sessionTitle: '1:1 Mentoring Session',
+    sessionMeta: 'Free · 30 to 45 minutes · Remote',
+    viewHours: 'View available hours',
   },
   chat: {
     launcherLabel: 'Ask this portfolio',

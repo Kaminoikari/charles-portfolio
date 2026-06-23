@@ -34,6 +34,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'adplist-mentorship',
+    date: '2026-06-23',
+    title: '新增 ADPList 一對一指導區塊',
+    tags: ['feature', 'design'],
+    body: [
+      '我加入 ADPList 成為 mentor，首頁現在多了一個可以直接預約跟我聊聊的地方。新的 Mentorship 區塊放在文章與聯絡 footer 之間，導覽列與 footer 也都更新成能引導到這裡。',
+      { kind: 'heading', text: '改了什麼' },
+      {
+        kind: 'list',
+        items: [
+          '**Mentorship 區塊**：一張貼合暗色主題的 call-to-action 卡片，需要時才就地載入 ADPList 的 live 預約 widget，讓你不用離開頁面就能挑選有空的時段。',
+          '**導覽錨點**：桌機與手機選單都加上 MENTORSHIP 連結，點擊會平滑捲動到新區塊。',
+          '**footer 的 profile icon**：官方 ADPList 標誌加進社群列，透過顏色 mask 繪製，色調與 hover 變橘都和其他 icon 一致。',
+          '**更即時的 footer hover**：社群 icon 原本連 hover 都套到了入場 stagger 的延遲，導致變色慢半拍。現在 hover 回饋即時觸發，入場的 stagger 仍然保留。',
+        ],
+      },
+    ],
+  },
+  {
     id: 'rag-blog-fulltext',
     date: '2026-06-18',
     title: '為 AI 聊天機器人的 CRAG pipeline 加入部落格全文檢索',

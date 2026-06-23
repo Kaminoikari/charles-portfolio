@@ -26,6 +26,28 @@ const SocialIcon = ({ platform }: { platform: string }) => {
       return (
         <img src="/portaly-icon.png" alt="" width={20} height={20} style={{ width: 20, height: 20, objectFit: 'contain' }} />
       )
+    case 'adplist':
+      // Official ADPList mark used as a mask so it inherits the row's
+      // currentColor (muted grey, mars-orange on hover) like the SVG icons.
+      return (
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-block',
+            width: 20,
+            height: 20,
+            backgroundColor: 'currentColor',
+            maskImage: 'url(/adplist-icon.png)',
+            WebkitMaskImage: 'url(/adplist-icon.png)',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+          }}
+        />
+      )
     default:
       return <span>{platform[0].toUpperCase()}</span>
   }
@@ -88,8 +110,19 @@ export default function ContactFooter() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t('footer.visitSocial', { platform: link.platform })}
-              className="reveal flex h-12 w-12 items-center justify-center border border-border-hover text-text-muted no-underline opacity-0 translate-y-4 transition-all duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-500 hover:scale-110 hover:border-accent-mars hover:text-accent-mars hover:shadow-[0_0_16px_rgba(232,101,43,0.3)]"
-              style={{ transitionDelay: `${200 + i * 100}ms` }}
+              className="reveal flex h-12 w-12 items-center justify-center border border-border-hover text-text-muted no-underline opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 hover:scale-110 hover:border-accent-mars hover:text-accent-mars hover:shadow-[0_0_16px_rgba(232,101,43,0.3)]"
+              style={{
+                // Stagger only the entrance (opacity/translate); keep the hover
+                // feedback (scale/color/border/shadow) instant — no inherited delay.
+                transition: [
+                  `opacity 500ms cubic-bezier(0.25,1,0.5,1) ${200 + i * 100}ms`,
+                  `translate 500ms cubic-bezier(0.25,1,0.5,1) ${200 + i * 100}ms`,
+                  'scale 200ms cubic-bezier(0.25,1,0.5,1)',
+                  'color 200ms cubic-bezier(0.25,1,0.5,1)',
+                  'border-color 200ms cubic-bezier(0.25,1,0.5,1)',
+                  'box-shadow 200ms cubic-bezier(0.25,1,0.5,1)',
+                ].join(', '),
+              }}
             >
               <SocialIcon platform={link.platform} />
             </a>

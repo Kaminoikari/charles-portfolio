@@ -12,13 +12,14 @@ import {
 
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
-const NAV_SECTIONS = ['about', 'skills', 'experience', 'projects', 'blog'] as const
+const NAV_SECTIONS = ['about', 'skills', 'experience', 'projects', 'blog', 'mentoring'] as const
 const NAV_SECTION_KEY: Record<(typeof NAV_SECTIONS)[number], StringKey> = {
   about: 'nav.about',
   skills: 'nav.skills',
   experience: 'nav.experience',
   projects: 'nav.projects',
   blog: 'nav.blog',
+  mentoring: 'nav.mentoring',
 }
 
 export default function Nav() {
