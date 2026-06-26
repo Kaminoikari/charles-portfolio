@@ -29,7 +29,9 @@ PROJECTS:
   Supabase RLS); cache-first + background sync for zero-blackout travel.
   Live demo: https://trip-path.vercel.app/
 - Plutus Trade — single-user AI decision-support for TW equities (Flutter,
-  FastAPI, Gemini 2.5 Flash); cross-domain synthesis + audited predictions.
+  FastAPI, Gemini 2.5 Flash); cross-domain BUY/SELL/HOLD synthesis, a daily
+  data-grounded holdings strategy (real market context + per-stock
+  fundamentals, emailed each evening), and audited win-rate/ROI tracking.
   Live demo: https://plutustrade.vercel.app/
 - Product Playbook — Claude Skill / plugin, 22 PM frameworks + 3 specialist
   sub-agents (agentic multi-agent), 6 languages, eval-driven (+69% quality).
