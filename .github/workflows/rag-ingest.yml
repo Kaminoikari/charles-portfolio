@@ -27,6 +27,7 @@ on:
       - 'src/data/skills.*.ts'
       - 'src/data/changelog.*.ts'
       - 'src/data/blog.*.ts'
+      - 'src/data/agentPatterns.*.ts'
       - 'rag/faq-cache.ts'
       - 'rag/portfolio-map.ts'
       - 'rag/entities/**'

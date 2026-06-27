@@ -357,6 +357,19 @@ export const faqEntries: FaqEntry[] = [
     },
   },
   {
+    id: 'agentic-design-patterns',
+    questions: {
+      en: ['Does he know agentic design patterns?', 'what agent design patterns does he use?', 'is he familiar with agentic patterns?', 'agentic design patterns', 'which AI agent patterns does Charles apply?'],
+      'zh-TW': ['他懂 agentic design patterns 嗎', '他用哪些 agent 設計模式', 'agent 設計模式', '代理設計模式', 'Charles 熟悉哪些 agentic pattern'],
+      ja: ['エージェント設計パターンを知っている', 'どのエージェントパターンを使う', 'エージェント設計パターン', 'Charles はどの agentic パターンを使う'],
+    },
+    answers: {
+      en: "Yes, agentic design patterns are core to how Charles works as an AI Product Builder, and several show up directly in systems he has shipped. This corrective-RAG chatbot alone runs **Routing** (its triage), **Knowledge Retrieval (RAG)**, **Reflection** (the self-correcting loop), **Guardrails/Safety**, **Resource-Aware Optimization** (the cost cascade), **Exception Handling**, and **Evaluation and Monitoring**. His **Product Playbook** multi-agent system adds **Multi-Agent Collaboration**, **Planning**, **Prompt Chaining**, **Prioritization**, and **Inter-Agent Communication**. Through his Claude Code and Codex workflows he also works with **Tool Use**, **MCP**, **Human-in-the-Loop**, **Memory Management**, and **Reasoning Techniques**. His working reference tracks all 21 patterns from Antonio Gulli's catalog. Ask about any specific one and I can tell you what it is and how he applies it.",
+      'zh-TW': '會，agentic design patterns 是 Charles 身為 AI Product Builder 工作方式的核心，其中好幾個直接出現在他出貨的系統裡。光是這個 corrective-RAG chatbot 就用到 **Routing**（它的 triage）、**Knowledge Retrieval（RAG）**、**Reflection**（self-correcting loop）、**Guardrails/Safety**、**Resource-Aware Optimization**（成本 cascade）、**Exception Handling**，以及 **Evaluation and Monitoring**。他的 **Product Playbook** 多代理系統再加上 **Multi-Agent Collaboration**、**Planning**、**Prompt Chaining**、**Prioritization** 與 **Inter-Agent Communication**。透過 Claude Code 與 Codex workflow，他也運用 **Tool Use**、**MCP**、**Human-in-the-Loop**、**Memory Management** 與 **Reasoning Techniques**。他的實戰參考涵蓋 Antonio Gulli 那套目錄裡全部 21 個 pattern。想問哪一個都可以，我能告訴你它是什麼以及他怎麼運用。',
+      ja: 'はい、agentic design patterns は Charles が AI Product Builder として働く上での中核であり、いくつかは彼がリリースしたシステムに直接現れています。この corrective-RAG チャットボットだけでも **Routing**（その triage）、**Knowledge Retrieval（RAG）**、**Reflection**（self-correcting loop）、**Guardrails/Safety**、**Resource-Aware Optimization**（コスト cascade）、**Exception Handling**、**Evaluation and Monitoring** を使っています。彼の **Product Playbook** マルチエージェントシステムには **Multi-Agent Collaboration**、**Planning**、**Prompt Chaining**、**Prioritization**、**Inter-Agent Communication** が加わります。Claude Code と Codex の workflow を通じて **Tool Use**、**MCP**、**Human-in-the-Loop**、**Memory Management**、**Reasoning Techniques** も扱います。彼の実務リファレンスは Antonio Gulli のカタログにある全 21 パターンを網羅しています。どれでも具体的に聞いてくれれば、それが何かと、彼がどう適用するかをお伝えします。',
+    },
+  },
+  {
     id: 'skills-product',
     questions: {
       en: ['What product frameworks does he know?', 'his product skills', 'PM frameworks', 'product strategy skills'],

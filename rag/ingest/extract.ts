@@ -17,7 +17,7 @@ import { getBlogBody } from './blog-bodies.js'
 export interface ChunkRecord {
   id: string
   parentId: string | null
-  sourceType: 'project' | 'about' | 'experience' | 'skill' | 'changelog' | 'blog' | 'playbook'
+  sourceType: 'project' | 'about' | 'experience' | 'skill' | 'changelog' | 'blog' | 'playbook' | 'knowledge'
   projectId: string | null
   locale: string
   title: string
@@ -30,15 +30,16 @@ const LOCALES: Locale[] = ['en', 'zh-TW', 'ja']
 // let one loop cover all three languages.
 async function loadLocale(locale: Locale) {
   const suffix = locale === 'en' ? 'en' : locale // files are *.en.ts / *.zh-TW.ts / *.ja.ts
-  const [projects, about, experience, skills, changelog, blog] = await Promise.all([
+  const [projects, about, experience, skills, changelog, blog, agentPatterns] = await Promise.all([
     import(`../../src/data/projects.${suffix}.ts`),
     import(`../../src/data/aboutContent.${suffix}.ts`),
     import(`../../src/data/experience.${suffix}.ts`),
     import(`../../src/data/skills.${suffix}.ts`),
     import(`../../src/data/changelog.${suffix}.ts`),
     import(`../../src/data/blog.${suffix}.ts`),
+    import(`../../src/data/agentPatterns.${suffix}.ts`),
   ])
-  return { projects, about, experience, skills, changelog, blog }
+  return { projects, about, experience, skills, changelog, blog, agentPatterns }
 }
 
 // Flatten a changelog body (string | block objects) into plain text.
@@ -66,7 +67,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
   const out: ChunkRecord[] = []
 
   for (const locale of LOCALES) {
-    const { projects, about, experience, skills, changelog, blog } = await loadLocale(locale)
+    const { projects, about, experience, skills, changelog, blog, agentPatterns } = await loadLocale(locale)
 
     // ── projects (one parent per project; one child chunk per section) ──
     for (const d of projects.projectDetails) {
@@ -161,6 +162,31 @@ export async function extractAll(): Promise<ChunkRecord[]> {
         }),
       )
     })
+
+    // ── agentic design patterns (Charles's curated knowledge; one chunk per
+    // pattern + an umbrella intro chunk). Lets the bot answer "does Charles know
+    // agentic design patterns / how does he apply X" from his real practice. ──
+    const patternsIntroId = `pattern:overview:${locale}`
+    out.push({
+      id: patternsIntroId,
+      parentId: null,
+      sourceType: 'knowledge',
+      projectId: null,
+      locale,
+      title: 'Agentic design patterns — overview',
+      content: agentPatterns.agentPatternsIntro,
+    })
+    agentPatterns.agentPatterns.forEach((p: { id: string; name: string; body: string }) =>
+      out.push({
+        id: `pattern:${p.id}:${locale}`,
+        parentId: patternsIntroId,
+        sourceType: 'knowledge',
+        projectId: null,
+        locale,
+        title: `Agentic design pattern — ${p.name}`,
+        content: `${p.name}\n${p.body}`,
+      }),
+    )
   }
 
   return out
