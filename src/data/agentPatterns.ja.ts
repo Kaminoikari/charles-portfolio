@@ -20,8 +20,8 @@ export interface AgentPattern {
 // One-paragraph intro that frames the whole set as Charles's expertise.
 export const agentPatternsIntro =
   'Agentic design patterns は、Charles が AI Product Builder として活用する再利用可能なビルディングブロックです。' +
-  'これらのノートは彼の実務リファレンスであり、この corrective-RAG チャットボットや Product Playbook の' +
-  'マルチエージェントシステムなど、実際にリリースしてきたシステムに根ざしています。各パターンは、それが何か、' +
+  '以下のノートは、この corrective-RAG チャットボットや Product Playbook の' +
+  'マルチエージェントシステムなど、彼が開発して本番投入したシステムに根ざしています。各パターンは、それが何か、' +
   'いつ手を伸ばすべきか、そして実務でどう適用しているかをカバーします。'
 
 export const agentPatterns: AgentPattern[] = [

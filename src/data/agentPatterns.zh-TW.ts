@@ -20,7 +20,7 @@ export interface AgentPattern {
 // One-paragraph intro that frames the whole set as Charles's expertise.
 export const agentPatternsIntro =
   'Agentic design patterns 是 Charles 身為 AI Product Builder 所倚賴的可重複使用建構模組。' +
-  '這些筆記是他的實戰參考，全都立基於他真正交付過的系統，包含這個 corrective-RAG chatbot ' +
+  '以下筆記都立基於他親手開發並上線的系統，包含這個 corrective-RAG chatbot ' +
   '以及他的 Product Playbook multi-agent 系統。每個 pattern 都會說明它是什麼、何時該動用，' +
   '以及他在實務上如何運用。'
 
@@ -53,7 +53,7 @@ export const agentPatterns: AgentPattern[] = [
     id: 'tool-use',
     name: 'Tool Use (Function Calling)',
     chapter: 5,
-    body: '給 model 結構化的 function，讓它能伸手越過自己的訓練資料、進到實際運作的系統裡，去查詢資料庫、呼叫 API 或執行程式碼。Charles 身為 AI Product Builder 高度倚賴這一點，他的 Claude Code 與 Codex agent 會呼叫真實的 tool 去建構並交付整個技術棧，而這個 chatbot 也是靠它去查詢 Qdrant 做 retrieval。',
+    body: '給 model 結構化的 function，讓它能伸手越過自己的訓練資料、進到實際運作的系統裡，去查詢資料庫、呼叫 API 或執行程式碼。Charles 身為 AI Product Builder 高度倚賴這一點，他的 Claude Code 與 Codex agent 會呼叫真實的 tool 去建構並上線整個技術棧，而這個 chatbot 也是靠它去查詢 Qdrant 做 retrieval。',
   },
   {
     id: 'planning',
@@ -101,7 +101,7 @@ export const agentPatterns: AgentPattern[] = [
     id: 'human-in-the-loop',
     name: 'Human-in-the-Loop',
     chapter: 13,
-    body: '在錯誤代價高昂的環節插入人工審查或核准，讓人始終留在關鍵路徑上。Charles 在他的 AI Product Builder loop 裡就扮演那個人，在任何東西交付之前，審查並引導 Claude Code 與 Codex 產出的成果。',
+    body: '在錯誤代價高昂的環節插入人工審查或核准，讓人始終留在關鍵路徑上。Charles 在他的 AI Product Builder loop 裡就扮演那個人，在任何東西上線之前，審查並引導 Claude Code 與 Codex 產出的成果。',
   },
   {
     id: 'knowledge-retrieval-rag',

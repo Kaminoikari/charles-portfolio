@@ -20,7 +20,7 @@ export interface AgentPattern {
 // One-paragraph intro that frames the whole set as Charles's expertise.
 export const agentPatternsIntro =
   'Agentic design patterns are the reusable building blocks Charles draws on as an AI Product Builder. ' +
-  'These notes are his working reference, grounded in systems he has actually shipped, including this ' +
+  'The notes below are grounded in systems he has built and put into production, including this ' +
   'corrective-RAG chatbot and his Product Playbook multi-agent system. Each pattern covers what it is, ' +
   'when to reach for it, and how he applies it in practice.'
 
@@ -53,7 +53,7 @@ export const agentPatterns: AgentPattern[] = [
     id: 'tool-use',
     name: 'Tool Use (Function Calling)',
     chapter: 5,
-    body: 'Give the model structured functions so it can reach past its training data into live systems, querying a database, calling an API, or running code. Charles leans on this heavily as an AI Product Builder, where Claude Code and Codex agents call real tools to build and ship the full stack, and where this chatbot queries Qdrant for retrieval.',
+    body: 'Give the model structured functions so it can reach past its training data into live systems, querying a database, calling an API, or running code. Charles leans on this heavily as an AI Product Builder, where Claude Code and Codex agents call real tools to build the full stack and take it to production, and where this chatbot queries Qdrant for retrieval.',
   },
   {
     id: 'planning',
@@ -101,7 +101,7 @@ export const agentPatterns: AgentPattern[] = [
     id: 'human-in-the-loop',
     name: 'Human-in-the-Loop',
     chapter: 13,
-    body: 'Insert human review or approval at the points where an error would be costly, keeping a person on the critical path. Charles works as that human in his AI Product Builder loop, reviewing and steering what Claude Code and Codex produce before anything ships.',
+    body: 'Insert human review or approval at the points where an error would be costly, keeping a person on the critical path. Charles works as that human in his AI Product Builder loop, reviewing and steering what Claude Code and Codex produce before anything goes live.',
   },
   {
     id: 'knowledge-retrieval-rag',
