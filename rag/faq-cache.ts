@@ -446,9 +446,9 @@ export const faqEntries: FaqEntry[] = [
       ja: ['メンターをしている', 'XChange School とは', '指導経験は'],
     },
     answers: {
-      en: "Since 2025 Charles has been a **Product Mentor at XChange School**, Taiwan's largest internet professional community, where he mentors aspiring product managers. He coaches them on the things that are hard to learn alone: framing the real problem before jumping to features, prioritizing with frameworks like RICE, and increasingly the Product Builder muscle of validating ideas by building. It is how he gives back to the PM community and pressure-tests his own thinking by teaching it.",
-      'zh-TW': '自 2025 年起，Charles 在 **XChange School**（台灣最大的網路專業社群）擔任 **產品導師**，輔導有志成為產品經理的學員。他幫他們練那些一個人很難學會的事：在跳到功能之前先把真正的問題框清楚、用 RICE 這類框架排優先級，以及愈來愈重要的 Product Builder 肌肉，也就是用「動手做」來驗證想法。這是他回饋 PM 社群的方式，也透過教學反覆檢驗自己的思考。',
-      ja: '2025 年から Charles は台湾最大のインターネット専門コミュニティ **XChange School** で **プロダクトメンター**を務め、PM 志望者を指導しています。一人では学びにくいことをコーチします：機能に飛びつく前に本当の問題を捉えること、RICE のようなフレームワークで優先順位をつけること、そして次第に重要になる Product Builder の筋力、つまり「作って検証する」力です。これは PM コミュニティへの恩返しであり、教えることで自身の思考を検証する場でもあります。',
+      en: "Since 2025 Charles has been a **Product Mentor at XChange School**, Taiwan's largest internet professional community, where he mentors aspiring product managers. His mentees have come from prestigious Taiwanese universities including NTU, NCCU, National Taipei University and Fu Jen Catholic University. He coaches them on the things that are hard to learn alone: framing the real problem before jumping to features, prioritizing with frameworks like RICE, and increasingly the Product Builder muscle of validating ideas by building. It is how he gives back to the PM community and pressure-tests his own thinking by teaching it.",
+      'zh-TW': '自 2025 年起，Charles 在 **XChange School**（台灣最大的網路專業社群）擔任 **產品導師**，輔導有志成為產品經理的學員，帶過的學員背景來自台大、政大、台北大學與輔仁大學。他幫他們練那些一個人很難學會的事：在跳到功能之前先把真正的問題框清楚、用 RICE 這類框架排優先級，以及愈來愈重要的 Product Builder 肌肉，也就是用「動手做」來驗證想法。這是他回饋 PM 社群的方式，也透過教學反覆檢驗自己的思考。',
+      ja: '2025 年から Charles は台湾最大のインターネット専門コミュニティ **XChange School** で **プロダクトメンター**を務め、PM 志望者を指導しています。メンティーの出身は台湾大学、政治大学、台北大学、輔仁大学など。一人では学びにくいことをコーチします：機能に飛びつく前に本当の問題を捉えること、RICE のようなフレームワークで優先順位をつけること、そして次第に重要になる Product Builder の筋力、つまり「作って検証する」力です。これは PM コミュニティへの恩返しであり、教えることで自身の思考を検証する場でもあります。',
     },
   },
   {

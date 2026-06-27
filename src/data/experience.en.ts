@@ -23,6 +23,7 @@ export const experience: ExperienceItem[] = [
     organization: 'XChange School',
     bullets: [
       'Mentoring aspiring PMs at Taiwan\'s largest internet professional community',
+      'Mentees have come from prestigious Taiwanese universities including NTU, NCCU, National Taipei University and Fu Jen Catholic University',
     ],
   },
   {

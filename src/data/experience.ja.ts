@@ -32,6 +32,7 @@ export const experience: ExperienceItem[] = [
     organization: 'XChange School',
     bullets: [
       '台湾最大のインターネット業界プロフェッショナルコミュニティで、PM を目指す人をメンタリング',
+      'メンティーの出身は台湾大学、政治大学、台北大学、輔仁大学など',
     ],
   },
   {
