@@ -32,7 +32,7 @@ export const experience: ExperienceItem[] = [
     organization: 'XChange School',
     bullets: [
       '在台灣最大的網路專業社群擔任 mentor，輔導有志成為 PM 的學員',
-      '帶過的學員背景來自台大、政大、台北大學與輔仁大學',
+      '指導學員多來自台大、政大、台北大學、輔仁大學等頂尖學府',
     ],
   },
   {
