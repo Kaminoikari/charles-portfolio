@@ -23,7 +23,7 @@ export const experience: ExperienceItem[] = [
     organization: 'XChange School',
     bullets: [
       'Mentoring aspiring PMs at Taiwan\'s largest internet professional community',
-      "Mentees are drawn from Taiwan's most prestigious universities, including National Taiwan University (NTU), National Chengchi University (NCCU), National Taipei University and Fu Jen Catholic University",
+      'Mentees are drawn from renowned Taiwanese universities, including National Taiwan University (NTU), National Chengchi University (NCCU), National Taipei University and Fu Jen Catholic University',
     ],
   },
   {
