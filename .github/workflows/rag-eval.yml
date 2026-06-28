@@ -1,17 +1,21 @@
 name: RAG Eval
 
-# Manually triggered retrieval-ablation eval against the live Qdrant index.
-# Runs the golden set through the retrieval arms (dense-only → hybrid →
-# hybrid+rerank) and prints recall@k / MRR / Δrecall to the job log. The
-# corrective arm is skipped automatically here because it needs an Anthropic key
-# (not in repo secrets) — the retrieval arms are what measure recall.
+# Manually triggered eval against the live Qdrant index. Runs the golden set
+# through the retrieval arms (dense-only → hybrid → hybrid+rerank) for
+# recall@k / MRR / Δrecall, plus the corrective arm: the full graph that
+# generates an answer and scores it with the faithfulness judge. Results print
+# to the job log.
 #
-# Why a workflow and not a local run: eval needs outbound access to Voyage and
-# Qdrant plus the secrets below; this runner has both, the runtime container
-# does not.
+# Why a workflow and not a local run: eval needs outbound access to Voyage,
+# Qdrant, Anthropic and Gemini plus the secrets below. This runner has them; a
+# local checkout does not, because the Vercel-side keys are Encrypted and cannot
+# be pulled back to a developer machine.
 #
-# Required repo secrets (same three the ingest workflow uses):
-#   QDRANT_URL · QDRANT_API_KEY · VOYAGE_API_KEY
+# Required repo secrets:
+#   QDRANT_URL · QDRANT_API_KEY · VOYAGE_API_KEY   → retrieval arms
+#   ANTHROPIC_API_KEY · GEMINI_API_KEY             → corrective arm + faithfulness judge
+# With the last two absent, the corrective arm self-skips and only the retrieval
+# arms run (run-eval.ts drops it when ANTHROPIC_API_KEY is unset).
 
 on:
   workflow_dispatch:
@@ -24,6 +28,14 @@ on:
         description: 'Qdrant collection to evaluate (defaults to the production doc_chunks)'
         type: string
         default: doc_chunks
+      arm:
+        description: 'Single arm to run (blank = all arms). e.g. corrective'
+        type: string
+        default: ''
+      locale:
+        description: 'Single locale to run (blank = all: en, zh-TW, ja). e.g. en'
+        type: string
+        default: ''
 
 jobs:
   eval:
@@ -40,10 +52,21 @@ jobs:
 
       - run: npm ci
 
-      - name: Run retrieval ablation eval
+      - name: Run eval (retrieval arms + corrective / faithfulness)
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
-        run: npm run rag:eval
+          # Inputs passed via env (not interpolated into the script) to avoid
+          # shell injection from workflow_dispatch fields.
+          ARM: ${{ inputs.arm }}
+          LOCALE: ${{ inputs.locale }}
+        run: |
+          ARGS=""
+          [ -n "$ARM" ] && ARGS="$ARGS --arm $ARM"
+          [ -n "$LOCALE" ] && ARGS="$ARGS --locale $LOCALE"
+          echo "running: npm run rag:eval -- $ARGS"
+          npm run rag:eval -- $ARGS
