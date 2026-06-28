@@ -17,8 +17,8 @@
 import { writeFileSync } from 'node:fs'
 
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
-import { answer as graphAnswer } from '../graph.js'
-import { type Locale } from '../language.js'
+import { graph } from '../graph.js'
+import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN } from './golden.js'
 import { judgeFaithfulness } from './judge.js'
 import {
@@ -66,14 +66,24 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
       const relevant = item.relevantIds
 
       if (arm.corrective) {
-        // Full graph: produces an answer + the chunks it actually used.
-        const res = await graphAnswer(question)
-        const ids = res.sources.map((s) => s.id)
+        // Full graph, invoked directly to read the FINAL STATE. answer() returns
+        // only Source metadata (id/title/score) and drops `graded`, so a prior
+        // version judged faithfulness against bare titles and the number read far
+        // too low. The generator's real evidence is the graded chunks'
+        // pageContent; ctx below rebuilds that, mirroring generate()'s "Context"
+        // block. (Fixed 2026-06-28.)
+        const language = detectLanguage(question)
+        const final = await graph.invoke({ question, language, queries: [question] })
+        const answerText = final.answer ?? ''
+        const ids = (final.sources ?? []).map((s) => s.id)
         recall.push(recallAtK(ids, relevant))
         mrr.push(reciprocalRank(ids, relevant))
-        corr.push(correctness(res.answer, item))
-        const ctx = res.sources.map((s) => s.title).join('\n')
-        faith.push((await judgeFaithfulness(res.answer, ctx)).grounded ? 1 : 0)
+        corr.push(correctness(answerText, item))
+        const graded = final.graded ?? []
+        const ctx = graded
+          .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
+          .join('\n\n')
+        faith.push((await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0)
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
         // correctness/faithfulness are not applicable (left out of their means).
