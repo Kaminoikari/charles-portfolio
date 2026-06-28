@@ -103,7 +103,13 @@ export async function consumeGated(
 }
 
 // Gemini factory — used directly by grade/rewrite, and as tier 1 of generate.
-export function gemini(temperature = 0): ChatGoogleGenerativeAI {
+//
+// Eval-only escape hatch: with RAG_FORCE_CLAUDE=1 this returns Claude, so the
+// eval suite runs every step (grade/rewrite/generate) on Claude and never hits
+// Gemini's free-tier 5-req/min quota. Production leaves the flag unset and keeps
+// the Gemini-first cost cascade unchanged.
+export function gemini(temperature = 0): BaseChatModel {
+  if (process.env.RAG_FORCE_CLAUDE === '1') return claude(false, temperature)
   return new ChatGoogleGenerativeAI({
     model: config.geminiModel,
     temperature,

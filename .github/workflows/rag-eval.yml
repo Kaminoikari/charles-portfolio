@@ -59,6 +59,10 @@ jobs:
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Run grade/rewrite/generate on Claude so the suite is never throttled
+          # by Gemini's free-tier 5-req/min quota. EVAL-ONLY; production keeps the
+          # Gemini-first cost cascade (this flag stays unset there).
+          RAG_FORCE_CLAUDE: '1'
           QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
           # Inputs passed via env (not interpolated into the script) to avoid
           # shell injection from workflow_dispatch fields.
