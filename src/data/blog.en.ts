@@ -43,6 +43,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'Your Competence Is the Average of Your Work',
+    subtitle:
+      "When the cost of building drops to zero, the question that matters for Taiwan's PMs is what becomes of a generalist's scattered knowledge: does it keep passively patching gaps, or actively expand into depth?",
+    url: 'https://charlestychen.substack.com/p/484',
+    platform: 'Substack',
+    date: '2026-07-02',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/7719f968-2b5b-4962-8ef3-d1b1ee9f5fa8_1672x941.png',
+  },
+  {
     title: 'How to Build the Most AI-Native Engineering Team in the World',
     subtitle:
       'Frontline observations from Fiona Fung, who leads Claude Code and Cowork. When quarterly output jumps eightfold, role boundaries blur completely, and agents are everywhere, how she leads the team and keeps the culture intact.',

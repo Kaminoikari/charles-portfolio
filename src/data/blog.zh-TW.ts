@@ -34,6 +34,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '你的職能，是你工作的「平均值」',
+    subtitle: '當實作成本歸零，台灣 PM 該擔心的不是被 AI 取代，而是你那份『什麼都做』的雜學，究竟是繼續被動補洞，還是主動擴張。',
+    url: 'https://charlestychen.substack.com/p/484',
+    platform: 'Substack',
+    date: '2026-07-02',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/7719f968-2b5b-4962-8ef3-d1b1ee9f5fa8_1672x941.png',
+  },
+  {
     title: '如何打造全世界最 AI 化的工程團隊',
     subtitle: 'Claude Code 與 Cowork 負責人 Fiona Fung 的一線觀察。當每季產出暴增八倍、角色界線全面模糊、agent 無所不在，她怎麼帶團隊、又怎麼守住文化。',
     url: 'https://charlestychen.substack.com/p/ai',

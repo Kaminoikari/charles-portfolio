@@ -42,6 +42,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'あなたの職能は、あなたの仕事の「平均値」である',
+    subtitle:
+      '実装コストがゼロになったとき、台湾の PM が本当に問うべきは「何でもやる」雑多な知識の行方だ。受動的に穴を埋め続けるのか、それとも主体的に広げていくのか。',
+    url: 'https://charlestychen.substack.com/p/484',
+    platform: 'Substack',
+    date: '2026-07-02',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/7719f968-2b5b-4962-8ef3-d1b1ee9f5fa8_1672x941.png',
+  },
+  {
     title: '世界で最も AI 化されたエンジニアリングチームの作り方',
     subtitle: 'Claude Code と Cowork を率いる Fiona Fung の最前線の観察。四半期ごとの成果が8倍に跳ね上がり、役割の境界が完全に曖昧になり、agent がどこにでもいる中で、彼女はどうチームを率い、どう文化を守るのか。',
     url: 'https://charlestychen.substack.com/p/ai',
