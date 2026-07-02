@@ -18,7 +18,19 @@ const SubstackLogo = () => (
   </svg>
 )
 
+// Substack stores cover images as raw multi-megabyte PNGs on S3. As a
+// background-image they paint only a top strip while the ~2MB file streams
+// in (10s+ on a cold connection). Route them through Substack's own image
+// CDN — resized to the card and re-encoded as webp — so a cover loads in
+// ~100ms and appears at once instead of wiping in from the top.
+function optimizedCover(url: string | undefined): string | undefined {
+  if (!url || !url.includes('substack-post-media.s3.amazonaws.com')) return url
+  const transform = 'w_1272,c_limit,f_webp,q_auto:good'
+  return `https://substackcdn.com/image/fetch/${transform}/${encodeURIComponent(url)}`
+}
+
 function BlogEntry({ article, index }: { article: BlogArticle; index: number }) {
+  const cover = optimizedCover(article.cover)
   return (
     <div className="group relative">
       <div
@@ -78,15 +90,15 @@ function BlogEntry({ article, index }: { article: BlogArticle; index: number }) 
         <div className="order-1 flex-1 md:order-2 xl:max-w-[500px]">
           <div
             className="break-words flex w-full items-center whitespace-pre-wrap bg-bg-secondary duration-150 aspect-[16/10]"
-            style={article.cover ? {
-              backgroundImage: `url("${article.cover}")`,
+            style={cover ? {
+              backgroundImage: `url("${cover}")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center center',
               backgroundRepeat: 'no-repeat',
             } : undefined}
           >
             <div className="flex h-full w-full items-center justify-center">
-              {!article.cover && (
+              {!cover && (
                 article.platform === 'Medium' ? <MediumLogo /> : <SubstackLogo />
               )}
             </div>
