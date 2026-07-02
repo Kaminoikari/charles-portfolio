@@ -34,6 +34,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-2-lens',
+    date: '2026-07-02',
+    title: 'Product Playbook 2.0：把整個 plugin 從 mode 流水線徹底重寫為可組合的 lens 架構',
+    tags: ['feature', 'technical'],
+    body: [
+      '我發佈了 **Product Playbook 2.0**，把自己開源的產品規劃 plugin 做了一次徹底的重寫與重構：每個框架都抽成獨立、可組合的 skill，退場了 6-mode 的 orchestrator，整套系統圍繞 outcome-first 的 meta-skill 重新打造。1.x 要你先選六種固定 mode 其中一種，再走一條既定的流水線；2.0 則讓你說出想要的結果，由 meta-skill 挑選能帶你抵達的產品思考 lens，需要時融合多個。網站上的案例（專案卡片、詳細頁、技術棧與 AI 聊天機器人）也一併更新，改為描述這個新架構。',
+      { kind: 'heading', text: '1.x 到 2.0 改了什麼' },
+      {
+        kind: 'list',
+        items: [
+          '**用 lens 取代 mode**：六種固定 mode 讓位給 16 個可組合的 lens skill（JTBD、PR-FAQ、positioning、pre-mortem、RICE 式排序、North Star 指標、MVP scoping、PMF／GTM、strategy kernel 等）。meta-skill 讀取你的結果、挑對 lens，遇到需要多重視角的決策就融合成一份整合答案。',
+          '**更精簡的專家層**：Sub-agent 從三個減為兩個。`strategy-critic` 與 `pre-mortem-runner` 保留並為 lens era 重寫；原本的 discovery-specialist 併入 persona-journey 與 jtbd 兩個 lens。',
+          '**每次輸出都帶 provenance**：每個答案結尾都會標註用到的 lens，例如 `— Frameworks: JTBD · Pre-mortem`，讓推理路徑可被檢視。',
+          '**recipe 取代僵硬的流水線**：四個可選 recipe（full-product-plan、quick-validation、product-revision、feature-extension）為大型需求預先編排 lens。它們只是建議，採不採用由你決定。',
+          '**會提示、不會擋路的 guardrail**：硬性的 planning gate 改為 relative guardrail，預設休眠，只有在結果會真正受損時，才以單行、非阻斷的方式浮現。',
+          '**證據佐證**：當判斷取決於真實世界的事實時，lens 會拉取即時證據並附上來源，同時在 provenance 那行標註來源數。',
+          '**徹底重構**：刪除 root 的 6-mode orchestrator（`SKILL.md`），meta-skill 成為唯一入口；install.sh 重寫為 skills-directory 安裝器；behavioral eval suite 也重建為 outcome-first 的 lens 案例。',
+          '**更輕的體積**：砍掉 i18n 檔案鏡像子系統與六個 mode slash command。Runtime 語言偵測保留，Claude 仍以你的語言回覆。',
+        ],
+      },
+      { kind: 'heading', text: '這次迭代好在哪' },
+      {
+        kind: 'list',
+        items: [
+          '**只帶問題需要的思考**：真實使用顯示多數產品問題一次只需要一兩個 lens，可組合的 lens 讓輸出更銳利，也少了把所有框架一次塞進來的雜訊。',
+          '**更少儀式、更快得到答案**：沒有 mode 選單、沒有進度指示、不用一步步確認。缺資訊時，工具用一行寫出假設，並在同一輪就交付完整成果。',
+          '**可信也可檢視**：provenance 那行與證據來源，讓人清楚哪些框架、哪些事實形塑了這個答案。',
+          '**把驗證過的核心延續下來**：早期評測顯示專家分工是承重結構（單獨移除 pre-mortem 就讓風險步驟從 100% 掉到 22.2%），這正是 strategy-critic 與 pre-mortem-runner 在 2.0 繼續擔任專屬專家的理由。',
+          '**更好安裝與維護**：單一 skills-directory 安裝，不用再同步各語言的鏡像檔。',
+        ],
+      },
+      '整個 plugin 以 MIT 授權開源；網站頁面與 chatbot 現在都跟隨已發佈的 2.0 架構。',
+    ],
+  },
+  {
     id: 'adplist-mentorship',
     date: '2026-06-23',
     title: '新增 ADPList 一對一指導區塊',

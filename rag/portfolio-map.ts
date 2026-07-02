@@ -33,8 +33,12 @@ PROJECTS:
   data-grounded holdings strategy (real market context + per-stock
   fundamentals, emailed each evening), and audited win-rate/ROI tracking.
   Live demo: https://plutustrade.vercel.app/
-- Product Playbook — Claude Skill / plugin, 22 PM frameworks + 3 specialist
-  sub-agents (agentic multi-agent), 6 languages, eval-driven (+69% quality).
+- Product Playbook — Claude Code skill / plugin, v2.0 outcome-first lens
+  architecture: 16 composable product-thinking lenses routed by a meta-skill +
+  2 read-only specialist sub-agents (strategy-critic, pre-mortem-runner),
+  per-output provenance, non-blocking guardrails. Earlier architecture measured
+  +69% product-thinking quality; the specialist split is load-bearing
+  (59.1%->100%, and pre-mortem alone 100%->22.2% when removed).
   GitHub: https://github.com/Kaminoikari/product-playbook
 - House Ops — automated real-estate decision pipeline (Node, Claude API,
   5-dimension weighted scoring).

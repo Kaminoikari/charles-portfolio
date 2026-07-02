@@ -35,6 +35,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-2-lens',
+    date: '2026-07-02',
+    title: 'Product Playbook 2.0：plugin 全体を mode パイプラインから組み合わせ可能な lens アーキテクチャへ全面リライト',
+    tags: ['feature', 'technical'],
+    body: [
+      '**Product Playbook 2.0** を出荷しました。オープンソースのプロダクトプランニング plugin を全面的に書き直し、再構築したものです：各フレームワークを独立した組み合わせ可能な skill へ切り出し、6-mode の orchestrator を廃止し、システム全体を outcome-first の meta-skill を中心に作り直しました。1.x は 6 つの固定 mode から 1 つを選ばせ、既定のパイプラインを歩ませていました。2.0 は欲しい成果を伝えると、meta-skill がそこへ導くプロダクト思考の lens を選び、必要に応じて複数を融合します。サイト上のケーススタディ（プロジェクトカード、詳細ページ、技術スタック、AI チャットボット）も、この新アーキテクチャを説明するよう更新しました。',
+      { kind: 'heading', text: '1.x から 2.0 への変更点' },
+      {
+        kind: 'list',
+        items: [
+          '**mode に代わる lens**：6 つの固定 mode が 16 個の組み合わせ可能な lens skill に置き換わりました（JTBD、PR-FAQ、positioning、pre-mortem、RICE 式の優先順位付け、North Star 指標、MVP scoping、PMF／GTM、strategy kernel など）。meta-skill が成果を読み、適した lens を選び、複数の視点を要する意思決定では 1 つの統合された答えへ融合します。',
+          '**より軽い専門層**：Sub-agent は 3 つから 2 つへ。`strategy-critic` と `pre-mortem-runner` は lens 時代向けに書き直して存続し、旧 discovery-specialist は persona-journey と jtbd の lens に統合されました。',
+          '**すべての出力に provenance**：各回答の末尾に使った lens を一行で明記します（例：`— Frameworks: JTBD · Pre-mortem`）。推論の道筋を検証できます。',
+          '**硬いパイプラインに代わる recipe**：4 つの任意の recipe（full-product-plan、quick-validation、product-revision、feature-extension）が大きな依頼向けに lens を事前に並べます。あくまで提案で、採用するかはあなた次第です。',
+          '**促すが止めない guardrail**：硬い planning gate が relative guardrail になり、既定で休眠し、成果が本当に損なわれるときだけ単一の非ブロッキングな行として現れます。',
+          '**証拠による裏づけ**：判断が現実世界の事実に依存するとき、lens がライブの証拠を引いて出典を添え、provenance の行に出典数を加えます。',
+          '**全面的な再構築**：root の 6-mode orchestrator（`SKILL.md`）を削除し、meta-skill を唯一の入口に。install.sh を skills-directory 形式のインストーラーへ書き直し、behavioral eval suite も outcome-first の lens ケースへ再構築しました。',
+          '**より軽いフットプリント**：i18n のファイルミラー機構と 6 つの mode slash command を廃止しました。Runtime の言語検出は残るので、Claude は引き続きあなたの言語で応答します。',
+        ],
+      },
+      { kind: 'heading', text: 'このイテレーションの利点' },
+      {
+        kind: 'list',
+        items: [
+          '**問いが必要とする思考だけ**：実利用では多くのプロダクトの問いが一度に 1〜2 個の lens で足りると分かりました。組み合わせ可能な lens は出力を鋭く保ち、すべてのフレームワークを一度に抱える雑音を減らします。',
+          '**儀式を減らし、答えを速く**：mode メニューも進捗表示も段階的な確認もありません。事実が欠けるときはツールが仮定を一行で示し、同じターンで完全な成果物を届けます。',
+          '**信頼でき、検証できる**：provenance の行と証拠の出典により、どのフレームワークとどの事実が答えを形づくったかが明確になります。',
+          '**実証済みの核心を継承**：初期の評価で専門分業が耐荷重構造だと示され（pre-mortem を単独で外すとリスクステップが 100% から 22.2% へ崩落）、これが strategy-critic と pre-mortem-runner を 2.0 でも専属の専門家として残す理由です。',
+          '**導入と保守が容易**：単一の skills-directory インストールで、各言語のミラーファイルを同期し続ける必要がありません。',
+        ],
+      },
+      'plugin 全体は MIT ライセンスで公開。サイトのページと chatbot は、出荷済みの 2.0 アーキテクチャを反映しています。',
+    ],
+  },
+  {
     id: 'adplist-mentorship',
     date: '2026-06-23',
     title: 'ADPList メンタリングセクションを追加',

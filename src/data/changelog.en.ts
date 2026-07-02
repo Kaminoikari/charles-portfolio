@@ -19,6 +19,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'product-playbook-2-lens',
+    date: '2026-07-02',
+    title: 'Product Playbook 2.0: a ground-up rewrite of the plugin, from a mode pipeline to a composable lens architecture',
+    tags: ['feature', 'technical'],
+    body: [
+      "I shipped **Product Playbook 2.0**, a ground-up rewrite and refactor of my open-source product-planning plugin. Every framework was pulled out into its own composable skill, the six-mode orchestrator was retired, and the whole system was rebuilt around an outcome-first meta-skill. The 1.x design asked you to pick one of six fixed modes and then walked a set pipeline; 2.0 lets you state the outcome you want and has a meta-skill select the product-thinking lens, or blend several, that gets you there. This site's case study (project card, detail page, tech stack, and AI chatbot) is updated to describe the new architecture.",
+      { kind: 'heading', text: 'What changed from 1.x to 2.0' },
+      {
+        kind: 'list',
+        items: [
+          '**Lenses over modes**: the six fixed modes give way to 16 composable lens skills (JTBD, PR-FAQ, positioning, pre-mortem, RICE-style prioritization, North Star metrics, MVP scoping, PMF/GTM, strategy kernel, and more). The meta-skill reads your outcome, picks the lens that fits, and blends several into one integrated answer when the decision needs more than one perspective.',
+          '**A leaner specialist layer**: the sub-agent count drops from three to two. `strategy-critic` and `pre-mortem-runner` survive, rewritten for the lens era; the old discovery-specialist folds into the persona-journey and jtbd lenses.',
+          '**Provenance on every output**: each answer now ends with a one-line tag naming the lenses applied, for example `— Frameworks: JTBD · Pre-mortem`, so the reasoning path is inspectable.',
+          '**Recipes replace rigid pipelines**: four optional recipes (full-product-plan, quick-validation, product-revision, feature-extension) pre-sequence the lenses for larger asks. They are suggested, never forced.',
+          '**Guardrails that nudge, never block**: hard planning gates become relative guardrails that stay dormant and surface as a single non-blocking line only when the outcome would genuinely be harmed.',
+          '**Evidence grounding**: when a call depends on real-world facts, the lenses pull live evidence and cite sources, adding a count to the provenance line.',
+          '**A ground-up refactor**: the root six-mode orchestrator (`SKILL.md`) is deleted and the meta-skill is now the sole entry point, install.sh was rewritten as a skills-directory installer, and the behavioral eval suite was rebuilt around outcome-first lens cases.',
+          '**A lighter footprint**: the i18n file-mirror subsystem and the six mode slash commands are gone. Runtime language detection stays, so Claude still replies in your language.',
+        ],
+      },
+      { kind: 'heading', text: 'Why the iteration is better' },
+      {
+        kind: 'list',
+        items: [
+          '**Only the thinking a question needs**: real usage showed most product questions want only one or two lenses at a time, so composable lenses keep the output sharp and cut the noise of carrying every framework at once.',
+          '**Less ceremony, faster answers**: no mode menu, no progress indicators, no step-by-step confirmation. When facts are missing the tool states its assumption in one line and delivers the full artifact in the same turn.',
+          '**Trustworthy and inspectable**: the provenance line and evidence citations make it clear which frameworks and which facts shaped an answer.',
+          '**The proven core carried forward**: the earlier evals showed the specialist split is load-bearing (removing pre-mortem alone collapsed the risk step from 100% to 22.2%), which is why strategy-critic and pre-mortem-runner remain dedicated specialists in 2.0.',
+          '**Simpler to install and maintain**: one skills-directory install, with no per-language file mirror to keep in sync.',
+        ],
+      },
+      "The whole plugin is open source under the MIT license; the site page and chatbot now track the shipped 2.0 architecture.",
+    ],
+  },
+  {
     id: 'adplist-mentorship',
     date: '2026-06-23',
     title: 'Added an ADPList mentorship section',
