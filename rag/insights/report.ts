@@ -59,8 +59,12 @@ async function main() {
   }
   rows.sort((a, b) => (b.ts ?? '').localeCompare(a.ts ?? ''))
 
-  if (rows.length === 0) {
-    console.log('No chat logs yet.')
+  // Only report on identified visitors. Pre-upgrade rows carry no visitor_id and
+  // are excluded entirely — they can't be attributed to a person or a funnel.
+  const identified = rows.filter((r) => r.visitor_id)
+
+  if (identified.length === 0) {
+    console.log('No chat logs with a visitor id yet.')
     return
   }
 
@@ -68,8 +72,8 @@ async function main() {
   // 'question' (something was actually asked). Rows from before the `type` field
   // existed have none and are questions, so anything not explicitly 'open' counts
   // as a question.
-  const openRows = rows.filter((r) => r.type === 'open')
-  const questionRows = rows.filter((r) => r.type !== 'open')
+  const openRows = identified.filter((r) => r.type === 'open')
+  const questionRows = identified.filter((r) => r.type !== 'open')
   const distinct = (rs: LogRow[]) => new Set(rs.map((r) => r.visitor_id).filter(Boolean)).size
 
   const uniqueOpeners = distinct(openRows)
@@ -77,7 +81,6 @@ async function main() {
   const conversion =
     uniqueOpeners > 0 ? `${((uniqueAskers / uniqueOpeners) * 100).toFixed(0)}%` : '—'
   const perAsker = uniqueAskers > 0 ? (questionRows.length / uniqueAskers).toFixed(1) : '—'
-  const preUpgrade = questionRows.filter((r) => !r.visitor_id).length
 
   const fallbacks = questionRows.filter((r) => r.route === 'fallback').length
   const corrective = questionRows.filter((r) => (r.loops ?? 0) > 0).length
@@ -98,7 +101,6 @@ async function main() {
   console.log(`- Asked a question: ${questionRows.length} times, ${uniqueAskers} unique visitors`)
   console.log(`- Open → ask conversion (unique visitors): ${conversion}`)
   console.log(`- Questions per asker: ${perAsker}`)
-  if (preUpgrade > 0) console.log(`- Questions with no visitor id (pre-upgrade logs): ${preUpgrade}`)
   console.log()
 
   console.log('## How questions were answered')

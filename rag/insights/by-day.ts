@@ -81,9 +81,11 @@ async function main() {
   const daysArgIdx = process.argv.indexOf('--days')
   const daysLimit = daysArgIdx >= 0 ? Number(process.argv[daysArgIdx + 1]) : Infinity
 
-  const rows = (await scrollAll()).filter((r) => r.ts)
+  // Only identified visitors — rows with no visitor_id (pre-upgrade anonymous
+  // logs) are dropped, so nothing shows up as "anonymous".
+  const rows = (await scrollAll()).filter((r) => r.ts && r.visitor_id)
   if (rows.length === 0) {
-    console.log('No chat logs yet.')
+    console.log('No chat logs with a visitor id yet.')
     return
   }
 
