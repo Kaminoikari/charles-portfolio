@@ -75,12 +75,15 @@ function BlogEntry({ article, index }: { article: BlogArticle; index: number }) 
                 </span>
               </div>
               <div>
-                <button
-                  type="button"
+                {/* Decorative only: the whole card is already the link (title
+                    anchor above). Render as an aria-hidden span so it isn't
+                    announced or focused as a button that does nothing. */}
+                <span
+                  aria-hidden="true"
                   className="pointer-events-none inline-flex shrink-0 items-center justify-center rounded-full border border-btn-border bg-transparent px-3.5 py-1.5 font-mono text-xs uppercase tracking-[1.5px] text-white transition-colors duration-200 group-hover:bg-white/[0.06]"
                 >
                   Read
-                </button>
+                </span>
               </div>
             </div>
           </div>

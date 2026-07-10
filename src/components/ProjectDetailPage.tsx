@@ -275,6 +275,20 @@ export default function ProjectDetailPage() {
 
 function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string; closeLabel: string; onClose: () => void }) {
   const isVideo = src.toLowerCase().endsWith('.mp4')
+  const closeRef = useRef<HTMLButtonElement>(null)
+  // Move focus into the dialog on open and keep Tab within it (the only control
+  // is Close). Focus is restored to the opener by the parent on close.
+  useEffect(() => {
+    closeRef.current?.focus()
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        closeRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onTab)
+    return () => document.removeEventListener('keydown', onTab)
+  }, [])
   return (
     <div
       role="dialog"
@@ -303,6 +317,7 @@ function Lightbox({ src, alt, closeLabel, onClose }: { src: string; alt: string;
         />
       )}
       <button
+        ref={closeRef}
         type="button"
         onClick={onClose}
         aria-label={closeLabel}

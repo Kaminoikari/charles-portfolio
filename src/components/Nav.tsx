@@ -234,6 +234,9 @@ export default function Nav() {
       {/* Mobile menu */}
       <div
         id="mobile-menu"
+        // inert when collapsed so its buttons leave the keyboard tab order and
+        // the a11y tree (maxHeight:0 alone still left them focusable/announced).
+        inert={!menuOpen}
         className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:hidden"
         style={{
           maxHeight: menuOpen ? `${(NAV_SECTIONS.length + 1) * 52 + 64}px` : '0',

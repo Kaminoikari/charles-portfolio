@@ -380,6 +380,7 @@ function Lightbox({
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const count = photos.length
   const [index, setIndex] = useState(initialIndex)
   const [vw, setVw] = useState(() => window.innerWidth)
@@ -410,6 +411,34 @@ function Lightbox({
       document.body.style.overflow = prevOverflow
     }
   }, [onClose, prev, next])
+
+  // Focus management for the modal: aria-modal marks the background inert, so
+  // focus must move INTO the dialog (Close) on open and be trapped within it,
+  // then return to the opener on close. Without this, keyboard/SR focus stayed
+  // on the photo button behind the overlay.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    closeRef.current?.focus()
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const focusables = overlayRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])')
+      if (!focusables || focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onTab)
+    return () => {
+      document.removeEventListener('keydown', onTab)
+      opener?.focus?.()
+    }
+  }, [])
 
   // Keep the slide width in sync with the viewport (resize / orientation / the
   // mobile address bar) so the translate offset always lands a slide dead-centre.
@@ -529,6 +558,7 @@ function Lightbox({
 
       {/* Close */}
       <button
+        ref={closeRef}
         onClick={onClose}
         aria-label="Close"
         className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white transition-colors hover:border-accent-cyan hover:text-accent-cyan"
