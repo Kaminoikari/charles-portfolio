@@ -14,6 +14,10 @@ on:
         type: string
         required: true
 
+# This job only calls the Qdrant HTTP API; it never touches the repo.
+permissions:
+  contents: read
+
 jobs:
   drop:
     runs-on: ubuntu-latest

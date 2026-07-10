@@ -16,7 +16,7 @@
 
 import { writeFileSync } from 'node:fs'
 
-import type { Locale } from '../../src/i18n.js'
+import type { Locale } from '../../src/i18n/config.js'
 import { loadBlogBodies, BODIES_PATH, type BlogBodyCache, type BlogBody } from './blog-bodies.js'
 
 const FORCE = process.argv.includes('--force')

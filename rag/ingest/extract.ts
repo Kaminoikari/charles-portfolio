@@ -9,7 +9,7 @@
 // embed well, large enough to stay self-contained. Each child chunk carries a
 // parent_id so the generate step could expand context if needed.
 
-import type { Locale } from '../../src/i18n.js'
+import type { Locale } from '../../src/i18n/config.js'
 import { config } from '../config.js'
 import { chunkText } from './chunk.js'
 import { getBlogBody } from './blog-bodies.js'

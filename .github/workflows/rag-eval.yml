@@ -37,6 +37,11 @@ on:
         type: string
         default: ''
 
+# Eval only reads the checkout and calls external APIs — no repo write needed.
+# Pin the token to read so it stays minimal regardless of the org-level default.
+permissions:
+  contents: read
+
 jobs:
   eval:
     runs-on: ubuntu-latest

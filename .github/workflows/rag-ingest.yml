@@ -72,6 +72,11 @@ jobs:
           # workflow_dispatch passes an explicit ref; a push has no input, so fall
           # back to the pushed commit (github.ref) instead of the stale default.
           ref: ${{ inputs.ref || github.ref }}
+          # Don't leave the contents:write token in .git/config for the whole job:
+          # npm ci (postinstall scripts) and rag:blog (third-party Substack fetch)
+          # run before the push and would otherwise be able to read it and push to
+          # main. The final push step re-authenticates explicitly instead.
+          persist-credentials: false
 
       - uses: actions/setup-node@v6
         with:
@@ -81,7 +86,7 @@ jobs:
       - run: npm ci
 
       - name: Fetch new blog bodies
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != true }}
         # Top up blog-bodies.json with any newly added articles so their full text
         # is indexed automatically on the same push that adds the article. Only
         # missing URLs are fetched (cached ones are skipped), and a flaky
@@ -118,7 +123,7 @@ jobs:
           fi
 
       - name: Persist refreshed blog cache
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ inputs.dry_run != true }}
         # Commit the topped-up cache back so blog-bodies.json stays the complete,
         # reproducible source of truth and the same body is never refetched twice.
         run: |
@@ -129,5 +134,6 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add rag/ingest/blog-bodies.json
             git commit -m "chore(rag): refresh blog-bodies cache [skip ci]"
-            git push
+            # Explicit token auth (checkout ran with persist-credentials: false).
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" "HEAD:${{ inputs.ref || github.ref_name }}"
           fi
