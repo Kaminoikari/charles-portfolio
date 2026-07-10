@@ -224,9 +224,11 @@ export default function UniverseSection() {
     const resize = () => {
       width = canvas.clientWidth
       height = canvas.clientHeight
-      canvas.width = width * window.devicePixelRatio
-      canvas.height = height * window.devicePixelRatio
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+      // Cap DPR at 2 like the hero to bound fill cost on high-DPR phones.
+      const dpr = Math.min(window.devicePixelRatio, 2)
+      canvas.width = width * dpr
+      canvas.height = height * dpr
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     resize()

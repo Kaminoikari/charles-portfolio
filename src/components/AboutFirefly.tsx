@@ -83,11 +83,14 @@ const HUB_COUNT = 10 // bright hub nodes
     const resize = () => {
       width = canvas.parentElement?.clientWidth ?? window.innerWidth
       height = canvas.parentElement?.clientHeight ?? window.innerHeight
-      canvas.width = width * window.devicePixelRatio
-      canvas.height = height * window.devicePixelRatio
+      // Cap DPR at 2 like the hero: a full-section canvas at 3x on some phones
+      // quadruples the fill cost for no visible gain.
+      const dpr = Math.min(window.devicePixelRatio, 2)
+      canvas.width = width * dpr
+      canvas.height = height * dpr
       canvas.style.width = `${width}px`
       canvas.style.height = `${height}px`
-      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     }
 
     resize()

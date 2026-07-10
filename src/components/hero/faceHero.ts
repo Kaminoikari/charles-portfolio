@@ -149,6 +149,20 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   renderer.setSize(dispW(), dispH(), false)
   renderer.setClearColor(0x000000, 1)
 
+  // iOS Safari / low-memory Android kill the WebGL context under memory pressure.
+  // Without a handler the RAF keeps rendering to a dead context and the hero
+  // stays black forever; route it through onError so FaceHero's static-portrait
+  // fallback takes over instead.
+  const onContextLost = (e: Event) => {
+    e.preventDefault()
+    opts.onError?.(new Error('WebGL context lost'))
+  }
+  canvas.addEventListener('webglcontextlost', onContextLost)
+
+  // Flipped in dispose(); guards the async build() and the render loop so nothing
+  // runs against a torn-down scene after an early unmount.
+  let disposed = false
+
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(50, dispW() / dispH(), 0.1, 100)
   camera.position.z = 5
@@ -657,12 +671,18 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   )
 
   Promise.all([loadImg, loadGlb]).then(([im, gltf]) => build(im, gltf)).catch((e: unknown) => {
+    if (disposed) return
     const err = e instanceof Error ? e : new Error(String(e))
     console.error(err)
     opts.onError?.(err)
   })
 
   function build(im: HTMLImageElement, gltf: GLTF) {
+    // If the component unmounted (route/locale change) before the 800KB GLB
+    // finished, skip the whole decimation pipeline — it is a 140ms+ main-thread
+    // block that would otherwise land on the destination page and mutate a
+    // scene that dispose() has already torn down.
+    if (disposed) return
     // photo luma sampler
     const { sw, sh } = CONFIG.photo
     const oc = document.createElement("canvas"); oc.width = sw; oc.height = sh
@@ -1117,10 +1137,19 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   let pendingSkip = false
   let rafId = 0
   let pausedAt = 0
+  let warmedUp = false
   function frame(now: number) {
     rafId = window.requestAnimationFrame(frame)
     syncSize()
-    if (!started) { composer.render(); return }
+    if (!started) {
+      // Behind the opaque loading gate nothing is visible, yet UnrealBloomPass
+      // costs full-screen GPU every frame regardless of scene content — and the
+      // visitor may sit at ENTER indefinitely (battery/thermal on mobile). Warm
+      // up shaders exactly once so the first post-ENTER frame isn't janky, then
+      // stop rendering until doStart().
+      if (assetsReady && !warmedUp) { composer.render(); warmedUp = true }
+      return
+    }
     const t = startTime ? (now - startTime) / 1000 : 0
     const dt = Math.min(0.05, Math.max(0, t - lastFrameT)); lastFrameT = t   // clamped frame delta (seconds)
     const introProg = updateIntro(t)
@@ -1249,7 +1278,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       }
     },
     dispose: () => {
+      disposed = true
       if (rafId) { window.cancelAnimationFrame(rafId); rafId = 0 }
+      canvas.removeEventListener('webglcontextlost', onContextLost)
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('pointerup', onPointerUp)
@@ -1274,6 +1305,10 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       })
       composer.dispose()
       bloom.dispose()
+      // forceContextLoss frees the GL context immediately; without it each
+      // remount leaks a live context until GC and the browser eventually drops
+      // the oldest ("too many WebGL contexts").
+      renderer.forceContextLoss()
       renderer.dispose()
     },
   }
