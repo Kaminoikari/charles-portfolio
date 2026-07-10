@@ -10,28 +10,38 @@ const AUDIO_SRC = '/assets/ambient-space.mp3'
 const TARGET_VOLUME = 0.35
 const FADE_DURATION_MS = 1800
 
-function fadeVolume(audio: HTMLAudioElement, from: number, to: number, durationMs: number) {
-  const start = performance.now()
-  const tick = (now: number) => {
-    const t = Math.min(1, (now - start) / durationMs)
-    audio.volume = from + (to - from) * t
-    if (t < 1) requestAnimationFrame(tick)
-    else if (to === 0) audio.pause()
-  }
-  requestAnimationFrame(tick)
-}
-
 export function AudioProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  // Monotonic id identifying the current fade. Bumped whenever mute state flips
+  // so any older fade loop bails on its next tick instead of running to its
+  // terminal pause() — which previously let a stale fade-out silence a track the
+  // user had just unmuted (toggle showing "on" but audio paused).
+  const fadeIdRef = useRef(0)
   // Always start muted on every page load — sound is opt-in per session.
   const [muted, setMuted] = useState(true)
+
+  const fadeTo = (audio: HTMLAudioElement, to: number, durationMs: number, fadeId: number) => {
+    const from = audio.volume
+    const start = performance.now()
+    const tick = (now: number) => {
+      if (fadeIdRef.current !== fadeId) return // superseded by a newer fade
+      const t = Math.min(1, (now - start) / durationMs)
+      audio.volume = from + (to - from) * t
+      if (t < 1) requestAnimationFrame(tick)
+      else if (to === 0) audio.pause()
+    }
+    requestAnimationFrame(tick)
+  }
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
+    // Invalidate any in-flight fade immediately (synchronously), so it can't win
+    // a race against this state change even if a play() promise resolves late.
+    const fadeId = ++fadeIdRef.current
 
     if (muted) {
-      if (!audio.paused) fadeVolume(audio, audio.volume, 0, 600)
+      if (!audio.paused) fadeTo(audio, 0, 600, fadeId)
       return
     }
 
@@ -39,7 +49,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     audio.volume = 0
     const playPromise = audio.play()
     if (playPromise && typeof playPromise.then === 'function') {
-      playPromise.then(() => fadeVolume(audio, 0, TARGET_VOLUME, FADE_DURATION_MS)).catch(() => {})
+      playPromise
+        .then(() => {
+          if (fadeIdRef.current === fadeId) fadeTo(audio, TARGET_VOLUME, FADE_DURATION_MS, fadeId)
+        })
+        .catch(() => {})
     }
   }, [muted])
 

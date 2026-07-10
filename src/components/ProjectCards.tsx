@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { type Project, useProjects } from '../data'
+import { Link } from 'react-router-dom'
 import { useLocalePath, useT } from '../i18n'
 import { CANVAS_W, CANVAS_H, easeInOutCubic, marsA, whiteA } from './animations/shared'
 import {
@@ -608,9 +609,9 @@ function ProjectCard({ project }: { project: Project }) {
   const isAnimating = isTouchDevice ? isVisible : isHovered
 
   return (
-    <a
+    <Link
       ref={cardRef}
-      href={localePath(`/projects/${project.id}`)}
+      to={localePath(`/projects/${project.id}`)}
       aria-label={project.title}
       className="group relative flex min-h-0 flex-col border border-border no-underline transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.01] hover:shadow-[0_4px_24px_rgba(0,0,0,0.3)] md:min-h-[520px]"
       style={{
@@ -675,7 +676,7 @@ function ProjectCard({ project }: { project: Project }) {
           <span aria-hidden="true" className="inline-block text-[13px] leading-none scale-[1.4] transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
         </div>
       </div>
-    </a>
+    </Link>
   )
 }
 

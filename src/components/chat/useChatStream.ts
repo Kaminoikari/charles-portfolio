@@ -27,6 +27,28 @@ interface SSEEvent {
   data: unknown
 }
 
+// Coerce the server's `done.sources` into well-formed ChatSource records. The
+// payload is untrusted at the type level (parsed JSON), and the UI renders
+// score.toFixed(2) — a missing/non-number score would throw during render and,
+// with no error boundary above, blank the whole SPA. Drop malformed entries and
+// default a non-numeric score to 0.
+function toSources(raw: unknown): ChatSource[] {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((s): ChatSource[] => {
+    if (typeof s !== 'object' || s === null) return []
+    const { id, title, score, locale } = s as Record<string, unknown>
+    if (typeof id !== 'string' || typeof title !== 'string') return []
+    return [
+      {
+        id,
+        title,
+        score: typeof score === 'number' && Number.isFinite(score) ? score : 0,
+        locale: typeof locale === 'string' ? locale : '',
+      },
+    ]
+  })
+}
+
 // Parse a chunk of the SSE byte stream into complete events. Returns the events
 // found plus any trailing partial frame to carry into the next chunk.
 function parseSSE(buffer: string): { events: SSEEvent[]; rest: string } {
@@ -103,8 +125,8 @@ export function useChatStream() {
               const t = (ev.data as { text?: string }).text ?? ''
               patchAssistant((m) => ({ ...m, text: m.text + t }))
             } else if (ev.event === 'done') {
-              const data = ev.data as { sources?: ChatSource[]; answer?: string }
-              const sources = data.sources ?? []
+              const data = ev.data as { sources?: unknown; answer?: string }
+              const sources = toSources(data.sources)
               // `done.answer` is the server's single authoritative answer; the
               // streamed tokens are only an optimistic preview. Reconcile to the
               // authoritative answer here — otherwise a Gemini→Claude fallback

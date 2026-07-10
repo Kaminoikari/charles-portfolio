@@ -28,9 +28,23 @@ function pangu(text: string): string {
 const LINK_CLASS =
   'text-accent-cyan underline decoration-accent-cyan/40 underline-offset-2 transition-colors hover:decoration-accent-cyan'
 
+// The answer text is model-generated and therefore attacker-influenceable via
+// prompt injection. React does NOT sanitize an <a href>, so a `[x](javascript:…)`
+// or `data:` link would execute / smuggle a payload inside a trusted bubble.
+// Allow only http(s)/mailto and relative (/, #, ?) targets; drop everything else
+// back to plain text.
+function safeHref(href: string): string | null {
+  const h = href.trim()
+  if (/^(https?:|mailto:)/i.test(h)) return h
+  if (/^[/#?]/.test(h)) return h
+  return null
+}
+
 function anchor(href: string, label: ReactNode, key: number): ReactNode {
+  const safe = safeHref(href)
+  if (!safe) return <Fragment key={key}>{label}</Fragment>
   return (
-    <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+    <a key={key} href={safe} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
       {label}
     </a>
   )

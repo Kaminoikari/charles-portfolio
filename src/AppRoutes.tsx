@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import App from './App'
 import Nav from './components/Nav'
 import ChatWidget from './components/chat/ChatWidget'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { MusicToggle } from './components/audio/MusicToggle'
 import { LOCALE_URL_PREFIX, useInitialLocaleRestore } from './i18n'
 
@@ -76,7 +77,9 @@ export default function AppRoutes() {
         )}
       </Routes>
       <MusicToggle />
-      <ChatWidget />
+      <ErrorBoundary fallback={null}>
+        <ChatWidget />
+      </ErrorBoundary>
     </>
   )
 }
