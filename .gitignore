@@ -29,3 +29,4 @@ dist-ssr
 
 # Local visual-verification screenshots (delivered, not version-controlled)
 docs/shot-*.png
+.env*
