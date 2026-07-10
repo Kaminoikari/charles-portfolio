@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { initFaceHero, type FaceHeroHandle } from './faceHero'
+import type { FaceHeroHandle } from './faceHero'
 import { useAmbientAudio } from '../audio/audio-context'
 import MobiusLoader from './MobiusLoader'
 
@@ -115,16 +115,25 @@ export default function FaceHero() {
     if (!canvas) return
     const reduced = prefersReducedMotion()
     const seen = alreadySeenThisSession()
-    const handle = initFaceHero(canvas, {
-      assetBase: '/hero/',
-      reducedMotion: reduced,
-      onProgress: (p) => { realProgressRef.current = p },
-      onReady: () => { if (seen) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
-      onIntroComplete: () => { setPhase('revealed'); if (enteredRef.current) unmuteRef.current() },   // BGM fades in only after the intro, and only when the visitor actually entered
-      onError: () => setFailed(true),
-    })
-    handleRef.current = handle
-    return () => { handle.dispose(); handleRef.current = null }
+    let disposed = false
+    // Load the three.js engine lazily so ~440 kB gzip of three + postprocessing
+    // leaves the entry chunk (the MobiusLoader gate already covers the gap). If
+    // the visitor navigates away before it resolves, skip init entirely.
+    import('./faceHero')
+      .then(({ initFaceHero }) => {
+        if (disposed) return
+        const handle = initFaceHero(canvas, {
+          assetBase: '/hero/',
+          reducedMotion: reduced,
+          onProgress: (p) => { realProgressRef.current = p },
+          onReady: () => { if (seen) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
+          onIntroComplete: () => { setPhase('revealed'); if (enteredRef.current) unmuteRef.current() },   // BGM fades in only after the intro, and only when the visitor actually entered
+          onError: () => setFailed(true),
+        })
+        handleRef.current = handle
+      })
+      .catch(() => setFailed(true))
+    return () => { disposed = true; handleRef.current?.dispose(); handleRef.current = null }
   }, [])
 
   useEffect(() => {
