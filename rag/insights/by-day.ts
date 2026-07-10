@@ -4,8 +4,10 @@
 // the questions they asked (time · language · route · text).
 //
 // Data reality (see api/chat.ts + api/geo.ts):
-//   - No IP is ever stored. Vercel only exposes a country header.
-//   - country lives ONLY on 'open' events; we join it onto a visitor by id.
+//   - The client IP (first x-forwarded-for hop) IS stored on both 'question'
+//     and 'open' events (null only in local dev), alongside the country header.
+//   - country is stored on both event types; we still join 'open' country onto
+//     a visitor by id for question rows that predate country logging.
 //   - visitor_id is null on pre-upgrade question logs → shown as "anonymous".
 //
 // Run:  npx tsx rag/insights/by-day.ts [--days N]   (needs QDRANT_*).

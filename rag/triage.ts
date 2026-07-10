@@ -56,11 +56,17 @@ const INJECTION = new RegExp(
     'what\\s+(are|is)\\s+your\\s+(system\\s+)?(prompt|instructions?|rules?|api\\s*key|secret)',
     'repeat\\s+(the\\s+)?(words?|text)\\s+above', 'say\\s+exactly',
     'bypass\\s+(your|the)', 'override\\s+(your|the|system)',
-    'new\\s+instructions?:', 'system\\s*:',
+    'new\\s+instructions?:',
+    // Anchored to line start so a fake system message ("system: you are now…")
+    // is caught but a mid-sentence mention ("his design system: tokens…") is not.
+    '(^|\\n)\\s*system\\s*:',
     // 中文
     '忽略.*(指令|指示|以上|先前|規則|提示)', '無視.*(指示|提示|以上|規則)',
     '忘記.*(指令|指示|規則|以上)', '假裝(你|妳|是)', '扮演(一個|成)',
-    '(顯示|印出|透露|告訴我|重複|洩漏).*(系統)?.*(提示詞|指令|prompt|規則|設定|金鑰)',
+    // Reveal attacks target the bot's OWN prompt/rules, so require a self-
+    // reference (你/妳/系統) right after the verb. This stops the loose `.*` from
+    // refusing genuine questions like "告訴我他的 prompt engineering 方法".
+    '(顯示|印出|透露|重複|洩漏|告訴我)\\s*(你的|妳的|你|妳|系統)[^。？！\\n]{0,12}(提示詞|指令|prompt|規則|設定|金鑰)',
     '你現在是', '開發者模式', '越獄',
     // 日本語
     '(以前|上記|これまで)の(指示|プロンプト|ルール).*(無視|忘れ)',
@@ -76,7 +82,10 @@ const INJECTION = new RegExp(
     'evaluate\\s+(this|the\\s+following)\\b',
     'what\\s+(does|is|will)\\s+(this|the|that|my)\\s+(code|function|script|program|snippet|line|regex|expression)\\b.{0,12}(print|output|return|do|evaluate\\s+to)',
     '\\b(decode|encode)\\b\\s+(this|that|it|the\\s+(following|text|string|message|word|name)|following|in\\s+(base64|rot13|hex|binary)|[A-Za-z0-9+/]{12,}={0,2})',
-    'base64', 'rot13', '\\bcipher\\b',
+    // Bare 'base64' removed: it refused legit questions ("base64 encoding in his
+    // projects?"). Real base64 attacks still match the decode/convert patterns
+    // above and below, which require an instruction verb around the token.
+    'rot13', '\\bcipher\\b',
     'replace\\s+(all|every|each|the)\\b.{0,24}\\b(letter|letters|char|chars|character|characters|word|words|vowel|consonant|digit|occurrence|instance)\\b',
     'concatenate', 'spell\\s+(out|it)\\b.{0,20}\\b(word|words|name|letter|letters|answer|phrase)\\b',
     'repeat\\s+.{0,20}\\s+times', 'say\\s+.{0,30}\\s+times',
