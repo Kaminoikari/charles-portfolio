@@ -4,11 +4,17 @@
 
 const int = (key: string, def: number): number => {
   const v = process.env[key]
-  return v === undefined ? def : Number.parseInt(v, 10)
+  if (v === undefined) return def
+  const n = Number.parseInt(v, 10)
+  // A malformed override (e.g. RAG_TOP_K=abc) must fall back to the default, not
+  // silently become NaN and poison every comparison/slice downstream.
+  return Number.isFinite(n) ? n : def
 }
 const float = (key: string, def: number): number => {
   const v = process.env[key]
-  return v === undefined ? def : Number.parseFloat(v)
+  if (v === undefined) return def
+  const n = Number.parseFloat(v)
+  return Number.isFinite(n) ? n : def
 }
 const bool = (key: string, def: boolean): boolean => {
   const v = process.env[key]
@@ -51,6 +57,11 @@ export const config = {
 
   // --- endpoints (secrets read lazily by clients) ---
   embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.voyageai.com/v1',
+  // Hard ceiling on each Voyage embed/rerank fetch. Without it a hung Voyage API
+  // would stall triage/retrieve on the request hot path until the platform kills
+  // the whole function (severing the SSE stream with no error event, no Claude
+  // fallback). Kept well under the 60s Vercel function limit.
+  embedTimeoutMs: int('RAG_EMBED_TIMEOUT_MS', 10_000),
   qdrantUrl: process.env.QDRANT_URL ?? '',
   qdrantCollection: process.env.QDRANT_COLLECTION ?? 'doc_chunks',
   qdrantLogsCollection: process.env.QDRANT_LOGS_COLLECTION ?? 'chat_logs',

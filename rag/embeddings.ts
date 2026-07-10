@@ -30,6 +30,7 @@ export async function embed(texts: string[], inputType: InputType = 'query'): Pr
       input_type: inputType,
       output_dimension: config.embedDim,
     }),
+    signal: AbortSignal.timeout(config.embedTimeoutMs),
   })
   if (!res.ok) throw new Error(`embed failed: ${res.status} ${await res.text()}`)
   const json = (await res.json()) as { data: { embedding: number[] }[] }
@@ -63,6 +64,7 @@ export async function rerank(
       documents: docs,
       top_k: topN,
     }),
+    signal: AbortSignal.timeout(config.embedTimeoutMs),
   })
   if (!res.ok) throw new Error(`rerank failed: ${res.status} ${await res.text()}`)
   const json = (await res.json()) as {

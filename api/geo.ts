@@ -15,11 +15,22 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
-import { clientCountry, clientId, isBlockedCountry } from '../rag/api-helpers.js'
+import { clientCountry, clientId, isBlockedCountry, RateLimiter } from '../rag/api-helpers.js'
 import { logChatEvent } from '../rag/chatlog.js'
 
 const BLOCKED_COUNTRIES = process.env.RAG_BLOCKED_COUNTRIES ?? 'CN'
 const MAX_VISITOR_ID_LEN = 64
+
+// Per-warm-instance cap on how many 'open' rows one IP can write. The endpoint
+// is unauthenticated and the widget only calls it once per page session, so a
+// generous ceiling never affects real visitors but stops a `curl` loop from
+// flooding chat_logs with junk 'open' rows (inflating unique-opener counts and
+// bloating the free-tier Qdrant store). The blocked/unblocked response is still
+// returned when over the cap — only the analytics write is skipped.
+const openLimiter = new RateLimiter(
+  Number.parseInt(process.env.RAG_OPEN_RATE_LIMIT ?? '30', 10),
+  Number.parseInt(process.env.RAG_OPEN_RATE_WINDOW_MS ?? '60000', 10),
+)
 
 // Pull a sane ?vid= from the request URL, or undefined. Mirrors the visitor-id
 // sanitising in api-helpers so a junk query string is never logged verbatim.
@@ -46,16 +57,19 @@ export default async function handler(
   const country = clientCountry(req.headers)
   const blocked = isBlockedCountry(country, BLOCKED_COUNTRIES)
 
-  // Log the open event best-effort. Awaited before res.end() because the Vercel
-  // instance freezes on return, which would sever a still-pending upsert.
+  // Log the open event best-effort, but only if this IP is under the write cap.
+  // Awaited before res.end() because the Vercel instance freezes on return,
+  // which would sever a still-pending upsert.
   const ip = clientId(req.headers)
-  const logged = logChatEvent({
-    type: 'open',
-    visitor_id: visitorIdFromUrl(req.url) ?? null,
-    country: country || null,
-    ip: ip === 'unknown' ? null : ip,
-    blocked,
-  })
+  const logged = openLimiter.check(ip).allowed
+    ? logChatEvent({
+        type: 'open',
+        visitor_id: visitorIdFromUrl(req.url) ?? null,
+        country: country || null,
+        ip: ip === 'unknown' ? null : ip,
+        blocked,
+      })
+    : Promise.resolve()
 
   res.statusCode = 200
   res.setHeader('Content-Type', 'application/json')
