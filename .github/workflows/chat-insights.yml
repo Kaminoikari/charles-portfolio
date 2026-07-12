@@ -19,6 +19,13 @@ on:
         description: 'Branch/ref to check out and run (defaults to main)'
         type: string
         default: main
+  # workflow_dispatch only registers once the file lands on the default branch;
+  # the push trigger below lets the report run from a feature branch too.
+  push:
+    branches:
+      - 'claude/chat-insight-*'
+    paths:
+      - '.github/workflows/chat-insights.yml'
 
 # Read-only: the job only reads the checkout and scrolls Qdrant.
 permissions:
