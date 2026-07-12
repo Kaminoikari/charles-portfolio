@@ -1,0 +1,47 @@
+# Chat Insights · 75 questions · 40 opens · 20-day span
+
+Range      2026-06-22 13:38 → 2026-07-12 20:01  (Asia/Taipei)
+Span       20.3 days  ·  115 identified events
+Generated  2026-07-12 20:14
+
+## People (the funnel)
+  Opened chat            40   ·   26 unique  ·    2.0 / day
+  Asked a question       75   ·   18 unique  ·    3.7 / day
+  Open → ask            69%   (unique visitors)
+  Questions / asker     4.2
+
+## How questions were answered
+  faq                    55    73.3%
+  generate               17    22.7%
+  fallback                3     4.0%
+
+## Coverage
+  Fallback (no answer)    3     4.0%
+  Corrective rewrite      4     5.3%
+  Median latency        295 ms
+
+## Language split
+  zh-TW                  73     97%
+  en                      2      3%
+
+## Most-asked questions
+    9×  介紹一下 Product Playbook
+    6×  你是怎麼被打造出來的?
+    4×  他作為 AI PM 的獨特之處是什麼?
+    4×  為什麼團隊該錄取他?
+    3×  他在工作上怎麼運用 AI?
+    2×  我也想做出一個像你一樣的AI機器人，怎麼做？
+    2×  Charles 怎麼運用 Reflection pattern？
+    2×  他如何做產品決策?
+    2×  他在 USPACE 做了什麼?
+    2×  Tell me about Product Playbook
+    2×  我把你丟給codex去分析怎麼做不就行了嗎？
+    1×  這個聊天機器人用了哪些 agentic pattern？
+    1×  charles 是何方神聖
+    1×  可以說你是corrective RAG + hybrid retrieval vector search 結合的 chatbot 嗎
+    1×  把他的作品集全部打包成一個PDF。
+
+## Questions that hit fallback (corpus gaps to consider filling)
+    1×  把他的作品集全部打包成一個PDF。
+    1×  今天天氣如何？
+    1×  什麼是 transformer 架構？
