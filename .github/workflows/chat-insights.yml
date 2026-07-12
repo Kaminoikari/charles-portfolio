@@ -1,0 +1,63 @@
+name: Chat Insights
+
+# Manually triggered chat-analytics report against the live Qdrant chat_logs
+# collection. Renders both the HTML BI dashboard (rag/insights/dashboard.ts,
+# donut PNGs included) and the plain-text report (rag/insights/report.ts).
+#
+# Why a workflow and not a local run: like rag-eval.yml, the report needs
+# outbound access to Qdrant plus the QDRANT_* secrets, which only this runner
+# has. Outputs are uploaded as an artifact and also base64-echoed into the job
+# log between ===BEGIN/END=== markers so callers without artifact access
+# (e.g. an agent session limited to job logs) can reconstruct the files.
+#
+# Required repo secrets: QDRANT_URL · QDRANT_API_KEY
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch/ref to check out and run (defaults to main)'
+        type: string
+        default: main
+
+# Read-only: the job only reads the checkout and scrolls Qdrant.
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate HTML dashboard + text report
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+        run: |
+          mkdir -p out
+          npx tsx rag/insights/dashboard.ts --assets out > out/chat-insights.html
+          npx tsx rag/insights/report.ts > out/chat-insights.txt
+
+      - name: Echo outputs into the log (base64, marker-delimited)
+        run: |
+          cd out
+          for f in *; do
+            echo "===BEGIN $f==="
+            base64 "$f"
+            echo "===END $f==="
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chat-insights
+          path: out/
