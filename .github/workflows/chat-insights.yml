@@ -6,9 +6,10 @@ name: Chat Insights
 #
 # Why a workflow and not a local run: like rag-eval.yml, the report needs
 # outbound access to Qdrant plus the QDRANT_* secrets, which only this runner
-# has. Outputs are uploaded as an artifact and also base64-echoed into the job
-# log between ===BEGIN/END=== markers so callers without artifact access
-# (e.g. an agent session limited to job logs) can reconstruct the files.
+# has. Outputs are uploaded as an artifact; on push-triggered runs they are
+# also committed back to the triggering branch under .insights-out/ so callers
+# whose network can reach github.com but not the artifact CDN (e.g. an agent
+# session behind an allowlist proxy) can fetch them with plain git.
 #
 # Required repo secrets: QDRANT_URL · QDRANT_API_KEY
 
@@ -27,9 +28,10 @@ on:
     paths:
       - '.github/workflows/chat-insights.yml'
 
-# Read-only: the job only reads the checkout and scrolls Qdrant.
+# contents: write only so push-triggered runs can commit .insights-out/ back
+# to their own branch; the job otherwise just reads the checkout and Qdrant.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   report:
@@ -55,14 +57,17 @@ jobs:
           npx tsx rag/insights/dashboard.ts --assets out > out/chat-insights.html
           npx tsx rag/insights/report.ts > out/chat-insights.txt
 
-      - name: Echo outputs into the log (base64, marker-delimited)
+      - name: Commit outputs back to the triggering branch (push runs only)
+        if: github.event_name == 'push'
         run: |
-          cd out
-          for f in *; do
-            echo "===BEGIN $f==="
-            base64 "$f"
-            echo "===END $f==="
-          done
+          rm -rf .insights-out
+          mkdir .insights-out
+          cp out/* .insights-out/
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .insights-out
+          git commit -m 'chore(insights): CI-generated chat-insights output [skip ci]' || exit 0
+          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - uses: actions/upload-artifact@v4
         with:
