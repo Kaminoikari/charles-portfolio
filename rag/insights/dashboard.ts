@@ -180,20 +180,36 @@ function kpis(ins: Insights): string {
 // The complete chronological question log. Rendered as a compact
 // one-line-per-question table (time · route-dot · text) so the full set — every
 // question ever asked, newest first — stays readable without a wall of cards.
+// Flatten answer markdown to a compact one-line preview for the email: drop
+// emphasis/code marks and turn [label](url) into just the label.
+function answerPreview(md: string): string {
+  return md
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*`_#>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function recentActivity(ins: Insights): string {
   if (ins.recent.length === 0) return ''
+  const answered = ins.recent.filter((r) => r.answer).length
   const rows = ins.recent
     .map((r, i) => {
       const border = i === 0 ? '' : `border-top:1px solid ${C.line};`
       const dot = r.route ? `<span style="color:${ROUTE_COLOR[r.route] ?? C.blue}">●</span>&nbsp; ` : ''
+      // Bot reply beneath the question (only rows logged since answers were kept).
+      const answer = r.answer
+        ? `<div style="margin-top:4px;padding-left:14px;border-left:2px solid ${C.line};font-family:${FONT_SANS};font-size:12px;line-height:1.45;color:${C.muted}">${esc(truncate(answerPreview(r.answer), 220))}</div>`
+        : ''
       return `<table role="presentation" width="100%" style="${border}"><tr>
         <td width="92" valign="top" style="padding:7px 0;font-family:${FONT_MONO};font-size:11px;color:${C.muted};white-space:nowrap">${esc(monthDay(r.day))} · ${esc(r.clock)}</td>
-        <td valign="top" style="padding:7px 0 7px 12px;font-family:${FONT_SANS};font-size:13px;line-height:1.45;color:${C.soft}">${dot}${esc(truncate(r.text, 120))}</td>
+        <td valign="top" style="padding:7px 0 7px 12px;font-family:${FONT_SANS};font-size:13px;line-height:1.45;color:${C.soft}">${dot}${esc(truncate(r.text, 120))}${answer}</td>
       </tr></table>`
     })
     .join('')
+  const note = answered > 0 ? `${ins.recent.length} · ${answered} with answers` : `${ins.recent.length} · newest first`
   return (
-    sectionHeader('All questions', { rightNote: `${ins.recent.length} · newest first` }) +
+    sectionHeader('All questions', { rightNote: note }) +
     card(rows, { bg: C.cardHero, border: C.lineHero, pad: '4px 18px 6px' })
   )
 }

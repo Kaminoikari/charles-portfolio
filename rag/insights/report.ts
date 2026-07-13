@@ -91,7 +91,14 @@ async function main() {
   }
 
   console.log(`\n## All questions (newest first, ${ins.recent.length} total)`)
-  for (const r of ins.recent) console.log(`  ${r.day} ${r.clock}  ${r.text}`)
+  for (const r of ins.recent) {
+    console.log(`  ${r.day} ${r.clock}  ${r.text}`)
+    // Stored bot reply on one indented line (rows logged since answers were kept).
+    if (r.answer) {
+      const oneLine = r.answer.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*`_#>]/g, '').replace(/\s+/g, ' ').trim()
+      console.log(`             ↳ ${oneLine.length > 200 ? `${oneLine.slice(0, 200)}…` : oneLine}`)
+    }
+  }
 }
 
 main().catch((err) => {

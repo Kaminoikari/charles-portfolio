@@ -9,6 +9,7 @@ export const TIME_ZONE = 'Asia/Taipei'
 interface LogRow {
   type: 'open' | 'question' | null
   question: string | null
+  answer: string | null // stored since 2026-07-13; null on older rows
   language: string | null
   route: string | null
   loops: number | null
@@ -37,6 +38,7 @@ export interface RecentItem {
   language: string
   route: string
   text: string
+  answer: string // stored bot reply, '' on rows logged before answers were kept
 }
 export interface QuestionTally {
   text: string
@@ -213,6 +215,7 @@ export async function gatherInsights(): Promise<Insights | null> {
         language: r.language ?? '',
         route: r.route ?? '',
         text: String(r.question ?? '').trim(),
+        answer: String(r.answer ?? '').trim(),
       }
     })
 
