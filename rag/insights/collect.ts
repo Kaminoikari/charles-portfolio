@@ -57,9 +57,8 @@ export interface QuestionTally {
 
 export interface Insights {
   timeZone: string
-  hasTimes: boolean
-  earliestMs: number
-  latestMs: number
+  windowStartMs: number
+  windowEndMs: number
   spanDays: number
   truncated: boolean
   identifiedCount: number
@@ -171,11 +170,12 @@ export async function gatherInsights(): Promise<Insights | null> {
   const uniqueAskers = distinct(questionRows)
   const qCount = questionRows.length || 1
 
-  const times = identified.map((r) => Date.parse(r.ts ?? '')).filter((t) => !Number.isNaN(t))
-  const hasTimes = times.length > 0
-  const earliestMs = hasTimes ? Math.min(...times) : 0
-  const latestMs = hasTimes ? Math.max(...times) : 0
-  const spanDays = hasTimes ? (latestMs - earliestMs) / 86_400_000 : 0
+  // The report always covers a fixed window: the epoch reset point through the
+  // instant this runs. Range end is generation time, not the last event, so a
+  // quiet stretch still reads "noon → now" instead of collapsing onto one event.
+  const windowStartMs = REPORT_EPOCH_MS
+  const windowEndMs = Date.now()
+  const spanDays = (windowEndMs - windowStartMs) / 86_400_000
   // Floor the denominator at one day so a same-day report shows the raw count as
   // its rate instead of extrapolating wildly from a few hours of traffic.
   const perDay = (n: number) => n / Math.max(spanDays, 1)
@@ -232,9 +232,8 @@ export async function gatherInsights(): Promise<Insights | null> {
 
   return {
     timeZone: TIME_ZONE,
-    hasTimes,
-    earliestMs,
-    latestMs,
+    windowStartMs,
+    windowEndMs,
     spanDays,
     truncated,
     identifiedCount: identified.length,

@@ -33,13 +33,9 @@ async function main() {
     `# Chat Insights · ${ins.questions.total} questions · ${ins.opens.total} opens · ${spanLabel(ins.spanDays)}\n`,
   )
 
-  if (ins.hasTimes) {
-    console.log(`Range      ${fmtWhen(ins.earliestMs)} → ${fmtWhen(ins.latestMs)}  (${ins.timeZone})`)
-    console.log(`Span       ${ins.spanDays.toFixed(1)} days  ·  ${ins.identifiedCount} identified events`)
-  } else {
-    console.log(`Range      no parseable timestamps  ·  ${ins.identifiedCount} identified events`)
-  }
-  console.log(`Generated  ${fmtWhen(Date.now())}`)
+  console.log(`Range      ${fmtWhen(ins.windowStartMs)} → ${fmtWhen(ins.windowEndMs)}  (${ins.timeZone})`)
+  console.log(`Span       ${ins.spanDays.toFixed(1)} days  ·  ${ins.identifiedCount} identified events`)
+  console.log(`Generated  ${fmtWhen(ins.windowEndMs)}`)
   if (ins.truncated) {
     console.log('Note       hit the 5000-row scan cap; range and totals cover only the newest slice')
   }

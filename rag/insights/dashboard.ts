@@ -150,9 +150,7 @@ function kpiCard(value: string, unit: string, label: string, sub: string, accent
 
 // ── sections ────────────────────────────────────────────────────────────────
 function header(ins: Insights): string {
-  const range = ins.hasTimes
-    ? `${fmtWhen(ins.earliestMs)} &nbsp;→&nbsp; ${fmtWhen(ins.latestMs)}`
-    : 'no parseable timestamps'
+  const range = `${fmtWhen(ins.windowStartMs)} &nbsp;→&nbsp; ${fmtWhen(ins.windowEndMs)}`
   const spanLabel = ins.spanDays < 1 ? 'under 1 day' : `${Math.round(ins.spanDays)}-day span`
   const trunc = ins.truncated
     ? `<div style="font-family:${FONT_SANS};font-size:11px;color:${C.mars};margin-top:8px">⚠ hit the 5000-row scan cap; range and totals cover only the newest slice</div>`
