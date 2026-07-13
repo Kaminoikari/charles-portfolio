@@ -11,6 +11,8 @@ export interface ChatSource {
   title: string
   score: number
   locale: string
+  // Public page this source links to; absent/null when it has no page.
+  url?: string | null
 }
 
 export interface ChatMessage {
@@ -36,7 +38,7 @@ function toSources(raw: unknown): ChatSource[] {
   if (!Array.isArray(raw)) return []
   return raw.flatMap((s): ChatSource[] => {
     if (typeof s !== 'object' || s === null) return []
-    const { id, title, score, locale } = s as Record<string, unknown>
+    const { id, title, score, locale, url } = s as Record<string, unknown>
     if (typeof id !== 'string' || typeof title !== 'string') return []
     return [
       {
@@ -44,6 +46,7 @@ function toSources(raw: unknown): ChatSource[] {
         title,
         score: typeof score === 'number' && Number.isFinite(score) ? score : 0,
         locale: typeof locale === 'string' ? locale : '',
+        url: typeof url === 'string' && url ? url : null,
       },
     ]
   })

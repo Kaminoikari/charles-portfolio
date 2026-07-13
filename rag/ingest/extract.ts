@@ -22,6 +22,9 @@ export interface ChunkRecord {
   locale: string
   title: string
   content: string
+  // External article URL — set only on blog chunks so the chat UI can link a
+  // cited blog source straight to the original post.
+  url?: string
 }
 
 const LOCALES: Locale[] = ['en', 'zh-TW', 'ja']
@@ -144,7 +147,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
     // embedding still lets en/ja queries retrieve them.
     blog.blogArticles.forEach((b: { title: string; subtitle: string; date: string; url: string }, i: number) => {
       const parentId = `blog:${i}:${locale}`
-      out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}` })
+      out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url })
 
       if (!config.blogBodyEnabled) return
       const body = getBlogBody(b.url)
@@ -159,6 +162,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
           locale,
           title: `${b.title} — part ${j + 1}`,
           content: piece,
+          url: b.url,
         }),
       )
     })

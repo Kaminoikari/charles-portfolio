@@ -16,6 +16,7 @@ import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
 import { sanitize, isOffensiveOutput, stripInvalidCitations } from './guardrails.js'
+import { sourceUrl } from './source-url.js'
 import { gemini, generateWithFallback } from './llm.js'
 import { triage as classifyQuestion, genericFallback } from './triage.js'
 
@@ -275,6 +276,12 @@ export async function generate(state: RAGStateType): Promise<Partial<RAGStateTyp
     title: d.metadata.title ?? d.metadata.sourceType,
     score: d.metadata.score ?? 0,
     locale: d.metadata.locale,
+    url: sourceUrl({
+      sourceType: d.metadata.sourceType,
+      projectId: d.metadata.projectId ?? null,
+      url: d.metadata.url ?? null,
+      locale: d.metadata.locale,
+    }),
   }))
 
   return { answer: stripInvalidCitations(text), sources, outcome: 'generate' }

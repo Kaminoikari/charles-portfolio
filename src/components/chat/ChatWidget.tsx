@@ -38,7 +38,18 @@ function Sources({ message }: { message: ChatMessage }) {
             key={s.id}
             className="flex items-center gap-3 border-t border-border px-3 py-2 text-[12px]"
           >
-            <span className="flex-1 truncate text-white">{s.title}</span>
+            {s.url ? (
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 truncate text-white underline decoration-border underline-offset-2 transition-colors hover:text-accent-cyan hover:decoration-accent-cyan"
+              >
+                {s.title}
+              </a>
+            ) : (
+              <span className="flex-1 truncate text-white">{s.title}</span>
+            )}
             <span className="hidden h-[3px] max-w-[80px] flex-1 rounded-full bg-border sm:block">
               <span
                 className="block h-full rounded-full bg-accent-mars"

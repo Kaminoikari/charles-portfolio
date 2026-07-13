@@ -19,6 +19,7 @@ interface Payload {
   locale: string
   title: string | null
   content: string
+  url?: string | null // external article URL, present only on blog chunks
 }
 
 // Which retrieval layers are active. The Phase 1 ablation toggles these to
@@ -85,6 +86,7 @@ function toDocument(p: ScoredPoint): Document {
       projectId: pl.project_id,
       locale: pl.locale,
       title: pl.title,
+      url: pl.url ?? null,
       score: p.score ?? 0,
     },
   })

@@ -11,6 +11,8 @@ export interface Source {
   title: string
   score: number
   locale: string
+  // Public page this source links to, or null when it has none (see sourceUrl).
+  url?: string | null
 }
 
 export const RAGState = Annotation.Root({

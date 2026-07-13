@@ -75,6 +75,8 @@ async function main() {
           locale: r.locale,
           title: r.title,
           content: r.content,
+          // Only blog chunks carry a url; omit the key entirely otherwise.
+          ...(r.url ? { url: r.url } : {}),
         },
       })
     })
