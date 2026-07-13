@@ -93,10 +93,13 @@ async function main() {
   console.log(`\n## All questions (newest first, ${ins.recent.length} total)`)
   for (const r of ins.recent) {
     console.log(`  ${r.day} ${r.clock}  ${r.text}`)
-    // Stored bot reply on one indented line (rows logged since answers were kept).
+    // Full stored bot reply, indented, line breaks preserved (rows logged since
+    // answers were kept). Not truncated — the whole reply is shown.
     if (r.answer) {
-      const oneLine = r.answer.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*`_#>]/g, '').replace(/\s+/g, ' ').trim()
-      console.log(`             ↳ ${oneLine.length > 200 ? `${oneLine.slice(0, 200)}…` : oneLine}`)
+      const plain = r.answer.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*`_#>]/g, '').replace(/[ \t]+/g, ' ').trim()
+      const lines = plain.split('\n')
+      console.log(`             ↳ ${lines[0]}`)
+      for (const l of lines.slice(1)) console.log(`               ${l}`)
     }
   }
 }

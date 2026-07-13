@@ -180,14 +180,16 @@ function kpis(ins: Insights): string {
 // The complete chronological question log. Rendered as a compact
 // one-line-per-question table (time · route-dot · text) so the full set — every
 // question ever asked, newest first — stays readable without a wall of cards.
-// Flatten answer markdown to a compact one-line preview for the email: drop
-// emphasis/code marks and turn [label](url) into just the label.
-function answerPreview(md: string): string {
-  return md
+// Render the full stored answer for the email: strip markdown emphasis/code
+// marks and turn [label](url) into just the label, but KEEP the full text and
+// its line breaks (→ <br>) so the reader sees the complete reply, untruncated.
+function answerHtml(md: string): string {
+  const plain = md
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/[*`_#>]/g, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]+/g, ' ')
     .trim()
+  return esc(plain).replace(/\n/g, '<br>')
 }
 
 function recentActivity(ins: Insights): string {
@@ -197,9 +199,9 @@ function recentActivity(ins: Insights): string {
     .map((r, i) => {
       const border = i === 0 ? '' : `border-top:1px solid ${C.line};`
       const dot = r.route ? `<span style="color:${ROUTE_COLOR[r.route] ?? C.blue}">●</span>&nbsp; ` : ''
-      // Bot reply beneath the question (only rows logged since answers were kept).
+      // Full bot reply beneath the question (only rows logged since answers were kept).
       const answer = r.answer
-        ? `<div style="margin-top:4px;padding-left:14px;border-left:2px solid ${C.line};font-family:${FONT_SANS};font-size:12px;line-height:1.45;color:${C.muted}">${esc(truncate(answerPreview(r.answer), 220))}</div>`
+        ? `<div style="margin-top:4px;padding-left:14px;border-left:2px solid ${C.line};font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${C.muted}">${answerHtml(r.answer)}</div>`
         : ''
       return `<table role="presentation" width="100%" style="${border}"><tr>
         <td width="92" valign="top" style="padding:7px 0;font-family:${FONT_MONO};font-size:11px;color:${C.muted};white-space:nowrap">${esc(monthDay(r.day))} · ${esc(r.clock)}</td>
