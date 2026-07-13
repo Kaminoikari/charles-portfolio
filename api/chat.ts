@@ -86,6 +86,10 @@ export default async function handler(req: IncomingMessage & { method?: string; 
         logged = logChatEvent({
           type: 'question',
           question: parsed.question,
+          // Persist the full answer so chat_logs holds complete Q&A transcripts,
+          // not just the questions. Same text already streamed to the visitor
+          // (the `done` event above), captured here before the instance freezes.
+          answer: ev.answer,
           language: ev.language,
           // The graph's own terminal outcome (canned | faq | generate | blocked
           // | fallback) — NOT re-derived from sources.length, which mislabeled
