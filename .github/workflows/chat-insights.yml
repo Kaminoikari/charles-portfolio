@@ -21,12 +21,14 @@ on:
         type: string
         default: main
   # workflow_dispatch only registers once the file lands on the default branch;
-  # the push trigger below lets the report run from a feature branch too.
+  # the push trigger below lets the report run from a feature branch too, and
+  # regenerates whenever the workflow or the insights renderers change.
   push:
     branches:
       - 'claude/chat-insight-*'
     paths:
       - '.github/workflows/chat-insights.yml'
+      - 'rag/insights/**'
 
 # contents: write only so push-triggered runs can commit .insights-out/ back
 # to their own branch; the job otherwise just reads the checkout and Qdrant.
@@ -57,8 +59,8 @@ jobs:
           npx tsx rag/insights/dashboard.ts --assets out > out/chat-insights.html
           npx tsx rag/insights/report.ts > out/chat-insights.txt
 
-      - name: Commit outputs back to the triggering branch (push runs only)
-        if: github.event_name == 'push'
+      - name: Commit outputs back to the triggering branch
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           rm -rf .insights-out
           mkdir .insights-out

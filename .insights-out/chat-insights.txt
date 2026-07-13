@@ -1,35 +1,35 @@
-# Chat Insights · 75 questions · 40 opens · 20-day span
+# Chat Insights · 81 questions · 46 opens · 20-day span
 
-Range      2026-06-22 13:38 → 2026-07-12 20:01  (Asia/Taipei)
-Span       20.3 days  ·  115 identified events
-Generated  2026-07-12 20:14
+Range      2026-06-22 13:38 → 2026-07-12 22:38  (Asia/Taipei)
+Span       20.4 days  ·  127 identified events
+Generated  2026-07-12 22:59
 
 ## People (the funnel)
-  Opened chat            40   ·   26 unique  ·    2.0 / day
-  Asked a question       75   ·   18 unique  ·    3.7 / day
-  Open → ask            69%   (unique visitors)
-  Questions / asker     4.2
+  Opened chat            46   ·   32 unique  ·    2.3 / day
+  Asked a question       81   ·   23 unique  ·    4.0 / day
+  Open → ask            72%   (unique visitors)
+  Questions / asker     3.5
 
 ## How questions were answered
-  faq                    55    73.3%
-  generate               17    22.7%
-  fallback                3     4.0%
+  faq                    61    75.3%
+  generate               17    21.0%
+  fallback                3     3.7%
 
 ## Coverage
-  Fallback (no answer)    3     4.0%
-  Corrective rewrite      4     5.3%
-  Median latency        295 ms
+  Fallback (no answer)    3     3.7%
+  Corrective rewrite      4     4.9%
+  Median latency        294 ms
 
 ## Language split
-  zh-TW                  73     97%
-  en                      2      3%
+  zh-TW                  79     98%
+  en                      2      2%
 
 ## Most-asked questions
-    9×  介紹一下 Product Playbook
-    6×  你是怎麼被打造出來的?
-    4×  他作為 AI PM 的獨特之處是什麼?
+   12×  介紹一下 Product Playbook
+    7×  你是怎麼被打造出來的?
+    5×  他作為 AI PM 的獨特之處是什麼?
     4×  為什麼團隊該錄取他?
-    3×  他在工作上怎麼運用 AI?
+    4×  他在工作上怎麼運用 AI?
     2×  我也想做出一個像你一樣的AI機器人，怎麼做？
     2×  Charles 怎麼運用 Reflection pattern？
     2×  他如何做產品決策?
@@ -45,3 +45,86 @@ Generated  2026-07-12 20:14
     1×  把他的作品集全部打包成一個PDF。
     1×  今天天氣如何？
     1×  什麼是 transformer 架構？
+
+## All questions (newest first, 81 total)
+  2026-07-12 22:38  你是怎麼被打造出來的?
+  2026-07-12 22:22  介紹一下 Product Playbook
+  2026-07-12 21:51  他在工作上怎麼運用 AI?
+  2026-07-12 21:47  他作為 AI PM 的獨特之處是什麼?
+  2026-07-12 21:47  介紹一下 Product Playbook
+  2026-07-12 21:44  介紹一下 Product Playbook
+  2026-07-12 20:01  他在工作上怎麼運用 AI?
+  2026-07-12 20:01  為什麼團隊該錄取他?
+  2026-07-12 20:01  他作為 AI PM 的獨特之處是什麼?
+  2026-07-12 20:00  你是怎麼被打造出來的?
+  2026-07-12 20:00  你是怎麼被打造出來的?
+  2026-07-12 19:50  介紹一下 Product Playbook
+  2026-07-12 19:40  介紹一下 Product Playbook
+  2026-07-12 18:58  他在工作上怎麼運用 AI?
+  2026-07-12 17:14  他做什麼的
+  2026-07-12 17:13  介紹一下 Product Playbook
+  2026-07-12 17:03  他作為 AI PM 的獨特之處是什麼?
+  2026-07-12 17:03  他如何做產品決策?
+  2026-07-12 16:21  你是怎麼被打造出來的?
+  2026-07-12 14:06  他在 USPACE 做了什麼?
+  2026-07-12 14:06  他作為 AI PM 的獨特之處是什麼?
+  2026-07-12 08:32  數據分析技能如何
+  2026-07-12 08:31  工作成就有哪些
+  2026-07-12 08:31  他工作的成就有哪些，不擅長什麼
+  2026-07-12 08:31  他的缺點是什麼
+  2026-07-12 08:30  他的優點是什麼
+  2026-07-12 08:30  為什麼團隊該錄取他?
+  2026-07-12 04:34  介紹一下 Product Playbook
+  2026-07-12 04:33  他如何做產品決策?
+  2026-07-12 04:33  為什麼團隊該錄取他?
+  2026-07-12 04:32  他作為 AI PM 的獨特之處是什麼?
+  2026-07-12 04:32  他在工作上怎麼運用 AI?
+  2026-07-12 04:32  他在 USPACE 做了什麼?
+  2026-07-12 04:31  你是怎麼被打造出來的?
+  2026-07-12 04:25  可以說你是corrective RAG + hybrid retrieval vector search 結合的 chatbot 嗎
+  2026-07-12 04:23  用國中生也能理解的話來介紹你這個chatbot
+  2026-07-12 04:23  你會怎麼用一句話介紹你這個 chatbot 所用到的技術
+  2026-07-12 04:21  他的 prompt engineering 是怎麼做的
+  2026-07-12 04:20  你是怎麼被打造出來的?
+  2026-07-07 09:40  你是怎麼被打造出來的?
+  2026-07-07 09:01  Tell me about Product Playbook
+  2026-07-07 01:02  Tell me about Product Playbook
+  2026-07-04 00:15  介紹一下 Product Playbook
+  2026-07-04 00:15  介紹一下 Product Playbook
+  2026-07-02 14:32  介紹一下 Product Playbook
+  2026-06-30 09:43  我也想做出一個像你一樣的AI機器人，怎麼做？
+  2026-06-30 09:43  把他的作品集全部打包成一個PDF。
+  2026-06-30 09:41  我把你丟給codex去分析怎麼做不就行了嗎？
+  2026-06-29 22:24  charles 怎麼設護欄的？
+  2026-06-29 22:22  charles 是如何做出跨平台的 agent 系統
+  2026-06-29 11:21  他在台灣念的學校ma
+  2026-06-29 11:20  他是在哪裡念的
+  2026-06-29 11:20  他是什麼背景的？念什麼學校，什麼科係？
+  2026-06-29 11:20  我把你丟給codex去分析怎麼做不就行了嗎？
+  2026-06-29 11:18  我也想做出一個像你一樣的AI機器人，怎麼做？
+  2026-06-29 11:17  他目前在什麼公司上班？
+  2026-06-29 11:17  那把他的作品集全部打包成一個PDF。
+  2026-06-29 11:15  把他說的把他這個個人網站上的東西全部轉成中文。
+  2026-06-29 11:15  能說中文嗎？
+  2026-06-28 01:08  chat log insights 怎麼 work
+  2026-06-28 01:06  這個聊天機器人用了哪些 agentic pattern？
+  2026-06-28 01:06  你是 AGI 嗎
+  2026-06-28 01:05  今天天氣如何？
+  2026-06-28 01:05  什麼是 transformer 架構？
+  2026-06-28 01:04  他在 Product Playbook 裡怎麼用 Multi-Agent Collaboration？
+  2026-06-28 01:04  什麼是 Resource-Aware Optimization，他怎麼用？
+  2026-06-28 01:03  Charles 怎麼運用 Reflection pattern？
+  2026-06-28 01:03  Charles 怎麼運用 Reflection pattern？
+  2026-06-28 01:03  他熟悉 agent 設計模式嗎？
+  2026-06-28 00:49  在這個chatbot 專案，他運用到了哪些design pattern
+  2026-06-28 00:48  reasoning technique 他是如何運用的
+  2026-06-28 00:47  charles 的 agent pattern 是什麼
+  2026-06-28 00:46  介紹一下 Product Playbook
+  2026-06-26 23:18  plutus trade 有什麼特色
+  2026-06-26 23:17  很多人認為PM是協調者，本身沒有產能，Charles 認為呢？
+  2026-06-26 23:16  Charles 認為應該要如何帶領 AI 團隊
+  2026-06-23 16:00  講中文
+  2026-06-23 15:55  charles 是何方神聖
+  2026-06-22 14:52  5倍速是如何計算的？
+  2026-06-22 13:38  為什麼團隊該錄取他?
+  2026-06-22 13:38  介紹一下 Product Playbook

@@ -89,6 +89,9 @@ async function main() {
   } else {
     for (const q of ins.gaps) console.log(`  ${padL(q.count, 3)}×  ${q.text}`)
   }
+
+  console.log(`\n## All questions (newest first, ${ins.recent.length} total)`)
+  for (const r of ins.recent) console.log(`  ${r.day} ${r.clock}  ${r.text}`)
 }
 
 main().catch((err) => {

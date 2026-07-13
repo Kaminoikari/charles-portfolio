@@ -135,10 +135,6 @@ function card(inner: string, opts: { bg?: string; border?: string; pad?: string 
   </td></tr>`
 }
 
-function chip(text: string, color: string): string {
-  return `<span style="font-family:${FONT_MONO};font-size:10px;color:${color};border:1px solid ${color}55;border-radius:20px;padding:2px 9px;white-space:nowrap">${esc(text)}</span>`
-}
-
 function kpiCard(value: string, unit: string, label: string, sub: string, accent: string): string {
   const unitHtml = unit ? `<span style="font-size:13px;color:${C.muted};font-weight:400"> ${esc(unit)}</span>` : ''
   return `<td class="kpi" width="25%" valign="top" style="padding:5px">
@@ -181,23 +177,25 @@ function kpis(ins: Insights): string {
   </tr></table></td></tr>`
 }
 
+// The complete chronological question log. Rendered as a compact
+// one-line-per-question table (time · route-dot · text) so the full set — every
+// question ever asked, newest first — stays readable without a wall of cards.
 function recentActivity(ins: Insights): string {
   if (ins.recent.length === 0) return ''
   const rows = ins.recent
     .map((r, i) => {
-      const pad = i === 0 ? 'padding:13px 0' : `padding:13px 0;border-top:1px solid ${C.line}`
-      const routeChip = r.route ? chip(r.route, ROUTE_COLOR[r.route] ?? C.blue) : ''
-      const lang = r.language ? ` &nbsp;·&nbsp; ${esc(r.language)}` : ''
-      return `<div style="${pad}">
-        <table role="presentation" width="100%"><tr>
-          <td style="font-family:${FONT_MONO};font-size:11px;color:${C.muted}">${esc(monthDay(r.day))} · ${esc(r.clock)}${lang}</td>
-          <td align="right">${routeChip}</td>
-        </tr></table>
-        <div style="font-family:${FONT_SANS};font-size:15px;line-height:1.5;color:${C.text};margin-top:6px">${esc(truncate(r.text, 160))}</div>
-      </div>`
+      const border = i === 0 ? '' : `border-top:1px solid ${C.line};`
+      const dot = r.route ? `<span style="color:${ROUTE_COLOR[r.route] ?? C.blue}">●</span>&nbsp; ` : ''
+      return `<table role="presentation" width="100%" style="${border}"><tr>
+        <td width="92" valign="top" style="padding:7px 0;font-family:${FONT_MONO};font-size:11px;color:${C.muted};white-space:nowrap">${esc(monthDay(r.day))} · ${esc(r.clock)}</td>
+        <td valign="top" style="padding:7px 0 7px 12px;font-family:${FONT_SANS};font-size:13px;line-height:1.45;color:${C.soft}">${dot}${esc(truncate(r.text, 120))}</td>
+      </tr></table>`
     })
     .join('')
-  return sectionHeader('Recent questions', { rightNote: 'newest first' }) + card(rows, { bg: C.cardHero, border: C.lineHero, pad: '6px 18px 8px' })
+  return (
+    sectionHeader('All questions', { rightNote: `${ins.recent.length} · newest first` }) +
+    card(rows, { bg: C.cardHero, border: C.lineHero, pad: '4px 18px 6px' })
+  )
 }
 
 function donutBlock(img: string, metrics: Metric[], colorOf: (m: Metric, i: number) => string): string {

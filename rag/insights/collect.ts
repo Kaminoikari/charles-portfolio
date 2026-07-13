@@ -196,11 +196,13 @@ export async function gatherInsights(): Promise<Insights | null> {
     .slice(-21)
     .map(([day, v]) => ({ day, weekday: weekday(day), questions: v.questions, opens: v.opens }))
 
-  // Recent question activity, newest first, top 12.
+  // Full question activity, newest first — the complete chronological log.
+  // Uncapped on purpose: the caller wants every asked question in time order,
+  // and the dashboard renders it as a compact one-line-per-question list so the
+  // full set stays readable without ballooning the email.
   const recent: RecentItem[] = questionRows
     .filter((r) => r.question && !Number.isNaN(Date.parse(r.ts ?? '')))
     .sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts))
-    .slice(0, 12)
     .map((r) => {
       const ms = Date.parse(r.ts)
       return {
