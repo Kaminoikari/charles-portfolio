@@ -42,6 +42,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI は何でも最も理にかなった答えをくれる。だが良い戦略は「反対できるもの」であるべきだ',
+    subtitle:
+      'Instagram は月間アクティブユーザー30億人を抱える。それでも責任者の Mosseri はこう言う。判断力は読んで身につくものではない。賭けて身につけるものだ。',
+    url: 'https://charlestychen.substack.com/p/ai-e32',
+    platform: 'Substack',
+    date: '2026-07-12',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/b59c06a2-93e3-4225-969a-eb6ade9a2061_1470x980.jpeg',
+  },
+  {
     title: 'あなたの職能は、あなたの仕事の「平均値」である',
     subtitle:
       '実装コストがゼロになったとき、台湾の PM が本当に問うべきは「何でもやる」雑多な知識の行方だ。受動的に穴を埋め続けるのか、それとも主体的に広げていくのか。',

@@ -34,6 +34,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI 什麼都給你最合理的答案，但好策略「應該要能被反對」',
+    subtitle: 'Instagram 有三十億每月活躍用戶，負責人 Mosseri 卻說：判斷力不是讀出來的，是賭出來的。',
+    url: 'https://charlestychen.substack.com/p/ai-e32',
+    platform: 'Substack',
+    date: '2026-07-12',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/b59c06a2-93e3-4225-969a-eb6ade9a2061_1470x980.jpeg',
+  },
+  {
     title: '你的職能，是你工作的「平均值」',
     subtitle: '當實作成本歸零，台灣 PM 該擔心的不是被 AI 取代，而是你那份『什麼都做』的雜學，究竟是繼續被動補洞，還是主動擴張。',
     url: 'https://charlestychen.substack.com/p/484',

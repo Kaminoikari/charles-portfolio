@@ -43,6 +43,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'AI Hands You the Most Reasonable Answer for Everything, but a Good Strategy Should Be Arguable',
+    subtitle:
+      "Instagram has three billion monthly active users, yet its head Adam Mosseri says judgment isn't something you read your way to. It's something you bet your way to.",
+    url: 'https://charlestychen.substack.com/p/ai-e32',
+    platform: 'Substack',
+    date: '2026-07-12',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/b59c06a2-93e3-4225-969a-eb6ade9a2061_1470x980.jpeg',
+  },
+  {
     title: 'Your Competence Is the Average of Your Work',
     subtitle:
       "When the cost of building drops to zero, the question that matters for Taiwan's PMs is what becomes of a generalist's scattered knowledge: does it keep passively patching gaps, or actively expand into depth?",
