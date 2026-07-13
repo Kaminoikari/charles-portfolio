@@ -25,7 +25,7 @@ const pct0 = (n: number) => `${n.toFixed(0)}%`
 async function main() {
   const ins = await gatherInsights()
   if (!ins) {
-    console.log('No chat logs with a visitor id yet.')
+    console.log('No chat activity in the current reporting window yet.')
     return
   }
 

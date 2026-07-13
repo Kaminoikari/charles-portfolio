@@ -353,7 +353,7 @@ function renderHtml(ins: Insights, assetDir: string): string {
 function renderEmpty(): string {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Chat Insights · no data</title></head>
 <body style="margin:0;background:${C.page}">
-  <div style="font-family:${FONT_SANS};color:${C.soft};padding:30px">No chat logs with a visitor id yet.</div>
+  <div style="font-family:${FONT_SANS};color:${C.soft};padding:30px">No chat activity in the current reporting window yet.</div>
 </body></html>`
 }
 

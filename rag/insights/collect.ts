@@ -6,6 +6,16 @@ import { qdrant } from '../qdrant.js'
 
 export const TIME_ZONE = 'Asia/Taipei'
 
+// The report shows only activity from this instant onward — a deliberate fresh
+// start on 2026-07-13 12:00 (Asia/Taipei), once answers began being stored.
+// Everything earlier stays in chat_logs; it is hidden from the report only.
+const REPORT_EPOCH_MS = Date.parse('2026-07-13T12:00:00+08:00')
+
+const withinEpoch = (ts: string | null | undefined): boolean => {
+  const t = Date.parse(ts ?? '')
+  return !Number.isNaN(t) && t >= REPORT_EPOCH_MS
+}
+
 interface LogRow {
   type: 'open' | 'question' | null
   question: string | null
@@ -148,9 +158,10 @@ export async function gatherInsights(): Promise<Insights | null> {
   }
   const truncated = Boolean(offset)
 
-  // Only identified visitors — pre-upgrade rows carry no visitor_id and can't be
-  // attributed to a person or a funnel.
-  const identified = rows.filter((r) => r.visitor_id)
+  // Only identified visitors from the report epoch onward. Pre-upgrade rows carry
+  // no visitor_id, and anything before the epoch is a prior era we've reset past;
+  // both stay in chat_logs but are excluded from the report.
+  const identified = rows.filter((r) => r.visitor_id && withinEpoch(r.ts))
   if (identified.length === 0) return null
 
   const openRows = identified.filter((r) => r.type === 'open')
