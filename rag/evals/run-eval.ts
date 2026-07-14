@@ -139,10 +139,16 @@ async function main() {
   const onlyLocale = arg('--locale') as Locale | undefined
   const onlyArm = arg('--arm')
   const out = arg('--out')
+  // Retrieval-only: run the deterministic recall@k / MRR arms and skip the
+  // corrective (LLM) arm. This is what the contextual A/B uses — a fast, cheap,
+  // reproducible measure of how an ingest-side change moves retrieval, with no
+  // LLM-judge variance in the comparison.
+  const retrievalOnly = process.argv.includes('--retrieval-only')
 
   const locales = onlyLocale ? [onlyLocale] : LOCALES
   let arms = onlyArm ? ARMS.filter((a) => a.name === onlyArm) : ARMS
   if (arms.length === 0) throw new Error(`unknown --arm; choose from ${ARMS.map((a) => a.name).join(', ')}`)
+  if (retrievalOnly) arms = arms.filter((a) => !a.corrective)
 
   // The corrective arm generates an answer and runs the faithfulness judge, so
   // it needs an Anthropic key. When none is set (e.g. CI with only the retrieval

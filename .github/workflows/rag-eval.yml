@@ -36,6 +36,10 @@ on:
         description: 'Single locale to run (blank = all: en, zh-TW, ja). e.g. en'
         type: string
         default: ''
+      retrieval_only:
+        description: 'Run only the deterministic retrieval arms (skip the corrective/LLM arm)'
+        type: boolean
+        default: false
 
 # Eval only reads the checkout and calls external APIs — no repo write needed.
 # Pin the token to read so it stays minimal regardless of the org-level default.
@@ -73,9 +77,17 @@ jobs:
           # shell injection from workflow_dispatch fields.
           ARM: ${{ inputs.arm }}
           LOCALE: ${{ inputs.locale }}
+          RETRIEVAL_ONLY: ${{ inputs.retrieval_only }}
         run: |
-          ARGS=""
+          ARGS="--out eval-report.md"
           [ -n "$ARM" ] && ARGS="$ARGS --arm $ARM"
           [ -n "$LOCALE" ] && ARGS="$ARGS --locale $LOCALE"
+          [ "$RETRIEVAL_ONLY" = "true" ] && ARGS="$ARGS --retrieval-only"
           echo "running: npm run rag:eval -- $ARGS"
           npm run rag:eval -- $ARGS
+          # Surface the ablation table in the run summary (and echo which collection).
+          {
+            echo "### RAG Eval — collection \`${QDRANT_COLLECTION}\`"
+            echo ""
+            cat eval-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
