@@ -35,6 +35,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-incremental-contextual-ingest',
+    date: '2026-07-14',
+    title: 'RAG ingest パイプラインの再構築：増分インデックス、contextual retrieval、そして eval で判断したリリース可否',
+    tags: ['technical'],
+    body: [
+      'チャットボットのベクトルインデックスは、これまで内容が変わるたびにコーパス全体（ドキュメント chunk 960 件と FAQ point 823 件）を再 embed・再書き込みしていました。一文字の修正でも同じです。ingest を content-hash reconciler の上に作り直し、変更のない chunk のコストをゼロにしたうえで、Anthropic 流の contextual retrieval を追加し、その層を本番に入れる価値があるかを自前の golden set eval で判断しました。',
+      {
+        kind: 'stats',
+        items: [
+          { value: '1,783 → 0', label: '内容変更のない push で再計算する embedding 数' },
+          { value: '627', label: 'contextual retrieval が再 embed する fragment chunk（全 960 中）' },
+          { value: '+0.10', label: 'hybrid アームの MRR 改善；reranker 後はほぼ 0' },
+        ],
+      },
+      { kind: 'heading', text: '変更点' },
+      {
+        kind: 'list',
+        items: [
+          '**増分インデックス**：各 chunk が content hash を持ち、実行ごとにコーパスとベクトルストアを diff して、実際に変わった分だけを embed します。内容変更のない push では embedding を 0 件しか書き込まず、削除された記事や改名された区画が残した stale point も回収します。従来の upsert のみのパイプラインにはできなかったことです。',
+          '**Contextual retrieval**：fragment chunk（blog 本文のスライス、プロジェクトの case study 区画）は、embed の前に Claude が生成した一文で親ドキュメント内での位置づけを付与でき、dense ベクトルと BM25 テキストの両方にその文脈が効きます。親ドキュメントの prompt caching により、fragment ごとのコストを低く保ちます。',
+          '**eval で判断したリリース可否**：golden set 上の A/B により、cross-encoder reranker が contextual retrieval の狙う順位改善をすでに取り込んでいることが分かったため、この層は完全に実装したうえで既定ではオフにし、recall@k / MRR の測定結果を repo に残しました。',
+          '**セーフティバルブ**：設定ミスで数百件の稼働中 point が stale に見えるとき、大量削除ガードが stale point の掃除を止めるので、フラグの誤りでインデックスを消してしまうことは決してありません。',
+        ],
+      },
+      { kind: 'heading', text: 'なぜ重要か' },
+      {
+        kind: 'list',
+        items: [
+          '**より安く、速く、自己修復する ingest**：一度の内容編集は触れた chunk だけを再処理し、contextual 生成に失敗した chunk は次の実行で拾い直されるので、インデックスが静かに劣化することはありません。',
+          '**数字に裏づけられた判断**：contextual retrieval の採否は golden set 上の recall@k / MRR アブレーションから決め、その数字をコードと一緒に repo へ commit しました。',
+        ],
+      },
+    ],
+  },
+  {
     id: 'product-playbook-2-lens',
     date: '2026-07-02',
     title: 'Product Playbook 2.0：plugin 全体を mode パイプラインから組み合わせ可能な lens アーキテクチャへ全面リライト',

@@ -19,6 +19,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-incremental-contextual-ingest',
+    date: '2026-07-14',
+    title: 'Rebuilt the RAG ingest pipeline: incremental indexing, contextual retrieval, and an eval-gated decision',
+    tags: ['technical'],
+    body: [
+      "The chatbot's vector index used to re-embed and re-upsert its entire corpus (960 document chunks plus 823 FAQ points) on every content change, even a one-word edit. I rebuilt the ingest around a content-hash reconciler so an unchanged chunk now costs nothing, added an Anthropic-style contextual-retrieval layer, and used my own golden-set eval to decide whether that layer earns a place in production.",
+      {
+        kind: 'stats',
+        items: [
+          { value: '1,783 → 0', label: 'embeddings recomputed on a no-change push' },
+          { value: '627', label: 'fragment chunks contextual retrieval re-embeds, of 960' },
+          { value: '+0.10', label: 'hybrid-arm MRR from context; ~0 once the reranker runs' },
+        ],
+      },
+      { kind: 'heading', text: 'What changed' },
+      {
+        kind: 'list',
+        items: [
+          '**Incremental indexing**: every chunk carries a content hash, and each run diffs the corpus against the vector store to embed only what actually changed. A push with no content change writes zero embeddings, and stale points from a deleted post or a renamed section are reclaimed, which the old upsert-only pipeline could never do.',
+          '**Contextual retrieval**: fragment chunks (blog body slices, project case-study sections) can be prepended with a short Claude-generated sentence situating them within their parent document before embedding, feeding both the dense vector and the BM25 text. Prompt caching on the parent document keeps the per-fragment cost low.',
+          '**An eval-gated decision**: an A/B on the golden set showed the cross-encoder reranker already captures the ranking gain that contextual retrieval adds, so the layer ships fully implemented and switched off, with the recall@k / MRR measurement recorded in the repo.',
+          '**A safety valve**: a mass-delete guard holds back the stale-point cleanup when a misconfigured run makes hundreds of live points look stale, so a flag mistake can never wipe the index.',
+        ],
+      },
+      { kind: 'heading', text: 'Why it matters' },
+      {
+        kind: 'list',
+        items: [
+          '**Cheaper, faster, self-healing ingest**: a content edit reprocesses only the chunks it touches, and a failed contextualization is picked up again on the next run, so the index never silently degrades.',
+          '**Decisions backed by numbers**: the contextual-retrieval call came from a recall@k / MRR ablation on a golden set, with the numbers committed alongside the code.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'product-playbook-2-lens',
     date: '2026-07-02',
     title: 'Product Playbook 2.0: a ground-up rewrite of the plugin, from a mode pipeline to a composable lens architecture',

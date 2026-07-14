@@ -34,6 +34,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-incremental-contextual-ingest',
+    date: '2026-07-14',
+    title: '重寫 RAG ingest pipeline：增量索引、contextual retrieval，以及一個由 eval 把關的決策',
+    tags: ['technical'],
+    body: [
+      '聊天機器人的向量索引過去每次內容變動都會把整個語料（960 個文件 chunk 加 823 個 FAQ point）重新 embed、重新寫入，連改一個字也一樣。我把 ingest 改建在一個 content-hash reconciler 上，讓未變動的 chunk 完全不花成本，加上 Anthropic 式的 contextual retrieval，並用自己的 golden set eval 來決定這一層值不值得上生產。',
+      {
+        kind: 'stats',
+        items: [
+          { value: '1,783 → 0', label: '無變動 push 需重算的 embedding 數' },
+          { value: '627', label: 'contextual retrieval 重新 embed 的 fragment chunk（共 960）' },
+          { value: '+0.10', label: 'hybrid 臂的 MRR 提升；經 reranker 後約為 0' },
+        ],
+      },
+      { kind: 'heading', text: '改了什麼' },
+      {
+        kind: 'list',
+        items: [
+          '**增量索引**：每個 chunk 帶一個 content hash，每次執行把語料跟向量庫做 diff，只 embed 真正變動的部分。無內容變動的 push 會寫入 0 個 embedding，被刪文章或改名區塊留下的 stale point 也會被回收，這是舊的 upsert-only pipeline 做不到的。',
+          '**Contextual retrieval**：fragment chunk（blog 內文切片、專案 case study 區塊）可以在 embed 前，由 Claude 生成一句話把它定位在母文件裡，dense 向量與 BM25 文字兩邊都吃到這個情境。母文件的 prompt caching 讓每個 fragment 的成本維持很低。',
+          '**由 eval 把關的決策**：golden set 上的 A/B 顯示 cross-encoder reranker 已經吃下 contextual retrieval 想補的排序增益，所以這一層完整實作但預設關閉，recall@k / MRR 的量測結果留存在 repo 裡。',
+          '**安全閥**：當設定失誤讓數百個線上 point 看起來像 stale 時，大量刪除的護欄會擋下 stale-point 清理，讓設定失誤永遠不會清空索引。',
+        ],
+      },
+      { kind: 'heading', text: '為什麼重要' },
+      {
+        kind: 'list',
+        items: [
+          '**更省、更快、可自癒的 ingest**：一次內容編輯只重算它動到的 chunk，contextual 生成失敗的 chunk 會在下次執行被重新處理，索引不會靜默劣化。',
+          '**用數字支撐決策**：contextual retrieval 的取捨來自 golden set 上的 recall@k / MRR ablation，數字跟程式碼一起 commit 進 repo。',
+        ],
+      },
+    ],
+  },
+  {
     id: 'product-playbook-2-lens',
     date: '2026-07-02',
     title: 'Product Playbook 2.0：把整個 plugin 從 mode 流水線徹底重寫為可組合的 lens 架構',
