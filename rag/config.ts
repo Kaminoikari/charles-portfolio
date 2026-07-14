@@ -55,6 +55,16 @@ export const config = {
   // modifier in qdrant.ts).
   sparseModel: process.env.RAG_SPARSE_MODEL ?? 'qdrant/bm25',
 
+  // --- contextual retrieval (Anthropic-style; ingest-side) ---
+  // When on, ingest prepends an LLM-generated situating sentence to each FRAGMENT
+  // chunk (blog body slice / project section) before embedding, so a fragment
+  // that lost its parent context is still retrievable. OFF by default until the
+  // golden-set ablation (rag/evals) proves the lift — a retrieval-quality change
+  // must be measured before it ships. Generator is the cheap fast model with
+  // prompt caching on the parent doc (rag/ingest/contextualize.ts).
+  contextualEnabled: bool('RAG_CONTEXTUAL', false),
+  contextModel: process.env.RAG_CONTEXT_MODEL ?? 'claude-haiku-4-5-20251001',
+
   // --- endpoints (secrets read lazily by clients) ---
   embedBaseUrl: process.env.EMBEDDING_BASE_URL ?? 'https://api.voyageai.com/v1',
   // Hard ceiling on each Voyage embed/rerank fetch. Without it a hung Voyage API

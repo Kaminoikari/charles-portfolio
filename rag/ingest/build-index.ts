@@ -1,22 +1,24 @@
-// Incremental index builder: extract corpus → diff against Qdrant by content
-// hash → embed ONLY the new/changed chunks with voyage-3-large → upsert (Qdrant
-// Cloud Inference computes the BM25 sparse vector server-side from each chunk's
-// text) → delete chunks the corpus no longer emits. Run locally / in CI (needs
-// EMBEDDING_API_KEY + QDRANT_URL + QDRANT_API_KEY):
+// Incremental + contextual index builder:
+//   extract corpus
+//   → diff against Qdrant by content hash (only new/changed chunks cost tokens)
+//   → for new/changed FRAGMENT chunks, generate an Anthropic-style situating
+//     context (rag/ingest/contextualize.ts) and prepend it to the embed + BM25 text
+//   → embed the changed chunks with voyage-3-large (Qdrant Cloud Inference builds
+//     the sparse vector server-side)
+//   → upsert, then delete chunks the corpus no longer emits.
 //
 //   npx tsx rag/ingest/build-index.ts            # incremental build
 //   npx tsx rag/ingest/build-index.ts --dry-run  # extract + diff report, no writes
 //
-// The old pipeline re-embedded and re-upserted the whole corpus on every run.
-// Now a content-hash reconciler (rag/ingest/reconcile.ts) makes an unchanged
-// chunk cost nothing: no embedding call, no upsert. Editing one blog post only
-// reprocesses that post's chunks; a rerun with no content change writes zero
-// points. It also deletes stale points — the upsert-only pipeline could never
-// remove a chunk whose source was deleted.
+// Needs EMBEDDING_API_KEY + QDRANT_URL + QDRANT_API_KEY; ANTHROPIC_API_KEY too
+// when RAG_CONTEXTUAL=1. The old pipeline re-embedded the whole corpus on every
+// run — now a content-hash reconciler makes an unchanged chunk cost nothing, and
+// stale points are reclaimed (the upsert-only pipeline could only ever add).
+// Contextualisation is OFF by default until the golden-set ablation proves the
+// lift (see rag/evals); flip it on with RAG_CONTEXTUAL=1.
 //
 // --dry-run reports the incremental plan (new / changed / unchanged / delete)
-// when Qdrant creds are present, else just the desired corpus — so you see
-// exactly what would change before spending any tokens.
+// when Qdrant creds are present, else just the desired corpus.
 
 import { config } from '../config.js'
 import { embed } from '../embeddings.js'
@@ -31,6 +33,7 @@ import {
 } from '../qdrant.js'
 import { extractAll, type ChunkRecord } from './extract.js'
 import { chunkHash, reconcile, isPruneSafe, type DesiredChunk } from './reconcile.js'
+import { contextualize, type ContextItem } from './contextualize.js'
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH = 32 // embedding requests per call
@@ -39,6 +42,13 @@ const UPSERT_PAGE = 64 // points per upsert page (stay under request-size limits
 // Model identifiers folded into every chunk's hash so a model / dimension swap
 // invalidates the whole corpus and forces a re-embed (see reconcile.ts).
 const EMBED_MODELS = [config.embedModel, String(config.embedDim), config.sparseModel]
+
+// Only FRAGMENT chunks — a slice of a longer document that has lost its parent
+// context — benefit from contextualisation. Self-contained chunks (about paras,
+// experience, skills, changelog entries, agent-pattern children) are left as-is.
+function needsContext(r: ChunkRecord): boolean {
+  return config.contextualEnabled && r.parentId !== null && (r.sourceType === 'blog' || r.sourceType === 'project')
+}
 
 type Point = {
   id: string
@@ -58,9 +68,29 @@ function summarize(records: ChunkRecord[]): string {
   return `  total=${records.length}\n  by type:   ${fmt(byType)}\n  by locale: ${fmt(byLocale)}`
 }
 
-// The metadata subset we fold into the hash: the payload minus the volatile
-// bookkeeping keys the writer adds (chunk_hash) and content (hashed separately).
-// A displayed title / url changing is a real change even when the body didn't.
+// parentId → the whole document text (parent chunk head + its children in order),
+// which is the cacheable prefix fed to the context generator.
+function buildParentDocs(records: ChunkRecord[]): Map<string, string> {
+  const head = new Map<string, string>() // chunk id → its own content
+  const parts = new Map<string, string[]>() // parentId → child contents, in order
+  for (const r of records) {
+    head.set(r.id, r.content)
+    if (r.parentId) {
+      const arr = parts.get(r.parentId) ?? []
+      arr.push(r.content)
+      parts.set(r.parentId, arr)
+    }
+  }
+  const docs = new Map<string, string>()
+  for (const [pid, childContents] of parts) {
+    docs.set(pid, [head.get(pid) ?? '', ...childContents].join('\n\n'))
+  }
+  return docs
+}
+
+// The metadata subset folded into the hash: payload minus the volatile keys the
+// writer adds (chunk_hash, context) and content (hashed via its own field). A
+// displayed title / url changing is a real change even when the body didn't.
 function hashPayload(r: ChunkRecord): Record<string, unknown> {
   return {
     parent_id: r.parentId,
@@ -72,21 +102,33 @@ function hashPayload(r: ChunkRecord): Record<string, unknown> {
   }
 }
 
-function desiredHash(r: ChunkRecord): string {
+// Hash of the NON-contextual state — the fingerprint a chunk gets when it is
+// stored raw (never contextualised, or context generation failed this run).
+function rawHash(r: ChunkRecord): string {
+  return chunkHash({ content: r.content, contextSource: '', models: EMBED_MODELS, payload: hashPayload(r) })
+}
+
+// Hash of the INTENDED state used for the reconcile diff: contextual when the
+// chunk qualifies (so turning contextualisation on/off re-ingests exactly the
+// fragment chunks), else identical to rawHash.
+function desiredHash(r: ChunkRecord, parentDocs: Map<string, string>): string {
+  if (!needsContext(r)) return rawHash(r)
   return chunkHash({
     content: r.content,
-    contextSource: '', // contextualisation lands in a later layer
-    models: EMBED_MODELS,
+    contextSource: parentDocs.get(r.parentId!) ?? '',
+    models: [...EMBED_MODELS, config.contextModel],
     payload: hashPayload(r),
   })
 }
 
-function toPoint(r: ChunkRecord, vector: number[], hash: string): Point {
+function toPoint(r: ChunkRecord, vector: number[], hash: string, embedText: string, context: string): Point {
   return {
     id: toPointId(r.id),
     vector: {
       [DENSE]: vector,
-      [SPARSE]: { text: r.content, model: config.sparseModel },
+      // Sparse (BM25) sees the SAME context-prefixed text as the dense embedding
+      // — Anthropic's "contextual BM25" half of the technique.
+      [SPARSE]: { text: embedText, model: config.sparseModel },
     },
     payload: {
       chunk_id: r.id,
@@ -96,8 +138,8 @@ function toPoint(r: ChunkRecord, vector: number[], hash: string): Point {
       project_id: r.projectId,
       locale: r.locale,
       title: r.title,
-      content: r.content,
-      // Only blog chunks carry a url; omit the key entirely otherwise.
+      content: r.content, // raw content stays for citation / display
+      ...(context ? { context } : {}), // the generated situating context, for transparency
       ...(r.url ? { url: r.url } : {}),
     },
   }
@@ -109,12 +151,9 @@ async function main() {
   console.log(summarize(records))
 
   const byId = new Map(records.map((r) => [r.id, r]))
-  const hashById = new Map(records.map((r) => [r.id, desiredHash(r)]))
-  const desired: DesiredChunk[] = records.map((r) => ({ chunkId: r.id, hash: hashById.get(r.id)! }))
+  const parentDocs = buildParentDocs(records)
+  const desired: DesiredChunk[] = records.map((r) => ({ chunkId: r.id, hash: desiredHash(r, parentDocs) }))
 
-  // The incremental diff needs to read Qdrant's current state. Always possible in
-  // the live path; in a dry-run only when creds are present — otherwise fall back
-  // to reporting the desired corpus (the old dry-run behaviour, still key-free).
   const canReachQdrant = Boolean(config.qdrantUrl && process.env.QDRANT_API_KEY)
   if (DRY_RUN && !canReachQdrant) {
     console.log(
@@ -135,7 +174,8 @@ async function main() {
   const plan = reconcile(existing, desired)
   console.log(
     `Incremental plan vs ${existing.size} existing point(s): ` +
-      `build=${plan.toBuild.length} (new/changed)  unchanged=${plan.unchanged.length}  delete=${plan.toDelete.length}`,
+      `build=${plan.toBuild.length} (new/changed)  unchanged=${plan.unchanged.length}  delete=${plan.toDelete.length}` +
+      (config.contextualEnabled ? '  [contextual ON]' : ''),
   )
 
   if (DRY_RUN) {
@@ -147,14 +187,35 @@ async function main() {
   if (build.length === 0) {
     console.log('Nothing to embed — corpus already current.')
   } else {
-    console.log(`\nEmbedding ${build.length} new/changed chunk(s) with ${config.embedModel} (batch ${BATCH}) …`)
-    // 'document' side of Voyage's asymmetric encoding (queries use 'query').
+    // Generate situating context for the changed FRAGMENT chunks only.
+    const ctxItems: ContextItem[] = build
+      .filter(needsContext)
+      .map((r) => ({ key: r.id, parentId: r.parentId!, parentDoc: parentDocs.get(r.parentId!) ?? '', chunk: r.content }))
+    let contexts = new Map<string, string>()
+    if (ctxItems.length > 0) {
+      console.log(`Generating context for ${ctxItems.length} fragment chunk(s) with ${config.contextModel} …`)
+      contexts = await contextualize(ctxItems)
+    }
+
+    // Assemble each chunk's embed text + the hash that reflects what we ACTUALLY
+    // store: contextual hash when context succeeded, raw hash otherwise — so a
+    // failed contextualisation self-heals (its raw hash won't match the desired
+    // contextual hash, so next run retries it).
+    const prepared = build.map((r) => {
+      const context = needsContext(r) ? (contexts.get(r.id) ?? '') : ''
+      const embedText = context ? `${context}\n\n${r.content}` : r.content
+      const hash = context ? desiredHash(r, parentDocs) : rawHash(r)
+      return { r, context, embedText, hash }
+    })
+
+    console.log(`\nEmbedding ${prepared.length} new/changed chunk(s) with ${config.embedModel} (batch ${BATCH}) …`)
     const points: Point[] = []
-    for (let i = 0; i < build.length; i += BATCH) {
-      const batch = build.slice(i, i + BATCH)
-      const vectors = await embed(batch.map((r) => r.content), 'document')
-      batch.forEach((r, j) => points.push(toPoint(r, vectors[j], hashById.get(r.id)!)))
-      process.stdout.write(`\r  embedded ${Math.min(i + BATCH, build.length)}/${build.length}`)
+    for (let i = 0; i < prepared.length; i += BATCH) {
+      const batch = prepared.slice(i, i + BATCH)
+      // 'document' side of Voyage's asymmetric encoding (queries use 'query').
+      const vectors = await embed(batch.map((p) => p.embedText), 'document')
+      batch.forEach((p, j) => points.push(toPoint(p.r, vectors[j], p.hash, p.embedText, p.context)))
+      process.stdout.write(`\r  embedded ${Math.min(i + BATCH, prepared.length)}/${prepared.length}`)
     }
     console.log('')
 
