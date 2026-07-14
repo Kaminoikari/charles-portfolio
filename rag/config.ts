@@ -77,6 +77,14 @@ export const config = {
   blogChunkChars: int('RAG_BLOG_CHUNK_CHARS', 900),
   blogChunkOverlap: int('RAG_BLOG_CHUNK_OVERLAP', 150),
 
+  // --- incremental ingest ---
+  // Mass-delete safety valve for the reconciler's stale-point pass. A normal
+  // content edit removes a few chunks; a misconfigured run (e.g. RAG_BLOG_BODY=0
+  // against the prod collection) would present hundreds of live points as stale.
+  // A delete larger than this is refused unless RAG_PRUNE=1 forces it, so a flag
+  // mistake can't silently wipe the index (see rag/ingest/reconcile.ts).
+  ingestPruneMax: int('RAG_PRUNE_MAX', 100),
+
   // --- semantic FAQ cache ---
   // A query whose embedding is at least this cosine-similar to a pre-written FAQ
   // question is answered from cache with NO generation LLM call. Tuned high so

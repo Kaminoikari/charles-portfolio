@@ -79,6 +79,47 @@ export async function ensureCollections(): Promise<void> {
   }
 }
 
+// Incremental ingest — read every point's (chunk_id → stored chunk_hash) so the
+// reconciler can diff the corpus against Qdrant before spending a single
+// embedding/LLM token. with_vector:false keeps this cheap: we pull only the two
+// bookkeeping keys, paginating so a growing corpus never blows the page limit.
+// The collection is assumed to exist (call ensureCollections first); an empty
+// collection simply yields an empty map, which makes a cold start build all.
+export async function scrollHashes(collection: string): Promise<Map<string, string>> {
+  const db = qdrant()
+  const out = new Map<string, string>()
+  let offset: string | number | undefined | null = undefined
+  do {
+    const res = await db.scroll(collection, {
+      limit: 256,
+      offset: offset ?? undefined,
+      with_payload: ['chunk_id', 'chunk_hash'],
+      with_vector: false,
+    })
+    for (const p of res.points) {
+      const pl = (p.payload ?? {}) as { chunk_id?: string; chunk_hash?: string }
+      // Points written by the pre-incremental pipeline carry chunk_id but no
+      // chunk_hash. Map those to '' so the first incremental run rebuilds them
+      // (populating the hash) and reclaims any that the corpus no longer emits.
+      if (pl.chunk_id) out.set(pl.chunk_id, pl.chunk_hash ?? '')
+    }
+    offset = res.next_page_offset as string | number | null | undefined
+  } while (offset !== null && offset !== undefined)
+  return out
+}
+
+// Reclaim points whose logical chunk_id the corpus no longer produces (a deleted
+// blog post, a renamed section). Maps each chunk_id back through the same
+// deterministic UUIDv5 the writer used, then deletes in pages.
+export async function deleteByChunkIds(collection: string, chunkIds: string[]): Promise<void> {
+  if (chunkIds.length === 0) return
+  const db = qdrant()
+  const ids = chunkIds.map(toPointId)
+  for (let i = 0; i < ids.length; i += 128) {
+    await db.delete(collection, { points: ids.slice(i, i + 128), wait: true })
+  }
+}
+
 // Look up the closest pre-written FAQ answer for a query embedding. Returns the
 // cached answer when the top hit clears the similarity threshold, else null
 // (caller falls through to RAG). Locale-filtered so each language matches its
