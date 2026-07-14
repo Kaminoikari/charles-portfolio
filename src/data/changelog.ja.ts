@@ -45,8 +45,8 @@ export const changelog: ChangelogEntry[] = [
         kind: 'stats',
         items: [
           { value: '1,783 → 0', label: '内容変更のない push で再計算する embedding 数' },
-          { value: '627', label: 'contextual retrieval が再 embed する fragment chunk（全 960 中）' },
-          { value: '+0.10', label: 'hybrid アームの MRR 改善；reranker 後はほぼ 0' },
+          { value: '3', label: 'このエントリの公開で再 embed した chunk 数（以前はコーパス全体）' },
+          { value: '276', label: '新パイプラインが回収した stale point（従来の upsert のみでは残った）' },
         ],
       },
       { kind: 'heading', text: '変更点' },

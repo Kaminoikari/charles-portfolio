@@ -28,9 +28,9 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'stats',
         items: [
-          { value: '1,783 → 0', label: 'embeddings recomputed on a no-change push' },
-          { value: '627', label: 'fragment chunks contextual retrieval re-embeds, of 960' },
-          { value: '+0.10', label: 'hybrid-arm MRR from context; ~0 once the reranker runs' },
+          { value: '1,783 → 0', label: 'embeddings recomputed when a content push changes nothing' },
+          { value: '3', label: 'chunks re-embedded to publish this entry; the whole corpus before' },
+          { value: '276', label: 'stale points reclaimed that the upsert-only pipeline had orphaned' },
         ],
       },
       { kind: 'heading', text: 'What changed' },

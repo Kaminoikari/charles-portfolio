@@ -43,9 +43,9 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'stats',
         items: [
-          { value: '1,783 → 0', label: '無變動 push 需重算的 embedding 數' },
-          { value: '627', label: 'contextual retrieval 重新 embed 的 fragment chunk（共 960）' },
-          { value: '+0.10', label: 'hybrid 臂的 MRR 提升；經 reranker 後約為 0' },
+          { value: '1,783 → 0', label: '無內容變更的 push 需重算的 embedding 數' },
+          { value: '3', label: '發布這則 entry 只重新 embed 的 chunk 數（過去要重算整個語料）' },
+          { value: '276', label: '新 pipeline 回收的 stale point（舊 upsert-only 清不掉）' },
         ],
       },
       { kind: 'heading', text: '改了什麼' },
