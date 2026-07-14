@@ -50,6 +50,14 @@ on:
         description: 'Index blog full-text body chunks (set false for a titles-only baseline)'
         type: string
         default: 'true'
+      contextual:
+        description: 'Contextual retrieval on fragment chunks (Anthropic-style; needs ANTHROPIC_API_KEY)'
+        type: boolean
+        default: false
+      prune:
+        description: 'Allow deleting stale points above RAG_PRUNE_MAX (one-time orphan cleanup)'
+        type: boolean
+        default: false
 
 # One ingest at a time. A newer push supersedes an in-flight run so the index
 # always settles on the latest content instead of racing two upserts into Qdrant.
@@ -99,8 +107,15 @@ jobs:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          # Only used when contextual retrieval is on; harmless otherwise.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
           RAG_BLOG_BODY: ${{ inputs.blog_body || 'true' }}
+          # Boolean inputs → the '1' our config readers expect; empty on a push
+          # event, so an auto-triggered content ingest stays contextual-off and
+          # prune-guarded.
+          RAG_CONTEXTUAL: ${{ inputs.contextual && '1' || '' }}
+          RAG_PRUNE: ${{ inputs.prune && '1' || '' }}
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             npm run rag:ingest:dry
