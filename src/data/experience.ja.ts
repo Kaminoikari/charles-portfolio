@@ -11,6 +11,9 @@ export interface ExperienceItem {
   dateRange: string
   title: string
   organization: string
+  // See experience.en.ts: stable English key for career-photo lookup. Unused
+  // here (organization already holds the English name), kept for type parity.
+  orgKey?: string
   bullets: string[]
 }
 

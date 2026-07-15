@@ -106,6 +106,7 @@ export default function CareerGallery() {
               key={i}
               title={item.title}
               org={item.organization}
+              orgKey={item.orgKey ?? item.organization}
               period={item.dateRange}
               bullets={item.bullets}
               onOpen={openBox}
@@ -140,17 +141,21 @@ function yearSpan(period: string): string {
 function CareerChapter({
   title,
   org,
+  orgKey,
   period,
   bullets,
   onOpen,
 }: {
   title: string
+  /** Bilingual display label shown in the caption, e.g. "人易科技… · NUEIP…". */
   org: string
+  /** Plain English company name — the career-photo lookup key + placeholder initial. */
+  orgKey: string
   period: string
   bullets: string[]
   onOpen: (photos: CareerPhoto[], index: number) => void
 }) {
-  const photos = careerPhotosFor(org)
+  const photos = careerPhotosFor(orgKey)
   // Big year anchor shows the span, not just the start, e.g. 'JULY 2024 — PRESENT'
   // becomes '2024 – PRESENT' and 'AUG 2022 — FEB 2024' becomes '2022 – 2024'. A
   // single-year role (start and end in the same year) collapses to just '2024'.
@@ -186,11 +191,11 @@ function CareerChapter({
       {/* Photos */}
       <div className="career-meta mt-6">
         {photos.length > 1 ? (
-          <PhotoRail org={org} photos={photos} onOpen={onOpen} />
+          <PhotoRail org={orgKey} photos={photos} onOpen={onOpen} />
         ) : (
           <div className="md:max-w-[70%]">
             <PhotoFrame
-              org={org}
+              org={orgKey}
               photo={photos[0]}
               onClick={photos.length ? () => onOpen(photos, 0) : undefined}
             />

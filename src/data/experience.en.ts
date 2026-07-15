@@ -2,6 +2,11 @@ export interface ExperienceItem {
   dateRange: string
   title: string
   organization: string
+  // Stable English company name used as the career-photo lookup key
+  // (career-photos.ts is keyed by these). Locales that localize `organization`
+  // (e.g. the bilingual zh-TW timeline) set this to the English name so photos
+  // still resolve; when absent, `organization` is used as the key directly.
+  orgKey?: string
   bullets: string[]
 }
 
