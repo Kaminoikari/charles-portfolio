@@ -6,8 +6,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { AmbientAudioContext } from './audio-context'
 
-const AUDIO_SRC = '/assets/ambient-space.mp3'
-const TARGET_VOLUME = 0.35
+const AUDIO_SRC = '/assets/ambient-noir.mp3'
+// The leberch "noir" master is ~7 LU quieter than the old space track
+// (-19.2 vs -12.1 LUFS integrated), so the playback gain is raised to hold the
+// perceived level roughly where it was — the hero braam still dissolves into a
+// BGM at the volume it was tuned against. Peak stays at -3.1 dBFS, no clipping.
+const TARGET_VOLUME = 0.7
 const FADE_DURATION_MS = 1800
 
 export function AudioProvider({ children }: { children: ReactNode }) {
