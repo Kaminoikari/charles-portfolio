@@ -24,7 +24,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'Rebuilt the RAG ingest pipeline: incremental indexing, contextual retrieval, and an eval-gated decision',
     tags: ['technical'],
     body: [
-      "The chatbot's vector index used to re-embed and re-upsert its entire corpus (960 document chunks plus 823 FAQ points) on every content change, even a one-word edit. I rebuilt the ingest around a content-hash reconciler so an unchanged chunk now costs nothing, added an Anthropic-style contextual-retrieval layer, and used my own golden-set eval to decide whether that layer earns a place in production.",
+      "The chatbot's vector index used to re-embed and re-upsert its entire corpus (960 document chunks plus 823 FAQ points) on every content change, even a one-word edit. At this corpus size a full rebuild runs fine on its own, so the motivation here was the engineering standard: a production-grade index reprocesses only what actually changed. I rebuilt the ingest around a content-hash reconciler so an unchanged chunk now costs nothing, added an Anthropic-style contextual-retrieval layer, and used my own golden-set eval to decide whether that layer earns a place in production.",
       {
         kind: 'stats',
         items: [
@@ -47,7 +47,8 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'list',
         items: [
-          '**Cheaper, faster, self-healing ingest**: a content edit reprocesses only the chunks it touches, and a failed contextualization is picked up again on the next run, so the index never silently degrades.',
+          '**Best practice that scales with the corpus**: reprocessing only the diff is the pattern production RAG systems use (the hash-diff reconciliation behind LangChain `index()` and LlamaIndex docstore upserts). It is the right shape at 960 chunks and stays the right shape at 960,000, where re-embedding everything on every edit would be untenable.',
+          '**No wasted spend, and self-healing**: a content edit re-embeds only the chunks it touches (3 to publish this entry), deletes are reconciled, and a failed contextualization is retried on the next run, so the index never drifts from the source and never pays to recompute thousands of unchanged vectors.',
           '**Decisions backed by numbers**: the contextual-retrieval call came from a recall@k / MRR ablation on a golden set, with the numbers committed alongside the code.',
         ],
       },

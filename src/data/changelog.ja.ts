@@ -40,7 +40,7 @@ export const changelog: ChangelogEntry[] = [
     title: 'RAG ingest パイプラインの再構築：増分インデックス、contextual retrieval、そして eval で判断したリリース可否',
     tags: ['technical'],
     body: [
-      'チャットボットのベクトルインデックスは、これまで内容が変わるたびにコーパス全体（ドキュメント chunk 960 件と FAQ point 823 件）を再 embed・再書き込みしていました。一文字の修正でも同じです。ingest を content-hash reconciler の上に作り直し、変更のない chunk のコストをゼロにしたうえで、Anthropic 流の contextual retrieval を追加し、その層を本番に入れる価値があるかを自前の golden set eval で判断しました。',
+      'チャットボットのベクトルインデックスは、これまで内容が変わるたびにコーパス全体（ドキュメント chunk 960 件と FAQ point 823 件）を再 embed・再書き込みしていました。一文字の修正でも同じです。このポートフォリオのコーパス規模なら全量再構築でも十分に動くので、狙いはエンジニアリング標準そのものです。production 級のインデックスは実際に変わった分だけを再処理します。ingest を content-hash reconciler の上に作り直し、変更のない chunk のコストをゼロにしたうえで、Anthropic 流の contextual retrieval を追加し、その層を本番に入れる価値があるかを自前の golden set eval で判断しました。',
       {
         kind: 'stats',
         items: [
@@ -63,7 +63,8 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'list',
         items: [
-          '**より安く、速く、自己修復する ingest**：一度の内容編集は触れた chunk だけを再処理し、contextual 生成に失敗した chunk は次の実行で拾い直されるので、インデックスが静かに劣化することはありません。',
+          '**コーパスの成長に耐える best practice**：差分だけを再処理するのは production の RAG システムが使う方式です（LangChain `index()` や LlamaIndex docstore upsert の背後にある hash-diff 対帳）。960 chunk でも正しい形で、全量再構築が現実的でなくなる 960,000 chunk でも正しい形のままです。',
+          '**無駄な消費がなく、自己修復する**：一度の内容編集は触れた chunk だけを再 embed し（このエントリの公開は 3 件）、削除は対帳され、contextual 生成に失敗した chunk は次の実行で拾い直されます。インデックスが元の内容とずれず、変わっていない数千のベクトルを再計算する支出も発生しません。',
           '**数字に裏づけられた判断**：contextual retrieval の採否は golden set 上の recall@k / MRR アブレーションから決め、その数字をコードと一緒に repo へ commit しました。',
         ],
       },

@@ -39,7 +39,7 @@ export const changelog: ChangelogEntry[] = [
     title: '重寫 RAG ingest pipeline：增量索引、contextual retrieval，以及一個由 eval 把關的決策',
     tags: ['technical'],
     body: [
-      '聊天機器人的向量索引過去每次內容變動都會把整個語料（960 個文件 chunk 加 823 個 FAQ point）重新 embed、重新寫入，連改一個字也一樣。我把 ingest 改建在一個 content-hash reconciler 上，讓未變動的 chunk 完全不花成本，加上 Anthropic 式的 contextual retrieval，並用自己的 golden set eval 來決定這一層值不值得上生產。',
+      '聊天機器人的向量索引過去每次內容變動都會把整個語料（960 個文件 chunk 加 823 個 FAQ point）重新 embed、重新寫入，連改一個字也一樣。以我作品集這個語料規模，全量重建其實跑得很順，所以動機是工程標準本身：production 級的索引只會重算真正變動的部分。我把 ingest 改建在一個 content-hash reconciler 上，讓未變動的 chunk 完全不花成本，加上 Anthropic 式的 contextual retrieval，並用自己的 golden set eval 來決定這一層值不值得上生產。',
       {
         kind: 'stats',
         items: [
@@ -62,7 +62,8 @@ export const changelog: ChangelogEntry[] = [
       {
         kind: 'list',
         items: [
-          '**更省、更快、可自癒的 ingest**：一次內容編輯只重算它動到的 chunk，contextual 生成失敗的 chunk 會在下次執行被重新處理，索引不會靜默劣化。',
+          '**符合 best practice，而且隨語料成長**：只重算差異是 production RAG 系統的做法（LangChain `index()` 與 LlamaIndex docstore upsert 背後的 hash-diff 對帳）。在 960 個 chunk 是對的形狀，到 960,000 個也還是對的形狀，那種規模下每次編輯全量重算會撐不住。',
+          '**不浪費成本，且可自癒**：一次內容編輯只重新 embed 它動到的 chunk（發布這則 entry 是 3 個），刪除會對帳，contextual 生成失敗的 chunk 會在下次執行被重新處理，索引不會跟原始內容失去同步，也不再花錢重算數千個沒變的向量。',
           '**用數字支撐決策**：contextual retrieval 的取捨來自 golden set 上的 recall@k / MRR ablation，數字跟程式碼一起 commit 進 repo。',
         ],
       },
