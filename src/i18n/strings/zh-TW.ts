@@ -10,7 +10,7 @@ import type { Strings } from './en'
 const zhTW: Strings = {
   brand: {
     name: 'CHARLES CHEN',
-    homeAriaLabel: '陳德潁 — 回到頁首',
+    homeAriaLabel: 'Charles Chen — 回到頁首',
   },
   nav: {
     about: 'ABOUT',
@@ -47,12 +47,12 @@ const zhTW: Strings = {
     projectsCaseStudy: 'CASE STUDY',
   },
   about: {
-    metaTitle: '關於陳德潁（Charles Chen）— 台灣 AI Product Manager',
-    metaDescription: '關於陳德潁（Charles Chen），來自台灣的 AI Product Manager 與 AI Product Builder。產品哲學、AI 工具運用、完整職涯經歷、技能組合。',
+    metaTitle: '關於 Charles Chen — 台灣 AI Product Manager',
+    metaDescription: '關於 Charles Chen，來自台灣的 AI Product Manager 與 AI Product Builder。產品哲學、AI 工具運用、完整職涯經歷、技能組合。',
     back: '← 返回作品集',
     heading: '關於 Charles Chen',
     subheading: '來自台灣的 AI Product Manager 與 AI Product Builder。',
-    photoAlt: '陳德潁 — AI Product Manager',
+    photoAlt: 'Charles Chen — AI Product Manager',
     sectionWhoIAm: '關於我',
     sectionPhilosophy: '產品哲學',
     sectionAi: '我如何在產品開發中運用 AI',
