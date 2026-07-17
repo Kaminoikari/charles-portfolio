@@ -9,7 +9,7 @@
 // src/data/*.ts during ingestion (see docs §4).
 
 export const portfolioMap = `
-Charles Chen (陳德潁) — Taiwan-based Software Product Manager, "Product Builder".
+Charles Chen — Taiwan-based Software Product Manager, "Product Builder".
 5+ yrs across creator tools, Fintech, B2B SaaS, MaaS. Ships 0→1, uses AI as the
 core dev engine to prototype and validate in production ~5x faster.
 
