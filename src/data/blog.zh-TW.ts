@@ -23,16 +23,16 @@ export const blogArticles: BlogArticle[] = [
     featured: true,
     cover: 'https://substack-post-media.s3.amazonaws.com/public/images/781195a1-7e0f-450d-88f1-3e976a22cf3d_1206x968.jpeg',
   },
-  {
-    title: '我如何用 LangGraph 打造「企業級」AI 數位分身',
-    subtitle: '來聊聊企業對 AI 應用的真正技術需求：從語意快取、混合檢索到自我修正管線，一個產品經理的 Enterprise-grade RAG 實踐。',
-    url: 'https://charlestychen.substack.com/p/langgraph-ai',
-    platform: 'Substack',
-    date: '2026-06-04',
-    featured: true,
-    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/180e9fdf-9f06-450e-adda-d9d13a0a92f2_1470x980.avif',
-  },
   // ── Chronological (newest first) ──
+  {
+    title: 'AI 最終要學會的，不是知識，而是那些從來沒有人說出口的事',
+    subtitle:
+      '企業最大的資產，不是文件、流程或 SOP，而是那些存在於老師傅、設計師、PM、業務與主管腦中的默會知識（Tacit Knowledge）。AI 正開始學習它，而這也重新定義了企業真正的競爭力。',
+    url: 'https://charlestychen.substack.com/p/ai-286',
+    platform: 'Substack',
+    date: '2026-07-19',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/00af0995-f0a7-477e-8c19-71ecf2dca761_1920x1080.jpeg',
+  },
   {
     title: 'AI 什麼都給你最合理的答案，但好策略「應該要能被反對」',
     subtitle: 'Instagram 有三十億每月活躍用戶，負責人 Mosseri 卻說：判斷力不是讀出來的，是賭出來的。',
@@ -64,6 +64,14 @@ export const blogArticles: BlogArticle[] = [
     platform: 'Substack',
     date: '2026-06-16',
     cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6831e03c-be9f-4e8f-96d9-6ab9012f7da2_1402x1122.png',
+  },
+  {
+    title: '我如何用 LangGraph 打造「企業級」AI 數位分身',
+    subtitle: '來聊聊企業對 AI 應用的真正技術需求：從語意快取、混合檢索到自我修正管線，一個產品經理的 Enterprise-grade RAG 實踐。',
+    url: 'https://charlestychen.substack.com/p/langgraph-ai',
+    platform: 'Substack',
+    date: '2026-06-04',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/180e9fdf-9f06-450e-adda-d9d13a0a92f2_1470x980.avif',
   },
   {
     title: '為什麼 AI 實驗室開始押注硬體：Caitlin Kalinowski 的觀察',

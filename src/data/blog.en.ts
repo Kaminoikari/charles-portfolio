@@ -31,17 +31,16 @@ export const blogArticles: BlogArticle[] = [
     featured: true,
     cover: 'https://substack-post-media.s3.amazonaws.com/public/images/781195a1-7e0f-450d-88f1-3e976a22cf3d_1206x968.jpeg',
   },
-  {
-    title: 'How I Built an "Enterprise-Grade" AI Digital Twin with LangGraph',
-    subtitle:
-      "What enterprises really need from AI applications: from semantic caching and hybrid retrieval to a self-correcting pipeline, one product manager's take on enterprise-grade RAG.",
-    url: 'https://charlestychen.substack.com/p/langgraph-ai',
-    platform: 'Substack',
-    date: '2026-06-04',
-    featured: true,
-    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/180e9fdf-9f06-450e-adda-d9d13a0a92f2_1470x980.avif',
-  },
   // ── Chronological (newest first) ──
+  {
+    title: 'The Real Thing AI Has Left to Learn: The Tacit Knowledge No One Ever Says Out Loud',
+    subtitle:
+      "A company's biggest asset lives in the heads of its veteran craftsmen, designers, PMs, salespeople, and managers as tacit knowledge. As AI begins to learn it, what counts as a company's real competitive edge is being redefined.",
+    url: 'https://charlestychen.substack.com/p/ai-286',
+    platform: 'Substack',
+    date: '2026-07-19',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/00af0995-f0a7-477e-8c19-71ecf2dca761_1920x1080.jpeg',
+  },
   {
     title: 'AI Hands You the Most Reasonable Answer for Everything, but a Good Strategy Should Be Arguable',
     subtitle:
@@ -77,6 +76,15 @@ export const blogArticles: BlogArticle[] = [
     platform: 'Substack',
     date: '2026-06-16',
     cover: 'https://substack-post-media.s3.amazonaws.com/public/images/6831e03c-be9f-4e8f-96d9-6ab9012f7da2_1402x1122.png',
+  },
+  {
+    title: 'How I Built an "Enterprise-Grade" AI Digital Twin with LangGraph',
+    subtitle:
+      "What enterprises really need from AI applications: from semantic caching and hybrid retrieval to a self-correcting pipeline, one product manager's take on enterprise-grade RAG.",
+    url: 'https://charlestychen.substack.com/p/langgraph-ai',
+    platform: 'Substack',
+    date: '2026-06-04',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/180e9fdf-9f06-450e-adda-d9d13a0a92f2_1470x980.avif',
   },
   {
     title: "Why AI Labs Are Starting to Bet on Hardware: Caitlin Kalinowski's Take",
