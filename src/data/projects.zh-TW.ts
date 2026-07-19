@@ -55,10 +55,10 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      '一套 outcome-first 的產品思考系統，跑在 Claude Code 上。說出你要的結果，meta-skill 就在 16 個可組合的產品 lens 中選對，需要時融合多個視角，並呼叫兩個唯讀專家 Sub-agent，把模糊想法轉成可交付的 PRD 規格；進入實作階段後，還有一層輕量的工程紀律層，把 TDD 與雙重審查的嚴謹從規劃延續到 build。',
+      '一個 Charles 做的免費開源工具，讓 AI 具備資深產品經理的直覺。說出你想達成什麼，它就用資深 PM 的方式把你粗略的想法想過一遍，交回一份工程師能直接開發的計畫，等開始動工後還會讓 AI 守規矩。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
-    tags: ['Lens System', 'Claude Code', 'AI/LLM'],
+    tags: ['Open Source', 'Claude Code', 'AI/LLM'],
   },
   {
     id: 'house-ops',
@@ -196,14 +196,14 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'product-playbook',
-    title: 'Product Playbook — Claude Code 上的 outcome-first 產品 Lens',
-    subtitle: '「讓 AI 擁有資深 PM 的大腦，再讓它自己伸手拿對的思考工具。」2.0 改寫讓整套系統變成 outcome-first：說出你要的結果，meta-skill 就挑選能帶你抵達的產品思考 lens，需要時融合多個。五個核心理念定義了這個架構：',
+    title: 'Product Playbook — 給 Claude Code 的 AI 產品經理夥伴',
+    subtitle: '「讓 AI 擁有資深產品經理的直覺，陪你一起做最難的思考。」把一個粗略的想法變成工程師能直接開發的計畫，本來要資深 PM 花上好幾天。現在你只要說出目標，Product Playbook 就替你把這些想完。它怎麼做到的：',
     features: [
-      { label: 'Outcome-first lens 路由', description: '說出結果，meta-skill 挑選合適的 lens，遇到需要多重視角的決策就融合成一份整合答案。16 個可組合 lens 覆蓋從探索到交接的完整弧線。' },
-      { label: '專家 Sub-agent 用在刀口上', description: '兩個唯讀 Sub-agent（strategy-critic、pre-mortem-runner）在獨立 Context 各自分析，讓嚴厲的策略批判與悲觀的失敗推演保持鋒利。' },
-      { label: '內建 provenance 與證據', description: '每一次輸出都標註用到的 lens；當判斷取決於真實世界的事實時，lens 會拉取即時證據並附上來源。' },
-      { label: '工程師可直接接手的交接', description: '一次產出帶驗收條件的 PRD、對齊 OWASP 的資安段落與 CLAUDE.md，再匯出成 HTML、PDF、DOCX 或 PPTX，達成真正的 Dev Handoff。' },
-      { label: '紀律一路延續到實作', description: '當規劃進入寫程式，一層輕量的工程紀律層接手：TDD 優先並明令禁止測試作弊、scope integrity、憑證守門，以及在分支收尾前的雙重新鮮 context 審查（一位 code reviewer 加一位 spec reviewer，採 fail-closed 判定）。' },
+      { label: '說出目標，它就想對方向', description: '你說出想達成什麼，它就替這件事挑對的產品管理方法，遇到需要多個角度的決策就組合幾種一起用，你完全不用自己懂該用哪個框架。' },
+      { label: '難題交給專門的幫手', description: '碰到最棘手的時刻，它會找來兩個各自獨立作業的幫手：一個專門唱反調、把策略的盲點戳出來，另一個的任務就是想像產品會怎麼失敗。' },
+      { label: '把思路攤開，還用事實佐證', description: '每個答案都會註明它靠了哪些方法；當某個判斷取決於真實世界的事實時，它會去查，並附上來源。' },
+      { label: '一份工程師能直接開發的計畫', description: '一次就產出一份完整的產品規格，內建資安檢查清單，還能匯出成文件、PDF 或簡報，隨時可以交接。' },
+      { label: '開始動工後也守規矩', description: '當你從規劃進到寫程式，它會用好的工程習慣要求自己：先寫測試、審查自己寫的程式，東西上線前不偷工。' },
     ],
     metaTitle: 'Product Playbook — outcome-first 產品思考 Lens 系統 | LLM 產品案例',
     metaDescription:

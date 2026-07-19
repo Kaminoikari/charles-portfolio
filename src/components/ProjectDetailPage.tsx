@@ -105,7 +105,7 @@ export default function ProjectDetailPage() {
 
         {detail.features && detail.features.length > 0 && (
           <ul
-            className="reveal mt-5 space-y-2.5 opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-600"
+            className="reveal mt-6 space-y-4 opacity-0 translate-y-4 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 [&.animate-in]:transition-all [&.animate-in]:duration-600"
             style={{ transitionDelay: '150ms' }}
           >
             {detail.features.map((feature) => (

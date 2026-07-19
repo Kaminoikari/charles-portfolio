@@ -56,10 +56,10 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      'Claude Code 上で動く outcome-first のプロダクト思考システム。欲しい成果を伝えると、meta-skill が 16 個の組み合わせ可能なプロダクト lens から適切なものを選び、必要に応じて複数を融合し、2 つの読み取り専用の専門 Sub-agent を呼び出して、曖昧なアイデアを出荷可能な PRD 仕様へ変換します。実装フェーズに入ると、軽量なエンジニアリング規律レイヤーが TDD とダブルレビューの厳密さを計画から build まで引き継ぎます。',
+      'Charles が作った無料のオープンソースツールで、AI にベテランプロダクトマネージャーの勘を持たせます。達成したいことを伝えると、ベテラン PM のやり方であなたのざっくりしたアイデアを考え抜き、エンジニアがそのまま開発できる計画を返し、開発が始まってからも AI に規律を守らせます。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
-    tags: ['Lens System', 'Claude Code', 'AI/LLM'],
+    tags: ['Open Source', 'Claude Code', 'AI/LLM'],
   },
   {
     id: 'house-ops',
@@ -197,14 +197,14 @@ export const projectDetails: ProjectDetail[] = [
   },
   {
     id: 'product-playbook',
-    title: 'Product Playbook — Claude Code 向け outcome-first プロダクト Lens',
-    subtitle: '「AI にシニア PM の頭脳を与え、そのうえで正しい思考ツールを自ら手に取らせる。」2.0 の書き直しでシステムは outcome-first になった：欲しい成果を伝えると、meta-skill がそこへ導くプロダクト思考の lens を選び、必要に応じて複数を融合する。5 つの中核的な理念がこの構造を定義する：',
+    title: 'Product Playbook — Claude Code のための AI プロダクトマネージャーの相棒',
+    subtitle: '「AI にベテランプロダクトマネージャーの勘を持たせ、いちばん難しい思考を一緒にやってもらう。」ざっくりしたアイデアをエンジニアがそのまま開発できる計画に変えるのは、本来ベテラン PM でも数日かかります。いまは目標を伝えるだけで、Product Playbook がその思考を代わりにやってくれます。どう実現するのか：',
     features: [
-      { label: 'Outcome-first な lens ルーティング', description: '成果を伝えると、meta-skill が適した lens を選び、複数の視点を要する意思決定では 1 つの統合された答えへ融合する。16 個の組み合わせ可能な lens が、ディスカバリーから引き継ぎまでの弧全体をカバーする。' },
-      { label: '専門 Sub-agent を要所で起用', description: '2 つの読み取り専用 Sub-agent（strategy-critic、pre-mortem-runner）が独立した Context で各自分析し、厳しい戦略批判と悲観的な失敗探索の切れ味を保つ。' },
-      { label: 'provenance と証拠を標準搭載', description: '出力ごとに使った lens を明記し、判断が現実世界の事実に依存するときは lens がライブの証拠を引き、出典を添える。' },
-      { label: 'エンジニアがそのまま引き継げる Handoff', description: '受け入れ基準付きの PRD、OWASP に沿ったセキュリティセクション、CLAUDE.md を一度に生成し、HTML・PDF・DOCX・PPTX へ書き出して本物の Dev Handoff を実現する。' },
-      { label: '実装まで引き継ぐ規律', description: '計画がコードに変わると、軽量なエンジニアリング規律レイヤーが引き継ぐ：TDD 優先とテストの不正の明示的な禁止、scope integrity、認証情報のガード、そしてブランチを閉じる前の 2 つの新鮮な context によるレビュー（code reviewer と spec reviewer、fail-closed 判定）。' },
+      { label: '目標を言えば、正しい考え方を選ぶ', description: '達成したいことを伝えると、その用件に合ったプロダクトマネジメントの手法を選び、複数の視点が要る判断ではいくつかを組み合わせます。どの手法を使うべきか、あなたが知っている必要はありません。' },
+      { label: '難しい判断は専門の助っ人に', description: 'いちばん厄介な場面では、それぞれ独立して動く 2 人の助っ人が加わります。1 人はわざと反対して戦略の盲点をあぶり出し、もう 1 人はプロダクトがどう失敗するかを想像するのが仕事です。' },
+      { label: '考えを見せ、事実で裏づける', description: 'どの答えにも、どの手法に頼ったかが記されます。判断が現実の事実に左右されるときは、それを調べて出典を添えます。' },
+      { label: 'エンジニアがそのまま開発できる計画', description: '一度で、セキュリティのチェックリストを備えた本格的なプロダクト仕様を作り、ドキュメント・PDF・スライドとして書き出して、いつでも引き継げます。' },
+      { label: '開発に入っても規律を保つ', description: '計画からコードを書く段階に移ると、良いエンジニアリング習慣を自分に課します：先にテストを書き、自分のコードをレビューし、リリース前に手を抜きません。' },
     ],
     metaTitle: 'Product Playbook — outcome-first プロダクト思考 Lens システム | LLM プロダクト事例',
     metaDescription:
