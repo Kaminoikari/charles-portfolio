@@ -55,7 +55,7 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      '一套 outcome-first 的產品思考系統，跑在 Claude Code 上。說出你要的結果，meta-skill 就在 16 個可組合的產品框架中選對 lens，需要時融合多個視角，並呼叫兩個唯讀專家 Sub-agent，把模糊想法轉成可交付的 PRD 規格。',
+      '一套 outcome-first 的產品思考系統，跑在 Claude Code 上。說出你要的結果，meta-skill 就在 16 個可組合的產品 lens 中選對，需要時融合多個視角，並呼叫兩個唯讀專家 Sub-agent，把模糊想法轉成可交付的 PRD 規格；進入實作階段後，還有一層輕量的工程紀律層，把 TDD 與雙重審查的嚴謹從規劃延續到 build。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Lens System', 'Claude Code', 'AI/LLM'],
@@ -197,16 +197,17 @@ export const projectDetails: ProjectDetail[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook — Claude Code 上的 outcome-first 產品 Lens',
-    subtitle: '「讓 AI 擁有資深 PM 的大腦，再讓它自己伸手拿對的思考工具。」2.0 改寫讓整套系統變成 outcome-first：說出你要的結果，meta-skill 就挑選能帶你抵達的產品思考 lens，需要時融合多個。四個核心理念定義了這個架構：',
+    subtitle: '「讓 AI 擁有資深 PM 的大腦，再讓它自己伸手拿對的思考工具。」2.0 改寫讓整套系統變成 outcome-first：說出你要的結果，meta-skill 就挑選能帶你抵達的產品思考 lens，需要時融合多個。五個核心理念定義了這個架構：',
     features: [
       { label: 'Outcome-first lens 路由', description: '說出結果，meta-skill 挑選合適的 lens，遇到需要多重視角的決策就融合成一份整合答案。16 個可組合 lens 覆蓋從探索到交接的完整弧線。' },
       { label: '專家 Sub-agent 用在刀口上', description: '兩個唯讀 Sub-agent（strategy-critic、pre-mortem-runner）在獨立 Context 各自分析，讓嚴厲的策略批判與悲觀的失敗推演保持鋒利。' },
       { label: '內建 provenance 與證據', description: '每一次輸出都標註用到的 lens；當判斷取決於真實世界的事實時，lens 會拉取即時證據並附上來源。' },
       { label: '工程師可直接接手的交接', description: '一次產出帶驗收條件的 PRD、對齊 OWASP 的資安段落與 CLAUDE.md，再匯出成 HTML、PDF、DOCX 或 PPTX，達成真正的 Dev Handoff。' },
+      { label: '紀律一路延續到實作', description: '當規劃進入寫程式，一層輕量的工程紀律層接手：TDD 優先並明令禁止測試作弊、scope integrity、憑證守門，以及在分支收尾前的雙重新鮮 context 審查（一位 code reviewer 加一位 spec reviewer，採 fail-closed 判定）。' },
     ],
     metaTitle: 'Product Playbook — outcome-first 產品思考 Lens 系統 | LLM 產品案例',
     metaDescription:
-      'An outcome-first product-planning system on Claude Code: 16 composable PM lenses routed by a meta-skill, 2 read-only specialist sub-agents (strategy critique, pre-mortem), per-output provenance, and automated Dev Handoff. AI PM Charles Chen，LLM orchestration case study.',
+      'An outcome-first product-planning system on Claude Code: 16 composable PM lenses routed by a meta-skill, 2 read-only specialist sub-agents (strategy critique, pre-mortem), per-output provenance, automated Dev Handoff, and a lightweight dev-discipline layer (TDD-first, dual code + spec review) for the build phase. AI PM Charles Chen，LLM orchestration case study.',
     problem: [
       '傳統規格撰寫成本極高：一份及格的產品需求文件（PRD）需整合用戶研究、競品分析與技術限制，通常耗時數天，常成為團隊開發的進度瓶頸。',
       '通用型 AI 的產品思維侷限：ChatGPT 或 Notion AI 雖能產出文字卻「不懂產品」，無法自動進行 JTBD 分析或依 RICE 模型排序優先級，流於通用廢話。',
@@ -221,6 +222,7 @@ export const projectDetails: ProjectDetail[] = [
       'Relative guardrails：一小組 guardrail 預設休眠，只有在目前路徑會真正傷害結果時，才以單行、非阻斷的提示浮現。任何情況都不會硬性擋下你。',
       '為大型需求準備的 recipes：四個可選 recipe（full-product-plan、quick-validation、product-revision、feature-extension）把 lens 預先編排成端到端流程。它們只是建議，採不採用由你決定。',
       '變動自動傳播與技術轉譯：上游決策修改時，下游文件同步更新。prd-and-handoff 這個 lens 會自動產出帶 OWASP 資安段落的 CLAUDE.md 與 TASKS.md，document-export 則把計畫渲染成 HTML、PDF、DOCX 或 PPTX。',
+      '從規劃延續到實作的紀律：當工作進入實作階段，一層輕量的 dev-discipline 接手，帶著 TDD 優先（並明令禁止測試作弊）、scope integrity、密鑰與憑證守門、雙重新鮮 context 審查（一位 code reviewer 加一位 spec reviewer，採 fail-closed 判定、最多三輪），以及帶進入點啟動檢查的 finish-branch 檢查表。它刻意保持輕量：約 600 token 的 session-start 摘要、一個隨需 skill，加上兩個 deterministic hook。',
     ],
     techStack: [
       { category: 'Platform', items: 'Claude Code plugin（skills-directory 安裝）、Claude.ai Custom Skill' },
@@ -228,6 +230,7 @@ export const projectDetails: ProjectDetail[] = [
       { category: 'Lens Layer', items: '16 個可組合 lens skill（JTBD、Positioning、PR-FAQ、RICE／solution-prioritization、success-metrics、MVP-scoping、PMF／GTM、strategy-kernel 等），由 meta-skill 路由，並在每次輸出標註 provenance' },
       { category: 'Specialist Sub-agents', items: '2 個唯讀 Claude Code sub-agent（strategy-critic／pre-mortem-runner），model: inherit、PROACTIVELY auto-delegate、structured output' },
       { category: 'Guardrails & Continuity', items: '3 個 lifecycle hook（session-start 注入 meta-skill、偵測離題、提醒維持文件產出），relative 非阻斷 guardrail，scoped SessionStart 路由指令' },
+      { category: 'Engineering Discipline', items: 'build 階段的 dev-discipline 層：TDD-first gate、密鑰／憑證守門 hook、雙 code + spec reviewer（fail-closed 判定）、finish-branch 啟動檢查；約 600 token 的 session-start 摘要 + 2 個 deterministic hook' },
       { category: 'Doc Processing', items: 'Playwright + pikepdf（帶書籤的 PDF）、Pandoc（DOCX／PPTX）、pymupdf、Tesseract OCR 備援' },
       { category: 'Tooling', items: 'Node.js、Bash、Markdown-based lens 定義、deterministic Python eval scorer' },
       { category: 'Localization', items: 'Runtime 語言偵測，Claude 以使用者的語言回覆；lens 內容以英文撰寫' },

@@ -56,7 +56,7 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      'Claude Code 上で動く outcome-first のプロダクト思考システム。欲しい成果を伝えると、meta-skill が 16 個の組み合わせ可能なプロダクトフレームワークから適切な lens を選び、必要に応じて複数を融合し、2 つの読み取り専用の専門 Sub-agent を呼び出して、曖昧なアイデアを出荷可能な PRD 仕様へ変換します。',
+      'Claude Code 上で動く outcome-first のプロダクト思考システム。欲しい成果を伝えると、meta-skill が 16 個の組み合わせ可能なプロダクト lens から適切なものを選び、必要に応じて複数を融合し、2 つの読み取り専用の専門 Sub-agent を呼び出して、曖昧なアイデアを出荷可能な PRD 仕様へ変換します。実装フェーズに入ると、軽量なエンジニアリング規律レイヤーが TDD とダブルレビューの厳密さを計画から build まで引き継ぎます。',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Lens System', 'Claude Code', 'AI/LLM'],
@@ -198,16 +198,17 @@ export const projectDetails: ProjectDetail[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook — Claude Code 向け outcome-first プロダクト Lens',
-    subtitle: '「AI にシニア PM の頭脳を与え、そのうえで正しい思考ツールを自ら手に取らせる。」2.0 の書き直しでシステムは outcome-first になった：欲しい成果を伝えると、meta-skill がそこへ導くプロダクト思考の lens を選び、必要に応じて複数を融合する。4 つの中核的な理念がこの構造を定義する：',
+    subtitle: '「AI にシニア PM の頭脳を与え、そのうえで正しい思考ツールを自ら手に取らせる。」2.0 の書き直しでシステムは outcome-first になった：欲しい成果を伝えると、meta-skill がそこへ導くプロダクト思考の lens を選び、必要に応じて複数を融合する。5 つの中核的な理念がこの構造を定義する：',
     features: [
       { label: 'Outcome-first な lens ルーティング', description: '成果を伝えると、meta-skill が適した lens を選び、複数の視点を要する意思決定では 1 つの統合された答えへ融合する。16 個の組み合わせ可能な lens が、ディスカバリーから引き継ぎまでの弧全体をカバーする。' },
       { label: '専門 Sub-agent を要所で起用', description: '2 つの読み取り専用 Sub-agent（strategy-critic、pre-mortem-runner）が独立した Context で各自分析し、厳しい戦略批判と悲観的な失敗探索の切れ味を保つ。' },
       { label: 'provenance と証拠を標準搭載', description: '出力ごとに使った lens を明記し、判断が現実世界の事実に依存するときは lens がライブの証拠を引き、出典を添える。' },
       { label: 'エンジニアがそのまま引き継げる Handoff', description: '受け入れ基準付きの PRD、OWASP に沿ったセキュリティセクション、CLAUDE.md を一度に生成し、HTML・PDF・DOCX・PPTX へ書き出して本物の Dev Handoff を実現する。' },
+      { label: '実装まで引き継ぐ規律', description: '計画がコードに変わると、軽量なエンジニアリング規律レイヤーが引き継ぐ：TDD 優先とテストの不正の明示的な禁止、scope integrity、認証情報のガード、そしてブランチを閉じる前の 2 つの新鮮な context によるレビュー（code reviewer と spec reviewer、fail-closed 判定）。' },
     ],
     metaTitle: 'Product Playbook — outcome-first プロダクト思考 Lens システム | LLM プロダクト事例',
     metaDescription:
-      'Claude Code 上の outcome-first なプロダクトプランニングシステム：meta-skill がルーティングする 16 個の組み合わせ可能な PM lens、2 名の読み取り専用の専門 Sub-agent（戦略批判、pre-mortem）、出力ごとの provenance、自動化された Dev Handoff。AI PM Charles Chen の LLM オーケストレーション事例研究。',
+      'Claude Code 上の outcome-first なプロダクトプランニングシステム：meta-skill がルーティングする 16 個の組み合わせ可能な PM lens、2 名の読み取り専用の専門 Sub-agent（戦略批判、pre-mortem）、出力ごとの provenance、自動化された Dev Handoff、そして build フェーズ向けの軽量な dev-discipline レイヤー（TDD 優先、code と spec のダブルレビュー）。AI PM Charles Chen の LLM オーケストレーション事例研究。',
     problem: [
       '従来のスペック作成コストが極めて高い：及第点の PRD はユーザーリサーチ、競合分析、技術的制約の統合を要し、通常数日を費やすため、チーム開発の進捗ボトルネックとなりがちである。',
       '汎用 AI のプロダクト思考の限界：ChatGPT や Notion AI は文章を生成できるが「プロダクトを理解していない」。JTBD 分析の自動実行や RICE モデルによるバックログの優先順位付けはできず、実用性のない汎用的な文章に終わる。',
@@ -222,6 +223,7 @@ export const projectDetails: ProjectDetail[] = [
       'Relative guardrails：少数の guardrail は既定で休眠し、現在の進め方が成果を本当に損なうときだけ、単一の非ブロッキングな注意として現れる。どんな場合もあなたを強制停止させない。',
       '大きな依頼向けの recipes：4 つの任意の recipe（full-product-plan、quick-validation、product-revision、feature-extension）が lens をエンドツーエンドのワークフローへ事前に並べる。あくまで提案で、採用するかはあなた次第。',
       '変更の自動伝播と技術翻訳：上流の意思決定が変わると下流ドキュメントも同期更新される。prd-and-handoff の lens が OWASP に沿ったセキュリティセクション付きの CLAUDE.md と TASKS.md を自動生成し、document-export が計画を HTML・PDF・DOCX・PPTX へ書き出す。',
+      '計画から実装まで引き継ぐ規律：作業が実装フェーズに入ると、軽量な dev-discipline が引き継ぎ、TDD 優先（テストの不正は明示的に禁止）、scope integrity、シークレットと認証情報のガード、2 つの新鮮な context によるレビュー（code reviewer と spec reviewer、fail-closed 判定、最大 3 ラウンド）、そしてエントリーポイントの起動チェック付きの finish-branch チェックリストを備える。意図的に軽量に保つ：約 600 token の session-start ダイジェスト、1 つのオンデマンド skill、2 つの deterministic hook。',
     ],
     techStack: [
       { category: 'Platform', items: 'Claude Code plugin（skills-directory インストール）、Claude.ai Custom Skill' },
@@ -229,6 +231,7 @@ export const projectDetails: ProjectDetail[] = [
       { category: 'Lens Layer', items: '16 個の組み合わせ可能な lens skill（JTBD、Positioning、PR-FAQ、RICE／solution-prioritization、success-metrics、MVP-scoping、PMF／GTM、strategy-kernel など）、meta-skill がルーティングし、出力ごとに provenance を付与' },
       { category: 'Specialist Sub-agents', items: '2 つの読み取り専用 Claude Code sub-agent（strategy-critic／pre-mortem-runner）、model: inherit、PROACTIVELY auto-delegate、structured output' },
       { category: 'Guardrails & Continuity', items: '3 つの lifecycle hook（session-start での meta-skill 注入、離題の監視、ドキュメント出力を保つリマインド）、relative な非ブロッキング guardrail、scoped SessionStart ルーティング指令' },
+      { category: 'Engineering Discipline', items: 'build フェーズの dev-discipline レイヤー：TDD-first gate、シークレット／認証情報ガード hook、code + spec のダブル reviewer（fail-closed 判定）、finish-branch 起動チェック；約 600 token の session-start ダイジェスト + 2 つの deterministic hook' },
       { category: 'Doc Processing', items: 'Playwright + pikepdf（ブックマーク付き PDF）、Pandoc（DOCX／PPTX）、pymupdf、Tesseract OCR フォールバック' },
       { category: 'Tooling', items: 'Node.js、Bash、Markdown ベースの lens 定義、deterministic Python eval scorer' },
       { category: 'Localization', items: 'Runtime の言語検出でユーザーの言語で応答；lens の内容は英語で記述' },

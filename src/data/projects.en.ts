@@ -46,7 +46,7 @@ export const projects: Project[] = [
     id: 'product-playbook',
     title: 'Product Playbook',
     description:
-      'An outcome-first product-thinking system for Claude Code. State the outcome and a meta-skill routes to the right lens among 16 composable product frameworks, blending them and calling two read-only specialist sub-agents to turn fuzzy ideas into shippable PRD specs.',
+      'An outcome-first product-thinking system for Claude Code. State the outcome and a meta-skill routes among 16 composable product lenses, blends them, and calls two read-only specialist sub-agents to turn fuzzy ideas into shippable PRD specs, then a lightweight engineering-discipline layer carries TDD and dual-review rigor from plan into the build.',
     ctaText: 'EXPLORE',
     ctaUrl: 'https://github.com/Kaminoikari/product-playbook',
     tags: ['Lens System', 'Claude Code', 'AI/LLM'],
@@ -186,15 +186,16 @@ export const projectDetails: ProjectDetail[] = [
   {
     id: 'product-playbook',
     title: 'Product Playbook — Outcome-First Product Lenses for Claude Code',
-    subtitle: '"Give AI a senior PM\'s brain, then let it reach for the right thinking tool on its own." The 2.0 rewrite turns the system outcome-first: you state the outcome you want and a meta-skill selects the product-thinking lens, or blends several, that gets you there. Four ideas define the architecture:',
+    subtitle: '"Give AI a senior PM\'s brain, then let it reach for the right thinking tool on its own." The 2.0 rewrite turns the system outcome-first: you state the outcome you want and a meta-skill selects the product-thinking lens, or blends several, that gets you there. Five ideas define the architecture:',
     features: [
       { label: 'Outcome-first lens routing', description: 'State the outcome; a meta-skill picks the lens that fits and blends several into one integrated answer when a decision needs more than one perspective. 16 composable lenses cover the whole discovery-to-handoff arc.' },
       { label: 'Specialists where they earn it', description: 'Two read-only sub-agents, strategy-critic and pre-mortem-runner, run their own analysis in isolated context so tough critique and pessimistic failure-hunting keep their edge.' },
       { label: 'Provenance and evidence built in', description: 'Every output tags the lenses it used, and when a call hinges on real-world facts the lenses pull live evidence and cite sources.' },
       { label: 'Engineer-ready handoff', description: 'One pass produces a PRD with acceptance criteria, an OWASP-aligned security section, and a CLAUDE.md, then exports to HTML, PDF, DOCX, or PPTX for a genuine Dev Handoff.' },
+      { label: 'Discipline that carries into the build', description: 'When planning turns into code, a lightweight engineering-discipline layer takes over: TDD-first with a named ban on test theater, scope integrity, a credential guard, and a dual fresh-context review (a code reviewer plus a spec reviewer with a fail-closed verdict) before the branch closes.' },
     ],
     metaTitle: 'Product Playbook — Outcome-First Product-Thinking Lens System | LLM Product Case Study',
-    metaDescription: 'An outcome-first product-planning system on Claude Code: 16 composable PM lenses routed by a meta-skill, 2 read-only specialist sub-agents (strategy critique, pre-mortem), per-output provenance, and automated Dev Handoff. AI PM Charles Chen, an LLM orchestration case study.',
+    metaDescription: 'An outcome-first product-planning system on Claude Code: 16 composable PM lenses routed by a meta-skill, 2 read-only specialist sub-agents (strategy critique, pre-mortem), per-output provenance, automated Dev Handoff, and a lightweight dev-discipline layer (TDD-first, dual code + spec review) for the build phase. AI PM Charles Chen, an LLM orchestration case study.',
     problem: [
       'Writing high-quality specs is brutally expensive: a passable PRD has to integrate user research, competitive analysis, and technical constraints. The work often spans days and turns into the build\'s bottleneck.',
       'General-purpose AI lacks product thinking: ChatGPT and Notion AI produce prose but they "don\'t understand product." They can\'t run a JTBD analysis or order a backlog by RICE; the output is generic boilerplate.',
@@ -209,6 +210,7 @@ export const projectDetails: ProjectDetail[] = [
       'Relative guardrails: a small set of guardrails stays dormant and surfaces as a single non-blocking nudge only when the outcome would genuinely be harmed by the current path. Nothing ever hard-stops you.',
       'Recipes for the big asks: four optional recipes (full-product-plan, quick-validation, product-revision, feature-extension) pre-sequence the lenses into an end-to-end workflow. They are suggested, never forced.',
       'Change propagation and tech translation: when an upstream decision changes, downstream documents update with it. The prd-and-handoff lens auto-generates CLAUDE.md and TASKS.md with an OWASP-aligned security section, and document-export renders the plan to HTML, PDF, DOCX, or PPTX.',
+      'Discipline from plan into build: when the session moves into implementation, a lightweight dev-discipline layer takes over with TDD-first (and a named ban on test theater), scope integrity, a secret and credential guard, dual fresh-context review (a code reviewer plus a spec reviewer, fail-closed verdict, capped at three rounds), and a finish-branch checklist with an entry-point launch check. It stays deliberately light: a ~600-token session-start digest, one on-demand skill, and two deterministic hooks.',
     ],
     techStack: [
       { category: 'Platform', items: 'Claude Code plugin (skills-directory install), Claude.ai Custom Skill' },
@@ -216,6 +218,7 @@ export const projectDetails: ProjectDetail[] = [
       { category: 'Lens Layer', items: '16 composable lens skills (JTBD, Positioning, PR-FAQ, RICE / solution-prioritization, success-metrics, MVP-scoping, PMF/GTM, strategy-kernel, etc.) routed by a meta-skill with per-output provenance' },
       { category: 'Specialist Sub-agents', items: '2 read-only Claude Code sub-agents (strategy-critic / pre-mortem-runner), model: inherit, PROACTIVELY auto-delegate, structured output' },
       { category: 'Guardrails & Continuity', items: '3 lifecycle hooks (session-start meta-skill inject, off-topic watch, keep-to-documents reminder), relative non-blocking guardrails, scoped SessionStart routing directive' },
+      { category: 'Engineering Discipline', items: 'dev-discipline layer for the build phase: TDD-first gate, secret / credential guard hook, dual code + spec reviewers with a fail-closed verdict, finish-branch launch check; ~600-token session-start digest + 2 deterministic hooks' },
       { category: 'Doc Processing', items: 'Playwright + pikepdf (PDF with bookmarks), Pandoc (DOCX/PPTX), pymupdf, Tesseract OCR fallback' },
       { category: 'Tooling', items: 'Node.js, Bash, Markdown-based lens definitions, deterministic Python eval scorer' },
       { category: 'Localization', items: 'Runtime language detection replies in the user\'s language; lens content authored in English' },
