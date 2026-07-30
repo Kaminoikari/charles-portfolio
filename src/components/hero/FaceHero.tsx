@@ -241,23 +241,26 @@ export default function FaceHero() {
   // Keyboard ownership while the splash gate is up, in one place.
   //
   // Hiding the nav makes it inert, which blurs whatever was focused inside it —
-  // reachable mid-session by activating the wordmark on a sub-page and landing here.
-  // So focus is parked on the gate: its ENTER control once that exists, the overlay
-  // itself while the assets are still loading. Tab is swallowed for the same reason
-  // — the only things behind the opaque overlay are the page's own controls, and
-  // focusing them would put an invisible focus ring on invisible content. The gate
-  // holds at most one control, so containment is "keep focus here" rather than a
-  // cycle, and ENTER is always reachable so a keyboard visitor can always proceed.
+  // reachable mid-session by activating the wordmark on a sub-page and landing here. So
+  // focus is parked on the OVERLAY, never on ENTER: Chrome matches :focus-visible on a
+  // programmatic focus(), which would paint the site's cyan focus ring around ENTER for
+  // a visitor who arrived with a mouse and never asked for one. The overlay carries
+  // outline-none, so parking there shows nothing.
+  //
+  // Tab is swallowed and redirected to ENTER instead: the only things behind the opaque
+  // overlay are the page's own controls, and focusing them would put an invisible focus
+  // ring on invisible content. A Tab is a real keyboard interaction, so the ring ENTER
+  // gets there is the one it should have. The gate holds at most that one control, so
+  // containment is "keep focus here" rather than a cycle.
   const enterRef = useRef<HTMLButtonElement>(null)
   const gateRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!gateOwnsInput) return
-    const focusGate = () => (enterRef.current ?? gateRef.current)?.focus({ preventScroll: true })
-    focusGate()
+    gateRef.current?.focus({ preventScroll: true })
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
       e.preventDefault()
-      focusGate()
+      ;(enterRef.current ?? gateRef.current)?.focus({ preventScroll: true })
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
@@ -349,8 +352,13 @@ export default function FaceHero() {
           // focusable only programmatically: it is where focus waits while the gate
           // holds no control of its own
           tabIndex={-1}
-          className="fixed inset-0 z-[100] bg-black outline-none"
+          className="fixed inset-0 z-[100] bg-black"
           style={{
+            // index.css's `*:focus-visible` outline is an UNLAYERED rule, so it outranks
+            // Tailwind's layered `outline-none` utility; only an inline declaration keeps
+            // a focus ring off a full-viewport overlay, where it indicates nothing and
+            // bleeds along whichever edge the scrollbar leaves visible.
+            outline: 'none',
             touchAction: 'none',
             opacity: gateActive ? 1 : 0,
             transition: `opacity ${GATE_FADE_OUT_MS}ms ease`,

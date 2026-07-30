@@ -264,11 +264,31 @@ describe('FaceHero chrome gating', () => {
   // mid-session: tab to the wordmark on /about, activate it, land on the home
   // route, and the intro starts with focus inside the bar that just went inert.
   // The gate has to catch that focus instead of dropping it on the body.
-  it('moves focus to the enter control when the gate takes over', async () => {
+  // Focus is parked on the overlay, not on ENTER: a programmatic focus() on the button
+  // makes Chrome match :focus-visible, which paints the site's cyan focus ring around it
+  // for a visitor who arrived with a mouse and never asked for one. The overlay carries
+  // outline-none, so parking there is invisible.
+  it('parks focus on the gate itself at takeover, forcing no focus ring on arrival', async () => {
     await renderHero()
     fireReadyAndFinishSweep()
-    expect(document.activeElement).toBe(screen.getByRole('button', { name: /enter/i }))
+    const gate = document.querySelector('[data-hero-gate]') as HTMLElement
+    expect(document.activeElement).toBe(gate)
+    expect(screen.getByRole('button', { name: /enter/i })).not.toHaveFocus()
+    // asserted as an inline style on purpose: index.css's `*:focus-visible` outline is an
+    // UNLAYERED rule, so it outranks Tailwind's `outline-none` utility (layered) and only
+    // an inline declaration suppresses the ring on the focused overlay
+    expect(gate.style.outline).toBe('none')
   })
+
+  it('moves focus to the enter control on the first Tab, where a ring is earned', async () => {
+    await renderHero()
+    fireReadyAndFinishSweep()
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(tab)
+    expect(tab.defaultPrevented).toBe(true)
+    expect(screen.getByRole('button', { name: /enter/i })).toHaveFocus()
+  })
+
 
   // While the gate is still loading it holds no control at all, so without
   // containment a Tab walks into the page content behind the opaque overlay:
