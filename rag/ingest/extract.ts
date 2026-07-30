@@ -9,6 +9,8 @@
 // embed well, large enough to stay self-contained. Each child chunk carries a
 // parent_id so the generate step could expand context if needed.
 
+import { createHash } from 'node:crypto'
+
 import type { Locale } from '../../src/i18n/config.js'
 import { config } from '../config.js'
 import { chunkText } from './chunk.js'
@@ -64,6 +66,79 @@ function changelogBodyText(body: unknown[]): string {
     // strip the inline markdown-lite the renderer supports
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
+}
+
+// A blog chunk id has to name the article, not its slot in the feed: a new post
+// is inserted at the top, so an index-derived id renames every older article on
+// every publish — re-embedding the whole corpus, orphaning the points behind the
+// old ids, and quietly invalidating the golden eval set, which pins ids. The URL
+// is already this repo's article identity (blog-bodies.json is keyed by it, and
+// the fetcher dedupes on it), so the id derives from there and from nothing else.
+// Editing an article's title or body therefore leaves its id alone.
+//
+// Substack paths give a clean human slug ("/p/outcome" → "outcome"). Medium
+// percent-encodes a Chinese title and appends its own post id, and the CJK runs
+// collapse to separators, leaving that trailing hex as the distinguishing part —
+// hence the 64-char budget, which is wide enough to keep it.
+export function blogSlug(url: string): string {
+  const last = decodeURIComponent(new URL(url).pathname.replace(/\/+$/, '').split('/').pop() ?? '')
+  const slug = last
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64)
+    .replace(/-+$/, '')
+  // Nothing survived (e.g. an all-CJK path with no id): fall back to the URL
+  // digest, which is stable and unique even though it reads as noise.
+  return slug || createHash('sha1').update(url).digest('hex').slice(0, 12)
+}
+
+export interface BlogArticleInput {
+  title: string
+  subtitle: string
+  date: string
+  url: string
+}
+
+// Blog chunks: a title+subtitle parent chunk (the id cited and deep-linked) plus,
+// when the article's full text has been fetched into blog-bodies.json, one child
+// chunk per body slice so the bot can answer questions whose answer lives in the
+// body rather than the headline. Bodies are Traditional Chinese for every locale
+// (the source articles are written once, in Chinese); the multilingual dense
+// embedding still lets en/ja queries retrieve them.
+export function blogChunks(articles: BlogArticleInput[], locale: string): ChunkRecord[] {
+  const out: ChunkRecord[] = []
+  const seen = new Set<string>()
+
+  articles.forEach((b) => {
+    const slug = blogSlug(b.url)
+    // Two articles under one slug would silently overwrite each other's chunks,
+    // so this is a build error rather than a last-write-wins merge.
+    if (seen.has(slug)) throw new Error(`duplicate blog slug "${slug}" — ${b.url} collides with an earlier article`)
+    seen.add(slug)
+
+    const parentId = `blog:${slug}:${locale}`
+    out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url })
+
+    if (!config.blogBodyEnabled) return
+    const body = getBlogBody(b.url)
+    if (!body) return
+    const pieces = chunkText(body, { maxChars: config.blogChunkChars, overlap: config.blogChunkOverlap })
+    pieces.forEach((piece, j) =>
+      out.push({
+        id: `blog:${slug}:body:${j}:${locale}`,
+        parentId,
+        sourceType: 'blog',
+        projectId: null,
+        locale,
+        title: `${b.title} — part ${j + 1}`,
+        content: piece,
+        url: b.url,
+      }),
+    )
+  })
+
+  return out
 }
 
 export async function extractAll(): Promise<ChunkRecord[]> {
@@ -137,35 +212,8 @@ export async function extractAll(): Promise<ChunkRecord[]> {
       out.push({ id: `changelog:${c.id}:${locale}`, parentId: null, sourceType: 'changelog', projectId: null, locale, title: c.title, content: `${c.title} (${c.date})\n${changelogBodyText(c.body)}` }),
     )
 
-    // ── blog (title+subtitle parent chunk + optional full-text body chunks) ──
-    // The title+subtitle chunk keeps the stable `blog:<i>` id (acts as the parent
-    // for deep-linking and citations). When the article's full text has been
-    // fetched into blog-bodies.json, it's split into `blog:<i>:body:<j>` child
-    // chunks so the bot can answer questions whose answer lives in the body, not
-    // just the headline. Bodies are Traditional Chinese for every locale (the
-    // source articles are written once, in Chinese); the multilingual dense
-    // embedding still lets en/ja queries retrieve them.
-    blog.blogArticles.forEach((b: { title: string; subtitle: string; date: string; url: string }, i: number) => {
-      const parentId = `blog:${i}:${locale}`
-      out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url })
-
-      if (!config.blogBodyEnabled) return
-      const body = getBlogBody(b.url)
-      if (!body) return
-      const pieces = chunkText(body, { maxChars: config.blogChunkChars, overlap: config.blogChunkOverlap })
-      pieces.forEach((piece, j) =>
-        out.push({
-          id: `blog:${i}:body:${j}:${locale}`,
-          parentId,
-          sourceType: 'blog',
-          projectId: null,
-          locale,
-          title: `${b.title} — part ${j + 1}`,
-          content: piece,
-          url: b.url,
-        }),
-      )
-    })
+    // ── blog (see blogChunks) ──
+    out.push(...blogChunks(blog.blogArticles, locale))
 
     // ── agentic design patterns (Charles's curated knowledge; one chunk per
     // pattern + an umbrella intro chunk). Lets the bot answer "does Charles know

@@ -9,9 +9,10 @@
 //
 // `relevantIds` are chunk-id PREFIXES (the stored ids carry a `:<locale>`
 // suffix), so a match counts if any retrieved chunk id starts with the prefix.
-// This keeps the set locale-agnostic. NOTE on prefix collisions: a bare prefix
-// like `blog:1` also matches `blog:10`..`blog:19`, so for sources with
-// double-digit indices (blog) use a trailing colon (`blog:1:`) to pin it.
+// This keeps the set locale-agnostic. NOTE on prefix collisions: blog ids carry
+// the article's URL slug, and one slug can prefix another (`blog:ai` also matches
+// `blog:ai-286`, `blog:pm` also matches `blog:pm-b5b`), so always pin a blog id
+// with a trailing colon (`blog:ai:`).
 //
 // `mustInclude` substrings are checked (lowercased) against the generated
 // answer, which is in the QUESTION's language. So prefer language-neutral tokens
@@ -188,7 +189,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 為什麼拒絕了 Uber 的 offer?',
       ja: 'Charles はなぜ Uber のオファーを断ったのですか?',
     },
-    relevantIds: ['blog:0:'],
+    relevantIds: ['blog:uber-l4-offer-pm-ai:'],
     mustInclude: ['uber'],
   },
   {
@@ -199,7 +200,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 寫過什麼關於打造企業級 RAG 的文章?',
       ja: 'Charles はエンタープライズ級 RAG の構築について何を書きましたか?',
     },
-    relevantIds: ['blog:1:'],
+    relevantIds: ['blog:langgraph-ai:'],
     mustInclude: ['langgraph'],
   },
 
@@ -271,7 +272,7 @@ export const GOLDEN: GoldenItem[] = [
     // Global synthesis: the about chunk is canonical, but his product-method
     // project and product-philosophy articles are equally valid evidence — once
     // blog bodies are indexed they legitimately rank here, so they count too.
-    relevantIds: ['about:philosophy', 'project:product-playbook:', 'blog:14:'],
+    relevantIds: ['about:philosophy', 'project:product-playbook:', 'blog:product-sense:'],
     mustInclude: ['outcome'],
   },
   {
@@ -285,7 +286,7 @@ export const GOLDEN: GoldenItem[] = [
     // Global synthesis: beyond the about chunk, the articles where he actually
     // builds with AI (the LangGraph twin, this RAG chatbot, Claude Code as an
     // agent OS) are valid evidence for "how he uses AI across his work".
-    relevantIds: ['about:ai', 'blog:1:', 'blog:12:', 'changelog:rag-chatbot:'],
+    relevantIds: ['about:ai', 'blog:langgraph-ai:', 'blog:claude-code-agent-os:', 'changelog:rag-chatbot:'],
     mustInclude: ['prototyp'],
   },
   {
