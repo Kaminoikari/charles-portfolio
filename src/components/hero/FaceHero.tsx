@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { FaceHeroHandle } from './faceHero'
 import { useAmbientAudio } from '../audio/audio-context'
+import { useHeroIntro } from './hero-intro-context'
+import { INTRO_FAILSAFE_MS } from './introTiming'
 import MobiusLoader from './MobiusLoader'
 
 type Phase = 'loading' | 'ready' | 'running' | 'revealed'
@@ -96,25 +98,48 @@ function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true
 }
 
+// A url that names a section (/#experience) asks for content, not for a splash
+// screen. Those arrivals skip the gate and the intro the same way a same-session
+// return does, land on the section they asked for, and keep the ambient track
+// opt-in via the music toggle. Such urls come from a section link followed on
+// another page, the skip link, or someone sharing what their address bar showed —
+// in-page section clicks on the home route never write a hash.
+function enteredViaSectionLink(): boolean {
+  return typeof window !== 'undefined' && window.location.hash.length > 1
+}
+
 export default function FaceHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<FaceHeroHandle | null>(null)
-  const [phase, setPhase] = useState<Phase>(() => (alreadySeenThisSession() ? 'revealed' : 'loading'))
+  // ONE skip decision, read by both the phase seed and the engine start below so
+  // the shell and the engine can never disagree about whether the intro plays.
+  const skipIntroRef = useRef(alreadySeenThisSession() || enteredViaSectionLink())
+  const [phase, setPhase] = useState<Phase>(() => (skipIntroRef.current ? 'revealed' : 'loading'))
   const [displayedProgress, setDisplayedProgress] = useState(0)
   const realProgressRef = useRef(0)
   const engineReadyRef = useRef(false)
   const [failed, setFailed] = useState(false)
+  const [heroLeftView, setHeroLeftView] = useState(false)   // scrolled away from the hero: nothing left to protect
   const { unmute, unlock } = useAmbientAudio()
+  const { setIntroRunning } = useHeroIntro()
   const enteredRef = useRef(false)   // true only after a real Enter click, so a same-session skip stays silent
   const unmuteRef = useRef(unmute)   // keep the init effect off unmute's identity so it still runs once
   useEffect(() => { unmuteRef.current = unmute }, [unmute])
+
+  // The shell's "the intro is over": settle the headline and let the ambient
+  // track in. Called by the engine and by the failsafe below, so both paths land
+  // the visitor in the same state.
+  const completeIntro = useCallback(() => {
+    setPhase('revealed')
+    if (enteredRef.current) unmuteRef.current()
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
     const reduced = prefersReducedMotion()
-    const seen = alreadySeenThisSession()
+    const skip = skipIntroRef.current
     let disposed = false
     // Load the three.js engine lazily so ~440 kB gzip of three + postprocessing
     // leaves the entry chunk (the MobiusLoader gate already covers the gap). If
@@ -126,15 +151,15 @@ export default function FaceHero() {
           assetBase: '/hero/',
           reducedMotion: reduced,
           onProgress: (p) => { realProgressRef.current = p },
-          onReady: () => { if (seen) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
-          onIntroComplete: () => { setPhase('revealed'); if (enteredRef.current) unmuteRef.current() },   // BGM fades in only after the intro, and only when the visitor actually entered
+          onReady: () => { if (skip) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
+          onIntroComplete: completeIntro,   // BGM and nav arrive together, only after the intro, and only when the visitor actually entered
           onError: () => setFailed(true),
         })
         handleRef.current = handle
       })
       .catch(() => setFailed(true))
     return () => { disposed = true; handleRef.current?.dispose(); handleRef.current = null }
-  }, [])
+  }, [completeIntro])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -144,7 +169,15 @@ export default function FaceHero() {
     let isTabVisible = !document.hidden
     const syncActive = () => handleRef.current?.setActive(isOnScreen && isTabVisible)
     const io = new IntersectionObserver(
-      (entries) => { isOnScreen = entries[0]?.isIntersecting ?? true; syncActive() },
+      (entries) => {
+        isOnScreen = entries[0]?.isIntersecting ?? true
+        // Leaving the viewport pauses the engine, which freezes the intro and its
+        // completion callback with it. Hand the chrome back instead of hiding the
+        // navigation behind an animation nobody can see. One-way: once the
+        // visitor has the nav, scrolling back must not snatch it away again.
+        if (!isOnScreen) setHeroLeftView(true)
+        syncActive()
+      },
       { threshold: 0 },
     )
     io.observe(section)
@@ -152,6 +185,23 @@ export default function FaceHero() {
     document.addEventListener('visibilitychange', onVisibility)
     return () => { io.disconnect(); document.removeEventListener('visibilitychange', onVisibility) }
   }, [])
+
+  // The intro owns the screen while it is actually playing in front of the
+  // visitor; a finished intro, an engine error, or scrolling away from the hero
+  // all hand the site chrome (the nav) back.
+  const introOwnsScreen = phase !== 'revealed' && !failed && !heroLeftView
+  useEffect(() => { setIntroRunning(introOwnsScreen) }, [introOwnsScreen, setIntroRunning])
+  // a hero that unmounts mid-intro (route change) must not take the nav with it
+  useEffect(() => () => setIntroRunning(false), [setIntroRunning])
+
+  // Last-resort release: an engine that stalls after Enter (rAF starved, a frame
+  // loop that never reaches the final beat) would otherwise leave the site with
+  // no navigation at all.
+  useEffect(() => {
+    if (phase !== 'running') return
+    const id = window.setTimeout(completeIntro, INTRO_FAILSAFE_MS)
+    return () => clearTimeout(id)
+  }, [phase, completeIntro])
 
   // drive the displayed progress: a steady ramp capped by real progress; the gate
   // flips to ready only when the bar has actually reached full
@@ -181,19 +231,57 @@ export default function FaceHero() {
   const gateFadeTimer = useRef(0)
   useEffect(() => () => clearTimeout(gateFadeTimer.current), [])
 
+  const gateActive = phase === 'loading' || phase === 'ready'
+  // An engine error unmounts the gate WITHOUT moving `phase`: only `failed` flips, and
+  // the progress ramp stops there, so `gateActive` stays true for the life of the
+  // document. Anything that grabs input has to read this instead — keyed on
+  // `gateActive` alone it would keep swallowing Tab over a fully visible page.
+  const gateOwnsInput = gateActive && !failed
+
+  // Keyboard ownership while the splash gate is up, in one place.
+  //
+  // Hiding the nav makes it inert, which blurs whatever was focused inside it —
+  // reachable mid-session by activating the wordmark on a sub-page and landing here.
+  // So focus is parked on the gate: its ENTER control once that exists, the overlay
+  // itself while the assets are still loading. Tab is swallowed for the same reason
+  // — the only things behind the opaque overlay are the page's own controls, and
+  // focusing them would put an invisible focus ring on invisible content. The gate
+  // holds at most one control, so containment is "keep focus here" rather than a
+  // cycle, and ENTER is always reachable so a keyboard visitor can always proceed.
+  const enterRef = useRef<HTMLButtonElement>(null)
+  const gateRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!gateOwnsInput) return
+    const focusGate = () => (enterRef.current ?? gateRef.current)?.focus({ preventScroll: true })
+    focusGate()
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      e.preventDefault()
+      focusGate()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [gateOwnsInput, phase])
+
   const onEnter = () => {
     markSeenThisSession()
     enteredRef.current = true
     handleRef.current?.startIntro()
     unlock()                 // unlock audio inside the click; the track stays silent until the intro ends
-    setPhase('running')
+    // Never regress out of 'revealed': with reduced motion the engine settles
+    // inside startIntro() above and has already reported completion in this same
+    // click, so forcing 'running' here would hide the headline and the nav behind
+    // an intro that is already over.
+    setPhase((p) => (p === 'revealed' ? p : 'running'))
     gateFadeTimer.current = window.setTimeout(() => setGateDismissed(true), GATE_FADE_OUT_MS)
   }
 
-  const gateActive = phase === 'loading' || phase === 'ready'
   // after Enter the overlay stays mounted just long enough to fade out over the
   // starting intro; an engine error drops the gate immediately so the static
-  // fallback underneath is actually reachable.
+  // fallback underneath is actually reachable. With reduced motion there is no
+  // intro to fade over — the phase is already 'revealed' by the end of the Enter
+  // click — so the overlay cuts straight out, which is what that preference asks
+  // for anyway.
   const gateMounted = (gateActive || phase === 'running') && !gateDismissed && !failed
   const heroTextVisible = phase === 'revealed' || failed
 
@@ -256,7 +344,12 @@ export default function FaceHero() {
         // dead-centre, rotating status copy 100px below centre, and a 1px
         // progress hairline 50px above the bottom edge.
         <div
-          className="fixed inset-0 z-[100] bg-black"
+          ref={gateRef}
+          data-hero-gate
+          // focusable only programmatically: it is where focus waits while the gate
+          // holds no control of its own
+          tabIndex={-1}
+          className="fixed inset-0 z-[100] bg-black outline-none"
           style={{
             touchAction: 'none',
             opacity: gateActive ? 1 : 0,
@@ -278,6 +371,7 @@ export default function FaceHero() {
             <div className="absolute inset-x-0 top-1/2 mt-[92px] flex justify-center">
               <button
                 type="button"
+                ref={enterRef}
                 onClick={onEnter}
                 className="gate-enter pointer-events-auto flex items-center gap-5 py-2 font-mono text-xs uppercase tracking-[0.35em] text-white"
               >

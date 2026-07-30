@@ -6,6 +6,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { INTRO_BEATS } from './introTiming'
 
 export type FaceHeroOptions = {
   /** 資產目錄，結尾帶斜線，例如 '/hero/' */
@@ -1004,7 +1005,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
 
   // --- intro (cat opening): red curtain rises bottom->top while the two eyes ignite as red
   // coronas, brief hold, then a top->down sweep reveals the dot-matrix portrait as the red recedes.
-  const INTRO = { red: 2.6, pause: 0.4, sweep: 1.5 }  // seconds per beat
+  const INTRO = INTRO_BEATS   // seconds per beat; shared with the shell's intro failsafe
   const RED = [1.0, 0.12, 0.06]             // curtain red
   const EDGE = [0.35, 0.9, 1.0]             // pale-cyan transform halo riding the sweep line
   const BAND = 0.06

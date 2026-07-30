@@ -5,6 +5,8 @@ import Nav from './components/Nav'
 import ChatWidget from './components/chat/ChatWidget'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { MusicToggle } from './components/audio/MusicToggle'
+import { HeroIntroProvider } from './components/hero/HeroIntroProvider'
+import { IntroHiddenChrome } from './components/IntroHiddenChrome'
 import { LOCALE_URL_PREFIX, useInitialLocaleRestore } from './i18n'
 
 const AboutPage = lazy(() => import('./components/AboutPage'))
@@ -63,7 +65,9 @@ export default function AppRoutes() {
   useInitialLocaleRestore()
 
   return (
-    <>
+    // The hero (inside the home route) tells the nav when its intro owns the
+    // screen, so the provider has to sit above both.
+    <HeroIntroProvider>
       <Nav />
       <Routes>
         {PAGES.flatMap((page) =>
@@ -76,10 +80,12 @@ export default function AppRoutes() {
           )),
         )}
       </Routes>
-      <MusicToggle />
-      <ErrorBoundary fallback={null}>
-        <ChatWidget />
-      </ErrorBoundary>
-    </>
+      <IntroHiddenChrome>
+        <MusicToggle />
+        <ErrorBoundary fallback={null}>
+          <ChatWidget />
+        </ErrorBoundary>
+      </IntroHiddenChrome>
+    </HeroIntroProvider>
   )
 }

@@ -20,10 +20,22 @@ vi.mock('../audio/audio-context', () => ({
 }))
 
 import FaceHero from './FaceHero.tsx'
+import { HeroIntroProvider } from './HeroIntroProvider'
+import { useHeroIntro } from './hero-intro-context'
+import { INTRO_FAILSAFE_MS } from './introTiming'
+
+// reads the real context the nav reads, so these assertions cover the actual
+// wiring rather than a mocked seam
+function ChromeProbe() {
+  const { introRunning } = useHeroIntro()
+  return <span data-testid="chrome">{introRunning ? 'hidden' : 'visible'}</span>
+}
+const chromeState = () => screen.getByTestId('chrome').textContent
 
 beforeEach(() => {
   startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); unlock.mockClear(); lastOpts = null
   sessionStorage.clear()
+  window.history.replaceState({}, '', '/')
   vi.useFakeTimers()
   vi.stubGlobal('IntersectionObserver', function IntersectionObserverStub() {
     return { observe: vi.fn(), disconnect: vi.fn() }
@@ -36,7 +48,12 @@ afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(
 // synchronous render. Flush that microtask so lastOpts and the engine handle are
 // wired before assertions run.
 async function renderHero() {
-  const utils = render(<FaceHero />)
+  const utils = render(
+    <HeroIntroProvider>
+      <FaceHero />
+      <ChromeProbe />
+    </HeroIntroProvider>,
+  )
   await act(async () => { await Promise.resolve(); await Promise.resolve() })
   return utils
 }
@@ -165,6 +182,173 @@ describe('FaceHero shell', () => {
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(sessionStorage.getItem('faceHeroSeen')).toBe('1')
+  })
+})
+
+// The nav reads introRunning: it must be hidden for exactly as long as the intro
+// owns the screen, and every way the intro can end has to hand the chrome back.
+describe('FaceHero chrome gating', () => {
+  it('holds the chrome hidden through the gate and the intro, releasing it with the music', async () => {
+    await renderHero()
+    expect(chromeState()).toBe('hidden')
+    fireReadyAndFinishSweep()
+    expect(chromeState()).toBe('hidden')
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    expect(chromeState()).toBe('hidden')
+    expect(unmute).not.toHaveBeenCalled()
+    act(() => { lastOpts?.onIntroComplete?.() })
+    expect(chromeState()).toBe('visible')
+    expect(unmute).toHaveBeenCalledTimes(1)
+  })
+
+  it('never hides the chrome on a same-session skip', async () => {
+    sessionStorage.setItem('faceHeroSeen', '1')
+    await renderHero()
+    expect(chromeState()).toBe('visible')
+    act(() => { lastOpts?.onReady?.() })
+    expect(chromeState()).toBe('visible')
+  })
+
+  it('releases the chrome when the engine errors', async () => {
+    await renderHero()
+    expect(chromeState()).toBe('hidden')
+    act(() => { lastOpts?.onError?.(new Error('WebGL unavailable')) })
+    expect(chromeState()).toBe('visible')
+  })
+
+  // An engine error unmounts the gate WITHOUT moving `phase` — only `failed` flips, and
+  // the progress ramp stops — so anything keyed on the phase alone stays engaged for the
+  // life of the document. With the whole page visible and reachable, that would leave
+  // Tab swallowed forever.
+  it('releases keyboard containment when an engine error removes the gate', async () => {
+    await renderHero()
+    const whileGated = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(whileGated)
+    expect(whileGated.defaultPrevented).toBe(true)
+
+    act(() => { lastOpts?.onError?.(new Error('WebGL context lost')) })
+    expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()   // gate gone
+    const afterError = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(afterError)
+    expect(afterError.defaultPrevented).toBe(false)
+  })
+
+  it('releases the chrome when the visitor scrolls the hero out of view mid-intro', async () => {
+    let ioCallback: ((entries: Array<{ isIntersecting: boolean }>) => void) | null = null
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(cb: (entries: Array<{ isIntersecting: boolean }>) => void) { ioCallback = cb }
+      observe = vi.fn()
+      disconnect = vi.fn()
+    })
+    await renderHero()
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    expect(chromeState()).toBe('hidden')
+    // off-screen pauses the engine, so onIntroComplete would never arrive
+    act(() => { ioCallback?.([{ isIntersecting: false }]) })
+    expect(chromeState()).toBe('visible')
+  })
+
+  it('releases the chrome and starts the music if the intro never reports completion', async () => {
+    await renderHero()
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    act(() => { vi.advanceTimersByTime(INTRO_FAILSAFE_MS - 1) })
+    expect(chromeState()).toBe('hidden')
+    act(() => { vi.advanceTimersByTime(2) })
+    expect(chromeState()).toBe('visible')
+    expect(unmute).toHaveBeenCalledTimes(1)
+  })
+
+  // Hiding the nav makes it inert, which blurs any focus inside it. Reachable
+  // mid-session: tab to the wordmark on /about, activate it, land on the home
+  // route, and the intro starts with focus inside the bar that just went inert.
+  // The gate has to catch that focus instead of dropping it on the body.
+  it('moves focus to the enter control when the gate takes over', async () => {
+    await renderHero()
+    fireReadyAndFinishSweep()
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /enter/i }))
+  })
+
+  // While the gate is still loading it holds no control at all, so without
+  // containment a Tab walks into the page content behind the opaque overlay:
+  // invisible focus, invisible focus ring. (jsdom performs no real tab traversal;
+  // what is asserted here is that focus is parked on the gate and that Tab is
+  // swallowed while it owns the screen — and released again afterwards.)
+  it('contains keyboard focus while the gate owns the screen, and releases it after', async () => {
+    await renderHero()
+    expect(document.activeElement).toBe(document.querySelector('[data-hero-gate]'))
+    const tab = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(tab)
+    expect(tab.defaultPrevented).toBe(true)
+
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    const afterEnter = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+    document.dispatchEvent(afterEnter)
+    expect(afterEnter.defaultPrevented).toBe(false)
+  })
+
+  // With reduced motion (verified in a real browser with the media feature
+  // emulated) the engine settles inside startIntro() and reports completion
+  // synchronously, still inside the Enter click — reproduced here by making the
+  // engine double stand in for that. Enter must not then drag the phase back to
+  // 'running': the intro is already over.
+  it('keeps the chrome visible when the engine settles synchronously inside the click', async () => {
+    await renderHero()
+    startIntro.mockImplementation(() => { lastOpts?.onIntroComplete?.() })
+    fireReadyAndFinishSweep()
+    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
+    expect(unmute).toHaveBeenCalledTimes(1)
+    expect(chromeState()).toBe('visible')
+    expect(screen.getByRole('heading', { level: 1 }).parentElement).toHaveStyle({ opacity: '1' })
+  })
+
+  it('releases the chrome when the hero unmounts mid-intro', async () => {
+    const Harness = ({ hero }: { hero: boolean }) => (
+      <HeroIntroProvider>
+        {hero ? <FaceHero /> : null}
+        <ChromeProbe />
+      </HeroIntroProvider>
+    )
+    const { rerender } = render(<Harness hero />)
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(chromeState()).toBe('hidden')
+    rerender(<Harness hero={false} />)
+    expect(chromeState()).toBe('visible')
+  })
+})
+
+// A shared deep link (/#experience) asks for a section, not the splash. It must
+// land on the content with the chrome up, and it must not silently swallow the
+// intro for a plain visit to the home route.
+describe('FaceHero section deep link', () => {
+  it('skips the gate and settles the portrait when the url targets a section', async () => {
+    window.history.replaceState({}, '', '/#experience')
+    await renderHero()
+    expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
+    act(() => { lastOpts?.onReady?.() })
+    expect(startIntro).toHaveBeenCalledWith(true)
+    expect(chromeState()).toBe('visible')
+  })
+
+  it('leaves the music off on a deep-link skip', async () => {
+    window.history.replaceState({}, '', '/#experience')
+    await renderHero()
+    act(() => { lastOpts?.onReady?.(); lastOpts?.onIntroComplete?.() })
+    expect(unmute).not.toHaveBeenCalled()
+    expect(unlock).not.toHaveBeenCalled()
+  })
+
+  // guards the other direction: the skip must not swallow the intro for someone
+  // who simply opened the home page
+  it('still plays the gate for a plain home visit', async () => {
+    window.history.replaceState({}, '', '/')
+    await renderHero()
+    expect(screen.getByTestId('mobius-loader')).toBeInTheDocument()
+    expect(chromeState()).toBe('hidden')
+    fireReadyAndFinishSweep()
+    expect(screen.getByRole('button', { name: /enter/i })).toBeInTheDocument()
   })
 })
 

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useHeroIntro } from './hero/hero-intro-context'
+import { CHROME_REVEAL_MS } from './hero/introTiming'
+import { inlineNavTakesOver } from './navBreakpoint'
 import {
   LOCALES,
   LOCALE_LABELS,
@@ -25,14 +28,18 @@ const NAV_SECTION_KEY: Record<(typeof NAV_SECTIONS)[number], StringKey> = {
 export default function Nav() {
   const navRef = useRef<HTMLElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const [scrolledPastHero, setScrolledPastHero] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [menuHeight, setMenuHeight] = useState(0)
   const logoClickTimesRef = useRef<number[]>([])
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
   const localePath = useLocalePath()
   const t = useT()
   const { locale, setLocale } = useLocale()
+  const { introRunning } = useHeroIntro()
   // Home is locale-aware: `/`, `/zh-TW`, `/zh-TW/`, `/ja`, `/ja/` all count.
   const homeUrl = localePath('/')
   const isHome = location.pathname === homeUrl || location.pathname === homeUrl + '/'
@@ -45,14 +52,26 @@ export default function Nav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  // An open panel has to close once the inline nav takes over, or it hangs below
+  // it. inlineNavTakesOver reads that decision off the CSS instead of restating
+  // the breakpoint here; see navBreakpoint.ts for why.
   useEffect(() => {
     if (!menuOpen) return
     const onResize = () => {
-      if (window.innerWidth >= 768) setMenuOpen(false)
+      if (inlineNavTakesOver(hamburgerRef.current)) setMenuOpen(false)
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [menuOpen])
+
+  // Measure the panel on the way open instead of predicting its height from an
+  // item count: the collapsed panel is clipped, not unmounted, so its content
+  // height is readable at any time and stays right when items, padding, locale,
+  // or fonts change.
+  const toggleMenu = () => {
+    if (!menuOpen) setMenuHeight(menuRef.current?.scrollHeight ?? 0)
+    setMenuOpen(!menuOpen)
+  }
 
   // Handle hash-based scroll after navigating back to home
   useEffect(() => {
@@ -64,7 +83,15 @@ export default function Nav() {
         if (el) {
           const navHeight = headerRef.current?.offsetHeight ?? 72
           const y = el.getBoundingClientRect().top + window.scrollY - navHeight
-          window.scrollTo({ top: y, behavior: 'smooth' })
+          // Every route into this effect is an ARRIVAL at the home route with a
+          // section hash — a shared deep link, a section link followed from
+          // another page, or the skip link — and all of them start at the top of
+          // a freshly mounted page. Jump: animating thousands of pixels is
+          // disorienting, and in-page section clicks never come through here
+          // (they call scrollTo() below, which keeps its smooth glide).
+          // 'instant', not 'auto': index.css sets `html { scroll-behavior: smooth }`
+          // and 'auto' defers to that computed value, so it would animate too.
+          window.scrollTo({ top: y, behavior: 'instant' })
         }
       }, 100)
       return () => clearTimeout(timer)
@@ -98,8 +125,17 @@ export default function Nav() {
     <nav
       ref={navRef}
       aria-label={t('nav.mainAriaLabel')}
-      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md transition-all duration-300"
+      // While the hero intro owns the screen the bar slides out of the way and
+      // leaves the tab order, so it neither floats over the animation nor answers
+      // a Tab from behind the splash gate. The floating controls step aside on the
+      // same signal, via IntroHiddenChrome.
+      inert={introRunning}
+      aria-hidden={introRunning || undefined}
+      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
       style={{
+        opacity: introRunning ? 0 : 1,
+        transform: introRunning ? 'translateY(-100%)' : 'none',
+        transition: `opacity ${CHROME_REVEAL_MS}ms ease, transform ${CHROME_REVEAL_MS}ms cubic-bezier(0.25,1,0.5,1), background-color 300ms ease, border-color 300ms ease`,
         borderColor: scrolledPastHero || menuOpen ? 'var(--color-border)' : 'transparent',
         background: menuOpen
           ? 'var(--color-bg-primary)'
@@ -108,7 +144,7 @@ export default function Nav() {
             : 'transparent',
       }}
     >
-      <div ref={headerRef} className="mx-auto flex max-w-[1400px] items-center justify-between px-4 py-3 md:px-12 md:py-4">
+      <div ref={headerRef} className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-4 py-3 md:px-12 md:py-4">
         <button
           onClick={() => {
             if (!isHome) {
@@ -134,8 +170,9 @@ export default function Nav() {
           {t('brand.name')}
         </button>
 
-        {/* Desktop nav */}
-        <div className="hidden gap-8 md:flex">
+        {/* Inline nav — only from `xl`, the narrowest breakpoint the full row fits in;
+            see navBreakpoint.ts */}
+        <div className="hidden gap-8 xl:flex">
           {NAV_SECTIONS.map((id) => (
             <button
               key={id}
@@ -167,7 +204,7 @@ export default function Nav() {
           <div
             role="group"
             aria-label={t('nav.languageGroupLabel')}
-            className="hidden items-center gap-1 rounded-full border border-btn-border px-1 py-0.5 md:flex"
+            className="hidden items-center gap-1 rounded-full border border-btn-border px-1 py-0.5 xl:flex"
           >
             {LOCALES.map((loc) => (
               <button
@@ -198,13 +235,14 @@ export default function Nav() {
             {t('nav.contact')}
           </button>
 
-          {/* Hamburger — mobile only, rightmost */}
+          {/* Hamburger — rightmost, wherever the inline nav doesn't fit */}
           <button
-            onClick={() => setMenuOpen((prev) => !prev)}
+            ref={hamburgerRef}
+            onClick={toggleMenu}
             aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-none bg-transparent md:hidden"
+            className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center border-none bg-transparent xl:hidden"
           >
             <div className="relative h-4 w-5">
               <span
@@ -231,19 +269,20 @@ export default function Nav() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Collapsed nav menu — everything the inline row can't show at this width */}
       <div
         id="mobile-menu"
         // inert when collapsed so its buttons leave the keyboard tab order and
         // the a11y tree (maxHeight:0 alone still left them focusable/announced).
         inert={!menuOpen}
-        className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] md:hidden"
+        className="overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] xl:hidden"
         style={{
-          maxHeight: menuOpen ? `${(NAV_SECTIONS.length + 1) * 52 + 64}px` : '0',
+          maxHeight: menuOpen ? `${menuHeight}px` : '0',
           opacity: menuOpen ? 1 : 0,
         }}
       >
-        <div className="flex flex-col border-t border-white/10 px-4 py-2">
+        {/* padding matches the header row so the items line up under the wordmark */}
+        <div ref={menuRef} className="flex flex-col border-t border-white/10 px-4 py-2 md:px-12">
           {NAV_SECTIONS.map((id) => (
             <button
               key={id}
