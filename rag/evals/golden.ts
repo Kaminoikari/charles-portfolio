@@ -46,7 +46,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 在 USPACE 的職位是什麼?',
       ja: 'Charles の USPACE での役職は何ですか?',
     },
-    relevantIds: ['experience:0'],
+    relevantIds: ['experience:uspace-tech-co-ltd:'],
     mustInclude: ['product manager', 'uspace'],
   },
   {
@@ -156,7 +156,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Product Playbook 用了幾個產品框架?',
       ja: 'Product Playbook はいくつのプロダクトフレームワークを使っていますか?',
     },
-    relevantIds: ['project:product-playbook:solution', 'project:product-playbook:tech', 'about:ai:1'],
+    relevantIds: ['project:product-playbook:solution', 'project:product-playbook:tech', 'about:ai:spec-writing:'],
     mustInclude: ['22'],
   },
   {
@@ -167,7 +167,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 在 USPACE 推出了什麼保險產品?',
       ja: 'Charles は USPACE でどんな保険商品を立ち上げましたか?',
     },
-    relevantIds: ['experience:0'],
+    relevantIds: ['experience:uspace-tech-co-ltd:'],
     mustInclude: ['fubon'],
   },
   {
@@ -178,7 +178,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 在 NUEIP 做什麼?',
       ja: 'Charles は NUEIP で何をしていましたか?',
     },
-    relevantIds: ['experience:2'],
+    relevantIds: ['experience:nueip-technology-co-ltd:'],
     mustInclude: ['nueip'],
   },
   {
@@ -297,7 +297,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 所謂的「Product Builder」是什麼意思?',
       ja: 'Charles の言う「Product Builder」とはどういう意味ですか?',
     },
-    relevantIds: ['about:whoiam', 'about:philosophy:3'],
+    relevantIds: ['about:whoiam', 'about:philosophy:build-to-learn:'],
     mustInclude: ['builder'],
   },
   {
@@ -308,7 +308,7 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 如何用 AI 撰寫產品規格?',
       ja: 'Charles はどのように AI を使ってプロダクト仕様を書きますか?',
     },
-    relevantIds: ['about:ai:1', 'project:product-playbook'],
+    relevantIds: ['about:ai:spec-writing:', 'project:product-playbook'],
     mustInclude: ['playbook'],
   },
   {

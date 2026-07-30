@@ -4,11 +4,17 @@
 // dotted-string keys cleanly.
 
 export interface AboutBullet {
+  // Stable, locale-independent key. The RAG chunk id is built from it, so it
+  // must stay identical across the three locale files and must not change when
+  // the copy is rewritten.
+  id: string
   title: string
   body: string
 }
 
 export interface AboutTableRow {
+  // Stable, locale-independent key — see AboutBullet.id.
+  id: string
   label: string
   body: string
 }
@@ -28,66 +34,81 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
+      id: 'outcomes-over-outputs',
       title: 'Outcomes over outputs',
       body: "Shipping features alone isn't the goal. Changing user behavior and moving business metrics is. I measure success by what users do differently, not by how many tickets get checked off.",
     },
     {
+      id: 'product-sense',
       title: 'Sharp product sense',
       body: 'The best decisions often happen before the data exists. Knowing which problems are worth solving, which solutions will resonate, and when to cut scope decisively: that intuition comes from shipping products and watching how real users respond.',
     },
     {
+      id: 'strong-opinions',
       title: 'Strong opinions, loosely held',
       body: 'Having product sense means holding a clear point of view on what to build and why. But conviction without flexibility is just stubbornness. I form strong hypotheses, then stay ready to let data and user feedback prove me wrong.',
     },
     {
+      id: 'build-to-learn',
       title: 'Build to learn',
       body: 'Prototypes beat slide decks. I use Claude Code and Codex to build working products that generate real user feedback, not hypothetical stakeholder opinions.',
     },
   ],
   aiTable: [
     {
+      id: 'discovery',
       label: 'Discovery',
       body: 'I use LLMs to process dense market research, competitive analysis, and interview material, turning fragmented signals into clear market insight that informs decisions.',
     },
     {
+      id: 'spec-writing',
       label: 'Spec Writing',
       body: 'I built my own AI agent, "Product Playbook", a Claude Skills setup integrating 22 product frameworks. It produces rigorous, professional product spec documents tailored to each context, compressing what used to take days of planning into hours.',
     },
     {
+      id: 'prototyping',
       label: 'Prototyping',
       body: 'I use Claude Code and Codex for full-stack prototyping, shipping product prototypes independently across React, Node.js, and Python and turning ideas into tangible software in hours.',
     },
     {
+      id: 'ai-features',
       label: 'AI Features',
       body: 'I have hands-on experience shipping AI in production. In Plutus Trade I deeply integrated the Gemini Model to turn complex data into intuitive per-stock diagnostics, enabling data-driven investment decisions.',
     },
     {
+      id: 'agentic-workflows',
       label: 'Agentic Workflows',
       body: "I build AI agents that handle tasks autonomously, delegating repetitive work spanning spec generation through dev handoff to AI and lifting the team's overall execution efficiency.",
     },
   ],
   skillsTable: [
     {
+      id: 'product-strategy',
       label: 'Product Strategy',
       body: 'JTBD, Persona, User Journey Map, Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE Prioritization, AARRR (Pirate Metrics), Competitive Analysis',
     },
     {
+      id: 'ai-llm',
       label: 'AI / LLM',
       body: 'Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, Agentic Workflows, Multi-Agent Systems',
     },
     {
+      id: 'ai-engineering',
       label: 'AI Engineering',
       body: 'RAG (Retrieval-Augmented Generation), Hybrid / Vector Search, LangGraph / LangChain, Vector Databases (Qdrant), Embeddings (Voyage AI), LLM Evaluation & Benchmarking, AI Safety / Prompt-Injection Defense',
     },
     {
+      id: 'engineering',
       label: 'Engineering',
       body: 'React, TypeScript, Flutter, Canvas 2D, three.js (WebGL), Node.js, Python (FastAPI), PHP (Laravel), PostgreSQL, SQLite, Redis, Supabase, Vercel, Fly.io',
     },
     {
+      id: 'data-analytics',
       label: 'Data & Analytics',
       body: 'BI Dashboards, Predictive Analytics, A/B Testing, SQL, Data-Driven Decision Making',
     },
     {
+      id: 'leadership',
       label: 'Leadership',
       body: 'Cross-Functional Team Leadership, Stakeholder Management, Agile / Scrum, Mentoring',
     },

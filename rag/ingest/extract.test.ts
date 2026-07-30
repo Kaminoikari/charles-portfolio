@@ -11,10 +11,24 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { blogChunks, blogSlug, type BlogArticleInput } from './extract.js'
+import {
+  aboutChunks,
+  blogChunks,
+  blogSlug,
+  experienceChunks,
+  type AboutContentInput,
+  type BlogArticleInput,
+  type ExperienceInput,
+} from './extract.js'
 import { blogArticles } from '../../src/data/blog.en.ts'
+import { aboutContent } from '../../src/data/aboutContent.en.ts'
+import { aboutContent as aboutContentZh } from '../../src/data/aboutContent.zh-TW.ts'
+import { experience } from '../../src/data/experience.en.ts'
+import { experience as experienceZh } from '../../src/data/experience.zh-TW.ts'
 
 const ARTICLES = blogArticles as BlogArticleInput[]
+const ABOUT = aboutContent as AboutContentInput
+const ROLES = experience as ExperienceInput[]
 
 const NEW_POST: BlogArticleInput = {
   title: 'A brand new post',
@@ -65,6 +79,78 @@ test('two articles sharing a slug fail loudly instead of overwriting each other'
 test('a slug survives a trailing slash and is derived from the article URL', () => {
   assert.equal(blogSlug('https://charlestychen.substack.com/p/outcome'), 'outcome')
   assert.equal(blogSlug('https://charlestychen.substack.com/p/outcome/'), 'outcome')
+})
+
+// ── experience ────────────────────────────────────────────────────────────
+// A new role goes in at index 0, and `experience:0` / `experience:2` are pinned
+// in the golden set, so an index-derived id silently repoints those evals.
+
+const NEW_ROLE: ExperienceInput = {
+  dateRange: 'AUG 2026 — PRESENT',
+  title: 'Head of Product',
+  organization: 'Somewhere New Inc.',
+  bullets: ['Joined most recently, so this role sorts to the top.'],
+}
+
+test('taking a new job leaves every existing role chunk untouched', () => {
+  const before = experienceChunks(ROLES, 'en')
+  const after = experienceChunks([NEW_ROLE, ...ROLES], 'en')
+  const byId = new Map(after.map((c) => [c.id, c]))
+
+  const moved = before.filter((c) => byId.get(c.id)?.content !== c.content)
+  assert.deepEqual(moved, [], `${moved.length} role chunk(s) changed identity, e.g. ${moved.map((c) => c.id).join(', ')}`)
+})
+
+test('a role keeps one id across locales even where the company name is localized', () => {
+  const en = experienceChunks(ROLES, 'en').map((c) => c.id.replace(/:en$/, ''))
+  const zh = experienceChunks(experienceZh as ExperienceInput[], 'zh-TW').map((c) => c.id.replace(/:zh-TW$/, ''))
+  assert.deepEqual(zh, en)
+})
+
+test('two stints at one company fail loudly instead of overwriting each other', () => {
+  const again: ExperienceInput = { ...NEW_ROLE, title: 'Promoted', dateRange: 'AUG 2027 — PRESENT' }
+  assert.throws(() => experienceChunks([NEW_ROLE, again], 'en'), /duplicate experience/i)
+})
+
+// ── about ─────────────────────────────────────────────────────────────────
+// `about:ai:1` is pinned in the golden set, and the visible title/label is
+// localized, so the id has to come from the explicit per-entry key.
+
+test('inserting an about entry leaves every existing about chunk untouched', () => {
+  const before = aboutChunks(ABOUT, 'en')
+  const after = aboutChunks(
+    {
+      whoIAm: ['A newly added opening paragraph.', ...ABOUT.whoIAm],
+      philosophyBullets: [{ id: 'ship-early', title: 'Ship early', body: 'A newly added bullet.' }, ...ABOUT.philosophyBullets],
+      aiTable: [{ id: 'research', label: 'Research', body: 'A newly added row.' }, ...ABOUT.aiTable],
+    },
+    'en',
+  )
+  const byId = new Map(after.map((c) => [c.id, c]))
+
+  const moved = before.filter((c) => byId.get(c.id)?.content !== c.content)
+  assert.deepEqual(moved, [], `${moved.length} about chunk(s) changed identity, e.g. ${moved.map((c) => c.id).join(', ')}`)
+})
+
+// Philosophy titles are genuinely translated, so this pins them. The AI-table
+// labels happen to be English in all three files today, so for those rows this
+// only asserts that a future translation would not split the id.
+test('philosophy and AI-table ids match across locales even though the copy does not', () => {
+  const en = aboutChunks(ABOUT, 'en')
+    .filter((c) => !c.id.startsWith('about:whoiam:'))
+    .map((c) => c.id.replace(/:en$/, ''))
+  const zh = aboutChunks(aboutContentZh as AboutContentInput, 'zh-TW')
+    .filter((c) => !c.id.startsWith('about:whoiam:'))
+    .map((c) => c.id.replace(/:zh-TW$/, ''))
+  assert.deepEqual(zh, en)
+})
+
+test('two about entries sharing a key fail loudly instead of overwriting each other', () => {
+  const row = { id: 'discovery', label: 'Discovery', body: 'first' }
+  assert.throws(
+    () => aboutChunks({ whoIAm: [], philosophyBullets: [], aiTable: [row, { ...row, body: 'second' }] }, 'en'),
+    /duplicate about:ai/i,
+  )
 })
 
 test('a URL with no usable slug characters still yields a stable non-empty id', () => {

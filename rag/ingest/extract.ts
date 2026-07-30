@@ -68,13 +68,35 @@ function changelogBodyText(body: unknown[]): string {
     .replace(/\*\*([^*]+)\*\*/g, '$1')
 }
 
-// A blog chunk id has to name the article, not its slot in the feed: a new post
-// is inserted at the top, so an index-derived id renames every older article on
-// every publish — re-embedding the whole corpus, orphaning the points behind the
-// old ids, and quietly invalidating the golden eval set, which pins ids. The URL
-// is already this repo's article identity (blog-bodies.json is keyed by it, and
-// the fetcher dedupes on it), so the id derives from there and from nothing else.
-// Editing an article's title or body therefore leaves its id alone.
+// A chunk id has to name the thing it holds, never its slot in an array. Every
+// list the corpus is built from grows at the FRONT (newest article, newest role),
+// so an index-derived id renames everything below the insertion point: the whole
+// tail gets re-embedded, the points behind the old ids are orphaned, and the
+// golden eval set — which pins ids — starts silently grading a different chunk.
+// Nothing fails loudly, which is why it went unnoticed for months.
+//
+// So each source derives its id from whatever already owns its identity, and a
+// collision is a build error rather than a last-write-wins overwrite.
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64)
+    .replace(/-+$/, '')
+}
+
+// Guards a per-source id space: same key twice means two entries would overwrite
+// each other's chunks, which is a data bug the build should refuse to encode.
+function uniqueKey(seen: Set<string>, key: string, source: string, what: string): string {
+  if (seen.has(key)) throw new Error(`duplicate ${source} key "${key}" — ${what} collides with an earlier entry`)
+  seen.add(key)
+  return key
+}
+
+// Blog identity is the article URL: blog-bodies.json is keyed by it and the
+// fetcher dedupes on it, so it already owns the article and nothing new has to
+// be invented. Retitling or rewriting an article therefore leaves its id alone.
 //
 // Substack paths give a clean human slug ("/p/outcome" → "outcome"). Medium
 // percent-encodes a Chinese title and appends its own post id, and the CJK runs
@@ -82,15 +104,9 @@ function changelogBodyText(body: unknown[]): string {
 // hence the 64-char budget, which is wide enough to keep it.
 export function blogSlug(url: string): string {
   const last = decodeURIComponent(new URL(url).pathname.replace(/\/+$/, '').split('/').pop() ?? '')
-  const slug = last
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 64)
-    .replace(/-+$/, '')
   // Nothing survived (e.g. an all-CJK path with no id): fall back to the URL
   // digest, which is stable and unique even though it reads as noise.
-  return slug || createHash('sha1').update(url).digest('hex').slice(0, 12)
+  return slugify(last) || createHash('sha1').update(url).digest('hex').slice(0, 12)
 }
 
 export interface BlogArticleInput {
@@ -111,12 +127,7 @@ export function blogChunks(articles: BlogArticleInput[], locale: string): ChunkR
   const seen = new Set<string>()
 
   articles.forEach((b) => {
-    const slug = blogSlug(b.url)
-    // Two articles under one slug would silently overwrite each other's chunks,
-    // so this is a build error rather than a last-write-wins merge.
-    if (seen.has(slug)) throw new Error(`duplicate blog slug "${slug}" — ${b.url} collides with an earlier article`)
-    seen.add(slug)
-
+    const slug = uniqueKey(seen, blogSlug(b.url), 'blog', b.url)
     const parentId = `blog:${slug}:${locale}`
     out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url })
 
@@ -139,6 +150,78 @@ export function blogChunks(articles: BlogArticleInput[], locale: string): ChunkR
   })
 
   return out
+}
+
+export interface AboutContentInput {
+  whoIAm: string[]
+  philosophyBullets: { id: string; title: string; body: string }[]
+  aiTable: { id: string; label: string; body: string }[]
+}
+
+// About identity comes from the `id` each bullet and table row now carries. The
+// visible title/label cannot serve: philosophy titles are already translated per
+// locale, and the AI-table labels are only English by coincidence — they are view
+// copy, so keying on them would make the id a hostage to a copy edit. The who-I-am
+// paragraphs are the exception: they are bare prose in a `string[]` with nothing
+// to key on, so the paragraph is its own identity via a digest. That costs one
+// swapped point per copy edit (the reconciler's ordinary prune clears it, being
+// far under RAG_PRUNE_MAX) and in exchange an inserted paragraph never disturbs
+// the others. Give whoIAm real keys if it ever needs to be cited or eval-pinned.
+export function aboutChunks(about: AboutContentInput, locale: string): ChunkRecord[] {
+  const out: ChunkRecord[] = []
+  const base = { parentId: null, sourceType: 'about' as const, projectId: null, locale }
+
+  const paragraphs = new Set<string>()
+  about.whoIAm.forEach((p) => {
+    const key = uniqueKey(paragraphs, createHash('sha1').update(p).digest('hex').slice(0, 12), 'about:whoiam', p.slice(0, 40))
+    out.push({ ...base, id: `about:whoiam:${key}:${locale}`, title: 'About — Who I Am', content: p })
+  })
+
+  const bullets = new Set<string>()
+  about.philosophyBullets.forEach((b) => {
+    const key = uniqueKey(bullets, b.id, 'about:philosophy', b.title)
+    out.push({ ...base, id: `about:philosophy:${key}:${locale}`, title: `Product philosophy — ${b.title}`, content: `${b.title}: ${b.body}` })
+  })
+
+  const rows = new Set<string>()
+  about.aiTable.forEach((r) => {
+    const key = uniqueKey(rows, r.id, 'about:ai', r.label)
+    out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${r.label}: ${r.body}` })
+  })
+
+  return out
+}
+
+export interface ExperienceInput {
+  dateRange: string
+  title: string
+  organization: string
+  orgKey?: string
+  bullets: string[]
+}
+
+// Experience identity is the English company name. `organization` is localized
+// (the zh-TW timeline is bilingual), but `orgKey` already exists to hold the
+// English name for the career-photo lookup, so `orgKey ?? organization` is the
+// same string in all three locales and keeps `experience:uspace…` pinnable in the
+// golden set. Two stints at one company would collide; that throws, and the fix
+// is to widen the key rather than to fall back on position.
+export function experienceChunks(items: ExperienceInput[], locale: string): ChunkRecord[] {
+  const seen = new Set<string>()
+
+  return items.map((e) => {
+    const org = e.orgKey ?? e.organization
+    const key = uniqueKey(seen, slugify(org), 'experience', org)
+    return {
+      id: `experience:${key}:${locale}`,
+      parentId: null,
+      sourceType: 'experience' as const,
+      projectId: null,
+      locale,
+      title: `${e.title} @ ${e.organization}`,
+      content: `${e.title} at ${e.organization} (${e.dateRange})\n${e.bullets.join('\n')}`,
+    }
+  })
 }
 
 export async function extractAll(): Promise<ChunkRecord[]> {
@@ -187,22 +270,11 @@ export async function extractAll(): Promise<ChunkRecord[]> {
       })
     }
 
-    // ── about (who-I-am paras + philosophy + AI table + skills table) ──
-    const a = about.aboutContent
-    a.whoIAm.forEach((p: string, i: number) =>
-      out.push({ id: `about:whoiam:${i}:${locale}`, parentId: null, sourceType: 'about', projectId: null, locale, title: 'About — Who I Am', content: p }),
-    )
-    a.philosophyBullets.forEach((b: { title: string; body: string }, i: number) =>
-      out.push({ id: `about:philosophy:${i}:${locale}`, parentId: null, sourceType: 'about', projectId: null, locale, title: `Product philosophy — ${b.title}`, content: `${b.title}: ${b.body}` }),
-    )
-    a.aiTable.forEach((r: { label: string; body: string }, i: number) =>
-      out.push({ id: `about:ai:${i}:${locale}`, parentId: null, sourceType: 'about', projectId: null, locale, title: `How I use AI — ${r.label}`, content: `${r.label}: ${r.body}` }),
-    )
+    // ── about (who-I-am paras + philosophy + AI table; see aboutChunks) ──
+    out.push(...aboutChunks(about.aboutContent, locale))
 
-    // ── experience (one chunk per role) ──
-    experience.experience.forEach((e: { dateRange: string; title: string; organization: string; bullets: string[] }, i: number) =>
-      out.push({ id: `experience:${i}:${locale}`, parentId: null, sourceType: 'experience', projectId: null, locale, title: `${e.title} @ ${e.organization}`, content: `${e.title} at ${e.organization} (${e.dateRange})\n${e.bullets.join('\n')}` }),
-    )
+    // ── experience (one chunk per role; see experienceChunks) ──
+    out.push(...experienceChunks(experience.experience, locale))
 
     // ── skills (single rolled-up chunk — each item is tiny) ──
     out.push({ id: `skills:all:${locale}`, parentId: null, sourceType: 'skill', projectId: null, locale, title: 'Skills', content: skills.skills.map((s: { name: string }) => s.name).join('; ') })

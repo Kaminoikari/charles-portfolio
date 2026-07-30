@@ -8,11 +8,17 @@
 //   - Descriptive sentences and bullet titles translated to Japanese.
 
 export interface AboutBullet {
+  // Stable, locale-independent key. The RAG chunk id is built from it, so it
+  // must stay identical across the three locale files and must not change when
+  // the copy is rewritten.
+  id: string
   title: string
   body: string
 }
 
 export interface AboutTableRow {
+  // Stable, locale-independent key — see AboutBullet.id.
+  id: string
   label: string
   body: string
 }
@@ -32,66 +38,81 @@ export const aboutContent: AboutContent = {
   ],
   philosophyBullets: [
     {
+      id: 'outcomes-over-outputs',
       title: 'Outputs より Outcomes',
       body: '単に feature を出すことが目的ではありません。ユーザー行動を変え、ビジネス指標を動かすことが目的です。「ticket を何枚チェックオフしたか」ではなく「ユーザーが何を変えたか」で成功を測ります。',
     },
     {
+      id: 'product-sense',
       title: '鋭い product sense',
       body: '最高の判断は、データがまだ存在しない時点で起きることが多いです。どの問題が解く価値があるか、どの解決策が刺さるか、いつ scope を思い切って切るか。その直感は、プロダクトを自ら出し続け、リアルなユーザーの反応を見ることで育ちます。',
     },
     {
+      id: 'strong-opinions',
       title: '強い意見、しなやかに手放す (Strong opinions, loosely held)',
       body: 'Product sense を持つということは、「何を作るか、なぜ作るか」に明確な視点を持つことです。ただし、信念だけで柔軟性のない姿勢は単なる頑固さです。強い仮説を立て、いつでもデータとユーザーフィードバックに自分の間違いを証明させる構えでいます。',
     },
     {
+      id: 'build-to-learn',
       title: '作って学ぶ (Build to learn)',
       body: 'プロトタイプはスライド資料に勝ちます。Claude Code と Codex で実際に動くプロダクトを作り、ステークホルダーの仮定の意見ではなく、本物のユーザーフィードバックを生み出します。',
     },
   ],
   aiTable: [
     {
+      id: 'discovery',
       label: 'Discovery',
       body: 'LLM を活用して、膨大な市場調査、競合分析、インタビュー資料を処理します。断片的な情報を素早く明確な市場インサイトにまとめ、意思決定を支援します。',
     },
     {
+      id: 'spec-writing',
       label: 'Spec Writing',
       body: '私自身が作った AI Agent「Product Playbook」。22 のプロダクトフレームワークを統合した Claude Skills として、状況ごとに論理的で専門性の高いプロダクト仕様書を生成し、従来数日を要した企画プロセスを数時間に短縮します。',
     },
     {
+      id: 'prototyping',
       label: 'Prototyping',
       body: 'Claude Code と Codex でフルスタックの原型開発を行います。React、Node.js、Python といった技術スタックにわたるプロダクト原型を独力で完成させ、アイデアを数時間で触れるソフトウェアに変換します。',
     },
     {
+      id: 'ai-features',
       label: 'AI Features',
       body: 'AI を実務に落とし込む経験があります。たとえば Plutus Trade では Gemini Model を深く統合し、複雑なデータを直感的な個別株診断に変換することで、データドリブンな投資判断を実現しています。',
     },
     {
+      id: 'agentic-workflows',
       label: 'Agentic Workflows',
       body: 'タスクを自動で処理できる AI Agent を構築します。仕様作成から開発引き渡しまでの反復作業を AI に任せることで、チーム全体の実行効率を大きく引き上げます。',
     },
   ],
   skillsTable: [
     {
+      id: 'product-strategy',
       label: 'Product Strategy',
       body: 'JTBD、Persona、User Journey Map、Empathy Map、Opportunity Solution Tree、User Story Mapping、North Star Metric、OKRs、RICE Prioritization、AARRR（Pirate Metrics）、Competitive Analysis',
     },
     {
+      id: 'ai-llm',
       label: 'AI / LLM',
       body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems',
     },
     {
+      id: 'ai-engineering',
       label: 'AI Engineering',
       body: 'RAG（Retrieval-Augmented Generation）、Hybrid / Vector Search、LangGraph / LangChain、Vector Database（Qdrant）、Embeddings（Voyage AI）、LLM Evaluation & Benchmarking、AI Safety / Prompt-Injection Defense',
     },
     {
+      id: 'engineering',
       label: 'Engineering',
       body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io',
     },
     {
+      id: 'data-analytics',
       label: 'Data & Analytics',
       body: 'BI Dashboard、Predictive Analytics、A/B Testing、SQL、データ駆動の意思決定',
     },
     {
+      id: 'leadership',
       label: 'Leadership',
       body: 'クロスファンクショナルチームのリード、Stakeholder Management、Agile / Scrum、Mentoring',
     },
