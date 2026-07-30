@@ -360,6 +360,28 @@ describe('FaceHero section deep link', () => {
     expect(unlock).not.toHaveBeenCalled()
   })
 
+  // Landing on /changelog or /about and then clicking the wordmark is an in-site
+  // navigation, not an arrival: a 2s loader plus a splash gate plus 4.5s of animation
+  // (with the nav gone for all of it) in the middle of a session is an ambush.
+  it('skips the gate when the visitor navigated here from another page in the session', async () => {
+    window.history.replaceState({}, '', '/changelog')   // the path this document landed on
+    vi.resetModules()
+    const { default: FreshHero } = await import('./FaceHero.tsx')
+    window.history.replaceState({}, '', '/')            // now on the home route
+    render(
+      <HeroIntroProvider>
+        <FreshHero />
+        <ChromeProbe />
+      </HeroIntroProvider>,
+    )
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+    expect(screen.queryByTestId('mobius-loader')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /enter/i })).not.toBeInTheDocument()
+    expect(chromeState()).toBe('visible')
+    act(() => { lastOpts?.onReady?.() })
+    expect(startIntro).toHaveBeenCalledWith(true)   // settled portrait, no replay
+  })
+
   // guards the other direction: the skip must not swallow the intro for someone
   // who simply opened the home page
   it('still plays the gate for a plain home visit', async () => {

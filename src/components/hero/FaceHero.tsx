@@ -108,13 +108,29 @@ function enteredViaSectionLink(): boolean {
   return typeof window !== 'undefined' && window.location.hash.length > 1
 }
 
+// The path this document landed on, captured once at module load — App imports this file
+// eagerly, so it runs before any client-side navigation can change the url.
+const LANDING_PATH = typeof window === 'undefined' ? '' : window.location.pathname
+
+// The splash belongs to a cold arrival at the home route. Reaching the hero from anywhere
+// else in the site — clicking the wordmark on /changelog or /about, say — means the
+// visitor is already mid-session, and a 2s loader plus a gate plus 4.5s of animation (with
+// the nav out of the way for all of it) would ambush them. Those mounts land on the
+// settled portrait instead. Locale-aware for free: /zh-TW/about → /zh-TW is still a
+// different path from the one the document loaded with.
+function navigatedHereInSession(): boolean {
+  return typeof window !== 'undefined' && window.location.pathname !== LANDING_PATH
+}
+
 export default function FaceHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<FaceHeroHandle | null>(null)
   // ONE skip decision, read by both the phase seed and the engine start below so
   // the shell and the engine can never disagree about whether the intro plays.
-  const skipIntroRef = useRef(alreadySeenThisSession() || enteredViaSectionLink())
+  const skipIntroRef = useRef(
+    alreadySeenThisSession() || enteredViaSectionLink() || navigatedHereInSession(),
+  )
   const [phase, setPhase] = useState<Phase>(() => (skipIntroRef.current ? 'revealed' : 'loading'))
   const [displayedProgress, setDisplayedProgress] = useState(0)
   const realProgressRef = useRef(0)
