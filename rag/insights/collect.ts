@@ -1,20 +1,9 @@
 // Shared data layer for the chat-insights renderers. Scrolls chat_logs once and
 // computes every metric the plain-text report and the HTML dashboard need, so
 // both renderers stay pure presentation over a single source of truth.
-import { config } from '../config.js'
-import { qdrant } from '../qdrant.js'
+import { REPORT_EPOCH_MS, scrollReportableLogs } from './chat-logs.js'
 
 export const TIME_ZONE = 'Asia/Taipei'
-
-// The report shows only activity from this instant onward — a deliberate fresh
-// start on 2026-07-13 12:00 (Asia/Taipei), once answers began being stored.
-// Everything earlier stays in chat_logs; it is hidden from the report only.
-const REPORT_EPOCH_MS = Date.parse('2026-07-13T12:00:00+08:00')
-
-const withinEpoch = (ts: string | null | undefined): boolean => {
-  const t = Date.parse(ts ?? '')
-  return !Number.isNaN(t) && t >= REPORT_EPOCH_MS
-}
 
 interface LogRow {
   type: 'open' | 'question' | null
@@ -138,29 +127,9 @@ function tallyMetric(
 }
 
 export async function gatherInsights(): Promise<Insights | null> {
-  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) {
-    throw new Error('QDRANT_URL and QDRANT_API_KEY are required.')
-  }
-  const db = qdrant()
-  const rows: LogRow[] = []
-  let offset: string | number | undefined | null = undefined
-  while (rows.length < 5000) {
-    const res = await db.scroll(config.qdrantLogsCollection, {
-      limit: 256,
-      with_payload: true,
-      with_vector: false,
-      offset: offset ?? undefined,
-    })
-    for (const p of res.points) rows.push((p.payload ?? {}) as unknown as LogRow)
-    offset = res.next_page_offset as string | number | null
-    if (!offset) break
-  }
-  const truncated = Boolean(offset)
-
-  // Only identified visitors from the report epoch onward. Pre-upgrade rows carry
-  // no visitor_id, and anything before the epoch is a prior era we've reset past;
-  // both stay in chat_logs but are excluded from the report.
-  const identified = rows.filter((r) => r.visitor_id && withinEpoch(r.ts))
+  // The loader has already dropped anonymous rows and everything before the
+  // report epoch, so what comes back is exactly what the report may show.
+  const { rows: identified, truncated } = await scrollReportableLogs<LogRow>()
   if (identified.length === 0) return null
 
   const openRows = identified.filter((r) => r.type === 'open')

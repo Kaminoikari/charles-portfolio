@@ -12,8 +12,7 @@
 //
 // Run:  npx tsx rag/insights/by-day.ts [--days N]   (needs QDRANT_*).
 
-import { config } from '../config.js'
-import { qdrant } from '../qdrant.js'
+import { scrollReportableLogs } from './chat-logs.js'
 
 const TIME_ZONE = 'Asia/Taipei'
 
@@ -57,37 +56,15 @@ function shortVid(vid: string | null): string {
   return vid ? vid.slice(0, 8) : 'anonymous'
 }
 
-async function scrollAll(): Promise<LogRow[]> {
-  const db = qdrant()
-  const rows: LogRow[] = []
-  let offset: string | number | undefined | null = undefined
-  while (rows.length < 5000) {
-    const res = await db.scroll(config.qdrantLogsCollection, {
-      limit: 256,
-      with_payload: true,
-      with_vector: false,
-      offset: offset ?? undefined,
-    })
-    for (const p of res.points) rows.push((p.payload ?? {}) as unknown as LogRow)
-    offset = res.next_page_offset as string | number | null
-    if (!offset) break
-  }
-  return rows
-}
-
 async function main() {
-  if (!config.qdrantUrl || !process.env.QDRANT_API_KEY) {
-    throw new Error('QDRANT_URL and QDRANT_API_KEY are required.')
-  }
-
   const daysArgIdx = process.argv.indexOf('--days')
   const daysLimit = daysArgIdx >= 0 ? Number(process.argv[daysArgIdx + 1]) : Infinity
 
-  // Only identified visitors — rows with no visitor_id (pre-upgrade anonymous
-  // logs) are dropped, so nothing shows up as "anonymous".
-  const rows = (await scrollAll()).filter((r) => r.ts && r.visitor_id)
+  // Same loader the aggregate report uses, so this forensic view is cut at the
+  // same epoch instead of quietly reaching further back than the dashboard.
+  const { rows } = await scrollReportableLogs<LogRow>()
   if (rows.length === 0) {
-    console.log('No chat logs with a visitor id yet.')
+    console.log('No chat activity in the current reporting window yet.')
     return
   }
 
