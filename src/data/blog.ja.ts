@@ -33,6 +33,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '1年後の認知ギャップは想像を絶する：あなたは役割の境界線を引いているのか、Outcome を届けているのか',
+    subtitle:
+      'スキルがモデルによって民主化された今、PM の成長速度を決めるのは High Agency だ。従来の PM 職能フレームワークに、自分の能力の境界を決めさせてはいけない。',
+    url: 'https://charlestychen.substack.com/p/outcome',
+    platform: 'Substack',
+    date: '2026-07-28',
+    cover:
+      'https://images.unsplash.com/photo-1515169067868-5387ec356754?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: 'AI が最終的に学ぶべきもの：誰も口にしてこなかった暗黙知',
     subtitle:
       '企業最大の資産は、ベテランの職人、デザイナー、PM、営業、管理職の頭の中にある暗黙知（Tacit Knowledge）にある。AI がそれを学び始めた今、企業の本当の競争力が問い直されている。',

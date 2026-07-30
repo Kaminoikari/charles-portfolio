@@ -33,6 +33,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'A Year From Now the Gap Will Be Unimaginable: Are You Guarding Role Boundaries, or Delivering Outcomes?',
+    subtitle:
+      "Once the models have democratized skill itself, what sets a PM's growth rate is High Agency. Don't let a traditional PM competency framework decide where your capabilities end.",
+    url: 'https://charlestychen.substack.com/p/outcome',
+    platform: 'Substack',
+    date: '2026-07-28',
+    cover:
+      'https://images.unsplash.com/photo-1515169067868-5387ec356754?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: 'The Real Thing AI Has Left to Learn: The Tacit Knowledge No One Ever Says Out Loud',
     subtitle:
       "A company's biggest asset lives in the heads of its veteran craftsmen, designers, PMs, salespeople, and managers as tacit knowledge. As AI begins to learn it, what counts as a company's real competitive edge is being redefined.",

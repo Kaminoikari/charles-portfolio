@@ -25,6 +25,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '一年後的認知差距將無法想像：你是在劃清角色邊界，還是在交付 Outcome？',
+    subtitle:
+      '當技能已被模型民主化，決定產品經理成長速度的是 High Agency。不要讓傳統的 PM 職能框架限制了你的能力邊界。',
+    url: 'https://charlestychen.substack.com/p/outcome',
+    platform: 'Substack',
+    date: '2026-07-28',
+    cover:
+      'https://images.unsplash.com/photo-1515169067868-5387ec356754?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: 'AI 最終要學會的，不是知識，而是那些從來沒有人說出口的事',
     subtitle:
       '企業最大的資產，不是文件、流程或 SOP，而是那些存在於老師傅、設計師、PM、業務與主管腦中的默會知識（Tacit Knowledge）。AI 正開始學習它，而這也重新定義了企業真正的競爭力。',
