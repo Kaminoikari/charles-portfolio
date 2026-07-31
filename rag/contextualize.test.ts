@@ -12,7 +12,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { contextualizeQuestion } from './contextualize.js'
-import type { Invoker } from './llm.js'
+import type { Tier } from './llm.js'
 
 const HISTORY = [
   { role: 'user' as const, content: '介紹一下 Product Playbook' },
@@ -20,11 +20,13 @@ const HISTORY = [
 ]
 
 // A tier that always fails, the way a quota-exhausted Gemini does.
-const failing = (message: string): Invoker => ({
+const failing = (message: string): Tier => ({
   invoke: () => Promise.reject(new Error(message)),
+  withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error(message)) }),
 })
-const answering = (content: string): Invoker => ({
+const answering = (content: string): Tier => ({
   invoke: () => Promise.resolve({ content }),
+  withStructuredOutput: <T>() => ({ invoke: () => Promise.resolve({} as T) }),
 })
 
 test('contextualizeQuestion: empty history is a no-op (no model call)', async () => {
