@@ -188,6 +188,37 @@ test('ordinalReference: null when the message names no position, or there is not
   assert.equal(ordinalReference('我第一輪問題問了你什麼', []), null)
 })
 
+// The direction that shipped broken: 問題 is also "problem", and "最後一個問題" /
+// "one last question" is the standard preface to a BRAND-NEW question. Routing
+// these to the transcript means the visitor asks what Charles's tech stack is
+// and gets told what their own earlier question was, having retrieved nothing.
+test('ordinalReference: a question-shaped phrase that points at nothing earlier is not a reference', () => {
+  for (const q of [
+    // A politeness opener in front of a new question.
+    '最後一個問題，他現在在找什麼機會?',
+    '第二個問題：他的技術棧是什麼?',
+    'One last question: what is he looking for next?',
+    'Second question: how big was the team?',
+    '最後の質問ですが、彼は何を作りましたか',
+    // 問題 as "problem", and questions about Charles's own practice.
+    'USPACE 遇到的第一個問題是什麼?',
+    '他在 USPACE 解決的第一個問題是什麼?',
+    '你做用戶訪談第一個問題會問什麼?',
+    "what's the first question you'd ask a new user?",
+  ]) {
+    assert.equal(ordinalReference(q, SESSION), null, `should not be a reference: ${q}`)
+    assert.equal(shouldAnswerFromHistory(q, SESSION), false, `should reach retrieval: ${q}`)
+  }
+})
+
+// …without losing the ones that do point backwards. A leading connective is
+// still the visitor talking about this conversation.
+test('ordinalReference: still fires when the phrase leads the sentence or points back', () => {
+  for (const q of ['所以第二個問題是什麼?', '那第一個問題是什麼?', '第2題你還沒回覆', '上一個問題你答錯了']) {
+    assert.notEqual(ordinalReference(q, SESSION), null, `should be a reference: ${q}`)
+  }
+})
+
 // Naming a question that was never asked is not a licence to pick another one.
 test('ordinalReference: an out-of-range position resolves with no target', () => {
   const ref = ordinalReference('第十個問題是什麼?', SESSION)

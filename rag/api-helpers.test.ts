@@ -73,14 +73,18 @@ test('parseChatRequest: keeps valid history, clamps size, drops junk, never reje
     assert.equal(mixed.history?.[0].content, 'kept')
   }
 
-  // Only the last 16 turns survive, and each is capped at 500 chars. The input
+  // Only the last 60 turns survive, and each is capped at 500 chars. The input
   // stays comfortably above the clamp so this keeps proving that it clamps.
-  const many = Array.from({ length: 24 }, (_, i) => ({ role: 'user' as const, content: `q${i}` }))
+  // 60 is the transport bound, not the memory window: the prompts render 16
+  // turns, and this has to stay wider so formatHistory can see that turns fell
+  // off. If they were equal again, its "(earlier turns are not shown)" marker
+  // could never fire and its question numbering would silently restart at 1.
+  const many = Array.from({ length: 80 }, (_, i) => ({ role: 'user' as const, content: `q${i}` }))
   const capped = parseChatRequest({ question: 'hi', history: many })
   assert.equal(capped.ok, true)
   if (capped.ok) {
-    assert.equal(capped.history?.length, 16)
-    assert.equal(capped.history?.[0].content, 'q8') // oldest kept is the 16th-from-last
+    assert.equal(capped.history?.length, 60)
+    assert.equal(capped.history?.[0].content, 'q20') // oldest kept is the 60th-from-last
   }
   const longTurn = parseChatRequest({ question: 'hi', history: [{ role: 'user', content: 'x'.repeat(600) }] })
   assert.equal(longTurn.ok, true)

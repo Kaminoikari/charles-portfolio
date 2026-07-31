@@ -6,18 +6,19 @@
 import { useCallback, useRef, useState } from 'react'
 import { getVisitorId } from './visitorId'
 
-// How much recent conversation to send so the server can resolve follow-ups
-// (see rag/contextualize.ts). Kept small — it rides on every request, and only
-// the last few turns matter for reference resolution. Assistant answers are
-// truncated: their topic disambiguates a follow-up, their full text is dead
-// weight. The server re-clamps these bounds, so this is just polite trimming.
-const HISTORY_MAX_TURNS = 16
+// Assistant answers are truncated: their topic disambiguates a follow-up, their
+// full text is dead weight on a request that carries it every time.
+//
+// The turn COUNT is deliberately not trimmed here. The server numbers the
+// visitor's questions from the start of what it receives (rag/history.ts) and
+// marks the transcript partial when its own window drops turns — both of which
+// are lies if the client silently dropped turns first. Trimming is the server's
+// job, at a bound wider than the window it renders, so it can tell.
 const HISTORY_ASSISTANT_CHARS = 300
 
 function buildHistory(msgs: ChatMessage[]): { role: 'user' | 'assistant'; content: string }[] {
   return msgs
     .filter((m) => !m.error && m.text.trim())
-    .slice(-HISTORY_MAX_TURNS)
     .map((m) => ({
       role: m.role,
       content: m.role === 'assistant' ? m.text.slice(0, HISTORY_ASSISTANT_CHARS) : m.text,

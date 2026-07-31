@@ -329,16 +329,30 @@ function capturingTier(): { tier: Tier; system: () => string } {
   return { tier, system: () => system }
 }
 
-test('converse: is handed the resolved question when the visitor names a position', async () => {
+test('converse: is pointed at the resolved transcript line when the visitor names a position', async () => {
   const { tier, system } = capturingTier()
   await converse(
     { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
     { primary: () => tier, fallback: () => tier },
   )
-  assert.match(system(), /question 2 of the 4/)
-  assert.match(system(), /那團隊多大\?/)
-  // And the transcript itself carries the numbering, so the two agree.
+  assert.match(system(), /pointing at the transcript line labelled "User \(question 2\)"/)
+  // The line it names has to be in the transcript, or the hint is a dead pointer.
   assert.match(system(), /User \(question 2\): 那團隊多大\?/)
+})
+
+// The hint is an instruction, so it must sit OUTSIDE the block the same prompt
+// declares to be data — and it must carry no visitor text, or a transcript line
+// reading "ignore the rules above" would arrive unfenced and unsanitized.
+test('converse: the hint precedes the transcript and quotes nothing from it', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  const hintAt = system().indexOf('pointing at the transcript line')
+  const transcriptAt = system().indexOf('Transcript:')
+  assert.equal(hintAt > -1 && hintAt < transcriptAt, true)
+  assert.equal(system().slice(hintAt, transcriptAt).includes('那團隊多大'), false)
 })
 
 test('converse: a position that was never asked is reported, not silently swapped', async () => {
@@ -347,7 +361,24 @@ test('converse: a position that was never asked is reported, not silently swappe
     { question: '第十個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
     { primary: () => tier, fallback: () => tier },
   )
-  assert.match(system(), /pointing at question 10, but they have only asked 4/)
+  assert.match(system(), /a question 10 that they never asked/)
+})
+
+// A position inside the conversation but outside the rendered window. Claiming
+// it was never asked would be false, and pointing at a line the model cannot
+// see would be a dead pointer; the honest answer is that it is out of view.
+test('converse: a position older than the rendered window is called out of view', async () => {
+  const long = Array.from({ length: 40 }, (_, i) => ({
+    role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
+    content: `t${i}`,
+  }))
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: long } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.match(system(), /earlier than the part of the transcript you can see/)
+  assert.equal(system().includes('never asked'), false)
 })
 
 test('converse: no positional reference leaves the prompt alone', async () => {

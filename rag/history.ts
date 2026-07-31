@@ -1,12 +1,15 @@
 // Conversation transcript helpers shared by every step that reads history.
 //
-// Two jobs live here so the pipeline has one definition of each:
+// Three jobs live here so the pipeline has one definition of each:
 //   formatHistory      — the transcript rendering used by contextualize, the
 //                        converse node, and the generation prompt.
 //   looksConversational — the gate that spots a message whose answer IS the
 //                        conversation ("我剛剛問了什麼", "repeat what I said"),
 //                        as opposed to a portfolio question that merely refers
 //                        back to it ("那個專案解決什麼問題?").
+//   ordinalReference /  — resolving a reference by position ("我剛剛問你的第二個
+//   replayTarget          問題") against the transcript, read by the graph and
+//                        by the converse node.
 //
 // The distinction matters because the two need opposite treatment. A
 // referential follow-up is rewritten into a standalone question and retrieved
@@ -92,22 +95,52 @@ const FIRST_QUESTION = /最初の(?:質問|問題)/
 const LAST_QUESTION =
   /上一(?:個|个)?(?:問題|问题|題|题)|最(?:後|后)(?:一(?:個|个)|的)?(?:問題|问题|題|题)|(?:剛剛|剛才|刚刚|刚才)[^。？?！!]{0,8}的?(?:問題|问题|題|题)|\b(?:previous|last)\s+question\b|(?:前|最後|さっき)の(?:質問|問題)/i
 
+// Naming a question is not the same as pointing at one. "最後一個問題，他現在在
+// 找什麼機會?" is a politeness opener in front of a brand-new question, and
+// "what's the first question you'd ask a new user?" asks about Charles's
+// practice — both contain a question-shaped phrase and neither refers to this
+// conversation. So the phrase counts only when the message points backwards, or
+// when the phrase is what the sentence is about.
+const POINTS_BACKWARD =
+  /我(?:剛剛|剛才)?(?:問|說|讲|講|提)|剛剛|剛才|刚刚|刚才|上面|前面|上一|\bmy\b|\bi (?:asked|said)\b|\byou (?:answered|said|replied)\b|私|さっき|(?:請|请)\s*回(?:答|覆|复)|\banswer\b|答えて/i
+// Applied to what FOLLOWS the phrase: "第二個問題是什麼", "第2題你還沒回覆",
+// "2番目の質問は何ですか", "my second question was …".
+const IS_THE_SUBJECT =
+  /^[\s,，、:：]*(?:是什麼|是什么|是哪|你(?:還|还)沒|(?:還|还)沒|は(?:何|なん)|でした|(?:was|is)\b)/i
+// And to what PRECEDES it. In zh, 問題 is also "problem", so "USPACE 遇到的第一個
+// 問題是什麼?" has the same tail as "第一個問題是什麼?" and means something else
+// entirely. What separates them is the modifier in front: a phrase owned by
+// something ("USPACE 遇到的", "他在 USPACE 解決的") is not this conversation.
+// Only a connective may lead.
+const NOTHING_OWNS_IT = /^[\s,，、。:：]*(?:所以|那麼|那么|那|嗯|好|so|and|then|ok)?[\s,，、:：]*$/i
+
 function parseNumber(token: string): number {
   return /^[0-9]+$/.test(token)
     ? Number(token)
     : (ZH_NUMERALS[token] ?? EN_ORDINALS[token.toLowerCase()] ?? 0)
 }
 
-// The 1-based position the message points at, or 0 when it points at nothing.
-// `total` lets "last" be resolved without the caller re-counting.
-function positionOf(question: string, total: number): number {
+// The 1-based position the message points at, with where the phrase ended, or
+// null when it points at nothing. `total` lets "last" be resolved without the
+// caller re-counting.
+function locate(
+  question: string,
+  total: number,
+): { index: number; start: number; end: number } | null {
   for (const re of [ZH_ORDINAL, JA_ORDINAL, EN_ORDINAL, EN_NUMBERED]) {
     const m = question.match(re)
-    if (m?.[1]) return parseNumber(m[1])
+    if (m?.[1] && m.index !== undefined) {
+      return { index: parseNumber(m[1]), start: m.index, end: m.index + m[0].length }
+    }
   }
-  if (FIRST_QUESTION.test(question)) return 1
-  if (LAST_QUESTION.test(question)) return total
-  return 0
+  for (const [re, index] of [
+    [FIRST_QUESTION, 1],
+    [LAST_QUESTION, total],
+  ] as const) {
+    const m = question.match(re)
+    if (m && m.index !== undefined) return { index, start: m.index, end: m.index + m[0].length }
+  }
+  return null
 }
 
 export interface OrdinalReference {
@@ -131,9 +164,17 @@ export function ordinalReference(question: string, history: ChatTurn[]): Ordinal
     .filter(({ turn }) => turn.role === 'user')
   if (!asked.length) return null
 
-  const index = positionOf(question, asked.length)
-  if (index < 1) return null
+  const found = locate(question, asked.length)
+  if (!found || found.index < 1) return null
+  // A question-shaped phrase only refers to an earlier turn when the message
+  // points backwards, or when the phrase leads the sentence and is what the
+  // sentence is about.
+  const isTheSubject =
+    NOTHING_OWNS_IT.test(question.slice(0, found.start)) &&
+    IS_THE_SUBJECT.test(question.slice(found.end))
+  if (!POINTS_BACKWARD.test(question) && !isTheSubject) return null
 
+  const { index } = found
   const hit = asked[index - 1]
   return {
     index,
@@ -166,8 +207,11 @@ export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): 
   if ((history?.length ?? 0) === 0) return false
   // A replay goes to retrieval under the earlier question's own words.
   if (replayTarget(question, history)) return false
-  // Any other positional reference is a question about the conversation, even
-  // when it names a position that was never asked.
+  // A message that points at an earlier question by position is asking about
+  // the conversation, including when it points at one that was never asked —
+  // "you only asked three" is an answer, and retrieval has nothing to find.
+  // ordinalReference is what decides that the message really points backwards
+  // rather than merely containing the word 問題 / "question".
   if (ordinalReference(question, history)) return true
   return looksConversational(question)
 }

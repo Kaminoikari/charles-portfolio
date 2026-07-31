@@ -29,12 +29,15 @@ export interface ParseError {
 
 const MAX_QUESTION_LEN = 200
 const MAX_VISITOR_ID_LEN = 64
-// Bound the memory window server-side regardless of what the client sends. 16
-// turns is eight exchanges: wide enough that a visitor asking "what did I ask
-// first" partway through a real session is still inside it, which the previous
-// 6 was not. Each turn is capped too, so a pasted wall of text cannot blow up
-// the prompts this rides on.
-const MAX_HISTORY_TURNS = 16
+// Bound the transport server-side regardless of what the client sends. This is
+// a payload limit, NOT the memory window: the prompts render the last 16 turns
+// (rag/nodes.ts), and this has to stay comfortably wider than that so
+// formatHistory can see that turns fell off and say so. When the two were both
+// 16 the "(earlier turns are not shown)" marker could never fire, and a
+// transcript whose oldest visible line was the visitor's third question was
+// numbered as their first. 60 turns is thirty exchanges. Each turn is capped
+// too, so a pasted wall of text cannot blow up the prompts this rides on.
+const MAX_HISTORY_TURNS = 60
 const MAX_TURN_LEN = 500
 
 // Accept a client-supplied visitor id only if it is a plausibly-sane string
