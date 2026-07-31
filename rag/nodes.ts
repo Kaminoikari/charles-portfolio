@@ -120,6 +120,17 @@ const verdictToRoute: Record<string, string> = {
   off_topic: 'off_topic',
 }
 
+// Pull a verdict out of a plain-text grader reply. Substring rather than exact
+// match, because a model asked for one word still sometimes wraps it ("Verdict:
+// off_topic."). Anything unrecognised returns '' and routes to generate, the
+// same lenient default the node uses when grading fails outright.
+function readVerdict(text: string): string {
+  const t = text.toLowerCase()
+  // Longest first: 'on_topic_no_data' contains no other verdict, but checking
+  // 'off_topic' before it would still be wrong if the order ever changed.
+  return ['on_topic_no_data', 'off_topic', 'answerable'].find((v) => t.includes(v)) ?? ''
+}
+
 // `injected` is typed `unknown` on purpose: the graph calls this node with a
 // RunnableConfig in that slot, and only a real Tiers value may win (see
 // resolveTiers). Tests pass stub tiers through the same door.
@@ -137,30 +148,48 @@ export async function gradeDocuments(
   // retrieved docs straight to generate. Each tier gets a tight 4s budget for
   // the same reason — better a slightly-less-filtered answer than a 504.
   const context = docs.map((d, i) => `[${i + 1}] ${d.pageContent}`).join('\n\n')
+  const messages = [
+    {
+      role: 'system',
+      content:
+        "You grade retrieval for Charles Chen's portfolio assistant. Judge " +
+        'whether the retrieved documents answer the question and return exactly ' +
+        'one verdict. Be lenient about "answerable" ' +
+        '(the goal is to filter clearly off-topic retrievals, not demand ' +
+        'perfection), but reserve "off_topic" for questions that are genuinely ' +
+        'not about Charles Chen at all. Questions about agentic design patterns ' +
+        "or AI agent engineering fall within Charles's documented expertise, so " +
+        'treat them as on-topic.',
+    },
+    { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
+  ]
   try {
-    const { verdict } = await withTierFallback(
+    const verdict = await withTierFallback(
       (tier) =>
         tier
-          .withStructuredOutput<{ verdict: 'answerable' | 'on_topic_no_data' | 'off_topic' }>(
-            gradeSchema,
-            { name: 'grade' },
-          )
-          .invoke([
-            {
-              role: 'system',
-              content:
-                "You grade retrieval for Charles Chen's portfolio assistant. Judge " +
-                'whether the retrieved documents answer the question and return exactly ' +
-                'one verdict. Be lenient about "answerable" ' +
-                '(the goal is to filter clearly off-topic retrievals, not demand ' +
-                'perfection), but reserve "off_topic" for questions that are genuinely ' +
-                'not about Charles Chen at all. Questions about agentic design patterns ' +
-                "or AI agent engineering fall within Charles's documented expertise, so " +
-                'treat them as on-topic.',
-            },
-            { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
-          ]),
-      { timeoutMs: 4000, label: 'grade' },
+          .withStructuredOutput<{ verdict: string }>(gradeSchema, { name: 'grade' })
+          .invoke(messages)
+          .then((r) => r.verdict),
+      {
+        timeoutMs: 4000,
+        label: 'grade',
+        // The paid tier answers in text: this node runs inside the graph, where
+        // every model call is streamed, and a streamed forced tool call reached
+        // Anthropic's parser with empty args in production. One word of output
+        // does not need tool calling.
+        fallbackCall: (tier) =>
+          tier
+            .invoke([
+              ...messages,
+              {
+                role: 'user',
+                content:
+                  'Reply with exactly one word and nothing else: answerable, ' +
+                  'on_topic_no_data, or off_topic.',
+              },
+            ])
+            .then((r) => readVerdict(String(r.content))),
+      },
       tiers,
     )
     return { graded: docs, route: verdictToRoute[verdict] ?? 'generate' }

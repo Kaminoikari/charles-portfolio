@@ -51,13 +51,39 @@ test('resolveTiers: a LangGraph RunnableConfig never passes for tiers', () => {
   assert.equal(resolveTiers(real), real)
 })
 
+// The fallback tier answers in plain text, not through withStructuredOutput.
+// Inside the graph every model call is streamed (streamEvents v2), and a
+// streamed forced tool call reached the parser with empty args in production:
+//   gradeDocuments failed ... Failed to parse. Text: """"
+// One word of output does not need tool calling, so the backstop asks for the
+// verdict as text and matches it.
 test('gradeDocuments: falls back to Claude when Gemini is quota-exhausted', async () => {
   const out = await gradeDocuments(
     { question: '天氣如何?', documents: DOCS } as never,
-    tiers(failing('[429] quota exceeded'), answering('', { verdict: 'off_topic' })),
+    tiers(failing('[429] quota exceeded'), answering('off_topic')),
   )
   // Without the fallback the grader is skipped and everything routes to generate.
   assert.equal(out.route, 'off_topic')
+})
+
+// 'generate' is also the degraded default, so this asserts on the one verdict
+// that routes somewhere else — otherwise the test would pass without reading
+// the reply at all.
+test('gradeDocuments: a fallback verdict wrapped in prose is still read', async () => {
+  const out = await gradeDocuments(
+    { question: '他養什麼寵物?', documents: DOCS } as never,
+    tiers(failing('[429] quota exceeded'), answering('Verdict: on_topic_no_data.')),
+  )
+  assert.equal(out.route, 'rewrite')
+})
+
+test('gradeDocuments: an unreadable fallback verdict degrades to generate', async () => {
+  const out = await gradeDocuments(
+    { question: '他在 USPACE 做什麼?', documents: DOCS } as never,
+    tiers(failing('[429] quota exceeded'), answering('I cannot help with that.')),
+  )
+  assert.equal(out.route, 'generate')
+  assert.deepEqual(out.graded, DOCS)
 })
 
 test('gradeDocuments: both tiers down still passes docs through to generate', async () => {

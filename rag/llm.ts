@@ -240,9 +240,19 @@ export const DEFAULT_TIERS: Tiers = { primary: gemini, fallback: claudeFast }
 // that — acceptable here because the failure that motivated this (a 429 with
 // MAX_RETRIES=0) rejects immediately rather than burning the deadline. THROWS
 // when both tiers fail; the caller decides what degrading gracefully means.
+// `fallbackCall` overrides how the paid tier is asked, for steps where the two
+// providers need different mechanics. grade uses it: inside the graph every
+// model call is streamed, and a streamed forced tool call reached Anthropic's
+// parser with empty args in production, so its backstop asks for text instead
+// of structured output.
 export async function withTierFallback<T>(
   call: (tier: Tier) => Promise<T>,
-  opts: { timeoutMs: number; label: string; temperature?: number },
+  opts: {
+    timeoutMs: number
+    label: string
+    temperature?: number
+    fallbackCall?: (tier: Tier) => Promise<T>
+  },
   tiers: Tiers = DEFAULT_TIERS,
 ): Promise<T> {
   const temperature = opts.temperature ?? 0
@@ -253,7 +263,12 @@ export async function withTierFallback<T>(
     return await withTimeout(call(tiers.primary(temperature)), opts.timeoutMs, `${opts.label} (Gemini)`)
   } catch (err) {
     console.warn(`${opts.label}: Gemini failed, falling back to Claude:`, (err as Error).message)
-    return await withTimeout(call(tiers.fallback(temperature)), opts.timeoutMs, `${opts.label} (Claude)`)
+    const onFallback = opts.fallbackCall ?? call
+    return await withTimeout(
+      onFallback(tiers.fallback(temperature)),
+      opts.timeoutMs,
+      `${opts.label} (Claude)`,
+    )
   }
 }
 
