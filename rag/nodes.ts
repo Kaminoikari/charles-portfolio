@@ -24,7 +24,7 @@ import {
   resolveTiers,
   resolveGenerator,
 } from './llm.js'
-import { formatHistory, looksConversational } from './history.js'
+import { formatHistory, shouldAnswerFromHistory } from './history.js'
 import { triage as classifyQuestion, genericFallback } from './triage.js'
 
 // --- triage --------------------------------------------------------------
@@ -49,7 +49,7 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
   // the transcript. Gated on there being a transcript: with no history the
   // question is unanswerable either way, and the normal pipeline's honest
   // refusal beats a node claiming a memory it does not have.
-  if ((state.history ?? []).length > 0 && looksConversational(state.question)) {
+  if (shouldAnswerFromHistory(state.question, state.history ?? [])) {
     return { route: 'converse' }
   }
 

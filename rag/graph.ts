@@ -20,6 +20,7 @@ import { config } from './config.js'
 import { detectLanguage } from './language.js'
 import { RAGState, type RAGStateType, type Source, type Outcome } from './state.js'
 import { contextualizeQuestion } from './contextualize.js'
+import { shouldAnswerFromHistory } from './history.js'
 import { decomposeQuestion } from './decompose.js'
 import type { ChatTurn } from './api-helpers.js'
 import * as defaultNodes from './nodes.js'
@@ -142,11 +143,18 @@ export async function* streamAnswer(
   // exactly what they did before. The original text is still what gets logged
   // (see api/chat.ts), so analytics keeps the visitor's verbatim wording.
   const language = detectLanguage(question)
-  const query = await contextualizeQuestion(question, history)
+  // A message ASKING ABOUT the conversation skips both preprocessing steps and
+  // reaches triage verbatim. Rewriting it would resolve exactly the references
+  // that mark it as conversational ("剛剛我說的那兩家公司是哪兩家?" becomes
+  // "華碩和鴻海是哪兩家公司?"), so triage would no longer recognise it and would
+  // send it to a retrieval that has nothing to find. Decomposing it is pointless
+  // for the same reason, and skipping both saves two model calls.
+  const fromHistory = shouldAnswerFromHistory(question, history)
+  const query = fromHistory ? question : await contextualizeQuestion(question, history)
   // Gated decomposition: single questions return [] with no LLM call, so the
   // common case is free; a genuine multi-part message is split so retrieve can
   // fan out one search per sub-question (see nodes.ts:retrieve).
-  const subQuestions = await decomposeQuestion(query)
+  const subQuestions = fromHistory ? [] : await decomposeQuestion(query)
   let answerText = ''
   let sources: Source[] = []
   let loops = 0

@@ -8,7 +8,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { looksConversational, formatHistory } from './history.js'
+import { looksConversational, formatHistory, shouldAnswerFromHistory } from './history.js'
 
 test('looksConversational: fires on questions whose answer is the conversation', () => {
   for (const q of [
@@ -60,4 +60,17 @@ test('formatHistory: keeps the last turns and truncates assistant answers', () =
 
 test('formatHistory: no turns is an empty string, never a stray label', () => {
   assert.equal(formatHistory([], { maxTurns: 6, assistantChars: 300 }), '')
+})
+
+// streamAnswer and triage both gate on this. They have to agree: if the rewrite
+// step does not skip a conversational message, contextualize resolves its
+// referents and the rewritten text no longer matches the gate triage reads —
+// which is exactly how "剛剛我說的那兩家公司是哪兩家?" reached retrieval and got
+// refused in production, while "請重複我剛剛說的話" (which the rewriter left
+// alone) came through fine.
+test('shouldAnswerFromHistory: needs both a conversational message and a transcript', () => {
+  const h = [{ role: 'user' as const, content: '他在 USPACE 做什麼?' }]
+  assert.equal(shouldAnswerFromHistory('剛剛我說的那兩家公司是哪兩家？', h), true)
+  assert.equal(shouldAnswerFromHistory('剛剛我說的那兩家公司是哪兩家？', []), false)
+  assert.equal(shouldAnswerFromHistory('他在 USPACE 做什麼?', h), false)
 })

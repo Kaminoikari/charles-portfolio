@@ -42,6 +42,16 @@ export function looksConversational(question: string): boolean {
   return CONVERSATIONAL.some((re) => re.test(question))
 }
 
+// The single decision both consumers ask: is this a message to answer from the
+// transcript? streamAnswer asks it to skip rewriting the question (rewriting
+// resolves the referents and thereby destroys the very markers the gate reads —
+// "剛剛我說的那兩家公司是哪兩家?" comes back as "華碩和鴻海是哪兩家公司?", which
+// then retrieves nothing), and triage asks it to pick the converse route. They
+// must agree, or a message gets rewritten out of the path it was headed for.
+export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): boolean {
+  return (history?.length ?? 0) > 0 && looksConversational(question)
+}
+
 // Render recent turns as a plain transcript. Assistant answers are truncated:
 // their topic is what disambiguates a follow-up, their full text is dead weight
 // in a prompt that is paid for on every request.
