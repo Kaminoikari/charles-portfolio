@@ -29,10 +29,12 @@ export interface ParseError {
 
 const MAX_QUESTION_LEN = 200
 const MAX_VISITOR_ID_LEN = 64
-// Bound the memory window server-side regardless of what the client sends: only
-// the last few turns matter for reference resolution, and each turn is capped so
-// a pasted wall of text can't blow up the contextualization prompt.
-const MAX_HISTORY_TURNS = 6
+// Bound the memory window server-side regardless of what the client sends. 16
+// turns is eight exchanges: wide enough that a visitor asking "what did I ask
+// first" partway through a real session is still inside it, which the previous
+// 6 was not. Each turn is capped too, so a pasted wall of text cannot blow up
+// the prompts this rides on.
+const MAX_HISTORY_TURNS = 16
 const MAX_TURN_LEN = 500
 
 // Accept a client-supplied visitor id only if it is a plausibly-sane string

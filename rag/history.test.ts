@@ -102,3 +102,21 @@ test('looksConversational: a request to ANSWER the earlier question is not conve
     assert.equal(looksConversational(q), false, `should not fire: ${q}`)
   }
 })
+
+// A 6-turn window is three exchanges, and the visitor asking "what did I ask
+// first" on their fifth question is past it. Live run, 2026-07-31: the bot
+// answered with the earliest turn it could still see and presented it as the
+// first, then apologised for an error that never happened. The window has to be
+// wide enough to cover a real session, and what falls off it has to be visible
+// to the reader rather than silently absent.
+test('formatHistory: marks the transcript as partial only when turns were dropped', () => {
+  const turn = (i: number) => ({ role: 'user' as const, content: `q${i}` })
+  const many = Array.from({ length: 10 }, (_, i) => turn(i))
+  const clipped = formatHistory(many, { maxTurns: 4, assistantChars: 300 })
+  assert.match(clipped, /earlier turns are not shown/i)
+  assert.equal(clipped.includes('q0'), false)
+  assert.equal(clipped.includes('q9'), true)
+
+  const whole = formatHistory(many.slice(0, 3), { maxTurns: 4, assistantChars: 300 })
+  assert.doesNotMatch(whole, /earlier turns are not shown/i)
+})

@@ -11,7 +11,7 @@ import { getVisitorId } from './visitorId'
 // the last few turns matter for reference resolution. Assistant answers are
 // truncated: their topic disambiguates a follow-up, their full text is dead
 // weight. The server re-clamps these bounds, so this is just polite trimming.
-const HISTORY_MAX_TURNS = 6
+const HISTORY_MAX_TURNS = 16
 const HISTORY_ASSISTANT_CHARS = 300
 
 function buildHistory(msgs: ChatMessage[]): { role: 'user' | 'assistant'; content: string }[] {

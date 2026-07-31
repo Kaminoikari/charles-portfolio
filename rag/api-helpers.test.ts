@@ -73,13 +73,14 @@ test('parseChatRequest: keeps valid history, clamps size, drops junk, never reje
     assert.equal(mixed.history?.[0].content, 'kept')
   }
 
-  // Only the last 6 turns survive, and each is capped at 500 chars.
-  const many = Array.from({ length: 10 }, (_, i) => ({ role: 'user' as const, content: `q${i}` }))
+  // Only the last 16 turns survive, and each is capped at 500 chars. The input
+  // stays comfortably above the clamp so this keeps proving that it clamps.
+  const many = Array.from({ length: 24 }, (_, i) => ({ role: 'user' as const, content: `q${i}` }))
   const capped = parseChatRequest({ question: 'hi', history: many })
   assert.equal(capped.ok, true)
   if (capped.ok) {
-    assert.equal(capped.history?.length, 6)
-    assert.equal(capped.history?.[0].content, 'q4') // oldest kept is the 5th-from-last
+    assert.equal(capped.history?.length, 16)
+    assert.equal(capped.history?.[0].content, 'q8') // oldest kept is the 16th-from-last
   }
   const longTurn = parseChatRequest({ question: 'hi', history: [{ role: 'user', content: 'x'.repeat(600) }] })
   assert.equal(longTurn.ok, true)

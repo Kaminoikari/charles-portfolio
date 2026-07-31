@@ -73,17 +73,26 @@ export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): 
 // Render recent turns as a plain transcript. Assistant answers are truncated:
 // their topic is what disambiguates a follow-up, their full text is dead weight
 // in a prompt that is paid for on every request.
+//
+// When turns fall off the window the transcript says so, because a model given
+// a silently-clipped transcript treats the oldest line it can see as the start
+// of the conversation. Live: asked "我剛剛問你的第一個問題是什麼?" on the fifth
+// turn, it confidently named the third — and then apologised for a mistake it
+// had never made. "I can only see the recent part" is an answer; a wrong first
+// question is not.
 export function formatHistory(
   turns: ChatTurn[],
   opts: { maxTurns: number; assistantChars: number },
 ): string {
   if (!turns?.length) return ''
-  return turns
-    .slice(-opts.maxTurns)
+  const kept = turns.slice(-opts.maxTurns)
+  const clipped = kept.length < turns.length
+  const body = kept
     .map((t) =>
       t.role === 'assistant'
         ? `Assistant: ${t.content.slice(0, opts.assistantChars)}`
         : `User: ${t.content}`,
     )
     .join('\n')
+  return clipped ? `(earlier turns are not shown)\n${body}` : body
 }
