@@ -56,7 +56,7 @@ interface Strings {
     thinking: string; sourcesLabel: string; sourcesCount: string
     errorMessage: string; rateLimited: string; regionBlocked: string; retry: string
     suggested1: string; suggested2: string; suggested3: string
-    suggested4: string; suggested5: string; suggested6: string; suggested7: string
+    suggested4: string; suggested5: string; suggested6: string
     muteMusic: string; unmuteMusic: string
   }
   defaults: { documentTitle: string }
@@ -186,13 +186,12 @@ const en: Strings = {
     rateLimited: 'Too many questions for now, give it a moment and try again.',
     regionBlocked: 'This assistant is not available in your region.',
     retry: 'Retry',
-    suggested1: 'Tell me about Product Playbook',
-    suggested2: 'How were you built?',
-    suggested3: 'How does he make product decisions?',
-    suggested4: 'How does he use AI in his work?',
-    suggested5: 'Why should a team hire him?',
-    suggested6: 'What makes him different as an AI PM?',
-    suggested7: 'What did he do at USPACE?',
+    suggested1: 'How were you built?',
+    suggested2: 'How does he use AI in his work?',
+    suggested3: 'What makes him different as an AI PM?',
+    suggested4: 'How does he make product decisions?',
+    suggested5: 'What did he do at USPACE?',
+    suggested6: 'Why should a team hire him?',
     muteMusic: 'Mute ambient music',
     unmuteMusic: 'Play ambient music',
   },

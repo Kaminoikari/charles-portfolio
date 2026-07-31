@@ -220,7 +220,6 @@ export default function ChatWidget() {
     t('chat.suggested4'),
     t('chat.suggested5'),
     t('chat.suggested6'),
-    t('chat.suggested7'),
   ]
 
   if (!open) {
