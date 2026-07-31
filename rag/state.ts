@@ -5,6 +5,7 @@
 
 import { Annotation } from '@langchain/langgraph'
 import type { Document } from '@langchain/core/documents'
+import type { ChatTurn } from './api-helpers.js'
 
 export interface Source {
   id: string
@@ -26,6 +27,11 @@ export const RAGState = Annotation.Root({
   // question — the retrieve node fans out only when this has 2+ entries. Set once
   // up front (see graph.ts); last-write-wins.
   subQuestions: Annotation<string[]>({ reducer: (_a, b) => b, default: () => [] }),
+  // Recent conversation, clamped by the API layer. Read by the converse node
+  // (which answers from it) and by generate (which uses it to keep a follow-up
+  // coherent). Empty on a first turn, which is why every reader must treat an
+  // empty transcript as "no memory" rather than as "nothing was said".
+  history: Annotation<ChatTurn[]>({ reducer: (_a, b) => b, default: () => [] }),
   documents: Annotation<Document[]>, // current candidate set
   graded: Annotation<Document[]>, // relevance-filtered candidates
   loops: Annotation<number>({ reducer: (_a, b) => b, default: () => 0 }),
@@ -43,8 +49,9 @@ export const RAGState = Annotation.Root({
 //   canned   — triage tier-1 deterministic (greeting / contact / privacy)
 //   faq      — semantic FAQ-cache hit (answered for $0, no generation LLM)
 //   generate — full RAG generation grounded in retrieved chunks
+//   converse — answered from the conversation transcript, no retrieval
 //   blocked  — generation produced offensive output, dropped by the guardrail
 //   fallback — retrieval failed after the corrective loop; honest refusal
-export type Outcome = 'canned' | 'faq' | 'generate' | 'blocked' | 'fallback'
+export type Outcome = 'canned' | 'faq' | 'generate' | 'converse' | 'blocked' | 'fallback'
 
 export type RAGStateType = typeof RAGState.State

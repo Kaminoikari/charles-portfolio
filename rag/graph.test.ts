@@ -14,11 +14,14 @@ import { config } from './config.js'
 
 // A stub node set whose `gradeDocuments` is scripted per-test. Counters let each
 // test assert how many times retrieve / rewrite actually ran.
-function makeNodes(grades: Array<'generate' | 'rewrite' | 'off_topic'>): {
+function makeNodes(
+  grades: Array<'generate' | 'rewrite' | 'off_topic'>,
+  triageRoute = 'retrieve',
+): {
   nodes: NodeSet
-  counts: { retrieve: number; rewrite: number; generate: number; fallback: number }
+  counts: { retrieve: number; rewrite: number; generate: number; fallback: number; converse: number }
 } {
-  const counts = { retrieve: 0, rewrite: 0, generate: 0, fallback: 0 }
+  const counts = { retrieve: 0, rewrite: 0, generate: 0, fallback: 0, converse: 0 }
   let gradeCall = 0
   const doc = new Document({
     pageContent: 'stub',
@@ -27,7 +30,11 @@ function makeNodes(grades: Array<'generate' | 'rewrite' | 'off_topic'>): {
   const nodes: NodeSet = {
     // Pass-through triage: always route on to retrieval (the LLM-path tests
     // exercise retrieve→grade; triage's own logic is unit-tested in triage.test).
-    triage: async () => ({ route: 'retrieve' }),
+    triage: async () => ({ route: triageRoute }),
+    converse: async () => {
+      counts.converse++
+      return { answer: 'stub transcript answer', sources: [], outcome: 'converse' }
+    },
     retrieve: async () => {
       counts.retrieve++
       return { documents: [doc] }
@@ -120,4 +127,17 @@ test('language detection seeds state', async () => {
   const { nodes } = makeNodes(['generate'])
   const res = await answer('他的產品風格是什麼?', buildGraph(nodes))
   assert.equal(res.language, 'zh-TW')
+})
+
+// A conversational message must never touch retrieval: there is no chunk that
+// answers "what did I just ask", so retrieving for it wastes an embedding call
+// and lands in grade, which correctly calls it unanswerable and refuses.
+test('triage routing to converse answers without retrieving', async () => {
+  const { nodes, counts } = makeNodes(['generate'], 'converse')
+  const res = await answer('我剛剛問了你什麼?', buildGraph(nodes))
+  assert.equal(res.answer, 'stub transcript answer')
+  assert.equal(res.outcome, 'converse')
+  assert.equal(counts.retrieve, 0)
+  assert.equal(counts.generate, 0)
+  assert.equal(counts.converse, 1)
 })

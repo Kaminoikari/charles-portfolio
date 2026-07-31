@@ -218,6 +218,15 @@ export interface Tiers {
 // place of tiers throws inside the try and the node degrades to its no-op, the
 // same result it would give if the provider were simply down — so the second
 // slot is read through this guard rather than trusted.
+export type Generator = typeof generateWithFallback
+
+// Same guard as resolveTiers, for the generate node's injectable generator: the
+// RunnableConfig LangGraph passes is an object, never a function, so it can
+// never be mistaken for one.
+export function resolveGenerator(candidate: unknown): Generator {
+  return typeof candidate === 'function' ? (candidate as Generator) : generateWithFallback
+}
+
 export function resolveTiers(candidate: unknown): Tiers {
   const t = candidate as Partial<Tiers> | null | undefined
   return typeof t?.primary === 'function' && typeof t?.fallback === 'function'

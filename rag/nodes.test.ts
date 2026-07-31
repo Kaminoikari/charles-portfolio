@@ -11,7 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { gradeDocuments, rewriteQuery } from './nodes.js'
+import { gradeDocuments, rewriteQuery, converse, triage, generate } from './nodes.js'
 import { resolveTiers, DEFAULT_TIERS, type Tier, type Tiers } from './llm.js'
 
 // A tier that fails the way a quota-exhausted Gemini does.
@@ -111,4 +111,74 @@ test('rewriteQuery: both tiers down keeps the original query', async () => {
   )
   assert.deepEqual(out.queries, ['他做了什麼?'])
   assert.equal(out.loops, 1)
+})
+
+// --- conversational path ---------------------------------------------------
+// "我剛剛問了什麼" has no answer in the corpus, so the normal pipeline retrieves
+// nothing, grades it unanswerable and refuses — while the answer was sitting in
+// the history the request already carried. These pin the separate route.
+
+const HISTORY = [
+  { role: 'user' as const, content: '他在 USPACE 做什麼?' },
+  { role: 'assistant' as const, content: 'Charles 在 USPACE 帶 15 人的 Scrum 團隊。' },
+]
+
+test('triage: a conversational message with history routes to converse', async () => {
+  const out = await triage({ question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never)
+  assert.equal(out.route, 'converse')
+})
+
+test('triage: the same message with no history takes the normal path', async () => {
+  // Nothing to answer from, so it must not claim a memory it does not have.
+  const out = await triage({ question: '我剛剛問了你什麼?', language: 'zh-TW', history: [] } as never)
+  assert.notEqual(out.route, 'converse')
+})
+
+test('converse: answers from the transcript, falling back to Claude', async () => {
+  const out = await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    tiers(failing('[429] quota exceeded'), answering('你剛剛問的是他在 USPACE 做什麼。')),
+  )
+  assert.equal(out.answer, '你剛剛問的是他在 USPACE 做什麼。')
+  assert.equal(out.outcome, 'converse')
+  assert.deepEqual(out.sources, [])
+})
+
+test('converse: both tiers down still answers, without inventing anything', async () => {
+  const out = await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    tiers(failing('gemini 429'), failing('claude 529')),
+  )
+  assert.equal(out.outcome, 'fallback')
+  assert.equal(typeof out.answer, 'string')
+  assert.equal((out.answer ?? '').length > 0, true)
+})
+
+// The generation prompt carries the transcript too, so a follow-up that DOES
+// retrieve something still reads as part of a thread. Asserted on the real node
+// by capturing the messages it hands the generator: the block is easy to add and
+// just as easy to drop in a later prompt edit, and nothing else would notice.
+test('generate: the prompt carries the transcript, marked as uncitable', async () => {
+  let system = ''
+  await generate({ question: '那團隊多大?', language: 'zh-TW', history: HISTORY, graded: [] } as never, async (
+    messages: { role: string; content: string }[],
+  ) => {
+    system = messages[0].content
+    return { text: '15 人。', provider: 'gemini' as const }
+  })
+  assert.equal(system.includes('User: 他在 USPACE 做什麼?'), true)
+  assert.equal(system.includes('Assistant: Charles 在 USPACE 帶 15 人的 Scrum 團隊。'), true)
+  // It must be fenced off from the citation rules, or the model starts citing it.
+  assert.match(system, /never be cited/)
+})
+
+test('generate: a first turn carries no transcript block at all', async () => {
+  let system = ''
+  await generate({ question: '他在 USPACE 做什麼?', language: 'zh-TW', history: [], graded: [] } as never, async (
+    messages: { role: string; content: string }[],
+  ) => {
+    system = messages[0].content
+    return { text: 'ok', provider: 'gemini' as const }
+  })
+  assert.equal(system.includes('Recent conversation'), false)
 })

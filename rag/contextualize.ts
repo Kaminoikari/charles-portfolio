@@ -17,6 +17,7 @@
 // free-tier quota runs out (which is exactly what happened in production).
 
 import { invokeWithFallback, DEFAULT_TIERS, type Tiers } from './llm.js'
+import { formatHistory } from './history.js'
 import type { ChatTurn } from './api-helpers.js'
 
 // Keep the rewrite prompt tiny: only the last few exchanges matter for pronoun
@@ -45,14 +46,10 @@ export async function contextualizeQuestion(
 ): Promise<string> {
   if (!history?.length) return question // first turn — zero added cost
 
-  const recent = history
-    .slice(-MAX_TURNS)
-    .map((t) =>
-      t.role === 'assistant'
-        ? `Assistant: ${t.content.slice(0, MAX_ASSISTANT_CHARS)}`
-        : `User: ${t.content}`,
-    )
-    .join('\n')
+  const recent = formatHistory(history, {
+    maxTurns: MAX_TURNS,
+    assistantChars: MAX_ASSISTANT_CHARS,
+  })
 
   try {
     const raw = await invokeWithFallback(

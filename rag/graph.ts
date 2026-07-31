@@ -29,6 +29,7 @@ export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>
 
 export interface NodeSet {
   triage: Node
+  converse: Node
   retrieve: Node
   gradeDocuments: Node
   rewriteQuery: Node
@@ -38,8 +39,12 @@ export interface NodeSet {
 
 // Conditional edge: triage either answered the question (deterministically, no
 // LLM) or passes it on to retrieval.
-function routeAfterTriage(state: RAGStateType): 'answered' | 'retrieve' {
-  return state.route === 'answered' ? 'answered' : 'retrieve'
+function routeAfterTriage(state: RAGStateType): 'answered' | 'converse' | 'retrieve' {
+  if (state.route === 'answered') return 'answered'
+  // Questions about the conversation itself: the corpus has nothing to retrieve
+  // for them, so they skip the whole retrieval half (see nodes.ts:converse).
+  if (state.route === 'converse') return 'converse'
+  return 'retrieve'
 }
 
 // Conditional edge: where to go after grading the retrieved chunks.
@@ -58,6 +63,7 @@ function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fa
 export function buildGraph(nodes: NodeSet = defaultNodes) {
   return new StateGraph(RAGState)
     .addNode('triage', nodes.triage)
+    .addNode('converse', nodes.converse)
     .addNode('retrieve', nodes.retrieve)
     .addNode('gradeDocuments', nodes.gradeDocuments)
     .addNode('rewriteQuery', nodes.rewriteQuery)
@@ -66,8 +72,10 @@ export function buildGraph(nodes: NodeSet = defaultNodes) {
     .addEdge(START, 'triage')
     .addConditionalEdges('triage', routeAfterTriage, {
       answered: END,
+      converse: 'converse',
       retrieve: 'retrieve',
     })
+    .addEdge('converse', END)
     .addEdge('retrieve', 'gradeDocuments')
     .addConditionalEdges('gradeDocuments', routeAfterGrade, {
       generate: 'generate',
@@ -145,7 +153,7 @@ export async function* streamAnswer(
   let outcome: Outcome = 'fallback'
 
   const events = compiled.streamEvents(
-    { question: query, language, queries: [query], subQuestions },
+    { question: query, language, queries: [query], subQuestions, history },
     { version: 'v2' },
   )
 
