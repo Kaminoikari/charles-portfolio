@@ -1,12 +1,21 @@
 // LLM provider layer — two-tier generation with cost-aware routing.
 //
-//   grade / rewrite (internal steps)  → Gemini free tier only (no fallback)
+//   grade / rewrite / decompose       → Gemini free tier only (no fallback)
+//   contextualize (memory)            → Gemini free tier, falling back to
+//                                       Claude Haiku (see invokeWithFallback)
 //   generate (the user-facing answer) → Gemini free tier, falling back to
 //                                       Anthropic Claude on ANY Gemini failure
 //
 // Rationale: keep the paid Claude budget for the answer the visitor actually
 // reads; let the cheap internal steps ride entirely on Gemini's free tier. This
 // mirrors how real products tier model spend (free-first, paid as backstop).
+//
+// Contextualize is the one internal step that buys a paid backstop, because it
+// degrades differently from the others: grade/rewrite/decompose falling back to
+// their no-op still answers the question asked, whereas an unresolved follow-up
+// ("那個專案呢?") answers a *different* question — the visitor reads it as the
+// bot having no memory at all. Gemini's free tier is 20 requests/day, so without
+// a backstop memory dies for the rest of the day once the quota is gone.
 
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatAnthropic } from '@langchain/anthropic'
@@ -181,6 +190,55 @@ export async function generateWithFallback(
       'Claude',
     )
     return { text: String(res.content), provider: 'claude' }
+  }
+}
+
+// The slice of a chat model that a non-streaming internal step actually uses.
+// Structural (not `BaseChatModel`) so tests can inject a stub tier without
+// standing up a real LangChain model — same spirit as buildGraph's stub nodes.
+export interface Invoker {
+  invoke(messages: BaseMessageLike[]): Promise<{ content: unknown }>
+}
+
+export interface Tiers {
+  primary: (temperature: number) => Invoker
+  fallback: (temperature: number) => Invoker
+}
+
+// Default tiering for a small internal step: free Gemini first, paid Haiku as
+// the backstop. `claudeFast` is deliberately Haiku — these steps rewrite one
+// short string, so Sonnet's quality would buy nothing.
+const claudeFast = (temperature: number): Invoker => claude(false, temperature)
+export const DEFAULT_TIERS: Tiers = { primary: gemini, fallback: claudeFast }
+
+// Non-streaming tier-1 → tier-2 fallback for a small internal step (the
+// streaming, first-token-gated equivalent is generateWithFallback above).
+//
+// Both tiers get their own `timeoutMs`, so the worst case is bounded at twice
+// that — acceptable here because the failure that motivated this (a 429 with
+// MAX_RETRIES=0) rejects immediately rather than burning the deadline. THROWS
+// when both tiers fail; the caller decides what degrading gracefully means.
+export async function invokeWithFallback(
+  messages: BaseMessageLike[],
+  opts: { timeoutMs: number; label: string; temperature?: number },
+  tiers: Tiers = DEFAULT_TIERS,
+): Promise<string> {
+  const temperature = opts.temperature ?? 0
+  try {
+    const res = await withTimeout(
+      tiers.primary(temperature).invoke(messages),
+      opts.timeoutMs,
+      `${opts.label} (Gemini)`,
+    )
+    return String(res.content)
+  } catch (err) {
+    console.warn(`${opts.label}: Gemini failed, falling back to Claude:`, (err as Error).message)
+    const res = await withTimeout(
+      tiers.fallback(temperature).invoke(messages),
+      opts.timeoutMs,
+      `${opts.label} (Claude)`,
+    )
+    return String(res.content)
   }
 }
 

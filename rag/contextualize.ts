@@ -7,11 +7,16 @@
 // standalone question fixes retrieval *and* generation, and keeps every
 // downstream node (triage, FAQ cache, retrieve, grade, generate) working on a
 // single self-contained string — so the large generation prompt never grows
-// with history. The whole cost of memory is one small call, on the free Gemini
-// tier, and only when there is history to resolve against. The first turn (empty
-// history) short-circuits to zero added cost.
+// with history. The whole cost of memory is one small call, and only when there
+// is history to resolve against. The first turn (empty history) short-circuits
+// to zero added cost.
+//
+// The call goes through invokeWithFallback rather than straight to Gemini: this
+// is the one internal step with a paid backstop, because a Gemini-only memory
+// silently switches itself off for the rest of the day the moment the 20/day
+// free-tier quota runs out (which is exactly what happened in production).
 
-import { gemini } from './llm.js'
+import { invokeWithFallback, DEFAULT_TIERS, type Tiers } from './llm.js'
 import type { ChatTurn } from './api-helpers.js'
 
 // Keep the rewrite prompt tiny: only the last few exchanges matter for pronoun
@@ -19,6 +24,9 @@ import type { ChatTurn } from './api-helpers.js'
 // text, is what disambiguates the follow-up).
 const MAX_TURNS = 6 // last ~3 exchanges
 const MAX_ASSISTANT_CHARS = 300
+// Per-tier deadline: Gemini gets 5s, then Claude gets its own 5s. The 10s worst
+// case only materialises if Gemini hangs rather than failing fast, and this step
+// runs before retrieval — well inside the 60s function limit.
 const TIMEOUT_MS = 5000
 // A standalone question is about as long as the user's own (capped at 200 in
 // api-helpers). A much longer output means the model rambled or leaked the
@@ -26,10 +34,15 @@ const TIMEOUT_MS = 5000
 const MAX_OUTPUT_CHARS = 300
 
 // Rewrite `question` into a standalone question using recent history. Returns the
-// question UNCHANGED when there is no history, when the model declines/times out,
-// or when the output looks degenerate — memory is a quality nicety, never a hard
-// gate on the answer (mirrors grade/rewrite's graceful degradation).
-export async function contextualizeQuestion(question: string, history: ChatTurn[]): Promise<string> {
+// question UNCHANGED when there is no history, when BOTH model tiers
+// decline/time out, or when the output looks degenerate — memory is a quality
+// nicety, never a hard gate on the answer (mirrors grade/rewrite's graceful
+// degradation). `tiers` is injectable for tests.
+export async function contextualizeQuestion(
+  question: string,
+  history: ChatTurn[],
+  tiers: Tiers = DEFAULT_TIERS,
+): Promise<string> {
   if (!history?.length) return question // first turn — zero added cost
 
   const recent = history
@@ -42,8 +55,8 @@ export async function contextualizeQuestion(question: string, history: ChatTurn[
     .join('\n')
 
   try {
-    const res = await Promise.race([
-      gemini().invoke([
+    const raw = await invokeWithFallback(
+      [
         {
           role: 'system',
           content:
@@ -57,12 +70,11 @@ export async function contextualizeQuestion(question: string, history: ChatTurn[
             'preamble, no quotes, no explanation.',
         },
         { role: 'user', content: `History:\n${recent}\n\nFollow-up: ${question}` },
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('contextualize timed out')), TIMEOUT_MS),
-      ),
-    ])
-    const out = String((res as { content: unknown }).content).trim()
+      ],
+      { timeoutMs: TIMEOUT_MS, label: 'contextualize' },
+      tiers,
+    )
+    const out = raw.trim()
     if (!out || out.length > MAX_OUTPUT_CHARS) return question
     return out
   } catch (err) {
