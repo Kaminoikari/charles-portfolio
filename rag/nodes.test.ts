@@ -242,3 +242,40 @@ test('converse: an invented link is demoted there too', async () => {
   )
   assert.equal((out.answer ?? '').includes('charleschen.tw'), false)
 })
+
+// Live regression, 2026-07-31: "他在工作上怎麼運用 AI?" — already a complete
+// question — was rewritten into "他在 USPACE 帶的團隊怎麼運用 AI?" and answered as
+// such, and the next turn inherited the distortion, describing Product Playbook
+// as something built for that team. The rewrite exists so retrieval has a
+// standalone string to embed; it was never meant to replace the visitor's
+// words. Generation reads the original and resolves references from the
+// transcript, which it now has.
+test('generate: answers the visitor’s own words, not the retrieval rewrite', async () => {
+  const { user, system } = await promptFor({
+    question: '他在工作上怎麼運用 AI?',
+    queries: ['他在 USPACE 帶的團隊怎麼運用 AI?'],
+    language: 'zh-TW',
+    history: HISTORY,
+    graded: [DOC],
+  })
+  assert.equal(user.trim(), '他在工作上怎麼運用 AI?')
+  assert.equal(user.includes('USPACE 帶的團隊'), false)
+  // The transcript is what lets it resolve references without the rewrite.
+  assert.equal(system.includes('User: 他在 USPACE 做什麼?'), true)
+})
+
+test('gradeDocuments: grades against the retrieval query, which is what was searched', async () => {
+  let prompt = ''
+  const capture: Tier = {
+    invoke: (m) => {
+      prompt = m.map((x) => String((x as { content: unknown }).content)).join('\n')
+      return Promise.resolve({ content: 'answerable' })
+    },
+    withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error('force text tier')) }),
+  }
+  await gradeDocuments(
+    { question: '那團隊多大?', queries: ['Charles 在 USPACE 帶的團隊多大?'], documents: DOCS } as never,
+    { primary: () => failing('429'), fallback: () => capture },
+  )
+  assert.equal(prompt.includes('Charles 在 USPACE 帶的團隊多大?'), true)
+})

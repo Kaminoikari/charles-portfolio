@@ -160,8 +160,14 @@ export async function* streamAnswer(
   let loops = 0
   let outcome: Outcome = 'fallback'
 
+  // `question` stays the message as typed and `queries` carries the rewrite.
+  // Seeding `question` with the rewrite is what let a rewrite's mistakes become
+  // the question being answered: "他在工作上怎麼運用 AI?" was rewritten to
+  // "他在 USPACE 帶的團隊怎麼運用 AI?" and answered as such, and the next turn
+  // inherited it. The rewrite is a search string; the visitor's words, plus the
+  // transcript, are what generation answers.
   const events = compiled.streamEvents(
-    { question: query, language, queries: [query], subQuestions, history },
+    { question, language, queries: [query], subQuestions, history },
     { version: 'v2' },
   )
 

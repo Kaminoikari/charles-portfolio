@@ -123,3 +123,16 @@ test('generic fallback is localized and includes a contact CTA', () => {
   assert.match(genericFallback('en'), /portfolio/i)
   assert.ok(genericFallback('ja').includes('Charles'))
 })
+
+// Live regression, 2026-07-31: "那團隊多大?" — a question about team size after
+// "他在 USPACE 做了什麼?" — was deflected as a privacy question and answered with
+// "這比較屬於個人問題，就留給 Charles 本人回答吧". 多大 asks someone's age only when
+// the subject is a person; here the subject is the team.
+test('多大 is only an age question when it is asked about a person', () => {
+  for (const q of ['那團隊多大?', '他的團隊多大', '這個市場多大', '規模多大']) {
+    assert.notEqual(triage(q, 'zh-TW').kind, 'personal', `should not be personal: ${q}`)
+  }
+  for (const q of ['他多大', '他今年多大', 'Charles 多大', '你多大']) {
+    assert.equal(triage(q, 'zh-TW').kind, 'personal', `should be personal: ${q}`)
+  }
+})

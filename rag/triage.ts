@@ -186,7 +186,11 @@ const PERSONAL = new RegExp(
     '(which|what)\\s+school', 'where (did|does|do)?\\s*(he|you|charles)?\\s*(study|studied)',
     '(his|your)\\s+(degree|education|major)', '\\bdiploma\\b',
     // 繁中
-    '幾歲', '年齡', '多大', '生日', '出生',
+    '幾歲', '年齡',
+    // 多大 asks an age only when the subject is a person. Unqualified, it
+    // deflected "那團隊多大?" as a privacy question (live, 2026-07-31), so it
+    // needs the pronoun or the name in front of it.
+    '(他|你|您|charles)\\s*(今年)?多大', '生日', '出生',
     '結婚', '已婚', '未婚', '老婆', '太太', '老公', '配偶',
     '女朋友', '男朋友', '女友', '男友', '交往', '單身', '獨身', '戀愛', '感情狀態',
     // family / personal background (NOT '背景' alone — professional background

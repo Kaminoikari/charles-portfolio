@@ -62,7 +62,7 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
   // falls through to RAG rather than blocking the answer.
   if (config.faqCacheEnabled) {
     try {
-      const vec = await embedOne(state.question, 'query')
+      const vec = await embedOne(retrievalQuery(state), 'query')
       const hit = await faqLookup(vec, locale)
       if (hit) {
         console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)}`)
@@ -105,8 +105,7 @@ export async function retrieve(state: RAGStateType): Promise<Partial<RAGStateTyp
     // All sub-retrievals empty/failed → fall through to the single-query path.
   }
 
-  const queries = state.queries?.length ? state.queries : [state.question]
-  const query = queries[queries.length - 1]
+  const query = retrievalQuery(state)
   const documents = await hybridRetrieve(query, locale)
   return { documents }
 }
@@ -167,6 +166,16 @@ function languageRule(language: string | undefined): string {
   )
 }
 
+// The text the retrieval half works on: the contextualized rewrite when there
+// is one, otherwise the visitor's own words. `state.question` stays the message
+// as typed, because that is what triage classifies, what converse answers, and
+// what generation must respond to — a rewrite is a search string, not a
+// restatement of what was asked.
+export function retrievalQuery(state: RAGStateType): string {
+  const qs = state.queries ?? []
+  return qs.length ? qs[qs.length - 1] : state.question
+}
+
 // Pull a verdict out of a plain-text grader reply. Substring rather than exact
 // match, because a model asked for one word still sometimes wraps it ("Verdict:
 // off_topic."). Anything unrecognised returns '' and routes to generate, the
@@ -208,7 +217,7 @@ export async function gradeDocuments(
         "or AI agent engineering fall within Charles's documented expertise, so " +
         'treat them as on-topic.',
     },
-    { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
+    { role: 'user', content: `Question: ${retrievalQuery(state)}\n\nDocuments:\n${context}` },
   ]
   try {
     const verdict = await withTierFallback(
@@ -272,16 +281,16 @@ export async function rewriteQuery(
               "manager's portfolio (projects, work experience, skills, blog). Keep " +
               'the original language. Return only the rewritten query.',
           },
-          { role: 'user', content: state.question },
+          { role: 'user', content: retrievalQuery(state) },
         ],
         { timeoutMs: 6000, label: 'rewrite' },
         tiers,
       )
     ).trim()
-    return { queries: [rewritten || state.question], loops }
+    return { queries: [rewritten || retrievalQuery(state)], loops }
   } catch (err) {
     console.warn('rewriteQuery failed, keeping the original query:', (err as Error).message)
-    return { queries: [state.question], loops }
+    return { queries: [retrievalQuery(state)], loops }
   }
 }
 
@@ -370,12 +379,12 @@ export async function generate(
     .join('\n\n')
 
   // Broad/synthetic questions get the stronger model IF we fall back to Claude.
-  const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(state.question)
+  const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(retrievalQuery(state))
 
   // Multi-hop entity relationships for whatever the question references — the
   // lightweight-graph half of the retrieval (see entities/graph.ts). Empty for
   // questions that mention no known entity, so generic questions pay nothing.
-  const entities = entityContext(state.question)
+  const entities = entityContext(retrievalQuery(state))
   const entityBlock = entities ? `\n\n${entities}` : ''
 
   // Recent conversation, so a follow-up reads as part of a thread rather than a
