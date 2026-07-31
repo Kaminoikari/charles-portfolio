@@ -11,7 +11,7 @@ import { config } from './config.js'
 import type { Locale } from './language.js'
 import type { RAGStateType, Source } from './state.js'
 import { embedOne } from './embeddings.js'
-import { hybridRetrieve } from './retrieval.js'
+import { hybridRetrieve, mergeInterleaved } from './retrieval.js'
 import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
@@ -58,10 +58,35 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
 // --- retrieve ------------------------------------------------------------
 // Hybrid (dense+sparse) → RRF → rerank. Uses the latest query (original or the
 // most recent rewrite).
+//
+// Multi-question fan-out: on the FIRST pass over a message that decomposition
+// split into 2+ sub-questions (see decompose.ts), retrieve each sub-question
+// independently and interleave the results, so every part gets representation
+// instead of being crowded out of a single top-k. The corrective loop (loops>0)
+// refines ONE rewritten query, so it always takes the single-retrieval path.
 export async function retrieve(state: RAGStateType): Promise<Partial<RAGStateType>> {
+  const locale = state.language ?? config.defaultLocale
+  const subs = state.subQuestions ?? []
+
+  if ((state.loops ?? 0) === 0 && subs.length > 1) {
+    // Fan out in parallel; a failed sub-question degrades to [] rather than
+    // sinking the whole request (mirrors grade/rewrite's graceful degradation).
+    const perSub = await Promise.all(
+      subs.map((s) =>
+        hybridRetrieve(s, locale).catch((err) => {
+          console.warn('sub-question retrieval failed:', (err as Error).message)
+          return [] as Document[]
+        }),
+      ),
+    )
+    const merged = mergeInterleaved(perSub, config.multiMergeK)
+    if (merged.length) return { documents: merged }
+    // All sub-retrievals empty/failed → fall through to the single-query path.
+  }
+
   const queries = state.queries?.length ? state.queries : [state.question]
   const query = queries[queries.length - 1]
-  const documents = await hybridRetrieve(query, state.language ?? config.defaultLocale)
+  const documents = await hybridRetrieve(query, locale)
   return { documents }
 }
 

@@ -22,6 +22,10 @@ export const RAGState = Annotation.Root({
     reducer: (a, b) => a.concat(b),
     default: () => [],
   }),
+  // Standalone sub-questions for a multi-part message. Empty for a single
+  // question — the retrieve node fans out only when this has 2+ entries. Set once
+  // up front (see graph.ts); last-write-wins.
+  subQuestions: Annotation<string[]>({ reducer: (_a, b) => b, default: () => [] }),
   documents: Annotation<Document[]>, // current candidate set
   graded: Annotation<Document[]>, // relevance-filtered candidates
   loops: Annotation<number>({ reducer: (_a, b) => b, default: () => 0 }),

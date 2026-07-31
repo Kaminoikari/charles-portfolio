@@ -6,6 +6,24 @@
 import { useCallback, useRef, useState } from 'react'
 import { getVisitorId } from './visitorId'
 
+// How much recent conversation to send so the server can resolve follow-ups
+// (see rag/contextualize.ts). Kept small — it rides on every request, and only
+// the last few turns matter for reference resolution. Assistant answers are
+// truncated: their topic disambiguates a follow-up, their full text is dead
+// weight. The server re-clamps these bounds, so this is just polite trimming.
+const HISTORY_MAX_TURNS = 6
+const HISTORY_ASSISTANT_CHARS = 300
+
+function buildHistory(msgs: ChatMessage[]): { role: 'user' | 'assistant'; content: string }[] {
+  return msgs
+    .filter((m) => !m.error && m.text.trim())
+    .slice(-HISTORY_MAX_TURNS)
+    .map((m) => ({
+      role: m.role,
+      content: m.role === 'assistant' ? m.text.slice(0, HISTORY_ASSISTANT_CHARS) : m.text,
+    }))
+}
+
 export interface ChatSource {
   id: string
   title: string
@@ -80,6 +98,11 @@ export function useChatStream() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [status, setStatus] = useState<ChatStatus>('idle')
   const abortRef = useRef<AbortController | null>(null)
+  // Mirror of `messages` for reading the pre-send conversation inside send()
+  // without adding `messages` to its dependency list (which would re-create the
+  // callback on every token). Refs aren't reactive, so this is safe to read.
+  const messagesRef = useRef<ChatMessage[]>([])
+  messagesRef.current = messages
 
   const send = useCallback(
     async (question: string, errorText: string) => {
@@ -89,6 +112,11 @@ export function useChatStream() {
       abortRef.current?.abort()
       const ctrl = new AbortController()
       abortRef.current = ctrl
+
+      // Snapshot the conversation BEFORE appending this turn — that's the history
+      // the server resolves the follow-up against (the current question is sent
+      // separately as `question`, so it must not appear in `history`).
+      const history = buildHistory(messagesRef.current)
 
       // Push the user message + an empty assistant message we'll fill as tokens arrive.
       setMessages((prev) => [...prev, { role: 'user', text: q }, { role: 'assistant', text: '' }])
@@ -107,7 +135,7 @@ export function useChatStream() {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ question: q, visitorId: getVisitorId() }),
+          body: JSON.stringify({ question: q, visitorId: getVisitorId(), history }),
           signal: ctrl.signal,
         })
         if (!res.ok || !res.body) throw new Error(`chat request failed: ${res.status}`)

@@ -19,6 +19,9 @@ import { StateGraph, START, END } from '@langchain/langgraph'
 import { config } from './config.js'
 import { detectLanguage } from './language.js'
 import { RAGState, type RAGStateType, type Source, type Outcome } from './state.js'
+import { contextualizeQuestion } from './contextualize.js'
+import { decomposeQuestion } from './decompose.js'
+import type { ChatTurn } from './api-helpers.js'
 import * as defaultNodes from './nodes.js'
 
 // A node is an (async) function from state to a partial state update.
@@ -122,16 +125,27 @@ export type StreamEvent =
 
 export async function* streamAnswer(
   question: string,
+  history: ChatTurn[] = [],
   compiled: ReturnType<typeof buildGraph> = graph,
 ): AsyncGenerator<StreamEvent> {
+  // Detect language from the ORIGINAL message (what the visitor typed), then
+  // resolve any follow-up into a standalone question the pipeline can retrieve
+  // and answer on its own. With no history this is a no-op — first turns cost
+  // exactly what they did before. The original text is still what gets logged
+  // (see api/chat.ts), so analytics keeps the visitor's verbatim wording.
   const language = detectLanguage(question)
+  const query = await contextualizeQuestion(question, history)
+  // Gated decomposition: single questions return [] with no LLM call, so the
+  // common case is free; a genuine multi-part message is split so retrieve can
+  // fan out one search per sub-question (see nodes.ts:retrieve).
+  const subQuestions = await decomposeQuestion(query)
   let answerText = ''
   let sources: Source[] = []
   let loops = 0
   let outcome: Outcome = 'fallback'
 
   const events = compiled.streamEvents(
-    { question, language, queries: [question] },
+    { question: query, language, queries: [query], subQuestions },
     { version: 'v2' },
   )
 

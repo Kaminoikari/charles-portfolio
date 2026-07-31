@@ -8,6 +8,7 @@ export type ChangelogBlock =
   | { kind: 'heading'; text: string }
   | { kind: 'list'; items: string[] }
   | { kind: 'stats'; items: { value: string; label: string }[] }
+  | { kind: 'table'; columns: string[]; rows: string[][] }
 
 export interface ChangelogEntry {
   id: string
@@ -18,6 +19,43 @@ export interface ChangelogEntry {
 }
 
 export const changelog: ChangelogEntry[] = [
+  {
+    id: 'chatbot-conversation-memory',
+    date: '2026-07-31',
+    title: `The assistant now remembers context, and handles several questions at once`,
+    tags: ['feature', 'technical'],
+    body: [
+      `The site's AI assistant used to treat every message as a brand-new, standalone question. Ask "What did he do at USPACE?" and then "And the salary?", and it had no idea what "the" pointed back to, so it just guessed again. This ships two things: **conversation memory**, so it can follow up, and **question decomposition**, so a message carrying several questions is split, retrieved for separately, then answered together.`,
+      { kind: 'heading', text: `Two failure modes: lost follow-ups, diluted retrieval` },
+      `There were two problems. Follow-ups: once a pronoun or reference ("he", "that project", "the second one") points back to an earlier turn, single-question retrieval has no idea who to look for. Several questions at once: the whole message goes in as one query, the fixed result budget gets split across the topics, and the weaker ones get crowded out, so the answer comes back missing a piece.`,
+      { kind: 'heading', text: `How each is handled` },
+      `Conversation memory uses the standard condense-question approach: the client sends the last few turns, and before retrieval runs, one cheap model call rewrites "And the salary?" into a standalone question like "What is Charles's salary at USPACE?". History is used in exactly one place, so retrieval, the FAQ match, and generation all receive a single self-contained question, and the expensive generation prompt never grows just because there's history. A first turn with no history skips the step entirely and costs what it did before.`,
+      `Question decomposition first runs a very cheap check: only a message with two or more question marks, or explicit numbering, spends one free-tier call to split into standalone sub-questions. Retrieval then runs once per sub-question and interleaves the results, so every part gets its most relevant chunks, while the merged total stays under a cap (currently up to four sub-questions, eight chunks kept) so the generation prompt still doesn't balloon. A single question, the vast majority of traffic, never gets past the string check and spends no extra model call.`,
+      { kind: 'heading', text: `Why this middle ground` },
+      `There's a tradeoff here. The frontier-lab standard for compound questions is to let the model split them itself, retrieve per question, and synthesize: best quality, but every sub-question costs a retrieval round, and tokens and calls climb. This assistant runs a cost-first path, where an FAQ cache and Gemini's free tier absorb most traffic and volume is sparse to begin with. So instead of always decomposing, it puts a gate in front of the frontier pattern and pays that cost only when it's actually needed: ordinary single questions stay at their old price, and only follow-ups and multi-part messages pay a little more.`,
+      { kind: 'heading', text: `Conversation memory: why not just inject the history` },
+      {
+        kind: 'table',
+        columns: [`Approach`, `Fixes retrieval?`, `Per-turn tokens`, `Verdict`],
+        rows: [
+          [`Whole message as one question (before)`, `No`, `Lowest`, `Follow-ups break`],
+          [`Inject full history into the prompt`, `No, only rephrasing`, `High; grows every turn`, `Not chosen`],
+          [`Query contextualization`, `Yes`, `Tiny; one small call, only on follow-ups`, `**Chosen**`],
+        ],
+      },
+      { kind: 'heading', text: `Multiple questions: why not always decompose` },
+      {
+        kind: 'table',
+        columns: [`Approach`, `Per-question retrieval?`, `Single-question cost`, `Verdict`],
+        rows: [
+          [`One blob, one retrieval (before)`, `No; budget is split`, `Lowest`, `Weak on multi-part`],
+          [`Always decompose first`, `Yes`, `Higher; single questions pay too`, `Not chosen`],
+          [`Gated decomposition`, `Yes (only when multi detected)`, `Zero extra`, `**Chosen**`],
+        ],
+      },
+      `Every path has a fallback: a missed gate, a failed split, or a sub-question that retrieves nothing all drop back to the original single-question flow, so a new feature can't break the whole answer. Analytics is untouched, and the chat log still stores the visitor's verbatim wording rather than the rewritten version.`,
+    ],
+  },
   {
     id: 'rag-incremental-contextual-ingest',
     date: '2026-07-14',
