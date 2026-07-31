@@ -247,11 +247,47 @@ test('replayTarget: only for messages asking for the answer, and only in range',
   assert.equal(replayTarget('他在 USPACE 做了什麼?', SESSION), null)
 })
 
-// The two routes must not overlap: a replay belongs to retrieval, everything
-// else positional belongs to the transcript.
+// A replay belongs to retrieval; a message that says it is looking back belongs
+// to the transcript.
 test('shouldAnswerFromHistory: splits replay from talk-about-the-conversation', () => {
   assert.equal(shouldAnswerFromHistory('請回答我剛剛問你的第二個問題', SESSION), false)
   assert.equal(shouldAnswerFromHistory('我剛剛問你的第二個問題是什麼?', SESSION), true)
-  // Out of range: converse says so; retrieval would have nothing to search for.
-  assert.equal(shouldAnswerFromHistory('請回答我第十個問題', SESSION), true)
+})
+
+// Naming a position, on its own, must NOT claim the message for the transcript.
+// It did for one deploy on 2026-07-31, and the cost was that any message opening
+// with a positional phrase and continuing into a NEW question stopped
+// retrieving: the visitor asked what made Charles leave USPACE and was told
+// which question they had asked earlier. Two rounds of narrowing the words that
+// may follow the phrase each fixed the examples in hand and left the neighbours
+// open, so the rule is now that the message has to say it is looking back.
+test('shouldAnswerFromHistory: a positional phrase alone never diverts a question from retrieval', () => {
+  for (const q of [
+    'Second question: is he open to relocating?',
+    'Last question: was the team remote?',
+    'Question 2: is he still at USPACE?',
+    'My second question: how did he measure success?',
+    "Last question: what's the answer to scaling a PM team?",
+    '最後一個問題，是什麼讓他離開 USPACE?',
+    '第二個問題，是什麼讓他決定做 AI PM?',
+    '最後一個問題，他現在在找什麼機會?',
+    'USPACE 遇到的第一個問題是什麼?',
+    // Out of range, and not looking back: retrieval will find nothing and say
+    // so, which beats converse claiming to know how many questions there were.
+    '請回答我第十個問題',
+  ]) {
+    assert.equal(shouldAnswerFromHistory(q, SESSION), false, `should reach retrieval: ${q}`)
+  }
+})
+
+// …and the phrasings that DO look back still reach the transcript.
+test('shouldAnswerFromHistory: a positional phrase that says it looks back still reaches converse', () => {
+  for (const q of [
+    '我剛剛問你的第一個問題是什麼?',
+    '你還記得我剛剛問你的問題嗎？請重複一遍',
+    'What was my first question?',
+    'Do you remember my first question?',
+  ]) {
+    assert.equal(shouldAnswerFromHistory(q, SESSION), true, `should reach converse: ${q}`)
+  }
 })

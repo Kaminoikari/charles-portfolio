@@ -205,14 +205,23 @@ export function replayTarget(
 // must agree, or a message gets rewritten out of the path it was headed for.
 export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): boolean {
   if ((history?.length ?? 0) === 0) return false
-  // A replay goes to retrieval under the earlier question's own words.
-  if (replayTarget(question, history)) return false
-  // A message that points at an earlier question by position is asking about
-  // the conversation, including when it points at one that was never asked —
-  // "you only asked three" is an answer, and retrieval has nothing to find.
-  // ordinalReference is what decides that the message really points backwards
-  // rather than merely containing the word 問題 / "question".
-  if (ordinalReference(question, history)) return true
+  // A replay goes to retrieval under the earlier question's own words, and
+  // needs no guard of its own here: replayTarget requires WANTS_AN_ANSWER, and
+  // looksConversational already rejects everything that matches it. A second
+  // check would mask this one, leaving both untestable.
+  //
+  // Naming a position is deliberately NOT enough on its own to claim the
+  // message for the transcript. That branch existed here for one turn and was
+  // reverted on 2026-07-31: "第N個問題" followed by punctuation and a brand-new
+  // question ("最後一個問題，是什麼讓他離開 USPACE?", "Second question: is he open
+  // to relocating?") is how people preface a question, not how they refer back
+  // to one, and every attempt to separate the two by looking at the words after
+  // the phrase closed the examples it was shown and left the neighbours open.
+  // So the pre-existing gate decides, and a positional phrase reaches converse
+  // only when the message ALSO says it is looking back ("我剛剛問你的第二個問題是
+  // 什麼?"). ordinalReference still resolves the position for the two consumers
+  // that have already been routed here: replayTarget above, and the converse
+  // hint in nodes.ts.
   return looksConversational(question)
 }
 
