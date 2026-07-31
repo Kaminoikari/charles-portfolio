@@ -279,3 +279,25 @@ test('gradeDocuments: grades against the retrieval query, which is what was sear
   )
   assert.equal(prompt.includes('Charles 在 USPACE 帶的團隊多大?'), true)
 })
+
+// Live: told "我沒有提供給你任何部落格文章", converse agreed and went further —
+// "我在回答第 3 和第 4 個問題時，引用了超出對話紀錄的內容。我不應該這樣做". Citing
+// the retrieved portfolio is the job; the transcript being its own only source
+// does not make the other answers improper. Confessing to a fault that did not
+// happen is still telling a recruiter something untrue.
+test('converse: is told that earlier grounded answers were legitimate', async () => {
+  let system = ''
+  const capture: Tier = {
+    invoke: (m) => {
+      system = String((m[0] as { content: unknown }).content)
+      return Promise.resolve({ content: 'ok' })
+    },
+    withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error('unused')) }),
+  }
+  await converse({ question: '我剛剛說了什麼?', language: 'zh-TW', history: HISTORY } as never, {
+    primary: () => capture,
+    fallback: () => capture,
+  })
+  assert.match(system, /earlier answers|previous answers/i)
+  assert.match(system, /portfolio the visitor cannot see|were properly grounded|not a fault/i)
+})
