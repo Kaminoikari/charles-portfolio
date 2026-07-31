@@ -2,7 +2,7 @@
 // question" pattern (a.k.a. history-aware query rewriting).
 //
 // Why this and not "stuff the history into the generation prompt": a follow-up
-// like "那薪水呢?" / "and there?" is meaningless to a vector search AND to the
+// like "那團隊多大?" / "and how big was it?" is meaningless to a vector search AND to the
 // grounded-answer LLM without the prior turns. Rewriting it ONCE into a
 // standalone question fixes retrieval *and* generation, and keeps every
 // downstream node (triage, FAQ cache, retrieve, grade, generate) working on a
