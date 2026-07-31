@@ -74,3 +74,31 @@ test('shouldAnswerFromHistory: needs both a conversational message and a transcr
   assert.equal(shouldAnswerFromHistory('剛剛我說的那兩家公司是哪兩家？', []), false)
   assert.equal(shouldAnswerFromHistory('他在 USPACE 做什麼?', h), false)
 })
+
+// Phrasings from today's transcript that fell through to retrieval and came
+// back as invention or refusal.
+test('looksConversational: covers corrections and questions about the visitor’s own message', () => {
+  for (const q of [
+    '那你知道為什麼我問這句話嗎',
+    '我沒有提供給你任何部落格文章',
+    '不對，是因為你剛剛用英文回答我，所以我才問了那句話',
+    '你剛剛用英文回答我',
+  ]) {
+    assert.equal(looksConversational(q), true, `should fire: ${q}`)
+  }
+})
+
+// "Answer my earlier question" is the opposite instruction: the visitor wants
+// the portfolio answer they never got, not a recital of what they asked. That
+// one belongs in the rewrite-and-retrieve path, which resolves it into the
+// earlier question.
+test('looksConversational: a request to ANSWER the earlier question is not conversational', () => {
+  for (const q of [
+    '請回答我剛剛的問題',
+    '請回答我剛剛問你的問題',
+    '那所以你現在要回答我的問題了嗎',
+    'Please answer my previous question',
+  ]) {
+    assert.equal(looksConversational(q), false, `should not fire: ${q}`)
+  }
+})

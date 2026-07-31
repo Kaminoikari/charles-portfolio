@@ -182,3 +182,46 @@ test('generate: a first turn carries no transcript block at all', async () => {
   })
   assert.equal(system.includes('Recent conversation'), false)
 })
+
+// --- prompt hygiene --------------------------------------------------------
+// From today's transcript: asked "為什麼你是用英文回答", the bot replied "我注意到
+// 你貼了一段長的背景資料" and later "你提供的那些部落格文章內容…確實反映了 Charles
+// 的思考方式", then admitted "我憑空捏造了一些內容，然後假裝你提供過". Nothing was
+// pasted. The retrieved chunks were sitting inside the USER turn, so from the
+// model's side the visitor had indeed just sent it several blog articles.
+const DOC = {
+  pageContent: 'Charles writes about the automation trap in his blog.',
+  metadata: { sourceType: 'blog', id: 'b1', title: 'Blog', score: 1, locale: 'zh-TW' },
+}
+
+async function promptFor(state: Record<string, unknown>) {
+  let messages: { role: string; content: string }[] = []
+  await generate(state as never, async (m: { role: string; content: string }[]) => {
+    messages = m
+    return { text: 'ok', provider: 'gemini' as const }
+  })
+  return { system: messages[0].content, user: messages[messages.length - 1].content }
+}
+
+test('generate: the visitor turn holds the question alone, never the retrieved context', async () => {
+  const { user } = await promptFor({ question: '為什麼你是用英文回答', language: 'zh-TW', graded: [DOC] })
+  assert.equal(user.includes('automation trap'), false)
+  assert.equal(user.includes('Context:'), false)
+  assert.equal(user.trim(), '為什麼你是用英文回答')
+})
+
+test('generate: the context is carried as retrieved material, not as the visitor’s', async () => {
+  const { system } = await promptFor({ question: '他寫過什麼?', language: 'zh-TW', graded: [DOC] })
+  assert.equal(system.includes('automation trap'), true)
+  // The rule that stops "你提供的那些部落格文章".
+  assert.match(system, /did not provide|never describe .* as something the visitor/i)
+})
+
+test('generate: the reply language is named, not left to inference', async () => {
+  const zh = await promptFor({ question: '他做什麼?', language: 'zh-TW', graded: [DOC] })
+  assert.match(zh.system, /Traditional Chinese/)
+  const ja = await promptFor({ question: '何をしましたか?', language: 'ja', graded: [DOC] })
+  assert.match(ja.system, /Japanese/)
+  const en = await promptFor({ question: 'What did he do?', language: 'en', graded: [DOC] })
+  assert.match(en.system, /English/)
+})

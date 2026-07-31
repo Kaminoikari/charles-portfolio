@@ -32,13 +32,31 @@ const CONVERSATIONAL: RegExp[] = [
   /repeat (what i|my|the) [^.?!]{0,20}(said|asked|question|message)/i,
   /do you remember (what|my|our)/i,
   /my (first|previous|last|earlier) (question|message)/i,
+  // Corrections and questions about the visitor's own message. Today's
+  // transcript had all of these land in retrieval, where the corpus has nothing
+  // and the bot filled the gap by inventing what the visitor had "provided".
+  /為什麼我(問|說|提|講)/,
+  /我(問|說|提|講)(了)?(這|那)(句|個|段|題|件)/,
+  /我(從來)?(都)?(沒有|沒|未曾|不曾)(提供|給|傳|貼|說|講|寄)/,
+  /你(剛剛|剛才)(說|講|回答|用|提到|寫|給)/,
   // ja
   /さっき[^。？?！!]{0,12}(聞|言|質問|話)/,
   /覚えて(いる|ます)/,
   /(繰り返し|もう一度言って)/,
 ]
 
+// "Answer my earlier question" points the other way: the visitor wants the
+// portfolio answer they never got, not a recital of what they asked. Those
+// belong in the rewrite-and-retrieve path, which resolves the reference into
+// the earlier question and searches for it.
+// The bare word 回答 is not enough to tell the two apart: "你剛剛用英文回答我" is
+// a correction, not a request. What marks a request is a modal or imperative in
+// front of it.
+const WANTS_AN_ANSWER =
+  /(請|请|要|能|可以|可不可以|會不會|会不会|應該|应该)\s*回(答|覆|复)|answer (my|the|that) [^.?!]{0,20}(question|one)|答えて/i
+
 export function looksConversational(question: string): boolean {
+  if (WANTS_AN_ANSWER.test(question)) return false
   return CONVERSATIONAL.some((re) => re.test(question))
 }
 

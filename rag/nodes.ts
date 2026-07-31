@@ -142,6 +142,26 @@ const verdictToRoute: Record<string, string> = {
   off_topic: 'off_topic',
 }
 
+// Name the reply language instead of leaving it to "reply in the language of
+// the question". The language is already detected deterministically up front,
+// and a soft instruction buried in a long English prompt does not hold: today a
+// zh-TW question came back as a full English answer, which the visitor then had
+// to ask about.
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  'zh-TW': 'Traditional Chinese (繁體中文)',
+  ja: 'Japanese (日本語)',
+}
+
+function languageRule(language: string | undefined): string {
+  const name = LANGUAGE_NAMES[language ?? ''] ?? LANGUAGE_NAMES.en
+  return (
+    `LANGUAGE: write the entire reply in ${name}. The visitor is writing in ` +
+    `${name}, so answer in ${name} even though these instructions and most of ` +
+    `the retrieved context are in English.`
+  )
+}
+
 // Pull a verdict out of a plain-text grader reply. Substring rather than exact
 // match, because a model asked for one word still sometimes wraps it ("Verdict:
 // off_topic."). Anything unrecognised returns '' and routes to generate, the
@@ -418,14 +438,23 @@ export async function generate(
           'map, state it with no citation at all. A citation is always a number, ' +
           'never a descriptive tag like [his bio] or [Charles Chen description]. ' +
           'When you describe a specific project, include its link from the ' +
-          'portfolio map as a markdown link (live demo if it has one, otherwise the ' +
-          'GitHub repo) so the visitor can open it. Reply in the language of the ' +
-          'question.\n\nPortfolio map:\n' +
+          `portfolio map as a markdown link (live demo if it has one, otherwise the ` +
+          `GitHub repo) so the visitor can open it.\n\n${languageRule(state.language)}` +
+          '\n\nWhere the context came from: the numbered items below, the portfolio ' +
+          'map, and the entity relationships were all RETRIEVED BY THIS SYSTEM from ' +
+          "Charles's own portfolio. The visitor did not provide, paste, write, or " +
+          'send any of it, and the only thing they wrote is the message in the user ' +
+          'turn. Never describe this material as something the visitor supplied, ' +
+          'shared, or gave you, and never thank them for it. If they ask what they ' +
+          'said or sent, answer only from the conversation transcript, and if it is ' +
+          'not there, say so instead of inventing it.\n\nContext:\n' +
+          context +
+          '\n\nPortfolio map:\n' +
           portfolioMap +
           entityBlock +
           historyBlock,
       },
-      { role: 'user', content: `Question: ${sanitize(state.question)}\n\nContext:\n${context}` },
+      { role: 'user', content: sanitize(state.question) },
     ],
     { strong: broad },
   )
