@@ -84,21 +84,56 @@ function ChangelogBody({ blocks }: { blocks: ChangelogBlock[] }) {
             </ul>
           )
         }
-        // stats grid
+        if (block.kind === 'stats') {
+          return (
+            <dl
+              key={j}
+              className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3"
+            >
+              {block.items.map((stat, k) => (
+                <div key={k} className="bg-bg-secondary px-4 py-3">
+                  <dt className="font-mono text-[10px] uppercase tracking-[1px] text-text-tertiary">
+                    {stat.label}
+                  </dt>
+                  <dd className="mt-1 text-lg font-semibold text-accent-mars">{stat.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )
+        }
+        // comparison table — scrolls horizontally on narrow screens so a wide
+        // chart never forces the page to overflow.
         return (
-          <dl
-            key={j}
-            className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3"
-          >
-            {block.items.map((stat, k) => (
-              <div key={k} className="bg-bg-secondary px-4 py-3">
-                <dt className="font-mono text-[10px] uppercase tracking-[1px] text-text-tertiary">
-                  {stat.label}
-                </dt>
-                <dd className="mt-1 text-lg font-semibold text-accent-mars">{stat.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <div key={j} className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full border-collapse text-left text-[13px] md:text-sm">
+              <thead>
+                <tr className="bg-white/[0.03]">
+                  {block.columns.map((col, k) => (
+                    <th
+                      key={k}
+                      className="whitespace-nowrap border-b border-border px-3 py-2.5 font-mono text-[11px] font-medium uppercase tracking-[0.5px] text-text-tertiary md:px-4"
+                    >
+                      {renderInline(col)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {block.rows.map((row, r) => (
+                  <tr key={r} className={r > 0 ? 'border-t border-border' : ''}>
+                    {row.map((cell, c) => (
+                      <td
+                        key={c}
+                        className="px-3 py-2.5 align-top leading-[1.6] text-text-muted md:px-4"
+                      >
+                        {renderInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )
       })}
     </div>
