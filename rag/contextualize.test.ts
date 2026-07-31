@@ -55,3 +55,24 @@ test('contextualizeQuestion: both tiers down keeps the original question', async
   })
   assert.equal(out, original)
 })
+
+// Live: after "他在 USPACE 做了什麼?" the follow-up "那團隊多大?" came back as
+// "是的，沒錯。[1] …15 人跨職能 Scrum 團隊". The rewrite had folded the answer it
+// found in the history into the question ("團隊是 15 人嗎?"), so the model
+// confirmed instead of answering. Resolving a reference is not the same as
+// deciding what the answer is.
+test('contextualizeQuestion: the rewrite prompt forbids changing the question type', async () => {
+  let system = ''
+  const capture: Tier = {
+    invoke: (messages) => {
+      system = String((messages[0] as { content: unknown }).content)
+      return Promise.resolve({ content: '團隊多大?' })
+    },
+    withStructuredOutput: <T>() => ({ invoke: () => Promise.resolve({} as T) }),
+  }
+  await contextualizeQuestion('那團隊多大?', HISTORY, {
+    primary: () => capture,
+    fallback: () => capture,
+  })
+  assert.match(system, /never answer|do not answer|keep the question type|open question/i)
+})

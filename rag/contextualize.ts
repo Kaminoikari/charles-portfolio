@@ -61,7 +61,12 @@ export async function contextualizeQuestion(
             'conversation history only to resolve references. Replace pronouns and ' +
             'context-dependent phrases ("he", "that project", "there", "第二個", ' +
             '"那個") with their explicit referents from the history, so the result ' +
-            'can be understood on its own. Keep the original language. If the ' +
+            'can be understood on its own. Resolve references ONLY: keep the ' +
+            'question type exactly as it is and never answer it. An open question ' +
+            'stays an open question — "那團隊多大?" becomes "Charles 在 USPACE 帶的 ' +
+            '團隊多大?", never "團隊是 15 人嗎?". Do not fold any fact from the ' +
+            'history into the question, even one that looks like the answer. ' +
+            'Keep the original language. If the ' +
             'message is ALREADY self-contained, or is a greeting, thanks, or ' +
             'chit-chat, return it UNCHANGED. Output ONLY the rewritten message — no ' +
             'preamble, no quotes, no explanation.',
