@@ -156,3 +156,27 @@ export async function retrieveWith(
 export function hybridRetrieve(query: string, locale: string): Promise<Document[]> {
   return retrieveWith(query, locale, DEFAULT_RETRIEVAL)
 }
+
+// Round-robin merge of per-sub-question retrievals for multi-question fan-out
+// (see nodes.ts:retrieve). Takes each list's rank-0 doc, then rank-1, etc.,
+// deduping by chunk id, until `cap`. Interleaving (not concatenation) guarantees
+// every sub-question contributes its strongest hits before any single one fills
+// the budget — the whole point of fanning out — while `cap` keeps the merged
+// context bounded so the generation prompt stays lean.
+export function mergeInterleaved(lists: Document[][], cap: number): Document[] {
+  const seen = new Set<string>()
+  const out: Document[] = []
+  const depth = Math.max(0, ...lists.map((l) => l.length))
+  for (let rank = 0; rank < depth && out.length < cap; rank++) {
+    for (const list of lists) {
+      if (out.length >= cap) break
+      const d = list[rank]
+      if (!d) continue
+      const id = String(d.metadata?.id ?? '')
+      if (id && seen.has(id)) continue
+      if (id) seen.add(id)
+      out.push(d)
+    }
+  }
+  return out
+}

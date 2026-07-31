@@ -37,6 +37,15 @@ export const config = {
   maxLoops: int('RAG_MAX_LOOPS', 2), // query-rewrite attempts
   gradeThreshold: float('RAG_GRADE_THRESHOLD', 0.5),
 
+  // --- multi-question fan-out (gated question decomposition) ---
+  // A single compound message ("2 題命中 + 1 題 generate + 1 題無資料") is split
+  // into standalone sub-questions, retrieved per-question, and merged — the
+  // token-efficient form of the frontier "decompose → per-question retrieve →
+  // synthesize" pattern. Gated by a cheap heuristic so single questions pay
+  // nothing (see decompose.ts).
+  maxSubQuestions: int('RAG_MAX_SUBQUESTIONS', 4), // cap the fan-out width
+  multiMergeK: int('RAG_MULTI_MERGE_K', 8), // total chunks kept after interleaving
+
   // --- models ---
   // Generation is two-tier: Gemini free-tier first, Anthropic as paid fallback.
   // grade/rewrite are internal steps → Gemini only (no fallback) to conserve the

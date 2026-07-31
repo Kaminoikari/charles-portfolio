@@ -20,6 +20,7 @@ import { config } from './config.js'
 import { detectLanguage } from './language.js'
 import { RAGState, type RAGStateType, type Source, type Outcome } from './state.js'
 import { contextualizeQuestion } from './contextualize.js'
+import { decomposeQuestion } from './decompose.js'
 import type { ChatTurn } from './api-helpers.js'
 import * as defaultNodes from './nodes.js'
 
@@ -134,13 +135,17 @@ export async function* streamAnswer(
   // (see api/chat.ts), so analytics keeps the visitor's verbatim wording.
   const language = detectLanguage(question)
   const query = await contextualizeQuestion(question, history)
+  // Gated decomposition: single questions return [] with no LLM call, so the
+  // common case is free; a genuine multi-part message is split so retrieve can
+  // fan out one search per sub-question (see nodes.ts:retrieve).
+  const subQuestions = await decomposeQuestion(query)
   let answerText = ''
   let sources: Source[] = []
   let loops = 0
   let outcome: Outcome = 'fallback'
 
   const events = compiled.streamEvents(
-    { question: query, language, queries: [query] },
+    { question: query, language, queries: [query], subQuestions },
     { version: 'v2' },
   )
 
