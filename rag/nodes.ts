@@ -16,7 +16,12 @@ import { hybridRetrieve, mergeInterleaved } from './retrieval.js'
 import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
-import { sanitize, isOffensiveOutput, stripInvalidCitations } from './guardrails.js'
+import {
+  sanitize,
+  isOffensiveOutput,
+  stripInvalidCitations,
+  stripUngroundedLinks,
+} from './guardrails.js'
 import { sourceUrl } from './source-url.js'
 import {
   invokeWithFallback,
@@ -333,7 +338,9 @@ export async function converse(
       console.warn('converse: offensive output blocked by guardrail')
       return { answer: genericFallback(locale), sources: [], outcome: 'blocked' }
     }
-    return { answer: clean, sources: [], outcome: 'converse' }
+    // The transcript is this node's only source, so it is also the only place a
+    // link may come from. Anything else is invented (see stripUngroundedLinks).
+    return { answer: stripUngroundedLinks(clean, transcript), sources: [], outcome: 'converse' }
   } catch (err) {
     console.warn('converse failed, falling back to the generic reply:', (err as Error).message)
     return { answer: genericFallback(locale), sources: [], outcome: 'fallback' }
@@ -490,7 +497,15 @@ export async function generate(
     }),
   }))
 
-  return { answer: stripInvalidCitations(text), sources, outcome: 'generate' }
+  // Links are checked against the material the model was actually given, not
+  // the transcript: a URL it invented one turn ago must not become grounding
+  // for repeating it. The visitor's own message is excluded for the same reason.
+  const grounding = `${context}\n${portfolioMap}\n${entityBlock}\n${sources.map((s) => s.url ?? '').join('\n')}`
+  return {
+    answer: stripUngroundedLinks(stripInvalidCitations(text), grounding),
+    sources,
+    outcome: 'generate',
+  }
 }
 
 // --- fallback ------------------------------------------------------------

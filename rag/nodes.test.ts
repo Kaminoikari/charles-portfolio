@@ -225,3 +225,20 @@ test('generate: the reply language is named, not left to inference', async () =>
   const en = await promptFor({ question: 'What did he do?', language: 'en', graded: [DOC] })
   assert.match(en.system, /English/)
 })
+
+test('generate: an invented link is demoted before the answer leaves the node', async () => {
+  const out = await generate(
+    { question: '他的作品集在哪?', language: 'zh-TW', graded: [DOC] } as never,
+    async () => ({ text: '查看他的[作品集](https://charleschen.tw)。', provider: 'gemini' as const }),
+  )
+  assert.equal((out.answer ?? '').includes('charleschen.tw'), false)
+  assert.equal((out.answer ?? '').includes('作品集'), true)
+})
+
+test('converse: an invented link is demoted there too', async () => {
+  const out = await converse(
+    { question: '我剛剛說了什麼?', language: 'zh-TW', history: HISTORY } as never,
+    tiers(failing('429'), answering('你剛剛問了 [這個](https://charleschen.tw)。')),
+  )
+  assert.equal((out.answer ?? '').includes('charleschen.tw'), false)
+})

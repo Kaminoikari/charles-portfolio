@@ -66,3 +66,25 @@ export function stripInvalidCitations(text: string): string {
     NUMERIC_CITATION.test(inner.trim()) ? full : '',
   )
 }
+
+// A URL is the one kind of hallucination a visitor cannot spot by reading: it
+// looks authoritative and only fails when clicked. The live bot wrote
+// "[作品集](https://charleschen.tw)" — a domain that exists nowhere in the
+// corpus, assembled out of Charles's name — and conceded "它是我自己編造的" when
+// challenged. The prompt already says to take links from the portfolio map;
+// this checks. Any link whose URL is not present verbatim in the material the
+// model was given is demoted to its label, so the sentence still reads and the
+// invented destination is gone. Deliberately not a repair: guessing the URL the
+// model meant would be the same failure one layer down.
+const MARKDOWN_LINK = /\[([^\]\n]*)\]\((https?:\/\/[^)\s]+)\)/g
+const BARE_URL = /\s?<?(https?:\/\/[^\s<>)\]]+)>?/g
+
+const canonical = (url: string) => url.replace(/[.,;:!?]+$/, '').replace(/\/+$/, '')
+
+export function stripUngroundedLinks(text: string, grounding: string): string {
+  const allowed = new Set((grounding.match(/https?:\/\/[^\s<>)\]"']+/g) ?? []).map(canonical))
+  const isGrounded = (url: string) => allowed.has(canonical(url))
+  return text
+    .replace(MARKDOWN_LINK, (full, label: string, url: string) => (isGrounded(url) ? full : label))
+    .replace(BARE_URL, (full, url: string) => (isGrounded(url) ? full : ''))
+}
