@@ -8,7 +8,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { buildGraph, answer, type NodeSet } from './graph.js'
+import { buildGraph, answer, streamAnswer, type NodeSet, type StreamEvent } from './graph.js'
+import { shouldAnswerFromHistory } from './history.js'
+import type { ChatTurn } from './api-helpers.js'
 import { detectLanguage } from './language.js'
 import { config } from './config.js'
 
@@ -140,4 +142,110 @@ test('triage routing to converse answers without retrieving', async () => {
   assert.equal(counts.retrieve, 0)
   assert.equal(counts.generate, 0)
   assert.equal(counts.converse, 1)
+})
+
+// --- what streamAnswer seeds the graph with ---------------------------------
+// The preprocessing in front of the graph decides WHICH question gets answered,
+// and until 2026-07-31 nothing pinned that down: "請回答我剛剛問你的第二個問題"
+// went to retrieval as its own literal text and came back about whichever topic
+// the search happened to like — the fourth question in one live run, the second
+// in the next.
+
+const SESSION: ChatTurn[] = [
+  { role: 'user', content: '他在 USPACE 做了什麼?' },
+  { role: 'assistant', content: 'USPACE …' },
+  { role: 'user', content: '那團隊多大?' },
+  { role: 'assistant', content: '15 人 …' },
+  { role: 'user', content: '他在工作上怎麼運用 AI?' },
+  { role: 'assistant', content: 'AI …' },
+  { role: 'user', content: '那個 Playbook 是什麼?' },
+  { role: 'assistant', content: 'Playbook …' },
+]
+
+// Records what the graph was seeded with, and routes for real so the split
+// between the two paths is exercised rather than asserted.
+function recordingNodes() {
+  const seen: Array<{ question: string; queries: string[] }> = []
+  const counts = { converse: 0, retrieve: 0 }
+  const nodes: NodeSet = {
+    triage: async (state) => {
+      seen.push({ question: state.question, queries: state.queries ?? [] })
+      return shouldAnswerFromHistory(state.question, state.history ?? [])
+        ? { route: 'converse' }
+        : { route: 'retrieve' }
+    },
+    converse: async () => {
+      counts.converse++
+      return { answer: 'from the transcript', sources: [], outcome: 'converse' }
+    },
+    retrieve: async () => {
+      counts.retrieve++
+      return { documents: [] }
+    },
+    gradeDocuments: async () => ({ graded: [], route: 'generate' }),
+    rewriteQuery: async () => ({}),
+    generate: async () => ({ answer: 'grounded answer', sources: [], outcome: 'generate' }),
+    fallback: async () => ({ answer: 'no info', sources: [], outcome: 'fallback' }),
+  }
+  return { nodes, seen, counts }
+}
+
+function stubDeps() {
+  const rewrites: Array<{ question: string; turns: number }> = []
+  const deps = {
+    contextualize: async (question: string, history: ChatTurn[]) => {
+      rewrites.push({ question, turns: history.length })
+      return `search:${question}`
+    },
+    decompose: async () => [],
+  }
+  return { deps, rewrites }
+}
+
+async function drain(gen: AsyncGenerator<StreamEvent>) {
+  const events: StreamEvent[] = []
+  for await (const ev of gen) events.push(ev)
+  return events
+}
+
+test('streamAnswer: a request to answer the Nth question replays that question', async () => {
+  const { nodes, seen, counts } = recordingNodes()
+  const { deps, rewrites } = stubDeps()
+  await drain(streamAnswer('請回答我剛剛問你的第二個問題', SESSION, buildGraph(nodes), deps))
+
+  // The graph is asked the earlier question, in the visitor's own words.
+  assert.equal(seen[0].question, '那團隊多大?')
+  assert.deepEqual(seen[0].queries, ['search:那團隊多大?'])
+  // Rewritten against the two turns that preceded it, not the whole session —
+  // otherwise "那團隊" binds to the Playbook they asked about last.
+  assert.deepEqual(rewrites, [{ question: '那團隊多大?', turns: 2 }])
+  assert.equal(counts.retrieve, 1)
+  assert.equal(counts.converse, 0)
+})
+
+test('streamAnswer: asking WHAT the Nth question was stays on the transcript path', async () => {
+  const { nodes, seen, counts } = recordingNodes()
+  const { deps, rewrites } = stubDeps()
+  const events = await drain(
+    streamAnswer('我剛剛問你的第二個問題是什麼?', SESSION, buildGraph(nodes), deps),
+  )
+
+  assert.equal(seen[0].question, '我剛剛問你的第二個問題是什麼?')
+  assert.deepEqual(seen[0].queries, ['我剛剛問你的第二個問題是什麼?'])
+  assert.deepEqual(rewrites, []) // no rewrite: it would erase the reference
+  assert.equal(counts.converse, 1)
+  assert.equal(counts.retrieve, 0)
+  const last = events.at(-1)
+  assert.equal(last?.type === 'done' ? last.outcome : null, 'converse')
+})
+
+test('streamAnswer: an ordinary follow-up is still rewritten against the whole session', async () => {
+  const { nodes, seen, counts } = recordingNodes()
+  const { deps, rewrites } = stubDeps()
+  await drain(streamAnswer('那個專案解決什麼問題?', SESSION, buildGraph(nodes), deps))
+
+  assert.equal(seen[0].question, '那個專案解決什麼問題?')
+  assert.deepEqual(seen[0].queries, ['search:那個專案解決什麼問題?'])
+  assert.deepEqual(rewrites, [{ question: '那個專案解決什麼問題?', turns: SESSION.length }])
+  assert.equal(counts.retrieve, 1)
 })

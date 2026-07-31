@@ -8,7 +8,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { looksConversational, formatHistory, shouldAnswerFromHistory } from './history.js'
+import {
+  looksConversational,
+  formatHistory,
+  shouldAnswerFromHistory,
+  ordinalReference,
+  replayTarget,
+} from './history.js'
 
 test('looksConversational: fires on questions whose answer is the conversation', () => {
   for (const q of [
@@ -53,7 +59,7 @@ test('formatHistory: keeps the last turns and truncates assistant answers', () =
   const out = formatHistory(turns, { maxTurns: 2, assistantChars: 10 })
   // Only the last 2 turns survive, so q1 is gone.
   assert.equal(out.includes('q1'), false)
-  assert.equal(out.includes('User: q2'), true)
+  assert.equal(out.includes('User (question 2): q2'), true)
   assert.equal(out.includes(`Assistant: ${'a'.repeat(10)}\n`), true)
   assert.equal(out.includes('a'.repeat(11)), false)
 })
@@ -119,4 +125,102 @@ test('formatHistory: marks the transcript as partial only when turns were droppe
 
   const whole = formatHistory(many.slice(0, 3), { maxTurns: 4, assistantChars: 300 })
   assert.doesNotMatch(whole, /earlier turns are not shown/i)
+})
+
+// Question numbers are counted over the whole history, not over the window. A
+// clipped transcript renumbered from 1 would tell the model that the oldest line
+// it can see is the visitor's first question, which is the same lie the
+// "(earlier turns are not shown)" header exists to prevent.
+test('formatHistory: numbers the visitor’s turns from the true start of the conversation', () => {
+  const turns = [
+    { role: 'user' as const, content: 'q1' },
+    { role: 'assistant' as const, content: 'a1' },
+    { role: 'user' as const, content: 'q2' },
+    { role: 'assistant' as const, content: 'a2' },
+    { role: 'user' as const, content: 'q3' },
+  ]
+  const whole = formatHistory(turns, { maxTurns: 10, assistantChars: 300 })
+  assert.match(whole, /User \(question 1\): q1/)
+  assert.match(whole, /User \(question 3\): q3/)
+
+  const clipped = formatHistory(turns, { maxTurns: 2, assistantChars: 300 })
+  assert.match(clipped, /User \(question 3\): q3/)
+  assert.equal(clipped.includes('question 1'), false)
+})
+
+// --- positional references -------------------------------------------------
+// Four questions, so an ordinal has something to land on. This is the shape of
+// the live session where "請回答我剛剛問你的第二個問題" answered about the fourth.
+const SESSION = [
+  { role: 'user' as const, content: '他在 USPACE 做了什麼?' },
+  { role: 'assistant' as const, content: 'USPACE …' },
+  { role: 'user' as const, content: '那團隊多大?' },
+  { role: 'assistant' as const, content: '15 人 …' },
+  { role: 'user' as const, content: '他在工作上怎麼運用 AI?' },
+  { role: 'assistant' as const, content: 'AI …' },
+  { role: 'user' as const, content: '那個 Playbook 是什麼?' },
+  { role: 'assistant' as const, content: 'Playbook …' },
+]
+
+test('ordinalReference: resolves a named position to the question actually asked', () => {
+  for (const [message, index] of [
+    ['請回答我剛剛問你的第二個問題', 2],
+    ['我剛剛問你的第二個問題是什麼?', 2],
+    ['第2題你還沒回覆', 2],
+    ['第一個問題是什麼?', 1],
+    ['最後一個問題是什麼?', 4],
+    ['上一個問題你答錯了', 4],
+    ['what was my second question?', 2],
+    ['answer question 3', 3],
+    ['my first question, please', 1],
+    ['2番目の質問は何ですか', 2],
+    ['最初の質問は何でしたか', 1],
+  ] as Array<[string, number]>) {
+    const ref = ordinalReference(message, SESSION)
+    assert.equal(ref?.index, index, `wrong index for: ${message}`)
+    assert.equal(ref?.total, 4)
+    assert.equal(ref?.question, SESSION[(index - 1) * 2].content, `wrong target for: ${message}`)
+  }
+})
+
+test('ordinalReference: null when the message names no position, or there is nothing to count', () => {
+  assert.equal(ordinalReference('他在 USPACE 做了什麼?', SESSION), null)
+  assert.equal(ordinalReference('我第一輪問題問了你什麼', []), null)
+})
+
+// Naming a question that was never asked is not a licence to pick another one.
+test('ordinalReference: an out-of-range position resolves with no target', () => {
+  const ref = ordinalReference('第十個問題是什麼?', SESSION)
+  assert.equal(ref?.index, 10)
+  assert.equal(ref?.total, 4)
+  assert.equal(ref?.question, null)
+})
+
+// The replayed question can itself be a follow-up ("那團隊多大?"), so it has to be
+// rewritten against the turns that preceded IT — not against the whole
+// transcript, whose latest topic would pull the rewrite somewhere else.
+test('replayTarget: hands back the earlier question plus the turns it referred to', () => {
+  const target = replayTarget('請回答我剛剛問你的第二個問題', SESSION)
+  assert.equal(target?.question, '那團隊多大?')
+  assert.deepEqual(
+    target?.priorTurns.map((t) => t.content),
+    ['他在 USPACE 做了什麼?', 'USPACE …'],
+  )
+})
+
+test('replayTarget: only for messages asking for the answer, and only in range', () => {
+  // Asking WHAT it was is a question about the conversation, not a replay.
+  assert.equal(replayTarget('我剛剛問你的第二個問題是什麼?', SESSION), null)
+  // Nothing to replay when they name a question they never asked.
+  assert.equal(replayTarget('請回答我第十個問題', SESSION), null)
+  assert.equal(replayTarget('他在 USPACE 做了什麼?', SESSION), null)
+})
+
+// The two routes must not overlap: a replay belongs to retrieval, everything
+// else positional belongs to the transcript.
+test('shouldAnswerFromHistory: splits replay from talk-about-the-conversation', () => {
+  assert.equal(shouldAnswerFromHistory('請回答我剛剛問你的第二個問題', SESSION), false)
+  assert.equal(shouldAnswerFromHistory('我剛剛問你的第二個問題是什麼?', SESSION), true)
+  // Out of range: converse says so; retrieval would have nothing to search for.
+  assert.equal(shouldAnswerFromHistory('請回答我第十個問題', SESSION), true)
 })

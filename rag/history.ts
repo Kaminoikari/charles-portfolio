@@ -60,6 +60,102 @@ export function looksConversational(question: string): boolean {
   return CONVERSATIONAL.some((re) => re.test(question))
 }
 
+// --- references by position ------------------------------------------------
+// "我剛剛問你的第二個問題" names an earlier question by its place in the
+// conversation. Nothing downstream can resolve that: an embedding has no
+// ordering, and an LLM handed a flat transcript has to count the turns itself —
+// which it did inconsistently in production, answering about the fourth
+// question in one run and the second in the next. Counting is arithmetic, so it
+// happens here, once, deterministically.
+
+const ZH_NUMERALS: Record<string, number> = {
+  一: 1, 二: 2, 兩: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10,
+}
+const EN_ORDINALS: Record<string, number> = {
+  first: 1, second: 2, third: 3, fourth: 4, fifth: 5,
+  sixth: 6, seventh: 7, eighth: 8, ninth: 9, tenth: 10,
+}
+
+// 第二個問題 / 第2題 / 第三個提問
+const ZH_ORDINAL = /第\s*([0-9]+|[一二兩三四五六七八九十])\s*(?:個|个|則|则|條|条)?\s*(?:問題|问题|題|题|提問|提问)/
+// 2番目の質問 / 二つ目の質問
+const JA_ORDINAL = /([0-9]+|[一二三四五六七八九十])\s*(?:番目|つ目)\s*の\s*(?:質問|問題)/
+// my second question / the 3rd question
+const EN_ORDINAL =
+  /\b(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|[0-9]+)(?:st|nd|rd|th)?\s+question\b/i
+// question 2 / question #3 / question number 4
+const EN_NUMBERED = /\bquestion\s*(?:#|no\.?|number)?\s*([0-9]+)\b/i
+// 最初の質問 — the zh "第一個問題" is already an ordinal above.
+const FIRST_QUESTION = /最初の(?:質問|問題)/
+// The most recent one, however it is named. Checked LAST so an explicit ordinal
+// inside the same sentence ("剛剛問你的第二個問題") wins over the 剛剛 in front.
+const LAST_QUESTION =
+  /上一(?:個|个)?(?:問題|问题|題|题)|最(?:後|后)(?:一(?:個|个)|的)?(?:問題|问题|題|题)|(?:剛剛|剛才|刚刚|刚才)[^。？?！!]{0,8}的?(?:問題|问题|題|题)|\b(?:previous|last)\s+question\b|(?:前|最後|さっき)の(?:質問|問題)/i
+
+function parseNumber(token: string): number {
+  return /^[0-9]+$/.test(token)
+    ? Number(token)
+    : (ZH_NUMERALS[token] ?? EN_ORDINALS[token.toLowerCase()] ?? 0)
+}
+
+// The 1-based position the message points at, or 0 when it points at nothing.
+// `total` lets "last" be resolved without the caller re-counting.
+function positionOf(question: string, total: number): number {
+  for (const re of [ZH_ORDINAL, JA_ORDINAL, EN_ORDINAL, EN_NUMBERED]) {
+    const m = question.match(re)
+    if (m?.[1]) return parseNumber(m[1])
+  }
+  if (FIRST_QUESTION.test(question)) return 1
+  if (LAST_QUESTION.test(question)) return total
+  return 0
+}
+
+export interface OrdinalReference {
+  /** 1-based position among the visitor's own questions, as they named it. */
+  index: number
+  /** How many questions they have actually asked. */
+  total: number
+  /** The question at `index`, or null when they named one that does not exist. */
+  question: string | null
+  /** Turns that preceded that question — what its own references resolve against. */
+  priorTurns: ChatTurn[]
+}
+
+// Resolve a positional reference against the transcript. Null when the message
+// names no position, or when there is nothing to count. An out-of-range index
+// still resolves (with `question: null`) so the converse node can say "you have
+// only asked three" instead of quietly answering about a different one.
+export function ordinalReference(question: string, history: ChatTurn[]): OrdinalReference | null {
+  const asked = (history ?? [])
+    .map((turn, at) => ({ turn, at }))
+    .filter(({ turn }) => turn.role === 'user')
+  if (!asked.length) return null
+
+  const index = positionOf(question, asked.length)
+  if (index < 1) return null
+
+  const hit = asked[index - 1]
+  return {
+    index,
+    total: asked.length,
+    question: hit ? hit.turn.content : null,
+    priorTurns: hit ? (history ?? []).slice(0, hit.at) : [],
+  }
+}
+
+// "請回答我剛剛問你的第二個問題" asks for the ANSWER to an earlier question, not
+// for a recital of it — so the pipeline replays that question through retrieval
+// instead of talking about the conversation. Null unless the message both asks
+// for an answer and names a question that exists.
+export function replayTarget(
+  question: string,
+  history: ChatTurn[],
+): { question: string; priorTurns: ChatTurn[] } | null {
+  if (!WANTS_AN_ANSWER.test(question)) return null
+  const ref = ordinalReference(question, history)
+  return ref?.question ? { question: ref.question, priorTurns: ref.priorTurns } : null
+}
+
 // The single decision both consumers ask: is this a message to answer from the
 // transcript? streamAnswer asks it to skip rewriting the question (rewriting
 // resolves the referents and thereby destroys the very markers the gate reads —
@@ -67,7 +163,13 @@ export function looksConversational(question: string): boolean {
 // then retrieves nothing), and triage asks it to pick the converse route. They
 // must agree, or a message gets rewritten out of the path it was headed for.
 export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): boolean {
-  return (history?.length ?? 0) > 0 && looksConversational(question)
+  if ((history?.length ?? 0) === 0) return false
+  // A replay goes to retrieval under the earlier question's own words.
+  if (replayTarget(question, history)) return false
+  // Any other positional reference is a question about the conversation, even
+  // when it names a position that was never asked.
+  if (ordinalReference(question, history)) return true
+  return looksConversational(question)
 }
 
 // Render recent turns as a plain transcript. Assistant answers are truncated:
@@ -80,18 +182,24 @@ export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): 
 // turn, it confidently named the third — and then apologised for a mistake it
 // had never made. "I can only see the recent part" is an answer; a wrong first
 // question is not.
+// The visitor's turns carry their question number, counted over the WHOLE
+// history before any clipping — so a reader of a partial transcript sees that
+// the oldest line it holds is question 4, not question 1. Numbering the lines is
+// what makes "第二個問題" answerable by reading rather than by counting.
 export function formatHistory(
   turns: ChatTurn[],
   opts: { maxTurns: number; assistantChars: number },
 ): string {
   if (!turns?.length) return ''
-  const kept = turns.slice(-opts.maxTurns)
+  let asked = 0
+  const numbered = turns.map((t) => ({ ...t, n: t.role === 'user' ? ++asked : 0 }))
+  const kept = numbered.slice(-opts.maxTurns)
   const clipped = kept.length < turns.length
   const body = kept
     .map((t) =>
       t.role === 'assistant'
         ? `Assistant: ${t.content.slice(0, opts.assistantChars)}`
-        : `User: ${t.content}`,
+        : `User (question ${t.n}): ${t.content}`,
     )
     .join('\n')
   return clipped ? `(earlier turns are not shown)\n${body}` : body

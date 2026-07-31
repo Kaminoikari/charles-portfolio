@@ -166,7 +166,7 @@ test('generate: the prompt carries the transcript, marked as uncitable', async (
     system = messages[0].content
     return { text: '15 人。', provider: 'gemini' as const }
   })
-  assert.equal(system.includes('User: 他在 USPACE 做什麼?'), true)
+  assert.equal(system.includes('User (question 1): 他在 USPACE 做什麼?'), true)
   assert.equal(system.includes('Assistant: Charles 在 USPACE 帶 15 人的 Scrum 團隊。'), true)
   // It must be fenced off from the citation rules, or the model starts citing it.
   assert.match(system, /never be cited/)
@@ -261,7 +261,7 @@ test('generate: answers the visitor’s own words, not the retrieval rewrite', a
   assert.equal(user.trim(), '他在工作上怎麼運用 AI?')
   assert.equal(user.includes('USPACE 帶的團隊'), false)
   // The transcript is what lets it resolve references without the rewrite.
-  assert.equal(system.includes('User: 他在 USPACE 做什麼?'), true)
+  assert.equal(system.includes('User (question 1): 他在 USPACE 做什麼?'), true)
 })
 
 test('gradeDocuments: grades against the retrieval query, which is what was searched', async () => {
@@ -300,4 +300,61 @@ test('converse: is told that earlier grounded answers were legitimate', async ()
   })
   assert.match(system, /earlier answers|previous answers/i)
   assert.match(system, /portfolio the visitor cannot see|were properly grounded|not a fault/i)
+})
+
+// Counting the visitor's turns is arithmetic, and converse was left to do it by
+// eye: asked "請回答我剛剛問你的第二個問題" in two live runs, it answered about the
+// fourth question once and the second once. The count is done in history.ts and
+// handed over, so the model reads the target instead of deriving it.
+const FOUR_QUESTIONS = [
+  { role: 'user' as const, content: '他在 USPACE 做了什麼?' },
+  { role: 'assistant' as const, content: 'USPACE …' },
+  { role: 'user' as const, content: '那團隊多大?' },
+  { role: 'assistant' as const, content: '15 人 …' },
+  { role: 'user' as const, content: '他在工作上怎麼運用 AI?' },
+  { role: 'assistant' as const, content: 'AI …' },
+  { role: 'user' as const, content: '那個 Playbook 是什麼?' },
+  { role: 'assistant' as const, content: 'Playbook …' },
+]
+
+function capturingTier(): { tier: Tier; system: () => string } {
+  let system = ''
+  const tier: Tier = {
+    invoke: (m) => {
+      system = String((m[0] as { content: unknown }).content)
+      return Promise.resolve({ content: 'ok' })
+    },
+    withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error('unused')) }),
+  }
+  return { tier, system: () => system }
+}
+
+test('converse: is handed the resolved question when the visitor names a position', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.match(system(), /question 2 of the 4/)
+  assert.match(system(), /那團隊多大\?/)
+  // And the transcript itself carries the numbering, so the two agree.
+  assert.match(system(), /User \(question 2\): 那團隊多大\?/)
+})
+
+test('converse: a position that was never asked is reported, not silently swapped', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '第十個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.match(system(), /pointing at question 10, but they have only asked 4/)
+})
+
+test('converse: no positional reference leaves the prompt alone', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '我剛剛說了什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.equal(/pointing at question/.test(system()), false)
 })

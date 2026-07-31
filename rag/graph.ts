@@ -20,7 +20,7 @@ import { config } from './config.js'
 import { detectLanguage } from './language.js'
 import { RAGState, type RAGStateType, type Source, type Outcome } from './state.js'
 import { contextualizeQuestion } from './contextualize.js'
-import { shouldAnswerFromHistory } from './history.js'
+import { shouldAnswerFromHistory, replayTarget } from './history.js'
 import { decomposeQuestion } from './decompose.js'
 import type { ChatTurn } from './api-helpers.js'
 import * as defaultNodes from './nodes.js'
@@ -132,10 +132,22 @@ export type StreamEvent =
   | { type: 'token'; text: string }
   | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome }
 
+// The two preprocessing steps, injectable so the seeding logic below can be
+// tested without reaching for a model (mirrors buildGraph's node overrides).
+export interface StreamDeps {
+  contextualize: typeof contextualizeQuestion
+  decompose: typeof decomposeQuestion
+}
+const DEFAULT_DEPS: StreamDeps = {
+  contextualize: contextualizeQuestion,
+  decompose: decomposeQuestion,
+}
+
 export async function* streamAnswer(
   question: string,
   history: ChatTurn[] = [],
   compiled: ReturnType<typeof buildGraph> = graph,
+  deps: StreamDeps = DEFAULT_DEPS,
 ): AsyncGenerator<StreamEvent> {
   // Detect language from the ORIGINAL message (what the visitor typed), then
   // resolve any follow-up into a standalone question the pipeline can retrieve
@@ -150,24 +162,33 @@ export async function* streamAnswer(
   // send it to a retrieval that has nothing to find. Decomposing it is pointless
   // for the same reason, and skipping both saves two model calls.
   const fromHistory = shouldAnswerFromHistory(question, history)
-  const query = fromHistory ? question : await contextualizeQuestion(question, history)
+  // "請回答我剛剛問你的第二個問題" is a request for an answer, not for a recital,
+  // so the pipeline runs the earlier question again under its own words. Which
+  // question that is gets counted in history.ts, because leaving the arithmetic
+  // to the model made the same request resolve to a different turn run to run.
+  // Its own references resolve against the turns that preceded IT — rewriting it
+  // against the whole transcript would bind it to the latest topic instead.
+  const replay = replayTarget(question, history)
+  const asked = replay?.question ?? question
+  const query = fromHistory ? asked : await deps.contextualize(asked, replay?.priorTurns ?? history)
   // Gated decomposition: single questions return [] with no LLM call, so the
   // common case is free; a genuine multi-part message is split so retrieve can
   // fan out one search per sub-question (see nodes.ts:retrieve).
-  const subQuestions = fromHistory ? [] : await decomposeQuestion(query)
+  const subQuestions = fromHistory ? [] : await deps.decompose(query)
   let answerText = ''
   let sources: Source[] = []
   let loops = 0
   let outcome: Outcome = 'fallback'
 
-  // `question` stays the message as typed and `queries` carries the rewrite.
-  // Seeding `question` with the rewrite is what let a rewrite's mistakes become
-  // the question being answered: "他在工作上怎麼運用 AI?" was rewritten to
-  // "他在 USPACE 帶的團隊怎麼運用 AI?" and answered as such, and the next turn
-  // inherited it. The rewrite is a search string; the visitor's words, plus the
-  // transcript, are what generation answers.
+  // `question` carries words the visitor actually typed — this message, or the
+  // earlier one they asked us to answer again — and `queries` carries the
+  // rewrite. Seeding `question` with the rewrite is what let a rewrite's
+  // mistakes become the question being answered: "他在工作上怎麼運用 AI?" was
+  // rewritten to "他在 USPACE 帶的團隊怎麼運用 AI?" and answered as such, and the
+  // next turn inherited it. The rewrite is a search string; the visitor's words,
+  // plus the transcript, are what generation answers.
   const events = compiled.streamEvents(
-    { question, language, queries: [query], subQuestions, history },
+    { question: asked, language, queries: [query], subQuestions, history },
     { version: 'v2' },
   )
 
