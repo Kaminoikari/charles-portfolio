@@ -1,8 +1,9 @@
 // Node implementations for the corrective RAG graph (see graph.ts for topology).
 //
-// LLM routing (see llm.ts): grade + rewrite are internal steps and run on
-// Gemini's free tier only; generate (the user-facing answer) runs on Gemini
-// first and falls back to paid Claude on any failure.
+// LLM routing (see llm.ts): every step runs on Gemini's free tier first and
+// falls back to Claude when it fails. grade + rewrite use withTierFallback /
+// invokeWithFallback and still degrade to their no-op if both tiers are down;
+// generate (the user-facing answer) falls back under a first-token gate.
 
 import { Document } from '@langchain/core/documents'
 import { z } from 'zod'
@@ -17,7 +18,7 @@ import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
 import { sanitize, isOffensiveOutput, stripInvalidCitations } from './guardrails.js'
 import { sourceUrl } from './source-url.js'
-import { gemini, generateWithFallback } from './llm.js'
+import { generateWithFallback, invokeWithFallback, withTierFallback, resolveTiers } from './llm.js'
 import { triage as classifyQuestion, genericFallback } from './triage.js'
 
 // --- triage --------------------------------------------------------------
@@ -119,38 +120,49 @@ const verdictToRoute: Record<string, string> = {
   off_topic: 'off_topic',
 }
 
-export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGStateType>> {
+// `injected` is typed `unknown` on purpose: the graph calls this node with a
+// RunnableConfig in that slot, and only a real Tiers value may win (see
+// resolveTiers). Tests pass stub tiers through the same door.
+export async function gradeDocuments(
+  state: RAGStateType,
+  injected?: unknown,
+): Promise<Partial<RAGStateType>> {
+  const tiers = resolveTiers(injected)
   const docs = state.documents ?? []
   if (docs.length === 0) return { graded: [], route: 'rewrite' }
 
-  // Grading is a quality nicety, not a hard gate. If the grader LLM is slow or
-  // rate-limited, DON'T block the answer (and don't trigger a rewrite loop,
-  // which costs another LLM call): degrade gracefully by passing the retrieved
-  // docs straight to generate. We give the grader a tight 4s budget for the
-  // same reason — better a slightly-less-filtered answer than a 504.
-  const grader = gemini().withStructuredOutput(gradeSchema, { name: 'grade' })
+  // Grading is a quality nicety, not a hard gate. If BOTH provider tiers are
+  // slow or rate-limited, DON'T block the answer (and don't trigger a rewrite
+  // loop, which costs another LLM call): degrade gracefully by passing the
+  // retrieved docs straight to generate. Each tier gets a tight 4s budget for
+  // the same reason — better a slightly-less-filtered answer than a 504.
   const context = docs.map((d, i) => `[${i + 1}] ${d.pageContent}`).join('\n\n')
   try {
-    const { verdict } = await Promise.race([
-      grader.invoke([
-        {
-          role: 'system',
-          content:
-            "You grade retrieval for Charles Chen's portfolio assistant. Judge " +
-            'whether the retrieved documents answer the question and return exactly ' +
-            'one verdict. Be lenient about "answerable" ' +
-            '(the goal is to filter clearly off-topic retrievals, not demand ' +
-            'perfection), but reserve "off_topic" for questions that are genuinely ' +
-            'not about Charles Chen at all. Questions about agentic design patterns ' +
-            "or AI agent engineering fall within Charles's documented expertise, so " +
-            'treat them as on-topic.',
-        },
-        { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
-      ]),
-      new Promise<{ verdict: 'answerable' | 'on_topic_no_data' | 'off_topic' }>((_, reject) =>
-        setTimeout(() => reject(new Error('grade timed out')), 4000),
-      ),
-    ])
+    const { verdict } = await withTierFallback(
+      (tier) =>
+        tier
+          .withStructuredOutput<{ verdict: 'answerable' | 'on_topic_no_data' | 'off_topic' }>(
+            gradeSchema,
+            { name: 'grade' },
+          )
+          .invoke([
+            {
+              role: 'system',
+              content:
+                "You grade retrieval for Charles Chen's portfolio assistant. Judge " +
+                'whether the retrieved documents answer the question and return exactly ' +
+                'one verdict. Be lenient about "answerable" ' +
+                '(the goal is to filter clearly off-topic retrievals, not demand ' +
+                'perfection), but reserve "off_topic" for questions that are genuinely ' +
+                'not about Charles Chen at all. Questions about agentic design patterns ' +
+                "or AI agent engineering fall within Charles's documented expertise, so " +
+                'treat them as on-topic.',
+            },
+            { role: 'user', content: `Question: ${state.question}\n\nDocuments:\n${context}` },
+          ]),
+      { timeoutMs: 4000, label: 'grade' },
+      tiers,
+    )
     return { graded: docs, route: verdictToRoute[verdict] ?? 'generate' }
   } catch (err) {
     console.warn('gradeDocuments failed, passing docs through to generate:', (err as Error).message)
@@ -161,29 +173,35 @@ export async function gradeDocuments(state: RAGStateType): Promise<Partial<RAGSt
 // --- rewriteQuery --------------------------------------------------------
 // Reformulate the question to retrieve better on the next loop. Increments the
 // loop counter (the graph caps total loops via config.maxLoops).
-export async function rewriteQuery(state: RAGStateType): Promise<Partial<RAGStateType>> {
+// Second parameter: see the note on gradeDocuments.
+export async function rewriteQuery(
+  state: RAGStateType,
+  injected?: unknown,
+): Promise<Partial<RAGStateType>> {
+  const tiers = resolveTiers(injected)
   const loops = (state.loops ?? 0) + 1
-  // Like grade, the rewrite is a quality nicety, not a hard gate. It calls Gemini
-  // with no Claude fallback, so a transient Gemini failure here would otherwise
-  // crash the whole request (surfacing as "Generation failed" to the user) — and
-  // it only fires on the corrective loop, making that error rare and confusing.
-  // Degrade gracefully: on any failure/timeout keep the original query and let
-  // the loop cap route to fallback if retrieval stays weak.
+  // Like grade, the rewrite is a quality nicety, not a hard gate: it only fires
+  // on the corrective loop, so a provider failure escaping from here would
+  // surface as a rare and confusing "Generation failed". Degrade gracefully: if
+  // both tiers fail or time out, keep the original query and let the loop cap
+  // route to fallback if retrieval stays weak.
   try {
-    const res = await Promise.race([
-      gemini().invoke([
-        {
-          role: 'system',
-          content:
-            'Rewrite the user question to improve retrieval against a product ' +
-            "manager's portfolio (projects, work experience, skills, blog). Keep " +
-            'the original language. Return only the rewritten query.',
-        },
-        { role: 'user', content: state.question },
-      ]),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('rewrite timed out')), 6000)),
-    ])
-    const rewritten = String(res.content).trim()
+    const rewritten = (
+      await invokeWithFallback(
+        [
+          {
+            role: 'system',
+            content:
+              'Rewrite the user question to improve retrieval against a product ' +
+              "manager's portfolio (projects, work experience, skills, blog). Keep " +
+              'the original language. Return only the rewritten query.',
+          },
+          { role: 'user', content: state.question },
+        ],
+        { timeoutMs: 6000, label: 'rewrite' },
+        tiers,
+      )
+    ).trim()
     return { queries: [rewritten || state.question], loops }
   } catch (err) {
     console.warn('rewriteQuery failed, keeping the original query:', (err as Error).message)

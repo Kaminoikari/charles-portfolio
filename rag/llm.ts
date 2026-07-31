@@ -1,21 +1,23 @@
 // LLM provider layer — two-tier generation with cost-aware routing.
 //
-//   grade / rewrite / decompose       → Gemini free tier only (no fallback)
-//   contextualize (memory)            → Gemini free tier, falling back to
-//                                       Claude Haiku (see invokeWithFallback)
+//   contextualize / grade / rewrite / → Gemini free tier, falling back to
+//   decompose (internal steps)          Claude Haiku (see withTierFallback)
 //   generate (the user-facing answer) → Gemini free tier, falling back to
-//                                       Anthropic Claude on ANY Gemini failure
+//                                       Claude Haiku or Sonnet, under a
+//                                       first-token gate (generateWithFallback)
 //
-// Rationale: keep the paid Claude budget for the answer the visitor actually
-// reads; let the cheap internal steps ride entirely on Gemini's free tier. This
-// mirrors how real products tier model spend (free-first, paid as backstop).
+// Rationale: Gemini's free tier is the first choice everywhere, so a normal day
+// costs nothing. What it is NOT is a single point of failure: that tier is
+// capped at 20 requests/day, and ordinary traffic exhausts it, at which point
+// every step above would otherwise degrade to its no-op at once. The internal
+// steps each degrade quietly (grade waves the docs through, rewrite keeps the
+// query, decompose stops fanning out, contextualize forgets the conversation),
+// so the visitor gets a worse answer with nothing on screen explaining why.
+// Haiku costs a fraction of a cent per call and keeps that from happening.
 //
-// Contextualize is the one internal step that buys a paid backstop, because it
-// degrades differently from the others: grade/rewrite/decompose falling back to
-// their no-op still answers the question asked, whereas an unresolved follow-up
-// ("那個專案呢?") answers a *different* question — the visitor reads it as the
-// bot having no memory at all. Gemini's free tier is 20 requests/day, so without
-// a backstop memory dies for the rest of the day once the quota is gone.
+// The paid tier is a backstop, never the default: it is only reached after
+// Gemini has actually failed, and the FAQ cache and triage still answer most
+// questions before any of this runs.
 
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { ChatAnthropic } from '@langchain/anthropic'
@@ -193,53 +195,76 @@ export async function generateWithFallback(
   }
 }
 
-// The slice of a chat model that a non-streaming internal step actually uses.
-// Structural (not `BaseChatModel`) so tests can inject a stub tier without
-// standing up a real LangChain model — same spirit as buildGraph's stub nodes.
-export interface Invoker {
+// The slice of a chat model the non-streaming internal steps actually use: a
+// plain invoke (contextualize, rewrite) and the structured-output wrapper
+// (grade, decompose). Structural rather than `BaseChatModel` so tests can inject
+// a stub tier — same spirit as buildGraph's stub nodes.
+export interface Tier {
   invoke(messages: BaseMessageLike[]): Promise<{ content: unknown }>
+  withStructuredOutput<T>(
+    schema: unknown,
+    config?: { name?: string },
+  ): { invoke(messages: BaseMessageLike[]): Promise<T> }
 }
 
 export interface Tiers {
-  primary: (temperature: number) => Invoker
-  fallback: (temperature: number) => Invoker
+  primary: (temperature: number) => Tier
+  fallback: (temperature: number) => Tier
+}
+
+// LangGraph invokes a node as `node(state, config)`, so any node that accepts
+// injected tiers in its second parameter receives that RunnableConfig in
+// production instead. The mistake is invisible from the outside — a config in
+// place of tiers throws inside the try and the node degrades to its no-op, the
+// same result it would give if the provider were simply down — so the second
+// slot is read through this guard rather than trusted.
+export function resolveTiers(candidate: unknown): Tiers {
+  const t = candidate as Partial<Tiers> | null | undefined
+  return typeof t?.primary === 'function' && typeof t?.fallback === 'function'
+    ? (t as Tiers)
+    : DEFAULT_TIERS
 }
 
 // Default tiering for a small internal step: free Gemini first, paid Haiku as
-// the backstop. `claudeFast` is deliberately Haiku — these steps rewrite one
-// short string, so Sonnet's quality would buy nothing.
-const claudeFast = (temperature: number): Invoker => claude(false, temperature)
+// the backstop. `claudeFast` is deliberately Haiku — these steps grade or
+// rewrite one short string, so Sonnet's quality would buy nothing.
+const claudeFast = (temperature: number): Tier => claude(false, temperature)
 export const DEFAULT_TIERS: Tiers = { primary: gemini, fallback: claudeFast }
 
 // Non-streaming tier-1 → tier-2 fallback for a small internal step (the
 // streaming, first-token-gated equivalent is generateWithFallback above).
+// `call` receives the tier and does whatever that step needs with it, so the
+// same cascade serves plain invokes and structured output alike.
 //
 // Both tiers get their own `timeoutMs`, so the worst case is bounded at twice
 // that — acceptable here because the failure that motivated this (a 429 with
 // MAX_RETRIES=0) rejects immediately rather than burning the deadline. THROWS
 // when both tiers fail; the caller decides what degrading gracefully means.
+export async function withTierFallback<T>(
+  call: (tier: Tier) => Promise<T>,
+  opts: { timeoutMs: number; label: string; temperature?: number },
+  tiers: Tiers = DEFAULT_TIERS,
+): Promise<T> {
+  const temperature = opts.temperature ?? 0
+  // Constructing the tier is inside the try on purpose: a missing or malformed
+  // API key throws right here, and that must degrade like any other provider
+  // failure instead of escaping as an unhandled error from the node.
+  try {
+    return await withTimeout(call(tiers.primary(temperature)), opts.timeoutMs, `${opts.label} (Gemini)`)
+  } catch (err) {
+    console.warn(`${opts.label}: Gemini failed, falling back to Claude:`, (err as Error).message)
+    return await withTimeout(call(tiers.fallback(temperature)), opts.timeoutMs, `${opts.label} (Claude)`)
+  }
+}
+
+// Text-answer convenience wrapper over withTierFallback.
 export async function invokeWithFallback(
   messages: BaseMessageLike[],
   opts: { timeoutMs: number; label: string; temperature?: number },
   tiers: Tiers = DEFAULT_TIERS,
 ): Promise<string> {
-  const temperature = opts.temperature ?? 0
-  try {
-    const res = await withTimeout(
-      tiers.primary(temperature).invoke(messages),
-      opts.timeoutMs,
-      `${opts.label} (Gemini)`,
-    )
-    return String(res.content)
-  } catch (err) {
-    console.warn(`${opts.label}: Gemini failed, falling back to Claude:`, (err as Error).message)
-    const res = await withTimeout(
-      tiers.fallback(temperature).invoke(messages),
-      opts.timeoutMs,
-      `${opts.label} (Claude)`,
-    )
-    return String(res.content)
-  }
+  const res = await withTierFallback((tier) => tier.invoke(messages), opts, tiers)
+  return String(res.content)
 }
 
 // Re-export the structured-output type helper shape used by grade.

@@ -10,13 +10,14 @@
 //
 // The cost discipline: a CHEAP heuristic gate runs first, so the overwhelming
 // majority of traffic (one question) never pays for the decomposition LLM call.
-// Only a plausibly-multi message spends one free-tier Gemini call, and even that
+// Only a plausibly-multi message spends one model call (free-tier Gemini, with
+// Claude Haiku as the backstop when Gemini's daily quota is gone), and even that
 // short-circuits to the single-question path if the split yields < 2 parts.
 
 import { z } from 'zod'
 
 import { config } from './config.js'
-import { gemini } from './llm.js'
+import { withTierFallback, DEFAULT_TIERS, type Tiers } from './llm.js'
 
 const TIMEOUT_MS = 6000
 
@@ -47,29 +48,31 @@ const schema = z.object({
 // message is a single question (heuristic gate), when decomposition fails or
 // times out, or when the split yields fewer than 2 parts — callers treat that as
 // "no fan-out, use the normal single-question path". Never throws.
-export async function decomposeQuestion(question: string): Promise<string[]> {
+export async function decomposeQuestion(
+  question: string,
+  tiers: Tiers = DEFAULT_TIERS,
+): Promise<string[]> {
   if (!looksMultiQuestion(question)) return [] // common case — zero added cost
 
   try {
-    const model = gemini().withStructuredOutput(schema, { name: 'decompose' })
-    const res = await Promise.race([
-      model.invoke([
-        {
-          role: 'system',
-          content:
-            'Split the user message into the distinct questions it asks. Rewrite ' +
-            'each as a standalone, self-contained question in the ORIGINAL ' +
-            'language, preserving the asker\'s intent. Do NOT invent questions they ' +
-            'did not ask, and do NOT split a single question into pieces. If the ' +
-            'message really asks only one thing, return that one question.',
-        },
-        { role: 'user', content: question },
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('decompose timed out')), TIMEOUT_MS),
-      ),
-    ])
-    const qs = (res as { questions?: unknown }).questions
+    const res = await withTierFallback(
+      (tier) =>
+        tier.withStructuredOutput<{ questions?: unknown }>(schema, { name: 'decompose' }).invoke([
+          {
+            role: 'system',
+            content:
+              'Split the user message into the distinct questions it asks. Rewrite ' +
+              'each as a standalone, self-contained question in the ORIGINAL ' +
+              'language, preserving the asker\'s intent. Do NOT invent questions they ' +
+              'did not ask, and do NOT split a single question into pieces. If the ' +
+              'message really asks only one thing, return that one question.',
+          },
+          { role: 'user', content: question },
+        ]),
+      { timeoutMs: TIMEOUT_MS, label: 'decompose' },
+      tiers,
+    )
+    const qs = res.questions
     if (!Array.isArray(qs)) return []
     const cleaned = qs
       .map((s) => String(s).trim())

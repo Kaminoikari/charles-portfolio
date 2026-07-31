@@ -47,9 +47,9 @@ export const config = {
   multiMergeK: int('RAG_MULTI_MERGE_K', 8), // total chunks kept after interleaving
 
   // --- models ---
-  // Generation is two-tier: Gemini free-tier first, Anthropic as paid fallback.
-  // grade/rewrite are internal steps → Gemini only (no fallback) to conserve the
-  // paid Claude budget for the user-facing final answer.
+  // Every LLM step is two-tier: Gemini free-tier first, Anthropic as the paid
+  // backstop (see llm.ts). The internal steps take modelFast (Haiku); only the
+  // user-facing answer can escalate to modelStrong.
   geminiModel: process.env.RAG_GEMINI_MODEL ?? 'gemini-2.5-flash',
   modelFast: process.env.RAG_MODEL_FAST ?? 'claude-haiku-4-5-20251001',
   modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-sonnet-4-6',
