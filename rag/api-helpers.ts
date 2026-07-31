@@ -2,6 +2,13 @@
 // from the handler so request validation, SSE framing, and rate limiting can be
 // unit-tested with no network or runtime.
 
+// One prior conversation turn, sent by the client so the server can resolve
+// follow-up questions against recent context (see rag/contextualize.ts).
+export interface ChatTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 export interface ParsedRequest {
   ok: true
   question: string
@@ -9,6 +16,10 @@ export interface ParsedRequest {
   // distinguish unique visitors from raw question counts in chat_logs. Optional:
   // an old client or a bad value simply omits it — it never fails the request.
   visitorId?: string
+  // Recent conversation turns (oldest → newest), already trimmed to a small
+  // budget. Undefined for the first turn or an old client. Like visitorId, a
+  // malformed value is dropped, never a request error.
+  history?: ChatTurn[]
 }
 export interface ParseError {
   ok: false
@@ -18,6 +29,11 @@ export interface ParseError {
 
 const MAX_QUESTION_LEN = 200
 const MAX_VISITOR_ID_LEN = 64
+// Bound the memory window server-side regardless of what the client sends: only
+// the last few turns matter for reference resolution, and each turn is capped so
+// a pasted wall of text can't blow up the contextualization prompt.
+const MAX_HISTORY_TURNS = 6
+const MAX_TURN_LEN = 500
 
 // Accept a client-supplied visitor id only if it is a plausibly-sane string
 // (a UUID is 36 chars); anything else is dropped rather than logged verbatim.
@@ -26,6 +42,24 @@ function sanitizeVisitorId(raw: unknown): string | undefined {
   const trimmed = raw.trim()
   if (trimmed.length === 0 || trimmed.length > MAX_VISITOR_ID_LEN) return undefined
   return trimmed
+}
+
+// Coerce a client-supplied history array into well-formed, budget-capped turns.
+// Anything malformed is dropped silently (never a request error); returns
+// undefined when nothing usable survives so callers can treat it as "no history".
+function sanitizeHistory(raw: unknown): ChatTurn[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const turns: ChatTurn[] = []
+  for (const item of raw) {
+    if (typeof item !== 'object' || item === null) continue
+    const { role, content } = item as Record<string, unknown>
+    if (role !== 'user' && role !== 'assistant') continue
+    if (typeof content !== 'string') continue
+    const trimmed = content.trim()
+    if (!trimmed) continue
+    turns.push({ role, content: trimmed.slice(0, MAX_TURN_LEN) })
+  }
+  return turns.length ? turns.slice(-MAX_HISTORY_TURNS) : undefined
 }
 
 // Validate and normalize an incoming chat request body.
@@ -44,7 +78,12 @@ export function parseChatRequest(body: unknown): ParsedRequest | ParseError {
   if (trimmed.length > MAX_QUESTION_LEN) {
     return { ok: false, status: 413, message: `Question exceeds ${MAX_QUESTION_LEN} characters.` }
   }
-  return { ok: true, question: trimmed, visitorId: sanitizeVisitorId((body as Record<string, unknown>).visitorId) }
+  return {
+    ok: true,
+    question: trimmed,
+    visitorId: sanitizeVisitorId((body as Record<string, unknown>).visitorId),
+    history: sanitizeHistory((body as Record<string, unknown>).history),
+  }
 }
 
 // Server-Sent Events frame. Each event is `event: <name>\ndata: <json>\n\n`.

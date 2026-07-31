@@ -41,6 +41,58 @@ test('parseChatRequest: keeps a sane visitorId, drops bad ones, never rejects', 
   }
 })
 
+test('parseChatRequest: keeps valid history, clamps size, drops junk, never rejects', () => {
+  const ok = parseChatRequest({
+    question: 'and there?',
+    history: [
+      { role: 'user', content: '  他在 USPACE 做了什麼?  ' },
+      { role: 'assistant', content: 'He led the parking product.' },
+    ],
+  })
+  assert.equal(ok.ok, true)
+  if (ok.ok) {
+    assert.equal(ok.history?.length, 2)
+    assert.equal(ok.history?.[0].content, '他在 USPACE 做了什麼?') // trimmed
+    assert.equal(ok.history?.[0].role, 'user')
+  }
+
+  // Malformed entries are dropped, not fatal.
+  const mixed = parseChatRequest({
+    question: 'hi',
+    history: [
+      { role: 'system', content: 'x' }, // bad role → dropped
+      { role: 'user' }, // missing content → dropped
+      { role: 'user', content: '   ' }, // empty → dropped
+      'nope', // not an object → dropped
+      { role: 'assistant', content: 'kept' },
+    ],
+  })
+  assert.equal(mixed.ok, true)
+  if (mixed.ok) {
+    assert.equal(mixed.history?.length, 1)
+    assert.equal(mixed.history?.[0].content, 'kept')
+  }
+
+  // Only the last 6 turns survive, and each is capped at 500 chars.
+  const many = Array.from({ length: 10 }, (_, i) => ({ role: 'user' as const, content: `q${i}` }))
+  const capped = parseChatRequest({ question: 'hi', history: many })
+  assert.equal(capped.ok, true)
+  if (capped.ok) {
+    assert.equal(capped.history?.length, 6)
+    assert.equal(capped.history?.[0].content, 'q4') // oldest kept is the 5th-from-last
+  }
+  const longTurn = parseChatRequest({ question: 'hi', history: [{ role: 'user', content: 'x'.repeat(600) }] })
+  assert.equal(longTurn.ok, true)
+  if (longTurn.ok) assert.equal(longTurn.history?.[0].content.length, 500)
+
+  // No history / non-array → undefined, request still parses.
+  for (const bad of [undefined, 'nope', 42, []]) {
+    const r = parseChatRequest({ question: 'hi', history: bad })
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.history, undefined)
+  }
+})
+
 test('sse: frames event + json data with blank-line terminator', () => {
   assert.equal(sse('token', { t: 'hi' }), 'event: token\ndata: {"t":"hi"}\n\n')
 })

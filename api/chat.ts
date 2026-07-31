@@ -78,7 +78,7 @@ export default async function handler(req: IncomingMessage & { method?: string; 
   // instance freezes on return, so a fire-and-forget upsert would be cut off.
   let logged: Promise<void> = Promise.resolve()
   try {
-    for await (const ev of streamAnswer(parsed.question)) {
+    for await (const ev of streamAnswer(parsed.question, parsed.history ?? [])) {
       if (ev.type === 'token') {
         res.write(sse('token', { text: ev.text }))
       } else {
