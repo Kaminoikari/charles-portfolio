@@ -21,7 +21,6 @@ const ja: Strings = {
     experience: 'EXPERIENCE',
     projects: 'PROJECTS',
     blog: 'BLOG',
-    mentoring: 'MENTORSHIP',
     changelog: 'CHANGELOG',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'お問い合わせへスクロール',
@@ -103,15 +102,6 @@ const ja: Strings = {
     rights: '© 2026 Charles Chen. All rights reserved.',
     rendered: '{{ms}} ms でレンダリング · React · WebGL · Tailwind',
     visitSocial: '{{platform}} へ',
-  },
-  mentoring: {
-    eyebrow: 'Mentoring',
-    heading: 'ADPList で時間を予約する',
-    body: '0 から 1 のプロダクト開発、プロダクトマネジメントへの転職、AI ネイティブな Product Builder になる方法をメンタリングしています。下記の空き枠からお選びください。',
-    sessionTitle: '1:1 メンタリングセッション',
-    sessionMeta: '無料 · 30〜45 分 · オンライン',
-    viewHours: '空き時間を見る',
-    bookOnAdplist: 'ADPList で予約する ↗',
   },
   chat: {
     launcherLabel: 'このポートフォリオに質問',

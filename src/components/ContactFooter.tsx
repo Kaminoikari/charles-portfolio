@@ -26,28 +26,6 @@ const SocialIcon = ({ platform }: { platform: string }) => {
       return (
         <img src="/portaly-icon.png" alt="" width={20} height={20} style={{ width: 20, height: 20, objectFit: 'contain' }} />
       )
-    case 'adplist':
-      // Official ADPList mark used as a mask so it inherits the row's
-      // currentColor (muted grey, mars-orange on hover) like the SVG icons.
-      return (
-        <span
-          aria-hidden
-          style={{
-            display: 'inline-block',
-            width: 20,
-            height: 20,
-            backgroundColor: 'currentColor',
-            maskImage: 'url(/adplist-icon.png)',
-            WebkitMaskImage: 'url(/adplist-icon.png)',
-            maskRepeat: 'no-repeat',
-            WebkitMaskRepeat: 'no-repeat',
-            maskPosition: 'center',
-            WebkitMaskPosition: 'center',
-            maskSize: 'contain',
-            WebkitMaskSize: 'contain',
-          }}
-        />
-      )
     default:
       return <span>{platform[0].toUpperCase()}</span>
   }

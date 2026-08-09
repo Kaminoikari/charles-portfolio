@@ -4,7 +4,6 @@ import UniverseSection from './components/UniverseSection'
 import ExperienceTimeline from './components/ExperienceTimeline'
 import ProjectCards from './components/ProjectCards'
 import BlogEntries from './components/BlogEntries'
-import MentoringSection from './components/MentoringSection'
 import ContactFooter from './components/ContactFooter'
 import { useDocumentMeta, useT } from './i18n'
 
@@ -20,7 +19,6 @@ export default function App() {
       <ExperienceTimeline />
       <ProjectCards />
       <BlogEntries />
-      <MentoringSection />
       <ContactFooter />
     </>
   )
