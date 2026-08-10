@@ -13,6 +13,7 @@
 // Run:  npx tsx rag/insights/by-day.ts [--days N]   (needs QDRANT_*).
 
 import { scrollReportableLogs } from './chat-logs.js'
+import { countryLabel } from './country.js'
 
 const TIME_ZONE = 'Asia/Taipei'
 
@@ -96,7 +97,7 @@ async function main() {
 
     // Opens: who opened the panel and from where.
     for (const o of opens.sort((a, b) => a.ts.localeCompare(b.ts))) {
-      const where = o.country ?? '?'
+      const where = countryLabel(o.country)
       const ip = o.ip ?? '?'
       const flags = o.blocked ? ' [blocked region]' : ''
       console.log(`- ${clockTime(o.ts)}  opened · ${shortVid(o.visitor_id)} · ${where} · ${ip}${flags}`)
@@ -114,10 +115,10 @@ async function main() {
     for (const [id, qs] of visitors) {
       const realId = id === '∅anonymous' ? null : id
       // Prefer a country recorded directly on the question (newer logs); fall back
-      // to one joined from this visitor's open event; '?' if neither exists.
-      const where =
-        qs.find((q) => q.country)?.country ??
-        (realId ? (countryByVisitor.get(realId) ?? '?') : '?')
+      // to one joined from this visitor's open event; 'Unknown' if neither exists.
+      const where = countryLabel(
+        qs.find((q) => q.country)?.country ?? (realId ? countryByVisitor.get(realId) : null),
+      )
       const ips = [...new Set(qs.map((q) => q.ip).filter(Boolean))]
       const ipLabel = ips.length ? ips.join(', ') : '?'
       console.log(

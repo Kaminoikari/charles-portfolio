@@ -11,6 +11,7 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Resvg } from '@resvg/resvg-js'
 import { gatherInsights, TIME_ZONE, type Insights, type Metric } from './collect.js'
+import { countryLabel } from './country.js'
 
 // ── palette (dark cinematic, matching the site brand) ───────────────────────
 const C = {
@@ -197,9 +198,9 @@ function recentActivity(ins: Insights): string {
     .map((r, i) => {
       const border = i === 0 ? '' : `border-top:1px solid ${C.line};`
       const dot = r.route ? `<span style="color:${ROUTE_COLOR[r.route] ?? C.blue}">●</span>&nbsp; ` : ''
-      // Country of the asking IP (Vercel edge geo header); '??' when the row
-      // predates country logging and no 'open' row exists to join against.
-      const geo = `<span style="font-family:${FONT_MONO};font-size:11px;color:${C.faint}">${esc(r.country || '??')}</span>&nbsp; `
+      // Country of the asking IP (Vercel edge geo header), as a name rather than
+      // the raw alpha-2 code, which is too confusable to skim ("IN" vs "ID").
+      const geo = `<span style="font-family:${FONT_MONO};font-size:11px;color:${C.faint};white-space:nowrap">${esc(countryLabel(r.country))}</span>&nbsp; `
       // Full bot reply beneath the question (only rows logged since answers were kept).
       const answer = r.answer
         ? `<div style="margin-top:4px;padding-left:14px;border-left:2px solid ${C.line};font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${C.muted}">${answerHtml(r.answer)}</div>`

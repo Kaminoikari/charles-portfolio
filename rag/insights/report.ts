@@ -2,6 +2,7 @@
 // fallback). All metrics come from collect.ts so this file is pure formatting.
 // Run:  npx tsx rag/insights/report.ts  (needs QDRANT_*).
 import { gatherInsights, TIME_ZONE } from './collect.js'
+import { countryLabel } from './country.js'
 
 // Emitted as monospace text (and wrapped by the HTML dashboard's <pre> fallback),
 // so space-padded columns line up. One label width keeps every block left-aligned.
@@ -87,10 +88,13 @@ async function main() {
   }
 
   console.log(`\n## All questions (newest first, ${ins.recent.length} total)`)
+  // Country comes from the Vercel edge geo header, resolved to a name because
+  // the raw codes are confusable ("IN" is India, "ID" is Indonesia). The column
+  // is padded to the widest name actually present so the questions stay aligned
+  // without truncating any name.
+  const geoWidth = Math.max(0, ...ins.recent.map((r) => countryLabel(r.country).length))
   for (const r of ins.recent) {
-    // Country is the Vercel edge geo header; '??' when the row predates country
-    // logging and the visitor has no 'open' row to join against.
-    console.log(`  ${r.day} ${r.clock}  ${padR(r.country || '??', 2)}  ${r.text}`)
+    console.log(`  ${r.day} ${r.clock}  ${padR(countryLabel(r.country), geoWidth)}  ${r.text}`)
     // Full stored bot reply, indented, line breaks preserved (rows logged since
     // answers were kept). Not truncated — the whole reply is shown.
     if (r.answer) {
