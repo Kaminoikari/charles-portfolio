@@ -88,7 +88,9 @@ async function main() {
 
   console.log(`\n## All questions (newest first, ${ins.recent.length} total)`)
   for (const r of ins.recent) {
-    console.log(`  ${r.day} ${r.clock}  ${r.text}`)
+    // Country is the Vercel edge geo header; '??' when the row predates country
+    // logging and the visitor has no 'open' row to join against.
+    console.log(`  ${r.day} ${r.clock}  ${padR(r.country || '??', 2)}  ${r.text}`)
     // Full stored bot reply, indented, line breaks preserved (rows logged since
     // answers were kept). Not truncated — the whole reply is shown.
     if (r.answer) {

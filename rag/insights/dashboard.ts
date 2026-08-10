@@ -197,13 +197,16 @@ function recentActivity(ins: Insights): string {
     .map((r, i) => {
       const border = i === 0 ? '' : `border-top:1px solid ${C.line};`
       const dot = r.route ? `<span style="color:${ROUTE_COLOR[r.route] ?? C.blue}">●</span>&nbsp; ` : ''
+      // Country of the asking IP (Vercel edge geo header); '??' when the row
+      // predates country logging and no 'open' row exists to join against.
+      const geo = `<span style="font-family:${FONT_MONO};font-size:11px;color:${C.faint}">${esc(r.country || '??')}</span>&nbsp; `
       // Full bot reply beneath the question (only rows logged since answers were kept).
       const answer = r.answer
         ? `<div style="margin-top:4px;padding-left:14px;border-left:2px solid ${C.line};font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${C.muted}">${answerHtml(r.answer)}</div>`
         : ''
       return `<table role="presentation" width="100%" style="${border}"><tr>
         <td width="92" valign="top" style="padding:7px 0;font-family:${FONT_MONO};font-size:11px;color:${C.muted};white-space:nowrap">${esc(monthDay(r.day))} · ${esc(r.clock)}</td>
-        <td valign="top" style="padding:7px 0 7px 12px;font-family:${FONT_SANS};font-size:13px;line-height:1.45;color:${C.soft}">${dot}${esc(truncate(r.text, 120))}${answer}</td>
+        <td valign="top" style="padding:7px 0 7px 12px;font-family:${FONT_SANS};font-size:13px;line-height:1.45;color:${C.soft}">${dot}${geo}${esc(truncate(r.text, 120))}${answer}</td>
       </tr></table>`
     })
     .join('')
