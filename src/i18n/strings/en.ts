@@ -45,7 +45,7 @@ interface Strings {
     visitSocial: string
   }
   chat: {
-    launcherLabel: string; launcherTag: string; openAriaLabel: string; closeAriaLabel: string
+    launcherLabel: string; launcherTag: string; openAriaLabel: string; minimiseAriaLabel: string
     clearLabel: string
     title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
@@ -155,7 +155,7 @@ const en: Strings = {
     launcherLabel: 'Ask this portfolio',
     launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
-    closeAriaLabel: 'Close the AI assistant',
+    minimiseAriaLabel: 'Minimise the AI assistant',
     clearLabel: 'Clear this conversation',
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',

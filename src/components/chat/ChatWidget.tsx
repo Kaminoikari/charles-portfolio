@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
+import { useChatMode } from './useChatMode'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 
@@ -137,7 +138,11 @@ function Message({ message, onRetry }: { message: ChatMessage; onRetry?: () => v
 
 export default function ChatWidget() {
   const t = useT()
-  const [open, setOpen] = useState(false)
+  // Size state lives in useChatMode; the conversation lives in useChatStream
+  // right here. Both stay mounted across every size change, which is what
+  // makes stowing the panel non-destructive.
+  const { mode, open: openPanel, minimise } = useChatMode()
+  const open = mode !== 'minimised'
   const [input, setInput] = useState('')
   // Region gate: blocked visitors (e.g. CN) can still open the panel, but it
   // lands in a disabled "not available here" state. Checked once on first open
@@ -148,10 +153,10 @@ export default function ChatWidget() {
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
-  // Set when the panel is closed via Escape / the close button, so focus returns
-  // to the launcher (which only mounts once the panel is closed) rather than
-  // being lost to <body>.
-  const restoreFocusRef = useRef(false)
+  // Tracks whether the panel has ever been open, so the first render doesn't
+  // steal focus onto the launcher — but every route that stows the panel
+  // (button or Escape) does return focus there rather than losing it to <body>.
+  const wasOpenRef = useRef(false)
 
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
   // scroll fired on every token fights itself and janks); smooth-scroll only
@@ -170,25 +175,12 @@ export default function ChatWidget() {
   // the panel. Touch users tap the field when they actually want to type.
   useEffect(() => {
     if (open) {
+      wasOpenRef.current = true
       const isFinePointer = window.matchMedia('(pointer: fine)').matches
       if (isFinePointer) inputRef.current?.focus()
-    } else if (restoreFocusRef.current) {
+    } else if (wasOpenRef.current) {
       launcherRef.current?.focus()
-      restoreFocusRef.current = false
     }
-  }, [open])
-
-  // Close on Escape.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        restoreFocusRef.current = true
-        setOpen(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
   // Resolve the visitor's region the first time the panel opens. Kept lazy so a
@@ -229,7 +221,7 @@ export default function ChatWidget() {
     return (
       <button
         ref={launcherRef}
-        onClick={() => setOpen(true)}
+        onClick={openPanel}
         aria-label={t('chat.openAriaLabel')}
         className="fixed bottom-5 right-5 z-50 inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-border bg-bg-secondary py-3.5 pl-4 pr-4 text-[14px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan"
       >
@@ -261,14 +253,21 @@ export default function ChatWidget() {
           </div>
         </div>
         <button
-          onClick={() => {
-            restoreFocusRef.current = true
-            setOpen(false)
-          }}
-          aria-label={t('chat.closeAriaLabel')}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-[18px] leading-none text-text-tertiary transition-colors hover:text-white"
+          onClick={minimise}
+          aria-label={t('chat.minimiseAriaLabel')}
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
         >
-          ✕
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+          </svg>
         </button>
       </div>
 

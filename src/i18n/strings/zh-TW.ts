@@ -104,7 +104,7 @@ const zhTW: Strings = {
     launcherLabel: '問這個作品集',
     launcherTag: 'RAG',
     openAriaLabel: '開啟 AI 助理',
-    closeAriaLabel: '關閉 AI 助理',
+    minimiseAriaLabel: '縮到最小',
     clearLabel: '清除這段對話',
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',

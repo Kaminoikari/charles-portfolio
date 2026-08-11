@@ -107,7 +107,7 @@ const ja: Strings = {
     launcherLabel: 'このポートフォリオに質問',
     launcherTag: 'RAG',
     openAriaLabel: 'AI アシスタントを開く',
-    closeAriaLabel: 'AI アシスタントを閉じる',
+    minimiseAriaLabel: 'AI アシスタントを最小化',
     clearLabel: 'この会話をクリア',
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',
