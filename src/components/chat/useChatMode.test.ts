@@ -78,14 +78,34 @@ describe('useChatMode', () => {
       expect(result.current.mode).toBe('minimised')
     })
 
-    // Escape must not leak past the widget's own lifetime.
-    it('stops responding after unmount', () => {
-      const { result, unmount } = renderHook(() => useChatMode())
-      act(() => result.current.open())
-      const before = result.current.mode
+    // Escape must not leak past the widget's own lifetime. Asserting on
+    // `result.current` after unmount cannot show this — it is frozen at the
+    // last render either way — so this watches the listener itself come off.
+    it('removes its key listener on unmount', () => {
+      const removeSpy = vi.spyOn(window, 'removeEventListener')
+      const { unmount } = renderHook(() => useChatMode())
       unmount()
-      pressEscape()
-      expect(before).toBe('docked')
+
+      const removedKeydown = removeSpy.mock.calls.some(([type]) => type === 'keydown')
+      expect(removedKeydown).toBe(true)
+      removeSpy.mockRestore()
+    })
+
+    it('unregisters the exact listener it registered', () => {
+      const addSpy = vi.spyOn(window, 'addEventListener')
+      const removeSpy = vi.spyOn(window, 'removeEventListener')
+      const { unmount } = renderHook(() => useChatMode())
+
+      const added = addSpy.mock.calls.find(([type]) => type === 'keydown')?.[1]
+      unmount()
+      const removed = removeSpy.mock.calls.find(([type]) => type === 'keydown')?.[1]
+
+      expect(added).toBeDefined()
+      // Same function reference, or removeEventListener silently no-ops and the
+      // listener stays live for the rest of the page's life.
+      expect(removed).toBe(added)
+      addSpy.mockRestore()
+      removeSpy.mockRestore()
     })
   })
 

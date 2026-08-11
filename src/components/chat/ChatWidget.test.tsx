@@ -216,6 +216,63 @@ describe('ChatWidget fullscreen', () => {
     })
   })
 
+  // The takeover covers the page, so Tab must not reach the nav behind the
+  // scrim. Forward Tab from outside the panel is the case that matters: it
+  // happens on the very first Tab on a touch device (autofocus is deliberately
+  // skipped there) and after any click on non-focusable panel chrome, both of
+  // which leave activeElement on <body>.
+  describe('focus containment', () => {
+    // The page behind the takeover is represented by a focusable element that
+    // sits BEFORE the widget in document order, the way the site nav does.
+    // Without it there is nowhere for focus to escape to and the test would
+    // pass against a trap that does nothing.
+    async function openFullscreen() {
+      const user = userEvent.setup()
+      render(
+        <>
+          <button type="button">behind the scrim</button>
+          <ChatWidget />
+        </>,
+      )
+      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+      const panel = screen.getByRole('dialog')
+      ;(document.activeElement as HTMLElement | null)?.blur()
+      expect(panel.contains(document.activeElement)).toBe(false)
+      return { user, panel }
+    }
+
+    it('pulls a forward Tab from outside the panel back inside', async () => {
+      const { user, panel } = await openFullscreen()
+      await user.keyboard('{Tab}')
+      expect(panel.contains(document.activeElement)).toBe(true)
+    })
+
+    it('pulls a backward Tab from outside the panel back inside', async () => {
+      const { user, panel } = await openFullscreen()
+      await user.keyboard('{Shift>}{Tab}{/Shift}')
+      expect(panel.contains(document.activeElement)).toBe(true)
+    })
+
+    // The docked panel deliberately does NOT trap: it is a small overlay beside
+    // a page the visitor can still use.
+    it('leaves focus free to reach the page from the docked panel', async () => {
+      const user = userEvent.setup()
+      render(
+        <>
+          <button type="button">page control</button>
+          <ChatWidget />
+        </>,
+      )
+      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      const panel = screen.getByRole('dialog')
+      ;(document.activeElement as HTMLElement | null)?.blur()
+
+      await user.keyboard('{Tab}')
+      expect(panel.contains(document.activeElement)).toBe(false)
+    })
+  })
+
   describe('background scroll lock', () => {
     const SCROLL_Y = 320
 

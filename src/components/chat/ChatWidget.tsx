@@ -221,10 +221,16 @@ export default function ChatWidget() {
       const first = focusables[0]
       const last = focusables[focusables.length - 1]
       const active = document.activeElement
-      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) {
+      // Focus sitting outside the panel is the common case, not an edge one: a
+      // click on non-focusable panel chrome leaves it on <body>, and on touch
+      // devices the open-time autofocus is deliberately skipped. Both
+      // directions have to reel it back in, or the next Tab walks into the page
+      // behind the scrim.
+      const outside = !panelRef.current.contains(active)
+      if (e.shiftKey && (outside || active === first)) {
         e.preventDefault()
         last.focus()
-      } else if (!e.shiftKey && active === last) {
+      } else if (!e.shiftKey && (outside || active === last)) {
         e.preventDefault()
         first.focus()
       }
@@ -305,7 +311,7 @@ export default function ChatWidget() {
             ? // Edge-to-edge on phones: an inset takeover on a 390px screen is
               // only a few px wider than the docked panel, which reads as no
               // change at all.
-              'inset-4 rounded-2xl max-md:inset-0 max-md:rounded-none max-md:border-0'
+              'inset-4 rounded-2xl max-md:inset-0 max-md:rounded-none max-md:border-0 animate-chat-panel-grow'
             : 'bottom-5 right-5 h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] rounded-2xl')
         }
       >
@@ -392,7 +398,11 @@ export default function ChatWidget() {
                   <button
                     key={s}
                     onClick={() => submit(s)}
-                    className="cursor-pointer rounded-[10px] border border-border bg-transparent px-2.5 py-2 text-left text-[12.5px] leading-snug text-text-muted transition-colors hover:border-border-hover hover:text-white"
+                    // Unlike the empty-state chips, these stay on screen during
+                    // a stream — where send() ignores them. Disable rather than
+                    // let a click do nothing with no explanation.
+                    disabled={status === 'streaming' || regionBlocked}
+                    className="cursor-pointer rounded-[10px] border border-border bg-transparent px-2.5 py-2 text-left text-[12.5px] leading-snug text-text-muted transition-colors hover:border-border-hover hover:text-white disabled:cursor-default disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted"
                   >
                     {s}
                   </button>

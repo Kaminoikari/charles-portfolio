@@ -48,11 +48,15 @@ export type ChatStatus = 'idle' | 'streaming' | 'error'
 // loop can send retrieve through a second time. So the trace is an ordered log
 // of what actually ran — a revisited node is a separate step, not an update to
 // the earlier one, because that repeat IS the correction worth showing.
-export interface TraceStep {
-  id: string
-  status: 'running' | 'done'
-  ms?: number
-}
+// A duration only exists once a pass has completed, so it belongs to the `done`
+// member rather than being optional across all of them — that way a reader
+// cannot print a cost for a node that never reported one.
+export type TraceStep =
+  | { id: string; status: 'running' }
+  | { id: string; status: 'done'; ms: number }
+  // The stream ended (error, abort, or a truncated connection) while this pass
+  // was still open. Without this, the rail spins its arc forever.
+  | { id: string; status: 'failed' }
 
 function applyNodeEvent(trace: TraceStep[], raw: unknown): TraceStep[] {
   if (typeof raw !== 'object' || raw === null) return trace
@@ -62,7 +66,7 @@ function applyNodeEvent(trace: TraceStep[], raw: unknown): TraceStep[] {
   if (status === 'start') return [...trace, { id, status: 'running' }]
   if (status !== 'done') return trace
 
-  const duration = typeof ms === 'number' && Number.isFinite(ms) ? ms : undefined
+  const duration = typeof ms === 'number' && Number.isFinite(ms) ? ms : 0
   // Close this node's open pass. Nodes run one at a time, so a corrective
   // loop's second visit only starts after the first has closed and there is at
   // most one open pass per id; scanning from the end just keeps that true if a
@@ -77,6 +81,15 @@ function applyNodeEvent(trace: TraceStep[], raw: unknown): TraceStep[] {
   // A done with no matching start (a truncated stream, an older server) still
   // belongs in the log rather than being dropped.
   return [...trace, { id, status: 'done', ms: duration }]
+}
+
+// Close any pass still open when the stream ends. Every exit route has to run
+// this — the error event, an abort, a throw, and a connection that simply stops
+// mid-node — because a step left `running` keeps the rail's arc spinning and
+// aria-busy set with nothing left to deliver.
+function failOpenSteps(trace: TraceStep[]): TraceStep[] {
+  if (!trace.some((s) => s.status === 'running')) return trace
+  return trace.map((s) => (s.status === 'running' ? { id: s.id, status: 'failed' } : s))
 }
 
 interface SSEEvent {
@@ -216,15 +229,20 @@ export function useChatStream() {
               patchAssistant((m) => ({ ...m, sources, text: data.answer || m.text || '' }))
             } else if (ev.event === 'error') {
               patchAssistant((m) => ({ ...m, text: errorText, error: true }))
+              setTrace(failOpenSteps)
             }
           }
         }
         // Never leave an empty assistant bubble (e.g. an unexpected empty done).
         patchAssistant((m) => (m.text ? m : { ...m, text: errorText, error: true }))
+        // A stream can also just stop mid-node without an error frame; nothing
+        // further will arrive, so any open pass is over either way.
+        setTrace(failOpenSteps)
         setStatus('idle')
       } catch (err) {
         if ((err as Error).name === 'AbortError') return
         patchAssistant((m) => ({ ...m, text: m.text || errorText, error: true }))
+        setTrace(failOpenSteps)
         setStatus('error')
       }
     },

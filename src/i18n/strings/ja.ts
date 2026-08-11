@@ -114,6 +114,7 @@ const ja: Strings = {
     pipelineTitle: '検索パイプライン',
     pipelineIdle: '質問すると、パイプラインがノードごとにここで動きます。',
     pipelineRunningLabel: '実行中',
+    pipelineInterrupted: '中断',
     nodeTriage: '振り分け',
     nodeConverse: '会話履歴を参照',
     nodeRetrieve: 'ベクトル検索',

@@ -159,6 +159,19 @@ body {
 .animate-chat-scrim {
   animation: chat-scrim 0.34s ease;
 }
+/* The panel's own geometry cannot be transitioned between the two sizes: docked
+   sets width/height with `left`/`top` auto, fullscreen sets all four insets
+   with width/height auto, and `auto` has nothing to interpolate. Sizing both
+   states in interpolatable units would mean deriving the docked box from `vh`,
+   which on iOS Safari resolves taller than the visible area and would put the
+   composer under the address bar. So the takeover grows into place instead. */
+@keyframes chat-panel-grow {
+  from { opacity: 0.5; transform: scale(0.975); }
+  to { opacity: 1; transform: none; }
+}
+.animate-chat-panel-grow {
+  animation: chat-panel-grow 0.36s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
 @keyframes chat-rail {
   from { opacity: 0; transform: translateX(-14px); }
   to { opacity: 1; transform: none; }
@@ -188,6 +201,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .animate-chat-scrim,
   .animate-chat-rail,
+  .animate-chat-panel-grow,
   .animate-chat-spin {
     animation: none;
   }

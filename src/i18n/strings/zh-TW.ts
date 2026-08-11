@@ -111,6 +111,7 @@ const zhTW: Strings = {
     pipelineTitle: '檢索管線',
     pipelineIdle: '問一個問題，管線會在這裡一個節點一個節點跑給你看。',
     pipelineRunningLabel: '進行中',
+    pipelineInterrupted: '已中斷',
     nodeTriage: '問題分流',
     nodeConverse: '讀取對話',
     nodeRetrieve: '向量檢索',

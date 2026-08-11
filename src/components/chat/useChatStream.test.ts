@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-import { useChatStream } from './useChatStream'
+import { useChatStream, type TraceStep } from './useChatStream'
 
 // Build a ReadableStream that emits the given SSE frames then closes.
 function sseStream(frames: string[]): ReadableStream<Uint8Array> {
@@ -75,6 +75,30 @@ describe('useChatStream pipeline trace', () => {
     return renderHook(() => useChatStream())
   }
 
+  // A stream held open so the trace can be inspected mid-run. Needed because a
+  // finished stream has no `running` steps left by design — anything still open
+  // when it ends is failed — so the running state only exists mid-flight.
+  function openStream() {
+    const enc = new TextEncoder()
+    let push!: (f: string) => void
+    let close!: () => void
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        push = (f) => controller.enqueue(enc.encode(f))
+        close = () => controller.close()
+      },
+    })
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, body })) as unknown as typeof fetch)
+    return { push, close, hook: renderHook(() => useChatStream()) }
+  }
+
+  const settle = () => new Promise((r) => setTimeout(r, 20))
+
+  // Narrow to the done member so a duration can be read at all — the union is
+  // what stops a cost being printed for a node that never reported one.
+  const durations = (trace: readonly TraceStep[], id: string) =>
+    trace.filter((s): s is Extract<TraceStep, { status: 'done' }> => s.status === 'done' && s.id === id).map((s) => s.ms)
+
   it('records each node in the order it ran, with its duration', async () => {
     const { result } = run([
       frame('node', { id: 'triage', status: 'start' }),
@@ -87,28 +111,36 @@ describe('useChatStream pipeline trace', () => {
       await result.current.send('q', 'error')
     })
 
-    expect(result.current.trace.map((s) => [s.id, s.status, s.ms])).toEqual([
+    expect(
+      result.current.trace.map((s) => [s.id, s.status, s.status === 'done' ? s.ms : null]),
+    ).toEqual([
       ['triage', 'done', 12],
       ['retrieve', 'done', 176],
     ])
   })
 
-  it('marks the node currently running', async () => {
-    // A stream that stops mid-node: the last step must still read as running,
-    // never silently as finished.
-    const { result } = run([
-      frame('node', { id: 'retrieve', status: 'start' }),
-      frame('node', { id: 'retrieve', status: 'done', ms: 90 }),
-      frame('node', { id: 'generate', status: 'start' }),
-      frame('done', { sources: [], answer: 'ok' }),
-    ])
+  it('marks the node currently running while the stream is still open', async () => {
+    const { push, close, hook } = openStream()
+    let sending!: Promise<void>
     await act(async () => {
-      await result.current.send('q', 'error')
+      sending = hook.result.current.send('q', 'error')
+      push(frame('node', { id: 'retrieve', status: 'start' }))
+      push(frame('node', { id: 'retrieve', status: 'done', ms: 90 }))
+      push(frame('node', { id: 'generate', status: 'start' }))
+      await settle()
     })
 
-    const last = result.current.trace.at(-1)
+    const last = hook.result.current.trace.at(-1)
     expect(last?.id).toBe('generate')
     expect(last?.status).toBe('running')
+
+    await act(async () => {
+      push(frame('node', { id: 'generate', status: 'done', ms: 400 }))
+      push(frame('done', { sources: [], answer: 'ok' }))
+      close()
+      await sending
+    })
+    expect(hook.result.current.trace.at(-1)?.status).toBe('done')
   })
 
   // The corrective loop revisits retrieve, and that repeat is the interesting
@@ -132,38 +164,44 @@ describe('useChatStream pipeline trace', () => {
       'rewriteQuery',
       'retrieve',
     ])
-    expect(result.current.trace.filter((s) => s.id === 'retrieve').map((s) => s.ms)).toEqual([100, 120])
+    expect(durations(result.current.trace, 'retrieve')).toEqual([100, 120])
+  })
+
+  // Sibling of the test above, and it has to exist separately: there are two
+  // routes that can put a repeat visit into the log — the `start` append, and
+  // the fallback that logs a `done` arriving with no matching `start`. With
+  // both present, removing either one alone still leaves the completed-loop
+  // test passing, so neither is actually pinned. This one inspects the trace
+  // while the second visit is open, which only the `start` route can satisfy.
+  it('logs a second visit to a node while it is still running', async () => {
+    const { push, close, hook } = openStream()
+    let sending!: Promise<void>
+    await act(async () => {
+      sending = hook.result.current.send('q', 'error')
+      push(frame('node', { id: 'retrieve', status: 'start' }))
+      push(frame('node', { id: 'retrieve', status: 'done', ms: 100 }))
+      push(frame('node', { id: 'rewriteQuery', status: 'start' }))
+      push(frame('node', { id: 'rewriteQuery', status: 'done', ms: 300 }))
+      push(frame('node', { id: 'retrieve', status: 'start' }))
+      await settle()
+    })
+
+    expect(hook.result.current.trace.map((s) => [s.id, s.status])).toEqual([
+      ['retrieve', 'done'],
+      ['rewriteQuery', 'done'],
+      ['retrieve', 'running'],
+    ])
+
+    await act(async () => {
+      push(frame('done', { sources: [], answer: 'ok' }))
+      close()
+      await sending
+    })
   })
 
   // Asserting only the final state would pass even if sources still arrived
   // solely on `done`, since `done` carries the same list. The point of the early
   // event is the timing, so the stream is held open and inspected mid-flight.
-  // Sibling of the test above, and it has to exist separately: there are two
-  // routes that can put a repeat visit into the log — the `start` append, and
-  // the fallback that logs a `done` arriving with no matching `start`. With
-  // both present, removing either one alone still leaves the completed-loop
-  // test passing, so neither is actually pinned. This one ends while the second
-  // visit is still running, which only the `start` route can satisfy.
-  it('logs a second visit to a node while it is still running', async () => {
-    const { result } = run([
-      frame('node', { id: 'retrieve', status: 'start' }),
-      frame('node', { id: 'retrieve', status: 'done', ms: 100 }),
-      frame('node', { id: 'rewriteQuery', status: 'start' }),
-      frame('node', { id: 'rewriteQuery', status: 'done', ms: 300 }),
-      frame('node', { id: 'retrieve', status: 'start' }),
-      frame('done', { sources: [], answer: 'ok' }),
-    ])
-    await act(async () => {
-      await result.current.send('q', 'error')
-    })
-
-    expect(result.current.trace.map((s) => [s.id, s.status])).toEqual([
-      ['retrieve', 'done'],
-      ['rewriteQuery', 'done'],
-      ['retrieve', 'running'],
-    ])
-  })
-
   it('shows sources before the answer has streamed', async () => {
     const early = [{ id: 'a', title: 'USPACE', score: 0.9, locale: 'en' }]
     const enc = new TextEncoder()
@@ -198,6 +236,53 @@ describe('useChatStream pipeline trace', () => {
       await sending
     })
     expect(result.current.messages.at(-1)?.text).toBe('He led it.')
+  })
+
+  // A node that was running when the stream died must reach a terminal state.
+  // Otherwise the rail spins its arc forever and keeps aria-busy set, which is
+  // exactly what a Gemini free-tier 429 on gradeDocuments produces in practice.
+  it('marks an unfinished node as failed when the server reports an error', async () => {
+    const { result } = run([
+      frame('node', { id: 'retrieve', status: 'start' }),
+      frame('node', { id: 'retrieve', status: 'done', ms: 176 }),
+      frame('node', { id: 'gradeDocuments', status: 'start' }),
+      frame('error', { message: 'boom' }),
+    ])
+    await act(async () => {
+      await result.current.send('q', 'error copy')
+    })
+
+    expect(result.current.trace.map((s) => [s.id, s.status])).toEqual([
+      ['retrieve', 'done'],
+      ['gradeDocuments', 'failed'],
+    ])
+    expect(result.current.trace.some((s) => s.status === 'running')).toBe(false)
+  })
+
+  it('marks an unfinished node as failed when the stream just stops', async () => {
+    const { result } = run([
+      frame('node', { id: 'generate', status: 'start' }),
+      // No done, no error — the connection simply ends.
+    ])
+    await act(async () => {
+      await result.current.send('q', 'error copy')
+    })
+
+    expect(result.current.trace.map((s) => s.status)).toEqual(['failed'])
+  })
+
+  it('marks an unfinished node as failed when the request throws', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('network down')
+      }) as unknown as typeof fetch,
+    )
+    const { result } = renderHook(() => useChatStream())
+    await act(async () => {
+      await result.current.send('q', 'error copy')
+    })
+    expect(result.current.trace.some((s) => s.status === 'running')).toBe(false)
   })
 
   it('starts each question from a clean trace', async () => {

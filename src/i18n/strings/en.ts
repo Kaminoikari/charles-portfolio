@@ -47,7 +47,8 @@ interface Strings {
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; minimiseAriaLabel: string
     expandAriaLabel: string; collapseAriaLabel: string; suggestionsTitle: string
-    pipelineTitle: string; pipelineIdle: string; pipelineRunningLabel: string
+    pipelineTitle: string; pipelineIdle: string
+    pipelineRunningLabel: string; pipelineInterrupted: string
     nodeTriage: string; nodeConverse: string; nodeRetrieve: string
     nodeGradeDocuments: string; nodeRewriteQuery: string; nodeGenerate: string
     nodeFallback: string
@@ -167,6 +168,7 @@ const en: Strings = {
     pipelineTitle: 'Retrieval pipeline',
     pipelineIdle: 'Ask something and the pipeline runs here, node by node.',
     pipelineRunningLabel: 'running',
+    pipelineInterrupted: 'interrupted',
     nodeTriage: 'Triage',
     nodeConverse: 'Read transcript',
     nodeRetrieve: 'Vector search',
