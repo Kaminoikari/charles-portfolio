@@ -25,6 +25,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '為什麼你的招聘流程在製造平庸？前 Facebook、Cursor 人才招募總監揭露「末日漏斗」與頂尖團隊的秘密',
+    subtitle:
+      "Adam Ward 在 Lenny's Podcast 拋出顛覆性觀點：把招聘當銷售漏斗，層層篩選後錄用的只是「殘餘者」。想打造高人才密度團隊，得先拆掉這座末日漏斗。",
+    url: 'https://charlestychen.substack.com/p/facebookcursor',
+    platform: 'Substack',
+    date: '2026-08-11',
+    cover:
+      'https://images.unsplash.com/photo-1666362755385-1856fca1a330?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: '一年後的認知差距將無法想像：你是在劃清角色邊界，還是在交付 Outcome？',
     subtitle:
       '當技能已被模型民主化，決定產品經理成長速度的是 High Agency。不要讓傳統的 PM 職能框架限制了你的能力邊界。',

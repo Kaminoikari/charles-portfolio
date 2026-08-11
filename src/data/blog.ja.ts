@@ -33,6 +33,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'なぜあなたの採用プロセスは凡庸を量産するのか？元 Facebook・現 Cursor 採用責任者が明かす「破滅のファネル」とトップチームの秘密',
+    subtitle:
+      "Facebook や Pinterest で採用を率い、現在 Cursor の採用責任者を務める Adam Ward が Lenny's Podcast で語った。従来の採用ファネルが最後に採るのは「残り物」だ。人材密度の高いチームづくりは、このファネルを壊すことから始まる。",
+    url: 'https://charlestychen.substack.com/p/facebookcursor',
+    platform: 'Substack',
+    date: '2026-08-11',
+    cover:
+      'https://images.unsplash.com/photo-1666362755385-1856fca1a330?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: '1年後の認知ギャップは想像を絶する：あなたは役割の境界線を引いているのか、Outcome を届けているのか',
     subtitle:
       'スキルがモデルによって民主化された今、PM の成長速度を決めるのは High Agency だ。従来の PM 職能フレームワークに、自分の能力の境界を決めさせてはいけない。',

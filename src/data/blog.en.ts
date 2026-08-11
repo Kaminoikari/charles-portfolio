@@ -33,6 +33,16 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: "Why Your Hiring Process Manufactures Mediocrity: the Ex-Facebook, Now-Cursor Head of Recruiting on the 'Funnel of Doom'",
+    subtitle:
+      "Adam Ward led recruiting at Facebook and Pinterest and now heads talent at Cursor. On Lenny's Podcast he argues the classic hiring funnel ends in 'remainder hiring': you employ whoever survives the sieve. Building real talent density starts with tearing that funnel down.",
+    url: 'https://charlestychen.substack.com/p/facebookcursor',
+    platform: 'Substack',
+    date: '2026-08-11',
+    cover:
+      'https://images.unsplash.com/photo-1666362755385-1856fca1a330?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+  },
+  {
     title: 'A Year From Now the Gap Will Be Unimaginable: Are You Guarding Role Boundaries, or Delivering Outcomes?',
     subtitle:
       "Once the models have democratized skill itself, what sets a PM's growth rate is High Agency. Don't let a traditional PM competency framework decide where your capabilities end.",
