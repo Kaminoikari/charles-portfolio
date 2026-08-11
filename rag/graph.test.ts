@@ -249,3 +249,71 @@ test('streamAnswer: an ordinary follow-up is still rewritten against the whole s
   assert.deepEqual(rewrites, [{ question: '那個專案解決什麼問題?', turns: SESSION.length }])
   assert.equal(counts.retrieve, 1)
 })
+
+// --- pipeline trace events ---------------------------------------------------
+// The fullscreen widget draws the pipeline as it runs, so streamAnswer has to
+// report which nodes actually executed. The graph is not a fixed line of steps:
+// triage can answer outright and skip retrieval entirely, and the corrective
+// loop can send the same node through twice. The trace must reflect what really
+// ran, not a hardcoded list of stages.
+
+function nodeEvents(events: StreamEvent[]) {
+  return events.filter((e): e is Extract<StreamEvent, { type: 'node' }> => e.type === 'node')
+}
+
+test('trace: reports a start and a done for each node that runs', async () => {
+  const { nodes } = makeNodes(['generate'])
+  const events = await drain(streamAnswer('What did he do at USPACE?', [], buildGraph(nodes), stubDeps().deps))
+  const trace = nodeEvents(events)
+
+  const starts = trace.filter((e) => e.status === 'start').map((e) => e.id)
+  const dones = trace.filter((e) => e.status === 'done').map((e) => e.id)
+
+  assert.deepEqual(starts, ['triage', 'retrieve', 'gradeDocuments', 'generate'])
+  assert.deepEqual(dones, starts, 'every started node must also report done')
+})
+
+test('trace: a node reports a duration when it finishes', async () => {
+  const { nodes } = makeNodes(['generate'])
+  const events = await drain(streamAnswer('q', [], buildGraph(nodes), stubDeps().deps))
+  for (const ev of nodeEvents(events).filter((e) => e.status === 'done')) {
+    assert.equal(typeof ev.ms, 'number', `${ev.id} reported no duration`)
+    assert.ok((ev.ms ?? -1) >= 0, `${ev.id} reported a negative duration`)
+  }
+})
+
+test('trace: omits nodes that never ran', async () => {
+  // Triage answers outright, so the whole retrieval half is skipped.
+  const { nodes } = makeNodes(['generate'])
+  nodes.triage = async () => ({ answer: 'I am Charles.', sources: [], route: 'answered', outcome: 'canned' })
+  const events = await drain(streamAnswer('你是誰?', [], buildGraph(nodes), stubDeps().deps))
+  const ids = nodeEvents(events).map((e) => e.id)
+
+  assert.deepEqual([...new Set(ids)], ['triage'])
+  assert.ok(!ids.includes('retrieve'), 'retrieval never ran, so it must not appear in the trace')
+})
+
+test('trace: shows the corrective loop revisiting retrieve', async () => {
+  const { nodes } = makeNodes(['rewrite', 'generate'])
+  const events = await drain(streamAnswer('vague', [], buildGraph(nodes), stubDeps().deps))
+  const starts = nodeEvents(events).filter((e) => e.status === 'start').map((e) => e.id)
+
+  assert.equal(starts.filter((id) => id === 'retrieve').length, 2, 'retrieve runs twice in a corrective loop')
+  assert.equal(starts.filter((id) => id === 'rewriteQuery').length, 1)
+})
+
+// Sources currently ride on `done`, which lands after the answer has finished
+// streaming. The fullscreen rail shows them as retrieval settles, so they are
+// also emitted as soon as a node produces them — ahead of the first token.
+test('trace: emits sources before the answer finishes', async () => {
+  const { nodes } = makeNodes(['generate'])
+  const events = await drain(streamAnswer('q', [], buildGraph(nodes), stubDeps().deps))
+
+  const sourcesIdx = events.findIndex((e) => e.type === 'sources')
+  const doneIdx = events.findIndex((e) => e.type === 'done')
+  assert.ok(sourcesIdx >= 0, 'no early sources event was emitted')
+  assert.ok(sourcesIdx < doneIdx, 'sources must arrive before done')
+
+  const early = events[sourcesIdx]
+  assert.equal(early.type === 'sources' ? early.sources.length : -1, 1)
+})

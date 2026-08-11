@@ -81,6 +81,14 @@ export default async function handler(req: IncomingMessage & { method?: string; 
     for await (const ev of streamAnswer(parsed.question, parsed.history ?? [])) {
       if (ev.type === 'token') {
         res.write(sse('token', { text: ev.text }))
+      } else if (ev.type === 'node') {
+        // Pipeline trace for the fullscreen rail. Clients that don't render it
+        // (the docked panel, any older cached bundle) ignore the event.
+        res.write(sse('node', { id: ev.id, status: ev.status, ms: ev.ms }))
+      } else if (ev.type === 'sources') {
+        // Early copy so the rail can show what retrieval settled on before the
+        // answer finishes; `done` below still carries the authoritative set.
+        res.write(sse('sources', { sources: ev.sources }))
       } else {
         res.write(sse('done', { sources: ev.sources, language: ev.language, answer: ev.answer }))
         logged = logChatEvent({

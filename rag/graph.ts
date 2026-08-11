@@ -130,7 +130,34 @@ export async function answer(
 // chunks and read the terminal state for sources. Tracing still auto-attaches.
 export type StreamEvent =
   | { type: 'token'; text: string }
+  // Pipeline trace. One `start` and one matching `done` per node that actually
+  // executed — the graph is not a fixed line of stages: triage can answer
+  // outright and skip retrieval, and the corrective loop can revisit a node.
+  | { type: 'node'; id: GraphNodeId; status: 'start' | 'done'; ms?: number }
+  // Sources as soon as a node produces them, ahead of the answer finishing.
+  // They also still ride on `done`, which stays the authoritative copy.
+  | { type: 'sources'; sources: Source[] }
   | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome }
+
+export type GraphNodeId = keyof NodeSet
+
+// Only these names are reported as pipeline steps. streamEvents also fires
+// chain events for the graph itself and for inner runnables (prompts, models,
+// parsers); without this allow-list the trace would fill with implementation
+// detail nobody asked to see.
+const GRAPH_NODE_IDS = new Set<string>([
+  'triage',
+  'converse',
+  'retrieve',
+  'gradeDocuments',
+  'rewriteQuery',
+  'generate',
+  'fallback',
+])
+
+function asGraphNodeId(value: unknown): GraphNodeId | null {
+  return typeof value === 'string' && GRAPH_NODE_IDS.has(value) ? (value as GraphNodeId) : null
+}
 
 // The two preprocessing steps, injectable so the seeding logic below can be
 // tested without reaching for a model (mirrors buildGraph's node overrides).
@@ -192,6 +219,11 @@ export async function* streamAnswer(
     { version: 'v2' },
   )
 
+  // Wall-clock per node, keyed by node id. A corrective loop revisits a node,
+  // so each `start` overwrites the previous mark and each `done` reports the
+  // duration of that pass rather than a running total.
+  const startedAt = new Map<GraphNodeId, number>()
+
   for await (const ev of events) {
     // Token chunks from the user-facing answer node ONLY. The grade/rewrite
     // nodes also run chat models (grade emits structured JSON like
@@ -202,6 +234,17 @@ export async function* streamAnswer(
       ev.metadata?.langgraph_node ??
       (ev.metadata as Record<string, unknown> | undefined)?.['langgraph_node'] ??
       ev.name
+
+    // Pipeline trace. `ev.name` is the node's own name on the chain events the
+    // graph emits for its nodes; the metadata lookup above resolves to the same
+    // name for inner runnables, so match on ev.name to avoid reporting a step
+    // once per nested runnable.
+    const traced = asGraphNodeId(ev.name)
+    if (traced && ev.event === 'on_chain_start') {
+      startedAt.set(traced, Date.now())
+      yield { type: 'node', id: traced, status: 'start' }
+    }
+
     if (ev.event === 'on_chat_model_stream' && node === 'generate') {
       const chunk = ev.data?.chunk
       const text = typeof chunk?.content === 'string' ? chunk.content : ''
@@ -217,10 +260,26 @@ export async function* streamAnswer(
     if (ev.event === 'on_chain_end') {
       const raw = ev.data?.output as unknown
       const out = (raw && typeof raw === 'object' ? raw : {}) as Partial<RAGStateType>
-      if (Array.isArray(out.sources)) sources = out.sources
+      if (Array.isArray(out.sources)) {
+        const isNew = out.sources !== sources
+        sources = out.sources
+        // Push sources the moment a node yields them, so the trace rail can
+        // show what retrieval settled on before the answer has finished.
+        if (isNew && sources.length > 0) yield { type: 'sources', sources }
+      }
       if (typeof out.loops === 'number') loops = out.loops
       if (typeof out.answer === 'string' && out.answer) answerText = out.answer
       if (out.outcome) outcome = out.outcome
+
+      if (traced) {
+        const began = startedAt.get(traced)
+        yield {
+          type: 'node',
+          id: traced,
+          status: 'done',
+          ms: began === undefined ? 0 : Math.max(0, Date.now() - began),
+        }
+      }
     }
   }
 

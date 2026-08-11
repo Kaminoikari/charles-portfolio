@@ -43,6 +43,42 @@ export interface ChatMessage {
 
 export type ChatStatus = 'idle' | 'streaming' | 'error'
 
+// One pass through one graph node. The pipeline is not a fixed list of stages:
+// triage can answer outright and skip retrieval entirely, and the corrective
+// loop can send retrieve through a second time. So the trace is an ordered log
+// of what actually ran — a revisited node is a separate step, not an update to
+// the earlier one, because that repeat IS the correction worth showing.
+export interface TraceStep {
+  id: string
+  status: 'running' | 'done'
+  ms?: number
+}
+
+function applyNodeEvent(trace: TraceStep[], raw: unknown): TraceStep[] {
+  if (typeof raw !== 'object' || raw === null) return trace
+  const { id, status, ms } = raw as Record<string, unknown>
+  if (typeof id !== 'string') return trace
+
+  if (status === 'start') return [...trace, { id, status: 'running' }]
+  if (status !== 'done') return trace
+
+  const duration = typeof ms === 'number' && Number.isFinite(ms) ? ms : undefined
+  // Close this node's open pass. Nodes run one at a time, so a corrective
+  // loop's second visit only starts after the first has closed and there is at
+  // most one open pass per id; scanning from the end just keeps that true if a
+  // future graph ever overlaps them.
+  for (let i = trace.length - 1; i >= 0; i--) {
+    if (trace[i].id === id && trace[i].status === 'running') {
+      const next = [...trace]
+      next[i] = { id, status: 'done', ms: duration }
+      return next
+    }
+  }
+  // A done with no matching start (a truncated stream, an older server) still
+  // belongs in the log rather than being dropped.
+  return [...trace, { id, status: 'done', ms: duration }]
+}
+
 interface SSEEvent {
   event: string
   data: unknown
@@ -98,6 +134,7 @@ function parseSSE(buffer: string): { events: SSEEvent[]; rest: string } {
 export function useChatStream() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [status, setStatus] = useState<ChatStatus>('idle')
+  const [trace, setTrace] = useState<TraceStep[]>([])
   const abortRef = useRef<AbortController | null>(null)
   // Mirror of `messages` for reading the pre-send conversation inside send()
   // without adding `messages` to its dependency list (which would re-create the
@@ -121,6 +158,9 @@ export function useChatStream() {
 
       // Push the user message + an empty assistant message we'll fill as tokens arrive.
       setMessages((prev) => [...prev, { role: 'user', text: q }, { role: 'assistant', text: '' }])
+      // Each question runs its own pipeline, so the trace starts empty rather
+      // than accumulating across turns.
+      setTrace([])
       setStatus('streaming')
 
       // Mutates the trailing assistant message in place (last array item).
@@ -156,6 +196,14 @@ export function useChatStream() {
             if (ev.event === 'token') {
               const t = (ev.data as { text?: string }).text ?? ''
               patchAssistant((m) => ({ ...m, text: m.text + t }))
+            } else if (ev.event === 'node') {
+              setTrace((prev) => applyNodeEvent(prev, ev.data))
+            } else if (ev.event === 'sources') {
+              // Retrieval has settled; show what it found without waiting for
+              // the answer to finish streaming. `done` re-sends the same set as
+              // the authoritative copy.
+              const early = toSources((ev.data as { sources?: unknown }).sources)
+              if (early.length > 0) patchAssistant((m) => ({ ...m, sources: early }))
             } else if (ev.event === 'done') {
               const data = ev.data as { sources?: unknown; answer?: string }
               const sources = toSources(data.sources)
@@ -206,8 +254,9 @@ export function useChatStream() {
   const clear = useCallback(() => {
     abortRef.current?.abort()
     setMessages([])
+    setTrace([])
     setStatus('idle')
   }, [])
 
-  return { messages, status, send, retry, clear }
+  return { messages, status, trace, send, retry, clear }
 }
