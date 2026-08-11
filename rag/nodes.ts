@@ -30,7 +30,7 @@ import {
   resolveGenerator,
 } from './llm.js'
 import { formatHistory, shouldAnswerFromHistory, ordinalReference } from './history.js'
-import { triage as classifyQuestion, genericFallback } from './triage.js'
+import { triage as classifyQuestion, genericFallback, CONTACT } from './triage.js'
 
 // --- triage --------------------------------------------------------------
 // Two cheap tiers before any RAG/generation LLM call — the biggest cost lever:
@@ -427,6 +427,22 @@ export async function generate(
       `treated as evidence about Charles:\n${transcript}`
     : ''
 
+  // Charles's own channels, so "the portfolio doesn't cover that, ask him" can
+  // hand over links a visitor can click. They live in triage.ts and appear in no
+  // retrieved chunk, so they have to be given here twice over: to the model, or
+  // it writes bare channel names, and to the grounding below, or the link filter
+  // reads them as invented and demotes them right back to plain text.
+  const contactChannels =
+    "\n\nCharles's contact channels — when you suggest contacting him, list these " +
+    'as markdown links so each one is clickable, and use these exact URLs, never ' +
+    'another address:\n' +
+    `* Email: mailto:${CONTACT.email}\n` +
+    `* LinkedIn: ${CONTACT.linkedin}\n` +
+    `* GitHub: ${CONTACT.github}\n` +
+    `* Threads: ${CONTACT.threads}\n` +
+    `* Substack: ${CONTACT.substack}\n` +
+    `* All links / Portaly: ${CONTACT.portaly}`
+
   // Tier 1 Gemini (free) → tier 2 Claude (paid) on any Gemini failure.
   const { text } = await generateAnswer(
     [
@@ -477,7 +493,8 @@ export async function generate(
           'For genuine questions ABOUT CHARLES, answer using ONLY the provided ' +
           'context, portfolio map, and entity relationships. Never invent roles, ' +
           'employers, dates, or credentials. If the context does not contain the ' +
-          'answer, say so plainly and suggest contacting him. Cite sources inline ' +
+          'answer, say so plainly and suggest contacting him through the channels ' +
+          'listed after the portfolio map. Cite sources inline ' +
           'as [n], where n is the number of a provided context item. The portfolio ' +
           'map and entity relationships are background context with no number: ' +
           'never cite them, and when a statement is supported only by the portfolio ' +
@@ -497,6 +514,7 @@ export async function generate(
           context +
           '\n\nPortfolio map:\n' +
           portfolioMap +
+          contactChannels +
           entityBlock +
           historyBlock,
       },
@@ -539,7 +557,7 @@ export async function generate(
   // Links are checked against the material the model was actually given, not
   // the transcript: a URL it invented one turn ago must not become grounding
   // for repeating it. The visitor's own message is excluded for the same reason.
-  const grounding = `${context}\n${portfolioMap}\n${entityBlock}\n${sources.map((s) => s.url ?? '').join('\n')}`
+  const grounding = `${context}\n${portfolioMap}\n${contactChannels}\n${entityBlock}\n${sources.map((s) => s.url ?? '').join('\n')}`
   return {
     answer: stripUngroundedLinks(stripInvalidCitations(text), grounding),
     sources,

@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 
 import { gradeDocuments, rewriteQuery, converse, triage, generate } from './nodes.js'
 import { resolveTiers, DEFAULT_TIERS, type Tier, type Tiers } from './llm.js'
+import { CONTACT } from './triage.js'
 
 // A tier that fails the way a quota-exhausted Gemini does.
 const failing = (message: string): Tier => ({
@@ -233,6 +234,38 @@ test('generate: an invented link is demoted before the answer leaves the node', 
   )
   assert.equal((out.answer ?? '').includes('charleschen.tw'), false)
   assert.equal((out.answer ?? '').includes('作品集'), true)
+})
+
+// Live regression, 2026-08-11: a question the portfolio does not cover produced
+// the honest "ask Charles directly" list, and every channel below the email
+// arrived as plain text. The contact URLs live in triage.ts and appear in no
+// retrieved chunk, so the link filter read the model's own LinkedIn/Threads/
+// Substack/Portaly links as invented and demoted them to their labels. They are
+// Charles's own channels: they belong in the grounding the answer is checked
+// against.
+test('generate: the real contact channels survive the link filter', async () => {
+  const written =
+    '作品集裡沒有這個資訊，建議直接問 Charles：\n\n' +
+    `* Email：[${CONTACT.email}](mailto:${CONTACT.email})\n` +
+    `* [LinkedIn](${CONTACT.linkedin})\n* [Threads](${CONTACT.threads})\n` +
+    `* [Substack](${CONTACT.substack})\n* [所有連結 / Portaly](${CONTACT.portaly})`
+  const out = await generate(
+    { question: '他的薪資期待是多少?', language: 'zh-TW', graded: [DOC] } as never,
+    async () => ({ text: written, provider: 'gemini' as const }),
+  )
+  for (const url of [CONTACT.linkedin, CONTACT.threads, CONTACT.substack, CONTACT.portaly]) {
+    assert.equal((out.answer ?? '').includes(url), true, `link dropped: ${url}`)
+  }
+})
+
+// Surviving the filter is only half of it: the model has to be given the URLs,
+// or it writes bare channel names (or guesses an address) in the first place.
+test('generate: the prompt hands the model the contact URLs to link to', async () => {
+  const { system } = await promptFor({ question: '他的薪資期待是多少?', language: 'zh-TW', graded: [DOC] })
+  for (const url of [CONTACT.linkedin, CONTACT.threads, CONTACT.substack, CONTACT.portaly]) {
+    assert.equal(system.includes(url), true, `prompt is missing: ${url}`)
+  }
+  assert.equal(system.includes(CONTACT.email), true)
 })
 
 test('converse: an invented link is demoted there too', async () => {
