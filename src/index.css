@@ -143,6 +143,24 @@ body {
 .chat-dots > span:nth-child(2) { animation-delay: 0.2s; }
 .chat-dots > span:nth-child(3) { animation-delay: 0.4s; }
 
+/* Chat fullscreen entrance. The scrim fades the page down while the left rail
+   slides in from its own edge, so the takeover reads as the panel growing into
+   the space rather than a new surface appearing on top of it. */
+@keyframes chat-scrim {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-chat-scrim {
+  animation: chat-scrim 0.34s ease;
+}
+@keyframes chat-rail {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-chat-rail {
+  animation: chat-rail 0.5s cubic-bezier(0.22, 0.9, 0.3, 1) 0.06s backwards;
+}
+
 /* When the chat panel is open, hide the third-party Protico "lobby" widget so
    the two floating bottom-corner elements don't overlap / fight for taps. The
    selectors cover however Protico injects (iframe src, id, or class). */

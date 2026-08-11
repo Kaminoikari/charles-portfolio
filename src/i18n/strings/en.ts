@@ -46,6 +46,7 @@ interface Strings {
   }
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; minimiseAriaLabel: string
+    expandAriaLabel: string; collapseAriaLabel: string; suggestionsTitle: string
     clearLabel: string
     title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
@@ -156,6 +157,9 @@ const en: Strings = {
     launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
     minimiseAriaLabel: 'Minimise the AI assistant',
+    expandAriaLabel: 'Expand to fullscreen',
+    collapseAriaLabel: 'Exit fullscreen',
+    suggestionsTitle: 'Try asking',
     clearLabel: 'Clear this conversation',
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',

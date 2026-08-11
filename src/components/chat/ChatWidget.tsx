@@ -141,8 +141,9 @@ export default function ChatWidget() {
   // Size state lives in useChatMode; the conversation lives in useChatStream
   // right here. Both stay mounted across every size change, which is what
   // makes stowing the panel non-destructive.
-  const { mode, open: openPanel, minimise } = useChatMode()
+  const { mode, open: openPanel, minimise, toggleFullscreen } = useChatMode()
   const open = mode !== 'minimised'
+  const fullscreen = mode === 'fullscreen'
   const [input, setInput] = useState('')
   // Region gate: blocked visitors (e.g. CN) can still open the panel, but it
   // lands in a disabled "not available here" state. Checked once on first open
@@ -153,6 +154,7 @@ export default function ChatWidget() {
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   // Tracks whether the panel has ever been open, so the first render doesn't
   // steal focus onto the launcher — but every route that stows the panel
   // (button or Escape) does return focus there rather than losing it to <body>.
@@ -182,6 +184,53 @@ export default function ChatWidget() {
       launcherRef.current?.focus()
     }
   }, [open])
+
+  // Pin the page behind the fullscreen takeover. Position-fixed rather than
+  // `overflow: hidden` because iOS Safari ignores the latter on <body>; the
+  // offset is carried on `top` so the page doesn't jump to 0 while pinned.
+  //
+  // The restore asks for 'instant' deliberately: index.css sets
+  // `scroll-behavior: smooth` on <html>, which would otherwise animate the
+  // restore and let the visitor watch the page scroll back.
+  useEffect(() => {
+    if (!fullscreen) return
+    const y = window.scrollY
+    const previous = document.body.style.cssText
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${y}px`
+    document.body.style.left = '0'
+    document.body.style.right = '0'
+    return () => {
+      document.body.style.cssText = previous
+      window.scrollTo({ top: y, behavior: 'instant' })
+    }
+  }, [fullscreen])
+
+  // Keep Tab inside the takeover. The docked panel deliberately does not trap:
+  // it is a small overlay beside a usable page, whereas fullscreen covers
+  // everything and tabbing to hidden content behind it would strand the focus.
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullscreen])
 
   // Resolve the visitor's region the first time the panel opens. Kept lazy so a
   // visitor who never opens chat never triggers the request. This fires exactly
@@ -235,49 +284,135 @@ export default function ChatWidget() {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-label={t('chat.title')}
-      className="fixed bottom-5 right-5 z-50 flex h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden rounded-2xl border border-border bg-bg-secondary shadow-[0_24px_60px_rgba(0,0,0,0.5)]"
-    >
-      {/* Header — title leads; the tech-stack line sits under it as a subtitle
-          that still signals the engineering ("show, don't tell"). */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <LiveDot />
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-[15px] font-semibold text-white">{t('chat.title')}</div>
-            <div className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.5px] text-text-muted">
-              {t('chat.subtitle')}
+    <>
+      {/* Scrim: only fullscreen takes the page over, so only fullscreen dims it. */}
+      {fullscreen && (
+        <div
+          aria-hidden="true"
+          onClick={toggleFullscreen}
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-[3px] motion-safe:animate-chat-scrim"
+        />
+      )}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal={fullscreen || undefined}
+        aria-label={t('chat.title')}
+        className={
+          'fixed z-50 flex flex-col overflow-hidden border border-border bg-bg-secondary shadow-[0_24px_60px_rgba(0,0,0,0.5)] ' +
+          (fullscreen
+            ? // Edge-to-edge on phones: an inset takeover on a 390px screen is
+              // only a few px wider than the docked panel, which reads as no
+              // change at all.
+              'inset-4 rounded-2xl max-md:inset-0 max-md:rounded-none max-md:border-0'
+            : 'bottom-5 right-5 h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] rounded-2xl')
+        }
+      >
+        {/* Header — title leads; the tech-stack line sits under it as a subtitle
+            that still signals the engineering ("show, don't tell"). */}
+        <div className="flex flex-none items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <LiveDot />
+            <div className="min-w-0 leading-tight">
+              <div className="truncate text-[15px] font-semibold text-white">{t('chat.title')}</div>
+              <div className="mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.5px] text-text-muted">
+                {t('chat.subtitle')}
+              </div>
             </div>
           </div>
+          <div className="flex flex-none items-center gap-0.5">
+            <button
+              onClick={toggleFullscreen}
+              aria-label={fullscreen ? t('chat.collapseAriaLabel') : t('chat.expandAriaLabel')}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                {fullscreen ? (
+                  <>
+                    <path d="M4 14h6v6" />
+                    <path d="M20 10h-6V4" />
+                    <path d="M14 10l7-7" />
+                    <path d="M3 21l7-7" />
+                  </>
+                ) : (
+                  <>
+                    <path d="M15 3h6v6" />
+                    <path d="M9 21H3v-6" />
+                    <path d="M21 3l-7 7" />
+                    <path d="M3 21l7-7" />
+                  </>
+                )}
+              </svg>
+            </button>
+            <button
+              onClick={minimise}
+              aria-label={t('chat.minimiseAriaLabel')}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={minimise}
-          aria-label={t('chat.minimiseAriaLabel')}
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <path d="M5 12h14" />
-          </svg>
-        </button>
-      </div>
 
-      {/* Body — aria-live so streamed answers reach screen readers. */}
-      <div
-        ref={bodyRef}
-        aria-live="polite"
-        aria-atomic="false"
-        className="flex flex-1 flex-col gap-4 overflow-y-auto p-4"
-      >
+        <div
+          className={
+            'min-h-0 flex-1 ' +
+            (fullscreen ? 'grid grid-cols-[236px_minmax(0,1fr)] max-md:grid-cols-1' : 'flex flex-col')
+          }
+        >
+          {/* Left rail: only fullscreen has the room for it. On a phone even
+              fullscreen doesn't, so it stays out of the way there too. */}
+          {fullscreen && (
+            <aside className="flex min-h-0 flex-col gap-5 overflow-y-auto border-r border-border p-4 max-md:hidden motion-safe:animate-chat-rail">
+              <div className="flex flex-col gap-2">
+                <h3 className="font-mono text-[10px] font-medium uppercase tracking-[1.1px] text-text-tertiary">
+                  {t('chat.suggestionsTitle')}
+                </h3>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => submit(s)}
+                    className="cursor-pointer rounded-[10px] border border-border bg-transparent px-2.5 py-2 text-left text-[12.5px] leading-snug text-text-muted transition-colors hover:border-border-hover hover:text-white"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </aside>
+          )}
+
+          {/* Centre column: the composer sits with the thread rather than on the
+              panel, so the two stay on the same axis when the rail is present. */}
+          <div className="flex min-h-0 min-w-0 flex-col">
+            {/* Body — aria-live so streamed answers reach screen readers. */}
+            <div
+              ref={bodyRef}
+              aria-live="polite"
+              aria-atomic="false"
+              className={
+                'flex flex-1 flex-col gap-4 overflow-y-auto ' +
+                (fullscreen ? 'mx-auto w-full max-w-[760px] px-6 py-7' : 'p-4')
+              }
+            >
         {regionBlocked ? (
           <p className="text-[14px] leading-[1.7] text-text-muted">{t('chat.regionBlocked')}</p>
         ) : messages.length === 0 ? (
@@ -331,36 +466,42 @@ export default function ChatWidget() {
         )}
       </div>
 
-      {/* Composer */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit(input)
-        }}
-        className="flex gap-2.5 border-t border-border p-3.5"
-      >
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
-          aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
-          maxLength={200}
-          disabled={regionBlocked}
-          // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
-          // zooms whenever a focused input is under 16px); the rest of the widget
-          // keeps its denser 14px scale.
-          className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
-        />
-        <button
-          type="submit"
-          disabled={status === 'streaming' || input.trim() === '' || regionBlocked}
-          aria-label={t('chat.sendAriaLabel')}
-          className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
-        >
-          {t('chat.send')}
-        </button>
-      </form>
-    </div>
+            {/* Composer */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                submit(input)
+              }}
+              className={
+                'flex flex-none gap-2.5 border-t border-border ' +
+                (fullscreen ? 'mx-auto w-full max-w-[760px] px-6 pb-5 pt-3.5' : 'p-3.5')
+              }
+            >
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
+                aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
+                maxLength={200}
+                disabled={regionBlocked}
+                // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
+                // zooms whenever a focused input is under 16px); the rest of the widget
+                // keeps its denser 14px scale.
+                className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={status === 'streaming' || input.trim() === '' || regionBlocked}
+                aria-label={t('chat.sendAriaLabel')}
+                className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
+              >
+                {t('chat.send')}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
   )
 }

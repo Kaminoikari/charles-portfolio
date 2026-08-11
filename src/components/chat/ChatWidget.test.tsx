@@ -119,3 +119,82 @@ describe('ChatWidget size modes', () => {
     expect(screen.queryByText(ANSWER)).toBeNull()
   })
 })
+
+describe('ChatWidget fullscreen', () => {
+  it('shows the pipeline rail only in fullscreen', async () => {
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+    expect(screen.getByRole('complementary')).toBeTruthy()
+  })
+
+  it('collapses back to the docked panel through the same control', async () => {
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+    await user.click(screen.getByRole('button', { name: /exit fullscreen/i }))
+    expect(screen.queryByRole('complementary')).toBeNull()
+  })
+
+  it('keeps the conversation across every size change', async () => {
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await openAndAsk(user)
+
+    await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+    expect(screen.getByText(ANSWER)).toBeTruthy()
+
+    await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
+    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    // Re-opens at the last size in use, which was fullscreen.
+    expect(screen.getByRole('complementary')).toBeTruthy()
+    expect(screen.getByText(ANSWER)).toBeTruthy()
+  })
+
+  describe('background scroll lock', () => {
+    const SCROLL_Y = 320
+
+    beforeEach(() => {
+      Object.defineProperty(window, 'scrollY', { value: SCROLL_Y, writable: true, configurable: true })
+      window.scrollTo = vi.fn() as unknown as typeof window.scrollTo
+      document.body.style.cssText = ''
+    })
+
+    it('pins the page while fullscreen is open', async () => {
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+
+      expect(document.body.style.position).toBe('fixed')
+      expect(document.body.style.top).toBe(`-${SCROLL_Y}px`)
+    })
+
+    // The page-level `scroll-behavior: smooth` in index.css turns a plain
+    // restore into an animated scroll, so the restore must ask for 'instant'.
+    it('restores the exact scroll position without animating it', async () => {
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+      await user.click(screen.getByRole('button', { name: /exit fullscreen/i }))
+
+      expect(document.body.style.position).not.toBe('fixed')
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: SCROLL_Y, behavior: 'instant' })
+    })
+
+    it('unpins the page when fullscreen is minimised directly', async () => {
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+      await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
+
+      expect(document.body.style.position).not.toBe('fixed')
+    })
+  })
+})
