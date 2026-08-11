@@ -47,6 +47,10 @@ interface Strings {
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; minimiseAriaLabel: string
     expandAriaLabel: string; collapseAriaLabel: string; suggestionsTitle: string
+    pipelineTitle: string; pipelineIdle: string; pipelineRunningLabel: string
+    nodeTriage: string; nodeConverse: string; nodeRetrieve: string
+    nodeGradeDocuments: string; nodeRewriteQuery: string; nodeGenerate: string
+    nodeFallback: string
     clearLabel: string
     title: string; subtitle: string; emptyMessage: string; previewLabel: string
     inputPlaceholder: string; send: string; sendAriaLabel: string
@@ -160,6 +164,16 @@ const en: Strings = {
     expandAriaLabel: 'Expand to fullscreen',
     collapseAriaLabel: 'Exit fullscreen',
     suggestionsTitle: 'Try asking',
+    pipelineTitle: 'Retrieval pipeline',
+    pipelineIdle: 'Ask something and the pipeline runs here, node by node.',
+    pipelineRunningLabel: 'running',
+    nodeTriage: 'Triage',
+    nodeConverse: 'Read transcript',
+    nodeRetrieve: 'Vector search',
+    nodeGradeDocuments: 'Grade documents',
+    nodeRewriteQuery: 'Rewrite query',
+    nodeGenerate: 'Generate answer',
+    nodeFallback: 'Decline',
     clearLabel: 'Clear this conversation',
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',

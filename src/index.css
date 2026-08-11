@@ -143,9 +143,15 @@ body {
 .chat-dots > span:nth-child(2) { animation-delay: 0.2s; }
 .chat-dots > span:nth-child(3) { animation-delay: 0.4s; }
 
-/* Chat fullscreen entrance. The scrim fades the page down while the left rail
-   slides in from its own edge, so the takeover reads as the panel growing into
-   the space rather than a new surface appearing on top of it. */
+/* Chat fullscreen entrance + pipeline trace.
+   These are hand-written classes, not Tailwind utilities, so a `motion-safe:`
+   prefix on them in JSX generates nothing — the variant only applies to
+   utilities Tailwind itself knows about, and the animation silently never
+   runs. Each class therefore carries its own reduced-motion guard here. */
+
+/* The scrim fades the page down while the left rail slides in from its own
+   edge, so the takeover reads as the panel growing into the space rather than
+   a new surface appearing on top of it. */
 @keyframes chat-scrim {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -159,6 +165,37 @@ body {
 }
 .animate-chat-rail {
   animation: chat-rail 0.5s cubic-bezier(0.22, 0.9, 0.3, 1) 0.06s backwards;
+}
+
+/* Pipeline trace. The working node spins an arc; when it completes, a pulse of
+   charge runs down the connector to the next station. Signal-processing
+   vocabulary rather than a generic spinner, because the trace is meant to carry
+   order and causality, not just say "busy". */
+@keyframes chat-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-chat-spin {
+  animation: chat-spin 0.85s linear infinite;
+}
+@keyframes chat-charge {
+  from { top: -0.75rem; opacity: 1; }
+  to { top: 100%; opacity: 0; }
+}
+.animate-chat-charge {
+  animation: chat-charge 0.45s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-chat-scrim,
+  .animate-chat-rail,
+  .animate-chat-spin {
+    animation: none;
+  }
+  /* The charge only exists as movement, so with motion reduced it has nothing
+     to say and would otherwise sit parked on the connector. */
+  .animate-chat-charge {
+    display: none;
+  }
 }
 
 /* When the chat panel is open, hide the third-party Protico "lobby" widget so

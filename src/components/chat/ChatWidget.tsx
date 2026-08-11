@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
 import { useChatMode } from './useChatMode'
+import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 
@@ -150,7 +151,7 @@ export default function ChatWidget() {
   // via /api/geo; any failure leaves the assistant usable (fail open).
   const [regionBlocked, setRegionBlocked] = useState(false)
   const geoCheckedRef = useRef(false)
-  const { messages, status, send, retry, clear } = useChatStream()
+  const { messages, status, trace, send, retry, clear } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
@@ -290,7 +291,7 @@ export default function ChatWidget() {
         <div
           aria-hidden="true"
           onClick={toggleFullscreen}
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-[3px] motion-safe:animate-chat-scrim"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-[3px] animate-chat-scrim"
         />
       )}
       <div
@@ -382,7 +383,7 @@ export default function ChatWidget() {
           {/* Left rail: only fullscreen has the room for it. On a phone even
               fullscreen doesn't, so it stays out of the way there too. */}
           {fullscreen && (
-            <aside className="flex min-h-0 flex-col gap-5 overflow-y-auto border-r border-border p-4 max-md:hidden motion-safe:animate-chat-rail">
+            <aside className="flex min-h-0 flex-col gap-5 overflow-y-auto border-r border-border p-4 max-md:hidden animate-chat-rail">
               <div className="flex flex-col gap-2">
                 <h3 className="font-mono text-[10px] font-medium uppercase tracking-[1.1px] text-text-tertiary">
                   {t('chat.suggestionsTitle')}
@@ -397,6 +398,9 @@ export default function ChatWidget() {
                   </button>
                 ))}
               </div>
+              {/* The reason fullscreen exists: the retrieval pipeline, visible
+                  while it runs. The docked panel has no room for it. */}
+              <PipelineTrace trace={trace} />
             </aside>
           )}
 
