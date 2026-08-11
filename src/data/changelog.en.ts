@@ -20,6 +20,33 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'chatbot-fullscreen-pipeline',
+    date: '2026-08-11',
+    title: `The assistant opens fullscreen, and shows its work while it looks things up`,
+    tags: ['feature', 'design'],
+    body: [
+      `The assistant in the bottom-right corner of this site was 400px wide, which one answer plus its cited sources filled completely. It now opens fullscreen, and the extra room goes to something the small panel had no space for: every step of the lookup, running live in a left-hand rail.`,
+      { kind: 'heading', text: `Three sizes, and no close button` },
+      `There are three states now: the pill in the corner, the original small panel, and a fullscreen takeover. Any of them reaches any other directly, Escape steps down one level at a time, and re-opening from the pill returns you to whichever size you were last using.`,
+      `There is deliberately no "close". Stowing the panel never discarded the conversation, so calling that button close was a lie; it is now "minimise". Clearing the chat is its own control under the messages.`,
+      { kind: 'heading', text: `What the left rail is doing` },
+      `Answering one question runs several steps behind the scenes: decide which route the message takes, turn it into a vector and search, score what came back, rewrite the question and search again if the results are weak, and only then write the answer. All of that used to hide behind the word "Retrieving…".`,
+      `The rail lays each step out. It lights up as far as the pipeline has got, prints how many milliseconds that step took as it finishes, and keeps a running total at the top. Between two steps a pulse of light travels down the connector, so you can see the work actually being handed on.`,
+      { kind: 'heading', text: `The pipeline turned out not to be a straight line` },
+      `My mock-up drew five nodes in a row, and hooking it to real data showed that was wrong. Some questions get classified as small talk or a known FAQ in the very first step and are answered on the spot, never touching retrieval at all. Others come back with weak results, so the system rewrites the question and searches again, and the same step appears twice.`,
+      `So the rail draws what actually ran this time rather than a fixed set of five slots. A repeat search gets its own station, because that repeat is the most interesting thing this pipeline does: it notices its own results are weak and has another go.`,
+      { kind: 'heading', text: `A few smaller things` },
+      {
+        kind: 'list',
+        items: [
+          `On phones the takeover goes edge to edge with no corner radius, and the rail folds away. The reason is dull: on a 390px screen, keeping the desktop's 16px margin would make fullscreen 8px wider than the small panel, which reads as nothing having happened.`,
+          `When the system asks for reduced motion every animation stops, and the step names and timings are all still there. Information should never live only in the movement.`,
+          `If the connection drops or the free quota runs out, the step that was running is marked interrupted. For a while during development it just span forever, because I had only handled the path where everything works.`,
+        ],
+      },
+    ],
+  },
+  {
     id: 'chatbot-conversation-memory',
     date: '2026-07-31',
     title: `The assistant now remembers context, and handles several questions at once`,
