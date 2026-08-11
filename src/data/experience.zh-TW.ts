@@ -62,7 +62,7 @@ export const experience: ExperienceItem[] = [
     organization: '全支付電子支付股份有限公司 · PXPay Plus Co., Ltd.',
     orgKey: 'PXPay Plus Co., Ltd.',
     bullets: [
-      '+25% 交易轉換率：3 個月內重新設計註冊與結帳流程',
+      '+25% 新戶首筆交易轉換率：3 個月內重新設計註冊與結帳流程',
       '+50% 營運效率：率先導入紅利點數系統，客訴 -40%',
       '主導第三方代收整合：停車、有線電視、勞退、政府規費',
     ],

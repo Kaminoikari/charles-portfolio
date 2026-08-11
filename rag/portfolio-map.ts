@@ -21,7 +21,8 @@ WORK:
   core line, not a "flagship" — describe it as a core product.)
 - XChange School (Jan 2025–present) — Product Mentor.
 - NUEIP (2024) — Senior PM, BI product, +40% data-driven decisions.
-- PXPay Plus (2022–2024) — PM, +25% checkout conversion, rewards system.
+- PXPay Plus (2022–2024) — PM, +25% sign-up-to-first-transaction conversion
+  (registered users who completed at least one transaction), rewards system.
 - FLUX (2019–2022) — Operations Manager, +20% market share, led team of 10.
 
 PROJECTS:

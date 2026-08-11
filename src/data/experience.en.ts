@@ -46,7 +46,7 @@ export const experience: ExperienceItem[] = [
     title: 'Product Manager',
     organization: 'PXPay Plus Co., Ltd.',
     bullets: [
-      '+25% transaction conversions: redesigned sign-up & checkout flow in 3 months',
+      '+25% sign-up-to-first-transaction conversion: redesigned sign-up & checkout flow in 3 months',
       '+50% operational efficiency: pioneered reward points system, -40% customer complaints',
       'Led third-party billing integration for parking, cable TV, pension & government payments',
     ],
