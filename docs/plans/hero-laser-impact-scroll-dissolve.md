@@ -24,12 +24,14 @@
 - 不動 `FaceHero.tsx`（scroll 監聽放引擎內，隨 dispose 拆除）
 
 ## Task checklist
-- [x] 失敗測試：scrollDissolveTarget / dissolveAliveEdge（先紅：9 failed）
+- [x] 失敗測試：scrollDissolveTarget / dissolveAliveEdge（先紅：9 failed；修正輪再加 3 條，先紅有存檔）
 - [x] 實作雷射命中特效（glow sprite ＋ spark 粒子池）
-- [x] 實作捲動解體（CPU 層 ＋ halftone/eye shader ＋ 塵埃增強）
-- [x] 單元測試轉綠、全 suite 綠（104）、build 綠
-- [x] Playwright 實機驗證＋多狀態截圖（見 scratchpad/verify-evidence.md）
-- [ ] 雙 reviewer（diff 正確性／spec 對照）
+- [x] 實作捲動解體（CPU 層 ＋ halftone/eye/occluder shader ＋ 塵埃增強）
+- [x] 單元測試轉綠（12）、全 suite 綠（107）、build 綠
+- [x] Playwright 實機驗證＋多狀態截圖，修正輪重拍（見 scratchpad/verify-evidence.md）
+- [x] 雙 reviewer：round 1 各 FAIL（3 confirmed ＋ 2 效率 ＋ spec 缺件）→ 修正 → round 2 雙 PASS
 
 ## Deviations
-- （無）
+- 第一輪 C3 的「reducedMotion 單元測試」未交付（僅 Playwright 截圖驗證），且本節誤登「無」。第二輪已補：`effectiveDissolveTarget` 純函數成為 frame loop 的實際決策點，並由 dissolve.test.ts 鎖定（reduced=true 恆 0）。
+- 第一輪 dissolve.test.ts 的紅燈輸出未留存原始擷取（僅文字宣稱，9 failed 由實作者親見）。第二輪起紅綠輸出均存檔於 session scratchpad（fix-round-red.txt / fix-round-green.txt）。
+- Review 第一輪三項 confirmed findings 已修：dissolveEdge 全解體殘光（加 0.92→1.0 收尾閘門）、occluder 頭形塵埃空洞（改 per-fragment discard shader）、按住開火捲動不停火（frame loop 強制 stopFiring）。效率建議 E1（spark 池閒置 early-out）、E2（scroll listener 改旗標＋每幀單次 rect 讀取）已採納；E3（逐頂點 dissolve 計算再省一次 key/exp）婉拒：4400 次/幀為 µs 級，不值得犧牲單一定義來源。

@@ -76,14 +76,25 @@ function dissolveAlive(ny: number, rand: number, dis: number): number {
   return 1 - t * t * (3 - 2 * t)
 }
 // Cyan flash riding the death front: a gaussian centred where the vertex is mid-death
-// (alive ≈ 0.5), gated off near progress 0 so no glow parks on the crown at rest.
+// (alive ≈ 0.5), gated off near progress 0 so no glow parks on the crown at rest, and
+// gated off again as progress reaches 1 — without the end gate the highest-key (bottom,
+// noisy) vertices sit inside the gaussian tail forever and keep a cyan residue at full
+// dissolve.
 function dissolveEdge(ny: number, rand: number, dis: number): number {
   const g = (dis - dissolveKey(ny, rand) - 0.035) / 0.05
-  return Math.exp(-g * g) * Math.min(1, Math.max(0, dis) / 0.02)
+  let end = (dis - 0.92) / 0.08
+  end = end < 0 ? 0 : end > 1 ? 1 : end
+  return Math.exp(-g * g) * Math.min(1, Math.max(0, dis) / 0.02) * (1 - end * end * (3 - 2 * end))
 }
 // Canonical composite (the shaders duplicate this math in GLSL — keep them in sync).
 export function dissolveAliveEdge(ny: number, rand: number, dis: number): { alive: number; edge: number } {
   return { alive: dissolveAlive(ny, rand, dis), edge: dissolveEdge(ny, rand, dis) }
+}
+
+// The one decision point the frame loop calls to turn scroll state into a dissolve
+// target: reduced-motion visitors keep a whole head no matter how far they scroll.
+export function effectiveDissolveTarget(reducedMotion: boolean, scrolledPx: number, heroH: number): number {
+  return reducedMotion ? 0 : scrollDissolveTarget(scrolledPx, heroH)
 }
 
 // Stable per-vertex noise shared by the CPU colour path and the halftone shader's
@@ -245,8 +256,9 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   const CONSTELLATION_GAIN = 1.6        // brighten the wireframe point nodes so vertices read as stars
 
   // --- scroll-out disintegration: 0..1 progress driven by how far the hero has scrolled away ---
-  let dissolveTargetV = 0   // set by the scroll listener via scrollDissolveTarget()
+  let dissolveTargetV = 0   // refreshed by the frame loop via effectiveDissolveTarget() when scrollDirty
   let dissolveNow = 0       // eased per-frame; consumed by the shaders, the CPU colour layers, the dust field and the fire gate
+  let scrollDirty = true    // scroll happened since the last frame-loop read (starts true: reload restores scroll)
 
   // shed-dust field: a fixed pool of motes that spawn on the head surface and drift outward (mostly
   // sideways + up), fading in and out over their life, then respawn. persists in both the wireframe and
@@ -434,8 +446,11 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     const mat = new THREE.PointsMaterial({ size: SPARK.size, map: dotTexture(), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true })
     const pts = new THREE.Points(g, mat); pts.frustumCulled = false; scene.add(pts)
     let cursor = 0, acc = 0   // round-robin slot reuse; at saturation the oldest spark is recycled first
+    let sparksAlive = false   // lets the update become a no-op when the pool is fully dead and nothing emits
     sparkUpdate = (dt, fire, t) => {
-      if (impactLive && fire > 0.01) {
+      const emitting = impactLive && fire > 0.01
+      if (!emitting && !sparksAlive) { impactGlow.visible = false; return }   // idle: no loop, no buffer uploads
+      if (emitting) {
         acc += SPARK.rate * fire * dt
         while (acc >= 1) {
           acc -= 1
@@ -455,10 +470,12 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
         }
       } else acc = 0
       const drag = Math.max(0, 1 - SPARK.drag * dt)
+      let anyAlive = false
       for (let i = 0; i < M; i++) {
         const o = i * 3
         if (age[i] >= life[i]) { col[o] = 0; col[o + 1] = 0; col[o + 2] = 0; continue }
         age[i] += dt
+        if (age[i] < life[i]) anyAlive = true
         vel[o] *= drag; vel[o + 1] = vel[o + 1] * drag - SPARK.gravity * dt; vel[o + 2] *= drag
         pos[o] += vel[o] * dt; pos[o + 1] += vel[o + 1] * dt; pos[o + 2] += vel[o + 2] * dt
         const lf = Math.min(1, age[i] / life[i]), e = Math.pow(1 - lf, 0.65)
@@ -468,7 +485,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
         col[o + 2] = (0.95 - 0.89 * lf) * e
       }
       g.attributes.position.needsUpdate = true; g.attributes.color.needsUpdate = true
-      impactGlow.visible = impactLive && fire > 0.01
+      sparksAlive = anyAlive
+      impactGlow.visible = emitting
       if (impactGlow.visible) {
         impactGlow.position.copy(impactPoint)
         impactGlow.scale.setScalar((0.30 + 0.07 * Math.sin(t * 43.0) + 0.04 * Math.sin(t * 97.0)) * fire)
@@ -589,7 +607,7 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       float dKey = ((1.0 - vNy) * 0.72 + vRand * 0.28) * 0.92;
       float dAlive = 1.0 - smoothstep(dKey, dKey + 0.07, uDissolve);
       float dg = (uDissolve - dKey - 0.035) / 0.05;
-      float dEdge = exp(-dg * dg) * min(1.0, max(uDissolve, 0.0) / 0.02);
+      float dEdge = exp(-dg * dg) * min(1.0, max(uDissolve, 0.0) / 0.02) * (1.0 - smoothstep(0.92, 1.0, uDissolve));
       gl_FragColor = vec4(((halftoneColor * portrait + halo) * dAlive + vec3(0.30, 0.85, 1.0) * dEdge * 0.9) * uIntroFade, 1.0);
     }`
   function makeHalftoneMaterial() {
@@ -750,6 +768,37 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
     return new THREE.ShaderMaterial({
       uniforms: halftoneUniforms, vertexShader: EYE_WIRE_VERT, fragmentShader: EYE_WIRE_FRAG,
       transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    })
+  }
+
+  // depth-only head occluder that erodes WITH the dissolve: each fragment stops writing
+  // depth once its vertex passes mid-death, so the dust field behind the head reappears
+  // exactly where the surface has already gone — an all-or-nothing occluder either
+  // punches a full head-shaped hole in the dust for the whole dissolve or pops the
+  // still-alive chin open at some arbitrary cutoff.
+  const OCCLUDER_VERT = `
+    attribute float aRand;
+    varying float vNy; varying float vRand;
+    uniform float uYMin, uYSpan;
+    void main() {
+      vNy = (position.y - uYMin) / uYSpan;
+      vRand = aRand;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`
+  const OCCLUDER_FRAG = `
+    precision highp float;
+    varying float vNy; varying float vRand;
+    uniform float uDissolve;
+    void main() {
+      float dKey = ((1.0 - vNy) * 0.72 + vRand * 0.28) * 0.92;   // same frontier as the visible layers
+      if (uDissolve > dKey + 0.035) discard;                     // depth hole opens at mid-death (alive ≈ 0.5)
+      gl_FragColor = vec4(0.0);
+    }`
+  function makeOccluderMaterial() {
+    return new THREE.ShaderMaterial({
+      uniforms: halftoneUniforms, vertexShader: OCCLUDER_VERT, fragmentShader: OCCLUDER_FRAG,
+      colorWrite: false, depthWrite: true, side: THREE.FrontSide,
+      polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
     })
   }
 
@@ -977,8 +1026,8 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       // depth-only occluder: the front surface writes depth so back-of-head wires can't bleed through (no x-ray look)
       if (o.occlude) {
         const go = new THREE.BufferGeometry(); go.setAttribute("position", posWireAttr); go.setIndex(index)
-        const mo = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1, side: THREE.FrontSide })
-        faceHitMesh = new THREE.Mesh(go, mo); o.parent.add(faceHitMesh)   // doubles as the raycast target for mobile face-region gating
+        go.setAttribute("aRand", new THREE.BufferAttribute(Float32Array.from(rnd), 1))   // depth erodes along the same dissolve frontier
+        faceHitMesh = new THREE.Mesh(go, makeOccluderMaterial()); o.parent.add(faceHitMesh)   // doubles as the raycast target for mobile face-region gating
       }
       if (o.halftone) {
         // dense screen-space halftone portrait, dot size driven by baked photo brightness
@@ -1126,13 +1175,13 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
   window.addEventListener('pointerleave', onPointerLeave)
   window.addEventListener('touchmove', onTouchMove, { passive: false })
   renderer.domElement.style.touchAction = "pan-y"   // vertical swipe scrolls the page; a still hold fires
-  // scroll-out disintegration input: rect-based so it tracks the hero wherever it sits, cheap
-  // because it only runs on scroll. reduced motion keeps the head whole — the listener never attaches.
-  const onScroll = () => { dissolveTargetV = scrollDissolveTarget(-canvas.getBoundingClientRect().top, dispH()) }
-  if (!opts.reducedMotion) {
-    window.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()   // browsers restore scroll on reload — a mid-page arrival starts already dissolved
-  }
+  // scroll-out disintegration input: the listener only raises a flag; the frame loop does the
+  // single getBoundingClientRect read per frame (a scroll storm costs one layout read, and a
+  // paused engine costs none). scrollDirty starts true because browsers restore scroll on
+  // reload — a mid-page arrival must resolve its dissolve target on the first running frame.
+  // The reduced-motion decision lives in effectiveDissolveTarget, at the read site.
+  const onScroll = () => { scrollDirty = true }
+  window.addEventListener('scroll', onScroll, { passive: true })
   // keep the canvas locked to the current viewport. dragging the window between
   // monitors with different devicePixelRatio doesn't always fire `resize`, which
   // would leave the canvas at the old monitor's size — pinned top-left, that pushes
@@ -1327,13 +1376,17 @@ export function initFaceHero(canvas: HTMLCanvasElement, opts: FaceHeroOptions): 
       head.position.y += (ease.y * TURN.shiftY - head.position.y) * FOLLOW.head
       halftoneUniforms.uMouse.value.set(ease.x, ease.y)
       halftoneUniforms.uCursorActive.value += (cursorActive - halftoneUniforms.uCursorActive.value) * 0.15   // ease the highlight in/out so it never pops
-      // scroll-out disintegration: ease toward the scroll-mapped target, then feed every consumer
+      // scroll-out disintegration: refresh the target from scroll state (coalesced to one
+      // layout read per frame, and only when a scroll actually happened), ease toward it,
+      // then feed every consumer. The occluder erodes via the shared uDissolve uniform.
+      if (scrollDirty) {
+        scrollDirty = false
+        dissolveTargetV = effectiveDissolveTarget(opts.reducedMotion === true, -canvas.getBoundingClientRect().top, dispH())
+      }
       dissolveNow += (dissolveTargetV - dissolveNow) * Math.min(1, dt * 8)
       if (Math.abs(dissolveNow - dissolveTargetV) < 0.001) dissolveNow = dissolveTargetV
       halftoneUniforms.uDissolve.value = dissolveNow
-      // a fully-dissolved head must stop writing depth, or it punches an invisible head-shaped
-      // hole in the dust field behind it (Raycaster still hits invisible meshes, so touch gating survives)
-      if (faceHitMesh) faceHitMesh.visible = dissolveNow < 0.92
+      if (firing && dissolveNow > 0.7) stopFiring()   // a held press must not keep the beam alive while the head dissolves under it
       applyState(st)
       dustSys.update(dt)   // shed dust runs every frame in both states (persistent field)
 
