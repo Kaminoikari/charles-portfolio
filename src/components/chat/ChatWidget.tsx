@@ -12,6 +12,8 @@ import { useChatMode } from './useChatMode'
 import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
+import { avatarGuideEnabledInBrowser, deriveAvatarMode } from './avatarMode'
+import AvatarGuide from './AvatarGuide'
 
 function LiveDot() {
   return (
@@ -160,6 +162,11 @@ export default function ChatWidget() {
   // steal focus onto the launcher — but every route that stows the panel
   // (button or Escape) does return focus there rather than losing it to <body>.
   const wasOpenRef = useRef(false)
+  // Dev-flagged 3D avatar guide (docs/plans/avatar-guide.md). Evaluated once:
+  // the flag, viewport class and WebGL support don't change mid-session in any
+  // way worth re-rendering for.
+  const [avatarOn] = useState(() => avatarGuideEnabledInBrowser())
+  const avatarMode = deriveAvatarMode(input, status)
 
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
   // scroll fired on every token fights itself and janks); smooth-scroll only
@@ -270,28 +277,59 @@ export default function ChatWidget() {
     t('chat.suggested6'),
   ]
 
+  // One persistent avatar wrapper across launcher/open states: remounting would
+  // re-fetch and re-parse the 15MB VRM on every open. Decorative only — the
+  // accessible control stays the launcher button; the wrapper's onClick is a
+  // pointer convenience for people who click the character itself. Known cost
+  // of that convenience: when closed, the wrapper's transparent pixels around
+  // the figure also catch clicks at z-50 (the open state flips to
+  // pointer-events-none, so only the launcher corner pays this).
+  // Open-state offset: 436px = panel right inset 20px + panel width 400px
+  // (the min() in the panel class always resolves to 400px on gated ≥880px
+  // viewports) + 16px gap.
+  const avatar = avatarOn && (
+    <div
+      aria-hidden="true"
+      onClick={open ? undefined : openPanel}
+      className={
+        fullscreen
+          ? 'hidden'
+          : open
+            ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
+            : 'fixed bottom-[84px] right-6 z-50 cursor-pointer'
+      }
+    >
+      <AvatarGuide mode={avatarMode} active={!fullscreen} />
+    </div>
+  )
+
   if (!open) {
     // Single floating CTA (bottom-right): one click opens chat. The ambient-music
     // toggle is its own bottom-left FAB (MusicToggle), so this stays a clean
-    // single-purpose launcher — left = music, right = AI.
+    // single-purpose launcher — left = music, right = AI. With the avatar flag
+    // on, the character stands above this pill; the pill remains the real button.
     return (
-      <button
-        ref={launcherRef}
-        onClick={openPanel}
-        aria-label={t('chat.openAriaLabel')}
-        className="fixed bottom-5 right-5 z-50 inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-border bg-bg-secondary py-3.5 pl-4 pr-4 text-[14px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan"
-      >
-        <LiveDot />
-        <span>{t('chat.launcherLabel')}</span>
-        <span className="rounded bg-accent-cyan/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-cyan">
-          {t('chat.launcherTag')}
-        </span>
-      </button>
+      <>
+        {avatar}
+        <button
+          ref={launcherRef}
+          onClick={openPanel}
+          aria-label={t('chat.openAriaLabel')}
+          className="fixed bottom-5 right-5 z-50 inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-border bg-bg-secondary py-3.5 pl-4 pr-4 text-[14px] text-white shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan"
+        >
+          <LiveDot />
+          <span>{t('chat.launcherLabel')}</span>
+          <span className="rounded bg-accent-cyan/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-accent-cyan">
+            {t('chat.launcherTag')}
+          </span>
+        </button>
+      </>
     )
   }
 
   return (
     <>
+      {avatar}
       {/* Scrim: only fullscreen takes the page over, so only fullscreen dims it. */}
       {fullscreen && (
         <div
