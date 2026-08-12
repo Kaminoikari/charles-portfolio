@@ -111,13 +111,13 @@ export default function Nav() {
     } else {
       y = el.getBoundingClientRect().top + window.scrollY - navHeight
     }
-    const doScroll = () => window.scrollTo({ top: y, behavior: 'smooth' })
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => void }
-    if (doc.startViewTransition) {
-      doc.startViewTransition(doScroll)
-    } else {
-      doScroll()
-    }
+    // Straight to scrollTo — never through document.startViewTransition. The
+    // transition freezes rendering to capture its snapshots while a smooth
+    // scroll needs rendering frames to advance, so the two deadlock until
+    // Chrome's 4s DOM-update timeout aborts the transition; every nav click
+    // froze the page for ~4s before the scroll ran. A transition adds nothing
+    // here anyway: both snapshots show the pre-scroll viewport.
+    window.scrollTo({ top: y, behavior: 'smooth' })
   }
 
   return (

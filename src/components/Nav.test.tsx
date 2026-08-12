@@ -183,4 +183,33 @@ describe('Nav deep-link scroll', () => {
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
     section.remove()
   })
+
+  // A smooth scroll must never be handed to document.startViewTransition: the
+  // transition freezes rendering to capture snapshots while the smooth scroll
+  // needs rendering frames to advance, so they deadlock until Chrome's 4s
+  // DOM-update timeout aborts the transition — measured 4082ms of frozen screen
+  // per nav click before the scroll finally ran. The stub below never invokes
+  // its callback, standing in for that stall.
+  it('starts the scroll directly, never through a view transition', () => {
+    const section = document.createElement('section')
+    section.id = 'experience'
+    document.body.appendChild(section)
+    const scrollTo = vi.fn()
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo
+    // jsdom has no startViewTransition, so the stub is an own property we can
+    // delete again; the loose cast keeps lib.dom's non-optional declaration out
+    // of the way
+    const doc = document as unknown as { startViewTransition?: (cb: () => void) => void }
+    const startViewTransition = vi.fn()
+    doc.startViewTransition = startViewTransition
+    try {
+      renderNav()
+      fireEvent.click(screen.getByRole('button', { name: /scroll to experience section/i }))
+      expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'smooth' }))
+      expect(startViewTransition).not.toHaveBeenCalled()
+    } finally {
+      delete doc.startViewTransition
+      section.remove()
+    }
+  })
 })
