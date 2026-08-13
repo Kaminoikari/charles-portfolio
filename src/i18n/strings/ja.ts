@@ -145,8 +145,6 @@ const ja: Strings = {
     suggested4: 'プロダクトの意思決定はどう進める?',
     suggested5: 'USPACE で何をしましたか?',
     suggested6: 'なぜチームは彼を採用すべき?',
-    muteMusic: 'BGM をミュート',
-    unmuteMusic: 'BGM を再生',
   },
   defaults: {
     documentTitle: '台湾の AI Product Manager | Charles Chen Portfolio',

@@ -36,17 +36,9 @@ describe('pickVoiceLine', () => {
 })
 
 describe('playVoiceCue', () => {
-  it('stays completely silent while the site sound toggle is off', () => {
+  it('constructs the picked clip and starts playback', () => {
     vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
-    // muted=true is the site default: sound is opt-in per session.
-    expect(playVoiceCue('greet', true)).toBeNull()
-    expect(FakeAudio.created).toHaveLength(0)
-  })
-
-  it('constructs the picked clip and starts playback when sound is on', () => {
-    vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
-    const el = playVoiceCue('greet', false, () => 0) as unknown as FakeAudio
-    expect(el).not.toBeNull()
+    const el = playVoiceCue('greet', () => 0) as unknown as FakeAudio
     expect(el.src).toBe(VOICE_LINES.greet[0])
     expect(el.play).toHaveBeenCalledTimes(1)
   })
@@ -56,6 +48,6 @@ describe('playVoiceCue', () => {
       play = vi.fn(() => undefined as unknown as Promise<void>)
     }
     vi.stubGlobal('Audio', NoPromiseAudio as unknown as typeof Audio)
-    expect(() => playVoiceCue('ack', false, () => 0)).not.toThrow()
+    expect(() => playVoiceCue('ack', () => 0)).not.toThrow()
   })
 })

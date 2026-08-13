@@ -142,8 +142,6 @@ const zhTW: Strings = {
     suggested4: '他如何做產品決策?',
     suggested5: '他在 USPACE 做了什麼?',
     suggested6: '為什麼團隊該錄取他?',
-    muteMusic: '關閉背景音樂',
-    unmuteMusic: '播放背景音樂',
   },
   defaults: {
     documentTitle: '台灣 AI Product Manager | Charles Chen Portfolio',

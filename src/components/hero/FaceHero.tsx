@@ -99,8 +99,7 @@ function prefersReducedMotion(): boolean {
 
 // A url that names a section (/#experience) asks for content, not for a splash
 // screen. Those arrivals skip the gate and the intro the same way a same-session
-// return does, land on the section they asked for, and keep the ambient track
-// opt-in via the music toggle. Such urls come from a section link followed on
+// return does, and land on the section they asked for. Such urls come from a section link followed on
 // another page, the skip link, or someone sharing what their address bar showed —
 // in-page section clicks on the home route never write a hash.
 function enteredViaSectionLink(): boolean {
@@ -138,9 +137,9 @@ export default function FaceHero() {
   const [heroLeftView, setHeroLeftView] = useState(false)   // scrolled away from the hero: nothing left to protect
   const { setIntroRunning } = useHeroIntro()
 
-  // The shell's "the intro is over": settle the headline. The hero no longer
-  // touches the ambient track at all — music is opt-in via the speaker FAB
-  // (default off), and that FAB performs its own iOS unlock inside its tap.
+  // The shell's "the intro is over": settle the headline. The hero owns only
+  // its own SFX — site-wide background music was removed 2026-08-13 (the old
+  // bottom-left FAB gated Mika's voice, which now plays per-tap instead).
   const completeIntro = useCallback(() => {
     setPhase('revealed')
   }, [])
@@ -162,7 +161,7 @@ export default function FaceHero() {
           reducedMotion: reduced,
           onProgress: (p) => { realProgressRef.current = p },
           onReady: () => { if (skip) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
-          onIntroComplete: completeIntro,   // settles the headline and hands the nav back; music stays off until the FAB
+          onIntroComplete: completeIntro,   // settles the headline and hands the nav back
           onError: () => setFailed(true),
         })
         handleRef.current = handle
@@ -350,8 +349,8 @@ export default function FaceHero() {
       </div>
 
       {gateMounted && createPortal(
-        // portaled to <body> as a full-viewport overlay so it sits above the fixed nav,
-        // chat launcher, and music toggle (all z-50); loader layout: Mobius mark
+        // portaled to <body> as a full-viewport overlay so it sits above the fixed nav
+        // and chat launcher (both z-50); loader layout: Mobius mark
         // dead-centre, rotating status copy 100px below centre, and a 1px
         // progress hairline 50px above the bottom edge.
         <div

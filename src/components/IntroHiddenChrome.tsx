@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useHeroIntro } from './hero/hero-intro-context'
 import { CHROME_REVEAL_MS } from './hero/introTiming'
 
-// Floating controls (the music toggle, the chat launcher and its open panel) step
+// Floating controls (the chat launcher and its open panel) step
 // aside while the hero intro owns the screen, and come back with the nav and the
 // headline.
 //

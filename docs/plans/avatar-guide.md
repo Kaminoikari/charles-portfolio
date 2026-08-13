@@ -43,9 +43,11 @@ mockup 的黑框是截圖合成痕跡）。
 **VOICEVOX:春日部つむぎ**（辣妹系聲線貼 Mika 造型；商用允許、需標注，credit 在
 ContactFooter）。三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
 greet ×2（點她／點泡泡時）、ack ×1（送出問題時）。播放全在 tap-completed 手勢內
-（符合 CLAUDE.md iOS 硬規則，無需 unlock dance）；`ambient.muted` 在**播放起點**
-閘門全部語音（聲音是全站 opt-in；播放中切靜音，當句至多 3.4 秒播完不腰斬）；
-膠囊代打狀態（閘門關／載入失敗／context 遺失）完全不出聲；播放中借用既有
+（符合 CLAUDE.md iOS 硬規則，無需 unlock dance）；~~`ambient.muted` 在**播放起點**
+閘門全部語音~~（**2026-08-13 修訂**：使用者決定移除背景音樂 FAB，整個 ambient
+系統（AudioProvider／audio-context／MusicToggle／ambient-noir.mp3）一併下線，
+語音改為**無條件**播放；安全性由「只在手勢內出聲」承擔，膠囊代打狀態照舊
+因 speakCue 的 avatarLoaded 前置檢查而完全不出聲）；播放中借用既有
 speaking mode 的**亂數口型迴圈**讓嘴巴動（與 clip 同起訖，不做音訊分析——
 Non-goals 的「口型對真實語音」維持不做）；檔案在
 `public/avatar/voice/*.m4a`（AAC 24kHz mono，13–19KB ×3，吃 /avatar/* immutable
@@ -120,13 +122,17 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
    launcher；不建立任何額外 WebGL context——探測必須排在 reduced-motion 之後）。
 4. 引擎 chunk（three-vrm＋引擎碼）與 VRM 檔維持 lazy，且在 hero intro 結束前不發出
    請求。
-5. 背景音樂預設關閉（同批使用者指示）：hero 完全不再碰 ambient audio（Enter 不
+5. ~~背景音樂預設關閉（同批使用者指示）：hero 完全不再碰 ambient audio（Enter 不
    unlock 也不 unmute，intro 結束不自動開聲）；唯一開聲路徑是左下 MusicToggle FAB，
    FAB 在自己的 tap 手勢內先做 iOS unlock（muted play）再 unmute，因此在任何路由
    （含直落 /about 等無 hero 頁）第一下都能出聲。也因此不再有「解鎖後整場靜音串流
-   4.7MB」的頻寬成本（code review round 1 #2/#5，一次修掉）。
-6. 測試：mode 推導、閘門、placement 皆有單元測試；FaceHero 音訊測試改釘「intro 完成
-   不呼叫 unmute」；全 suite 綠。
+   4.7MB」的頻寬成本（code review round 1 #2/#5，一次修掉）。~~
+   （**2026-08-13 修訂**：背景音樂整組移除——FAB、AudioProvider、音檔全下線，
+   詳見上方語音節修訂。本條的現行殘餘只剩「hero 不碰任何 BGM、intro 結束不自動
+   開聲」，這在系統移除後自然成立。）
+6. 測試：mode 推導、閘門、placement 皆有單元測試；~~FaceHero 音訊測試改釘「intro 完成
+   不呼叫 unmute」~~（2026-08-13 修訂：ambient 模組已刪，該批守衛失去標的一併移除）；
+   全 suite 綠。
 
 ## Non-goals（本階段明確不做）
 
@@ -145,7 +151,8 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
 - 單元：`avatarMode.test.ts`（推導／閘門／placement 全分支）＋ `FaceHero.test.tsx`
   音訊斷言翻新（TDD：先紅後綠）
 - 視覺：`npm run preview` 桌機（1470 寬）與行動（390×844）截圖——launcher 態、
-  開面板態（窄螢幕驗 avatar 隱藏）、音樂 FAB 預設 off
+  開面板態（窄螢幕驗 avatar 隱藏）、~~音樂 FAB 預設 off~~（2026-08-13 修訂：FAB
+  已移除，改驗「左下角無任何 fixed 按鈕」）
 - 迴歸：`npx tsc --noEmit`、`npm test` 全綠、`npm run build` 過
 - 雙 reviewer（code＋spec）審 diff 與本檔
 

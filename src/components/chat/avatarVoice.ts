@@ -9,9 +9,10 @@
 // Playback rules (see the project's hard-won iOS notes in CLAUDE.md):
 //   - every play starts inside a tap-completed gesture (launcher tap, send
 //     tap/Enter), so no unlock dance is needed;
-//   - clips NEVER autoplay from timers or effects;
-//   - sound is opt-in per session — the ambient-audio mute state gates all
-//     voice, so a visitor who never enabled sound hears nothing.
+//   - clips NEVER autoplay from timers or effects — a line only ever sounds
+//     as the direct result of the visitor's own tap. (The site used to gate
+//     voice behind the ambient-music mute; that button was removed 2026-08-13
+//     and voice became unconditional.)
 
 export type VoiceCue = 'greet' | 'ack'
 
@@ -28,15 +29,10 @@ export function pickVoiceLine(cue: VoiceCue, rng: () => number = Math.random): s
 }
 
 // Fire-and-forget: audio is chrome, never blocks the chat. Returns the element
-// so the caller can drive the viseme loop off ended/error, or null when muted.
+// so the caller can drive the viseme loop off ended/error.
 // `play()` is optional-chained: jsdom's stub returns undefined instead of a
 // promise, and a rejected real promise (rare autoplay refusal) is swallowed.
-export function playVoiceCue(
-  cue: VoiceCue,
-  muted: boolean,
-  rng: () => number = Math.random,
-): HTMLAudioElement | null {
-  if (muted) return null
+export function playVoiceCue(cue: VoiceCue, rng: () => number = Math.random): HTMLAudioElement {
   const el = new Audio(pickVoiceLine(cue, rng))
   el.play()?.catch(() => {})
   return el

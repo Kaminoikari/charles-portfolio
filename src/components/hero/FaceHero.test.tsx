@@ -4,8 +4,6 @@ import { render, screen, act, fireEvent } from '@testing-library/react'
 const startIntro = vi.fn()
 const setActive = vi.fn()
 const dispose = vi.fn()
-const unmute = vi.fn()
-const unlock = vi.fn()
 let lastOpts: import('./faceHero').FaceHeroOptions | null = null
 
 vi.mock('./faceHero', () => ({
@@ -13,10 +11,6 @@ vi.mock('./faceHero', () => ({
     lastOpts = opts
     return { startIntro, setActive, dispose }
   },
-}))
-
-vi.mock('../audio/audio-context', () => ({
-  useAmbientAudio: () => ({ muted: true, toggle: vi.fn(), unmute, unlock }),
 }))
 
 import FaceHero from './FaceHero.tsx'
@@ -33,7 +27,7 @@ function ChromeProbe() {
 const chromeState = () => screen.getByTestId('chrome').textContent
 
 beforeEach(() => {
-  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); unmute.mockClear(); unlock.mockClear(); lastOpts = null
+  startIntro.mockClear(); setActive.mockClear(); dispose.mockClear(); lastOpts = null
   sessionStorage.clear()
   window.history.replaceState({}, '', '/')
   vi.useFakeTimers()
@@ -84,28 +78,6 @@ describe('FaceHero shell', () => {
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(startIntro).toHaveBeenCalledTimes(1)
-  })
-
-  it('leaves the ambient audio completely alone on enter — the music FAB owns unlock and unmute', async () => {
-    await renderHero()
-    fireReadyAndFinishSweep()
-    fireEvent.click(screen.getByRole('button', { name: /enter/i }))
-    // No silent 4.7MB stream behind the intro: unlock now happens inside the
-    // FAB's own tap, the only gesture that can lead to audible music.
-    expect(unlock).not.toHaveBeenCalled()
-    expect(unmute).not.toHaveBeenCalled()
-    act(() => { lastOpts?.onIntroComplete?.() })
-    // Music is opt-in via the speaker FAB now; finishing the intro must not start it.
-    expect(unmute).not.toHaveBeenCalled()
-  })
-
-  it('touches no ambient audio on a same-session skip either (no enter click)', async () => {
-    sessionStorage.setItem('faceHeroSeen', '1')
-    await renderHero()
-    act(() => { lastOpts?.onReady?.() })
-    act(() => { lastOpts?.onIntroComplete?.() })
-    expect(unmute).not.toHaveBeenCalled()
-    expect(unlock).not.toHaveBeenCalled()
   })
 
   it('disposes the engine on unmount', async () => {
@@ -198,10 +170,8 @@ describe('FaceHero chrome gating', () => {
     expect(chromeState()).toBe('hidden')
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
     expect(chromeState()).toBe('hidden')
-    expect(unmute).not.toHaveBeenCalled()
     act(() => { lastOpts?.onIntroComplete?.() })
     expect(chromeState()).toBe('visible')
-    expect(unmute).not.toHaveBeenCalled()
   })
 
   it('never hides the chrome on a same-session skip', async () => {
@@ -252,7 +222,7 @@ describe('FaceHero chrome gating', () => {
     expect(chromeState()).toBe('visible')
   })
 
-  it('releases the chrome without touching the music if the intro never reports completion', async () => {
+  it('releases the chrome via the failsafe if the intro never reports completion', async () => {
     await renderHero()
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
@@ -260,7 +230,6 @@ describe('FaceHero chrome gating', () => {
     expect(chromeState()).toBe('hidden')
     act(() => { vi.advanceTimersByTime(2) })
     expect(chromeState()).toBe('visible')
-    expect(unmute).not.toHaveBeenCalled()
   })
 
   // Hiding the nav makes it inert, which blurs any focus inside it. Reachable
@@ -322,7 +291,6 @@ describe('FaceHero chrome gating', () => {
     startIntro.mockImplementation(() => { lastOpts?.onIntroComplete?.() })
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
-    expect(unmute).not.toHaveBeenCalled()
     expect(chromeState()).toBe('visible')
     expect(screen.getByRole('heading', { level: 1 }).parentElement).toHaveStyle({ opacity: '1' })
   })
@@ -353,14 +321,6 @@ describe('FaceHero section deep link', () => {
     act(() => { lastOpts?.onReady?.() })
     expect(startIntro).toHaveBeenCalledWith(true)
     expect(chromeState()).toBe('visible')
-  })
-
-  it('leaves the music off on a deep-link skip', async () => {
-    window.history.replaceState({}, '', '/#experience')
-    await renderHero()
-    act(() => { lastOpts?.onReady?.(); lastOpts?.onIntroComplete?.() })
-    expect(unmute).not.toHaveBeenCalled()
-    expect(unlock).not.toHaveBeenCalled()
   })
 
   // Landing on /changelog or /about and then clicking the wordmark is an in-site

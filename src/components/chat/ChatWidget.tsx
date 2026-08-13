@@ -14,7 +14,6 @@ import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 import { avatarGuideEnabledInBrowser, avatarPlacement, deriveAvatarMode } from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
-import { useAmbientAudio } from '../audio/audio-context'
 import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
 
@@ -214,9 +213,6 @@ export default function ChatWidget() {
   // avatar. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
   // they don't change mid-session in any way worth re-rendering for.
   const { introRunning } = useHeroIntro()
-  // Site-wide sound switch (the bottom-left music FAB owns it). Mika's voice
-  // rides the same opt-in: visitors who never enabled sound hear nothing.
-  const ambient = useAmbientAudio()
   const [avatarOn, setAvatarOn] = useState(false)
   // false until the latch has actually evaluated the gate: "gate said no" and
   // "gate not asked yet" must render differently — the capsule shows for the
@@ -261,19 +257,16 @@ export default function ChatWidget() {
     return () => clearTimeout(id)
   }, [avatarOn, avatarLoaded, avatarDead, avatarFailed])
   // Mika speaks a short line at interaction moments — only while she is
-  // actually on duty and site sound is on (the ambient mute gates all voice).
-  // Every call sits inside the visitor's tap/keypress, which is exactly what
-  // iOS requires for audio, so no unlock dance is needed here.
+  // actually on duty. Every call sits inside the visitor's tap/keypress, which
+  // is exactly what iOS requires for audio, so no unlock dance is needed here,
+  // and it means sound can be unconditional: a line never plays unless the
+  // visitor just acted (the old ambient-music mute gate was removed with the
+  // background-music FAB).
   const speakCue = (cue: VoiceCue) => {
     if (!avatarOn || !avatarLoaded || avatarDead) return
     voiceRef.current?.pause() // never overlap two lines
-    // pause() never fires 'ended', so reset here — otherwise muting mid-line
-    // and tapping again strands voiceSpeaking at true (a silent, permanent
-    // speaking face). Re-set below only when a new line actually plays.
-    setVoiceSpeaking(false)
-    const el = playVoiceCue(cue, ambient.muted)
+    const el = playVoiceCue(cue)
     voiceRef.current = el
-    if (!el) return
     setVoiceSpeaking(true)
     const done = () => {
       if (voiceRef.current === el) setVoiceSpeaking(false)
@@ -581,9 +574,7 @@ export default function ChatWidget() {
   )
 
   if (!open) {
-    // Single floating CTA (bottom-right): one click opens chat. The ambient-music
-    // toggle is its own bottom-left FAB (MusicToggle), so this stays a clean
-    // single-purpose launcher — left = music, right = AI. Once the character
+    // Single floating CTA (bottom-right): one click opens chat. Once the character
     // has loaded, SHE is the launcher and the capsule leaves; the capsule
     // renders for gated-off visitors, while the VRM is still downloading, and
     // if it never loads.
