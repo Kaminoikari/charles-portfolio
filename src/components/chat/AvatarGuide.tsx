@@ -1,6 +1,7 @@
 // React shell for the 3D avatar guide. Dynamically imports the engine (which
-// carries three-vrm + GLTFLoader) so flag-off visitors never download it, and
-// tears the engine down on unmount. All behaviour lives in avatarGuideEngine.ts.
+// carries three-vrm + GLTFLoader) so gated-off visitors (reduced-motion, no
+// WebGL2) never download it, and tears the engine down on unmount. All
+// behaviour lives in avatarGuideEngine.ts.
 
 import { useEffect, useRef } from 'react'
 import type { AvatarMode } from './avatarMode'

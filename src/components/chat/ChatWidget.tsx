@@ -12,7 +12,8 @@ import { useChatMode } from './useChatMode'
 import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
-import { avatarGuideEnabledInBrowser, deriveAvatarMode } from './avatarMode'
+import { avatarGuideEnabledInBrowser, avatarPlacement, deriveAvatarMode } from './avatarMode'
+import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
 
 function LiveDot() {
@@ -162,11 +163,36 @@ export default function ChatWidget() {
   // steal focus onto the launcher — but every route that stows the panel
   // (button or Escape) does return focus there rather than losing it to <body>.
   const wasOpenRef = useRef(false)
-  // Dev-flagged 3D avatar guide (docs/plans/avatar-guide.md). Evaluated once:
-  // the flag, viewport class and WebGL support don't change mid-session in any
-  // way worth re-rendering for.
-  const [avatarOn] = useState(() => avatarGuideEnabledInBrowser())
   const avatarMode = deriveAvatarMode(input, status)
+  // Viewport class IS tracked live (rotate a phone, resize a window): it moves
+  // the avatar between standing above the launcher and beside the docked panel.
+  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 880px)').matches)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 880px)')
+    setWide(mq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
+    const onChange = () => setWide(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
+  // 2026-08-13 launch. Held back while the hero intro owns the screen, for two
+  // reasons with one latch: the 15MB VRM must not compete with the intro's
+  // assets for bandwidth, and the gate's WebGL2 probe (a real GL context, tens
+  // of ms on weak mobile GPUs) must not run inside the intro window either —
+  // so the gate is evaluated when the latch fires, not in the first render.
+  // The 400ms grace covers the first-paint race: HeroIntroProvider starts with
+  // introRunning false and FaceHero only flips it true in its first effect
+  // pass, which cancels this timer before it fires. Once set, the latch never
+  // clears — scrolling back to a replaying hero must not unmount a loaded
+  // avatar. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
+  // they don't change mid-session in any way worth re-rendering for.
+  const { introRunning } = useHeroIntro()
+  const [avatarOn, setAvatarOn] = useState(false)
+  useEffect(() => {
+    if (introRunning || avatarOn) return
+    const id = window.setTimeout(() => setAvatarOn(avatarGuideEnabledInBrowser()), 400)
+    return () => clearTimeout(id)
+  }, [introRunning, avatarOn])
 
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
   // scroll fired on every token fights itself and janks); smooth-scroll only
@@ -282,32 +308,38 @@ export default function ChatWidget() {
   // accessible control stays the launcher button; the wrapper's onClick is a
   // pointer convenience for people who click the character itself. Known cost
   // of that convenience: when closed, the wrapper's transparent pixels around
-  // the figure also catch clicks at z-50 (the open state flips to
+  // the figure also catch clicks at z-50 (the beside-panel state flips to
   // pointer-events-none, so only the launcher corner pays this).
-  // Open-state offset: 436px = panel right inset 20px + panel width 400px
-  // (the min() in the panel class always resolves to 400px on gated ≥880px
-  // viewports) + 16px gap.
+  // Beside-panel offset: 436px = panel right inset 20px + panel width 400px
+  // (the min() in the panel class always resolves to 400px on ≥880px
+  // viewports, which is exactly when 'beside-panel' is chosen) + 16px gap.
+  const placement = avatarPlacement(mode, wide)
   const avatar = avatarOn && (
     <div
       aria-hidden="true"
-      onClick={open ? undefined : openPanel}
+      onClick={placement === 'launcher' ? openPanel : undefined}
       className={
-        fullscreen
+        placement === 'hidden'
           ? 'hidden'
-          : open
+          : placement === 'beside-panel'
             ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
-            : 'fixed bottom-[84px] right-6 z-50 cursor-pointer'
+            : // Narrow screens keep the character but at 72% (a transform, so the
+              // canvas bitmap and engine are untouched). This reduces how much
+              // of a phone's hero headline she covers; it does not clear it —
+              // a fixed 130×202 figure over a 390px page overlaps something at
+              // some scroll position no matter where it stands.
+              'fixed bottom-[84px] right-6 z-50 cursor-pointer max-[879px]:origin-bottom-right max-[879px]:scale-[0.72]'
       }
     >
-      <AvatarGuide mode={avatarMode} active={!fullscreen} />
+      <AvatarGuide mode={avatarMode} active={placement !== 'hidden'} />
     </div>
   )
 
   if (!open) {
     // Single floating CTA (bottom-right): one click opens chat. The ambient-music
     // toggle is its own bottom-left FAB (MusicToggle), so this stays a clean
-    // single-purpose launcher — left = music, right = AI. With the avatar flag
-    // on, the character stands above this pill; the pill remains the real button.
+    // single-purpose launcher — left = music, right = AI. The avatar character
+    // stands above this pill; the pill remains the real button.
     return (
       <>
         {avatar}

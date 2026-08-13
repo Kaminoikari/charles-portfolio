@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveAvatarMode, avatarGuideEnabled } from './avatarMode'
+import { deriveAvatarMode, avatarGuideEnabled, avatarPlacement } from './avatarMode'
 
 describe('deriveAvatarMode', () => {
   it('is idle with empty input and no stream', () => {
@@ -22,73 +22,66 @@ describe('deriveAvatarMode', () => {
   })
 })
 
+describe('avatarPlacement', () => {
+  it('stands above the launcher whenever the panel is stowed, any viewport', () => {
+    expect(avatarPlacement('minimised', true)).toBe('launcher')
+    expect(avatarPlacement('minimised', false)).toBe('launcher')
+  })
+
+  it('stands beside the docked panel only when the viewport has room for both', () => {
+    expect(avatarPlacement('docked', true)).toBe('beside-panel')
+  })
+
+  it('hides while the docked panel covers a narrow (phone) viewport', () => {
+    expect(avatarPlacement('docked', false)).toBe('hidden')
+  })
+
+  it('hides under the fullscreen takeover on every viewport', () => {
+    expect(avatarPlacement('fullscreen', true)).toBe('hidden')
+    expect(avatarPlacement('fullscreen', false)).toBe('hidden')
+  })
+})
+
 function fakeMatchMedia(matches: Record<string, boolean>) {
   return (q: string) => ({ matches: matches[q] ?? false })
 }
 
-const DESKTOP = {
-  '(min-width: 880px)': true,
-  '(pointer: fine)': true,
-  '(prefers-reduced-motion: reduce)': false,
-}
-
 describe('avatarGuideEnabled', () => {
   const on = {
-    search: '?avatar=1',
-    stored: null,
-    matchMedia: fakeMatchMedia(DESKTOP),
+    matchMedia: fakeMatchMedia({ '(prefers-reduced-motion: reduce)': false }),
     webgl: () => true,
   }
 
-  it('turns on with the query flag on a capable desktop', () => {
+  it('turns on for any visitor with motion allowed and WebGL2 — mobile included', () => {
     expect(avatarGuideEnabled(on)).toBe(true)
-  })
-
-  it('turns on via the localStorage flag without the query param', () => {
-    expect(avatarGuideEnabled({ ...on, search: '', stored: '1' })).toBe(true)
-  })
-
-  it('stays off with no flag at all — production default', () => {
-    expect(avatarGuideEnabled({ ...on, search: '', stored: null })).toBe(false)
-  })
-
-  it('stays off on narrow / coarse-pointer screens', () => {
-    expect(
-      avatarGuideEnabled({
-        ...on,
-        matchMedia: fakeMatchMedia({ ...DESKTOP, '(min-width: 880px)': false }),
-      }),
-    ).toBe(false)
-    expect(
-      avatarGuideEnabled({
-        ...on,
-        matchMedia: fakeMatchMedia({ ...DESKTOP, '(pointer: fine)': false }),
-      }),
-    ).toBe(false)
   })
 
   it('stays off under prefers-reduced-motion', () => {
     expect(
       avatarGuideEnabled({
         ...on,
-        matchMedia: fakeMatchMedia({ ...DESKTOP, '(prefers-reduced-motion: reduce)': true }),
+        matchMedia: fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }),
       }),
     ).toBe(false)
   })
 
-  it('stays off without WebGL', () => {
+  it('stays off without WebGL2', () => {
     expect(avatarGuideEnabled({ ...on, webgl: () => false })).toBe(false)
   })
 
-  it('never probes WebGL unless every cheaper gate already passed', () => {
-    // The probe creates a real GL context in the browser, so the flag-off
-    // production path must not reach it.
+  it('never probes WebGL unless the cheaper reduced-motion gate already passed', () => {
+    // The probe creates a real GL context, so reduced-motion visitors (who will
+    // never see the avatar) must not pay that cost.
     let probed = 0
     const webgl = () => {
       probed++
       return true
     }
-    avatarGuideEnabled({ ...on, search: '', stored: null, webgl })
+    avatarGuideEnabled({
+      ...on,
+      matchMedia: fakeMatchMedia({ '(prefers-reduced-motion: reduce)': true }),
+      webgl,
+    })
     expect(probed).toBe(0)
     avatarGuideEnabled({ ...on, webgl })
     expect(probed).toBe(1)

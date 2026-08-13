@@ -20,6 +20,39 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-guide-3d',
+    date: '2026-08-13',
+    title: `A full-body 3D character now fronts the AI assistant`,
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      `The AI assistant in the bottom-right corner now has a face, and a body: a full-body **3D character** stands above the launcher, on phones as well as desktops. She reacts to the conversation in real time. While nothing is happening she looks around; the moment you start typing she tilts her head up and down as if following your draft; and while the answer streams in, her mouth moves through real vowel shapes and her colours warm toward the site's mars orange, settling back once the answer lands.`,
+      { kind: 'heading', text: `A VRM humanoid, driven by chat state` },
+      `The character is a **VRM** model (the humanoid format used across VTuber tooling), rendered with three.js and \`@pixiv/three-vrm\`. Head movement is skeletal: the head, neck and a hint of spine rotate together while the eyes track a gaze target, so she turns to look the way people do. Speech is a viseme loop over the five Japanese vowel mouth shapes on a deliberately uneven cadence, because an even beat reads as a machine.`,
+      `All of it is driven by two signals the chat widget already had: what is in the input field, and whether an answer is streaming. No cursor tracking, no audio analysis.`,
+      { kind: 'heading', text: `What it costs, and who is excused` },
+      {
+        kind: 'list',
+        items: [
+          `The model weighs 15.4MB, so it loads lazily and only after the hero intro has finished, keeping the opening animation's bandwidth to itself. Repeat visits ride the browser cache.`,
+          `Visitors with **prefers-reduced-motion** set, or hardware without WebGL2, keep exactly the interface they had before: the capsule launcher, unchanged. The WebGL2 probe runs last so those visitors never pay for a graphics context.`,
+          `The capsule stays the real, accessible button (focus ring, aria-label, keyboard path). The character is decoration you can also click.`,
+          `On phones she stands above the launcher; while the chat panel covers a narrow screen she steps aside entirely and rendering pauses.`,
+        ],
+      },
+      `The current character is VRoid Studio's official sample model, standing in while a custom character is built. Swapping her out later means replacing one file.`,
+    ],
+  },
+  {
+    id: 'ambient-music-opt-in',
+    date: '2026-08-13',
+    title: `The ambient soundtrack no longer starts itself`,
+    tags: ['design'],
+    body: [
+      `Until now, finishing the hero intro would fade the ambient music in automatically for anyone who had clicked Enter. In testing that felt like a small reward. In practice it was a presumption: the visitor asked to see the site and received sound they never requested.`,
+      `Music is now strictly opt-in. The speaker button in the bottom-left corner is the single way to start it, and its icon always reflects what is actually playing. The tap on the speaker also satisfies iOS Safari's rule that sound may only start inside a real gesture, so the first tap produces music on every page, even when the visitor never saw the intro. A side benefit: the site no longer keeps a silent audio stream running for visitors who never asked for sound.`,
+    ],
+  },
+  {
     id: 'chatbot-fullscreen-pipeline',
     date: '2026-08-11',
     title: `The assistant gets a fullscreen mode, with the RAG pipeline exposed live`,
@@ -243,7 +276,7 @@ export const changelog: ChangelogEntry[] = [
         items: [
           '**One pipeline, two looks**: the dot portrait runs on the GPU while the wireframe is lit on the CPU, blended by the sweep position so the transition stays smooth.',
           '**Built to behave**: it pauses when it scrolls off screen or the tab goes to the background, respects reduced-motion preferences, and falls back to a still photo if WebGL is unavailable.',
-          '**Audio that starts on a tap**: the Enter splash exists so the intro sound and ambient track can begin the moment you choose to enter, which browsers only allow after a gesture.',
+          '**Audio that starts on a tap**: the Enter splash exists so the intro sound can begin the moment you choose to enter, which browsers only allow after a gesture.',
         ],
       },
     ],

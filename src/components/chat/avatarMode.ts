@@ -2,6 +2,7 @@
 // functions so the rules are testable without WebGL or React.
 
 import type { ChatStatus } from './useChatStream'
+import type { ChatMode } from './useChatMode'
 
 // What the avatar body is doing. The 3D engine consumes this; nothing else does.
 //  idle       head sweeps left/right — nobody is talking
@@ -17,39 +18,40 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
   return 'idle'
 }
 
+// Where the avatar stands for a given widget mode and viewport width.
+// 'hidden' means display:none, never unmount: the wrapper stays mounted so the
+// 15MB VRM is fetched and parsed exactly once per page.
+//  launcher      stowed panel — the character stands above the launcher pill
+//  beside-panel  docked panel on a viewport wide enough for both, side by side
+//  hidden        fullscreen takeover, or a docked panel covering a phone screen
+export type AvatarPlacement = 'launcher' | 'beside-panel' | 'hidden'
+
+export function avatarPlacement(mode: ChatMode, wide: boolean): AvatarPlacement {
+  if (mode === 'fullscreen') return 'hidden'
+  if (mode === 'minimised') return 'launcher'
+  return wide ? 'beside-panel' : 'hidden'
+}
+
 interface GateInputs {
-  search: string
-  stored: string | null
   matchMedia: (q: string) => Pick<MediaQueryList, 'matches'>
-  // A thunk, not a boolean: probing WebGL2 creates a real GL context, and the
-  // gate must not pay that cost for the (default, flag-off) production visitor.
-  // Keeping the probe lazy means it only runs after every cheaper check passes.
+  // A thunk, not a boolean: probing WebGL2 creates a real GL context, so it
+  // stays lazy and only runs after the cheaper reduced-motion check passes —
+  // a reduced-motion visitor never sees the avatar and must not pay the probe.
   webgl: () => boolean
 }
 
-// Dev-flag gate. The avatar ships dark: production visitors keep the capsule
-// launcher until the real character replaces the sample model. Everything here
-// is injected so tests never touch real browser globals.
-export function avatarGuideEnabled({ search, stored, matchMedia, webgl }: GateInputs): boolean {
-  const flagged = new URLSearchParams(search).get('avatar') === '1' || stored === '1'
-  if (!flagged) return false
-  if (!matchMedia('(min-width: 880px)').matches) return false
-  if (!matchMedia('(pointer: fine)').matches) return false
+// Capability gate — the avatar is on for everyone (mobile included) since the
+// 2026-08-13 production launch. Only two things turn it off: the visitor asked
+// for reduced motion, or the device can't run WebGL2. Inputs are injected so
+// tests never touch real browser globals.
+export function avatarGuideEnabled({ matchMedia, webgl }: GateInputs): boolean {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return false
   return webgl()
 }
 
 // Browser-bound wrapper used by the widget; the testable core stays injected.
 export function avatarGuideEnabledInBrowser(): boolean {
-  let stored: string | null = null
-  try {
-    stored = window.localStorage.getItem('avatarGuide')
-  } catch {
-    // storage blocked (private mode etc.) — flag simply reads as absent
-  }
   return avatarGuideEnabled({
-    search: window.location.search,
-    stored,
     matchMedia: (q) => window.matchMedia(q),
     webgl: hasWebGL,
   })
@@ -58,7 +60,12 @@ export function avatarGuideEnabledInBrowser(): boolean {
 function hasWebGL(): boolean {
   try {
     const canvas = document.createElement('canvas')
-    return canvas.getContext('webgl2') != null
+    const gl = canvas.getContext('webgl2')
+    if (!gl) return false
+    // Release the probe context right away — browsers cap live GL contexts
+    // (~16) and the real one for the avatar canvas is about to be created.
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return true
   } catch {
     return false
   }
