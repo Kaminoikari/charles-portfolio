@@ -269,7 +269,16 @@ export default function ChatWidget() {
   // (the session intro) only burn their shot on a real playback.
   const speakCue = (cue: VoiceCue): boolean => {
     if (!avatarOn || !avatarLoaded || avatarDead) return false
-    voiceRef.current?.pause() // never overlap two lines
+    const current = voiceRef.current
+    // Stream-outcome cues yield to a line she is already speaking: a cached
+    // answer can finish in ~0.5s, and letting 'done' preempt chopped the ack
+    // ~0.1s in — an audible pop (diagnosed on production 2026-08-13). The
+    // skipped line is never queued: by then the answer is on screen and the
+    // in-flight ack already covers the delivery. Gesture cues still preempt.
+    if ((cue === 'done' || cue === 'error') && current && !current.paused && !current.ended) {
+      return false
+    }
+    current?.pause() // never overlap two lines
     // One shared reset for every way a line can stop: finished, media error,
     // or play() refused outright (iOS rejects the off-gesture done/error cues
     // with NO DOM event — only the onBlocked callback catches that one).

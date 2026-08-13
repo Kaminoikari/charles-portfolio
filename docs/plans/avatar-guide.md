@@ -57,7 +57,10 @@ frame（HTTP 200＋status 停在 idle、訊息標 error）**，後者是 pipelin
 常態路徑，effect 以訊息的 error 旗標路由，不能只看 status）。前五種 cue 全在
 tap/keypress 手勢內；**done／error 兩種在手勢外觸發（status 轉場 effect），iOS 會
 拒絕 fresh play() 而靜默、桌機在首次互動後可播**——使用者知情接受的取捨。done／
-error 另以 `open` 守門：串流中收面板就不出聲。iOS 拒播時 promise 被拒但**不觸發
+error 另以 `open` 守門：串流中收面板就不出聲；且**讓行不搶話**（2026-08-13
+使用者定案）：ack 還在播時 done／error 直接跳過不補播——快取快答曾在 ack 播到
+0.118s 時被 done 掐斷成爆音（production 時間軸實測），跳過而非排隊是因為
+答案早已上屏、ack 本身已涵蓋交付，且排隊起點在 ended 回呼（手勢外）iOS 也不會放行。iOS 拒播時 promise 被拒但**不觸發
 任何 DOM 事件**，playVoiceCue 的 onBlocked 回呼負責把 voiceSpeaking 撥回 false，
 否則 speaking 臉會卡死。~~日文三語系共用不變~~（**2026-08-13 再修訂（使用者試聽
 多語 TTS 候選後否決：「只有原本的 voicevox 最好」，英文版改由 VOICEVOX 生成）**：
