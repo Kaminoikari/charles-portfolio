@@ -23,21 +23,71 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
   禁止的是「收費再散佈模型檔案本身」與改標 CC0。本站免費展示，合規。
 - **行動版佈局**：launcher 態（面板收起）在所有viewport 都顯示 avatar；docked 面板開啟時，
   寬度 <880px 的裝置面板幾乎蓋滿螢幕，avatar 以 `display:none` 隱藏並停止渲染
-  （wrapper 不 unmount，VRM 不重載）。fullscreen 同前，一律隱藏。
-  placement 三態由純函式 `avatarPlacement(mode, wide)` 決定，有單元測試。
+  （wrapper 不 unmount，VRM 不重載）。fullscreen 同前，一律隱藏（此句後由
+  launcher 取代節推翻：寬且高足夠的 fullscreen 改站 rail）。
+  placement 三態由純函式 `avatarPlacement(mode, wide)` 決定，有單元測試
+  （後續 launcher 取代節將其擴為四態，並加入第三參數 `tall`）。
 - **VRM 延後載入**：hero intro 進行中（`useHeroIntro().introRunning`）不掛載 avatar，
   intro 結束（或 400ms 內未開始，涵蓋 same-session skip 路徑）才載，避免 15MB 與
   intro 資產搶頻寬。latch 一旦開啟不再關閉。
 
-## Acceptance criteria（launch 版）
+## 2026-08-13 launcher 取代＋fullscreen rail 修訂（使用者以 mockup 確認）
+
+使用者選定：launcher 走 **C＋B 混合**（純角色為按鈕＋首次泡泡提示）、fullscreen rail
+avatar **一起做**。mockup：scratchpad/mock-launcher-{A,B,C}.png、mock-fullscreen-rail.png。
+使用者補充約束：avatar 背景必須與實際畫面背景一致（canvas alpha:true 透明背景已滿足，
+mockup 的黑框是截圖合成痕跡）。
+
+- **launcher 態（C＋B）**：avatar 載入完成後取代膠囊。wrapper 維持常駐 `<div>`
+  （元素型別不變，React 才不會重掛 canvas，15MB VRM 只載一次）；互動由 wrapper 內
+  `inset-0` 的真 `<button>`（canvas 的 sibling）承擔（沿用 `chat.openAriaLabel`，
+  focus-visible/hover 顯示腳下青色光環，不出現大矩形 focus ring）。膠囊在以下情況
+  **保留或回歸**：閘門關（reduced-motion／無 WebGL2）、VRM 尚未載完、VRM 載入失敗、
+  WebGL context 被瀏覽器回收——引擎為此提供 onLoaded 與 onContextLost 回報，且
+  onLoaded 在**首幀真正畫出後**才發（避免 parse 完成到首幀之間「膠囊已卸、角色
+  未畫」的空窗，弱 GPU 上該窗可達數百 ms）。交接方式：onLoaded 當下膠囊卸載、
+  角色 wrapper 以 `transition-[bottom]` 滑入角落定位（非 crossfade）。
+  首次泡泡：每 tab-session 一次（sessionStorage），顯示 8 秒淡出，文案入 i18n ×3；
+  泡泡本身可點（同樣開面板——邀請點擊的元件自己必須可點）。
+- **fullscreen rail**：`avatarPlacement` 增第四態 `rail`（fullscreen 且 wide ≥880px），
+  角色以 transform 縮至 rail 寬內站在 rail 底部，pointer-events-none、渲染恢復
+  （active=true）。手機 fullscreen 無 rail 維持 hidden；768–880px 有 rail 但不放
+  avatar（接受，記為已知限制）；視窗高 <640px 時 `tall`（min-height:640px
+  matchMedia 的 React 狀態）作為第三參數進 `avatarPlacement` 純函式，rail 降級為
+  hidden——wrapper 隱藏且 active=false 真正停掉渲染迴圈（code review round 1 後
+  由 CSS 版改此作法，round 2 後收進純函式納入單元測試）。
+- **changelog**：更新今日剛發的 avatar 條目（「膠囊仍是真按鈕」的句子隨此輪失真，
+  同日修訂不另開條目）。
+- **實作過程中的使用者追加指令**（mid-turn，一併入約）：
+  1. avatar 背景與畫面背景一致（canvas alpha:true 已滿足）。
+  2. 泡泡內的小 tag（RAG · AI 副標）拿掉，只留一句話。
+  3. **管線不可被角色擋住**：rail 內容改為狀態換場——trace 為空時顯示建議問題，
+     trace 一有節點就整區讓位給管線（建議退場）；rail 末端以真 spacer 元素
+     （212px＋原 padding＝248px 淨空）保留她的站位，滾到底的內容停在她頭上
+     （不用 block-end padding：部分引擎不把它計入 overflow 容器的捲動範圍）。
+  4. ~~移除預設問題「Why should a team hire him?」~~（使用者於 rail 換場定案後
+     撤回此指令：換場後管線不再與建議並列，6 條無害，**保留** suggested6）。
+  5. 泡泡右側要有類似箭頭的形狀，像是 avatar 講出來的話——以 before/after
+     雙三角偽元素做講話尾巴（border 色墊底＋填色內縮 1px）。
+- **focus 矩形陷阱（實測發現）**：index.css 的無 layer `*:focus-visible` outline
+  會以 cascade-layer 順序壓過任何 Tailwind utility；解法是全域規則挖
+  `:not([data-own-focus-ring])` 豁免口，avatar 按鈕掛該屬性、以腳下光環為
+  focus 指示。
+
+## Acceptance criteria（2026-08-13，含 launcher 取代＋rail 修訂；第 1、2 條由該節改寫）
 
 1. 無任何 flag 的 production 訪客（桌機與行動裝置皆然），只要未開 reduced-motion 且
-   WebGL2 可用：全身 3D avatar（無底座、無邊框）站在膠囊 launcher 正上方；膠囊按鈕
-   保留，仍是唯一的可及性控制項（focus ring、aria-label、鍵盤路徑不變），點角色本身
-   等同點膠囊。
-2. 面板開啟時：寬 viewport（≥880px）avatar 站在面板左側，持續反映對話狀態
-   （idle 左右看／listening 上下看／speaking visemes＋mars-orange tint，動作一律骨骼
-   旋轉）；窄 viewport avatar 隱藏且渲染迴圈停止，收起面板後回到 launcher 上方。
+   WebGL2 可用：VRM 載入完成後，全身 3D avatar（無底座、無邊框）**本人就是 launcher
+   按鈕**（沿用 `chat.openAriaLabel`、鍵盤可達，focus/hover 指示為腳下青色光環，
+   無全域矩形 focus ring）；膠囊按鈕只在閘門關、VRM 未載完、載入失敗或 WebGL
+   context 遺失時作為 fallback（context 遺失後膠囊**回歸**，角落不得留下隱形按鈕）。
+2. 面板開啟時：docked＋寬 viewport（≥880px）avatar 站在面板左側（docked 只看寬度，
+   矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）；fullscreen＋寬且高
+   ≥640px avatar 縮小站在左側 rail 底部（管線一啟動建議即讓位，角色站位以 rail
+   末端**真 spacer 元素**保留，不被節點壓到）；docked＋窄，以及 fullscreen＋窄或矮
+   viewport，avatar 隱藏且渲染迴圈停止。全程持續反映對話狀態（idle 左右看／
+   listening 上下看／speaking visemes＋mars-orange tint，動作一律骨骼旋轉），
+   收起面板後回到 launcher 態。
 3. reduced-motion 或無 WebGL2 的訪客：可觀測行為與 avatar 出現前完全相同（膠囊
    launcher；不建立任何額外 WebGL context——探測必須排在 reduced-motion 之後）。
 4. 引擎 chunk（three-vrm＋引擎碼）與 VRM 檔維持 lazy，且在 hero intro 結束前不發出
@@ -54,8 +104,12 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
 
 - 正式自製角色（換檔即換，不動接線）
 - hologram shader、口型對真實語音
-- `webglcontextlost` handler（正式角色落地那輪一併補；行動裝置背景分頁遺失 context
-  時 canvas 空白、膠囊照常可用，可接受）
+- `webglcontextlost` 後的 context **恢復**（正式角色落地那輪評估）。round 3–4 已補
+  最小 handler：遺失即回報 onContextLost、膠囊回歸為 launcher、avatar wrapper
+  **整個卸載**（死 canvas 在 Chrome 會合成為不透明白框，不能只留空）、引擎
+  dispose 停掉渲染迴圈；同頁不重掛（剛證明 GPU 記憶體吃緊的裝置不該再吞 15MB），
+  重新整理才重來。引擎端 contextLost 旗標同時擋住「遺失後 VRM 才解析完 →
+  onLoaded 補發 → 膠囊被卸」的競態。
 - 行動裝置 docked 面板旁的 avatar 佈局（螢幕放不下兩者並列，直接隱藏）
 
 ## 驗證計畫
@@ -69,7 +123,10 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
 
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
-- 無 `webglcontextlost` handler（見 Non-goals）。
+- WebGL context 遺失後不嘗試恢復——膠囊回歸、avatar wrapper 卸載，直到重新整理
+  （最小 handler 見 Non-goals）。
+- 768–880px 的 fullscreen 有 rail 但不放 avatar（wide 檢查取 880 對齊
+  placement 一致性）。
 - launcher 態下 avatar wrapper 的透明像素會吃右下角點擊（ChatWidget 註解記載取捨）。
 - GLTFLoader 因 hero 與 avatar 引擎共用而被 Rollup 抽成獨立 chunk：hero 多一個 HTTP
   request，總 bytes 不變（round 1 spec review 核可的例外）。

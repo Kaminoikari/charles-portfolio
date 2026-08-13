@@ -25,7 +25,7 @@ export const changelog: ChangelogEntry[] = [
     title: `A full-body 3D character now fronts the AI assistant`,
     tags: ['feature', 'design', 'technical'],
     body: [
-      `The AI assistant in the bottom-right corner now has a face, and a body: a full-body **3D character** stands above the launcher, on phones as well as desktops. She reacts to the conversation in real time. While nothing is happening she looks around; the moment you start typing she tilts her head up and down as if following your draft; and while the answer streams in, her mouth moves through real vowel shapes and her colours warm toward the site's mars orange, settling back once the answer lands.`,
+      `The AI assistant in the bottom-right corner now has a face, and a body: a full-body **3D character** IS the launcher, on phones as well as desktops. She reacts to the conversation in real time. While nothing is happening she looks around; the moment you start typing she tilts her head up and down as if following your draft; and while the answer streams in, her mouth moves through real vowel shapes and her colours warm toward the site's mars orange, settling back once the answer lands. In the fullscreen takeover on a desktop-sized window she stands at the bottom of the retrieval-pipeline rail, mouthing the answer while the stations light up.`,
       { kind: 'heading', text: `A VRM humanoid, driven by chat state` },
       `The character is a **VRM** model (the humanoid format used across VTuber tooling), rendered with three.js and \`@pixiv/three-vrm\`. Head movement is skeletal: the head, neck and a hint of spine rotate together while the eyes track a gaze target, so she turns to look the way people do. Speech is a viseme loop over the five Japanese vowel mouth shapes on a deliberately uneven cadence, because an even beat reads as a machine.`,
       `All of it is driven by two signals the chat widget already had: what is in the input field, and whether an answer is streaming. No cursor tracking, no audio analysis.`,
@@ -35,8 +35,8 @@ export const changelog: ChangelogEntry[] = [
         items: [
           `The model weighs 15.4MB, so it loads lazily and only after the hero intro has finished, keeping the opening animation's bandwidth to itself. Repeat visits ride the browser cache.`,
           `Visitors with **prefers-reduced-motion** set, or hardware without WebGL2, keep exactly the interface they had before: the capsule launcher, unchanged. The WebGL2 probe runs last so those visitors never pay for a graphics context.`,
-          `The capsule stays the real, accessible button (focus ring, aria-label, keyboard path). The character is decoration you can also click.`,
-          `On phones she stands above the launcher; while the chat panel covers a narrow screen she steps aside entirely and rendering pauses.`,
+          `The character herself is the launcher button: the aria-label and keyboard path carry over, and the focus ring becomes a glow ring at her feet. A speech bubble invites the first tap, once per visit for eight seconds, then stays out of the way. While the model is still downloading (and for visitors the gate excuses, or if the load fails) the original capsule button serves instead.`,
+          `On phones she stands in the corner as the launcher herself; while the chat panel covers a narrow screen she steps aside entirely and rendering pauses.`,
         ],
       },
       `The current character is VRoid Studio's official sample model, standing in while a custom character is built. Swapping her out later means replacing one file.`,

@@ -21,13 +21,21 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 // Where the avatar stands for a given widget mode and viewport width.
 // 'hidden' means display:none, never unmount: the wrapper stays mounted so the
 // 15MB VRM is fetched and parsed exactly once per page.
-//  launcher      stowed panel — the character stands above the launcher pill
+//  launcher      stowed panel — the character IS the launcher button
 //  beside-panel  docked panel on a viewport wide enough for both, side by side
-//  hidden        fullscreen takeover, or a docked panel covering a phone screen
-export type AvatarPlacement = 'launcher' | 'beside-panel' | 'hidden'
+//  rail          wide fullscreen — she stands at the bottom of the pipeline rail
+//  hidden        narrow fullscreen (no rail), or a docked panel covering a phone
+export type AvatarPlacement = 'launcher' | 'beside-panel' | 'rail' | 'hidden'
 
-export function avatarPlacement(mode: ChatMode, wide: boolean): AvatarPlacement {
-  if (mode === 'fullscreen') return 'hidden'
+// `tall` (viewport height ≥640px) only matters for the rail: in a short window
+// the pipeline stations reach the bottom and would overlap her. The other
+// placements have their own column or corner regardless of height.
+export function avatarPlacement(
+  mode: ChatMode,
+  wide: boolean,
+  tall: boolean,
+): AvatarPlacement {
+  if (mode === 'fullscreen') return wide && tall ? 'rail' : 'hidden'
   if (mode === 'minimised') return 'launcher'
   return wide ? 'beside-panel' : 'hidden'
 }

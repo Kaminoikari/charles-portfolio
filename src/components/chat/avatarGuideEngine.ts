@@ -32,7 +32,23 @@ const VISEMES = ['aa', 'ih', 'ou', 'ee', 'oh'] as const
 // mostly-light albedo without crushing dark materials to black.
 const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
 
-export function initAvatarGuide(canvas: HTMLCanvasElement, vrmUrl: string): AvatarGuideHandle {
+export function initAvatarGuide(
+  canvas: HTMLCanvasElement,
+  vrmUrl: string,
+  // Fires once the VRM's FIRST frame has actually rendered — not at parse
+  // time. The widget uses it to swap the capsule launcher for the character;
+  // on a weak GPU the texture upload/shader compile after parsing takes
+  // hundreds of ms, and swapping at parse time leaves the corner with neither
+  // capsule nor character for that window. Never fires on a failed load, so
+  // the capsule stays and the corner never holds an empty, invisible button.
+  onLoaded?: () => void,
+  // Fires when the browser reclaims the WebGL context (backgrounded mobile
+  // tab). The canvas is permanently blank after that (context restore is a
+  // non-goal), so the widget must bring the capsule launcher back — otherwise
+  // the corner is an invisible button and pointer users lose the only visible
+  // way into the assistant.
+  onContextLost?: () => void,
+): AvatarGuideHandle {
   let disposed = false
   let mode: AvatarMode = 'idle'
 
@@ -103,6 +119,8 @@ export function initAvatarGuide(canvas: HTMLCanvasElement, vrmUrl: string): Avat
         }
       })
       vrm = loaded
+      // onLoaded intentionally NOT fired here — see the frame loop, which
+      // reports after the first real render instead.
     },
     undefined,
     // Loading is best-effort chrome: on failure the launcher's static fallback
@@ -126,11 +144,13 @@ export function initAvatarGuide(canvas: HTMLCanvasElement, vrmUrl: string): Avat
   let pageVisible = true
   let userActive = true
   let running = false
+  let loadedFired = false
+  let contextLost = false
 
   // The loop genuinely stops when hidden or deactivated (fullscreen chat) —
   // an early-return inside a still-scheduled rAF would keep waking the browser
   // at 60Hz for a no-op. Mirrors faceHero's setActive contract.
-  const shouldRun = () => !disposed && pageVisible && userActive
+  const shouldRun = () => !disposed && !contextLost && pageVisible && userActive
   function ensureRunning() {
     if (running || !shouldRun()) return
     running = true
@@ -226,9 +246,28 @@ export function initAvatarGuide(canvas: HTMLCanvasElement, vrmUrl: string): Avat
       vrm.update(dt) // spring bones (hair, skirt) advance here
     }
     renderer.render(scene, camera)
+    if (vrm && !loadedFired) {
+      loadedFired = true
+      onLoaded?.()
+    }
   }
   running = true
   rafId = window.requestAnimationFrame(frame)
+
+  // The browser can reclaim the GL context (mobile tab backgrounded). Restore
+  // is a non-goal; report it so the widget swaps the capsule launcher back.
+  // contextLost also stops the loop (three's render() is a silent no-op on a
+  // dead context, so the loop would burn spring-bone physics at 60fps forever)
+  // and pins loadedFired: a VRM that finishes parsing AFTER the loss must
+  // never report loaded — the widget would drop the capsule for a character
+  // that can no longer be drawn.
+  const onCtxLost = () => {
+    if (disposed) return
+    contextLost = true
+    loadedFired = true
+    onContextLost?.()
+  }
+  canvas.addEventListener('webglcontextlost', onCtxLost)
 
   // Stop the loop while the tab is hidden; `t` is wall-clock so motion
   // resumes in phase instead of jumping.
@@ -250,6 +289,9 @@ export function initAvatarGuide(canvas: HTMLCanvasElement, vrmUrl: string): Avat
       disposed = true
       window.cancelAnimationFrame(rafId)
       document.removeEventListener('visibilitychange', onVisibility)
+      // Before forceContextLoss below, which would otherwise fire onCtxLost
+      // for a teardown the widget must not react to (disposed also guards it).
+      canvas.removeEventListener('webglcontextlost', onCtxLost)
       if (vrm) {
         scene.remove(vrm.scene)
         VRMUtils.deepDispose(vrm.scene)

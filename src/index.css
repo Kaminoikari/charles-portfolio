@@ -82,8 +82,11 @@ body {
   top: 8px;
 }
 
-/* Focus indicators for keyboard navigation */
-*:focus-visible {
+/* Focus indicators for keyboard navigation. The escape hatch exists for
+   controls that paint their own focus indicator (the avatar launcher's ground
+   ring): this rule is unlayered so it beats every Tailwind utility (cascade
+   layers), and an attribute opt-out is the only way past it. */
+*:focus-visible:not([data-own-focus-ring]) {
   outline: 2px solid var(--color-accent-cyan);
   outline-offset: 2px;
 }

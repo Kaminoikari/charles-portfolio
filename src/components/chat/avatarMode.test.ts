@@ -24,21 +24,31 @@ describe('deriveAvatarMode', () => {
 
 describe('avatarPlacement', () => {
   it('stands above the launcher whenever the panel is stowed, any viewport', () => {
-    expect(avatarPlacement('minimised', true)).toBe('launcher')
-    expect(avatarPlacement('minimised', false)).toBe('launcher')
+    expect(avatarPlacement('minimised', true, true)).toBe('launcher')
+    expect(avatarPlacement('minimised', false, false)).toBe('launcher')
   })
 
   it('stands beside the docked panel only when the viewport has room for both', () => {
-    expect(avatarPlacement('docked', true)).toBe('beside-panel')
+    expect(avatarPlacement('docked', true, true)).toBe('beside-panel')
+    // Width decides the docked case; a short-but-wide window still has the
+    // side column free, so height does not demote it.
+    expect(avatarPlacement('docked', true, false)).toBe('beside-panel')
   })
 
   it('hides while the docked panel covers a narrow (phone) viewport', () => {
-    expect(avatarPlacement('docked', false)).toBe('hidden')
+    expect(avatarPlacement('docked', false, true)).toBe('hidden')
   })
 
-  it('hides under the fullscreen takeover on every viewport', () => {
-    expect(avatarPlacement('fullscreen', true)).toBe('hidden')
-    expect(avatarPlacement('fullscreen', false)).toBe('hidden')
+  it('stands in the pipeline rail during a wide and tall fullscreen takeover', () => {
+    expect(avatarPlacement('fullscreen', true, true)).toBe('rail')
+  })
+
+  it('hides under a narrow fullscreen takeover (no rail exists there)', () => {
+    expect(avatarPlacement('fullscreen', false, true)).toBe('hidden')
+  })
+
+  it('hides in a short fullscreen window, where she would collide with the pipeline', () => {
+    expect(avatarPlacement('fullscreen', true, false)).toBe('hidden')
   })
 })
 

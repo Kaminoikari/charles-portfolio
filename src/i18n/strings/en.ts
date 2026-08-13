@@ -46,6 +46,7 @@ interface Strings {
   }
   chat: {
     launcherLabel: string; launcherTag: string; openAriaLabel: string; minimiseAriaLabel: string
+    avatarBubble: string
     expandAriaLabel: string; collapseAriaLabel: string; suggestionsTitle: string
     pipelineTitle: string; pipelineIdle: string
     pipelineRunningLabel: string; pipelineInterrupted: string
@@ -159,6 +160,7 @@ const en: Strings = {
   },
   chat: {
     launcherLabel: 'Ask this portfolio',
+    avatarBubble: "Ask me about Charles's work",
     launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
     minimiseAriaLabel: 'Minimise the AI assistant',
