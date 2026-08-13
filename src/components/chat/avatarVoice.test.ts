@@ -1,0 +1,61 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { VOICE_LINES, pickVoiceLine, playVoiceCue } from './avatarVoice'
+
+// Minimal Audio stand-in: jsdom's play() is unimplemented, and these tests
+// only care about WHICH clip was constructed and whether play() was invoked.
+class FakeAudio {
+  static created: FakeAudio[] = []
+  src: string
+  preload = ''
+  play = vi.fn(() => Promise.resolve())
+  pause = vi.fn()
+  addEventListener = vi.fn()
+  constructor(src: string) {
+    this.src = src
+    FakeAudio.created.push(this)
+  }
+}
+
+afterEach(() => {
+  FakeAudio.created = []
+  vi.unstubAllGlobals()
+})
+
+describe('pickVoiceLine', () => {
+  it('picks deterministically from the cue catalogue via the injected rng', () => {
+    expect(pickVoiceLine('greet', () => 0)).toBe(VOICE_LINES.greet[0])
+    expect(pickVoiceLine('greet', () => 0.99)).toBe(VOICE_LINES.greet[VOICE_LINES.greet.length - 1])
+    expect(pickVoiceLine('ack', () => 0)).toBe(VOICE_LINES.ack[0])
+  })
+
+  it('every catalogued clip lives under the immutable-cached /avatar/ path', () => {
+    for (const clips of Object.values(VOICE_LINES)) {
+      for (const clip of clips) expect(clip.startsWith('/avatar/voice/')).toBe(true)
+    }
+  })
+})
+
+describe('playVoiceCue', () => {
+  it('stays completely silent while the site sound toggle is off', () => {
+    vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
+    // muted=true is the site default: sound is opt-in per session.
+    expect(playVoiceCue('greet', true)).toBeNull()
+    expect(FakeAudio.created).toHaveLength(0)
+  })
+
+  it('constructs the picked clip and starts playback when sound is on', () => {
+    vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
+    const el = playVoiceCue('greet', false, () => 0) as unknown as FakeAudio
+    expect(el).not.toBeNull()
+    expect(el.src).toBe(VOICE_LINES.greet[0])
+    expect(el.play).toHaveBeenCalledTimes(1)
+  })
+
+  it("tolerates play() returning undefined (jsdom's stub does)", () => {
+    class NoPromiseAudio extends FakeAudio {
+      play = vi.fn(() => undefined as unknown as Promise<void>)
+    }
+    vi.stubGlobal('Audio', NoPromiseAudio as unknown as typeof Audio)
+    expect(() => playVoiceCue('ack', false, () => 0)).not.toThrow()
+  })
+})

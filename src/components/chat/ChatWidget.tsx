@@ -13,6 +13,8 @@ import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 import { avatarGuideEnabledInBrowser, avatarPlacement, deriveAvatarMode } from './avatarMode'
+import { playVoiceCue, type VoiceCue } from './avatarVoice'
+import { useAmbientAudio } from '../audio/audio-context'
 import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
 
@@ -163,7 +165,12 @@ export default function ChatWidget() {
   // steal focus onto the launcher — but every route that stows the panel
   // (button or Escape) does return focus there rather than losing it to <body>.
   const wasOpenRef = useRef(false)
-  const avatarMode = deriveAvatarMode(input, status)
+  // True while one of Mika's short voice lines is playing — it borrows the
+  // 'speaking' mode so her mouth moves with her own voice, not only with
+  // streaming answers.
+  const [voiceSpeaking, setVoiceSpeaking] = useState(false)
+  const voiceRef = useRef<HTMLAudioElement | null>(null)
+  const avatarMode = voiceSpeaking ? 'speaking' : deriveAvatarMode(input, status)
   // Viewport class IS tracked live (rotate a phone, resize a window): width
   // moves the avatar between launcher / beside-panel / rail, and height gates
   // the rail stand (a short viewport has no floor space under the pipeline).
@@ -207,6 +214,9 @@ export default function ChatWidget() {
   // avatar. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
   // they don't change mid-session in any way worth re-rendering for.
   const { introRunning } = useHeroIntro()
+  // Site-wide sound switch (the bottom-left music FAB owns it). Mika's voice
+  // rides the same opt-in: visitors who never enabled sound hear nothing.
+  const ambient = useAmbientAudio()
   const [avatarOn, setAvatarOn] = useState(false)
   // false until the latch has actually evaluated the gate: "gate said no" and
   // "gate not asked yet" must render differently — the capsule shows for the
@@ -250,6 +260,28 @@ export default function ChatWidget() {
     const id = window.setTimeout(() => setAvatarSlow(true), 12000)
     return () => clearTimeout(id)
   }, [avatarOn, avatarLoaded, avatarDead, avatarFailed])
+  // Mika speaks a short line at interaction moments — only while she is
+  // actually on duty and site sound is on (the ambient mute gates all voice).
+  // Every call sits inside the visitor's tap/keypress, which is exactly what
+  // iOS requires for audio, so no unlock dance is needed here.
+  const speakCue = (cue: VoiceCue) => {
+    if (!avatarOn || !avatarLoaded || avatarDead) return
+    voiceRef.current?.pause() // never overlap two lines
+    // pause() never fires 'ended', so reset here — otherwise muting mid-line
+    // and tapping again strands voiceSpeaking at true (a silent, permanent
+    // speaking face). Re-set below only when a new line actually plays.
+    setVoiceSpeaking(false)
+    const el = playVoiceCue(cue, ambient.muted)
+    voiceRef.current = el
+    if (!el) return
+    setVoiceSpeaking(true)
+    const done = () => {
+      if (voiceRef.current === el) setVoiceSpeaking(false)
+    }
+    el.addEventListener('ended', done)
+    el.addEventListener('error', done)
+  }
+  useEffect(() => () => voiceRef.current?.pause(), [])
   const avatarLauncherRef = useRef<HTMLButtonElement>(null)
   // First-visit affordance (the "B" half of the chosen C+B design): a speech
   // bubble invites the first tap, once per tab-session, gone after 8s. The
@@ -391,6 +423,7 @@ export default function ChatWidget() {
     const q = question.trim()
     if (!q) return
     setInput('')
+    speakCue('ack')
     void send(q, t('chat.errorMessage'))
   }
 
@@ -489,7 +522,10 @@ export default function ChatWidget() {
         <>
           <button
             ref={avatarLauncherRef}
-            onClick={openPanel}
+            onClick={() => {
+              speakCue('greet')
+              openPanel()
+            }}
             aria-label={t('chat.openAriaLabel')}
             // data-own-focus-ring: opts out of index.css's global unlayered
             // `*:focus-visible` outline, which beats any Tailwind utility via
@@ -513,7 +549,10 @@ export default function ChatWidget() {
               // character button sits to its right and a tap on the text would
               // otherwise fall through to whatever page content is underneath.
               // Redundant click target: keyboard/AT users have the button.
-              onClick={openPanel}
+              onClick={() => {
+                speakCue('greet')
+                openPanel()
+              }}
               className={
                 // The before/after pair draws the speech tail pointing at her:
                 // a border-coloured triangle underneath, the fill triangle one

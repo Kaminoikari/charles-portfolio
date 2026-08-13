@@ -38,6 +38,20 @@ avatar **一起做**。mockup：scratchpad/mock-launcher-{A,B,C}.png、mock-full
 使用者補充約束：avatar 背景必須與實際畫面背景一致（canvas alpha:true 透明背景已滿足，
 mockup 的黑框是截圖合成痕跡）。
 
+**語音（2026-08-13 使用者定案，路線 A）**：預錄 voice lines，**不做**即時 TTS 唸答案
+（執行期成本＋濫用風險，翻盤條件：正式角色定案且願掛付費 API 預算）。聲源
+**VOICEVOX:春日部つむぎ**（辣妹系聲線貼 Mika 造型；商用允許、需標注，credit 在
+ContactFooter）。三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
+greet ×2（點她／點泡泡時）、ack ×1（送出問題時）。播放全在 tap-completed 手勢內
+（符合 CLAUDE.md iOS 硬規則，無需 unlock dance）；`ambient.muted` 在**播放起點**
+閘門全部語音（聲音是全站 opt-in；播放中切靜音，當句至多 3.4 秒播完不腰斬）；
+膠囊代打狀態（閘門關／載入失敗／context 遺失）完全不出聲；播放中借用既有
+speaking mode 的**亂數口型迴圈**讓嘴巴動（與 clip 同起訖，不做音訊分析——
+Non-goals 的「口型對真實語音」維持不做）；檔案在
+`public/avatar/voice/*.m4a`（AAC 24kHz mono，13–19KB ×3，吃 /avatar/* immutable
+快取，**改內容必須換檔名**）。合成管線：本機 colima＋voicevox_engine Docker（speaker 8）
+→ wav → afconvert AAC。
+
 **角色命名（2026-08-13 使用者定案）**：**Mika**（ミカ／中文稱 Mika 醬）。選名理由：
 辣妹感貼合黑肉街頭系造型＋兩音拍三語系都好念；Amika 避開（與參考站 mekahime 撞名圈）、
 Orihime 否決（神話人設＋BLEACH 撞名）。名字落地面：泡泡文案（i18n ×3）、FAQ cache

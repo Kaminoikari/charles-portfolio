@@ -37,6 +37,7 @@ export const changelog: ChangelogEntry[] = [
           `Visitors with **prefers-reduced-motion** set, or hardware without WebGL2, keep exactly the interface they had before: the capsule launcher, unchanged. The WebGL2 probe runs last so those visitors never pay for a graphics context.`,
           `The character herself is the launcher button: the aria-label and keyboard path carry over, and the focus ring becomes a glow ring at her feet. A speech bubble invites the first tap, once per visit for eight seconds, then stays out of the way. For visitors the gate excuses — and when the load fails or drags on — the original capsule button serves instead; during a normal load the corner simply stays empty until she arrives.`,
           `On phones she stands in the corner as the launcher herself; while the chat panel covers a narrow screen she steps aside entirely and rendering pauses.`,
+          `She also has a voice now: short Japanese lines (voiced with VOICEVOX:春日部つむぎ, credited in the footer) greet a tap on her and acknowledge a sent question, and her mouth moves while she speaks (the same viseme loop the answers use, still no audio analysis). Voice rides the site's sound toggle, so visitors who never enable sound hear nothing.`,
         ],
       },
       `The current character is VRoid Studio's official sample model, standing in while a custom character is built. Swapping her out later means replacing one file.`,

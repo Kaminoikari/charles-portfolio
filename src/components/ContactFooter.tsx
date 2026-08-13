@@ -117,6 +117,11 @@ export default function ContactFooter() {
         <div className="mt-3 font-mono text-[10px] tracking-[1px] text-white/70">
           {'Rendered in '}<span ref={perfRef}>—</span>{'ms · React · WebGL · Tailwind'}
         </div>
+        {/* Voice-library credit — required by the VOICEVOX character licence
+            for 春日部つむぎ (Mika's voice lines). Keep visible site-wide. */}
+        <div className="mt-2 font-mono text-[10px] tracking-[1px] text-white/50">
+          {'Mika voice: VOICEVOX:春日部つむぎ'}
+        </div>
       </footer>
     </div>
   )
