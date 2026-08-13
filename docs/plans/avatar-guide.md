@@ -49,13 +49,15 @@ mockup 的黑框是截圖合成痕跡）。
   角色 wrapper 以 `transition-[bottom]` 滑入角落定位（非 crossfade）。
   首次泡泡：每 tab-session 一次（sessionStorage），顯示 8 秒淡出，文案入 i18n ×3；
   泡泡本身可點（同樣開面板——邀請點擊的元件自己必須可點）。
-- **fullscreen rail**：`avatarPlacement` 增第四態 `rail`（fullscreen 且 wide ≥880px），
-  角色以 transform 縮至 rail 寬內站在 rail 底部，pointer-events-none、渲染恢復
-  （active=true）。手機 fullscreen 無 rail 維持 hidden；768–880px 有 rail 但不放
-  avatar（接受，記為已知限制）；視窗高 <640px 時 `tall`（min-height:640px
-  matchMedia 的 React 狀態）作為第三參數進 `avatarPlacement` 純函式，rail 降級為
-  hidden——wrapper 隱藏且 active=false 真正停掉渲染迴圈（code review round 1 後
-  由 CSS 版改此作法，round 2 後收進純函式納入單元測試）。
+- **fullscreen rail**：`avatarPlacement` 增第四態 `rail`，門檻是 rail **自己的**
+  斷點 `md`（≥768px，aside 的 max-md:hidden）＋高 ≥640px——她站在 rail 存在的
+  任何地方，含 768–880px 平板視窗（post-launch 小修批次補上；原本以 wide=880
+  代管、留過已知限制）。角色以 transform 縮至 rail 寬內站在 rail 底部，
+  pointer-events-none、渲染恢復（active=true）。手機 fullscreen 無 rail 維持
+  hidden；視窗高 <640px 時 `tall`（min-height:640px matchMedia 的 React 狀態）
+  把 rail 降級為 hidden——wrapper 隱藏且 active=false 真正停掉渲染迴圈
+  （code review round 1 後由 CSS 版改此作法，round 2 後收進純函式納入單元測試；
+  `md`／`tall` 皆為 `avatarPlacement` 參數，全分支有測試）。
 - **changelog**：更新今日剛發的 avatar 條目（「膠囊仍是真按鈕」的句子隨此輪失真，
   同日修訂不另開條目）。
 - **實作過程中的使用者追加指令**（mid-turn，一併入約）：
@@ -82,10 +84,10 @@ mockup 的黑框是截圖合成痕跡）。
    無全域矩形 focus ring）；膠囊按鈕只在閘門關、VRM 未載完、載入失敗或 WebGL
    context 遺失時作為 fallback（context 遺失後膠囊**回歸**，角落不得留下隱形按鈕）。
 2. 面板開啟時：docked＋寬 viewport（≥880px）avatar 站在面板左側（docked 只看寬度，
-   矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）；fullscreen＋寬且高
-   ≥640px avatar 縮小站在左側 rail 底部（管線一啟動建議即讓位，角色站位以 rail
-   末端**真 spacer 元素**保留，不被節點壓到）；docked＋窄，以及 fullscreen＋窄或矮
-   viewport，avatar 隱藏且渲染迴圈停止。全程持續反映對話狀態（idle 左右看／
+   矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）；fullscreen 在 rail
+   存在（≥768px）且高 ≥640px 時 avatar 縮小站在左側 rail 底部（管線一啟動建議即
+   讓位，角色站位以 rail 末端**真 spacer 元素**保留，不被節點壓到）；docked＋窄，
+   以及 fullscreen＋手機寬或矮 viewport，avatar 隱藏且渲染迴圈停止。全程持續反映對話狀態（idle 左右看／
    listening 上下看／speaking visemes＋mars-orange tint，動作一律骨骼旋轉），
    收起面板後回到 launcher 態。
 3. reduced-motion 或無 WebGL2 的訪客：可觀測行為與 avatar 出現前完全相同（膠囊
@@ -124,9 +126,7 @@ mockup 的黑框是截圖合成痕跡）。
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
 - WebGL context 遺失後不嘗試恢復——膠囊回歸、avatar wrapper 卸載，直到重新整理
-  （最小 handler 見 Non-goals）。
-- 768–880px 的 fullscreen 有 rail 但不放 avatar（wide 檢查取 880 對齊
-  placement 一致性）。
+  （最小 handler 見 Non-goals；遺失瞬間若焦點在角色鈕上，交還膠囊）。
 - launcher 態下 avatar wrapper 的透明像素會吃右下角點擊（ChatWidget 註解記載取捨）。
 - GLTFLoader 因 hero 與 avatar 引擎共用而被 Rollup 抽成獨立 chunk：hero 多一個 HTTP
   request，總 bytes 不變（round 1 spec review 核可的例外）。

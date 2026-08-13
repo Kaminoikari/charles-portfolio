@@ -172,18 +172,26 @@ export default function ChatWidget() {
   // 60fps behind an invisible canvas.
   const [wide, setWide] = useState(() => window.matchMedia('(min-width: 880px)').matches)
   const [tall, setTall] = useState(() => window.matchMedia('(min-height: 640px)').matches)
+  // md mirrors the rail's own breakpoint (the aside is max-md:hidden): the
+  // character stands wherever the rail exists, which starts below `wide`.
+  const [md, setMd] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   useEffect(() => {
     const wq = window.matchMedia('(min-width: 880px)')
     const hq = window.matchMedia('(min-height: 640px)')
+    const mq = window.matchMedia('(min-width: 768px)')
     setWide(wq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
     setTall(hq.matches)
+    setMd(mq.matches)
     const onW = () => setWide(wq.matches)
     const onH = () => setTall(hq.matches)
+    const onM = () => setMd(mq.matches)
     wq.addEventListener('change', onW)
     hq.addEventListener('change', onH)
+    mq.addEventListener('change', onM)
     return () => {
       wq.removeEventListener('change', onW)
       hq.removeEventListener('change', onH)
+      mq.removeEventListener('change', onM)
     }
   }, [])
   // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
@@ -216,6 +224,13 @@ export default function ChatWidget() {
   // loop). Deliberately never reset: remounting would re-download 15MB on a
   // device that just proved it is short on GPU memory; a refresh starts over.
   const [avatarDead, setAvatarDead] = useState(false)
+  const refocusCapsuleRef = useRef(false)
+  useEffect(() => {
+    if (avatarDead && refocusCapsuleRef.current) {
+      refocusCapsuleRef.current = false
+      launcherRef.current?.focus()
+    }
+  }, [avatarDead])
   const avatarLauncherRef = useRef<HTMLButtonElement>(null)
   // First-visit affordance (the "B" half of the chosen C+B design): a speech
   // bubble invites the first tap, once per tab-session, gone after 8s. The
@@ -396,7 +411,7 @@ export default function ChatWidget() {
   // A short viewport downgrades 'rail' to 'hidden' inside avatarPlacement
   // (React state, not a CSS media query), so `active` below genuinely stops
   // the render loop too.
-  const placement = avatarPlacement(mode, wide, tall)
+  const placement = avatarPlacement(mode, wide, tall, md)
   // !avatarDead guards a context-loss race: a frame scheduled between the
   // webglcontextlost event and this commit could still report onLoaded, and
   // launcher-true here with the wrapper unmounted would leave NO launcher.
@@ -419,7 +434,9 @@ export default function ChatWidget() {
                 (avatarIsLauncher
                   ? 'fixed bottom-4 right-6 z-50'
                   : 'pointer-events-none fixed bottom-[84px] right-6 z-50') +
-                ' transition-[bottom] duration-500 max-[879px]:origin-bottom-right max-[879px]:scale-[0.72]'
+                // max-[880px] = width < 880px, the exact complement of the
+                // `wide` matchMedia — max-[879px] left a 1px seam at 879.
+                ' transition-[bottom] duration-500 max-[880px]:origin-bottom-right max-[880px]:scale-[0.72]'
       }
     >
       <AvatarGuide
@@ -431,6 +448,11 @@ export default function ChatWidget() {
         // opaque white box) and bring the capsule back — an invisible button
         // in the corner would otherwise be the only way into the assistant.
         onContextLost={() => {
+          // Unmounting a focused element drops focus to <body>; if the
+          // character button held it, hand it to the returning capsule.
+          refocusCapsuleRef.current =
+            avatarLauncherRef.current !== null &&
+            document.activeElement === avatarLauncherRef.current
           setAvatarDead(true)
           setAvatarLoaded(false)
         }}
@@ -472,11 +494,14 @@ export default function ChatWidget() {
                 // scale (18×0.72≈13px, 240×0.72≈173px): the bubble is the only
                 // thing teaching a touch visitor she is tappable, so it must
                 // not render at 9px.
-                'absolute right-[150px] top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[879px]:w-[240px] max-[879px]:text-[18px] max-[359px]:w-[184px] ' +
+                'absolute right-[150px] top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[880px]:w-[240px] max-[880px]:text-[18px] max-[359px]:w-[184px] ' +
                 'before:absolute before:-right-[16px] before:bottom-[10px] before:h-0 before:w-0 before:border-8 before:border-transparent before:border-l-border before:content-[""] ' +
                 'after:absolute after:-right-[13px] after:bottom-[11px] after:h-0 after:w-0 after:border-7 after:border-transparent after:border-l-bg-secondary after:content-[""] ' +
                 (bubble === 'shown'
-                  ? 'cursor-pointer opacity-100'
+                  ? // starting:opacity-0 (@starting-style) gives the mount a
+                    // fade-in in browsers that support it; older ones show it
+                    // instantly, which is what happened everywhere before.
+                    'cursor-pointer opacity-100 starting:opacity-0'
                   : 'pointer-events-none opacity-0')
               }
             >

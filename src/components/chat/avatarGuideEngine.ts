@@ -299,7 +299,9 @@ export function initAvatarGuide(
       mats = []
       // Without forceContextLoss the browser keeps the GL context alive until
       // it feels like collecting it — same hard-won note as faceHero's dispose.
-      renderer.forceContextLoss()
+      // Skip it when the context is already gone: three warnOnce()s about the
+      // missing WEBGL_lose_context extension on a dead context.
+      if (!contextLost) renderer.forceContextLoss()
       renderer.dispose()
     },
   }

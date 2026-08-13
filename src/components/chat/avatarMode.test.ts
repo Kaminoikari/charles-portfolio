@@ -23,32 +23,36 @@ describe('deriveAvatarMode', () => {
 })
 
 describe('avatarPlacement', () => {
+  // args: (mode, wide ≥880, tall ≥640, md ≥768 — the rail's own breakpoint)
   it('stands above the launcher whenever the panel is stowed, any viewport', () => {
-    expect(avatarPlacement('minimised', true, true)).toBe('launcher')
-    expect(avatarPlacement('minimised', false, false)).toBe('launcher')
+    expect(avatarPlacement('minimised', true, true, true)).toBe('launcher')
+    expect(avatarPlacement('minimised', false, false, false)).toBe('launcher')
   })
 
   it('stands beside the docked panel only when the viewport has room for both', () => {
-    expect(avatarPlacement('docked', true, true)).toBe('beside-panel')
+    expect(avatarPlacement('docked', true, true, true)).toBe('beside-panel')
     // Width decides the docked case; a short-but-wide window still has the
     // side column free, so height does not demote it.
-    expect(avatarPlacement('docked', true, false)).toBe('beside-panel')
+    expect(avatarPlacement('docked', true, false, true)).toBe('beside-panel')
   })
 
   it('hides while the docked panel covers a narrow (phone) viewport', () => {
-    expect(avatarPlacement('docked', false, true)).toBe('hidden')
+    expect(avatarPlacement('docked', false, true, true)).toBe('hidden')
   })
 
-  it('stands in the pipeline rail during a wide and tall fullscreen takeover', () => {
-    expect(avatarPlacement('fullscreen', true, true)).toBe('rail')
+  it('stands in the pipeline rail during a tall fullscreen takeover with a rail', () => {
+    expect(avatarPlacement('fullscreen', true, true, true)).toBe('rail')
+    // The rail exists from the md breakpoint (768px), below the 880px `wide`
+    // gate — she stands wherever the rail does (768–880px tablet windows).
+    expect(avatarPlacement('fullscreen', false, true, true)).toBe('rail')
   })
 
-  it('hides under a narrow fullscreen takeover (no rail exists there)', () => {
-    expect(avatarPlacement('fullscreen', false, true)).toBe('hidden')
+  it('hides under a phone fullscreen takeover (no rail exists there)', () => {
+    expect(avatarPlacement('fullscreen', false, true, false)).toBe('hidden')
   })
 
   it('hides in a short fullscreen window, where she would collide with the pipeline', () => {
-    expect(avatarPlacement('fullscreen', true, false)).toBe('hidden')
+    expect(avatarPlacement('fullscreen', true, false, true)).toBe('hidden')
   })
 })
 

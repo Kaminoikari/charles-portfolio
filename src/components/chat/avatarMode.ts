@@ -28,14 +28,17 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 export type AvatarPlacement = 'launcher' | 'beside-panel' | 'rail' | 'hidden'
 
 // `tall` (viewport height ≥640px) only matters for the rail: in a short window
-// the pipeline stations reach the bottom and would overlap her. The other
-// placements have their own column or corner regardless of height.
+// the pipeline stations reach the bottom and would overlap her. `md` (≥768px)
+// is the rail's OWN breakpoint (the aside is max-md:hidden), distinct from
+// `wide` (≥880px) which gates the docked side-by-side layout — she stands
+// wherever the rail exists, including 768–880px tablet windows.
 export function avatarPlacement(
   mode: ChatMode,
   wide: boolean,
   tall: boolean,
+  md: boolean,
 ): AvatarPlacement {
-  if (mode === 'fullscreen') return wide && tall ? 'rail' : 'hidden'
+  if (mode === 'fullscreen') return md && tall ? 'rail' : 'hidden'
   if (mode === 'minimised') return 'launcher'
   return wide ? 'beside-panel' : 'hidden'
 }
