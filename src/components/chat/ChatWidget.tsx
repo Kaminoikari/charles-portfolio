@@ -208,16 +208,26 @@ export default function ChatWidget() {
   // they don't change mid-session in any way worth re-rendering for.
   const { introRunning } = useHeroIntro()
   const [avatarOn, setAvatarOn] = useState(false)
+  // false until the latch has actually evaluated the gate: "gate said no" and
+  // "gate not asked yet" must render differently — the capsule shows for the
+  // first, and must NOT flash during the second (see capsuleHeldBack below).
+  const [gateSettled, setGateSettled] = useState(false)
   useEffect(() => {
     if (introRunning || avatarOn) return
-    const id = window.setTimeout(() => setAvatarOn(avatarGuideEnabledInBrowser()), 400)
+    const id = window.setTimeout(() => {
+      setAvatarOn(avatarGuideEnabledInBrowser())
+      setGateSettled(true)
+    }, 400)
     return () => clearTimeout(id)
   }, [introRunning, avatarOn])
-  // The capsule launcher stays until the VRM is actually parsed and standing
-  // (engine onLoaded): a slow network or a failed load must never leave the
-  // corner with an empty, invisible button. Once true the character takes over
-  // as the launcher and the capsule leaves.
+  // The character takes over as the launcher once the VRM's first frame has
+  // rendered (engine onLoaded); until then the corner stays EMPTY rather than
+  // showing the capsule — the first thing a visitor sees must not be the old
+  // widget getting replaced seconds later (user report, real iPhone on 5G).
+  // The capsule still exists for every "she is not coming" outcome: gate off,
+  // load failed, load slower than the patience window, context lost.
   const [avatarLoaded, setAvatarLoaded] = useState(false)
+  const [avatarFailed, setAvatarFailed] = useState(false)
   // Set when the browser reclaims the WebGL context. A lost-context canvas is
   // not merely blank — Chrome composites it as an opaque white box — so the
   // whole wrapper unmounts (which also disposes the engine and stops its rAF
@@ -231,6 +241,15 @@ export default function ChatWidget() {
       launcherRef.current?.focus()
     }
   }, [avatarDead])
+  // Patience window: a load that outlives it brings the capsule back so a
+  // flaky network never leaves the corner without any way into the assistant.
+  // Deliberately never reset — if she arrives later, the swap hides it again.
+  const [avatarSlow, setAvatarSlow] = useState(false)
+  useEffect(() => {
+    if (!avatarOn || avatarLoaded || avatarDead || avatarFailed) return
+    const id = window.setTimeout(() => setAvatarSlow(true), 12000)
+    return () => clearTimeout(id)
+  }, [avatarOn, avatarLoaded, avatarDead, avatarFailed])
   const avatarLauncherRef = useRef<HTMLButtonElement>(null)
   // First-visit affordance (the "B" half of the chosen C+B design): a speech
   // bubble invites the first tap, once per tab-session, gone after 8s. The
@@ -416,6 +435,12 @@ export default function ChatWidget() {
   // webglcontextlost event and this commit could still report onLoaded, and
   // launcher-true here with the wrapper unmounted would leave NO launcher.
   const avatarIsLauncher = placement === 'launcher' && avatarLoaded && !avatarDead
+  // Hold the capsule back while the character is plausibly on her way: before
+  // the gate has even been asked, and during a healthy load. Every "she is not
+  // coming" signal (gate off, failure, patience window, dead context) releases
+  // it, and avatarIsLauncher hides it again once she has taken over.
+  const capsuleHeldBack =
+    !gateSettled || (avatarOn && !avatarLoaded && !avatarDead && !avatarFailed && !avatarSlow)
   const avatar = avatarOn && !avatarDead && (
     <div
       aria-hidden={avatarIsLauncher ? undefined : true}
@@ -443,6 +468,9 @@ export default function ChatWidget() {
         mode={avatarMode}
         active={placement !== 'hidden'}
         onLoaded={() => setAvatarLoaded(true)}
+        // Releases the held-back capsule: with the corner kept empty during a
+        // healthy load, a failed load MUST report itself or nothing ever shows.
+        onLoadFailed={() => setAvatarFailed(true)}
         // A reclaimed WebGL context means the character is gone for good this
         // page-load: unmount the wrapper (the dead canvas composites as an
         // opaque white box) and bring the capsule back — an invisible button
@@ -523,7 +551,7 @@ export default function ChatWidget() {
     return (
       <>
         {avatar}
-        {!avatarIsLauncher && (
+        {!avatarIsLauncher && !capsuleHeldBack && (
           <button
             ref={launcherRef}
             onClick={openPanel}

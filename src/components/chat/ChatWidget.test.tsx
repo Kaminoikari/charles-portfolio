@@ -58,23 +58,28 @@ beforeEach(() => {
 afterEach(cleanup)
 
 async function openAndAsk(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+  await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
   await user.type(screen.getByLabelText(/ask anything about his work/i), 'what did he do?')
   await user.click(screen.getByRole('button', { name: /send question/i }))
   await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy())
 }
 
 describe('ChatWidget size modes', () => {
-  it('rests as a launcher pill with no panel showing', () => {
+  it('rests as a launcher pill once the avatar gate settles, never flashing it before', async () => {
     render(<ChatWidget />)
-    expect(screen.getByRole('button', { name: /open the ai assistant/i })).toBeTruthy()
+    // Fresh visit: while the avatar gate is still unasked, the corner stays
+    // EMPTY — the old capsule must not flash first and get replaced seconds
+    // later (real-iPhone report, 2026-08-13). jsdom has no WebGL2, so the
+    // gate settles to "off" ~400ms later and the capsule then appears.
+    expect(screen.queryByRole('button', { name: /open the ai assistant/i })).toBeNull()
+    expect(await screen.findByRole('button', { name: /open the ai assistant/i })).toBeTruthy()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
   it('offers minimise rather than close, because stowing keeps the conversation', async () => {
     const user = userEvent.setup()
     render(<ChatWidget />)
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.getByRole('button', { name: /minimise the ai assistant/i })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /close the ai assistant/i })).toBeNull()
   })
@@ -89,7 +94,7 @@ describe('ChatWidget size modes', () => {
     await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
     expect(screen.queryByRole('dialog')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.getByText(ANSWER)).toBeTruthy()
   })
 
@@ -101,7 +106,7 @@ describe('ChatWidget size modes', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.getByText(ANSWER)).toBeTruthy()
   })
 
@@ -121,7 +126,7 @@ describe('ChatWidget fullscreen', () => {
   it('shows the pipeline rail only in fullscreen', async () => {
     const user = userEvent.setup()
     render(<ChatWidget />)
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.queryByRole('complementary')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
@@ -131,7 +136,7 @@ describe('ChatWidget fullscreen', () => {
   it('collapses back to the docked panel through the same control', async () => {
     const user = userEvent.setup()
     render(<ChatWidget />)
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
     await user.click(screen.getByRole('button', { name: /exit fullscreen/i }))
     expect(screen.queryByRole('complementary')).toBeNull()
@@ -146,7 +151,7 @@ describe('ChatWidget fullscreen', () => {
     expect(screen.getByText(ANSWER)).toBeTruthy()
 
     await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
-    await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     // Re-opens at the last size in use, which was fullscreen.
     expect(screen.getByRole('complementary')).toBeTruthy()
     expect(screen.getByText(ANSWER)).toBeTruthy()
@@ -158,7 +163,7 @@ describe('ChatWidget fullscreen', () => {
     it('invites a question before anything has run', async () => {
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
 
       expect(screen.getByText(/the pipeline runs here/i)).toBeTruthy()
@@ -176,7 +181,7 @@ describe('ChatWidget fullscreen', () => {
       ])
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
       await user.type(screen.getByLabelText(/ask anything about his work/i), 'q')
       await user.click(screen.getByRole('button', { name: /send question/i }))
@@ -204,7 +209,7 @@ describe('ChatWidget fullscreen', () => {
       ])
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
       await user.type(screen.getByLabelText(/ask anything about his work/i), 'q')
       await user.click(screen.getByRole('button', { name: /send question/i }))
@@ -234,7 +239,7 @@ describe('ChatWidget fullscreen', () => {
           <ChatWidget />
         </>,
       )
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
       const panel = screen.getByRole('dialog')
       ;(document.activeElement as HTMLElement | null)?.blur()
@@ -264,7 +269,7 @@ describe('ChatWidget fullscreen', () => {
           <ChatWidget />
         </>,
       )
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       const panel = screen.getByRole('dialog')
       ;(document.activeElement as HTMLElement | null)?.blur()
 
@@ -285,7 +290,7 @@ describe('ChatWidget fullscreen', () => {
     it('pins the page while fullscreen is open', async () => {
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
 
       expect(document.body.style.position).toBe('fixed')
@@ -297,7 +302,7 @@ describe('ChatWidget fullscreen', () => {
     it('restores the exact scroll position without animating it', async () => {
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
       await user.click(screen.getByRole('button', { name: /exit fullscreen/i }))
 
@@ -308,7 +313,7 @@ describe('ChatWidget fullscreen', () => {
     it('unpins the page when fullscreen is minimised directly', async () => {
       const user = userEvent.setup()
       render(<ChatWidget />)
-      await user.click(screen.getByRole('button', { name: /open the ai assistant/i }))
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
       await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
       await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
 

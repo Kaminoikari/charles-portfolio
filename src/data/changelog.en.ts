@@ -35,7 +35,7 @@ export const changelog: ChangelogEntry[] = [
         items: [
           `The model weighs 15.4MB, so it loads lazily and only after the hero intro has finished, keeping the opening animation's bandwidth to itself. Repeat visits ride the browser cache.`,
           `Visitors with **prefers-reduced-motion** set, or hardware without WebGL2, keep exactly the interface they had before: the capsule launcher, unchanged. The WebGL2 probe runs last so those visitors never pay for a graphics context.`,
-          `The character herself is the launcher button: the aria-label and keyboard path carry over, and the focus ring becomes a glow ring at her feet. A speech bubble invites the first tap, once per visit for eight seconds, then stays out of the way. While the model is still downloading (and for visitors the gate excuses, or if the load fails) the original capsule button serves instead.`,
+          `The character herself is the launcher button: the aria-label and keyboard path carry over, and the focus ring becomes a glow ring at her feet. A speech bubble invites the first tap, once per visit for eight seconds, then stays out of the way. For visitors the gate excuses — and when the load fails or drags on — the original capsule button serves instead; during a normal load the corner simply stays empty until she arrives.`,
           `On phones she stands in the corner as the launcher herself; while the chat panel covers a narrow screen she steps aside entirely and rendering pauses.`,
         ],
       },

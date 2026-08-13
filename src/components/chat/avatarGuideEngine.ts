@@ -48,6 +48,10 @@ export function initAvatarGuide(
   // the corner is an invisible button and pointer users lose the only visible
   // way into the assistant.
   onContextLost?: () => void,
+  // Fires when the VRM fetch/parse fails. The widget holds the capsule back
+  // during a healthy load, so silence here would leave the corner empty
+  // forever on a failed one.
+  onLoadFailed?: () => void,
 ): AvatarGuideHandle {
   let disposed = false
   let mode: AvatarMode = 'idle'
@@ -123,9 +127,11 @@ export function initAvatarGuide(
       // reports after the first real render instead.
     },
     undefined,
-    // Loading is best-effort chrome: on failure the launcher's static fallback
-    // stays, so there is nothing to surface to the visitor here.
-    () => {},
+    // Loading is best-effort chrome — no visitor-facing error, but the widget
+    // must know so it can release the held-back capsule launcher.
+    () => {
+      if (!disposed) onLoadFailed?.()
+    },
   )
 
   // ---- per-frame state ----

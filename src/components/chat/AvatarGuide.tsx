@@ -14,6 +14,7 @@ export default function AvatarGuide({
   active = true,
   onLoaded,
   onContextLost,
+  onLoadFailed,
 }: {
   mode: AvatarMode
   active?: boolean
@@ -23,6 +24,9 @@ export default function AvatarGuide({
   // Relayed when the browser reclaims the WebGL context — the canvas stays
   // blank from then on, so the widget must fall back to the capsule launcher.
   onContextLost?: () => void
+  // Relayed when the VRM fetch/parse fails — the widget keeps the corner
+  // empty during a healthy load, so a failure has to announce itself.
+  onLoadFailed?: () => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<AvatarGuideHandle | null>(null)
@@ -30,10 +34,12 @@ export default function AvatarGuide({
   const activeRef = useRef(active)
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
+  const onLoadFailedRef = useRef(onLoadFailed)
   useEffect(() => {
     onLoadedRef.current = onLoaded
     onContextLostRef.current = onContextLost
-  }, [onLoaded, onContextLost])
+    onLoadFailedRef.current = onLoadFailed
+  }, [onLoaded, onContextLost, onLoadFailed])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -51,6 +57,9 @@ export default function AvatarGuide({
         },
         () => {
           if (!cancelled) onContextLostRef.current?.()
+        },
+        () => {
+          if (!cancelled) onLoadFailedRef.current?.()
         },
       )
       handleRef.current.setMode(modeRef.current)

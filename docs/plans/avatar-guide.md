@@ -41,9 +41,11 @@ mockup 的黑框是截圖合成痕跡）。
 - **launcher 態（C＋B）**：avatar 載入完成後取代膠囊。wrapper 維持常駐 `<div>`
   （元素型別不變，React 才不會重掛 canvas，15MB VRM 只載一次）；互動由 wrapper 內
   `inset-0` 的真 `<button>`（canvas 的 sibling）承擔（沿用 `chat.openAriaLabel`，
-  focus-visible/hover 顯示腳下青色光環，不出現大矩形 focus ring）。膠囊在以下情況
-  **保留或回歸**：閘門關（reduced-motion／無 WebGL2）、VRM 尚未載完、VRM 載入失敗、
-  WebGL context 被瀏覽器回收——引擎為此提供 onLoaded 與 onContextLost 回報，且
+  focus-visible/hover 顯示腳下青色光環，不出現大矩形 focus ring）。膠囊只在
+  「她確定不會來」時**出現或回歸**：閘門關（reduced-motion／無 WebGL2）、VRM 載入
+  失敗（onLoadFailed）、載入超過 12 秒耐心窗、WebGL context 被瀏覽器回收；
+  **正常載入過程角落保持留空**，不先閃舊膠囊（使用者 2026-08-13 真機回報後定案）
+  ——引擎為此提供 onLoaded／onContextLost／onLoadFailed 回報，且
   onLoaded 在**首幀真正畫出後**才發（避免 parse 完成到首幀之間「膠囊已卸、角色
   未畫」的空窗，弱 GPU 上該窗可達數百 ms）。交接方式：onLoaded 當下膠囊卸載、
   角色 wrapper 以 `transition-[bottom]` 滑入角落定位（非 crossfade）。
@@ -71,6 +73,8 @@ mockup 的黑框是截圖合成痕跡）。
      撤回此指令：換場後管線不再與建議並列，6 條無害，**保留** suggested6）。
   5. 泡泡右側要有類似箭頭的形狀，像是 avatar 講出來的話——以 before/after
      雙三角偽元素做講話尾巴（border 色墊底＋填色內縮 1px）。
+  6. （出貨後真機回報）landing page 首開不得先出現舊膠囊 widget——載入中角落
+     留空，膠囊只在閘門關／載入失敗／逾時／context 遺失時出現。
 - **focus 矩形陷阱（實測發現）**：index.css 的無 layer `*:focus-visible` outline
   會以 cascade-layer 順序壓過任何 Tailwind utility；解法是全域規則挖
   `:not([data-own-focus-ring])` 豁免口，avatar 按鈕掛該屬性、以腳下光環為
@@ -81,8 +85,9 @@ mockup 的黑框是截圖合成痕跡）。
 1. 無任何 flag 的 production 訪客（桌機與行動裝置皆然），只要未開 reduced-motion 且
    WebGL2 可用：VRM 載入完成後，全身 3D avatar（無底座、無邊框）**本人就是 launcher
    按鈕**（沿用 `chat.openAriaLabel`、鍵盤可達，focus/hover 指示為腳下青色光環，
-   無全域矩形 focus ring）；膠囊按鈕只在閘門關、VRM 未載完、載入失敗或 WebGL
-   context 遺失時作為 fallback（context 遺失後膠囊**回歸**，角落不得留下隱形按鈕）。
+   無全域矩形 focus ring）；膠囊按鈕只在閘門關、載入失敗、載入逾時（12s）或 WebGL
+   context 遺失時作為 fallback（context 遺失後膠囊**回歸**，角落不得留下隱形按鈕）；
+   正常載入過程角落留空，首開不閃舊膠囊。
 2. 面板開啟時：docked＋寬 viewport（≥880px）avatar 站在面板左側（docked 只看寬度，
    矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）；fullscreen 在 rail
    存在（≥768px）且高 ≥640px 時 avatar 縮小站在左側 rail 底部（管線一啟動建議即
