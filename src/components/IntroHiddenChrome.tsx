@@ -3,8 +3,8 @@ import { useHeroIntro } from './hero/hero-intro-context'
 import { CHROME_REVEAL_MS } from './hero/introTiming'
 
 // Floating controls (the music toggle, the chat launcher and its open panel) step
-// aside while the hero intro owns the screen, and come back with the nav, the
-// headline and the ambient track.
+// aside while the hero intro owns the screen, and come back with the nav and the
+// headline.
 //
 // Opacity only — never a transform on this wrapper. A transformed ancestor becomes
 // the containing block for its `position: fixed` descendants, which would drag

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { FaceHeroHandle } from './faceHero'
-import { useAmbientAudio } from '../audio/audio-context'
 import { useHeroIntro } from './hero-intro-context'
 import { INTRO_FAILSAFE_MS } from './introTiming'
 import MobiusLoader from './MobiusLoader'
@@ -15,7 +14,7 @@ const LOADING_MESSAGES = [
   'Loading the experience. Good things take a few milliseconds.',
   'Waking the particles. Each one knows where to go.',
   'Aligning pixels and code. Almost ready.',
-  'Tuning the ambient soundtrack behind the scenes.',
+  'Charging the scan line. It only gets one pass.',
   'Finalizing the details. Just a moment more.',
 ]
 const MESSAGE_HOLD_MS = 3000
@@ -137,18 +136,13 @@ export default function FaceHero() {
   const engineReadyRef = useRef(false)
   const [failed, setFailed] = useState(false)
   const [heroLeftView, setHeroLeftView] = useState(false)   // scrolled away from the hero: nothing left to protect
-  const { unmute, unlock } = useAmbientAudio()
   const { setIntroRunning } = useHeroIntro()
-  const enteredRef = useRef(false)   // true only after a real Enter click, so a same-session skip stays silent
-  const unmuteRef = useRef(unmute)   // keep the init effect off unmute's identity so it still runs once
-  useEffect(() => { unmuteRef.current = unmute }, [unmute])
 
-  // The shell's "the intro is over": settle the headline and let the ambient
-  // track in. Called by the engine and by the failsafe below, so both paths land
-  // the visitor in the same state.
+  // The shell's "the intro is over": settle the headline. The hero no longer
+  // touches the ambient track at all — music is opt-in via the speaker FAB
+  // (default off), and that FAB performs its own iOS unlock inside its tap.
   const completeIntro = useCallback(() => {
     setPhase('revealed')
-    if (enteredRef.current) unmuteRef.current()
   }, [])
 
   useEffect(() => {
@@ -168,7 +162,7 @@ export default function FaceHero() {
           reducedMotion: reduced,
           onProgress: (p) => { realProgressRef.current = p },
           onReady: () => { if (skip) handleRef.current?.startIntro(true); else engineReadyRef.current = true },
-          onIntroComplete: completeIntro,   // BGM and nav arrive together, only after the intro, and only when the visitor actually entered
+          onIntroComplete: completeIntro,   // settles the headline and hands the nav back; music stays off until the FAB
           onError: () => setFailed(true),
         })
         handleRef.current = handle
@@ -284,9 +278,7 @@ export default function FaceHero() {
 
   const onEnter = () => {
     markSeenThisSession()
-    enteredRef.current = true
     handleRef.current?.startIntro()
-    unlock()                 // unlock audio inside the click; the track stays silent until the intro ends
     // Never regress out of 'revealed': with reduced motion the engine settles
     // inside startIntro() above and has already reported completion in this same
     // click, so forcing 'running' here would hide the headline and the nav behind

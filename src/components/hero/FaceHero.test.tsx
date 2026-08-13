@@ -86,17 +86,20 @@ describe('FaceHero shell', () => {
     expect(startIntro).toHaveBeenCalledTimes(1)
   })
 
-  it('unlocks audio on enter but holds the music until the intro finishes', async () => {
+  it('leaves the ambient audio completely alone on enter — the music FAB owns unlock and unmute', async () => {
     await renderHero()
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
-    expect(unlock).toHaveBeenCalledTimes(1)
+    // No silent 4.7MB stream behind the intro: unlock now happens inside the
+    // FAB's own tap, the only gesture that can lead to audible music.
+    expect(unlock).not.toHaveBeenCalled()
     expect(unmute).not.toHaveBeenCalled()
     act(() => { lastOpts?.onIntroComplete?.() })
-    expect(unmute).toHaveBeenCalledTimes(1)
+    // Music is opt-in via the speaker FAB now; finishing the intro must not start it.
+    expect(unmute).not.toHaveBeenCalled()
   })
 
-  it('does not start the music on a same-session skip (no enter click)', async () => {
+  it('touches no ambient audio on a same-session skip either (no enter click)', async () => {
     sessionStorage.setItem('faceHeroSeen', '1')
     await renderHero()
     act(() => { lastOpts?.onReady?.() })
@@ -188,7 +191,7 @@ describe('FaceHero shell', () => {
 // The nav reads introRunning: it must be hidden for exactly as long as the intro
 // owns the screen, and every way the intro can end has to hand the chrome back.
 describe('FaceHero chrome gating', () => {
-  it('holds the chrome hidden through the gate and the intro, releasing it with the music', async () => {
+  it('holds the chrome hidden through the gate and the intro, releasing it when the intro ends', async () => {
     await renderHero()
     expect(chromeState()).toBe('hidden')
     fireReadyAndFinishSweep()
@@ -198,7 +201,7 @@ describe('FaceHero chrome gating', () => {
     expect(unmute).not.toHaveBeenCalled()
     act(() => { lastOpts?.onIntroComplete?.() })
     expect(chromeState()).toBe('visible')
-    expect(unmute).toHaveBeenCalledTimes(1)
+    expect(unmute).not.toHaveBeenCalled()
   })
 
   it('never hides the chrome on a same-session skip', async () => {
@@ -249,7 +252,7 @@ describe('FaceHero chrome gating', () => {
     expect(chromeState()).toBe('visible')
   })
 
-  it('releases the chrome and starts the music if the intro never reports completion', async () => {
+  it('releases the chrome without touching the music if the intro never reports completion', async () => {
     await renderHero()
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
@@ -257,7 +260,7 @@ describe('FaceHero chrome gating', () => {
     expect(chromeState()).toBe('hidden')
     act(() => { vi.advanceTimersByTime(2) })
     expect(chromeState()).toBe('visible')
-    expect(unmute).toHaveBeenCalledTimes(1)
+    expect(unmute).not.toHaveBeenCalled()
   })
 
   // Hiding the nav makes it inert, which blurs any focus inside it. Reachable
@@ -319,7 +322,7 @@ describe('FaceHero chrome gating', () => {
     startIntro.mockImplementation(() => { lastOpts?.onIntroComplete?.() })
     fireReadyAndFinishSweep()
     fireEvent.click(screen.getByRole('button', { name: /enter/i }))
-    expect(unmute).toHaveBeenCalledTimes(1)
+    expect(unmute).not.toHaveBeenCalled()
     expect(chromeState()).toBe('visible')
     expect(screen.getByRole('heading', { level: 1 }).parentElement).toHaveStyle({ opacity: '1' })
   })

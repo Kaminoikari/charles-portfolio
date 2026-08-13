@@ -9,8 +9,8 @@ export const INTRO_DURATION_MS = (INTRO_BEATS.red + INTRO_BEATS.pause + INTRO_BE
 
 // How long the site chrome takes to fade back in once the intro hands the screen
 // over. Matches the hero headline's `duration-700` in FaceHero.tsx, so the nav,
-// the floating controls, the headline and the ambient track all arrive on one
-// beat. Owned here because the nav and the floating-chrome wrapper both read it.
+// the floating controls and the headline all arrive on one beat. Owned here
+// because the nav and the floating-chrome wrapper both read it.
 export const CHROME_REVEAL_MS = 700
 
 // Upper bound the shell waits for the engine's onIntroComplete before revealing

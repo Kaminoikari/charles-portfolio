@@ -9,8 +9,9 @@ export interface AmbientAudioValue {
   muted: boolean
   toggle: () => void
   unmute: () => void
-  // start the element playing but silent, inside a user gesture, so a later unmute() (e.g. after the
-  // hero intro) produces sound even though it fires outside a gesture (iOS autoplay unlock)
+  // start the element playing but silent, inside a user gesture, so the unmute() that follows
+  // produces sound even though it fires from an effect (iOS autoplay unlock). Sole caller today:
+  // the MusicToggle FAB, at the top of its own tap handler.
   unlock: () => void
 }
 

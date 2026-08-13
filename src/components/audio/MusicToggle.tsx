@@ -14,10 +14,21 @@ export function MusicToggle() {
   const audio = useAmbientAudio()
   const label = audio.muted ? t('chat.unmuteMusic') : t('chat.muteMusic')
 
+  // This tap is the ONLY route to audible music on any page, so the iOS unlock
+  // has to happen right here, inside the completed gesture: start the element
+  // playing muted now, then the [muted] effect unmutes it — iOS blocks a fresh
+  // play() from an effect but honours unmuting an already-playing element
+  // (audio rules in the project CLAUDE.md). Skipped when muting: no gesture is
+  // needed to go silent, and it would pointlessly restart the stream.
+  const onClick = () => {
+    if (audio.muted) audio.unlock()
+    audio.toggle()
+  }
+
   return (
     <button
       type="button"
-      onClick={audio.toggle}
+      onClick={onClick}
       aria-label={label}
       aria-pressed={!audio.muted}
       className="fixed bottom-5 left-5 z-50 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border border-border bg-bg-secondary text-text-tertiary shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-[transform,border-color,color] duration-200 hover:-translate-y-0.5 hover:border-accent-cyan hover:text-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan"

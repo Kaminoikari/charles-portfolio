@@ -61,8 +61,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [muted])
 
-  // play silently inside the user gesture so a later unmute() (after the hero intro) can produce
-  // sound on iOS, where audio must first be started by a real gesture
+  // play silently inside the user gesture so a later unmute() (the visitor tapping the
+  // music FAB) can produce sound on iOS, where audio must first be started by a real gesture
   const unlock = () => {
     const audio = audioRef.current
     if (!audio) return
