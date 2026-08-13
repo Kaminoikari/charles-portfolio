@@ -192,6 +192,16 @@ fade 值、無硬歸零、每幀最大 Δ0.024；實機 probe 平滑無閃爍（
 - E 登場：onLoaded 首幀跑 materialize（cyan→本色色閃＋0.94→1 scale pop＋粒子
   上升束）；rail/launcher 轉場期間輕微步行 bob（時間盒，效果不到位就保留純滑動）。
 
+**Batch 2 驗證結果（2026-08-14）**：C＋E materialize 實裝——ACESFilmic＋
+exposure 1.25（截圖比對色彩不濁不暗）、DPR 上限 2（特寫線條明顯銳化）、MToon
+parametricRim mars orange（rimR 讀回 idle 0.178→speaking 0.581，恰為公式值經
+sRGB→linear；特寫可見外套/髮絲邊緣暖光）、接觸陰影 radial disc（shadowOp 0→1
+隨 materialize 淡入）、低位 cyan 補光。materialize 首幀即 p=0（不閃全尺寸幀）：
+scale 讀回 0.952→1.006（back-out overshoot）→1.0、粒子束截圖可見、1.1s 後資源
+即時 dispose。EffectComposer 維持 Non-goal 未引入。**E 的 rail/launcher 轉場
+walk bob 走預留出口不做**：placement 轉場是 500ms CSS bottom 滑動，rotation-only
+bob 疊加讀感為抖動、位移式 bob 違反「動作一律骨骼旋轉」慣例，保留純滑動。
+
 **Batch 3（互動＋資產）**
 - F 互動：游標接近 wrapper 時眼神/頭部追游標（離開回 idle 掃視）；桌機 head 區
   hover 來回 ≥3 次觸發摸頭反應（happy＋wiggle，**不出聲**——點擊她=開面板的

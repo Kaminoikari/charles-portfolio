@@ -16,6 +16,15 @@
 //   - gestures: procedural wave/bow/nod, additive over the mode pose
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
+// Rendering & entrance (Batch 2):
+//   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
+//     light; fake radial contact shadow at her feet (no shadow-map pass)
+//   - MToon parametric rim in mars orange, swelling while she answers — the
+//     body multiply-tint is halved so the rim carries the answering look
+//   - materialize entrance, once, from the first rendered frame: cyan flash
+//     (>1 channels overdrive under ACES — glow without bloom/EffectComposer,
+//     which stays a Non-goal), back-out scale pop, rising particle column
+//
 // Learned in the PoC (scratchpad/poc.html, 2026-08-13) and load-bearing here:
 //   - three-vrm normalises VRM0 blendshape names to VRM1: a/i/u/e/o become
 //     aa/ih/ou/ee/oh. `blink` keeps its name, which makes half-working
@@ -103,7 +112,15 @@ export function initAvatarGuide(
   const H = canvas.clientHeight || 280
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setSize(W, H, false)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5))
+  // DPR 2 (was 1.5): the character is ~180px wide, so full-res costs little
+  // and the line work (toon shading, hair) is exactly where 1.5 aliased.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  // ACES gives the toon shading a filmic rolloff; exposure compensates the
+  // curve's darkening so the pre-ACES look stays the baseline (screenshot-
+  // compared, not guessed). EffectComposer/bloom is a plan Non-goal: it
+  // breaks the alpha channel over the transparent canvas.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.25
 
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(27, W / H, 0.1, 30)
@@ -113,6 +130,77 @@ export function initAvatarGuide(
   const key = new THREE.DirectionalLight(0xffffff, 1.4)
   key.position.set(0.6, 1.6, 2.2)
   scene.add(key)
+  // Low cyan fill from below-front (position under the target aims it up):
+  // the site's interactive accent, and it separates her dark outfit from the
+  // dark page ground where the white key alone went muddy.
+  const fill = new THREE.DirectionalLight(0x00d9ff, 0.3)
+  fill.position.set(-0.4, -1.0, 1.8)
+  scene.add(fill)
+
+  // Contact shadow: a radial-gradient disc at her feet. Fake and cheap on
+  // purpose — real shadow maps cost a render pass and read as noise on a
+  // 180px figure; grounding is all this needs to do.
+  const shadowCanvas = document.createElement('canvas')
+  shadowCanvas.width = shadowCanvas.height = 128
+  const sctx = shadowCanvas.getContext('2d')
+  if (sctx) {
+    const g = sctx.createRadialGradient(64, 64, 6, 64, 64, 62)
+    g.addColorStop(0, 'rgba(0,0,0,0.42)')
+    g.addColorStop(0.55, 'rgba(0,0,0,0.18)')
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    sctx.fillStyle = g
+    sctx.fillRect(0, 0, 128, 128)
+  }
+  const shadowTex = new THREE.CanvasTexture(shadowCanvas)
+  const shadowMat = new THREE.MeshBasicMaterial({
+    map: shadowTex,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: false,
+  })
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 0.85), shadowMat)
+  shadow.rotation.x = -Math.PI / 2
+  shadow.position.y = 0.005
+  shadow.visible = false // appears with the materialize entrance
+  scene.add(shadow)
+
+  // Rising cyan particle column for the materialize entrance; spawned on the
+  // first rendered frame, disposed as soon as the entrance ends.
+  function spawnParticles() {
+    const N = 70
+    const posArr = new Float32Array(N * 3)
+    particleVel = new Float32Array(N)
+    for (let i = 0; i < N; i++) {
+      const r = 0.08 + Math.random() * 0.24
+      const a = Math.random() * Math.PI * 2
+      posArr[i * 3] = Math.cos(a) * r
+      posArr[i * 3 + 1] = Math.random() * 1.5
+      posArr[i * 3 + 2] = Math.sin(a) * r
+      particleVel[i] = 0.5 + Math.random() * 1.1
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(posArr, 3))
+    const pm = new THREE.PointsMaterial({
+      color: 0x00d9ff,
+      size: 0.028,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+    particles = new THREE.Points(geo, pm)
+    scene.add(particles)
+  }
+
+  function disposeParticles() {
+    if (!particles) return
+    scene.remove(particles)
+    particles.geometry.dispose()
+    ;(particles.material as THREE.Material).dispose()
+    particles = null
+    particleVel = null
+  }
 
   let vrm: VRM | null = null
   const eyeTarget = new THREE.Object3D()
@@ -123,6 +211,16 @@ export function initAvatarGuide(
   // tinted endpoint is a pure function of the base, so it's precomputed here
   // rather than allocated per material per frame inside the render loop.
   let mats: { m: THREE.Material & { color: THREE.Color }; base: THREE.Color; tinted: THREE.Color }[] = []
+  // MToon materials additionally get a parametric rim (mars orange) whose
+  // intensity rides the speaking tint — the rim carries the "answering" look
+  // now, which is why the body tint below is halved.
+  type MToonLike = THREE.Material & {
+    parametricRimColorFactor: THREE.Color
+    parametricRimFresnelPowerFactor: number
+  }
+  let mtoons: MToonLike[] = []
+  const RIM_COLOR = new THREE.Color(0xe8652b)
+  const rimScratch = new THREE.Color()
 
   const loader = new GLTFLoader()
   loader.register((p) => new VRMLoaderPlugin(p))
@@ -156,6 +254,11 @@ export function initAvatarGuide(
               base: withColor.color.clone(),
               tinted: ANSWER_TINT.clone().multiply(withColor.color),
             })
+          const mtoon = m as Partial<MToonLike> & THREE.Material
+          if (mtoon.parametricRimColorFactor) {
+            mtoon.parametricRimFresnelPowerFactor = 6 // tight edge highlight
+            mtoons.push(mtoon as MToonLike)
+          }
         }
       })
       // Which emotion presets this model actually ships (VRM0 naming trap:
@@ -182,6 +285,14 @@ export function initAvatarGuide(
   // background stint can't fast-forward blink/viseme timers on resume.
   let prevMs = performance.now()
   let tint = 0
+  let colorDirty = false
+  // Materialize entrance: -1 = waiting for the first rendered frame,
+  // [0,1] = running, 2 = done (never replays).
+  let matzT = -1
+  let particles: THREE.Points | null = null
+  let particleVel: Float32Array | null = null
+  // Channels >1 overdrive toward white under ACES — a glow without bloom.
+  const CYAN_FLASH = new THREE.Color(0.35, 1.2, 1.6)
   let randViseme = -1
   let visemeTimer = 0
   let visemeHold = 0.11
@@ -237,6 +348,38 @@ export function initAvatarGuide(
     const t = nowMs / 1000
 
     if (vrm) {
+      // Materialize entrance: cyan flash + scale pop + rising particles, once,
+      // starting on the very first frame the character is visible. Applies
+      // the p=0 state before this frame renders so the swap-in never shows a
+      // single full-scale frame first.
+      if (matzT === -1) {
+        matzT = 0
+        shadow.visible = true
+        shadowMat.opacity = 0
+        spawnParticles()
+      }
+      if (matzT >= 0 && matzT <= 1) {
+        const p = matzT
+        const back = 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2)
+        vrm.scene.scale.setScalar(0.94 + 0.06 * back)
+        shadowMat.opacity = Math.min(1, p * 2)
+        if (particles && particleVel) {
+          const pos = particles.geometry.getAttribute('position') as THREE.BufferAttribute
+          for (let i = 0; i < particleVel.length; i++) {
+            pos.setY(i, pos.getY(i) + particleVel[i] * dt)
+          }
+          pos.needsUpdate = true
+          ;(particles.material as THREE.PointsMaterial).opacity = 0.9 * (1 - p)
+        }
+        matzT += dt / 1.1
+        if (matzT > 1) {
+          vrm.scene.scale.setScalar(1)
+          shadowMat.opacity = 1
+          disposeParticles()
+          matzT = 2
+        }
+      }
+
       // Head direction per mode — rotation on head/neck/spine, eyes tracking a
       // real target so the gaze leads the turn the way people actually look.
       let yaw = 0
@@ -415,18 +558,35 @@ export function initAvatarGuide(
           hipsZ: hips ? hips.rotation.z : 0,
           headX: head ? head.rotation.x : 0,
           spineX: spine ? spine.rotation.x : 0,
+          matz: matzT,
+          scale: vrm.scene.scale.x,
+          rimR: mtoons.length > 0 ? mtoons[0].parametricRimColorFactor.r : -1,
+          shadowOp: shadow.visible ? shadowMat.opacity : -1,
         }
       }
 
-      // Answering tint, lerped both directions so the colour never snaps.
+      // Answering look, lerped both directions so nothing snaps. The body
+      // tint is halved from Batch 1-era so the mars parametric rim (below)
+      // reads as the "answering" signal; the materialize cyan flash rides the
+      // same consolidated colour write so the two never fight over m.color.
       const target = mode === 'speaking' ? 1 : 0
       tint += (target - tint) * Math.min(1, dt * 4)
-      if (tint > 0.001) {
-        for (const { m, base, tinted } of mats) m.color.copy(base).lerp(tinted, tint)
-      } else if (tint !== 0) {
+      if (tint < 0.001) tint = 0
+      const flashW = matzT >= 0 && matzT <= 1 ? (1 - Math.min(matzT, 1)) * 0.75 : 0
+      if (tint > 0 || flashW > 0) {
+        for (const { m, base, tinted } of mats) {
+          m.color.copy(base).lerp(tinted, tint * 0.5)
+          if (flashW > 0) m.color.lerp(CYAN_FLASH, flashW)
+        }
+        colorDirty = true
+      } else if (colorDirty) {
         for (const { m, base } of mats) m.color.copy(base)
-        tint = 0
+        colorDirty = false
       }
+      // Mars rim: always faintly present (separates her from the dark page),
+      // swelling while she answers.
+      rimScratch.copy(RIM_COLOR).multiplyScalar(0.22 + tint * 0.5)
+      for (const m of mtoons) m.parametricRimColorFactor.copy(rimScratch)
 
       vrm.expressionManager?.update()
       vrm.update(dt) // spring bones (hair, skirt) advance here
@@ -520,6 +680,11 @@ export function initAvatarGuide(
         VRMUtils.deepDispose(vrm.scene)
       }
       mats = []
+      mtoons = []
+      disposeParticles()
+      shadow.geometry.dispose()
+      shadowMat.dispose()
+      shadowTex.dispose()
       // Without forceContextLoss the browser keeps the GL context alive until
       // it feels like collecting it — same hard-won note as faceHero's dispose.
       // Skip it when the context is already gone: three warnOnce()s about the
