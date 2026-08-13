@@ -49,8 +49,8 @@ describe('pickVoiceLine', () => {
     expect(pickVoiceLine('bye', 'zh-TW', () => 0.99)).toBe(VOICE_LINES.bye[VOICE_LINES.bye.length - 1])
   })
 
-  it('covers all seven interaction cues, each with at least one clip', () => {
-    const cues = ['greet', 'ack', 'fullscreen', 'suggest', 'bye', 'done', 'error'] as const
+  it('covers all eight interaction cues, each with at least one clip', () => {
+    const cues = ['intro', 'greet', 'ack', 'fullscreen', 'suggest', 'bye', 'done', 'error'] as const
     expect(Object.keys(VOICE_LINES).sort()).toEqual([...cues].sort())
     for (const cue of cues) expect(VOICE_LINES[cue].length).toBeGreaterThan(0)
   })

@@ -44,7 +44,12 @@ mockup 的黑框是截圖合成痕跡）。
 ContactFooter）。~~三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
 greet ×2（點她／點泡泡時）、ack ×1（送出問題時）。播放全在 tap-completed 手勢內
 （符合 CLAUDE.md iOS 硬規則，無需 unlock dance）~~（**2026-08-13 擴充（使用者指示
-「20 句全部接上」）**：目錄擴為 **23 句／7 種 cue**——greet ×9（點她／點泡泡，含
+「20 句全部接上」）**：目錄擴為 **23 句／7 種 cue**（**2026-08-13 三修：加 intro cue 成 24 句／8 種**——
+使用者選定句 A——ja／zh-TW 站：「はじめまして！あたしミカ！チャールズの作品集を案内する、エーアイアシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！」；en 站（カタカナ英語，對應 "Hi, I'm Mika! Charles's AI portfolio guide. Ask me anything about his work!"）：「ハーイ、アイムミカ！チャールズの、エーアイポートフォリオガイド！アスクミーエニシング、アバウトヒズワーク！」——**每 tab-session 首次開面板**播
+完整自介（sessionStorage `mikaIntroSpoken`＋in-memory ref 雙 latch。膠囊時期的開啟結構上
+就走不到 speakOpenCue（膠囊鈕只呼叫 openPanel），「僅在真的播出時燒掉」是對
+未來新呼叫點的第二道保險；之後開面板回到 greet 池）。日文版 1.1 倍速 8.95s、
+カタカナ英語版 7.38s）——greet ×9（點她／點泡泡，含
 2 句彩蛋）、ack ×5（打字送出）、fullscreen ×2（僅進入全螢幕，收合靜默）、
 suggest ×2（點建議問題，取代該次的 ack）、bye ×2（僅明確的關閉鈕；Escape 關閉
 刻意靜默）、done ×2（串流成功結束）、error ×1（串流失敗——含連線層失敗與 **SSE error

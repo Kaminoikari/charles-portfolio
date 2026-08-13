@@ -17,9 +17,12 @@
 
 import type { Locale } from '../../i18n'
 
-export type VoiceCue = 'greet' | 'ack' | 'fullscreen' | 'suggest' | 'bye' | 'done' | 'error'
+export type VoiceCue = 'intro' | 'greet' | 'ack' | 'fullscreen' | 'suggest' | 'bye' | 'done' | 'error'
 
 export const VOICE_LINES: Record<VoiceCue, string[]> = {
+  // First panel open of the tab-session: a full self-introduction. Later
+  // opens fall back to the short greet pool (ChatWidget owns that latch).
+  intro: ['/avatar/voice/mika-intro-1.m4a'],
   // Tap on Mika (or her speech bubble): she says hello and invites a question.
   greet: [
     '/avatar/voice/mika-greet-1.m4a',

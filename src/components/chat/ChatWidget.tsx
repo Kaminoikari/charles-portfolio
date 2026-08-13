@@ -265,8 +265,10 @@ export default function ChatWidget() {
   // and it means sound can be unconditional: a line never plays unless the
   // visitor just acted (the old ambient-music mute gate was removed with the
   // background-music FAB).
-  const speakCue = (cue: VoiceCue) => {
-    if (!avatarOn || !avatarLoaded || avatarDead) return
+  // Returns whether a line actually started, so callers with one-shot latches
+  // (the session intro) only burn their shot on a real playback.
+  const speakCue = (cue: VoiceCue): boolean => {
+    if (!avatarOn || !avatarLoaded || avatarDead) return false
     voiceRef.current?.pause() // never overlap two lines
     // One shared reset for every way a line can stop: finished, media error,
     // or play() refused outright (iOS rejects the off-gesture done/error cues
@@ -279,8 +281,35 @@ export default function ChatWidget() {
     setVoiceSpeaking(true)
     el.addEventListener('ended', done)
     el.addEventListener('error', done)
+    return true
   }
   useEffect(() => () => voiceRef.current?.pause(), [])
+  // The full self-introduction plays on the first panel open of the
+  // tab-session; every later open uses the short greet pool. In-memory ref
+  // twin mirrors the sessionStorage flag for storage-blocked contexts (same
+  // pattern as the speech bubble below). Today only the launcher/bubble
+  // (avatarIsLauncher) reach this, so she is always on duty here; the
+  // burn-only-on-real-playback check is insurance for future call sites.
+  const introSpokenRef = useRef(false)
+  const speakOpenCue = () => {
+    let spoken = introSpokenRef.current
+    try {
+      spoken = spoken || sessionStorage.getItem('mikaIntroSpoken') === '1'
+    } catch {
+      /* storage blocked: ref alone carries the latch */
+    }
+    if (spoken) {
+      speakCue('greet')
+      return
+    }
+    if (!speakCue('intro')) return
+    introSpokenRef.current = true
+    try {
+      sessionStorage.setItem('mikaIntroSpoken', '1')
+    } catch {
+      /* storage blocked */
+    }
+  }
   const avatarLauncherRef = useRef<HTMLButtonElement>(null)
   // First-visit affordance (the "B" half of the chosen C+B design): a speech
   // bubble invites the first tap, once per tab-session, gone after 8s. The
@@ -544,7 +573,7 @@ export default function ChatWidget() {
           <button
             ref={avatarLauncherRef}
             onClick={() => {
-              speakCue('greet')
+              speakOpenCue()
               openPanel()
             }}
             aria-label={t('chat.openAriaLabel')}
@@ -571,7 +600,7 @@ export default function ChatWidget() {
               // otherwise fall through to whatever page content is underneath.
               // Redundant click target: keyboard/AT users have the button.
               onClick={() => {
-                speakCue('greet')
+                speakOpenCue()
                 openPanel()
               }}
               className={
