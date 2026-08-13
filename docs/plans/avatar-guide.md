@@ -38,6 +38,13 @@ avatar **一起做**。mockup：scratchpad/mock-launcher-{A,B,C}.png、mock-full
 使用者補充約束：avatar 背景必須與實際畫面背景一致（canvas alpha:true 透明背景已滿足，
 mockup 的黑框是截圖合成痕跡）。
 
+**角色命名（2026-08-13 使用者定案）**：**Mika**（ミカ／中文稱 Mika 醬）。選名理由：
+辣妹感貼合黑肉街頭系造型＋兩音拍三語系都好念；Amika 避開（與參考站 mekahime 撞名圈）、
+Orihime 否決（神話人設＋BLEACH 撞名）。名字落地面：泡泡文案（i18n ×3）、FAQ cache
+新條目 who-is-mika（「你是誰」類 paraphrase 自 who-is-charles 移轉）、portfolio map
+SITE 節、generation persona（rag/nodes.ts）、changelog ×3、專案 memory。
+aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
+
 - **launcher 態（C＋B）**：avatar 載入完成後取代膠囊。wrapper 維持常駐 `<div>`
   （元素型別不變，React 才不會重掛 canvas，15MB VRM 只載一次）；互動由 wrapper 內
   `inset-0` 的真 `<button>`（canvas 的 sibling）承擔（沿用 `chat.openAriaLabel`，

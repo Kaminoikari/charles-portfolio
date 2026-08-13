@@ -160,7 +160,7 @@ const en: Strings = {
   },
   chat: {
     launcherLabel: 'Ask this portfolio',
-    avatarBubble: "Ask me about Charles's work",
+    avatarBubble: "I'm Mika! Ask me about Charles's work",
     launcherTag: 'RAG',
     openAriaLabel: 'Open the AI assistant',
     minimiseAriaLabel: 'Minimise the AI assistant',

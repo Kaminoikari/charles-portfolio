@@ -102,7 +102,7 @@ const zhTW: Strings = {
   },
   chat: {
     launcherLabel: '問這個作品集',
-    avatarBubble: '想了解 Charles？問我',
+    avatarBubble: '我是 Mika 醬！想了解 Charles 就問我',
     launcherTag: 'RAG',
     openAriaLabel: '開啟 AI 助理',
     minimiseAriaLabel: '縮到最小',

@@ -105,7 +105,7 @@ const ja: Strings = {
   },
   chat: {
     launcherLabel: 'このポートフォリオに質問',
-    avatarBubble: 'Charles のことなら私に聞いて',
+    avatarBubble: 'ミカだよ！Charles のことは私に聞いて',
     launcherTag: 'RAG',
     openAriaLabel: 'AI アシスタントを開く',
     minimiseAriaLabel: 'AI アシスタントを最小化',

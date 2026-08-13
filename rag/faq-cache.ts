@@ -26,9 +26,11 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'who-is-charles',
     questions: {
-      en: ['Who is Charles?', 'Who are you?', 'Tell me about Charles Chen', 'introduce yourself'],
-      'zh-TW': ['你是誰', 'Charles 是誰', '介紹一下 Charles', '自我介紹'],
-      ja: ['あなたは誰', 'Charles とは誰', '自己紹介して'],
+      // "Who are you?"-type paraphrases moved to who-is-mika: with a named
+      // on-page character, self-directed questions belong to her.
+      en: ['Who is Charles?', 'Tell me about Charles Chen', 'introduce yourself'],
+      'zh-TW': ['Charles 是誰', '介紹一下 Charles', '自我介紹'],
+      ja: ['Charles とは誰', '自己紹介して'],
     },
     answers: {
       en: "I'm the portfolio assistant for **Charles Chen（陳德潁）**, a Taiwan-based **AI Product Manager** with **5+ years** taking software products from a blank page to launch (0 to 1).\n\nWhat makes him unusual: he pairs sharp product strategy (frameworks like **JTBD**, **RICE**, and opportunity framing) with hands-on AI engineering. Using tools like **Claude Code** and **Codex**, he builds and ships the whole product himself, so ideas reach real users **5x faster**.\n\nHis work spans creator tools, Fintech, B2B SaaS, and MaaS, and has reached **7M+ people**. Today he leads three core product lines at **USPACE** (parking payments, corporate travel, and insurance), after starting there as the app owner leading a **15-person** cross-functional team.\n\nAsk me about his projects, work experience, skills, product philosophy, or exactly how he puts AI to work.",
@@ -77,6 +79,19 @@ export const faqEntries: FaqEntry[] = [
   },
 
   // ──────────────────── about the chatbot itself (meta) ────────────────────
+  {
+    id: 'who-is-mika',
+    questions: {
+      en: ['Who is Mika?', 'Who are you?', "What's the 3D character on the site?", 'who is the girl in the corner?', 'what is the avatar?', "what's your name?"],
+      'zh-TW': ['你是誰', 'Mika 是誰', 'Mika醬是誰', '網站上那個 3D 角色是誰', '右下角那個女生是誰', '你叫什麼名字'],
+      ja: ['あなたは誰', 'ミカって誰', 'この 3D キャラクターは何', 'サイトの女の子は誰', '名前は？'],
+    },
+    answers: {
+      en: "That's **Mika** (ミカ), the full-body 3D character standing in the corner of this site, and she's me: the visual form of Charles's portfolio assistant. Tap her and this chat opens. While an answer streams she mouths the words with real vowel shapes, and her colours warm toward the site's mars orange.\n\nTechnically she is a **VRM** humanoid rendered with **three.js / three-vrm**, driven by the chat state (idle when nothing happens, listening while you type, speaking while the answer streams), with bone-driven motion and spring-bone physics. Charles designed and shipped that whole pipeline himself, the same way he built the corrective RAG system answering you now.\n\nAsk me anything about Charles's work. That's what I'm here for.",
+      'zh-TW': '那是 **Mika 醬**（ミカ），站在網站角落的全身 3D 角色，也就是我：Charles 作品集助手的具象化身。點她就會打開這個聊天視窗；回答串流時她會跟著母音動嘴型，全身色調暖成本站的 mars orange。\n\n技術上她是用 **three.js／three-vrm** 渲染的 **VRM** 人形模型，由聊天狀態驅動（沒事發呆、你打字時聆聽、回答時說話），動作走骨骼旋轉加 spring-bone 物理。這整條管線和正在回答你的 corrective RAG 一樣，都是 Charles 自己設計並上線的。\n\n想了解 Charles 的工作就儘管問我，這就是我站在這裡的原因。',
+      ja: 'あの子は **ミカ**（Mika）。このサイトの隅に立つ全身 3D キャラクターで、私自身です。Charles のポートフォリオアシスタントの姿ですね。タップするとこのチャットが開き、回答のストリーミング中は母音の口形で口が動き、全身がサイトの mars orange へ暖かく色づきます。\n\n技術的には **three.js／three-vrm** で描画される **VRM** ヒューマノイドで、チャットの状態（何もないときはアイドル、入力中は傾聴、回答中は発話）で駆動され、動きはボーン回転とスプリングボーン物理です。いま答えている corrective RAG と同じく、このパイプラインも Charles が自分で設計して出荷しました。\n\nCharles のことなら何でも聞いてください。そのためにここに立っています。',
+    },
+  },
   {
     id: 'bot-how-made',
     questions: {
