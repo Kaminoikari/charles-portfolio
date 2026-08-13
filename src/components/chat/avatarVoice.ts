@@ -1,7 +1,8 @@
 // Mika's voice lines — short pre-recorded VOICEVOX clips for interaction
 // moments, NOT a TTS of the answers (that trade-off is recorded in
-// docs/plans/avatar-guide.md). Japanese in every locale on purpose: the voice
-// is the character's identity, the localised bubble/text carries the meaning.
+// docs/plans/avatar-guide.md). One voice in every locale on purpose — the
+// voice is the character's identity: ja/zh-TW hear her Japanese lines, en
+// hears the same voice reading katakana English (see VOICE_LINES_EN below).
 //
 // Voice library: VOICEVOX:春日部つむぎ — commercial use permitted with credit;
 // the credit line lives in the site footer and the plan doc records the terms.
@@ -13,6 +14,8 @@
 //     as the direct result of the visitor's own tap. (The site used to gate
 //     voice behind the ambient-music mute; that button was removed 2026-08-13
 //     and voice became unconditional.)
+
+import type { Locale } from '../../i18n'
 
 export type VoiceCue = 'greet' | 'ack' | 'fullscreen' | 'suggest' | 'bye' | 'done' | 'error'
 
@@ -51,8 +54,26 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
   error: ['/avatar/voice/mika-error-1.m4a'],
 }
 
-export function pickVoiceLine(cue: VoiceCue, rng: () => number = Math.random): string {
-  const clips = VOICE_LINES[cue]
+// The en locale gets the same つむぎ voice reading katakana-transliterated
+// English (カタカナ英語 — the accent is part of the gyaru charm, and it is the
+// only legal way to keep ONE voice across languages: VOICEVOX has no non-JA
+// phonemes, and cloning the voice into another engine is barred by the
+// character licence). zh-TW keeps the Japanese lines: Mandarin cannot be
+// approximated with kana at all. Same filenames with an -en suffix, one per
+// Japanese clip, so the two catalogues stay in lockstep.
+export const VOICE_LINES_EN: Record<VoiceCue, string[]> = Object.fromEntries(
+  Object.entries(VOICE_LINES).map(([cue, clips]) => [
+    cue,
+    clips.map((clip) => clip.replace(/\.m4a$/, '-en.m4a')),
+  ]),
+) as Record<VoiceCue, string[]>
+
+export function voiceLinesFor(locale: Locale): Record<VoiceCue, string[]> {
+  return locale === 'en' ? VOICE_LINES_EN : VOICE_LINES
+}
+
+export function pickVoiceLine(cue: VoiceCue, locale: Locale, rng: () => number = Math.random): string {
+  const clips = voiceLinesFor(locale)[cue]
   return clips[Math.min(clips.length - 1, Math.floor(rng() * clips.length))]
 }
 
@@ -64,10 +85,11 @@ export function pickVoiceLine(cue: VoiceCue, rng: () => number = Math.random): s
 // fires NO DOM event in that case and callers must reset their own state.
 export function playVoiceCue(
   cue: VoiceCue,
+  locale: Locale,
   rng: () => number = Math.random,
   onBlocked?: () => void,
 ): HTMLAudioElement {
-  const el = new Audio(pickVoiceLine(cue, rng))
+  const el = new Audio(pickVoiceLine(cue, locale, rng))
   el.play()?.catch(() => onBlocked?.())
   return el
 }

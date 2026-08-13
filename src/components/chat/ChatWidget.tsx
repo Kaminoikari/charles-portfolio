@@ -6,7 +6,7 @@
 // the visitor's locale and the backend answers in the question's language.
 
 import { useEffect, useRef, useState } from 'react'
-import { useT } from '../../i18n'
+import { useLocale, useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
 import { useChatMode } from './useChatMode'
 import { PipelineTrace } from './PipelineTrace'
@@ -143,6 +143,9 @@ function Message({ message, onRetry }: { message: ChatMessage; onRetry?: () => v
 
 export default function ChatWidget() {
   const t = useT()
+  // Voice clips are locale-keyed: en gets つむぎ reading katakana-English,
+  // ja/zh-TW share the Japanese set (see avatarVoice.ts for the why).
+  const { locale } = useLocale()
   // Size state lives in useChatMode; the conversation lives in useChatStream
   // right here. Both stay mounted across every size change, which is what
   // makes stowing the panel non-destructive.
@@ -271,7 +274,7 @@ export default function ChatWidget() {
     const done = () => {
       if (voiceRef.current === el) setVoiceSpeaking(false)
     }
-    const el = playVoiceCue(cue, undefined, () => done())
+    const el = playVoiceCue(cue, locale, undefined, () => done())
     voiceRef.current = el
     setVoiceSpeaking(true)
     el.addEventListener('ended', done)

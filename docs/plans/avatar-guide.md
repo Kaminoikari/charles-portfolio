@@ -54,7 +54,13 @@ tap/keypress 手勢內；**done／error 兩種在手勢外觸發（status 轉場
 拒絕 fresh play() 而靜默、桌機在首次互動後可播**——使用者知情接受的取捨。done／
 error 另以 `open` 守門：串流中收面板就不出聲。iOS 拒播時 promise 被拒但**不觸發
 任何 DOM 事件**，playVoiceCue 的 onBlocked 回呼負責把 voiceSpeaking 撥回 false，
-否則 speaking 臉會卡死。日文三語系共用不變）；~~`ambient.muted` 在**播放起點**
+否則 speaking 臉會卡死。~~日文三語系共用不變~~（**2026-08-13 再修訂（使用者試聽
+多語 TTS 候選後否決：「只有原本的 voicevox 最好」，英文版改由 VOICEVOX 生成）**：
+語音目錄改 locale 分流——en 語系用**同一把つむぎ聲音唸カタカナ英語**（23 句
+`-en.m4a` 對檔，合成時片假名**連寫**避免空格停頓＋speedScale 1.1，時長 0.7–3.7s
+與日文版同節奏）；ja／zh-TW 共用日文原 23 句（中文無法用假名近似，維持
+「聲音是角色身分」）。聲音克隆到多語 TTS 為授權禁區（VOICEVOX 條款禁止拿生成
+音訊訓練聲音模型），カタカナ英語是同聲跨語的唯一合法路徑）；~~`ambient.muted` 在**播放起點**
 閘門全部語音~~（**2026-08-13 修訂**：使用者決定移除背景音樂 FAB，整個 ambient
 系統（AudioProvider／audio-context／MusicToggle／ambient-noir.mp3）一併下線，
 語音改為**無條件**播放；安全性由「只在手勢內出聲」承擔，膠囊代打狀態照舊
