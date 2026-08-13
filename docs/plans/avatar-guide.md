@@ -72,9 +72,11 @@ error 另以 `open` 守門：串流中收面板就不出聲；且**讓行不搶�
 閘門全部語音~~（**2026-08-13 修訂**：使用者決定移除背景音樂 FAB，整個 ambient
 系統（AudioProvider／audio-context／MusicToggle／ambient-noir.mp3）一併下線，
 語音改為**無條件**播放；安全性由「只在手勢內出聲」承擔，膠囊代打狀態照舊
-因 speakCue 的 avatarLoaded 前置檢查而完全不出聲）；播放中借用既有
+因 speakCue 的 avatarLoaded 前置檢查而完全不出聲）；~~播放中借用既有
 speaking mode 的**亂數口型迴圈**讓嘴巴動（與 clip 同起訖，不做音訊分析——
-Non-goals 的「口型對真實語音」維持不做）；檔案在
+Non-goals 的「口型對真實語音」維持不做）~~（**2026-08-14 修訂**：Batch 1 A 項
+改為預生成 VOICEVOX mora 時間軸逐幀對嘴，見「表演力升級」節；「不做 runtime
+音訊分析」這一半維持成立，亂數迴圈降為無 track 時的回退）；檔案在
 `public/avatar/voice/*.m4a`（AAC 24kHz mono，8–23KB ×23 共約 300KB，吃 /avatar/*
 immutable 快取，**改內容必須換檔名**）。合成管線：本機 colima＋voicevox_engine
 Docker（speaker 8）→ wav → afconvert AAC（不帶 -b，帶了會報 '!dat' 錯）。
@@ -128,6 +130,81 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
   `:not([data-own-focus-ring])` 豁免口，avatar 按鈕掛該屬性、以腳下光環為
   focus 指示。
 
+## 2026-08-14 表演力升級（hololive 對標，使用者圈選 7 項）
+
+使用者要求以百萬粉 VTuber 標準檢視後圈選執行；**明確不做**：客製正式模型
+（Tier1-1，另案）與全文 TTS（Tier3-8，翻盤條件維持原記錄）。三批交付，每批
+獨立 gate＋probe＋雙 reviewer。
+
+**Batch 1（表演力核心）**
+- A 口型同步：VOICEVOX audio_query 的 mora 時間軸（vowel＋consonant/vowel_length，
+  除以各 clip 的 speedScale，加 prePhonemeLength 位移）預生成 `voiceVisemes.gen.ts`
+  （48 clip 全表；生成腳本兼作全部台詞的 canonical 記錄）。引擎新增 speech track
+  模式：**以 audio element 的 currentTime 逐幀取樣**（天然對時，不碰 Web Audio，
+  iOS 規則無涉），5 viseme 通道各自 lerp；無 track（串流回答）回退亂數迴圈。
+  AC：播任一語音時嘴型與母音逐幀一致；track 結束自動歸零。
+- B 表情層：runtime 檢查 expressionManager 實有 preset（VRM0 樣本預期
+  happy/angry/sad/relaxed，**無 surprised**），cue→emotion 映射（intro/greet/bye/
+  done→happy、ack/suggest→relaxed 輕、error→sad、fullscreen→happy 輕），
+  平滑進出＋hold 自動歸位；emotion 高權重時抑制眨眼、speech 中 emotion 上限 0.45
+  防嘴型打架。缺 preset 時靜默跳過（換正式模型自動升級）。
+- D 動作：呼吸（chest 正弦）＋重心慢移（hips＋spine 反向）＋眼球 saccade
+  （0.7–2.5s 微跳，快切不 lerp）＋自然眨眼（1.5–6s、12% 雙連眨）＋程序式手勢庫
+  wave（greet/intro）/bow（bye）/nod（ack/suggest/done 輕），additive 疊在既有姿勢上，
+  播畢自動回位。
+
+**Batch 1 驗證結果（2026-08-14）**：tsc 0、vitest 131/131（含 visemeTrack 4 條，
+lockstep guard 經 mutation 驗證）、build 過。preview probe（`?mikadebug=1` 引擎
+逐幀 state channel，斷言值為 scene graph 讀回非計算值 echo）：口型自我比對
+greet 34 樣本＋bye 9 樣本 **0 mismatch**（含 ？/、停頓段與句尾歸零，speechT 與
+audio currentTime 差 <16ms）；happy attack→hold→decay→清除全程觀測；wave 於
+1.6s 準時結束且手臂回 rest pose（後續截圖無殘留）；bow 於 launcher 位觀測；
+呼吸 chestX ±0.012 振盪、重心 hipsZ +0.020↔−0.020 慢擺（皆骨骼讀回值）。
+截圖：b1-idle / b1-wave（右臂舉起）/ b1-bow。console 僅 preview 固有的
+Vercel analytics 404。~~ack→nod、error→sad 走同一 CUE_PERFORMANCE 查表路徑，
+未逐一重放（與 greet/bye 同機制）~~（R1 spec review 指出 nod 是獨立動畫分支，
+豁免不成立；R2 已補觀測，下段）。
+
+**R1 雙 review（皆 FAIL）→ 修正 → R2 補驗（2026-08-14）**：code MEDIUM——
+emotion cap 為離散開關直接乘顯示值，短 clip 結束時臉部權重單幀 0.45→1.0 瞬跳、
+切換 emotion 殘值繞過 attack；修為 emoShown 單一 smoothing pass（cap 只限制
+target）＋emoFade crossfade。spec HIGH——本檔 Non-goals「口型對真實語音」與
+語音節舊文字和 Batch 1 A 項矛盾；已劃線修訂（存續部分＝不做 runtime 音訊分析）。
+R2 probe 補齊：ack→nod（headX 讀回擺幅 0.204）、串流亂數回退（47 樣本
+speechT=−1 且 viseme 全五種）、done cue、error→sad（attack→cap 釘住→平滑衰減）、
+cap 釋放上坡（bye clip 0.715s＜hold：0.449→…→1.0 約 500ms，55ms 樣本最大
+Δ0.168，修正前為單幀跳變）、bow spineX 讀回峰值 0.319（包絡 0.32）→0。
+眨眼抑制改用顯示值 emoShown；引擎檔頭 docblock 同步四層新行為。
+
+**R2→R3（2026-08-14）**：R2 spec PASS；R2 code FAIL 新抓 MEDIUM——A→B→A 快速
+切回的續接分支寫在 emoFade 覆寫之後成為死碼，切回頻道被硬熄再從 0 重 attack。
+R3 重排 setEmotion（先消化切入情緒的 fade 續接，再推入切出情緒；emoW/emoShown
+同設 resume 值）；Node 逐行等價 sim（reviewer 同法同情境）：切回首寫 0.482＝
+fade 值、無硬歸零、每幀最大 Δ0.024；實機 probe 平滑無閃爍（50ms 級時序受
+軟體渲染限制，判別以 sim 為準）。gate 全綠（vitest 131/131；中途一輪 7–9 紅
+為機器負載 timeout，colima 停機後復綠，隔離跑亦綠）。
+
+**Batch 2（畫面質感）**
+- C 渲染：ACESFilmic tone mapping、DPR 上限 1.5→2、MToon 參數化 rim（mars orange，
+  speaking 時增強；整身乘色 tint 減半讓 rim 當主角）、腳下接觸陰影（radial 貼圖
+  平面）、低位 cyan 補光。禁 EffectComposer（透明背景＋bloom 的 alpha 破壞
+  ＋chunk 成本，本輪明確不做，記為 Non-goal）。
+- E 登場：onLoaded 首幀跑 materialize（cyan→本色色閃＋0.94→1 scale pop＋粒子
+  上升束）；rail/launcher 轉場期間輕微步行 bob（時間盒，效果不到位就保留純滑動）。
+
+**Batch 3（互動＋資產）**
+- F 互動：游標接近 wrapper 時眼神/頭部追游標（離開回 idle 掃視）；桌機 head 區
+  hover 來回 ≥3 次觸發摸頭反應（happy＋wiggle，**不出聲**——點擊她=開面板的
+  契約不可破壞，故不用 press-hold）；idle 25–45s 隨機視覺小動作（伸展），
+  純視覺不出聲。
+- G 壓縮（時間盒 45 分鐘）：gltf-transform meshopt＋webp 試壓 AvatarSample_B
+  （15.4MB 目標 ≤7MB），**必須驗證 VRM 擴充存活**（載入 probe：渲染＋表情＋
+  spring bones 全通過才換檔）；失敗即記錄原因跳過，不硬上。
+
+**驗證計畫**：逐批 tsc/vitest/build＋preview probe（口型：取樣 track 與
+expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度截圖；渲染：
+截圖對比）＋production 驗證。
+
 ## Acceptance criteria（2026-08-13，含 launcher 取代＋rail 修訂；第 1、2 條由該節改寫）
 
 1. 無任何 flag 的 production 訪客（桌機與行動裝置皆然），只要未開 reduced-motion 且
@@ -162,7 +239,10 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
 ## Non-goals（本階段明確不做）
 
 - 正式自製角色（換檔即換，不動接線）
-- hologram shader、口型對真實語音
+- hologram shader、~~口型對真實語音~~（**2026-08-14 修訂**：語音口型已由表演力
+  升級 Batch 1 以**預生成 mora 時間軸**實現；本條的存續部分是「不做 runtime
+  音訊分析」——引擎仍不碰 Web Audio／AnalyserNode，對「真實語音」（訪客麥克風
+  或任意音訊）的口型分析維持不做）
 - `webglcontextlost` 後的 context **恢復**（正式角色落地那輪評估）。round 3–4 已補
   最小 handler：遺失即回報 onContextLost、膠囊回歸為 launcher、avatar wrapper
   **整個卸載**（死 canvas 在 Chrome 會合成為不透明白框，不能只留空）、引擎

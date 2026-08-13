@@ -16,6 +16,26 @@ import { avatarGuideEnabledInBrowser, avatarPlacement, deriveAvatarMode } from '
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
 import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
+import { VOICE_VISEMES } from './voiceVisemes.gen'
+import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideEngine'
+
+// What Mika performs alongside each voice cue: an expression preset (name,
+// weight, hold seconds) and optionally a body gesture. Emotion holds outlast
+// their clip slightly so the face doesn't drop the moment the audio ends.
+// Applied only when a line actually starts — a skipped cue performs nothing.
+const CUE_PERFORMANCE: Record<
+  VoiceCue,
+  { emotion: readonly [EmotionName, number, number]; gesture?: GestureName }
+> = {
+  intro: { emotion: ['happy', 1, 3.5], gesture: 'wave' },
+  greet: { emotion: ['happy', 1, 2.4], gesture: 'wave' },
+  ack: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
+  suggest: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
+  fullscreen: { emotion: ['happy', 0.6, 2.0] },
+  bye: { emotion: ['happy', 1, 2.4], gesture: 'bow' },
+  done: { emotion: ['happy', 0.8, 2.2], gesture: 'nod' },
+  error: { emotion: ['sad', 0.9, 2.6] },
+}
 
 function LiveDot() {
   return (
@@ -172,6 +192,11 @@ export default function ChatWidget() {
   // streaming answers.
   const [voiceSpeaking, setVoiceSpeaking] = useState(false)
   const voiceRef = useRef<HTMLAudioElement | null>(null)
+  // Live engine handle (null until the engine mounts, and again after
+  // teardown) for the imperative performance beats: lip-sync attachment,
+  // expressions, gestures. Optional-chained everywhere — the voice works
+  // fine before the handle exists, just without the face acting.
+  const avatarHandleRef = useRef<AvatarGuideHandle | null>(null)
   const avatarMode = voiceSpeaking ? 'speaking' : deriveAvatarMode(input, status)
   // Viewport class IS tracked live (rotate a phone, resize a window): width
   // moves the avatar between launcher / beside-panel / rail, and height gates
@@ -283,13 +308,25 @@ export default function ChatWidget() {
     // or play() refused outright (iOS rejects the off-gesture done/error cues
     // with NO DOM event — only the onBlocked callback catches that one).
     const done = () => {
-      if (voiceRef.current === el) setVoiceSpeaking(false)
+      if (voiceRef.current === el) {
+        setVoiceSpeaking(false)
+        avatarHandleRef.current?.setSpeech(null, null)
+      }
     }
     const el = playVoiceCue(cue, locale, undefined, () => done())
     voiceRef.current = el
     setVoiceSpeaking(true)
     el.addEventListener('ended', done)
     el.addEventListener('error', done)
+    // Performance beats ride the same "a line actually started" condition as
+    // the latch above. Lip sync keys the viseme timeline by clip filename —
+    // the same key both locale catalogues and the generator share.
+    const clipKey = (el.src.split('/').pop() ?? '').replace(/\.m4a$/, '')
+    const handle = avatarHandleRef.current
+    handle?.setSpeech(el, VOICE_VISEMES[clipKey] ?? null)
+    const perf = CUE_PERFORMANCE[cue]
+    handle?.setEmotion(...perf.emotion)
+    if (perf.gesture) handle?.playGesture(perf.gesture)
     return true
   }
   useEffect(() => () => voiceRef.current?.pause(), [])
@@ -559,6 +596,9 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
+        onHandle={(h) => {
+          avatarHandleRef.current = h
+        }}
         onLoaded={() => setAvatarLoaded(true)}
         // Releases the held-back capsule: with the corner kept empty during a
         // healthy load, a failed load MUST report itself or nothing ever shows.

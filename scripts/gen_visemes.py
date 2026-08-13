@@ -1,0 +1,136 @@
+# Generates src/components/chat/voiceVisemes.gen.ts from VOICEVOX audio_query
+# mora timings. Canonical text table for every shipped clip lives HERE.
+# Regenerate: start voicevox engine (speaker 8), then:
+#   python3 scripts/gen_visemes.py <repo-root>   (defaults to this repo)
+import json, subprocess, sys, urllib.request, urllib.parse
+
+REPO = sys.argv[1] if len(sys.argv) > 1 else '/Users/charles/portfolio'
+SPK = 8
+
+# (clip key, text, speedScale used at synthesis)
+LINES = [
+    # --- Japanese set (ja / zh-TW locales) ---
+    ('mika-greet-1', 'はーい！チャールズのこと、なんでも聞いてね！', 1.0),
+    ('mika-greet-2', '呼んだ？なんでも答えるよー！', 1.0),
+    ('mika-greet-3', 'やっほー！今日はなに聞く？', 1.0),
+    ('mika-greet-4', 'きたきた！待ってたよー！', 1.0),
+    ('mika-greet-5', 'チャールズのこと、あたしが一番くわしいよ！', 1.0),
+    ('mika-greet-6', 'おっ、気になる？なんでも聞いて！', 1.0),
+    ('mika-greet-7', 'ようこそー！ゆっくりしてってね！', 1.0),
+    ('mika-greet-8', '採用するなら早いもの勝ちだよ？', 1.0),
+    ('mika-greet-9', 'あたしの声、かわいいでしょ？', 1.0),
+    ('mika-ack-1', 'オッケー！ちょっと待っててね', 1.0),
+    ('mika-ack-2', 'りょーかい！ちょい待ちね！', 1.0),
+    ('mika-ack-3', 'いい質問！すぐ調べる！', 1.0),
+    ('mika-ack-4', 'まかせて！', 1.0),
+    ('mika-ack-5', 'ん、それね！いま答える！', 1.0),
+    ('mika-full-1', 'じゃーん！おっきくなった！', 1.0),
+    ('mika-full-2', 'ここからが本番だよ！', 1.0),
+    ('mika-suggest-1', 'お、それ聞いちゃう？', 1.0),
+    ('mika-suggest-2', 'ナイスチョイス！', 1.0),
+    ('mika-bye-1', 'またねー！', 1.0),
+    ('mika-bye-2', 'いつでも呼んでね！', 1.0),
+    ('mika-done-1', 'こんな感じ！どう？', 1.0),
+    ('mika-done-2', '他にも聞いてね！', 1.0),
+    ('mika-error-1', 'あれ？ちょっと失敗しちゃった…もっかい試して？', 1.0),
+    ('mika-intro-1', 'はじめまして！あたしミカ！チャールズの作品集を案内する、エーアイアシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！', 1.1),
+    # --- Katakana-English set (en locale) ---
+    ('mika-greet-1-en', 'ハーイ！アスクミーエニシング、アバウトチャールズ！', 1.1),
+    ('mika-greet-2-en', 'ユーコールド？アイガットオールジアンサーズ！', 1.1),
+    ('mika-greet-3-en', 'ヤッホー！ワットアーウィーアスキング、トゥデイ？', 1.1),
+    ('mika-greet-4-en', 'ゼアユーアー！アイブビーンウェイティング！', 1.1),
+    ('mika-greet-5-en', 'ノーバディノウズチャールズ、ベターザンミー！', 1.1),
+    ('mika-greet-6-en', 'オー、キュリアス？アスクミーエニシング！', 1.1),
+    ('mika-greet-7-en', 'ウェルカム！メイクユアセルフアットホーム！', 1.1),
+    ('mika-greet-8-en', 'ワナハイヤーヒム？ファーストカム、ファーストサーブド！', 1.1),
+    ('mika-greet-9-en', 'マイボイスイズキュート、ライト？', 1.1),
+    ('mika-ack-1-en', 'オッケー！ジャストアセック！', 1.1),
+    ('mika-ack-2-en', 'ロジャーザット！ハングオン！', 1.1),
+    ('mika-ack-3-en', 'グッドクエスチョン！オンイット！', 1.1),
+    ('mika-ack-4-en', 'リーブイットトゥーミー！', 1.1),
+    ('mika-ack-5-en', 'ウー、ザットワン！カミングライトアップ！', 1.1),
+    ('mika-full-1-en', 'ジャジャーン！ビッグスクリーンモード！', 1.1),
+    ('mika-full-2-en', 'ナウ、ザリアルショービギンズ！', 1.1),
+    ('mika-suggest-1-en', 'ウー、ゴーイングウィズザットワン？', 1.1),
+    ('mika-suggest-2-en', 'ナイスチョイス！', 1.1),
+    ('mika-bye-1-en', 'シーヤ！', 1.1),
+    ('mika-bye-2-en', 'コールミーエニタイム！', 1.1),
+    ('mika-done-1-en', 'ゼアユーゴー！ハウズザット？', 1.1),
+    ('mika-done-2-en', 'アスクミーモア！', 1.1),
+    ('mika-error-1-en', 'ウップス、サムシングウェントロング。トライアゲイン？', 1.1),
+    ('mika-intro-1-en', 'ハーイ、アイムミカ！チャールズの、エーアイポートフォリオガイド！アスクミーエニシング、アバウトヒズワーク！', 1.1),
+]
+
+VOWEL_TO_IDX = {'a': 0, 'i': 1, 'u': 2, 'e': 3, 'o': 4}  # aa ih ou ee oh
+
+
+def audio_query(text):
+    q = urllib.parse.urlencode({'text': text, 'speaker': SPK})
+    req = urllib.request.Request(f'http://localhost:50021/audio_query?{q}', method='POST')
+    return json.load(urllib.request.urlopen(req))
+
+
+def clip_duration(key):
+    out = subprocess.run(['afinfo', f'{REPO}/public/avatar/voice/{key}.m4a'],
+                         capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        if 'estimated duration' in line:
+            return float(line.split(':')[1].strip().split(' ')[0])
+    raise RuntimeError(f'no duration for {key}')
+
+
+entries = []
+bad = []
+for key, text, speed in LINES:
+    q = audio_query(text)
+    t = q['prePhonemeLength']
+    segs = []  # [startSec, visemeIdx]
+    last = None
+    for phrase in q['accent_phrases']:
+        moras = list(phrase['moras'])
+        if phrase.get('pause_mora'):
+            moras.append(phrase['pause_mora'])
+        for m in moras:
+            v = VOWEL_TO_IDX.get((m['vowel'] or '').lower(), -1)
+            if v != last:
+                segs.append([round(t / speed, 3), v])
+                last = v
+            t += (m.get('consonant_length') or 0) + (m.get('vowel_length') or 0)
+    t += q['postPhonemeLength']
+    end = round(t / speed, 3)
+    real = clip_duration(key)
+    # Sentence-final ？/！ upspeak lengthens the last mora at synthesis time
+    # beyond the query's stated lengths — trailing-only drift. Snap the closing
+    # sentinel to the real clip length so the mouth holds through the tail.
+    segs.append([max(end, round(real, 3)), -1])
+    drift = abs(end - real)
+    if drift > 0.35:
+        bad.append((key, end, real))
+    entries.append((key, segs, end, real))
+    print(f'{key:22s} timeline={end:5.2f}s clip={real:5.2f}s drift={end-real:+.3f}s segs={len(segs)}')
+
+if bad:
+    print('\nDRIFT FAILURES (timeline vs shipped clip):', bad)
+    sys.exit(1)
+
+lines_out = [
+    '// GENERATED by scratchpad gen_visemes.py — do not edit by hand.',
+    '// Per-clip viseme timelines derived from the same VOICEVOX audio_query',
+    '// (speaker 8) each clip was synthesized from, divided by its speedScale.',
+    '// Format: [startSec, viseme] steps; viseme indexes VISEME_NAMES, -1 = closed.',
+    '// Regenerate: start the voicevox engine, then run the script (see its header).',
+    '',
+    "export const VISEME_NAMES = ['aa', 'ih', 'ou', 'ee', 'oh'] as const",
+    '',
+    'export type VisemeTrack = ReadonlyArray<readonly [number, number]>',
+    '',
+    'export const VOICE_VISEMES: Record<string, VisemeTrack> = {',
+]
+for key, segs, _end, _real in entries:
+    body = ', '.join(f'[{s}, {v}]' for s, v in segs)
+    lines_out.append(f"  '{key}': [{body}],")
+lines_out.append('}')
+lines_out.append('')
+with open(f'{REPO}/src/components/chat/voiceVisemes.gen.ts', 'w') as f:
+    f.write('\n'.join(lines_out))
+print(f'\nwrote voiceVisemes.gen.ts with {len(entries)} tracks')

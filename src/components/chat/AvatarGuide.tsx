@@ -12,12 +12,17 @@ const VRM_URL = '/avatar/AvatarSample_B.vrm'
 export default function AvatarGuide({
   mode,
   active = true,
+  onHandle,
   onLoaded,
   onContextLost,
   onLoadFailed,
 }: {
   mode: AvatarMode
   active?: boolean
+  // Hands the live engine handle up once the engine is created (and null on
+  // teardown) so the widget can drive lip sync / emotions / gestures directly
+  // — those are imperative performance beats, not renderable React state.
+  onHandle?: (handle: AvatarGuideHandle | null) => void
   // Relayed from the engine after the VRM's first rendered frame; the widget
   // swaps the capsule launcher for the character only after this fires.
   onLoaded?: () => void
@@ -32,14 +37,16 @@ export default function AvatarGuide({
   const handleRef = useRef<AvatarGuideHandle | null>(null)
   const modeRef = useRef(mode)
   const activeRef = useRef(active)
+  const onHandleRef = useRef(onHandle)
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
   const onLoadFailedRef = useRef(onLoadFailed)
   useEffect(() => {
+    onHandleRef.current = onHandle
     onLoadedRef.current = onLoaded
     onContextLostRef.current = onContextLost
     onLoadFailedRef.current = onLoadFailed
-  }, [onLoaded, onContextLost, onLoadFailed])
+  }, [onHandle, onLoaded, onContextLost, onLoadFailed])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -64,11 +71,13 @@ export default function AvatarGuide({
       )
       handleRef.current.setMode(modeRef.current)
       handleRef.current.setActive(activeRef.current)
+      onHandleRef.current?.(handleRef.current)
     })
     return () => {
       cancelled = true
       handleRef.current?.dispose()
       handleRef.current = null
+      onHandleRef.current?.(null)
     }
   }, [])
 
