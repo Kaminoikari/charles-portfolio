@@ -14,13 +14,41 @@
 //     voice behind the ambient-music mute; that button was removed 2026-08-13
 //     and voice became unconditional.)
 
-export type VoiceCue = 'greet' | 'ack'
+export type VoiceCue = 'greet' | 'ack' | 'fullscreen' | 'suggest' | 'bye' | 'done' | 'error'
 
 export const VOICE_LINES: Record<VoiceCue, string[]> = {
   // Tap on Mika (or her speech bubble): she says hello and invites a question.
-  greet: ['/avatar/voice/mika-greet-1.m4a', '/avatar/voice/mika-greet-2.m4a'],
-  // Question submitted: a short acknowledgement while the pipeline spins up.
-  ack: ['/avatar/voice/mika-ack-1.m4a'],
+  greet: [
+    '/avatar/voice/mika-greet-1.m4a',
+    '/avatar/voice/mika-greet-2.m4a',
+    '/avatar/voice/mika-greet-3.m4a',
+    '/avatar/voice/mika-greet-4.m4a',
+    '/avatar/voice/mika-greet-5.m4a',
+    '/avatar/voice/mika-greet-6.m4a',
+    '/avatar/voice/mika-greet-7.m4a',
+    '/avatar/voice/mika-greet-8.m4a',
+    '/avatar/voice/mika-greet-9.m4a',
+  ],
+  // Question submitted by typing: a short acknowledgement while the pipeline spins up.
+  ack: [
+    '/avatar/voice/mika-ack-1.m4a',
+    '/avatar/voice/mika-ack-2.m4a',
+    '/avatar/voice/mika-ack-3.m4a',
+    '/avatar/voice/mika-ack-4.m4a',
+    '/avatar/voice/mika-ack-5.m4a',
+  ],
+  // Expand button tap, entering fullscreen only (collapsing stays silent).
+  fullscreen: ['/avatar/voice/mika-full-1.m4a', '/avatar/voice/mika-full-2.m4a'],
+  // A suggested-question chip tap (replaces ack for that submit).
+  suggest: ['/avatar/voice/mika-suggest-1.m4a', '/avatar/voice/mika-suggest-2.m4a'],
+  // The explicit minimise button (Escape closes silently by design).
+  bye: ['/avatar/voice/mika-bye-1.m4a', '/avatar/voice/mika-bye-2.m4a'],
+  // Answer stream finished / failed. These two cues fire OUTSIDE a tap gesture,
+  // so iOS refuses the fresh play() and they stay silent there (the rejection
+  // is swallowed); desktop browsers allow them after the visitor's first
+  // interaction. Accepted trade-off, recorded in docs/plans/avatar-guide.md.
+  done: ['/avatar/voice/mika-done-1.m4a', '/avatar/voice/mika-done-2.m4a'],
+  error: ['/avatar/voice/mika-error-1.m4a'],
 }
 
 export function pickVoiceLine(cue: VoiceCue, rng: () => number = Math.random): string {
@@ -31,9 +59,15 @@ export function pickVoiceLine(cue: VoiceCue, rng: () => number = Math.random): s
 // Fire-and-forget: audio is chrome, never blocks the chat. Returns the element
 // so the caller can drive the viseme loop off ended/error.
 // `play()` is optional-chained: jsdom's stub returns undefined instead of a
-// promise, and a rejected real promise (rare autoplay refusal) is swallowed.
-export function playVoiceCue(cue: VoiceCue, rng: () => number = Math.random): HTMLAudioElement {
+// promise. A rejected promise (autoplay refusal — routine on iOS for the
+// off-gesture done/error cues) reports through onBlocked, because the browser
+// fires NO DOM event in that case and callers must reset their own state.
+export function playVoiceCue(
+  cue: VoiceCue,
+  rng: () => number = Math.random,
+  onBlocked?: () => void,
+): HTMLAudioElement {
   const el = new Audio(pickVoiceLine(cue, rng))
-  el.play()?.catch(() => {})
+  el.play()?.catch(() => onBlocked?.())
   return el
 }

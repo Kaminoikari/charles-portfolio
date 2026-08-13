@@ -41,18 +41,29 @@ mockup 的黑框是截圖合成痕跡）。
 **語音（2026-08-13 使用者定案，路線 A）**：預錄 voice lines，**不做**即時 TTS 唸答案
 （執行期成本＋濫用風險，翻盤條件：正式角色定案且願掛付費 API 預算）。聲源
 **VOICEVOX:春日部つむぎ**（辣妹系聲線貼 Mika 造型；商用允許、需標注，credit 在
-ContactFooter）。三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
+ContactFooter）。~~三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
 greet ×2（點她／點泡泡時）、ack ×1（送出問題時）。播放全在 tap-completed 手勢內
-（符合 CLAUDE.md iOS 硬規則，無需 unlock dance）；~~`ambient.muted` 在**播放起點**
+（符合 CLAUDE.md iOS 硬規則，無需 unlock dance）~~（**2026-08-13 擴充（使用者指示
+「20 句全部接上」）**：目錄擴為 **23 句／7 種 cue**——greet ×9（點她／點泡泡，含
+2 句彩蛋）、ack ×5（打字送出）、fullscreen ×2（僅進入全螢幕，收合靜默）、
+suggest ×2（點建議問題，取代該次的 ack）、bye ×2（僅明確的關閉鈕；Escape 關閉
+刻意靜默）、done ×2（串流成功結束）、error ×1（串流失敗——含連線層失敗與 **SSE error
+frame（HTTP 200＋status 停在 idle、訊息標 error）**，後者是 pipeline 生成失敗的
+常態路徑，effect 以訊息的 error 旗標路由，不能只看 status）。前五種 cue 全在
+tap/keypress 手勢內；**done／error 兩種在手勢外觸發（status 轉場 effect），iOS 會
+拒絕 fresh play() 而靜默、桌機在首次互動後可播**——使用者知情接受的取捨。done／
+error 另以 `open` 守門：串流中收面板就不出聲。iOS 拒播時 promise 被拒但**不觸發
+任何 DOM 事件**，playVoiceCue 的 onBlocked 回呼負責把 voiceSpeaking 撥回 false，
+否則 speaking 臉會卡死。日文三語系共用不變）；~~`ambient.muted` 在**播放起點**
 閘門全部語音~~（**2026-08-13 修訂**：使用者決定移除背景音樂 FAB，整個 ambient
 系統（AudioProvider／audio-context／MusicToggle／ambient-noir.mp3）一併下線，
 語音改為**無條件**播放；安全性由「只在手勢內出聲」承擔，膠囊代打狀態照舊
 因 speakCue 的 avatarLoaded 前置檢查而完全不出聲）；播放中借用既有
 speaking mode 的**亂數口型迴圈**讓嘴巴動（與 clip 同起訖，不做音訊分析——
 Non-goals 的「口型對真實語音」維持不做）；檔案在
-`public/avatar/voice/*.m4a`（AAC 24kHz mono，13–19KB ×3，吃 /avatar/* immutable
-快取，**改內容必須換檔名**）。合成管線：本機 colima＋voicevox_engine Docker（speaker 8）
-→ wav → afconvert AAC。
+`public/avatar/voice/*.m4a`（AAC 24kHz mono，8–23KB ×23 共約 300KB，吃 /avatar/*
+immutable 快取，**改內容必須換檔名**）。合成管線：本機 colima＋voicevox_engine
+Docker（speaker 8）→ wav → afconvert AAC（不帶 -b，帶了會報 '!dat' 錯）。
 
 **角色命名（2026-08-13 使用者定案）**：**Mika**（ミカ／中文稱 Mika 醬）。選名理由：
 辣妹感貼合黑肉街頭系造型＋兩音拍三語系都好念；Amika 避開（與參考站 mekahime 撞名圈）、

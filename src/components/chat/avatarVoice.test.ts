@@ -26,6 +26,14 @@ describe('pickVoiceLine', () => {
     expect(pickVoiceLine('greet', () => 0)).toBe(VOICE_LINES.greet[0])
     expect(pickVoiceLine('greet', () => 0.99)).toBe(VOICE_LINES.greet[VOICE_LINES.greet.length - 1])
     expect(pickVoiceLine('ack', () => 0)).toBe(VOICE_LINES.ack[0])
+    expect(pickVoiceLine('fullscreen', () => 0)).toBe(VOICE_LINES.fullscreen[0])
+    expect(pickVoiceLine('bye', () => 0.99)).toBe(VOICE_LINES.bye[VOICE_LINES.bye.length - 1])
+  })
+
+  it('covers all seven interaction cues, each with at least one clip', () => {
+    const cues = ['greet', 'ack', 'fullscreen', 'suggest', 'bye', 'done', 'error'] as const
+    expect(Object.keys(VOICE_LINES).sort()).toEqual([...cues].sort())
+    for (const cue of cues) expect(VOICE_LINES[cue].length).toBeGreaterThan(0)
   })
 
   it('every catalogued clip lives under the immutable-cached /avatar/ path', () => {
@@ -49,5 +57,20 @@ describe('playVoiceCue', () => {
     }
     vi.stubGlobal('Audio', NoPromiseAudio as unknown as typeof Audio)
     expect(() => playVoiceCue('ack', () => 0)).not.toThrow()
+  })
+
+  it('reports a refused play() through onBlocked so callers can reset state', async () => {
+    // iOS refuses off-gesture play() by rejecting the promise WITHOUT firing
+    // 'ended' or 'error' DOM events — without this callback the speaking face
+    // would stay stuck on after every done/error cue there.
+    class RefusingAudio extends FakeAudio {
+      play = vi.fn(() => Promise.reject(new Error('NotAllowedError')))
+    }
+    vi.stubGlobal('Audio', RefusingAudio as unknown as typeof Audio)
+    const onBlocked = vi.fn()
+    playVoiceCue('done', () => 0, onBlocked)
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(onBlocked).toHaveBeenCalledTimes(1)
   })
 })

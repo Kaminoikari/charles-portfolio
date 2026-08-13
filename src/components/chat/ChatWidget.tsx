@@ -265,12 +265,15 @@ export default function ChatWidget() {
   const speakCue = (cue: VoiceCue) => {
     if (!avatarOn || !avatarLoaded || avatarDead) return
     voiceRef.current?.pause() // never overlap two lines
-    const el = playVoiceCue(cue)
-    voiceRef.current = el
-    setVoiceSpeaking(true)
+    // One shared reset for every way a line can stop: finished, media error,
+    // or play() refused outright (iOS rejects the off-gesture done/error cues
+    // with NO DOM event — only the onBlocked callback catches that one).
     const done = () => {
       if (voiceRef.current === el) setVoiceSpeaking(false)
     }
+    const el = playVoiceCue(cue, undefined, () => done())
+    voiceRef.current = el
+    setVoiceSpeaking(true)
     el.addEventListener('ended', done)
     el.addEventListener('error', done)
   }
@@ -411,14 +414,36 @@ export default function ChatWidget() {
       .catch(() => setRegionBlocked(false))
   }, [open])
 
-  const submit = (question: string) => {
+  const submit = (question: string, cue: VoiceCue = 'ack') => {
     if (regionBlocked) return
     const q = question.trim()
     if (!q) return
     setInput('')
-    speakCue('ack')
+    speakCue(cue)
     void send(q, t('chat.errorMessage'))
   }
+
+  // Stream-outcome cues. These two fire from a state transition, not a tap, so
+  // iOS declines the fresh play() and they are desktop-only by design (the
+  // trade-off is recorded in the plan doc). Guarded on `open` so a visitor who
+  // minimised mid-stream isn't startled by a voice with no visible answer.
+  const prevStatusRef = useRef(status)
+  useEffect(() => {
+    const prev = prevStatusRef.current
+    prevStatusRef.current = status
+    if (prev !== 'streaming' || !open) return
+    const last = messages[messages.length - 1]
+    if (status === 'error') speakCue('error')
+    else if (status === 'idle' && last && last.text) {
+      // Pipeline failures arrive as an SSE error frame over HTTP 200: the
+      // stream ends with status 'idle' and the message flagged error — the
+      // status alone never says 'error' for those, so route on the flag.
+      speakCue(last.error ? 'error' : 'done')
+    }
+    // speakCue and messages are deliberately unlisted: this effect must react to
+    // status edges only, never re-fire on token appends.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, open])
 
   const suggestions = [
     t('chat.suggested1'),
@@ -639,7 +664,10 @@ export default function ChatWidget() {
           </div>
           <div className="flex flex-none items-center gap-0.5">
             <button
-              onClick={toggleFullscreen}
+              onClick={() => {
+                if (!fullscreen) speakCue('fullscreen') // entering only; collapse is silent
+                toggleFullscreen()
+              }}
               aria-label={fullscreen ? t('chat.collapseAriaLabel') : t('chat.expandAriaLabel')}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
             >
@@ -671,7 +699,10 @@ export default function ChatWidget() {
               </svg>
             </button>
             <button
-              onClick={minimise}
+              onClick={() => {
+                speakCue('bye')
+                minimise()
+              }}
               aria-label={t('chat.minimiseAriaLabel')}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-text-tertiary transition-colors hover:text-white"
             >
@@ -716,7 +747,7 @@ export default function ChatWidget() {
                   {suggestions.map((s) => (
                     <button
                       key={s}
-                      onClick={() => submit(s)}
+                      onClick={() => submit(s, 'suggest')}
                       // The outer guard already excludes streaming, so only the
                       // region block can disable these now.
                       disabled={regionBlocked}
@@ -768,7 +799,7 @@ export default function ChatWidget() {
               {suggestions.map((s) => (
                 <button
                   key={s}
-                  onClick={() => submit(s)}
+                  onClick={() => submit(s, 'suggest')}
                   className="cursor-pointer rounded-full border border-border bg-transparent px-3 py-2 text-[12px] text-text-muted transition-colors hover:border-border-hover hover:text-white"
                 >
                   {s}
