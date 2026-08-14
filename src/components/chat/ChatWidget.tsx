@@ -13,9 +13,10 @@ import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 import {
-  AVATAR_FRAMING_RAIL,
+  AVATAR_FRAMING_COLUMN,
   avatarGuideEnabledInBrowser,
   AVATAR_LAUNCHER_HIT_CLASS,
+  avatarColumnBox,
   avatarPlacement,
   avatarSizeClass,
   CHAT_PANEL_HEIGHT_CLASS,
@@ -206,44 +207,51 @@ export default function ChatWidget() {
   const avatarHandleRef = useRef<AvatarGuideHandle | null>(null)
   const avatarMode = voiceSpeaking ? 'speaking' : deriveAvatarMode(input, status)
   // Viewport class IS tracked live (rotate a phone, resize a window): width
-  // moves the avatar between launcher / beside-panel / rail, and height gates
-  // the rail stand (a short viewport has no floor space under the pipeline).
-  // Height lives in React state, not a CSS media query, because `active` must
-  // follow it — display:none alone would leave the engine's rAF loop burning
-  // 60fps behind an invisible canvas.
+  // moves the avatar between launcher / beside-panel / column. It lives in
+  // React state, not a CSS media query, because `active` must follow it —
+  // display:none alone would leave the engine's rAF loop burning 60fps behind
+  // an invisible canvas.
   const [wide, setWide] = useState(() => window.matchMedia('(min-width: 880px)').matches)
-  const [tall, setTall] = useState(() => window.matchMedia('(min-height: 640px)').matches)
-  // md mirrors the rail's own breakpoint (the aside is max-md:hidden): the
-  // character stands wherever the rail exists, which starts below `wide`.
+  // md mirrors the pipeline rail's own breakpoint (the aside is max-md:hidden)
+  // and is the floor for the fullscreen column too.
   const [md, setMd] = useState(() => window.matchMedia('(min-width: 768px)').matches)
-  // The rail's enlarged canvas needs vertical room that the 640px rail floor
-  // does not guarantee: at 640 its 330px spacer takes 60% of the visible
-  // column and the trace — the reason fullscreen exists, and which the owner
-  // asked never be crowded out by her — has ~196px left. Between 640 and 760
-  // she keeps the launcher's 245×280 box, which costs 62px of spacer.
-  const [roomy, setRoomy] = useState(() => window.matchMedia('(min-height: 760px)').matches)
   useEffect(() => {
     const wq = window.matchMedia('(min-width: 880px)')
-    const hq = window.matchMedia('(min-height: 640px)')
     const mq = window.matchMedia('(min-width: 768px)')
-    const rq = window.matchMedia('(min-height: 760px)')
     setWide(wq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
-    setTall(hq.matches)
     setMd(mq.matches)
-    setRoomy(rq.matches)
     const onW = () => setWide(wq.matches)
-    const onH = () => setTall(hq.matches)
     const onM = () => setMd(mq.matches)
-    const onR = () => setRoomy(rq.matches)
     wq.addEventListener('change', onW)
-    hq.addEventListener('change', onH)
     mq.addEventListener('change', onM)
-    rq.addEventListener('change', onR)
     return () => {
       wq.removeEventListener('change', onW)
-      hq.removeEventListener('change', onH)
       mq.removeEventListener('change', onM)
-      rq.removeEventListener('change', onR)
+    }
+  }, [])
+  // The fullscreen column's box needs the viewport in pixels, not in classes:
+  // it trades height against width continuously (avatarColumnBox) rather than
+  // switching at a breakpoint. A rAF coalesces the resize burst so a drag
+  // re-renders once per frame at most, and the engine reconciles its drawing
+  // buffer to the canvas box every frame anyway.
+  const [viewport, setViewport] = useState(() => ({
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+  }))
+  useEffect(() => {
+    let frame = 0
+    const onResize = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        setViewport({ vw: window.innerWidth, vh: window.innerHeight })
+      })
+    }
+    onResize()
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      if (frame) cancelAnimationFrame(frame)
     }
   }, [])
   // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
@@ -571,37 +579,42 @@ export default function ChatWidget() {
   //                pure margin, so a stretch loses ~15px of fingertip there and
   //                nothing from ~933px up. document.scrollWidth was unchanged
   //                (874) — a fixed box overhanging leftward adds no scroll.
-  //  rail          wide fullscreen: she stands at the bottom of the pipeline
-  //                rail. Panel is inset-4 with a 236px rail column, so
-  //                left = 16 + (236-w)/2 centres her canvas in it, which works
-  //                out at 12px for the 245px box a short viewport falls back
-  //                to. The full 300px box is WIDER than the column, so it uses
-  //                -left-4, which still centres it on the column, with the
-  //                transparent overhang split evenly either side.
-  //                z-[55] beats the panel's z-50; rendered at full
-  //                size (the old 80% shrink fought the whole point of the
-  //                fullscreen view, where there is the most room to actually
-  //                watch her) with the trace spacer below reserving the taller
-  //                footprint; hidden under 640px viewport height where the two
-  //                would collide.
-  //  hidden        narrow fullscreen or docked-on-phone: display:none, engine
-  //                paused, never unmounted.
-  // A short viewport downgrades 'rail' to 'hidden' inside avatarPlacement
-  // (React state, not a CSS media query), so `active` below genuinely stops
-  // the render loop too.
-  const placement = avatarPlacement(mode, wide, tall, md)
+  //  column        fullscreen: she stands at the panel's bottom-right inner
+  //                corner (bottom-4 right-4), the full height of the panel body
+  //                below the header, at the head-to-knee crop of
+  //                AVATAR_FRAMING_COLUMN. z-[55] beats the panel's z-50.
+  //                Her canvas is WIDER than the space the transcript gives up:
+  //                avatarColumnBox reserves only her body, and the transparent
+  //                gesture margin overhangs the transcript's gutter, where it
+  //                costs nothing because the wrapper takes no pointer events.
+  //                A stretch does sweep a hand across the text's right edge —
+  //                deliberate, and the reason the reserve is a fraction rather
+  //                than the whole box.
+  //  hidden        fullscreen on a phone, or docked-on-phone: display:none,
+  //                engine paused, never unmounted.
+  const placement = avatarPlacement(mode, wide, md)
   // !avatarDead guards a context-loss race: a frame scheduled between the
   // webglcontextlost event and this commit could still report onLoaded, and
   // launcher-true here with the wrapper unmounted would leave NO launcher.
   const avatarIsLauncher = placement === 'launcher' && avatarLoaded && !avatarDead
-  // Enlarged canvas for the two chat-open placements; the rail also needs the
-  // vertical room (see `roomy`).
-  const avatarBig = placement === 'beside-panel' || (placement === 'rail' && roomy)
-  // The rail goes one further: 400px tall with the camera dollied back to
-  // match (AVATAR_FRAMING_RAIL), so she is the same size on screen but stands
-  // 58px higher in the column and is cropped below the knee instead of
-  // mid-thigh. The docked panel keeps 342px — it has less height to give.
-  const avatarRailBig = placement === 'rail' && roomy
+  // Recomputed on every resize frame; only read in the column placement, but
+  // cheap enough (six multiplications) not to be worth gating.
+  const columnBox = avatarColumnBox(viewport.vw, viewport.vh)
+  const inColumn = placement === 'column'
+  // What the transcript actually gives up. Zero until she is on screen, so a
+  // gated-off, failed or context-lost avatar leaves the text its full width
+  // rather than a gap where nobody is standing. The cost is one reflow when she
+  // finishes loading, which is a second or two before the panel is usually
+  // opened at all.
+  const columnReserve = inColumn && avatarLoaded && !avatarDead ? columnBox.reserve : 0
+  // Replaces the old `max-w-[760px]`: same 712px measure when she is absent
+  // (760 element − 48 of px-6), pushed left by her body when she is not. The
+  // element stays mx-auto, which centres the TEXT in what is left beside her —
+  // the reserve rides inside the element's own width, so both halves move by
+  // the same amount.
+  const columnGutter = fullscreen
+    ? { maxWidth: 760 + columnReserve, paddingRight: columnReserve + 24 }
+    : undefined
   // Hold the capsule back while the character is plausibly on her way: before
   // the gate has even been asked, and during a healthy load. Every "she is not
   // coming" signal (gate off, failure, patience window, dead context) releases
@@ -616,22 +629,11 @@ export default function ChatWidget() {
           ? 'hidden'
           : placement === 'beside-panel'
             ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
-            : placement === 'rail'
-              ? avatarBig
-                ? // The 300px box is wider than the 236px rail column, so
-                  // centring her in it takes a negative offset: 16 - (300-236)/2
-                  // = -16. The overhang either side is transparent and the
-                  // wrapper is pointer-events-none, so it covers no station and
-                  // catches no click. Her RESTING silhouette stays inside the
-                  // column, but a stretch does not: its fingertips reach
-                  // ±128px from centre 134, i.e. x≈6 and x≈262 against a column
-                  // of [16, 252], so about 10px of hand crosses onto the
-                  // backdrop on one side and the transcript on the other. That
-                  // is the point — the owner asked for gestures that do not
-                  // look boxed in — and it is safe only because this wrapper
-                  // takes no pointer events.
-                  'pointer-events-none fixed bottom-6 -left-4 z-[55]'
-                : 'pointer-events-none fixed bottom-6 left-[12px] z-[55]'
+            : inColumn
+              ? // Pinned to the panel's bottom-right inner corner: the panel is
+                // inset-4, so bottom-4 right-4 puts her canvas edges exactly on
+                // its own. Her height then reaches up to just under the header.
+                'pointer-events-none fixed bottom-4 right-4 z-[55]'
               : // launcher: glides from above the capsule down into the corner
                 // once she takes over as the button. 72% on narrow screens
                 // reduces how much of a phone's hero headline she covers; it
@@ -656,9 +658,11 @@ export default function ChatWidget() {
         active={placement !== 'hidden'}
         // Widths carry her arm span, heights and framing carry her size; both
         // live in avatarMode.ts so a test can hold the class strings and the
-        // AVATAR_CANVAS_* constants to each other.
-        sizeClass={avatarSizeClass(placement, roomy)}
-        framing={avatarRailBig ? AVATAR_FRAMING_RAIL : undefined}
+        // AVATAR_CANVAS_* constants to each other. The column's box is
+        // arithmetic instead, for the same reason it has no class.
+        sizeClass={avatarSizeClass(placement)}
+        sizeStyle={inColumn ? { width: columnBox.w, height: columnBox.h } : undefined}
+        framing={inColumn ? AVATAR_FRAMING_COLUMN : undefined}
         onHandle={(h) => {
           avatarHandleRef.current = h
         }}
@@ -902,54 +906,34 @@ export default function ChatWidget() {
               fullscreen doesn't, so it stays out of the way there too. */}
           {fullscreen && (
             <aside className="flex min-h-0 flex-col gap-5 overflow-y-auto border-r border-border p-4 max-md:hidden animate-chat-rail">
-              {/* The rail's job changes with state: before the first question it
-                  invites one (suggestions); after that it belongs to the
-                  pipeline. Keeping both stacked would also push the trace's
-                  last stations down behind the character standing at the
-                  rail's foot. The status guard matters on FOLLOW-UP questions:
-                  send() clears the trace in the same batch it sets 'streaming',
-                  so without it the suggestions would flash back for the
-                  hundreds of ms before the first node event arrives. */}
-              {trace.length === 0 && status !== 'streaming' && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="font-mono text-[10px] font-medium uppercase tracking-[1.1px] text-text-tertiary">
-                    {t('chat.suggestionsTitle')}
-                  </h3>
-                  {suggestions.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => submit(s, 'suggest')}
-                      // The outer guard already excludes streaming, so only the
-                      // region block can disable these now.
-                      disabled={regionBlocked}
-                      className="cursor-pointer rounded-[10px] border border-border bg-transparent px-2.5 py-2 text-left text-[12.5px] leading-snug text-text-muted transition-colors hover:border-border-hover hover:text-white disabled:cursor-default disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* The suggestions used to be swapped out for the pipeline once a
+                  question was asked. That was never about the suggestions: the
+                  character stood at the foot of this rail, and stacking both
+                  pushed the trace's last stations behind her head. She moved to
+                  a column of her own on 2026-08-14, so the rail is free to keep
+                  both and simply scroll — which it already does. Asking a
+                  follow-up no longer means waiting for the answer to get the
+                  prompts back. */}
+              <div className="flex flex-col gap-2">
+                <h3 className="font-mono text-[10px] font-medium uppercase tracking-[1.1px] text-text-tertiary">
+                  {t('chat.suggestionsTitle')}
+                </h3>
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => submit(s, 'suggest')}
+                    // Streaming has to disable these now that they outlive the
+                    // question: the outer guard used to do it by unmounting them.
+                    disabled={regionBlocked || status === 'streaming'}
+                    className="cursor-pointer rounded-[10px] border border-border bg-transparent px-2.5 py-2 text-left text-[12.5px] leading-snug text-text-muted transition-colors hover:border-border-hover hover:text-white disabled:cursor-default disabled:opacity-40 disabled:hover:border-border disabled:hover:text-text-muted"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
               {/* The reason fullscreen exists: the retrieval pipeline, visible
                   while it runs. The docked panel has no room for it. */}
               <PipelineTrace trace={trace} />
-              {/* The character stands (fixed, z-[55]) over the bottom of this
-                  rail. Reserve her floor space with a real element so a long
-                  trace scrolls to rest above her head — block-end PADDING on
-                  an overflow container is dropped from the scroll extent by
-                  some engines, a spacer never is. Both numbers are derived:
-                  her canvas top is vh−424 on the rail's 400px canvas and
-                  vh−304 on the 280px one a short viewport falls back to
-                  (bottom-6 + the canvas), the aside's bottom padding is 16px
-                  and gap-5 adds 20px — change any of those (or the panel's
-                  inset-4) and these move with them. Measured against the
-                  canvas rather than her hairline, so the framing's headroom
-                  reads as breathing space between the trace and her. */}
-              {avatarOn && avatarLoaded && placement === 'rail' && (
-                <div
-                  aria-hidden
-                  className={avatarRailBig ? 'h-[388px] shrink-0' : 'h-[268px] shrink-0'}
-                />
-              )}
             </aside>
           )}
 
@@ -963,8 +947,14 @@ export default function ChatWidget() {
               aria-atomic="false"
               className={
                 'flex flex-1 flex-col gap-4 overflow-y-auto ' +
-                (fullscreen ? 'mx-auto w-full max-w-[760px] px-6 py-7' : 'p-4')
+                (fullscreen ? 'mx-auto w-full px-6 py-7' : 'p-4')
               }
+              // She stands over the right of this column, so the text stops at
+              // her body rather than running under it — her transparent gesture
+              // margin is free to overhang the gap that leaves. Padding, not a
+              // grid column, so the transcript keeps the whole width when she
+              // is absent (phone fullscreen, reduced motion, a dead context).
+              style={columnGutter}
             >
         {regionBlocked ? (
           <p className="text-[14px] leading-[1.7] text-text-muted">{t('chat.regionBlocked')}</p>
@@ -1027,8 +1017,12 @@ export default function ChatWidget() {
               }}
               className={
                 'flex flex-none gap-2.5 border-t border-border ' +
-                (fullscreen ? 'mx-auto w-full max-w-[760px] px-6 pb-5 pt-3.5' : 'p-3.5')
+                (fullscreen ? 'mx-auto w-full px-6 pb-5 pt-3.5' : 'p-3.5')
               }
+              // Same gutter as the body above: the composer shares the thread's
+              // axis, so it has to stop where the text does or the Send button
+              // ends up behind her skirt.
+              style={columnGutter}
             >
               <input
                 ref={inputRef}

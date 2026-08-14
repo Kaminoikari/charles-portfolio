@@ -195,6 +195,38 @@ describe('ChatWidget fullscreen', () => {
       expect(screen.getByText('799 ms')).toBeTruthy()
     })
 
+    // The rail used to swap the suggestions out for the trace, because the
+    // character stood at its foot and the two stacked pushed the last stations
+    // behind her. She moved to her own column on 2026-08-14 and they now
+    // coexist. Asserted through a real answered question, since the old
+    // behaviour only showed itself after one.
+    it('keeps the suggestions in the rail after a question has been answered', async () => {
+      // Node frames are load-bearing: the old rule hid the suggestions while
+      // the TRACE was non-empty, so a stub that reports no nodes leaves the
+      // trace empty and the old behaviour passes this test too. Verified by
+      // mutation — with these frames removed, restoring the old condition
+      // stayed green.
+      stubFetch([
+        frame('node', { id: 'retrieve', status: 'start' }),
+        frame('node', { id: 'retrieve', status: 'done', ms: 176 }),
+        frame('done', { sources: [], answer: ANSWER }),
+      ])
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+      await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+      const rail = document.querySelector('aside')!
+      const inRail = (name: RegExp) =>
+        [...rail.querySelectorAll('button')].some((b) => name.test(b.textContent ?? ''))
+      expect(inRail(/how were you built/i)).toBe(true)
+
+      await user.type(screen.getByLabelText(/ask anything about his work/i), 'q')
+      await user.click(screen.getByRole('button', { name: /send question/i }))
+      await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy())
+
+      expect(inRail(/how were you built/i)).toBe(true)
+    })
+
     // The corrective loop is the most interesting thing this pipeline does, so
     // a second visit has to read as a second station rather than being folded
     // into the first.

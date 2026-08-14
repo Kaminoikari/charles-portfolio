@@ -23,22 +23,23 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 // 5.5MB VRM is fetched and parsed exactly once per page.
 //  launcher      stowed panel — the character IS the launcher button
 //  beside-panel  docked panel on a viewport wide enough for both, side by side
-//  rail          wide fullscreen — she stands at the bottom of the pipeline rail
-//  hidden        narrow fullscreen (no rail), or a docked panel covering a phone
-export type AvatarPlacement = 'launcher' | 'beside-panel' | 'rail' | 'hidden'
+//  column        fullscreen — she stands full height in a column of her own on
+//                the right, at whatever size the window can pay for
+//  hidden        fullscreen on a phone, or a docked panel covering one
+export type AvatarPlacement = 'launcher' | 'beside-panel' | 'column' | 'hidden'
 
-// `tall` (viewport height ≥640px) only matters for the rail: in a short window
-// the pipeline stations reach the bottom and would overlap her. `md` (≥768px)
-// is the rail's OWN breakpoint (the aside is max-md:hidden), distinct from
-// `wide` (≥880px) which gates the docked side-by-side layout — she stands
-// wherever the rail exists, including 768–880px tablet windows.
-export function avatarPlacement(
-  mode: ChatMode,
-  wide: boolean,
-  tall: boolean,
-  md: boolean,
-): AvatarPlacement {
-  if (mode === 'fullscreen') return md && tall ? 'rail' : 'hidden'
+// `md` (≥768px) is the pipeline rail's own breakpoint (the aside is
+// max-md:hidden) and doubles as the floor for the column: below it the panel
+// is an edge-to-edge phone takeover with no room to stand anyone beside the
+// text. `wide` (≥880px) gates the docked side-by-side layout, separately.
+//
+// There is deliberately no height gate and no narrow-window fallback. Both used
+// to exist because she stood at the FOOT of the pipeline rail, where a short or
+// narrow window put her on top of the trace; in a column of her own she has
+// nothing to collide with, and avatarColumnBox() answers "too small" by
+// shrinking her rather than by moving her somewhere else.
+export function avatarPlacement(mode: ChatMode, wide: boolean, md: boolean): AvatarPlacement {
+  if (mode === 'fullscreen') return md ? 'column' : 'hidden'
   if (mode === 'minimised') return 'launcher'
   return wide ? 'beside-panel' : 'hidden'
 }
@@ -92,13 +93,16 @@ export function stepHeadAim(prev: number, target: number, dt: number): number {
 // testable without WebGL.
 //
 // Her on-screen size is `2 · distance · tan(fov/2) / canvasHeight` metres per
-// pixel. That gives two ways to spend a taller canvas, and both are in use:
-//  · dolly the camera back with it and she stays the same size while more of
-//    her fits — the rail's framing, same Mika, more leg;
+// pixel, so a taller canvas can be spent two ways, and both are in use:
 //  · leave the framing alone and the same crop stretches over more pixels, so
 //    she scales up — what the docked panel does, on purpose. Her 560px box is
 //    1.64× the launcher's 280px one and she renders 1.64× larger, waist-up
-//    either way.
+//    either way;
+//  · re-compose the framing for the taller box and choose what the extra height
+//    buys — the fullscreen column spends it on scale and on her legs down to
+//    the knee, rather than on air above her head.
+// (A third way, dollying back to hold her size constant while showing more of
+// her, was the old fullscreen rail's. It went with the rail on 2026-08-14.)
 export const AVATAR_FOV = 27
 // The camera sits this far above the point it looks at, for a slight tilt.
 export const AVATAR_CAMERA_TILT = 0.1
@@ -112,19 +116,18 @@ export interface AvatarFraming {
 // y=1.722 (her hair top is 1.582), bottom at y=0.618, mid-thigh. Canvas width
 // does not enter into it — see avatarViewHalfWidth.
 export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.17 }
-// The height the rail's dolly was composed against: the docked canvas as it
-// stood before the 2026-08-14 resize to the panel height. It is the rail's
-// anchor and nothing else's now. While fullscreen gives her a 236px column she
-// CANNOT grow to the docked panel's scale there — 560px of her needs 491px of
-// width — so the two placements no longer render her at one size, and she is
-// smaller in fullscreen than docked. Fullscreen owns that fix (a column of its
-// own); until then this constant is what the 2.69 below means.
-export const AVATAR_RAIL_SCALE_ANCHOR_H = 342
-// The rail's 400px-tall canvas is 58px taller than that anchor. Distance grows
-// with it (2.3 × 400/342) and the look-at drops so the extra view lands below
-// her, not as headroom: the top edge stays at 1.722 and the bottom reaches
-// y=0.431, just past her knees.
-export const AVATAR_FRAMING_RAIL: AvatarFraming = { distance: 2.69, lookAtY: 1.076 }
+// The fullscreen column's framing: head to knee, composed tight. The default
+// framing leaves 0.14m of air above her hair, which reads as a big empty gap
+// once the canvas is 800px tall, so this pulls the top edge down to 1.602 —
+// 0.02m over her hair at 1.582, about 40px of clearance on screen and as close
+// as her hair ornaments allow. The bottom edge stays at her knee (0.43), the
+// same cut the old rail made, so the tightening is all headroom.
+//
+// The view is 1.172m tall against the default's 1.291m, which is why she comes
+// out 10% larger on the same canvas — and why the column is proportionally
+// WIDER than the rail was: her arm room is a fixed 0.484m spread over fewer
+// metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
+export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 1.016 }
 
 // ---- arm reach ------------------------------------------------------------
 // Her arm, measured off the VRM's own bone translations (metres). VRM0's rest
@@ -176,9 +179,12 @@ export const AVATAR_WIDEST_GESTURE_REACH = armReach(
 // same 491/560 ratio, so the ±0.484m of arm room survives the resize. Both
 // literals below are the uncapped 100%-of-560 case; on a viewport under 700px
 // tall the vh branch scales the pair together and she simply renders smaller.
+//
+// The fullscreen column has no entry here at all: its box is arithmetic, not a
+// number, because it answers to both viewport axes at once. See
+// avatarColumnBox().
 export const AVATAR_CANVAS_LAUNCHER = { w: 245, h: 280 }
 export const AVATAR_CANVAS_DOCKED = { w: 491, h: 560 }
-export const AVATAR_CANVAS_RAIL = { w: 300, h: 400 }
 
 // The docked panel's height, as the Tailwind literal. It lives here, next to
 // the canvas that must match it, because those are one number wearing two hats:
@@ -186,6 +192,71 @@ export const AVATAR_CANVAS_RAIL = { w: 300, h: 400 }
 // min() for the canvas, and a test parses both back so raising the panel
 // without raising her cannot pass silently.
 export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
+
+// ---- the fullscreen column ------------------------------------------------
+// Fullscreen stands her at the right, the full height of the panel body, with
+// the transcript to her left. Unlike every other placement her box is computed
+// rather than written down, because it answers to BOTH viewport axes: height
+// decides how tall she can be, width decides how tall she may be.
+//
+// Panel geometry she is measured against. The header number is measured off the
+// rendered panel, not guessed — it is what keeps her head below the close
+// button rather than behind it.
+export const CHAT_PANEL_INSET = 16
+export const CHAT_PANEL_HEADER_H = 61
+export const CHAT_RAIL_W = 236
+// The narrowest the transcript TEXT may be squeezed — measured on the text, not
+// on the column that holds it, which is why the padding below is subtracted
+// separately. (It was the column at first, and delivered 312px of text where
+// the name promised 360.) Not a comfort target: it is the floor at which the
+// column stops taking width and starts shrinking her instead. 360 is roughly a
+// phone measure, which a chat transcript reads fine at.
+export const CHAT_COLUMN_MIN_TRANSCRIPT = 360
+// The transcript's own px-6, both sides. ChatWidget applies it as a class and
+// adds her reserve to the right one, so the budget has to allow for it or the
+// floor above is short by exactly this much.
+export const CHAT_TRANSCRIPT_PADDING = 48
+// Canvas width per unit height, from AVATAR_FRAMING_COLUMN: ±0.484m of arm room
+// over a 0.586m half-height view. Tighter than the rail's 0.75 because the
+// framing is tighter vertically — the arm room is the same metres either way.
+export const AVATAR_COLUMN_ASPECT = 0.484 / 0.586
+// How much of that width her RESTING silhouette and hair actually cover,
+// measured off the render. The rest is transparent gesture margin, and the
+// transcript only reserves the body: a stretch does sweep a transparent hand
+// past the text (reaching 0.92 of the width), which is the point of gestures
+// that are not boxed in, and is safe because the wrapper takes no pointer
+// events. Raise this and she pushes the text away; lower it and she stands on
+// top of it.
+export const AVATAR_COLUMN_BODY_FRACTION = 0.8
+
+export interface AvatarColumnBox {
+  // Canvas box. Fixed-positioned against the panel's bottom-right inner corner.
+  w: number
+  h: number
+  // What the transcript column must keep clear on its right. Always ≤ w: the
+  // difference is the transparent margin, which overhangs and costs nothing.
+  reserve: number
+}
+
+// Her box for a viewport. Height is the panel body, unless her reserve would
+// squeeze the transcript past its floor — then width is the binding constraint
+// and she shrinks, keeping the aspect so no gesture starts clipping. This is
+// what replaces the old narrow-window fallback: there is no other placement to
+// fall back to, so the box itself absorbs a small window.
+export function avatarColumnBox(vw: number, vh: number): AvatarColumnBox {
+  const bodyH = vh - 2 * CHAT_PANEL_INSET - CHAT_PANEL_HEADER_H
+  const budget =
+    vw -
+    2 * CHAT_PANEL_INSET -
+    CHAT_RAIL_W -
+    CHAT_TRANSCRIPT_PADDING -
+    CHAT_COLUMN_MIN_TRANSCRIPT
+  // reserve = h · aspect · bodyFraction, so this inverts it for h.
+  const hFromWidth = budget / (AVATAR_COLUMN_ASPECT * AVATAR_COLUMN_BODY_FRACTION)
+  const h = Math.max(0, Math.min(bodyH, hFromWidth))
+  const w = h * AVATAR_COLUMN_ASPECT
+  return { w, h, reserve: w * AVATAR_COLUMN_BODY_FRACTION }
+}
 
 // Percent inset, each side, of the launcher's click target inside that canvas.
 // It exists so the transparent gesture margin is not clickable, which means it
@@ -206,8 +277,10 @@ export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[13%] right-[13%]'
 // 70.14vh = 80vh × 491/560: the vh branch has to carry the ratio too, or a
 // short viewport would shrink her height while keeping full width and hand her
 // a metre of empty room beside her arms.
-export function avatarSizeClass(placement: AvatarPlacement, roomy: boolean): string {
-  if (placement === 'rail' && roomy) return 'h-[400px] w-[300px]'
+//
+// The column is absent on purpose: its box is avatarColumnBox() arithmetic
+// applied as an inline style, so it has no literal here to keep in step.
+export function avatarSizeClass(placement: AvatarPlacement): string {
   if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(491px,70.14vh)]'
   return 'h-[280px] w-[245px]'
 }

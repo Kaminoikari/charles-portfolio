@@ -7,7 +7,6 @@ import {
   AVATAR_WIDEST_GESTURE_REACH,
   AVATAR_LAUNCHER_HIT_INSET_PCT,
   AVATAR_LAUNCHER_HIT_CLASS,
-  AVATAR_RAIL_SCALE_ANCHOR_H,
   CHAT_PANEL_HEIGHT_CLASS,
   ARM_REST_UPPER_Z,
   ARM_REST_FORE_Z,
@@ -15,9 +14,16 @@ import {
   armReach,
   AVATAR_CANVAS_DOCKED,
   AVATAR_CANVAS_LAUNCHER,
-  AVATAR_CANVAS_RAIL,
   AVATAR_FRAMING_DEFAULT,
-  AVATAR_FRAMING_RAIL,
+  AVATAR_FRAMING_COLUMN,
+  AVATAR_COLUMN_ASPECT,
+  avatarColumnBox,
+  AVATAR_COLUMN_BODY_FRACTION,
+  CHAT_COLUMN_MIN_TRANSCRIPT,
+  CHAT_TRANSCRIPT_PADDING,
+  CHAT_PANEL_HEADER_H,
+  CHAT_PANEL_INSET,
+  CHAT_RAIL_W,
   avatarMetresPerPixel,
   avatarViewSpan,
   deriveAvatarMode,
@@ -48,36 +54,139 @@ describe('deriveAvatarMode', () => {
 })
 
 describe('avatarPlacement', () => {
-  // args: (mode, wide ≥880, tall ≥640, md ≥768 — the rail's own breakpoint)
+  // args: (mode, wide ≥880, md ≥768 — the rail's own breakpoint)
   it('stands above the launcher whenever the panel is stowed, any viewport', () => {
-    expect(avatarPlacement('minimised', true, true, true)).toBe('launcher')
-    expect(avatarPlacement('minimised', false, false, false)).toBe('launcher')
+    expect(avatarPlacement('minimised', true, true)).toBe('launcher')
+    expect(avatarPlacement('minimised', false, false)).toBe('launcher')
   })
 
   it('stands beside the docked panel only when the viewport has room for both', () => {
-    expect(avatarPlacement('docked', true, true, true)).toBe('beside-panel')
-    // Width decides the docked case; a short-but-wide window still has the
-    // side column free, so height does not demote it.
-    expect(avatarPlacement('docked', true, false, true)).toBe('beside-panel')
+    expect(avatarPlacement('docked', true, true)).toBe('beside-panel')
   })
 
   it('hides while the docked panel covers a narrow (phone) viewport', () => {
-    expect(avatarPlacement('docked', false, true, true)).toBe('hidden')
+    expect(avatarPlacement('docked', false, true)).toBe('hidden')
   })
 
-  it('stands in the pipeline rail during a tall fullscreen takeover with a rail', () => {
-    expect(avatarPlacement('fullscreen', true, true, true)).toBe('rail')
-    // The rail exists from the md breakpoint (768px), below the 880px `wide`
-    // gate — she stands wherever the rail does (768–880px tablet windows).
-    expect(avatarPlacement('fullscreen', false, true, true)).toBe('rail')
+  it('stands in her own column for any fullscreen takeover above the phone', () => {
+    expect(avatarPlacement('fullscreen', true, true)).toBe('column')
+    // From the md breakpoint (768px), below the 880px `wide` gate: a tablet
+    // window keeps her too, just smaller — avatarColumnBox handles the size.
+    expect(avatarPlacement('fullscreen', false, true)).toBe('column')
   })
 
-  it('hides under a phone fullscreen takeover (no rail exists there)', () => {
-    expect(avatarPlacement('fullscreen', false, true, false)).toBe('hidden')
+  it('hides under a phone fullscreen takeover, the one window with no room', () => {
+    expect(avatarPlacement('fullscreen', false, false)).toBe('hidden')
   })
 
-  it('hides in a short fullscreen window, where she would collide with the pipeline', () => {
-    expect(avatarPlacement('fullscreen', true, false, true)).toBe('hidden')
+  // The regression this pins: 'rail' and its height gates were removed on
+  // 2026-08-14 because the column has nothing to collide with. Re-adding a
+  // height demotion would silently take her off a short fullscreen window
+  // again, where she now stands perfectly well at a reduced size.
+  it('keeps her in fullscreen at any viewport height', () => {
+    for (const vh of [520, 640, 760, 900, 1400]) {
+      expect({ vh, at: avatarPlacement('fullscreen', true, true) }).toEqual({ vh, at: 'column' })
+      expect(avatarColumnBox(1440, vh).h).toBeGreaterThan(0)
+    }
+  })
+})
+
+describe('avatarColumnBox', () => {
+  const bodyH = (vh: number) => vh - 2 * CHAT_PANEL_INSET - CHAT_PANEL_HEADER_H
+  // The TEXT width ChatWidget ends up rendering, not the column that holds it:
+  // the padding is what the first version of this helper forgot, and it hid a
+  // 48px shortfall against the floor that the browser then showed. Mirrors
+  // ChatWidget's own layout — element = min(column, 760 + reserve), text =
+  // element − padding − reserve.
+  const transcript = (vw: number, vh: number) => {
+    const { reserve } = avatarColumnBox(vw, vh)
+    const column = vw - 2 * CHAT_PANEL_INSET - CHAT_RAIL_W
+    return Math.min(column, 760 + reserve) - CHAT_TRANSCRIPT_PADDING - reserve
+  }
+
+  // The headline promise: on a normal laptop she is the full height of the
+  // panel body, top of her head just under the header, feet at its floor.
+  it('gives her the whole panel body on a window that can pay for it', () => {
+    for (const [vw, vh] of [
+      [1440, 900],
+      [1512, 982],
+      [1728, 1117],
+      [1920, 1080],
+    ]) {
+      expect({ vw, h: avatarColumnBox(vw, vh).h }).toEqual({ vw, h: bodyH(vh) })
+    }
+  })
+
+  // The owner's requirement, stated exactly: narrowing the window must not drop
+  // her to some other placement. What that means arithmetically is that her
+  // height is CONTINUOUS in the viewport width — a fallback is a step, and a
+  // step is what this catches. The slope is 1/(aspect·bodyFraction) ≈ 1.51px of
+  // height per px of width, so 2 is just above the real gradient and hundreds
+  // below any discrete switch.
+  //
+  // Full height itself arrives at 1210px, not 1200: at 1200 she gives up 14px
+  // of 807. Recorded here because it is a near miss rather than a fact.
+  it('changes height continuously as the window narrows, with no fallback step', () => {
+    let worst = { vw: 0, jump: 0 }
+    for (let vw = 800; vw <= 1600; vw++) {
+      const jump = Math.abs(avatarColumnBox(vw + 1, 900).h - avatarColumnBox(vw, 900).h)
+      if (jump > worst.jump) worst = { vw, jump }
+    }
+    expect(worst.jump).toBeLessThan(2)
+    expect(avatarColumnBox(1210, 900).h).toBe(bodyH(900))
+    expect(bodyH(900) - avatarColumnBox(1200, 900).h).toBeCloseTo(14, 0)
+  })
+
+  // Below that the width binds, and the answer is a smaller Mika rather than a
+  // different placement. This is the whole reason the old rail fallback could
+  // be deleted; a Math.min dropped here would put her head through the header.
+  it('shrinks her instead of overrunning a narrow window', () => {
+    const box = avatarColumnBox(1024, 900)
+    expect(box.h).toBeLessThan(bodyH(900))
+    expect(box.h).toBeGreaterThan(300)
+    // Width is binding, so the transcript lands exactly on its floor.
+    expect(transcript(1024, 900)).toBeCloseTo(CHAT_COLUMN_MIN_TRANSCRIPT, 6)
+  })
+
+  it('never squeezes the transcript below its floor, at any viewport', () => {
+    for (let vw = 768; vw <= 2560; vw += 64) {
+      for (const vh of [520, 700, 900, 1200, 1440]) {
+        const left = transcript(vw, vh)
+        // Floating point only — the box is derived from this bound.
+        expect({ vw, vh, ok: left >= CHAT_COLUMN_MIN_TRANSCRIPT - 1e-9 }).toEqual({
+          vw,
+          vh,
+          ok: true,
+        })
+      }
+    }
+  })
+
+  // Whichever axis binds, the box keeps the framing's aspect — that is what
+  // stops a narrow window from cropping her arms off instead of scaling her.
+  it('holds the aspect and the body fraction while it shrinks', () => {
+    for (const [vw, vh] of [
+      [1920, 1080],
+      [1200, 900],
+      [1024, 900],
+      [860, 700],
+    ]) {
+      const box = avatarColumnBox(vw, vh)
+      expect(box.w / box.h).toBeCloseTo(AVATAR_COLUMN_ASPECT, 6)
+      expect(box.reserve).toBeLessThan(box.w)
+      expect(box.reserve / box.w).toBeCloseTo(AVATAR_COLUMN_BODY_FRACTION, 6)
+    }
+  })
+
+  // A window narrower than the rail plus the floor has a negative budget. She
+  // is hidden there by avatarPlacement's md gate, but the box must not answer
+  // with a negative canvas — a negative width/height reaches the DOM as an
+  // invalid style and the engine's aspect goes NaN.
+  it('clamps to zero rather than going negative on an impossible window', () => {
+    const box = avatarColumnBox(400, 900)
+    expect(box.h).toBe(0)
+    expect(box.w).toBe(0)
+    expect(box.reserve).toBe(0)
   })
 })
 
@@ -128,16 +237,28 @@ describe('avatarGuideEnabled', () => {
 })
 
 describe('avatar camera framing', () => {
-  // The rail hands her a taller canvas so more of her legs fit, and the dolly
-  // that comes with it exists so the extra height does not also magnify her.
-  // The scale it holds her to is AVATAR_RAIL_SCALE_ANCHOR_H's, read through the
-  // default framing — resize the rail canvas without moving the distance and
-  // she silently grows on the one screen with the least room to spare.
-  it('holds the rail to the scale its dolly was composed against', () => {
-    const anchor = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_RAIL_SCALE_ANCHOR_H)
-    const rail = avatarMetresPerPixel(AVATAR_FRAMING_RAIL, AVATAR_CANVAS_RAIL.h)
-    // Within 0.02mm per pixel, i.e. under 1% of the ~3.23mm/px scale.
-    expect(rail * 1000).toBeCloseTo(anchor * 1000, 1)
+  // The column framing's whole job is to spend the headroom the default leaves.
+  // Loosen the top edge and the empty gap above her head comes back on an
+  // 800px canvas, which is what the recompose was for; drop the bottom edge and
+  // it stops being the head-to-knee crop the owner chose.
+  it('composes the column tight to her head, keeping the knee', () => {
+    const span = avatarViewSpan(AVATAR_FRAMING_COLUMN)
+    // Her hair top is 1.582 — above it, but by centimetres rather than the
+    // default's 0.14m.
+    expect(span.top).toBeGreaterThan(1.582)
+    expect(span.top - 1.582).toBeLessThan(0.05)
+    // Knee is ~0.40, mid-thigh ~0.62: the cut stays just below the knee.
+    expect(span.bottom).toBeLessThan(0.45)
+    expect(span.bottom).toBeGreaterThan(0.38)
+  })
+
+  // The aspect is not a taste decision, it is that framing's arm room divided
+  // by its half-height. Retuning the framing without retuning the aspect is
+  // exactly how gestures start clipping, so this derives one from the other.
+  it('derives the column aspect from the framing it belongs to', () => {
+    const span = avatarViewSpan(AVATAR_FRAMING_COLUMN)
+    const halfHeight = (span.top - span.bottom) / 2
+    expect(AVATAR_COLUMN_ASPECT).toBeCloseTo(0.484 / halfHeight, 2)
   })
 
   // The docked canvas is the one placement that deliberately does NOT hold that
@@ -160,16 +281,6 @@ describe('avatar camera framing', () => {
     expect(aspect(AVATAR_CANVAS_DOCKED)).toBeCloseTo(aspect(AVATAR_CANVAS_LAUNCHER), 2)
   })
 
-  it('spends the rail canvas extra height below her, not as headroom', () => {
-    const docked = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
-    const rail = avatarViewSpan(AVATAR_FRAMING_RAIL)
-    // Same top edge: her head keeps its clearance instead of drifting down.
-    expect(rail.top).toBeCloseTo(docked.top, 2)
-    // Bottom edge drops from mid-thigh (~0.62) past the knee (~0.40).
-    expect(docked.bottom).toBeGreaterThan(0.55)
-    expect(rail.bottom).toBeLessThan(0.45)
-  })
-
   it('keeps the launcher framing where the head has clearance', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
     // Her hair top is at y≈1.582; anything below that crops her head.
@@ -182,7 +293,12 @@ describe('avatar camera framing', () => {
     const frames: Array<[string, AvatarFraming, { w: number; h: number }]> = [
       ['launcher', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER],
       ['docked', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED],
-      ['rail', AVATAR_FRAMING_RAIL, AVATAR_CANVAS_RAIL],
+      // The column's box is computed, so it is checked at the two viewports
+      // that bind it differently: 1440×900 where height decides, and 1024×900
+      // where the transcript floor does. The aspect holds either way, which is
+      // the property that keeps her arms in frame while she shrinks.
+      ['column@1440', AVATAR_FRAMING_COLUMN, avatarColumnBox(1440, 900)],
+      ['column@1024', AVATAR_FRAMING_COLUMN, avatarColumnBox(1024, 900)],
     ]
     for (const [name, framing, canvas] of frames) {
       const half = avatarViewHalfWidth(framing, canvas)
@@ -244,11 +360,8 @@ describe('avatar camera framing', () => {
       }
       return { w: axis('w'), h: axis('h') }
     }
-    expect(parse(avatarSizeClass('launcher', true))).toEqual(AVATAR_CANVAS_LAUNCHER)
-    expect(parse(avatarSizeClass('beside-panel', true))).toEqual(AVATAR_CANVAS_DOCKED)
-    expect(parse(avatarSizeClass('rail', true))).toEqual(AVATAR_CANVAS_RAIL)
-    // A short viewport drops the rail back to the launcher box.
-    expect(parse(avatarSizeClass('rail', false))).toEqual(AVATAR_CANVAS_LAUNCHER)
+    expect(parse(avatarSizeClass('launcher'))).toEqual(AVATAR_CANVAS_LAUNCHER)
+    expect(parse(avatarSizeClass('beside-panel'))).toEqual(AVATAR_CANVAS_DOCKED)
   })
 
   // Her docked height is the panel's height — one number, two literals, because
@@ -258,7 +371,7 @@ describe('avatar camera framing', () => {
   // rather than its own copy is held by a ChatWidget test, which renders it.)
   it('sizes the docked canvas to the panel it stands beside', () => {
     const heightExpr = (cls: string) => /(?:^| )h-(\[[^\]]+\])/.exec(cls)?.[1]
-    expect(heightExpr(avatarSizeClass('beside-panel', true))).toBe(
+    expect(heightExpr(avatarSizeClass('beside-panel'))).toBe(
       heightExpr(CHAT_PANEL_HEIGHT_CLASS),
     )
   })
@@ -267,7 +380,7 @@ describe('avatar camera framing', () => {
   // viewport would shrink her while the width stayed at its px cap, handing her
   // arms a metre of empty room on a short screen.
   it('keeps the short-viewport branch on the same proportions', () => {
-    const cls = avatarSizeClass('beside-panel', true)
+    const cls = avatarSizeClass('beside-panel')
     const vh = (a: string) => {
       const m = new RegExp(`(?:^| )${a}-\\[min\\(\\d+px,([\\d.]+)vh\\)`).exec(cls)
       if (!m) throw new Error(`no vh branch on ${a}: ${cls}`)

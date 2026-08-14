@@ -18,6 +18,7 @@ export default function AvatarGuide({
   mode,
   active = true,
   sizeClass,
+  sizeStyle,
   framing,
   onHandle,
   onLoaded,
@@ -32,6 +33,10 @@ export default function AvatarGuide({
   // defaulted: a default would be a fourth hand-written copy of the numbers
   // that avatarMode.ts and its test now hold together.
   sizeClass: string
+  // The fullscreen column's box instead, in px, from avatarColumnBox(). It wins
+  // over sizeClass when present — that box depends on both viewport axes at
+  // once, which is arithmetic no utility class can carry.
+  sizeStyle?: { width: number; height: number }
   // Camera distance and look-at height for this placement, when the canvas is
   // tall enough to want a different crop. Undefined keeps the engine default.
   framing?: AvatarFraming
@@ -209,8 +214,9 @@ export default function AvatarGuide({
       // canvas into the page instead.
       className={
         'pointer-events-none select-none [-webkit-mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] [mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] ' +
-        sizeClass
+        (sizeStyle ? '' : sizeClass)
       }
+      style={sizeStyle}
     />
   )
 }

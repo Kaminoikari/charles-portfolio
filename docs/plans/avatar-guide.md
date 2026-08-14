@@ -484,6 +484,42 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   canvas x=[−16,284]，中心 134 對欄中心 135，差 1px）；三者 drawing buffer
   皆等於 CSS 盒 ×2。
 
+## Batch 5——docked 對齊面板高度＋fullscreen 改右側全高欄（2026-08-14）
+
+使用者兩點回饋：docked 態 Mika 應與 chat widget 同高等比放大；fullscreen 態應佔滿
+螢幕高度。第二點以真實頁面 mockup（只改瀏覽器 CSS，不動原始碼）比較後定案。
+
+- **docked 對齊面板**：canvas 從 300×342 改為面板自己的 `min(560px,80vh)`，寬度
+  依同比例走 `min(491px,70.14vh)`。構圖不變，等於同一個腰上景攤在 1.64 倍的像素上。
+  面板高度移進 `CHAT_PANEL_HEIGHT_CLASS`，由 ChatWidget 消費，ChatWidget 測試渲染
+  真面板讀回該 class，兩者不能各改各的。
+  已知取捨：視窗寬 880–933px 時她的左側手勢邊界超出畫面（880px 實測 −53px，
+  純邊界只有 38px，stretch 少約 15px 指尖）；fixed 元素向左溢出不產生捲軸
+  （`scrollWidth` 實測未變）。
+
+- **fullscreen 改 `column`，`rail` 站位整個移除**。mockup 比較三案後使用者選定
+  「不開剛性第三欄、改給文字欄右內距」：她的身體只佔 canvas 約 80% 寬，其餘是透明
+  手勢邊界，讓邊界疊在留白上，文字欄比開剛性欄多 119px。
+  - **構圖重新對到她身上**（使用者要求頭頂再高一些）：`AVATAR_FRAMING_COLUMN`
+    = distance 2.441／lookAtY 1.016，上緣 1.602（髮頂 1.582 之上約 40px 螢幕餘裕，
+    已接近髮飾極限），下緣維持膝蓋 0.43。視野高度 1.291→1.172m，同畫布放大 10%。
+    比例因此從 rail 的 0.75 變成 0.826——手臂空間是固定的 0.484m，攤在較少的
+    垂直公尺上就佔更大寬度比。
+  - **不設窄視窗退路**（使用者明確要求 1200px 以下不退回）。`avatarColumnBox(vw,vh)`
+    以「面板本體高」與「寬度預算」取小，維持比例縮放，所以窄視窗得到的是小一號的
+    她而不是別的站位。高度對寬度連續，測試以「相鄰 1px 的高度差 < 2px」釘住，
+    任何斷點式退路都是幾百 px 的跳躍，會紅。
+  - `tall`／`roomy` 兩個高度閘門與 rail 底部的 spacer 一併移除：它們只為了擋
+    「她站在 rail 腳下壓到 trace」，站位換了就沒有碰撞對象。副作用是 vh<640 的
+    fullscreen 從「完全隱藏」變成「縮小顯示」，這是改善。
+  - `CHAT_COLUMN_MIN_TRANSCRIPT` 是**文字**寬下限而非欄位寬：第一版忘了扣 `px-6`
+    的 48px，常數寫 360 但實際只給 312，瀏覽器量測時才發現。測試 helper 已改為
+    重現 ChatWidget 的實際版面（element = min(欄寬, 760+reserve) − padding − reserve）。
+
+- **建議問題永駐**：舊規則是 trace 一有節點就整區讓位，理由是她站在 rail 腳下會擋住
+  最後幾站。她離開 rail 後該理由消失，改為常駐並在 streaming 時 disabled，長 trace
+  由 rail 既有的 `overflow-y-auto` 捲動。
+
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
 - **這份文件本身在 Tailwind 的掃描範圍內**：v4 預設掃整個 repo，所以把已廢棄的
