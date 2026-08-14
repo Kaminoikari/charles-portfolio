@@ -548,12 +548,19 @@ export default function ChatWidget() {
   //  beside-panel  docked panel, wide viewport. Offset 436px = panel right
   //                inset 20px + panel width 400px (the min() in the panel class
   //                always resolves to 400px on ≥880px viewports) + 16px gap.
+  //                Canvas 220×342 here and in the rail: once the chat is open
+  //                she is something the visitor is looking AT, and the space
+  //                either side of the panel is free. She grows up and to the
+  //                left from the same corner, so the panel never moves.
   //  rail          wide fullscreen: she stands at the bottom of the pipeline
   //                rail. Panel is inset-4 with a 236px rail column, so
-  //                left = 16 + (236-180)/2 = 44px centres the 180px canvas in
-  //                the rail; z-[55] beats the panel's z-50; scaled to 80% so
-  //                pipeline stations keep room; hidden under 640px viewport
-  //                height where the two would collide.
+  //                left = 16 + (236-220)/2 = 24px centres the 220px canvas in
+  //                the rail; z-[55] beats the panel's z-50; rendered at full
+  //                size (the old 80% shrink fought the whole point of the
+  //                fullscreen view, where there is the most room to actually
+  //                watch her) with the trace spacer below reserving the taller
+  //                footprint; hidden under 640px viewport height where the two
+  //                would collide.
   //  hidden        narrow fullscreen or docked-on-phone: display:none, engine
   //                paused, never unmounted.
   // A short viewport downgrades 'rail' to 'hidden' inside avatarPlacement
@@ -579,7 +586,7 @@ export default function ChatWidget() {
           : placement === 'beside-panel'
             ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
             : placement === 'rail'
-              ? 'pointer-events-none fixed bottom-6 left-[44px] z-[55] origin-bottom scale-[0.8]'
+              ? 'pointer-events-none fixed bottom-6 left-[24px] z-[55]'
               : // launcher: glides from above the capsule down into the corner
                 // once she takes over as the button. 72% on narrow screens
                 // reduces how much of a phone's hero headline she covers; it
@@ -596,6 +603,11 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
+        sizeClass={
+          placement === 'beside-panel' || placement === 'rail'
+            ? 'h-[342px] w-[220px]'
+            : 'h-[280px] w-[180px]'
+        }
         onHandle={(h) => {
           avatarHandleRef.current = h
         }}
@@ -846,13 +858,15 @@ export default function ChatWidget() {
                   rail. Reserve her floor space with a real element so a long
                   trace scrolls to rest above her head — block-end PADDING on
                   an overflow container is dropped from the scroll extent by
-                  some engines, a spacer never is. 212px is derived: her head
-                  top is vh−248 (bottom-6 + 280px canvas × scale-[0.8]), the
+                  some engines, a spacer never is. 330px is derived: her canvas
+                  top is vh−366 (bottom-6 + the rail's 342px canvas), the
                   aside's bottom padding is 16px and gap-5 adds 20px — change
                   any of those (or the panel's inset-4) and this number moves
-                  with them. */}
+                  with them. Measured against the canvas rather than her
+                  hairline, so the waist-up framing's headroom reads as
+                  breathing space between the trace and her. */}
               {avatarOn && avatarLoaded && placement === 'rail' && (
-                <div aria-hidden className="h-[212px] shrink-0" />
+                <div aria-hidden className="h-[330px] shrink-0" />
               )}
             </aside>
           )}

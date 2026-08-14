@@ -17,8 +17,6 @@
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
 // Perception & idle life (Batch 3):
-//   - cursor gaze: setGaze/clearGaze blend a pointer-derived look direction
-//     over the mode sweep (fades both ways; saccades still ride on top)
 //   - head-pat: AvatarGuide detects strokes across her head and triggers a
 //     happy wiggle — silent by design, and it never intercepts the click
 //   - idle acts: 11 varieties (stretch, head tilt, glance, palm check, weight
@@ -85,11 +83,6 @@ export type AvatarGuideHandle = {
   setSpeech: (audio: HTMLAudioElement | null, track: VisemeTrack | null) => void
   setEmotion: (name: EmotionName, weight?: number, holdSec?: number) => void
   playGesture: (name: GestureName) => void
-  // Cursor gaze: gx/gy in [-1,1] relative to the character (right/up
-  // positive). The gaze BLENDS over the mode-driven look direction and
-  // fades back out when null — leaving never snaps her head.
-  setGaze: (gx: number, gy: number) => void
-  clearGaze: () => void
   dispose: () => void
 }
 
@@ -354,9 +347,19 @@ export function initAvatarGuide(
   renderer.toneMappingExposure = 1.25
 
   const scene = new THREE.Scene()
+  // Waist-up framing. The full-body shot this replaced put her face at ~27px
+  // on a 180×280 canvas (~19px once the launcher's 72% narrow-screen scale
+  // applied), which is below what the expressions, the outfit detail and the
+  // gestures need to read at all. Pulling the camera in from 3.9m to 2.3m is
+  // free magnification: the canvas, her footprint on the page and the visual
+  // order of the hero are all untouched, and only the framing changes.
+  // Her feet and the contact shadow fall outside this frame by design — the
+  // canvas carries a bottom mask (AvatarGuide.tsx) so the crop fades out.
+  // Every gesture in GESTURES was checked against this frame; the raised arms
+  // of wave / stretch / hairTouch stay inside it.
   const camera = new THREE.PerspectiveCamera(27, W / H, 0.1, 30)
-  camera.position.set(0, 0.95, 3.9)
-  camera.lookAt(0, 0.82, 0)
+  camera.position.set(0, 1.27, 2.3)
+  camera.lookAt(0, 1.17, 0)
   scene.add(new THREE.AmbientLight(0xffffff, 1.1))
   const key = new THREE.DirectionalLight(0xffffff, 1.4)
   key.position.set(0.6, 1.6, 2.2)
@@ -544,14 +547,10 @@ export function initAvatarGuide(
   let saccadeTimer = 0.9
   let saccadeX = 0
   let saccadeY = 0
-  let gazeX = 0
-  let gazeY = 0
-  let gazeOn = false
-  let gazeBlend = 0
   // Idle self-actions fire only during undisturbed idle, roughly every 5s
-  // start-to-start (timer 2.5-4s + the act itself, pool mean ~2s)
-  // (8–12s uniform); interaction pushes the next one back. One re-roll
-  // guards against the same act twice in a row.
+  // start-to-start (timer 2.5–4s + the act itself, pool mean ~2s);
+  // interaction pushes the next one back. One re-roll guards against the
+  // same act twice in a row.
   let idleActTimer = 2.5 + Math.random() * 1.5
   let lastIdleAct: GestureName | null = null
   let gesture: { name: GestureName; t: number; v: number } | null = null
@@ -638,14 +637,6 @@ export function initAvatarGuide(
         yaw = Math.sin(t * ((2 * Math.PI) / 6.5)) * 0.07
         pitch = Math.sin(t * ((2 * Math.PI) / 4.3)) * 0.03
       }
-      // Cursor gaze blends over the mode-driven look and fades both ways, so
-      // entering or leaving the tracking radius never snaps her head. Leaving
-      // hands the eyes back to the idle sweep + saccades.
-      gazeBlend += ((gazeOn ? 1 : 0) - gazeBlend) * Math.min(1, dt * 6)
-      if (gazeBlend > 0.001) {
-        yaw = yaw * (1 - gazeBlend) + gazeX * 0.55 * gazeBlend
-        pitch = pitch * (1 - gazeBlend) + gazeY * -0.3 * gazeBlend
-      }
 
       // Idle self-actions: an unprompted little performance roughly every 5s
       // of undisturbed idle (post-entrance, nothing else performing), picked
@@ -658,8 +649,7 @@ export function initAvatarGuide(
         mode === 'idle' &&
         !gesture &&
         speechIdle &&
-        emoW < 0.05 &&
-        gazeBlend < 0.05
+        emoW < 0.05
       ) {
         idleActTimer -= dt
         if (idleActTimer <= 0) {
@@ -833,7 +823,6 @@ export function initAvatarGuide(
           headX: head ? head.rotation.x : 0,
           spineX: spine ? spine.rotation.x : 0,
           matz: matzT,
-          gazeBlend,
           headY: head ? head.rotation.y : 0,
           headZ: head ? head.rotation.z : 0,
           scale: vrm.scene.scale.x,
@@ -867,6 +856,19 @@ export function initAvatarGuide(
 
       vrm.expressionManager?.update()
       vrm.update(dt) // spring bones (hair, skirt) advance here
+    }
+    // The canvas grows when the chat opens (ChatWidget hands the docked and
+    // fullscreen placements a bigger box). Matching the drawing buffer to the
+    // CSS box keeps her at native resolution there instead of upscaling the
+    // 180px buffer — a CSS transform would have been one line and visibly
+    // softer. Cheap to check per frame; setSize only runs on an actual change.
+    const cw = canvas.clientWidth
+    const ch = canvas.clientHeight
+    const dpr = renderer.getPixelRatio()
+    if (cw > 0 && ch > 0 && (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr))) {
+      renderer.setSize(cw, ch, false)
+      camera.aspect = cw / ch
+      camera.updateProjectionMatrix()
     }
     renderer.render(scene, camera)
     if (vrm && !loadedFired) {
@@ -942,14 +944,6 @@ export function initAvatarGuide(
       // Replacing a mid-flight arm gesture must not strand a half-raised arm.
       if (gesture && GESTURES[gesture.name].arms && vrm) pinArms(vrm)
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
-    },
-    setGaze: (gx, gy) => {
-      gazeX = Math.min(Math.max(gx, -1), 1)
-      gazeY = Math.min(Math.max(gy, -1), 1)
-      gazeOn = true
-    },
-    clearGaze: () => {
-      gazeOn = false
     },
     dispose: () => {
       disposed = true

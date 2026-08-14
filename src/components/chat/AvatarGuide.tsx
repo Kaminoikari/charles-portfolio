@@ -17,6 +17,7 @@ const VRM_URL = '/avatar/AvatarSample_B_webp.vrm'
 export default function AvatarGuide({
   mode,
   active = true,
+  sizeClass = 'h-[280px] w-[180px]',
   onHandle,
   onLoaded,
   onContextLost,
@@ -24,6 +25,11 @@ export default function AvatarGuide({
 }: {
   mode: AvatarMode
   active?: boolean
+  // Tailwind height/width for the canvas box. The engine matches its drawing
+  // buffer to whatever this resolves to, so a bigger box means more pixels of
+  // her rather than an upscale. Keep the 180:280 aspect ratio: the framing is
+  // composed for it, and a different ratio re-crops her.
+  sizeClass?: string
   // Hands the live engine handle up once the engine is created (and null on
   // teardown) so the widget can drive lip sync / emotions / gestures directly
   // — those are imperative performance beats, not renderable React state.
@@ -91,11 +97,16 @@ export default function AvatarGuide({
     handleRef.current?.setMode(mode)
   }, [mode])
 
-  // Cursor perception, desktop (fine-pointer) only: she watches the cursor
-  // when it comes near, and a stroke back and forth across her head (≥3
-  // direction flips within 2s) earns a happy head wiggle. Listening is
+  // Head pats, desktop (fine-pointer) only: a stroke back and forth across her
+  // head (≥3 direction flips within 2s) earns a happy head wiggle. Listening is
   // passive on document — nothing here can swallow the click that opens the
-  // panel, and a hidden placement (zero-size rect) just clears the gaze.
+  // panel, and a hidden placement (zero-size rect) is ignored.
+  //
+  // Cursor tracking used to live here too: she turned her head toward the
+  // pointer wherever it went on the page. Removed 2026-08-14 on the owner's
+  // call — a figure that follows the cursor across an unrelated page reads as
+  // demanding attention rather than offering it. Her look now comes only from
+  // the chat state (idle sweep / listening / speaking) and her own idle acts.
   useEffect(() => {
     if (!window.matchMedia('(pointer: fine)').matches) return
     let patDir = 0
@@ -108,24 +119,16 @@ export default function AvatarGuide({
       const canvas = canvasRef.current
       if (!h || !canvas) return
       const r = canvas.getBoundingClientRect()
-      if (r.width === 0) {
-        h.clearGaze()
-        return
-      }
-      const dx = e.clientX - (r.left + r.width / 2)
-      // Her face sits in the upper third, not at the geometric centre.
-      const dy = e.clientY - (r.top + r.height * 0.35)
-      if (Math.hypot(dx, dy) < 420) {
-        h.setGaze(dx / (r.width * 1.6), -dy / (r.height * 1.1))
-      } else {
-        h.clearGaze()
-      }
+      if (r.width === 0) return
       const now = performance.now()
+      // Her head spans ~18%–36% of the canvas in the waist-up framing; the band
+      // is widened either way so a stroke that overshoots still counts, while
+      // the empty strip above her hair no longer does.
       const inHead =
         e.clientX > r.left + r.width * 0.2 &&
         e.clientX < r.right - r.width * 0.2 &&
-        e.clientY > r.top &&
-        e.clientY < r.top + r.height * 0.32
+        e.clientY > r.top + r.height * 0.12 &&
+        e.clientY < r.top + r.height * 0.42
       if (inHead) {
         const dir = Math.sign(e.clientX - lastX)
         if (dir !== 0) {
@@ -152,16 +155,9 @@ export default function AvatarGuide({
       }
       lastX = e.clientX
     }
-    // Leaving the window entirely fires no further pointermove — without
-    // these she'd stay locked on the last cursor position (R1 review LOW).
-    const onLeave = () => handleRef.current?.clearGaze()
     document.addEventListener('pointermove', onMove, { passive: true })
-    document.documentElement.addEventListener('pointerleave', onLeave)
-    window.addEventListener('blur', onLeave)
     return () => {
       document.removeEventListener('pointermove', onMove)
-      document.documentElement.removeEventListener('pointerleave', onLeave)
-      window.removeEventListener('blur', onLeave)
     }
   }, [])
 
@@ -174,7 +170,13 @@ export default function AvatarGuide({
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none h-[280px] w-[180px] select-none"
+      // The waist-up camera crops her mid-thigh; without this the crop reads as
+      // a hard cut across her legs. The gradient dissolves the last 16% of the
+      // canvas into the page instead.
+      className={
+        'pointer-events-none select-none [-webkit-mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] [mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] ' +
+        sizeClass
+      }
     />
   )
 }

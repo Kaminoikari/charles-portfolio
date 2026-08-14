@@ -119,7 +119,8 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
   2. 泡泡內的小 tag（RAG · AI 副標）拿掉，只留一句話。
   3. **管線不可被角色擋住**：rail 內容改為狀態換場——trace 為空時顯示建議問題，
      trace 一有節點就整區讓位給管線（建議退場）；rail 末端以真 spacer 元素
-     （212px＋原 padding＝248px 淨空）保留她的站位，滾到底的內容停在她頭上
+     （**2026-08-14 Batch 4 起 330px**＋原 padding＝366px 淨空；原為 212px，
+     對應舊的 0.8 縮放 180×280 畫布）保留她的站位，滾到底的內容停在她頭上
      （不用 block-end padding：部分引擎不把它計入 overflow 容器的捲動範圍）。
   4. ~~移除預設問題「Why should a team hire him?」~~（使用者於 rail 換場定案後
      撤回此指令：換場後管線不再與建議並列，6 條無害，**保留** suggested6）。
@@ -219,7 +220,8 @@ bob 疊加讀感為抖動、位移式 bob 違反「動作一律骨骼旋轉」�
 
 **Batch 3 驗證結果（2026-08-14）**：
 F——游標追視（gaze blend 層：進 0.989/1.0、出衰減 0.001，headY 隨游標左右
-翻號 −0.235/+0.124）；摸頭（頭區來回 ≥3 翻向、2s 窗、8s 冷卻：wiggle 8 樣本
+翻號 −0.235/+0.124）**已於同日 Batch 4 整組移除，見下節**；摸頭（頭區來回
+≥3 翻向、2s 窗、8s 冷卻：wiggle 8 樣本
 ＋happy＋headZ 0.08，純 hover 不動 click 契約）；idle 伸展（25–45s 未打擾
 idle 觸發：65s 觀測窗抓到 stretch 8 樣本，雙臂外張＋後仰，播畢回 pin）。
 第一輪 probe gaze/pat 全零是 probe 自己 querySelector 抓到 hero canvas
@@ -294,6 +296,43 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
   已移除，改驗「左下角無任何 fixed 按鈕」）
 - 迴歸：`npx tsc --noEmit`、`npm test` 全綠、`npm run build` 過
 - 雙 reviewer（code＋spec）審 diff 與本檔
+
+## Batch 4——構圖改半身景＋聊天態放大＋移除游標追視（2026-08-14）
+
+使用者回報「桌機與行動都看不清楚」。量測後確認主因是**構圖**：全身景下臉在
+180×280 畫布上只有約 26.7px 高，launcher 態窄螢幕再乘 0.72 只剩 19.3px。
+四案（相機拉近／只在聊天態放大／hover 才放大／整體放大）以真實頁面截圖比較後，
+使用者選定相機拉近，並追加要求小 widget 與全螢幕態一併加強。
+
+- **相機 3.9m → 2.3m（腰上景）**，`camera.position (0,1.27,2.3)`／`lookAt (0,1.17,0)`。
+  臉高 ×1.70，**畫布尺寸與她在頁面上的佔位完全不變**，視覺引導順序不受影響。
+  距離比即倍率（3.926/2.304），與截圖目視一致。
+- **手勢全數重驗**：GESTURES 中抬手最高的 wave／stretch／hairTouch 在新框內；
+  bow 前傾使頭下移約畫面 13.5%，仍在框內。唯一語意減弱的是 `toeLook`
+  （腳已在框外，讀作單純低頭），保留在 IDLE_ACTS。
+- **底緣遮罩**：畫面在大腿中段截斷，canvas 加
+  `mask-image: linear-gradient(to bottom, #000 84%, transparent)` 讓裁切溶入頁面，
+  取代硬切。腳下的假接觸陰影自此在框外（grounding 是這案的已知取捨）。
+- **聊天態畫布加大**：beside-panel 與 rail 由 180×280 改 220×342（**維持 180:280
+  比例，否則構圖會被重新裁切**）。引擎每幀比對 canvas CSS 盒與 drawing buffer，
+  不符即 `setSize`＋更新 aspect，因此是**原生解析度**而非 CSS 放大。
+  rail 同時取消原本的 `scale-[0.8]`（全螢幕是最該看清楚她的地方），
+  `left` 44px→24px 重新居中於 236px 側欄，spacer 212px→330px。
+- **移除游標追視**（使用者 mid-turn 指示：「動作不要跟著滑鼠 hover 走」）。
+  驅動端與引擎端一併移除（`setGaze`／`clearGaze`／gazeBlend／idle gate 的
+  `gazeBlend < 0.05` 條件／debug 欄位），**摸頭保留**——它需要在她頭上來回劃過，
+  屬於主動互動，不是被動跟隨。她的視線現在只來自聊天狀態與 idle 動作。
+- **摸頭頭區隨構圖上移**：判定由畫布 0–32% 改 12–42%（頭實際落在 18–36%），
+  gaze 中心 0.35→0.30。
+
+**驗證（2026-08-14）**：三態幾何以 `getBoundingClientRect` 實測——launcher
+180×280、beside-panel 與 rail 皆 CSS 220×342 且 drawing buffer 同值（證明 resize
+生效）；rail canvas top = vh−366、trace 內容底 524 對 canvas 頂 534，不重疊。
+三態＋行動 390×844 皆有截圖。摸頭做了對照組：清掉 8s 冷卻後，先在她頭頂上方
+空白帶（畫布 5%）來回 8 次 gesture 全程 null，再在頭區（27%）同手法觸發 wiggle。
+`npx tsc --noEmit` 乾淨、chat 測試 70 綠。
+（本輪 Playwright 已知限制：viewport 截圖常在 software WebGL 下等不到穩定幀而
+逾時，reload 後才有額度；幾何一律改以 evaluate 實測數據佐證。）
 
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
