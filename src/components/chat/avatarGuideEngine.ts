@@ -23,7 +23,7 @@
 //     happy wiggle — silent by design, and it never intercepts the click
 //   - idle acts: 11 varieties (stretch, head tilt, glance, palm check, weight
 //     shift, bounce, arm swing, hair touch, deep breath, hip twist, floor
-//     peek), picked at random roughly every 10s of undisturbed idle
+//     peek), picked at random roughly every 5s of undisturbed idle
 //
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
@@ -548,10 +548,11 @@ export function initAvatarGuide(
   let gazeY = 0
   let gazeOn = false
   let gazeBlend = 0
-  // Idle self-actions fire only during undisturbed idle, roughly every 10s
+  // Idle self-actions fire only during undisturbed idle, roughly every 5s
+  // start-to-start (timer 2.5-4s + the act itself, pool mean ~2s)
   // (8–12s uniform); interaction pushes the next one back. One re-roll
   // guards against the same act twice in a row.
-  let idleActTimer = 8 + Math.random() * 4
+  let idleActTimer = 2.5 + Math.random() * 1.5
   let lastIdleAct: GestureName | null = null
   let gesture: { name: GestureName; t: number; v: number } | null = null
   // Per-frame gesture offset accumulator (reset each frame, never allocated
@@ -646,7 +647,7 @@ export function initAvatarGuide(
         pitch = pitch * (1 - gazeBlend) + gazeY * -0.3 * gazeBlend
       }
 
-      // Idle self-actions: an unprompted little performance roughly every 10s
+      // Idle self-actions: an unprompted little performance roughly every 5s
       // of undisturbed idle (post-entrance, nothing else performing), picked
       // at random from IDLE_ACTS. Purely visual — no sound, per the plan's F
       // item. A single re-roll makes an immediate repeat unlikely (~1/121, not
@@ -666,10 +667,10 @@ export function initAvatarGuide(
           if (pick === lastIdleAct) pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
           lastIdleAct = pick
           gesture = { name: pick, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
-          idleActTimer = 8 + Math.random() * 4
+          idleActTimer = 2.5 + Math.random() * 1.5
         }
       } else if (mode !== 'idle') {
-        idleActTimer = Math.max(idleActTimer, 6)
+        idleActTimer = Math.max(idleActTimer, 4)
       }
 
       // Gesture offsets ADD to the mode-driven head/spine pose (a nod during
