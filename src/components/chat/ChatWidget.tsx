@@ -654,17 +654,21 @@ export default function ChatWidget() {
             aria-label={t('chat.openAriaLabel')}
             // data-own-focus-ring: opts out of index.css's global unlayered
             // `*:focus-visible` outline, which beats any Tailwind utility via
-            // cascade-layer ordering. The ground ring below is this button's
-            // focus indicator; a 280px cyan rectangle framing mostly empty
-            // pixels is what this replaces.
+            // cascade-layer ordering. The glow below is this button's focus
+            // indicator, in place of a cyan rectangle around the whole canvas.
             data-own-focus-ring=""
             className="group absolute inset-0 cursor-pointer outline-none"
           >
-            {/* ground ring = hover/focus affordance; replaces the rectangular
-                focus outline that would otherwise frame 280px of empty pixels */}
+            {/* hover/focus affordance, in place of a rectangle around the
+                canvas. This used to be a ground ring at her feet, which the
+                waist-up camera put out of frame: it read as a cyan disc
+                hovering under her fading skirt. A glow centred on her body
+                needs no floor, so it survives a change of framing.
+                mix-blend-screen keeps it additive over her instead of a veil,
+                which also spares this from depending on stacking order. */}
             <span
               aria-hidden="true"
-              className="absolute bottom-0 left-1/2 h-[20px] w-[130px] -translate-x-1/2 rounded-[50%] border border-accent-cyan/50 bg-[radial-gradient(ellipse,rgba(0,217,255,0.30),transparent_70%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+              className="absolute left-1/2 top-[24%] h-[54%] w-[150%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(0,217,255,0.30),transparent_70%)] opacity-0 mix-blend-screen transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
             />
           </button>
           {bubble !== 'hidden' && (

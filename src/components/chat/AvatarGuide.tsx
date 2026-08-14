@@ -121,14 +121,16 @@ export default function AvatarGuide({
       const r = canvas.getBoundingClientRect()
       if (r.width === 0) return
       const now = performance.now()
-      // Her head spans ~18%–36% of the canvas in the waist-up framing; the band
-      // is widened either way so a stroke that overshoots still counts, while
-      // the empty strip above her hair no longer does.
+      // Projected against the VRM's own skeleton in the waist-up framing, her
+      // hair top sits at 12.5% of the canvas, chin ~38%, neck 42.8%. The band
+      // is 12–40%: a little slack above the hair, and stopping short of the
+      // neck so a stroke across her collarbone is not a head pat. Fractions of
+      // the measured rect, so the 220×342 chat canvas needs no separate case.
       const inHead =
         e.clientX > r.left + r.width * 0.2 &&
         e.clientX < r.right - r.width * 0.2 &&
         e.clientY > r.top + r.height * 0.12 &&
-        e.clientY < r.top + r.height * 0.42
+        e.clientY < r.top + r.height * 0.4
       if (inHead) {
         const dir = Math.sign(e.clientX - lastX)
         if (dir !== 0) {

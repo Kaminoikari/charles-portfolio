@@ -336,7 +336,7 @@ export function initAvatarGuide(
   const H = canvas.clientHeight || 280
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setSize(W, H, false)
-  // DPR 2 (was 1.5): the character is ~180px wide, so full-res costs little
+  // DPR 2 (was 1.5): at 180–220px wide the character costs little at full res,
   // and the line work (toon shading, hair) is exactly where 1.5 aliased.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   // ACES gives the toon shading a filmic rolloff; exposure compensates the
@@ -372,8 +372,11 @@ export function initAvatarGuide(
   scene.add(fill)
 
   // Contact shadow: a radial-gradient disc at her feet. Fake and cheap on
-  // purpose — real shadow maps cost a render pass and read as noise on a
-  // 180px figure; grounding is all this needs to do.
+  // purpose — real shadow maps cost a render pass and read as noise at this
+  // size; grounding is all this needs to do.
+  // The waist-up camera leaves it out of frame, so it is invisible today. It
+  // stays because it costs one draw call and is what any framing that shows
+  // her feet again would need; the materialize entrance still fades it in.
   const shadowCanvas = document.createElement('canvas')
   shadowCanvas.width = shadowCanvas.height = 128
   const sctx = shadowCanvas.getContext('2d')
