@@ -20,7 +20,7 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 
 // Where the avatar stands for a given widget mode and viewport width.
 // 'hidden' means display:none, never unmount: the wrapper stays mounted so the
-// 15MB VRM is fetched and parsed exactly once per page.
+// 5.5MB VRM is fetched and parsed exactly once per page.
 //  launcher      stowed panel — the character IS the launcher button
 //  beside-panel  docked panel on a viewport wide enough for both, side by side
 //  rail          wide fullscreen — she stands at the bottom of the pipeline rail

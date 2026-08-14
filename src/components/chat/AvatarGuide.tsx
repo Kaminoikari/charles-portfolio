@@ -7,7 +7,12 @@ import { useEffect, useRef } from 'react'
 import type { AvatarMode } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
 
-const VRM_URL = '/avatar/AvatarSample_B.vrm'
+// _webp = same model repacked with EXT_texture_webp textures (15.4MB→5.5MB,
+// scripts/compress_vrm_webp.py). /avatar/* is cached immutable, so any
+// content change MUST come with a new filename. WebP support is a safe
+// assumption here: the avatar gate already requires WebGL2, which every
+// WebP-capable browser generation ships with.
+const VRM_URL = '/avatar/AvatarSample_B_webp.vrm'
 
 export default function AvatarGuide({
   mode,
@@ -85,6 +90,80 @@ export default function AvatarGuide({
     modeRef.current = mode
     handleRef.current?.setMode(mode)
   }, [mode])
+
+  // Cursor perception, desktop (fine-pointer) only: she watches the cursor
+  // when it comes near, and a stroke back and forth across her head (≥3
+  // direction flips within 2s) earns a happy head wiggle. Listening is
+  // passive on document — nothing here can swallow the click that opens the
+  // panel, and a hidden placement (zero-size rect) just clears the gaze.
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: fine)').matches) return
+    let patDir = 0
+    let patFlips = 0
+    let patWindowStart = 0
+    let patCooldownUntil = 0
+    let lastX = 0
+    const onMove = (e: PointerEvent) => {
+      const h = handleRef.current
+      const canvas = canvasRef.current
+      if (!h || !canvas) return
+      const r = canvas.getBoundingClientRect()
+      if (r.width === 0) {
+        h.clearGaze()
+        return
+      }
+      const dx = e.clientX - (r.left + r.width / 2)
+      // Her face sits in the upper third, not at the geometric centre.
+      const dy = e.clientY - (r.top + r.height * 0.35)
+      if (Math.hypot(dx, dy) < 420) {
+        h.setGaze(dx / (r.width * 1.6), -dy / (r.height * 1.1))
+      } else {
+        h.clearGaze()
+      }
+      const now = performance.now()
+      const inHead =
+        e.clientX > r.left + r.width * 0.2 &&
+        e.clientX < r.right - r.width * 0.2 &&
+        e.clientY > r.top &&
+        e.clientY < r.top + r.height * 0.32
+      if (inHead) {
+        const dir = Math.sign(e.clientX - lastX)
+        if (dir !== 0) {
+          if (patDir !== 0 && dir !== patDir) {
+            if (patFlips === 0) patWindowStart = now
+            if (now - patWindowStart >= 2000) {
+              patFlips = 0
+              patWindowStart = now
+            }
+            patFlips++
+            if (patFlips >= 3 && now > patCooldownUntil) {
+              patFlips = 0
+              patCooldownUntil = now + 8000
+              // Deliberately silent (plan F): pats never speak, only react.
+              h.setEmotion('happy', 0.9, 1.8)
+              h.playGesture('wiggle')
+            }
+          }
+          patDir = dir
+        }
+      } else {
+        patDir = 0
+        patFlips = 0
+      }
+      lastX = e.clientX
+    }
+    // Leaving the window entirely fires no further pointermove — without
+    // these she'd stay locked on the last cursor position (R1 review LOW).
+    const onLeave = () => handleRef.current?.clearGaze()
+    document.addEventListener('pointermove', onMove, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onLeave)
+    window.addEventListener('blur', onLeave)
+    return () => {
+      document.removeEventListener('pointermove', onMove)
+      document.documentElement.removeEventListener('pointerleave', onLeave)
+      window.removeEventListener('blur', onLeave)
+    }
+  }, [])
 
   useEffect(() => {
     activeRef.current = active

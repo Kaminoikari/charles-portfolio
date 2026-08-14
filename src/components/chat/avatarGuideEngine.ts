@@ -16,6 +16,13 @@
 //   - gestures: procedural wave/bow/nod, additive over the mode pose
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
+// Perception & idle life (Batch 3):
+//   - cursor gaze: setGaze/clearGaze blend a pointer-derived look direction
+//     over the mode sweep (fades both ways; saccades still ride on top)
+//   - head-pat: AvatarGuide detects strokes across her head and triggers a
+//     happy wiggle — silent by design, and it never intercepts the click
+//   - stretch: an unprompted self-action after 25–45s of undisturbed idle
+//
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
 //     light; fake radial contact shadow at her feet (no shadow-map pass)
@@ -44,7 +51,9 @@ import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 // checks availability at runtime and silently skips unknown presets, so a
 // future custom model upgrades expressiveness without touching callers.
 export type EmotionName = 'happy' | 'angry' | 'sad' | 'relaxed' | 'surprised'
-export type GestureName = 'wave' | 'bow' | 'nod'
+// wiggle = head-pat response (small head roll); stretch = idle self-action.
+// Neither is cue-driven: AvatarGuide triggers them from pointer/idle logic.
+export type GestureName = 'wave' | 'bow' | 'nod' | 'wiggle' | 'stretch'
 
 export type AvatarGuideHandle = {
   setMode: (mode: AvatarMode) => void
@@ -58,6 +67,11 @@ export type AvatarGuideHandle = {
   setSpeech: (audio: HTMLAudioElement | null, track: VisemeTrack | null) => void
   setEmotion: (name: EmotionName, weight?: number, holdSec?: number) => void
   playGesture: (name: GestureName) => void
+  // Cursor gaze: gx/gy in [-1,1] relative to the character (right/up
+  // positive). The gaze BLENDS over the mode-driven look direction and
+  // fades back out when null — leaving never snaps her head.
+  setGaze: (gx: number, gy: number) => void
+  clearGaze: () => void
   dispose: () => void
 }
 
@@ -228,7 +242,7 @@ export function initAvatarGuide(
     vrmUrl,
     (gltf) => {
       if (disposed) {
-        // Disposed while the 15MB VRM was still parsing: nobody else will ever
+        // Disposed while the 5.5MB VRM was still parsing: nobody else will ever
         // see this scene, so release its geometry/textures here or leak them.
         VRMUtils.deepDispose(gltf.scene)
         return
@@ -313,6 +327,13 @@ export function initAvatarGuide(
   let saccadeTimer = 0.9
   let saccadeX = 0
   let saccadeY = 0
+  let gazeX = 0
+  let gazeY = 0
+  let gazeOn = false
+  let gazeBlend = 0
+  // Idle self-actions (stretch) fire only after a long undisturbed idle;
+  // any non-idle state resets the clock.
+  let idleActTimer = 25 + Math.random() * 20
   let gesture: { name: GestureName; t: number; dur: number } | null = null
   // Probe channel for automated verification (?mikadebug=1) — same pattern as
   // the retired ?audiodebug overlay, kept because avatar work re-needs it.
@@ -394,10 +415,42 @@ export function initAvatarGuide(
         yaw = Math.sin(t * ((2 * Math.PI) / 6.5)) * 0.07
         pitch = Math.sin(t * ((2 * Math.PI) / 4.3)) * 0.03
       }
+      // Cursor gaze blends over the mode-driven look and fades both ways, so
+      // entering or leaving the tracking radius never snaps her head. Leaving
+      // hands the eyes back to the idle sweep + saccades.
+      gazeBlend += ((gazeOn ? 1 : 0) - gazeBlend) * Math.min(1, dt * 6)
+      if (gazeBlend > 0.001) {
+        yaw = yaw * (1 - gazeBlend) + gazeX * 0.55 * gazeBlend
+        pitch = pitch * (1 - gazeBlend) + gazeY * -0.3 * gazeBlend
+      }
+
+      // Idle self-action: an unprompted stretch after 25–45s of undisturbed
+      // idle (post-entrance, nothing else performing). Purely visual — no
+      // sound, per the plan's F item.
+      const speechIdle = !speechEl || speechEl.paused || speechEl.ended
+      if (
+        matzT === 2 &&
+        mode === 'idle' &&
+        !gesture &&
+        speechIdle &&
+        emoW < 0.05 &&
+        gazeBlend < 0.05
+      ) {
+        idleActTimer -= dt
+        if (idleActTimer <= 0) {
+          gesture = { name: 'stretch', t: 0, dur: 1.8 }
+          idleActTimer = 25 + Math.random() * 20
+        }
+      } else if (mode !== 'idle') {
+        idleActTimer = Math.max(idleActTimer, 8)
+      }
+
       // Gesture offsets ADD to the mode-driven head/spine pose (a nod during
-      // listening still tracks the visitor); the right arm is the exception —
-      // it's pinned, not mode-driven, so the wave owns it and restores the pin.
+      // listening still tracks the visitor); the arms are the exception —
+      // they're pinned, not mode-driven, so wave/stretch own them and restore
+      // the pins when done.
       let gestureHeadPitch = 0
+      let gestureHeadRoll = 0
       let gestureSpineX = 0
       if (gesture) {
         gesture.t += dt
@@ -413,12 +466,23 @@ export function initAvatarGuide(
         } else if (gesture.name === 'bow') {
           gestureSpineX = env * 0.32
           gestureHeadPitch = env * 0.18
+        } else if (gesture.name === 'wiggle') {
+          // head-pat response: happy little side-to-side head roll
+          gestureHeadRoll = Math.sin(p * Math.PI * 4) * 0.09 * env
+        } else if (gesture.name === 'stretch') {
+          // arms flare out from the pins, head tips back, chest opens
+          const lua = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
+          const rua = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
+          if (lua) lua.rotation.z = 1.15 - env * 0.35
+          if (rua) rua.rotation.z = -1.15 + env * 0.35
+          gestureHeadPitch = -env * 0.12
+          gestureSpineX = -env * 0.04
         } else {
           // nod: two down-beats inside one smooth envelope
           gestureHeadPitch = Math.sin(p * Math.PI * 2) * 0.14 * env
         }
         if (p >= 1) {
-          if (gesture.name === 'wave') pinArms(vrm)
+          if (gesture.name === 'wave' || gesture.name === 'stretch') pinArms(vrm)
           gesture = null
         }
       }
@@ -436,6 +500,7 @@ export function initAvatarGuide(
       if (head) {
         head.rotation.y = yaw * 0.65
         head.rotation.x = pitch * 0.7 + gestureHeadPitch
+        head.rotation.z = gestureHeadRoll
       }
       if (neck) {
         neck.rotation.y = yaw * 0.35
@@ -559,6 +624,9 @@ export function initAvatarGuide(
           headX: head ? head.rotation.x : 0,
           spineX: spine ? spine.rotation.x : 0,
           matz: matzT,
+          gazeBlend,
+          headY: head ? head.rotation.y : 0,
+          headZ: head ? head.rotation.z : 0,
           scale: vrm.scene.scale.x,
           rimR: mtoons.length > 0 ? mtoons[0].parametricRimColorFactor.r : -1,
           shadowOp: shadow.visible ? shadowMat.opacity : -1,
@@ -662,9 +730,21 @@ export function initAvatarGuide(
       emoHold = holdSec
     },
     playGesture: (name) => {
-      // Replacing a mid-flight wave must not strand a half-raised arm.
-      if (gesture?.name === 'wave' && vrm) pinArms(vrm)
-      gesture = { name, t: 0, dur: name === 'wave' ? 1.6 : name === 'bow' ? 1.5 : 0.9 }
+      // Replacing a mid-flight arm gesture must not strand a half-raised arm.
+      if ((gesture?.name === 'wave' || gesture?.name === 'stretch') && vrm) pinArms(vrm)
+      gesture = {
+        name,
+        t: 0,
+        dur: name === 'wave' ? 1.6 : name === 'stretch' ? 1.8 : name === 'bow' ? 1.5 : 0.9,
+      }
+    },
+    setGaze: (gx, gy) => {
+      gazeX = Math.min(Math.max(gx, -1), 1)
+      gazeY = Math.min(Math.max(gy, -1), 1)
+      gazeOn = true
+    },
+    clearGaze: () => {
+      gazeOn = false
     },
     dispose: () => {
       disposed = true

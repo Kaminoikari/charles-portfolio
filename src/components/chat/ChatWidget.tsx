@@ -230,7 +230,7 @@ export default function ChatWidget() {
   }, [])
   // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
   // 2026-08-13 launch. Held back while the hero intro owns the screen, for two
-  // reasons with one latch: the 15MB VRM must not compete with the intro's
+  // reasons with one latch: the 5.5MB VRM must not compete with the intro's
   // assets for bandwidth, and the gate's WebGL2 probe (a real GL context, tens
   // of ms on weak mobile GPUs) must not run inside the intro window either —
   // so the gate is evaluated when the latch fires, not in the first render.
@@ -265,7 +265,7 @@ export default function ChatWidget() {
   // Set when the browser reclaims the WebGL context. A lost-context canvas is
   // not merely blank — Chrome composites it as an opaque white box — so the
   // whole wrapper unmounts (which also disposes the engine and stops its rAF
-  // loop). Deliberately never reset: remounting would re-download 15MB on a
+  // loop). Deliberately never reset: remounting would re-download 5.5MB on a
   // device that just proved it is short on GPU memory; a refresh starts over.
   const [avatarDead, setAvatarDead] = useState(false)
   const refocusCapsuleRef = useRef(false)
@@ -533,7 +533,7 @@ export default function ChatWidget() {
   ]
 
   // One persistent avatar wrapper across every placement: the wrapper element
-  // type never changes, so React never remounts the canvas and the 15MB VRM is
+  // type never changes, so React never remounts the canvas and the 5.5MB VRM is
   // fetched and parsed exactly once. The interactive parts (launcher button,
   // ground ring, bubble) are conditional SIBLINGS of the canvas inside it —
   // they may come and go without touching the engine.

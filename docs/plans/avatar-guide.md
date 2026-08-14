@@ -17,7 +17,9 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
 - **閘門改為全員開啟**：拿掉 `?avatar=1`／localStorage flag、≥880px、fine-pointer 三項檢查。
   保留兩項能力檢查：`prefers-reduced-motion: reduce` 關閉、WebGL2 探測（仍必須排最後，
   reduced-motion 訪客不付探測成本；探測後以 `WEBGL_lose_context` 立即釋放 context）。
-- **AvatarSample_B.vrm 入 git 並上 production**。授權已核對（pixiv 官方 FAQ，2024-12-26 更新，
+- **AvatarSample_B.vrm 入 git 並上 production**（2026-08-14 起 production 檔為
+  WebP 重打包版 `AvatarSample_B_webp.vrm`，見 Batch 3-G；原檔已自 public/ 移除，
+  git 歷史可回）。授權已核對（pixiv 官方 FAQ，2024-12-26 更新，
   https://vroid.pixiv.help/hc/en-us/articles/4402394424089 ）：AvatarSample 系列
   "can be used by anyone in any kind of activity, be it for-profit or not"、無署名義務；
   禁止的是「收費再散佈模型檔案本身」與改標 CC0。本站免費展示，合規。
@@ -211,6 +213,24 @@ bob 疊加讀感為抖動、位移式 bob 違反「動作一律骨骼旋轉」�
   （15.4MB 目標 ≤7MB），**必須驗證 VRM 擴充存活**（載入 probe：渲染＋表情＋
   spring bones 全通過才換檔）；失敗即記錄原因跳過，不硬上。
 
+**Batch 3 驗證結果（2026-08-14）**：
+F——游標追視（gaze blend 層：進 0.989/1.0、出衰減 0.001，headY 隨游標左右
+翻號 −0.235/+0.124）；摸頭（頭區來回 ≥3 翻向、2s 窗、8s 冷卻：wiggle 8 樣本
+＋happy＋headZ 0.08，純 hover 不動 click 契約）；idle 伸展（25–45s 未打擾
+idle 觸發：65s 觀測窗抓到 stretch 8 樣本，雙臂外張＋後仰，播畢回 pin）。
+第一輪 probe gaze/pat 全零是 probe 自己 querySelector 抓到 hero canvas
+（頁面 9 個 canvas 的第一個），修 selector 後全過——實作未改。
+G——gltf-transform optimize 確認**丟棄整個 VRM extension**（extensionsUsed
+只剩 KHR_materials_unlit，輸出中無 "VRM" 字串），該路徑棄用；改走自製
+`scripts/compress_vrm_webp.py`：只換 image payload 為 WebP（EXT_texture_webp，
+three GLTFLoader 原生支援）＋重排 byteOffset，mesh/accessor/texture **索引
+全不動**，VRM extension 引用保持有效。15.4MB→5.5MB（−64%，HTTP 實傳 1.9MB），
+存活 gate 全過：expressions 15（=原檔）、spring joints 58、humanoid 完整、
+180 材質貼圖全解、渲染像素 alpha 255、`aa` 表情驅動可見。腳本以 git 歷史
+原檔重跑產出 byte-identical，已入 repo。換檔守則照舊：新內容新檔名
+（AvatarSample_B_webp.vrm）＋VRM_URL 同步改，原檔自 public/ 移除（git 歷史
+可回）。WebP 解碼支援由 WebGL2 閘門涵蓋（凡過閘門的瀏覽器世代皆支援 WebP）。
+
 **驗證計畫**：逐批 tsc/vitest/build＋preview probe（口型：取樣 track 與
 expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度截圖；渲染：
 截圖對比）＋production 驗證。
@@ -278,8 +298,10 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
 - launcher 態下 avatar wrapper 的透明像素會吃右下角點擊（ChatWidget 註解記載取捨）。
 - GLTFLoader 因 hero 與 avatar 引擎共用而被 Rollup 抽成獨立 chunk：hero 多一個 HTTP
   request，總 bytes 不變（round 1 spec review 核可的例外）。
-- 15.4MB VRM 是首訪成本（intro 後才載、瀏覽器快取吸收重訪）；正式角色階段再壓
-  （meshopt／draco／貼圖降階）。
+- ~~15.4MB VRM 是首訪成本（intro 後才載、瀏覽器快取吸收重訪）；正式角色階段再壓
+  （meshopt／draco／貼圖降階）~~（**2026-08-14 修訂**：Batch 3-G 已壓——WebP
+  重打包 5.5MB（HTTP 實傳約 1.9MB），延載與快取策略不變；mesh 端 meshopt/draco
+  仍未做，留給正式角色階段）。
 - `/avatar/*` 在 vercel.json 設了 `max-age=31536000, immutable`（讓「重訪走快取」
   成立）。**約束：換角色必須換檔名**（並改 `AvatarGuide.tsx` 的 `VRM_URL`），同名
   覆蓋會讓舊訪客拿快取裡的舊模型最長一年。
