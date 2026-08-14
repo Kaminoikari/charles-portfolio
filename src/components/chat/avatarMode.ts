@@ -43,6 +43,53 @@ export function avatarPlacement(
   return wide ? 'beside-panel' : 'hidden'
 }
 
+// ---- camera framing -------------------------------------------------------
+// Lives here rather than in the engine so the React shell can read it without
+// pulling three.js into the main bundle, and so the invariant below is unit
+// testable without WebGL.
+//
+// Her on-screen size is `2 · distance · tan(fov/2) / canvasHeight` metres per
+// pixel. Hold that ratio constant and a taller canvas shows MORE of her at the
+// same size, instead of scaling her up — which is the whole point of the rail
+// getting its own framing: same Mika, more leg.
+export const AVATAR_FOV = 27
+// The camera sits this far above the point it looks at, for a slight tilt.
+export const AVATAR_CAMERA_TILT = 0.1
+
+export interface AvatarFraming {
+  distance: number
+  lookAtY: number
+}
+
+// Waist-up, composed for the 180×280 launcher canvas: top edge at world
+// y=1.722 (her hair top is 1.582), bottom at y=0.618, mid-thigh.
+export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.17 }
+// The rail's 220×400 canvas is 58px taller than the docked one. Distance grows
+// with it (2.3 × 400/342) and the look-at drops so the extra view lands below
+// her, not as headroom: the top edge stays at 1.722 and the bottom reaches
+// y=0.431, just past her knees.
+export const AVATAR_FRAMING_RAIL: AvatarFraming = { distance: 2.69, lookAtY: 1.076 }
+
+// Canvas boxes per placement. ChatWidget must spell the Tailwind classes out as
+// literals for the JIT to see them, so these are duplicated there by necessity;
+// ChatWidget.test.tsx asserts the rendered canvas matches these numbers.
+export const AVATAR_CANVAS_LAUNCHER = { w: 180, h: 280 }
+export const AVATAR_CANVAS_DOCKED = { w: 220, h: 342 }
+export const AVATAR_CANVAS_RAIL = { w: 220, h: 400 }
+
+// Metres of world per canvas pixel — the number that must match across
+// placements for her to look the same size in each.
+export function avatarMetresPerPixel(framing: AvatarFraming, canvasHeight: number): number {
+  return (2 * framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180))) / canvasHeight
+}
+
+// World-space heights the top and bottom canvas edges land on. Her hair top is
+// at y≈1.582, mid-thigh ≈0.62, knee ≈0.40.
+export function avatarViewSpan(framing: AvatarFraming): { top: number; bottom: number } {
+  const half = framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180))
+  return { top: framing.lookAtY + half, bottom: framing.lookAtY - half }
+}
+
 interface GateInputs {
   matchMedia: (q: string) => Pick<MediaQueryList, 'matches'>
   // A thunk, not a boolean: probing WebGL2 creates a real GL context, so it

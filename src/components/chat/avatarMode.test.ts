@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { deriveAvatarMode, avatarGuideEnabled, avatarPlacement } from './avatarMode'
+import {
+  AVATAR_CANVAS_DOCKED,
+  AVATAR_CANVAS_LAUNCHER,
+  AVATAR_CANVAS_RAIL,
+  AVATAR_FRAMING_DEFAULT,
+  AVATAR_FRAMING_RAIL,
+  avatarMetresPerPixel,
+  avatarViewSpan,
+  deriveAvatarMode,
+  avatarGuideEnabled,
+  avatarPlacement,
+} from './avatarMode'
 
 describe('deriveAvatarMode', () => {
   it('is idle with empty input and no stream', () => {
@@ -99,5 +110,35 @@ describe('avatarGuideEnabled', () => {
     expect(probed).toBe(0)
     avatarGuideEnabled({ ...on, webgl })
     expect(probed).toBe(1)
+  })
+})
+
+describe('avatar camera framing', () => {
+  // The rail hands her a taller canvas so more of her legs fit. The point of
+  // dollying the camera with it is that she must not get BIGGER — if these
+  // drift apart she visibly changes size when the chat goes fullscreen.
+  it('renders her at the same size on the rail canvas as on the docked one', () => {
+    const docked = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED.h)
+    const rail = avatarMetresPerPixel(AVATAR_FRAMING_RAIL, AVATAR_CANVAS_RAIL.h)
+    // Within 0.02mm per pixel, i.e. under 1% of the ~3.23mm/px scale.
+    expect(rail * 1000).toBeCloseTo(docked * 1000, 1)
+  })
+
+  it('spends the rail canvas extra height below her, not as headroom', () => {
+    const docked = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
+    const rail = avatarViewSpan(AVATAR_FRAMING_RAIL)
+    // Same top edge: her head keeps its clearance instead of drifting down.
+    expect(rail.top).toBeCloseTo(docked.top, 2)
+    // Bottom edge drops from mid-thigh (~0.62) past the knee (~0.40).
+    expect(docked.bottom).toBeGreaterThan(0.55)
+    expect(rail.bottom).toBeLessThan(0.45)
+  })
+
+  it('keeps the launcher framing where the head has clearance', () => {
+    const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
+    // Her hair top is at y≈1.582; anything below that crops her head.
+    expect(span.top).toBeGreaterThan(1.6)
+    // And the launcher canvas is the one the default framing was composed for.
+    expect(AVATAR_CANVAS_LAUNCHER.h).toBe(280)
   })
 })

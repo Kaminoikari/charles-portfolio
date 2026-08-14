@@ -12,7 +12,12 @@ import { useChatMode } from './useChatMode'
 import { PipelineTrace } from './PipelineTrace'
 import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
-import { avatarGuideEnabledInBrowser, avatarPlacement, deriveAvatarMode } from './avatarMode'
+import {
+  AVATAR_FRAMING_RAIL,
+  avatarGuideEnabledInBrowser,
+  avatarPlacement,
+  deriveAvatarMode,
+} from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
 import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
@@ -584,9 +589,13 @@ export default function ChatWidget() {
   // launcher-true here with the wrapper unmounted would leave NO launcher.
   const avatarIsLauncher = placement === 'launcher' && avatarLoaded && !avatarDead
   // Enlarged canvas for the two chat-open placements; the rail also needs the
-  // vertical room (see `roomy`). Keeps the 180:280 aspect — the waist-up
-  // framing is composed for it.
+  // vertical room (see `roomy`).
   const avatarBig = placement === 'beside-panel' || (placement === 'rail' && roomy)
+  // The rail goes one further: 400px tall with the camera dollied back to
+  // match (AVATAR_FRAMING_RAIL), so she is the same size on screen but stands
+  // 58px higher in the column and is cropped below the knee instead of
+  // mid-thigh. The docked panel keeps 342px — it has less height to give.
+  const avatarRailBig = placement === 'rail' && roomy
   // Hold the capsule back while the character is plausibly on her way: before
   // the gate has even been asked, and during a healthy load. Every "she is not
   // coming" signal (gate off, failure, patience window, dead context) releases
@@ -621,7 +630,14 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
-        sizeClass={avatarBig ? 'h-[342px] w-[220px]' : 'h-[280px] w-[180px]'}
+        sizeClass={
+          avatarRailBig
+            ? 'h-[400px] w-[220px]'
+            : avatarBig
+              ? 'h-[342px] w-[220px]'
+              : 'h-[280px] w-[180px]'
+        }
+        framing={avatarRailBig ? AVATAR_FRAMING_RAIL : undefined}
         onHandle={(h) => {
           avatarHandleRef.current = h
         }}
@@ -877,15 +893,18 @@ export default function ChatWidget() {
                   trace scrolls to rest above her head — block-end PADDING on
                   an overflow container is dropped from the scroll extent by
                   some engines, a spacer never is. Both numbers are derived:
-                  her canvas top is vh−366 on the 342px canvas and vh−304 on
-                  the 280px one (bottom-6 + the canvas), the aside's bottom
-                  padding is 16px and gap-5 adds 20px — change any of those (or
-                  the panel's inset-4) and these move with them. Measured
-                  against the canvas rather than her hairline, so the waist-up
-                  framing's headroom reads as breathing space between the trace
-                  and her. */}
+                  her canvas top is vh−424 on the rail's 400px canvas and
+                  vh−304 on the 280px one a short viewport falls back to
+                  (bottom-6 + the canvas), the aside's bottom padding is 16px
+                  and gap-5 adds 20px — change any of those (or the panel's
+                  inset-4) and these move with them. Measured against the
+                  canvas rather than her hairline, so the framing's headroom
+                  reads as breathing space between the trace and her. */}
               {avatarOn && avatarLoaded && placement === 'rail' && (
-                <div aria-hidden className={avatarBig ? 'h-[330px] shrink-0' : 'h-[268px] shrink-0'} />
+                <div
+                  aria-hidden
+                  className={avatarRailBig ? 'h-[388px] shrink-0' : 'h-[268px] shrink-0'}
+                />
               )}
             </aside>
           )}

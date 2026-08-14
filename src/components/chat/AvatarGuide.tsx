@@ -4,7 +4,7 @@
 // behaviour lives in avatarGuideEngine.ts.
 
 import { useEffect, useRef } from 'react'
-import type { AvatarMode } from './avatarMode'
+import { AVATAR_FRAMING_DEFAULT, type AvatarFraming, type AvatarMode } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
 
 // _webp = same model repacked with EXT_texture_webp textures (15.4MB→5.5MB,
@@ -18,6 +18,7 @@ export default function AvatarGuide({
   mode,
   active = true,
   sizeClass = 'h-[280px] w-[180px]',
+  framing,
   onHandle,
   onLoaded,
   onContextLost,
@@ -27,9 +28,11 @@ export default function AvatarGuide({
   active?: boolean
   // Tailwind height/width for the canvas box. The engine matches its drawing
   // buffer to whatever this resolves to, so a bigger box means more pixels of
-  // her rather than an upscale. Keep the 180:280 aspect ratio: the framing is
-  // composed for it, and a different ratio re-crops her.
+  // her rather than an upscale.
   sizeClass?: string
+  // Camera distance and look-at height for this placement, when the canvas is
+  // tall enough to want a different crop. Undefined keeps the engine default.
+  framing?: AvatarFraming
   // Hands the live engine handle up once the engine is created (and null on
   // teardown) so the widget can drive lip sync / emotions / gestures directly
   // — those are imperative performance beats, not renderable React state.
@@ -48,6 +51,7 @@ export default function AvatarGuide({
   const handleRef = useRef<AvatarGuideHandle | null>(null)
   const modeRef = useRef(mode)
   const activeRef = useRef(active)
+  const framingRef = useRef(framing)
   const onHandleRef = useRef(onHandle)
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
@@ -82,6 +86,11 @@ export default function AvatarGuide({
       )
       handleRef.current.setMode(modeRef.current)
       handleRef.current.setActive(activeRef.current)
+      // The engine is created with the default framing; a placement that
+      // already wants a different one would otherwise show one frame of the
+      // wrong crop before the effect below fires.
+      const f = framingRef.current
+      if (f) handleRef.current.setFraming(f.distance, f.lookAtY)
       onHandleRef.current?.(handleRef.current)
     })
     return () => {
@@ -96,6 +105,19 @@ export default function AvatarGuide({
     modeRef.current = mode
     handleRef.current?.setMode(mode)
   }, [mode])
+
+  // Dolly with the placement. Depends on the numbers rather than the object so
+  // a fresh literal each render does not re-run this.
+  const framingDistance = framing?.distance
+  const framingLookAtY = framing?.lookAtY
+  useEffect(() => {
+    framingRef.current =
+      framingDistance !== undefined && framingLookAtY !== undefined
+        ? { distance: framingDistance, lookAtY: framingLookAtY }
+        : undefined
+    const f = framingRef.current ?? AVATAR_FRAMING_DEFAULT
+    handleRef.current?.setFraming(f.distance, f.lookAtY)
+  }, [framingDistance, framingLookAtY])
 
   // Head pats, desktop (fine-pointer) only: a stroke back and forth across her
   // head (≥3 direction flips within 2s) earns a happy head wiggle. Listening is

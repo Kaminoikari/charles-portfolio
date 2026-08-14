@@ -42,7 +42,12 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
-import type { AvatarMode } from './avatarMode'
+import {
+  AVATAR_CAMERA_TILT,
+  AVATAR_FOV,
+  AVATAR_FRAMING_DEFAULT,
+  type AvatarMode,
+} from './avatarMode'
 import { sampleViseme } from './visemeTrack'
 import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 
@@ -83,12 +88,18 @@ export type AvatarGuideHandle = {
   setSpeech: (audio: HTMLAudioElement | null, track: VisemeTrack | null) => void
   setEmotion: (name: EmotionName, weight?: number, holdSec?: number) => void
   playGesture: (name: GestureName) => void
+  // Camera dolly for a placement that gets a taller canvas. Pass the distance
+  // and the height the camera looks at; the tilt is preserved. Keeping
+  // `distance / canvas height` constant keeps her on-screen size constant, so
+  // a taller canvas shows more of her instead of scaling her up.
+  setFraming: (distance: number, lookAtY: number) => void
   dispose: () => void
 }
 
 // Multiply-tint target while answering; reads as #E8652B over the sample's
 // mostly-light albedo without crushing dark materials to black.
 const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
+
 
 type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']>[0]
 // VRM0 rest pose is a T-pose; these Z rotations bring the arms down. The wave
@@ -357,9 +368,13 @@ export function initAvatarGuide(
   // canvas carries a bottom mask (AvatarGuide.tsx) so the crop fades out.
   // Every gesture in GESTURES was checked against this frame; the raised arms
   // of wave / stretch / hairTouch stay inside it.
-  const camera = new THREE.PerspectiveCamera(27, W / H, 0.1, 30)
-  camera.position.set(0, 1.27, 2.3)
-  camera.lookAt(0, 1.17, 0)
+  const camera = new THREE.PerspectiveCamera(AVATAR_FOV, W / H, 0.1, 30)
+  camera.position.set(
+    0,
+    AVATAR_FRAMING_DEFAULT.lookAtY + AVATAR_CAMERA_TILT,
+    AVATAR_FRAMING_DEFAULT.distance,
+  )
+  camera.lookAt(0, AVATAR_FRAMING_DEFAULT.lookAtY, 0)
   scene.add(new THREE.AmbientLight(0xffffff, 1.1))
   const key = new THREE.DirectionalLight(0xffffff, 1.4)
   key.position.set(0.6, 1.6, 2.2)
@@ -753,7 +768,12 @@ export function initAvatarGuide(
       if (sEl && speechTrack && !sEl.paused && !sEl.ended) {
         speechActive = true
         visemeTarget = sampleViseme(speechTrack, sEl.currentTime)
-        visemeTargetW = 0.85
+        // Full weight, not 0.85: her face is ~55px tall on screen, so the
+        // mouth only has a few pixels of travel to say anything with. A mora
+        // often lasts 3-5 frames, and the lerp below only closes ~70% of the
+        // gap in that time, so the visible opening is smaller than the target
+        // anyway — starting from a reduced target made it unreadable.
+        visemeTargetW = 1
       } else if (mode === 'speaking') {
         visemeTimer -= dt
         if (visemeTimer <= 0) {
@@ -763,10 +783,13 @@ export function initAvatarGuide(
           visemeTimer = visemeHold
         }
         visemeTarget = randViseme
-        visemeTargetW = 0.65
+        visemeTargetW = 0.8
       }
       for (let i = 0; i < visemeW.length; i++) {
-        visemeW[i] += ((i === visemeTarget ? visemeTargetW : 0) - visemeW[i]) * Math.min(1, dt * 22)
+        // 28/s (was 22): a 60ms mora is 3-4 frames, where 22 reached ~70% of
+        // the target and 28 reaches ~85%. Higher than this and consecutive
+        // vowels start to read as a chatter rather than speech.
+        visemeW[i] += ((i === visemeTarget ? visemeTargetW : 0) - visemeW[i]) * Math.min(1, dt * 28)
         if (visemeW[i] < 0.001) visemeW[i] = 0
         vrm.expressionManager?.setValue(VISEME_NAMES[i], visemeW[i])
       }
@@ -951,6 +974,10 @@ export function initAvatarGuide(
       // Replacing a mid-flight arm gesture must not strand a half-raised arm.
       if (gesture && GESTURES[gesture.name].arms && vrm) pinArms(vrm)
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+    },
+    setFraming: (distance, lookAtY) => {
+      camera.position.set(0, lookAtY + AVATAR_CAMERA_TILT, distance)
+      camera.lookAt(0, lookAtY, 0)
     },
     dispose: () => {
       disposed = true

@@ -325,6 +325,23 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
   （spec review R1 抓到，已改）。
   rail 同時取消原本的 `scale-[0.8]`（全螢幕是最該看清楚她的地方），
   `left` 44px→24px 重新居中於 236px 側欄，spacer 212px→330px。
+- **rail 再往上＋露到膝蓋（2026-08-14 使用者回饋「位置有點太下面、想多露腿部」）**：
+  單純平移不會露出更多腿（切點在她身上的位置不變），要**畫布加高＋相機同步後拉**。
+  rail 畫布 342→**400px**，相機 2.3→**2.69m**、lookAt 1.17→**1.076**。
+  不變量：`2·distance·tan(fov/2) / 畫布高` ＝ 每像素世界尺寸，兩態同為 **3.229 mm/px**，
+  所以她**在螢幕上一樣大**；上緣維持 y=1.722（頭頂留白不變），下緣 0.618→**0.430**
+  （大腿中段→膝蓋以下）。畫布往上長 58px ⇒ 她整體上移 58px。spacer 330→**388**。
+  常數收斂在 `avatarMode.ts`（`AVATAR_FRAMING_*`／`AVATAR_CANVAS_*`／
+  `avatarMetresPerPixel`／`avatarViewSpan`），引擎與 React 殼層都讀同一份；
+  引擎新增 `setFraming(distance, lookAtY)`。**三條單元測試釘住不變量**
+  （同尺寸／多出的視野在下方不在頭上／launcher 構圖不裁到頭），
+  兩個 mutation 各自驗過會轉紅（拿掉 dolly → 2 紅；不下移 lookAt → 1 紅）。
+- **嘴型可讀性（同輪回饋「嘴型有點看不太清楚」）**：不是解析度問題（DPR 已 cap 2、
+  buffer 與 CSS 盒同尺寸），是**嘴巴的像素尺寸**——臉在螢幕上約 55px 高，
+  嘴巴開合只有數 px。viseme 目標權重 0.85→**1.0**（隨機口型 0.65→0.8）、
+  lerp 22→**28/s**：一個 60ms 的 mora 只有 3–4 幀，22 只走完約 70%、28 約 85%，
+  再高會讀成連續碎抖。**根本解**（未做，需使用者決定）是說話時把相機推近，
+  `setFraming` 已具備這個能力。
 - **短視窗退回（e54f76c）**：rail 的加大畫布需要 rail 自身 640px 高門檻不保證的
   縱向空間——640 高時 330px spacer 吃掉側欄可視高度的 60%，trace 只剩約 196px，
   違反「管線不可被角色擋住」的舊約定。新增 `roomy`（`min-height: 760px`）：
@@ -351,8 +368,12 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
   （gaze 的 dy 錨點原本也要從 0.35 調到 0.30，隨游標追視整組移除而不存在了。）
 
 **驗證（2026-08-14）**：三態幾何以 `getBoundingClientRect` 實測——launcher
-180×280、beside-panel 與 rail 皆 CSS 220×342 且 drawing buffer 同值（證明 resize
-生效）；rail canvas top = vh−366、trace 內容底 524 對 canvas 頂 534，不重疊。
+180×280、beside-panel 220×342、rail 220×400，drawing buffer 皆等於 CSS 盒
+（證明 resize 生效）；rail canvas top = vh−424、spacer 388、left 24，canvas 底
+在 aside 內。**未驗**：rail 新構圖的實際畫面沒截到——1 fps 環境下
+`browser_take_screenshot` 連三種做法（reload／關閉重開分頁／凍結 rAF）都逾時，
+見 [[project_playwright_starved_transitions]]。尺寸不變與露出範圍改由單元測試
+與幾何數據保證。（此前 220×342 態的畫面截圖存在，構圖差異僅在下緣。）
 900×640 的短視窗實測退回 180×280／left 44／spacer 268／trace 可見 258px。
 floor 對 round 的差異以 `Math.floor` 對照 three 原始碼逐一驗算四組尺寸 × 五種
 DPR：round 有 2 組不一致（220×342 @1.25、@1.75），floor 為 0 組。
