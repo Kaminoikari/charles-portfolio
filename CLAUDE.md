@@ -32,9 +32,16 @@ If you're unsure whether a change qualifies, **ask first** before writing one. D
 
 ### Audio — iOS Safari rules (hard-won; do NOT re-litigate)
 
-The hero heat-vision SFX (`src/components/hero/faceHero.ts`) and any future audio
-must respect these iOS Safari (incl. iOS 18) facts. We burned many deploy cycles
-proving them on a real iPhone — trust them instead of re-testing from scratch.
+Any audio on this site must respect these iOS Safari (incl. iOS 18) facts. We
+burned many deploy cycles proving them on a real iPhone — trust them instead of
+re-testing from scratch.
+
+These rules were won on the hero's heat-vision SFX, which lived in
+`src/components/hero/faceHero.ts`. That file was deleted on 2026-08-14 when the
+face hero was replaced (see the changelog entry `hero-particle-field`); the code
+it describes is on the `backup/hero-face` branch if you ever need to read the
+working implementation. The rules below still bind every audio surface that
+remains, above all Mika's voice in `src/components/chat/`.
 
 - **Do NOT use the Web Audio API for the looping beam.** It cannot be unlocked
   reliably on iOS in our interaction model. Use `<audio>` elements (HTMLMediaElement),

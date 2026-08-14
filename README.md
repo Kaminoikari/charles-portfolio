@@ -28,7 +28,7 @@ Personal portfolio site for Charles Chen — AI Product Manager from Taiwan who 
 
 | Section | Description |
 |---------|-------------|
-| **FaceHero** | Live WebGL portrait (three.js): a point-cloud face that a scan line morphs into a lit wireframe, behind an enter gate with a real-time Mobius loader, rotating status copy, and a staged loading→ENTER handoff |
+| **TextHero** | The headline centred in a live WebGL particle field (three.js): motes expand radially from the centre of the screen, with direction sampled by area and reach measured per-direction against the frame so the field fills any viewport evenly |
 | **About** | Profile photo with achievement annotations, neural network background animation |
 | **Universe** | 3D Fibonacci sphere with scroll-driven skill labels |
 | **Experience** | Timeline with staggered reveal animations |
@@ -71,7 +71,7 @@ The vector index is built via a manual GitHub Action (`rag-ingest.yml`, `workflo
 ```
 src/
 ├── components/          # React components
-│   ├── hero/            # WebGL portrait hero + enter loading gate (FaceHero, MobiusLoader)
+│   ├── hero/            # Headline + WebGL particle field (TextHero, particleHero)
 │   ├── animations/      # Canvas modules (path, plutus, playbook, houseOps, jobOps)
 │   └── chat/            # AI chatbot widget, streaming hook, markdown renderer
 ├── data/                # Static data (projects, experience, skills, changelog)

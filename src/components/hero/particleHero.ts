@@ -1,7 +1,9 @@
 // Particle-only hero background: a field expanding outward from the centre of
 // the screen, with the headline sitting in the middle of it.
 //
-// It descends from faceHero.ts's shed-dust field and keeps that field's
+// It descends from faceHero.ts, which was deleted with the face hero on
+// 2026-08-14 and is readable on the `backup/hero-face` branch. It keeps that
+// field's
 // material — the soft-edged square sprite (halftone pixels read square, not
 // round), additive blending, mote size, the cyan-white colour, the
 // sin(π·life) fade in and out, and the UnrealBloom settings.

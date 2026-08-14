@@ -252,9 +252,11 @@ export default function ChatWidget() {
   // assets for bandwidth, and the gate's WebGL2 probe (a real GL context, tens
   // of ms on weak mobile GPUs) must not run inside the intro window either —
   // so the gate is evaluated when the latch fires, not in the first render.
-  // The 400ms grace covers the first-paint race: HeroIntroProvider starts with
-  // introRunning false and FaceHero only flips it true in its first effect
-  // pass, which cancels this timer before it fires. Once set, the latch never
+  // The 400ms grace covered a first-paint race: HeroIntroProvider starts with
+  // introRunning false and the old FaceHero only flipped it true in its first
+  // effect pass, which cancelled this timer before it fired. No hero writes that
+  // flag since 2026-08-14, so the grace is now just a small delay before the VRM
+  // download begins (see hero-intro-context.ts). Once set, the latch never
   // clears — scrolling back to a replaying hero must not unmount a loaded
   // avatar. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
   // they don't change mid-session in any way worth re-rendering for.
