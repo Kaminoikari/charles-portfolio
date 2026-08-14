@@ -619,6 +619,17 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   launcher 342×280 跑 90 秒真實 idle、2700 幀，最窄邊距 10px、貼邊幀數 0；
   docked 在版面寬 894 跑 60 秒、1801 幀，畫布落在 x 0..458，她離螢幕左緣最近 13px、
   畫布內最窄邊距 20px。加寬前同樣的量測，doublePeace 在 t=0.22s 有 58 個像素貼邊。
+- **加寬的兩個視覺副作用**（使用者回報）：她的身體在畫布正中，畫布加寬 97px 就把
+  她往左推了 48.5px（手機縮放後約 35px），看起來「站得比較裡面」；同時泡泡壓到她。
+  - launcher 的 wrapper 從 `right-6` 改成 `right-0`。手機上她的中心回到離右緣
+    121px（加寬前約 112px），而畫布右緣貼齊螢幕右緣後，右側手勢仍完全在畫面內
+    （45 秒實測最右 376，螢幕 387）。
+  - 泡泡 `right-[183px]` → **`right-[256px]`**，並把數值搬進 avatarMode 的
+    `AVATAR_BUBBLE_RIGHT_PX`／`AVATAR_BUBBLE_RIGHT_CLASS`，由 ChatWidget 消費。
+    這個偏移**已經被畫布加寬撞歪兩次**（245px 那次改過一次），所以補了一條測試
+    把它綁在 `AVATAR_CANVAS_LAUNCHER.w` 與 `AVATAR_LAUNCHER_BODY_FRACTION`
+    （0.415，launcher 畫布上她連頭髮的實測寬度佔比）上：清空間必須 > 10px。
+    mutation：改回 183 該測試轉紅。實測清空間 12px（手機 387px 寬）。
 - 量測工具的注意事項：`getBoundingClientRect` 會把入場的 scale transform 算進去
   （量到 176×202 而不是 245×280），亮度門檻會把 hero 星空誤判成她。用
   `gl.readPixels` 的 alpha 通道，並等 `matz === 2`。

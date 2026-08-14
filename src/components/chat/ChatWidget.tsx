@@ -18,6 +18,7 @@ import {
   AVATAR_LAUNCHER_HIT_CLASS,
   avatarColumnBox,
   avatarPlacement,
+  AVATAR_BUBBLE_RIGHT_CLASS,
   avatarSizeClass,
   besidePanelScale,
   CHAT_PANEL_HEIGHT_CLASS,
@@ -657,8 +658,8 @@ export default function ChatWidget() {
                 // button inside re-enables events for itself, which is what
                 // keeps the transparent gesture margin click-through.
                 (avatarIsLauncher
-                  ? 'pointer-events-none fixed bottom-4 right-6 z-50'
-                  : 'pointer-events-none fixed bottom-[84px] right-6 z-50') +
+                  ? 'pointer-events-none fixed bottom-4 right-0 z-50'
+                  : 'pointer-events-none fixed bottom-[84px] right-0 z-50') +
                 // max-[880px] = width < 880px, the exact complement of the
                 // `wide` matchMedia — max-[879px] left a 1px seam at 879.
                 ' transition-[bottom] duration-500 max-[880px]:origin-bottom-right max-[880px]:scale-[0.72]'
@@ -761,10 +762,12 @@ export default function ChatWidget() {
                 // scale (18×0.72≈13px, 240×0.72≈173px): the bubble is the only
                 // thing teaching a touch visitor she is tappable, so it must
                 // not render at 9px.
-                // right-[183px]: the bubble's tail points at her head, and the
-                // canvas growing to 245px moved her centre 32px further from
-                // the wrapper's right edge.
-                'absolute right-[183px] top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[880px]:w-[240px] max-[880px]:text-[18px] max-[359px]:w-[184px] ' +
+                // right-[232px]: the tail points at her head, so this tracks
+                // her body centre, which sits at half the canvas width from the
+                // wrapper's right edge. Every canvas widening has had to move
+                // it — 342px puts her centre at 171, and 232 keeps the same
+                // 61px of clearance the 245px canvas had at 183.
+                `absolute ${AVATAR_BUBBLE_RIGHT_CLASS} top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[880px]:w-[240px] max-[880px]:text-[18px] max-[359px]:w-[184px] ` +
                 'before:absolute before:-right-[16px] before:bottom-[10px] before:h-0 before:w-0 before:border-8 before:border-transparent before:border-l-border before:content-[""] ' +
                 'after:absolute after:-right-[13px] after:bottom-[11px] after:h-0 after:w-0 after:border-7 after:border-transparent after:border-l-bg-secondary after:content-[""] ' +
                 (bubble === 'shown'

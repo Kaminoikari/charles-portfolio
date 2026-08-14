@@ -4,6 +4,9 @@ import {
   gestureEnvelope,
   headAim,
   stepHeadAim,
+  AVATAR_BUBBLE_RIGHT_CLASS,
+  AVATAR_BUBBLE_RIGHT_PX,
+  AVATAR_LAUNCHER_BODY_FRACTION,
   avatarSizeClass,
   besidePanelScale,
   CHAT_BESIDE_PANEL_RIGHT,
@@ -456,6 +459,22 @@ describe('avatar camera framing', () => {
     for (let vw = 880; vw < 1200; vw++) {
       expect(Math.abs(besidePanelScale(vw + 1) - besidePanelScale(vw))).toBeLessThan(0.01)
     }
+  })
+
+  // The bubble sits beside her head, so its offset is measured from the same
+  // corner her body is centred against. It has been corrected twice now, once
+  // per canvas widening, each time only after it landed on her face on a phone.
+  it('keeps the speech bubble clear of her body, at whatever width the canvas is', () => {
+    const px = /right-\[(\d+)px\]/.exec(AVATAR_BUBBLE_RIGHT_CLASS)
+    expect(px).not.toBeNull()
+    expect(Number(px![1])).toBe(AVATAR_BUBBLE_RIGHT_PX)
+    // Her body is centred in the canvas, so its left edge is this far from the
+    // wrapper's right corner. The bubble's right edge has to be further out.
+    const bodyLeftEdge =
+      AVATAR_CANVAS_LAUNCHER.w / 2 + (AVATAR_CANVAS_LAUNCHER.w * AVATAR_LAUNCHER_BODY_FRACTION) / 2
+    expect(AVATAR_BUBBLE_RIGHT_PX).toBeGreaterThan(bodyLeftEdge)
+    // With room to read as a separate object rather than a sticker on her arm.
+    expect(AVATAR_BUBBLE_RIGHT_PX - bodyLeftEdge).toBeGreaterThan(10)
   })
 
   // The click target is a percentage of a width, so it only stays ~180px while

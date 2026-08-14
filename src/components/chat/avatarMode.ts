@@ -419,6 +419,17 @@ export const AVATAR_LAUNCHER_HIT_INSET_PCT = 24
 // than spell its own copy, or the constant above pins nothing.
 export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[24%] right-[24%]'
 
+// Where her body actually ends inside the launcher canvas, as a fraction of the
+// canvas width, read off the render at rest with her hair. Her body is CENTRED,
+// so widening the canvas walks her inland and walks this edge with her — which
+// is why the speech bubble beside her has now been nudged twice, once per
+// widening, with nothing tying the two together. The test below is that tie.
+export const AVATAR_LAUNCHER_BODY_FRACTION = 0.415
+// How far the bubble's right edge sits from the wrapper's right corner, so its
+// tail lands beside her head instead of on it.
+export const AVATAR_BUBBLE_RIGHT_PX = 256
+export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[256px]'
+
 // The Tailwind class for each box. Tailwind's JIT only sees arbitrary values
 // written as complete literals, so the numbers cannot be interpolated from the
 // constants above — which is exactly why this lives next to them and is pinned
