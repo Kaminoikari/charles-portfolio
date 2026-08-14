@@ -15,7 +15,9 @@ import { Markdown } from './Markdown'
 import {
   AVATAR_FRAMING_RAIL,
   avatarGuideEnabledInBrowser,
+  AVATAR_LAUNCHER_HIT_CLASS,
   avatarPlacement,
+  avatarSizeClass,
   deriveAvatarMode,
 } from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
@@ -218,7 +220,7 @@ export default function ChatWidget() {
   // does not guarantee: at 640 its 330px spacer takes 60% of the visible
   // column and the trace — the reason fullscreen exists, and which the owner
   // asked never be crowded out by her — has ~196px left. Between 640 and 760
-  // she keeps the launcher's 180×280 box, which costs 62px of spacer.
+  // she keeps the launcher's 245×280 box, which costs 62px of spacer.
   const [roomy, setRoomy] = useState(() => window.matchMedia('(min-height: 760px)').matches)
   useEffect(() => {
     const wq = window.matchMedia('(min-width: 880px)')
@@ -373,45 +375,42 @@ export default function ChatWidget() {
     }
   }
   const avatarLauncherRef = useRef<HTMLButtonElement>(null)
-  // First-visit affordance (the "B" half of the chosen C+B design): a speech
-  // bubble invites the first tap, once per tab-session, gone after 8s. The
-  // character alone reads as decoration to a first-time visitor; the bubble
-  // teaches the click, then never nags again.
+  // Speech bubble inviting the first tap: the character alone reads as
+  // decoration, and the bubble is the only thing teaching a touch visitor that
+  // she is tappable. It loops on a 5s-on / 5s-off cadence (owner's call,
+  // 2026-08-14) rather than appearing once for 8s — a visitor who arrives
+  // mid-scroll or looks away never saw the single showing.
   const [bubble, setBubble] = useState<'hidden' | 'shown' | 'leaving'>('hidden')
-  // In-memory twin of the sessionStorage flag: with storage blocked, the effect
-  // re-runs on every panel close and would re-show the bubble after every
-  // conversation without this. Survives for the mount, which is all we need.
-  const bubbleShownRef = useRef(false)
+  // The loop is bound to the stowed state, with no "already seen" latch of any
+  // kind: an open panel hides it (the bubble only renders in the launcher
+  // placement anyway) and stowing the panel starts it again. Both latches tried
+  // before are gone — sessionStorage meant a reload showed it zero times, and a
+  // per-mount ref meant one visit to the panel silenced her for good, which the
+  // owner overruled on 2026-08-14.
   useEffect(() => {
     if (open) {
-      // Opening the panel is the very action the bubble invites, and it also
-      // clears this effect's timers — without this reset, a visitor who taps
-      // her within the 8s window would find the bubble back (and permanent)
-      // after closing the panel, because the sessionStorage guard blocks any
-      // rescheduling.
       setBubble('hidden')
       return
     }
     if (!avatarLoaded) return
-    if (bubbleShownRef.current) return
-    // sessionStorage THROWS with storage fully blocked (Chrome "block all
-    // cookies", some WebViews) — and an uncaught throw here bubbles to the
-    // ErrorBoundary and unmounts the entire chat widget. Blocked storage just
-    // means the bubble may show again next load; that beats losing the chat.
-    try {
-      if (sessionStorage.getItem('avatarBubbleSeen')) return
-      sessionStorage.setItem('avatarBubbleSeen', '1')
-    } catch {
-      // storage unavailable — show it this once; the ref above stops the re-nag
+    let timers: number[] = []
+    const clear = () => {
+      timers.forEach(clearTimeout)
+      timers = []
     }
-    bubbleShownRef.current = true
-    setBubble('shown')
-    const hide = window.setTimeout(() => setBubble('leaving'), 8000)
-    const gone = window.setTimeout(() => setBubble('hidden'), 8600)
-    return () => {
-      clearTimeout(hide)
-      clearTimeout(gone)
+    const cycle = () => {
+      clear()
+      setBubble('shown')
+      timers = [
+        // 5s visible, then the 500ms fade in the class below, then 5s of quiet
+        // before the next showing.
+        window.setTimeout(() => setBubble('leaving'), 5000),
+        window.setTimeout(() => setBubble('hidden'), 5600),
+        window.setTimeout(cycle, 10000),
+      ]
     }
+    cycle()
+    return clear
   }, [avatarLoaded, open])
 
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
@@ -564,15 +563,18 @@ export default function ChatWidget() {
   //  beside-panel  docked panel, wide viewport. Offset 436px = panel right
   //                inset 20px + panel width 400px (the min() in the panel class
   //                always resolves to 400px on ≥880px viewports) + 16px gap.
-  //                Canvas 220×342 here and in the rail: once the chat is open
-  //                she is something the visitor is looking AT, and the space
-  //                either side of the panel is free. She grows up and to the
-  //                left from the same corner, so the panel never moves.
+  //                Canvas 300×342 here and 300×400 in the rail: once the chat
+  //                is open she is something the visitor is looking AT, and the
+  //                space either side of the panel is free. She grows up and to
+  //                the left from the same corner, so the panel never moves.
   //  rail          wide fullscreen: she stands at the bottom of the pipeline
   //                rail. Panel is inset-4 with a 236px rail column, so
-  //                left = 16 + (236-w)/2 centres her canvas in it: 24px for
-  //                the 220px box, 44px for the 180px one a short viewport
-  //                falls back to; z-[55] beats the panel's z-50; rendered at full
+  //                left = 16 + (236-w)/2 centres her canvas in it, which works
+  //                out at 12px for the 245px box a short viewport falls back
+  //                to. The full 300px box is WIDER than the column, so it uses
+  //                -left-4, which still centres it on the column, with the
+  //                transparent overhang split evenly either side.
+  //                z-[55] beats the panel's z-50; rendered at full
   //                size (the old 80% shrink fought the whole point of the
   //                fullscreen view, where there is the most room to actually
   //                watch her) with the trace spacer below reserving the taller
@@ -612,15 +614,33 @@ export default function ChatWidget() {
             ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
             : placement === 'rail'
               ? avatarBig
-                ? 'pointer-events-none fixed bottom-6 left-[24px] z-[55]'
-                : 'pointer-events-none fixed bottom-6 left-[44px] z-[55]'
+                ? // The 300px box is wider than the 236px rail column, so
+                  // centring her in it takes a negative offset: 16 - (300-236)/2
+                  // = -16. The overhang either side is transparent and the
+                  // wrapper is pointer-events-none, so it covers no station and
+                  // catches no click. Her RESTING silhouette stays inside the
+                  // column, but a stretch does not: its fingertips reach
+                  // ±128px from centre 134, i.e. x≈6 and x≈262 against a column
+                  // of [16, 252], so about 10px of hand crosses onto the
+                  // backdrop on one side and the transcript on the other. That
+                  // is the point — the owner asked for gestures that do not
+                  // look boxed in — and it is safe only because this wrapper
+                  // takes no pointer events.
+                  'pointer-events-none fixed bottom-6 -left-4 z-[55]'
+                : 'pointer-events-none fixed bottom-6 left-[12px] z-[55]'
               : // launcher: glides from above the capsule down into the corner
                 // once she takes over as the button. 72% on narrow screens
                 // reduces how much of a phone's hero headline she covers; it
                 // does not clear it — a fixed figure over a 390px page overlaps
                 // something at some scroll position no matter where it stands.
+                // pointer-events-none even as the launcher: the wrapper is
+                // sized by the canvas, so without this its whole box swallows
+                // clicks on the page behind it — and the 2026-08-14 widening
+                // would have grown that dead zone from 180px to 245px. The
+                // button inside re-enables events for itself, which is what
+                // keeps the transparent gesture margin click-through.
                 (avatarIsLauncher
-                  ? 'fixed bottom-4 right-6 z-50'
+                  ? 'pointer-events-none fixed bottom-4 right-6 z-50'
                   : 'pointer-events-none fixed bottom-[84px] right-6 z-50') +
                 // max-[880px] = width < 880px, the exact complement of the
                 // `wide` matchMedia — max-[879px] left a 1px seam at 879.
@@ -630,13 +650,10 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
-        sizeClass={
-          avatarRailBig
-            ? 'h-[400px] w-[220px]'
-            : avatarBig
-              ? 'h-[342px] w-[220px]'
-              : 'h-[280px] w-[180px]'
-        }
+        // Widths carry her arm span, heights and framing carry her size; both
+        // live in avatarMode.ts so a test can hold the class strings and the
+        // AVATAR_CANVAS_* constants to each other.
+        sizeClass={avatarSizeClass(placement, roomy)}
         framing={avatarRailBig ? AVATAR_FRAMING_RAIL : undefined}
         onHandle={(h) => {
           avatarHandleRef.current = h
@@ -673,7 +690,16 @@ export default function ChatWidget() {
             // cascade-layer ordering. The glow below is this button's focus
             // indicator, in place of a cyan rectangle around the whole canvas.
             data-own-focus-ring=""
-            className="group absolute inset-0 cursor-pointer outline-none"
+            // Not inset-0: the canvas is 245px wide but only ~180px of that is
+            // ever her — the rest is the transparent margin her arms swing
+            // into. Insetting 13% a side keeps the click target at the same
+            // ~180px it was before the canvas grew, so widening the frame
+            // doesn't hand more of the page's bottom-right corner to a
+            // transparent button.
+            className={
+              'group pointer-events-auto absolute inset-y-0 cursor-pointer outline-none ' +
+              AVATAR_LAUNCHER_HIT_CLASS
+            }
           >
             {/* hover/focus affordance, in place of a rectangle around the
                 canvas. This used to be a ground ring at her feet, which the
@@ -684,7 +710,12 @@ export default function ChatWidget() {
                 which also spares this from depending on stacking order. */}
             <span
               aria-hidden="true"
-              className="absolute left-1/2 top-[24%] h-[54%] w-[150%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(0,217,255,0.30),transparent_70%)] opacity-0 mix-blend-screen transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
+              // pointer-events-none: w-[150%] makes this decoration 45px wider
+              // than the button on each side (wider than the canvas itself),
+              // and as the button's own child it would otherwise inherit
+              // pointer-events-auto and quietly hand the gesture margin — and
+              // 8px of the page beyond it — back to the click target.
+              className="pointer-events-none absolute left-1/2 top-[24%] h-[54%] w-[150%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(0,217,255,0.30),transparent_70%)] opacity-0 mix-blend-screen transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100"
             />
           </button>
           {bubble !== 'hidden' && (
@@ -706,14 +737,19 @@ export default function ChatWidget() {
                 // scale (18×0.72≈13px, 240×0.72≈173px): the bubble is the only
                 // thing teaching a touch visitor she is tappable, so it must
                 // not render at 9px.
-                'absolute right-[150px] top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[880px]:w-[240px] max-[880px]:text-[18px] max-[359px]:w-[184px] ' +
+                // right-[183px]: the bubble's tail points at her head, and the
+                // canvas growing to 245px moved her centre 32px further from
+                // the wrapper's right edge.
+                'absolute right-[183px] top-6 w-[190px] rounded-2xl rounded-br-[4px] border border-border bg-bg-secondary px-4 py-3 text-left text-[13px] leading-snug text-white shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-opacity duration-500 max-[880px]:w-[240px] max-[880px]:text-[18px] max-[359px]:w-[184px] ' +
                 'before:absolute before:-right-[16px] before:bottom-[10px] before:h-0 before:w-0 before:border-8 before:border-transparent before:border-l-border before:content-[""] ' +
                 'after:absolute after:-right-[13px] after:bottom-[11px] after:h-0 after:w-0 after:border-7 after:border-transparent after:border-l-bg-secondary after:content-[""] ' +
                 (bubble === 'shown'
-                  ? // starting:opacity-0 (@starting-style) gives the mount a
-                    // fade-in in browsers that support it; older ones show it
-                    // instantly, which is what happened everywhere before.
-                    'cursor-pointer opacity-100 starting:opacity-0'
+                  ? // pointer-events-auto because the wrapper above is now
+                    // pointer-events-none; the bubble invites a tap, so it has
+                    // to take one. starting:opacity-0 (@starting-style) gives
+                    // the mount a fade-in in browsers that support it; older
+                    // ones show it instantly, as everywhere did before.
+                    'pointer-events-auto cursor-pointer opacity-100 starting:opacity-0'
                   : 'pointer-events-none opacity-0')
               }
             >

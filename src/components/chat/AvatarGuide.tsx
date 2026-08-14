@@ -17,7 +17,7 @@ const VRM_URL = '/avatar/AvatarSample_B_webp.vrm'
 export default function AvatarGuide({
   mode,
   active = true,
-  sizeClass = 'h-[280px] w-[180px]',
+  sizeClass,
   framing,
   onHandle,
   onLoaded,
@@ -26,10 +26,12 @@ export default function AvatarGuide({
 }: {
   mode: AvatarMode
   active?: boolean
-  // Tailwind height/width for the canvas box. The engine matches its drawing
-  // buffer to whatever this resolves to, so a bigger box means more pixels of
-  // her rather than an upscale.
-  sizeClass?: string
+  // Tailwind height/width for the canvas box, from avatarSizeClass(). The
+  // engine matches its drawing buffer to whatever this resolves to, so a bigger
+  // box means more pixels of her rather than an upscale. Required rather than
+  // defaulted: a default would be a fourth hand-written copy of the numbers
+  // that avatarMode.ts and its test now hold together.
+  sizeClass: string
   // Camera distance and look-at height for this placement, when the canvas is
   // tall enough to want a different crop. Undefined keeps the engine default.
   framing?: AvatarFraming
@@ -144,13 +146,21 @@ export default function AvatarGuide({
       if (r.width === 0) return
       const now = performance.now()
       // Projected against the VRM's own skeleton in the waist-up framing, her
-      // hair top sits at 12.5% of the canvas, chin ~38%, neck 42.8%. The band
-      // is 12–40%: a little slack above the hair, and stopping short of the
-      // neck so a stroke across her collarbone is not a head pat. Fractions of
-      // the measured rect, so the 220×342 chat canvas needs no separate case.
+      // hair top sits at 12.5% of the canvas HEIGHT, chin ~38%, neck 42.8%.
+      // The band is 12–40%: a little slack above the hair, and stopping short
+      // of the neck so a stroke across her collarbone is not a head pat.
+      //
+      // Both axes are fractions of the HEIGHT, measured from her centre line.
+      // Height is what fixes her scale (metres-per-pixel divides by it), while
+      // width only buys margin for her arms — so a fraction of the width would
+      // make the band grow with the margin. It did: the 2026-08-14 widening
+      // took it from ±54px to ±73.5px, 3.7× her head, before this was tied to
+      // the right axis. 0.19 = the 54px it was at the original 280px box.
+      const midX = r.left + r.width / 2
+      const headHalfBand = r.height * 0.19
       const inHead =
-        e.clientX > r.left + r.width * 0.2 &&
-        e.clientX < r.right - r.width * 0.2 &&
+        e.clientX > midX - headHalfBand &&
+        e.clientX < midX + headHalfBand &&
         e.clientY > r.top + r.height * 0.12 &&
         e.clientY < r.top + r.height * 0.4
       if (inHead) {

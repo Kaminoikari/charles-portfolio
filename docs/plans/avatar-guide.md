@@ -101,7 +101,9 @@ aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
   onLoaded 在**首幀真正畫出後**才發（避免 parse 完成到首幀之間「膠囊已卸、角色
   未畫」的空窗，弱 GPU 上該窗可達數百 ms）。交接方式：onLoaded 當下膠囊卸載、
   角色 wrapper 以 `transition-[bottom]` 滑入角落定位（非 crossfade）。
-  首次泡泡：每 tab-session 一次（sessionStorage），顯示 8 秒淡出，文案入 i18n ×3；
+  ~~首次泡泡：每 tab-session 一次（sessionStorage），顯示 8 秒淡出~~，文案入 i18n ×3；
+  （**2026-08-14 修訂**：改為 5s 顯示／5s 靜默的無限循環，sessionStorage 旗標移除，
+  且開過面板後收起仍會繼續循環，見下節）
   泡泡本身可點（同樣開面板——邀請點擊的元件自己必須可點）。
 - **fullscreen rail**：`avatarPlacement` 增第四態 `rail`，門檻是 rail **自己的**
   斷點 `md`（≥768px，aside 的 max-md:hidden）＋高 ≥640px——她站在 rail 存在的
@@ -309,14 +311,21 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
   臉高 ×1.70，**launcher 態的畫布尺寸與她在頁面上的佔位完全不變**（聊天開啟後的
   兩態另外加大，見下），視覺引導順序不受影響。距離比即倍率（3.926/2.304），
   與截圖目視一致。
-- **手勢全數重驗**：GESTURES 中抬手最高的 wave／stretch／hairTouch 在新框內；
+- ~~**手勢全數重驗**：GESTURES 中抬手最高的 wave／stretch／hairTouch 在新框內~~；
   bow 前傾使頭下移約畫面 13.5%，仍在框內。唯一語意減弱的是 `toeLook`
   （腳已在框外，讀作單純低頭），保留在 IDLE_ACTS。
+  （**2026-08-14 同日推翻**：那次重驗只看了垂直方向。wave 與 stretch 在水平方向
+  各被切掉——stretch 在 launcher 盒少 13.7px、在兩個聊天盒少 16.7px，wave 則是
+  9.6px 與 11.6px（13.7／16.7 是同一個手勢在兩種擺放下的值，不是兩個手勢）——
+  正是使用者當天回報的現象，負向對照已重現。這條記錄
+  保留原文，因為它就是讓 bug 通過的那個保證。見下方「手勢被畫布左右裁掉」。）
 - **底緣遮罩**：畫面在大腿中段截斷，canvas 加
   `mask-image: linear-gradient(to bottom, #000 84%, transparent)` 讓裁切溶入頁面，
   取代硬切。腳下的假接觸陰影自此在框外（grounding 是這案的已知取捨）。
-- **聊天態畫布加大**：beside-panel 與 rail 由 180×280 改 220×342（**維持 180:280
-  比例，否則構圖會被重新裁切**）。引擎每幀比對 canvas CSS 盒與 drawing buffer，
+- **聊天態畫布加大**：beside-panel 與 rail 由 180×280 改 220×342（當時**維持 180:280
+  比例**，因為那時寬高一起決定構圖）。（**2026-08-14 同日修訂**：手勢露出批次把
+  寬度改由手臂長度決定，三態成為 245×280／300×342／300×400，比例不再守恆——
+  高度與 distance 才是決定她大小的兩個數，見下節。）引擎每幀比對 canvas CSS 盒與 drawing buffer，
   不符即 `setSize`＋更新 aspect，因此是**原生解析度**而非 CSS 放大。
   **比對必須用 `Math.floor(css × pixelRatio)`**，那是 `setSize` 實際寫進
   `canvas.width` 的值（three r183 `WebGLRenderer.setSize`）；用 `Math.round`
@@ -325,6 +334,8 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
   （spec review R1 抓到，已改）。
   rail 同時取消原本的 `scale-[0.8]`（全螢幕是最該看清楚她的地方），
   `left` 44px→24px 重新居中於 236px 側欄，spacer 212px→330px。
+  （**2026-08-14 手勢露出批次修訂**：畫布加寬到 300px 後 `left` 改為 −16px，
+  仍居中於同一個 236px 側欄，spacer 不變。）
 - **rail 再往上＋露到膝蓋（2026-08-14 使用者回饋「位置有點太下面、想多露腿部」）**：
   單純平移不會露出更多腿（切點在她身上的位置不變），要**畫布加高＋相機同步後拉**。
   rail 畫布 342→**400px**，相機 2.3→**2.69m**、lookAt 1.17→**1.076**。
@@ -345,7 +356,8 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
 - **短視窗退回（e54f76c）**：rail 的加大畫布需要 rail 自身 640px 高門檻不保證的
   縱向空間——640 高時 330px spacer 吃掉側欄可視高度的 60%，trace 只剩約 196px，
   違反「管線不可被角色擋住」的舊約定。新增 `roomy`（`min-height: 760px`）：
-  未達標時 rail 退回 180×280／`left-[44px]`／spacer 268px，trace 回到 258px。
+  未達標時 rail 退回 launcher 的盒子／spacer 268px，trace 回到 258px
+  （當時是 180×280／`left` 44px，2026-08-14 手勢露出批次改為 245×280／`left-[12px]`）。
   beside-panel 不設此門檻（她旁邊就是面板，沒有被擠壓的內容）。
 - **移除游標追視**（使用者 mid-turn 指示：「動作不要跟著滑鼠 hover 走」）。
   驅動端與引擎端一併移除（`setGaze`／`clearGaze`／gazeBlend／idle gate 的
@@ -364,17 +376,38 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
 - **摸頭頭區隨構圖上移**：判定由畫布 0–32% 改 **12–40%**。以 VRM 骨架投影實測
   （code review R1 校正了我原本目測的 18–36%）：髮頂 12.5%、眼 31.2%、下巴約 38%、
   頸 42.8%、肩 44.9%——所以上界停在 40%，劃過鎖骨不算摸頭。比例式判定，
-  聊天態換成 220×342 畫布時自動跟著走。
+  聊天態換成更大的畫布時自動跟著走。
   （gaze 的 dy 錨點原本也要從 0.35 調到 0.30，隨游標追視整組移除而不存在了。）
+- **講完話的角度跳接（使用者回報「非常突兀」）**：root cause 是三個模式各自一組
+  正弦、共用同一個 `t`、直接寫進骨骼，中間沒有任何插值。idle 的 yaw 掃 ±0.42、
+  speaking 只有 ±0.07，所以串流結束那一幀最壞會跳 0.487rad（27.9°），平均
+  0.265rad（15.2°），到 head bone 是單幀 18.1°，眼睛注視點橫移 2.85 world unit。
+  這是既有缺陷，2.3m 構圖把她放大 1.7× 之後才變得刺眼。修法是把三組正弦抽成
+  `avatarMode.ts` 的 `headAim(mode, t)`，引擎改用一階低通（`HEAD_AIM_SMOOTHING = 6`，
+  `k = min(1, dt·6)`）追過去：模式切換約 0.4s 收斂成一次轉頭，代價是 idle 掃視
+  本身損失約 2% 振幅與 11° 相位，在這個尺寸看不出來。下游（head 0.65、neck、
+  spine、eyeTarget）全部沿用濾波後的值，不需改動。
+- **邀請泡泡改成循環**（使用者指示：每 5 秒顯示一次、每次約 5 秒）。原本是
+  sessionStorage `avatarBubbleSeen` 把持的「每個 tab session 只出現一次、8 秒」，
+  現在改為遞迴 `setTimeout` 的 5s 顯示／500ms 淡出（timer 給 600ms）／4.4s 靜默，
+  週期 10s。使用者原話「每 5 秒顯示一次、每次約 5 秒」照字面取（週期 5s＋時長 5s）
+  會變成永不消失，所以取「顯示 5s、靜默 5s」這個唯一自洽的讀法。
+  sessionStorage 旗標一併移除：留著它會讓重新整理後一次都不顯示，與「反覆邀請」
+  的意圖相反。~~另外自行加了「開過面板就不再循環」的 `bubbleDoneRef`~~
+  （**同日使用者推翻**：「開過面板後泡泡循環還是要可以繼續正常顯示」，該 ref 整組
+  移除）。現在循環只綁在收合狀態上，沒有任何「看過了」的閂：面板開著時隱藏
+  （泡泡本來就只在 launcher 態渲染），收起面板就重新開始。
 
-**驗證（2026-08-14）**：三態幾何以 `getBoundingClientRect` 實測——launcher
-180×280、beside-panel 220×342、rail 220×400，drawing buffer 皆等於 CSS 盒
+**驗證（2026-08-14，構圖批次當時）**：三態幾何以 `getBoundingClientRect` 實測——
+~~launcher 180×280、beside-panel 220×342、rail 220×400~~（**同日手勢露出批次改為
+245×280／300×342／300×400，見該節的驗證段**），drawing buffer 皆等於 CSS 盒
 （證明 resize 生效）；rail canvas top = vh−424、spacer 388、left 24，canvas 底
 在 aside 內。**未驗**：rail 新構圖的實際畫面沒截到——1 fps 環境下
 `browser_take_screenshot` 連三種做法（reload／關閉重開分頁／凍結 rAF）都逾時，
 見 [[project_playwright_starved_transitions]]。尺寸不變與露出範圍改由單元測試
 與幾何數據保證。（此前 220×342 態的畫面截圖存在，構圖差異僅在下緣。）
-900×640 的短視窗實測退回 180×280／left 44／spacer 268／trace 可見 258px。
+900×640 的短視窗實測退回 ~~180×280／left 44~~／spacer 268／trace 可見 258px
+（退回的盒子同日改為 245×280／left 12；spacer 與 trace 不變）。
 floor 對 round 的差異以 `Math.floor` 對照 three 原始碼逐一驗算四組尺寸 × 五種
 DPR：round 有 2 組不一致（220×342 @1.25、@1.75），floor 為 0 組。
 三態＋行動 390×844 皆有截圖。摸頭做了對照組：清掉 8s 冷卻後，先在她頭頂上方
@@ -383,11 +416,92 @@ DPR：round 有 2 組不一致（220×342 @1.25、@1.75），floor 為 0 組。
 （本輪 Playwright 已知限制：viewport 截圖常在 software WebGL 下等不到穩定幀而
 逾時，reload 後才有額度；幾何一律改以 evaluate 實測數據佐證。）
 
+- **手勢被畫布左右裁掉**（使用者回報「某些動作的手勢會超出框」）。root cause 是
+  畫布寬度是照「她要多大」定的，沒人算過她的手伸多遠：三態的水平半視野都是
+  0.355m，而 `stretch` 的指尖到 0.409m、`wave` 到 0.393m（依 VRM 骨架算：肩
+  離中線 0.081、upperArm 0.233、lowerArm 加手 0.333，套上手勢表的旋轉）。
+  修法利用透視相機的 fov 是**垂直**的這件事：加寬畫布只增加水平視野，她的大小
+  由 `2·distance·tan(fov/2)/canvasHeight` 決定，完全不受寬度影響。三態改為
+  245×280／300×342／300×400（高度與 framing 全部不動），半視野變成 0.484m，
+  比最寬手勢多 18% 餘裕，足夠吸收手本身的厚度與 spring bone 甩出的頭髮。
+  多出來的區域是透明的，不佔頁面任何可見空間。連帶處置三處：
+  launcher 的點擊鈕從 `inset-0` 改 `left-[13%] right-[13%]`，維持原本約 180px
+  的點擊寬度（否則加寬等於把右下角更多透明像素變成按鈕）；泡泡的 `right` 由
+  150px 改 183px，讓尾巴繼續指著她的頭；rail 由 `left` 24px 改 `-left-4`
+  （＝16−(300−236)/2），讓 300px 畫布仍以 236px 欄為中心，溢出的透明區平均分在
+  兩側。畫布尺寸原本是 ChatWidget 裡的 Tailwind 字面量、與 `AVATAR_CANVAS_*`
+  常數各寫一份且無人綁定（改一邊另一邊靜默失效），這輪收斂成
+  `avatarSizeClass()` 並加測試把字串解析回來與常數比對。
+  **雙 reviewer 抓到的連帶漏網（本輪一併修）**：
+  1. 摸頭判定的水平帶原本是 `r.width * 0.2`，寬度一放寬它就跟著長（±54px→
+     ±73.5px，約她頭寬的 3.7 倍），旁邊空白處來回劃也算摸頭。兩軸改為以
+     **高度**為基準（`r.height * 0.19`，自中線起算）：高度才是決定她大小的維度，
+     寬度只是手臂餘裕。
+  2. launcher 的 wrapper 原本沒有 `pointer-events-none`，所以整個畫布盒都在吃
+     右下角的點擊，加寬等於把死區從 180px 擴到 245px。改為 wrapper 不收事件、
+     按鈕與泡泡各自 `pointer-events-auto`（泡泡若漏掉就會變成不可點，這是加上
+     wrapper 那道 none 之後才出現的新耦合）。
+  3. `AVATAR_WIDEST_GESTURE_REACH` 原本是從 scratchpad 腳本手抄的 0.409，與引擎的
+     手勢表無任何綁定。改為 `armReach()` 從骨長與 `ARM_REST_UPPER_Z`／
+     `STRETCH_ARM_FLARE` 算出，引擎的 ARM_PINS 與 stretch 改用同一組常數：把
+     stretch 的 0.35 調大到 0.6，畫布寬度測試會紅。
+  4. `AvatarGuide.tsx` 的 `sizeClass` 預設值是第三份手寫尺寸，改為必填。
+  **知情接受的兩點**：rail 態下 stretch 的指尖會越過 236px 側欄約 10px（左側落在
+  遮罩上、右側落在對話欄上）。canvas 透明且 `pointer-events-none`，不擋任何互動，
+  而且「手可以越過欄界」正是使用者要的「看不出框」。另外 launcher 的按鈕只覆蓋
+  中央 ±90.7px，而 stretch 指尖到 ±105px，所以**點在她伸出的手上不會開面板**——
+  那正是本輪要露出的像素，與「透明邊緣不該是按鈕」互為代價。
+
+**驗證（頭部平滑與泡泡循環，2026-08-14）**：泡泡在瀏覽器實測通過——每 200ms
+取樣 opacity 共 43 秒，顯示起點（淡入）落在 5.4／15.4／25.4／35.4s，淡出起點
+落在 10.4／20.4／30.4／40.4s，DOM 在 11／21／31／41s 卸載，週期 10.0s。
+每輪可見 5.6s（淡入 0.6＋全亮 4.4＋淡出 0.6）、DOM 缺席 4.4s，與規格相符。
+頭部平滑只有單元測試證據（`avatarMode.test.ts` 三條：原始不連續 > 0.45rad、
+收斂時間落在 0.2–0.8s、idle 掃視峰值仍 > 0.4；mutation 把 6 改成 90 紅 1 條、
+改成 1.2 紅 2 條）。**未在瀏覽器實測**，而且在這個環境原理上測不出來：
+software WebGL 只有 1 fps，`k = min(1, dt·6)` 在 dt≈1s 時等於 1，濾波器退化成
+直接賦值，濾波前後的畫面完全相同。引擎端的接線靠 `tsc` 與讀碼確認。
+（code review R1 指出原本的三條測試在測試檔裡重寫了濾波器，等於只釘住常數，
+把引擎那兩行刪掉照樣全綠。已把濾波抽成 `avatarMode.ts` 的 `stepHeadAim()`，
+引擎與測試呼叫同一支；mutation 讓它改為 `return target` 會紅。
+  全部 mutation 的實際輸出存在 `scratchpad/mutations.txt`：改 90 紅 1 條、改 1.2
+  紅 2 條、`AVATAR_CANVAS_LAUNCHER.w` 改回 180 紅 3 條、點擊 inset class 脫鉤紅 1 條。）
+
+**驗證（手勢露出，2026-08-14）**：瀏覽器實測通過，證據在
+`scratchpad/round6-browser.txt`。做法是每幀 `readPixels` 取 alpha>20 的
+bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
+`window.__mikaHandle`，沿用既有 `__mikaState` 的閘門）直接觸發 `stretch`，
+因為 1 fps 下 idle act 的計時器要等上百秒、也抓不到峰值幀。
+`__mikaState.luaZ` 確認峰值真的到了 0.800（＝1.15−0.35）。
+- 新尺寸 245×280：峰值輪廓寬 209.5px，左右各餘 17.5px，**兩側皆未裁切**；
+  實測最遠伸展 0.414m，與骨架推算的 0.409m 差 1.2%（手的厚度）。
+- **負向對照**：同一幀把 CSS 寬度強制改回 180px（引擎每幀把 drawing buffer 與
+  camera aspect 對齊 CSS 盒，buffer 隨即變成 360＝DPR 2，證明對齊有跑），
+  同樣的 stretch 峰值下輪廓寬 179.5px＝整個畫布，左右間隙皆 0，**兩側都裁**。
+  這同時證明使用者的觀察為真，以及新尺寸解掉了它。
+- 三態尺寸與位置：launcher 245×280（點擊區 181px）、beside-panel 300×342
+  （`right-[436px]`，canvas x=[728,1028]）、rail 300×400（`-left-4`，
+  canvas x=[−16,284]，中心 134 對欄中心 135，差 1px）；三者 drawing buffer
+  皆等於 CSS 盒 ×2。
+
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
+
+- **這份文件本身在 Tailwind 的掃描範圍內**：v4 預設掃整個 repo，所以把已廢棄的
+  class 名以字面量寫進這裡（加寬前 rail 用的那兩個 `left` 偏移就是例子，這裡
+  刻意不把它們寫成 class 字面量，否則這段文字自己就會讓它們復活），
+  production CSS 就會繼續產出那條沒人用的規則。2026-08-14 實測到兩條，
+  已把出處改寫成敘述並重新 build 確認兩條都消失。
+  觸發條件：在 docs/ 用反引號寫**現在已不存在**的 Tailwind arbitrary value。
+  驗證方式：`npm run build` 後在 `dist/assets/*.css` 找**轉義後**的 selector
+  （`.w-\[245px\]`，不是 `w-[245px]`——用未轉義字串搜尋會全部假報 MISSING，
+  這輪就先踩了一次；`%` 同樣會轉義成 `\%`，所以百分比的 class 要搜
+  `.left-\[13\%\]`）。可停用條件：Tailwind 設定改為明確的 `@source` 只含 `src/`。
 
 - WebGL context 遺失後不嘗試恢復——膠囊回歸、avatar wrapper 卸載，直到重新整理
   （最小 handler 見 Non-goals；遺失瞬間若焦點在角色鈕上，交還膠囊）。
-- launcher 態下 avatar wrapper 的透明像素會吃右下角點擊（ChatWidget 註解記載取捨）。
+- ~~launcher 態下 avatar wrapper 的透明像素會吃右下角點擊~~（**2026-08-14 手勢露出
+  批次修正**：wrapper 改 `pointer-events-none`、按鈕與泡泡各自 auto，實測畫布左右
+  邊緣的點擊已穿透到頁面；死區縮到按鈕自己的 181px）。
 - GLTFLoader 因 hero 與 avatar 引擎共用而被 Rollup 抽成獨立 chunk：hero 多一個 HTTP
   request，總 bytes 不變（round 1 spec review 核可的例外）。
 - ~~15.4MB VRM 是首訪成本（intro 後才載、瀏覽器快取吸收重訪）；正式角色階段再壓

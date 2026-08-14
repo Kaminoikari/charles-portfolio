@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
+  headAim,
+  stepHeadAim,
+  avatarSizeClass,
+  avatarViewHalfWidth,
+  AVATAR_WIDEST_GESTURE_REACH,
+  AVATAR_LAUNCHER_HIT_INSET_PCT,
+  AVATAR_LAUNCHER_HIT_CLASS,
+  ARM_REST_UPPER_Z,
+  ARM_REST_FORE_Z,
+  STRETCH_ARM_FLARE,
+  armReach,
   AVATAR_CANVAS_DOCKED,
   AVATAR_CANVAS_LAUNCHER,
   AVATAR_CANVAS_RAIL,
@@ -11,6 +22,7 @@ import {
   avatarGuideEnabled,
   avatarPlacement,
 } from './avatarMode'
+import type { AvatarFraming } from './avatarMode'
 
 describe('deriveAvatarMode', () => {
   it('is idle with empty input and no stream', () => {
@@ -140,5 +152,115 @@ describe('avatar camera framing', () => {
     expect(span.top).toBeGreaterThan(1.6)
     // And the launcher canvas is the one the default framing was composed for.
     expect(AVATAR_CANVAS_LAUNCHER.h).toBe(280)
+  })
+
+  it('shows her whole arm span, with margin, in every placement', () => {
+    const frames: Array<[string, AvatarFraming, { w: number; h: number }]> = [
+      ['launcher', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER],
+      ['docked', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED],
+      ['rail', AVATAR_FRAMING_RAIL, AVATAR_CANVAS_RAIL],
+    ]
+    for (const [name, framing, canvas] of frames) {
+      const half = avatarViewHalfWidth(framing, canvas)
+      // 15% past the fingertip, for the hand's own width and for hair the
+      // spring bones throw outward mid-gesture.
+      const clears = half > AVATAR_WIDEST_GESTURE_REACH * 1.15
+      expect({ [name]: clears }).toEqual({ [name]: true })
+      // Sized for that and not accidentally enormous: all three land on the
+      // same half-width, so she has the same room in every placement.
+      expect(half).toBeCloseTo(0.484, 2)
+    }
+  })
+
+  // The reach is derived from the pose numbers the ENGINE uses, so a gesture
+  // widened there moves it. Without that link the reach was hand-transcribed
+  // and a wider stretch would clip again with the suite green.
+  it('derives the widest reach from the arm pose the engine actually uses', () => {
+    // Rest pose: arms down at her sides, well inside the frame.
+    expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
+    // Stretch flares the upper arm out of that pin; this is what sets the width.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.409, 3)
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBe(
+      armReach(ARM_REST_UPPER_Z - STRETCH_ARM_FLARE, ARM_REST_FORE_Z),
+    )
+    // A wider flare must demand a wider canvas, not silently start clipping.
+    expect(armReach(ARM_REST_UPPER_Z - 0.6, ARM_REST_FORE_Z)).toBeGreaterThan(
+      avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
+    )
+  })
+
+  // The click target is a percentage of a width, so it only stays ~180px while
+  // that width is 245. Nothing else ties the two together.
+  it('keeps the launcher click target on her, not on the gesture margin', () => {
+    // The class ChatWidget applies and the number must agree, or the constant
+    // pins nothing — the class is what actually reaches the DOM.
+    const pct = /left-\[(\d+)%\] right-\[(\d+)%\]/.exec(AVATAR_LAUNCHER_HIT_CLASS)
+    expect(pct).not.toBeNull()
+    expect(Number(pct![1])).toBe(AVATAR_LAUNCHER_HIT_INSET_PCT)
+    expect(Number(pct![2])).toBe(AVATAR_LAUNCHER_HIT_INSET_PCT)
+    const inset = AVATAR_LAUNCHER_HIT_INSET_PCT / 100
+    const targetPx = AVATAR_CANVAS_LAUNCHER.w * (1 - 2 * inset)
+    // Her resting silhouette is ~148px wide; the margin either side is hers to
+    // swing into and must not be a button.
+    expect(targetPx).toBeGreaterThan(160)
+    expect(targetPx).toBeLessThan(200)
+  })
+
+  // The Tailwind literals and the constants are two spellings of one number,
+  // and Tailwind's JIT forbids deriving one from the other. Without this, a
+  // width edited in only one of the two places goes unnoticed.
+  it('keeps the size classes and the canvas constants in step', () => {
+    const parse = (cls: string) => {
+      const h = /h-\[(\d+)px\]/.exec(cls)
+      const w = /w-\[(\d+)px\]/.exec(cls)
+      if (!h || !w) throw new Error(`unparseable size class: ${cls}`)
+      return { w: Number(w[1]), h: Number(h[1]) }
+    }
+    expect(parse(avatarSizeClass('launcher', true))).toEqual(AVATAR_CANVAS_LAUNCHER)
+    expect(parse(avatarSizeClass('beside-panel', true))).toEqual(AVATAR_CANVAS_DOCKED)
+    expect(parse(avatarSizeClass('rail', true))).toEqual(AVATAR_CANVAS_RAIL)
+    // A short viewport drops the rail back to the launcher box.
+    expect(parse(avatarSizeClass('rail', false))).toEqual(AVATAR_CANVAS_LAUNCHER)
+  })
+})
+
+describe('head aim across mode changes', () => {
+  // The bug this guards: each mode is its own sine pair on a shared clock, so
+  // the raw value jumps the frame the mode flips. Reported as "she snaps to a
+  // disconnected angle the moment she finishes speaking".
+  it('has a large raw discontinuity between speaking and idle', () => {
+    let worst = 0
+    for (let t = 0; t < 60; t += 0.005) {
+      worst = Math.max(worst, Math.abs(headAim('idle', t).yaw - headAim('speaking', t).yaw))
+    }
+    // ~0.487rad = 27.9° of yaw, 18° once the head bone's 0.65 share is applied.
+    expect(worst).toBeGreaterThan(0.45)
+  })
+
+  it('settles a mode change over a few tenths of a second, not one frame', () => {
+    const dt = 1 / 60
+    const from = headAim('speaking', 40.33).yaw
+    const to = headAim('idle', 40.33).yaw
+    let v = from
+    let frames = 0
+    while (Math.abs(to - v) > Math.abs(to - from) * 0.1 && frames < 600) {
+      v = stepHeadAim(v, to, dt)
+      frames++
+    }
+    const seconds = frames / 60
+    expect(seconds).toBeGreaterThan(0.2) // a snap would be ~0.02s
+    expect(seconds).toBeLessThan(0.8) // and a drift would read as lag
+  })
+
+  it('leaves the idle sweep itself essentially untouched', () => {
+    // Smoothing that fixes the step must not flatten the 5.2s sweep it rides on.
+    const dt = 1 / 60
+    let v = 0
+    let peak = 0
+    for (let t = 0; t < 30; t += dt) {
+      v = stepHeadAim(v, headAim('idle', t).yaw, dt)
+      if (t > 10) peak = Math.max(peak, Math.abs(v)) // skip the initial settle
+    }
+    expect(peak).toBeGreaterThan(0.4) // raw amplitude is 0.42
   })
 })

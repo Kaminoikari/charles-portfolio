@@ -43,9 +43,14 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
 import {
+  ARM_REST_FORE_Z,
+  ARM_REST_UPPER_Z,
   AVATAR_CAMERA_TILT,
   AVATAR_FOV,
   AVATAR_FRAMING_DEFAULT,
+  STRETCH_ARM_FLARE,
+  headAim,
+  stepHeadAim,
   type AvatarMode,
 } from './avatarMode'
 import { sampleViseme } from './visemeTrack'
@@ -106,10 +111,10 @@ type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']
 // gesture borrows the right arm and must restore these EXACT values — they are
 // the single source of truth for the rest pose.
 const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
-  ['leftUpperArm', 1.15],
-  ['rightUpperArm', -1.15],
-  ['leftLowerArm', 0.25],
-  ['rightLowerArm', -0.25],
+  ['leftUpperArm', ARM_REST_UPPER_Z],
+  ['rightUpperArm', -ARM_REST_UPPER_Z],
+  ['leftLowerArm', ARM_REST_FORE_Z],
+  ['rightLowerArm', -ARM_REST_FORE_Z],
   ['rightHand', 0],
 ]
 
@@ -190,8 +195,10 @@ const GESTURES: Record<GestureName, GestureDef> = {
     apply: (vrm, _p, env, _v, o) => {
       const lua = bone(vrm, 'leftUpperArm')
       const rua = bone(vrm, 'rightUpperArm')
-      if (lua) lua.rotation.z = 1.15 - env * 0.35
-      if (rua) rua.rotation.z = -1.15 + env * 0.35
+      // STRETCH_ARM_FLARE is shared with avatarMode.ts, which derives the
+      // canvas width needed to keep these fingertips in frame from it.
+      if (lua) lua.rotation.z = ARM_REST_UPPER_Z - env * STRETCH_ARM_FLARE
+      if (rua) rua.rotation.z = -ARM_REST_UPPER_Z + env * STRETCH_ARM_FLARE
       o.hp += -env * 0.12
       o.sx += -env * 0.04
     },
@@ -343,11 +350,14 @@ export function initAvatarGuide(
   let disposed = false
   let mode: AvatarMode = 'idle'
 
-  const W = canvas.clientWidth || 180
-  const H = canvas.clientHeight || 280
+  // Fallbacks only matter for a zero-size canvas (never in practice: the
+  // per-frame reconcile below fixes both before the first visible frame).
+  // Deliberately not the real box numbers — those live in AVATAR_CANVAS_*.
+  const W = canvas.clientWidth || 1
+  const H = canvas.clientHeight || 1
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setSize(W, H, false)
-  // DPR 2 (was 1.5): at 180–220px wide the character costs little at full res,
+  // DPR 2 (was 1.5): at this size the character costs little at full res,
   // and the line work (toon shading, hair) is exactly where 1.5 aliased.
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   // ACES gives the toon shading a filmic rolloff; exposure compensates the
@@ -359,15 +369,20 @@ export function initAvatarGuide(
 
   const scene = new THREE.Scene()
   // Waist-up framing. The full-body shot this replaced put her face at ~27px
-  // on a 180×280 canvas (~19px once the launcher's 72% narrow-screen scale
-  // applied), which is below what the expressions, the outfit detail and the
-  // gestures need to read at all. Pulling the camera in from 3.9m to 2.3m is
-  // free magnification: the canvas, her footprint on the page and the visual
+  // on the launcher canvas (~19px once its 72% narrow-screen scale applied),
+  // which is below what the expressions, the outfit detail and the gestures
+  // need to read at all. Pulling the camera in from 3.9m to 2.3m is free
+  // magnification: the canvas height, her footprint on the page and the visual
   // order of the hero are all untouched, and only the framing changes.
   // Her feet and the contact shadow fall outside this frame by design — the
   // canvas carries a bottom mask (AvatarGuide.tsx) so the crop fades out.
-  // Every gesture in GESTURES was checked against this frame; the raised arms
-  // of wave / stretch / hairTouch stay inside it.
+  //
+  // The gestures were originally checked against the VERTICAL extent only, and
+  // stretch and wave turned out to be clipped left and right (stretch lost
+  // 13.7px per side in the launcher box and 16.7px in the two chat boxes; wave
+  // 9.6px and 11.6px). Reported by the owner 2026-08-14. What contains them is
+  // the canvas WIDTH, which is separate from everything above because fov is
+  // vertical — see AVATAR_WIDEST_GESTURE_REACH and the AVATAR_CANVAS_* boxes.
   const camera = new THREE.PerspectiveCamera(AVATAR_FOV, W / H, 0.1, 30)
   camera.position.set(
     0,
@@ -565,6 +580,9 @@ export function initAvatarGuide(
   let saccadeTimer = 0.9
   let saccadeX = 0
   let saccadeY = 0
+  // Smoothed head aim; the raw per-mode value steps on every mode change.
+  let aimYaw = 0
+  let aimPitch = 0
   // Idle self-actions fire only during undisturbed idle, roughly every 5s
   // start-to-start (timer 2.5–4s + the act itself, pool mean ~2s);
   // interaction pushes the next one back. One re-roll guards against the
@@ -643,18 +661,15 @@ export function initAvatarGuide(
 
       // Head direction per mode — rotation on head/neck/spine, eyes tracking a
       // real target so the gaze leads the turn the way people actually look.
-      let yaw = 0
-      let pitch = 0
-      if (mode === 'idle') {
-        yaw = Math.sin(t * ((2 * Math.PI) / 5.2)) * 0.42
-        pitch = Math.sin(t * ((2 * Math.PI) / 9.1)) * 0.05
-      } else if (mode === 'listening') {
-        pitch = Math.sin(t * ((2 * Math.PI) / 1.6)) * 0.16 - 0.04
-        yaw = Math.sin(t * ((2 * Math.PI) / 7.0)) * 0.06
-      } else {
-        yaw = Math.sin(t * ((2 * Math.PI) / 6.5)) * 0.07
-        pitch = Math.sin(t * ((2 * Math.PI) / 4.3)) * 0.03
-      }
+      // headAim() is a step function across mode changes (see its comment), so
+      // it feeds a one-pole filter instead of the bones directly: without this
+      // the frame an answer ends snaps her head 18° and throws the eye target
+      // 2.85 units sideways, which reads as a glitch rather than a look-away.
+      const aimTarget = headAim(mode, t)
+      aimYaw = stepHeadAim(aimYaw, aimTarget.yaw, dt)
+      aimPitch = stepHeadAim(aimPitch, aimTarget.pitch, dt)
+      const yaw = aimYaw
+      const pitch = aimPitch
 
       // Idle self-actions: an unprompted little performance roughly every 5s
       // of undisturbed idle (post-entrance, nothing else performing), picked
@@ -886,7 +901,7 @@ export function initAvatarGuide(
     // The canvas grows when the chat opens (ChatWidget hands the docked and
     // fullscreen placements a bigger box). Matching the drawing buffer to the
     // CSS box keeps her at native resolution there instead of upscaling the
-    // 180px buffer — a CSS transform would have been one line and visibly
+    // a launcher-sized buffer — a CSS transform would have been one line and visibly
     // softer. Cheap to check per frame; setSize only runs on an actual change.
     const cw = canvas.clientWidth
     const ch = canvas.clientHeight
@@ -932,7 +947,7 @@ export function initAvatarGuide(
   }
   document.addEventListener('visibilitychange', onVisibility)
 
-  return {
+  const handle: AvatarGuideHandle = {
     setMode: (m) => {
       mode = m
     },
@@ -1004,6 +1019,20 @@ export function initAvatarGuide(
       // missing WEBGL_lose_context extension on a dead context.
       if (!contextLost) renderer.forceContextLoss()
       renderer.dispose()
+      // Every handle method closes over renderer/scene/camera/vrm, so leaving
+      // the debug global set would pin the whole parsed VRM scene graph for the
+      // life of the page — exactly the teardown a context-loss unmount runs to
+      // avoid. (__mikaState needs no such cleanup: it holds only numbers.)
+      delete (window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle
     },
   }
+
+  // Same ?mikadebug=1 gate as __mikaState: an automated check needs to trigger
+  // a specific gesture (a fingertip's distance from the frame edge is only
+  // meaningful at a gesture's peak) rather than waiting out the idle-act timer.
+  if (debugTap) {
+    ;(window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle = handle
+  }
+
+  return handle
 }
