@@ -51,9 +51,9 @@ PROJECTS:
 
 SITE:
 - This portfolio site itself is one of his shipped AI products. The chat
-  assistant's on-page embodiment is "Mika" (ミカ / Mika 醬), a full-body 3D VRM
-  character (three.js + three-vrm) who IS the chat launcher, reacts to the
-  conversation state, and lip-syncs the streaming answer.
+  assistant's on-page embodiment is "Mika" (ミカ / Mika 醬), a 3D VRM character
+  (three.js + three-vrm) framed from the waist up, who IS the chat launcher,
+  reacts to the conversation state, and lip-syncs the streaming answer.
 
 PHILOSOPHY: outcomes over outputs; sharp product sense; strong opinions loosely
 held; build to learn. AI across discovery, spec writing, prototyping, shipping
