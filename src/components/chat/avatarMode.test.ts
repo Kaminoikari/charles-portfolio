@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  armAt,
+  ARM_TRANSIT_YAW,
   gestureEnvelope,
   headAim,
   stepHeadAim,
@@ -322,12 +324,10 @@ describe('avatar camera framing', () => {
   it('derives the widest reach from the arm poses the engine actually uses', () => {
     // Rest pose: arms down at her sides, well inside the frame.
     expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
-    // The widest is now `hairTouch`'s fingertip at 0.314. Each retirement has
-    // moved it down: `stretch` held it at 0.409 until 2026-08-14, then `wave`
-    // at 0.393 until the greeting stopped using it on 2026-08-15. The canvases
-    // were sized for the widest of the day and are deliberately NOT shrunk to
-    // follow it down, so the margin below only ever grows.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.314, 3)
+    // 0.392, and it is a point PART WAY through a raise, not any pose. The
+    // canvases were sized for `stretch`'s 0.409 back when that was the widest
+    // and are deliberately not resized as gestures come and go.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.392, 3)
     // A wider pose must demand a wider canvas, not silently start clipping.
     expect(armReach(ARM_REST_UPPER_Z - 0.6, ARM_REST_FORE_Z)).toBeGreaterThan(
       avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
@@ -350,6 +350,47 @@ describe('avatar camera framing', () => {
         })
       }
     }
+  })
+
+  // Reported 2026-08-15: the arm is cut off DURING the raise. It was, and the
+  // reach check could not see it, because both ends of the travel are narrow
+  // and it only ever looked at the ends. These hold the two halves of the fix:
+  // that the check walks the travel, and that the travel is routed in front of
+  // her so it fits.
+  it('measures a gesture across its whole travel, not just the pose it ends on', () => {
+    const peak = ARM_GESTURE_PEAKS.doublePeace.left!
+    // The pose itself is one of the NARROWEST attitudes the arm passes through.
+    const atPose = armReach(peak.upper, peak.fore)
+    expect(atPose).toBeLessThan(0.2)
+    // Part way up, with the forearm still opening out, it is far wider.
+    expect(poseReach(peak)).toBeGreaterThan(atPose * 2)
+  })
+
+  it('turns the shoulder so a raise passes in front of her, not out beside her', () => {
+    const peak = ARM_GESTURE_PEAKS.doublePeace.left!
+    const half = avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER)
+    // Squared up, the widest point of the raise is outside the canvas: this is
+    // the bug as it shipped, and the number the fix has to beat.
+    let squared = 0
+    for (let i = 0; i <= 96; i++) {
+      const e = i / 96
+      squared = Math.max(
+        squared,
+        armReach(
+          ARM_REST_UPPER_Z + (peak.upper - ARM_REST_UPPER_Z) * e,
+          ARM_REST_FORE_Z + (peak.fore - ARM_REST_FORE_Z) * e,
+        ),
+      )
+    }
+    expect(squared).toBeGreaterThan(half)
+    expect(poseReach(peak)).toBeLessThan(half)
+    // The yaw is transient: it has to be gone by the time she holds the pose,
+    // or every held pose would be turned away from the viewer.
+    expect(armAt(peak, 0).yaw).toBe(0)
+    expect(armAt(peak, 1).yaw).toBeCloseTo(0, 12)
+    expect(armAt(peak, 0.5).yaw).toBeCloseTo(ARM_TRANSIT_YAW, 6)
+    // A pose that brings the hand DOWN never swings wide, so it stays square.
+    expect(armAt(ARM_GESTURE_PEAKS.handOnHip.left!, 0.5).yaw).toBe(0)
   })
 
   // The elbow term in widestReach() is inert against the CURRENT table (every

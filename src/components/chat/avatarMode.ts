@@ -148,13 +148,19 @@ const ARM = { shoulderX: 0.081, upper: 0.233, foreAndHand: 0.333 }
 export const ARM_REST_UPPER_Z = 1.15
 export const ARM_REST_FORE_Z = 0.25
 
+// Where the elbow and the fingertip sit, sideways from her centre line, for one
+// arm attitude. A shoulder yaw turns the whole arm out of the frontal plane, so
+// it foreshortens both bones; the shoulder joint itself does not move.
+function armSpan(zUpper: number, zFore: number, yaw: number): { elbow: number; tip: number } {
+  const cy = Math.cos(yaw)
+  const elbow = -ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper) * cy
+  return { elbow, tip: elbow + ARM.foreAndHand * Math.cos(Math.PI + zUpper + zFore) * cy }
+}
+
 // Distance from her centre line to a fingertip, for a given pair of arm
 // rotations. Angles are measured from +x, so the left arm starts at π.
 export function armReach(zUpper: number, zFore: number): number {
-  const upperDir = Math.PI + zUpper
-  const foreDir = upperDir + zFore
-  const elbow = -ARM.shoulderX + ARM.upper * Math.cos(upperDir)
-  return Math.abs(elbow + ARM.foreAndHand * Math.cos(foreDir))
+  return Math.abs(armSpan(zUpper, zFore, 0).tip)
 }
 
 // Distance from her centre line to the ELBOW. Gestures that fold the forearm
@@ -162,7 +168,45 @@ export function armReach(zUpper: number, zFore: number): number {
 // here, not at the fingertip, so a reach check that only looked at fingertips
 // would wave them through and then clip the elbow.
 export function elbowReach(zUpper: number): number {
-  return Math.abs(-ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper))
+  return Math.abs(armSpan(zUpper, 0, 0).elbow)
+}
+
+// How far the shoulder turns the arm forward at the midpoint of a gesture's
+// travel, for gestures that fold the forearm UP.
+//
+// Reported 2026-08-15 as the arm being cut off "during the raise". It was: from
+// a hanging arm, folding the forearm up in the frontal plane swings the hand
+// out through horizontal, and at 0.62 from her centre line against a 0.484
+// half-width it left the canvas. Both ENDS of that travel are narrow (rest
+// 0.23, the pose itself 0.31), which is exactly why a reach check that only
+// looked at the peaks passed it for a day.
+//
+// Turning the shoulder moves that swing in front of her instead of out beside
+// her, and it costs nothing at either end because sin(0) = sin(π) = 0: the
+// pose she holds is the same pose. Rotating forward on x cannot do this — an
+// x rotation preserves the x component of everything below the joint, which is
+// measurable on the model (a 1.25rad forward swing moves the resting wrist from
+// 0.212 to 0.207).
+export const ARM_TRANSIT_YAW = 1.3
+
+export interface ArmFrame {
+  upper: number
+  fore: number
+  yaw: number
+}
+
+// One frame of an arm's travel from its rest pin to a pose. The ENGINE poses
+// from this and the width check below measures it, so the two cannot disagree
+// about what the arm does between the two ends.
+export function armAt(pose: ArmPose, env: number): ArmFrame {
+  return {
+    upper: ARM_REST_UPPER_Z + (pose.upper - ARM_REST_UPPER_Z) * env,
+    fore: ARM_REST_FORE_Z + (pose.fore - ARM_REST_FORE_Z) * env,
+    // Only the upward folds need it. A pose that brings the hand DOWN (a hand
+    // to the hip) never swings wide, and a pose that leaves the z angles alone
+    // (pointing at the viewer) has no travel to route.
+    yaw: pose.fore < ARM_REST_FORE_Z ? ARM_TRANSIT_YAW * Math.sin(env * Math.PI) : 0,
+  }
 }
 
 // How far into a gesture the body is, from 0 at rest to 1 at the full pose.
@@ -251,12 +295,20 @@ export const ARM_GESTURE_PEAKS: Record<ArmGestureName, { left?: ArmPose; right?:
 // parameter rather than closing over the table so a test can feed it a pose
 // whose elbow beats every fingertip: with the real table the fingertips win
 // everywhere, which leaves the elbow term unproven and free to be deleted.
-// How far one posed arm reaches sideways: the further of its fingertip and its
-// elbow. Both the aggregate below and the per-gesture test call THIS rather
-// than taking the fingertip alone, so a pose that wings its elbow out wider
-// than its own hand is still measured at its widest point.
+// How far one arm gesture reaches sideways over its WHOLE travel: the further
+// of the fingertip and the elbow, at every point between the rest pin and the
+// pose. Sampling the travel rather than the pose is the whole point — the peak
+// is the narrow part of these gestures, and checking it alone is what let a
+// clipping raise ship.
+const ARM_PATH_SAMPLES = 96
 export function poseReach(p: ArmPose): number {
-  return Math.max(armReach(p.upper, p.fore), elbowReach(p.upper))
+  let worst = 0
+  for (let i = 0; i <= ARM_PATH_SAMPLES; i++) {
+    const f = armAt(p, i / ARM_PATH_SAMPLES)
+    const span = armSpan(f.upper, f.fore, f.yaw)
+    worst = Math.max(worst, Math.abs(span.tip), Math.abs(span.elbow))
+  }
+  return worst
 }
 
 export function widestReach(peaks: Record<string, { left?: ArmPose; right?: ArmPose }>): number {
