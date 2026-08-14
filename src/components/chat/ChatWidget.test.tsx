@@ -3,6 +3,7 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
+import { CHAT_PANEL_HEIGHT_CLASS } from './avatarMode'
 
 // Build a ReadableStream that emits the given SSE frames then closes.
 function sseStream(frames: string[]): ReadableStream<Uint8Array> {
@@ -276,6 +277,19 @@ describe('ChatWidget fullscreen', () => {
       await user.keyboard('{Tab}')
       expect(panel.contains(document.activeElement)).toBe(false)
     })
+  })
+
+  // The avatar canvas is sized to the docked panel so she stands exactly as
+  // tall as it. avatarMode.ts holds the two Tailwind literals to each other,
+  // but only if the panel actually renders the shared one — spelling
+  // 'h-[min(560px,80vh)]' inline here again would satisfy that unit test while
+  // letting the panel drift away from her on the next edit. This drives the
+  // real component and reads what reached the DOM.
+  it('renders the docked panel at the height the avatar is sized to', async () => {
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    expect(screen.getByRole('dialog').className).toContain(CHAT_PANEL_HEIGHT_CLASS)
   })
 
   describe('background scroll lock', () => {

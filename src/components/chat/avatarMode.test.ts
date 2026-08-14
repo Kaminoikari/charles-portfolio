@@ -7,6 +7,8 @@ import {
   AVATAR_WIDEST_GESTURE_REACH,
   AVATAR_LAUNCHER_HIT_INSET_PCT,
   AVATAR_LAUNCHER_HIT_CLASS,
+  AVATAR_RAIL_SCALE_ANCHOR_H,
+  CHAT_PANEL_HEIGHT_CLASS,
   ARM_REST_UPPER_Z,
   ARM_REST_FORE_Z,
   STRETCH_ARM_FLARE,
@@ -126,14 +128,36 @@ describe('avatarGuideEnabled', () => {
 })
 
 describe('avatar camera framing', () => {
-  // The rail hands her a taller canvas so more of her legs fit. The point of
-  // dollying the camera with it is that she must not get BIGGER — if these
-  // drift apart she visibly changes size when the chat goes fullscreen.
-  it('renders her at the same size on the rail canvas as on the docked one', () => {
-    const docked = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED.h)
+  // The rail hands her a taller canvas so more of her legs fit, and the dolly
+  // that comes with it exists so the extra height does not also magnify her.
+  // The scale it holds her to is AVATAR_RAIL_SCALE_ANCHOR_H's, read through the
+  // default framing — resize the rail canvas without moving the distance and
+  // she silently grows on the one screen with the least room to spare.
+  it('holds the rail to the scale its dolly was composed against', () => {
+    const anchor = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_RAIL_SCALE_ANCHOR_H)
     const rail = avatarMetresPerPixel(AVATAR_FRAMING_RAIL, AVATAR_CANVAS_RAIL.h)
     // Within 0.02mm per pixel, i.e. under 1% of the ~3.23mm/px scale.
-    expect(rail * 1000).toBeCloseTo(docked * 1000, 1)
+    expect(rail * 1000).toBeCloseTo(anchor * 1000, 1)
+  })
+
+  // The docked canvas is the one placement that deliberately does NOT hold that
+  // scale: it is sized to the panel standing beside it, so she grows when the
+  // chat opens. Two things make that a scale-up rather than a re-crop or a
+  // stretch — she keeps AVATAR_FRAMING_DEFAULT (so the world span is untouched
+  // and the growth is exactly the height ratio) and the box keeps the
+  // launcher's proportions. Giving the docked placement its own framing, or
+  // rounding the width off the ratio, breaks one of these.
+  it('scales her up to the panel height, in proportion', () => {
+    const launcher = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER.h)
+    const docked = avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED.h)
+    // Fewer metres per pixel = larger on screen, by the height ratio and
+    // nothing else.
+    expect(launcher / docked).toBeCloseTo(AVATAR_CANVAS_DOCKED.h / AVATAR_CANVAS_LAUNCHER.h, 6)
+    expect(launcher / docked).toBeGreaterThan(1.5)
+    // Same proportions, so she scales rather than stretches: within half a
+    // percent of the launcher's aspect, which is all a whole-pixel width allows.
+    const aspect = (c: { w: number; h: number }) => c.w / c.h
+    expect(aspect(AVATAR_CANVAS_DOCKED)).toBeCloseTo(aspect(AVATAR_CANVAS_LAUNCHER), 2)
   })
 
   it('spends the rail canvas extra height below her, not as headroom', () => {
@@ -210,17 +234,46 @@ describe('avatar camera framing', () => {
   // and Tailwind's JIT forbids deriving one from the other. Without this, a
   // width edited in only one of the two places goes unnoticed.
   it('keeps the size classes and the canvas constants in step', () => {
+    // Two shapes to read: a plain px box, and the docked box's min(px, vh)
+    // pair, whose px branch is the uncapped size the constants record.
     const parse = (cls: string) => {
-      const h = /h-\[(\d+)px\]/.exec(cls)
-      const w = /w-\[(\d+)px\]/.exec(cls)
-      if (!h || !w) throw new Error(`unparseable size class: ${cls}`)
-      return { w: Number(w[1]), h: Number(h[1]) }
+      const axis = (a: string) => {
+        const m = new RegExp(`(?:^| )${a}-\\[(?:min\\()?(\\d+)px`).exec(cls)
+        if (!m) throw new Error(`unparseable size class: ${cls}`)
+        return Number(m[1])
+      }
+      return { w: axis('w'), h: axis('h') }
     }
     expect(parse(avatarSizeClass('launcher', true))).toEqual(AVATAR_CANVAS_LAUNCHER)
     expect(parse(avatarSizeClass('beside-panel', true))).toEqual(AVATAR_CANVAS_DOCKED)
     expect(parse(avatarSizeClass('rail', true))).toEqual(AVATAR_CANVAS_RAIL)
     // A short viewport drops the rail back to the launcher box.
     expect(parse(avatarSizeClass('rail', false))).toEqual(AVATAR_CANVAS_LAUNCHER)
+  })
+
+  // Her docked height is the panel's height — one number, two literals, because
+  // Tailwind's JIT will not take an interpolated one. Raising the panel to
+  // 600px and leaving her at 560 would otherwise open a 40px gap above her head
+  // that nothing else in the suite looks at. (That the PANEL uses the constant
+  // rather than its own copy is held by a ChatWidget test, which renders it.)
+  it('sizes the docked canvas to the panel it stands beside', () => {
+    const heightExpr = (cls: string) => /(?:^| )h-(\[[^\]]+\])/.exec(cls)?.[1]
+    expect(heightExpr(avatarSizeClass('beside-panel', true))).toBe(
+      heightExpr(CHAT_PANEL_HEIGHT_CLASS),
+    )
+  })
+
+  // The vh branch has to carry the width ratio too. Height alone tracking the
+  // viewport would shrink her while the width stayed at its px cap, handing her
+  // arms a metre of empty room on a short screen.
+  it('keeps the short-viewport branch on the same proportions', () => {
+    const cls = avatarSizeClass('beside-panel', true)
+    const vh = (a: string) => {
+      const m = new RegExp(`(?:^| )${a}-\\[min\\(\\d+px,([\\d.]+)vh\\)`).exec(cls)
+      if (!m) throw new Error(`no vh branch on ${a}: ${cls}`)
+      return Number(m[1])
+    }
+    expect(vh('w') / vh('h')).toBeCloseTo(AVATAR_CANVAS_DOCKED.w / AVATAR_CANVAS_DOCKED.h, 3)
   })
 })
 

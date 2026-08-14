@@ -18,6 +18,7 @@ import {
   AVATAR_LAUNCHER_HIT_CLASS,
   avatarPlacement,
   avatarSizeClass,
+  CHAT_PANEL_HEIGHT_CLASS,
   deriveAvatarMode,
 } from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
@@ -559,10 +560,17 @@ export default function ChatWidget() {
   //  beside-panel  docked panel, wide viewport. Offset 436px = panel right
   //                inset 20px + panel width 400px (the min() in the panel class
   //                always resolves to 400px on ≥880px viewports) + 16px gap.
-  //                Canvas 300×342 here and 300×400 in the rail: once the chat
-  //                is open she is something the visitor is looking AT, and the
-  //                space either side of the panel is free. She grows up and to
-  //                the left from the same corner, so the panel never moves.
+  //                Canvas 491×560, matched to the panel's own min(560px,80vh)
+  //                so their tops line up at every viewport height: once the
+  //                chat is open she is something the visitor is looking AT, and
+  //                the space beside the panel is free. She grows up and to the
+  //                left from the same bottom-5 corner, so the panel never moves.
+  //                Accepted cost: just above the 880px `wide` threshold her
+  //                left gesture margin runs past the screen edge. Measured at
+  //                880px with a scrollbar: canvas left = -53px against 38px of
+  //                pure margin, so a stretch loses ~15px of fingertip there and
+  //                nothing from ~933px up. document.scrollWidth was unchanged
+  //                (874) — a fixed box overhanging leftward adds no scroll.
   //  rail          wide fullscreen: she stands at the bottom of the pipeline
   //                rail. Panel is inset-4 with a 236px rail column, so
   //                left = 16 + (236-w)/2 centres her canvas in it, which works
@@ -806,7 +814,11 @@ export default function ChatWidget() {
               // only a few px wider than the docked panel, which reads as no
               // change at all.
               'inset-4 rounded-2xl max-md:inset-0 max-md:rounded-none max-md:border-0 animate-chat-panel-grow'
-            : 'bottom-5 right-5 h-[min(560px,80vh)] w-[min(400px,calc(100vw-2.5rem))] rounded-2xl')
+            : // Height comes from avatarMode.ts because the avatar canvas is
+              // sized to it: she stands exactly as tall as this panel, so the
+              // two must never be edited apart.
+              'bottom-5 right-5 w-[min(400px,calc(100vw-2.5rem))] rounded-2xl ' +
+              CHAT_PANEL_HEIGHT_CLASS)
         }
       >
         {/* Header — title leads; the tech-stack line sits under it as a subtitle

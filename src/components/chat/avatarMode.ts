@@ -92,9 +92,13 @@ export function stepHeadAim(prev: number, target: number, dt: number): number {
 // testable without WebGL.
 //
 // Her on-screen size is `2 · distance · tan(fov/2) / canvasHeight` metres per
-// pixel. Hold that ratio constant and a taller canvas shows MORE of her at the
-// same size, instead of scaling her up — which is the whole point of the rail
-// getting its own framing: same Mika, more leg.
+// pixel. That gives two ways to spend a taller canvas, and both are in use:
+//  · dolly the camera back with it and she stays the same size while more of
+//    her fits — the rail's framing, same Mika, more leg;
+//  · leave the framing alone and the same crop stretches over more pixels, so
+//    she scales up — what the docked panel does, on purpose. Her 560px box is
+//    1.64× the launcher's 280px one and she renders 1.64× larger, waist-up
+//    either way.
 export const AVATAR_FOV = 27
 // The camera sits this far above the point it looks at, for a slight tilt.
 export const AVATAR_CAMERA_TILT = 0.1
@@ -108,7 +112,15 @@ export interface AvatarFraming {
 // y=1.722 (her hair top is 1.582), bottom at y=0.618, mid-thigh. Canvas width
 // does not enter into it — see avatarViewHalfWidth.
 export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.17 }
-// The rail's 400px-tall canvas is 58px taller than the docked one. Distance grows
+// The height the rail's dolly was composed against: the docked canvas as it
+// stood before the 2026-08-14 resize to the panel height. It is the rail's
+// anchor and nothing else's now. While fullscreen gives her a 236px column she
+// CANNOT grow to the docked panel's scale there — 560px of her needs 491px of
+// width — so the two placements no longer render her at one size, and she is
+// smaller in fullscreen than docked. Fullscreen owns that fix (a column of its
+// own); until then this constant is what the 2.69 below means.
+export const AVATAR_RAIL_SCALE_ANCHOR_H = 342
+// The rail's 400px-tall canvas is 58px taller than that anchor. Distance grows
 // with it (2.3 × 400/342) and the look-at drops so the extra view lands below
 // her, not as headroom: the top edge stays at 1.722 and the bottom reaches
 // y=0.431, just past her knees.
@@ -157,9 +169,23 @@ export const AVATAR_WIDEST_GESTURE_REACH = armReach(
 // hair the spring bones throw outward. The extra area is transparent, so it
 // costs page space nowhere; only the launcher's click target had to be narrowed
 // to match (see ChatWidget).
+//
+// The docked box is the odd one out: it is sized to the PANEL, not to a number
+// of its own, so she stands exactly as tall as the thing she is standing next
+// to. Its height is the panel's `min(560px,80vh)` and its width follows at the
+// same 491/560 ratio, so the ±0.484m of arm room survives the resize. Both
+// literals below are the uncapped 100%-of-560 case; on a viewport under 700px
+// tall the vh branch scales the pair together and she simply renders smaller.
 export const AVATAR_CANVAS_LAUNCHER = { w: 245, h: 280 }
-export const AVATAR_CANVAS_DOCKED = { w: 300, h: 342 }
+export const AVATAR_CANVAS_DOCKED = { w: 491, h: 560 }
 export const AVATAR_CANVAS_RAIL = { w: 300, h: 400 }
+
+// The docked panel's height, as the Tailwind literal. It lives here, next to
+// the canvas that must match it, because those are one number wearing two hats:
+// ChatWidget CONSUMES this for the panel and avatarSizeClass() spells the same
+// min() for the canvas, and a test parses both back so raising the panel
+// without raising her cannot pass silently.
+export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
 
 // Percent inset, each side, of the launcher's click target inside that canvas.
 // It exists so the transparent gesture margin is not clickable, which means it
@@ -177,9 +203,12 @@ export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[13%] right-[13%]'
 // constants above — which is exactly why this lives next to them and is pinned
 // by a test that parses these strings back. Editing one of these widths without
 // editing its constant used to be silent; now it is red.
+// 70.14vh = 80vh × 491/560: the vh branch has to carry the ratio too, or a
+// short viewport would shrink her height while keeping full width and hand her
+// a metre of empty room beside her arms.
 export function avatarSizeClass(placement: AvatarPlacement, roomy: boolean): string {
   if (placement === 'rail' && roomy) return 'h-[400px] w-[300px]'
-  if (placement === 'beside-panel') return 'h-[342px] w-[300px]'
+  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(491px,70.14vh)]'
   return 'h-[280px] w-[245px]'
 }
 
