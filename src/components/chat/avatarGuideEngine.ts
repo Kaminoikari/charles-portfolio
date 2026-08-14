@@ -157,14 +157,22 @@ function pinArms(v: VRM) {
 }
 
 // How far each finger curls toward the palm, as a fraction of a full fist.
-// Curling is +Z on the left hand and -Z on the right, the same mirror the arm
-// pins use (positive Z brings a left limb inward).
+// Curling is -Z on the left hand and +Z on the right — the OPPOSITE mirror to
+// the arm pins. The first draft reused the arm sign and every "curled" finger
+// hyperextended backward out of the hand; nobody saw it until a phone-scale
+// closeup, because from the front a finger bent back hides almost as well as
+// one folded in.
 interface HandPose {
   curl: Record<FingerName, number>
   // Sideways splay on the proximal joint. Two straight fingers side by side
   // render as one thick finger at the size she is actually seen at, so a V that
   // does not splay reads as a point — checked on the 807px fullscreen canvas.
   spread?: Partial<Record<FingerName, number>>
+  // Twist of the wrist about the forearm axis, radians, mirrored like the rest.
+  // A raised forearm leaves the palm facing her own head, which turns a V's
+  // splay into pure depth — from the front the two fingers eclipse each other
+  // and the sign reads as ONE finger. The twist turns the palm to the camera.
+  wrist?: number
 }
 const HAND_OPEN: HandPose = { curl: { Thumb: 0, Index: 0, Middle: 0, Ring: 0, Little: 0 } }
 // Two fingers up, the rest folded away. The thumb only half-curls: folded flat
@@ -172,6 +180,7 @@ const HAND_OPEN: HandPose = { curl: { Thumb: 0, Index: 0, Middle: 0, Ring: 0, Li
 const HAND_PEACE: HandPose = {
   curl: { Thumb: 0.6, Index: 0, Middle: 0, Ring: 1, Little: 1 },
   spread: { Index: 0.55, Middle: -0.55 },
+  wrist: 1.0,
 }
 // One finger out, for pointing and for poking her own cheeks.
 const HAND_POINT: HandPose = { curl: { Thumb: 0.5, Index: 0, Middle: 1, Ring: 1, Little: 1 } }
@@ -191,14 +200,18 @@ const FINGER_FULL_CURL = 1.6
 function setHand(v: VRM, side: 'left' | 'right', pose: HandPose, amount: number) {
   const mirror = side === 'left' ? 1 : -1
   for (const finger of FINGERS) {
-    // The thumb folds across the palm rather than into it, so it curls on a
-    // shallower arc; without this it clips through the fingers on a fist.
+    // The thumb sits rotated ~90° from the fingers in the rest pose, so folding
+    // it across the palm is a rotation about y where the fingers fold on z; on
+    // z it hyperextends sideways out of the hand, the "chicken foot" of the
+    // first draft. It also folds on a shallower arc, or it clips the fingers.
     const scale = finger === 'Thumb' ? 0.55 : 1
-    const z = mirror * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
+    const angle = -mirror * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
     const bones = fingerBones(side, finger)
     for (const name of bones) {
       const b = v.humanoid?.getNormalizedBoneNode(name)
-      if (b) b.rotation.z = z
+      if (!b) continue
+      if (finger === 'Thumb') b.rotation.y = angle
+      else b.rotation.z = angle
     }
     // Splay lives on the proximal joint only — the knuckle is where a finger
     // actually spreads; putting it on every segment bows the finger sideways.
@@ -207,6 +220,10 @@ function setHand(v: VRM, side: 'left' | 'right', pose: HandPose, amount: number)
       const b = v.humanoid?.getNormalizedBoneNode(bones[0])
       if (b) b.rotation.y = mirror * spread * amount
     }
+  }
+  if (pose.wrist !== undefined) {
+    const b = v.humanoid?.getNormalizedBoneNode(`${side}Hand` as BoneName)
+    if (b) b.rotation.x = mirror * pose.wrist * amount
   }
 }
 

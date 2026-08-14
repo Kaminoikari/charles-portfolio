@@ -630,6 +630,17 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
     把它綁在 `AVATAR_CANVAS_LAUNCHER.w` 與 `AVATAR_LAUNCHER_BODY_FRACTION`
     （0.415，launcher 畫布上她連頭髮的實測寬度佔比）上：清空間必須 > 10px。
     mutation：改回 183 該測試轉紅。實測清空間 12px（手機 387px 寬）。
+- **手指彎曲方向全部反了**（使用者手機特寫回報「不像人類的手的角度」）。
+  `setHand` 的 curl 沿用了手臂 pin 的鏡像符號（左 +z），但手指收向掌心是
+  **相反的**鏡像（左 −z、右 +z），所以每根「彎起來」的手指其實都往手背反折。
+  正面遠看幾乎看不出來（反折的手指跟收進掌心的一樣會消失），特寫才露餡。
+  兩個連帶修正：拇指的彎曲軸改成 **y**（拇指在 rest pose 就轉了 ~90°，用 z 彎
+  會橫著戳出去變雞爪）；`HandPose` 新增 `wrist`（繞前臂軸的手腕轉向，鏡像），
+  V 手勢 `wrist: 1.0` 把掌心轉向鏡頭——前臂折起後掌心原本朝著自己的頭，
+  V 的張開方向變成純深度，正面看兩指互相遮擋只剩一指。
+  驗證方式是 929×807 大畫布下逐姿勢手部特寫（誤標軸向時畫面立刻露餡），
+  修正後八個姿勢的全身 contact sheet 全部可讀。`pinArms` 的手指歸零是
+  `rotation.set(0,0,0)`，y 軸的拇指與 x 軸的手腕都涵蓋。
 - 量測工具的注意事項：`getBoundingClientRect` 會把入場的 scale transform 算進去
   （量到 176×202 而不是 245×280），亮度門檻會把 hero 星空誤判成她。用
   `gl.readPixels` 的 alpha 通道，並等 `matz === 2`。
