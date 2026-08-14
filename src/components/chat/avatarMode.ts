@@ -149,18 +149,16 @@ export const ARM_REST_UPPER_Z = 1.15
 export const ARM_REST_FORE_Z = 0.25
 
 // Where the elbow and the fingertip sit, sideways from her centre line, for one
-// arm attitude. A shoulder yaw turns the whole arm out of the frontal plane, so
-// it foreshortens both bones; the shoulder joint itself does not move.
-function armSpan(zUpper: number, zFore: number, yaw: number): { elbow: number; tip: number } {
-  const cy = Math.cos(yaw)
-  const elbow = -ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper) * cy
-  return { elbow, tip: elbow + ARM.foreAndHand * Math.cos(Math.PI + zUpper + zFore) * cy }
+// arm attitude, measured in the frontal plane.
+function armSpan(zUpper: number, zFore: number): { elbow: number; tip: number } {
+  const elbow = -ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper)
+  return { elbow, tip: elbow + ARM.foreAndHand * Math.cos(Math.PI + zUpper + zFore) }
 }
 
 // Distance from her centre line to a fingertip, for a given pair of arm
 // rotations. Angles are measured from +x, so the left arm starts at π.
 export function armReach(zUpper: number, zFore: number): number {
-  return Math.abs(armSpan(zUpper, zFore, 0).tip)
+  return Math.abs(armSpan(zUpper, zFore).tip)
 }
 
 // Distance from her centre line to the ELBOW. Gestures that fold the forearm
@@ -168,44 +166,25 @@ export function armReach(zUpper: number, zFore: number): number {
 // here, not at the fingertip, so a reach check that only looked at fingertips
 // would wave them through and then clip the elbow.
 export function elbowReach(zUpper: number): number {
-  return Math.abs(armSpan(zUpper, 0, 0).elbow)
+  return Math.abs(armSpan(zUpper, 0).elbow)
 }
-
-// How far the shoulder turns the arm forward at the midpoint of a gesture's
-// travel, for gestures that fold the forearm UP.
-//
-// Reported 2026-08-15 as the arm being cut off "during the raise". It was: from
-// a hanging arm, folding the forearm up in the frontal plane swings the hand
-// out through horizontal, and at 0.62 from her centre line against a 0.484
-// half-width it left the canvas. Both ENDS of that travel are narrow (rest
-// 0.23, the pose itself 0.31), which is exactly why a reach check that only
-// looked at the peaks passed it for a day.
-//
-// Turning the shoulder moves that swing in front of her instead of out beside
-// her, and it costs nothing at either end because sin(0) = sin(π) = 0: the
-// pose she holds is the same pose. Rotating forward on x cannot do this — an
-// x rotation preserves the x component of everything below the joint, which is
-// measurable on the model (a 1.25rad forward swing moves the resting wrist from
-// 0.212 to 0.207).
-export const ARM_TRANSIT_YAW = 1.3
 
 export interface ArmFrame {
   upper: number
   fore: number
-  yaw: number
 }
 
 // One frame of an arm's travel from its rest pin to a pose. The ENGINE poses
 // from this and the width check below measures it, so the two cannot disagree
-// about what the arm does between the two ends.
+// about what the arm does between the two ends. The travel is a plain linear
+// interpolation of both joints, which is the motion the owner approved; a
+// shoulder turn tried on 2026-08-15 to narrow it was rejected as something no
+// human shoulder does, and the canvases were widened to fit the real motion
+// instead.
 export function armAt(pose: ArmPose, env: number): ArmFrame {
   return {
     upper: ARM_REST_UPPER_Z + (pose.upper - ARM_REST_UPPER_Z) * env,
     fore: ARM_REST_FORE_Z + (pose.fore - ARM_REST_FORE_Z) * env,
-    // Only the upward folds need it. A pose that brings the hand DOWN (a hand
-    // to the hip) never swings wide, and a pose that leaves the z angles alone
-    // (pointing at the viewer) has no travel to route.
-    yaw: pose.fore < ARM_REST_FORE_Z ? ARM_TRANSIT_YAW * Math.sin(env * Math.PI) : 0,
   }
 }
 
@@ -305,7 +284,7 @@ export function poseReach(p: ArmPose): number {
   let worst = 0
   for (let i = 0; i <= ARM_PATH_SAMPLES; i++) {
     const f = armAt(p, i / ARM_PATH_SAMPLES)
-    const span = armSpan(f.upper, f.fore, f.yaw)
+    const span = armSpan(f.upper, f.fore)
     worst = Math.max(worst, Math.abs(span.tip), Math.abs(span.elbow))
   }
   return worst
@@ -343,8 +322,19 @@ export const AVATAR_WIDEST_GESTURE_REACH = widestReach(ARM_GESTURE_PEAKS)
 // The fullscreen column has no entry here at all: its box is arithmetic, not a
 // number, because it answers to both viewport axes at once. See
 // avatarColumnBox().
-export const AVATAR_CANVAS_LAUNCHER = { w: 245, h: 280 }
-export const AVATAR_CANVAS_DOCKED = { w: 491, h: 560 }
+export const AVATAR_CANVAS_LAUNCHER = { w: 342, h: 280 }
+export const AVATAR_CANVAS_DOCKED = { w: 684, h: 560 }
+
+// The docked canvas hangs to the LEFT of the panel, from a fixed right offset:
+// the panel's own 400px plus a 36px gutter. At 684px wide it no longer fits a
+// narrow desktop window — at 900px, 226px of the canvas is off the left edge of
+// the screen and 26px of that is her shoulder. She scales down to fit instead,
+// continuously rather than at a breakpoint, which is the same call the owner
+// made for the column on 2026-08-14: a smaller Mika, never a cut one.
+export const CHAT_BESIDE_PANEL_RIGHT = 436
+export function besidePanelScale(vw: number): number {
+  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / AVATAR_CANVAS_DOCKED.w))
+}
 
 // The docked panel's height, as the Tailwind literal. It lives here, next to
 // the canvas that must match it, because those are one number wearing two hats:
@@ -379,7 +369,7 @@ export const CHAT_TRANSCRIPT_PADDING = 48
 // Canvas width per unit height, from AVATAR_FRAMING_COLUMN: ±0.484m of arm room
 // over a 0.586m half-height view. Tighter than the rail's 0.75 because the
 // framing is tighter vertically — the arm room is the same metres either way.
-export const AVATAR_COLUMN_ASPECT = 0.484 / 0.586
+export const AVATAR_COLUMN_ASPECT = 0.6745 / 0.586
 // How much of that width her RESTING silhouette and hair actually cover,
 // measured off the render. The rest is transparent gesture margin, and the
 // transcript only reserves the body: a stretch does sweep a transparent hand
@@ -387,7 +377,7 @@ export const AVATAR_COLUMN_ASPECT = 0.484 / 0.586
 // that are not boxed in, and is safe because the wrapper takes no pointer
 // events. Raise this and she pushes the text away; lower it and she stands on
 // top of it.
-export const AVATAR_COLUMN_BODY_FRACTION = 0.8
+export const AVATAR_COLUMN_BODY_FRACTION = 0.5741
 
 export interface AvatarColumnBox {
   // Canvas box. Fixed-positioned against the panel's bottom-right inner corner.
@@ -422,12 +412,12 @@ export function avatarColumnBox(vw: number, vh: number): AvatarColumnBox {
 // It exists so the transparent gesture margin is not clickable, which means it
 // is tied to the launcher WIDTH: a wider canvas with this left alone silently
 // hands the margin back.
-export const AVATAR_LAUNCHER_HIT_INSET_PCT = 13
+export const AVATAR_LAUNCHER_HIT_INSET_PCT = 24
 // The class ChatWidget applies. Same arrangement as avatarSizeClass(): the JIT
 // needs the literal, so the number is written twice and a test parses this
 // string back to hold the two together. ChatWidget must CONSUME this rather
 // than spell its own copy, or the constant above pins nothing.
-export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[13%] right-[13%]'
+export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[24%] right-[24%]'
 
 // The Tailwind class for each box. Tailwind's JIT only sees arbitrary values
 // written as complete literals, so the numbers cannot be interpolated from the
@@ -441,8 +431,8 @@ export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[13%] right-[13%]'
 // The column is absent on purpose: its box is avatarColumnBox() arithmetic
 // applied as an inline style, so it has no literal here to keep in step.
 export function avatarSizeClass(placement: AvatarPlacement): string {
-  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(491px,70.14vh)]'
-  return 'h-[280px] w-[245px]'
+  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(684px,97.71vh)]'
+  return 'h-[280px] w-[342px]'
 }
 
 // Metres of world per canvas pixel — the number that must match across

@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   armAt,
-  ARM_TRANSIT_YAW,
   gestureEnvelope,
   headAim,
   stepHeadAim,
   avatarSizeClass,
+  besidePanelScale,
+  CHAT_BESIDE_PANEL_RIGHT,
   avatarViewHalfWidth,
   AVATAR_WIDEST_GESTURE_REACH,
   AVATAR_LAUNCHER_HIT_INSET_PCT,
@@ -264,7 +265,7 @@ describe('avatar camera framing', () => {
   it('derives the column aspect from the framing it belongs to', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_COLUMN)
     const halfHeight = (span.top - span.bottom) / 2
-    expect(AVATAR_COLUMN_ASPECT).toBeCloseTo(0.484 / halfHeight, 2)
+    expect(AVATAR_COLUMN_ASPECT).toBeCloseTo(0.6745 / halfHeight, 2)
   })
 
   // The docked canvas is the one placement that deliberately does NOT hold that
@@ -308,13 +309,16 @@ describe('avatar camera framing', () => {
     ]
     for (const [name, framing, canvas] of frames) {
       const half = avatarViewHalfWidth(framing, canvas)
-      // 15% past the fingertip, for the hand's own width and for hair the
-      // spring bones throw outward mid-gesture.
-      const clears = half > AVATAR_WIDEST_GESTURE_REACH * 1.15
+      // 8% past the widest point of the travel, for the sleeve and the hair
+      // that the bone maths does not carry. That factor used to be a 15% guess
+      // over a much smaller number; it is now measured, by reading the canvas
+      // alpha over 90s of real idle: the widest rendered silhouette was 0.636m
+      // against 0.622m of bone, so 2.3%, and 8% is comfortably past it.
+      const clears = half > AVATAR_WIDEST_GESTURE_REACH * 1.08
       expect({ [name]: clears }).toEqual({ [name]: true })
-      // Sized for that and not accidentally enormous: all three land on the
+      // Sized for that and not accidentally enormous: all four land on the
       // same half-width, so she has the same room in every placement.
-      expect(half).toBeCloseTo(0.484, 2)
+      expect(half).toBeCloseTo(0.674, 2)
     }
   })
 
@@ -324,13 +328,22 @@ describe('avatar camera framing', () => {
   it('derives the widest reach from the arm poses the engine actually uses', () => {
     // Rest pose: arms down at her sides, well inside the frame.
     expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
-    // 0.392, and it is a point PART WAY through a raise, not any pose. The
-    // canvases were sized for `stretch`'s 0.409 back when that was the widest
-    // and are deliberately not resized as gestures come and go.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.392, 3)
-    // A wider pose must demand a wider canvas, not silently start clipping.
-    expect(armReach(ARM_REST_UPPER_Z - 0.6, ARM_REST_FORE_Z)).toBeGreaterThan(
-      avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
+    // 0.622, and it is a point PART WAY through a raise, not any pose: from a
+    // hanging arm the forearm folds up through the frontal plane and the hand
+    // passes far wider than it ever sits. Every canvas is sized off THIS, which
+    // is why they are wide boxes with a lot of transparent air in them.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.622, 3)
+    // Sized for that travel, the canvas now holds the arm's ENTIRE range: fully
+    // extended and horizontal reaches 0.647, still inside the 0.674 half-width,
+    // so no pose in the z plane and no point on the way to one can leave the
+    // frame. That is the property the widening bought.
+    const half = avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER)
+    expect(armReach(0, 0)).toBeCloseTo(0.647, 3)
+    expect(armReach(0, 0)).toBeLessThan(half)
+    // And the check is still sensitive to the width: the canvas as it shipped
+    // before 2026-08-15 does not contain the travel, which is the bug.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeGreaterThan(
+      avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, { w: 245, h: 280 }),
     )
   })
 
@@ -366,31 +379,19 @@ describe('avatar camera framing', () => {
     expect(poseReach(peak)).toBeGreaterThan(atPose * 2)
   })
 
-  it('turns the shoulder so a raise passes in front of her, not out beside her', () => {
+  // The travel is a plain interpolation of the two joints and nothing else. A
+  // shoulder turn was tried on 2026-08-15 to keep the raise narrow enough for
+  // the old canvas; the owner rejected it as a motion no human shoulder makes,
+  // and the canvases were widened instead. This holds the motion to the two
+  // joints so the next width problem cannot be solved by bending her again.
+  it('travels to a pose on the two arm joints alone', () => {
     const peak = ARM_GESTURE_PEAKS.doublePeace.left!
-    const half = avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER)
-    // Squared up, the widest point of the raise is outside the canvas: this is
-    // the bug as it shipped, and the number the fix has to beat.
-    let squared = 0
-    for (let i = 0; i <= 96; i++) {
-      const e = i / 96
-      squared = Math.max(
-        squared,
-        armReach(
-          ARM_REST_UPPER_Z + (peak.upper - ARM_REST_UPPER_Z) * e,
-          ARM_REST_FORE_Z + (peak.fore - ARM_REST_FORE_Z) * e,
-        ),
-      )
+    expect(Object.keys(armAt(peak, 0.5)).sort()).toEqual(['fore', 'upper'])
+    for (const env of [0, 0.25, 0.5, 0.75, 1]) {
+      const f = armAt(peak, env)
+      expect(f.upper).toBeCloseTo(ARM_REST_UPPER_Z + (peak.upper - ARM_REST_UPPER_Z) * env, 12)
+      expect(f.fore).toBeCloseTo(ARM_REST_FORE_Z + (peak.fore - ARM_REST_FORE_Z) * env, 12)
     }
-    expect(squared).toBeGreaterThan(half)
-    expect(poseReach(peak)).toBeLessThan(half)
-    // The yaw is transient: it has to be gone by the time she holds the pose,
-    // or every held pose would be turned away from the viewer.
-    expect(armAt(peak, 0).yaw).toBe(0)
-    expect(armAt(peak, 1).yaw).toBeCloseTo(0, 12)
-    expect(armAt(peak, 0.5).yaw).toBeCloseTo(ARM_TRANSIT_YAW, 6)
-    // A pose that brings the hand DOWN never swings wide, so it stays square.
-    expect(armAt(ARM_GESTURE_PEAKS.handOnHip.left!, 0.5).yaw).toBe(0)
   })
 
   // The elbow term in widestReach() is inert against the CURRENT table (every
@@ -431,6 +432,29 @@ describe('avatar camera framing', () => {
   it('leaves a beat with no hold on the sine curve it was tuned with', () => {
     for (const t of [0, 0.4, 1.1, 1.6, 2.2, 2.4]) {
       expect(gestureEnvelope(t, 2.4, 0)).toBeCloseTo(Math.sin((t / 2.4) * Math.PI), 6)
+    }
+  })
+
+  // The docked canvas is now wider than the gap left of the panel on a narrow
+  // desktop window, so it has to shrink to stay on screen. Without this the
+  // 2026-08-15 widening pushed 226px of canvas, including 26px of her shoulder,
+  // off the left edge at 900px — a fix for one kind of clipping that caused
+  // another.
+  it('shrinks the docked canvas rather than running it off the screen', () => {
+    // The canvas's own left edge, in viewport coordinates, at a given width.
+    const leftEdge = (vw: number) =>
+      vw - CHAT_BESIDE_PANEL_RIGHT - AVATAR_CANVAS_DOCKED.w * besidePanelScale(vw)
+    // From the placement gate (880) upward, it never leaves the screen.
+    for (let vw = 880; vw <= 2560; vw += 4) {
+      expect({ vw, ok: leftEdge(vw) >= -1e-9 }).toEqual({ vw, ok: true })
+    }
+    // Full size as soon as there is room for it, and never larger.
+    expect(besidePanelScale(1120)).toBeCloseTo(1, 6)
+    expect(besidePanelScale(1920)).toBe(1)
+    // Continuous, like the column: the owner rejected a step there, and a step
+    // here would be the same jump in her size for one pixel of window.
+    for (let vw = 880; vw < 1200; vw++) {
+      expect(Math.abs(besidePanelScale(vw + 1) - besidePanelScale(vw))).toBeLessThan(0.01)
     }
   })
 

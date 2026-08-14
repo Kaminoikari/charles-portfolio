@@ -19,6 +19,7 @@ import {
   avatarColumnBox,
   avatarPlacement,
   avatarSizeClass,
+  besidePanelScale,
   CHAT_PANEL_HEIGHT_CLASS,
   deriveAvatarMode,
 } from './avatarMode'
@@ -234,8 +235,14 @@ export default function ChatWidget() {
   // switching at a breakpoint. A rAF coalesces the resize burst so a drag
   // re-renders once per frame at most, and the engine reconciles its drawing
   // buffer to the canvas box every frame anyway.
+  //
+  // Width comes from clientWidth, not innerWidth: everything measured against
+  // it is positioned against the LAYOUT viewport, which a classic desktop
+  // scrollbar makes narrower. innerWidth's extra 6px is what left her canvas
+  // hanging 6px off the left edge at 900px. Height stays innerHeight, because
+  // the panel it is compared against is sized in CSS vh.
   const [viewport, setViewport] = useState(() => ({
-    vw: window.innerWidth,
+    vw: document.documentElement.clientWidth,
     vh: window.innerHeight,
   }))
   useEffect(() => {
@@ -244,7 +251,7 @@ export default function ChatWidget() {
       if (frame) return
       frame = requestAnimationFrame(() => {
         frame = 0
-        setViewport({ vw: window.innerWidth, vh: window.innerHeight })
+        setViewport({ vw: document.documentElement.clientWidth, vh: window.innerHeight })
       })
     }
     onResize()
@@ -601,6 +608,8 @@ export default function ChatWidget() {
   // cheap enough (six multiplications) not to be worth gating.
   const columnBox = avatarColumnBox(viewport.vw, viewport.vh)
   const inColumn = placement === 'column'
+  // Only read in the beside-panel placement; one divide, not worth gating.
+  const besideScale = besidePanelScale(viewport.vw)
   // What the transcript actually gives up. Zero until she is on screen, so a
   // gated-off, failed or context-lost avatar leaves the text its full width
   // rather than a gap where nobody is standing. The cost is one reflow when she
@@ -628,7 +637,9 @@ export default function ChatWidget() {
         placement === 'hidden'
           ? 'hidden'
           : placement === 'beside-panel'
-            ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
+            ? // right-[436px] is CHAT_BESIDE_PANEL_RIGHT; the scale that keeps
+              // the canvas on screen at narrow widths rides in the style below.
+              'pointer-events-none fixed bottom-5 right-[436px] z-50'
             : inColumn
               ? // Pinned to the panel's bottom-right inner corner: the panel is
                 // inset-4, so bottom-4 right-4 puts her canvas edges exactly on
@@ -651,6 +662,11 @@ export default function ChatWidget() {
                 // max-[880px] = width < 880px, the exact complement of the
                 // `wide` matchMedia — max-[879px] left a 1px seam at 879.
                 ' transition-[bottom] duration-500 max-[880px]:origin-bottom-right max-[880px]:scale-[0.72]'
+      }
+      style={
+        placement === 'beside-panel' && besideScale < 1
+          ? { transform: `scale(${besideScale})`, transformOrigin: 'bottom right' }
+          : undefined
       }
     >
       <AvatarGuide

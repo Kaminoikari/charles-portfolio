@@ -249,9 +249,9 @@ type GestureDef = {
 const bone = (v: VRM, n: BoneName) => v.humanoid?.getNormalizedBoneNode(n)
 
 // Drive one arm from its rest pin toward a named peak pose. The attitude comes
-// from avatarMode's armAt(), which the canvas-width check measures, so the arm
-// cannot travel through a shape the check never sees. Magnitudes there; the
-// sign is the left/right mirror the pins use.
+// from avatarMode's armAt(), which the canvas-width check samples across the
+// whole travel, so the arm cannot pass through a shape the check never sees.
+// Magnitudes there; the sign is the left/right mirror the pins use.
 function armTo(v: VRM, side: 'left' | 'right', peak: ArmGestureName, env: number) {
   const pose = ARM_GESTURE_PEAKS[peak][side]
   if (!pose) return
@@ -259,12 +259,7 @@ function armTo(v: VRM, side: 'left' | 'right', peak: ArmGestureName, env: number
   const frame = armAt(pose, env)
   const upper = bone(v, `${side}UpperArm` as BoneName)
   const fore = bone(v, `${side}LowerArm` as BoneName)
-  if (upper) {
-    upper.rotation.z = mirror * frame.upper
-    // Turns the raise in front of her instead of out beside her. Zero at both
-    // ends of the travel, so the pose she arrives at is untouched.
-    upper.rotation.y = mirror * frame.yaw
-  }
+  if (upper) upper.rotation.z = mirror * frame.upper
   if (fore) fore.rotation.z = mirror * frame.fore
 }
 
