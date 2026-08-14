@@ -206,7 +206,8 @@ walk bob 走預留出口不做**：placement 轉場是 500ms CSS bottom 滑動�
 bob 疊加讀感為抖動、位移式 bob 違反「動作一律骨骼旋轉」慣例，保留純滑動。
 
 **Batch 3（互動＋資產）**
-- F 互動：游標接近 wrapper 時眼神/頭部追游標（離開回 idle 掃視）；桌機 head 區
+- F 互動：~~游標接近 wrapper 時眼神/頭部追游標（離開回 idle 掃視）~~
+  （**2026-08-14 Batch 4 整組移除**，使用者指示不要跟著滑鼠走）；桌機 head 區
   hover 來回 ≥3 次觸發摸頭反應（happy＋wiggle，**不出聲**——點擊她=開面板的
   契約不可破壞，故不用 press-hold）；idle 25–45s 隨機視覺小動作（伸展），
   純視覺不出聲。（**2026-08-14 增訂，使用者指示**：小動作擴為 **11 種**——伸展、
@@ -305,8 +306,9 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
 使用者選定相機拉近，並追加要求小 widget 與全螢幕態一併加強。
 
 - **相機 3.9m → 2.3m（腰上景）**，`camera.position (0,1.27,2.3)`／`lookAt (0,1.17,0)`。
-  臉高 ×1.70，**畫布尺寸與她在頁面上的佔位完全不變**，視覺引導順序不受影響。
-  距離比即倍率（3.926/2.304），與截圖目視一致。
+  臉高 ×1.70，**launcher 態的畫布尺寸與她在頁面上的佔位完全不變**（聊天開啟後的
+  兩態另外加大，見下），視覺引導順序不受影響。距離比即倍率（3.926/2.304），
+  與截圖目視一致。
 - **手勢全數重驗**：GESTURES 中抬手最高的 wave／stretch／hairTouch 在新框內；
   bow 前傾使頭下移約畫面 13.5%，仍在框內。唯一語意減弱的是 `toeLook`
   （腳已在框外，讀作單純低頭），保留在 IDLE_ACTS。
@@ -316,18 +318,32 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
 - **聊天態畫布加大**：beside-panel 與 rail 由 180×280 改 220×342（**維持 180:280
   比例，否則構圖會被重新裁切**）。引擎每幀比對 canvas CSS 盒與 drawing buffer，
   不符即 `setSize`＋更新 aspect，因此是**原生解析度**而非 CSS 放大。
+  **比對必須用 `Math.floor(css × pixelRatio)`**，那是 `setSize` 實際寫進
+  `canvas.width` 的值（three r183 `WebGLRenderer.setSize`）；用 `Math.round`
+  在小數 devicePixelRatio（Windows 125%／175%、瀏覽器縮放）下會與它差 1，
+  條件恆真而每幀重配 drawing buffer——220×342 在 DPR 1.25／1.75 正好中招
+  （spec review R1 抓到，已改）。
   rail 同時取消原本的 `scale-[0.8]`（全螢幕是最該看清楚她的地方），
   `left` 44px→24px 重新居中於 236px 側欄，spacer 212px→330px。
+- **短視窗退回（e54f76c）**：rail 的加大畫布需要 rail 自身 640px 高門檻不保證的
+  縱向空間——640 高時 330px spacer 吃掉側欄可視高度的 60%，trace 只剩約 196px，
+  違反「管線不可被角色擋住」的舊約定。新增 `roomy`（`min-height: 760px`）：
+  未達標時 rail 退回 180×280／`left-[44px]`／spacer 268px，trace 回到 258px。
+  beside-panel 不設此門檻（她旁邊就是面板，沒有被擠壓的內容）。
 - **移除游標追視**（使用者 mid-turn 指示：「動作不要跟著滑鼠 hover 走」）。
   驅動端與引擎端一併移除（`setGaze`／`clearGaze`／gazeBlend／idle gate 的
   `gazeBlend < 0.05` 條件／debug 欄位），**摸頭保留**——它需要在她頭上來回劃過，
   屬於主動互動，不是被動跟隨。她的視線現在只來自聊天狀態與 idle 動作。
-- **摸頭頭區隨構圖上移**：判定由畫布 0–32% 改 12–42%（頭實際落在 18–36%），
-  gaze 中心 0.35→0.30。
+- **摸頭頭區隨構圖上移**：判定由畫布 0–32% 改 12–42%（頭實際落在 18–36%）。
+  比例式判定，所以聊天態換成 220×342 畫布時自動跟著走。
+  （gaze 的 dy 錨點原本也要從 0.35 調到 0.30，隨游標追視整組移除而不存在了。）
 
 **驗證（2026-08-14）**：三態幾何以 `getBoundingClientRect` 實測——launcher
 180×280、beside-panel 與 rail 皆 CSS 220×342 且 drawing buffer 同值（證明 resize
 生效）；rail canvas top = vh−366、trace 內容底 524 對 canvas 頂 534，不重疊。
+900×640 的短視窗實測退回 180×280／left 44／spacer 268／trace 可見 258px。
+floor 對 round 的差異以 `Math.floor` 對照 three 原始碼逐一驗算四組尺寸 × 五種
+DPR：round 有 2 組不一致（220×342 @1.25、@1.75），floor 為 0 組。
 三態＋行動 390×844 皆有截圖。摸頭做了對照組：清掉 8s 冷卻後，先在她頭頂上方
 空白帶（畫布 5%）來回 8 次 gesture 全程 null，再在頭區（27%）同手法觸發 wiggle。
 `npx tsc --noEmit` 乾淨、chat 測試 70 綠。

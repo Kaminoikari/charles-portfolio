@@ -865,7 +865,11 @@ export function initAvatarGuide(
     const cw = canvas.clientWidth
     const ch = canvas.clientHeight
     const dpr = renderer.getPixelRatio()
-    if (cw > 0 && ch > 0 && (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr))) {
+    // Math.floor, matching what setSize itself writes into canvas.width — with
+    // Math.round a fractional devicePixelRatio (Windows 125%/175%, browser
+    // zoom) lands the two on either side of a .5 and this "did it change"
+    // check is true forever, reallocating the drawing buffer every frame.
+    if (cw > 0 && ch > 0 && (canvas.width !== Math.floor(cw * dpr) || canvas.height !== Math.floor(ch * dpr))) {
       renderer.setSize(cw, ch, false)
       camera.aspect = cw / ch
       camera.updateProjectionMatrix()
