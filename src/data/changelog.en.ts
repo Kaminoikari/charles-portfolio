@@ -20,6 +20,27 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'hero-particle-field',
+    date: '2026-08-14',
+    title: `The hero sheds its face for a particle field that expands from the centre`,
+    tags: ['design', 'technical'],
+    body: [
+      `The point-cloud portrait has left the top of the site. What remains is the headline, centred in a field of drifting motes that expands outward from the middle of the screen. The page opens straight into it, with no loading sequence and no gate to click through.`,
+      { kind: 'heading', text: `Why the intro left with it` },
+      `The loader, the Enter gate and the cinematic intro all existed to serve the portrait. The gate covered a heavy download and unlocked the audio inside a tap, the intro was a performance staged on the face, and a static photo stood in wherever WebGL was unavailable. With the face gone, each of them had nothing left to do, so the hero renders on mount and the headline is there from the first paint. That also took **3.3MB** of images, audio and 3D assets off the site.`,
+      { kind: 'heading', text: `Rebuilding the motion` },
+      {
+        kind: 'list',
+        items: [
+          `Motes used to spawn on the vertices of the head mesh and peel off sideways, which is a shape that needs a head. Each one now starts at the centre and travels straight outward, so the motion reads as expansion from a point wherever you look.`,
+          `A mote's distance from the centre is derived from its age. The old field accumulated it from a velocity, which meant the first frame was a dot in the middle that took a whole lifetime to spread; deriving it puts the settled field on screen at the first paint.`,
+          `Directions are sampled by area. Handing every angle the same number of motes packs the short edges of a wide screen about three times denser than the corners.`,
+          `How far a mote travels is measured against the frame edge along its own direction, so one heading for a near edge no longer spends most of its life outside the picture.`,
+        ],
+      },
+    ],
+  },
+  {
     id: 'avatar-performance-upgrade',
     date: '2026-08-14',
     title: `Mika levels up: frame-accurate lip sync, live emotions, a 64% lighter model`,
