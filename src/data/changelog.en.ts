@@ -20,6 +20,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-full-height',
+    date: '2026-08-14',
+    title: `Mika stands as tall as the conversation she is having`,
+    tags: ['design', 'technical'],
+    body: [
+      `Mika was a 342px figure standing next to a 560px panel, which read as a decoration parked in the corner more than the guide doing the talking. She now takes the full height of the chat in both of its sizes: matched to the docked panel beside her, and the whole height of the screen when the chat opens fullscreen.`,
+      { kind: 'heading', text: `Beside the docked panel` },
+      `Her canvas is the panel's own height now, with the width following at the same ratio so the room her arms need survives the resize. Same waist-up framing, **1.64× larger**. The panel and the canvas read one number in the code, so the panel cannot be resized without her.`,
+      { kind: 'heading', text: `A column of her own at full screen` },
+      `Fullscreen used to stand her at the foot of the 236px pipeline rail, which capped her at 400px and left her smaller at full screen than in the small panel she had just grown to match. She moved to the right of the transcript, where she has the full height of the panel below the header.`,
+      `Only her body pushes the text aside. The rest of her canvas is transparent room for her gestures, and it floats over the gap that leaves, which keeps **132px** of reading width that a column sized to the whole canvas would have taken.`,
+      `The camera was recomposed for the taller frame. The old framing left a gap above her hair that goes unnoticed on a 400px canvas and reads as a hole on an 800px one. The top edge now sits just over her head while the bottom stays at her knee, so the same canvas shows her **10% larger**.`,
+      { kind: 'heading', text: `A small window shrinks her, it does not move her` },
+      `There is no width at which she jumps back somewhere else. Her box is the smaller of the panel's height and what the window's width can pay for, at a fixed ratio, so a narrow window gets a smaller Mika standing in the same place with every gesture still in frame. Short windows get her back entirely: she used to disappear below 640px of height, purely because she would have stood on top of the pipeline, and in a column of her own there is nothing to stand on top of.`,
+      { kind: 'heading', text: `The suggested questions stay put` },
+      `The rail swapped its suggestions out for the pipeline the moment a question was asked. That was never about the suggestions: she stood at the rail's foot, and the two stacked pushed the last stations behind her head. They share the rail now and it scrolls, so asking a follow-up no longer means waiting for the answer to get the prompts back.`,
+    ],
+  },
+  {
     id: 'hero-particle-field',
     date: '2026-08-14',
     title: `The hero sheds its face for a particle field that expands from the centre`,
@@ -62,7 +81,7 @@ export const changelog: ChangelogEntry[] = [
       { kind: 'heading', text: `Cinematic rendering and an entrance` },
       `Rendering moved to filmic (ACES) tone mapping at a sharper pixel ratio, with a mars-orange rim light that swells while she answers, a soft contact shadow grounding her feet, and a low cyan fill separating her dark outfit from the dark page. She also arrives properly now: a rise of cyan particles, a brief glow, and a small scale pop as she materializes.`,
       { kind: 'heading', text: `Close enough to read` },
-      `All of that acting was landing on a face about 27 pixels tall, and roughly 19 on a phone. The camera now frames her from the waist up: her face is **1.7× larger** while the space she occupies on the page stays exactly the same, so nothing else had to move. Open the chat and she gets more room again, on a bigger canvas rendered at native resolution, in the docked panel and at full screen alike. In the fullscreen rail the camera pulls back as the canvas grows, so she stays exactly the same size on screen while standing higher in the column and showing her legs down past the knee. The crop below fades softly into the page. The frames are as wide as her arms too: a stretch used to lose its fingertips to the canvas edge, so every canvas gained horizontal room. Because the field of view is vertical, that room changes nothing about how big she looks.`,
+      `All of that acting was landing on a face about 27 pixels tall, and roughly 19 on a phone. The camera now frames her from the waist up: her face is **1.7× larger** while the space she occupies on the page stays exactly the same, so nothing else had to move. Open the chat and she gets more room again, on a bigger canvas rendered at native resolution, in the docked panel and at full screen alike. The crop below fades softly into the page. The frames are as wide as her arms too: a stretch used to lose its fingertips to the canvas edge, so every canvas gained horizontal room. Because the field of view is vertical, that room changes nothing about how big she looks.`,
       { kind: 'heading', text: `Pat her on the head` },
       `Stroke the top of her head a few times and she does a happy little head wiggle (silently; she only speaks when you actually tap her). Leave her alone and roughly every five seconds she picks one of eleven little self-performances: a stretch, a curious head tilt, a glance around, checking her palm, shifting her weight, a tiny bounce, swinging her arms, touching her hair, a deep breath, a hip twist, or peering at the floor.`,
       { kind: 'heading', text: `64% lighter, nothing lost` },
@@ -75,7 +94,7 @@ export const changelog: ChangelogEntry[] = [
     title: `A full-body 3D character now fronts the AI assistant`,
     tags: ['feature', 'design', 'technical'],
     body: [
-      `The AI assistant in the bottom-right corner now has a face, a body, and a name: **Mika**, a full-body **3D character** who IS the launcher, on phones as well as desktops. She reacts to the conversation in real time. While nothing is happening she looks around; the moment you start typing she tilts her head up and down as if following your draft; and while the answer streams in, her mouth moves through real vowel shapes and her colours warm toward the site's mars orange, settling back once the answer lands. In the fullscreen takeover on anything wider than a phone she stands at the bottom of the retrieval-pipeline rail, mouthing the answer while the stations light up.`,
+      `The AI assistant in the bottom-right corner now has a face, a body, and a name: **Mika**, a full-body **3D character** who IS the launcher, on phones as well as desktops. She reacts to the conversation in real time. While nothing is happening she looks around; the moment you start typing she tilts her head up and down as if following your draft; and while the answer streams in, her mouth moves through real vowel shapes and her colours warm toward the site's mars orange, settling back once the answer lands. In the fullscreen takeover on anything wider than a phone she stands beside the transcript, mouthing the answer while the pipeline's stations light up.`,
       { kind: 'heading', text: `A VRM humanoid, driven by chat state` },
       `The character is a **VRM** model (the humanoid format used across VTuber tooling), rendered with three.js and \`@pixiv/three-vrm\`. Head movement is skeletal: the head, neck and a hint of spine rotate together while the eyes track a gaze target, so she turns to look the way people do. Speech is a viseme loop over the five Japanese vowel mouth shapes on a deliberately uneven cadence, because an even beat reads as a machine.`,
       `All of it is driven by two signals the chat widget already had: what is in the input field, and whether an answer is streaming. No cursor tracking, no audio analysis.`,
