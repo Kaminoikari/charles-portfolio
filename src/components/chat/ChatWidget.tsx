@@ -209,23 +209,34 @@ export default function ChatWidget() {
   // md mirrors the rail's own breakpoint (the aside is max-md:hidden): the
   // character stands wherever the rail exists, which starts below `wide`.
   const [md, setMd] = useState(() => window.matchMedia('(min-width: 768px)').matches)
+  // The rail's enlarged canvas needs vertical room that the 640px rail floor
+  // does not guarantee: at 640 its 330px spacer takes 60% of the visible
+  // column and the trace — the reason fullscreen exists, and which the owner
+  // asked never be crowded out by her — has ~196px left. Between 640 and 760
+  // she keeps the launcher's 180×280 box, which costs 62px of spacer.
+  const [roomy, setRoomy] = useState(() => window.matchMedia('(min-height: 760px)').matches)
   useEffect(() => {
     const wq = window.matchMedia('(min-width: 880px)')
     const hq = window.matchMedia('(min-height: 640px)')
     const mq = window.matchMedia('(min-width: 768px)')
+    const rq = window.matchMedia('(min-height: 760px)')
     setWide(wq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
     setTall(hq.matches)
     setMd(mq.matches)
+    setRoomy(rq.matches)
     const onW = () => setWide(wq.matches)
     const onH = () => setTall(hq.matches)
     const onM = () => setMd(mq.matches)
+    const onR = () => setRoomy(rq.matches)
     wq.addEventListener('change', onW)
     hq.addEventListener('change', onH)
     mq.addEventListener('change', onM)
+    rq.addEventListener('change', onR)
     return () => {
       wq.removeEventListener('change', onW)
       hq.removeEventListener('change', onH)
       mq.removeEventListener('change', onM)
+      rq.removeEventListener('change', onR)
     }
   }, [])
   // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
@@ -554,8 +565,9 @@ export default function ChatWidget() {
   //                left from the same corner, so the panel never moves.
   //  rail          wide fullscreen: she stands at the bottom of the pipeline
   //                rail. Panel is inset-4 with a 236px rail column, so
-  //                left = 16 + (236-220)/2 = 24px centres the 220px canvas in
-  //                the rail; z-[55] beats the panel's z-50; rendered at full
+  //                left = 16 + (236-w)/2 centres her canvas in it: 24px for
+  //                the 220px box, 44px for the 180px one a short viewport
+  //                falls back to; z-[55] beats the panel's z-50; rendered at full
   //                size (the old 80% shrink fought the whole point of the
   //                fullscreen view, where there is the most room to actually
   //                watch her) with the trace spacer below reserving the taller
@@ -571,6 +583,10 @@ export default function ChatWidget() {
   // webglcontextlost event and this commit could still report onLoaded, and
   // launcher-true here with the wrapper unmounted would leave NO launcher.
   const avatarIsLauncher = placement === 'launcher' && avatarLoaded && !avatarDead
+  // Enlarged canvas for the two chat-open placements; the rail also needs the
+  // vertical room (see `roomy`). Keeps the 180:280 aspect — the waist-up
+  // framing is composed for it.
+  const avatarBig = placement === 'beside-panel' || (placement === 'rail' && roomy)
   // Hold the capsule back while the character is plausibly on her way: before
   // the gate has even been asked, and during a healthy load. Every "she is not
   // coming" signal (gate off, failure, patience window, dead context) releases
@@ -586,7 +602,9 @@ export default function ChatWidget() {
           : placement === 'beside-panel'
             ? 'pointer-events-none fixed bottom-5 right-[436px] z-50'
             : placement === 'rail'
-              ? 'pointer-events-none fixed bottom-6 left-[24px] z-[55]'
+              ? avatarBig
+                ? 'pointer-events-none fixed bottom-6 left-[24px] z-[55]'
+                : 'pointer-events-none fixed bottom-6 left-[44px] z-[55]'
               : // launcher: glides from above the capsule down into the corner
                 // once she takes over as the button. 72% on narrow screens
                 // reduces how much of a phone's hero headline she covers; it
@@ -603,11 +621,7 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
-        sizeClass={
-          placement === 'beside-panel' || placement === 'rail'
-            ? 'h-[342px] w-[220px]'
-            : 'h-[280px] w-[180px]'
-        }
+        sizeClass={avatarBig ? 'h-[342px] w-[220px]' : 'h-[280px] w-[180px]'}
         onHandle={(h) => {
           avatarHandleRef.current = h
         }}
@@ -858,15 +872,16 @@ export default function ChatWidget() {
                   rail. Reserve her floor space with a real element so a long
                   trace scrolls to rest above her head — block-end PADDING on
                   an overflow container is dropped from the scroll extent by
-                  some engines, a spacer never is. 330px is derived: her canvas
-                  top is vh−366 (bottom-6 + the rail's 342px canvas), the
-                  aside's bottom padding is 16px and gap-5 adds 20px — change
-                  any of those (or the panel's inset-4) and this number moves
-                  with them. Measured against the canvas rather than her
-                  hairline, so the waist-up framing's headroom reads as
-                  breathing space between the trace and her. */}
+                  some engines, a spacer never is. Both numbers are derived:
+                  her canvas top is vh−366 on the 342px canvas and vh−304 on
+                  the 280px one (bottom-6 + the canvas), the aside's bottom
+                  padding is 16px and gap-5 adds 20px — change any of those (or
+                  the panel's inset-4) and these move with them. Measured
+                  against the canvas rather than her hairline, so the waist-up
+                  framing's headroom reads as breathing space between the trace
+                  and her. */}
               {avatarOn && avatarLoaded && placement === 'rail' && (
-                <div aria-hidden className="h-[330px] shrink-0" />
+                <div aria-hidden className={avatarBig ? 'h-[330px] shrink-0' : 'h-[268px] shrink-0'} />
               )}
             </aside>
           )}
