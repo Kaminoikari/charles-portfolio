@@ -21,7 +21,9 @@
 //     over the mode sweep (fades both ways; saccades still ride on top)
 //   - head-pat: AvatarGuide detects strokes across her head and triggers a
 //     happy wiggle — silent by design, and it never intercepts the click
-//   - stretch: an unprompted self-action after 25–45s of undisturbed idle
+//   - idle acts: 11 varieties (stretch, head tilt, glance, palm check, weight
+//     shift, bounce, arm swing, hair touch, deep breath, hip twist, floor
+//     peek), picked at random roughly every 10s of undisturbed idle
 //
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
@@ -51,9 +53,25 @@ import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 // checks availability at runtime and silently skips unknown presets, so a
 // future custom model upgrades expressiveness without touching callers.
 export type EmotionName = 'happy' | 'angry' | 'sad' | 'relaxed' | 'surprised'
-// wiggle = head-pat response (small head roll); stretch = idle self-action.
-// Neither is cue-driven: AvatarGuide triggers them from pointer/idle logic.
-export type GestureName = 'wave' | 'bow' | 'nod' | 'wiggle' | 'stretch'
+// wave/bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
+// head-pat response; everything from stretch on is the idle-act pool that
+// fires on its own during undisturbed idle (see IDLE_ACTS).
+export type GestureName =
+  | 'wave'
+  | 'bow'
+  | 'nod'
+  | 'wiggle'
+  | 'stretch'
+  | 'tilt'
+  | 'glance'
+  | 'lookHand'
+  | 'swayStep'
+  | 'bounce'
+  | 'armSwing'
+  | 'hairTouch'
+  | 'deepBreath'
+  | 'hipTwist'
+  | 'toeLook'
 
 export type AvatarGuideHandle = {
   setMode: (mode: AvatarMode) => void
@@ -97,6 +115,205 @@ function pinArms(v: VRM) {
     if (b) b.rotation.set(0, 0, z)
   }
 }
+
+// ---- gesture / idle-act library --------------------------------------------
+// Every gesture is a pure per-frame function: p ∈ [0,1] is progress, env is
+// the sin(pπ) ease envelope, v ∈ {-1, 1} picks a random side per trigger, and
+// offsets accumulate into `o` (ADDED to the mode-driven pose downstream).
+// Arm-touching gestures write the arm bones directly — absolute values based
+// on ARM_PINS — and are flagged `arms` so completion AND interruption restore
+// the pins exactly. Table-driven because a 15-branch if-chain stopped reading.
+type GestureOffsets = {
+  hp: number // head pitch (+ looks down)
+  hy: number // head yaw (+ turns to her left)
+  hr: number // head roll
+  sx: number // spine pitch
+  sy: number // spine yaw
+  sz: number // spine roll
+  cx: number // chest pitch (adds to breathing)
+  ex: number // eye-target x offset
+  ey: number // eye-target y offset
+}
+
+type GestureDef = {
+  dur: number
+  arms?: boolean
+  apply: (vrm: VRM, p: number, env: number, v: number, o: GestureOffsets) => void
+}
+
+const bone = (v: VRM, n: BoneName) => v.humanoid?.getNormalizedBoneNode(n)
+
+const GESTURES: Record<GestureName, GestureDef> = {
+  // -- cue-driven ------------------------------------------------------------
+  wave: {
+    dur: 1.6,
+    arms: true,
+    apply: (vrm, p, env) => {
+      const rua = bone(vrm, 'rightUpperArm')
+      const rla = bone(vrm, 'rightLowerArm')
+      const rh = bone(vrm, 'rightHand')
+      if (rua) rua.rotation.z = -1.15 + env * 0.85
+      if (rla) rla.rotation.z = -0.25 - env * 0.75
+      if (rh) rh.rotation.z = Math.sin(p * 22.4) * 0.45 * env // 14 rad/s × 1.6s
+    },
+  },
+  bow: {
+    dur: 1.5,
+    apply: (_vrm, _p, env, _v, o) => {
+      o.sx += env * 0.32
+      o.hp += env * 0.18
+    },
+  },
+  nod: {
+    dur: 0.9,
+    // two down-beats inside one smooth envelope
+    apply: (_vrm, p, env, _v, o) => {
+      o.hp += Math.sin(p * Math.PI * 2) * 0.14 * env
+    },
+  },
+  // -- head-pat response -------------------------------------------------------
+  wiggle: {
+    dur: 0.9,
+    apply: (_vrm, p, env, _v, o) => {
+      o.hr += Math.sin(p * Math.PI * 4) * 0.09 * env
+    },
+  },
+  // -- idle-act pool (~10s cadence while undisturbed; picked at random) -------
+  stretch: {
+    dur: 1.8,
+    arms: true,
+    // arms flare out from the pins, head tips back, chest opens
+    apply: (vrm, _p, env, _v, o) => {
+      const lua = bone(vrm, 'leftUpperArm')
+      const rua = bone(vrm, 'rightUpperArm')
+      if (lua) lua.rotation.z = 1.15 - env * 0.35
+      if (rua) rua.rotation.z = -1.15 + env * 0.35
+      o.hp += -env * 0.12
+      o.sx += -env * 0.04
+    },
+  },
+  tilt: {
+    dur: 1.6,
+    // curious head tilt to a random side
+    apply: (_vrm, _p, env, v, o) => {
+      o.hr += v * 0.16 * env
+      o.hy += v * 0.05 * env
+    },
+  },
+  glance: {
+    dur: 2.2,
+    // quick look one way then the other, eyes leading the head
+    apply: (_vrm, p, env, v, o) => {
+      const w = Math.sin(p * Math.PI * 2) * env
+      o.hy += v * w * 0.35
+      o.ex += v * w * 1.4
+    },
+  },
+  lookHand: {
+    dur: 2.4,
+    arms: true,
+    // raises her right palm and studies it
+    apply: (vrm, _p, env, _v, o) => {
+      const rua = bone(vrm, 'rightUpperArm')
+      const rla = bone(vrm, 'rightLowerArm')
+      if (rua) rua.rotation.z = -1.15 + env * 0.25
+      if (rla) rla.rotation.z = -0.25 - env * 0.95
+      o.hp += env * 0.22
+      o.hy += -env * 0.18
+      o.ey += -env * 1.6
+    },
+  },
+  swayStep: {
+    dur: 2.0,
+    // one exaggerated weight shift, head countering to stay level
+    apply: (_vrm, p, env, v, o) => {
+      const w = Math.sin(p * Math.PI * 2) * env
+      o.sz += v * w * 0.05
+      o.hr += -v * w * 0.03
+    },
+  },
+  bounce: {
+    dur: 1.2,
+    // three quick little body dips — a hop feel without any translation
+    apply: (_vrm, p, env, _v, o) => {
+      const w = Math.abs(Math.sin(p * Math.PI * 3)) * env
+      o.sx += w * 0.05
+      o.hp += w * 0.05
+    },
+  },
+  armSwing: {
+    dur: 1.8,
+    arms: true,
+    // arms swing gently front-and-back in opposite phase (x only; z pins stay)
+    apply: (vrm, p, env) => {
+      const s = Math.sin(p * Math.PI * 3) * 0.12 * env
+      const lua = bone(vrm, 'leftUpperArm')
+      const rua = bone(vrm, 'rightUpperArm')
+      if (lua) lua.rotation.x = s
+      if (rua) rua.rotation.x = -s
+    },
+  },
+  hairTouch: {
+    dur: 2.4,
+    arms: true,
+    // left hand up toward her hair, head leaning into it
+    apply: (vrm, _p, env, _v, o) => {
+      const lua = bone(vrm, 'leftUpperArm')
+      const lla = bone(vrm, 'leftLowerArm')
+      if (lua) lua.rotation.z = 1.15 - env * 0.75
+      if (lla) lla.rotation.z = 0.25 + env * 1.1
+      o.hr += -env * 0.08
+      o.hy += env * 0.08
+    },
+  },
+  deepBreath: {
+    dur: 2.6,
+    arms: true,
+    // shoulders rise, chest opens, chin lifts — one long breath
+    apply: (vrm, _p, env, _v, o) => {
+      const lua = bone(vrm, 'leftUpperArm')
+      const rua = bone(vrm, 'rightUpperArm')
+      if (lua) lua.rotation.z = 1.15 - env * 0.08
+      if (rua) rua.rotation.z = -1.15 + env * 0.08
+      o.cx += -env * 0.05
+      o.hp += -env * 0.08
+    },
+  },
+  hipTwist: {
+    dur: 1.8,
+    // small torso twist left-right, head countering
+    apply: (_vrm, p, env, v, o) => {
+      const w = Math.sin(p * Math.PI * 2) * env
+      o.sy += v * w * 0.12
+      o.hy += -v * w * 0.06
+    },
+  },
+  toeLook: {
+    dur: 2.0,
+    // peers down at the floor by her feet
+    apply: (_vrm, _p, env, v, o) => {
+      o.hp += env * 0.3
+      o.hy += v * 0.1 * env
+      o.ey += -env * 2
+    },
+  },
+}
+
+// What the idle timer may pick from. Cue gestures and the pat response stay
+// out — they belong to their own triggers.
+const IDLE_ACTS: readonly GestureName[] = [
+  'stretch',
+  'tilt',
+  'glance',
+  'lookHand',
+  'swayStep',
+  'bounce',
+  'armSwing',
+  'hairTouch',
+  'deepBreath',
+  'hipTwist',
+  'toeLook',
+]
 
 export function initAvatarGuide(
   canvas: HTMLCanvasElement,
@@ -331,10 +548,15 @@ export function initAvatarGuide(
   let gazeY = 0
   let gazeOn = false
   let gazeBlend = 0
-  // Idle self-actions (stretch) fire only after a long undisturbed idle;
-  // any non-idle state resets the clock.
-  let idleActTimer = 25 + Math.random() * 20
-  let gesture: { name: GestureName; t: number; dur: number } | null = null
+  // Idle self-actions fire only during undisturbed idle, roughly every 10s
+  // (8–12s uniform); interaction pushes the next one back. One re-roll
+  // guards against the same act twice in a row.
+  let idleActTimer = 8 + Math.random() * 4
+  let lastIdleAct: GestureName | null = null
+  let gesture: { name: GestureName; t: number; v: number } | null = null
+  // Per-frame gesture offset accumulator (reset each frame, never allocated
+  // inside the loop) — see GESTURES.
+  const OFF: GestureOffsets = { hp: 0, hy: 0, hr: 0, sx: 0, sy: 0, sz: 0, cx: 0, ex: 0, ey: 0 }
   // Probe channel for automated verification (?mikadebug=1) — same pattern as
   // the retired ?audiodebug overlay, kept because avatar work re-needs it.
   const debugTap =
@@ -424,9 +646,11 @@ export function initAvatarGuide(
         pitch = pitch * (1 - gazeBlend) + gazeY * -0.3 * gazeBlend
       }
 
-      // Idle self-action: an unprompted stretch after 25–45s of undisturbed
-      // idle (post-entrance, nothing else performing). Purely visual — no
-      // sound, per the plan's F item.
+      // Idle self-actions: an unprompted little performance roughly every 10s
+      // of undisturbed idle (post-entrance, nothing else performing), picked
+      // at random from IDLE_ACTS. Purely visual — no sound, per the plan's F
+      // item. A single re-roll makes an immediate repeat unlikely (~1/121, not
+      // impossible) without ever risking a loop.
       const speechIdle = !speechEl || speechEl.paused || speechEl.ended
       if (
         matzT === 2 &&
@@ -438,51 +662,29 @@ export function initAvatarGuide(
       ) {
         idleActTimer -= dt
         if (idleActTimer <= 0) {
-          gesture = { name: 'stretch', t: 0, dur: 1.8 }
-          idleActTimer = 25 + Math.random() * 20
+          let pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+          if (pick === lastIdleAct) pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+          lastIdleAct = pick
+          gesture = { name: pick, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+          idleActTimer = 8 + Math.random() * 4
         }
       } else if (mode !== 'idle') {
-        idleActTimer = Math.max(idleActTimer, 8)
+        idleActTimer = Math.max(idleActTimer, 6)
       }
 
       // Gesture offsets ADD to the mode-driven head/spine pose (a nod during
       // listening still tracks the visitor); the arms are the exception —
-      // they're pinned, not mode-driven, so wave/stretch own them and restore
-      // the pins when done.
-      let gestureHeadPitch = 0
-      let gestureHeadRoll = 0
-      let gestureSpineX = 0
+      // they're pinned, not mode-driven, so arm gestures own them and restore
+      // the pins when done. All motion curves live in the GESTURES table.
+      OFF.hp = OFF.hy = OFF.hr = OFF.sx = OFF.sy = OFF.sz = OFF.cx = OFF.ex = OFF.ey = 0
       if (gesture) {
         gesture.t += dt
-        const p = Math.min(gesture.t / gesture.dur, 1)
+        const def = GESTURES[gesture.name]
+        const p = Math.min(gesture.t / def.dur, 1)
         const env = Math.sin(p * Math.PI)
-        if (gesture.name === 'wave') {
-          const rua = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
-          const rla = vrm.humanoid?.getNormalizedBoneNode('rightLowerArm')
-          const rh = vrm.humanoid?.getNormalizedBoneNode('rightHand')
-          if (rua) rua.rotation.z = -1.15 + env * 0.85
-          if (rla) rla.rotation.z = -0.25 - env * 0.75
-          if (rh) rh.rotation.z = Math.sin(gesture.t * 14) * 0.45 * env
-        } else if (gesture.name === 'bow') {
-          gestureSpineX = env * 0.32
-          gestureHeadPitch = env * 0.18
-        } else if (gesture.name === 'wiggle') {
-          // head-pat response: happy little side-to-side head roll
-          gestureHeadRoll = Math.sin(p * Math.PI * 4) * 0.09 * env
-        } else if (gesture.name === 'stretch') {
-          // arms flare out from the pins, head tips back, chest opens
-          const lua = vrm.humanoid?.getNormalizedBoneNode('leftUpperArm')
-          const rua = vrm.humanoid?.getNormalizedBoneNode('rightUpperArm')
-          if (lua) lua.rotation.z = 1.15 - env * 0.35
-          if (rua) rua.rotation.z = -1.15 + env * 0.35
-          gestureHeadPitch = -env * 0.12
-          gestureSpineX = -env * 0.04
-        } else {
-          // nod: two down-beats inside one smooth envelope
-          gestureHeadPitch = Math.sin(p * Math.PI * 2) * 0.14 * env
-        }
+        def.apply(vrm, p, env, gesture.v, OFF)
         if (p >= 1) {
-          if (gesture.name === 'wave' || gesture.name === 'stretch') pinArms(vrm)
+          if (def.arms) pinArms(vrm)
           gesture = null
         }
       }
@@ -495,21 +697,21 @@ export function initAvatarGuide(
       const sway = Math.sin(t * ((2 * Math.PI) / 13))
       const chest = vrm.humanoid?.getNormalizedBoneNode('chest')
       const hips = vrm.humanoid?.getNormalizedBoneNode('hips')
-      if (chest) chest.rotation.x = Math.sin(t * ((2 * Math.PI) / 4.2)) * 0.012
+      if (chest) chest.rotation.x = Math.sin(t * ((2 * Math.PI) / 4.2)) * 0.012 + OFF.cx
       if (hips) hips.rotation.z = sway * 0.02
       if (head) {
-        head.rotation.y = yaw * 0.65
-        head.rotation.x = pitch * 0.7 + gestureHeadPitch
-        head.rotation.z = gestureHeadRoll
+        head.rotation.y = yaw * 0.65 + OFF.hy
+        head.rotation.x = pitch * 0.7 + OFF.hp
+        head.rotation.z = OFF.hr
       }
       if (neck) {
         neck.rotation.y = yaw * 0.35
         neck.rotation.x = pitch * 0.3
       }
       if (spine) {
-        spine.rotation.y = yaw * 0.1
-        spine.rotation.x = gestureSpineX
-        spine.rotation.z = sway * -0.012
+        spine.rotation.y = yaw * 0.1 + OFF.sy
+        spine.rotation.x = OFF.sx
+        spine.rotation.z = sway * -0.012 + OFF.sz
       }
 
       // Saccades: real gaze is a series of small jumps, not a smooth glide.
@@ -522,8 +724,8 @@ export function initAvatarGuide(
         saccadeTimer = 0.7 + Math.random() * 1.8
       }
       eyeTarget.position.set(
-        Math.sin(yaw) * 6 + saccadeX,
-        1.35 + Math.sin(pitch) * -4 + saccadeY,
+        Math.sin(yaw) * 6 + saccadeX + OFF.ex,
+        1.35 + Math.sin(pitch) * -4 + saccadeY + OFF.ey,
         4,
       )
 
@@ -616,6 +818,12 @@ export function initAvatarGuide(
           emoW,
           emoShown,
           gesture: gesture ? gesture.name : null,
+          ruaZ: bone(vrm, 'rightUpperArm')?.rotation.z ?? 0,
+          ruaX: bone(vrm, 'rightUpperArm')?.rotation.x ?? 0,
+          luaZ: bone(vrm, 'leftUpperArm')?.rotation.z ?? 0,
+          llaZ: bone(vrm, 'leftLowerArm')?.rotation.z ?? 0,
+          rlaZ: bone(vrm, 'rightLowerArm')?.rotation.z ?? 0,
+          rhZ: bone(vrm, 'rightHand')?.rotation.z ?? 0,
           speechT: speechActive && sEl ? sEl.currentTime : -1,
           // Read back from the scene graph, not echoed from the math — proves
           // the bones actually moved, for the automated probe.
@@ -731,12 +939,8 @@ export function initAvatarGuide(
     },
     playGesture: (name) => {
       // Replacing a mid-flight arm gesture must not strand a half-raised arm.
-      if ((gesture?.name === 'wave' || gesture?.name === 'stretch') && vrm) pinArms(vrm)
-      gesture = {
-        name,
-        t: 0,
-        dur: name === 'wave' ? 1.6 : name === 'stretch' ? 1.8 : name === 'bow' ? 1.5 : 0.9,
-      }
+      if (gesture && GESTURES[gesture.name].arms && vrm) pinArms(vrm)
+      gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
     },
     setGaze: (gx, gy) => {
       gazeX = Math.min(Math.max(gx, -1), 1)
