@@ -20,6 +20,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-performance-upgrade',
+    date: '2026-08-14',
+    title: `Mika levels up: frame-accurate lip sync, live emotions, a 64% lighter model`,
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      `One day after her debut, **Mika** learned to perform. Her mouth now matches every syllable she speaks, her face carries real emotions, she waves hello and bows goodbye, and she notices your cursor. The whole upgrade also made her **64% lighter** to download.`,
+      { kind: 'heading', text: `Lip sync from the synthesizer's own timing` },
+      `Every voice clip now ships with a pre-baked timeline of mouth shapes, derived from the exact per-vowel timings the VOICEVOX synthesizer reports while generating that clip. During playback the engine samples the audio element's clock every frame and looks up which vowel her mouth should form, with the five mouth channels cross-fading between shapes. The result is frame-accurate lip sync with zero runtime audio analysis; the browser never inspects the audio signal, so the approach costs nothing and works everywhere the voice does.`,
+      { kind: 'heading', text: `A face and body that act` },
+      {
+        kind: 'list',
+        items: [
+          `Each spoken moment carries an expression: happy for greetings and goodbyes, relaxed while she takes your question, apologetic when something fails. Expressions ease in, hold a beat past the clip, and ease back out.`,
+          `Gestures joined the vocabulary: she waves when greeting, nods when acknowledging, bows when you close the chat.`,
+          `Between the beats she breathes, shifts her weight slowly, darts her eyes in small saccades, and occasionally double-blinks, so she never freezes into a mannequin.`,
+        ],
+      },
+      { kind: 'heading', text: `Cinematic rendering and an entrance` },
+      `Rendering moved to filmic (ACES) tone mapping at a sharper pixel ratio, with a mars-orange rim light that swells while she answers, a soft contact shadow grounding her feet, and a low cyan fill separating her dark outfit from the dark page. She also arrives properly now: a rise of cyan particles, a brief glow, and a small scale pop as she materializes.`,
+      { kind: 'heading', text: `She notices you` },
+      `On desktop she watches your cursor when it comes near, and looks back to her idle sweep when it leaves. Stroke the top of her head a few times and she does a happy little head wiggle (silently; she only speaks when you actually tap her). Leave her alone for half a minute and she stretches.`,
+      { kind: 'heading', text: `64% lighter, nothing lost` },
+      `Her model's textures were repacked as WebP with every VRM feature intact, verified byte for byte on the skeleton, expressions, and spring-bone data. The download dropped from 15.4MB to 5.5MB, roughly 1.9MB over the wire, while the character on screen stayed pixel-for-pixel the same.`,
+    ],
+  },
+  {
     id: 'avatar-guide-3d',
     date: '2026-08-13',
     title: `A full-body 3D character now fronts the AI assistant`,
