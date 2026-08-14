@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useHeroIntro } from './hero/hero-intro-context'
-import { CHROME_REVEAL_MS } from './hero/introTiming'
 import { inlineNavTakesOver } from './navBreakpoint'
 import {
   LOCALES,
@@ -38,7 +36,6 @@ export default function Nav() {
   const localePath = useLocalePath()
   const t = useT()
   const { locale, setLocale } = useLocale()
-  const { introRunning } = useHeroIntro()
   // Home is locale-aware: `/`, `/zh-TW`, `/zh-TW/`, `/ja`, `/ja/` all count.
   const homeUrl = localePath('/')
   const isHome = location.pathname === homeUrl || location.pathname === homeUrl + '/'
@@ -124,17 +121,9 @@ export default function Nav() {
     <nav
       ref={navRef}
       aria-label={t('nav.mainAriaLabel')}
-      // While the hero intro owns the screen the bar slides out of the way and
-      // leaves the tab order, so it neither floats over the animation nor answers
-      // a Tab from behind the splash gate. The floating controls step aside on the
-      // same signal, via IntroHiddenChrome.
-      inert={introRunning}
-      aria-hidden={introRunning || undefined}
       className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
       style={{
-        opacity: introRunning ? 0 : 1,
-        transform: introRunning ? 'translateY(-100%)' : 'none',
-        transition: `opacity ${CHROME_REVEAL_MS}ms ease, transform ${CHROME_REVEAL_MS}ms cubic-bezier(0.25,1,0.5,1), background-color 300ms ease, border-color 300ms ease`,
+        transition: 'background-color 300ms ease, border-color 300ms ease',
         borderColor: scrolledPastHero || menuOpen ? 'var(--color-border)' : 'transparent',
         background: menuOpen
           ? 'var(--color-bg-primary)'

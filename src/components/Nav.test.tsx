@@ -4,41 +4,27 @@ import { MemoryRouter, useNavigate } from 'react-router-dom'
 import Nav from './Nav'
 import { inlineNavTakesOver } from './navBreakpoint'
 import { LocaleProvider } from '../i18n'
-import { HeroIntroProvider } from './hero/HeroIntroProvider'
-import { useHeroIntro } from './hero/hero-intro-context'
 
-// stands in for FaceHero: the only writer of the intro state in the real app
-function IntroDriver() {
-  const { setIntroRunning } = useHeroIntro()
+function NavDriver() {
   const navigate = useNavigate()
-  return (
-    <>
-      <button onClick={() => setIntroRunning(true)}>start-intro</button>
-      <button onClick={() => setIntroRunning(false)}>end-intro</button>
-      {/* a second hash arrival, the way the app produces one */}
-      <button onClick={() => navigate('/#projects')}>goto-projects</button>
-    </>
-  )
+  {/* a second hash arrival, the way the app produces one */}
+  return <button onClick={() => navigate('/#projects')}>goto-projects</button>
 }
 
 function renderNav(initialEntry = '/') {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <LocaleProvider locale="en">
-        <HeroIntroProvider>
-          <Nav />
-          <IntroDriver />
-        </HeroIntroProvider>
+        <Nav />
+        <NavDriver />
       </LocaleProvider>
     </MemoryRouter>,
   )
 }
 
-// queried by element, not by role: a hidden nav is deliberately absent from the
-// accessibility tree, which is itself asserted below
+// queried by element, not by role, so the assertions can reach it however it is
+// exposed to the accessibility tree
 const nav = () => document.querySelector('nav[aria-label]') as HTMLElement
-const startIntro = () => fireEvent.click(screen.getByText('start-intro'))
-const endIntro = () => fireEvent.click(screen.getByText('end-intro'))
 
 function setViewportWidth(width: number) {
   Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width })
@@ -50,33 +36,15 @@ beforeEach(() => {
 })
 afterEach(() => { vi.restoreAllMocks() })
 
-describe('Nav intro gating', () => {
-  it('is visible and interactive by default (routes without a hero)', () => {
+describe('Nav presence', () => {
+  // The bar used to hide itself while the hero intro owned the screen. That
+  // hero and its intro state were removed on 2026-08-14, so the only thing left
+  // to pin is that nothing hides the bar on arrival.
+  it('is visible, interactive and in the accessibility tree on arrival', () => {
     renderNav()
-    expect(nav()).toHaveStyle({ opacity: '1' })
     expect(nav()).not.toHaveAttribute('inert')
-  })
-
-  it('hides itself and leaves the tab order while the hero intro owns the screen', () => {
-    renderNav()
+    expect(nav()).not.toHaveAttribute('aria-hidden')
     expect(screen.queryByRole('navigation')).toBeInTheDocument()
-    act(() => { startIntro() })
-    expect(nav()).toHaveStyle({ opacity: '0' })
-    // slid out as well, so a transition that never runs cannot leave it hovering
-    expect(nav()).toHaveStyle({ transform: 'translateY(-100%)' })
-    expect(nav()).toHaveAttribute('inert')
-    expect(nav()).toHaveAttribute('aria-hidden', 'true')
-    // out of the accessibility tree too, so screen readers don't announce a bar
-    // the visitor cannot see or reach
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument()
-  })
-
-  it('comes back when the intro hands the screen over', () => {
-    renderNav()
-    act(() => { startIntro() })
-    act(() => { endIntro() })
-    expect(nav()).toHaveStyle({ opacity: '1' })
-    expect(nav()).not.toHaveAttribute('inert')
   })
 })
 

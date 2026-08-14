@@ -21,7 +21,6 @@ import {
   deriveAvatarMode,
 } from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
-import { useHeroIntro } from '../hero/hero-intro-context'
 import AvatarGuide from './AvatarGuide'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
 import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideEngine'
@@ -247,33 +246,28 @@ export default function ChatWidget() {
     }
   }, [])
   // 3D avatar guide (docs/plans/avatar-guide.md), on for everyone since the
-  // 2026-08-13 launch. Held back while the hero intro owns the screen, for two
-  // reasons with one latch: the 5.5MB VRM must not compete with the intro's
-  // assets for bandwidth, and the gate's WebGL2 probe (a real GL context, tens
-  // of ms on weak mobile GPUs) must not run inside the intro window either —
-  // so the gate is evaluated when the latch fires, not in the first render.
-  // The 400ms grace covered a first-paint race: HeroIntroProvider starts with
-  // introRunning false and the old FaceHero only flipped it true in its first
-  // effect pass, which cancelled this timer before it fired. No hero writes that
-  // flag since 2026-08-14, so the grace is now just a small delay before the VRM
-  // download begins (see hero-intro-context.ts). Once set, the latch never
-  // clears — scrolling back to a replaying hero must not unmount a loaded
-  // avatar. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
+  // 2026-08-13 launch. A 400ms latch stands between first paint and the VRM, so
+  // the 5.5MB download and the gate's WebGL2 probe (a real GL context, tens of
+  // ms on weak mobile GPUs) both stay out of the first frames — which is why the
+  // gate is evaluated when the latch fires and not in the first render. The
+  // delay used to be tied to the hero intro, which owned the screen and the
+  // bandwidth for its first seconds; that hero was deleted on 2026-08-14 and the
+  // latch is now simply a short head start for the page. Once set, it never
+  // clears. Gate inputs (reduced-motion, WebGL2) aren't re-checked afterwards;
   // they don't change mid-session in any way worth re-rendering for.
-  const { introRunning } = useHeroIntro()
   const [avatarOn, setAvatarOn] = useState(false)
   // false until the latch has actually evaluated the gate: "gate said no" and
   // "gate not asked yet" must render differently — the capsule shows for the
   // first, and must NOT flash during the second (see capsuleHeldBack below).
   const [gateSettled, setGateSettled] = useState(false)
   useEffect(() => {
-    if (introRunning || avatarOn) return
+    if (avatarOn) return
     const id = window.setTimeout(() => {
       setAvatarOn(avatarGuideEnabledInBrowser())
       setGateSettled(true)
     }, 400)
     return () => clearTimeout(id)
-  }, [introRunning, avatarOn])
+  }, [avatarOn])
   // The character takes over as the launcher once the VRM's first frame has
   // rendered (engine onLoaded); until then the corner stays EMPTY rather than
   // showing the capsule — the first thing a visitor sees must not be the old
