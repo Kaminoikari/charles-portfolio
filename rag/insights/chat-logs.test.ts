@@ -23,10 +23,11 @@ test('the epoch sits at a Taipei midnight', () => {
 // Pins the reset itself, not just its arithmetic. Every test below is written
 // relative to REPORT_EPOCH_MS and so would survive the constant sliding back to
 // a previous era; this one would not. Update it deliberately when resetting.
-test('the current reset starts on 2026-07-30 (Taipei)', () => {
+test('the current reset starts on 2026-08-15 (Taipei)', () => {
   const taipeiDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Taipei' }).format(new Date(REPORT_EPOCH_MS))
-  assert.equal(taipeiDate, '2026-07-30')
+  assert.equal(taipeiDate, '2026-08-15')
   // Conversations logged before the reset stay in chat_logs but must not surface.
+  assert.equal(withinReportWindow('2026-08-14T09:33:00.000Z'), false)
   assert.equal(withinReportWindow('2026-07-27T02:11:00.000Z'), false)
   assert.equal(withinReportWindow('2026-07-13T05:00:00.000Z'), false)
 })
