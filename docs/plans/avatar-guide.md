@@ -520,6 +520,39 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   最後幾站。她離開 rail 後該理由消失，改為常駐並在 streaming 時 disabled，長 trace
   由 rail 既有的 `overflow-y-auto` 捲動。
 
+## Batch 6——八個可讀的手勢取代 stretch，加上手指關節（2026-08-14）
+
+使用者看不懂 idle 裡的 `stretch`（雙臂外張＋後仰在半身景裡讀起來不像動作），
+給了九張參考圖要求換成更可愛的動作。idle 池從 11 個變成 18 個。
+
+- **新增八個手勢**：`doublePeace`／`singlePeace`／`cheekPoke`／`salute`／
+  `pointAtYou`／`handsBehindHead`／`handOnHip`／`hipWave`。`stretch` 與
+  `STRETCH_ARM_FLARE` 一併移除。
+- **手指關節**：模型帶完整 VRM0 的 30 根手指骨。新增 `HandPose`（curl 走 z、
+  spread 走 proximal 的 y）與 `HAND_PEACE`／`HAND_POINT`／`HAND_HIP` 等姿勢。
+  V 字必須張開（`spread` ±0.55）：兩根併攏的手指在她實際被看到的尺寸下會糊成
+  一根粗手指，比 0.3 小的張開量在 807px 畫布上看不出來。`pinArms` 因此要一併
+  歸零 30 根手指骨，它是唯一會還原手勢的地方，漏列的骨頭會留在原地到下次重整。
+- **`fore` 的方向與直覺相反**：前臂的角度是**接續**上臂的旋轉，所以正值是把手
+  往下、往身體內側折。八個手勢的第一版全部寫成正值，結果兩隻手都停在腰上。
+  所有舉手的姿勢現在都是負值。校準基準（讀 `rightHand` 的世界座標）：
+  頭骨 1.320、臉頰約 1.38、眉 1.45、髮頂 1.582、腰約 0.90。
+- **`pointAtYou` 的寬度是實測翻案的**：原本給上臂 0.55 把手臂側舉，再用
+  `forward` 旋轉補向前。x 軸旋轉不會改變 x 分量，所以側舉的部分整個留著，
+  指尖實測跑到 0.604，超出畫布半寬 0.484。改成 z 角維持 rest、整個動作交給
+  x 軸前擺，指尖落在身前 0.528、側向只有 0.212。
+  連帶把 `poseReach()` 裡的 `cos(forward)` 前縮項刪掉：它把這個姿勢的寬度低估
+  了三倍，是它讓越界的版本通過測試的。mutation 驗證：把 0.55 那版寫回去，
+  「keeps every arm gesture inside the canvas」轉紅（`fits: false`）。
+- **量測工具的陷阱（已移除，重開時要記得）**：用 `window.__mikaPose` 把手勢
+  凍在 envelope 中點時，`pinArms` 永遠不會執行（它只在 `p >= 1` 觸發），所以
+  只擺單邊的手勢會留著上一個姿勢的另一邊，連 `rotation.x` 也留著。前兩輪的
+  contact sheet 有三格是這樣被污染的，看起來像姿勢寫錯。凍結前要自己先呼叫
+  `pinArms`。production 沒有這個問題：idle 挑選只在 `!gesture` 時進行，
+  `playGesture` 也會先 pin。
+- 驗證：18 個 idle act 在真實 idle 下實測 56 秒觸發 5 次（含 `cheekPoke`、
+  `handsBehindHead`），每次結束後上臂都回到 1.150／−1.150 的 pin 值。
+
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
 - **這份文件本身在 Tailwind 的掃描範圍內**：v4 預設掃整個 repo，所以把已廢棄的

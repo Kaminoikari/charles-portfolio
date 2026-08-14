@@ -10,7 +10,10 @@ import {
   CHAT_PANEL_HEIGHT_CLASS,
   ARM_REST_UPPER_Z,
   ARM_REST_FORE_Z,
-  STRETCH_ARM_FLARE,
+  ARM_GESTURE_PEAKS,
+  elbowReach,
+  widestReach,
+  poseReach,
   armReach,
   AVATAR_CANVAS_DOCKED,
   AVATAR_CANVAS_LAUNCHER,
@@ -315,18 +318,54 @@ describe('avatar camera framing', () => {
   // The reach is derived from the pose numbers the ENGINE uses, so a gesture
   // widened there moves it. Without that link the reach was hand-transcribed
   // and a wider stretch would clip again with the suite green.
-  it('derives the widest reach from the arm pose the engine actually uses', () => {
+  it('derives the widest reach from the arm poses the engine actually uses', () => {
     // Rest pose: arms down at her sides, well inside the frame.
     expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
-    // Stretch flares the upper arm out of that pin; this is what sets the width.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.409, 3)
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBe(
-      armReach(ARM_REST_UPPER_Z - STRETCH_ARM_FLARE, ARM_REST_FORE_Z),
-    )
-    // A wider flare must demand a wider canvas, not silently start clipping.
+    // The widest is `wave`'s fingertip at 0.393. It used to be `stretch` at
+    // 0.409, which was retired on 2026-08-14 for reading as no gesture at all.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.393, 3)
+    // A wider pose must demand a wider canvas, not silently start clipping.
     expect(armReach(ARM_REST_UPPER_Z - 0.6, ARM_REST_FORE_Z)).toBeGreaterThan(
       avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
     )
+  })
+
+  // Every gesture that moves an arm, not just the widest one. The elbow is
+  // checked alongside the fingertip because the poses that fold the forearm
+  // back (hands behind her head, a hand on her hip) put their widest point
+  // there, and a fingertip-only check waves them straight through.
+  it('keeps every arm gesture inside the canvas, elbows included', () => {
+    const half = avatarViewHalfWidth(AVATAR_FRAMING_COLUMN, avatarColumnBox(1440, 900))
+    for (const [name, g] of Object.entries(ARM_GESTURE_PEAKS)) {
+      for (const [side, pose] of Object.entries(g)) {
+        if (!pose) continue
+        const widest = poseReach(pose)
+        expect({ at: `${name}.${side}`, fits: widest < half }).toEqual({
+          at: `${name}.${side}`,
+          fits: true,
+        })
+      }
+    }
+  })
+
+  // The elbow term in widestReach() is inert against the CURRENT table (every
+  // fingertip beats every elbow), so nothing else would notice it being
+  // deleted. This feeds it a pose where the elbow is the widest point — arm
+  // out near horizontal, forearm folded right back — and holds it to that.
+  it('measures the elbow when a pose folds the hand back inside it', () => {
+    const elbowLed = { fake: { left: { upper: 0.1, fore: 2.6 } } }
+    const pose = elbowLed.fake.left
+    expect(elbowReach(pose.upper)).toBeGreaterThan(armReach(pose.upper, pose.fore))
+    expect(widestReach(elbowLed)).toBeCloseTo(elbowReach(pose.upper), 6)
+  })
+
+  // The peaks table is the engine's pose source, so a typo there is a real
+  // pose change. These two are the load-bearing ones: `wave` sets the width,
+  // and handsBehindHead is the only gesture whose elbow beats its fingertip.
+  it('pins the poses the width budget is measured against', () => {
+    expect(ARM_GESTURE_PEAKS.wave.right).toEqual({ upper: 0.3, fore: 1.0 })
+    const behind = ARM_GESTURE_PEAKS.handsBehindHead.left!
+    expect(elbowReach(behind.upper)).toBeGreaterThan(armReach(behind.upper, behind.fore))
   })
 
   // The click target is a percentage of a width, so it only stays ~180px while

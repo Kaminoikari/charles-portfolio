@@ -19,9 +19,12 @@
 // Perception & idle life (Batch 3):
 //   - head-pat: AvatarGuide detects strokes across her head and triggers a
 //     happy wiggle — silent by design, and it never intercepts the click
-//   - idle acts: 11 varieties (stretch, head tilt, glance, palm check, weight
-//     shift, bounce, arm swing, hair touch, deep breath, hip twist, floor
-//     peek), picked at random roughly every 5s of undisturbed idle
+//   - idle acts: 18 varieties, picked at random roughly every 5s of undisturbed
+//     idle. Eight are named poses added 2026-08-14 (double and single peace
+//     signs, poking her own cheeks, a salute, pointing at the viewer, hands
+//     behind her head, a hand on her hip, and that hand-on-hip plus a wave);
+//     the rest are the smaller beats (head tilt, glance, palm check, weight
+//     shift, bounce, arm swing, hair touch, deep breath, hip twist, floor peek)
 //
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
@@ -43,14 +46,15 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
 import {
+  ARM_GESTURE_PEAKS,
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
   AVATAR_CAMERA_TILT,
   AVATAR_FOV,
   AVATAR_FRAMING_DEFAULT,
-  STRETCH_ARM_FLARE,
   headAim,
   stepHeadAim,
+  type ArmGestureName,
   type AvatarMode,
 } from './avatarMode'
 import { sampleViseme } from './visemeTrack'
@@ -62,22 +66,21 @@ import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 // future custom model upgrades expressiveness without touching callers.
 export type EmotionName = 'happy' | 'angry' | 'sad' | 'relaxed' | 'surprised'
 // wave/bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
-// head-pat response; everything from stretch on is the idle-act pool that
-// fires on its own during undisturbed idle (see IDLE_ACTS).
+// head-pat response; the rest is the idle-act pool that fires on its own during
+// undisturbed idle (see IDLE_ACTS).
+//
+// The arm half of the union comes from avatarMode's ARM_GESTURE_PEAKS, so every
+// gesture that moves an arm necessarily has a peak pose the canvas-width test
+// can see. Adding one here without adding it there is a type error.
 export type GestureName =
-  | 'wave'
+  | ArmGestureName
   | 'bow'
   | 'nod'
   | 'wiggle'
-  | 'stretch'
   | 'tilt'
   | 'glance'
-  | 'lookHand'
   | 'swayStep'
   | 'bounce'
-  | 'armSwing'
-  | 'hairTouch'
-  | 'deepBreath'
   | 'hipTwist'
   | 'toeLook'
 
@@ -115,13 +118,88 @@ const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
   ['rightUpperArm', -ARM_REST_UPPER_Z],
   ['leftLowerArm', ARM_REST_FORE_Z],
   ['rightLowerArm', -ARM_REST_FORE_Z],
+  ['leftHand', 0],
   ['rightHand', 0],
 ]
+
+// Finger bones, all 30 of them (this model carries the full VRM0 set). They
+// rest at identity and the hand poses below rotate them, so the restore has to
+// cover them too: pinArms is the ONLY thing that undoes a gesture, and a bone
+// it does not list stays wherever the gesture left it for the rest of the page.
+const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Little'] as const
+const FINGER_SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
+type FingerName = (typeof FINGERS)[number]
+
+function fingerBones(side: 'left' | 'right', finger: FingerName): BoneName[] {
+  return FINGER_SEGMENTS.map((seg) => `${side}${finger}${seg}` as BoneName)
+}
 
 function pinArms(v: VRM) {
   for (const [name, z] of ARM_PINS) {
     const b = v.humanoid?.getNormalizedBoneNode(name)
     if (b) b.rotation.set(0, 0, z)
+  }
+  for (const side of ['left', 'right'] as const) {
+    for (const finger of FINGERS) {
+      for (const name of fingerBones(side, finger)) {
+        const b = v.humanoid?.getNormalizedBoneNode(name)
+        if (b) b.rotation.set(0, 0, 0)
+      }
+    }
+  }
+}
+
+// How far each finger curls toward the palm, as a fraction of a full fist.
+// Curling is +Z on the left hand and -Z on the right, the same mirror the arm
+// pins use (positive Z brings a left limb inward).
+interface HandPose {
+  curl: Record<FingerName, number>
+  // Sideways splay on the proximal joint. Two straight fingers side by side
+  // render as one thick finger at the size she is actually seen at, so a V that
+  // does not splay reads as a point — checked on the 807px fullscreen canvas.
+  spread?: Partial<Record<FingerName, number>>
+}
+const HAND_OPEN: HandPose = { curl: { Thumb: 0, Index: 0, Middle: 0, Ring: 0, Little: 0 } }
+// Two fingers up, the rest folded away. The thumb only half-curls: folded flat
+// it disappears into the palm and the silhouette stops reading as a V.
+const HAND_PEACE: HandPose = {
+  curl: { Thumb: 0.6, Index: 0, Middle: 0, Ring: 1, Little: 1 },
+  spread: { Index: 0.55, Middle: -0.55 },
+}
+// One finger out, for pointing and for poking her own cheeks.
+const HAND_POINT: HandPose = { curl: { Thumb: 0.5, Index: 0, Middle: 1, Ring: 1, Little: 1 } }
+
+// A loose hand, for poses where the fingers are not the point.
+const HAND_RELAXED: HandPose = {
+  curl: { Thumb: 0.2, Index: 0.25, Middle: 0.3, Ring: 0.35, Little: 0.4 },
+}
+// Fingers spread over the hip bone, closer to flat than to a fist.
+const HAND_HIP: HandPose = {
+  curl: { Thumb: 0.3, Index: 0.2, Middle: 0.2, Ring: 0.25, Little: 0.3 },
+}
+
+// A full fist is about 1.6rad per joint; the poses above are fractions of it.
+const FINGER_FULL_CURL = 1.6
+
+function setHand(v: VRM, side: 'left' | 'right', pose: HandPose, amount: number) {
+  const mirror = side === 'left' ? 1 : -1
+  for (const finger of FINGERS) {
+    // The thumb folds across the palm rather than into it, so it curls on a
+    // shallower arc; without this it clips through the fingers on a fist.
+    const scale = finger === 'Thumb' ? 0.55 : 1
+    const z = mirror * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
+    const bones = fingerBones(side, finger)
+    for (const name of bones) {
+      const b = v.humanoid?.getNormalizedBoneNode(name)
+      if (b) b.rotation.z = z
+    }
+    // Splay lives on the proximal joint only — the knuckle is where a finger
+    // actually spreads; putting it on every segment bows the finger sideways.
+    const spread = pose.spread?.[finger]
+    if (spread !== undefined) {
+      const b = v.humanoid?.getNormalizedBoneNode(bones[0])
+      if (b) b.rotation.y = mirror * spread * amount
+    }
   }
 }
 
@@ -147,22 +225,37 @@ type GestureOffsets = {
 type GestureDef = {
   dur: number
   arms?: boolean
+  // Which ARM_GESTURE_PEAKS entry this gesture poses to. Present on every arm
+  // gesture, because that table is what the canvas-width test reads: a gesture
+  // that reached the peak by writing its own literals would be invisible to it
+  // and would clip at the canvas edge with the suite green.
+  peak?: ArmGestureName
   apply: (vrm: VRM, p: number, env: number, v: number, o: GestureOffsets) => void
 }
 
 const bone = (v: VRM, n: BoneName) => v.humanoid?.getNormalizedBoneNode(n)
+
+// Drive one arm from its rest pin toward a named peak pose. `upper` and `fore`
+// in the table are magnitudes; the sign is the left/right mirror the pins use.
+function armTo(v: VRM, side: 'left' | 'right', peak: ArmGestureName, env: number) {
+  const pose = ARM_GESTURE_PEAKS[peak][side]
+  if (!pose) return
+  const mirror = side === 'left' ? 1 : -1
+  const upper = bone(v, `${side}UpperArm` as BoneName)
+  const fore = bone(v, `${side}LowerArm` as BoneName)
+  if (upper) upper.rotation.z = mirror * (ARM_REST_UPPER_Z + (pose.upper - ARM_REST_UPPER_Z) * env)
+  if (fore) fore.rotation.z = mirror * (ARM_REST_FORE_Z + (pose.fore - ARM_REST_FORE_Z) * env)
+}
 
 const GESTURES: Record<GestureName, GestureDef> = {
   // -- cue-driven ------------------------------------------------------------
   wave: {
     dur: 1.6,
     arms: true,
+    peak: 'wave',
     apply: (vrm, p, env) => {
-      const rua = bone(vrm, 'rightUpperArm')
-      const rla = bone(vrm, 'rightLowerArm')
+      armTo(vrm, 'right', 'wave', env)
       const rh = bone(vrm, 'rightHand')
-      if (rua) rua.rotation.z = -1.15 + env * 0.85
-      if (rla) rla.rotation.z = -0.25 - env * 0.75
       if (rh) rh.rotation.z = Math.sin(p * 22.4) * 0.45 * env // 14 rad/s × 1.6s
     },
   },
@@ -188,19 +281,135 @@ const GESTURES: Record<GestureName, GestureDef> = {
     },
   },
   // -- idle-act pool (~10s cadence while undisturbed; picked at random) -------
-  stretch: {
-    dur: 1.8,
+  //
+  // The eight poses below replaced `stretch` on 2026-08-14. A stretch that only
+  // flared the arms 20° out of a hanging pose read as nothing in particular,
+  // which is exactly how the owner reported it. Each of these is a pose a
+  // viewer can name.
+  doublePeace: {
+    dur: 2.2,
     arms: true,
-    // arms flare out from the pins, head tips back, chest opens
+    peak: 'doublePeace',
+    // both hands up beside her face, fingers in a V, head tipped into it
     apply: (vrm, _p, env, _v, o) => {
-      const lua = bone(vrm, 'leftUpperArm')
+      armTo(vrm, 'left', 'doublePeace', env)
+      armTo(vrm, 'right', 'doublePeace', env)
+      setHand(vrm, 'left', HAND_PEACE, env)
+      setHand(vrm, 'right', HAND_PEACE, env)
+      o.hr += env * 0.1
+      o.hp += -env * 0.05
+    },
+  },
+  singlePeace: {
+    dur: 2.0,
+    arms: true,
+    peak: 'singlePeace',
+    // one V held by her temple, head leaning toward the hand
+    apply: (vrm, _p, env, _v, o) => {
+      armTo(vrm, 'right', 'singlePeace', env)
+      setHand(vrm, 'right', HAND_PEACE, env)
+      o.hr += -env * 0.12
+      o.hy += -env * 0.06
+    },
+  },
+  cheekPoke: {
+    dur: 2.4,
+    arms: true,
+    peak: 'cheekPoke',
+    // index fingers to her own cheeks, chin tucked, a small side-to-side press
+    apply: (vrm, p, env, _v, o) => {
+      armTo(vrm, 'left', 'cheekPoke', env)
+      armTo(vrm, 'right', 'cheekPoke', env)
+      setHand(vrm, 'left', HAND_POINT, env)
+      setHand(vrm, 'right', HAND_POINT, env)
+      o.hp += env * 0.1
+      o.hr += Math.sin(p * Math.PI * 4) * 0.05 * env
+    },
+  },
+  salute: {
+    dur: 2.0,
+    arms: true,
+    peak: 'salute',
+    // right hand to the brow, left hand on her hip, chin up
+    apply: (vrm, _p, env, _v, o) => {
+      armTo(vrm, 'right', 'salute', env)
+      armTo(vrm, 'left', 'salute', env)
+      setHand(vrm, 'right', HAND_OPEN, env)
+      setHand(vrm, 'left', HAND_HIP, env)
+      o.hp += -env * 0.1
+      o.sz += env * 0.03
+    },
+  },
+  pointAtYou: {
+    dur: 2.0,
+    arms: true,
+    peak: 'pointAtYou',
+    // The whole gesture is a forward swing out of the frontal plane (x, not z),
+    // which is why the reach table leaves this arm's z angles at rest. Positive
+    // x swings toward the viewer: the first draft had it negative and pointed
+    // her arm out sideways and slightly behind her.
+    apply: (vrm, _p, env, _v, o) => {
+      armTo(vrm, 'right', 'pointAtYou', env)
       const rua = bone(vrm, 'rightUpperArm')
-      // STRETCH_ARM_FLARE is shared with avatarMode.ts, which derives the
-      // canvas width needed to keep these fingertips in frame from it.
-      if (lua) lua.rotation.z = ARM_REST_UPPER_Z - env * STRETCH_ARM_FLARE
-      if (rua) rua.rotation.z = -ARM_REST_UPPER_Z + env * STRETCH_ARM_FLARE
-      o.hp += -env * 0.12
-      o.sx += -env * 0.04
+      const rla = bone(vrm, 'rightLowerArm')
+      if (rua) rua.rotation.x = env * 1.25
+      if (rla) rla.rotation.x = env * 0.2
+      setHand(vrm, 'right', HAND_POINT, env)
+      o.hy += -env * 0.05
+      o.hp += -env * 0.04
+    },
+  },
+  handsBehindHead: {
+    dur: 2.6,
+    arms: true,
+    peak: 'handsBehindHead',
+    // elbows wide, hands laced behind her head, leaning back into them
+    apply: (vrm, _p, env, _v, o) => {
+      armTo(vrm, 'left', 'handsBehindHead', env)
+      armTo(vrm, 'right', 'handsBehindHead', env)
+      // The forearms also rotate back in depth, or the hands end up in front of
+      // her face instead of behind her head.
+      const lla = bone(vrm, 'leftLowerArm')
+      const rla = bone(vrm, 'rightLowerArm')
+      if (lla) lla.rotation.x = env * 0.55
+      if (rla) rla.rotation.x = env * 0.55
+      setHand(vrm, 'left', HAND_RELAXED, env)
+      setHand(vrm, 'right', HAND_RELAXED, env)
+      o.hp += -env * 0.09
+      o.sx += -env * 0.05
+    },
+  },
+  handOnHip: {
+    dur: 2.2,
+    arms: true,
+    peak: 'handOnHip',
+    // one hand planted on her hip, weight shifted onto that leg
+    apply: (vrm, _p, env, _v, o) => {
+      armTo(vrm, 'left', 'handOnHip', env)
+      // Forward in depth so the hand lands on the hip rather than inside it.
+      const lla = bone(vrm, 'leftLowerArm')
+      if (lla) lla.rotation.x = -env * 0.45
+      setHand(vrm, 'left', HAND_HIP, env)
+      o.sz += env * 0.05
+      o.hr += -env * 0.05
+    },
+  },
+  hipWave: {
+    dur: 2.4,
+    arms: true,
+    peak: 'hipWave',
+    // hand on hip and the other one up waving — the greeting from the refs
+    apply: (vrm, p, env, _v, o) => {
+      armTo(vrm, 'left', 'hipWave', env)
+      armTo(vrm, 'right', 'hipWave', env)
+      const lla = bone(vrm, 'leftLowerArm')
+      if (lla) lla.rotation.x = -env * 0.45
+      const rh = bone(vrm, 'rightHand')
+      if (rh) rh.rotation.z = Math.sin(p * 18) * 0.4 * env
+      setHand(vrm, 'left', HAND_HIP, env)
+      setHand(vrm, 'right', HAND_OPEN, env)
+      o.sz += env * 0.05
+      o.hr += env * 0.06
     },
   },
   tilt: {
@@ -225,10 +434,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
     arms: true,
     // raises her right palm and studies it
     apply: (vrm, _p, env, _v, o) => {
-      const rua = bone(vrm, 'rightUpperArm')
-      const rla = bone(vrm, 'rightLowerArm')
-      if (rua) rua.rotation.z = -1.15 + env * 0.25
-      if (rla) rla.rotation.z = -0.25 - env * 0.95
+      armTo(vrm, 'right', 'lookHand', env)
       o.hp += env * 0.22
       o.hy += -env * 0.18
       o.ey += -env * 1.6
@@ -269,10 +475,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
     arms: true,
     // left hand up toward her hair, head leaning into it
     apply: (vrm, _p, env, _v, o) => {
-      const lua = bone(vrm, 'leftUpperArm')
-      const lla = bone(vrm, 'leftLowerArm')
-      if (lua) lua.rotation.z = 1.15 - env * 0.75
-      if (lla) lla.rotation.z = 0.25 + env * 1.1
+      armTo(vrm, 'left', 'hairTouch', env)
       o.hr += -env * 0.08
       o.hy += env * 0.08
     },
@@ -282,10 +485,8 @@ const GESTURES: Record<GestureName, GestureDef> = {
     arms: true,
     // shoulders rise, chest opens, chin lifts — one long breath
     apply: (vrm, _p, env, _v, o) => {
-      const lua = bone(vrm, 'leftUpperArm')
-      const rua = bone(vrm, 'rightUpperArm')
-      if (lua) lua.rotation.z = 1.15 - env * 0.08
-      if (rua) rua.rotation.z = -1.15 + env * 0.08
+      armTo(vrm, 'left', 'deepBreath', env)
+      armTo(vrm, 'right', 'deepBreath', env)
       o.cx += -env * 0.05
       o.hp += -env * 0.08
     },
@@ -313,7 +514,14 @@ const GESTURES: Record<GestureName, GestureDef> = {
 // What the idle timer may pick from. Cue gestures and the pat response stay
 // out — they belong to their own triggers.
 const IDLE_ACTS: readonly GestureName[] = [
-  'stretch',
+  'doublePeace',
+  'singlePeace',
+  'cheekPoke',
+  'salute',
+  'pointAtYou',
+  'handsBehindHead',
+  'handOnHip',
+  'hipWave',
   'tilt',
   'glance',
   'lookHand',

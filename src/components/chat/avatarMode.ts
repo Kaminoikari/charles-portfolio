@@ -142,7 +142,6 @@ const ARM = { shoulderX: 0.081, upper: 0.233, foreAndHand: 0.333 }
 // that checks the canvas contains her reach turns red.
 export const ARM_REST_UPPER_Z = 1.15
 export const ARM_REST_FORE_Z = 0.25
-export const STRETCH_ARM_FLARE = 0.35
 
 // Distance from her centre line to a fingertip, for a given pair of arm
 // rotations. Angles are measured from +x, so the left arm starts at π.
@@ -153,14 +152,112 @@ export function armReach(zUpper: number, zFore: number): number {
   return Math.abs(elbow + ARM.foreAndHand * Math.cos(foreDir))
 }
 
-// The widest any gesture puts a fingertip: `stretch`, which flares the upper arm
-// without folding the forearm back in. 0.409m. `wave` is next at 0.393; the
-// other arm gestures either fold the forearm (hairTouch, lookHand) or move the
-// arm in depth only (armSwing).
-export const AVATAR_WIDEST_GESTURE_REACH = armReach(
-  ARM_REST_UPPER_Z - STRETCH_ARM_FLARE,
-  ARM_REST_FORE_Z,
-)
+// Distance from her centre line to the ELBOW. Gestures that fold the forearm
+// back — hands behind the head, a hand on her hip — put their widest point
+// here, not at the fingertip, so a reach check that only looked at fingertips
+// would wave them through and then clip the elbow.
+export function elbowReach(zUpper: number): number {
+  return Math.abs(-ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper))
+}
+
+// ---- what each arm gesture actually does -----------------------------------
+// The peak pose (envelope = 1) of every gesture that moves an arm, in the
+// engine's own bone units: `upper` is |z| on the upper arm (smaller = raised
+// toward the T-pose) and `fore` is |z| on the forearm (larger = folded in
+// toward the shoulder). The engine's GESTURES table READS this, so these are
+// the poses themselves and not a description that can drift from them, and the
+// canvas-width check below therefore covers every gesture rather than one.
+// A gesture may also swing an arm forward out of the frontal plane, toward the
+// viewer. That rotation is about the x axis, so it leaves the sideways reach
+// modelled here untouched, and the pose needs no field for it: measured on the
+// model, the resting wrist sits at x 0.212 and a 1.25 rad forward swing moves
+// it to 0.207. An earlier version of this file scored such a swing as
+// cos(forward) foreshortening, which understated the width by 3x.
+export interface ArmPose {
+  upper: number
+  fore: number
+}
+// Named so the engine's GestureName can be built from it: every arm gesture
+// must appear here, and the Record makes a missing one a type error.
+export type ArmGestureName =
+  | 'wave'
+  | 'lookHand'
+  | 'armSwing'
+  | 'hairTouch'
+  | 'deepBreath'
+  | 'doublePeace'
+  | 'singlePeace'
+  | 'cheekPoke'
+  | 'salute'
+  | 'pointAtYou'
+  | 'handsBehindHead'
+  | 'handOnHip'
+  | 'hipWave'
+
+export const ARM_GESTURE_PEAKS: Record<ArmGestureName, { left?: ArmPose; right?: ArmPose }> = {
+  // Every pose below was set by measuring where the wrist bone actually lands
+  // in world space, not by solving the angles on paper: `fore` continues the
+  // upper arm's rotation rather than opposing it, so the intuitive positive
+  // value folds the hand DOWN across the body. Every hand-up pose here is
+  // negative, and the first draft of all eight had it backwards.
+  // Reference heights on this model: head bone 1.320, cheek ~1.38, brow ~1.45,
+  // hair top 1.582, hip ~0.90.
+
+  // Right hand up beside her head, forearm folded, hand rocking.
+  wave: { right: { upper: 0.3, fore: 1.0 } },
+  // Right palm raised in front of her and studied.
+  lookHand: { right: { upper: 0.9, fore: 1.2 } },
+  // Depth only: the z angles never leave the rest pose.
+  armSwing: { left: { upper: ARM_REST_UPPER_Z, fore: ARM_REST_FORE_Z } },
+  // Left hand up to her hair.
+  hairTouch: { left: { upper: 0.4, fore: 1.35 } },
+  // Barely moves; it is a breath, not a gesture.
+  deepBreath: { left: { upper: 1.07, fore: ARM_REST_FORE_Z } },
+
+  // Wrists at (±0.24, 1.40) — eye level, just outside her hair.
+  doublePeace: { left: { upper: 0.0, fore: -2.0 }, right: { upper: 0.0, fore: -2.0 } },
+  singlePeace: { right: { upper: 0.0, fore: -2.0 } },
+  // Wrists at (±0.15, 1.31), so the extended index finger lands on her cheek.
+  cheekPoke: { left: { upper: 0.25, fore: -2.6 }, right: { upper: 0.25, fore: -2.6 } },
+  // Right wrist at (0.13, 1.45), her brow. Left hand goes to the hip.
+  salute: { right: { upper: -0.45, fore: -2.0 }, left: { upper: 0.75, fore: 1.45 } },
+  // Aimed at the viewer: the z angles stay at rest and the engine does the
+  // whole gesture with a forward swing, putting the fingertip 0.52 in front of
+  // her and only 0.23 to the side. Raising the arm sideways first, as the first
+  // draft did, sent the fingertip to 0.60 and off the edge of the canvas.
+  pointAtYou: { right: { upper: ARM_REST_UPPER_Z, fore: ARM_REST_FORE_Z } },
+  // Wrists at (±0.20, 1.51) and pushed back in depth by the gesture itself.
+  // The elbows are the widest point of any pose here, which is what
+  // elbowReach() exists for.
+  handsBehindHead: { left: { upper: -0.45, fore: -1.6 }, right: { upper: -0.45, fore: -1.6 } },
+  // Wrist at (0.12, 0.87), the top of her thigh, with the elbow winged out.
+  handOnHip: { left: { upper: 0.75, fore: 1.45 } },
+  // That hand on the hip, and the other one up in a proper greeting.
+  hipWave: { left: { upper: 0.75, fore: 1.45 }, right: { upper: -0.25, fore: -1.6 } },
+}
+
+// The widest point a set of poses reaches, fingertip or elbow. Taken as a
+// parameter rather than closing over the table so a test can feed it a pose
+// whose elbow beats every fingertip: with the real table the fingertips win
+// everywhere, which leaves the elbow term unproven and free to be deleted.
+// How far one posed arm reaches sideways: the further of its fingertip and its
+// elbow. Both the aggregate below and the per-gesture test call THIS rather
+// than taking the fingertip alone, so a pose that wings its elbow out wider
+// than its own hand is still measured at its widest point.
+export function poseReach(p: ArmPose): number {
+  return Math.max(armReach(p.upper, p.fore), elbowReach(p.upper))
+}
+
+export function widestReach(peaks: Record<string, { left?: ArmPose; right?: ArmPose }>): number {
+  return Math.max(
+    ...Object.values(peaks).flatMap((g) =>
+      [g.left, g.right].filter((p): p is ArmPose => p !== undefined).map(poseReach),
+    ),
+  )
+}
+
+// What the canvas width has to contain.
+export const AVATAR_WIDEST_GESTURE_REACH = widestReach(ARM_GESTURE_PEAKS)
 
 // Canvas boxes per placement.
 //
