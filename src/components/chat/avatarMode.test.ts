@@ -322,9 +322,12 @@ describe('avatar camera framing', () => {
   it('derives the widest reach from the arm poses the engine actually uses', () => {
     // Rest pose: arms down at her sides, well inside the frame.
     expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
-    // The widest is `wave`'s fingertip at 0.393. It used to be `stretch` at
-    // 0.409, which was retired on 2026-08-14 for reading as no gesture at all.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.393, 3)
+    // The widest is now `hairTouch`'s fingertip at 0.314. Each retirement has
+    // moved it down: `stretch` held it at 0.409 until 2026-08-14, then `wave`
+    // at 0.393 until the greeting stopped using it on 2026-08-15. The canvases
+    // were sized for the widest of the day and are deliberately NOT shrunk to
+    // follow it down, so the margin below only ever grows.
+    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.314, 3)
     // A wider pose must demand a wider canvas, not silently start clipping.
     expect(armReach(ARM_REST_UPPER_Z - 0.6, ARM_REST_FORE_Z)).toBeGreaterThan(
       avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
@@ -361,10 +364,11 @@ describe('avatar camera framing', () => {
   })
 
   // The peaks table is the engine's pose source, so a typo there is a real
-  // pose change. These two are the load-bearing ones: `wave` sets the width,
-  // and handsBehindHead is the only gesture whose elbow beats its fingertip.
+  // pose change. These two are the load-bearing ones: `hairTouch` sets the
+  // width, and handsBehindHead is the only gesture whose elbow beats its
+  // fingertip.
   it('pins the poses the width budget is measured against', () => {
-    expect(ARM_GESTURE_PEAKS.wave.right).toEqual({ upper: 0.3, fore: 1.0 })
+    expect(ARM_GESTURE_PEAKS.hairTouch.left).toEqual({ upper: 0.4, fore: 1.35 })
     const behind = ARM_GESTURE_PEAKS.handsBehindHead.left!
     expect(elbowReach(behind.upper)).toBeGreaterThan(armReach(behind.upper, behind.fore))
   })

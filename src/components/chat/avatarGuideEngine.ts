@@ -14,7 +14,7 @@
 //     currentTime (no runtime audio analysis, no Web Audio); without a clip,
 //     speaking falls back to the original uneven random viseme loop
 //   - emotion layer: VRM expression presets per cue, smooth in/hold/out
-//   - gestures: procedural wave/bow/nod, additive over the mode pose
+//   - gestures: procedural bow/nod, additive over the mode pose
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
 // Perception & idle life (Batch 3):
@@ -71,7 +71,7 @@ import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 // checks availability at runtime and silently skips unknown presets, so a
 // future custom model upgrades expressiveness without touching callers.
 export type EmotionName = 'happy' | 'angry' | 'sad' | 'relaxed' | 'surprised'
-// wave/bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
+// bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
 // head-pat response; the rest is the idle-act pool that fires on its own during
 // undisturbed idle (see IDLE_ACTS).
 //
@@ -116,8 +116,8 @@ const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
 
 
 type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']>[0]
-// VRM0 rest pose is a T-pose; these Z rotations bring the arms down. The wave
-// gesture borrows the right arm and must restore these EXACT values — they are
+// VRM0 rest pose is a T-pose; these Z rotations bring the arms down. Every arm
+// gesture borrows these bones and must restore these EXACT values — they are
 // the single source of truth for the rest pose.
 const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
   ['leftUpperArm', ARM_REST_UPPER_Z],
@@ -261,16 +261,6 @@ function armTo(v: VRM, side: 'left' | 'right', peak: ArmGestureName, env: number
 
 const GESTURES: Record<GestureName, GestureDef> = {
   // -- cue-driven ------------------------------------------------------------
-  wave: {
-    dur: 1.6,
-    arms: true,
-    peak: 'wave',
-    apply: (vrm, p, env) => {
-      armTo(vrm, 'right', 'wave', env)
-      const rh = bone(vrm, 'rightHand')
-      if (rh) rh.rotation.z = Math.sin(p * 22.4) * 0.45 * env // 14 rad/s × 1.6s
-    },
-  },
   bow: {
     dur: 1.5,
     apply: (_vrm, _p, env, _v, o) => {

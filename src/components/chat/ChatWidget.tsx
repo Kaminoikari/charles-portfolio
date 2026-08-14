@@ -35,8 +35,8 @@ const CUE_PERFORMANCE: Record<
   VoiceCue,
   { emotion: readonly [EmotionName, number, number]; gesture?: GestureName }
 > = {
-  intro: { emotion: ['happy', 1, 3.5], gesture: 'wave' },
-  greet: { emotion: ['happy', 1, 2.4], gesture: 'wave' },
+  intro: { emotion: ['happy', 1, 3.5] },
+  greet: { emotion: ['happy', 1, 2.4] },
   ack: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   suggest: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   fullscreen: { emotion: ['happy', 0.6, 2.0] },

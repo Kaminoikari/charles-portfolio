@@ -200,7 +200,6 @@ export interface ArmPose {
 // Named so the engine's GestureName can be built from it: every arm gesture
 // must appear here, and the Record makes a missing one a type error.
 export type ArmGestureName =
-  | 'wave'
   | 'lookHand'
   | 'hairTouch'
   | 'doublePeace'
@@ -221,8 +220,6 @@ export const ARM_GESTURE_PEAKS: Record<ArmGestureName, { left?: ArmPose; right?:
   // Reference heights on this model: head bone 1.320, cheek ~1.38, brow ~1.45,
   // hair top 1.582, hip ~0.90.
 
-  // Right hand up beside her head, forearm folded, hand rocking.
-  wave: { right: { upper: 0.3, fore: 1.0 } },
   // Right palm raised in front of her and studied.
   lookHand: { right: { upper: 0.9, fore: 1.2 } },
   // Left hand up to her hair.

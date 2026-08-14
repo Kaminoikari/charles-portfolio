@@ -65,7 +65,7 @@ export const changelog: ChangelogEntry[] = [
     title: `Mika levels up: frame-accurate lip sync, live emotions, a 64% lighter model`,
     tags: ['feature', 'design', 'technical'],
     body: [
-      `One day after her debut, **Mika** learned to perform. Her mouth now matches every syllable she speaks, her face carries real emotions, she waves hello and bows goodbye, and the camera moved close enough that you can actually read all of it. The whole upgrade also made her **64% lighter** to download.`,
+      `One day after her debut, **Mika** learned to perform. Her mouth now matches every syllable she speaks, her face carries real emotions, she greets you and bows goodbye, and the camera moved close enough that you can actually read all of it. The whole upgrade also made her **64% lighter** to download.`,
       { kind: 'heading', text: `Lip sync from the synthesizer's own timing` },
       `Every voice clip now ships with a pre-baked timeline of mouth shapes, derived from the exact per-vowel timings the VOICEVOX synthesizer reports while generating that clip. During playback the engine samples the audio element's clock every frame and looks up which vowel her mouth should form, with the five mouth channels cross-fading between shapes. The result is frame-accurate lip sync with zero runtime audio analysis; the browser never inspects the audio signal, so the approach costs nothing and works everywhere the voice does.`,
       { kind: 'heading', text: `A face and body that act` },
@@ -73,7 +73,7 @@ export const changelog: ChangelogEntry[] = [
         kind: 'list',
         items: [
           `Each spoken moment carries an expression: happy for greetings and goodbyes, relaxed while she takes your question, apologetic when something fails. Expressions ease in, hold a beat past the clip, and ease back out.`,
-          `Gestures joined the vocabulary: she waves when greeting, nods when acknowledging, bows when you close the chat.`,
+          `Gestures joined the vocabulary: she nods when acknowledging, and bows when you close the chat.`,
           `Between the beats she breathes, shifts her weight slowly, darts her eyes in small saccades, and occasionally double-blinks, so she never freezes into a mannequin.`,
           `Each of the three states has its own rhythm of glances, and a filter now carries her between them, so finishing an answer takes her about 0.4 seconds to turn her head back toward idle.`,
         ],
