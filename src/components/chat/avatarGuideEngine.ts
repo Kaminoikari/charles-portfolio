@@ -205,7 +205,12 @@ function setHand(v: VRM, side: 'left' | 'right', pose: HandPose, amount: number)
     // z it hyperextends sideways out of the hand, the "chicken foot" of the
     // first draft. It also folds on a shallower arc, or it clips the fingers.
     const scale = finger === 'Thumb' ? 0.55 : 1
-    const angle = -mirror * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
+    // The thumb's y fold takes the OPPOSITE mirror to the fingers' z curl:
+    // +mirror against their -mirror. Settled per hand on closeups — each wrong
+    // sign rotates that thumb out of the fist to hang sideways off the hand,
+    // which is exactly what the owner flagged on the peace signs.
+    const angle =
+      (finger === 'Thumb' ? mirror : -mirror) * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
     const bones = fingerBones(side, finger)
     for (const name of bones) {
       const b = v.humanoid?.getNormalizedBoneNode(name)
