@@ -47,15 +47,20 @@ export function avatarPlacement(mode: ChatMode, wide: boolean, md: boolean): Ava
 // ---- head aim -------------------------------------------------------------
 // Where she is looking for a given mode, in radians, before gestures are added
 // on top. Each mode is its own slow sine pair, and they share one clock, so the
-// value STEPS the frame the mode changes: idle sweeps ±0.42 while speaking
-// barely moves at ±0.07, making the end of an answer worth up to 0.487rad
-// (27.9°) of yaw in a single frame — 18° at the head bone, plus a 2.85-unit
-// sideways jump of the eye target. That snap is what HEAD_AIM_SMOOTHING is for;
-// the engine runs this through a one-pole filter rather than using it directly.
+// value STEPS the frame the mode changes. That step is what HEAD_AIM_SMOOTHING
+// is for; the engine runs this through a one-pole filter rather than using it
+// directly.
+//
+// Idle used to sweep ±0.42 on a 5.2s period, which at the head bone is ±15.6°
+// swinging back and forth without pause. The owner reported it on 2026-08-15 as
+// her never keeping still, and it also stole the effect from `glance`, the idle
+// act whose whole job is looking around. Idle now holds the viewer's eye with a
+// 19s ±0.08 drift (±3° at the bone), and looking away is something she DOES
+// rather than something she is always doing.
 export function headAim(mode: AvatarMode, t: number): { yaw: number; pitch: number } {
   if (mode === 'idle') {
     return {
-      yaw: Math.sin(t * ((2 * Math.PI) / 5.2)) * 0.42,
+      yaw: Math.sin(t * ((2 * Math.PI) / 19)) * 0.08,
       pitch: Math.sin(t * ((2 * Math.PI) / 9.1)) * 0.05,
     }
   }
@@ -73,10 +78,10 @@ export function headAim(mode: AvatarMode, t: number): { yaw: number; pitch: numb
 
 // One-pole rate for the filter above, per second. 6 settles a mode change in
 // ~0.4s, so the end of an answer reads as a turn of the head. The cost is paid
-// by the sinusoids themselves, and it scales with their speed: the 5.2s idle
-// sweep keeps 98% of its amplitude and lags 11°, while the fastest one (the
-// 1.6s listening nod) keeps 85% and lags 0.133s. At this size that worst case
-// is 0.024rad of aim, under 1° at the head bone.
+// by the sinusoids themselves, and it scales with their speed: the 19s idle
+// drift is untouched at any useful precision, while the fastest one (the 1.6s
+// listening nod) keeps 85% and lags 0.133s. At this size that worst case is
+// 0.024rad of aim, under 1° at the head bone.
 export const HEAD_AIM_SMOOTHING = 6
 
 // One filter step, per axis. It lives here rather than inline in the engine so
@@ -160,6 +165,21 @@ export function elbowReach(zUpper: number): number {
   return Math.abs(-ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper))
 }
 
+// How far into a gesture the body is, from 0 at rest to 1 at the full pose.
+// `dur` is the movement time, split evenly between the rise and the fall, and
+// `hold` parks the body at the full pose in between. A named pose needs that
+// plateau: the pure sine the beats were tuned with touches 1 for a single
+// frame, so a peace sign appears to bounce off her temple instead of being
+// held there. A hold of 0 reproduces that sine exactly, which is why the
+// ambient beats can keep it.
+export function gestureEnvelope(t: number, dur: number, hold: number): number {
+  const ramp = dur / 2
+  if (t < ramp) return Math.sin((t / ramp) * (Math.PI / 2))
+  if (t < ramp + hold) return 1
+  const falling = (dur + hold - t) / ramp
+  return Math.sin(Math.max(0, falling) * (Math.PI / 2))
+}
+
 // ---- what each arm gesture actually does -----------------------------------
 // The peak pose (envelope = 1) of every gesture that moves an arm, in the
 // engine's own bone units: `upper` is |z| on the upper arm (smaller = raised
@@ -182,9 +202,7 @@ export interface ArmPose {
 export type ArmGestureName =
   | 'wave'
   | 'lookHand'
-  | 'armSwing'
   | 'hairTouch'
-  | 'deepBreath'
   | 'doublePeace'
   | 'singlePeace'
   | 'cheekPoke'
@@ -207,12 +225,8 @@ export const ARM_GESTURE_PEAKS: Record<ArmGestureName, { left?: ArmPose; right?:
   wave: { right: { upper: 0.3, fore: 1.0 } },
   // Right palm raised in front of her and studied.
   lookHand: { right: { upper: 0.9, fore: 1.2 } },
-  // Depth only: the z angles never leave the rest pose.
-  armSwing: { left: { upper: ARM_REST_UPPER_Z, fore: ARM_REST_FORE_Z } },
   // Left hand up to her hair.
   hairTouch: { left: { upper: 0.4, fore: 1.35 } },
-  // Barely moves; it is a breath, not a gesture.
-  deepBreath: { left: { upper: 1.07, fore: ARM_REST_FORE_Z } },
 
   // Wrists at (±0.24, 1.40) — eye level, just outside her hair.
   doublePeace: { left: { upper: 0.0, fore: -2.0 }, right: { upper: 0.0, fore: -2.0 } },

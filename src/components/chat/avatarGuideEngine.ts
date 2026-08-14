@@ -2,7 +2,8 @@
 // pattern: a React shell mounts a canvas, this module owns everything inside).
 //
 // Loads a VRM humanoid and drives it from AvatarMode:
-//   idle      → head sweeps left/right (bone rotation, never translation)
+//   idle      → head holds the viewer, with a slow drift (bone rotation, never
+//               translation); looking away is the `glance` idle act's job
 //   listening → head tilts up/down
 //   speaking  → mouth animates + albedo tint toward mars orange, lerped back
 //               once the stream ends
@@ -19,12 +20,16 @@
 // Perception & idle life (Batch 3):
 //   - head-pat: AvatarGuide detects strokes across her head and triggers a
 //     happy wiggle — silent by design, and it never intercepts the click
-//   - idle acts: 18 varieties, picked at random roughly every 5s of undisturbed
+//   - idle acts: 16 varieties, picked at random roughly every 5s of undisturbed
 //     idle. Eight are named poses added 2026-08-14 (double and single peace
 //     signs, poking her own cheeks, a salute, pointing at the viewer, hands
-//     behind her head, a hand on her hip, and that hand-on-hip plus a wave);
-//     the rest are the smaller beats (head tilt, glance, palm check, weight
-//     shift, bounce, arm swing, hair touch, deep breath, hip twist, floor peek)
+//     behind her head, a hand on her hip, and that hand-on-hip plus a wave),
+//     each parked at its full pose for 3.5s so a viewer can read it; the rest
+//     are the smaller beats (head tilt, glance, palm check, weight shift,
+//     bounce, hair touch, hip twist, floor peek). The bar every one of them has
+//     to clear: a viewer can say what it is. `stretch`, `armSwing` and
+//     `deepBreath` were all cut for failing it, the last two because their peak
+//     is under 0.12rad and reads as the resting pose.
 //
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
@@ -49,6 +54,7 @@ import {
   ARM_GESTURE_PEAKS,
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
+  gestureEnvelope,
   AVATAR_CAMERA_TILT,
   AVATAR_FOV,
   AVATAR_FRAMING_DEFAULT,
@@ -223,7 +229,13 @@ type GestureOffsets = {
 }
 
 type GestureDef = {
+  // Seconds of MOVEMENT: the rise and the fall, half of `dur` each.
   dur: number
+  // Seconds spent parked at full envelope between the two. A named pose is a
+  // pose, and `sin(p·π)` alone touches its peak for a single frame, which reads
+  // as the gesture bouncing off something. The ambient beats leave this at 0
+  // and keep the pure sine they were tuned with.
+  hold?: number
   arms?: boolean
   // Which ARM_GESTURE_PEAKS entry this gesture poses to. Present on every arm
   // gesture, because that table is what the canvas-width test reads: a gesture
@@ -288,6 +300,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   // viewer can name.
   doublePeace: {
     dur: 2.2,
+    hold: 3.5,
     arms: true,
     peak: 'doublePeace',
     // both hands up beside her face, fingers in a V, head tipped into it
@@ -302,6 +315,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   singlePeace: {
     dur: 2.0,
+    hold: 3.5,
     arms: true,
     peak: 'singlePeace',
     // one V held by her temple, head leaning toward the hand
@@ -314,6 +328,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   cheekPoke: {
     dur: 2.4,
+    hold: 3.5,
     arms: true,
     peak: 'cheekPoke',
     // index fingers to her own cheeks, chin tucked, a small side-to-side press
@@ -328,6 +343,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   salute: {
     dur: 2.0,
+    hold: 3.5,
     arms: true,
     peak: 'salute',
     // right hand to the brow, left hand on her hip, chin up
@@ -342,6 +358,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   pointAtYou: {
     dur: 2.0,
+    hold: 3.5,
     arms: true,
     peak: 'pointAtYou',
     // The whole gesture is a forward swing out of the frontal plane (x, not z),
@@ -361,6 +378,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   handsBehindHead: {
     dur: 2.6,
+    hold: 3.5,
     arms: true,
     peak: 'handsBehindHead',
     // elbows wide, hands laced behind her head, leaning back into them
@@ -381,6 +399,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   handOnHip: {
     dur: 2.2,
+    hold: 3.5,
     arms: true,
     peak: 'handOnHip',
     // one hand planted on her hip, weight shifted onto that leg
@@ -396,6 +415,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   },
   hipWave: {
     dur: 2.4,
+    hold: 3.5,
     arms: true,
     peak: 'hipWave',
     // hand on hip and the other one up waving — the greeting from the refs
@@ -458,18 +478,6 @@ const GESTURES: Record<GestureName, GestureDef> = {
       o.hp += w * 0.05
     },
   },
-  armSwing: {
-    dur: 1.8,
-    arms: true,
-    // arms swing gently front-and-back in opposite phase (x only; z pins stay)
-    apply: (vrm, p, env) => {
-      const s = Math.sin(p * Math.PI * 3) * 0.12 * env
-      const lua = bone(vrm, 'leftUpperArm')
-      const rua = bone(vrm, 'rightUpperArm')
-      if (lua) lua.rotation.x = s
-      if (rua) rua.rotation.x = -s
-    },
-  },
   hairTouch: {
     dur: 2.4,
     arms: true,
@@ -478,17 +486,6 @@ const GESTURES: Record<GestureName, GestureDef> = {
       armTo(vrm, 'left', 'hairTouch', env)
       o.hr += -env * 0.08
       o.hy += env * 0.08
-    },
-  },
-  deepBreath: {
-    dur: 2.6,
-    arms: true,
-    // shoulders rise, chest opens, chin lifts — one long breath
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'left', 'deepBreath', env)
-      armTo(vrm, 'right', 'deepBreath', env)
-      o.cx += -env * 0.05
-      o.hp += -env * 0.08
     },
   },
   hipTwist: {
@@ -527,9 +524,7 @@ const IDLE_ACTS: readonly GestureName[] = [
   'lookHand',
   'swayStep',
   'bounce',
-  'armSwing',
   'hairTouch',
-  'deepBreath',
   'hipTwist',
   'toeLook',
 ]
@@ -912,8 +907,9 @@ export function initAvatarGuide(
       if (gesture) {
         gesture.t += dt
         const def = GESTURES[gesture.name]
-        const p = Math.min(gesture.t / def.dur, 1)
-        const env = Math.sin(p * Math.PI)
+        const total = def.dur + (def.hold ?? 0)
+        const p = Math.min(gesture.t / total, 1)
+        const env = gestureEnvelope(gesture.t, def.dur, def.hold ?? 0)
         def.apply(vrm, p, env, gesture.v, OFF)
         if (p >= 1) {
           if (def.arms) pinArms(vrm)

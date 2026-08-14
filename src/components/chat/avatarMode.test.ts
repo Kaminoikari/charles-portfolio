@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  gestureEnvelope,
   headAim,
   stepHeadAim,
   avatarSizeClass,
@@ -368,6 +369,26 @@ describe('avatar camera framing', () => {
     expect(elbowReach(behind.upper)).toBeGreaterThan(armReach(behind.upper, behind.fore))
   })
 
+  // The owner's report was that a pose "snaps back the moment it arrives".
+  // These hold the plateau that fixed it, and hold the ramps to the exact sine
+  // the ambient beats were tuned against.
+  it('parks a named pose at the full pose for its whole hold', () => {
+    // 2s of movement, 3.5s parked: full envelope from the end of the rise to
+    // the start of the fall, which is the part the owner asked for.
+    for (const t of [1.0, 2.0, 3.0, 4.4]) expect(gestureEnvelope(t, 2, 3.5)).toBe(1)
+    // Rises from nothing and returns to nothing, so the arms reach the pins.
+    expect(gestureEnvelope(0, 2, 3.5)).toBe(0)
+    expect(gestureEnvelope(5.5, 2, 3.5)).toBeCloseTo(0, 6)
+    // Half a second in, a quarter of the way up the rise.
+    expect(gestureEnvelope(0.5, 2, 3.5)).toBeCloseTo(Math.sin(Math.PI / 4), 6)
+  })
+
+  it('leaves a beat with no hold on the sine curve it was tuned with', () => {
+    for (const t of [0, 0.4, 1.1, 1.6, 2.2, 2.4]) {
+      expect(gestureEnvelope(t, 2.4, 0)).toBeCloseTo(Math.sin((t / 2.4) * Math.PI), 6)
+    }
+  })
+
   // The click target is a percentage of a width, so it only stays ~180px while
   // that width is 245. Nothing else ties the two together.
   it('keeps the launcher click target on her, not on the gesture margin', () => {
@@ -433,13 +454,28 @@ describe('head aim across mode changes', () => {
   // The bug this guards: each mode is its own sine pair on a shared clock, so
   // the raw value jumps the frame the mode flips. Reported as "she snaps to a
   // disconnected angle the moment she finishes speaking".
-  it('has a large raw discontinuity between speaking and idle', () => {
+  it('still steps between speaking and idle, so the filter is still load-bearing', () => {
     let worst = 0
     for (let t = 0; t < 60; t += 0.005) {
       worst = Math.max(worst, Math.abs(headAim('idle', t).yaw - headAim('speaking', t).yaw))
     }
-    // ~0.487rad = 27.9° of yaw, 18° once the head bone's 0.65 share is applied.
-    expect(worst).toBeGreaterThan(0.45)
+    // Was ~0.487rad when idle swept ±0.42. Calming idle to a ±0.08 drift on
+    // 2026-08-15 shrank the step to ~0.15rad, which is still 5.6° at the head
+    // bone in a single frame, so the smoothing below stays.
+    expect(worst).toBeGreaterThan(0.13)
+    expect(worst).toBeLessThan(0.2)
+  })
+
+  // What the owner asked for on 2026-08-15: she should stop swinging her head
+  // while nothing is happening. A sweep is easy to reintroduce by nudging one
+  // amplitude, and nothing else would notice.
+  it('keeps her facing the viewer while idle', () => {
+    let worst = 0
+    for (let t = 0; t < 120; t += 0.01) worst = Math.max(worst, Math.abs(headAim('idle', t).yaw))
+    // 0.12rad of aim is 4.5° at the head bone: a drift, not a sweep.
+    expect(worst).toBeLessThan(0.12)
+    // And not frozen — she is a character, not a photograph.
+    expect(worst).toBeGreaterThan(0.02)
   })
 
   it('settles a mode change over a few tenths of a second, not one frame', () => {
@@ -457,15 +493,22 @@ describe('head aim across mode changes', () => {
     expect(seconds).toBeLessThan(0.8) // and a drift would read as lag
   })
 
-  it('leaves the idle sweep itself essentially untouched', () => {
-    // Smoothing that fixes the step must not flatten the 5.2s sweep it rides on.
+  it('leaves the idle drift itself essentially untouched', () => {
+    // Smoothing that fixes the step must not flatten the drift it rides on.
+    // Held as a RATIO of the raw amplitude so retuning idle cannot quietly
+    // turn this into a test of the amplitude instead of a test of the filter.
     const dt = 1 / 60
     let v = 0
     let peak = 0
-    for (let t = 0; t < 30; t += dt) {
-      v = stepHeadAim(v, headAim('idle', t).yaw, dt)
-      if (t > 10) peak = Math.max(peak, Math.abs(v)) // skip the initial settle
+    let raw = 0
+    for (let t = 0; t < 60; t += dt) {
+      const target = headAim('idle', t).yaw
+      v = stepHeadAim(v, target, dt)
+      if (t > 10) {
+        peak = Math.max(peak, Math.abs(v))
+        raw = Math.max(raw, Math.abs(target))
+      }
     }
-    expect(peak).toBeGreaterThan(0.4) // raw amplitude is 0.42
+    expect(peak / raw).toBeGreaterThan(0.95)
   })
 })
