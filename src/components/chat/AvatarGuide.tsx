@@ -142,6 +142,10 @@ export default function AvatarGuide({
     let patFlips = 0
     let patWindowStart = 0
     let patCooldownUntil = 0
+    // Third pat in quick succession and the wiggle turns into 怒り: petting a
+    // cat past its patience. Streak resets once the visitor lets 20s pass.
+    let patStreak = 0
+    let lastPatAt = 0
     let lastX = 0
     const onMove = (e: PointerEvent) => {
       const h = handleRef.current
@@ -181,9 +185,16 @@ export default function AvatarGuide({
             if (patFlips >= 3 && now > patCooldownUntil) {
               patFlips = 0
               patCooldownUntil = now + 8000
+              patStreak = now - lastPatAt < 20000 ? patStreak + 1 : 1
+              lastPatAt = now
               // Deliberately silent (plan F): pats never speak, only react.
-              h.setEmotion('happy', 0.9, 1.8)
-              h.playGesture('wiggle')
+              if (patStreak >= 3) {
+                patStreak = 0
+                h.setEmotion('angry', 0.9, 1.6)
+              } else {
+                h.setEmotion('happy', 0.9, 1.8)
+                h.playGesture('wiggle')
+              }
             }
           }
           patDir = dir

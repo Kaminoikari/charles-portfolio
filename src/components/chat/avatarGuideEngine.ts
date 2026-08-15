@@ -55,6 +55,9 @@ import {
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
   armAt,
+  EMOTION_RECIPES,
+  emotionChannelValues,
+  FACE_PALE_TINT,
   gestureEnvelope,
   AVATAR_CAMERA_TILT,
   AVATAR_FOV,
@@ -63,15 +66,14 @@ import {
   stepHeadAim,
   type ArmGestureName,
   type AvatarMode,
+  type EmotionName,
 } from './avatarMode'
 import { sampleViseme } from './visemeTrack'
 import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 
-// VRM0 models expose joy/angry/sorrow/fun, which three-vrm normalises to
-// happy/angry/sad/relaxed. surprised only exists on VRM1 models — setEmotion
-// checks availability at runtime and silently skips unknown presets, so a
-// future custom model upgrades expressiveness without touching callers.
-export type EmotionName = 'happy' | 'angry' | 'sad' | 'relaxed' | 'surprised'
+// The emotion vocabulary and its channel recipes live in avatarMode (pure data,
+// unit-tested); this re-export keeps the engine the import point for callers.
+export type { EmotionName } from './avatarMode'
 // bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
 // head-pat response; the rest is the idle-act pool that fires on its own during
 // undisturbed idle (see IDLE_ACTS).
@@ -180,7 +182,7 @@ const HAND_OPEN: HandPose = { curl: { Thumb: 0, Index: 0, Middle: 0, Ring: 0, Li
 const HAND_PEACE: HandPose = {
   curl: { Thumb: 0.6, Index: 0, Middle: 0, Ring: 1, Little: 1 },
   spread: { Index: 0.55, Middle: -0.55 },
-  wrist: 1.0,
+  wrist: -1.0,
 }
 // One finger out, for pointing and for poking her own cheeks.
 const HAND_POINT: HandPose = { curl: { Thumb: 0.5, Index: 0, Middle: 1, Ring: 1, Little: 1 } }
@@ -650,6 +652,65 @@ export function initAvatarGuide(
   shadow.visible = false // appears with the materialize entrance
   scene.add(shadow)
 
+  // Manga anger vein (青筋) for the angry emotion, matched to the drawn mark on
+  // the owner's expression sheet: four bowed V strokes in a pinwheel, apex
+  // pointing INWARD so the eight limb ends splay outward, WHITE cored with a
+  // red outline. Three earlier shapes were rejected before this one — circle
+  // arcs, then the corners of a rounded square, then the solid-red crescents of
+  // the U+1F4A2 emoji glyph, which is a different mark from the hand-drawn one
+  // the sheet uses. Coordinates are in a 128-unit space (centre 64,64) drawn at
+  // 2× into a 256px canvas so the outline stays crisp on her hair.
+  const markCanvas = document.createElement('canvas')
+  markCanvas.width = markCanvas.height = 256
+  const mctx = markCanvas.getContext('2d')
+  if (mctx) {
+    const APEX = 15 // how far the inward point stops short of the centre
+    const TIP = 52 // limb length from the centre
+    const HALF = 0.55 // half the V's opening, radians
+    const BOW = 0.5 // control point along the limb: 0 = straight V, 1 = round
+    const SKEW = 0.35 // the whole mark sits off-axis, as a drawn one would
+    mctx.scale(2, 2)
+    mctx.lineCap = 'round'
+    mctx.lineJoin = 'round'
+    for (let q = 0; q < 4; q++) {
+      mctx.save()
+      mctx.translate(64, 64)
+      mctx.rotate((q * Math.PI) / 2 + SKEW)
+      const lx = -Math.sin(HALF) * TIP
+      const rx = Math.sin(HALF) * TIP
+      const ty = -Math.cos(HALF) * TIP
+      const p = new Path2D()
+      p.moveTo(lx, ty)
+      p.quadraticCurveTo(lx * BOW, ty * BOW, 0, -APEX)
+      p.quadraticCurveTo(rx * BOW, ty * BOW, rx, ty)
+      // Outline first, then the core over it: one stroke drawn twice, so the
+      // white can never drift out of its own border.
+      mctx.strokeStyle = '#d94a3d'
+      mctx.lineWidth = 17
+      mctx.stroke(p)
+      mctx.strokeStyle = '#ffffff'
+      mctx.lineWidth = 6
+      mctx.stroke(p)
+      mctx.restore()
+    }
+  }
+  const markTex = new THREE.CanvasTexture(markCanvas)
+  // Canvas pixels are authored in sRGB; without the tag three treats them as
+  // linear and the sRGB output pass washes the red out.
+  markTex.colorSpace = THREE.SRGBColorSpace
+  const markMat = new THREE.SpriteMaterial({
+    map: markTex,
+    transparent: true,
+    opacity: 0,
+    depthTest: false,
+    toneMapped: false, // keep the authored red; ACES would dull it
+  })
+  const angerMark = new THREE.Sprite(markMat)
+  angerMark.renderOrder = 10
+  angerMark.visible = false
+  scene.add(angerMark)
+  const markPos = new THREE.Vector3()
+
   // Rising cyan particle column for the materialize entrance; spawned on the
   // first rendered frame, disposed as soon as the entrance ends.
   function spawnParticles() {
@@ -705,6 +766,10 @@ export function initAvatarGuide(
     parametricRimFresnelPowerFactor: number
   }
   let mtoons: MToonLike[] = []
+  // The face/skin materials only, for `pale`: a whole-body blue reads as a
+  // lighting change, a bluish face reads as 青ざめ.
+  let faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
+  const PALE = new THREE.Color(...FACE_PALE_TINT)
   const RIM_COLOR = new THREE.Color(0xe8652b)
   const rimScratch = new THREE.Color()
 
@@ -734,12 +799,19 @@ export function initAvatarGuide(
           if (seen.has(m)) continue // shared materials must be tinted once, not once per mesh
           seen.add(m)
           const withColor = m as THREE.Material & { color?: THREE.Color }
-          if (withColor.color)
+          if (withColor.color) {
             mats.push({
               m: withColor as never,
               base: withColor.color.clone(),
               tinted: ANSWER_TINT.clone().multiply(withColor.color),
             })
+            if (/face|skin/i.test(m.name))
+              faceMats.push({
+                m: withColor as never,
+                base: withColor.color.clone(),
+                pale: PALE.clone().multiply(withColor.color),
+              })
+          }
           const mtoon = m as Partial<MToonLike> & THREE.Material
           if (mtoon.parametricRimColorFactor) {
             mtoon.parametricRimFresnelPowerFactor = 6 // tight edge highlight
@@ -796,6 +868,44 @@ export function initAvatarGuide(
   // A replaced emotion fades its channel out here while the new one attacks
   // from zero — hard-zeroing the old channel read as a facial snap (R1 #1).
   let emoFade: { name: EmotionName; w: number } | null = null
+  // Write one emotion's weight into every channel its recipe names.
+  const writeEmotion = (name: EmotionName, w: number) => {
+    // The weight→channel rule lives in avatarMode so the tests drive the same
+    // code this does; snapToFull morphs get their whole share or nothing.
+    for (const [ch, v] of emotionChannelValues(name, w))
+      vrm?.expressionManager?.setValue(ch, v)
+  }
+  const applyEmotion = (name: EmotionName, weight = 1, holdSec = 2.4) => {
+    // Gate on the recipe's channels, not the emotion's own name: composites
+    // (nagomi, pale) never appear in the model's expression list themselves.
+    if (!EMOTION_RECIPES[name].channels.every(([ch]) => availableEmotions.has(ch))) return
+    if (emoName !== name) {
+      // Order matters (R2 review): consume a fade of the INCOMING emotion
+      // first — switching back mid-fade resumes from its faded weight, so
+      // the channel never snaps to zero and re-attacks. Only then park the
+      // outgoing emotion in the fade slot. A third distinct emotion inside
+      // one fade window snaps the oldest channel off (documented cut).
+      let resumeW = 0
+      if (emoFade && emoFade.name === name) {
+        resumeW = emoFade.w
+        emoFade = null
+      }
+      if (emoName) {
+        if (emoFade) writeEmotion(emoFade.name, 0)
+        emoFade = { name: emoName, w: emoShown }
+      }
+      // Fresh emotions attack from zero (inheriting the old weight skipped
+      // the attack curve, R1 #1); a resumed one continues where it faded to.
+      emoW = resumeW
+      emoShown = resumeW
+    }
+    emoName = name
+    emoPeak = Math.min(Math.max(weight, 0), 1)
+    emoHold = holdSec
+  }
+  // Roughly every 20s of undisturbed idle she closes her eyes for a beat — the
+  // なごみ目 from the owner's expression sheet, as a moment rather than a cue.
+  let idleEmoTimer = 12 + Math.random() * 10
   let saccadeTimer = 0.9
   let saccadeX = 0
   let saccadeY = 0
@@ -903,6 +1013,11 @@ export function initAvatarGuide(
         speechIdle &&
         emoW < 0.05
       ) {
+        idleEmoTimer -= dt
+        if (idleEmoTimer <= 0) {
+          applyEmotion('nagomi', 1, 2.2)
+          idleEmoTimer = 16 + Math.random() * 12
+        }
         idleActTimer -= dt
         if (idleActTimer <= 0) {
           let pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
@@ -1037,10 +1152,10 @@ export function initAvatarGuide(
       if (emoFade) {
         emoFade.w += (0 - emoFade.w) * Math.min(1, dt * 7)
         if (emoFade.w < 0.001) {
-          vrm.expressionManager?.setValue(emoFade.name, 0)
+          writeEmotion(emoFade.name, 0)
           emoFade = null
         } else {
-          vrm.expressionManager?.setValue(emoFade.name, emoFade.w)
+          writeEmotion(emoFade.name, emoFade.w)
         }
       }
       if (emoName) {
@@ -1053,12 +1168,12 @@ export function initAvatarGuide(
         const emoTarget = speechActive ? Math.min(emoW, 0.45) : emoW
         emoShown += (emoTarget - emoShown) * Math.min(1, dt * 7)
         if (emoHold <= 0 && emoW < 0.001 && emoShown < 0.001) {
-          vrm.expressionManager?.setValue(emoName, 0)
+          writeEmotion(emoName, 0)
           emoName = null
           emoW = 0
           emoShown = 0
         } else {
-          vrm.expressionManager?.setValue(emoName, emoShown)
+          writeEmotion(emoName, emoShown)
         }
       }
 
@@ -1100,11 +1215,32 @@ export function initAvatarGuide(
       tint += (target - tint) * Math.min(1, dt * 4)
       if (tint < 0.001) tint = 0
       const flashW = matzT >= 0 && matzT <= 1 ? (1 - Math.min(matzT, 1)) * 0.75 : 0
-      if (tint > 0 || flashW > 0) {
+      // `pale` rides the same consolidated colour write as the answering tint
+      // and the entrance flash, so no two of them ever fight over m.color.
+      const paleW =
+        (emoName && EMOTION_RECIPES[emoName].paleTint ? emoShown : 0) +
+        (emoFade && EMOTION_RECIPES[emoFade.name].paleTint ? emoFade.w : 0)
+      // The anger vein presses onto her hair at the viewer's upper-right of
+      // her head (owner's placement call, 2026-08-15), riding the same weights
+      // as the tint so it can never outlive or lag the face it annotates.
+      const markW =
+        (emoName && EMOTION_RECIPES[emoName].angerMark ? emoShown : 0) +
+        (emoFade && EMOTION_RECIPES[emoFade.name].angerMark ? emoFade.w : 0)
+      angerMark.visible = markW > 0.02 && matzT === 2
+      if (angerMark.visible && head) {
+        head.getWorldPosition(markPos)
+        angerMark.position.set(markPos.x + 0.08, markPos.y + 0.11, markPos.z + 0.04)
+        markMat.opacity = Math.min(1, markW)
+        // A touch of pop as it lands, without a full pulse animation.
+        const s = 0.15 * (0.85 + 0.15 * markW)
+        angerMark.scale.set(s, s, 1)
+      }
+      if (tint > 0 || flashW > 0 || paleW > 0.003) {
         for (const { m, base, tinted } of mats) {
           m.color.copy(base).lerp(tinted, tint * 0.5)
           if (flashW > 0) m.color.lerp(CYAN_FLASH, flashW)
         }
+        if (paleW > 0.003) for (const { m, pale } of faceMats) m.color.lerp(pale, Math.min(1, paleW))
         colorDirty = true
       } else if (colorDirty) {
         for (const { m, base } of mats) m.color.copy(base)
@@ -1179,32 +1315,7 @@ export function initAvatarGuide(
       speechEl = audio
       speechTrack = track
     },
-    setEmotion: (name, weight = 1, holdSec = 2.4) => {
-      if (!availableEmotions.has(name)) return // this model doesn't ship the preset (VRM0 has no surprised)
-      if (emoName !== name) {
-        // Order matters (R2 review): consume a fade of the INCOMING emotion
-        // first — switching back mid-fade resumes from its faded weight, so
-        // the channel never snaps to zero and re-attacks. Only then park the
-        // outgoing emotion in the fade slot. A third distinct emotion inside
-        // one fade window snaps the oldest channel off (documented cut).
-        let resumeW = 0
-        if (emoFade && emoFade.name === name) {
-          resumeW = emoFade.w
-          emoFade = null
-        }
-        if (emoName) {
-          if (emoFade) vrm?.expressionManager?.setValue(emoFade.name, 0)
-          emoFade = { name: emoName, w: emoShown }
-        }
-        // Fresh emotions attack from zero (inheriting the old weight skipped
-        // the attack curve, R1 #1); a resumed one continues where it faded to.
-        emoW = resumeW
-        emoShown = resumeW
-      }
-      emoName = name
-      emoPeak = Math.min(Math.max(weight, 0), 1)
-      emoHold = holdSec
-    },
+    setEmotion: applyEmotion,
     playGesture: (name) => {
       // Replacing a mid-flight arm gesture must not strand a half-raised arm.
       if (gesture && GESTURES[gesture.name].arms && vrm) pinArms(vrm)
@@ -1233,6 +1344,8 @@ export function initAvatarGuide(
       shadow.geometry.dispose()
       shadowMat.dispose()
       shadowTex.dispose()
+      markMat.dispose()
+      markTex.dispose()
       // Without forceContextLoss the browser keeps the GL context alive until
       // it feels like collecting it — same hard-won note as faceHero's dispose.
       // Skip it when the context is already gone: three warnOnce()s about the

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   armAt,
+  EMOTION_RECIPES,
+  emotionChannelValues,
+  FACE_PALE_TINT,
   gestureEnvelope,
   headAim,
   stepHeadAim,
@@ -535,6 +538,72 @@ describe('avatar camera framing', () => {
       return Number(m[1])
     }
     expect(vh('w') / vh('h')).toBeCloseTo(AVATAR_CANVAS_DOCKED.w / AVATAR_CANVAS_DOCKED.h, 3)
+  })
+})
+
+describe('emotion recipes', () => {
+  // The engine's availability gate compares channel names against the model's
+  // expression list verbatim. The custom groups keep their authored casing,
+  // and lower-casing 'Surprised' is why the surprised emotion silently never
+  // played in production — these pin the exact strings.
+  it('addresses the custom expressions by their authored, capitalised names', () => {
+    expect(EMOTION_RECIPES.surprised.channels).toEqual([['Surprised', 1]])
+    // Full weight is load-bearing too: the X lashes rest INSIDE the head, so
+    // partial weights render them half-clipped (black dots at 0.85-0.93,
+    // plain closed eyes at 0.75 and below). Owner-confirmed 2026-08-15.
+    expect(EMOTION_RECIPES.excited.channels).toEqual([['Extra', 1]])
+  })
+
+  // The bug this pins, found in review on 2026-08-15: the cue asked for
+  // excited at 0.85 and the engine multiplies cue weight by channel share, so
+  // the >< face that the owner signed off at 1.0 rendered as the half-clipped
+  // 0.85 frame every single time. The speech cap makes it worse — `done`
+  // fires while she is still talking, which clamps the weight to 0.45.
+  it('renders the >< morph at full through both the cue weight and the speech cap', () => {
+    for (const w of [0.45, 0.85, 1]) {
+      expect({ w, ch: emotionChannelValues('excited', w) }).toEqual({ w, ch: [['Extra', 1]] })
+    }
+    // Still off before it flips on, and off once the release passes back down.
+    expect(emotionChannelValues('excited', 0.2)).toEqual([['Extra', 0]])
+  })
+
+  it('scales every other emotion by its weight, so only the snap morph snaps', () => {
+    expect(emotionChannelValues('pale', 0.5)).toEqual([['sad', 0.35]])
+    expect(emotionChannelValues('nagomi', 0.5)).toEqual([
+      ['relaxed', 0.5],
+      ['blink', 0.5],
+    ])
+  })
+
+  it('floats the anger vein for angry, and only angry', () => {
+    for (const [name, recipe] of Object.entries(EMOTION_RECIPES)) {
+      expect({ name, mark: recipe.angerMark === true }).toEqual({ name, mark: name === 'angry' })
+    }
+  })
+
+  it('builds nagomi from curved lids plus closed lids', () => {
+    const channels = EMOTION_RECIPES.nagomi.channels.map(([ch]) => ch).sort()
+    expect(channels).toEqual(['blink', 'relaxed'])
+  })
+
+  it('marks pale, and only pale, for the face tint', () => {
+    for (const [name, recipe] of Object.entries(EMOTION_RECIPES)) {
+      expect({ name, tints: recipe.paleTint === true }).toEqual({ name, tints: name === 'pale' })
+    }
+    // Bluish, not blue: every component stays high enough that the face still
+    // reads as skin under it.
+    expect(Math.min(...FACE_PALE_TINT)).toBeGreaterThan(0.5)
+    expect(FACE_PALE_TINT[2]).toBeGreaterThan(FACE_PALE_TINT[0])
+  })
+
+  it('gives every emotion at least one channel at a sane share', () => {
+    for (const recipe of Object.values(EMOTION_RECIPES)) {
+      expect(recipe.channels.length).toBeGreaterThan(0)
+      for (const [, share] of recipe.channels) {
+        expect(share).toBeGreaterThan(0)
+        expect(share).toBeLessThanOrEqual(1)
+      }
+    }
   })
 })
 

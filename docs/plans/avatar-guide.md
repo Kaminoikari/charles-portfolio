@@ -647,6 +647,50 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   （量到 176×202 而不是 245×280），亮度門檻會把 hero 星空誤判成她。用
   `gl.readPixels` 的 alpha 通道，並等 `matz === 2`。
 
+## Batch 7——表情擴充＋peace 掌心修正（2026-08-15，使用者附表情差分一覧＋雙 V 參考照）
+
+使用者兩點：peace 的掌心要朝鏡頭（參考照是雙 V 掌心向前）；表情不夠豐富，
+把差分一覧下排四種（しいたけ目・怒り・青ざめ・なごみ目）加進去。
+
+- **peace 掌心**：`HAND_PEACE.wrist` 從 1.0 翻成 **−1.0**。前一輪加 wrist 軸時
+  方向選錯，V 是張開了但露的是手背。single/double 兩姿勢特寫各自確認掌心向前。
+- **表情配方層 `EMOTION_RECIPES`**（avatarMode.ts，純資料可測）：每個情緒宣告
+  [channel, share] 清單＋可選 `paleTint`／`angerMark` 旗標，引擎的可用性閘門改成
+  逐 channel 對模型的 expression 清單。**修掉一個上線以來的沉默 bug**：模型的
+  自訂 blendshape 叫 `'Surprised'`／`'Extra'`（保留原作大小寫），舊閘門拿小寫
+  `'surprised'` 比對永遠 false，她從來沒驚訝過。測試釘死大小寫字串。
+- **四種新表情**：
+  - `excited`＝模型內建 `Extra`（>< 臉），**權重只能 1.0**——X 睫毛 rest 時藏在
+    臉內，morph 是「滑出來」不是「縮放」，0.85–0.93 渲染成兩顆黑點、0.75 以下
+    只剩閉眼（五個權重逐一截圖驗證）。使用者嫌 1.0 的 V 太大，但看過對照圖後
+    拍板保留原作 1.0。接 `done` cue（答完 nod ＋ excited/2.2s）。
+    **配方寫 1.0 不等於畫面是 1.0**：引擎是 `setValue(ch, 顯示權重 × share)`
+    相乘，cue 傳 0.85 就渲染成 0.85 的破圖，語音期間更被 `emoTarget` 的 0.45
+    上限夾住（`done` 正好與語音同時發）。收斂做法是配方加 `snapToFull`
+    旗標＋`EMOTION_SNAP_THRESHOLD`（0.25，刻意壓在 0.45 之下），權重換算抽成
+    `emotionChannelValues()` 放 avatarMode 由引擎與測試共用，測試釘住
+    0.45／0.85／1 三個輸入都輸出 `Extra = 1`。這條是 spec review 抓到的，
+    上一版全綠測試只釘到配方常數、釘不到 cue→引擎的端到端權重。
+  - `nagomi`＝`relaxed`＋`blink` 合成（閉眼滿足）。接 undisturbed idle 的
+    12–22s 隨機拍（之後 16–28s），與 idle acts 並行不衝突。
+  - `pale`＝`sad`@0.7 ＋ 臉部材質乘 `FACE_PALE_TINT`（0.62/0.74/0.95）——
+    blendshape 動不了膚色，藍色由引擎在 `/face|skin/i` 材質上疊，騎在既有的
+    consolidated m.color write（與 answering tint／入場 flash 不打架）。接
+    `error` cue。驗證是量臉頰 RGB：pale 的 r−b 差收到 10（其他表情 21–35）。
+  - `angry`＝內建 angry ＋ **青筋 sprite**：canvas 手繪四道弓形 V（尖端朝內、
+    八個肢端朝外、整體帶 0.35 rad 傾斜），**白芯＋紅描邊**，同一條 path 描兩次
+    （先紅 17 後白 6），對齊使用者給的 怒り 差分圖。
+    形狀試錯四輪才收斂，依序被退回的是：圓弧破圓、圓角方框四角、
+    U+1F4A2 emoji 字符的實心紅新月（emoji 與手繪青筋是兩個不同的符號）。
+    定案方式是把畫出來的貼圖本身放大跟參考圖並排比對——只在 3D 場景裡看
+    是前兩輪連錯的原因。`colorSpace = SRGBColorSpace`（漏標會被當 linear 洗淡）、
+    depthTest off、256px 貼圖，位置每幀從 head bone 世界座標 + (+0.08, +0.11)，
+    **壓在頭髮右上**（使用者指定），透明度與 pale 同機制騎 `emoShown`／`emoFade`。
+    接連拍頭：相鄰兩次間隔 < 20 秒的連段到第三次觸發 angry 0.9/1.6s
+    （`patStreak`，滾動視窗不是固定 20 秒視窗），前兩次仍是 happy＋wiggle。
+- 驗證路徑：TEMP probe 的 `__mikaEmo` 一度只做裸 `setValue`，合成表情與 tint
+  根本沒走到——改成呼叫真的 `applyEmotion` 後才算數（probe 已於收尾移除）。
+
 ## 已知限制（歷輪 review 記錄，接受不修的部分）
 
 - **這份文件本身在 Tailwind 的掃描範圍內**：v4 預設掃整個 repo，所以把已廢棄的

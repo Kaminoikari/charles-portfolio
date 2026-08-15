@@ -92,6 +92,93 @@ export function stepHeadAim(prev: number, target: number, dt: number): number {
   return prev + (target - prev) * Math.min(1, dt * HEAD_AIM_SMOOTHING)
 }
 
+// ---- emotions ---------------------------------------------------------------
+// What the face can do, and which VRM expression channels carry each one. The
+// model ships four standard presets (three-vrm normalises VRM0's joy/angry/
+// sorrow/fun to happy/angry/sad/relaxed) plus two CUSTOM groups whose names
+// survive as-is, capitals included: 'Surprised' and 'Extra' (the >< face).
+// That casing is load-bearing — the engine's availability gate compares these
+// strings against the model's expression list, and lower-casing 'Surprised'
+// is why she never once looked surprised in production before 2026-08-15.
+//
+// The last three are composites, added from the owner's expression-sheet
+// reference (しいたけ目・怒り・青ざめ・なごみ目 — 怒り is the plain angry
+// preset):
+//  excited  the model's own >< face
+//  nagomi   content closed-eye smile: relaxed curves the lids, blink closes them
+//  pale     dread: sad brows plus a bluish face tint the engine layers on the
+//           face materials, because no blendshape can recolour skin
+export type EmotionName =
+  | 'happy'
+  | 'angry'
+  | 'sad'
+  | 'relaxed'
+  | 'surprised'
+  | 'excited'
+  | 'nagomi'
+  | 'pale'
+
+export interface EmotionRecipe {
+  // [expression channel, share of the emotion's weight it receives]
+  channels: ReadonlyArray<readonly [string, number]>
+  // The engine tints the face materials toward FACE_PALE_TINT by this weight.
+  paleTint?: boolean
+  // The engine floats the manga anger vein (💢) beside her head, opacity
+  // riding the emotion's weight — the blendshape only changes the face, and
+  // the owner's reference sheet draws 怒り with the mark.
+  angerMark?: boolean
+  // Write the channels at their full share as soon as the emotion is showing
+  // at all, instead of scaling them by its weight. For a morph that only
+  // renders correctly at 1 (see excited), every intermediate value is a broken
+  // frame, so a snap is the better of the two artefacts.
+  snapToFull?: boolean
+}
+
+// Where a snapToFull recipe flips on. It sits below the engine's 0.45 speech
+// cap on purpose: `done` fires while she is still talking, and a threshold
+// above the cap would mean the >< face never appears on the one cue that
+// uses it.
+export const EMOTION_SNAP_THRESHOLD = 0.25
+
+export const EMOTION_RECIPES: Record<EmotionName, EmotionRecipe> = {
+  happy: { channels: [['happy', 1]] },
+  angry: { channels: [['angry', 1]], angerMark: true },
+  sad: { channels: [['sad', 1]] },
+  relaxed: { channels: [['relaxed', 1]] },
+  surprised: { channels: [['Surprised', 1]] },
+  // The model's own >< face, at FULL weight only: the X lashes rest inside the
+  // head and the morph slides them out, so any partial weight leaves them
+  // half-clipped by the face (0.85–0.93 render as black dots, 0.75 and below
+  // as plain closed eyes). Verified across five weights on 2026-08-15; the
+  // owner chose the authored 1.0 over a weightless closed-eye smile.
+  excited: { channels: [['Extra', 1]], snapToFull: true },
+  nagomi: {
+    channels: [
+      ['relaxed', 1],
+      ['blink', 1],
+    ],
+  },
+  // Sad at partial weight: full sorrow reads as about to cry, and the blue
+  // carries most of the 青ざめ.
+  pale: { channels: [['sad', 0.7]], paleTint: true },
+}
+
+// Multiplied over the face materials' base colour at full pale weight.
+export const FACE_PALE_TINT: readonly [number, number, number] = [0.62, 0.74, 0.95]
+
+// What each of an emotion's channels should be set to at a displayed weight.
+// The engine writes exactly this, so a test of this function tests what the
+// face actually does — including the snapToFull rule, whose whole point is to
+// survive weights it never chose (the 0.45 speech cap, a cue asking for 0.85).
+export function emotionChannelValues(
+  name: EmotionName,
+  w: number,
+): Array<readonly [string, number]> {
+  const recipe = EMOTION_RECIPES[name]
+  const scale = recipe.snapToFull ? (w > EMOTION_SNAP_THRESHOLD ? 1 : 0) : w
+  return recipe.channels.map(([ch, share]) => [ch, scale * share] as const)
+}
+
 // ---- camera framing -------------------------------------------------------
 // Lives here rather than in the engine so the React shell can read it without
 // pulling three.js into the main bundle, and so the invariant below is unit

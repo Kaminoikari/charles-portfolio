@@ -43,8 +43,14 @@ const CUE_PERFORMANCE: Record<
   suggest: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   fullscreen: { emotion: ['happy', 0.6, 2.0] },
   bye: { emotion: ['happy', 1, 2.4], gesture: 'bow' },
-  done: { emotion: ['happy', 0.8, 2.2], gesture: 'nod' },
-  error: { emotion: ['sad', 0.9, 2.6] },
+  // The >< face from the owner's expression sheet: an answer landing is her
+  // best moment, and plain happy was already taken by the greetings. Weight 1
+  // is load-bearing — the engine multiplies cue weight by the recipe's share,
+  // and this morph only renders correctly at full (see EMOTION_RECIPES).
+  done: { emotion: ['excited', 1, 2.2], gesture: 'nod' },
+  // 青ざめ — sad brows plus the bluish face tint. An error is the one moment
+  // dread is the honest reaction.
+  error: { emotion: ['pale', 0.9, 2.6] },
 }
 
 function LiveDot() {
