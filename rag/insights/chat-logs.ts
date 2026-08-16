@@ -15,8 +15,9 @@ import { qdrant } from '../qdrant.js'
 //
 // Reset history: 2026-07-13 12:00 (once answers began being stored) → 2026-07-30
 // 00:00 (fresh start on the conversations that follow the id/eval cleanup) →
-// 2026-08-15 00:00 (clear out everything logged up to the avatar-guide launch).
-export const REPORT_EPOCH_MS = Date.parse('2026-08-15T00:00:00+08:00')
+// 2026-08-15 00:00 (clear out everything logged up to the avatar-guide launch) →
+// 2026-08-16 00:00 (drop the avatar-tuning day's own traffic).
+export const REPORT_EPOCH_MS = Date.parse('2026-08-16T00:00:00+08:00')
 
 export function withinReportWindow(ts: string | null | undefined): boolean {
   const t = Date.parse(ts ?? '')
