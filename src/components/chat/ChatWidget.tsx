@@ -5,7 +5,7 @@
 // Mounted once, globally (see AppRoutes). All copy is i18n; the panel reads in
 // the visitor's locale and the backend answers in the question's language.
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocale, useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
 import { useChatMode } from './useChatMode'
@@ -196,7 +196,7 @@ export default function ChatWidget() {
   const geoCheckedRef = useRef(false)
   const { messages, status, trace, send, retry, clear } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   // Tracks whether the panel has ever been open, so the first render doesn't
@@ -432,6 +432,16 @@ export default function ChatWidget() {
     return clear
   }, [avatarLoaded, open])
 
+  // A native input is always one line tall. The composer uses a textarea so
+  // drafts wrap inside the unchanged chat width, then measures its rendered
+  // content after every edit to keep the field exactly as tall as the draft.
+  useLayoutEffect(() => {
+    const composer = inputRef.current
+    if (!composer) return
+    composer.style.height = 'auto'
+    composer.style.height = `${composer.scrollHeight}px`
+  }, [input, open])
+
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
   // scroll fired on every token fights itself and janks); smooth-scroll only
   // once the answer settles.
@@ -488,7 +498,7 @@ export default function ChatWidget() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !panelRef.current) return
       const focusables = panelRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), a[href], summary, [tabindex]:not([tabindex="-1"])',
       )
       if (focusables.length === 0) return
       const first = focusables[0]
@@ -1041,7 +1051,7 @@ export default function ChatWidget() {
                 submit(input)
               }}
               className={
-                'flex flex-none gap-2.5 border-t border-border ' +
+                'flex flex-none items-end gap-2.5 border-t border-border ' +
                 (fullscreen ? 'mx-auto w-full px-6 pb-5 pt-3.5' : 'p-3.5')
               }
               // Same gutter as the body above: the composer shares the thread's
@@ -1049,24 +1059,31 @@ export default function ChatWidget() {
               // ends up behind her skirt.
               style={columnGutter}
             >
-              <input
+              <textarea
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+                  e.preventDefault()
+                  if (status !== 'streaming' && !regionBlocked) submit(input)
+                }}
                 placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
                 aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
                 maxLength={200}
                 disabled={regionBlocked}
+                rows={1}
+                wrap="soft"
                 // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
                 // zooms whenever a focused input is under 16px); the rest of the widget
                 // keeps its denser 14px scale.
-                className="flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-[46px] min-w-0 flex-1 resize-none overflow-hidden rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={status === 'streaming' || input.trim() === '' || regionBlocked}
                 aria-label={t('chat.sendAriaLabel')}
-                className="cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
+                className="h-[46px] cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40"
               >
                 {t('chat.send')}
               </button>

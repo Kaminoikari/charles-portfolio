@@ -66,6 +66,50 @@ async function openAndAsk(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('ChatWidget size modes', () => {
+  it('wraps long drafts and grows the composer to their content height', async () => {
+    const singleLineHeight = 46
+    const wrappedContentHeight = 72
+    let scrollHeight = singleLineHeight
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'scrollHeight',
+    )
+    Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => scrollHeight,
+    })
+
+    try {
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+
+      const composer = screen.getByLabelText(/ask anything about his work/i)
+      expect(composer.tagName).toBe('TEXTAREA')
+      expect(composer).toHaveAttribute('wrap', 'soft')
+
+      scrollHeight = wrappedContentHeight
+      await user.type(composer, 'A draft that needs more than one line.')
+      expect(composer).toHaveStyle({ height: `${wrappedContentHeight}px` })
+    } finally {
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', scrollHeightDescriptor)
+      } else {
+        delete (HTMLTextAreaElement.prototype as { scrollHeight?: number }).scrollHeight
+      }
+    }
+  })
+
+  it('sends a draft when Enter is pressed', async () => {
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    await user.type(screen.getByLabelText(/ask anything about his work/i), 'what did he do?')
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy())
+  })
+
   it('rests as a launcher pill once the avatar gate settles, never flashing it before', async () => {
     render(<ChatWidget />)
     // Fresh visit: while the avatar gate is still unasked, the corner stays
