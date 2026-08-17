@@ -442,6 +442,12 @@ export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
 export const CHAT_PANEL_INSET = 16
 export const CHAT_PANEL_HEADER_H = 61
 export const CHAT_RAIL_W = 236
+// The column canvas must travel 48px farther right than the panel's 16px inset.
+// Its subject is centred inside a wide gesture-safe frame, so pinning that
+// frame to the panel edge leaves visible empty canvas after Mika. This optical
+// nudge aligns the figure with the right edge while retaining enough room for
+// the widest hand pose before the viewport clips it.
+export const AVATAR_COLUMN_RIGHT_INSET = -32
 // The narrowest the transcript TEXT may be squeezed — measured on the text, not
 // on the column that holds it, which is why the padding below is subtracted
 // separately. (It was the column at first, and delivered 312px of text where

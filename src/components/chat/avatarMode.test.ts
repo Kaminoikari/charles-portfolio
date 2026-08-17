@@ -29,6 +29,7 @@ import {
   AVATAR_CANVAS_LAUNCHER,
   AVATAR_FRAMING_DEFAULT,
   AVATAR_FRAMING_COLUMN,
+  AVATAR_COLUMN_RIGHT_INSET,
   AVATAR_COLUMN_ASPECT,
   avatarColumnBox,
   AVATAR_COLUMN_BODY_FRACTION,
@@ -200,6 +201,12 @@ describe('avatarColumnBox', () => {
     expect(box.h).toBe(0)
     expect(box.w).toBe(0)
     expect(box.reserve).toBe(0)
+  })
+})
+
+describe('fullscreen avatar optical alignment', () => {
+  it('moves the gesture canvas past the panel edge so Mika reads right-aligned', () => {
+    expect(AVATAR_COLUMN_RIGHT_INSET).toBe(-32)
   })
 })
 

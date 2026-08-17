@@ -14,6 +14,7 @@ import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 import {
   AVATAR_FRAMING_COLUMN,
+  AVATAR_COLUMN_RIGHT_INSET,
   avatarGuideEnabledInBrowser,
   AVATAR_LAUNCHER_HIT_CLASS,
   avatarColumnBox,
@@ -603,9 +604,10 @@ export default function ChatWidget() {
   //                pure margin, so a stretch loses ~15px of fingertip there and
   //                nothing from ~933px up. document.scrollWidth was unchanged
   //                (874) — a fixed box overhanging leftward adds no scroll.
-  //  column        fullscreen: she stands at the panel's bottom-right inner
-  //                corner (bottom-4 right-4), the full height of the panel body
-  //                below the header, at the head-to-knee crop of
+  //  column        fullscreen: her wide, gesture-safe canvas overhangs the
+  //                panel's right edge by 32px. This places the visible figure
+  //                toward that edge while keeping the full height of the panel
+  //                body below the header, at the head-to-knee crop of
   //                AVATAR_FRAMING_COLUMN. z-[55] beats the panel's z-50.
   //                Her canvas is WIDER than the space the transcript gives up:
   //                avatarColumnBox reserves only her body, and the transparent
@@ -658,9 +660,8 @@ export default function ChatWidget() {
               // the canvas on screen at narrow widths rides in the style below.
               'pointer-events-none fixed bottom-5 right-[436px] z-50'
             : inColumn
-              ? // Pinned to the panel's bottom-right inner corner: the panel is
-                // inset-4, so bottom-4 right-4 puts her canvas edges exactly on
-                // its own. Her height then reaches up to just under the header.
+              ? // The canvas overhangs the viewport at right, so the body reads
+                // right-aligned despite the frame's transparent gesture margin.
                 'pointer-events-none fixed bottom-4 right-4 z-[55]'
               : // launcher: glides from above the capsule down into the corner
                 // once she takes over as the button. 72% on narrow screens
@@ -683,7 +684,9 @@ export default function ChatWidget() {
       style={
         placement === 'beside-panel' && besideScale < 1
           ? { transform: `scale(${besideScale})`, transformOrigin: 'bottom right' }
-          : undefined
+          : inColumn
+            ? { right: AVATAR_COLUMN_RIGHT_INSET }
+            : undefined
       }
     >
       <AvatarGuide
