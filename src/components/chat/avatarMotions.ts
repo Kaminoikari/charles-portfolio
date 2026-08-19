@@ -24,12 +24,6 @@ import {
   type AvatarPlacement,
 } from './avatarMode'
 
-// pixiv publishes two English wordings: this one on the BOOTH item page, and
-// "Animation credits to…" in the readme inside the pack. This is the storefront
-// text and the closer rendering of the Japanese 「キャラクターアニメーション: …」,
-// so it is a deliberate choice. Do not "correct" it to the readme's.
-export const CREDIT = "Character animation credits to pixiv Inc.'s VRoid Project"
-
 export type AvatarMotionName = 'peaceSign' | 'modelPose' | 'spin'
 
 // Which composed frame a motion has been measured against. The launcher and the
