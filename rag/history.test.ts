@@ -10,6 +10,7 @@ import assert from 'node:assert/strict'
 
 import {
   looksConversational,
+  excerpt,
   formatHistory,
   shouldAnswerFromHistory,
   ordinalReference,
@@ -60,8 +61,10 @@ test('formatHistory: keeps the last turns and truncates assistant answers', () =
   // Only the last 2 turns survive, so q1 is gone.
   assert.equal(out.includes('q1'), false)
   assert.equal(out.includes('User (question 2): q2'), true)
-  assert.equal(out.includes(`Assistant: ${'a'.repeat(10)}\n`), true)
+  assert.equal(out.includes(`Assistant: ${'a'.repeat(10)}…`), true)
   assert.equal(out.includes('a'.repeat(11)), false)
+  // Shortening it is fine; hiding that it was shortened is not.
+  assert.match(out, /excerpt: first 10 of 500 chars/)
 })
 
 test('formatHistory: no turns is an empty string, never a stray label', () => {
@@ -290,4 +293,120 @@ test('shouldAnswerFromHistory: a positional phrase that says it looks back still
   ]) {
     assert.equal(shouldAnswerFromHistory(q, SESSION), true, `should reach converse: ${q}`)
   }
+})
+
+// 2026-08-19, production. A visitor asked Mika to answer "第 8 題" from a
+// ten-item list she had just written. Her reply had been delivered whole — 649
+// chars, all ten items, on screen in front of them — but the copy that came
+// back on the next turn had been sliced to 300 chars, cutting mid-way through
+// item 5. She first said the list "只列出了前五個問題", true of what she could
+// see, and then invented a cause for it: "我的回應被截斷了". Nothing had been cut
+// off; the shortening happened on the way back in, silently, and she filled the
+// gap with a failure she never had.
+//
+// Two rules come out of that, and both are needed. The recent answers go back
+// whole, because that is where a follow-up points. And any turn that IS
+// shortened says so in the transcript, because no ceiling is high enough
+// forever — when one is finally passed, the model has to be able to report an
+// excerpt rather than invent an explanation for the ragged edge it sees.
+test('formatHistory: the most recent assistant turns go back whole', () => {
+  const long = 'x'.repeat(2000)
+  const out = formatHistory(
+    [
+      { role: 'user', content: 'q1' },
+      { role: 'assistant', content: long },
+      { role: 'user', content: 'q2' },
+    ],
+    { maxTurns: 16, assistantChars: 300, recentAssistantTurns: 2, recentAssistantChars: 4000 },
+  )
+  assert.equal(out.includes(long), true, 'the recent answer must survive intact')
+  assert.doesNotMatch(out, /excerpt/, 'nothing was shortened, so nothing may claim it was')
+})
+
+test('formatHistory: an assistant turn past the recent window is excerpted, and says so', () => {
+  const long = 'x'.repeat(2000)
+  const out = formatHistory(
+    [
+      { role: 'assistant', content: long },
+      { role: 'user', content: 'q1' },
+      { role: 'assistant', content: 'recent A' },
+      { role: 'user', content: 'q2' },
+      { role: 'assistant', content: 'recent B' },
+    ],
+    { maxTurns: 16, assistantChars: 300, recentAssistantTurns: 2, recentAssistantChars: 4000 },
+  )
+  assert.equal(out.includes('x'.repeat(300)), true)
+  assert.equal(out.includes('x'.repeat(301)), false)
+  assert.match(out, /excerpt: first 300 of 2000 chars/)
+  // The two most recent answers are what a follow-up points at, so they stay whole.
+  assert.equal(out.includes('recent A'), true)
+  assert.equal(out.includes('recent B'), true)
+})
+
+test('formatHistory: a recent answer past its own ceiling is still marked as an excerpt', () => {
+  const huge = 'y'.repeat(5000)
+  const out = formatHistory([{ role: 'assistant', content: huge }], {
+    maxTurns: 16,
+    assistantChars: 300,
+    recentAssistantTurns: 2,
+    recentAssistantChars: 4000,
+  })
+  assert.equal(out.includes('y'.repeat(4000)), true)
+  assert.equal(out.includes('y'.repeat(4001)), false)
+  assert.match(out, /excerpt: first 4000 of 5000 chars/)
+})
+
+// Clipping and the recent window applied together — a long conversation where
+// the render window drops turns AND the newest answers must survive whole.
+// Every other test here is short enough that only one of the two is active.
+//
+// It does NOT pin the whole-history basis of `recentFrom`, and no test can,
+// because that basis has no failure mode: `numbered.slice(-maxTurns)` is a TAIL
+// slice, so the Nth-newest assistant of the whole history and the Nth-newest of
+// the tail are the same turn whenever the tail holds N of them, and the `?? 0`
+// fallback covers the case where it does not. Probed across 81 shapes (2-61
+// turns × maxTurns 2/4/16 × recentTurns 1/2/3): zero shapes render differently.
+// Written down so the next reader does not re-derive it, or add a test that can
+// only ever pass.
+test('formatHistory: a clipped long conversation still returns its newest answers whole', () => {
+  const turns = Array.from({ length: 40 }, (_, i) =>
+    i % 2 === 0
+      ? { role: 'user' as const, content: `q${i}` }
+      : { role: 'assistant' as const, content: `answer ${i} ${'z'.repeat(1000)}` },
+  )
+  const out = formatHistory(turns, {
+    maxTurns: 4,
+    assistantChars: 300,
+    recentAssistantTurns: 2,
+    recentAssistantChars: 4000,
+  })
+  // The window keeps turns 36-39, so both of the two newest answers (37 and 39)
+  // are rendered and both must survive whole at 1010 chars each, while
+  // everything older is clipped away entirely.
+  assert.equal(out.includes(`answer 37 ${'z'.repeat(1000)}`), true)
+  assert.equal(out.includes(`answer 39 ${'z'.repeat(1000)}`), true)
+  assert.equal(out.includes('answer 35'), false)
+  assert.doesNotMatch(out, /excerpt/, 'a rendered answer inside the recent window must not be cut')
+  assert.match(out, /earlier turns are not shown/)
+})
+
+// A turn can pass two ceilings: the transport bound and then the prompt bound.
+// Marking it twice must not corrupt the number, because an inaccurate figure is
+// the same class of defect as the silent cut — it hands the model a fact that is
+// wrong and invites it to reason from it. Naively re-marking reported "first
+// 4000 of 8036", counting the already-shortened body plus its own marker as if
+// that were the original length.
+test('excerpt: shortening an already-shortened turn still reports the true original length', () => {
+  const original = 'z'.repeat(9000)
+  const atTransport = excerpt(original, 8000)
+  assert.match(atTransport, /excerpt: first 8000 of 9000 chars/)
+
+  const atPrompt = excerpt(atTransport, 4000)
+  assert.match(atPrompt, /excerpt: first 4000 of 9000 chars/)
+  assert.equal(atPrompt.includes('of 8036'), false)
+  // One marker, not a stack of them.
+  assert.equal(atPrompt.match(/excerpt:/g)?.length, 1)
+
+  // A marked turn that already fits is left exactly as it is.
+  assert.equal(excerpt(atTransport, 20000), atTransport)
 })

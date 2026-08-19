@@ -73,8 +73,7 @@ test('parseChatRequest: keeps valid history, clamps size, drops junk, never reje
     assert.equal(mixed.history?.[0].content, 'kept')
   }
 
-  // Only the last 60 turns survive, and each is capped at 500 chars. The input
-  // stays comfortably above the clamp so this keeps proving that it clamps.
+  // Only the last 60 turns survive.
   // 60 is the transport bound, not the memory window: the prompts render 16
   // turns, and this has to stay wider so formatHistory can see that turns fell
   // off. If they were equal again, its "(earlier turns are not shown)" marker
@@ -86,9 +85,14 @@ test('parseChatRequest: keeps valid history, clamps size, drops junk, never reje
     assert.equal(capped.history?.length, 60)
     assert.equal(capped.history?.[0].content, 'q20') // oldest kept is the 60th-from-last
   }
+  // A user turn stays on the low bound and, when clamped, says so. The two
+  // roles get different bounds; that split has its own test below.
   const longTurn = parseChatRequest({ question: 'hi', history: [{ role: 'user', content: 'x'.repeat(600) }] })
   assert.equal(longTurn.ok, true)
-  if (longTurn.ok) assert.equal(longTurn.history?.[0].content.length, 500)
+  if (longTurn.ok) {
+    assert.equal(longTurn.history?.[0].content.includes('x'.repeat(501)), false)
+    assert.match(longTurn.history?.[0].content ?? '', /excerpt: first 500 of 600 chars/)
+  }
 
   // No history / non-array → undefined, request still parses.
   for (const bad of [undefined, 'nope', 42, []]) {
@@ -145,4 +149,54 @@ test('isBlockedCountry: matches blocklist, ignores case, never blocks unknown', 
   assert.equal(isBlockedCountry('HK', 'CN,HK'), true)
   assert.equal(isBlockedCountry('TW', 'CN'), false)
   assert.equal(isBlockedCountry('', 'CN'), false) // unknown origin is never blocked
+})
+
+// The transport used to clamp every turn at 500 chars, which on its own would
+// have cut the ten-item list of the 2026-08-19 incident (649 chars) before the
+// prompt was ever built. This bound is payload protection, not the memory
+// window: it has to sit far above any answer the bot actually writes, so the
+// single place that decides how much of a turn the prompt sees is
+// formatHistory. What it does clamp carries the excerpt marker, so a shortened
+// turn is never presented downstream as a whole one.
+test('parseChatRequest: a real-length answer survives the transport, and a clamped one says so', () => {
+  const real = 'a'.repeat(2000)
+  const kept = parseChatRequest({ question: 'hi', history: [{ role: 'assistant', content: real }] })
+  assert.equal(kept.ok, true)
+  if (kept.ok) assert.equal(kept.history?.[0].content, real)
+
+  const huge = 'b'.repeat(9000)
+  const clamped = parseChatRequest({ question: 'hi', history: [{ role: 'assistant', content: huge }] })
+  assert.equal(clamped.ok, true)
+  if (clamped.ok) {
+    assert.match(clamped.history?.[0].content ?? '', /excerpt: first 8000 of 9000 chars/)
+    assert.equal((clamped.history?.[0].content ?? '').includes('b'.repeat(8001)), false)
+  }
+})
+
+// The length bound is per role, because only one of the two roles is bounded
+// anywhere else. A visitor's question is capped at MAX_QUESTION_LEN on the way
+// in, so a user turn in history is a replay of something already ≤200 chars and
+// 500 is generous. An ASSISTANT turn has no such upstream cap and is the thing
+// the 2026-08-19 incident was about, so it gets room.
+//
+// Keeping them on one number is not a simplification, it is a hole:
+// formatHistory clamps assistant turns and renders user turns whole, so the
+// transport bound IS the prompt bound for user text. Raising both to 8000 let a
+// crafted 60-turn body render a 128,957-char transcript, up from ~8,100 —
+// measured, on a paid tier-2 fallback behind a 20-req/min limiter.
+test('parseChatRequest: the length bound is per role, since only user turns are capped upstream', () => {
+  const hostile = Array.from({ length: 60 }, () => ({ role: 'user' as const, content: 'x'.repeat(20000) }))
+  const parsed = parseChatRequest({ question: 'hi', history: hostile })
+  assert.equal(parsed.ok, true)
+  if (parsed.ok) {
+    // Comfortably above MAX_QUESTION_LEN, nowhere near the assistant bound.
+    assert.ok((parsed.history?.[0].content.length ?? 0) <= 600, 'a user turn must stay near its upstream cap')
+    assert.match(parsed.history?.[0].content ?? '', /excerpt: first 500 of 20000 chars/)
+  }
+
+  // The assistant bound is what the incident needed, and it is unaffected.
+  const answer = 'b'.repeat(2000)
+  const kept = parseChatRequest({ question: 'hi', history: [{ role: 'assistant', content: answer }] })
+  assert.equal(kept.ok, true)
+  if (kept.ok) assert.equal(kept.history?.[0].content, answer)
 })

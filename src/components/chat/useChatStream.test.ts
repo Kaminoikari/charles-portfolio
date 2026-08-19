@@ -311,3 +311,50 @@ describe('useChatStream pipeline trace', () => {
     expect(result.current.trace.map((s) => s.id)).toEqual(['retrieve'])
   })
 })
+
+describe('useChatStream history payload', () => {
+  beforeEach(() => vi.restoreAllMocks())
+
+  // 2026-08-19, production. Mika wrote out ten suggested questions, 649 chars,
+  // and the visitor saw all ten. When they asked her to answer number 8, the
+  // copy this hook sent back had been sliced to 300 chars, ending inside item 5.
+  // She reported the list as five items long, then explained the ragged edge as
+  // "我的回應被截斷了" — a failure that never happened, about an answer that had
+  // arrived whole.
+  //
+  // The client is the wrong place to make that call. It cannot know how much of
+  // a turn the prompt has room for, and when it shortens one it leaves no trace
+  // the server can read. So it sends what was actually said, and the server
+  // decides (rag/history.ts formatHistory), the same division of labour that
+  // already governs the turn COUNT.
+  it('sends prior answers in full, however long they ran', async () => {
+    const tenItems = Array.from(
+      { length: 10 },
+      (_, i) => `${i + 1}. a suggested question about Charles, long enough to be realistic`,
+    ).join('\n')
+    // The live list ran 649 chars and the old client cut it at 300, mid-item-5.
+    expect(tenItems.length).toBeGreaterThan(600)
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([frame('done', { sources: [], answer: tenItems })]),
+    })) as unknown as typeof fetch
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { result } = renderHook(() => useChatStream())
+    await act(async () => {
+      await result.current.send('請列出10個問題可以問 charles 的', 'error')
+    })
+    await act(async () => {
+      await result.current.send('請回答第8題', 'error')
+    })
+
+    const second = (fetchMock as unknown as { mock: { calls: [string, { body: string }][] } }).mock.calls[1]
+    const sent = JSON.parse(second[1].body) as {
+      history: { role: string; content: string }[]
+    }
+    const answer = sent.history.find((t) => t.role === 'assistant')
+    expect(answer?.content).toBe(tenItems)
+    expect(answer?.content).toContain('8. a suggested question')
+  })
+})

@@ -225,33 +225,85 @@ export function shouldAnswerFromHistory(question: string, history: ChatTurn[]): 
   return looksConversational(question)
 }
 
-// Render recent turns as a plain transcript. Assistant answers are truncated:
-// their topic is what disambiguates a follow-up, their full text is dead weight
-// in a prompt that is paid for on every request.
+// The one shape a shortened turn takes, wherever it gets shortened. A cut line
+// has to LOOK cut. On 2026-08-19 one did not: a ten-item list came back on the
+// next turn sliced to 300 chars, ending mid-sentence inside item 5, and the
+// model read that ragged edge as evidence that its own reply had failed to
+// send. It told the visitor "我的回應被截斷了" about an answer that had reached
+// them whole. A marker turns that into something reportable — the model can say
+// it is holding an excerpt and offer the rest — and it costs about ten tokens
+// on the turns that actually get cut.
+// Re-marking is idempotent about the ORIGINAL length, because a turn can pass
+// two ceilings (the transport bound, then the prompt bound) and the second pass
+// otherwise measures the already-shortened body and calls that the original: a
+// 9000-char answer came out as "first 4000 of 8036". A wrong number is the same
+// class of defect as the silent cut that started this — a fact the model has no
+// way to doubt.
+const MARKED = /…\[excerpt: first \d+ of (\d+) chars\]$/
+
+export function excerpt(text: string, limit: number): string {
+  const marked = text.match(MARKED)
+  const body = marked ? text.slice(0, -marked[0].length) : text
+  // Already short enough: keep it exactly as it is, marker and all.
+  if (body.length <= limit) return text
+  const original = marked ? Number(marked[1]) : text.length
+  return `${body.slice(0, limit)}…[excerpt: first ${limit} of ${original} chars]`
+}
+
+// Render recent turns as a plain transcript.
+//
+// Older assistant answers are shortened: their topic is what disambiguates a
+// follow-up, and their full text is dead weight in a prompt paid for on every
+// request. The most recent ones are not, because that is where a follow-up
+// actually points. "請回答第 8 題" is answerable only if item 8 of the list is
+// still in the transcript, and on 2026-08-19 it was not — every copy of that
+// answer had been cut at 300 chars before the prompt was built.
 //
 // When turns fall off the window the transcript says so, because a model given
 // a silently-clipped transcript treats the oldest line it can see as the start
 // of the conversation. Live: asked "我剛剛問你的第一個問題是什麼?" on the fifth
 // turn, it confidently named the third — and then apologised for a mistake it
 // had never made. "I can only see the recent part" is an answer; a wrong first
-// question is not.
+// question is not. Shortening one turn is the same failure at a smaller scale,
+// so it gets the same treatment: `excerpt` above marks it.
+//
 // The visitor's turns carry their question number, counted over the WHOLE
 // history before any clipping — so a reader of a partial transcript sees that
 // the oldest line it holds is question 4, not question 1. Numbering the lines is
 // what makes "第二個問題" answerable by reading rather than by counting.
 export function formatHistory(
   turns: ChatTurn[],
-  opts: { maxTurns: number; assistantChars: number },
+  opts: {
+    maxTurns: number
+    /** Ceiling for assistant answers older than the recent window. */
+    assistantChars: number
+    /** How many trailing assistant answers keep their full text. */
+    recentAssistantTurns?: number
+    /** Ceiling for those, so one runaway answer still cannot own the prompt. */
+    recentAssistantChars?: number
+  },
 ): string {
   if (!turns?.length) return ''
   let asked = 0
-  const numbered = turns.map((t) => ({ ...t, n: t.role === 'user' ? ++asked : 0 }))
+  const numbered = turns.map((t, at) => ({ ...t, at, n: t.role === 'user' ? ++asked : 0 }))
+
+  // Where the recent window starts, measured over the whole history rather than
+  // the rendered slice: which answers are recent is a fact about the
+  // conversation, not about how much of it fits in the prompt.
+  const recentTurns = opts.recentAssistantTurns ?? 0
+  const assistantAt = numbered.filter((t) => t.role === 'assistant').map((t) => t.at)
+  const recentFrom =
+    recentTurns > 0 ? (assistantAt[assistantAt.length - recentTurns] ?? 0) : Number.POSITIVE_INFINITY
+
   const kept = numbered.slice(-opts.maxTurns)
   const clipped = kept.length < turns.length
   const body = kept
     .map((t) =>
       t.role === 'assistant'
-        ? `Assistant: ${t.content.slice(0, opts.assistantChars)}`
+        ? `Assistant: ${excerpt(
+            t.content,
+            t.at >= recentFrom ? (opts.recentAssistantChars ?? opts.assistantChars) : opts.assistantChars,
+          )}`
         : `User (question ${t.n}): ${t.content}`,
     )
     .join('\n')

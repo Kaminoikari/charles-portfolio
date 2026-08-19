@@ -422,3 +422,94 @@ test('converse: no positional reference leaves the prompt alone', async () => {
   )
   assert.equal(/pointing at question/.test(system()), false)
 })
+
+// 2026-08-19, production. Mika listed ten questions a visitor could ask
+// Charles. The answer went out whole — 649 chars, all ten items — and the
+// visitor read it. On the next turn the transcript held only its first 300
+// chars, ending inside item 5, and she explained that ragged edge to them as
+// "我的回應被截斷了": an invented failure of her own delivery, in the product's
+// own voice, on a portfolio whose argument is that the system works.
+//
+// Raising the ceiling (see HISTORY_RECENT_ASSISTANT_CHARS) closes that specific
+// case. This rule is the half that keeps holding once some longer conversation
+// runs past the new ceiling too, which one eventually will. Both prompts that
+// carry a transcript need it: generate answers alongside retrieved context, and
+// converse answers about the conversation itself, which is where a visitor
+// asking "第 8 題" actually lands.
+test('generate: is told an excerpt marker means shortened storage, not a failed reply', async () => {
+  const { system } = await promptFor({
+    question: '請回答第8題',
+    language: 'zh-TW',
+    graded: [DOC],
+    history: [
+      { role: 'user', content: '請列出10個問題' },
+      { role: 'assistant', content: '1. …' },
+    ],
+  })
+  assert.match(system, /"Assistant:" turn whose text ends in \[excerpt: first N of M chars\]/)
+  assert.match(system, /visitor received it complete/i)
+  assert.match(system, /never tell them your reply was cut off/i)
+  // Scoped to the role, so a visitor typing the marker into their own ≤200-char
+  // question cannot borrow the rule for a "User" line.
+  assert.match(system, /same text ending a "User" turn belongs to the visitor and says nothing\s+about your replies/)
+  // The transcript is reintroduced by its own label, so it does not read as an
+  // illustration of the sentence in front of it.
+  assert.match(system, /your replies\.\nTranscript:\n/)
+})
+
+test('converse: is told the same, since a question about the conversation lands here', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    { question: '你剛剛說的第8題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.match(system(), /"Assistant:" turn whose text\s+ends in "\[excerpt: first N of M chars\]"/)
+  assert.match(system(), /received it complete/i)
+  assert.match(system(), /never tell them the answer itself was cut off/i)
+  assert.match(system(), /ending a "User" turn belongs to the visitor and says nothing about\s+your replies/)
+})
+
+// The ceilings above are inert unless both call sites actually pass them, and
+// nothing here was watching those two lines. Every assistant fixture in this
+// file is a few dozen chars, so with the arguments deleted `formatHistory`
+// falls back to clamping every answer at 300 — the exact 2026-08-19 failure —
+// and the whole suite stays green. history.test.ts cannot see it either: it
+// calls formatHistory directly with explicit options. So these two drive the
+// real nodes with an answer longer than the old ceiling and read what the model
+// is actually handed.
+const LONG_ANSWER = `十個問題：\n${Array.from(
+  { length: 10 },
+  (_, i) => `${i + 1}. 一個關於 Charles 的問題，長度足以讓這份清單超過舊的 300 字上限`,
+).join('\n')}`
+
+test('generate: a long recent answer reaches the model whole, not clamped at 300', async () => {
+  assert.ok(LONG_ANSWER.length > 300, 'fixture must exceed the old ceiling to prove anything')
+  const { system } = await promptFor({
+    question: '請回答第8題',
+    language: 'zh-TW',
+    graded: [DOC],
+    history: [
+      { role: 'user', content: '請列出10個問題' },
+      { role: 'assistant', content: LONG_ANSWER },
+    ],
+  })
+  assert.equal(system.includes(LONG_ANSWER), true, 'the whole answer must be in the prompt')
+  assert.equal(system.includes('excerpt: first 300'), false, 'a recent answer must not be clamped')
+})
+
+test('converse: the same, since a question about the conversation is answered here', async () => {
+  const { tier, system } = capturingTier()
+  await converse(
+    {
+      question: '你剛剛列的第8題是什麼?',
+      language: 'zh-TW',
+      history: [
+        { role: 'user', content: '請列出10個問題' },
+        { role: 'assistant', content: LONG_ANSWER },
+      ],
+    } as never,
+    { primary: () => tier, fallback: () => tier },
+  )
+  assert.equal(system().includes(LONG_ANSWER), true, 'the whole answer must be in the prompt')
+  assert.equal(system().includes('excerpt: first 300'), false, 'a recent answer must not be clamped')
+})

@@ -6,23 +6,25 @@
 import { useCallback, useRef, useState } from 'react'
 import { getVisitorId } from './visitorId'
 
-// Assistant answers are truncated: their topic disambiguates a follow-up, their
-// full text is dead weight on a request that carries it every time.
+// Nothing is trimmed here — not the turn COUNT, and (since 2026-08-19) not the
+// turn TEXT either. The server numbers the visitor's questions from the start of
+// what it receives (rag/history.ts), marks the transcript partial when its own
+// window drops turns, and marks a turn as an excerpt when it shortens one. All
+// three are lies if the client quietly shortened something first.
 //
-// The turn COUNT is deliberately not trimmed here. The server numbers the
-// visitor's questions from the start of what it receives (rag/history.ts) and
-// marks the transcript partial when its own window drops turns — both of which
-// are lies if the client silently dropped turns first. Trimming is the server's
-// job, at a bound wider than the window it renders, so it can tell.
-const HISTORY_ASSISTANT_CHARS = 300
-
+// That is not hypothetical. This function used to slice assistant answers at 300
+// chars. Mika wrote out ten suggested questions, the visitor read all ten, and
+// then asked her to answer number 8 — which by then had never reached her,
+// because the copy sent from here ended inside item 5. She reported a five-item
+// list, and on the next turn explained the ragged edge as "我的回應被截斷了",
+// telling the visitor her own answer had failed when it had arrived whole.
+//
+// How much of a turn the prompt has room for is a fact the client does not have.
+// So it sends what was actually said, and rag/history.ts decides.
 function buildHistory(msgs: ChatMessage[]): { role: 'user' | 'assistant'; content: string }[] {
   return msgs
     .filter((m) => !m.error && m.text.trim())
-    .map((m) => ({
-      role: m.role,
-      content: m.role === 'assistant' ? m.text.slice(0, HISTORY_ASSISTANT_CHARS) : m.text,
-    }))
+    .map((m) => ({ role: m.role, content: m.text }))
 }
 
 export interface ChatSource {

@@ -2,6 +2,8 @@
 // from the handler so request validation, SSE framing, and rate limiting can be
 // unit-tested with no network or runtime.
 
+import { excerpt } from './history.js'
+
 // One prior conversation turn, sent by the client so the server can resolve
 // follow-up questions against recent context (see rag/contextualize.ts).
 export interface ChatTurn {
@@ -38,7 +40,26 @@ const MAX_VISITOR_ID_LEN = 64
 // numbered as their first. 60 turns is thirty exchanges. Each turn is capped
 // too, so a pasted wall of text cannot blow up the prompts this rides on.
 const MAX_HISTORY_TURNS = 60
-const MAX_TURN_LEN = 500
+// Length bounds, per role, because the two roles are bounded very differently
+// elsewhere and one number cannot serve both.
+//
+// An ASSISTANT turn has no upstream cap at all, and shortening one here is what
+// broke on 2026-08-19: a 649-char list of ten suggested questions arrived
+// already cut, and nothing downstream could tell. So this sits far above any
+// answer the bot writes, and how much of one the PROMPT sees is formatHistory's
+// decision instead (rag/nodes.ts sets the ceilings it uses).
+//
+// A USER turn is a replay of a question that MAX_QUESTION_LEN already refused
+// past 200 chars, so 500 is generous and the low bound costs nothing. It has to
+// stay low: formatHistory clamps assistant turns and renders user turns whole,
+// so for user text this bound IS the prompt bound. Briefly both were 8000, and
+// a crafted 60-turn body then rendered a 128,957-char transcript against a paid
+// fallback — measured, not feared.
+//
+// Whatever either one clamps is marked, so a shortened turn never travels on as
+// a whole one.
+const MAX_USER_TURN_LEN = 500
+const MAX_ASSISTANT_TURN_LEN = 8000
 
 // Accept a client-supplied visitor id only if it is a plausibly-sane string
 // (a UUID is 36 chars); anything else is dropped rather than logged verbatim.
@@ -62,7 +83,8 @@ function sanitizeHistory(raw: unknown): ChatTurn[] | undefined {
     if (typeof content !== 'string') continue
     const trimmed = content.trim()
     if (!trimmed) continue
-    turns.push({ role, content: trimmed.slice(0, MAX_TURN_LEN) })
+    const limit = role === 'user' ? MAX_USER_TURN_LEN : MAX_ASSISTANT_TURN_LEN
+    turns.push({ role, content: excerpt(trimmed, limit) })
   }
   return turns.length ? turns.slice(-MAX_HISTORY_TURNS) : undefined
 }
