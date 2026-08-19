@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { consumeGated } from './llm.js'
+import { consumeGated, generateWithFallback } from './llm.js'
 
 type Chunk = { content: unknown }
 
@@ -24,7 +24,7 @@ const opts = { firstTokenMs: 60, stallMs: 60, label: 'T' }
 test('consumeGated: accumulates a healthy long stream to completion', async () => {
   // 5 tokens 30ms apart = 150ms total, far past one 60ms window, but each gap is
   // within it — must finish on this provider, no throw.
-  const text = await consumeGated(
+  const res = await consumeGated(
     chunks([
       { content: 'a', afterMs: 30 },
       { content: 'b', afterMs: 30 },
@@ -34,7 +34,8 @@ test('consumeGated: accumulates a healthy long stream to completion', async () =
     ]),
     opts,
   )
-  assert.equal(text, 'abcde')
+  assert.equal(res.text, 'abcde')
+  assert.equal(res.stalled, false)
 })
 
 test('consumeGated: throws when no first token arrives within the gate (→ fallback)', async () => {
@@ -50,7 +51,7 @@ test('consumeGated: throws on an empty stream (→ fallback)', async () => {
 
 test('consumeGated: skips leading empty chunks until the first visible token', async () => {
   // Models can emit empty/metadata chunks first; those must not trip the gate.
-  const text = await consumeGated(
+  const res = await consumeGated(
     chunks([
       { content: '', afterMs: 10 },
       { content: '', afterMs: 10 },
@@ -59,24 +60,26 @@ test('consumeGated: skips leading empty chunks until the first visible token', a
     ]),
     opts,
   )
-  assert.equal(text, 'hi there')
+  assert.equal(res.text, 'hi there')
 })
 
 test('consumeGated: after the first token, a stall returns the partial answer (no throw)', async () => {
   // First token is fast (commit), then a gap longer than stallMs: we must NOT
   // throw — that would let the caller swap providers over visible text.
-  const text = await consumeGated(
+  const res = await consumeGated(
     chunks([
       { content: 'partial', afterMs: 10 },
       { content: ' more', afterMs: 200 },
     ]),
     opts,
   )
-  assert.equal(text, 'partial')
+  assert.equal(res.text, 'partial')
+  // And the caller is told, so the half sentence can announce itself.
+  assert.equal(res.stalled, true)
 })
 
 test('consumeGated: ignores non-string chunk content', async () => {
-  const text = await consumeGated(
+  const res = await consumeGated(
     chunks([
       { content: 'a', afterMs: 10 },
       { content: [{ type: 'text', text: 'block' }], afterMs: 10 },
@@ -84,7 +87,7 @@ test('consumeGated: ignores non-string chunk content', async () => {
     ]),
     opts,
   )
-  assert.equal(text, 'ab')
+  assert.equal(res.text, 'ab')
 })
 
 test('consumeGated: cancels the upstream stream via return() on gate failure', async () => {
@@ -103,4 +106,69 @@ test('consumeGated: cancels the upstream stream via return() on gate failure', a
   }
   await assert.rejects(consumeGated(stream, opts), /no first token/)
   assert.equal(cancelled, true)
+})
+
+// A stall is not just a log line. Phase 2 hands back whatever arrived, and that
+// partial answer goes on to be shown, persisted to chat_logs, and replayed as
+// history on the next turn — where the model reads its own half-finished
+// sentence with nothing to explain it. That is the shape of the 2026-08-19
+// incident, where a ragged edge with no marker got explained as a failure that
+// had not happened. So the caller has to be told, and the only way to tell it
+// is to return the fact alongside the text.
+test('consumeGated: reports that it stalled, so the caller can say so', async () => {
+  const res = await consumeGated(
+    chunks([
+      { content: 'half a sen', afterMs: 20 },
+      { content: 'tence', afterMs: 200 }, // past the 60ms stall window
+    ]),
+    opts,
+  )
+  assert.equal(res.text, 'half a sen')
+  assert.equal(res.stalled, true)
+})
+
+test('consumeGated: a stream that finishes on its own is not marked stalled', async () => {
+  const res = await consumeGated(
+    chunks([
+      { content: 'a', afterMs: 20 },
+      { content: 'b', afterMs: 20 },
+    ]),
+    opts,
+  )
+  assert.equal(res.text, 'ab')
+  assert.equal(res.stalled, false)
+})
+
+// The wiring between consumeGated and the caller needs its own test. The node
+// layer injects a stub generator (resolveGenerator), so a node test never runs
+// this function, and a dropped `stalled` here would be invisible from both
+// sides — the same shape of gap that left the history ceilings in nodes.ts
+// unpinned until a review caught them.
+//
+// The stream throws rather than idling, because Phase 2 treats an error and a
+// stall as one case ("Stall/error ends with partial text") and a real idle would
+// mean waiting out GEMINI_STALL_MS.
+test('generateWithFallback: carries the stall signal from the stream out to the caller', async () => {
+  async function* diesAfterFirstToken() {
+    yield { content: 'half a sen' }
+    throw new Error('connection reset')
+  }
+  const res = await generateWithFallback([{ role: 'user', content: 'q' }], {}, () => ({
+    stream: async () => diesAfterFirstToken(),
+  }))
+  assert.equal(res.provider, 'gemini')
+  assert.equal(res.text, 'half a sen')
+  assert.equal(res.stalled, true)
+})
+
+test('generateWithFallback: a stream that completes reports no stall', async () => {
+  async function* healthy() {
+    yield { content: 'a whole ' }
+    yield { content: 'answer.' }
+  }
+  const res = await generateWithFallback([{ role: 'user', content: 'q' }], {}, () => ({
+    stream: async () => healthy(),
+  }))
+  assert.equal(res.text, 'a whole answer.')
+  assert.equal(res.stalled, false)
 })

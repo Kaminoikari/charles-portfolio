@@ -513,3 +513,46 @@ test('converse: the same, since a question about the conversation is answered he
   assert.equal(system().includes(LONG_ANSWER), true, 'the whole answer must be in the prompt')
   assert.equal(system().includes('excerpt: first 300'), false, 'a recent answer must not be clamped')
 })
+
+// When generation stops arriving rather than finishing, the visitor is left
+// looking at a sentence that ends mid-word, and that same half sentence is
+// persisted to chat_logs and replayed as history on the next turn. The excerpt
+// marker does not cover this: nothing shortened the text, it simply stopped, so
+// there is no marker to add and nothing in the transcript to explain the edge.
+// That is precisely the position the 2026-08-19 answer was in when the model
+// read a ragged edge and reported a failure that had not happened.
+//
+// So the node says what it observed. The wording claims only that generation
+// stopped, which stays true in the case where a provider goes quiet after a
+// complete answer without closing its stream — the model has no way to tell the
+// two apart, and neither does this code.
+async function promptWith(
+  state: Record<string, unknown>,
+  result: { text: string; provider: 'gemini' | 'claude'; stalled: boolean },
+) {
+  return generate(state as never, async () => result)
+}
+
+test('generate: an answer that stopped arriving says so, in the visitor’s language', async () => {
+  for (const [language, marker] of [
+    ['zh-TW', '生成在這裡停住了'],
+    ['ja', '生成はここで止まりました'],
+    ['en', 'Generation stopped here'],
+  ] as Array<[string, string]>) {
+    const out = await promptWith(
+      { question: 'q', language, graded: [DOC] },
+      { text: 'Charles led the parking pro', provider: 'gemini', stalled: true },
+    )
+    const answer = String(out.answer)
+    assert.equal(answer.startsWith('Charles led the parking pro'), true, `${language}: the partial text must survive`)
+    assert.equal(answer.includes(marker), true, `${language}: missing the notice`)
+  }
+})
+
+test('generate: an answer that finished normally carries no such notice', async () => {
+  const out = await promptWith(
+    { question: 'q', language: 'zh-TW', graded: [DOC] },
+    { text: '他負責停車產品。', provider: 'gemini', stalled: false },
+  )
+  assert.equal(String(out.answer), '他負責停車產品。')
+})

@@ -151,6 +151,26 @@ const HISTORY_RECENT_ASSISTANT_TURNS = 2
 // production, and anything past it arrives marked as an excerpt.
 const HISTORY_RECENT_ASSISTANT_CHARS = 4000
 
+// What a visitor is told when generation stops arriving rather than finishing
+// (see consumeGated's stall deadline in llm.ts). The tokens already on screen
+// stay: a provider swap over visible text is the thing the first-token gate
+// exists to prevent, so the answer cannot be replaced, only explained.
+//
+// The claim is deliberately narrow. "Generation stopped here" is observable;
+// "this answer is incomplete" is not, because a provider that goes quiet after
+// a complete answer without closing its stream trips the same deadline, and
+// nothing downstream can tell the two apart. Saying only what is known is the
+// whole lesson of the truncation incident: a system that guesses at its own
+// state hands the model a fact it cannot doubt.
+//
+// It rides along into chat_logs and into the next turn's transcript, so the
+// model also meets an explanation rather than a bare half sentence.
+const STALL_NOTICE: Record<Locale, string> = {
+  'zh-TW': '\n\n（生成在這裡停住了。如果這個回答看起來沒說完，我可以重寫一次。）',
+  ja: '\n\n（生成はここで止まりました。この回答が途中に見えるようでしたら、書き直します。）',
+  en: '\n\n(Generation stopped here. If this answer looks unfinished, I can write it again.)',
+}
+
 const verdictToRoute: Record<string, string> = {
   answerable: 'generate',
   on_topic_no_data: 'rewrite',
@@ -481,7 +501,7 @@ export async function generate(
     `* All links / Portaly: ${CONTACT.portaly}`
 
   // Tier 1 Gemini (free) → tier 2 Claude (paid) on any Gemini failure.
-  const { text } = await generateAnswer(
+  const { text, stalled } = await generateAnswer(
     [
       {
         role: 'system',
@@ -601,7 +621,12 @@ export async function generate(
   // for repeating it. The visitor's own message is excluded for the same reason.
   const grounding = `${context}\n${portfolioMap}\n${contactChannels}\n${entityBlock}\n${sources.map((s) => s.url ?? '').join('\n')}`
   return {
-    answer: stripUngroundedLinks(stripInvalidCitations(text), grounding),
+    // The notice is appended AFTER the guardrails, so it is never mistaken for
+    // model output: stripInvalidCitations and stripUngroundedLinks judge what
+    // the model wrote, and this sentence is ours.
+    answer:
+      stripUngroundedLinks(stripInvalidCitations(text), grounding) +
+      (stalled ? STALL_NOTICE[(state.language as Locale) ?? 'en'] : ''),
     sources,
     outcome: 'generate',
   }

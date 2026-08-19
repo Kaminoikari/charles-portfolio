@@ -73,10 +73,23 @@ function raceStep<T>(
 //     out. A later stall or error ends the stream with the partial answer (best
 //     effort) instead of throwing — falling back here would replace on-screen
 //     text, the exact artifact we are avoiding.
+//
+// `stalled` reports which of the two Phase-2 exits happened, because the partial
+// answer does not stop at the screen: it is persisted to chat_logs and replayed
+// as history on the following turn, where the model meets its own unfinished
+// sentence. On 2026-08-19 an unmarked ragged edge in exactly that position was
+// read as evidence of a failed send and explained to the visitor as one. A
+// caller that knows can say what happened; a caller handed a bare string cannot.
+export interface GatedResult {
+  text: string
+  /** True when Phase 2 ended on the stall deadline rather than end-of-stream. */
+  stalled: boolean
+}
+
 export async function consumeGated(
   stream: AsyncIterable<{ content: unknown }>,
   opts: { firstTokenMs: number; stallMs: number; label: string },
-): Promise<string> {
+): Promise<GatedResult> {
   const it = stream[Symbol.asyncIterator]()
   const asText = (chunk: { content: unknown }): string =>
     typeof chunk?.content === 'string' ? chunk.content : ''
@@ -99,6 +112,7 @@ export async function consumeGated(
   }
 
   // Phase 2 — committed to this provider. Stall/error ends with partial text.
+  let stalled = false
   try {
     for (;;) {
       const r = await raceStep(it.next(), opts.stallMs, `${opts.label} stalled (no token in ${opts.stallMs}ms)`)
@@ -106,11 +120,12 @@ export async function consumeGated(
       text += asText(r.value)
     }
   } catch (err) {
+    stalled = true
     console.warn(`${opts.label} stalled after first token, returning partial answer:`, (err as Error).message)
   } finally {
     await it.return?.()
   }
-  return text
+  return { text, stalled }
 }
 
 // Gemini factory — used directly by grade/rewrite, and as tier 1 of generate.
@@ -161,6 +176,12 @@ const CLAUDE_TIMEOUT_MS = Number.parseInt(process.env.RAG_CLAUDE_TIMEOUT_MS ?? '
 export interface GenerateResult {
   text: string
   provider: 'gemini' | 'claude'
+  /**
+   * The answer stopped arriving rather than finishing. Only tier 1 can report
+   * this: the Claude fallback is a plain invoke, which either returns a whole
+   * answer or throws. See GatedResult for why it travels with the text.
+   */
+  stalled: boolean
 }
 
 // Tier-1 → tier-2 fallback for the final answer, under a first-token gate.
@@ -171,19 +192,30 @@ export interface GenerateResult {
 // emits a visible token we commit to it; a later stall ends with the partial
 // answer rather than swapping providers. `strong` picks Sonnet over Haiku for
 // the fallback when the question is broad/synthetic.
+// The slice of tier 1 this function uses: one streaming call. Structural, and
+// injectable for the same reason `Tier` is — the tier-1-to-caller wiring needs a
+// test of its own. Without one, a stub generator injected at the node layer
+// (resolveGenerator) skips this function entirely, and dropping the stall signal
+// here would be invisible: exactly the gap that let the ceilings in nodes.ts go
+// unpinned until a review caught them.
+export interface StreamTier {
+  stream(messages: BaseMessageLike[]): Promise<AsyncIterable<{ content: unknown }>>
+}
+
 export async function generateWithFallback(
   messages: BaseMessageLike[],
   opts: { strong?: boolean; temperature?: number } = {},
+  primary: (temperature: number) => StreamTier = gemini,
 ): Promise<GenerateResult> {
   const temperature = opts.temperature ?? 0.2
   try {
-    const stream = await gemini(temperature).stream(messages)
-    const text = await consumeGated(stream, {
+    const stream = await primary(temperature).stream(messages)
+    const { text, stalled } = await consumeGated(stream, {
       firstTokenMs: GEMINI_FIRST_TOKEN_MS,
       stallMs: GEMINI_STALL_MS,
       label: 'Gemini',
     })
-    return { text, provider: 'gemini' }
+    return { text, provider: 'gemini', stalled }
   } catch (err) {
     console.warn('Gemini generation failed before first token, falling back to Claude:', (err as Error).message)
     const res = await withTimeout(
@@ -191,7 +223,7 @@ export async function generateWithFallback(
       CLAUDE_TIMEOUT_MS,
       'Claude',
     )
-    return { text: String(res.content), provider: 'claude' }
+    return { text: String(res.content), provider: 'claude', stalled: false }
   }
 }
 
