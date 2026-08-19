@@ -314,12 +314,6 @@ export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
 export const CHAT_PANEL_INSET = 16
 export const CHAT_PANEL_HEADER_H = 61
 export const CHAT_RAIL_W = 236
-// The column canvas must travel 48px farther right than the panel's 16px inset.
-// Its subject is centred inside a wide gesture-safe frame, so pinning that
-// frame to the panel edge leaves visible empty canvas after Mika. This optical
-// nudge aligns the figure with the right edge while retaining enough room for
-// the widest hand pose before the viewport clips it.
-export const AVATAR_COLUMN_RIGHT_INSET = -32
 // The narrowest the transcript TEXT may be squeezed — measured on the text, not
 // on the column that holds it, which is why the padding below is subtracted
 // separately. (It was the column at first, and delivered 312px of text where
@@ -343,6 +337,54 @@ export const AVATAR_COLUMN_ASPECT = 0.6745 / 0.586
 // events. Raise this and she pushes the text away; lower it and she stands on
 // top of it.
 export const AVATAR_COLUMN_BODY_FRACTION = 0.5741
+
+// Where her RESTING silhouette's right edge falls, as a fraction of the canvas
+// width measured from the canvas's left. Read off the render on 2026-08-19: at
+// 1920x1080 her arms-down figure ends 793px into a 1136px canvas (0.699), and
+// four samples at 1440x900 put it between 0.706 and 0.713. 0.70 covers both.
+//
+// This is NOT derivable from AVATAR_COLUMN_BODY_FRACTION. That constant answers
+// how much width to keep clear of the text and carries clearance beyond her
+// silhouette; assuming she was centred inside it put this edge at 0.787 and left
+// her 100px short of where she was supposed to stand. Her figure also does not
+// sit centred in the canvas — the framing leans her slightly left of it — which
+// is the other half of the same error. Re-measure this from a screenshot if the
+// column framing, the canvas aspect, or the model changes.
+export const AVATAR_COLUMN_BODY_RIGHT = 0.7
+
+// Breathing room between her silhouette's right edge and the panel's inner
+// right edge. Landing her flush (a gap of 0) put her sleeve 4px off the panel
+// border at 1920x1080, which the owner read as too tight on 2026-08-19. This is
+// the one number to turn if she wants to stand nearer or further from the edge;
+// everything else in the placement is measurement.
+export const AVATAR_COLUMN_BODY_GAP = 32
+
+// Where her column canvas sits, as a CSS `right` in px. Negative hangs it past
+// the viewport's right edge.
+//
+// This cannot be a constant, which is what it was until 2026-08-19. The width
+// after her figure is `w · (1 − AVATAR_COLUMN_BODY_RIGHT)`: 341px on a 1136px
+// column, 48px on a 160px one. A fixed -48 swallowed the whole of the small one
+// and a seventh of the large one, which is why she stood ~200px short of the
+// panel's edge at 1920x1080 while nearly touching it at 768x1024.
+//
+// So pin the FIGURE rather than the frame: hang the canvas out by exactly that
+// width, less the panel's own inset, and her body's right edge lands flush with
+// the panel's inner right edge at every canvas size. What now overhangs is her
+// gesture room, and gestures may be clipped by the viewport. That is the trade
+// the owner asked for on 2026-08-19: her body always whole, her reach free to
+// run off the edge.
+//
+// The transcript's reserve is deliberately left alone. It is still the full
+// AVATAR_COLUMN_BODY_FRACTION, so the text does not move; moving her right
+// simply opens more space between the two.
+export function avatarColumnRightInset(canvasW: number): number {
+  const margin = canvasW * (1 - AVATAR_COLUMN_BODY_RIGHT)
+  // Math.min keeps this at +0 when the margin is already inside where she is
+  // meant to stand; negating a Math.max would hand back -0, which is not 0 to a
+  // strict test.
+  return Math.min(0, CHAT_PANEL_INSET + AVATAR_COLUMN_BODY_GAP - margin)
+}
 
 export interface AvatarColumnBox {
   // Canvas box. Fixed-positioned against the panel's bottom-right inner corner.

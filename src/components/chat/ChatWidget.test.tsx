@@ -3,7 +3,30 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
-import { CHAT_PANEL_HEIGHT_CLASS } from './avatarMode'
+import {
+  avatarColumnBox,
+  avatarColumnRightInset,
+  CHAT_PANEL_HEIGHT_CLASS,
+} from './avatarMode'
+
+// The real guide builds a WebGL renderer, which jsdom has none of. Every other
+// test in this file leaves the capability gate closed and never reaches it; the
+// column-placement test below opens the gate deliberately, so the component it
+// mounts has to be a stub. The wrapper DIV that carries the positioning is
+// ChatWidget's own, so stubbing the canvas away costs the assertion nothing.
+vi.mock('./AvatarGuide', async () => {
+  const { useEffect } = await import('react')
+  return {
+    default: ({ onLoaded }: { onLoaded?: () => void }) => {
+      // The widget keeps the corner EMPTY until the guide reports its first
+      // frame, so a stub that never loads takes the launcher button with it.
+      useEffect(() => {
+        onLoaded?.()
+      }, [onLoaded])
+      return null
+    },
+  }
+})
 
 // Build a ReadableStream that emits the given SSE frames then closes.
 function sseStream(frames: string[]): ReadableStream<Uint8Array> {
@@ -366,6 +389,62 @@ describe('ChatWidget fullscreen', () => {
     render(<ChatWidget />)
     await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.getByRole('dialog').className).toContain(CHAT_PANEL_HEIGHT_CLASS)
+  })
+
+  // avatarMode.test.ts proves avatarColumnRightInset lands her body on the
+  // panel's inner right edge, but only the widget decides what to feed it.
+  // Passing a constant here — which is what this was until 2026-08-19 — would
+  // satisfy that unit test while leaving her 194px short on a desktop. This
+  // drives the real component at a real viewport and reads the style that
+  // reached the DOM.
+  it('hangs the fullscreen avatar canvas out by the inset for its own width', async () => {
+    const vw = 1920
+    const vh = 1080
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: vw,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerHeight', { value: vh, configurable: true })
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(min-width: 768px)' || query === '(min-width: 880px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia,
+    )
+    // Opens the capability gate: it probes for a WebGL2 context and nothing else.
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      ((kind: string) =>
+        kind === 'webgl2'
+          ? { getExtension: () => null }
+          : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    )
+
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    await user.click(screen.getByRole('button', { name: /expand to fullscreen/i }))
+
+    // The gate runs behind a 400ms latch, so she is not in the DOM on the first
+    // frame. z-[55] is the column wrapper's own layer.
+    const wrapper = await waitFor(
+      () => {
+        const el = document.querySelector<HTMLElement>('.z-\\[55\\]')
+        expect(el).toBeTruthy()
+        return el as HTMLElement
+      },
+      { timeout: 2000 },
+    )
+
+    const expected = avatarColumnRightInset(avatarColumnBox(vw, vh).w)
+    expect(expected).toBeLessThan(-100)
+    expect(wrapper.style.right).toBe(`${expected}px`)
   })
 
   describe('background scroll lock', () => {

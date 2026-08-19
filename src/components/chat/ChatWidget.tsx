@@ -14,7 +14,7 @@ import { getVisitorId } from './visitorId'
 import { Markdown } from './Markdown'
 import {
   AVATAR_FRAMING_COLUMN,
-  AVATAR_COLUMN_RIGHT_INSET,
+  avatarColumnRightInset,
   avatarGuideEnabledInBrowser,
   AVATAR_LAUNCHER_HIT_CLASS,
   avatarColumnBox,
@@ -605,8 +605,10 @@ export default function ChatWidget() {
   //                nothing from ~933px up. document.scrollWidth was unchanged
   //                (874) — a fixed box overhanging leftward adds no scroll.
   //  column        fullscreen: her wide, gesture-safe canvas overhangs the
-  //                panel's right edge by 32px. This places the visible figure
-  //                toward that edge while keeping the full height of the panel
+  //                viewport's right edge by whatever her transparent margin is
+  //                at this canvas width (avatarColumnRightInset), which lands
+  //                her BODY flush with the panel's inner right edge at every
+  //                size while keeping the full height of the panel
   //                body below the header, at the head-to-knee crop of
   //                AVATAR_FRAMING_COLUMN. z-[55] beats the panel's z-50.
   //                Her canvas is WIDER than the space the transcript gives up:
@@ -685,7 +687,7 @@ export default function ChatWidget() {
         placement === 'beside-panel' && besideScale < 1
           ? { transform: `scale(${besideScale})`, transformOrigin: 'bottom right' }
           : inColumn
-            ? { right: AVATAR_COLUMN_RIGHT_INSET }
+            ? { right: avatarColumnRightInset(columnBox.w) }
             : undefined
       }
     >

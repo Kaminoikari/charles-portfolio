@@ -921,9 +921,7 @@ export function initAvatarGuide(
         }
         idleActTimer -= dt
         if (idleActTimer <= 0) {
-          const clips = motionsFor(placement, canvas.clientWidth).filter((name) =>
-            motionClips.has(name),
-          )
+          const clips = motionsFor(placement).filter((name) => motionClips.has(name))
           if (clips.length > 0 && Math.random() < 0.66) {
             let pick = clips[(Math.random() * clips.length) | 0]
             if (pick === lastMotion && clips.length > 1) {

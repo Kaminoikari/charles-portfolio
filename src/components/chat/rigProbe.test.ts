@@ -20,19 +20,13 @@ import {
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
   AVATAR_CANVAS_LAUNCHER,
+  AVATAR_COLUMN_ASPECT,
   AVATAR_FRAMING_COLUMN,
   AVATAR_FRAMING_DEFAULT,
-  avatarColumnBox,
   avatarViewHalfWidth,
   avatarViewSpan,
 } from './avatarMode'
-import {
-  AVATAR_MOTIONS,
-  columnVisibleHalfWidth,
-  MAX_HIPS_SINK,
-  motionsFor,
-  type AvatarMotionName,
-} from './avatarMotions'
+import { AVATAR_MOTIONS, MAX_HIPS_SINK, type AvatarMotionName } from './avatarMotions'
 
 const asset = (...parts: string[]): Uint8Array =>
   new Uint8Array(readFileSync(path.join(process.cwd(), 'public', 'avatar', ...parts)))
@@ -56,33 +50,27 @@ function motion(name: AvatarMotionName): Motion {
 // The launcher and docked canvases share a framing and an aspect, so one box
 // covers both; the fullscreen column is composed lower and tighter.
 //
-// The column's budget is its VISIBLE half-width, not its canvas half-width. The
-// column canvas deliberately overhangs the viewport's right edge so her body
-// sits against it, which means the outer slice of her gesture margin is off
-// screen. Certifying a clip against the full canvas would wave through one that
-// is cut off on the right for every visitor.
+// Both sideways edges are checked against the same budget: the canvas itself.
+// A hand past the canvas is not drawn at all, which is a hard rectangular cut
+// through an arm. A hand past the VIEWPORT is a different matter and is no
+// longer checked here — since 2026-08-19 her body hugs the panel's right edge
+// (avatarColumnRightInset) and her gesture room deliberately hangs off screen,
+// which the owner asked for and accepted the clipping of.
 //
-// That loss is a fixed 32px out of however wide the canvas rendered, so it is
-// NOT one number: the column is 1136px at 1920x1080 and 160px on an iPad in
-// portrait, which keeps 0.6365m and 0.4051m of her right side respectively. The
-// desktop reference below is what the bundled clips are certified at; the
-// narrow end is handled by motionsFor(), which withholds a clip whose reach the
-// canvas cannot show, and is guarded separately.
-const COLUMN_REFERENCE = { vw: 1440, vh: 900 }
-const COLUMN_BOX = avatarColumnBox(COLUMN_REFERENCE.vw, COLUMN_REFERENCE.vh)
+// Screen sides, not hers: facing the viewer mirrors her, so her right hand
+// renders on the viewer's left. See rigProbe's screenX.
+const COLUMN_HALF_WIDTH = avatarViewHalfWidth(AVATAR_FRAMING_COLUMN, {
+  w: AVATAR_COLUMN_ASPECT,
+  h: 1,
+})
 
-// `canvasHalfWidth` is what the canvas frames; `halfWidth` is what the viewer
-// can see of its RIGHT half after the column's overhang. They are the same
-// number for the waist-up canvases, which are wholly on screen.
 const FRAMES = {
   waistUp: {
-    canvasHalfWidth: avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
     halfWidth: avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER),
     span: avatarViewSpan(AVATAR_FRAMING_DEFAULT),
   },
   column: {
-    canvasHalfWidth: columnVisibleHalfWidth(Infinity),
-    halfWidth: columnVisibleHalfWidth(COLUMN_BOX.w),
+    halfWidth: COLUMN_HALF_WIDTH,
     span: avatarViewSpan(AVATAR_FRAMING_COLUMN),
   },
 }
@@ -291,12 +279,14 @@ describe('bundled motions', () => {
     },
   )
 
-  // The two sideways edges are cropped differently, so they are checked against
-  // different budgets. The canvas is centred on her, and its LEFT half is wholly
-  // on screen (it floats over the transcript, transparent), so that side only
-  // has to fit the canvas. Its RIGHT half is where the column overhangs the
-  // viewport, so that side has to fit what is actually visible.
+  // Both sideways edges are checked against the same budget: the canvas. A hand
+  // past the canvas is not drawn at all, which is a hard rectangular cut through
+  // an arm. Whether the canvas itself is wholly on screen is a separate question
+  // and is deliberately NOT asked here — since 2026-08-19 the column hangs off
+  // the viewport on purpose (avatarColumnRightInset) and a clipped gesture is
+  // accepted.
   //
+  // The two sides are still asserted separately so a failure names the edge.
   // Screen sides, not hers: facing the viewer mirrors her, so her right hand
   // renders on the viewer's left. See rigProbe's screenX.
   it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
@@ -323,7 +313,7 @@ describe('bundled motions', () => {
       // The bottom edge is not checked: an arm hanging at her side leaves the
       // waist-up frame the same way a real one does, and the canvas masks it.
       expect(screenLeft, `${name} reach to the viewer's left in ${placement}`).toBeLessThan(
-        frame.canvasHalfWidth,
+        frame.halfWidth,
       )
       expect(screenRight, `${name} reach to the viewer's right in ${placement}`).toBeLessThan(
         frame.halfWidth,
@@ -333,61 +323,6 @@ describe('bundled motions', () => {
   })
 
 
-  // motionsFor() decides at run time whether a column is wide enough to show a
-  // clip, and it decides from AvatarMotionDef.screenRightReach. That number is a
-  // hand-written copy of a measurement, so it is pinned to the measurement here;
-  // otherwise swapping a .vrma leaves the picker filtering on the old file's
-  // reach and the guard below certifies nothing. It is also the number whose
-  // SIGN is easy to get wrong, which is the whole reason it goes through
-  // screenX rather than reading wrist.x directly.
-  it.each(Object.entries(AVATAR_MOTIONS))(
-    '%s declares the reach the picker filters on',
-    (name, def) => {
-      const r = rig()
-      const m = motion(name as AvatarMotionName)
-      let measured = -Infinity
-      for (const time of m.sampleTimes) {
-        applyMotion(r, m, time)
-        for (const joint of silhouetteJoints(r)) {
-          measured = Math.max(measured, screenX(joint.x))
-        }
-      }
-      expect(measured, `${name} measured reach to the viewer's right`).toBeCloseTo(
-        def.screenRightReach,
-        3,
-      )
-    },
-  )
-
-  // How much of the viewer's right survives depends on the canvas's pixel width.
-  // At the desktop reference every column clip fits. At the narrowest a column
-  // ever gets — a tablet held upright, where `md` has only just been met — the
-  // canvas is 160px and its budget no longer covers peaceSign.
-  it('offers a column clip only while the canvas can show its reach', () => {
-    const column = motionsFor('column', COLUMN_BOX.w)
-    expect(column.length).toBeGreaterThan(0)
-    for (const name of column) {
-      expect(
-        AVATAR_MOTIONS[name].screenRightReach,
-        `${name} at the ${Math.round(COLUMN_BOX.w)}px reference column`,
-      ).toBeLessThan(FRAMES.column.halfWidth)
-    }
-
-    const narrow = avatarColumnBox(768, 1024)
-    const narrowBudget = columnVisibleHalfWidth(narrow.w)
-    expect(narrowBudget).toBeLessThan(FRAMES.column.halfWidth)
-    const offered = motionsFor('column', narrow.w)
-    expect(offered.length).toBeLessThan(column.length)
-    for (const name of offered) {
-      expect(AVATAR_MOTIONS[name].screenRightReach).toBeLessThan(narrowBudget)
-    }
-
-    // An unmeasured column canvas is treated as the worst case, so a caller that
-    // forgets the width gets silence instead of a clipped hand.
-    expect(motionsFor('column')).toHaveLength(0)
-    // The waist-up canvases are wholly on screen, so they are unaffected.
-    expect(motionsFor('launcher')).toHaveLength(Object.keys(AVATAR_MOTIONS).length)
-  })
 
   it.each(
     Object.entries(AVATAR_MOTIONS).filter(([, def]) => def.showsPalm),

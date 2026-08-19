@@ -1,39 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AVATAR_BUBBLE_RIGHT_CLASS,
+  AVATAR_BUBBLE_RIGHT_PX,
+  AVATAR_CANVAS_DOCKED,
+  AVATAR_CANVAS_LAUNCHER,
+  AVATAR_COLUMN_ASPECT,
+  AVATAR_COLUMN_BODY_FRACTION,
+  AVATAR_COLUMN_BODY_GAP,
+  AVATAR_COLUMN_BODY_RIGHT,
+  AVATAR_FRAMING_COLUMN,
+  AVATAR_FRAMING_DEFAULT,
+  AVATAR_LAUNCHER_BODY_FRACTION,
+  AVATAR_LAUNCHER_HIT_CLASS,
+  AVATAR_LAUNCHER_HIT_INSET_PCT,
+  avatarColumnBox,
+  avatarColumnRightInset,
+  avatarGuideEnabled,
+  avatarMetresPerPixel,
+  avatarPlacement,
+  avatarSizeClass,
+  avatarViewHalfWidth,
+  avatarViewSpan,
+  besidePanelScale,
+  CHAT_BESIDE_PANEL_RIGHT,
+  CHAT_COLUMN_MIN_TRANSCRIPT,
+  CHAT_PANEL_HEADER_H,
+  CHAT_PANEL_HEIGHT_CLASS,
+  CHAT_PANEL_INSET,
+  CHAT_RAIL_W,
+  CHAT_TRANSCRIPT_PADDING,
+  deriveAvatarMode,
   EMOTION_RECIPES,
   emotionChannelValues,
   FACE_PALE_TINT,
   gestureEnvelope,
   headAim,
   stepHeadAim,
-  AVATAR_BUBBLE_RIGHT_CLASS,
-  AVATAR_BUBBLE_RIGHT_PX,
-  AVATAR_LAUNCHER_BODY_FRACTION,
-  avatarSizeClass,
-  besidePanelScale,
-  CHAT_BESIDE_PANEL_RIGHT,
-  avatarViewHalfWidth,
-  AVATAR_LAUNCHER_HIT_INSET_PCT,
-  AVATAR_LAUNCHER_HIT_CLASS,
-  CHAT_PANEL_HEIGHT_CLASS,
-  AVATAR_CANVAS_DOCKED,
-  AVATAR_CANVAS_LAUNCHER,
-  AVATAR_FRAMING_DEFAULT,
-  AVATAR_FRAMING_COLUMN,
-  AVATAR_COLUMN_RIGHT_INSET,
-  AVATAR_COLUMN_ASPECT,
-  avatarColumnBox,
-  AVATAR_COLUMN_BODY_FRACTION,
-  CHAT_COLUMN_MIN_TRANSCRIPT,
-  CHAT_TRANSCRIPT_PADDING,
-  CHAT_PANEL_HEADER_H,
-  CHAT_PANEL_INSET,
-  CHAT_RAIL_W,
-  avatarMetresPerPixel,
-  avatarViewSpan,
-  deriveAvatarMode,
-  avatarGuideEnabled,
-  avatarPlacement,
 } from './avatarMode'
 import type { AvatarFraming } from './avatarMode'
 
@@ -196,8 +198,41 @@ describe('avatarColumnBox', () => {
 })
 
 describe('fullscreen avatar optical alignment', () => {
-  it('moves the gesture canvas past the panel edge so Mika reads right-aligned', () => {
-    expect(AVATAR_COLUMN_RIGHT_INSET).toBe(-32)
+  // The width after her figure scales with the canvas, so a FIXED inset cannot
+  // hold her against the edge: -48px left her 194px short at 1920x1080 and cut
+  // 14px off her at 768x1024. What is pinned here is the outcome the owner
+  // asked for — her body flush with the panel's inner right edge — at every
+  // size the column can take.
+  const bodyEdgeFromViewportRight = (vw: number, vh: number): number => {
+    const { w } = avatarColumnBox(vw, vh)
+    const margin = w * (1 - AVATAR_COLUMN_BODY_RIGHT)
+    return margin + avatarColumnRightInset(w)
+  }
+
+  it.each([
+    [1920, 1080],
+    [1440, 900],
+    [1280, 800],
+    [1024, 768],
+    [900, 900],
+    [768, 1024],
+  ])('stands her body against the panel edge at %ix%i', (vw, vh) => {
+    expect(bodyEdgeFromViewportRight(vw, vh)).toBeCloseTo(
+      CHAT_PANEL_INSET + AVATAR_COLUMN_BODY_GAP,
+      6,
+    )
+  })
+
+  it('never lets the canvas hang out so far that her body leaves the screen', () => {
+    for (let vw = 768; vw <= 2560; vw += 16) {
+      expect(bodyEdgeFromViewportRight(vw, 900)).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('stops hanging out at all once the margin is smaller than where she stands', () => {
+    // A canvas this narrow has less transparent margin than the inset and gap
+    // together, so there is nothing to absorb and she simply stands inside.
+    expect(avatarColumnRightInset(10)).toBe(0)
   })
 })
 
