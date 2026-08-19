@@ -619,6 +619,8 @@ export function initAvatarGuide(
   // by hand she would keep whatever offset the clip ended on for the life of
   // the page.
   const restHips = new THREE.Vector3()
+  // Scratch for the ?mikadebug hips readout below; the tap runs every frame.
+  const debugHips = new THREE.Vector3()
 
   const motionLoader = new GLTFLoader()
   motionLoader.register((p) => new VRMAnimationLoaderPlugin(p))
@@ -1115,6 +1117,10 @@ export function initAvatarGuide(
           motionW: motionAction ? motionAction.getEffectiveWeight() : 0,
           motionClips: motionClips.size,
           placement,
+          // Hips WORLD height: the one number that says whether a clip's hips
+          // translation track reached the model at all. `squat` is meant to
+          // take her from 0.878 down to 0.660.
+          hipsY: bone(vrm, 'hips')?.getWorldPosition(debugHips).y ?? 0,
           ruaZ: bone(vrm, 'rightUpperArm')?.rotation.z ?? 0,
           ruaX: bone(vrm, 'rightUpperArm')?.rotation.x ?? 0,
           luaZ: bone(vrm, 'leftUpperArm')?.rotation.z ?? 0,

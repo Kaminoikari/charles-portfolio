@@ -199,6 +199,21 @@ describe('guard sensitivity', () => {
     expect(restHipsY - hips.y).toBeGreaterThan(MAX_HIPS_SINK)
   })
 
+  // No clip in the pool trips the crop-bottom guard: `squat`, the one that goes
+  // down on purpose, stops 0.042 above the waist-up edge. This pins the
+  // MEASUREMENT — that a sunk hips reads below the edge, and that the two frames
+  // crop differently — which is all a synthetic can do. Loosening the guard's
+  // budget leaves this green; the red evidence for the guard itself is
+  // `greeting` (hips 0.305, below both edges), and that needs its .vrma put back
+  // in public/ because the clip is deliberately not in the repo.
+  it('sees hips dropped through the bottom of the crop', () => {
+    const r = rig()
+    applyMotion(r, synthetic({ hipsY: FRAMES.waistUp.span.bottom - 0.05 }), 0)
+    const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
+    expect(hips.y).toBeLessThan(FRAMES.waistUp.span.bottom)
+    expect(hips.y).toBeGreaterThan(FRAMES.column.span.bottom)
+  })
+
   it('sees a body that is not upright', () => {
     const r = rig()
     // A quarter turn about X at the hips: the whole body pitches forward and
@@ -339,21 +354,25 @@ describe('bundled motions', () => {
     expect(best, `${name} best palm-to-viewer`).toBeGreaterThan(0.6)
   })
 
-  // Motion capture brings its own stance with it. `greeting` was dropped from
-  // the pack over exactly this: its hips open 0.57m below her rest height and
-  // rise off the floor over four seconds, which on the launcher canvas is her
-  // sinking most of the way out of frame before she waves.
-  it.each(Object.keys(AVATAR_MOTIONS))('%s keeps her standing at her own height', (name) => {
+  // A clip must never sink out of the bottom of the crop. This is the guard for
+  // what a motion DOES: `squat` lowers her hips 0.218 on purpose and belongs in
+  // the pool, so the budget is the frame's own bottom edge rather than a flat
+  // cap. Her hips at rest are 0.878, the waist-up frame ends at 0.618, and the
+  // column's at 0.430; squat's deepest is 0.660.
+  it.each(Object.entries(AVATAR_MOTIONS))('%s keeps her hips inside the crop', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
-    const restHipsY = r.restPosition.hips.y
-    let deepest = 0
+    let lowest = Infinity
     for (const time of m.sampleTimes) {
       applyMotion(r, m, time)
       const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
-      deepest = Math.max(deepest, restHipsY - hips.y)
+      lowest = Math.min(lowest, hips.y)
     }
-    expect(deepest, `${name} deepest hips sink`).toBeLessThan(MAX_HIPS_SINK)
+    for (const placement of def.placements) {
+      expect(lowest, `${name} lowest hips in ${placement}`).toBeGreaterThan(
+        FRAMES[placement].span.bottom,
+      )
+    }
   })
 
   // Both ends of a clip have to be a plain standing rest pose. The engine fades
@@ -364,10 +383,17 @@ describe('bundled motions', () => {
   it.each(Object.keys(AVATAR_MOTIONS))('%s opens and closes on a standing pose', (name) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
+    const restHipsY = r.restPosition.hips.y
     for (const time of [0, m.duration]) {
       applyMotion(r, m, time)
       const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
       expect(Math.abs(hips.x), `${name} hips drift at t=${time}`).toBeLessThan(0.1)
+      // Motion capture brings its own stance with it, and a clip whose ends do
+      // not sit at her own height is one three-vrm-animation has mis-seated on
+      // her rig. `greeting` opens 0.568 low and rises off the floor over 2.4s,
+      // which on the launcher canvas is her sinking most of the way out of
+      // frame before she waves. Checked at the ends only: see MAX_HIPS_SINK.
+      expect(restHipsY - hips.y, `${name} hips sink at t=${time}`).toBeLessThan(MAX_HIPS_SINK)
       for (const side of ['left', 'right'] as const) {
         // Wrist below the shoulder (y=1.215) means the arm is hanging.
         expect(probeHand(r, side).wrist.y, `${name} ${side} wrist at t=${time}`).toBeLessThan(1.05)

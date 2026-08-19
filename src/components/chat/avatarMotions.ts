@@ -18,7 +18,7 @@
 // bundling. See docs/plans/avatar-motion-capture.md for the hashes and terms.
 import type { AvatarPlacement } from './avatarMode'
 
-export type AvatarMotionName = 'peaceSign' | 'modelPose' | 'spin'
+export type AvatarMotionName = 'peaceSign' | 'modelPose' | 'spin' | 'squat'
 
 // Which composed frame a motion has been measured against. The launcher and the
 // docked canvas share a framing and an aspect ratio, so they share a budget;
@@ -41,18 +41,20 @@ export interface AvatarMotionDef {
 // AvatarSample_B_webp.vrm. Four are absent on purpose, and the numbers are here
 // so nobody re-adds one on the assumption that an official clip must be safe:
 //
-//   greeting      hips start at y=0.306, 0.57m below her rest height — she
-//                 rises off the floor over the first four seconds — and a
-//                 fingertip passes through her cheek at t=6.06s (0.65)
-//   squat         hips sink 0.218, most of the way to the frame's bottom edge,
-//                 and its best palm-to-viewer is 0.23
-//   showFullBody  reaches 0.713 toward the viewer's left, past the canvas
-//                 itself, and never turns a palm to the viewer (0.32)
+//   greeting      opens with her hips at y=0.310, 0.568m below her rest height,
+//                 and she rises off the floor over the first 2.4s. A fingertip
+//                 is also 17.0mm inside her head across 67 frames between
+//                 t=2.27s and t=7.23s. Two independent failures.
+//   showFullBody  reaches 0.713 toward the viewer's left against a 0.675 canvas
+//                 budget, for 54 frames between t=1.42s and t=2.30s. That edge
+//                 is the one over the transcript, so the cut happens in the
+//                 middle of the screen rather than off it: about 32px of hand
+//                 disappearing for nearly a second on a 1920x1080 column.
 //   shoot         VRMA_04, and it SHIPPED until the probe was widened from the
 //                 index fingertip to all sixteen hand joints: its right thumb
-//                 crosses into her cheek for 16 frames around t=3.45s, 7-10mm
-//                 past the face ellipsoid. Index-only it measures 1.19 and looks
-//                 clean. Do not re-add it without fixing the clip.
+//                 crosses into her cheek for 16 frames from t=3.35s to t=3.60s,
+//                 4.9mm past the face ellipsoid. Index-only it measures 1.19 and
+//                 looks clean. Do not re-add it without fixing the clip.
 //
 // A clip is only listed once the probe agrees it fits; adding one without
 // running that check is how the hand-authored gestures got where they were.
@@ -68,20 +70,38 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // sound; on every measurement of soundness it is the cleanest of the seven
   // after modelPose.
   spin: { placements: ['waistUp', 'column'], showsPalm: true },
+  // VRMA_07. She lowers into a squat and comes back up. Her hips reach 0.660,
+  // which is 0.218 below her rest height and still above both frames' bottom
+  // edges (0.618 waist-up, 0.430 column), so the whole motion stays in shot.
+  // Her hands stay low the entire time (best palm-to-viewer 0.23), so this is
+  // not a hand the viewer is meant to read.
+  squat: { placements: ['waistUp', 'column'], showsPalm: false },
 }
 
-// How far a clip may drop her hips below their rest height. Motion capture
-// carries its own stance, and three-vrm-animation scales the hips track by the
-// two rigs' rest heights without re-seating it, so a clip authored on a rig
-// that stood lower pulls the whole body down the canvas. 0.08m is about 20px
+// How far a clip's FIRST AND LAST frames may sit below her rest height. Motion
+// capture carries its own stance, and three-vrm-animation scales the hips track
+// by the two rigs' rest heights without re-seating it, so a clip authored on a
+// rig that stood lower pulls the whole body down the canvas. 0.08m is about 20px
 // on the launcher canvas: visible if you look for it, invisible in motion.
+//
+// This is checked at the ends and nowhere else, which is the 2026-08-20
+// correction. Applied to every frame it also rejected `squat` for going down —
+// which is what a squat is. A retargeting offset shows itself at the ends,
+// because a clip that opens and closes standing must open and close at her own
+// height; what happens in between is the motion, and the guard for THAT is the
+// frame's bottom edge.
 export const MAX_HIPS_SINK = 0.08
 
 export const MOTION_URL = (name: AvatarMotionName): string => `/avatar/animations/${name}.vrma`
 
 // What the idle timer may pick. All three read as something a person would do
 // unprompted while waiting; none of them needs a reason.
-export const IDLE_MOTIONS: readonly AvatarMotionName[] = ['peaceSign', 'modelPose', 'spin']
+export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
+  'peaceSign',
+  'modelPose',
+  'spin',
+  'squat',
+]
 
 /** The frame a placement composes to, or null where no avatar renders. */
 export function motionFrame(placement: AvatarPlacement): MotionFrame | null {
