@@ -20,6 +20,51 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-motion-capture',
+    date: '2026-08-19',
+    title: `Mika's gestures are motion capture now, and a test measures every pose before you see it`,
+    tags: ['feature', 'technical'],
+    body: [
+      `Her arm gestures used to be bone angles typed in by hand. Measured against her actual skeleton, seven of the ten put her hands somewhere the name never described: a hand resting at her hip while the gesture was called touching her hair, a fingertip inside her cheek, two palms turned away from you in the middle of a peace sign. All ten are gone. She now performs motion capture from VRoid Project, and a new test measures where a clip really puts her hands before it is allowed anywhere near you.`,
+      { kind: 'heading', text: `What was actually wrong` },
+      `The only automated check those gestures ever had was sideways reach against the width of her canvas. Where a hand landed, which way a palm faced, whether a finger passed through her face: none of it was visible to any test, so every adjustment was eyeball work against a screenshot, and a fix that looked right in one frame quietly broke another.`,
+      {
+        kind: 'table',
+        columns: [`Gesture`, `What it claimed`, `What it measured`],
+        rows: [
+          ['`hairTouch`', `Touching her hair`, `Wrist parked at her hip, 0.567m from the centre of her head`],
+          ['`cheekPoke`', `A poke at her own cheek`, `Fingertip 0.090m from her head centre, inside a skull of radius 0.115m`],
+          ['`doublePeace`', `Two peace signs at you`, `Both palms turned away, so you saw the backs of her hands`],
+          ['`salute`', `A salute`, `Wrist sunk into her hair, with her fingers pointing at the ceiling`],
+          ['`hipWave`', `A wave with a hand on her hip`, `Palm edge-on to the camera, so the wave showed only the side of her hand`],
+        ],
+      },
+      { kind: 'heading', text: `Motion capture, and only the clips that survive the check` },
+      `She now performs three of VRoid Project's official animation files: a peace sign held beside her face, a quiet standing pose, and a turn on the spot. Their joints are coordinated because a person actually moved that way. Four more clips from the same official pack are sitting on the floor, rejected by the test, and that is the point: an official asset still has to survive measurement.`,
+      {
+        kind: 'list',
+        items: [
+          '`greeting` starts with her hips 0.57m below her standing height, so she rises out of the floor across the first four seconds, and a fingertip passes through her cheek at the six second mark.',
+          '`shoot` is the one that nearly got through. The finger gun raised toward you looks clean, and it was cleared and staged, until the probe was widened from the index fingertip to all sixteen joints of the hand. Its THUMB crosses about 5mm into her cheek for a quarter of a second. Measured at the index alone it scores 1.19 and passes; measured across the whole hand it scores 0.90 and fails.',
+          '`showFullBody` reaches 0.713m, past the canvas itself, and never turns a palm toward you.',
+          '`squat` drops her hips 0.218m, most of the way down to the bottom edge of the picture.',
+        ],
+      },
+      { kind: 'heading', text: `The test that measures her` },
+      `The new verification layer rebuilds her skeleton straight out of the model file and runs the joint maths in Node, with no browser and no WebGL, so measuring every keyframe of every clip finishes in about a second. Six things have to hold: no joint of either hand enters the volume of her face, her whole silhouette stays inside the part of the frame you can actually see, a clip whose whole point is a hand turns that palm toward you at some moment, her hips stay within 0.08m of her standing height, she starts and finishes on her feet, and the skeleton decodes to an upright body in the first place.`,
+      `That last one exists because it caught the reader itself. One of the three clips stores its bones in a different rest orientation, and reading it the naive way stood her upside down with her feet above her head. Every other check passed on that pose, because a body folded in half is narrow, short, and points its palms nowhere. Each check was made to fail on purpose before it was trusted, and they need different provocations to do it: putting the rejected clips back turns most of them red, one clip per defect, while the upright check goes red only when the decoding step it exists to catch is taken out. What ships is a test result.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '7 of 10', label: `old arm gestures measured broken` },
+          { value: '3', label: `motion clips cleared to ship` },
+          { value: '6', label: `checks every clip has to pass` },
+        ],
+      },
+      `Her quieter beats are untouched: the head tilt, the glance around, the weight shift, the small bounce, the hip twist, the look at the floor, and the happy wiggle when you stroke the top of her head. Those move only her head and spine, where there was never an arm to get wrong. The animation credit sits in the site footer beside her voice credit, as her licence requires.`,
+    ],
+  },
+  {
     id: 'mika-full-height',
     date: '2026-08-14',
     title: `Mika stands as tall as the conversation she is having`,

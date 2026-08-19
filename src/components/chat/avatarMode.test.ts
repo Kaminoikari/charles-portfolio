@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  armAt,
   EMOTION_RECIPES,
   emotionChannelValues,
   FACE_PALE_TINT,
@@ -14,17 +13,9 @@ import {
   besidePanelScale,
   CHAT_BESIDE_PANEL_RIGHT,
   avatarViewHalfWidth,
-  AVATAR_WIDEST_GESTURE_REACH,
   AVATAR_LAUNCHER_HIT_INSET_PCT,
   AVATAR_LAUNCHER_HIT_CLASS,
   CHAT_PANEL_HEIGHT_CLASS,
-  ARM_REST_UPPER_Z,
-  ARM_REST_FORE_Z,
-  ARM_GESTURE_PEAKS,
-  elbowReach,
-  widestReach,
-  poseReach,
-  armReach,
   AVATAR_CANVAS_DOCKED,
   AVATAR_CANVAS_LAUNCHER,
   AVATAR_FRAMING_DEFAULT,
@@ -309,7 +300,11 @@ describe('avatar camera framing', () => {
     expect(AVATAR_CANVAS_LAUNCHER.h).toBe(280)
   })
 
-  it('shows her whole arm span, with margin, in every placement', () => {
+  // The canvas is a wide box with a lot of transparent air in it, and this is
+  // what holds every placement to the SAME amount of air. What that width has
+  // to contain is no longer computed here: rigProbe.test.ts measures each
+  // motion-capture clip against this exact half-width on the real skeleton.
+  it('gives her the same arm room in every placement', () => {
     const frames: Array<[string, AvatarFraming, { w: number; h: number }]> = [
       ['launcher', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER],
       ['docked', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED],
@@ -322,116 +317,15 @@ describe('avatar camera framing', () => {
     ]
     for (const [name, framing, canvas] of frames) {
       const half = avatarViewHalfWidth(framing, canvas)
-      // 8% past the widest point of the travel, for the sleeve and the hair
-      // that the bone maths does not carry. That factor used to be a 15% guess
-      // over a much smaller number; it is now measured, by reading the canvas
-      // alpha over 90s of real idle: the widest rendered silhouette was 0.636m
-      // against 0.622m of bone, so 2.3%, and 8% is comfortably past it.
-      const clears = half > AVATAR_WIDEST_GESTURE_REACH * 1.08
-      expect({ [name]: clears }).toEqual({ [name]: true })
-      // Sized for that and not accidentally enormous: all four land on the
-      // same half-width, so she has the same room in every placement.
-      expect(half).toBeCloseTo(0.674, 2)
+      // All four land on the same half-width, so a clip cleared in one
+      // placement is cleared in all of them.
+      expect({ [name]: half }).toEqual({ [name]: expect.closeTo(0.674, 2) })
     }
   })
 
-  // The reach is derived from the pose numbers the ENGINE uses, so a gesture
-  // widened there moves it. Without that link the reach was hand-transcribed
-  // and a wider stretch would clip again with the suite green.
-  it('derives the widest reach from the arm poses the engine actually uses', () => {
-    // Rest pose: arms down at her sides, well inside the frame.
-    expect(armReach(ARM_REST_UPPER_Z, ARM_REST_FORE_Z)).toBeCloseTo(0.233, 3)
-    // 0.622, and it is a point PART WAY through a raise, not any pose: from a
-    // hanging arm the forearm folds up through the frontal plane and the hand
-    // passes far wider than it ever sits. Every canvas is sized off THIS, which
-    // is why they are wide boxes with a lot of transparent air in them.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeCloseTo(0.622, 3)
-    // Sized for that travel, the canvas now holds the arm's ENTIRE range: fully
-    // extended and horizontal reaches 0.647, still inside the 0.674 half-width,
-    // so no pose in the z plane and no point on the way to one can leave the
-    // frame. That is the property the widening bought.
-    const half = avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER)
-    expect(armReach(0, 0)).toBeCloseTo(0.647, 3)
-    expect(armReach(0, 0)).toBeLessThan(half)
-    // And the check is still sensitive to the width: the canvas as it shipped
-    // before 2026-08-15 does not contain the travel, which is the bug.
-    expect(AVATAR_WIDEST_GESTURE_REACH).toBeGreaterThan(
-      avatarViewHalfWidth(AVATAR_FRAMING_DEFAULT, { w: 245, h: 280 }),
-    )
-  })
-
-  // Every gesture that moves an arm, not just the widest one. The elbow is
-  // checked alongside the fingertip because the poses that fold the forearm
-  // back (hands behind her head, a hand on her hip) put their widest point
-  // there, and a fingertip-only check waves them straight through.
-  it('keeps every arm gesture inside the canvas, elbows included', () => {
-    const half = avatarViewHalfWidth(AVATAR_FRAMING_COLUMN, avatarColumnBox(1440, 900))
-    for (const [name, g] of Object.entries(ARM_GESTURE_PEAKS)) {
-      for (const [side, pose] of Object.entries(g)) {
-        if (!pose) continue
-        const widest = poseReach(pose)
-        expect({ at: `${name}.${side}`, fits: widest < half }).toEqual({
-          at: `${name}.${side}`,
-          fits: true,
-        })
-      }
-    }
-  })
-
-  // Reported 2026-08-15: the arm is cut off DURING the raise. It was, and the
-  // reach check could not see it, because both ends of the travel are narrow
-  // and it only ever looked at the ends. These hold the two halves of the fix:
-  // that the check walks the travel, and that the travel is routed in front of
-  // her so it fits.
-  it('measures a gesture across its whole travel, not just the pose it ends on', () => {
-    const peak = ARM_GESTURE_PEAKS.doublePeace.left!
-    // The pose itself is one of the NARROWEST attitudes the arm passes through.
-    const atPose = armReach(peak.upper, peak.fore)
-    expect(atPose).toBeLessThan(0.2)
-    // Part way up, with the forearm still opening out, it is far wider.
-    expect(poseReach(peak)).toBeGreaterThan(atPose * 2)
-  })
-
-  // The travel is a plain interpolation of the two joints and nothing else. A
-  // shoulder turn was tried on 2026-08-15 to keep the raise narrow enough for
-  // the old canvas; the owner rejected it as a motion no human shoulder makes,
-  // and the canvases were widened instead. This holds the motion to the two
-  // joints so the next width problem cannot be solved by bending her again.
-  it('travels to a pose on the two arm joints alone', () => {
-    const peak = ARM_GESTURE_PEAKS.doublePeace.left!
-    expect(Object.keys(armAt(peak, 0.5)).sort()).toEqual(['fore', 'upper'])
-    for (const env of [0, 0.25, 0.5, 0.75, 1]) {
-      const f = armAt(peak, env)
-      expect(f.upper).toBeCloseTo(ARM_REST_UPPER_Z + (peak.upper - ARM_REST_UPPER_Z) * env, 12)
-      expect(f.fore).toBeCloseTo(ARM_REST_FORE_Z + (peak.fore - ARM_REST_FORE_Z) * env, 12)
-    }
-  })
-
-  // The elbow term in widestReach() is inert against the CURRENT table (every
-  // fingertip beats every elbow), so nothing else would notice it being
-  // deleted. This feeds it a pose where the elbow is the widest point — arm
-  // out near horizontal, forearm folded right back — and holds it to that.
-  it('measures the elbow when a pose folds the hand back inside it', () => {
-    const elbowLed = { fake: { left: { upper: 0.1, fore: 2.6 } } }
-    const pose = elbowLed.fake.left
-    expect(elbowReach(pose.upper)).toBeGreaterThan(armReach(pose.upper, pose.fore))
-    expect(widestReach(elbowLed)).toBeCloseTo(elbowReach(pose.upper), 6)
-  })
-
-  // The peaks table is the engine's pose source, so a typo there is a real
-  // pose change. These two are the load-bearing ones: `hairTouch` sets the
-  // width, and handsBehindHead is the only gesture whose elbow beats its
-  // fingertip.
-  it('pins the poses the width budget is measured against', () => {
-    expect(ARM_GESTURE_PEAKS.hairTouch.left).toEqual({ upper: 0.4, fore: 1.35 })
-    const behind = ARM_GESTURE_PEAKS.handsBehindHead.left!
-    expect(elbowReach(behind.upper)).toBeGreaterThan(armReach(behind.upper, behind.fore))
-  })
-
-  // The owner's report was that a pose "snaps back the moment it arrives".
-  // These hold the plateau that fixed it, and hold the ramps to the exact sine
-  // the ambient beats were tuned against.
-  it('parks a named pose at the full pose for its whole hold', () => {
+  // gestureEnvelope's plateau: no bundled beat uses it today (they are all pure
+  // sine), but it is the shape any held pose needs, so it stays proven.
+  it('parks a pose at the full envelope for its whole hold', () => {
     // 2s of movement, 3.5s parked: full envelope from the end of the rise to
     // the start of the fall, which is the part the owner asked for.
     for (const t of [1.0, 2.0, 3.0, 4.4]) expect(gestureEnvelope(t, 2, 3.5)).toBe(1)

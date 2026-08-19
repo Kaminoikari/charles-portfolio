@@ -217,63 +217,25 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 //
 // The view is 1.172m tall against the default's 1.291m, which is why she comes
 // out 10% larger on the same canvas — and why the column is proportionally
-// WIDER than the rail was: her arm room is a fixed 0.484m spread over fewer
+// WIDER than the rail was: her arm room is a fixed 0.674m spread over fewer
 // metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
 export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 1.016 }
 
-// ---- arm reach ------------------------------------------------------------
-// Her arm, measured off the VRM's own bone translations (metres). VRM0's rest
-// pose is a T-pose, so an arm starts along ±x and the upperArm/lowerArm z
-// rotations swing it down in the xy plane.
-const ARM = { shoulderX: 0.081, upper: 0.233, foreAndHand: 0.333 }
-
-// The rest pose the engine pins the arms to, and how far `stretch` flares them
-// out of it. These live here, rather than as literals in the engine's gesture
-// table, so the reach below is COMPUTED from the same numbers the engine poses
-// with: widening a gesture now moves the required canvas width, and the test
-// that checks the canvas contains her reach turns red.
+// ---- arm rest pose ---------------------------------------------------------
+// The engine pins her arms here whenever nothing else is driving them: VRM0's
+// rest pose is a T-pose, and these Z rotations bring the arms down to her sides.
+//
+// This is all that is left of a much larger block. Until 2026-08-19 this file
+// also carried a forward-kinematic model of her arm — reach, elbow span, a peak
+// pose per gesture, and the widest point of every travel — because the arm
+// gestures were hand-authored joint angles and the canvas had to be proven wide
+// enough to contain them. Motion capture replaced those gestures, and the
+// containment proof moved with them: rigProbe.ts poses the REAL skeleton out of
+// the .vrm and rigProbe.test.ts measures each clip against each frame, which
+// covers what this model covered plus everything it could not see (a hand
+// inside her head, a palm turned away, a stance that sinks).
 export const ARM_REST_UPPER_Z = 1.15
 export const ARM_REST_FORE_Z = 0.25
-
-// Where the elbow and the fingertip sit, sideways from her centre line, for one
-// arm attitude, measured in the frontal plane.
-function armSpan(zUpper: number, zFore: number): { elbow: number; tip: number } {
-  const elbow = -ARM.shoulderX + ARM.upper * Math.cos(Math.PI + zUpper)
-  return { elbow, tip: elbow + ARM.foreAndHand * Math.cos(Math.PI + zUpper + zFore) }
-}
-
-// Distance from her centre line to a fingertip, for a given pair of arm
-// rotations. Angles are measured from +x, so the left arm starts at π.
-export function armReach(zUpper: number, zFore: number): number {
-  return Math.abs(armSpan(zUpper, zFore).tip)
-}
-
-// Distance from her centre line to the ELBOW. Gestures that fold the forearm
-// back — hands behind the head, a hand on her hip — put their widest point
-// here, not at the fingertip, so a reach check that only looked at fingertips
-// would wave them through and then clip the elbow.
-export function elbowReach(zUpper: number): number {
-  return Math.abs(armSpan(zUpper, 0).elbow)
-}
-
-export interface ArmFrame {
-  upper: number
-  fore: number
-}
-
-// One frame of an arm's travel from its rest pin to a pose. The ENGINE poses
-// from this and the width check below measures it, so the two cannot disagree
-// about what the arm does between the two ends. The travel is a plain linear
-// interpolation of both joints, which is the motion the owner approved; a
-// shoulder turn tried on 2026-08-15 to narrow it was rejected as something no
-// human shoulder does, and the canvases were widened to fit the real motion
-// instead.
-export function armAt(pose: ArmPose, env: number): ArmFrame {
-  return {
-    upper: ARM_REST_UPPER_Z + (pose.upper - ARM_REST_UPPER_Z) * env,
-    fore: ARM_REST_FORE_Z + (pose.fore - ARM_REST_FORE_Z) * env,
-  }
-}
 
 // How far into a gesture the body is, from 0 at rest to 1 at the full pose.
 // `dur` is the movement time, split evenly between the rise and the fall, and
@@ -290,119 +252,29 @@ export function gestureEnvelope(t: number, dur: number, hold: number): number {
   return Math.sin(Math.max(0, falling) * (Math.PI / 2))
 }
 
-// ---- what each arm gesture actually does -----------------------------------
-// The peak pose (envelope = 1) of every gesture that moves an arm, in the
-// engine's own bone units: `upper` is |z| on the upper arm (smaller = raised
-// toward the T-pose) and `fore` is |z| on the forearm (larger = folded in
-// toward the shoulder). The engine's GESTURES table READS this, so these are
-// the poses themselves and not a description that can drift from them, and the
-// canvas-width check below therefore covers every gesture rather than one.
-// A gesture may also swing an arm forward out of the frontal plane, toward the
-// viewer. That rotation is about the x axis, so it leaves the sideways reach
-// modelled here untouched, and the pose needs no field for it: measured on the
-// model, the resting wrist sits at x 0.212 and a 1.25 rad forward swing moves
-// it to 0.207. An earlier version of this file scored such a swing as
-// cos(forward) foreshortening, which understated the width by 3x.
-export interface ArmPose {
-  upper: number
-  fore: number
-}
-// Named so the engine's GestureName can be built from it: every arm gesture
-// must appear here, and the Record makes a missing one a type error.
-export type ArmGestureName =
-  | 'lookHand'
-  | 'hairTouch'
-  | 'doublePeace'
-  | 'singlePeace'
-  | 'cheekPoke'
-  | 'salute'
-  | 'pointAtYou'
-  | 'handsBehindHead'
-  | 'handOnHip'
-  | 'hipWave'
-
-export const ARM_GESTURE_PEAKS: Record<ArmGestureName, { left?: ArmPose; right?: ArmPose }> = {
-  // Every pose below was set by measuring where the wrist bone actually lands
-  // in world space, not by solving the angles on paper: `fore` continues the
-  // upper arm's rotation rather than opposing it, so the intuitive positive
-  // value folds the hand DOWN across the body. Every hand-up pose here is
-  // negative, and the first draft of all eight had it backwards.
-  // Reference heights on this model: head bone 1.320, cheek ~1.38, brow ~1.45,
-  // hair top 1.582, hip ~0.90.
-
-  // Right palm raised in front of her and studied.
-  lookHand: { right: { upper: 0.9, fore: 1.2 } },
-  // Left hand up to her hair.
-  hairTouch: { left: { upper: 0.4, fore: 1.35 } },
-
-  // Wrists at (±0.24, 1.40) — eye level, just outside her hair.
-  doublePeace: { left: { upper: 0.0, fore: -2.0 }, right: { upper: 0.0, fore: -2.0 } },
-  singlePeace: { right: { upper: 0.0, fore: -2.0 } },
-  // Wrists at (±0.15, 1.31), so the extended index finger lands on her cheek.
-  cheekPoke: { left: { upper: 0.25, fore: -2.6 }, right: { upper: 0.25, fore: -2.6 } },
-  // Right wrist at (0.13, 1.45), her brow. Left hand goes to the hip.
-  salute: { right: { upper: -0.45, fore: -2.0 }, left: { upper: 0.75, fore: 1.45 } },
-  // Aimed at the viewer: the z angles stay at rest and the engine does the
-  // whole gesture with a forward swing, putting the fingertip 0.52 in front of
-  // her and only 0.23 to the side. Raising the arm sideways first, as the first
-  // draft did, sent the fingertip to 0.60 and off the edge of the canvas.
-  pointAtYou: { right: { upper: ARM_REST_UPPER_Z, fore: ARM_REST_FORE_Z } },
-  // Wrists at (±0.20, 1.51) and pushed back in depth by the gesture itself.
-  // The elbows are the widest point of any pose here, which is what
-  // elbowReach() exists for.
-  handsBehindHead: { left: { upper: -0.45, fore: -1.6 }, right: { upper: -0.45, fore: -1.6 } },
-  // Wrist at (0.12, 0.87), the top of her thigh, with the elbow winged out.
-  handOnHip: { left: { upper: 0.75, fore: 1.45 } },
-  // That hand on the hip, and the other one up in a proper greeting.
-  hipWave: { left: { upper: 0.75, fore: 1.45 }, right: { upper: -0.25, fore: -1.6 } },
-}
-
-// The widest point a set of poses reaches, fingertip or elbow. Taken as a
-// parameter rather than closing over the table so a test can feed it a pose
-// whose elbow beats every fingertip: with the real table the fingertips win
-// everywhere, which leaves the elbow term unproven and free to be deleted.
-// How far one arm gesture reaches sideways over its WHOLE travel: the further
-// of the fingertip and the elbow, at every point between the rest pin and the
-// pose. Sampling the travel rather than the pose is the whole point — the peak
-// is the narrow part of these gestures, and checking it alone is what let a
-// clipping raise ship.
-const ARM_PATH_SAMPLES = 96
-export function poseReach(p: ArmPose): number {
-  let worst = 0
-  for (let i = 0; i <= ARM_PATH_SAMPLES; i++) {
-    const f = armAt(p, i / ARM_PATH_SAMPLES)
-    const span = armSpan(f.upper, f.fore)
-    worst = Math.max(worst, Math.abs(span.tip), Math.abs(span.elbow))
-  }
-  return worst
-}
-
-export function widestReach(peaks: Record<string, { left?: ArmPose; right?: ArmPose }>): number {
-  return Math.max(
-    ...Object.values(peaks).flatMap((g) =>
-      [g.left, g.right].filter((p): p is ArmPose => p !== undefined).map(poseReach),
-    ),
-  )
-}
-
-// What the canvas width has to contain.
-export const AVATAR_WIDEST_GESTURE_REACH = widestReach(ARM_GESTURE_PEAKS)
-
 // Canvas boxes per placement.
 //
-// The widths are set by that reach, not by how big she should look. Because the
-// FOV is vertical, width only adds horizontal view: the same character at the
-// same size with more room beside her. The old widths showed ±0.355m, so a
-// stretch lost its last 14-17px and a wave its last 10-12px. These show ±0.484m,
-// which clears the reach by 18% — enough for the hand's own thickness and for
-// hair the spring bones throw outward. The extra area is transparent, so it
+// The widths are set by how much room her arms need, not by how big she should
+// look. They were sized against the forward-kinematic reach model this file used
+// to carry; that model is gone (see the note above ARM_REST_UPPER_Z) and the
+// containment proof now lives in rigProbe.test.ts, which measures every shipped
+// clip against these same boxes. Because the FOV is vertical, width only adds
+// horizontal view: the same character at the same size with more room beside
+// her. The old widths showed ±0.355m, so a stretch lost its last 14-17px and a
+// wave its last 10-12px. These show ±0.674m, and the widest bundled clip takes
+// almost all of it: `spin` reaches 0.658m by its index knuckle. Do not read the
+// remaining 16mm as margin. rigProbe measures JOINTS, and this model's fingertip
+// end nodes sit up to 0.020m beyond the distal joint, so the skinned surface
+// peaks at about 0.674m — roughly 0.6mm inside the edge, measured. What is left
+// over is not room for hair the spring bones throw outward, which nothing here
+// models. The extra area is transparent, so it
 // costs page space nowhere; only the launcher's click target had to be narrowed
 // to match (see ChatWidget).
 //
 // The docked box is the odd one out: it is sized to the PANEL, not to a number
 // of its own, so she stands exactly as tall as the thing she is standing next
 // to. Its height is the panel's `min(560px,80vh)` and its width follows at the
-// same 491/560 ratio, so the ±0.484m of arm room survives the resize. Both
+// same 684/560 ratio, so the ±0.674m of arm room survives the resize. Both
 // literals below are the uncapped 100%-of-560 case; on a viewport under 700px
 // tall the vh branch scales the pair together and she simply renders smaller.
 //
@@ -459,7 +331,7 @@ export const CHAT_COLUMN_MIN_TRANSCRIPT = 360
 // adds her reserve to the right one, so the budget has to allow for it or the
 // floor above is short by exactly this much.
 export const CHAT_TRANSCRIPT_PADDING = 48
-// Canvas width per unit height, from AVATAR_FRAMING_COLUMN: ±0.484m of arm room
+// Canvas width per unit height, from AVATAR_FRAMING_COLUMN: ±0.6745m of arm room
 // over a 0.586m half-height view. Tighter than the rail's 0.75 because the
 // framing is tighter vertically — the arm room is the same metres either way.
 export const AVATAR_COLUMN_ASPECT = 0.6745 / 0.586
@@ -528,7 +400,7 @@ export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[256px]'
 // constants above — which is exactly why this lives next to them and is pinned
 // by a test that parses these strings back. Editing one of these widths without
 // editing its constant used to be silent; now it is red.
-// 70.14vh = 80vh × 491/560: the vh branch has to carry the ratio too, or a
+// 97.71vh = 80vh × 684/560: the vh branch has to carry the ratio too, or a
 // short viewport would shrink her height while keeping full width and hand her
 // a metre of empty room beside her arms.
 //

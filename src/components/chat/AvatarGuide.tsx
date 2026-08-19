@@ -4,7 +4,12 @@
 // behaviour lives in avatarGuideEngine.ts.
 
 import { useEffect, useRef } from 'react'
-import { AVATAR_FRAMING_DEFAULT, type AvatarFraming, type AvatarMode } from './avatarMode'
+import {
+  AVATAR_FRAMING_DEFAULT,
+  type AvatarFraming,
+  type AvatarMode,
+  type AvatarPlacement,
+} from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
 
 // _webp = same model repacked with EXT_texture_webp textures (15.4MB→5.5MB,
@@ -20,6 +25,7 @@ export default function AvatarGuide({
   sizeClass,
   sizeStyle,
   framing,
+  placement,
   onHandle,
   onLoaded,
   onContextLost,
@@ -40,6 +46,9 @@ export default function AvatarGuide({
   // Camera distance and look-at height for this placement, when the canvas is
   // tall enough to want a different crop. Undefined keeps the engine default.
   framing?: AvatarFraming
+  // Which composition she stands in. The engine plays only the motion-capture
+  // clips that have been measured to fit that frame.
+  placement: AvatarPlacement
   // Hands the live engine handle up once the engine is created (and null on
   // teardown) so the widget can drive lip sync / emotions / gestures directly
   // — those are imperative performance beats, not renderable React state.
@@ -59,6 +68,7 @@ export default function AvatarGuide({
   const modeRef = useRef(mode)
   const activeRef = useRef(active)
   const framingRef = useRef(framing)
+  const placementRef = useRef(placement)
   const onHandleRef = useRef(onHandle)
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
@@ -98,6 +108,7 @@ export default function AvatarGuide({
       // wrong crop before the effect below fires.
       const f = framingRef.current
       if (f) handleRef.current.setFraming(f.distance, f.lookAtY)
+      handleRef.current.setPlacement(placementRef.current)
       onHandleRef.current?.(handleRef.current)
     })
     return () => {
@@ -112,6 +123,11 @@ export default function AvatarGuide({
     modeRef.current = mode
     handleRef.current?.setMode(mode)
   }, [mode])
+
+  useEffect(() => {
+    placementRef.current = placement
+    handleRef.current?.setPlacement(placement)
+  }, [placement])
 
   // Dolly with the placement. Depends on the numbers rather than the object so
   // a fresh literal each render does not re-run this.

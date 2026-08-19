@@ -17,19 +17,19 @@
 //   - gestures: procedural bow/nod, additive over the mode pose
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
-// Perception & idle life (Batch 3):
+// Perception & idle life (Batch 3, rebuilt 2026-08-19):
 //   - head-pat: AvatarGuide detects strokes across her head and triggers a
 //     happy wiggle — silent by design, and it never intercepts the click
-//   - idle acts: 16 varieties, picked at random roughly every 5s of undisturbed
-//     idle. Eight are named poses added 2026-08-14 (double and single peace
-//     signs, poking her own cheeks, a salute, pointing at the viewer, hands
-//     behind her head, a hand on her hip, and that hand-on-hip plus a wave),
-//     each parked at its full pose for 3.5s so a viewer can read it; the rest
-//     are the smaller beats (head tilt, glance, palm check, weight shift,
-//     bounce, hair touch, hip twist, floor peek). The bar every one of them has
-//     to clear: a viewer can say what it is. `stretch`, `armSwing` and
-//     `deepBreath` were all cut for failing it, the last two because their peak
-//     is under 0.12rad and reads as the resting pose.
+//   - idle acts fire roughly every 5s of undisturbed idle and come from two
+//     pools. Two thirds are motion-capture clips (avatarMotions.ts); the rest
+//     are six procedural beats that lean the head and torso a few degrees
+//     (tilt, glance, weight shift, bounce, hip twist, floor peek).
+//   - the ten hand-authored ARM gestures that used to sit in that pool were
+//     removed on 2026-08-19. Measured against the real skeleton, seven of them
+//     put a hand somewhere no person would: fingers inside her own face, a
+//     "hair touch" that stopped at her hip, a peace sign with one palm facing
+//     backwards. Joint angles were being authored without any way to see where
+//     they landed. See docs/plans/avatar-motion-capture.md and rigProbe.ts.
 //
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
@@ -51,10 +51,20 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { VRMLoaderPlugin, VRMUtils, type VRM } from '@pixiv/three-vrm'
 import {
-  ARM_GESTURE_PEAKS,
+  createVRMAnimationClip,
+  VRMAnimationLoaderPlugin,
+  VRMLookAtQuaternionProxy,
+  type VRMAnimation,
+} from '@pixiv/three-vrm-animation'
+import {
+  IDLE_MOTIONS,
+  MOTION_URL,
+  motionsFor,
+  type AvatarMotionName,
+} from './avatarMotions'
+import {
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
-  armAt,
   EMOTION_RECIPES,
   emotionChannelValues,
   FACE_PALE_TINT,
@@ -64,8 +74,8 @@ import {
   AVATAR_FRAMING_DEFAULT,
   headAim,
   stepHeadAim,
-  type ArmGestureName,
   type AvatarMode,
+  type AvatarPlacement,
   type EmotionName,
 } from './avatarMode'
 import { sampleViseme } from './visemeTrack'
@@ -78,11 +88,12 @@ export type { EmotionName } from './avatarMode'
 // head-pat response; the rest is the idle-act pool that fires on its own during
 // undisturbed idle (see IDLE_ACTS).
 //
-// The arm half of the union comes from avatarMode's ARM_GESTURE_PEAKS, so every
-// gesture that moves an arm necessarily has a peak pose the canvas-width test
-// can see. Adding one here without adding it there is a type error.
+// Nothing here touches an arm any more. Arms are motion capture (avatarMotions)
+// because a hand has to ARRIVE somewhere — beside her temple, on her hip — and
+// hand-authored joint angles were never checked against where they actually
+// landed. These survivors only lean the head and torso a few degrees, which is
+// a shape a formula can hold honestly.
 export type GestureName =
-  | ArmGestureName
   | 'bow'
   | 'nod'
   | 'wiggle'
@@ -105,11 +116,18 @@ export type AvatarGuideHandle = {
   setSpeech: (audio: HTMLAudioElement | null, track: VisemeTrack | null) => void
   setEmotion: (name: EmotionName, weight?: number, holdSec?: number) => void
   playGesture: (name: GestureName) => void
+  // Play a motion-capture clip. Returns false when the clip has not finished
+  // downloading, which is not an error: the caller falls back to a procedural
+  // beat and the clip is there for the next one.
+  playMotion: (name: AvatarMotionName) => boolean
   // Camera dolly for a placement that gets a taller canvas. Pass the distance
   // and the height the camera looks at; the tilt is preserved. Keeping
   // `distance / canvas height` constant keeps her on-screen size constant, so
   // a taller canvas shows more of her instead of scaling her up.
   setFraming: (distance: number, lookAtY: number) => void
+  // Which composition she is rendered in. Gates which motion-capture clips are
+  // eligible: a clip is only played in a frame it has been measured to fit.
+  setPlacement: (placement: AvatarPlacement) => void
   dispose: () => void
 }
 
@@ -119,9 +137,10 @@ const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
 
 
 type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']>[0]
-// VRM0 rest pose is a T-pose; these Z rotations bring the arms down. Every arm
-// gesture borrows these bones and must restore these EXACT values — they are
-// the single source of truth for the rest pose.
+// VRM0 rest pose is a T-pose; these Z rotations bring the arms down. Nothing
+// procedural touches the arms any more, but every motion-capture clip animates
+// them, so stopMotion has to put back these EXACT values — they are the single
+// source of truth for the rest pose.
 const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
   ['leftUpperArm', ARM_REST_UPPER_Z],
   ['rightUpperArm', -ARM_REST_UPPER_Z],
@@ -132,9 +151,10 @@ const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
 ]
 
 // Finger bones, all 30 of them (this model carries the full VRM0 set). They
-// rest at identity and the hand poses below rotate them, so the restore has to
-// cover them too: pinArms is the ONLY thing that undoes a gesture, and a bone
-// it does not list stays wherever the gesture left it for the rest of the page.
+// rest at identity, and the motion-capture clips animate every one of them (a
+// peace sign is nothing without fingers), so the restore has to cover them:
+// `stopMotion` calls pinArms, and a bone it does not list keeps whatever the
+// clip left on it for the rest of the page.
 const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Little'] as const
 const FINGER_SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
 type FingerName = (typeof FINGERS)[number]
@@ -158,89 +178,12 @@ function pinArms(v: VRM) {
   }
 }
 
-// How far each finger curls toward the palm, as a fraction of a full fist.
-// Curling is -Z on the left hand and +Z on the right — the OPPOSITE mirror to
-// the arm pins. The first draft reused the arm sign and every "curled" finger
-// hyperextended backward out of the hand; nobody saw it until a phone-scale
-// closeup, because from the front a finger bent back hides almost as well as
-// one folded in.
-interface HandPose {
-  curl: Record<FingerName, number>
-  // Sideways splay on the proximal joint. Two straight fingers side by side
-  // render as one thick finger at the size she is actually seen at, so a V that
-  // does not splay reads as a point — checked on the 807px fullscreen canvas.
-  spread?: Partial<Record<FingerName, number>>
-  // Twist of the wrist about the forearm axis, radians, mirrored like the rest.
-  // A raised forearm leaves the palm facing her own head, which turns a V's
-  // splay into pure depth — from the front the two fingers eclipse each other
-  // and the sign reads as ONE finger. The twist turns the palm to the camera.
-  wrist?: number
-}
-const HAND_OPEN: HandPose = { curl: { Thumb: 0, Index: 0, Middle: 0, Ring: 0, Little: 0 } }
-// Two fingers up, the rest folded away. The thumb only half-curls: folded flat
-// it disappears into the palm and the silhouette stops reading as a V.
-const HAND_PEACE: HandPose = {
-  curl: { Thumb: 0.6, Index: 0, Middle: 0, Ring: 1, Little: 1 },
-  spread: { Index: 0.55, Middle: -0.55 },
-  wrist: -1.0,
-}
-// One finger out, for pointing and for poking her own cheeks.
-const HAND_POINT: HandPose = { curl: { Thumb: 0.5, Index: 0, Middle: 1, Ring: 1, Little: 1 } }
-
-// A loose hand, for poses where the fingers are not the point.
-const HAND_RELAXED: HandPose = {
-  curl: { Thumb: 0.2, Index: 0.25, Middle: 0.3, Ring: 0.35, Little: 0.4 },
-}
-// Fingers spread over the hip bone, closer to flat than to a fist.
-const HAND_HIP: HandPose = {
-  curl: { Thumb: 0.3, Index: 0.2, Middle: 0.2, Ring: 0.25, Little: 0.3 },
-}
-
-// A full fist is about 1.6rad per joint; the poses above are fractions of it.
-const FINGER_FULL_CURL = 1.6
-
-function setHand(v: VRM, side: 'left' | 'right', pose: HandPose, amount: number) {
-  const mirror = side === 'left' ? 1 : -1
-  for (const finger of FINGERS) {
-    // The thumb sits rotated ~90° from the fingers in the rest pose, so folding
-    // it across the palm is a rotation about y where the fingers fold on z; on
-    // z it hyperextends sideways out of the hand, the "chicken foot" of the
-    // first draft. It also folds on a shallower arc, or it clips the fingers.
-    const scale = finger === 'Thumb' ? 0.55 : 1
-    // The thumb's y fold takes the OPPOSITE mirror to the fingers' z curl:
-    // +mirror against their -mirror. Settled per hand on closeups — each wrong
-    // sign rotates that thumb out of the fist to hang sideways off the hand,
-    // which is exactly what the owner flagged on the peace signs.
-    const angle =
-      (finger === 'Thumb' ? mirror : -mirror) * pose.curl[finger] * amount * FINGER_FULL_CURL * scale
-    const bones = fingerBones(side, finger)
-    for (const name of bones) {
-      const b = v.humanoid?.getNormalizedBoneNode(name)
-      if (!b) continue
-      if (finger === 'Thumb') b.rotation.y = angle
-      else b.rotation.z = angle
-    }
-    // Splay lives on the proximal joint only — the knuckle is where a finger
-    // actually spreads; putting it on every segment bows the finger sideways.
-    const spread = pose.spread?.[finger]
-    if (spread !== undefined) {
-      const b = v.humanoid?.getNormalizedBoneNode(bones[0])
-      if (b) b.rotation.y = mirror * spread * amount
-    }
-  }
-  if (pose.wrist !== undefined) {
-    const b = v.humanoid?.getNormalizedBoneNode(`${side}Hand` as BoneName)
-    if (b) b.rotation.x = mirror * pose.wrist * amount
-  }
-}
-
 // ---- gesture / idle-act library --------------------------------------------
 // Every gesture is a pure per-frame function: p ∈ [0,1] is progress, env is
 // the sin(pπ) ease envelope, v ∈ {-1, 1} picks a random side per trigger, and
 // offsets accumulate into `o` (ADDED to the mode-driven pose downstream).
-// Arm-touching gestures write the arm bones directly — absolute values based
-// on ARM_PINS — and are flagged `arms` so completion AND interruption restore
-// the pins exactly. Table-driven because a 15-branch if-chain stopped reading.
+// No gesture writes a bone directly any more, which is why none of them needs
+// an interruption path: the offsets simply stop being accumulated.
 type GestureOffsets = {
   hp: number // head pitch (+ looks down)
   hy: number // head yaw (+ turns to her left)
@@ -256,42 +199,20 @@ type GestureOffsets = {
 type GestureDef = {
   // Seconds of MOVEMENT: the rise and the fall, half of `dur` each.
   dur: number
-  // Seconds spent parked at full envelope between the two. A named pose is a
-  // pose, and `sin(p·π)` alone touches its peak for a single frame, which reads
-  // as the gesture bouncing off something. The ambient beats leave this at 0
-  // and keep the pure sine they were tuned with.
+  // Seconds spent parked at full envelope between the two. Every survivor
+  // leaves this at 0 and keeps the pure sine it was tuned with; the plateau
+  // existed for named arm poses, which motion capture owns now.
   hold?: number
-  arms?: boolean
-  // Which ARM_GESTURE_PEAKS entry this gesture poses to. Present on every arm
-  // gesture, because that table is what the canvas-width test reads: a gesture
-  // that reached the peak by writing its own literals would be invisible to it
-  // and would clip at the canvas edge with the suite green.
-  peak?: ArmGestureName
-  apply: (vrm: VRM, p: number, env: number, v: number, o: GestureOffsets) => void
+  apply: (p: number, env: number, v: number, o: GestureOffsets) => void
 }
 
 const bone = (v: VRM, n: BoneName) => v.humanoid?.getNormalizedBoneNode(n)
-
-// Drive one arm from its rest pin toward a named peak pose. The attitude comes
-// from avatarMode's armAt(), which the canvas-width check samples across the
-// whole travel, so the arm cannot pass through a shape the check never sees.
-// Magnitudes there; the sign is the left/right mirror the pins use.
-function armTo(v: VRM, side: 'left' | 'right', peak: ArmGestureName, env: number) {
-  const pose = ARM_GESTURE_PEAKS[peak][side]
-  if (!pose) return
-  const mirror = side === 'left' ? 1 : -1
-  const frame = armAt(pose, env)
-  const upper = bone(v, `${side}UpperArm` as BoneName)
-  const fore = bone(v, `${side}LowerArm` as BoneName)
-  if (upper) upper.rotation.z = mirror * frame.upper
-  if (fore) fore.rotation.z = mirror * frame.fore
-}
 
 const GESTURES: Record<GestureName, GestureDef> = {
   // -- cue-driven ------------------------------------------------------------
   bow: {
     dur: 1.5,
-    apply: (_vrm, _p, env, _v, o) => {
+    apply: (_p, env, _v, o) => {
       o.sx += env * 0.32
       o.hp += env * 0.18
     },
@@ -299,161 +220,27 @@ const GESTURES: Record<GestureName, GestureDef> = {
   nod: {
     dur: 0.9,
     // two down-beats inside one smooth envelope
-    apply: (_vrm, p, env, _v, o) => {
+    apply: (p, env, _v, o) => {
       o.hp += Math.sin(p * Math.PI * 2) * 0.14 * env
     },
   },
-  // -- head-pat response -------------------------------------------------------
+  // -- head-pat response -----------------------------------------------------
   wiggle: {
     dur: 0.9,
-    apply: (_vrm, p, env, _v, o) => {
+    apply: (p, env, _v, o) => {
       o.hr += Math.sin(p * Math.PI * 4) * 0.09 * env
     },
   },
-  // -- idle-act pool (~10s cadence while undisturbed; picked at random) -------
-  //
-  // The eight poses below replaced `stretch` on 2026-08-14. A stretch that only
-  // flared the arms 20° out of a hanging pose read as nothing in particular,
-  // which is exactly how the owner reported it. Each of these is a pose a
-  // viewer can name.
-  doublePeace: {
-    dur: 2.2,
-    hold: 3.5,
-    arms: true,
-    peak: 'doublePeace',
-    // both hands up beside her face, fingers in a V, head tipped into it
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'left', 'doublePeace', env)
-      armTo(vrm, 'right', 'doublePeace', env)
-      setHand(vrm, 'left', HAND_PEACE, env)
-      setHand(vrm, 'right', HAND_PEACE, env)
-      o.hr += env * 0.1
-      o.hp += -env * 0.05
-    },
-  },
-  singlePeace: {
-    dur: 2.0,
-    hold: 3.5,
-    arms: true,
-    peak: 'singlePeace',
-    // one V held by her temple, head leaning toward the hand
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'right', 'singlePeace', env)
-      setHand(vrm, 'right', HAND_PEACE, env)
-      o.hr += -env * 0.12
-      o.hy += -env * 0.06
-    },
-  },
-  cheekPoke: {
-    dur: 2.4,
-    hold: 3.5,
-    arms: true,
-    peak: 'cheekPoke',
-    // index fingers to her own cheeks, chin tucked, a small side-to-side press
-    apply: (vrm, p, env, _v, o) => {
-      armTo(vrm, 'left', 'cheekPoke', env)
-      armTo(vrm, 'right', 'cheekPoke', env)
-      setHand(vrm, 'left', HAND_POINT, env)
-      setHand(vrm, 'right', HAND_POINT, env)
-      o.hp += env * 0.1
-      o.hr += Math.sin(p * Math.PI * 4) * 0.05 * env
-    },
-  },
-  salute: {
-    dur: 2.0,
-    hold: 3.5,
-    arms: true,
-    peak: 'salute',
-    // right hand to the brow, left hand on her hip, chin up
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'right', 'salute', env)
-      armTo(vrm, 'left', 'salute', env)
-      setHand(vrm, 'right', HAND_OPEN, env)
-      setHand(vrm, 'left', HAND_HIP, env)
-      o.hp += -env * 0.1
-      o.sz += env * 0.03
-    },
-  },
-  pointAtYou: {
-    dur: 2.0,
-    hold: 3.5,
-    arms: true,
-    peak: 'pointAtYou',
-    // The whole gesture is a forward swing out of the frontal plane (x, not z),
-    // which is why the reach table leaves this arm's z angles at rest. Positive
-    // x swings toward the viewer: the first draft had it negative and pointed
-    // her arm out sideways and slightly behind her.
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'right', 'pointAtYou', env)
-      const rua = bone(vrm, 'rightUpperArm')
-      const rla = bone(vrm, 'rightLowerArm')
-      if (rua) rua.rotation.x = env * 1.25
-      if (rla) rla.rotation.x = env * 0.2
-      setHand(vrm, 'right', HAND_POINT, env)
-      o.hy += -env * 0.05
-      o.hp += -env * 0.04
-    },
-  },
-  handsBehindHead: {
-    dur: 2.6,
-    hold: 3.5,
-    arms: true,
-    peak: 'handsBehindHead',
-    // elbows wide, hands laced behind her head, leaning back into them
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'left', 'handsBehindHead', env)
-      armTo(vrm, 'right', 'handsBehindHead', env)
-      // The forearms also rotate back in depth, or the hands end up in front of
-      // her face instead of behind her head.
-      const lla = bone(vrm, 'leftLowerArm')
-      const rla = bone(vrm, 'rightLowerArm')
-      if (lla) lla.rotation.x = env * 0.55
-      if (rla) rla.rotation.x = env * 0.55
-      setHand(vrm, 'left', HAND_RELAXED, env)
-      setHand(vrm, 'right', HAND_RELAXED, env)
-      o.hp += -env * 0.09
-      o.sx += -env * 0.05
-    },
-  },
-  handOnHip: {
-    dur: 2.2,
-    hold: 3.5,
-    arms: true,
-    peak: 'handOnHip',
-    // one hand planted on her hip, weight shifted onto that leg
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'left', 'handOnHip', env)
-      // Forward in depth so the hand lands on the hip rather than inside it.
-      const lla = bone(vrm, 'leftLowerArm')
-      if (lla) lla.rotation.x = -env * 0.45
-      setHand(vrm, 'left', HAND_HIP, env)
-      o.sz += env * 0.05
-      o.hr += -env * 0.05
-    },
-  },
-  hipWave: {
-    dur: 2.4,
-    hold: 3.5,
-    arms: true,
-    peak: 'hipWave',
-    // hand on hip and the other one up waving — the greeting from the refs
-    apply: (vrm, p, env, _v, o) => {
-      armTo(vrm, 'left', 'hipWave', env)
-      armTo(vrm, 'right', 'hipWave', env)
-      const lla = bone(vrm, 'leftLowerArm')
-      if (lla) lla.rotation.x = -env * 0.45
-      const rh = bone(vrm, 'rightHand')
-      if (rh) rh.rotation.z = Math.sin(p * 18) * 0.4 * env
-      setHand(vrm, 'left', HAND_HIP, env)
-      setHand(vrm, 'right', HAND_OPEN, env)
-      o.sz += env * 0.05
-      o.hr += env * 0.06
-    },
-  },
+  // -- ambient beats ---------------------------------------------------------
+  // What is left of the hand-authored library. Every one of these moves only
+  // the head and the torso by a few degrees, which is why they survived the
+  // 2026-08-19 audit intact while all ten arm gestures were replaced by motion
+  // capture: an arm has to arrive somewhere specific, and a three-degree lean
+  // does not.
   tilt: {
     dur: 1.6,
     // curious head tilt to a random side
-    apply: (_vrm, _p, env, v, o) => {
+    apply: (_p, env, v, o) => {
       o.hr += v * 0.16 * env
       o.hy += v * 0.05 * env
     },
@@ -461,27 +248,16 @@ const GESTURES: Record<GestureName, GestureDef> = {
   glance: {
     dur: 2.2,
     // quick look one way then the other, eyes leading the head
-    apply: (_vrm, p, env, v, o) => {
+    apply: (p, env, v, o) => {
       const w = Math.sin(p * Math.PI * 2) * env
       o.hy += v * w * 0.35
       o.ex += v * w * 1.4
     },
   },
-  lookHand: {
-    dur: 2.4,
-    arms: true,
-    // raises her right palm and studies it
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'right', 'lookHand', env)
-      o.hp += env * 0.22
-      o.hy += -env * 0.18
-      o.ey += -env * 1.6
-    },
-  },
   swayStep: {
     dur: 2.0,
     // one exaggerated weight shift, head countering to stay level
-    apply: (_vrm, p, env, v, o) => {
+    apply: (p, env, v, o) => {
       const w = Math.sin(p * Math.PI * 2) * env
       o.sz += v * w * 0.05
       o.hr += -v * w * 0.03
@@ -490,26 +266,16 @@ const GESTURES: Record<GestureName, GestureDef> = {
   bounce: {
     dur: 1.2,
     // three quick little body dips — a hop feel without any translation
-    apply: (_vrm, p, env, _v, o) => {
+    apply: (p, env, _v, o) => {
       const w = Math.abs(Math.sin(p * Math.PI * 3)) * env
       o.sx += w * 0.05
       o.hp += w * 0.05
     },
   },
-  hairTouch: {
-    dur: 2.4,
-    arms: true,
-    // left hand up toward her hair, head leaning into it
-    apply: (vrm, _p, env, _v, o) => {
-      armTo(vrm, 'left', 'hairTouch', env)
-      o.hr += -env * 0.08
-      o.hy += env * 0.08
-    },
-  },
   hipTwist: {
     dur: 1.8,
     // small torso twist left-right, head countering
-    apply: (_vrm, p, env, v, o) => {
+    apply: (p, env, v, o) => {
       const w = Math.sin(p * Math.PI * 2) * env
       o.sy += v * w * 0.12
       o.hy += -v * w * 0.06
@@ -518,7 +284,7 @@ const GESTURES: Record<GestureName, GestureDef> = {
   toeLook: {
     dur: 2.0,
     // peers down at the floor by her feet
-    apply: (_vrm, _p, env, v, o) => {
+    apply: (_p, env, v, o) => {
       o.hp += env * 0.3
       o.hy += v * 0.1 * env
       o.ey += -env * 2
@@ -529,20 +295,10 @@ const GESTURES: Record<GestureName, GestureDef> = {
 // What the idle timer may pick from. Cue gestures and the pat response stay
 // out — they belong to their own triggers.
 const IDLE_ACTS: readonly GestureName[] = [
-  'doublePeace',
-  'singlePeace',
-  'cheekPoke',
-  'salute',
-  'pointAtYou',
-  'handsBehindHead',
-  'handOnHip',
-  'hipWave',
   'tilt',
   'glance',
-  'lookHand',
   'swayStep',
   'bounce',
-  'hairTouch',
   'hipTwist',
   'toeLook',
 ]
@@ -598,12 +354,10 @@ export function initAvatarGuide(
   // Her feet and the contact shadow fall outside this frame by design — the
   // canvas carries a bottom mask (AvatarGuide.tsx) so the crop fades out.
   //
-  // The gestures were originally checked against the VERTICAL extent only, and
-  // stretch and wave turned out to be clipped left and right (stretch lost
-  // 13.7px per side in the launcher box and 16.7px in the two chat boxes; wave
-  // 9.6px and 11.6px). Reported by the owner 2026-08-14. What contains them is
-  // the canvas WIDTH, which is separate from everything above because fov is
-  // vertical — see AVATAR_WIDEST_GESTURE_REACH and the AVATAR_CANVAS_* boxes.
+  // Hands are contained by the canvas WIDTH, which is separate from everything
+  // above because the fov is vertical. What has to fit is no longer computed
+  // from an arm model here: rigProbe.test.ts measures every bundled clip
+  // against each placement's frame on the real skeleton.
   const camera = new THREE.PerspectiveCamera(AVATAR_FOV, W / H, 0.1, 30)
   camera.position.set(
     0,
@@ -791,6 +545,17 @@ export function initAvatarGuide(
       scene.add(loaded.scene)
       if (loaded.lookAt) loaded.lookAt.target = eyeTarget
       pinArms(loaded)
+      const restHipsNode = loaded.humanoid?.getNormalizedBoneNode('hips')
+      if (restHipsNode) restHips.copy(restHipsNode.position)
+      // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
+      // and builds this itself, with a console warning, if the scene has none.
+      // None of the bundled clips carries such a track, so this exists purely
+      // to keep the console clean; her gaze stays on eyeTarget throughout.
+      if (loaded.lookAt) {
+        const proxy = new VRMLookAtQuaternionProxy(loaded.lookAt)
+        proxy.name = 'VRMLookAtQuaternionProxy'
+        loaded.scene.add(proxy)
+      }
       const seen = new Set<THREE.Material>()
       loaded.scene.traverse((o) => {
         const material = (o as THREE.Mesh).material
@@ -835,6 +600,96 @@ export function initAvatarGuide(
       if (!disposed) onLoadFailed?.()
     },
   )
+
+  // ---- motion-capture playback ------------------------------------------
+  //
+  // The arm half of her performance is motion capture now (see avatarMotions.ts
+  // for why, and rigProbe.ts for what keeps it honest). A clip drives the
+  // humanoid bones through an AnimationMixer, so while one is running the
+  // procedural writes to head/neck/spine/chest/hips have to stand down or they
+  // fight the capture for the same bones. Expressions are a separate channel
+  // and keep running throughout: she still blinks, lip-syncs and emotes mid-clip.
+  let mixer: THREE.AnimationMixer | null = null
+  let motionAction: THREE.AnimationAction | null = null
+  let motionName: AvatarMotionName | null = null
+  const motionClips = new Map<AvatarMotionName, THREE.AnimationClip>()
+  let motionsRequested = false
+  // Where the hips sit at rest. A clip animates hips POSITION, and the
+  // procedural layer only ever writes hips rotation, so without restoring this
+  // by hand she would keep whatever offset the clip ended on for the life of
+  // the page.
+  const restHips = new THREE.Vector3()
+
+  const motionLoader = new GLTFLoader()
+  motionLoader.register((p) => new VRMAnimationLoaderPlugin(p))
+
+  function loadMotion(name: AvatarMotionName): void {
+    if (motionClips.has(name)) return
+    motionLoader.load(
+      MOTION_URL(name),
+      (gltf) => {
+        const animation = (gltf.userData.vrmAnimations as VRMAnimation[] | undefined)?.[0]
+        // contextLost as well as disposed: a reclaimed context unmounts the
+        // whole wrapper, and building clips for a dead VRM just holds ~2.5MB.
+        if (!animation || !vrm || disposed || contextLost) return
+        motionClips.set(name, createVRMAnimationClip(animation, vrm))
+      },
+      undefined,
+      // A missing or corrupt clip costs her one idle beat, never the page: the
+      // idle picker simply finds nothing cached and falls back to a procedural
+      // act. Nothing here is allowed to throw into the rAF loop.
+      () => {},
+    )
+  }
+
+  // Deliberately NOT part of first paint. These are fetched once the entrance
+  // has played, so the 2.5MB of clips lands behind the 5.5MB model rather than
+  // racing it, and only for a visitor who actually sees her.
+  function requestMotions(): void {
+    if (motionsRequested || !vrm) return
+    motionsRequested = true
+    for (const name of IDLE_MOTIONS) loadMotion(name)
+  }
+
+  // Seconds a clip takes to hand the bones back, used at every exit. Long
+  // enough to cover a raised arm's travel, short enough that an interrupt still
+  // feels like a response to the visitor.
+  const MOTION_FADE = 0.25
+
+  function stopMotion(): void {
+    if (!motionAction) return
+    motionAction.stop()
+    motionAction = null
+    motionName = null
+    motionFading = false
+    if (vrm) {
+      // The mixer leaves every bone it touched at the clip's last frame. The
+      // procedural layer rewrites head/neck/spine every frame, but nothing
+      // rewrites the arms or the hips offset, so those are restored here.
+      pinArms(vrm)
+      const hips = vrm.humanoid?.getNormalizedBoneNode('hips')
+      if (hips) hips.position.copy(restHips)
+    }
+  }
+
+  function playMotion(name: AvatarMotionName): boolean {
+    const clip = motionClips.get(name)
+    if (!clip || !vrm) return false
+    if (!mixer) mixer = new THREE.AnimationMixer(vrm.scene)
+    stopMotion()
+    const action = mixer.clipAction(clip)
+    action.reset()
+    action.setLoop(THREE.LoopOnce, 1)
+    action.clampWhenFinished = true
+    // Both ends of every bundled clip are a standing rest pose (pinned by
+    // rigProbe.test.ts), so this fade only has to cover the head turn the
+    // procedural layer may be mid-way through.
+    action.fadeIn(MOTION_FADE)
+    action.play()
+    motionAction = action
+    motionName = name
+    return true
+  }
 
   // ---- per-frame state ----
   // Manual timing (faceHero convention): THREE.Clock is deprecated in three
@@ -918,6 +773,14 @@ export function initAvatarGuide(
   // same act twice in a row.
   let idleActTimer = 2.5 + Math.random() * 1.5
   let lastIdleAct: GestureName | null = null
+  let lastMotion: AvatarMotionName | null = null
+  // A clip that is fading out still owns its bones, so it has to keep being
+  // advanced until its weight reaches zero; this flag stops the fade being
+  // restarted on every frame in between.
+  let motionFading = false
+  // Which composition she is standing in. Only the clips measured against that
+  // frame are eligible — see motionsFor().
+  let placement: AvatarPlacement = 'launcher'
   let gesture: { name: GestureName; t: number; v: number } | null = null
   // Per-frame gesture offset accumulator (reset each frame, never allocated
   // inside the loop) — see GESTURES.
@@ -985,8 +848,30 @@ export function initAvatarGuide(
           shadowMat.opacity = 1
           disposeParticles()
           matzT = 2
+          requestMotions()
         }
       }
+
+      // A running clip owns the humanoid bones. It is advanced before anything
+      // procedural reads or writes them, and `motionActive` gates every write
+      // below that would otherwise be applied on top of the capture.
+      if (motionAction && mixer) {
+        mixer.update(dt)
+        // Finishing was the one exit that was a hard cut. A clip's last frame
+        // leaves her wrists up to 0.097m from ARM_PINS (peaceSign; ~25px on the
+        // launcher canvas), and stopMotion snaps them back in a single frame.
+        // Fading over the clip's final MOTION_FADE seconds hands the bones back
+        // gradually: three's PropertyMixer lerps a fading action toward the
+        // value the bone held before it bound, which is the pinned rest pose.
+        // Entry and both interrupt paths were already faded.
+        const remaining = motionAction.getClip().duration - motionAction.time
+        if (!motionFading && remaining <= MOTION_FADE) {
+          motionAction.fadeOut(MOTION_FADE)
+          motionFading = true
+        }
+        if (!motionAction.isRunning()) stopMotion()
+      }
+      const motionActive = motionAction !== null
 
       // Head direction per mode — rotation on head/neck/spine, eyes tracking a
       // real target so the gaze leads the turn the way people actually look.
@@ -1000,16 +885,32 @@ export function initAvatarGuide(
       const yaw = aimYaw
       const pitch = aimPitch
 
+      // She stops performing the moment the visitor does something. A clip is
+      // faded rather than cut: its own bones are mid-travel, so dropping it
+      // would snap an arm back to her side in one frame.
+      if (mode !== 'idle' && motionAction && !motionFading) {
+        // Slightly longer than MOTION_FADE, unchanged from when this was the
+        // only fade: the visitor has just acted, so this one is allowed to look
+        // like her settling rather than like a cut.
+        motionAction.fadeOut(0.3)
+        motionFading = true
+      }
+      if (motionFading && motionAction && motionAction.getEffectiveWeight() < 0.01) {
+        stopMotion()
+      }
+
       // Idle self-actions: an unprompted little performance roughly every 5s
-      // of undisturbed idle (post-entrance, nothing else performing), picked
-      // at random from IDLE_ACTS. Purely visual — no sound, per the plan's F
-      // item. A single re-roll makes an immediate repeat unlikely (~1/121, not
-      // impossible) without ever risking a loop.
+      // of undisturbed idle (post-entrance, nothing else performing). Two
+      // thirds of those beats are a motion-capture clip and the rest are the
+      // procedural head and torso beats, which are short enough to read as
+      // punctuation between the clips. A single re-roll makes an immediate
+      // repeat unlikely without ever risking a loop.
       const speechIdle = !speechEl || speechEl.paused || speechEl.ended
       if (
         matzT === 2 &&
         mode === 'idle' &&
         !gesture &&
+        !motionActive &&
         speechIdle &&
         emoW < 0.05
       ) {
@@ -1020,10 +921,22 @@ export function initAvatarGuide(
         }
         idleActTimer -= dt
         if (idleActTimer <= 0) {
-          let pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
-          if (pick === lastIdleAct) pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
-          lastIdleAct = pick
-          gesture = { name: pick, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+          const clips = motionsFor(placement, canvas.clientWidth).filter((name) =>
+            motionClips.has(name),
+          )
+          if (clips.length > 0 && Math.random() < 0.66) {
+            let pick = clips[(Math.random() * clips.length) | 0]
+            if (pick === lastMotion && clips.length > 1) {
+              pick = clips[(Math.random() * clips.length) | 0]
+            }
+            lastMotion = pick
+            playMotion(pick)
+          } else {
+            let pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+            if (pick === lastIdleAct) pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+            lastIdleAct = pick
+            gesture = { name: pick, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+          }
           idleActTimer = 2.5 + Math.random() * 1.5
         }
       } else if (mode !== 'idle') {
@@ -1031,9 +944,9 @@ export function initAvatarGuide(
       }
 
       // Gesture offsets ADD to the mode-driven head/spine pose (a nod during
-      // listening still tracks the visitor); the arms are the exception —
-      // they're pinned, not mode-driven, so arm gestures own them and restore
-      // the pins when done. All motion curves live in the GESTURES table.
+      // listening still tracks the visitor). Nothing here touches an arm any
+      // more: arms are either pinned or driven by a clip. All the curves live
+      // in the GESTURES table.
       OFF.hp = OFF.hy = OFF.hr = OFF.sx = OFF.sy = OFF.sz = OFF.cx = OFF.ex = OFF.ey = 0
       if (gesture) {
         gesture.t += dt
@@ -1041,36 +954,51 @@ export function initAvatarGuide(
         const total = def.dur + (def.hold ?? 0)
         const p = Math.min(gesture.t / total, 1)
         const env = gestureEnvelope(gesture.t, def.dur, def.hold ?? 0)
-        def.apply(vrm, p, env, gesture.v, OFF)
-        if (p >= 1) {
-          if (def.arms) pinArms(vrm)
-          gesture = null
-        }
+        def.apply(p, env, gesture.v, OFF)
+        if (p >= 1) gesture = null
       }
 
+      // Breathing on the chest and a slow weight shift on the hips, with the
+      // spine countering so the head stays centred — the body never freezes.
+      // All of it stands down under a clip: the capture already carries its own
+      // breathing and weight, and writing on top of it would both double the
+      // motion and drag her head away from where the performance put it.
       const head = vrm.humanoid?.getNormalizedBoneNode('head')
       const neck = vrm.humanoid?.getNormalizedBoneNode('neck')
       const spine = vrm.humanoid?.getNormalizedBoneNode('spine')
-      // Breathing on the chest and a slow weight shift on the hips, with the
-      // spine countering so the head stays centred — the body never freezes.
-      const sway = Math.sin(t * ((2 * Math.PI) / 13))
       const chest = vrm.humanoid?.getNormalizedBoneNode('chest')
       const hips = vrm.humanoid?.getNormalizedBoneNode('hips')
-      if (chest) chest.rotation.x = Math.sin(t * ((2 * Math.PI) / 4.2)) * 0.012 + OFF.cx
-      if (hips) hips.rotation.z = sway * 0.02
-      if (head) {
-        head.rotation.y = yaw * 0.65 + OFF.hy
-        head.rotation.x = pitch * 0.7 + OFF.hp
-        head.rotation.z = OFF.hr
-      }
-      if (neck) {
-        neck.rotation.y = yaw * 0.35
-        neck.rotation.x = pitch * 0.3
-      }
-      if (spine) {
-        spine.rotation.y = yaw * 0.1 + OFF.sy
-        spine.rotation.x = OFF.sx
-        spine.rotation.z = sway * -0.012 + OFF.sz
+      // How much of these bones the procedural layer owns this frame. A clip at
+      // full weight owns them outright; as it fades the procedural pose takes
+      // them back in step, so a gesture that interrupted a clip is visible from
+      // its first frame instead of after the fade. With no clip this is 1 and
+      // every lerp below collapses to a plain assignment.
+      const proceduralW = motionAction ? 1 - motionAction.getEffectiveWeight() : 1
+      if (proceduralW > 0.001) {
+        const blend = (current: number, target: number): number =>
+          THREE.MathUtils.lerp(current, target, proceduralW)
+        const sway = Math.sin(t * ((2 * Math.PI) / 13))
+        if (chest) {
+          chest.rotation.x = blend(
+            chest.rotation.x,
+            Math.sin(t * ((2 * Math.PI) / 4.2)) * 0.012 + OFF.cx,
+          )
+        }
+        if (hips) hips.rotation.z = blend(hips.rotation.z, sway * 0.02)
+        if (head) {
+          head.rotation.y = blend(head.rotation.y, yaw * 0.65 + OFF.hy)
+          head.rotation.x = blend(head.rotation.x, pitch * 0.7 + OFF.hp)
+          head.rotation.z = blend(head.rotation.z, OFF.hr)
+        }
+        if (neck) {
+          neck.rotation.y = blend(neck.rotation.y, yaw * 0.35)
+          neck.rotation.x = blend(neck.rotation.x, pitch * 0.3)
+        }
+        if (spine) {
+          spine.rotation.y = blend(spine.rotation.y, yaw * 0.1 + OFF.sy)
+          spine.rotation.x = blend(spine.rotation.x, OFF.sx)
+          spine.rotation.z = blend(spine.rotation.z, sway * -0.012 + OFF.sz)
+        }
       }
 
       // Saccades: real gaze is a series of small jumps, not a smooth glide.
@@ -1185,6 +1113,10 @@ export function initAvatarGuide(
           emoW,
           emoShown,
           gesture: gesture ? gesture.name : null,
+          motion: motionName,
+          motionW: motionAction ? motionAction.getEffectiveWeight() : 0,
+          motionClips: motionClips.size,
+          placement,
           ruaZ: bone(vrm, 'rightUpperArm')?.rotation.z ?? 0,
           ruaX: bone(vrm, 'rightUpperArm')?.rotation.x ?? 0,
           luaZ: bone(vrm, 'leftUpperArm')?.rotation.z ?? 0,
@@ -1317,9 +1249,20 @@ export function initAvatarGuide(
     },
     setEmotion: applyEmotion,
     playGesture: (name) => {
-      // Replacing a mid-flight arm gesture must not strand a half-raised arm.
-      if (gesture && GESTURES[gesture.name].arms && vrm) pinArms(vrm)
+      // A head pat or a cue beat is a RESPONSE to the visitor, so it outranks
+      // whatever idle clip happens to be running. Without this the clip keeps
+      // the bones, the gesture burns its whole duration producing no movement,
+      // and the pat's 8s cooldown starts on a pat nobody saw — and clips run
+      // most of the idle wall-clock, so that was most pats.
+      if (motionAction && !motionFading) {
+        motionAction.fadeOut(MOTION_FADE)
+        motionFading = true
+      }
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+    },
+    playMotion,
+    setPlacement: (next) => {
+      placement = next
     },
     setFraming: (distance, lookAtY) => {
       camera.position.set(0, lookAtY + AVATAR_CAMERA_TILT, distance)

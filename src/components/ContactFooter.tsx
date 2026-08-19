@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { socialLinks } from '../data/social'
 import { useT } from '../i18n'
+import { CREDIT as MOTION_CREDIT } from './chat/avatarMotions'
 
 const SocialIcon = ({ platform }: { platform: string }) => {
   switch (platform) {
@@ -121,6 +122,12 @@ export default function ContactFooter() {
             for 春日部つむぎ (Mika's voice lines). Keep visible site-wide. */}
         <div className="mt-2 font-mono text-[10px] tracking-[1px] text-white/50">
           {'Mika voice: VOICEVOX:春日部つむぎ'}
+        </div>
+        {/* Animation credit — required by the VRoid Project licence covering
+            the .vrma clips Mika performs. Same rule as the voice line above:
+            visible site-wide, and the string lives with the motions it covers. */}
+        <div className="mt-1 font-mono text-[10px] tracking-[1px] text-white/50">
+          {MOTION_CREDIT}
         </div>
       </footer>
     </div>

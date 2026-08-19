@@ -692,6 +692,9 @@ export default function ChatWidget() {
       <AvatarGuide
         mode={avatarMode}
         active={placement !== 'hidden'}
+        // Gates which motion-capture clips she may play: each one is measured
+        // against a composed frame, and the two frames crop differently.
+        placement={placement}
         // Widths carry her arm span, heights and framing carry her size; both
         // live in avatarMode.ts so a test can hold the class strings and the
         // AVATAR_CANVAS_* constants to each other. The column's box is
