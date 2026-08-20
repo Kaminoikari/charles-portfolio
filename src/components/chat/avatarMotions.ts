@@ -8,22 +8,54 @@
 // that way, and the probe in rigProbe.ts measures where they actually land
 // before any of them reaches a visitor.
 //
-// LICENCE. VRoid Project's free 7-pack of VRM Animation files, verified on
-// 2026-08-19 to be bit-identical to the originals in pixiv's own
-// VRMA_MotionPack.zip. Commercial use is permitted with attribution, and the
-// pack's terms forbid redistributing the motions in a form that can be rigged
-// or extracted without permission — which serving them from /avatar/animations
-// is, and which the owner holds permission for. Do not add a motion here
-// without checking where its file came from and whether its terms allow
-// bundling. See docs/plans/avatar-motion-capture.md for the hashes and terms.
+// LICENCE, for the four clips taken from VRoid Project's free 7-pack of VRM
+// Animation files (peaceSign, modelPose, spin, squat), verified on 2026-08-19
+// to be bit-identical to the originals in pixiv's own VRMA_MotionPack.zip.
+// Commercial use is permitted with attribution, and the pack's terms forbid
+// redistributing the motions in a form that can be rigged or extracted without
+// permission — which serving them from /avatar/animations is, and which the
+// owner holds permission for. See docs/plans/avatar-motion-capture.md for the
+// hashes and terms. CREDIT below is that pack's required attribution and
+// names that pack only.
 import type { AvatarPlacement } from './avatarMode'
 
-export type AvatarMotionName = 'peaceSign' | 'modelPose' | 'spin' | 'squat'
+export type AvatarMotionName =
+  | 'peaceSign'
+  | 'modelPose'
+  | 'spin'
+  | 'squat'
+  | 'akimbo'
+  | 'playFingers'
+  | 'scratchHead'
+  | 'idleLoop'
+  | 'stretch'
+  | 'dance'
 
 // Which composed frame a motion has been measured against. The launcher and the
 // docked canvas share a framing and an aspect ratio, so they share a budget;
 // the fullscreen column is composed lower and slightly tighter.
 export type MotionFrame = 'waistUp' | 'column'
+
+/**
+ * A measured guard violation this clip is knowingly shipped with.
+ *
+ * Every field is the clip's OWN measured worst case, so the guard still holds
+ * it to a number rather than waving it through. rigProbe.test.ts also fails a
+ * waiver that is not needed, which stops one being left behind after a clip is
+ * re-exported or replaced: a waiver has to earn its place every run.
+ */
+export interface MotionWaiver {
+  /** Highest hand, in metres, when it rises above a frame's top edge. */
+  handTop?: number
+  /** Deepest hand-against-face ellipsoid value, when it drops below 1. */
+  handInHead?: number
+  /** Widest sideways reach, in metres, when it passes the canvas half-width. */
+  reach?: number
+  /** Hips sideways offset at the clip's ends, in metres, when it is off centre. */
+  hipsDrift?: number
+  /** Highest wrist at the clip's ends, in metres, when an arm is not hanging. */
+  endWrist?: number
+}
 
 export interface AvatarMotionDef {
   /** Frames this motion has been measured to fit. Enforced in rigProbe.test.ts. */
@@ -35,6 +67,8 @@ export interface AvatarMotionDef {
    * whole life on the site.
    */
   showsPalm: boolean
+  /** Measured guard violations shipped on purpose. Absent means none. */
+  waiver?: MotionWaiver
 }
 
 // Measured 2026-08-19 by retargeting all seven clips of the pack onto
@@ -76,6 +110,51 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // Her hands stay low the entire time (best palm-to-viewer 0.23), so this is
   // not a hand the viewer is meant to read.
   squat: { placements: ['waistUp', 'column'], showsPalm: false },
+  // Hands to her hips. Reaches 0.250 / 0.274 to the two screen sides against a
+  // 0.674 budget, hands never above y=0.938, hips flat at 0.882. Best
+  // palm-to-viewer is -0.15, the backs of her hands, which is what hands on
+  // hips look like from the front.
+  akimbo: { placements: ['waistUp', 'column'], showsPalm: false },
+  // She turns her fingers over in front of her. The smallest of the ten:
+  // 0.233 / 0.234 sideways, hands never above y=0.954. Palm -0.10.
+  playFingers: { placements: ['waistUp', 'column'], showsPalm: false },
+  // A hand up to the back of her head. Closest approach to her face is 1.34,
+  // clear of the ellipsoid, and the palm does turn to the viewer at 0.89.
+  scratchHead: { placements: ['waistUp', 'column'], showsPalm: true },
+  // A standing idle, and by far the quietest clip here: 0.337 to the viewer's
+  // left, 0.035 to the right, hands never above y=0.768. It does stand 0.152 to
+  // one side of centre, at both ends and so throughout, which the fade slides
+  // her across on the way in and out: about 38px on the launcher canvas.
+  idleLoop: {
+    placements: ['waistUp', 'column'],
+    showsPalm: false,
+    waiver: { hipsDrift: 0.16 },
+  },
+  // Arms overhead. Her hands pass ABOVE both crops: 1.785 at t=1.87s against a
+  // 1.722 waist-up edge (80 of 137 frames) and a 1.602 column edge (90 frames),
+  // so for most of the clip her hands are off the top of the canvas. Shipped
+  // with that, and the waiver pins how far.
+  stretch: {
+    placements: ['waistUp', 'column'],
+    showsPalm: true,
+    waiver: { handTop: 1.79 },
+  },
+  // 26.8s, the longest by far. Two measured violations: a hand reaches 26.8mm
+  // inside her head for 15 frames around t=8.23s (ellipsoid 0.488, five times
+  // deeper than the 4.9mm that kept `shoot` out), and at t=2.17s she reaches
+  // 0.6800 to the viewer's left against a 0.6745 canvas, 5.5mm past the edge
+  // for 2 frames.
+  // Its VRMC_vrm_animation has no specVersion, so three-vrm logs one warning per
+  // load and assumes 1.0. The other nine clips declare it.
+  //
+  // It also ends badly for a clip the engine has to fade out of: hips 0.140 off
+  // centre and her right wrist still up at 1.188, where the guard wants an arm
+  // hanging below 1.05. `greeting` was dropped partly for ending at 1.15.
+  dance: {
+    placements: ['waistUp', 'column'],
+    showsPalm: true,
+    waiver: { handInHead: 0.48, reach: 0.69, hipsDrift: 0.15, endWrist: 1.19 },
+  },
 }
 
 // How far a clip's FIRST AND LAST frames may sit below her rest height. Motion
@@ -101,6 +180,12 @@ export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
   'modelPose',
   'spin',
   'squat',
+  'akimbo',
+  'playFingers',
+  'scratchHead',
+  'idleLoop',
+  'stretch',
+  'dance',
 ]
 
 /** The frame a placement composes to, or null where no avatar renders. */

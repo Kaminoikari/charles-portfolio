@@ -289,7 +289,11 @@ describe('bundled motions', () => {
           }
         }
       }
-      expect(worst, `${name} deepest fingertip against her face`).toBeGreaterThan(1)
+      const faceBudget = def.waiver?.handInHead
+      if (faceBudget !== undefined) {
+        expect(worst, `${name} declares a handInHead waiver it does not need`).toBeLessThan(1)
+      }
+      expect(worst, `${name} deepest fingertip against her face`).toBeGreaterThan(faceBudget ?? 1)
       expect(def.placements.length).toBeGreaterThan(0)
     },
   )
@@ -327,13 +331,32 @@ describe('bundled motions', () => {
       }
       // The bottom edge is not checked: an arm hanging at her side leaves the
       // waist-up frame the same way a real one does, and the canvas masks it.
+      // A waiver replaces the budget with the clip's own measured worst case,
+      // and is itself checked: declaring one that the clip does not need is a
+      // failure, so a stale waiver cannot sit here quietly widening the guard.
+      const reachBudget = def.waiver?.reach
+      if (reachBudget !== undefined) {
+        expect(
+          Math.max(screenLeft, screenRight),
+          `${name} declares a reach waiver it does not need in ${placement}`,
+        ).toBeGreaterThan(frame.halfWidth)
+      }
       expect(screenLeft, `${name} reach to the viewer's left in ${placement}`).toBeLessThan(
-        frame.halfWidth,
+        reachBudget ?? frame.halfWidth,
       )
       expect(screenRight, `${name} reach to the viewer's right in ${placement}`).toBeLessThan(
-        frame.halfWidth,
+        reachBudget ?? frame.halfWidth,
       )
-      expect(maxY, `${name} highest hand in ${placement}`).toBeLessThan(frame.span.top)
+      const topBudget = def.waiver?.handTop
+      if (topBudget !== undefined) {
+        expect(
+          maxY,
+          `${name} declares a handTop waiver it does not need in ${placement}`,
+        ).toBeGreaterThan(frame.span.top)
+      }
+      expect(maxY, `${name} highest hand in ${placement}`).toBeLessThan(
+        topBudget ?? frame.span.top,
+      )
     }
   })
 
@@ -380,24 +403,52 @@ describe('bundled motions', () => {
   // a SHORT distance gracefully: `greeting`, now dropped, ended with a hand
   // still up at y=1.15, which is most of an arm's travel to cross in a quarter
   // of a second. This guard is what keeps the fade's job small.
-  it.each(Object.keys(AVATAR_MOTIONS))('%s opens and closes on a standing pose', (name) => {
-    const r = rig()
-    const m = motion(name as AvatarMotionName)
-    const restHipsY = r.restPosition.hips.y
-    for (const time of [0, m.duration]) {
-      applyMotion(r, m, time)
-      const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
-      expect(Math.abs(hips.x), `${name} hips drift at t=${time}`).toBeLessThan(0.1)
-      // Motion capture brings its own stance with it, and a clip whose ends do
-      // not sit at her own height is one three-vrm-animation has mis-seated on
-      // her rig. `greeting` opens 0.568 low and rises off the floor over 2.4s,
-      // which on the launcher canvas is her sinking most of the way out of
-      // frame before she waves. Checked at the ends only: see MAX_HIPS_SINK.
-      expect(restHipsY - hips.y, `${name} hips sink at t=${time}`).toBeLessThan(MAX_HIPS_SINK)
-      for (const side of ['left', 'right'] as const) {
-        // Wrist below the shoulder (y=1.215) means the arm is hanging.
-        expect(probeHand(r, side).wrist.y, `${name} ${side} wrist at t=${time}`).toBeLessThan(1.05)
+  const MAX_END_DRIFT = 0.1
+  // Wrist below the shoulder (y=1.215) means the arm is hanging.
+  const MAX_END_WRIST = 1.05
+
+  it.each(Object.entries(AVATAR_MOTIONS))(
+    '%s opens and closes on a standing pose',
+    (name, def) => {
+      const r = rig()
+      const m = motion(name as AvatarMotionName)
+      const restHipsY = r.restPosition.hips.y
+      // Both ends are measured before anything is asserted: a waiver is earned
+      // by either end, so the worst of the two is what it has to be judged on.
+      let drift = 0
+      let wrist = -Infinity
+      for (const time of [0, m.duration]) {
+        applyMotion(r, m, time)
+        const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
+        drift = Math.max(drift, Math.abs(hips.x))
+        for (const side of ['left', 'right'] as const) {
+          wrist = Math.max(wrist, probeHand(r, side).wrist.y)
+        }
+        // Motion capture brings its own stance with it, and a clip whose ends do
+        // not sit at her own height is one three-vrm-animation has mis-seated on
+        // her rig. `greeting` opens 0.568 low and rises off the floor over 2.4s,
+        // which on the launcher canvas is her sinking most of the way out of
+        // frame before she waves. Checked at the ends only: see MAX_HIPS_SINK.
+        expect(restHipsY - hips.y, `${name} hips sink at t=${time}`).toBeLessThan(MAX_HIPS_SINK)
       }
-    }
-  })
+
+      const driftBudget = def.waiver?.hipsDrift
+      if (driftBudget !== undefined) {
+        expect(drift, `${name} declares a hipsDrift waiver it does not need`).toBeGreaterThan(
+          MAX_END_DRIFT,
+        )
+      }
+      expect(drift, `${name} hips drift at its ends`).toBeLessThan(driftBudget ?? MAX_END_DRIFT)
+
+      const wristBudget = def.waiver?.endWrist
+      if (wristBudget !== undefined) {
+        expect(wrist, `${name} declares an endWrist waiver it does not need`).toBeGreaterThan(
+          MAX_END_WRIST,
+        )
+      }
+      expect(wrist, `${name} highest wrist at its ends`).toBeLessThan(
+        wristBudget ?? MAX_END_WRIST,
+      )
+    },
+  )
 })
