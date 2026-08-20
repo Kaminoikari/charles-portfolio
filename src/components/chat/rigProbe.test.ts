@@ -191,6 +191,27 @@ describe('guard sensitivity', () => {
     expect(reach).toBeGreaterThan(FRAMES.column.halfWidth)
   })
 
+  // The whole reason the frames were widened on 2026-08-20. A distal finger bone
+  // is not where the finger ends, and measuring there read ~20mm narrower than
+  // what is drawn — enough that `spin` sat 0.5mm inside the old canvas edge with
+  // a green suite. Nothing else pins this: once the frames were wide enough,
+  // every clip cleared with or without the tips, so dropping them again would
+  // have gone unnoticed.
+  it('measures a finger to its skinned tip, not to its last joint', () => {
+    const r = rig()
+    const distal = new THREE.Vector3().setFromMatrixPosition(r.bones.rightIndexDistal.matrixWorld)
+    const tip = new THREE.Vector3().setFromMatrixPosition(r.bones.rightIndexTip.matrixWorld)
+    // Read out of the shipped VRM: J_Bip_R_Index3 -> J_Bip_R_Index3_end.
+    expect(tip.distanceTo(distal)).toBeCloseTo(0.0204, 3)
+    // The tip is FURTHER from her centre than the joint, which is why it moves
+    // the sideways reading at all.
+    expect(Math.abs(tip.x)).toBeGreaterThan(Math.abs(distal.x))
+    // And the hand sampler actually hands it out.
+    const sampled = handJoints(r, 'right')
+    expect(sampled.some((j) => j.distanceTo(tip) < 1e-9)).toBe(true)
+    expect(sampled.some((j) => j.distanceTo(distal) < 1e-9)).toBe(true)
+  })
+
   it('sees a stance that sinks', () => {
     const r = rig()
     const restHipsY = r.restPosition.hips.y

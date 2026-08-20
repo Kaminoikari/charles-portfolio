@@ -4,6 +4,7 @@ import {
   AVATAR_BUBBLE_RIGHT_PX,
   AVATAR_CANVAS_DOCKED,
   AVATAR_CANVAS_LAUNCHER,
+  AVATAR_ARM_ROOM,
   AVATAR_COLUMN_ASPECT,
   AVATAR_COLUMN_BODY_FRACTION,
   AVATAR_COLUMN_BODY_GAP,
@@ -304,7 +305,7 @@ describe('avatar camera framing', () => {
   it('derives the column aspect from the framing it belongs to', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_COLUMN)
     const halfHeight = (span.top - span.bottom) / 2
-    expect(AVATAR_COLUMN_ASPECT).toBeCloseTo(0.6745 / halfHeight, 2)
+    expect(AVATAR_COLUMN_ASPECT).toBeCloseTo(AVATAR_ARM_ROOM / halfHeight, 2)
   })
 
   // The docked canvas is the one placement that deliberately does NOT hold that
@@ -354,7 +355,7 @@ describe('avatar camera framing', () => {
       const half = avatarViewHalfWidth(framing, canvas)
       // All four land on the same half-width, so a clip cleared in one
       // placement is cleared in all of them.
-      expect({ [name]: half }).toEqual({ [name]: expect.closeTo(0.674, 2) })
+      expect({ [name]: half }).toEqual({ [name]: expect.closeTo(AVATAR_ARM_ROOM, 2) })
     }
   })
 
@@ -377,19 +378,33 @@ describe('avatar camera framing', () => {
     }
   })
 
-  // The docked canvas is now wider than the gap left of the panel on a narrow
-  // desktop window, so it has to shrink to stay on screen. Without this the
-  // 2026-08-15 widening pushed 226px of canvas, including 26px of her shoulder,
-  // off the left edge at 900px — a fix for one kind of clipping that caused
-  // another.
-  it('shrinks the docked canvas rather than running it off the screen', () => {
-    // The canvas's own left edge, in viewport coordinates, at a given width.
-    const leftEdge = (vw: number) =>
+  // The docked canvas is wider than the gap left of the panel on a narrow
+  // desktop window, so it has to shrink. Without this the 2026-08-15 widening
+  // pushed 226px of canvas, including 26px of her shoulder, off the left edge at
+  // 900px — a fix for one kind of clipping that caused another.
+  //
+  // What must stay on screen is HER, not the canvas. Until 2026-08-20 the two
+  // were the same assertion, because the scale divided by the full canvas. The
+  // arm-room widening that day added 68px of transparent margin either side, and
+  // defending those empty pixels would have shrunk her 9% at 1120px, where she
+  // is full size today. So the margin may hang off the left edge and her body
+  // may not.
+  it('shrinks the docked canvas rather than running HER off the screen', () => {
+    const canvasLeft = (vw: number) =>
       vw - CHAT_BESIDE_PANEL_RIGHT - AVATAR_CANVAS_DOCKED.w * besidePanelScale(vw)
-    // From the placement gate (880) upward, it never leaves the screen.
+    // Her body is centred in the canvas and covers this fraction of its width.
+    const bodyLeft = (vw: number) =>
+      canvasLeft(vw) +
+      AVATAR_CANVAS_DOCKED.w *
+        besidePanelScale(vw) *
+        ((1 - AVATAR_LAUNCHER_BODY_FRACTION) / 2)
+    // From the placement gate (880) upward, she never leaves the screen.
     for (let vw = 880; vw <= 2560; vw += 4) {
-      expect({ vw, ok: leftEdge(vw) >= -1e-9 }).toEqual({ vw, ok: true })
+      expect({ vw, ok: bodyLeft(vw) >= -1e-9 }).toEqual({ vw, ok: true })
     }
+    // And the margin is what absorbs it: at the gate the canvas itself does
+    // hang off, which is the trade this test now permits and pins.
+    expect(canvasLeft(880)).toBeLessThan(0)
     // Full size as soon as there is room for it, and never larger.
     expect(besidePanelScale(1120)).toBeCloseTo(1, 6)
     expect(besidePanelScale(1920)).toBe(1)

@@ -130,20 +130,26 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
     showsPalm: false,
     waiver: { hipsDrift: 0.16 },
   },
-  // Arms overhead. Her hands pass ABOVE both crops: 1.785 at t=1.87s against a
-  // 1.722 waist-up edge (80 of 137 frames) and a 1.602 column edge (90 frames),
-  // so for most of the clip her hands are off the top of the canvas. Shipped
-  // with that, and the waiver pins how far.
+  // Arms overhead. Her hands pass ABOVE both crops: 1.7698 at t=1.87s against
+  // a 1.722 waist-up edge and a 1.602 column edge, so for most of the clip her
+  // hands are off the top of the canvas. Shipped with that, and the waiver pins
+  // how far. The 2026-08-20 widening bought sideways room, not height, so this
+  // one is untouched by it.
   stretch: {
     placements: ['waistUp', 'column'],
     showsPalm: true,
-    waiver: { handTop: 1.79 },
+    waiver: { handTop: 1.77 },
   },
-  // 26.8s, the longest by far. Two measured violations: a hand reaches 26.8mm
-  // inside her head for 15 frames around t=8.23s (ellipsoid 0.488, five times
-  // deeper than the 4.9mm that kept `shoot` out), and at t=2.17s she reaches
-  // 0.6800 to the viewer's left against a 0.6745 canvas, 5.5mm past the edge
-  // for 2 frames.
+  // 26.8s, the longest by far, and the clip that drove the 2026-08-20 widening:
+  // it reaches 0.6978 to the viewer's left, which was 23mm past the old 0.6745
+  // canvas and sits 44mm inside the 0.7415 one. Its reach waiver is gone with
+  // that, because a waiver that is not needed is a test failure.
+  //
+  // What it still does is put a hand 38.9mm inside her head for 18 frames around
+  // t=8.23s — ellipsoid 0.299, eight times the 4.9mm that kept `shoot` out. That
+  // figure got WORSE when the probe started measuring the skinned fingertip: on
+  // the distal joint alone it read 26.8mm.
+  //
   // Its VRMC_vrm_animation has no specVersion, so three-vrm logs one warning per
   // load and assumes 1.0. The other nine clips declare it.
   //
@@ -153,7 +159,7 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   dance: {
     placements: ['waistUp', 'column'],
     showsPalm: true,
-    waiver: { handInHead: 0.48, reach: 0.69, hipsDrift: 0.15, endWrist: 1.19 },
+    waiver: { handInHead: 0.29, hipsDrift: 0.15, endWrist: 1.19 },
   },
 }
 

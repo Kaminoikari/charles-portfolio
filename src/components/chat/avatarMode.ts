@@ -261,15 +261,23 @@ export function gestureEnvelope(t: number, dur: number, hold: number): number {
 // clip against these same boxes. Because the FOV is vertical, width only adds
 // horizontal view: the same character at the same size with more room beside
 // her. The old widths showed ±0.355m, so a stretch lost its last 14-17px and a
-// wave its last 10-12px. These show ±0.674m, and the widest bundled clip takes
-// almost all of it: `spin` reaches 0.658m by its index knuckle. Do not read the
-// remaining 16mm as margin. rigProbe measures JOINTS, and this model's fingertip
-// end nodes sit up to 0.020m beyond the distal joint, so the skinned surface
-// peaks at about 0.674m — roughly 0.6mm inside the edge, measured. What is left
-// over is not room for hair the spring bones throw outward, which nothing here
-// models. The extra area is transparent, so it
-// costs page space nowhere; only the launcher's click target had to be narrowed
-// to match (see ChatWidget).
+// wave its last 10-12px. These show ±AVATAR_ARM_ROOM.
+//
+// That figure was ±0.674m until 2026-08-20, when the paragraph standing here
+// hedged in prose about a gap the code was not measuring: rigProbe read the
+// distal finger JOINT, and this model's fingertip is skinned out to an `_end`
+// leaf 20.4mm past it. The prose was right and useless — `spin` really did peak
+// 0.5mm inside the edge, `dance` really did overrun by 23mm, and the suite was
+// green throughout. The probe now walks to the tip, and the boxes were widened
+// to 0.7415 so the pool clears with room: `dance` 44mm, `spin` 68mm.
+//
+// Still not modelled: hair, which the spring bones throw outward at runtime.
+// If clipping is ever reported again with the fingertips comfortably inside,
+// that is the next thing to measure.
+//
+// The extra area is transparent, so it costs page space nowhere; the launcher's
+// click target and the speech bubble beside her both had to move to match, and
+// each is pinned to its constant by a test in avatarMode.test.ts.
 //
 // The docked box is the odd one out: it is sized to the PANEL, not to a number
 // of its own, so she stands exactly as tall as the thing she is standing next
@@ -281,8 +289,8 @@ export function gestureEnvelope(t: number, dur: number, hold: number): number {
 // The fullscreen column has no entry here at all: its box is arithmetic, not a
 // number, because it answers to both viewport axes at once. See
 // avatarColumnBox().
-export const AVATAR_CANVAS_LAUNCHER = { w: 342, h: 280 }
-export const AVATAR_CANVAS_DOCKED = { w: 684, h: 560 }
+export const AVATAR_CANVAS_LAUNCHER = { w: 376, h: 280 }
+export const AVATAR_CANVAS_DOCKED = { w: 752, h: 560 }
 
 // The docked canvas hangs to the LEFT of the panel, from a fixed right offset:
 // the panel's own 400px plus a 36px gutter. At 684px wide it no longer fits a
@@ -291,8 +299,16 @@ export const AVATAR_CANVAS_DOCKED = { w: 684, h: 560 }
 // continuously rather than at a breakpoint, which is the same call the owner
 // made for the column on 2026-08-14: a smaller Mika, never a cut one.
 export const CHAT_BESIDE_PANEL_RIGHT = 436
+
+// How much of the docked canvas the scale below keeps on screen. It is 68px
+// narrower than the canvas, and deliberately: what the scale protects is her
+// BODY, and the 2026-08-20 widening added transparent gesture margin either
+// side of it. Dividing by the full canvas instead would shrink her 9% at
+// 1120px, where she is at full size today, to defend empty pixels. A gesture
+// that runs off the left edge there is the trade the owner already accepted.
+const DOCKED_ON_SCREEN_W = 684
 export function besidePanelScale(vw: number): number {
-  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / AVATAR_CANVAS_DOCKED.w))
+  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / DOCKED_ON_SCREEN_W))
 }
 
 // The docked panel's height, as the Tailwind literal. It lives here, next to
@@ -328,7 +344,16 @@ export const CHAT_TRANSCRIPT_PADDING = 48
 // Canvas width per unit height, from AVATAR_FRAMING_COLUMN: ±0.6745m of arm room
 // over a 0.586m half-height view. Tighter than the rail's 0.75 because the
 // framing is tighter vertically — the arm room is the same metres either way.
-export const AVATAR_COLUMN_ASPECT = 0.6745 / 0.586
+// Metres from her centre to a side edge — the arm room every placement gets.
+// This is the ONE definition: the column aspect below divides by its own
+// half-height, the launcher and docked canvases are sized so their width/height
+// lands on the same number, and rigProbe.test.ts measures every clip against it.
+// Raised from 0.6745 on 2026-08-20 because the probe, once it measured the
+// SKINNED fingertip instead of the distal joint, put `spin` 0.5mm inside the
+// edge and `dance` 23mm past it.
+export const AVATAR_ARM_ROOM = 0.7415
+
+export const AVATAR_COLUMN_ASPECT = AVATAR_ARM_ROOM / 0.586
 // How much of that width her RESTING silhouette and hair actually cover,
 // measured off the render. The rest is transparent gesture margin, and the
 // transcript only reserves the body: a stretch does sweep a transparent hand
@@ -336,7 +361,7 @@ export const AVATAR_COLUMN_ASPECT = 0.6745 / 0.586
 // that are not boxed in, and is safe because the wrapper takes no pointer
 // events. Raise this and she pushes the text away; lower it and she stands on
 // top of it.
-export const AVATAR_COLUMN_BODY_FRACTION = 0.5741
+export const AVATAR_COLUMN_BODY_FRACTION = 0.5222
 
 // Where her RESTING silhouette's right edge falls, as a fraction of the canvas
 // width measured from the canvas's left. Read off the render on 2026-08-19: at
@@ -350,7 +375,7 @@ export const AVATAR_COLUMN_BODY_FRACTION = 0.5741
 // sit centred in the canvas — the framing leans her slightly left of it — which
 // is the other half of the same error. Re-measure this from a screenshot if the
 // column framing, the canvas aspect, or the model changes.
-export const AVATAR_COLUMN_BODY_RIGHT = 0.7
+export const AVATAR_COLUMN_BODY_RIGHT = 0.6819
 
 // Breathing room between her silhouette's right edge and the panel's inner
 // right edge. Landing her flush (a gap of 0) put her sleeve 4px off the panel
@@ -419,23 +444,23 @@ export function avatarColumnBox(vw: number, vh: number): AvatarColumnBox {
 // It exists so the transparent gesture margin is not clickable, which means it
 // is tied to the launcher WIDTH: a wider canvas with this left alone silently
 // hands the margin back.
-export const AVATAR_LAUNCHER_HIT_INSET_PCT = 24
+export const AVATAR_LAUNCHER_HIT_INSET_PCT = 26
 // The class ChatWidget applies. Same arrangement as avatarSizeClass(): the JIT
 // needs the literal, so the number is written twice and a test parses this
 // string back to hold the two together. ChatWidget must CONSUME this rather
 // than spell its own copy, or the constant above pins nothing.
-export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[24%] right-[24%]'
+export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[26%] right-[26%]'
 
 // Where her body actually ends inside the launcher canvas, as a fraction of the
 // canvas width, read off the render at rest with her hair. Her body is CENTRED,
 // so widening the canvas walks her inland and walks this edge with her — which
 // is why the speech bubble beside her has now been nudged twice, once per
 // widening, with nothing tying the two together. The test below is that tie.
-export const AVATAR_LAUNCHER_BODY_FRACTION = 0.415
+export const AVATAR_LAUNCHER_BODY_FRACTION = 0.3775
 // How far the bubble's right edge sits from the wrapper's right corner, so its
 // tail lands beside her head instead of on it.
-export const AVATAR_BUBBLE_RIGHT_PX = 256
-export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[256px]'
+export const AVATAR_BUBBLE_RIGHT_PX = 273
+export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[273px]'
 
 // The Tailwind class for each box. Tailwind's JIT only sees arbitrary values
 // written as complete literals, so the numbers cannot be interpolated from the
@@ -449,8 +474,8 @@ export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[256px]'
 // The column is absent on purpose: its box is avatarColumnBox() arithmetic
 // applied as an inline style, so it has no literal here to keep in step.
 export function avatarSizeClass(placement: AvatarPlacement): string {
-  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(684px,97.71vh)]'
-  return 'h-[280px] w-[342px]'
+  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(752px,107.43vh)]'
+  return 'h-[280px] w-[376px]'
 }
 
 // Metres of world per canvas pixel — the number that must match across

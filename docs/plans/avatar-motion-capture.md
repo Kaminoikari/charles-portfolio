@@ -414,6 +414,81 @@ probe 只證明「Node 裡的 FK 這樣算」，證明不了「引擎有沒有�
   接近靜止的格子上，追第三次沒有意義。1.785 是 probe 的數字，而 probe 與引擎在
   `squat` 的髖部上已經對到小數第三位。
 
+## 畫面左緣被截：root cause 是量錯了，不是擺錯了（2026-08-20）
+
+使用者回報「我的左邊（Mika 的右邊）邊界不夠遠，有些動作會被截掉」。
+
+**root cause：`rigProbe` 量的是 distal 指節，畫出來的是皮膚。** 這個模型的
+`J_Bip_R_Index3` 底下還有一個 `J_Bip_R_Index3_end`，離它 **20.4mm**（中指 21.0mm），
+而且幾乎整條都落在手指自己的 +X 軸上，也就是她的右、畫面的左。池子裡每一支寬動作的
+極值骨都是 `rightIndexDistal`，所以每一次側向量測都系統性地少算約 20mm——**正好就是
+使用者看到被截掉的那一側**。
+
+這件事本來以散文形式寫在 `avatarMode.ts` 的註解裡（「不要把剩下的 16mm 當餘裕」），
+寫對了，但沒有變成量測，所以測試照樣全綠。
+
+改用皮膚指尖之後，數字整個變樣：
+
+| 動作 | 舊量法（distal 關節） | 新量法（皮膚指尖） | 對舊畫布 0.6745 |
+| --- | --- | --- | --- |
+| `dance` | 0.6800 | **0.6978** | 超出 23.2mm |
+| `spin` | 0.6583 | **0.6740** | 只剩 **0.5mm** |
+| `squat` | 0.6221 | 0.6296 | 餘 45mm |
+| `peaceSign` | 0.5875 | 0.5998 | 餘 75mm |
+
+`spin` 從 2026-08-19 起就是這樣在跑的，一路綠燈。
+
+### 修法：量準，然後把框放寬
+
+1. **指尖進骨架。** `buildRig` 為每個 `*Distal` 骨骼補一個 tip 節點，位置沿用同一條
+   規則（相對父骨的 rest world 偏移、rest 旋轉 identity）。`handJoints` 每根手指因此
+   回四個點而非三個，`probeHand.fingertip` 改讀 tip。
+2. **手臂空間 0.6745 → 0.7415**（+67mm），三個 placement 同步，並收斂成單一常數
+   `AVATAR_ARM_ROOM`，欄位 aspect 與測試都從它推導。之後 `dance` 餘 44mm、`spin` 餘 68mm。
+
+連動常數全部重推，沒有一個是猜的：
+
+| 常數 | 舊 | 新 | 依據 |
+| --- | --- | --- | --- |
+| `AVATAR_CANVAS_LAUNCHER.w` | 342 | 376 | 高度不動，寬度 ×1.10 |
+| `AVATAR_CANVAS_DOCKED.w` | 684 | 752 | 同上 |
+| `AVATAR_COLUMN_ASPECT` | 0.6745/0.586 | `AVATAR_ARM_ROOM`/0.586 | 手臂空間 ÷ 半高 |
+| `AVATAR_COLUMN_BODY_FRACTION` | 0.5741 | 0.5222 | 身體公尺數不變 ÷ 新畫布公尺數 |
+| `AVATAR_COLUMN_BODY_RIGHT` | 0.70 | 0.6819 | 身體右緣離中心的公尺數不變 |
+| `AVATAR_LAUNCHER_BODY_FRACTION` | 0.415 | 0.3775 | ×342/376 |
+| `AVATAR_LAUNCHER_HIT_INSET_PCT` | 24 | 26 | 點擊區絕對寬度維持（實測 180px vs 178px） |
+| `AVATAR_BUBBLE_RIGHT_PX` | 256 | 273 | 對話框仍在身體左緣外 14px |
+
+**欄位加寬是免費的**：`hFromWidth = budget / (aspect × bodyFraction)`，aspect 乘上 k、
+bodyFraction 除以 k，乘積不變，所以她的尺寸、文字 reserve、文字位置全部不動。多出來的
+寬度一半掛到螢幕外的右側，一半變成畫面左側的手勢空間。1920 實測：畫布 1136→1249px，
+左緣 1076.8→1020（多 56.8px），身體右緣仍在 1872。
+
+**docked 有一個要付的代價，已明寫。** `besidePanelScale` 原本用整塊畫布寬當分母，畫布
+一變寬，1120px 的視窗會把她縮小 9%——為了保護透明像素而讓她變小。所以分母改成一個具名
+常數 `DOCKED_ON_SCREEN_W = 684`：這個縮放保護的是她的**身體**，透明邊掛出螢幕是可以的
+（使用者 2026-08-19 已接受手勢被截）。對應的測試也從「畫布不出界」改成「身體不出界」，
+並且反過來釘住「在 880px 時畫布確實出界」，免得斷言被悄悄放寬。
+
+### 一個差點漏掉的破口
+
+六條 mutation 跑下來，**「把指尖從 `handJoints` 拿掉」竟然全綠**。原因是框放寬之後，
+所有動作有沒有指尖都過得了關——也就是說這次修的東西自己沒有被任何測試釘住，改回去
+不會有人發現。補上 `measures a finger to its skinned tip, not to its last joint`：
+直接斷言 tip 離 distal 20.4mm、tip 比 distal 更遠離中心、而且 `handJoints` 真的有回傳
+它。補完之後那條 mutation 轉紅。
+
+其餘 mutation：拿掉 tip 骨骼（2 紅）、手臂空間改回 0.6745（3 紅）、launcher 寬度改回
+342（4 紅）、docked 寬度改回 684（5 紅）、把 `dance` 已不需要的 reach waiver 放回去
+（1 紅，「申報了卻用不到」那條）。
+
+### waiver 隨之重算
+
+- `dance` 的 `reach: 0.69` **刪除**：新框之下用不到，而用不到就是測試失敗。
+- `dance` 的 `handInHead` 0.48 → **0.29**：指尖納入量測後，入頭深度從 26.8mm 變成
+  **38.9mm**、15 格變 18 格。這個數字是變糟的，不是變好。
+- `stretch` 的 `handTop` 1.79 → **1.77**：加寬買的是側向空間，不是高度，它照樣過頂。
+
 ## 端到端驗證（production build + vite preview + Playwright）
 
 - 三個 clip 全部下載並建成 AnimationClip（`motionClips: 3`）

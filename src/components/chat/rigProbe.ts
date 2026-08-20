@@ -252,6 +252,28 @@ export function buildRig(vrmData: Uint8Array): Rig {
     ;(parent ? bones[parent] : root).add(bones[bone])
   }
 
+  // Fingertips. A distal finger bone is NOT where the finger ends: the mesh is
+  // skinned out to an `_end` leaf past it, 20.4mm on this model's right index
+  // and 21.0mm on its middle, almost entirely along the finger's own axis. Every
+  // wide pose in the pool peaks at a distal joint, so measuring there reads
+  // ~20mm narrower than what is drawn — enough to pass a clip that is visibly
+  // clipped. These carry no humanoid bone name, so they are added here by the
+  // same rule as everything else: local position is the rest-pose world offset
+  // from the parent, rest rotation identity.
+  for (const [bone, node] of Object.entries(nodeOfBone)) {
+    if (!bone.endsWith('Distal')) continue
+    const child = (nodes[node].children ?? [])[0]
+    if (child === undefined) continue
+    const tip = new THREE.Object3D()
+    tip.position
+      .setFromMatrixPosition(worldMatrix(child))
+      .sub(restPosition[bone])
+    bones[bone].add(tip)
+    const name = `${bone.slice(0, -'Distal'.length)}Tip`
+    bones[name] = tip
+    restPosition[name] = new THREE.Vector3().setFromMatrixPosition(worldMatrix(child))
+  }
+
   return { bones, root, restPosition }
 }
 
@@ -506,11 +528,15 @@ const SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
  * and fails a whole-hand one at 0.90: its THUMB is what crosses her cheek. The
  * same widening moves modelPose's rightward reach from 0.269 to 0.286, because
  * its little finger is outside its index.
+ *
+ * Each finger contributes four points, not three: the skinned tip past the
+ * distal joint is included, because that is where the finger is drawn to.
  */
 export function handJoints(rig: Rig, side: 'left' | 'right'): THREE.Vector3[] {
   const out = [worldPosition(rig, `${side}Hand`)]
   for (const finger of FINGERS) {
-    for (const segment of SEGMENTS) {
+    // `Tip` is the skinned end of the finger, past the distal joint. See buildRig.
+    for (const segment of [...SEGMENTS, 'Tip']) {
       const bone = `${side}${finger}${segment}`
       if (bone in rig.bones) out.push(worldPosition(rig, bone))
     }
@@ -545,7 +571,12 @@ export function probeHand(rig: Rig, side: 'left' | 'right'): HandProbe {
   const shoulder = worldPosition(rig, `${side}UpperArm`)
   const elbow = worldPosition(rig, `${side}LowerArm`)
   const wrist = worldPosition(rig, `${side}Hand`)
-  const fingertip = worldPosition(rig, `${side}IndexDistal`)
+  // The skinned end of the index finger when the model has one, which every
+  // VRoid export does; the distal joint is 20mm short of it.
+  const fingertip = worldPosition(
+    rig,
+    `${side}IndexTip` in rig.bones ? `${side}IndexTip` : `${side}IndexDistal`,
+  )
 
   const toShoulder = new THREE.Vector3().subVectors(shoulder, elbow).normalize()
   const toWrist = new THREE.Vector3().subVectors(wrist, elbow).normalize()
