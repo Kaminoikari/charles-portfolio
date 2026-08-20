@@ -643,9 +643,11 @@ describe('stepFramePan', () => {
 
   it('gets there in time for the frames the pan exists for', () => {
     // `dance` first puts her hips below the unpanned bottom edge at t=7.77s and
-    // its hair over the column's top edge at t=11.93. The camera has to be all
-    // the way there by then, not most of the way, in both frames it pans in.
-    for (const target of [-0.08, 0.16]) {
+    // its hair over the column's unpanned top edge at t=7.79 (three sweeps read
+    // 7.79/7.80/7.80, with 103-108 frames of the clip over that edge). The
+    // camera has to be all the way there by then, not most of the way, in both
+    // frames it pans in.
+    for (const target of [-0.08, 0.13]) {
       let v = 0
       for (let t = 0; t < 7.77; t += dt) v = stepFramePan(v, target, dt)
       expect(v).toBe(target)

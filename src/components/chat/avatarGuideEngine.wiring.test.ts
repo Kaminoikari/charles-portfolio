@@ -75,7 +75,7 @@ describe('the pan reaches the camera', () => {
     // A placement change CUTS the framing. Easing the pan across that cut
     // leaves the camera between two compositions for about a second — measured
     // at lookAtY 0.957 for ~600ms going fullscreen mid-`dance`, against hair at
-    // 1.7215. Both handles land it, so the fix does not rest on which of
+    // 1.7276. Both handles land it, so the fix does not rest on which of
     // AvatarGuide's two effects React happens to run first.
     for (const name of ['setPlacement', 'setFraming']) {
       const body = handlerBody(name)

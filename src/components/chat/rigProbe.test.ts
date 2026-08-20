@@ -426,7 +426,7 @@ describe('bundled motions', () => {
       // off the render and carried on the clip (AvatarMotionDef.crown). What
       // this file can measure is hands, and `dance` never raises one near the
       // top edge — so before `crown` existed nothing here looked at the frame
-      // the browser drew 119mm of her hair past.
+      // the browser drew 119mm of her hair past on the 2026-08-20 sweep.
       if (def.crown !== undefined) {
         expect(def.crown, `${name} highest hair in ${placement}`).toBeLessThan(frame.span.top)
       }

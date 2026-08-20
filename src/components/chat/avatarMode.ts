@@ -289,7 +289,7 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 // metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
 //
 // Composed for a figure that stands still, which is what nine of the ten clips
-// do. `dance` does not: its hop throws her hair to 1.7215, 119mm past this top
+// do. `dance` does not: its hop throws her hair to 1.7276, 126mm past this top
 // edge, so it pans this frame up while it plays (avatarMotions' MotionPan).
 //
 // The 0.02m of headroom above is measured to the hair's BIND POSE. On the render

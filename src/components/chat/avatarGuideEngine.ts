@@ -1380,7 +1380,7 @@ export function initAvatarGuide(
       // the same call, riding that cut. Easing to it instead leaves the camera
       // between two compositions for the best part of a second — measured at
       // lookAtY 0.957 for ~600ms when the visitor goes fullscreen mid-`dance`, a
-      // 1.543 top edge against hair that reaches 1.7215.
+      // 1.543 top edge against hair that reaches 1.7276.
       //
       // Which of this and setPlacement runs first does not matter: on the mount
       // path AvatarGuide calls this one first, on a placement change the other,

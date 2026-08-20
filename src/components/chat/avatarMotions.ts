@@ -93,12 +93,28 @@ export interface AvatarMotionDef {
    * exists: her hair hangs from spring bones, which the probe does not simulate
    * (see rigProbe's note on what is still not modelled). The gap is not small.
    * At rest the spring settles her topmost drawn pixel 29mm BELOW the bind-pose
-   * hair vertex; mid-hop the same strands are thrown 140mm above it. Rigging
+   * hair vertex; mid-hop the same strands are thrown 146mm above it. Rigging
    * that vertex to the head bone and calling it the crown puts the clip's worst
-   * frame 32mm over the column's top edge, at t=19.53; the browser's worst is
-   * 119mm over, at t=12.05. Close enough to sound like a measurement, wrong by
-   * a factor of four, wrong about which frame, and wrong in the direction that
-   * lets a clip through.
+   * frame 32mm over the column's unpanned top edge, at t=19.53; the render puts
+   * it 126mm over, and peaks at t=11.85. Close enough to sound like a
+   * measurement, wrong by a factor of four, wrong about which frame, and wrong
+   * in the direction that lets a clip through.
+   *
+   * It is a SAMPLING bound, not a ceiling. The spring is driven by the frame
+   * timings it happens to get, so the peak moves run to run: nine column sweeps
+   * at pan +0.16 topped out at 1.7215, and eighteen at +0.13 ranged over
+   * 1.7175-1.7276, a 10mm spread. The figure carried below is that worst.
+   * Record the worst you have seen, and read a higher reading as a result
+   * rather than as noise to round away — this value only ever moves by hand, so
+   * a thin margin costs a re-measure, never a silent regression.
+   *
+   * It is also the topmost pixel with alpha over 8/255, which counts the
+   * translucent fringe on her hair tips and ornaments and not only the hair you
+   * can see. In the column that fringe got to row 3 at worst, while the topmost
+   * pixel above alpha 128 never rose past row 25 in the three sweeps measured
+   * at both thresholds, 32mm lower. So this trips about 32mm before anything
+   * visible is cut, which is the direction a guard should be wrong in — and a
+   * re-measure at another threshold is not comparable.
    *
    * Absent means not measured, and absent is the norm: this costs a browser
    * sweep of every frame of the clip, and it is carried for the one clip whose
@@ -202,18 +218,19 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //
   // It also MOVES, which nothing else in the pool does, and it moves at both
   // ends. Her hips drop to 0.7525 and hop to 0.9644 against a rest height of
-  // 0.8782, and the hop throws her hair to 1.7215 — 169mm above where it hangs
+  // 0.8782, and the hop throws her hair to 1.7276 — 175mm above where it hangs
   // when she stands still. Against the two compositions:
   //
   //   waist-up  hips 15mm below the bottom edge, for 14 of 805 sampled frames
   //             from t=7.77s. This is what took the clip out of the waist-up
   //             pool on 2026-08-20 and off the launcher with it.
   //   column    119mm above the top edge at t=12.05, and above it at all on 98
-  //             of 1589 rendered frames. What is out is hair and the ornaments
-  //             in it — her skull was never measured and is not claimed — but
-  //             at 119mm the cut runs through the whole crown of her head, and
-  //             the screenshots at t=12.05 and t=19.46 show it flat. This
-  //             shipped.
+  //             of 1589 rendered frames. That is the 2026-08-20 sweep, which
+  //             is why its numbers sit 6mm under the `crown` above. What is
+  //             out is hair and the ornaments in it — her skull was never
+  //             measured and is not claimed — but at 119mm the cut runs
+  //             through the whole crown of her head, and the screenshots at
+  //             t=12.05 and t=19.46 show it flat. This shipped.
   //
   // A static re-centre of the waist-up frame was available and was not taken.
   // With this clip in the pool the window for lookAtY is 1.2569 (`stretch`'s
@@ -224,26 +241,34 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //
   // So the frame moves for the clip instead, and the two numbers are derived,
   // not dialled. What has to fit is this clip's OWN rendered extremes: hips
-  // 0.7525 at the bottom, crown 1.7215 at the top, 0.969m apart.
+  // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart.
   //
-  //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.237, rounded
+  //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.240, rounded
   //                   to 1.24 like every lookAtY here): 65mm under her hips,
-  //                   71mm over her hair. The span had the room; it was sitting
+  //                   65mm over her hair. The span had the room; it was sitting
   //                   in the wrong place.
-  //   column   +0.16  the MINIMUM that clears her hair (119.5mm) plus 40mm, near
-  //                   the 49mm the column gives it at rest. Not centred, and
-  //                   deliberately: the column's spare room is all at the
-  //                   BOTTOM, and every mm the frame rises is a mm of her legs —
-  //                   160mm of them here, knee to mid-thigh. Centring would have
-  //                   cost 220mm to buy headroom nothing occupies. Drop it to
-  //                   +0.13 if her legs matter more than a 40mm hair margin.
+  //   column   +0.13  the smallest pan that does not clip her hair, and so the
+  //                   most leg this clip can keep: the column's spare room is
+  //                   all at the BOTTOM, so every mm the frame rises is a mm of
+  //                   her legs. Eighteen full-clip sweeps at this value never
+  //                   reached row 0; the worst was row 3, putting crown 1.7276
+  //                   4.4mm inside the 1.732 top edge. +0.12 was not swept —
+  //                   that same measured crown is 5.6mm outside ITS edge, which
+  //                   is why the guard reddens there. The 4.4mm is the
+  //                   translucent fringe the crown threshold counts; the topmost
+  //                   pixel a visitor can see stayed 36mm inside. So a
+  //                   re-measure risks a red guard, not a visible cut. +0.16 is
+  //                   this clip with a 34mm fringe margin and 30mm less leg;
+  //                   neither setting reaches her knee, which avatarMode puts
+  //                   at 0.40 in one comment and 0.43 in another — below this
+  //                   frame's 0.560 bottom edge either way.
   //
   // Nothing else in the pool is touched by either number.
   dance: {
     placements: ['waistUp', 'column'],
     showsPalm: true,
-    pan: { waistUp: -0.08, column: 0.16 },
-    crown: 1.7215,
+    pan: { waistUp: -0.08, column: 0.13 },
+    crown: 1.7276,
     waiver: { handInHead: 0.29, hipsDrift: 0.15, endWrist: 1.19 },
   },
 }
