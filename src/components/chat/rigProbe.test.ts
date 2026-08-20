@@ -13,6 +13,7 @@ import {
   resetRig,
   screenX,
   silhouetteJoints,
+  SKIN_ABOVE_JOINT,
   type Motion,
   type Rig,
 } from './rigProbe'
@@ -248,13 +249,25 @@ describe('guard sensitivity', () => {
 
   it('sees a hand raised above the frame', () => {
     const r = rig()
-    // Left arm straight up: fingertips well over the top edge of both frames.
+    // Left arm straight up, and her whole stance lifted on top of that. The arm
+    // alone used to clear both frames; since the waist-up frame was raised to
+    // 1.872 for `stretch` it no longer does — straight up from her shoulder is
+    // 1.793, which is 79mm SHORT of the new top edge. That is a fact about her
+    // proportions, not a reason to lower the frame, so the synthetic pose lifts
+    // her instead.
+    //
     // +z here, because applyMotion negates it: the arm has to end up raised,
     // and writing the sign that LOOKS right sends it to the floor instead.
     const half = Math.SQRT1_2
     applyMotion(
       r,
-      synthetic({ rotation: { leftUpperArm: [0, 0, half, half], leftLowerArm: [0, 0, 0, 1] } }),
+      synthetic({
+        // applyMotion rescales a hips track by restPosition.hips.y / restHipsY,
+        // and synthetic() declares restHipsY = 1, so this is multiplied by 0.878
+        // on the way in: 1.25 lands her hips at 1.098, a lift of 0.22.
+        hipsY: 1.25,
+        rotation: { leftUpperArm: [0, 0, half, half], leftLowerArm: [0, 0, 0, 1] },
+      }),
       0,
     )
     const top = probeHand(r, 'left').fingertip.y
@@ -345,9 +358,12 @@ describe('bundled motions', () => {
           screenLeft = Math.max(screenLeft, -screenX(joint.x))
           screenRight = Math.max(screenRight, screenX(joint.x))
         }
+        // Every joint of the hand, the same set the face and silhouette guards
+        // use. Sampling the wrist and the index tip alone read `stretch` at
+        // 1.7698 when its highest bone is a THUMB tip at 1.7971 — 27mm, and the
+        // top edge was tuned against the smaller number.
         for (const side of ['left', 'right'] as const) {
-          const { wrist, fingertip } = probeHand(r, side)
-          maxY = Math.max(maxY, wrist.y, fingertip.y)
+          for (const joint of handJoints(r, side)) maxY = Math.max(maxY, joint.y)
         }
       }
       // The bottom edge is not checked: an arm hanging at her side leaves the
@@ -368,14 +384,18 @@ describe('bundled motions', () => {
       expect(screenRight, `${name} reach to the viewer's right in ${placement}`).toBeLessThan(
         reachBudget ?? frame.halfWidth,
       )
+      // Against the top of her SKIN, not of her skeleton. Clearing the joint
+      // alone is what the first attempt at the raised-hand fix did, and it
+      // still rendered a cut hand: see SKIN_ABOVE_JOINT.
+      const skinTop = maxY + SKIN_ABOVE_JOINT
       const topBudget = def.waiver?.handTop
       if (topBudget !== undefined) {
         expect(
-          maxY,
+          skinTop,
           `${name} declares a handTop waiver it does not need in ${placement}`,
         ).toBeGreaterThan(frame.span.top)
       }
-      expect(maxY, `${name} highest hand in ${placement}`).toBeLessThan(
+      expect(skinTop, `${name} highest hand in ${placement}`).toBeLessThan(
         topBudget ?? frame.span.top,
       )
     }
@@ -401,8 +421,9 @@ describe('bundled motions', () => {
   // A clip must never sink out of the bottom of the crop. This is the guard for
   // what a motion DOES: `squat` lowers her hips 0.218 on purpose and belongs in
   // the pool, so the budget is the frame's own bottom edge rather than a flat
-  // cap. Her hips at rest are 0.878, the waist-up frame ends at 0.618, and the
-  // column's at 0.430; squat's deepest is 0.660.
+  // cap. Her hips at rest are 0.878, the waist-up frame ends at 0.768, and the
+  // column's at 0.430; squat's deepest is 0.660, which is why it plays in the
+  // column only.
   it.each(Object.entries(AVATAR_MOTIONS))('%s keeps her hips inside the crop', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)

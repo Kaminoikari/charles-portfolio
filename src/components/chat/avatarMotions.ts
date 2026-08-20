@@ -104,12 +104,13 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // sound; on every measurement of soundness it is the cleanest of the seven
   // after modelPose.
   spin: { placements: ['waistUp', 'column'], showsPalm: true },
-  // VRMA_07. She lowers into a squat and comes back up. Her hips reach 0.660,
-  // which is 0.218 below her rest height and still above both frames' bottom
-  // edges (0.618 waist-up, 0.430 column), so the whole motion stays in shot.
-  // Her hands stay low the entire time (best palm-to-viewer 0.23), so this is
-  // not a hand the viewer is meant to read.
-  squat: { placements: ['waistUp', 'column'], showsPalm: false },
+  // VRMA_07. She lowers into a squat and comes back up, hips down to 0.660.
+  // Column only. The waist-up frame was raised on 2026-08-20 to fit `stretch`'s
+  // raised hands, and its bottom edge came up with it, from 0.618 to 0.768 —
+  // past her hips at the bottom of the squat. The column crops at 0.430 and has
+  // room to spare. Her hands stay low the entire time (best palm-to-viewer
+  // 0.23), so this is not a hand the viewer is meant to read.
+  squat: { placements: ['column'], showsPalm: false },
   // Hands to her hips. Reaches 0.250 / 0.274 to the two screen sides against a
   // 0.674 budget, hands never above y=0.938, hips flat at 0.882. Best
   // palm-to-viewer is -0.15, the backs of her hands, which is what hands on
@@ -130,16 +131,13 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
     showsPalm: false,
     waiver: { hipsDrift: 0.16 },
   },
-  // Arms overhead. Her hands pass ABOVE both crops: 1.7698 at t=1.87s against
-  // a 1.722 waist-up edge and a 1.602 column edge, so for most of the clip her
-  // hands are off the top of the canvas. Shipped with that, and the waiver pins
-  // how far. The 2026-08-20 widening bought sideways room, not height, so this
-  // one is untouched by it.
-  stretch: {
-    placements: ['waistUp', 'column'],
-    showsPalm: true,
-    waiver: { handTop: 1.77 },
-  },
+  // Arms overhead: highest joint 1.7971, highest SKIN 1.8091. Waist-up only, and
+  // the reason that frame was raised on 2026-08-20 — at the old 1.722 top edge
+  // this was cut on the very canvas the owner wanted to watch it on, and it now
+  // clears the 1.8722 edge by 63mm. The column crops at 1.602 and cannot hold it
+  // without giving up the full-height composition that placement exists for, so
+  // it is simply not offered there.
+  stretch: { placements: ['waistUp'], showsPalm: true },
   // 26.8s, the longest by far, and the clip that drove the 2026-08-20 widening:
   // it reaches 0.6978 to the viewer's left, which was 23mm past the old 0.6745
   // canvas and sits 44mm inside the 0.7415 one. Its reach waiver is gone with
@@ -156,8 +154,12 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // It also ends badly for a clip the engine has to fade out of: hips 0.140 off
   // centre and her right wrist still up at 1.188, where the guard wants an arm
   // hanging below 1.05. `greeting` was dropped partly for ending at 1.15.
+  //
+  // Column only since the waist-up frame rose for `stretch`: it drops its hips to
+  // 0.7525, and holding both that and a raised hand would need the waist-up frame
+  // to sit within 4mm of two opposite edges at once.
   dance: {
-    placements: ['waistUp', 'column'],
+    placements: ['column'],
     showsPalm: true,
     waiver: { handInHead: 0.29, hipsDrift: 0.15, endWrist: 1.19 },
   },

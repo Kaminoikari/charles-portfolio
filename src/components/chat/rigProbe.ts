@@ -521,6 +521,25 @@ const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Little'] as const
 const SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
 
 /**
+ * How far her SKIN reaches past the last bone, in metres.
+ *
+ * Every number this module returns is a joint position, and a joint is not an
+ * edge: the hand is drawn around its bones, so the rendered silhouette clears
+ * the outermost joint by a margin no amount of forward kinematics can see. The
+ * frame has to reserve that margin, and it is measured rather than guessed.
+ *
+ * Measured on 2026-08-20 against the launcher canvas (280px tall, 253.5 px/m)
+ * with `stretch` held at its peak, where the highest joint in the pose is a
+ * thumb tip at 1.7971 and the topmost rendered pixel of her hand sits 12mm
+ * above it. That 12mm is why raising the frame to clear 1.7971 alone still
+ * rendered a cut hand.
+ *
+ * Re-measure it if the model is replaced. Skin thickness is a property of THIS
+ * mesh over THIS skeleton and does not travel with the animation library.
+ */
+export const SKIN_ABOVE_JOINT = 0.012
+
+/**
  * Every joint of one hand: the wrist and all fifteen finger joints.
  *
  * Sampling the wrist and the index fingertip alone is not enough, and that is

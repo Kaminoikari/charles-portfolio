@@ -205,17 +205,48 @@ export interface AvatarFraming {
 }
 
 // Waist-up, composed for the launcher canvas's 280px HEIGHT: top edge at world
-// y=1.722 (her hair top is 1.582), bottom at y=0.618, mid-thigh. Canvas width
+// y=1.872 (her hair top is 1.582), bottom at y=0.768, upper thigh. Canvas width
 // does not enter into it — see avatarViewHalfWidth.
-export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.17 }
+//
+// lookAtY was 1.17 until 2026-08-20, putting the top edge at 1.722. `stretch`
+// puts a hand at 1.809, so it was cut at the top on the very canvas the owner
+// asked to see it whole on.
+//
+// Height is not free the way width was. The visible span is 2·distance·tan(fov/2)
+// — 1.104m here — and distance also sets how large she renders, so the span
+// cannot grow without shrinking her or growing the canvas, and the docked canvas
+// is sized to the panel and cannot grow. What CAN move is where that fixed span
+// sits, which is this number, and every 1mm the top edge rises is 1mm the bottom
+// edge rises with it.
+//
+// So it is chosen, not guessed. Two edges bound the waist-up pool:
+//
+//   top    ≥ 1.8091  `stretch`'s raised hand, SKIN and not bone: its highest
+//                    joint is a thumb tip at 1.7971 and the rendered hand runs
+//                    SKIN_ABOVE_JOINT past it. Measuring the joint alone is what
+//                    put the first attempt at this fix 4px short.
+//   bottom ≤ 0.8225  `peaceSign`'s hips, the lowest in the pool once `dance`
+//                    (0.7525) is out of it.
+//
+// That leaves the window 1.2569 ≤ lookAtY ≤ 1.3747, and 1.32 is its centre to
+// the nearest 10mm: 63mm of clearance above her hand, 55mm below her hips.
+// Re-derive it, do not nudge it, if the pool changes.
+//
+// The bill is paid at the bottom and in air. The bottom cut rises from 0.618 to
+// 0.768, so `squat` (hips to 0.660) and `dance` (0.7525) play in the fullscreen
+// column only, and the docked canvas shows less of her thighs. And the top edge
+// now sits 0.290m above her hair, 74px of empty canvas above her head at rest
+// where there used to be 35px. That air is the raised hand's room; a frame
+// cannot hold a gesture 0.23m above her head without reserving the space.
+export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.32 }
 // The fullscreen column's framing: head to knee, composed tight. The default
-// framing leaves 0.14m of air above her hair, which reads as a big empty gap
+// framing leaves 0.23m of air above her hair, which reads as a big empty gap
 // once the canvas is 800px tall, so this pulls the top edge down to 1.602 —
 // 0.02m over her hair at 1.582, about 40px of clearance on screen and as close
 // as her hair ornaments allow. The bottom edge stays at her knee (0.43), the
 // same cut the old rail made, so the tightening is all headroom.
 //
-// The view is 1.172m tall against the default's 1.291m, which is why she comes
+// The view is 1.172m tall against the default's 1.104m, which is why she comes
 // out 10% larger on the same canvas — and why the column is proportionally
 // WIDER than the rail was: her arm room is a fixed 0.674m spread over fewer
 // metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
