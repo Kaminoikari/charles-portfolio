@@ -14,10 +14,25 @@
 //     as the direct result of the visitor's own tap. (The site used to gate
 //     voice behind the ambient-music mute; that button was removed 2026-08-13
 //     and voice became unconditional.)
+//   - the one non-tap cue is the head-pat giggle (added 2026-08-20): it rides a
+//     pointermove stroke, which is not a tap-completed gesture. That costs it
+//     nothing, because head pats are desktop-only (pointer: fine) and desktop
+//     browsers allow audio once the visitor has interacted with the page at
+//     all; a visitor who pats before ever clicking gets the refusal handled the
+//     same way done/error already handle it (onBlocked, silent, face reset).
 
 import type { Locale } from '../../i18n'
 
-export type VoiceCue = 'intro' | 'greet' | 'ack' | 'fullscreen' | 'suggest' | 'bye' | 'done' | 'error'
+export type VoiceCue =
+  | 'intro'
+  | 'greet'
+  | 'ack'
+  | 'fullscreen'
+  | 'suggest'
+  | 'giggle'
+  | 'bye'
+  | 'done'
+  | 'error'
 
 export const VOICE_LINES: Record<VoiceCue, string[]> = {
   // First panel open of the tab-session: a full self-introduction. Later
@@ -47,6 +62,18 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
   fullscreen: ['/avatar/voice/mika-full-1.m4a', '/avatar/voice/mika-full-2.m4a'],
   // A suggested-question chip tap (replaces ack for that submit).
   suggest: ['/avatar/voice/mika-suggest-1.m4a', '/avatar/voice/mika-suggest-2.m4a'],
+  // Head pat (desktop only — see AvatarGuide). She used to answer a pat in
+  // silence; the owner asked for the laugh on 2026-08-20, so a pat now earns a
+  // bashful えへへ on top of the same happy face and head wiggle. Still not a
+  // LINE: she laughs, she does not talk, which is what keeps the pool usable
+  // in every locale untranslated.
+  giggle: [
+    '/avatar/voice/mika-giggle-1.m4a',
+    '/avatar/voice/mika-giggle-2.m4a',
+    '/avatar/voice/mika-giggle-3.m4a',
+    '/avatar/voice/mika-giggle-4.m4a',
+    '/avatar/voice/mika-giggle-5.m4a',
+  ],
   // The explicit minimise button (Escape closes silently by design).
   bye: ['/avatar/voice/mika-bye-1.m4a', '/avatar/voice/mika-bye-2.m4a'],
   // Answer stream finished / failed. These two cues fire OUTSIDE a tap gesture,
@@ -64,10 +91,18 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
 // character licence). zh-TW keeps the Japanese lines: Mandarin cannot be
 // approximated with kana at all. Same filenames with an -en suffix, one per
 // Japanese clip, so the two catalogues stay in lockstep.
+//
+// Laughter is the exception: えへへ is the same sound in every language, so the
+// giggle pool is SHARED verbatim rather than duplicated into byte-identical
+// -en files. Any cue added here must be wordless for the same reason.
+const LOCALE_NEUTRAL_CUES: readonly VoiceCue[] = ['giggle']
+
 export const VOICE_LINES_EN: Record<VoiceCue, string[]> = Object.fromEntries(
   Object.entries(VOICE_LINES).map(([cue, clips]) => [
     cue,
-    clips.map((clip) => clip.replace(/\.m4a$/, '-en.m4a')),
+    LOCALE_NEUTRAL_CUES.includes(cue as VoiceCue)
+      ? clips
+      : clips.map((clip) => clip.replace(/\.m4a$/, '-en.m4a')),
   ]),
 ) as Record<VoiceCue, string[]>
 

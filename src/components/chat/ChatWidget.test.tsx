@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import { act, render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
@@ -8,6 +8,48 @@ import {
   avatarColumnRightInset,
   CHAT_PANEL_HEIGHT_CLASS,
 } from './avatarMode'
+import { VOICE_LINES } from './avatarVoice'
+import { PAT_EMOTION } from './avatarMode'
+
+// The head-pat detector lives in AvatarGuide (tested there against real
+// pointer maths); what this file owns is the other half — what the widget
+// PLAYS when a pat is reported. The stub hands the callback back out.
+// Same reason as AvatarGuide.test.tsx: sentinel values nothing else uses, so
+// the head-pat performance assertion below fails if CUE_PERFORMANCE.giggle goes
+// back to an inline ('happy', 0.9, 1.8) that can drift from the detector's.
+vi.mock('./avatarMode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./avatarMode')>()),
+  PAT_EMOTION: {
+    happy: ['nagomi', 0.42, 3.75],
+    annoyed: ['surprised', 0.37, 2.25],
+  },
+}))
+
+type PatCallback = (kind: 'happy' | 'annoyed') => void
+const avatarStub = vi.hoisted(() => ({
+  onPat: null as PatCallback | null,
+  handle: {
+    setMode: vi.fn(),
+    setActive: vi.fn(),
+    setSpeech: vi.fn(),
+    setEmotion: vi.fn(),
+    playGesture: vi.fn(),
+    playMotion: vi.fn(() => true),
+    setFraming: vi.fn(),
+    setPlacement: vi.fn(),
+    dispose: vi.fn(),
+  },
+}))
+
+// Read through a function on purpose: assigning `avatarStub.onPat = null` in a
+// setup helper narrows the property to `null` for the rest of THAT function, so
+// reading it there would need a cast that lies. The stub fills it in from a
+// React render, which the type checker cannot see either way.
+function takePatCallback(): PatCallback {
+  const pat = avatarStub.onPat
+  if (!pat) throw new Error('the avatar stub never handed its pat callback out')
+  return pat
+}
 
 // The real guide builds a WebGL renderer, which jsdom has none of. Every other
 // test in this file leaves the capability gate closed and never reaches it; the
@@ -17,12 +59,24 @@ import {
 vi.mock('./AvatarGuide', async () => {
   const { useEffect } = await import('react')
   return {
-    default: ({ onLoaded }: { onLoaded?: () => void }) => {
+    default: ({
+      onLoaded,
+      onPat,
+      onHandle,
+    }: {
+      onLoaded?: () => void
+      onPat?: (kind: 'happy' | 'annoyed') => void
+      onHandle?: (handle: unknown) => void
+    }) => {
       // The widget keeps the corner EMPTY until the guide reports its first
       // frame, so a stub that never loads takes the launcher button with it.
       useEffect(() => {
         onLoaded?.()
-      }, [onLoaded])
+        // The real engine handle is what receives the performance beats; the
+        // spy stands in for it so a cue's face can be asserted.
+        onHandle?.(avatarStub.handle)
+      }, [onLoaded, onHandle])
+      avatarStub.onPat = onPat ?? null
       return null
     },
   }
@@ -445,6 +499,98 @@ describe('ChatWidget fullscreen', () => {
     const expected = avatarColumnRightInset(avatarColumnBox(vw, vh).w)
     expect(expected).toBeLessThan(-100)
     expect(wrapper.style.right).toBe(`${expected}px`)
+  })
+
+  describe('head pats', () => {
+    // Every clip the widget starts goes through `new Audio(src)`; jsdom has no
+    // media stack, so this stand-in is both the recorder and the stub.
+    class FakeAudio {
+      static created: FakeAudio[] = []
+      src: string
+      paused = false
+      ended = false
+      play = vi.fn(() => Promise.resolve())
+      pause = vi.fn()
+      addEventListener = vi.fn()
+      constructor(src: string) {
+        this.src = src
+        FakeAudio.created.push(this)
+      }
+    }
+
+    // Renders the widget with the capability gate open and waits for the guide
+    // to hand its pat callback out. Nothing has been clicked at this point, so
+    // no voice line is in flight.
+    async function mountPattable() {
+      FakeAudio.created = []
+      avatarStub.onPat = null
+      avatarStub.handle.setEmotion.mockClear()
+      avatarStub.handle.playGesture.mockClear()
+      vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+        ((kind: string) =>
+          kind === 'webgl2'
+            ? { getExtension: () => null }
+            : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+      )
+      render(<ChatWidget />)
+      // Two waits, and the second one is load-bearing. The gate runs behind a
+      // 400ms latch before she is mounted at all; the FIRST render after that
+      // still has avatarLoaded false (the stub reports its first frame from an
+      // effect), and the pat callback captured in that render closes over a
+      // speakCue that refuses to play — she is not on duty yet. This test was
+      // flaky (2 failures in 5 runs) until it waited for the render that comes
+      // AFTER the load: the character launcher button, which is the only DOM
+      // node gated on avatarIsLauncher, and so on avatarLoaded.
+      await waitFor(() => expect(avatarStub.onPat).toBeTruthy(), { timeout: 2000 })
+      await waitFor(() => expect(document.querySelector('[data-own-focus-ring]')).toBeTruthy(), {
+        timeout: 2000,
+      })
+      // Read at call time rather than captured here: the stub replaces the
+      // callback on every render, and only the latest one is the live wiring.
+      return (kind: 'happy' | 'annoyed') => takePatCallback()(kind)
+    }
+
+    it('answers a happy pat with a giggle from the locale-shared pool', async () => {
+      const pat = await mountPattable()
+
+      act(() => pat('happy'))
+
+      expect(FakeAudio.created).toHaveLength(1)
+      // Asserting membership of the JAPANESE pool is the point: the laugh is
+      // wordless, so every locale plays these same five files.
+      expect(VOICE_LINES.giggle).toContain(FakeAudio.created[0].src)
+      expect(FakeAudio.created[0].play).toHaveBeenCalledTimes(1)
+      // The cue's face comes from the pat's shared constant, so the detector
+      // and the cue cannot set two different faces on one pat.
+      expect(avatarStub.handle.setEmotion).toHaveBeenCalledWith(...PAT_EMOTION.happy)
+      // The wiggle is AvatarGuide's; performing it here again would double it.
+      expect(avatarStub.handle.playGesture).not.toHaveBeenCalled()
+    })
+
+    it('keeps the annoyed third pat silent', async () => {
+      const pat = await mountPattable()
+
+      act(() => pat('annoyed'))
+
+      // A giggle under the 怒り face would cancel out the one beat that says
+      // "enough" — the third pat reacts with her face only.
+      expect(FakeAudio.created).toHaveLength(0)
+    })
+
+    it('yields the giggle to a line she is already speaking', async () => {
+      const pat = await mountPattable()
+      act(() => pat('happy'))
+      expect(FakeAudio.created).toHaveLength(1)
+
+      // Second pat while the first giggle is still running: cutting her off to
+      // laugh again reads as an interruption, and the visible beat (face plus
+      // head wiggle) has already landed inside AvatarGuide either way.
+      act(() => pat('happy'))
+
+      expect(FakeAudio.created).toHaveLength(1)
+      expect(FakeAudio.created[0].pause).not.toHaveBeenCalled()
+    })
   })
 
   describe('background scroll lock', () => {

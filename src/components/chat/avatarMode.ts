@@ -166,6 +166,20 @@ export const EMOTION_RECIPES: Record<EmotionName, EmotionRecipe> = {
 // Multiplied over the face materials' base colour at full pale weight.
 export const FACE_PALE_TINT: readonly [number, number, number] = [0.62, 0.74, 0.95]
 
+// The face a head pat earns. Two places perform one pat: the pointer detector
+// in AvatarGuide, which must react even when no sound can follow, and the
+// giggle cue in ChatWidget, which re-applies its cue performance for every
+// line it starts. They run back to back on the same pat, so both read THIS —
+// otherwise tuning the pat in one of them is silently overwritten by the other.
+export const PAT_EMOTION: Record<
+  'happy' | 'annoyed',
+  readonly [EmotionName, number, number]
+> = {
+  happy: ['happy', 0.9, 1.8],
+  // Third pat inside 20s: petting a cat past its patience.
+  annoyed: ['angry', 0.9, 1.6],
+}
+
 // What each of an emotion's channels should be set to at a displayed weight.
 // The engine writes exactly this, so a test of this function tests what the
 // face actually does — including the snapToFull rule, whose whole point is to

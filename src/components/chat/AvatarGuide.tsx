@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react'
 import {
   AVATAR_FRAMING_DEFAULT,
+  PAT_EMOTION,
   type AvatarFraming,
   type AvatarMode,
   type AvatarPlacement,
@@ -27,6 +28,7 @@ export default function AvatarGuide({
   framing,
   placement,
   onHandle,
+  onPat,
   onLoaded,
   onContextLost,
   onLoadFailed,
@@ -53,6 +55,12 @@ export default function AvatarGuide({
   // teardown) so the widget can drive lip sync / emotions / gestures directly
   // — those are imperative performance beats, not renderable React state.
   onHandle?: (handle: AvatarGuideHandle | null) => void
+  // Fires when a head pat lands, with which reaction it earned. The face and
+  // the body beat are performed here (below) so a pat always reads even when
+  // no sound can follow; the callback exists because the VOICE belongs to
+  // ChatWidget — it owns the one audio element, the no-overlap rule and the
+  // lip-sync wiring, none of which this shell should grow a second copy of.
+  onPat?: (kind: 'happy' | 'annoyed') => void
   // Relayed from the engine after the VRM's first rendered frame; the widget
   // swaps the capsule launcher for the character only after this fires.
   onLoaded?: () => void
@@ -70,15 +78,17 @@ export default function AvatarGuide({
   const framingRef = useRef(framing)
   const placementRef = useRef(placement)
   const onHandleRef = useRef(onHandle)
+  const onPatRef = useRef(onPat)
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
   const onLoadFailedRef = useRef(onLoadFailed)
   useEffect(() => {
     onHandleRef.current = onHandle
+    onPatRef.current = onPat
     onLoadedRef.current = onLoaded
     onContextLostRef.current = onContextLost
     onLoadFailedRef.current = onLoadFailed
-  }, [onHandle, onLoaded, onContextLost, onLoadFailed])
+  }, [onHandle, onPat, onLoaded, onContextLost, onLoadFailed])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -143,7 +153,8 @@ export default function AvatarGuide({
   }, [framingDistance, framingLookAtY])
 
   // Head pats, desktop (fine-pointer) only: a stroke back and forth across her
-  // head (≥3 direction flips within 2s) earns a happy head wiggle. Listening is
+  // head (≥3 direction flips within 2s) earns a happy head wiggle and a
+  // bashful giggle (えへへ, via onPat → ChatWidget). Listening is
   // passive on document — nothing here can swallow the click that opens the
   // panel, and a hidden placement (zero-size rect) is ignored.
   //
@@ -203,13 +214,21 @@ export default function AvatarGuide({
               patCooldownUntil = now + 8000
               patStreak = now - lastPatAt < 20000 ? patStreak + 1 : 1
               lastPatAt = now
-              // Deliberately silent (plan F): pats never speak, only react.
+              // She reacts here and reports the pat upward; the sound (a
+              // bashful giggle on the happy beat) is ChatWidget's to play.
+              // Plan F's "pats never speak" still holds in the sense that
+              // matters: she laughs, she never says a line — the owner asked
+              // for the laugh on 2026-08-20.
               if (patStreak >= 3) {
                 patStreak = 0
-                h.setEmotion('angry', 0.9, 1.6)
+                h.setEmotion(...PAT_EMOTION.annoyed)
+                // The third pat stays silent on purpose: a giggle under the
+                // 怒り face would cancel out the one beat that says "enough".
+                onPatRef.current?.('annoyed')
               } else {
-                h.setEmotion('happy', 0.9, 1.8)
+                h.setEmotion(...PAT_EMOTION.happy)
                 h.playGesture('wiggle')
+                onPatRef.current?.('happy')
               }
             }
           }

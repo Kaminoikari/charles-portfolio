@@ -1,3 +1,6 @@
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { VOICE_LINES, VOICE_LINES_EN, pickVoiceLine, playVoiceCue, voiceLinesFor } from './avatarVoice'
 
@@ -21,6 +24,8 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../public')
+
 describe('voiceLinesFor', () => {
   it('serves the katakana-English set to the en locale and Japanese to the rest', () => {
     expect(voiceLinesFor('en')).toBe(VOICE_LINES_EN)
@@ -35,10 +40,19 @@ describe('voiceLinesFor', () => {
     }
   })
 
-  it('every English clip is a distinct -en file so caches never collide', () => {
-    for (const clips of Object.values(VOICE_LINES_EN)) {
+  it('every spoken English clip is a distinct -en file so caches never collide', () => {
+    for (const [cue, clips] of Object.entries(VOICE_LINES_EN)) {
+      if (cue === 'giggle') continue // wordless: shared, asserted below
       for (const clip of clips) expect(clip.endsWith('-en.m4a')).toBe(true)
     }
+  })
+
+  it('shares the wordless giggle pool across locales instead of duplicating it', () => {
+    // A laugh has no language. Mapping it through the -en rule would demand
+    // five byte-identical -en files, and shipping none of them would point the
+    // en locale at clips that do not exist.
+    expect(VOICE_LINES_EN.giggle).toEqual(VOICE_LINES.giggle)
+    for (const clip of VOICE_LINES_EN.giggle) expect(clip.endsWith('-en.m4a')).toBe(false)
   })
 })
 
@@ -49,8 +63,18 @@ describe('pickVoiceLine', () => {
     expect(pickVoiceLine('bye', 'zh-TW', () => 0.99)).toBe(VOICE_LINES.bye[VOICE_LINES.bye.length - 1])
   })
 
-  it('covers all eight interaction cues, each with at least one clip', () => {
-    const cues = ['intro', 'greet', 'ack', 'fullscreen', 'suggest', 'bye', 'done', 'error'] as const
+  it('covers all nine interaction cues, each with at least one clip', () => {
+    const cues = [
+      'intro',
+      'greet',
+      'ack',
+      'fullscreen',
+      'suggest',
+      'giggle',
+      'bye',
+      'done',
+      'error',
+    ] as const
     expect(Object.keys(VOICE_LINES).sort()).toEqual([...cues].sort())
     for (const cue of cues) expect(VOICE_LINES[cue].length).toBeGreaterThan(0)
   })
@@ -61,6 +85,23 @@ describe('pickVoiceLine', () => {
         for (const clip of clips) expect(clip.startsWith('/avatar/voice/')).toBe(true)
       }
     }
+  })
+
+  it('every catalogued clip is actually shipped in public/', () => {
+    // A catalogue path with no file behind it fails silently in the browser —
+    // the element just never plays — so the mismatch has to fail here instead.
+    // Resolved through fileURLToPath rather than `new URL(..., import.meta.url)`:
+    // Vite rewrites that form into a served asset URL, which existsSync can
+    // never find, and the test would then "fail" on clips that do ship.
+    const missing: string[] = []
+    for (const table of [VOICE_LINES, VOICE_LINES_EN]) {
+      for (const clips of Object.values(table)) {
+        for (const clip of clips) {
+          if (!existsSync(join(PUBLIC_DIR, clip))) missing.push(clip)
+        }
+      }
+    }
+    expect(missing).toEqual([])
   })
 })
 

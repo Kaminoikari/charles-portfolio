@@ -46,7 +46,7 @@ mockup 的黑框是截圖合成痕跡）。
 ContactFooter）。~~三句日文短句（三語系共用——聲音是角色身分，文字才在地化）：
 greet ×2（點她／點泡泡時）、ack ×1（送出問題時）。播放全在 tap-completed 手勢內
 （符合 CLAUDE.md iOS 硬規則，無需 unlock dance）~~（**2026-08-13 擴充（使用者指示
-「20 句全部接上」）**：目錄擴為 **23 句／7 種 cue**（**2026-08-13 三修：加 intro cue 成 24 句／8 種**——
+「20 句全部接上」）**：目錄擴為 **23 句／7 種 cue**（**2026-08-13 三修：加 intro cue 成 24 句／8 種**（**2026-08-20 四修：加 giggle cue 成 29 句／9 種**，笑聲池見下方 F 互動節）——
 使用者選定句 A——ja／zh-TW 站：「はじめまして！あたしミカ！チャールズの作品集を案内する、エーアイアシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！」；en 站（カタカナ英語，對應 "Hi, I'm Mika! Charles's AI portfolio guide. Ask me anything about his work!"）：「ハーイ、アイムミカ！チャールズの、エーアイポートフォリオガイド！アスクミーエニシング、アバウトヒズワーク！」——**每 tab-session 首次開面板**播
 完整自介（sessionStorage `mikaIntroSpoken`＋in-memory ref 雙 latch。膠囊時期的開啟結構上
 就走不到 speakOpenCue（膠囊鈕只呼叫 openPanel），「僅在真的播出時燒掉」是對
@@ -58,7 +58,13 @@ suggest ×2（點建議問題，取代該次的 ack）、bye ×2（僅明確的�
 frame（HTTP 200＋status 停在 idle、訊息標 error）**，後者是 pipeline 生成失敗的
 常態路徑，effect 以訊息的 error 旗標路由，不能只看 status）。前五種 cue 全在
 tap/keypress 手勢內；**done／error 兩種在手勢外觸發（status 轉場 effect），iOS 會
-拒絕 fresh play() 而靜默、桌機在首次互動後可播**——使用者知情接受的取捨。done／
+拒絕 fresh play() 而靜默、桌機在首次互動後可播**——使用者知情接受的取捨
+（**2026-08-20 增訂**：giggle 是第三個手勢外的 cue，它騎在 pointermove 上。
+代價與 done／error 相同，但摸頭本來就以 `(pointer: fine)` 擋掉觸控裝置，
+所以這條只落在桌機，而桌機在訪客有過任何一次互動後就放行。讓行規則現在是雙向的：
+串流結束前 1.6 秒內摸頭，笑聲會把該次 done 吃掉，她不會說「こんな感じ！どう？」。
+接受，理由與 ack 吃掉 done 相同：答案早已上屏，而摸頭是訪客當下的動作，
+比收尾台詞更該被回應）。done／
 error 另以 `open` 守門：串流中收面板就不出聲；且**讓行不搶話**（2026-08-13
 使用者定案）：ack 還在播時 done／error 直接跳過不補播——快取快答曾在 ack 播到
 0.118s 時被 done 掐斷成爆音（production 時間軸實測），跳過而非排隊是因為
@@ -79,7 +85,8 @@ speaking mode 的**亂數口型迴圈**讓嘴巴動（與 clip 同起訖，不�
 Non-goals 的「口型對真實語音」維持不做）~~（**2026-08-14 修訂**：Batch 1 A 項
 改為預生成 VOICEVOX mora 時間軸逐幀對嘴，見「表演力升級」節；「不做 runtime
 音訊分析」這一半維持成立，亂數迴圈降為無 track 時的回退）；檔案在
-`public/avatar/voice/*.m4a`（AAC 24kHz mono，8–23KB ×23 共約 300KB，吃 /avatar/*
+`public/avatar/voice/*.m4a`（AAC 24kHz mono，單檔 7–41KB，最大的是自介 intro-1；2026-08-20 起是
+24 句日文＋24 句 `-en`＋5 段三語系共用的笑聲＝53 檔約 735KB，吃 /avatar/*
 immutable 快取，**改內容必須換檔名**）。合成管線：本機 colima＋voicevox_engine
 Docker（speaker 8）→ wav → afconvert AAC（不帶 -b，帶了會報 '!dat' 錯）。
 
@@ -210,8 +217,16 @@ bob 疊加讀感為抖動、位移式 bob 違反「動作一律骨骼旋轉」�
 **Batch 3（互動＋資產）**
 - F 互動：~~游標接近 wrapper 時眼神/頭部追游標（離開回 idle 掃視）~~
   （**2026-08-14 Batch 4 整組移除**，使用者指示不要跟著滑鼠走）；桌機 head 區
-  hover 來回 ≥3 次觸發摸頭反應（happy＋wiggle，**不出聲**——點擊她=開面板的
-  契約不可破壞，故不用 press-hold）；idle 25–45s 隨機視覺小動作（伸展），
+  hover 來回 ≥3 次觸發摸頭反應（happy＋wiggle，~~**不出聲**~~——點擊她=開面板的
+  契約不可破壞，故不用 press-hold）（**2026-08-20 修訂，使用者指示**：摸頭改為
+  **會笑**。新增 `giggle` cue，五段 VOICEVOX 純笑聲（えへへ／んふふ 系，
+  0.67–1.57s），由 AvatarGuide 的 `onPat('happy')` 回報、ChatWidget 的
+  `speakCue('giggle')` 播放。「不說台詞」那一半維持成立：她只笑，不講話；也因為
+  笑聲無語言，五段檔三語系**共用**，不做 `-en` 對檔（`LOCALE_NEUTRAL_CUES`）。
+  表情與 wiggle 仍由 AvatarGuide 自己演（`PAT_EMOTION` 是兩處共用的常數），
+  所以聲音被跳過或被瀏覽器拒播時，摸頭照樣讀得出來；giggle 與 done／error
+  同一條讓行規則，她正在講話時不搶話。連拍第三次的 angry 維持**不出聲**：
+  怒臉配笑聲會互相抵銷）；idle 25–45s 隨機視覺小動作（伸展），
   純視覺不出聲。（**2026-08-14 增訂，使用者指示**：小動作擴為 **11 種**——伸展、
   歪頭、快速張望、看手掌、重心大挪移、小彈跳、雙臂輕擺、撥髮、深呼吸、扭腰、
   看地板——頻率改**約 5 秒**起點間隔（timer 2.5–4s 均勻抽樣＋動作本身約 2s；2026-08-14 使用者再指示由約 10 秒加快），單次 re-roll 使連續重複機率降到約 1/121，
@@ -687,7 +702,8 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
     depthTest off、256px 貼圖，位置每幀從 head bone 世界座標 + (+0.08, +0.11)，
     **壓在頭髮右上**（使用者指定），透明度與 pale 同機制騎 `emoShown`／`emoFade`。
     接連拍頭：相鄰兩次間隔 < 20 秒的連段到第三次觸發 angry 0.9/1.6s
-    （`patStreak`，滾動視窗不是固定 20 秒視窗），前兩次仍是 happy＋wiggle。
+    （`patStreak`，滾動視窗不是固定 20 秒視窗），前兩次仍是 happy＋wiggle
+    （2026-08-20 起再加 giggle 笑聲；第三次的 angry 不配聲音）。
 - 驗證路徑：TEMP probe 的 `__mikaEmo` 一度只做裸 `setValue`，合成表情與 tint
   根本沒走到——改成呼叫真的 `applyEmotion` 後才算數（probe 已於收尾移除）。
 

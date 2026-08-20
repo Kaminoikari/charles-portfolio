@@ -24,6 +24,7 @@ import {
   besidePanelScale,
   CHAT_PANEL_HEIGHT_CLASS,
   deriveAvatarMode,
+  PAT_EMOTION,
 } from './avatarMode'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
 import AvatarGuide from './AvatarGuide'
@@ -44,6 +45,11 @@ const CUE_PERFORMANCE: Record<
   suggest: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   fullscreen: { emotion: ['happy', 0.6, 2.0] },
   bye: { emotion: ['happy', 1, 2.4], gesture: 'bow' },
+  // A head pat. The face is the pat's own (shared constant), and there is no
+  // gesture here on purpose: AvatarGuide already played the wiggle when it
+  // detected the stroke, so that a pat still reads when the giggle is skipped
+  // or refused. Adding one here would double it.
+  giggle: { emotion: PAT_EMOTION.happy },
   // The >< face from the owner's expression sheet: an answer landing is her
   // best moment, and plain happy was already taken by the greetings. Weight 1
   // is load-bearing — the engine multiplies cue weight by the recipe's share,
@@ -338,7 +344,17 @@ export default function ChatWidget() {
     // ~0.1s in — an audible pop (diagnosed on production 2026-08-13). The
     // skipped line is never queued: by then the answer is on screen and the
     // in-flight ack already covers the delivery. Gesture cues still preempt.
-    if ((cue === 'done' || cue === 'error') && current && !current.paused && !current.ended) {
+    //
+    // The head-pat giggle yields on the same rule for a different reason: a
+    // pat that lands mid-sentence would cut her off to laugh, which reads as
+    // an interruption rather than a reaction — and the pat still gets its
+    // visible beat (happy face, head wiggle) from AvatarGuide either way.
+    if (
+      (cue === 'done' || cue === 'error' || cue === 'giggle') &&
+      current &&
+      !current.paused &&
+      !current.ended
+    ) {
       return false
     }
     current?.pause() // never overlap two lines
@@ -706,6 +722,11 @@ export default function ChatWidget() {
         framing={inColumn ? AVATAR_FRAMING_COLUMN : undefined}
         onHandle={(h) => {
           avatarHandleRef.current = h
+        }}
+        // A pat is a real interaction, so she answers it out loud — with a
+        // laugh, never a line. The annoyed third pat is deliberately silent.
+        onPat={(kind) => {
+          if (kind === 'happy') speakCue('giggle')
         }}
         onLoaded={() => setAvatarLoaded(true)}
         // Releases the held-back capsule: with the corner kept empty during a
