@@ -30,9 +30,12 @@ import {
 import {
   AVATAR_MOTIONS,
   MAX_HIPS_SINK,
+  motionPan,
+  motionsFor,
   settleSeconds,
   settleWeight,
   type AvatarMotionName,
+  type MotionFrame,
 } from './avatarMotions'
 
 const asset = (...parts: string[]): Uint8Array =>
@@ -80,6 +83,20 @@ const FRAMES = {
     halfWidth: COLUMN_HALF_WIDTH,
     span: avatarViewSpan(AVATAR_FRAMING_COLUMN),
   },
+}
+
+// The frame a clip is actually played in. A clip that declares a pan slides the
+// camera while it runs (MotionPan, eased by stepFramePan), so measuring it
+// against the resting composition would answer a question the visitor is never
+// asked. The sideways budget is unaffected: the pan is vertical, and half-width
+// comes from the distance, which it does not touch.
+function frameFor(name: AvatarMotionName, placement: MotionFrame) {
+  const frame = FRAMES[placement]
+  const pan = motionPan(name, placement)
+  return {
+    halfWidth: frame.halfWidth,
+    span: { top: frame.span.top + pan, bottom: frame.span.bottom + pan },
+  }
 }
 
 describe('rigProbe', () => {
@@ -352,7 +369,7 @@ describe('bundled motions', () => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
     for (const placement of def.placements) {
-      const frame = FRAMES[placement]
+      const frame = frameFor(name as AvatarMotionName, placement)
       let screenLeft = -Infinity
       let screenRight = -Infinity
       let maxY = -Infinity
@@ -404,6 +421,56 @@ describe('bundled motions', () => {
       expect(skinTop, `${name} highest hand in ${placement}`).toBeLessThan(
         topBudget ?? frame.span.top,
       )
+      // …and against the top of her HAIR where that has been measured. The rig
+      // has no spring bones, so this number cannot be derived here; it is read
+      // off the render and carried on the clip (AvatarMotionDef.crown). What
+      // this file can measure is hands, and `dance` never raises one near the
+      // top edge — so before `crown` existed nothing here looked at the frame
+      // the browser drew 119mm of her hair past.
+      if (def.crown !== undefined) {
+        expect(def.crown, `${name} highest hair in ${placement}`).toBeLessThan(frame.span.top)
+      }
+    }
+  })
+
+  // A pan has to earn its place, exactly as a waiver does. It costs a visible
+  // camera move every time the clip plays, so a clip that would sit inside the
+  // resting composition anyway must not ask for one — and a pan left behind
+  // after a clip is re-exported or a frame is recomposed is a move the visitor
+  // pays for and nobody needs.
+  //
+  // "Needs it" means the clip leaves the UNPANNED frame: hips out of the bottom
+  // (why `dance` pans DOWN in the waist-up frame), a hand out of the top, or a
+  // measured crown out of the top (why it pans UP in the column). Those are the
+  // three edges the guards above measure, so those are the three this can
+  // honestly claim to have checked.
+  it.each(Object.entries(AVATAR_MOTIONS))('%s declares no pan it does not need', (name, def) => {
+    for (const [frame, pan] of Object.entries(def.pan ?? {}) as [MotionFrame, number][]) {
+      // A pan for a frame the clip is never played in is dead configuration:
+      // nothing applies it and nothing measures against it.
+      expect(def.placements, `${name} pans a frame it does not declare`).toContain(frame)
+      expect(pan, `${name} declares a zero pan in ${frame}`).not.toBe(0)
+
+      const r = rig()
+      const m = motion(name as AvatarMotionName)
+      let lowestHips = Infinity
+      let highestHand = -Infinity
+      for (const time of m.sampleTimes) {
+        applyMotion(r, m, time)
+        lowestHips = Math.min(
+          lowestHips,
+          new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld).y,
+        )
+        for (const side of ['left', 'right'] as const) {
+          for (const joint of handJoints(r, side)) highestHand = Math.max(highestHand, joint.y)
+        }
+      }
+      const rest = FRAMES[frame].span
+      const escapes =
+        lowestHips < rest.bottom ||
+        highestHand + SKIN_ABOVE_JOINT > rest.top ||
+        (def.crown ?? -Infinity) > rest.top
+      expect(escapes, `${name} fits ${frame} unpanned and does not need its pan`).toBe(true)
     }
   })
 
@@ -441,7 +508,7 @@ describe('bundled motions', () => {
     }
     for (const placement of def.placements) {
       expect(lowest, `${name} lowest hips in ${placement}`).toBeGreaterThan(
-        FRAMES[placement].span.bottom,
+        frameFor(name as AvatarMotionName, placement).span.bottom,
       )
     }
   })
@@ -501,6 +568,34 @@ describe('bundled motions', () => {
   )
 })
 
+
+// What the idle picker is allowed to draw from, per placement. The geometry
+// guards above answer "does this clip fit here"; this one answers "is it
+// offered here at all", which is a different question and the one that went
+// wrong on 2026-08-20: `dance` was dropped from the waist-up frame to keep it
+// out of a crop it no longer fits, and with the launcher and the docked panel
+// both composed waist-up, that took it off the two surfaces a visitor sees
+// without opening anything. Nothing failed; it simply stopped happening.
+describe('the idle pool', () => {
+  it('offers dance wherever she is rendered', () => {
+    for (const placement of ['launcher', 'beside-panel', 'column'] as const) {
+      expect(motionsFor(placement), `dance is missing from ${placement}`).toContain('dance')
+    }
+  })
+
+  it('offers nothing where she is not rendered', () => {
+    expect(motionsFor('hidden')).toHaveLength(0)
+  })
+
+  it('draws only from clips the frame guards above have measured', () => {
+    // Every name the picker can return has to be a key of AVATAR_MOTIONS, which
+    // is what every guard in this file iterates. A clip reachable at runtime but
+    // absent from that table would be unmeasured.
+    for (const placement of ['launcher', 'beside-panel', 'column'] as const) {
+      for (const name of motionsFor(placement)) expect(AVATAR_MOTIONS[name]).toBeDefined()
+    }
+  })
+})
 
 // The handover at the end of a clip. What the visitor sees is not the clip's
 // last frame, it is the trip from there back to the pinned rest pose, and that

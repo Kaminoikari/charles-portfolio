@@ -57,6 +57,23 @@ export interface MotionWaiver {
   endWrist?: number
 }
 
+/**
+ * Metres the frame slides while a clip plays, per frame it declares.
+ *
+ * A frame is composed for its pool, and each pool is nine clips, eight of which
+ * stand still. The ninth does not: `dance` drops her hips 0.126m below rest,
+ * hops 0.086m above it, and throws her hair higher still. One composition can hold that AND
+ * `stretch`'s hands overhead, but only by spending the clearance the other eight
+ * clips rely on. Rather than drop the clip (what happened on 2026-08-20) or
+ * re-centre the frame for all nine, the camera moves for the clip that needs it
+ * and moves back after: negative slides the frame DOWN, positive UP.
+ *
+ * The engine eases it in and out (stepFramePan) and rigProbe.test.ts measures a
+ * panning clip against its OWN panned frame — and fails a pan the clip does not
+ * need, the same way a waiver has to earn its place.
+ */
+export type MotionPan = Partial<Record<MotionFrame, number>>
+
 export interface AvatarMotionDef {
   /** Frames this motion has been measured to fit. Enforced in rigProbe.test.ts. */
   placements: readonly MotionFrame[]
@@ -67,6 +84,34 @@ export interface AvatarMotionDef {
    * whole life on the site.
    */
   showsPalm: boolean
+  /** Frame movement this clip needs to be seen whole. Absent means none. */
+  pan?: MotionPan
+  /**
+   * The highest point this clip DRAWS, in metres — hair and ornaments included.
+   *
+   * Read off the render, not off the rig, and that is the whole reason it
+   * exists: her hair hangs from spring bones, which the probe does not simulate
+   * (see rigProbe's note on what is still not modelled). The gap is not small.
+   * At rest the spring settles her topmost drawn pixel 29mm BELOW the bind-pose
+   * hair vertex; mid-hop the same strands are thrown 140mm above it. Rigging
+   * that vertex to the head bone and calling it the crown puts the clip's worst
+   * frame 32mm over the column's top edge, at t=19.53; the browser's worst is
+   * 119mm over, at t=12.05. Close enough to sound like a measurement, wrong by
+   * a factor of four, wrong about which frame, and wrong in the direction that
+   * lets a clip through.
+   *
+   * Absent means not measured, and absent is the norm: this costs a browser
+   * sweep of every frame of the clip, and it is carried for the one clip whose
+   * framing depends on it. The other nine were swept once on 2026-08-20 anyway.
+   * The eight that play in the column all sit within 5mm of its top edge (spin,
+   * playFingers and scratchHead 3-5mm PAST it, which is how they already ship
+   * and is untouched by this); `stretch` plays waist-up only, where its highest
+   * point is a hand and the bone guard above already measures it. See
+   * docs/plans/avatar-motion-capture.md for the table.
+   *
+   * Re-measure if the model, the clip, or a frame's composition changes.
+   */
+  crown?: number
   /** Measured guard violations shipped on purpose. Absent means none. */
   waiver?: MotionWaiver
 }
@@ -155,12 +200,50 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // centre and her right wrist still up at 1.188, where the guard wants an arm
   // hanging below 1.05. `greeting` was dropped partly for ending at 1.15.
   //
-  // Column only since the waist-up frame rose for `stretch`: it drops its hips to
-  // 0.7525, and holding both that and a raised hand would need the waist-up frame
-  // to sit within 4mm of two opposite edges at once.
+  // It also MOVES, which nothing else in the pool does, and it moves at both
+  // ends. Her hips drop to 0.7525 and hop to 0.9644 against a rest height of
+  // 0.8782, and the hop throws her hair to 1.7215 — 169mm above where it hangs
+  // when she stands still. Against the two compositions:
+  //
+  //   waist-up  hips 15mm below the bottom edge, for 14 of 805 sampled frames
+  //             from t=7.77s. This is what took the clip out of the waist-up
+  //             pool on 2026-08-20 and off the launcher with it.
+  //   column    119mm above the top edge at t=12.05, and above it at all on 98
+  //             of 1589 rendered frames. What is out is hair and the ornaments
+  //             in it — her skull was never measured and is not claimed — but
+  //             at 119mm the cut runs through the whole crown of her head, and
+  //             the screenshots at t=12.05 and t=19.46 show it flat. This
+  //             shipped.
+  //
+  // A static re-centre of the waist-up frame was available and was not taken.
+  // With this clip in the pool the window for lookAtY is 1.2569 (`stretch`'s
+  // hand at the top) to 1.3047 (these hips at the bottom): 48mm wide, so its
+  // centre leaves 24mm at both edges where the pool has 63mm and 55mm today.
+  // That spends eight clips' margin on this one — and 24mm is inside the range
+  // the unmodelled hair swings through.
+  //
+  // So the frame moves for the clip instead, and the two numbers are derived,
+  // not dialled. What has to fit is this clip's OWN rendered extremes: hips
+  // 0.7525 at the bottom, crown 1.7215 at the top, 0.969m apart.
+  //
+  //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.237, rounded
+  //                   to 1.24 like every lookAtY here): 65mm under her hips,
+  //                   71mm over her hair. The span had the room; it was sitting
+  //                   in the wrong place.
+  //   column   +0.16  the MINIMUM that clears her hair (119.5mm) plus 40mm, near
+  //                   the 49mm the column gives it at rest. Not centred, and
+  //                   deliberately: the column's spare room is all at the
+  //                   BOTTOM, and every mm the frame rises is a mm of her legs —
+  //                   160mm of them here, knee to mid-thigh. Centring would have
+  //                   cost 220mm to buy headroom nothing occupies. Drop it to
+  //                   +0.13 if her legs matter more than a 40mm hair margin.
+  //
+  // Nothing else in the pool is touched by either number.
   dance: {
-    placements: ['column'],
+    placements: ['waistUp', 'column'],
     showsPalm: true,
+    pan: { waistUp: -0.08, column: 0.16 },
+    crown: 1.7215,
     waiver: { handInHead: 0.29, hipsDrift: 0.15, endWrist: 1.19 },
   },
 }
@@ -202,7 +285,7 @@ export const MAX_HIPS_SINK = 0.08
 // from making her look underwater.
 //
 // The floor is doing most of the work, and that is deliberate. Seven of the
-// eight clips the waist-up idle picker draws from end within 0.143m of rest, so
+// nine clips the waist-up idle picker draws from end within 0.143m of rest, so
 // distance alone would leave them all at roughly the old timing; 0.4s is what
 // actually slows THOSE down (peaceSign travels 0.097m: 0.41 m/s flat before,
 // 0.24 m/s average now). Above 0.18m the speed takes over, which is where
@@ -250,6 +333,19 @@ export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
 export function motionFrame(placement: AvatarPlacement): MotionFrame | null {
   if (placement === 'hidden') return null
   return placement === 'column' ? 'column' : 'waistUp'
+}
+
+/**
+ * How far the frame slides while `name` plays in `frame`. 0 for every clip that
+ * fits the composition it is played in, which is all of them but one.
+ *
+ * Null on either argument means nothing is playing or nothing is rendered, and
+ * both answer 0 — the resting composition. That is what returns the camera when
+ * a clip ends or the visitor interrupts it.
+ */
+export function motionPan(name: AvatarMotionName | null, frame: MotionFrame | null): number {
+  if (!name || !frame) return 0
+  return AVATAR_MOTIONS[name].pan?.[frame] ?? 0
 }
 
 /**

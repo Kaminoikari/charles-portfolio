@@ -92,6 +92,26 @@ export function stepHeadAim(prev: number, target: number, dt: number): number {
   return prev + (target - prev) * Math.min(1, dt * HEAD_AIM_SMOOTHING)
 }
 
+// The same one-pole filter, for the camera rather than the head: a clip that
+// declares a pan (avatarMotions' MotionPan) slides the frame while it plays and
+// slides it back afterwards, and this is the trip between the two.
+//
+// Slow on purpose, and it can afford to be. The clip that needs it is 26.8s long
+// and does not reach the edge it is being moved for until t=7.77s, so nothing
+// here is racing a deadline; what it is avoiding is a camera that appears to
+// snap. At 1.6 and 60fps the move is 80% done in a second, is 0.6mm short of a
+// -0.08 pan at three seconds, and snaps onto it (the epsilon below) at 3.7s.
+export const FRAME_PAN_SMOOTHING = 1.6
+// Below this the filter's asymptote is called arrived. A one-pole never reaches
+// its target, and a camera that is 0.2mm out forever keeps rewriting its own
+// matrix every frame for a difference of 0.05px.
+const FRAME_PAN_EPSILON = 0.0002
+
+export function stepFramePan(prev: number, target: number, dt: number): number {
+  const next = prev + (target - prev) * Math.min(1, dt * FRAME_PAN_SMOOTHING)
+  return Math.abs(target - next) < FRAME_PAN_EPSILON ? target : next
+}
+
 // ---- emotions ---------------------------------------------------------------
 // What the face can do, and which VRM expression channels carry each one. The
 // model ships four standard presets (three-vrm normalises VRM0's joy/angry/
@@ -239,19 +259,22 @@ export interface AvatarFraming {
 //                    joint is a thumb tip at 1.7971 and the rendered hand runs
 //                    SKIN_ABOVE_JOINT past it. Measuring the joint alone is what
 //                    put the first attempt at this fix 4px short.
-//   bottom ≤ 0.8225  `peaceSign`'s hips, the lowest in the pool once `dance`
-//                    (0.7525) is out of it.
+//   bottom ≤ 0.8225  `peaceSign`'s hips, the lowest of the clips composed AS
+//                    THEY STAND. `dance` reaches 0.7525 and `squat` 0.660, and
+//                    neither bounds this number: `dance` moves the camera rather
+//                    than this (avatarMotions' MotionPan) and is bounded by its
+//                    own panned frame, and `squat` is simply not offered here.
 //
 // That leaves the window 1.2569 ≤ lookAtY ≤ 1.3747, and 1.32 is its centre to
 // the nearest 10mm: 63mm of clearance above her hand, 55mm below her hips.
 // Re-derive it, do not nudge it, if the pool changes.
 //
 // The bill is paid at the bottom and in air. The bottom cut rises from 0.618 to
-// 0.768, so `squat` (hips to 0.660) and `dance` (0.7525) play in the fullscreen
-// column only, and the docked canvas shows less of her thighs. And the top edge
-// now sits 0.290m above her hair, 74px of empty canvas above her head at rest
-// where there used to be 35px. That air is the raised hand's room; a frame
-// cannot hold a gesture 0.23m above her head without reserving the space.
+// 0.768, so the docked canvas shows less of her thighs, and `squat` (hips to
+// 0.660) plays in the fullscreen column only. And the top edge now sits 0.290m
+// above her hair, 74px of empty canvas above her head at rest where there used
+// to be 35px. That air is the raised hand's room; a frame cannot hold a gesture
+// 0.23m above her head without reserving the space.
 export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1.32 }
 // The fullscreen column's framing: head to knee, composed tight. The default
 // framing leaves 0.23m of air above her hair, which reads as a big empty gap
@@ -264,6 +287,15 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 // out 10% larger on the same canvas — and why the column is proportionally
 // WIDER than the rail was: her arm room is a fixed 0.674m spread over fewer
 // metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
+//
+// Composed for a figure that stands still, which is what nine of the ten clips
+// do. `dance` does not: its hop throws her hair to 1.7215, 119mm past this top
+// edge, so it pans this frame up while it plays (avatarMotions' MotionPan).
+//
+// The 0.02m of headroom above is measured to the hair's BIND POSE. On the render
+// the spring bones settle it 29mm lower when she stands still (49mm of clearance,
+// 34px on an 807px canvas) and throw it far higher when she moves, which is why a
+// clip's real headroom is a rendered measurement and not this arithmetic.
 export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 1.016 }
 
 // ---- arm rest pose ---------------------------------------------------------

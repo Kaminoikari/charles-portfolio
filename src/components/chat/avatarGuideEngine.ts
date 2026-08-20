@@ -59,6 +59,8 @@ import {
 import {
   IDLE_MOTIONS,
   MOTION_URL,
+  motionFrame,
+  motionPan,
   motionsFor,
   settleSeconds,
   settleWeight,
@@ -75,6 +77,7 @@ import {
   AVATAR_FOV,
   AVATAR_FRAMING_DEFAULT,
   headAim,
+  stepFramePan,
   stepHeadAim,
   type AvatarMode,
   type AvatarPlacement,
@@ -361,12 +364,30 @@ export function initAvatarGuide(
   // from an arm model here: rigProbe.test.ts measures every bundled clip
   // against each placement's frame on the real skeleton.
   const camera = new THREE.PerspectiveCamera(AVATAR_FOV, W / H, 0.1, 30)
-  camera.position.set(
-    0,
-    AVATAR_FRAMING_DEFAULT.lookAtY + AVATAR_CAMERA_TILT,
-    AVATAR_FRAMING_DEFAULT.distance,
-  )
-  camera.lookAt(0, AVATAR_FRAMING_DEFAULT.lookAtY, 0)
+  // The framing the PLACEMENT asks for, which setFraming replaces. What the
+  // camera is actually pointed at is this plus `framePan` — the clip-driven
+  // slide below — so the two are kept apart: the pan must not overwrite the
+  // placement, and a placement change must re-ask the clip rather than drag the
+  // old frame's pan into the new composition (see setFraming).
+  let framingDistance = AVATAR_FRAMING_DEFAULT.distance
+  let framingLookAtY = AVATAR_FRAMING_DEFAULT.lookAtY
+  // Where the current clip wants the frame, and where it is on the way there.
+  let framePan = 0
+  // What the running clip is asking for RIGHT NOW. Zero while nothing is playing
+  // and from the moment a settle starts, so the camera comes home with her arms.
+  // One definition, because three callers read it and they must not disagree:
+  // the render loop eases toward it, and setPlacement and setFraming land on it
+  // when the composition cuts.
+  function panTargetNow(): number {
+    if (!motionAction || settleDur > 0) return 0
+    return motionPan(motionName, motionFrame(placement))
+  }
+  function aimCamera(): void {
+    const y = framingLookAtY + framePan
+    camera.position.set(0, y + AVATAR_CAMERA_TILT, framingDistance)
+    camera.lookAt(0, y, 0)
+  }
+  aimCamera()
   scene.add(new THREE.AmbientLight(0xffffff, 1.1))
   const key = new THREE.DirectionalLight(0xffffff, 1.4)
   key.position.set(0.6, 1.6, 2.2)
@@ -934,6 +955,20 @@ export function initAvatarGuide(
       }
       const motionActive = motionAction !== null
 
+      // The clip-driven camera slide. A clip that does not fit the composition
+      // it is played in (only `dance`, which leaves the waist-up frame at the
+      // bottom and the column at the top) declares how far the frame has to move
+      // to hold it; the camera eases there while the clip runs and eases back the
+      // moment it starts putting its arms down, so the shot resolves as she does.
+      // Every other clip asks for 0 and the filter's epsilon parks the camera
+      // exactly where the placement put it — no per-frame matrix writes when
+      // nothing is panning.
+      const panTarget = panTargetNow()
+      if (framePan !== panTarget) {
+        framePan = stepFramePan(framePan, panTarget, dt)
+        aimCamera()
+      }
+
       // Head direction per mode — rotation on head/neck/spine, eyes tracking a
       // real target so the gaze leads the turn the way people actually look.
       // headAim() is a step function across mode changes (see its comment), so
@@ -1171,6 +1206,11 @@ export function initAvatarGuide(
           // translation track reached the model at all. `squat` is meant to
           // take her from 0.878 down to 0.660.
           hipsY: bone(vrm, 'hips')?.getWorldPosition(debugHips).y ?? 0,
+          // The camera, read off the camera rather than echoed from `framePan`:
+          // the pan is only real once aimCamera() has run. Its own tilt is
+          // subtracted so this is the height the frame is centred on, which is
+          // what the frame's edges are computed from.
+          camLookY: camera.position.y - AVATAR_CAMERA_TILT,
           ruaZ: bone(vrm, 'rightUpperArm')?.rotation.z ?? 0,
           ruaX: bone(vrm, 'rightUpperArm')?.rotation.x ?? 0,
           luaZ: bone(vrm, 'leftUpperArm')?.rotation.z ?? 0,
@@ -1313,11 +1353,40 @@ export function initAvatarGuide(
     },
     playMotion,
     setPlacement: (next) => {
+      const before = motionFrame(placement)
       placement = next
+      // The same landing as setFraming, on the same condition: the COMPOSITION
+      // changed. Landing it here too means neither call has to run first —
+      // AvatarGuide drives them from two effects and nothing in the type system
+      // fixes their order, so whichever arrives second re-asks the clip and both
+      // agree on the answer.
+      //
+      // The frame check is not decoration. launcher and beside-panel share both
+      // a framing and a frame, so a move between them calls THIS and not
+      // setFraming (ChatWidget passes `framing` only in the column), and there
+      // is no cut to ride. Landing unconditionally would snap a mid-ease pan up
+      // to 80mm in one frame — 20px on the launcher canvas — for a transition
+      // that was continuous before.
+      if (motionFrame(next) !== before) {
+        framePan = panTargetNow()
+        aimCamera()
+      }
     },
     setFraming: (distance, lookAtY) => {
-      camera.position.set(0, lookAtY + AVATAR_CAMERA_TILT, distance)
-      camera.lookAt(0, lookAtY, 0)
+      framingDistance = distance
+      framingLookAtY = lookAtY
+      // A framing change is a composition CUT: 1.32 to 1.016 in one frame, far
+      // bigger than any pan. So the clip's pan lands on the new frame's number in
+      // the same call, riding that cut. Easing to it instead leaves the camera
+      // between two compositions for the best part of a second — measured at
+      // lookAtY 0.957 for ~600ms when the visitor goes fullscreen mid-`dance`, a
+      // 1.543 top edge against hair that reaches 1.7215.
+      //
+      // Which of this and setPlacement runs first does not matter: on the mount
+      // path AvatarGuide calls this one first, on a placement change the other,
+      // and both land the same number, so the second call is a no-op.
+      framePan = panTargetNow()
+      aimCamera()
     },
     dispose: () => {
       disposed = true

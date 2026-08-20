@@ -623,3 +623,141 @@ launcher 畫布 376×280（253.5 px/m），用 5 秒間隔重播 `stretch`（cli
 未驗證：渲染出來的視覺外觀。Playwright 這裡是 software WebGL 且
 `preserveDrawingBuffer: false`，canvas 讀不回像素，截圖也落不到可讀路徑。
 姿勢的正確性由 rigProbe 在真實骨架上量測涵蓋，但「好不好看」仍需人眼確認一次。
+
+## `dance` 回到每一個 placement：讓鏡頭替 clip 讓位（2026-08-20）
+
+### 症狀
+
+使用者「等了 10 分鐘都沒有看到 Mika 跳舞」。原因不是隨機沒抽到：同一天上午的
+319036b 為了讓 `stretch` 舉高的手不被切，把 waist-up 取景的上緣抬到 1.8722，下緣
+跟著抬到 0.768，而 `dance` 的臀部會沉到 0.7525，於是那次修正把 `dance` 的
+`placements` 從 `['waistUp', 'column']` 砍成 `['column']`。launcher 與 docked 都用
+waist-up 取景，所以那之後只有全螢幕看得到這支 clip。
+
+### 兩個發現，第二個是原本沒人知道的
+
+1. **waist-up 下緣**：`dance` 的臀部在 805 個取樣影格中有 14 格低於 0.76782，
+   從 t=7.77s 開始，約半秒。骨架量得到。
+2. **column 上緣**：`dance` 的頭髮在 1589 個實際算繪影格中有 98 格高過 column 的
+   上緣 1.602，最差 t=12.05 超出 **119.5mm**。超出去的是頭髮與髮飾——頭骨本身沒有
+   量過、也不主張——但 119mm 這個量級，切線是橫過整個頭頂的，t=12.05 與 t=19.46 的
+   截圖都看得到那條平切。**這是當時正在 production 播的**。rigProbe 量不到，因為
+   頭髮掛在 spring bone 上，探針沒有物理。
+
+第 2 點是「量測 vs 模型」的教訓：以 bind-pose 的最高髮尖頂點剛體綁到 head bone 推
+算，`dance` 只超出 32mm；實際算繪是 119mm。靜止時 spring 讓髮尖比 bind pose **低**
+29mm，跳起來時甩到 **高** 140mm。差距是四倍，方向還不固定。
+
+### 做法：MotionPan
+
+clip 可以宣告「播我的時候，這個取景要移動多少公尺」。引擎在 render loop 用
+`stepFramePan`（與 `stepHeadAim` 同型的 one-pole，`FRAME_PAN_SMOOTHING = 1.6`）把
+`framePan` 推向目標，加在 placement 給的 `lookAtY` 上，clip 一開始收手
+（`settleDur > 0`）就推回 0。epsilon 0.2mm 讓它真的停在目標上，不再每格重寫矩陣。
+
+| frame | pan | 依據 |
+|---|---|---|
+| waistUp | **-0.08** | 把 clip 自己的極值（臀 0.7525、髮 1.7215，相距 0.969m）置中於 1.104m 的視野：中點 1.237，取到 1.24。上下各留 71mm／65mm |
+| column | **+0.16** | 清掉頭髮所需的最小值（119.5mm）再加 40mm，接近 column 靜止時給頭髮的 49mm。**不置中**：column 的餘裕全在下方，每抬 1mm 就少 1mm 的腿（這裡少 160mm，膝蓋切到大腿中段），置中要付 220mm。想優先保留腿就降到 +0.13，髮頂餘裕剩約 10mm |
+
+其餘九支 clip 不宣告 pan，鏡頭一動也不動——這是刻意的，取景是為「站著不動」構的，
+只有會移動的那一支需要鏡頭配合。
+
+### 取景切換時 pan 用「落地」而不是「緩動」
+
+這是第一版漏掉、由 code review 抓出來的。placement 換取景是**硬切**（1.32 → 1.016，
+一格 304mm），pan 卻只用 1.6/s 緩動追過去，而換 placement 並不會停掉正在播的 clip。
+實測：跳舞跳到一半按全螢幕，lookAtY 停在 **0.957 約 600ms**，上緣 1.543，正好低於
+髮頂 1.7215——修掉的那個切頭 bug 會在這一秒內重現。
+
+所以 `setFraming` 與 `setPlacement` 都在同一格把 `framePan` 直接設成新取景的目標值
+（`panTargetNow()`），跟著那個硬切走。兩邊都做，是為了不依賴 AvatarGuide 那兩個
+effect 的宣告順序——型別系統並不保證它。
+
+`setPlacement` 這一邊多一道 `motionFrame(next) !== before`。這道判斷不是裝飾：
+`ChatWidget` 只在 column 傳 `framing`，所以 launcher ↔ beside-panel 之間只會呼叫
+`setPlacement`，那裡**沒有硬切可以藏**。無條件落地會把還在緩動中的 pan 瞬間拉最多
+80mm（launcher 上約 20px），把一個原本連續的轉場弄出跳動。實測加了判斷之後，單格
+最大變化 4mm，就是正常的濾波步長。
+
+### 引擎接線：一支讀原始碼的測試
+
+`rigProbe.test.ts` 的 `frameFor()` 現在拿**平移後**的取景在量 `dance`，等於那兩條幾何
+守則的成立條件變成「引擎真的會平移」。而引擎沒有單元測試（第一行就開 WebGLRenderer，
+jsdom 進不去，`AvatarGuide.test.tsx` 直接把整個 handle mock 掉）——把 render loop 那段
+pan 刪掉，全套測試照樣綠，兩條守則還會繼續替一支已經不合的 clip 背書。
+
+`avatarGuideEngine.wiring.test.ts` 讀引擎原始碼，釘住把 pan 送到相機的那幾行。它是結構
+測試，檔頭寫明了能證明什麼、不能證明什麼：改名字會紅（更新 pattern 即可），刪掉會紅
+（不可以）。專案 memory `feedback_injection_bypasses_wiring` 描述的就是這個形狀。
+
+### 實測（Playwright + `?mikadebug=1`，dev server，1440x900）
+
+技術上有一點值得記：**canvas 像素現在讀得回來**。在自己的 rAF callback 裡呼叫
+`canvas.toDataURL()` / `drawImage()`，時序落在引擎算繪之後、合成之前，
+`preserveDrawingBuffer: false` 依然讀得到內容。上一節寫「canvas 讀不回像素」已經
+過時。`__mikaState` 新增 `camLookY`（從 camera 讀回，不是回報算式）。
+
+**vite 在這次任務中兩度供應舊版模組**（memory `project_vite_dev_serves_stale_modules`）。
+兩次都是「改完量到沒生效」，`curl` 比對 server 供應的原始碼才發現。下面的數字全部是
+清掉 `node_modules/.vite`、重啟、`curl` 確認過供應內容之後、在最終樹上重跑的。
+
+每個 placement 都跑完整 26.8s 並逐格量測最上緣／最低臀：
+
+| placement | canvas | 播放中 lookAtY | 最上緣餘裕 | 臀部餘裕 | 影格數 |
+|---|---|---|---|---|---|
+| launcher | 376x280 | 1.24 | 110.4mm | 64.7mm | 1620 |
+| beside-panel | 752x560 | 1.24 | 80.9mm | 64.7mm | 1620 |
+| column | 1021x807 | 1.176 | 43.6mm | 163.2mm | 1619 |
+
+三個 placement 都沒有任何一格被切。clip 結束後相機精確回到 placement 的值
+（column 讀到 `=== 1.016`），之後播 `modelPose` 也不再移動。切換路徑另外量了兩條：
+launcher → beside-panel（同 frame）單格最大變化 4mm；beside-panel → column（跨 frame）
+直接落在 1.1683，clip 還在跑的期間不會低於 column 自己的 1.016。
+
+`crown = 1.7215` 是九次掃描的**觀測最大值**（區間 1.7094–1.7215），不是理論上界；
+column 只剩 40.5mm 餘裕，大於觀測到的 12mm 抖動。模型、clip、取景任一改變就要重量。
+
+### 已知限制（量過，決定不修）
+
+訪客在頭髮甩到最高的那 ~0.6 秒內切換 placement 時，clip 會被中斷，pan 在殘影還在的
+期間就先鬆開：實測 lookAtY 降到 **1.0707**，上緣 1.657 對髮頂 1.7215。
+
+要修的做法是讓 pan 乘上 settle weight，使取景精確追隨畫面上實際畫出來的東西（settle
+期間畫的仍是 clip 的姿勢，只是權重遞減）。沒有做，理由是發生條件要「中斷剛好落在那
+0.6 秒」，而那一刻畫布本身正在改變大小；這是目前唯一值得考慮的後續。
+
+### 順手量到、但沒有動的事
+
+同一套掃描量了全部十支 clip 在 column 的最高算繪像素：`spin` 1.6053、`playFingers`
+1.6053、`scratchHead` 1.6068、`idleLoop` 1.6024，對上緣 1.602 各超出 0.4mm 到 5mm
+（2-3px）。這是既有狀態，與這次改動無關，沒有處理。`peaceSign` 1.5748、`modelPose`
+1.5806、`squat` 1.5835、`akimbo` 1.5632 都在裡面。`stretch` 只在 waist-up 播，它的最
+高點是手不是頭髮，由既有的 handTop 守則涵蓋。
+
+### 守則與 mutation
+
+- `dance stays inside every frame it declares` 現在對照**平移後**的取景，並加量
+  `def.crown`（算繪量到的髮頂，1.7215）：拿掉 column pan 或改成 +0.10 都紅。
+- `dance keeps her hips inside the crop` 同樣對照平移後的下緣：拿掉 waistUp pan 或
+  改成 -0.01 都紅。
+- `%s declares no pan it does not need`：替 `peaceSign` 加一個不需要的 pan 紅；替
+  `stretch` 宣告一個它不播的 frame 的 pan 紅。
+- `the idle pool > offers dance wherever she is rendered`：把 `placements` 改回
+  `['column']` 紅、把 `dance` 從 `IDLE_MOTIONS` 拿掉也紅——這條直接釘住這次的回歸。
+- `stepFramePan` 五條：拿掉 epsilon 紅三條、拿掉 dt 比例紅一條、改成瞬間到位紅兩條。
+- `avatarGuideEngine.wiring.test.ts` 七條：刪掉 render loop 的 pan 區塊、`aimCamera`
+  拿掉 `+ framePan`、`setPlacement` 不落地、`setFraming` 不落地、`panTargetNow` 寫死
+  frame、`panTargetNow` 忽略 settle、`setPlacement` 改成無條件落地（那道 frame 判斷
+  自己也要有人釘），各自紅。
+
+二十一個 mutation 全部確認落地（pattern 命中數 ≠ 1 即中止）。**其中兩個第一次跑是綠
+的，而那兩次才是這輪最有價值的東西**：
+
+- `setPlacement` 不落地 → 綠。原因是斷言的正則用了沒有邊界的 `[\s\S]*?`，從
+  `setPlacement` 一路走進 `setFraming` 的 body，在那裡找到同一行。改成先切出每個
+  handler 的 body 再斷言。
+- `setPlacement` 改成無條件落地（也就是還原成會跳動的版本）→ 綠。原因是那道 frame
+  判斷本身沒有任何斷言釘著。補上第五條之後轉紅。
+
+兩次都是「測試綠 ≠ 防禦有效」的實例：斷言的形狀不對，跟沒有斷言一樣。
