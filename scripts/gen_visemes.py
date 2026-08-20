@@ -40,8 +40,6 @@ LINES = [
     ('mika-giggle-1', 'えへへ…', 1.0),
     ('mika-giggle-2', 'えへへっ', 1.0),
     ('mika-giggle-3', 'えへへへ…', 0.95),
-    ('mika-giggle-4', 'んふふ…えへへ', 1.0),
-    ('mika-giggle-5', 'わっ、えへへ…', 1.0),
     # --- Katakana-English set (en locale) ---
     ('mika-greet-1-en', 'ハーイ！アスクミーエニシング、アバウトチャールズ！', 1.1),
     ('mika-greet-2-en', 'ユーコールド？アイガットオールジアンサーズ！', 1.1),

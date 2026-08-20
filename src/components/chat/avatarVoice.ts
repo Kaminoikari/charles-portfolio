@@ -71,8 +71,6 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
     '/avatar/voice/mika-giggle-1.m4a',
     '/avatar/voice/mika-giggle-2.m4a',
     '/avatar/voice/mika-giggle-3.m4a',
-    '/avatar/voice/mika-giggle-4.m4a',
-    '/avatar/voice/mika-giggle-5.m4a',
   ],
   // The explicit minimise button (Escape closes silently by design).
   bye: ['/avatar/voice/mika-bye-1.m4a', '/avatar/voice/mika-bye-2.m4a'],
