@@ -179,6 +179,56 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
 // frame's bottom edge.
 export const MAX_HIPS_SINK = 0.08
 
+// ---- returning to rest -----------------------------------------------------
+//
+// Every clip hands the bones back to the engine's pinned rest pose (ARM_PINS in
+// avatarGuideEngine.ts), and until 2026-08-20 that handover was a 0.25s LINEAR
+// cross-fade for all ten of them. Two things were wrong with it, both measured
+// on the running page rather than guessed:
+//
+//  · A linear weight ramp has a velocity STEP at both ends. In the recorded
+//    trace her left upper arm drifts 0.0011 rad per frame through the clip's
+//    last second and then moves 0.0137 in the first fade frame — twelve times
+//    faster, in one frame — holds exactly that speed for fifteen frames, and
+//    stops dead. Nothing alive starts or stops like that.
+//  · A fixed duration over a variable distance. A clip's final pose is not the
+//    pinned rest pose, and how far apart they are is a property of the clip:
+//    from 0.060m of wrist travel (`squat`) to 0.540m (`dance`). At 0.25s flat
+//    that is a ninefold spread in speed, so the same settle reads as gentle
+//    after one clip and as a snap after another.
+//
+// So the settle is eased and its duration comes from the distance. The speed is
+// the constant; the bounds keep a tiny settle from being instant and a huge one
+// from making her look underwater.
+//
+// The floor is doing most of the work, and that is deliberate. Seven of the
+// eight clips the waist-up idle picker draws from end within 0.143m of rest, so
+// distance alone would leave them all at roughly the old timing; 0.4s is what
+// actually slows THOSE down (peaceSign travels 0.097m: 0.41 m/s flat before,
+// 0.24 m/s average now). Above 0.18m the speed takes over, which is where
+// `idleLoop` (0.231m) and `dance` (0.540m) live — the two that were genuinely
+// racing at 0.92 and 2.16 m/s.
+const SETTLE_SPEED = 0.45
+const SETTLE_MIN = 0.4
+const SETTLE_MAX = 0.75
+
+/** How long a settle covering `distance` metres of wrist travel should take. */
+export function settleSeconds(distance: number): number {
+  return Math.min(SETTLE_MAX, Math.max(SETTLE_MIN, distance / SETTLE_SPEED))
+}
+
+/**
+ * The clip's weight `elapsed` seconds into a settle of `duration`.
+ *
+ * Smoothstep, so the derivative is zero at both ends: she leaves the clip's
+ * last pose from a standstill and arrives at rest at a standstill. A linear
+ * ramp is what this replaced.
+ */
+export function settleWeight(elapsed: number, duration: number): number {
+  const p = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 1
+  return 1 - p * p * (3 - 2 * p)
+}
+
 export const MOTION_URL = (name: AvatarMotionName): string => `/avatar/animations/${name}.vrma`
 
 // What the idle timer may pick. All three read as something a person would do

@@ -550,6 +550,61 @@ launcher 畫布 376×280（253.5 px/m），用 5 秒間隔重播 `stretch`（cli
 最高的一格她的頂端落在畫布第 16 列，離上緣 63mm，沒有觸邊。峰值是 1.5s–2.4s 的平台區，
 5mm 內平坦，所以連拍抓得到。
 
+## 收尾太快：固定時間的線性 cross-fade（2026-08-20）
+
+使用者回報「比完動作之後回到原始站姿時，有點不自然或者說有點太快」。
+
+**root cause 是收尾用固定 0.25 秒的線性 cross-fade。** 兩件事同時錯，都是在跑起來的頁面
+上量到的，不是推測：
+
+1. **線性 weight 斜坡在兩端都有速度斷點。** 錄到的軌跡裡，她的左上臂在 clip 最後一秒
+   每格漂移 0.0011 rad，第一個 fade 格就跳到 0.0137——一格之內快十二倍——然後精確維持
+   這個速度十五格，再瞬間停住。活的東西不會這樣起步與煞車。
+2. **固定時間配上會變的距離。** clip 的最後一格不等於站姿，兩者差多遠是 clip 的性質：
+   `squat` 0.060m、`dance` 0.540m（手腕位移）。同樣 0.25 秒，速度差九倍，所以同一個
+   收尾在某些 clip 後面像放鬆，在另一些後面像被扯回去。
+
+還有第三件小事：fade 在 `remaining <= 0.25` 才觸發，實際只剩 0.234 秒，所以 clip 結束時
+還有約 7% 的權重沒走完，被 `stopMotion` 一格切掉。
+
+### 修法
+
+| 項目 | 舊 | 新 |
+| --- | --- | --- |
+| 曲線 | three 的 `fadeOut`（線性） | smoothstep，兩端導數為 0 |
+| 時長 | 固定 0.25s | `settleSeconds(距離)`，0.4s–0.75s |
+| 觸發點 | clip 最後 0.25 秒（重疊） | clip 播完之後（`clampWhenFinished` 撐住末格） |
+| 殘留 | 約 7% 權重被切掉 | 權重寫在 `mixer.update` 之前，最後一格就是 0 |
+
+時長的下限 0.4s 是刻意在做主要的事：waist-up 池子八支裡有七支結束時離站姿 0.143m 以內，
+只靠速度上限它們會維持原本的時序。0.18m 以上速度接手，那是 `idleLoop`（0.231m）與
+`dance`（0.540m）的位置，也就是本來真的在飆的兩支。
+
+### 一個自己種下的 regression
+
+`setEffectiveWeight` 改的是 action 物件上的 `weight` 欄位，而 `mixer.clipAction(clip)` 每次
+回傳**同一個** action，`reset()` 不清 `weight`。所以 settle 結束留下的 0 會被下一次
+`fadeIn` 乘進去（0 × ramp = 0）：**同一支 clip 播第二次會整支不動**，站十一秒，然後從一個
+她從來沒擺出來的姿勢收尾。瀏覽器量到才發現，單元測試碰不到這條接線。修法是 `playMotion`
+明確寫回 `setEffectiveWeight(1)`。
+
+### 量到的數字
+
+| clip | 距離 | 舊收尾 | 新收尾 | 起步速度 | 收尾殘留 |
+| --- | --- | --- | --- | --- | --- |
+| `peaceSign` | 0.097m | 234ms 線性 | **398ms** | 0.0137 → **0.0028** rad/格 | 7% → **0** |
+| `idleLoop` | 0.231m | 234ms 線性 | **506ms** | — | 0.0002 rad |
+
+`idleLoop` 拿到的 506ms 與 `settleSeconds(0.231)` 的 513ms 對得上，`peaceSign` 拿到下限
+398ms：兩支不同，證明引擎真的量了距離，不是一律吃下限。
+
+### Mutation
+
+- `settleWeight` 改回線性 → 「eases in and out」紅。
+- `settleSeconds` 改回固定 0.25 → 四條紅（含 `idleLoop` 與 `dance` 的速度）。
+- `SETTLE_MIN` 0.4 → 0.35 或 0.2 → 八條「settles slower than the fade it replaced」紅。
+  這條是專門為了釘住下限而寫的：上限太鬆，抓不到它。
+
 ## 端到端驗證（production build + vite preview + Playwright）
 
 - 三個 clip 全部下載並建成 AnimationClip（`motionClips: 3`）

@@ -60,6 +60,8 @@ import {
   IDLE_MOTIONS,
   MOTION_URL,
   motionsFor,
+  settleSeconds,
+  settleWeight,
   type AvatarMotionName,
 } from './avatarMotions'
 import {
@@ -547,6 +549,12 @@ export function initAvatarGuide(
       pinArms(loaded)
       const restHipsNode = loaded.humanoid?.getNormalizedBoneNode('hips')
       if (restHipsNode) restHips.copy(restHipsNode.position)
+      // Where the pinned rest pose puts her wrists. Every settle measures how
+      // far it has to travel against these, so it has to be read here, from the
+      // pose pinArms just wrote, before any clip has touched a bone.
+      loaded.scene.updateMatrixWorld(true)
+      loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWristL)
+      loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWristR)
       // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
       // and builds this itself, with a console warning, if the scene has none.
       // None of the bundled clips carries such a track, so this exists purely
@@ -619,6 +627,13 @@ export function initAvatarGuide(
   // by hand she would keep whatever offset the clip ended on for the life of
   // the page.
   const restHips = new THREE.Vector3()
+  // Where the pinned rest pose puts each wrist, filled in at load. A settle's
+  // duration is the distance from here, so a clip that ends with an arm out
+  // takes longer to put it down than one that ends already standing.
+  const restWristL = new THREE.Vector3()
+  const restWristR = new THREE.Vector3()
+  // Scratch for the settle's distance measurement, allocated once.
+  const settleProbe = new THREE.Vector3()
   // Scratch for the ?mikadebug hips readout below; the tap runs every frame.
   const debugHips = new THREE.Vector3()
 
@@ -653,17 +668,42 @@ export function initAvatarGuide(
     for (const name of IDLE_MOTIONS) loadMotion(name)
   }
 
-  // Seconds a clip takes to hand the bones back, used at every exit. Long
-  // enough to cover a raised arm's travel, short enough that an interrupt still
-  // feels like a response to the visitor.
+  // Seconds a clip takes to take the bones OVER, at entry. The exit is a settle
+  // instead, timed by distance and eased — see beginSettle and settleSeconds.
   const MOTION_FADE = 0.25
+
+  /**
+   * Start handing the bones back to the pinned rest pose.
+   *
+   * Called at all three exits: the clip finishing, the visitor interrupting,
+   * and a gesture outranking it. The duration comes from how far her wrists
+   * currently are from where rest puts them, so it is the same settle SPEED
+   * every time whatever the clip left behind.
+   *
+   * three's own fadeOut is not used: it warps the weight linearly, which is the
+   * velocity step this replaced. Manual weight and the scheduled kind compound
+   * (`_updateWeight` multiplies them), so any fade still running is cleared.
+   */
+  function beginSettle(): void {
+    if (!motionAction || settleDur > 0 || !vrm) return
+    motionAction.stopFading()
+    const h = vrm.humanoid
+    let far = 0
+    const l = h?.getNormalizedBoneNode('leftHand')
+    if (l) far = Math.max(far, l.getWorldPosition(settleProbe).distanceTo(restWristL))
+    const r = h?.getNormalizedBoneNode('rightHand')
+    if (r) far = Math.max(far, r.getWorldPosition(settleProbe).distanceTo(restWristR))
+    settleDur = settleSeconds(far)
+    settleT = 0
+  }
 
   function stopMotion(): void {
     if (!motionAction) return
     motionAction.stop()
     motionAction = null
     motionName = null
-    motionFading = false
+    settleDur = 0
+    settleT = 0
     if (vrm) {
       // The mixer leaves every bone it touched at the clip's last frame. The
       // procedural layer rewrites head/neck/spine every frame, but nothing
@@ -681,6 +721,12 @@ export function initAvatarGuide(
     stopMotion()
     const action = mixer.clipAction(clip)
     action.reset()
+    // clipAction hands back the SAME action object every time this clip plays,
+    // and `weight` is not one of the fields reset() clears. The settle leaves it
+    // at 0, and fadeIn MULTIPLIES its ramp by it, so without this the second
+    // play of any clip runs to completion at weight 0: she stands still for
+    // eleven seconds and then settles out of a pose she never struck.
+    action.setEffectiveWeight(1)
     action.setLoop(THREE.LoopOnce, 1)
     action.clampWhenFinished = true
     // Both ends of every bundled clip are a standing rest pose (pinned by
@@ -776,10 +822,11 @@ export function initAvatarGuide(
   let idleActTimer = 2.5 + Math.random() * 1.5
   let lastIdleAct: GestureName | null = null
   let lastMotion: AvatarMotionName | null = null
-  // A clip that is fading out still owns its bones, so it has to keep being
-  // advanced until its weight reaches zero; this flag stops the fade being
-  // restarted on every frame in between.
-  let motionFading = false
+  // A clip that is settling still owns its bones, so it has to keep being
+  // advanced until its weight reaches zero. `settleDur > 0` is what says one is
+  // under way, which is also what stops it being restarted every frame.
+  let settleDur = 0
+  let settleT = 0
   // Which composition she is standing in. Only the clips measured against that
   // frame are eligible — see motionsFor().
   let placement: AvatarPlacement = 'launcher'
@@ -858,20 +905,32 @@ export function initAvatarGuide(
       // procedural reads or writes them, and `motionActive` gates every write
       // below that would otherwise be applied on top of the capture.
       if (motionAction && mixer) {
-        mixer.update(dt)
         // Finishing was the one exit that was a hard cut. A clip's last frame
-        // leaves her wrists up to 0.097m from ARM_PINS (peaceSign; ~25px on the
-        // launcher canvas), and stopMotion snaps them back in a single frame.
-        // Fading over the clip's final MOTION_FADE seconds hands the bones back
-        // gradually: three's PropertyMixer lerps a fading action toward the
-        // value the bone held before it bound, which is the pinned rest pose.
-        // Entry and both interrupt paths were already faded.
-        const remaining = motionAction.getClip().duration - motionAction.time
-        if (!motionFading && remaining <= MOTION_FADE) {
-          motionAction.fadeOut(MOTION_FADE)
-          motionFading = true
+        // leaves her wrists 0.060m (`squat`) to 0.540m (`dance`) from ARM_PINS,
+        // and stopMotion used to snap them back in a single frame.
+        //
+        // The settle runs AFTER the clip rather than over its last frames:
+        // clampWhenFinished holds the final pose (three pauses the action and
+        // leaves it enabled, so the mixer keeps accumulating it), so the whole
+        // performance plays and then she puts her arms down. Overlapping would
+        // eat the tail of a 4.5s clip for a settle that can last 0.75s.
+        //
+        // What actually returns the bones is three's PropertyMixer: it lerps
+        // toward the value each bone held before the action bound, which is the
+        // pinned rest pose, so weight 0 IS rest and stopMotion's pinArms below
+        // only re-affirms it.
+        //
+        // Order matters: the weight is written BEFORE the mixer applies it, so
+        // the last weight a settle computes is 0 and the pose the pin lands on
+        // is already rest. Written after, every settle would end on a one-frame
+        // cut of whatever weight was still standing.
+        if (settleDur > 0) {
+          settleT += dt
+          motionAction.setEffectiveWeight(settleWeight(settleT, settleDur))
         }
-        if (!motionAction.isRunning()) stopMotion()
+        mixer.update(dt)
+        if (settleDur === 0 && !motionAction.isRunning()) beginSettle()
+        else if (settleDur > 0 && settleT >= settleDur) stopMotion()
       }
       const motionActive = motionAction !== null
 
@@ -890,16 +949,7 @@ export function initAvatarGuide(
       // She stops performing the moment the visitor does something. A clip is
       // faded rather than cut: its own bones are mid-travel, so dropping it
       // would snap an arm back to her side in one frame.
-      if (mode !== 'idle' && motionAction && !motionFading) {
-        // Slightly longer than MOTION_FADE, unchanged from when this was the
-        // only fade: the visitor has just acted, so this one is allowed to look
-        // like her settling rather than like a cut.
-        motionAction.fadeOut(0.3)
-        motionFading = true
-      }
-      if (motionFading && motionAction && motionAction.getEffectiveWeight() < 0.01) {
-        stopMotion()
-      }
+      if (mode !== 'idle' && motionAction) beginSettle()
 
       // Idle self-actions: an unprompted little performance roughly every 5s
       // of undisturbed idle (post-entrance, nothing else performing). Two
@@ -1258,10 +1308,7 @@ export function initAvatarGuide(
       // the bones, the gesture burns its whole duration producing no movement,
       // and the pat's 8s cooldown starts on a pat nobody saw — and clips run
       // most of the idle wall-clock, so that was most pats.
-      if (motionAction && !motionFading) {
-        motionAction.fadeOut(MOTION_FADE)
-        motionFading = true
-      }
+      beginSettle()
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
     },
     playMotion,

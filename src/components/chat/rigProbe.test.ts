@@ -27,7 +27,13 @@ import {
   avatarViewHalfWidth,
   avatarViewSpan,
 } from './avatarMode'
-import { AVATAR_MOTIONS, MAX_HIPS_SINK, type AvatarMotionName } from './avatarMotions'
+import {
+  AVATAR_MOTIONS,
+  MAX_HIPS_SINK,
+  settleSeconds,
+  settleWeight,
+  type AvatarMotionName,
+} from './avatarMotions'
 
 const asset = (...parts: string[]): Uint8Array =>
   new Uint8Array(readFileSync(path.join(process.cwd(), 'public', 'avatar', ...parts)))
@@ -493,4 +499,97 @@ describe('bundled motions', () => {
       )
     },
   )
+})
+
+
+// The handover at the end of a clip. What the visitor sees is not the clip's
+// last frame, it is the trip from there back to the pinned rest pose, and that
+// trip was reported as "too fast, unnatural" on 2026-08-20.
+describe('returning to rest', () => {
+  // The pinned rest pose, rebuilt from the same two constants ARM_PINS uses in
+  // avatarGuideEngine.ts. Reading it from source is the point: change the rest
+  // pose and the settle distances below move with it.
+  function pinnedRest(r: Rig): { left: THREE.Vector3; right: THREE.Vector3 } {
+    resetRig(r)
+    r.bones.leftUpperArm.rotation.set(0, 0, ARM_REST_UPPER_Z)
+    r.bones.rightUpperArm.rotation.set(0, 0, -ARM_REST_UPPER_Z)
+    r.bones.leftLowerArm.rotation.set(0, 0, ARM_REST_FORE_Z)
+    r.bones.rightLowerArm.rotation.set(0, 0, -ARM_REST_FORE_Z)
+    r.root.updateMatrixWorld(true)
+    return {
+      left: new THREE.Vector3().setFromMatrixPosition(r.bones.leftHand.matrixWorld),
+      right: new THREE.Vector3().setFromMatrixPosition(r.bones.rightHand.matrixWorld),
+    }
+  }
+
+  /** How far the settle has to carry her wrists after this clip's last frame. */
+  function endDistance(name: AvatarMotionName): number {
+    const r = rig()
+    const rest = pinnedRest(r)
+    const m = motion(name)
+    applyMotion(r, m, m.duration)
+    const l = new THREE.Vector3().setFromMatrixPosition(r.bones.leftHand.matrixWorld)
+    const right = new THREE.Vector3().setFromMatrixPosition(r.bones.rightHand.matrixWorld)
+    return Math.max(l.distanceTo(rest.left), right.distanceTo(rest.right))
+  }
+
+  it('eases in and out instead of ramping', () => {
+    expect(settleWeight(0, 0.5)).toBe(1)
+    expect(settleWeight(0.5, 0.5)).toBe(0)
+    expect(settleWeight(0.6, 0.5)).toBe(0)
+    expect(settleWeight(0.25, 0.5)).toBeCloseTo(0.5, 6)
+    // The whole point, and what a linear ramp fails: she leaves the clip's pose
+    // from a standstill and arrives at rest at a standstill. A linear fade
+    // would have moved 10% of the way in each of these, which is the velocity
+    // step that was reported as unnatural.
+    expect(1 - settleWeight(0.05, 0.5)).toBeLessThan(0.03)
+    expect(settleWeight(0.45, 0.5)).toBeLessThan(0.03)
+  })
+
+  it('spends longer on a settle that has further to travel', () => {
+    // Between the clamps the duration tracks the distance, so the SPEED is the
+    // constant rather than the duration. That band is 0.18m to 0.338m, which is
+    // where `idleLoop` and `dance` sit; everything shorter rides the floor.
+    expect(settleSeconds(0.3)).toBeCloseTo(settleSeconds(0.2) * 1.5, 6)
+    // …and outside them it stops, so a clip ending already at rest still takes
+    // a moment and one ending mid-air does not take all day.
+    expect(settleSeconds(0)).toBe(settleSeconds(0.05))
+    expect(settleSeconds(2)).toBe(settleSeconds(10))
+    expect(settleSeconds(2)).toBeLessThan(1)
+  })
+
+  // The guard for the actual complaint. Every bundled clip is measured, so a
+  // new one that ends with an arm out cannot quietly get a 0.3s snap.
+  it.each(Object.keys(AVATAR_MOTIONS))('%s puts its arms down at a human speed', (name) => {
+    const distance = endDistance(name as AvatarMotionName)
+    const speed = distance / settleSeconds(distance)
+    expect(speed, `${name} settle speed (m/s over ${distance.toFixed(3)}m)`).toBeLessThan(0.75)
+  })
+
+  // The floor is the half of the fix that reaches the clips the idle picker
+  // actually draws: seven of the eight waist-up clips end within 0.143m of rest,
+  // so the speed limit alone would leave them at roughly the timing that was
+  // reported as too fast. Nothing else pins it — the ceiling above is far too
+  // loose to notice — so the complaint is written down as a requirement here.
+  const FLAT_FADE_WAS = 0.25
+  it.each(Object.keys(AVATAR_MOTIONS))('%s settles slower than the fade it replaced', (name) => {
+    const distance = endDistance(name as AvatarMotionName)
+    const before = distance / FLAT_FADE_WAS
+    const now = distance / settleSeconds(distance)
+    expect(now, `${name} settle speed against the flat ${FLAT_FADE_WAS}s fade`).toBeLessThan(
+      before * 0.7,
+    )
+  })
+
+  // …and the scaling has to be load-bearing on the real clips, not just on
+  // synthetic distances: at least one bundled clip must end far enough out that
+  // it needs more than the shortest settle. `dance` ends 0.540m from rest,
+  // `idleLoop` 0.231m; at the old flat 0.25s those were 2.16 and 0.92 m/s.
+  it('has at least one clip that the distance scaling actually lengthens', () => {
+    const shortest = settleSeconds(0)
+    const stretched = (Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]).filter(
+      (name) => settleSeconds(endDistance(name)) > shortest,
+    )
+    expect(stretched.length).toBeGreaterThan(0)
+  })
 })
