@@ -16,6 +16,26 @@
 # (scripts/gen_visemes_align.py --verify checks that claim rather than trusting
 # it).
 #
+# What frame-synchronous does NOT mean is pitch-preserving, and the first zh-TW
+# batch was shipped on that assumption. It ran with f0_condition=False, which
+# selects the model that has no F0 input at all: pitch is regenerated from
+# content plus the target speaker embedding. For English that is unremarkable.
+# For Mandarin it is fatal, because the pitch contour inside a syllable IS the
+# tone, and the target embedding is a Japanese speaker's — so the tones came out
+# shaped by a non-tonal language and the owner heard the whole set as
+# foreign-accented on 2026-08-21.
+#
+# The measurement that would have caught it is per-syllable, not per-clip:
+# sentence-level F0 correlation between source and output was 0.89 for Mandarin
+# and 0.86 for English, which looks fine and is, because the damage sits under
+# the sentence envelope.
+#
+# f0_condition=True selects the F0-conditioned 44kHz model and feeds it the
+# SOURCE's contour; auto_f0_adjust=True transposes that contour to the target's
+# median pitch so it lands in her register with its shape intact. Those two
+# together are the fix, and they are what makes the accent source's Mandarin
+# tones survive into her voice.
+#
 # seed-vc reloads every model on each call to its main(), which for a 48-clip
 # batch would be most of the wall clock. The cache below makes that once.
 #
@@ -32,6 +52,26 @@ import sys
 import types
 
 
+def float32_f0(f0_fn):
+    """Hand seed-vc's F0 back as float32.
+
+    RMVPE returns a float64 numpy array, inference.py wraps it in
+    torch.from_numpy and moves it to the device, and MPS has no float64 at all,
+    so the F0-conditioned path dies on its first clip. Only the F0 path hits
+    this, which is why the earlier f0_condition=False batch never saw it.
+    Patched here rather than in the checkout, for the same reason as the
+    autocast shim: the clone stays a clean clone.
+    """
+    if f0_fn is None:
+        return None
+
+    def as_float32(*a, **kw):
+        import numpy as np
+        return np.asarray(f0_fn(*a, **kw), dtype=np.float32)
+
+    return as_float32
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--seed-vc', required=True, help='checkout of Plachtaa/seed-vc')
@@ -41,6 +81,9 @@ def main() -> None:
     ap.add_argument('--diffusion-steps', type=int, default=30)
     ap.add_argument('--inference-cfg-rate', type=float, default=0.7)
     ap.add_argument('--only', help='one clip key')
+    ap.add_argument('--device', default='cpu', choices=['cpu', 'auto'],
+                    help="'cpu' because the F0-conditioned vocoder cannot run on "
+                         "MPS; 'auto' is only useful on a CUDA box")
     args = ap.parse_args()
 
     seed_vc = os.path.abspath(args.seed_vc)
@@ -71,6 +114,31 @@ def main() -> None:
 
     torch.autocast = autocast_or_nothing
 
+    # The F0-conditioned model cannot run on MPS at all. Its vocoder is
+    # BigVGAN's alias-free upsampler, whose grouped conv_transpose1d asks for
+    # more than 65536 output channels, and Metal refuses that outright — as a
+    # raised NotImplementedError, so PYTORCH_ENABLE_MPS_FALLBACK does not catch
+    # it either (that only covers ops missing from the dispatch table). Hiding
+    # MPS before the import is what makes inference.py pick CPU for everything
+    # in one consistent decision; overriding inference.device afterwards would
+    # leave every other module's own device global still pointing at Metal.
+    #
+    # The cost is wall clock and nothing else, and it is only paid by this
+    # stage: measured at 2.6 minutes a clip, 63 minutes for the 25.
+    if args.device == 'cpu':
+        torch.backends.mps.is_available = lambda: False
+
+    # torchaudio 2.13 forwards save() to TorchCodec, whose dylib will not bind
+    # to a Homebrew FFmpeg here. seed-vc writes one plain wav per clip, which
+    # soundfile does directly, so the dependency buys nothing worth debugging.
+    import soundfile  # noqa: E402
+    import torchaudio  # noqa: E402
+
+    def save_with_soundfile(path, tensor, sample_rate, **_):
+        soundfile.write(path, tensor.detach().cpu().numpy().T, int(sample_rate))
+
+    torchaudio.save = save_with_soundfile
+
     import inference  # noqa: E402
 
     loaded = {}
@@ -80,7 +148,8 @@ def main() -> None:
         key = (a.f0_condition, a.checkpoint, a.fp16)
         if key not in loaded:
             print('loading models (once)...', flush=True)
-            loaded[key] = original(a)
+            bundle = original(a)
+            loaded[key] = bundle[:2] + (float32_f0(bundle[2]),) + bundle[3:]
         return loaded[key]
 
     inference.load_models = load_once
@@ -103,7 +172,8 @@ def main() -> None:
             diffusion_steps=args.diffusion_steps,
             length_adjust=1.0,  # 1.0 keeps the stage-1 timings valid
             inference_cfg_rate=args.inference_cfg_rate,
-            f0_condition=False, auto_f0_adjust=False, semi_tone_shift=0,
+            # Both True on purpose; the header explains what False cost us.
+            f0_condition=True, auto_f0_adjust=True, semi_tone_shift=0,
             checkpoint=None, config=None, fp16=False,  # MPS is unreliable in fp16
         )
         inference.main(call)

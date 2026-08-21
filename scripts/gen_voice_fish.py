@@ -19,7 +19,7 @@
 # Usage:
 #   . <somewhere>/fish.env
 #   python3 scripts/gen_voice_fish.py --zh-voice <id> --en-voice <id>
-#   python3 scripts/gen_voice_fish.py --zh-voice <id> --only mika-intro-1-zh
+#   python3 scripts/gen_voice_fish.py --zh-voice <id> --only mika-intro-1-zh2
 import argparse
 import base64
 import json

@@ -120,10 +120,22 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
 // timbre comes from her. docs/plans/avatar-guide.md carries the pipeline and
 // the licence position.
 //
-// The English set is `-en2`, not `-en`. /avatar/* is served immutable, so a
-// clip's NAME is its cache key and re-recording under a shipped name leaves
-// visitors on the old audio forever. The `-en` files are gone; nothing points
-// at them.
+// Both sets carry a generation number — `-en2` and `-zh2`, never `-en` or
+// `-zh`. /avatar/* is served immutable, so a clip's NAME is its cache key and
+// re-recording under a shipped name leaves visitors on the old audio forever.
+// The `-en` and `-zh` files are gone; nothing points at them.
+//
+// zh-TW is on its second generation because the first shipped with broken
+// tones. Stage 2 ran seed-vc with `f0_condition=False`, so pitch was
+// regenerated from content plus a Japanese speaker embedding instead of
+// following the accent source. English was unharmed; Mandarin was not, because
+// the pitch contour inside a syllable is the tone, and the owner heard the
+// result as foreign-accented on 2026-08-21. Six lines were also wrong as text:
+// 「唷」 came back as 「噎」 in all three lines that used it, 「鏘」 wanted to be
+// the two-syllable 「將將」, greet-3 now opens on 「Hello」 rather than 「哈囉」,
+// and ack-1 ends on a full stop so its 「喔」 reads as the light particle it is.
+// scripts/vc_to_tsumugi.py holds the diagnosis; scripts/voice_lines.py holds
+// the wording.
 //
 // Laughter is the exception: えへへ is the same sound in every language, so the
 // giggle pool is SHARED verbatim rather than duplicated into three byte-
@@ -142,7 +154,7 @@ function localised(suffix: string): Record<VoiceCue, string[]> {
 }
 
 export const VOICE_LINES_EN = localised('-en2')
-export const VOICE_LINES_ZH = localised('-zh')
+export const VOICE_LINES_ZH = localised('-zh2')
 
 export function voiceLinesFor(locale: Locale): Record<VoiceCue, string[]> {
   if (locale === 'en') return VOICE_LINES_EN

@@ -53,7 +53,7 @@ JA_LINES = [
 ]
 
 # Laughter, shared verbatim by every locale — えへへ is the same sound in any
-# language, so these keep their VOICEVOX originals and get no -zh/-en twins.
+# language, so these keep their VOICEVOX originals and get no -zh2/-en2 twins.
 # avatarVoice.ts exempts the giggle cue from the per-locale suffix mapping.
 GIGGLE_LINES = [
     ('mika-giggle-1', 'えへへ…', 1.0),
@@ -64,37 +64,70 @@ GIGGLE_LINES = [
 # Taiwanese Mandarin, rewritten from the Japanese lines' JOB. A literal
 # translation reads like a textbook, because the Japanese is gyaru shorthand.
 # These keep the same beat in the register a Taiwanese speaker actually uses:
-# sentence-final 喔／唷／啦／欸／齁 over 呢／吧, and 「Charles」, which is what her
+# sentence-final 喔／喲／啦／欸／齁 over 呢／吧, and 「Charles」, which is what her
 # bubble already calls him (i18n/strings/zh-TW.ts).
 #
 # Kept short on purpose: these are interaction chrome, and the longest is the
 # intro. Full-width punctuation throughout, per the project's writing rules.
+#
+# The set is `-zh2`, and the `-zh` clips it replaces are gone. Two things were
+# wrong with them, one in each stage of the pipeline:
+#
+#   Stage 2 shipped with `f0_condition=False`, so seed-vc regenerated pitch from
+#   content plus a Japanese speaker embedding instead of following the source.
+#   English survived that; Mandarin did not, because in Mandarin the pitch
+#   contour IS the tone, so the syllables came out with the wrong tones and the
+#   owner heard the whole set as foreign-accented. It hid from the obvious
+#   measurement: sentence-level F0 correlation between the two stages stayed at
+#   0.89, the same as English, because the damage is inside each syllable.
+#   vc_to_tsumugi.py now passes `f0_condition=True`.
+#
+#   Six lines were also wrong as TEXT, which no amount of conversion fixes:
+#   「唷」 came back sounding like 「噎」 in all three lines that used it (the one
+#   character with a 3-of-3 failure rate across the batch), so greet-2, greet-8
+#   and full-2 use 「喲」; and 「鏘」 was read qiāng when the beat wanted the
+#   two-syllable ta-da, so full-1 says 「將將」.
+#
+#   Two more went a round further, on the owner's ear rather than on a defect
+#   anyone could name from the text. greet-3 opened on 「哈囉」, two full-tone
+#   syllables where the beat wants the shape of the English word, so it now
+#   opens on 「Hello」 (gen_visemes_align.zh_vowels has the Latin fallback that
+#   keeps her mouth moving through it). ack-1's 「喔」 landed as a stressed
+#   fourth tone; the exclamation mark was what asked for the stress, and a full
+#   stop is what finally read as the light final particle it is meant to be.
+#   Candidates were synthesized and picked by listening, which is the only
+#   instrument that settles this: the measurement preferred a different take.
+#
+# Re-synthesis was deliberately limited to the lines above. Stage 1 is
+# stochastic (temperature 0.7) and the owner had already judged the remaining 19
+# takes natural, so their fish.audio audio was carried over rather than rolled
+# again — a re-roll can only lose a take that was already approved.
 ZH_LINES = [
-    ('mika-greet-1-zh', '嗨嗨！關於 Charles 的事，什麼都可以問我喔！'),
-    ('mika-greet-2-zh', '有叫我嗎？什麼問題我都答得出來唷！'),
-    ('mika-greet-3-zh', '哈囉！今天想問什麼呀？'),
-    ('mika-greet-4-zh', '來了來了！我等你好久了欸！'),
-    ('mika-greet-5-zh', '講到 Charles，全世界就我最清楚啦！'),
-    ('mika-greet-6-zh', '喔，你好奇齁？儘管問啦！'),
-    ('mika-greet-7-zh', '歡迎歡迎！慢慢看，別客氣喔！'),
-    ('mika-greet-8-zh', '想錄取他的話，要搶要快唷？'),
-    ('mika-greet-9-zh', '我的聲音，很可愛對吧？'),
-    ('mika-ack-1-zh', '好喔！稍等我一下下'),
-    ('mika-ack-2-zh', '收到！等我一下下！'),
-    ('mika-ack-3-zh', '這問題問得好！我馬上查！'),
-    ('mika-ack-4-zh', '交給我！'),
-    ('mika-ack-5-zh', '嗯，那個喔！我現在就回答！'),
-    ('mika-full-1-zh', '鏘！我變大了！'),
-    ('mika-full-2-zh', '好戲從現在才開始唷！'),
-    ('mika-suggest-1-zh', '喔，你要問那個喔？'),
-    ('mika-suggest-2-zh', '這個選得好欸！'),
-    ('mika-bye-1-zh', '掰掰，下次見！'),
-    ('mika-bye-2-zh', '隨時都可以叫我喔！'),
-    ('mika-done-1-zh', '大概就是這樣，還可以嗎？'),
-    ('mika-done-2-zh', '還想問什麼，儘管說喔！'),
-    ('mika-error-1-zh', '欸？我好像出了點狀況，可以再試一次嗎？'),
-    ('mika-huff-1-zh', '夠了啦！摸太多次了欸！'),
-    ('mika-intro-1-zh', '初次見面！我是 Mika 醬！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
+    ('mika-greet-1-zh2', '嗨嗨！關於 Charles 的事，什麼都可以問我喔！'),
+    ('mika-greet-2-zh2', '有叫我嗎？什麼問題我都答得出來喲！'),
+    ('mika-greet-3-zh2', 'Hello！今天想問什麼呀？'),
+    ('mika-greet-4-zh2', '來了來了！我等你好久了欸！'),
+    ('mika-greet-5-zh2', '講到 Charles，全世界就我最清楚啦！'),
+    ('mika-greet-6-zh2', '喔，你好奇齁？儘管問啦！'),
+    ('mika-greet-7-zh2', '歡迎歡迎！慢慢看，別客氣喔！'),
+    ('mika-greet-8-zh2', '想錄取他的話，要搶要快喲？'),
+    ('mika-greet-9-zh2', '我的聲音，很可愛對吧？'),
+    ('mika-ack-1-zh2', '好喔。稍等我一下下'),
+    ('mika-ack-2-zh2', '收到！等我一下下！'),
+    ('mika-ack-3-zh2', '這問題問得好！我馬上查！'),
+    ('mika-ack-4-zh2', '交給我！'),
+    ('mika-ack-5-zh2', '嗯，那個喔！我現在就回答！'),
+    ('mika-full-1-zh2', '將將！我變大了！'),
+    ('mika-full-2-zh2', '好戲從現在才開始喲！'),
+    ('mika-suggest-1-zh2', '喔，你要問那個喔？'),
+    ('mika-suggest-2-zh2', '這個選得好欸！'),
+    ('mika-bye-1-zh2', '掰掰，下次見！'),
+    ('mika-bye-2-zh2', '隨時都可以叫我喔！'),
+    ('mika-done-1-zh2', '大概就是這樣，還可以嗎？'),
+    ('mika-done-2-zh2', '還想問什麼，儘管說喔！'),
+    ('mika-error-1-zh2', '欸？我好像出了點狀況，可以再試一次嗎？'),
+    ('mika-huff-1-zh2', '夠了啦！摸太多次了欸！'),
+    ('mika-intro-1-zh2', '初次見面！我是 Mika 醬！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
 ]
 
 # English. These REPLACE the カタカナ英語 set, which was Japanese phonetics

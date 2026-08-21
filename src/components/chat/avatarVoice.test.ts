@@ -53,10 +53,12 @@ describe('voiceLinesFor', () => {
   })
 
   it('gives each locale a distinct filename so caches never collide', () => {
-    // -en2, not -en: the English lines were re-recorded on 2026-08-21 and
-    // /avatar/* is immutable-cached, so reusing the old name would have served
-    // the old katakana audio to everyone who had already heard it.
-    for (const [suffix, table] of [['-en2', VOICE_LINES_EN], ['-zh', VOICE_LINES_ZH]] as const) {
+    // Every localised clip carries a generation number: -en2 because the
+    // English was re-recorded on 2026-08-21, -zh2 because the Mandarin was
+    // re-recorded later the same day once its tones turned out to be broken.
+    // /avatar/* is immutable-cached, so reusing either old name would have
+    // served the old audio to everyone who had already heard it.
+    for (const [suffix, table] of [['-en2', VOICE_LINES_EN], ['-zh2', VOICE_LINES_ZH]] as const) {
       for (const [cue, clips] of Object.entries(table)) {
         if (cue === 'giggle') continue // wordless: shared, asserted below
         for (const clip of clips) expect(clip.endsWith(`${suffix}.m4a`)).toBe(true)
@@ -71,7 +73,7 @@ describe('voiceLinesFor', () => {
     for (const table of [VOICE_LINES_EN, VOICE_LINES_ZH]) {
       expect(table.giggle).toEqual(VOICE_LINES.giggle)
       for (const clip of table.giggle) {
-        expect(clip.endsWith('-en2.m4a') || clip.endsWith('-zh.m4a')).toBe(false)
+        expect(clip.endsWith('-en2.m4a') || clip.endsWith('-zh2.m4a')).toBe(false)
       }
     }
   })

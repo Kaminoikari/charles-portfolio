@@ -67,6 +67,15 @@ EN_VOWEL = {'a': AA, 'e': EE, 'i': IH, 'o': OH, 'u': OU, 'y': IH}
 
 
 def zh_vowels(text: str) -> list[int]:
+    """Vowels for one Mandarin span, falling back to the English rule for Latin.
+
+    The Chinese lines carry Latin tokens — Charles, Mika, AI, and since
+    2026-08-21 the 「Hello」 that opens mika-greet-3 — and fish.audio reports each
+    as one whole segment. pypinyin with errors='ignore' returns [] for those, and
+    an empty list makes build_track drop the span entirely: her mouth stays shut
+    for the whole word and nothing anywhere reports it. That was tolerable while
+    the Latin sat mid-sentence; it is not once a clip OPENS on one.
+    """
     from pypinyin import Style, lazy_pinyin
     out = []
     for syllable in lazy_pinyin(text, style=Style.FINALS, errors='ignore'):
@@ -74,6 +83,8 @@ def zh_vowels(text: str) -> list[int]:
             if syllable.endswith(final):
                 out.append(vowel)
                 break
+    if not out and re.search(r'[A-Za-z]', text):
+        return en_vowels(text)
     return out
 
 
@@ -147,7 +158,21 @@ def build_track(align: dict, locale: str) -> list[list]:
 
 
 def locale_of(clip_key: str) -> str:
-    return 'zh' if clip_key.endswith('-zh') else 'en'
+    """Which vowel table a clip's text needs.
+
+    Matched on a suffix that allows a generation number, because clip keys carry
+    one: the set is `-zh2` and the English is `-en2`, both because a re-recorded
+    clip has to take a new cache key. The previous version tested
+    `endswith('-zh')` and fell through to English for anything else, so the
+    rename to `-zh2` would have run en_vowels over Chinese text — which finds no
+    [aeiouy] clusters in 你好, emits an empty track for every clip, and reports
+    no error at all. Unknown suffixes raise here for that reason: the failure
+    this guards against is silent, so the guard cannot be.
+    """
+    m = re.search(r'-(zh|en)\d*$', clip_key)
+    if not m:
+        raise ValueError(f'{clip_key}: cannot tell which language this clip is in')
+    return m.group(1)
 
 
 def duration(path: str) -> float:

@@ -2,13 +2,19 @@
 #
 # Matches the catalogue the ja clips already ship as — AAC, 24kHz, mono, around
 # 34kbps — so the new locales weigh the same per second as the old ones and no
-# player has to deal with two formats. 24kHz is not a downgrade here: seed-vc
-# emits 22.05kHz, so this is the first encode that is not throwing anything away.
+# player has to deal with two formats.
+#
+# 24kHz IS a downgrade for the zh2 set, and deliberately so. seed-vc's default
+# model emits 22.05kHz, which this encode used to sit just above; the
+# F0-conditioned model these were rebuilt on emits 44.1kHz, so everything over
+# 12kHz is discarded here. Kept anyway: one format across the catalogue is worth
+# more than the top octave of a 2-second interaction cue, and doubling the
+# bitrate for that octave would show up on every visitor's first tap.
 #
 # The viseme tracks are timed against the WAV that goes in, not the m4a that
 # comes out, and that is correct: AAC-in-MP4 carries ~96ms of encoder priming
 # that ffprobe counts and players skip. Measured in Chrome, `audio.duration` for
-# these files matches the wav (8.406s vs 8.41s for mika-intro-1-zh), so
+# these files matches the wav (8.406s vs 8.41s for mika-intro-1-zh2), so
 # currentTime and the track share one timeline. Anyone re-timing tracks from the
 # shipped m4a with ffprobe would shift every step by that 96ms; gen_visemes.py
 # reads afinfo for exactly this reason.
