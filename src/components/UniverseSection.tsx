@@ -6,6 +6,16 @@ import { useSkills } from '../data'
 import { skills as EN_SKILLS } from '../data/skills.en'
 import { useT } from '../i18n'
 
+// The layer the two skill labels ride on, above everything else this section
+// draws (its own layers stop at z-30) and below the chat avatar, who floats
+// over the whole page at AVATAR_DOCKED_Z_CLASS. It was z-50 until 2026-08-21,
+// which is site-chrome territory: the section is `relative` with no z-index of
+// its own, so it opens no stacking context and these labels were competing
+// with the nav and the docked avatar in the root one. Nothing here needs to
+// reach that high — what the comments below mean by 'so the gradient can't
+// cover it' is the z-[5] fade.
+export const UNIVERSE_LABEL_Z_CLASS = 'z-40'
+
 const SKILL_COUNT = EN_SKILLS.length
 
 // --- Constants ---
@@ -472,7 +482,7 @@ export default function UniverseSection() {
       {/* Tooltip — section level so gradient can't cover it */}
       <div
         ref={tooltipRef}
-        className="pointer-events-none absolute left-0 top-0 z-50"
+        className={`pointer-events-none absolute left-0 top-0 ${UNIVERSE_LABEL_Z_CLASS}`}
         style={{
           opacity: hoveredIndex !== null ? 1 : 0,
           transition: 'opacity 150ms',
@@ -495,7 +505,7 @@ export default function UniverseSection() {
       {/* Auto-cycling skill label — section level */}
       <div
         ref={autoLabelRef}
-        className="pointer-events-none absolute left-0 top-0 z-50"
+        className={`pointer-events-none absolute left-0 top-0 ${UNIVERSE_LABEL_Z_CLASS}`}
         style={{
           opacity: 0,
           transition: 'none',

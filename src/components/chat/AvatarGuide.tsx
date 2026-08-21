@@ -52,15 +52,16 @@ export default function AvatarGuide({
 }: {
   mode: AvatarMode
   active?: boolean
-  // Tailwind height/width for the canvas box, from avatarSizeClass(). The
-  // engine matches its drawing buffer to whatever this resolves to, so a bigger
-  // box means more pixels of her rather than an upscale. Required rather than
-  // defaulted: a default would be a fourth hand-written copy of the numbers
-  // that avatarMode.ts and its test now hold together.
+  // Tailwind height/width for the canvas box: AVATAR_LAUNCHER_SIZE_CLASS, the
+  // one placement whose box is a fixed pair of numbers. The engine matches its
+  // drawing buffer to whatever this resolves to, so a bigger box means more
+  // pixels of her rather than an upscale. Required rather than defaulted: a
+  // default would be a third hand-written copy of the numbers that
+  // avatarMode.ts and its test hold together.
   sizeClass: string
-  // The fullscreen column's box instead, in px, from avatarColumnBox(). It wins
-  // over sizeClass when present — that box depends on both viewport axes at
-  // once, which is arithmetic no utility class can carry.
+  // The docked or column box instead, in px, from avatarDockedBox() or
+  // avatarColumnBox(). It wins over sizeClass when present — both depend on the
+  // viewport, which is arithmetic no utility class can carry.
   sizeStyle?: { width: number; height: number }
   // Camera distance and look-at height for this placement, when the canvas is
   // tall enough to want a different crop. Undefined keeps the engine default.

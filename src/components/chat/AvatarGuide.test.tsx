@@ -111,6 +111,42 @@ async function mount(
   await waitFor(() => expect(onHandle).toHaveBeenCalledWith(handle))
 }
 
+// The canvas box arrives one of two ways: a Tailwind class for the launcher,
+// and px arithmetic for the two placements that answer to the viewport
+// (avatarDockedBox, avatarColumnBox). The engine sizes its drawing buffer from
+// whatever the element actually resolves to, so a style that never reaches the
+// canvas renders her at the class's size while every arithmetic test upstream
+// stays green.
+describe('AvatarGuide canvas box', () => {
+  it('applies a px box as an inline style and drops the class', () => {
+    render(
+      <AvatarGuide
+        mode="idle"
+        placement="beside-panel"
+        sizeClass="h-[280px] w-[376px]"
+        sizeStyle={{ width: 1020, height: 760 }}
+        onHandle={vi.fn()}
+      />,
+    )
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement
+    expect(canvas.style.width).toBe('1020px')
+    expect(canvas.style.height).toBe('760px')
+    // The class would fight the style at a lower specificity and win nothing,
+    // but leaving it on is how a placement ends up with two sizes on the same
+    // element the day one of them changes.
+    expect(canvas.className).not.toContain('h-[280px]')
+  })
+
+  it('falls back to the class when no px box is given', () => {
+    render(
+      <AvatarGuide mode="idle" placement="launcher" sizeClass="h-[280px] w-[376px]" onHandle={vi.fn()} />,
+    )
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement
+    expect(canvas.className).toContain('h-[280px]')
+    expect(canvas.style.width).toBe('')
+  })
+})
+
 describe('AvatarGuide head pats', () => {
   it('reports a happy pat, and performs the face and wiggle itself', async () => {
     const onPat = vi.fn()

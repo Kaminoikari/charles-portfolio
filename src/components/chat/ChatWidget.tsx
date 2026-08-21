@@ -20,7 +20,10 @@ import {
   avatarColumnBox,
   avatarPlacement,
   AVATAR_BUBBLE_RIGHT_CLASS,
-  avatarSizeClass,
+  AVATAR_DOCKED_Z_CLASS,
+  AVATAR_LAUNCHER_SIZE_CLASS,
+  avatarDockedBox,
+  CHAT_DOCK_BOTTOM_CLASS,
   besidePanelScale,
   CHAT_PANEL_HEIGHT_CLASS,
   deriveAvatarMode,
@@ -625,17 +628,22 @@ export default function ChatWidget() {
   //  beside-panel  docked panel, wide viewport. Offset 436px = panel right
   //                inset 20px + panel width 400px (the min() in the panel class
   //                always resolves to 400px on ≥880px viewports) + 16px gap.
-  //                Canvas 491×560, matched to the panel's own min(560px,80vh)
-  //                so their tops line up at every viewport height: once the
-  //                chat is open she is something the visitor is looking AT, and
-  //                the space beside the panel is free. She grows up and to the
-  //                left from the same bottom-5 corner, so the panel never moves.
-  //                Accepted cost: just above the 880px `wide` threshold her
-  //                left gesture margin runs past the screen edge. Measured at
-  //                880px with a scrollbar: canvas left = -53px against 38px of
-  //                pure margin, so a stretch loses ~15px of fingertip there and
-  //                nothing from ~933px up. document.scrollWidth was unchanged
-  //                (874) — a fixed box overhanging leftward adds no scroll.
+  //                Canvas from avatarDockedBox: TALLER than the panel by the
+  //                empty headroom the waist-up frame holds above her hair, so
+  //                that HER FIGURE, and not the box around it, is the height of
+  //                the panel. Once the chat is open she is something the
+  //                visitor is looking AT, and the space beside the panel is
+  //                free. She grows up and to the left from the same bottom-5
+  //                corner the panel sits on, so the panel never moves and the
+  //                extra height overhangs its top edge.
+  //                Accepted cost: her left gesture margin runs past the screen
+  //                edge on a narrow desktop window, where besidePanelScale
+  //                shrinks her rather than cutting her. The taller canvas moves
+  //                full size out to ~1364px of width from 1120px, and costs
+  //                nothing doing it: below that threshold the scale normalises
+  //                her to the same on-screen size she had before. A fixed box
+  //                overhanging leftward adds no scroll (document.scrollWidth
+  //                measured unchanged at 880px).
   //  column        fullscreen: her wide, gesture-safe canvas overhangs the
   //                viewport's right edge by whatever her transparent margin is
   //                at this canvas width (avatarColumnRightInset), which lands
@@ -661,8 +669,12 @@ export default function ChatWidget() {
   // cheap enough (six multiplications) not to be worth gating.
   const columnBox = avatarColumnBox(viewport.vw, viewport.vh)
   const inColumn = placement === 'column'
-  // Only read in the beside-panel placement; one divide, not worth gating.
-  const besideScale = besidePanelScale(viewport.vw)
+  // Same deal as columnBox: recomputed per resize frame, only read beside the
+  // panel. Her canvas is TALLER than the panel there (avatarDockedBox), so the
+  // box has to be known here rather than left to a Tailwind literal — the scale
+  // below divides by its width.
+  const dockedBox = avatarDockedBox(viewport.vh)
+  const besideScale = besidePanelScale(viewport.vw, dockedBox.w)
   // What the transcript actually gives up. Zero until she is on screen, so a
   // gated-off, failed or context-lost avatar leaves the text its full width
   // rather than a gap where nobody is standing. The cost is one reflow when she
@@ -692,7 +704,7 @@ export default function ChatWidget() {
           : placement === 'beside-panel'
             ? // right-[436px] is CHAT_BESIDE_PANEL_RIGHT; the scale that keeps
               // the canvas on screen at narrow widths rides in the style below.
-              'pointer-events-none fixed bottom-5 right-[436px] z-50'
+              `pointer-events-none fixed ${CHAT_DOCK_BOTTOM_CLASS} right-[436px] ${AVATAR_DOCKED_Z_CLASS}`
             : inColumn
               ? // The canvas overhangs the viewport at right, so the body reads
                 // right-aligned despite the frame's transparent gesture margin.
@@ -729,12 +741,19 @@ export default function ChatWidget() {
         // Gates which motion-capture clips she may play: each one is measured
         // against a composed frame, and the two frames crop differently.
         placement={placement}
-        // Widths carry her arm span, heights and framing carry her size; both
-        // live in avatarMode.ts so a test can hold the class strings and the
-        // AVATAR_CANVAS_* constants to each other. The column's box is
-        // arithmetic instead, for the same reason it has no class.
-        sizeClass={avatarSizeClass(placement)}
-        sizeStyle={inColumn ? { width: columnBox.w, height: columnBox.h } : undefined}
+        // Widths carry her arm span, heights and framing carry her size; all of
+        // it lives in avatarMode.ts. Only the launcher is a class: the docked
+        // and column boxes answer to the viewport, so they are arithmetic
+        // applied as an inline style, and AvatarGuide drops the class when a
+        // style is present.
+        sizeClass={AVATAR_LAUNCHER_SIZE_CLASS}
+        sizeStyle={
+          inColumn
+            ? { width: columnBox.w, height: columnBox.h }
+            : placement === 'beside-panel'
+              ? { width: dockedBox.w, height: dockedBox.h }
+              : undefined
+        }
         framing={inColumn ? AVATAR_FRAMING_COLUMN : undefined}
         onHandle={(h) => {
           avatarHandleRef.current = h
@@ -901,10 +920,12 @@ export default function ChatWidget() {
               // only a few px wider than the docked panel, which reads as no
               // change at all.
               'inset-4 rounded-2xl max-md:inset-0 max-md:rounded-none max-md:border-0 animate-chat-panel-grow'
-            : // Height comes from avatarMode.ts because the avatar canvas is
-              // sized to it: she stands exactly as tall as this panel, so the
-              // two must never be edited apart.
-              'bottom-5 right-5 w-[min(400px,calc(100vw-2.5rem))] rounded-2xl ' +
+            : // Height and bottom offset both come from avatarMode.ts, because
+              // avatarDockedBox derives her canvas from them: her box is this
+              // height plus the headroom the frame holds above her hair, hung
+              // off this same bottom edge. Spelling either one inline here
+              // again is how she silently stops matching the panel.
+              `${CHAT_DOCK_BOTTOM_CLASS} right-5 w-[min(400px,calc(100vw-2.5rem))] rounded-2xl ` +
               CHAT_PANEL_HEIGHT_CLASS)
         }
       >

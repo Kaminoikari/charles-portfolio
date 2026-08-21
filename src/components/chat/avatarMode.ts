@@ -221,9 +221,10 @@ export function emotionChannelValues(
 // Her on-screen size is `2 · distance · tan(fov/2) / canvasHeight` metres per
 // pixel, so a taller canvas can be spent two ways, and both are in use:
 //  · leave the framing alone and the same crop stretches over more pixels, so
-//    she scales up — what the docked panel does, on purpose. Her 560px box is
-//    1.64× the launcher's 280px one and she renders 1.64× larger, waist-up
-//    either way;
+//    she scales up — what the docked panel does, on purpose. Its box is 759.6px
+//    tall against the launcher's 280px, so she renders 2.71× larger there,
+//    waist-up either way (avatarDockedBox derives that height from the panel's;
+//    it is not a number anyone wrote down);
 //  · re-compose the framing for the taller box and choose what the extra height
 //    buys — the fullscreen column spends it on scale and on her legs down to
 //    the knee, rather than on air above her head.
@@ -248,10 +249,15 @@ export interface AvatarFraming {
 //
 // Height is not free the way width was. The visible span is 2·distance·tan(fov/2)
 // — 1.104m here — and distance also sets how large she renders, so the span
-// cannot grow without shrinking her or growing the canvas, and the docked canvas
-// is sized to the panel and cannot grow. What CAN move is where that fixed span
-// sits, which is this number, and every 1mm the top edge rises is 1mm the bottom
-// edge rises with it.
+// cannot grow without shrinking her or growing the canvas. What CAN move is
+// where that fixed span sits, which is this number, and every 1mm the top edge
+// rises is 1mm the bottom edge rises with it.
+//
+// Growing the canvas is what 2026-08-21 did instead, and it is a separate lever
+// from this one: avatarDockedBox scales the docked box so that the air THIS
+// number reserves lands above the panel rather than inside it. It does not
+// relax the bounds below — the pool they define is in metres, and a bigger
+// canvas spends the same span over more pixels.
 //
 // So it is chosen, not guessed. Two edges bound the waist-up pool:
 //
@@ -356,44 +362,138 @@ export function gestureEnvelope(t: number, dur: number, hold: number): number {
 // click target and the speech bubble beside her both had to move to match, and
 // each is pinned to its constant by a test in avatarMode.test.ts.
 //
-// The docked box is the odd one out: it is sized to the PANEL, not to a number
-// of its own, so she stands exactly as tall as the thing she is standing next
-// to. Its height is the panel's `min(560px,80vh)` and its width follows at the
-// same 684/560 ratio, so the ±0.674m of arm room survives the resize. Both
-// literals below are the uncapped 100%-of-560 case; on a viewport under 700px
-// tall the vh branch scales the pair together and she simply renders smaller.
-//
-// The fullscreen column has no entry here at all: its box is arithmetic, not a
-// number, because it answers to both viewport axes at once. See
-// avatarColumnBox().
+// The docked box is not here at all any more, for the same reason the column's
+// is not: it answers to the viewport as well as to the panel. See
+// avatarDockedBox().
 export const AVATAR_CANVAS_LAUNCHER = { w: 376, h: 280 }
-export const AVATAR_CANVAS_DOCKED = { w: 752, h: 560 }
+
+// Canvas width per unit height, shared by the launcher and the docked box. It
+// is the launcher's proportions and not a number of its own, because the two
+// share AVATAR_FRAMING_DEFAULT: the fov is vertical, so this ratio IS her arm
+// room (avatarViewHalfWidth), and a docked box off this ratio would hand her a
+// different reach in the two placements. rigProbe.test.ts measures every clip
+// against the launcher box on that assumption.
+export const AVATAR_WAISTUP_ASPECT = AVATAR_CANVAS_LAUNCHER.w / AVATAR_CANVAS_LAUNCHER.h
 
 // The docked canvas hangs to the LEFT of the panel, from a fixed right offset:
-// the panel's own 400px plus a 36px gutter. At 684px wide it no longer fits a
-// narrow desktop window — at 900px, 226px of the canvas is off the left edge of
-// the screen and 26px of that is her shoulder. She scales down to fit instead,
-// continuously rather than at a breakpoint, which is the same call the owner
-// made for the column on 2026-08-14: a smaller Mika, never a cut one.
+// the panel's own 400px plus a 36px gutter. It is wider than the gap left of
+// the panel on a narrow desktop window: the 2026-08-15 widening put 226px of a
+// 752px canvas off the left edge at 900px, 26px of it her shoulder, and the box
+// has only grown since. She scales down to fit instead, continuously rather than
+// at a breakpoint, which is the same call the owner made for the column on
+// 2026-08-14: a smaller Mika, never a cut one.
 export const CHAT_BESIDE_PANEL_RIGHT = 436
 
-// How much of the docked canvas the scale below keeps on screen. It is 68px
-// narrower than the canvas, and deliberately: what the scale protects is her
-// BODY, and the 2026-08-20 widening added transparent gesture margin either
-// side of it. Dividing by the full canvas instead would shrink her 9% at
-// 1120px, where she is at full size today, to defend empty pixels. A gesture
-// that runs off the left edge there is the trade the owner already accepted.
-const DOCKED_ON_SCREEN_W = 684
-export function besidePanelScale(vw: number): number {
-  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / DOCKED_ON_SCREEN_W))
+// Both the panel and her canvas sit on `bottom-5`, which is what lines their
+// bottom edges up. avatarDockedBox reads it to know how much room is left above
+// her, so the two must be one number: move the panel off bottom-5 and she must
+// move with it, or the box grows past the top of the screen and takes the
+// raised hand with it.
+//
+// The class is here for the same reason every other pair in this file is: the
+// px number cannot be interpolated into a Tailwind literal, so it is written
+// twice and a test converts the class back through Tailwind's 4px spacing unit
+// (bottom-5 = 5 × 0.25rem = 20px). ChatWidget must CONSUME the class rather
+// than spell its own `bottom-5`, which a render test checks on both elements.
+export const CHAT_DOCK_BOTTOM = 20
+export const CHAT_DOCK_BOTTOM_CLASS = 'bottom-5'
+
+// The layer her docked canvas paints on, and it must stay BELOW the nav's
+// (Nav.tsx's NAV_Z_CLASS). Both were z-50 until 2026-08-21, which was harmless
+// while her canvas was the panel's height and started 188px down a 768px
+// window. Now it starts at 0 there, `stretch` puts a hand 43px below its top,
+// and the nav bar is 77px tall: at equal z-indexes the later element in the DOM
+// wins, the widget mounts after the nav, so that hand was painted over the nav
+// links. Below the nav it is occluded instead, which costs her nothing — her
+// head is 26% down the canvas and never reaches this band.
+//
+// 45 rather than 40, so no layer in the site ties with hers: the nav is 50, the
+// skills labels are UniverseSection's 40, and a tie is settled by DOM order,
+// which is exactly the invisible rule that put a hand on top of the nav in the
+// first place.
+export const AVATAR_DOCKED_Z_CLASS = 'z-[45]'
+// Tailwind's spacing scale: one step is 0.25rem, and the root font size is the
+// browser default 16px, so a step is 4px. Only the test does this arithmetic.
+export const TAILWIND_SPACING_PX = 4
+
+// How much of the docked canvas the scale below keeps on screen, as a FRACTION
+// of its width. What the scale protects is her BODY, and the canvas carries
+// transparent gesture margin either side of it; defending those empty pixels
+// would shrink her to no visible end. It was written as 684 of a 752px canvas
+// until 2026-08-21 — the same 0.91, but as a px constant, which is a number the
+// next canvas resize has to remember to bring with it or she quietly stops being
+// protected at the width it was measured at. A gesture that runs off the left
+// edge is the trade the owner already accepted.
+const DOCKED_ON_SCREEN_FRACTION = 0.9096
+export function besidePanelScale(vw: number, canvasW: number): number {
+  const onScreen = canvasW * DOCKED_ON_SCREEN_FRACTION
+  // A zero-width canvas has nothing to keep on screen, and dividing by it would
+  // hand the wrapper a NaN transform. Full size is the no-op answer.
+  if (onScreen <= 0) return 1
+  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / onScreen))
 }
 
-// The docked panel's height, as the Tailwind literal. It lives here, next to
-// the canvas that must match it, because those are one number wearing two hats:
-// ChatWidget CONSUMES this for the panel and avatarSizeClass() spells the same
-// min() for the canvas, and a test parses both back so raising the panel
-// without raising her cannot pass silently.
+// The docked panel's height: the Tailwind literal ChatWidget applies, and the
+// same rule as two numbers for avatarDockedBox to compute with. Tailwind's JIT
+// will not take an interpolated value, so the three spellings are held together
+// by a test that parses the class back.
+//
+// Only the px half reaches her box today. The vh half is the panel's own rule
+// and avatarDockedBox keeps it so the expression means "the panel's height"
+// rather than "560", but at 80vh it cannot decide the answer: the height it
+// asks for is 0.8·vh / 0.7372 = 1.085·vh, always more than the vh − 20 the
+// screen cap allows, so the cap binds first at every viewport where this branch
+// is live. Drop CHAT_PANEL_HEIGHT_VH under ~74 and it starts deciding again —
+// which is what the cap test below is written to notice.
 export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
+export const CHAT_PANEL_HEIGHT_PX = 560
+export const CHAT_PANEL_HEIGHT_VH = 80
+
+// Her box beside the docked panel.
+//
+// Until 2026-08-21 this was the panel's own `min(560px,80vh)`, and the CANVAS
+// did stand exactly as tall as the panel — but she did not. The waist-up
+// framing puts the top edge at world y=1.872 against a hair top of 1.582, so
+// the top 26.3% of the canvas is empty air, held for `stretch`'s raised hand
+// (1.809). On the 560px canvas that was 147px of nothing above her head, so her
+// hair top to the shared bottom edge measured 413px beside a 560px panel, which
+// is what the owner read as her not being the same height as the window.
+//
+// Dollying in would have filled it by re-cropping — and cut the raised hand off
+// at the top, which is the one thing the framing above was rewritten to stop. So
+// the canvas grows instead: at h = panelH / (1 − headroom) the air above her
+// head is exactly the panel's overhang, her hair top lands on the panel's top
+// edge, and her figure fills the panel's height. Nothing about the composition
+// moves — same distance, same lookAtY, same aspect — so every clip rigProbe has
+// cleared stays cleared, and she simply renders 1.36× larger.
+//
+// Width follows, because arm room is fixed in METRES: a 560px figure needs a
+// 1020px canvas, so full size wants a 1364px window where 1120px did before.
+// That threshold reads like a cost and is not one. Once besidePanelScale binds,
+// the canvas on screen is (vw − 436) / 0.9096 whatever the box was, so at every
+// width below 1364 she renders the size she rendered before this change (268px
+// at 880, 413px at 1120, to the pixel), and above it she is larger. No viewport
+// gets a smaller Mika.
+//
+// The real bill is headroom. The canvas is taller than the panel and grows
+// upward from the shared bottom edge, so on a viewport under ~780px tall it
+// would run past the top of the screen, and a hand clipped by the SCREEN edge
+// is cut just as squarely as one clipped by the canvas. So it is capped at what
+// fits above her, and she gives up height rather than the gesture: ~89% of the
+// panel at vh 700, ~95% at 745, exact from 780 up. That cap is deliberately
+// measured against the whole canvas and not against the 1.809 hand: turning it
+// into the reach would buy ~5% more height on a short screen at the cost of
+// hand-copying a number that lives in rigProbe's measurements, and drifting
+// from it silently.
+export function avatarDockedBox(vh: number): { w: number; h: number } {
+  const panelH = Math.min(CHAT_PANEL_HEIGHT_PX, (vh * CHAT_PANEL_HEIGHT_VH) / 100)
+  const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
+  // Fraction of the canvas that sits above her hair, from the framing itself —
+  // re-dolly the waist-up frame and this follows without being edited.
+  const headroom = (span.top - AVATAR_HEAD_TOP_Y) / (span.top - span.bottom)
+  const h = Math.max(0, Math.min(panelH / (1 - headroom), vh - CHAT_DOCK_BOTTOM))
+  return { w: h * AVATAR_WAISTUP_ASPECT, h }
+}
 
 // ---- the fullscreen column ------------------------------------------------
 // Fullscreen stands her at the right, the full height of the panel body, with
@@ -522,9 +622,9 @@ export function avatarColumnBox(vw: number, vh: number): AvatarColumnBox {
 // is tied to the launcher WIDTH: a wider canvas with this left alone silently
 // hands the margin back.
 export const AVATAR_LAUNCHER_HIT_INSET_PCT = 26
-// The class ChatWidget applies. Same arrangement as avatarSizeClass(): the JIT
-// needs the literal, so the number is written twice and a test parses this
-// string back to hold the two together. ChatWidget must CONSUME this rather
+// The class ChatWidget applies. Same arrangement as AVATAR_LAUNCHER_SIZE_CLASS:
+// the JIT needs the literal, so the number is written twice and a test parses
+// this string back to hold the two together. ChatWidget must CONSUME this rather
 // than spell its own copy, or the constant above pins nothing.
 export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[26%] right-[26%]'
 
@@ -539,21 +639,19 @@ export const AVATAR_LAUNCHER_BODY_FRACTION = 0.3775
 export const AVATAR_BUBBLE_RIGHT_PX = 273
 export const AVATAR_BUBBLE_RIGHT_CLASS = 'right-[273px]'
 
-// The Tailwind class for each box. Tailwind's JIT only sees arbitrary values
-// written as complete literals, so the numbers cannot be interpolated from the
-// constants above — which is exactly why this lives next to them and is pinned
-// by a test that parses these strings back. Editing one of these widths without
-// editing its constant used to be silent; now it is red.
-// 97.71vh = 80vh × 684/560: the vh branch has to carry the ratio too, or a
-// short viewport would shrink her height while keeping full width and hand her
-// a metre of empty room beside her arms.
+// The Tailwind class for the launcher box. Tailwind's JIT only sees arbitrary
+// values written as complete literals, so the numbers cannot be interpolated
+// from AVATAR_CANVAS_LAUNCHER — which is exactly why this lives next to it and
+// is pinned by a test that parses the string back. Editing this width without
+// editing the constant used to be silent; now it is red.
 //
-// The column is absent on purpose: its box is avatarColumnBox() arithmetic
-// applied as an inline style, so it has no literal here to keep in step.
-export function avatarSizeClass(placement: AvatarPlacement): string {
-  if (placement === 'beside-panel') return 'h-[min(560px,80vh)] w-[min(752px,107.43vh)]'
-  return 'h-[280px] w-[376px]'
-}
+// The docked box and the column have no entry here on purpose: both are
+// arithmetic (avatarDockedBox, avatarColumnBox) applied as an inline style,
+// because both answer to the viewport and no literal can. That leaves one class
+// rather than a per-placement function, which is why this is a constant now —
+// the remaining placements are the launcher and 'hidden', and 'hidden' takes
+// display:none from ChatWidget and never paints.
+export const AVATAR_LAUNCHER_SIZE_CLASS = 'h-[280px] w-[376px]'
 
 // Metres of world per canvas pixel — the number that must match across
 // placements for her to look the same size in each.

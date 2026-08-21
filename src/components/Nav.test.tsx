@@ -4,6 +4,7 @@ import { MemoryRouter, useNavigate } from 'react-router-dom'
 import Nav from './Nav'
 import { inlineNavTakesOver } from './navBreakpoint'
 import { LocaleProvider } from '../i18n'
+import { NAV_Z_CLASS } from './Nav'
 
 function NavDriver() {
   const navigate = useNavigate()
@@ -37,6 +38,17 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks() })
 
 describe('Nav presence', () => {
+
+  // The nav's layer is exported so the docked chat avatar can be held below it:
+  // her canvas reaches the top of a short window now and `stretch` puts a hand
+  // inside this bar. ChatWidget's test compares the two CONSTANTS, so without
+  // this the nav could be dropped to a lower class here and that comparison
+  // would still pass while the hand went back on top of the links.
+  it('renders at the layer it exports', () => {
+    renderNav()
+    const nav = document.querySelector('nav') as HTMLElement
+    expect(nav.className.split(' ')).toContain(NAV_Z_CLASS)
+  })
   // The bar used to hide itself while the hero intro owned the screen. That
   // hero and its intro state were removed on 2026-08-14, so the only thing left
   // to pin is that nothing hides the bar on arrival.

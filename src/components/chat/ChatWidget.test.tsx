@@ -3,10 +3,17 @@ import { act, render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
+import { NAV_Z_CLASS } from '../Nav'
+import { UNIVERSE_LABEL_Z_CLASS } from '../UniverseSection'
 import {
+  AVATAR_DOCKED_Z_CLASS,
   avatarColumnBox,
   avatarColumnRightInset,
+  avatarDockedBox,
+  CHAT_BESIDE_PANEL_RIGHT,
+  CHAT_DOCK_BOTTOM_CLASS,
   CHAT_PANEL_HEIGHT_CLASS,
+  CHAT_PANEL_HEIGHT_PX,
 } from './avatarMode'
 import { VOICE_LINES } from './avatarVoice'
 import { PAT_EMOTION } from './avatarMode'
@@ -28,6 +35,10 @@ vi.mock('./avatarMode', async (importOriginal) => ({
 type PatCallback = (kind: 'happy' | 'annoyed') => void
 const avatarStub = vi.hoisted(() => ({
   onPat: null as PatCallback | null,
+  // The box the widget handed the guide on its last render. The real guide
+  // turns this into the canvas's inline style; the stub renders nothing, so
+  // this is where a wiring assertion has to read it.
+  sizeStyle: null as { width: number; height: number } | null,
   handle: {
     setMode: vi.fn(),
     setActive: vi.fn(),
@@ -63,10 +74,12 @@ vi.mock('./AvatarGuide', async () => {
       onLoaded,
       onPat,
       onHandle,
+      sizeStyle,
     }: {
       onLoaded?: () => void
       onPat?: (kind: 'happy' | 'annoyed') => void
       onHandle?: (handle: unknown) => void
+      sizeStyle?: { width: number; height: number }
     }) => {
       // The widget keeps the corner EMPTY until the guide reports its first
       // frame, so a stub that never loads takes the launcher button with it.
@@ -77,6 +90,7 @@ vi.mock('./AvatarGuide', async () => {
         onHandle?.(avatarStub.handle)
       }, [onLoaded, onHandle])
       avatarStub.onPat = onPat ?? null
+      avatarStub.sizeStyle = sizeStyle ?? null
       return null
     },
   }
@@ -432,17 +446,105 @@ describe('ChatWidget fullscreen', () => {
     })
   })
 
-  // The avatar canvas is sized to the docked panel so she stands exactly as
-  // tall as it. avatarMode.ts holds the two Tailwind literals to each other,
-  // but only if the panel actually renders the shared one — spelling
-  // 'h-[min(560px,80vh)]' inline here again would satisfy that unit test while
-  // letting the panel drift away from her on the next edit. This drives the
-  // real component and reads what reached the DOM.
+  // The avatar canvas is sized FROM the docked panel's height, so she stands as
+  // tall as it. avatarMode.ts holds that class and the px/vh pair
+  // avatarDockedBox computes with to each other, but only if the panel actually
+  // renders the shared one — spelling 'h-[min(560px,80vh)]' inline here again
+  // would satisfy that unit test while letting the panel drift away from her on
+  // the next edit. This drives the real component and reads what reached the DOM.
   it('renders the docked panel at the height the avatar is sized to', async () => {
     const user = userEvent.setup()
     render(<ChatWidget />)
     await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     expect(screen.getByRole('dialog').className).toContain(CHAT_PANEL_HEIGHT_CLASS)
+  })
+
+  // The other half of that pair, and the half the unit test cannot see: the
+  // widget has to FEED avatarDockedBox's answer to the canvas as an inline
+  // style. Leaving the old Tailwind literal in place here would keep every
+  // avatarMode test green while rendering her at the panel's height again —
+  // which is the bug this replaced. So this reads the box off the DOM and
+  // insists it is the computed one, taller than the panel by her headroom.
+  it('sizes the docked avatar canvas from avatarDockedBox, not the panel class', async () => {
+    const vw = 1920
+    const vh = 1080
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: vw,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerHeight', { value: vh, configurable: true })
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(min-width: 768px)' || query === '(min-width: 880px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia,
+    )
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      ((kind: string) =>
+        kind === 'webgl2'
+          ? { getExtension: () => null }
+          : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    )
+
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+
+    // The gate's 400ms latch means she is not mounted on the first frame, and
+    // the wrapper that carries her is the one hung off CHAT_BESIDE_PANEL_RIGHT.
+    await waitFor(
+      () => {
+        const wrapper = [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
+          el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
+        )
+        expect(wrapper).toBeTruthy()
+        expect(avatarStub.sizeStyle).not.toBeNull()
+      },
+      { timeout: 2000 },
+    )
+
+    const box = avatarDockedBox(vh)
+    expect(avatarStub.sizeStyle).toEqual({ width: box.w, height: box.h })
+
+    // The box is only the height of the panel if the two hang off the SAME
+    // bottom edge, and avatarDockedBox subtracts that offset from the viewport
+    // to keep her canvas on screen. Both elements must therefore carry the
+    // shared class rather than each spelling its own.
+    const wrapper = [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
+      el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
+    ) as HTMLElement
+    for (const el of [wrapper, screen.getByRole('dialog')]) {
+      expect(el.className.split(' ')).toContain(CHAT_DOCK_BOTTOM_CLASS)
+    }
+
+    // Her canvas now reaches the top of a short window, and `stretch` puts a
+    // hand just below its top edge, so it overlaps the nav bar. Equal z-indexes
+    // are settled by DOM order and the widget mounts last, which drew that hand
+    // OVER the nav links until 2026-08-21. Reading Nav's own class rather than a
+    // copy of it is what makes raising the nav's layer show up here.
+    const layer = (cls: string) => {
+      const m = /^z-(?:(\d+)|\[(\d+)\])$/.exec(cls)
+      if (!m) throw new Error(`unparseable z class: ${cls}`)
+      return Number(m[1] ?? m[2])
+    }
+    expect(wrapper.className.split(' ')).toContain(AVATAR_DOCKED_Z_CLASS)
+    // Strictly between the two, with no ties: a tie is settled by DOM order,
+    // which is the invisible rule that put her hand on the nav to begin with.
+    // The skills labels are the other side of it — they sit in the same root
+    // stacking context (their section opens none) and used to be z-50 too, so
+    // lowering her alone would only have moved the overlap onto them.
+    expect(layer(AVATAR_DOCKED_Z_CLASS)).toBeLessThan(layer(NAV_Z_CLASS))
+    expect(layer(AVATAR_DOCKED_Z_CLASS)).toBeGreaterThan(layer(UNIVERSE_LABEL_Z_CLASS))
+    // Taller than the panel, which is the point: the excess is the empty
+    // headroom the raised hand needs, hanging above the panel's top edge.
+    expect(box.h).toBeGreaterThan(CHAT_PANEL_HEIGHT_PX * 1.2)
   })
 
   // avatarMode.test.ts proves avatarColumnRightInset lands her body on the

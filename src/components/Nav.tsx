@@ -11,6 +11,15 @@ import {
   type StringKey,
 } from '../i18n'
 
+// The nav is site chrome and sits above the page at this layer. It is exported
+// because the docked avatar has to stay BELOW it: her canvas grew past the top
+// of the screen on 2026-08-21 so that her figure could match the chat panel's
+// height, and `stretch` puts a hand 43px below the canvas top — inside this bar
+// on any window under ~800px tall. Equal z-indexes are decided by DOM order and
+// the widget mounts after the nav, so without the two being held apart a raised
+// hand is painted over the nav links. See AVATAR_DOCKED_Z_CLASS.
+export const NAV_Z_CLASS = 'z-50'
+
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
 const NAV_SECTIONS = ['about', 'skills', 'experience', 'projects', 'blog'] as const
@@ -121,7 +130,7 @@ export default function Nav() {
     <nav
       ref={navRef}
       aria-label={t('nav.mainAriaLabel')}
-      className="fixed top-0 left-0 right-0 z-50 border-b backdrop-blur-md"
+      className={`fixed top-0 left-0 right-0 ${NAV_Z_CLASS} border-b backdrop-blur-md`}
       style={{
         transition: 'background-color 300ms ease, border-color 300ms ease',
         borderColor: scrolledPastHero || menuOpen ? 'var(--color-border)' : 'transparent',
