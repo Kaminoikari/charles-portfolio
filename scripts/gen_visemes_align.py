@@ -161,10 +161,11 @@ def locale_of(clip_key: str) -> str:
     """Which vowel table a clip's text needs.
 
     Matched on a suffix that allows a generation number, because clip keys carry
-    one: the English is `-en2`, and the Mandarin is `-zh2` except for the three
-    lines re-recorded again on 2026-08-21, which are `-zh3`. A re-recorded clip
-    has to take a new cache key, and it takes it one clip at a time, so the
-    number here is matched rather than enumerated. The previous version tested
+    one: the English is `-en2`, and the Mandarin set holds several generations
+    at once because a re-recorded clip has to take a new cache key and takes it
+    one clip at a time. The number here is therefore matched rather than
+    enumerated — listing the current generations would go stale the next time a
+    single clip is re-cut. The previous version tested
     `endswith('-zh')` and fell through to English for anything else, so the
     rename to `-zh2` would have run en_vowels over Chinese text — which finds no
     [aeiouy] clusters in 你好, emits an empty track for every clip, and reports

@@ -4,8 +4,8 @@
 # 34kbps — so the new locales weigh the same per second as the old ones and no
 # player has to deal with two formats.
 #
-# 24kHz IS a downgrade for the zh2 set, and deliberately so. seed-vc's default
-# model emits 22.05kHz, which this encode used to sit just above; the
+# 24kHz IS a downgrade for the Mandarin clips, and deliberately so. seed-vc's
+# default model emits 22.05kHz, which this encode used to sit just above; the
 # F0-conditioned model these were rebuilt on emits 44.1kHz, so everything over
 # 12kHz is discarded here. Kept anyway: one format across the catalogue is worth
 # more than the top octave of a 2-second interaction cue, and doubling the
@@ -15,8 +15,8 @@
 # that comes out. That was originally to dodge AAC-in-MP4 encoder priming: the
 # clip that shipped as mika-intro-1-zh2 measured ~96ms longer under ffprobe than
 # it played under Chrome, where `audio.duration` matched the wav (8.406s vs
-# 8.41s). Re-measured on the -zh3 clips that replaced it on 2026-08-21, ffprobe
-# and the source wav now agree to within 1ms, so this encode is not adding that
+# 8.41s). Re-measured on the clips that replaced it on 2026-08-21, ffprobe and
+# the source wav now agree to within 1ms, so this encode is not adding that
 # offset any more.
 #
 # Timing off the wav stays correct either way, and it is the safer of the two

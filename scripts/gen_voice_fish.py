@@ -19,7 +19,10 @@
 # Usage:
 #   . <somewhere>/fish.env
 #   python3 scripts/gen_voice_fish.py --zh-voice <id> --en-voice <id>
-#   python3 scripts/gen_voice_fish.py --zh-voice <id> --only mika-intro-1-zh3
+#   python3 scripts/gen_voice_fish.py --zh-voice <id> --only <clip-key>
+#
+# Clip keys come from voice_lines.py; they carry a generation number, so copy
+# the one you want from that table rather than from here.
 import argparse
 import base64
 import json

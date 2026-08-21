@@ -59,12 +59,22 @@ describe('voiceLinesFor', () => {
     // /avatar/* is immutable-cached, so reusing either old name would have
     // served the old audio to everyone who had already heard it.
     //
-    // The generation is per CLIP, not per locale: three Mandarin lines were
-    // re-recorded again hours after the set shipped and took -zh3, while the
-    // other 22 stayed on the takes the owner had already approved. The three
-    // are listed here rather than imported from the source so that changing
-    // the mapping has to be a deliberate edit in two places.
-    const ZH3 = ['mika-intro-1-zh3.m4a', 'mika-suggest-1-zh3.m4a', 'mika-suggest-2-zh3.m4a']
+    // The generation is per CLIP, not per locale: the Mandarin lines listed
+    // below were re-cut after the set shipped, while the rest stayed on the
+    // takes the owner had already approved. intro-1 went one further than the
+    // others, to -zh4, on a new take and a pitch drop rather than any change
+    // of wording.
+    //
+    // They are listed here rather than imported from the source so that
+    // changing the mapping has to be a deliberate edit in two places, and
+    // matched on "anything that is not -zh2" so a fifth generation cannot slip
+    // in unlisted.
+    const RECUT = [
+      'mika-bye-1-zh3.m4a',
+      'mika-intro-1-zh4.m4a',
+      'mika-suggest-1-zh3.m4a',
+      'mika-suggest-2-zh3.m4a',
+    ]
     const localised = (table: Record<string, string[]>) =>
       Object.entries(table)
         .filter(([cue]) => cue !== 'giggle') // wordless: shared, asserted below
@@ -75,11 +85,11 @@ describe('voiceLinesFor', () => {
     }
     const zh = localised(VOICE_LINES_ZH)
     for (const clip of zh) {
-      expect(clip.endsWith('-zh2.m4a') || clip.endsWith('-zh3.m4a'), clip).toBe(true)
+      expect(/-zh\d+\.m4a$/.test(clip), clip).toBe(true)
     }
     expect(
-      zh.filter((clip) => clip.endsWith('-zh3.m4a')).map((clip) => clip.split('/').pop()!).sort(),
-    ).toEqual(ZH3)
+      zh.filter((clip) => !clip.endsWith('-zh2.m4a')).map((clip) => clip.split('/').pop()!).sort(),
+    ).toEqual(RECUT)
   })
 
   it('shares the wordless giggle pool across locales instead of duplicating it', () => {

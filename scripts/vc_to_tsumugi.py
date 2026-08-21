@@ -43,13 +43,45 @@
 #   python3 scripts/vc_to_tsumugi.py \
 #     --seed-vc <dir> --source-dir build/voice-fish \
 #     --target build/voice-ref/ref.wav --out build/voice-vc
+#
+# Pitch correction comes from voice_lines.PITCH_SHIFT, keyed by clip and locale,
+# so a whole-batch re-run reproduces what shipped without anyone remembering a
+# flag, and keeps doing so after a clip takes a new generation suffix.
+# --semi-tone-shift overrides it, which is what auditioning a new correction
+# looks like.
 import argparse
 import glob
 import os
+import re
 import shutil
 import subprocess
 import sys
 import types
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from voice_lines import PITCH_SHIFT  # noqa: E402
+
+
+def pitch_for(clip_key: str, override: float | None) -> float:
+    """Semitones to transpose this clip by, after auto_f0_adjust.
+
+    The table is the default so that re-running the batch reproduces the
+    shipped audio; the flag exists to try a DIFFERENT correction, which is a
+    deliberate act and reads like one on the command line.
+
+    Looked up with the generation number stripped and the locale kept, so a
+    correction survives the clip being re-cut without leaking across locales.
+    Keying on the full clip key would put the silence back — `mika-intro-1-zh5`
+    would miss a row written for -zh4 and get 0.0, which is the one clip that
+    must not — and dropping the locale as well would hand the English and
+    Japanese recordings of the same line a correction measured off the Mandarin
+    one. Audition keys (the -a-/-q- names used for candidates) reduce to
+    something of their own and match nothing, so trying a new correction means
+    passing the flag.
+    """
+    if override is not None:
+        return override
+    return PITCH_SHIFT.get(re.sub(r'(-(?:zh|en))\d*$', r'\1', clip_key), 0.0)
 
 
 def float32_f0(f0_fn):
@@ -81,6 +113,15 @@ def main() -> None:
     ap.add_argument('--diffusion-steps', type=int, default=30)
     ap.add_argument('--inference-cfg-rate', type=float, default=0.7)
     ap.add_argument('--only', help='one clip key')
+    ap.add_argument('--semi-tone-shift', type=float, default=None,
+                    help='transpose the output this many semitones, applied AFTER '
+                         'auto_f0_adjust; negative lowers her. Overrides '
+                         'voice_lines.PITCH_SHIFT, which is where the corrections '
+                         'that SHIPPED live. Needed at all because auto_f0_adjust '
+                         'aligns every clip to the REFERENCE median (351Hz here), '
+                         'which lands some clips higher than the owner wants: intro-1 '
+                         'came out at 359Hz against the 327Hz of a clip he had already '
+                         'accepted.')
     ap.add_argument('--device', default='cpu', choices=['cpu', 'auto'],
                     help="'cpu' because the F0-conditioned vocoder cannot run on "
                          "MPS; 'auto' is only useful on a CUDA box")
@@ -173,7 +214,8 @@ def main() -> None:
             length_adjust=1.0,  # 1.0 keeps the stage-1 timings valid
             inference_cfg_rate=args.inference_cfg_rate,
             # Both True on purpose; the header explains what False cost us.
-            f0_condition=True, auto_f0_adjust=True, semi_tone_shift=0,
+            f0_condition=True, auto_f0_adjust=True,
+            semi_tone_shift=pitch_for(clip_key, args.semi_tone_shift),
             checkpoint=None, config=None, fp16=False,  # MPS is unreliable in fp16
         )
         inference.main(call)
@@ -194,7 +236,9 @@ def main() -> None:
         after = probe(final)
         drift = abs(after - before)
         flag = '' if drift <= 0.05 else f'  DRIFT {drift * 1000:.0f}ms'
-        print(f'  {clip_key:<22} {before:5.2f}s -> {after:5.2f}s{flag}', flush=True)
+        applied = pitch_for(clip_key, args.semi_tone_shift)
+        shift = f'  {applied:+.2f}st' if applied else ''
+        print(f'  {clip_key:<22} {before:5.2f}s -> {after:5.2f}s{shift}{flag}', flush=True)
 
     shutil.rmtree(scratch, ignore_errors=True)
 

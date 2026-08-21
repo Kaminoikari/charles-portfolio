@@ -13,6 +13,8 @@
 #   scripts/gen_voice_ref.py     ja     -> the seed-vc timbre reference, which
 #                                          picks five JA_LINES keys by name
 #
+import re
+
 # CLIP KEYS ARE CACHE KEYS. /avatar/* is served immutable, so changing what a
 # clip SAYS means changing its key, not just its bytes (avatar-guide.md).
 
@@ -103,10 +105,13 @@ GIGGLE_LINES = [
 # takes natural, so their fish.audio audio was carried over rather than rolled
 # again — a re-roll can only lose a take that was already approved.
 #
-# Three lines went to a THIRD generation later the same day, on the owner's ear
-# again. They are the only `-zh3` keys; the other 22 are still `-zh2`, and
-# avatarVoice.ts carries the per-clip mapping that lets one set hold two
-# generations.
+# Several lines were then re-cut on the owner's ear, one of them twice, so this
+# set no longer shares one suffix: the keys below carry whichever generation
+# each clip is on, and avatarVoice.ts's ZH_REGEN is the mapping that lets them
+# differ. Read the table itself for the current spread — an earlier draft of
+# this comment stated the tally and got it wrong, which is what writing the
+# tally down buys you. Nothing forces a set to share one suffix, and forcing it
+# would mean re-rolling approved takes.
 #
 #   suggest-1 had both of its 喔 wrong, in opposite directions: the opening one
 #   was heard as 「嗚喔」, which is 喔 carrying wo1/wu1 as heteronyms beside its
@@ -124,6 +129,36 @@ GIGGLE_LINES = [
 #   how the pronunciation is spelled. Do not "correct" this back to 醬 without
 #   re-recording the clip. Charles was also not English enough; both were fixed
 #   by the same take, which is why the line was not re-rolled for each.
+#
+#   bye-1 joined them afterwards. Its first 掰 was arriving as a fragment the
+#   owner heard as 「阿掰」: the alignment gave it 0.08s against the second one's
+#   0.48s. Eight re-rolls of the same words put it at 0.08s seven times and
+#   0.16s once, so the compression is what the model does with that
+#   reduplication rather than a bad draw, and 拜拜 behaved identically. Splitting
+#   the pair with punctuation worked, but the owner rejected all three of those
+#   takes and asked for English instead, which is the same move greet-3 made
+#   when 「哈囉」 became 「Hello」.
+#
+#   intro-1 then went to a FOURTH generation without a single character
+#   changing, which is why its line below is identical to what -zh3 shipped.
+#   Two faults, both outside the wording:
+#
+#     Pitch. The owner heard the converted clip as too high, and it was: stage
+#     2's auto_f0_adjust transposes every clip onto the REFERENCE median, so a
+#     source that sat low gets over-lifted. This one came from 229Hz and landed
+#     at 359Hz — above the reference itself (351Hz) and above a clip he had
+#     already accepted (327Hz). The correction that ships for it is -1.5, which
+#     puts it at 331Hz; it lives in PITCH_SHIFT below rather than in a flag, and
+#     vc_to_tsumugi.py's --semi-tone-shift only overrides it.
+#
+#     Charles was not intelligible. The name got 0.24s here against 0.48s in
+#     greet-5 and 0.32s in greet-1, both of which he accepted. Re-rolling the
+#     unchanged sentence produced 0.40s, so the short one was the draw rather
+#     than the sentence: 「Charles 作品集」 is not too crowded to say. Candidates
+#     that padded the name (「Charles 的作品集」, a comma after it) and the
+#     transliteration 查爾斯 were all synthesized and all passed over — 查爾斯
+#     would also have been the only clip calling him something other than what
+#     greet-1 and greet-5 call him.
 ZH_LINES = [
     ('mika-greet-1-zh2', '嗨嗨！關於 Charles 的事，什麼都可以問我喔！'),
     ('mika-greet-2-zh2', '有叫我嗎？什麼問題我都答得出來喲！'),
@@ -143,13 +178,13 @@ ZH_LINES = [
     ('mika-full-2-zh2', '好戲從現在才開始喲！'),
     ('mika-suggest-1-zh3', '哦？你要問那個喔！'),
     ('mika-suggest-2-zh3', '這個選得好欸！'),
-    ('mika-bye-1-zh2', '掰掰，下次見！'),
+    ('mika-bye-1-zh3', 'Bye bye～，下次見！'),
     ('mika-bye-2-zh2', '隨時都可以叫我喔！'),
     ('mika-done-1-zh2', '大概就是這樣，還可以嗎？'),
     ('mika-done-2-zh2', '還想問什麼，儘管說喔！'),
     ('mika-error-1-zh2', '欸？我好像出了點狀況，可以再試一次嗎？'),
     ('mika-huff-1-zh2', '夠了啦！摸太多次了欸！'),
-    ('mika-intro-1-zh3', '初次見面！我是 Mika 獎！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
+    ('mika-intro-1-zh4', '初次見面！我是 Mika 獎！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
 ]
 
 # English. These REPLACE the カタカナ英語 set, which was Japanese phonetics
@@ -189,3 +224,46 @@ EN_LINES = [
     ('mika-intro-1-en2', "Nice to meet you! I'm Mika! I'm the AI assistant who shows you around Charles's portfolio. His background, his projects, ask me anything!"),
 ]
 
+# Stage-2 pitch correction, in semitones, applied AFTER seed-vc's
+# auto_f0_adjust (scripts/vc_to_tsumugi.py reads this table).
+#
+# This is DATA rather than a flag someone remembers to type, because forgetting
+# a flag fails silently. auto_f0_adjust transposes every clip onto the
+# REFERENCE median, so a clip whose source sat low comes out over-lifted:
+# intro-1 came from 229Hz and landed at 359Hz, above the reference itself
+# (351Hz) and above a clip the owner had already accepted (327Hz). Re-running
+# the batch without the correction puts it back at 359Hz while the viseme
+# tracks, the catalogue and the file names all still agree — nothing goes red,
+# and only the pitch is wrong.
+#
+# Keyed by clip name and LOCALE but without the generation number, which is
+# the second half of the same problem. `mika-intro-1-zh4` would stop matching
+# the day intro-1 is re-cut as -zh5, and `.get()` would quietly hand back 0.0
+# for exactly the clip that needs the correction. Dropping the locale too would
+# break it the other way: `mika-intro-1` also prefixes the English and Japanese
+# recordings of that line, which come from different sources at different
+# pitches and must not inherit this. `mika-intro-1-zh` survives re-cuts and
+# still names one recording; the assert below refuses a name matching none.
+#
+# A clip absent from here gets no correction, which is the right default —
+# most sources land close enough to the reference to need nothing.
+#
+# Defined at the end of the file because the guard below reads every LINES
+# table, and only zh/en clips ever reach the lookup: the ja set is VOICEVOX
+# output that never goes through voice conversion.
+PITCH_SHIFT = {
+    'mika-intro-1-zh': -1.5,
+}
+
+# Every clip key reduces to a base name, so the guard covers all three locales
+# even though only zh-TW needs a correction today. A typo here would otherwise
+# be the third silent failure in the same place: `.get()` hands back 0.0 for a
+# name nothing matches, and no output looks wrong until someone listens.
+_CLIP_BASES = {
+    re.sub(r'(-(?:zh|en))\d*$', r'\1', key)
+    for key, *_ in (*JA_LINES, *GIGGLE_LINES, *ZH_LINES, *EN_LINES)
+}
+assert set(PITCH_SHIFT) <= _CLIP_BASES, (
+    f'PITCH_SHIFT names clips that do not exist: '
+    f'{sorted(set(PITCH_SHIFT) - _CLIP_BASES)}'
+)
