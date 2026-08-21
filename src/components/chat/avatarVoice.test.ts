@@ -2,7 +2,14 @@ import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { VOICE_LINES, VOICE_LINES_EN, pickVoiceLine, playVoiceCue, voiceLinesFor } from './avatarVoice'
+import {
+  VOICE_LINES,
+  VOICE_LINES_EN,
+  VOICE_LINES_ZH,
+  pickVoiceLine,
+  playVoiceCue,
+  voiceLinesFor,
+} from './avatarVoice'
 
 // Minimal Audio stand-in: jsdom's play() is unimplemented, and these tests
 // only care about WHICH clip was constructed and whether play() was invoked.
@@ -27,32 +34,46 @@ afterEach(() => {
 const PUBLIC_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../../public')
 
 describe('voiceLinesFor', () => {
-  it('serves the katakana-English set to the en locale and Japanese to the rest', () => {
+  it('serves each locale its own recordings, and Japanese to ja', () => {
+    // zh-TW used to fall through to the Japanese set for want of anything
+    // better. It has its own recordings since 2026-08-21, so a fall-through
+    // here is now a regression rather than the design.
     expect(voiceLinesFor('en')).toBe(VOICE_LINES_EN)
+    expect(voiceLinesFor('zh-TW')).toBe(VOICE_LINES_ZH)
     expect(voiceLinesFor('ja')).toBe(VOICE_LINES)
-    expect(voiceLinesFor('zh-TW')).toBe(VOICE_LINES)
   })
 
-  it('keeps the two catalogues in lockstep: same cues, same clip counts', () => {
-    expect(Object.keys(VOICE_LINES_EN).sort()).toEqual(Object.keys(VOICE_LINES).sort())
-    for (const cue of Object.keys(VOICE_LINES) as Array<keyof typeof VOICE_LINES>) {
-      expect(VOICE_LINES_EN[cue].length).toBe(VOICE_LINES[cue].length)
+  it('keeps all three catalogues in lockstep: same cues, same clip counts', () => {
+    for (const table of [VOICE_LINES_EN, VOICE_LINES_ZH]) {
+      expect(Object.keys(table).sort()).toEqual(Object.keys(VOICE_LINES).sort())
+      for (const cue of Object.keys(VOICE_LINES) as Array<keyof typeof VOICE_LINES>) {
+        expect(table[cue].length).toBe(VOICE_LINES[cue].length)
+      }
     }
   })
 
-  it('every spoken English clip is a distinct -en file so caches never collide', () => {
-    for (const [cue, clips] of Object.entries(VOICE_LINES_EN)) {
-      if (cue === 'giggle') continue // wordless: shared, asserted below
-      for (const clip of clips) expect(clip.endsWith('-en.m4a')).toBe(true)
+  it('gives each locale a distinct filename so caches never collide', () => {
+    // -en2, not -en: the English lines were re-recorded on 2026-08-21 and
+    // /avatar/* is immutable-cached, so reusing the old name would have served
+    // the old katakana audio to everyone who had already heard it.
+    for (const [suffix, table] of [['-en2', VOICE_LINES_EN], ['-zh', VOICE_LINES_ZH]] as const) {
+      for (const [cue, clips] of Object.entries(table)) {
+        if (cue === 'giggle') continue // wordless: shared, asserted below
+        for (const clip of clips) expect(clip.endsWith(`${suffix}.m4a`)).toBe(true)
+      }
     }
   })
 
   it('shares the wordless giggle pool across locales instead of duplicating it', () => {
-    // A laugh has no language. Mapping it through the -en rule would demand
-    // five byte-identical -en files, and shipping none of them would point the
-    // en locale at clips that do not exist.
-    expect(VOICE_LINES_EN.giggle).toEqual(VOICE_LINES.giggle)
-    for (const clip of VOICE_LINES_EN.giggle) expect(clip.endsWith('-en.m4a')).toBe(false)
+    // A laugh has no language. Mapping it through the suffix rule would demand
+    // byte-identical copies per locale, and shipping none of them would point
+    // those locales at clips that do not exist.
+    for (const table of [VOICE_LINES_EN, VOICE_LINES_ZH]) {
+      expect(table.giggle).toEqual(VOICE_LINES.giggle)
+      for (const clip of table.giggle) {
+        expect(clip.endsWith('-en2.m4a') || clip.endsWith('-zh.m4a')).toBe(false)
+      }
+    }
   })
 })
 
@@ -60,7 +81,9 @@ describe('pickVoiceLine', () => {
   it('picks deterministically from the locale catalogue via the injected rng', () => {
     expect(pickVoiceLine('greet', 'ja', () => 0)).toBe(VOICE_LINES.greet[0])
     expect(pickVoiceLine('greet', 'en', () => 0)).toBe(VOICE_LINES_EN.greet[0])
-    expect(pickVoiceLine('bye', 'zh-TW', () => 0.99)).toBe(VOICE_LINES.bye[VOICE_LINES.bye.length - 1])
+    expect(pickVoiceLine('bye', 'zh-TW', () => 0.99)).toBe(
+      VOICE_LINES_ZH.bye[VOICE_LINES_ZH.bye.length - 1],
+    )
   })
 
   it('covers all nine interaction cues, each with at least one clip', () => {
@@ -80,7 +103,7 @@ describe('pickVoiceLine', () => {
   })
 
   it('every catalogued clip lives under the immutable-cached /avatar/ path', () => {
-    for (const table of [VOICE_LINES, VOICE_LINES_EN]) {
+    for (const table of [VOICE_LINES, VOICE_LINES_EN, VOICE_LINES_ZH]) {
       for (const clips of Object.values(table)) {
         for (const clip of clips) expect(clip.startsWith('/avatar/voice/')).toBe(true)
       }
@@ -94,7 +117,7 @@ describe('pickVoiceLine', () => {
     // Vite rewrites that form into a served asset URL, which existsSync can
     // never find, and the test would then "fail" on clips that do ship.
     const missing: string[] = []
-    for (const table of [VOICE_LINES, VOICE_LINES_EN]) {
+    for (const table of [VOICE_LINES, VOICE_LINES_EN, VOICE_LINES_ZH]) {
       for (const clips of Object.values(table)) {
         for (const clip of clips) {
           if (!existsSync(join(PUBLIC_DIR, clip))) missing.push(clip)

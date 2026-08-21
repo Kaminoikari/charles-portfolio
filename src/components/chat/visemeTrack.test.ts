@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { sampleViseme } from './visemeTrack'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
-import { VOICE_LINES, VOICE_LINES_EN } from './avatarVoice'
+import { VOICE_LINES, VOICE_LINES_EN, VOICE_LINES_ZH } from './avatarVoice'
 
 const TRACK = [
   [0.1, 0],
@@ -31,12 +31,26 @@ describe('sampleViseme', () => {
 describe('VOICE_VISEMES catalogue lockstep', () => {
   const clipKey = (path: string) => path.split('/').pop()!.replace(/\.m4a$/, '')
 
-  it('has a track for every shipped clip in both locale catalogues', () => {
-    for (const table of [VOICE_LINES, VOICE_LINES_EN]) {
+  it('has a track for every shipped clip in all three locale catalogues', () => {
+    for (const table of [VOICE_LINES, VOICE_LINES_EN, VOICE_LINES_ZH]) {
       for (const clips of Object.values(table)) {
         for (const clip of clips) {
           expect(VOICE_VISEMES[clipKey(clip)], `missing track for ${clip}`).toBeDefined()
         }
+      }
+    }
+  })
+
+  it('never repeats the same viseme on consecutive steps', () => {
+    // A step that changes nothing is dead data, and it is what a generator bug
+    // looks like: the zh/en builder collapses runs of one vowel, and an early
+    // version could re-expose a duplicate while resolving two steps landing in
+    // the same frame.
+    for (const [key, track] of Object.entries(VOICE_VISEMES)) {
+      for (let i = 1; i < track.length; i++) {
+        expect(track[i][1], `${key} step ${i} repeats viseme ${track[i][1]}`).not.toBe(
+          track[i - 1][1],
+        )
       }
     }
   })

@@ -186,8 +186,9 @@ function Message({ message, onRetry }: { message: ChatMessage; onRetry?: () => v
 
 export default function ChatWidget() {
   const t = useT()
-  // Voice clips are locale-keyed: en gets つむぎ reading katakana-English,
-  // ja/zh-TW share the Japanese set (see avatarVoice.ts for the why).
+  // Voice clips are locale-keyed. Since 2026-08-21 every locale hears its own
+  // recordings, all in the one voice; before that ja and zh-TW shared the
+  // Japanese set (avatarVoice.ts carries how one voice speaks three languages).
   const { locale } = useLocale()
   // Size state lives in useChatMode; the conversation lives in useChatStream
   // right here. Both stay mounted across every size change, which is what
@@ -374,7 +375,7 @@ export default function ChatWidget() {
     el.addEventListener('error', done)
     // Performance beats ride the same "a line actually started" condition as
     // the latch above. Lip sync keys the viseme timeline by clip filename —
-    // the same key both locale catalogues and the generator share.
+    // the same key all three locale catalogues and the generator share.
     const clipKey = (el.src.split('/').pop() ?? '').replace(/\.m4a$/, '')
     const handle = avatarHandleRef.current
     handle?.setSpeech(el, VOICE_VISEMES[clipKey] ?? null)

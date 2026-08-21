@@ -1,11 +1,17 @@
-// Mika's voice lines — short pre-recorded VOICEVOX clips for interaction
-// moments, NOT a TTS of the answers (that trade-off is recorded in
-// docs/plans/avatar-guide.md). One voice in every locale on purpose — the
-// voice is the character's identity: ja/zh-TW hear her Japanese lines, en
-// hears the same voice reading katakana English (see VOICE_LINES_EN below).
+// Mika's voice lines — short pre-recorded clips for interaction moments, NOT a
+// TTS of the answers (that trade-off is recorded in docs/plans/avatar-guide.md).
+// One voice in every locale on purpose, because the voice is the character's
+// identity; since 2026-08-21 each locale hears that voice speaking its OWN
+// language rather than Japanese (see the note above VOICE_LINES_EN).
 //
-// Voice library: VOICEVOX:春日部つむぎ — commercial use permitted with credit;
-// the credit line lives in the site footer and the plan doc records the terms.
+// Voice library: VOICEVOX:春日部つむぎ, commercial use permitted with credit.
+// There is no credit LINE anywhere — ContactFooter has none. The name does
+// appear on the site, inside the body of the 2026-08-13 changelog entry, which
+// visitors can read on /changelog in all three locales; whether a mention in a
+// changelog discharges the obligation is the owner's call. The zh-TW and en
+// clips add two more names: public fish.audio voices supply the accent before
+// conversion to つむぎ's timbre, and neither is named anywhere. Raised with the
+// owner on 2026-08-21; docs/plans/avatar-guide.md holds the terms.
 //
 // Playback rules (see the project's hard-won iOS notes in CLAUDE.md):
 //   - every play starts inside a tap-completed gesture (launcher tap, send
@@ -82,30 +88,53 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
   error: ['/avatar/voice/mika-error-1.m4a'],
 }
 
-// The en locale gets the same つむぎ voice reading katakana-transliterated
-// English (カタカナ英語 — the accent is part of the gyaru charm, and it is the
-// only legal way to keep ONE voice across languages: VOICEVOX has no non-JA
-// phonemes, and cloning the voice into another engine is barred by the
-// character licence). zh-TW keeps the Japanese lines: Mandarin cannot be
-// approximated with kana at all. Same filenames with an -en suffix, one per
-// Japanese clip, so the two catalogues stay in lockstep.
+// zh-TW and en get their OWN recordings in the same voice (2026-08-21).
+//
+// What they used to get: en heard カタカナ英語, English words spelled in kana so
+// VOICEVOX could pronounce them at all, and zh-TW heard the Japanese clips
+// untranslated, because Mandarin cannot be approximated with kana even badly.
+// Both were consequences of one engine limit — VOICEVOX has no non-Japanese
+// phonemes — and the owner ruled on 2026-08-21 that the katakana English had
+// stopped reading as charm and started reading as unintelligible.
+//
+// How the voice crosses languages now: fish.audio synthesizes each line with a
+// NATIVE-accent voice, and seed-vc converts that recording's timbre to hers.
+// Cloning her voice and asking it to speak Mandarin was tried first and is what
+// does not work — a clone of a Japanese-only reference has no evidence of how
+// this speaker forms Mandarin or English, so it transfers Japanese phonemes and
+// you get the same unintelligibility from a different direction. Splitting the
+// job in two is the point: the accent comes from a speaker who has one, the
+// timbre comes from her. docs/plans/avatar-guide.md carries the pipeline and
+// the licence position.
+//
+// The English set is `-en2`, not `-en`. /avatar/* is served immutable, so a
+// clip's NAME is its cache key and re-recording under a shipped name leaves
+// visitors on the old audio forever. The `-en` files are gone; nothing points
+// at them.
 //
 // Laughter is the exception: えへへ is the same sound in every language, so the
-// giggle pool is SHARED verbatim rather than duplicated into byte-identical
-// -en files. Any cue added here must be wordless for the same reason.
+// giggle pool is SHARED verbatim rather than duplicated into three byte-
+// identical copies. Any cue added here must be wordless for the same reason.
 const LOCALE_NEUTRAL_CUES: readonly VoiceCue[] = ['giggle']
 
-export const VOICE_LINES_EN: Record<VoiceCue, string[]> = Object.fromEntries(
-  Object.entries(VOICE_LINES).map(([cue, clips]) => [
-    cue,
-    LOCALE_NEUTRAL_CUES.includes(cue as VoiceCue)
-      ? clips
-      : clips.map((clip) => clip.replace(/\.m4a$/, '-en.m4a')),
-  ]),
-) as Record<VoiceCue, string[]>
+function localised(suffix: string): Record<VoiceCue, string[]> {
+  return Object.fromEntries(
+    Object.entries(VOICE_LINES).map(([cue, clips]) => [
+      cue,
+      LOCALE_NEUTRAL_CUES.includes(cue as VoiceCue)
+        ? clips
+        : clips.map((clip) => clip.replace(/\.m4a$/, `${suffix}.m4a`)),
+    ]),
+  ) as Record<VoiceCue, string[]>
+}
+
+export const VOICE_LINES_EN = localised('-en2')
+export const VOICE_LINES_ZH = localised('-zh')
 
 export function voiceLinesFor(locale: Locale): Record<VoiceCue, string[]> {
-  return locale === 'en' ? VOICE_LINES_EN : VOICE_LINES
+  if (locale === 'en') return VOICE_LINES_EN
+  if (locale === 'zh-TW') return VOICE_LINES_ZH
+  return VOICE_LINES
 }
 
 export function pickVoiceLine(cue: VoiceCue, locale: Locale, rng: () => number = Math.random): string {

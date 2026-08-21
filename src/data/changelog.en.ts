@@ -20,6 +20,41 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-trilingual-voice',
+    date: '2026-08-21',
+    title: `Mika speaks Mandarin now, and her English has stopped being spelled in kana`,
+    tags: ['feature', 'technical'],
+    body: [
+      `Her Mandarin voice did not exist before this. Visitors to the Chinese site heard the Japanese clips untranslated, and the English site heard English words spelled out in katakana, which was the only thing VOICEVOX could do with them because it has no non-Japanese phonemes. All three sites now have their own 24 lines, in the same voice.`,
+      { kind: 'heading', text: `The obvious approach was tried first, and failed a listening test` },
+      `The first attempt cloned her voice into a multilingual model and asked it to speak Mandarin. The Mandarin came out Japanese-accented and the English came out hard to understand. This was not a settings problem: every second of the cloning reference is Japanese, so the model has no evidence of how THIS speaker forms Mandarin or English, and falls back on Japanese phonetics. A discriminating test confirmed where the fault sat, since the same model speaks perfectly ordinary Mandarin when it is not wearing the clone.`,
+      { kind: 'heading', text: `Buy the accent from someone who has one, buy the timbre from her` },
+      `The shipped approach buys the two halves of a spoken line separately. A native Taiwanese-Mandarin voice reads the script first, which settles the articulation and the intonation and leaves the timbre wrong. Voice conversion then rewrites the timbre frame by frame into hers without touching what was articulated. It is the one operation that separates those two things.`,
+      {
+        kind: 'table',
+        columns: [`Stage`, `What runs`, `What it buys`],
+        rows: [
+          ['1', `Synthesis with a native-accent voice, timings captured with it`, `Correct articulation`],
+          ['2', `Voice conversion`, `Her voice`],
+          ['3', `Timings become a viseme track`, `Frame-accurate lip sync`],
+          ['4', `Encode to 24kHz AAC`, `Parity with the existing clips`],
+        ],
+      },
+      { kind: 'heading', text: `The lip sync did not degrade with it` },
+      `Her mouth is driven by a pre-baked timeline, and that timeline came from the per-vowel timings VOICEVOX reported as it synthesized each clip. Replacing the synthesizer should have cost us that data. The replacement turns out to report it too, per syllable for Chinese and per word for English. Voice conversion preserves duration exactly, measured clip by clip, so a timing taken before the conversion still points at the same syllable after it.`,
+      `Those timings describe the text, though, and text and audio part company at the edges: on a quarter of the clips the sound carries on for up to 415ms after the last word the synthesizer claims to have finished, and two lines open on a sound that has no vowel to shape (an "Mm" and an 「嗯」), so her mouth waited up to half a second before moving. So the first and last mouth shape in every clip are pinned to the measured start and end of the audio itself. All 48 now open and close within a millisecond of when she is actually audible.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '48', label: `newly recorded lines` },
+          { value: '0ms', label: `timing drift through conversion` },
+          { value: '3', label: `languages, one voice` },
+        ],
+      },
+      `The laughter is untouched. The three head-pat giggles carry no language, so all three sites still play the same files.`,
+    ],
+  },
+  {
     id: 'mika-motion-capture',
     date: '2026-08-19',
     title: `Mika's gestures are motion capture now, and a test measures every pose before you see it`,

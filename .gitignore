@@ -30,3 +30,8 @@ dist-ssr
 # Local visual-verification screenshots (delivered, not version-controlled)
 docs/shot-*.png
 .env*
+
+# Voice pipeline intermediates (scripts/gen_voice_fish.py -> vc_to_tsumugi.py).
+# Only the packed public/avatar/voice/*.m4a ship; the wavs are reproducible.
+build/
+scripts/__pycache__/
