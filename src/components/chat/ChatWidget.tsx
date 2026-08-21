@@ -50,6 +50,11 @@ const CUE_PERFORMANCE: Record<
   // detected the stroke, so that a pat still reads when the giggle is skipped
   // or refused. Adding one here would double it.
   giggle: { emotion: PAT_EMOTION.happy },
+  // The third pat in a row. Same shape as the giggle: AvatarGuide already put
+  // 怒り on her face when it counted the pat, and re-applying it here just
+  // renews the hold so the face lasts as long as the complaint does. No
+  // gesture — the wiggle is the happy beat's, and she is not happy.
+  huff: { emotion: PAT_EMOTION.annoyed },
   // The >< face from the owner's expression sheet: an answer landing is her
   // best moment, and plain happy was already taken by the greetings. Weight 1
   // is load-bearing — the engine multiplies cue weight by the recipe's share,
@@ -216,6 +221,10 @@ export default function ChatWidget() {
   // streaming answers.
   const [voiceSpeaking, setVoiceSpeaking] = useState(false)
   const voiceRef = useRef<HTMLAudioElement | null>(null)
+  // Which cue the element in voiceRef is playing. Only the yielding rule below
+  // reads it: what a new cue is allowed to interrupt depends on what is already
+  // sounding, and the element itself only knows its filename.
+  const voiceCueRef = useRef<VoiceCue | null>(null)
   // Live engine handle (null until the engine mounts, and again after
   // teardown) for the imperative performance beats: lip-sync attachment,
   // expressions, gestures. Optional-chained everywhere — the voice works
@@ -350,12 +359,17 @@ export default function ChatWidget() {
     // pat that lands mid-sentence would cut her off to laugh, which reads as
     // an interruption rather than a reaction — and the pat still gets its
     // visible beat (happy face, head wiggle) from AvatarGuide either way.
-    if (
-      (cue === 'done' || cue === 'error' || cue === 'giggle') &&
-      current &&
-      !current.paused &&
-      !current.ended
-    ) {
+    const speaking = current && !current.paused && !current.ended
+    if ((cue === 'done' || cue === 'error' || cue === 'giggle') && speaking) {
+      return false
+    }
+    // The complaint yields to a LINE but talks over a laugh. Three pats in a row
+    // is a rapid gesture, and the giggles it starts with are 0.7-0.9s each, so
+    // holding huff behind them is how the beat the owner asked for comes out
+    // silent exactly when the visitor pats fastest. Cutting a giggle short to
+    // complain is not an interruption either — it is the reaction escalating,
+    // which is what the third pat means.
+    if (cue === 'huff' && speaking && voiceCueRef.current !== 'giggle') {
       return false
     }
     current?.pause() // never overlap two lines
@@ -370,6 +384,7 @@ export default function ChatWidget() {
     }
     const el = playVoiceCue(cue, locale, undefined, () => done())
     voiceRef.current = el
+    voiceCueRef.current = cue
     setVoiceSpeaking(true)
     el.addEventListener('ended', done)
     el.addEventListener('error', done)
@@ -724,10 +739,13 @@ export default function ChatWidget() {
         onHandle={(h) => {
           avatarHandleRef.current = h
         }}
-        // A pat is a real interaction, so she answers it out loud — with a
-        // laugh, never a line. The annoyed third pat is deliberately silent.
+        // A pat is a real interaction, so she answers it out loud: a laugh for
+        // the first two, a complaint for the third. The complaint is a LINE,
+        // which the earlier "she laughs, she never talks back to a pat" rule
+        // ruled out and the owner overrode on 2026-08-21 — the annoyed beat was
+        // silent before that and read as nothing happening.
         onPat={(kind) => {
-          if (kind === 'happy') speakCue('giggle')
+          speakCue(kind === 'happy' ? 'giggle' : 'huff')
         }}
         onLoaded={() => setAvatarLoaded(true)}
         // Releases the held-back capsule: with the corner kept empty during a

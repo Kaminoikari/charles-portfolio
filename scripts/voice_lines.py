@@ -43,6 +43,12 @@ JA_LINES = [
     ('mika-done-1', 'こんな感じ！どう？', 1.0),
     ('mika-done-2', '他にも聞いてね！', 1.0),
     ('mika-error-1', 'あれ？ちょっと失敗しちゃった…もっかい試して？', 1.0),
+    # Third head pat in a row. The first two earn a wordless giggle, which is
+    # what lets that pool ship untranslated; this one is a LINE, so it is
+    # localised like every other line. The owner asked on 2026-08-21 for the
+    # annoyed beat to be audible, and a grunt shared across three locales would
+    # have been the one place she speaks nobody's language.
+    ('mika-huff-1', 'もー！さわりすぎだよ！', 1.0),
     ('mika-intro-1', 'はじめまして！あたしミカ！チャールズの作品集を案内する、エーアイアシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！', 1.1),
 ]
 
@@ -87,6 +93,7 @@ ZH_LINES = [
     ('mika-done-1-zh', '大概就是這樣，還可以嗎？'),
     ('mika-done-2-zh', '還想問什麼，儘管說喔！'),
     ('mika-error-1-zh', '欸？我好像出了點狀況，可以再試一次嗎？'),
+    ('mika-huff-1-zh', '夠了啦！摸太多次了欸！'),
     ('mika-intro-1-zh', '初次見面！我是 Mika 醬！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
 ]
 
@@ -123,6 +130,7 @@ EN_LINES = [
     ('mika-done-1-en2', "That's about it! How was that?"),
     ('mika-done-2-en2', "Ask me anything else, okay?"),
     ('mika-error-1-en2', "Huh? Something went wrong. Could you try again?"),
+    ('mika-huff-1-en2', "Hey! That's enough already!"),
     ('mika-intro-1-en2', "Nice to meet you! I'm Mika! I'm the AI assistant who shows you around Charles's portfolio. His background, his projects, ask me anything!"),
 ]
 

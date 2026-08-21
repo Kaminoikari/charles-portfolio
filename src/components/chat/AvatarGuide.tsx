@@ -7,11 +7,28 @@ import { useEffect, useRef } from 'react'
 import {
   AVATAR_FRAMING_DEFAULT,
   PAT_EMOTION,
+  avatarHeadBand,
   type AvatarFraming,
   type AvatarMode,
   type AvatarPlacement,
 } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
+
+// Head-pat pacing. The streak window is what makes three pats read as "in a
+// row" rather than as three unrelated pats over a coffee break; the two
+// cooldowns differ because the gestures do. A stroke is continuous, so without
+// a long cooldown one sweep would fire over and over.
+//
+// The tap gap is deliberately SHORT. It exists to collapse a duplicate
+// pointerup into one pat, not to police how fast the visitor may pat: a
+// deliberate second tap is a second pat, and three quick ones have to reach the
+// annoyed beat, which is the whole point of the gesture. At 350ms it did not —
+// a steady 300ms tap rhythm landed only two pats in three, so the third pat
+// needed a fifth tap. 120ms is below any rhythm a hand produces on purpose.
+const PAT_STREAK_LIMIT = 3
+const PAT_STREAK_WINDOW_MS = 20000
+const PAT_STROKE_COOLDOWN_MS = 8000
+const PAT_TAP_COOLDOWN_MS = 120
 
 // _webp = same model repacked with EXT_texture_webp textures (15.4MB→5.5MB,
 // scripts/compress_vrm_webp.py). /avatar/* is cached immutable, so any
@@ -152,11 +169,19 @@ export default function AvatarGuide({
     handleRef.current?.setFraming(f.distance, f.lookAtY)
   }, [framingDistance, framingLookAtY])
 
-  // Head pats, desktop (fine-pointer) only: a stroke back and forth across her
-  // head (≥3 direction flips within 2s) earns a happy head wiggle and a
-  // bashful giggle (えへへ, via onPat → ChatWidget). Listening is
-  // passive on document — nothing here can swallow the click that opens the
-  // panel, and a hidden placement (zero-size rect) is ignored.
+  // Head pats, two ways in.
+  //
+  // A TAP on her head (mouse or touch) is the plain one, added 2026-08-21 on
+  // the owner's ask. A STROKE back and forth across it (≥3 direction flips
+  // within 2s, fine pointers only) is the older one and still earns the same
+  // reaction. Either way the third in a row turns the happy wiggle into 怒り:
+  // petting a cat past its patience. The streak is SHARED, so three of any mix
+  // gets there.
+  //
+  // Both listen passively on document rather than on a hit target of their own.
+  // The canvas is pointer-events-none and must stay that way — anything here
+  // that could swallow a click would be swallowing the click that opens the
+  // panel. A hidden placement (zero-size rect) is ignored for the same reason.
   //
   // Cursor tracking used to live here too: she turned her head toward the
   // pointer wherever it went on the page. Removed 2026-08-14 on the owner's
@@ -164,85 +189,117 @@ export default function AvatarGuide({
   // demanding attention rather than offering it. Her look now comes only from
   // the chat state (idle sweep / listening / speaking) and her own idle acts.
   useEffect(() => {
-    if (!window.matchMedia('(pointer: fine)').matches) return
     let patDir = 0
     let patFlips = 0
     let patWindowStart = 0
-    let patCooldownUntil = 0
-    // Third pat in quick succession and the wiggle turns into 怒り: petting a
-    // cat past its patience. Streak resets once the visitor lets 20s pass.
+    let strokeCooldownUntil = 0
+    let tapCooldownUntil = 0
     let patStreak = 0
     let lastPatAt = 0
     let lastX = 0
-    const onMove = (e: PointerEvent) => {
-      const h = handleRef.current
+
+    // Where her head is depends on the camera, so the band is derived from the
+    // framing rather than written down. It used to be two literal canvas
+    // percentages measured against lookAtY 1.17; raising the frame to 1.32 on
+    // 2026-08-20 moved her head down inside the canvas and left the band
+    // pointing at the wrong part of it, with nothing to notice. avatarMode.ts
+    // owns that arithmetic now and its test holds it to both placements.
+    const onHead = (clientX: number, clientY: number): boolean => {
       const canvas = canvasRef.current
-      if (!h || !canvas) return
+      if (!canvas) return false
       const r = canvas.getBoundingClientRect()
-      if (r.width === 0) return
-      const now = performance.now()
-      // Projected against the VRM's own skeleton in the waist-up framing, her
-      // hair top sits at 12.5% of the canvas HEIGHT, chin ~38%, neck 42.8%.
-      // The band is 12–40%: a little slack above the hair, and stopping short
-      // of the neck so a stroke across her collarbone is not a head pat.
-      //
-      // Both axes are fractions of the HEIGHT, measured from her centre line.
-      // Height is what fixes her scale (metres-per-pixel divides by it), while
-      // width only buys margin for her arms — so a fraction of the width would
-      // make the band grow with the margin. It did: the 2026-08-14 widening
-      // took it from ±54px to ±73.5px, 3.7× her head, before this was tied to
-      // the right axis. 0.19 = the 54px it was at the original 280px box.
+      if (r.width === 0) return false
+      const band = avatarHeadBand(framingRef.current ?? AVATAR_FRAMING_DEFAULT, {
+        w: r.width,
+        h: r.height,
+      })
       const midX = r.left + r.width / 2
-      const headHalfBand = r.height * 0.19
-      const inHead =
-        e.clientX > midX - headHalfBand &&
-        e.clientX < midX + headHalfBand &&
-        e.clientY > r.top + r.height * 0.12 &&
-        e.clientY < r.top + r.height * 0.4
-      if (inHead) {
-        const dir = Math.sign(e.clientX - lastX)
-        if (dir !== 0) {
-          if (patDir !== 0 && dir !== patDir) {
-            if (patFlips === 0) patWindowStart = now
-            if (now - patWindowStart >= 2000) {
-              patFlips = 0
-              patWindowStart = now
-            }
-            patFlips++
-            if (patFlips >= 3 && now > patCooldownUntil) {
-              patFlips = 0
-              patCooldownUntil = now + 8000
-              patStreak = now - lastPatAt < 20000 ? patStreak + 1 : 1
-              lastPatAt = now
-              // She reacts here and reports the pat upward; the sound (a
-              // bashful giggle on the happy beat) is ChatWidget's to play.
-              // Plan F's "pats never speak" still holds in the sense that
-              // matters: she laughs, she never says a line — the owner asked
-              // for the laugh on 2026-08-20.
-              if (patStreak >= 3) {
-                patStreak = 0
-                h.setEmotion(...PAT_EMOTION.annoyed)
-                // The third pat stays silent on purpose: a giggle under the
-                // 怒り face would cancel out the one beat that says "enough".
-                onPatRef.current?.('annoyed')
-              } else {
-                h.setEmotion(...PAT_EMOTION.happy)
-                h.playGesture('wiggle')
-                onPatRef.current?.('happy')
-              }
-            }
-          }
-          patDir = dir
-        }
+      const halfBand = r.width * band.halfWidth
+      return (
+        clientX > midX - halfBand &&
+        clientX < midX + halfBand &&
+        clientY > r.top + r.height * band.top &&
+        clientY < r.top + r.height * band.bottom
+      )
+    }
+
+    // She reacts here and reports the pat upward; the SOUND is ChatWidget's to
+    // play, because it owns the one audio element and the no-overlap rule. The
+    // face and the body beat stay here so a pat still reads when the sound is
+    // skipped or the browser refuses it.
+    // Returns whether the pat LANDED. The engine handle arrives from a dynamic
+    // import, so a gesture during the load has nothing to perform on; callers
+    // must not spend their cooldown on one, or a stroke over her head before
+    // the engine is ready would do nothing AND eat the next eight seconds.
+    const landPat = (now: number): boolean => {
+      const h = handleRef.current
+      if (!h) return false
+      patStreak = now - lastPatAt < PAT_STREAK_WINDOW_MS ? patStreak + 1 : 1
+      lastPatAt = now
+      if (patStreak >= PAT_STREAK_LIMIT) {
+        patStreak = 0
+        h.setEmotion(...PAT_EMOTION.annoyed)
+        onPatRef.current?.('annoyed')
       } else {
+        h.setEmotion(...PAT_EMOTION.happy)
+        h.playGesture('wiggle')
+        onPatRef.current?.('happy')
+      }
+      return true
+    }
+
+    const onTap = (e: PointerEvent) => {
+      // While she IS the launcher, every click on her belongs to the button
+      // that opens the panel. Giving her head a second meaning there would
+      // spend the visitor's way in on a giggle.
+      //
+      // The reach that leaves is a WIDTH, not a pointer type: the docked
+      // placement needs ≥880px and the fullscreen column ≥768px
+      // (avatarPlacement), and neither asks what kind of pointer you have. A
+      // narrow phone therefore never reaches a tap pat, because she is only
+      // ever its launcher; an iPad, or the same phone turned landscape, does.
+      if (placementRef.current === 'launcher') return
+      const now = performance.now()
+      if (now < tapCooldownUntil || !onHead(e.clientX, e.clientY)) return
+      if (landPat(now)) tapCooldownUntil = now + PAT_TAP_COOLDOWN_MS
+    }
+
+    const onMove = (e: PointerEvent) => {
+      const now = performance.now()
+      if (!onHead(e.clientX, e.clientY)) {
         patDir = 0
         patFlips = 0
+        lastX = e.clientX
+        return
+      }
+      const dir = Math.sign(e.clientX - lastX)
+      if (dir !== 0) {
+        if (patDir !== 0 && dir !== patDir) {
+          if (patFlips === 0) patWindowStart = now
+          if (now - patWindowStart >= 2000) {
+            patFlips = 0
+            patWindowStart = now
+          }
+          patFlips++
+          if (patFlips >= 3 && now > strokeCooldownUntil) {
+            patFlips = 0
+            if (landPat(now)) strokeCooldownUntil = now + PAT_STROKE_COOLDOWN_MS
+          }
+        }
+        patDir = dir
       }
       lastX = e.clientX
     }
-    document.addEventListener('pointermove', onMove, { passive: true })
+
+    // pointerup, not pointerdown: it is a tap-COMPLETED gesture, which is what
+    // iOS requires before it will let the reaction make a sound at all (the
+    // project's audio rules in CLAUDE.md).
+    document.addEventListener('pointerup', onTap, { passive: true })
+    const fine = window.matchMedia('(pointer: fine)').matches
+    if (fine) document.addEventListener('pointermove', onMove, { passive: true })
     return () => {
-      document.removeEventListener('pointermove', onMove)
+      document.removeEventListener('pointerup', onTap)
+      if (fine) document.removeEventListener('pointermove', onMove)
     }
   }, [])
 

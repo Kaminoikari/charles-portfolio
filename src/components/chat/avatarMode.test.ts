@@ -17,6 +17,9 @@ import {
   avatarColumnBox,
   avatarColumnRightInset,
   avatarGuideEnabled,
+  AVATAR_HEAD_BOTTOM_Y,
+  AVATAR_HEAD_TOP_Y,
+  avatarHeadBand,
   avatarMetresPerPixel,
   avatarPlacement,
   avatarSizeClass,
@@ -40,6 +43,7 @@ import {
   stepHeadAim,
 } from './avatarMode'
 import type { AvatarFraming } from './avatarMode'
+import { FACE_BOX } from './rigProbe'
 
 describe('deriveAvatarMode', () => {
   it('is idle with empty input and no stream', () => {
@@ -291,10 +295,9 @@ describe('avatar camera framing', () => {
   // it stops being the head-to-knee crop the owner chose.
   it('composes the column tight to her head, keeping the knee', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_COLUMN)
-    // Her hair top is 1.582 — above it, but by centimetres rather than the
-    // default's 0.14m.
-    expect(span.top).toBeGreaterThan(1.582)
-    expect(span.top - 1.582).toBeLessThan(0.05)
+    // Above her hair top, but by centimetres rather than the default's 0.14m.
+    expect(span.top).toBeGreaterThan(AVATAR_HEAD_TOP_Y)
+    expect(span.top - AVATAR_HEAD_TOP_Y).toBeLessThan(0.05)
     // Knee is ~0.40, mid-thigh ~0.62: the cut stays just below the knee.
     expect(span.bottom).toBeLessThan(0.45)
     expect(span.bottom).toBeGreaterThan(0.38)
@@ -329,10 +332,64 @@ describe('avatar camera framing', () => {
     expect(aspect(AVATAR_CANVAS_DOCKED)).toBeCloseTo(aspect(AVATAR_CANVAS_LAUNCHER), 2)
   })
 
+  // The head-pat hit test used to carry the band as two hardcoded canvas
+  // percentages, measured once against lookAtY 1.17. Raising the frame to 1.32
+  // on 2026-08-20 moved her head down inside the canvas and slid the band off
+  // the part of it a pat lands on, silently: still her crown in the waist-up
+  // frame, her chin and mouth in the column, and drifting again on the next
+  // dolly. These hold the band to the FRAMING instead, in both placements.
+  // AVATAR_HEAD_BOTTOM_Y is a hand-copy of a measurement that lives somewhere
+  // else. Replacing a literal with a constant in the file that reads it is not
+  // convergence: re-measuring the model updates rigProbe's box and would leave
+  // the band's chin behind, silently, which is the exact class of drift the
+  // band was rewritten to stop. This is the only thing that would notice.
+  it('takes her chin from the same box rigProbe measures fingers against', () => {
+    expect(AVATAR_HEAD_BOTTOM_Y).toBe(FACE_BOX.min.y)
+  })
+
+  describe('avatarHeadBand', () => {
+    const cases = [
+      ['waist-up', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_DOCKED],
+      ['column', AVATAR_FRAMING_COLUMN, { w: 800, h: 745 }],
+    ] as const
+
+    for (const [name, framing, canvas] of cases) {
+      // Fractions of the canvas, so the test speaks the same units the hit test
+      // does, and converting back to metres is what proves they mean her head.
+      const yOf = (fraction: number) => {
+        const span = avatarViewSpan(framing)
+        return span.top - (span.top - span.bottom) * fraction
+      }
+
+      it(`puts the ${name} band on her head, from hair top to chin`, () => {
+        const band = avatarHeadBand(framing, canvas)
+        // Top edge clears her hair without floating far above it.
+        expect(yOf(band.top)).toBeGreaterThan(AVATAR_HEAD_TOP_Y)
+        expect(yOf(band.top) - AVATAR_HEAD_TOP_Y).toBeLessThan(0.06)
+        // Bottom edge reaches her chin and stops short of her collarbone.
+        expect(yOf(band.bottom)).toBeCloseTo(AVATAR_HEAD_BOTTOM_Y, 3)
+        expect(yOf(band.bottom)).toBeGreaterThan(1.2)
+      })
+
+      it(`keeps the ${name} band inside the canvas and wider than her face`, () => {
+        const band = avatarHeadBand(framing, canvas)
+        expect(band.top).toBeGreaterThanOrEqual(0)
+        expect(band.bottom).toBeLessThanOrEqual(1)
+        expect(band.bottom).toBeGreaterThan(band.top)
+        // Her face is ±0.092m; the band has to cover the hair around it and
+        // stay well inside the arm room, which is where her hands swing.
+        const metresFromCentre = band.halfWidth * canvas.w
+          * avatarMetresPerPixel(framing, canvas.h)
+        expect(metresFromCentre).toBeGreaterThan(0.092)
+        expect(metresFromCentre).toBeLessThan(AVATAR_ARM_ROOM)
+      })
+    }
+  })
+
   it('keeps the launcher framing where the head has clearance', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
-    // Her hair top is at y≈1.582; anything below that crops her head.
-    expect(span.top).toBeGreaterThan(1.6)
+    // Anything below her hair top crops her head.
+    expect(span.top).toBeGreaterThan(AVATAR_HEAD_TOP_Y)
     // And the launcher canvas is the one the default framing was composed for.
     expect(AVATAR_CANVAS_LAUNCHER.h).toBe(280)
   })

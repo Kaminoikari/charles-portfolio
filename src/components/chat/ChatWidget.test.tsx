@@ -568,14 +568,17 @@ describe('ChatWidget fullscreen', () => {
       expect(avatarStub.handle.playGesture).not.toHaveBeenCalled()
     })
 
-    it('keeps the annoyed third pat silent', async () => {
+    it('answers the annoyed third pat with the complaint, not the giggle', async () => {
       const pat = await mountPattable()
 
       act(() => pat('annoyed'))
 
-      // A giggle under the 怒り face would cancel out the one beat that says
-      // "enough" — the third pat reacts with her face only.
-      expect(FakeAudio.created).toHaveLength(0)
+      // It used to be silent, which read as nothing happening. A laugh would be
+      // worse than silence here: it cancels out the one beat that says
+      // "enough", so the third pat gets its own line.
+      expect(FakeAudio.created).toHaveLength(1)
+      expect(FakeAudio.created[0].src).toContain('mika-huff-1')
+      expect(FakeAudio.created[0].src).not.toContain('giggle')
     })
 
     it('yields the giggle to a line she is already speaking', async () => {
@@ -587,6 +590,39 @@ describe('ChatWidget fullscreen', () => {
       // laugh again reads as an interruption, and the visible beat (face plus
       // head wiggle) has already landed inside AvatarGuide either way.
       act(() => pat('happy'))
+
+      expect(FakeAudio.created).toHaveLength(1)
+      expect(FakeAudio.created[0].pause).not.toHaveBeenCalled()
+    })
+
+    it('lets the complaint talk over a laugh, so a fast triple pat still sounds', async () => {
+      const pat = await mountPattable()
+      act(() => pat('happy'))
+      expect(FakeAudio.created).toHaveLength(1)
+
+      // Three pats in a row is a fast gesture and the giggles are under a
+      // second each. If the complaint queued behind them it would come out
+      // silent exactly when the visitor pats quickest, which is the beat this
+      // whole cue exists for.
+      act(() => pat('annoyed'))
+
+      expect(FakeAudio.created).toHaveLength(2)
+      expect(FakeAudio.created[1].src).toContain('mika-huff-1')
+      expect(FakeAudio.created[0].pause).toHaveBeenCalled()
+    })
+
+    it('still holds the complaint back while she is speaking a LINE', async () => {
+      const pat = await mountPattable()
+      // Opening the panel starts a real line; a pat landing on top of one must
+      // not cut her off, which is the rule the giggle has always followed and
+      // the only part of it talking over a laugh is meant to relax.
+      await act(async () => {
+        ;(document.querySelector('[data-own-focus-ring]') as HTMLElement).click()
+      })
+      expect(FakeAudio.created).toHaveLength(1)
+      expect(FakeAudio.created[0].src).not.toContain('mika-giggle')
+
+      act(() => pat('annoyed'))
 
       expect(FakeAudio.created).toHaveLength(1)
       expect(FakeAudio.created[0].pause).not.toHaveBeenCalled()

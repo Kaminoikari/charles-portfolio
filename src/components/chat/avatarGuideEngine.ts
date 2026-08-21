@@ -18,8 +18,10 @@
 //   - life: breathing, slow weight shift, eye saccades, 12% double blinks
 //
 // Perception & idle life (Batch 3, rebuilt 2026-08-19):
-//   - head-pat: AvatarGuide detects strokes across her head and triggers a
-//     happy wiggle — silent by design, and it never intercepts the click
+//   - head-pat: AvatarGuide detects a tap on her head, or a mouse stroke
+//     across it, and triggers a happy wiggle. It never intercepts the click.
+//     The sound is ChatWidget's: a giggle, or a complaint on the third pat in
+//     a row, which also swaps the wiggle for an annoyed face.
 //   - idle acts fire roughly every 5s of undisturbed idle and come from two
 //     pools. Two thirds are motion-capture clips (avatarMotions.ts); the rest
 //     are six procedural beats that lean the head and torso a few degrees

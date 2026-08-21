@@ -41,11 +41,19 @@ vi.mock('./avatarGuideEngine', () => ({
   },
 }))
 
-// Her launcher box, laid out at the origin: midX 188, so the head band is
-// x 134.8–241.2 (±0.19 × height) and y 33.6–112 (12%–40% of height).
+// Her launcher box, laid out at the origin: midX 188. avatarHeadBand() puts
+// her head at y 66–148 and x 150–226 in this box under the default framing;
+// the numbers below are inside and below that, and the band's own arithmetic
+// is held to her skeleton in avatarMode.test.ts rather than here.
 const RECT = { left: 0, top: 0, width: 376, height: 280 } as DOMRect
+const IN_HEAD_X = 188
 const IN_HEAD_Y = 70
 const OUTSIDE_HEAD_Y = 200
+
+function tap(x = IN_HEAD_X, y = IN_HEAD_Y) {
+  clock += 60
+  document.dispatchEvent(new MouseEvent('pointerup', { clientX: x, clientY: y }))
+}
 
 let clock = 0
 function stroke(xs: number[], y = IN_HEAD_Y) {
@@ -82,12 +90,17 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-async function mount(onPat: (kind: 'happy' | 'annoyed') => void) {
+async function mount(
+  onPat: (kind: 'happy' | 'annoyed') => void,
+  // Launcher by default because that is what the stroke tests below were
+  // written against. Taps are the placement-sensitive gesture, so they say so.
+  placement: 'launcher' | 'beside-panel' = 'launcher',
+) {
   const onHandle = vi.fn()
   render(
     <AvatarGuide
       mode="idle"
-      placement="launcher"
+      placement={placement}
       sizeClass="h-[280px] w-[376px]"
       onPat={onPat}
       onHandle={onHandle}
@@ -122,7 +135,7 @@ describe('AvatarGuide head pats', () => {
     expect(onPat).not.toHaveBeenCalled()
   })
 
-  it('turns the third pat in quick succession into an annoyed, silent one', async () => {
+  it('turns the third pat in quick succession into an annoyed one', async () => {
     const onPat = vi.fn()
     await mount(onPat)
 
@@ -135,5 +148,117 @@ describe('AvatarGuide head pats', () => {
     expect(handle.setEmotion).toHaveBeenLastCalledWith(...PAT_EMOTION.annoyed)
     // The wiggle belongs to the happy beats only.
     expect(handle.playGesture).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('AvatarGuide head taps', () => {
+  it('answers a tap on her head with the same beat a stroke earns', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    tap()
+
+    expect(onPat).toHaveBeenCalledTimes(1)
+    expect(onPat).toHaveBeenCalledWith('happy')
+    expect(handle.setEmotion).toHaveBeenCalledWith(...PAT_EMOTION.happy)
+    expect(handle.playGesture).toHaveBeenCalledWith('wiggle')
+  })
+
+  it('leaves the launcher alone, where a click has to open the panel', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'launcher')
+
+    tap()
+
+    expect(onPat).not.toHaveBeenCalled()
+  })
+
+  it('ignores a tap below her head', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    tap(IN_HEAD_X, OUTSIDE_HEAD_Y)
+
+    expect(onPat).not.toHaveBeenCalled()
+  })
+
+  it('turns the third tap in a row into the annoyed one', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    for (let i = 0; i < 3; i++) {
+      tap()
+      clock += 400 // past the tap cooldown, far inside the 20s streak window
+    }
+
+    expect(onPat.mock.calls.map(([kind]) => kind)).toEqual(['happy', 'happy', 'annoyed'])
+    expect(handle.setEmotion).toHaveBeenLastCalledWith(...PAT_EMOTION.annoyed)
+  })
+
+  it('counts taps and strokes into ONE streak', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    stroke(BACK_AND_FORTH)
+    clock += 400
+    tap()
+    clock += 400
+    tap()
+
+    // Two taps alone would both be happy; it is the stroke before them that
+    // makes the second one the third pat.
+    expect(onPat.mock.calls.map(([kind]) => kind)).toEqual(['happy', 'happy', 'annoyed'])
+  })
+
+  it('collapses a duplicate pointerup into one pat', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    tap()
+    clock += 40 // faster than a hand taps on purpose
+    tap()
+
+    expect(onPat).toHaveBeenCalledTimes(1)
+  })
+
+  it('lets a deliberate tap rhythm reach the annoyed beat', async () => {
+    const onPat = vi.fn()
+    await mount(onPat, 'beside-panel')
+
+    // 300ms apart is a normal "pat pat pat". The gap used to be 350ms, which
+    // ate the middle tap and left three taps looking like two.
+    for (let i = 0; i < 3; i++) {
+      tap()
+      clock += 240 // + the 60ms `tap` advances = 300ms between taps
+    }
+
+    expect(onPat.mock.calls.map(([kind]) => kind)).toEqual(['happy', 'happy', 'annoyed'])
+  })
+
+  it('spends no cooldown on a pat the engine could not perform', async () => {
+    const onPat = vi.fn()
+    const onHandle = vi.fn()
+    // No `mount` here on purpose: it waits for the engine handle. The engine
+    // arrives through a dynamic import, so a gesture before it lands has
+    // nothing to perform on — and burning the 8s stroke cooldown there would
+    // silence every stroke for the eight seconds AFTER she is finally ready.
+    render(
+      <AvatarGuide
+        mode="idle"
+        placement="beside-panel"
+        sizeClass="h-[280px] w-[376px]"
+        onPat={onPat}
+        onHandle={onHandle}
+      />,
+    )
+    stroke(BACK_AND_FORTH)
+    expect(onPat).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(onHandle).toHaveBeenCalledWith(handle))
+    // One stroke, once she is ready. The clock has moved 300ms, far inside the
+    // cooldown the lost pat would have started.
+    stroke(BACK_AND_FORTH)
+
+    expect(onPat).toHaveBeenCalledWith('happy')
   })
 })

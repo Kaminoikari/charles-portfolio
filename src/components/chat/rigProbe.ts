@@ -629,7 +629,7 @@ export interface HeadVolume {
 // z -0.113–0.033, against a head bone resting at (0, 1.320, 0.005). An
 // ellipsoid inscribed in that box is smaller than the box everywhere off the
 // three axes, so a fingertip inside it is inside her face, never merely near it.
-const FACE_BOX = {
+export const FACE_BOX = {
   min: new THREE.Vector3(-0.092, 1.287, -0.113),
   max: new THREE.Vector3(0.092, 1.503, 0.033),
 }

@@ -20,12 +20,18 @@
 //     as the direct result of the visitor's own tap. (The site used to gate
 //     voice behind the ambient-music mute; that button was removed 2026-08-13
 //     and voice became unconditional.)
-//   - the one non-tap cue is the head-pat giggle (added 2026-08-20): it rides a
-//     pointermove stroke, which is not a tap-completed gesture. That costs it
-//     nothing, because head pats are desktop-only (pointer: fine) and desktop
-//     browsers allow audio once the visitor has interacted with the page at
-//     all; a visitor who pats before ever clicking gets the refusal handled the
-//     same way done/error already handle it (onBlocked, silent, face reset).
+//   - the head-pat cues (giggle, huff) reach her two ways. A TAP is a
+//     pointerup, which IS a tap-completed gesture, so nothing is owed there.
+//     A STROKE is pointermove, which is not — but the stroke path is behind
+//     `pointer: fine`, and desktop browsers allow audio once the visitor has
+//     interacted with the page at all. A visitor who strokes before ever
+//     clicking gets the refusal handled the way done/error already handle it
+//     (onBlocked, silent, face reset).
+//
+//     Taps are NOT desktop-only, which the previous version of this note said.
+//     Only the launcher placement is excluded (AvatarGuide gates on it), and
+//     the docked placement is gated on width alone — a coarse-pointer device
+//     at ≥880 CSS px, an iPad or a landscape phone, pats by tapping.
 
 import type { Locale } from '../../i18n'
 
@@ -36,6 +42,7 @@ export type VoiceCue =
   | 'fullscreen'
   | 'suggest'
   | 'giggle'
+  | 'huff'
   | 'bye'
   | 'done'
   | 'error'
@@ -68,7 +75,7 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
   fullscreen: ['/avatar/voice/mika-full-1.m4a', '/avatar/voice/mika-full-2.m4a'],
   // A suggested-question chip tap (replaces ack for that submit).
   suggest: ['/avatar/voice/mika-suggest-1.m4a', '/avatar/voice/mika-suggest-2.m4a'],
-  // Head pat (desktop only — see AvatarGuide). She used to answer a pat in
+  // First two head pats (see AvatarGuide for how one is detected). She used to answer a pat in
   // silence; the owner asked for the laugh on 2026-08-20, so a pat now earns a
   // bashful えへへ on top of the same happy face and head wiggle. Still not a
   // LINE: she laughs, she does not talk, which is what keeps the pool usable
@@ -78,6 +85,12 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
     '/avatar/voice/mika-giggle-2.m4a',
     '/avatar/voice/mika-giggle-3.m4a',
   ],
+  // Third head pat in a row. Unlike the giggle this one is a LINE, so it is
+  // localised like every other line: the annoyed beat used to be silent, and
+  // the owner asked on 2026-08-21 for it to be audible. A wordless grunt would
+  // have been the cheaper answer and the wrong one — she would have been the
+  // only character on the site who complains in nobody's language.
+  huff: ['/avatar/voice/mika-huff-1.m4a'],
   // The explicit minimise button (Escape closes silently by design).
   bye: ['/avatar/voice/mika-bye-1.m4a', '/avatar/voice/mika-bye-2.m4a'],
   // Answer stream finished / failed. These two cues fire OUTSIDE a tap gesture,

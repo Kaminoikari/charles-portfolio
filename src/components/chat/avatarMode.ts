@@ -578,6 +578,51 @@ export function avatarViewSpan(framing: AvatarFraming): { top: number; bottom: n
   return { top: framing.lookAtY + half, bottom: framing.lookAtY - half }
 }
 
+// ---- head band ------------------------------------------------------------
+// Where her HEAD is, for the head-pat hit test.
+//
+// Both numbers are the same measurements the framing comments above cite: her
+// hair top at 1.582, and the bottom of the Face.baked bounding box at 1.287,
+// which is her chin (rigProbe.ts's FACE_BOX carries that measurement and uses
+// it for fingers-inside-her-skull checks).
+export const AVATAR_HEAD_TOP_Y = 1.582
+export const AVATAR_HEAD_BOTTOM_Y = 1.287
+
+// A tap wants a forgiving target, so the band clears her hair by a few
+// centimetres rather than hugging it.
+const HEAD_BAND_SLACK_Y = 0.03
+
+// Her face box is ±0.092m and her hair adds 0.079m ABOVE it (1.503 -> 1.582);
+// assuming it adds about as much at the sides gives ~0.17m, and 0.15 keeps the
+// band inside that rather than reaching for the arm room on either side.
+const HEAD_BAND_HALF_WIDTH = 0.15
+
+/**
+ * The head-pat target for a framing, as fractions of the canvas box.
+ *
+ * `top` and `bottom` are measured DOWN from the canvas top edge; `halfWidth` is
+ * measured out from the horizontal centre, as a fraction of the canvas WIDTH.
+ *
+ * Derived rather than hardcoded on purpose. The hit test used to carry the band
+ * as two literal percentages measured against lookAtY 1.17; raising the frame
+ * to 1.32 on 2026-08-20 moved her head down inside the canvas, and the band was
+ * left pointing at the wrong part of it with nothing to notice: it kept the top
+ * half of her head in the waist-up frame and swapped to the bottom half in the
+ * column, and every future dolly would have moved it again.
+ */
+export function avatarHeadBand(
+  framing: AvatarFraming,
+  canvas: { w: number; h: number },
+): { top: number; bottom: number; halfWidth: number } {
+  const view = avatarViewSpan(framing)
+  const span = view.top - view.bottom
+  return {
+    top: Math.max(0, (view.top - (AVATAR_HEAD_TOP_Y + HEAD_BAND_SLACK_Y)) / span),
+    bottom: (view.top - AVATAR_HEAD_BOTTOM_Y) / span,
+    halfWidth: HEAD_BAND_HALF_WIDTH / (2 * avatarViewHalfWidth(framing, canvas)),
+  }
+}
+
 interface GateInputs {
   matchMedia: (q: string) => Pick<MediaQueryList, 'matches'>
   // A thunk, not a boolean: probing WebGL2 creates a real GL context, so it

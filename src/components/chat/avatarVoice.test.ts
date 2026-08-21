@@ -86,7 +86,7 @@ describe('pickVoiceLine', () => {
     )
   })
 
-  it('covers all nine interaction cues, each with at least one clip', () => {
+  it('covers all ten interaction cues, each with at least one clip', () => {
     const cues = [
       'intro',
       'greet',
@@ -94,6 +94,7 @@ describe('pickVoiceLine', () => {
       'fullscreen',
       'suggest',
       'giggle',
+      'huff',
       'bye',
       'done',
       'error',

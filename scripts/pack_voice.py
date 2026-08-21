@@ -39,12 +39,18 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument('--from', dest='src', required=True)
     ap.add_argument('--to', dest='dst', required=True)
+    ap.add_argument('--only', help='one clip key. The catalogue grows a line at a '
+                                   'time now, and the guard below refuses to rewrite '
+                                   'names that already shipped, so a whole-directory '
+                                   'run stops on the first old clip.')
     ap.add_argument('--dry-run', action='store_true')
     args = ap.parse_args()
 
     wavs = sorted(glob.glob(os.path.join(args.src, '*.wav')))
+    if args.only:
+        wavs = [w for w in wavs if os.path.basename(w)[:-len('.wav')] == args.only]
     if not wavs:
-        sys.exit(f'no wavs in {args.src}')
+        sys.exit(f'no wavs in {args.src}' + (f' matching {args.only}' if args.only else ''))
     os.makedirs(args.dst, exist_ok=True)
 
     total = 0
