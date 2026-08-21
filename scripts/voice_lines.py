@@ -102,6 +102,28 @@ GIGGLE_LINES = [
 # stochastic (temperature 0.7) and the owner had already judged the remaining 19
 # takes natural, so their fish.audio audio was carried over rather than rolled
 # again — a re-roll can only lose a take that was already approved.
+#
+# Three lines went to a THIRD generation later the same day, on the owner's ear
+# again. They are the only `-zh3` keys; the other 22 are still `-zh2`, and
+# avatarVoice.ts carries the per-clip mapping that lets one set hold two
+# generations.
+#
+#   suggest-1 had both of its 喔 wrong, in opposite directions: the opening one
+#   was heard as 「嗚喔」, which is 喔 carrying wo1/wu1 as heteronyms beside its
+#   default o1, and the owner wanted a plain rising 2nd tone. 哦 has no such
+#   alternative reading. The closing one wanted the stressed 4th tone that
+#   ack-1 was fixed by REMOVING last round, so it gets the exclamation mark
+#   ack-1 gave up. The question mark is what makes the opening rise: measured
+#   across 12 rolls it buys +9 to +15 semitones there, but it leaks that rise
+#   into the sentence-final particle, so only 2 takes in 24 landed both tones.
+#   The one that ships is the one the owner picked between those two.
+#
+#   intro-1 says 獎 where the character is 醬. This table is synthesis INPUT,
+#   never displayed — the bubble copy in i18n/strings/zh-TW.ts is what a visitor
+#   reads — and 醬 is jiang4 while the owner wants jiang3, so the homophone is
+#   how the pronunciation is spelled. Do not "correct" this back to 醬 without
+#   re-recording the clip. Charles was also not English enough; both were fixed
+#   by the same take, which is why the line was not re-rolled for each.
 ZH_LINES = [
     ('mika-greet-1-zh2', '嗨嗨！關於 Charles 的事，什麼都可以問我喔！'),
     ('mika-greet-2-zh2', '有叫我嗎？什麼問題我都答得出來喲！'),
@@ -119,15 +141,15 @@ ZH_LINES = [
     ('mika-ack-5-zh2', '嗯，那個喔！我現在就回答！'),
     ('mika-full-1-zh2', '將將！我變大了！'),
     ('mika-full-2-zh2', '好戲從現在才開始喲！'),
-    ('mika-suggest-1-zh2', '喔，你要問那個喔？'),
-    ('mika-suggest-2-zh2', '這個選得好欸！'),
+    ('mika-suggest-1-zh3', '哦？你要問那個喔！'),
+    ('mika-suggest-2-zh3', '這個選得好欸！'),
     ('mika-bye-1-zh2', '掰掰，下次見！'),
     ('mika-bye-2-zh2', '隨時都可以叫我喔！'),
     ('mika-done-1-zh2', '大概就是這樣，還可以嗎？'),
     ('mika-done-2-zh2', '還想問什麼，儘管說喔！'),
     ('mika-error-1-zh2', '欸？我好像出了點狀況，可以再試一次嗎？'),
     ('mika-huff-1-zh2', '夠了啦！摸太多次了欸！'),
-    ('mika-intro-1-zh2', '初次見面！我是 Mika 醬！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
+    ('mika-intro-1-zh3', '初次見面！我是 Mika 獎！我是帶你逛 Charles 作品集的 AI 助理喔。不管是經歷還是專案，什麼都可以問我！'),
 ]
 
 # English. These REPLACE the カタカナ英語 set, which was Japanese phonetics

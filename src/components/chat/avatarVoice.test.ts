@@ -58,12 +58,28 @@ describe('voiceLinesFor', () => {
     // re-recorded later the same day once its tones turned out to be broken.
     // /avatar/* is immutable-cached, so reusing either old name would have
     // served the old audio to everyone who had already heard it.
-    for (const [suffix, table] of [['-en2', VOICE_LINES_EN], ['-zh2', VOICE_LINES_ZH]] as const) {
-      for (const [cue, clips] of Object.entries(table)) {
-        if (cue === 'giggle') continue // wordless: shared, asserted below
-        for (const clip of clips) expect(clip.endsWith(`${suffix}.m4a`)).toBe(true)
-      }
+    //
+    // The generation is per CLIP, not per locale: three Mandarin lines were
+    // re-recorded again hours after the set shipped and took -zh3, while the
+    // other 22 stayed on the takes the owner had already approved. The three
+    // are listed here rather than imported from the source so that changing
+    // the mapping has to be a deliberate edit in two places.
+    const ZH3 = ['mika-intro-1-zh3.m4a', 'mika-suggest-1-zh3.m4a', 'mika-suggest-2-zh3.m4a']
+    const localised = (table: Record<string, string[]>) =>
+      Object.entries(table)
+        .filter(([cue]) => cue !== 'giggle') // wordless: shared, asserted below
+        .flatMap(([, clips]) => clips)
+
+    for (const clip of localised(VOICE_LINES_EN)) {
+      expect(clip.endsWith('-en2.m4a'), clip).toBe(true)
     }
+    const zh = localised(VOICE_LINES_ZH)
+    for (const clip of zh) {
+      expect(clip.endsWith('-zh2.m4a') || clip.endsWith('-zh3.m4a'), clip).toBe(true)
+    }
+    expect(
+      zh.filter((clip) => clip.endsWith('-zh3.m4a')).map((clip) => clip.split('/').pop()!).sort(),
+    ).toEqual(ZH3)
   })
 
   it('shares the wordless giggle pool across locales instead of duplicating it', () => {
@@ -73,7 +89,7 @@ describe('voiceLinesFor', () => {
     for (const table of [VOICE_LINES_EN, VOICE_LINES_ZH]) {
       expect(table.giggle).toEqual(VOICE_LINES.giggle)
       for (const clip of table.giggle) {
-        expect(clip.endsWith('-en2.m4a') || clip.endsWith('-zh2.m4a')).toBe(false)
+        expect(/-(?:en|zh)\d+\.m4a$/.test(clip), clip).toBe(false)
       }
     }
   })

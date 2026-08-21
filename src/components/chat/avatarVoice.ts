@@ -123,7 +123,9 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
 // Both sets carry a generation number — `-en2` and `-zh2`, never `-en` or
 // `-zh`. /avatar/* is served immutable, so a clip's NAME is its cache key and
 // re-recording under a shipped name leaves visitors on the old audio forever.
-// The `-en` and `-zh` files are gone; nothing points at them.
+// The `-en` and `-zh` files are gone; nothing points at them. That rule is also
+// why three clips are `-zh3` while the rest of their set is `-zh2`: the
+// generation is per clip, not per locale (see ZH_REGEN below).
 //
 // zh-TW is on its second generation because the first shipped with broken
 // tones. Stage 2 ran seed-vc with `f0_condition=False`, so pitch was
@@ -137,24 +139,50 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
 // scripts/vc_to_tsumugi.py holds the diagnosis; scripts/voice_lines.py holds
 // the wording.
 //
+// Three of those lines went one generation further on the owner's ear the same
+// day: suggest-1's two 喔 needed opposite tones and are now 「哦？…喔！」, where
+// the question mark buys the opening rise and the exclamation mark the closing
+// stress; suggest-2 is the same words on a different take; and intro-1 needed
+// 醬 to be pronounced jiang3, which is spelled as the homophone 獎 in the
+// synthesis input while the character a visitor reads stays 醬.
+//
 // Laughter is the exception: えへへ is the same sound in every language, so the
 // giggle pool is SHARED verbatim rather than duplicated into three byte-
 // identical copies. Any cue added here must be wordless for the same reason.
 const LOCALE_NEUTRAL_CUES: readonly VoiceCue[] = ['giggle']
 
-function localised(suffix: string): Record<VoiceCue, string[]> {
+// Three zh-TW clips went to a third generation on 2026-08-21, hours after the
+// second shipped, so the set holds two generations at once. Re-cutting the
+// other 22 to keep one suffix would mean re-rolling takes the owner had already
+// approved, and stage 1 is stochastic: a re-roll can only lose them.
+//
+// Keyed on the base clip name, which is the part that survives both the
+// directory and the generation suffix.
+const ZH_REGEN: Readonly<Record<string, string>> = {
+  'mika-suggest-1': '-zh3',
+  'mika-suggest-2': '-zh3',
+  'mika-intro-1': '-zh3',
+}
+
+function localised(
+  suffix: string,
+  regen: Readonly<Record<string, string>> = {},
+): Record<VoiceCue, string[]> {
   return Object.fromEntries(
     Object.entries(VOICE_LINES).map(([cue, clips]) => [
       cue,
       LOCALE_NEUTRAL_CUES.includes(cue as VoiceCue)
         ? clips
-        : clips.map((clip) => clip.replace(/\.m4a$/, `${suffix}.m4a`)),
+        : clips.map((clip) => {
+            const base = clip.slice(clip.lastIndexOf('/') + 1, -'.m4a'.length)
+            return clip.replace(/\.m4a$/, `${regen[base] ?? suffix}.m4a`)
+          }),
     ]),
   ) as Record<VoiceCue, string[]>
 }
 
 export const VOICE_LINES_EN = localised('-en2')
-export const VOICE_LINES_ZH = localised('-zh2')
+export const VOICE_LINES_ZH = localised('-zh2', ZH_REGEN)
 
 export function voiceLinesFor(locale: Locale): Record<VoiceCue, string[]> {
   if (locale === 'en') return VOICE_LINES_EN

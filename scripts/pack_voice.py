@@ -11,13 +11,18 @@
 # more than the top octave of a 2-second interaction cue, and doubling the
 # bitrate for that octave would show up on every visitor's first tap.
 #
-# The viseme tracks are timed against the WAV that goes in, not the m4a that
-# comes out, and that is correct: AAC-in-MP4 carries ~96ms of encoder priming
-# that ffprobe counts and players skip. Measured in Chrome, `audio.duration` for
-# these files matches the wav (8.406s vs 8.41s for mika-intro-1-zh2), so
-# currentTime and the track share one timeline. Anyone re-timing tracks from the
-# shipped m4a with ffprobe would shift every step by that 96ms; gen_visemes.py
-# reads afinfo for exactly this reason.
+# The viseme tracks are timed against the WAV that goes in, rather than the m4a
+# that comes out. That was originally to dodge AAC-in-MP4 encoder priming: the
+# clip that shipped as mika-intro-1-zh2 measured ~96ms longer under ffprobe than
+# it played under Chrome, where `audio.duration` matched the wav (8.406s vs
+# 8.41s). Re-measured on the -zh3 clips that replaced it on 2026-08-21, ffprobe
+# and the source wav now agree to within 1ms, so this encode is not adding that
+# offset any more.
+#
+# Timing off the wav stays correct either way, and it is the safer of the two
+# because it does not depend on which of them is right today. gen_visemes.py
+# reads afinfo for the same reason. If you ever DO re-time from a shipped m4a,
+# measure the offset again rather than assuming either number.
 #
 # /avatar/* is served with an immutable cache, so a clip's NAME is its cache
 # key: re-encoding a clip under a name that has shipped leaves visitors on the
