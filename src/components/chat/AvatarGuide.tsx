@@ -254,11 +254,12 @@ export default function AvatarGuide({
       // that opens the panel. Giving her head a second meaning there would
       // spend the visitor's way in on a giggle.
       //
-      // The reach that leaves is a WIDTH, not a pointer type: the docked
-      // placement needs ≥880px and the fullscreen column ≥768px
-      // (avatarPlacement), and neither asks what kind of pointer you have. A
-      // narrow phone therefore never reaches a tap pat, because she is only
-      // ever its launcher; an iPad, or the same phone turned landscape, does.
+      // The reach that leaves is a SIZE, not a pointer type: the docked
+      // placement needs her to read beside the panel (besidePanelFits) and the
+      // fullscreen column needs ≥768px (avatarPlacement), and neither asks what
+      // kind of pointer you have. A phone held upright therefore never reaches
+      // a tap pat, because she is only ever its launcher; an iPad in landscape,
+      // or the same phone turned sideways, does.
       if (placementRef.current === 'launcher') return
       const now = performance.now()
       if (now < tapCooldownUntil || !onHead(e.clientX, e.clientY)) return

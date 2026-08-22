@@ -22,7 +22,8 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 // 'hidden' means display:none, never unmount: the wrapper stays mounted so the
 // 5.5MB VRM is fetched and parsed exactly once per page.
 //  launcher      stowed panel — the character IS the launcher button
-//  beside-panel  docked panel on a viewport wide enough for both, side by side
+//  beside-panel  docked panel on a viewport big enough for her to read
+//                beside it, side by side
 //  column        fullscreen — she stands full height in a column of her own on
 //                the right, at whatever size the window can pay for
 //  hidden        fullscreen on a phone, or a docked panel covering one
@@ -31,17 +32,23 @@ export type AvatarPlacement = 'launcher' | 'beside-panel' | 'column' | 'hidden'
 // `md` (≥768px) is the pipeline rail's own breakpoint (the aside is
 // max-md:hidden) and doubles as the floor for the column: below it the panel
 // is an edge-to-edge phone takeover with no room to stand anyone beside the
-// text. `wide` (≥880px) gates the docked side-by-side layout, separately.
+// text. `fitsBeside` gates the docked side-by-side layout separately, and is
+// besidePanelFits() rather than a width: see it for why the docked question
+// needs both axes when the column's needs only one.
 //
 // There is deliberately no height gate and no narrow-window fallback. Both used
 // to exist because she stood at the FOOT of the pipeline rail, where a short or
 // narrow window put her on top of the trace; in a column of her own she has
 // nothing to collide with, and avatarColumnBox() answers "too small" by
 // shrinking her rather than by moving her somewhere else.
-export function avatarPlacement(mode: ChatMode, wide: boolean, md: boolean): AvatarPlacement {
+export function avatarPlacement(
+  mode: ChatMode,
+  fitsBeside: boolean,
+  md: boolean,
+): AvatarPlacement {
   if (mode === 'fullscreen') return md ? 'column' : 'hidden'
   if (mode === 'minimised') return 'launcher'
-  return wide ? 'beside-panel' : 'hidden'
+  return fitsBeside ? 'beside-panel' : 'hidden'
 }
 
 // ---- head aim -------------------------------------------------------------
@@ -449,6 +456,21 @@ export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
 export const CHAT_PANEL_HEIGHT_PX = 560
 export const CHAT_PANEL_HEIGHT_VH = 80
 
+// The panel's rendered height, from the class above. Two things measure
+// themselves against it — her box and the gate that decides whether she stands
+// beside it at all — and they must not be able to disagree.
+function chatPanelHeight(vh: number): number {
+  return Math.min(CHAT_PANEL_HEIGHT_PX, (vh * CHAT_PANEL_HEIGHT_VH) / 100)
+}
+
+// Fraction of the canvas that sits above her hair, from the framing itself —
+// re-dolly the waist-up frame and this follows without being edited. Same rule:
+// the box and the gate both need it and must read the one definition.
+function dockedHeadroom(): number {
+  const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
+  return (span.top - AVATAR_HEAD_TOP_Y) / (span.top - span.bottom)
+}
+
 // Her box beside the docked panel.
 //
 // Until 2026-08-21 this was the panel's own `min(560px,80vh)`, and the CANVAS
@@ -473,7 +495,9 @@ export const CHAT_PANEL_HEIGHT_VH = 80
 // the canvas on screen is (vw − 436) / 0.9096 whatever the box was, so at every
 // width below 1364 she renders the size she rendered before this change (268px
 // at 880, 413px at 1120, to the pixel), and above it she is larger. No viewport
-// gets a smaller Mika.
+// gets a smaller Mika. Below 880 there is no size to compare against: the gate
+// hid her there until 2026-08-22, so those widths gained her rather than
+// resized her.
 //
 // The real bill is headroom. The canvas is taller than the panel and grows
 // upward from the shared bottom edge, so on a viewport under ~780px tall it
@@ -486,13 +510,59 @@ export const CHAT_PANEL_HEIGHT_VH = 80
 // hand-copying a number that lives in rigProbe's measurements, and drifting
 // from it silently.
 export function avatarDockedBox(vh: number): { w: number; h: number } {
-  const panelH = Math.min(CHAT_PANEL_HEIGHT_PX, (vh * CHAT_PANEL_HEIGHT_VH) / 100)
-  const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
-  // Fraction of the canvas that sits above her hair, from the framing itself —
-  // re-dolly the waist-up frame and this follows without being edited.
-  const headroom = (span.top - AVATAR_HEAD_TOP_Y) / (span.top - span.bottom)
-  const h = Math.max(0, Math.min(panelH / (1 - headroom), vh - CHAT_DOCK_BOTTOM))
+  const h = Math.max(
+    0,
+    Math.min(chatPanelHeight(vh) / (1 - dockedHeadroom()), vh - CHAT_DOCK_BOTTOM),
+  )
   return { w: h * AVATAR_WAISTUP_ASPECT, h }
+}
+
+// How tall her FIGURE stands as a fraction of the panel it is standing next to.
+// This is what the docked gate is really asking, and it needs both axes: once
+// the screen-top cap binds, her figure's height on screen is decided by WIDTH
+// alone (besidePanelScale normalises it to (vw − 436) / 0.9096 whatever the box
+// was), while the panel it is read against keeps growing with HEIGHT until it
+// hits 560px. A width-only gate therefore answers a two-axis question with one
+// number, and where you set that number depends on the height you happened to
+// test at.
+//
+// That is not theoretical: this gate WAS a bare width, and lowering it to 700
+// for a landscape phone (852x393, where she reaches 0.80 of the panel) also let
+// in every portrait tablet above 700px, where the same width buys far less
+// against a full-height panel — 0.33 at an iPad mini's 744x1133. That is below
+// the 0.46 of a landscape SE, which is the size we had already judged reads as
+// a smudge rather than as a character.
+export function besidePanelFigureRatio(vw: number, vh: number): number {
+  const panelH = chatPanelHeight(vh)
+  // A zero-height panel has no height to be a fraction of. Nothing is standing
+  // beside it either, so the gate below should read this as "no".
+  if (panelH <= 0) return 0
+  const box = avatarDockedBox(vh)
+  return (box.h * (1 - dockedHeadroom()) * besidePanelScale(vw, box.w)) / panelH
+}
+
+// The floor is the figure an 880px desktop window shipped under the old gate,
+// which works out at 0.478546…. "An 880px window" means 880px of LAYOUT width:
+// the old gate was a media query, so a classic scrollbar bought her in at 880
+// of OUTER width and shipped 0.462 there, under this floor and under the 0.465
+// of the landscape SE two paragraphs up. Pinning the gate
+// there is what makes this a re-expression of the old rule rather than a new
+// one: at 880 layout px it holds at every height, so what clears it on top of
+// that is exactly the landscape phones the change was asked for (686px of
+// width at 393 tall, 709 at 430), and no portrait tablet. The literal is
+// rounded DOWN from the derivation so floating-point noise cannot flip her off
+// an 880px window; a test pins it to besidePanelFigureRatio(880, 900) so
+// re-dollying the camera reopens the decision instead of silently moving the
+// gate.
+//
+// One window does lose her, and deliberately: the media query this replaced
+// matched innerWidth, which counts a desktop scrollbar, and this reads the
+// layout width she is actually placed in. See the wiring in ChatWidget, which
+// is where that trade is argued.
+export const BESIDE_PANEL_MIN_FIGURE_RATIO = 0.4785
+
+export function besidePanelFits(vw: number, vh: number): boolean {
+  return besidePanelFigureRatio(vw, vh) >= BESIDE_PANEL_MIN_FIGURE_RATIO
 }
 
 // ---- the fullscreen column ------------------------------------------------

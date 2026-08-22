@@ -10,6 +10,7 @@ import {
   avatarColumnBox,
   avatarColumnRightInset,
   avatarDockedBox,
+  besidePanelFits,
   CHAT_BESIDE_PANEL_RIGHT,
   CHAT_DOCK_BOTTOM_CLASS,
   CHAT_PANEL_HEIGHT_CLASS,
@@ -476,7 +477,7 @@ describe('ChatWidget fullscreen', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((query: string) => ({
-        matches: query === '(min-width: 768px)' || query === '(min-width: 880px)',
+        matches: query === '(min-width: 768px)',
         media: query,
         onchange: null,
         addEventListener: vi.fn(),
@@ -547,6 +548,66 @@ describe('ChatWidget fullscreen', () => {
     expect(box.h).toBeGreaterThan(CHAT_PANEL_HEIGHT_PX * 1.2)
   })
 
+  // The docked gate weighs width against height, and only the widget can feed
+  // it both. A portrait tablet is the viewport that tells the two apart: it is
+  // wider than any min-width this gate could plausibly carry, and she would
+  // stand there at a third of the panel's height. If this widget ever goes back
+  // to subscribing to a min-width, this is the test that catches it — the unit
+  // tests would stay green, because besidePanelFits itself would still be
+  // right; it just would not be the thing deciding.
+  it('keeps her off a portrait tablet, which a min-width gate would let her onto', async () => {
+    const vw = 810
+    const vh = 1080
+    expect(besidePanelFits(vw, vh)).toBe(false)
+    Object.defineProperty(document.documentElement, 'clientWidth', {
+      value: vw,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerHeight', { value: vh, configurable: true })
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(min-width: 768px)',
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })) as unknown as typeof window.matchMedia,
+    )
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      ((kind: string) =>
+        kind === 'webgl2'
+          ? { getExtension: () => null }
+          : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    )
+
+    // An absence needs a positive signal that the moment it should have
+    // appeared has passed. The stub handing its pat callback out is that
+    // signal: it means the 400ms gate latch fired and the guide mounted. The
+    // stub is module-level and nothing resets it, so it is cleared BEFORE the
+    // render — an earlier test's callback would otherwise pass for one this
+    // render never made, and clearing it afterwards would leave it null until
+    // some later render happened to refill it.
+    avatarStub.onPat = null
+    avatarStub.sizeStyle = null
+
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    await waitFor(() => expect(avatarStub.onPat).not.toBeNull(), { timeout: 2000 })
+
+    // Mounted, and placed nowhere: no docked wrapper, and no box handed to her.
+    expect(
+      [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
+        el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
+      ),
+    ).toBeUndefined()
+    expect(avatarStub.sizeStyle).toBeNull()
+  })
+
   // avatarMode.test.ts proves avatarColumnRightInset lands her body on the
   // panel's inner right edge, but only the widget decides what to feed it.
   // Passing a constant here — which is what this was until 2026-08-19 — would
@@ -564,7 +625,7 @@ describe('ChatWidget fullscreen', () => {
     vi.stubGlobal(
       'matchMedia',
       vi.fn((query: string) => ({
-        matches: query === '(min-width: 768px)' || query === '(min-width: 880px)',
+        matches: query === '(min-width: 768px)',
         media: query,
         onchange: null,
         addEventListener: vi.fn(),

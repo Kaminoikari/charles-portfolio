@@ -22,6 +22,7 @@ import {
   AVATAR_BUBBLE_RIGHT_CLASS,
   AVATAR_DOCKED_Z_CLASS,
   AVATAR_LAUNCHER_SIZE_CLASS,
+  besidePanelFits,
   avatarDockedBox,
   CHAT_DOCK_BOTTOM_CLASS,
   besidePanelScale,
@@ -234,28 +235,23 @@ export default function ChatWidget() {
   // fine before the handle exists, just without the face acting.
   const avatarHandleRef = useRef<AvatarGuideHandle | null>(null)
   const avatarMode = voiceSpeaking ? 'speaking' : deriveAvatarMode(input, status)
-  // Viewport class IS tracked live (rotate a phone, resize a window): width
-  // moves the avatar between launcher / beside-panel / column. It lives in
-  // React state, not a CSS media query, because `active` must follow it —
-  // display:none alone would leave the engine's rAF loop burning 60fps behind
-  // an invisible canvas.
-  const [wide, setWide] = useState(() => window.matchMedia('(min-width: 880px)').matches)
+  // Viewport size IS tracked live (rotate a phone, resize a window): it moves
+  // the avatar between launcher / beside-panel / column. It lives in React
+  // state, not in CSS, because `active` must follow it — display:none alone
+  // would leave the engine's rAF loop burning 60fps behind an invisible canvas.
+  //
   // md mirrors the pipeline rail's own breakpoint (the aside is max-md:hidden)
-  // and is the floor for the fullscreen column too.
+  // and is the floor for the fullscreen column too. It stays a media query
+  // because it IS one, in Tailwind, on the same markup. The docked gate below
+  // is not: besidePanelFits weighs width against height, which no single
+  // min-width can express.
   const [md, setMd] = useState(() => window.matchMedia('(min-width: 768px)').matches)
   useEffect(() => {
-    const wq = window.matchMedia('(min-width: 880px)')
     const mq = window.matchMedia('(min-width: 768px)')
-    setWide(wq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
-    setMd(mq.matches)
-    const onW = () => setWide(wq.matches)
+    setMd(mq.matches) // re-sync: a flip between first render and this commit would otherwise be lost
     const onM = () => setMd(mq.matches)
-    wq.addEventListener('change', onW)
     mq.addEventListener('change', onM)
-    return () => {
-      wq.removeEventListener('change', onW)
-      mq.removeEventListener('change', onM)
-    }
+    return () => mq.removeEventListener('change', onM)
   }, [])
   // The fullscreen column's box needs the viewport in pixels, not in classes:
   // it trades height against width continuously (avatarColumnBox) rather than
@@ -625,9 +621,11 @@ export default function ChatWidget() {
   //                loaded, the capsule stays and this wrapper ignores pointers.
   //                Known cost, unchanged from the capsule era: the button also
   //                covers the transparent pixels around the figure.
-  //  beside-panel  docked panel, wide viewport. Offset 436px = panel right
-  //                inset 20px + panel width 400px (the min() in the panel class
-  //                always resolves to 400px on ≥880px viewports) + 16px gap.
+  //  beside-panel  docked panel, viewport big enough for her to read beside it
+  //                (besidePanelFits). Offset 436px = panel right inset 20px +
+  //                panel width 400px (the min() in the panel class resolves to
+  //                400px on any viewport over 440px, so it is 400 everywhere
+  //                this placement is reachable) + 16px gap.
   //                Canvas from avatarDockedBox: TALLER than the panel by the
   //                empty headroom the waist-up frame holds above her hair, so
   //                that HER FIGURE, and not the box around it, is the height of
@@ -637,13 +635,16 @@ export default function ChatWidget() {
   //                corner the panel sits on, so the panel never moves and the
   //                extra height overhangs its top edge.
   //                Accepted cost: her left gesture margin runs past the screen
-  //                edge on a narrow desktop window, where besidePanelScale
-  //                shrinks her rather than cutting her. The taller canvas moves
-  //                full size out to ~1364px of width from 1120px, and costs
-  //                nothing doing it: below that threshold the scale normalises
-  //                her to the same on-screen size she had before. A fixed box
-  //                overhanging leftward adds no scroll (document.scrollWidth
-  //                measured unchanged at 880px).
+  //                edge on any window narrow enough for the scale to bite, from
+  //                a landscape phone at the gate up to the desktop width where
+  //                she reaches full size. besidePanelScale shrinks her there
+  //                rather than cutting her. The taller canvas moves full size
+  //                out to ~1364px of width from 1120px, and costs nothing doing
+  //                it: below that threshold the scale normalises her to the
+  //                same on-screen size she had before. A fixed box overhanging
+  //                leftward adds no scroll (document.scrollWidth measured
+  //                unchanged at 880px, and at 700x393 it reads 694 with the
+  //                canvas 25.6px past the left edge).
   //  column        fullscreen: her wide, gesture-safe canvas overhangs the
   //                viewport's right edge by whatever her transparent margin is
   //                at this canvas width (avatarColumnRightInset), which lands
@@ -660,7 +661,18 @@ export default function ChatWidget() {
   //                than the whole box.
   //  hidden        fullscreen on a phone, or docked-on-phone: display:none,
   //                engine paused, never unmounted.
-  const placement = avatarPlacement(mode, wide, md)
+  // Both axes, from the same viewport state the canvas is sized from, so the
+  // gate and the size can never be answering different windows. That also
+  // settles which width: the media query this replaced matched on innerWidth,
+  // which counts a desktop scrollbar, while everything the canvas is placed by
+  // uses clientWidth, which does not. So a window whose scrollbar leaves it
+  // under 880px of LAYOUT width now loses her, and should: the room beside the
+  // panel is room in the layout viewport, and 874px of it was never enough. The
+  // band that changes is one scrollbar wide, wherever that lands: outer widths
+  // 880-885 inclusive on the 6px scrollbars measured here, 880-895 on a 16px
+  // Windows one. Phones and tablets overlay their scrollbars, so nothing there
+  // moves.
+  const placement = avatarPlacement(mode, besidePanelFits(viewport.vw, viewport.vh), md)
   // !avatarDead guards a context-loss race: a frame scheduled between the
   // webglcontextlost event and this commit could still report onLoaded, and
   // launcher-true here with the wrapper unmounted would leave NO launcher.
@@ -723,8 +735,14 @@ export default function ChatWidget() {
                 (avatarIsLauncher
                   ? 'pointer-events-none fixed bottom-4 right-0 z-50'
                   : 'pointer-events-none fixed bottom-[84px] right-0 z-50') +
-                // max-[880px] = width < 880px, the exact complement of the
-                // `wide` matchMedia — max-[879px] left a 1px seam at 879.
+                // 880 used to be the complement of the docked gate. It stays
+                // here on its own terms now that the gate is a ratio: what it
+                // answers is how much of a phone's hero headline she covers,
+                // which is a question about the width of the SCREEN and not
+                // about whether the panel has room beside it. A landscape phone
+                // is inside it, and wants the smaller figure for the same
+                // reason a portrait one does — its 393px of height is what her
+                // 280px canvas is competing with.
                 ' transition-[bottom] duration-500 max-[880px]:origin-bottom-right max-[880px]:scale-[0.72]'
       }
       style={

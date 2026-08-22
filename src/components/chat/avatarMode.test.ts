@@ -27,6 +27,9 @@ import {
   avatarViewHalfWidth,
   avatarViewSpan,
   besidePanelScale,
+  BESIDE_PANEL_MIN_FIGURE_RATIO,
+  besidePanelFigureRatio,
+  besidePanelFits,
   CHAT_BESIDE_PANEL_RIGHT,
   CHAT_COLUMN_MIN_TRANSCRIPT,
   CHAT_PANEL_HEADER_H,
@@ -73,7 +76,8 @@ describe('deriveAvatarMode', () => {
 })
 
 describe('avatarPlacement', () => {
-  // args: (mode, wide ≥880, md ≥768 — the rail's own breakpoint)
+  // args: (mode, fitsBeside = besidePanelFits(vw, vh), md ≥768 — the rail's
+  // own breakpoint)
   it('stands above the launcher whenever the panel is stowed, any viewport', () => {
     expect(avatarPlacement('minimised', true, true)).toBe('launcher')
     expect(avatarPlacement('minimised', false, false)).toBe('launcher')
@@ -83,14 +87,82 @@ describe('avatarPlacement', () => {
     expect(avatarPlacement('docked', true, true)).toBe('beside-panel')
   })
 
-  it('hides while the docked panel covers a narrow (phone) viewport', () => {
+  it('hides while the docked panel leaves her no room to read beside it', () => {
     expect(avatarPlacement('docked', false, true)).toBe('hidden')
+  })
+
+  // The gate itself. It was a bare min-width until 2026-08-22, when it was
+  // lowered so a phone held sideways could reach this placement — and a bare
+  // width could not do that without also admitting every portrait tablet above
+  // the same number, at a third of the figure. The device table below is the
+  // whole decision: each row is a device's own CSS viewport, and the ones that
+  // are out are out because she reads as a smudge there, not because they are
+  // narrow. These are the device numbers, not what a desktop harness measures:
+  // phones and tablets use overlay scrollbars, so their layout width IS the
+  // viewport width, which is what the gate reads.
+  it('admits a phone held sideways and keeps portrait tablets out', () => {
+    const cases: [string, number, number, boolean][] = [
+      // Landscape phones, in — the case this gate was changed for.
+      ['iPhone 14 Pro landscape', 852, 393, true],
+      ['iPhone 8 Plus landscape', 736, 414, true],
+      ['iPhone 15 Pro Max landscape', 932, 430, true],
+      // An SE in landscape stays out: 0.46 of the panel is the size we judged
+      // reads as a smudge rather than as a character.
+      ['iPhone SE landscape', 667, 375, false],
+      // Portrait phones, out, including the widest — she is the launcher there.
+      ['iPhone 15 Pro Max portrait', 430, 932, false],
+      ['iPhone 14 portrait', 390, 844, false],
+      // Portrait tablets, out. These are the ones a bare 700px width let in at
+      // 0.33-0.40 of the panel, which is smaller than the SE row above.
+      ['iPad mini portrait', 744, 1133, false],
+      ['iPad portrait', 768, 1024, false],
+      ['iPad 10.2 portrait', 810, 1080, false],
+      // Landscape tablets and desktop windows, in, exactly as before.
+      ['iPad landscape', 1024, 768, true],
+      ['desktop at the old width gate', 880, 900, true],
+      ['laptop', 1440, 900, true],
+    ]
+    for (const [name, vw, vh, fits] of cases) {
+      expect({ name, fits: besidePanelFits(vw, vh) }).toEqual({ name, fits })
+    }
+  })
+
+  // The floor is not a taste number: it is what the placement already shipped
+  // at 880 layout px, which is what makes the ratio a re-expression of the old
+  // width rule rather than a new rule with new losers. (The one window that
+  // does lose her is a desktop one whose scrollbar put it under 880 of layout
+  // width; ChatWidget argues that trade where the two widths meet.) Re-dolly
+  // the waist-up frame and this goes red, which is the point — the gate has to
+  // be re-decided, not silently dragged along by the camera.
+  it('sets the floor at the smallest figure this placement has ever shipped', () => {
+    expect(besidePanelFigureRatio(880, 900)).toBeCloseTo(BESIDE_PANEL_MIN_FIGURE_RATIO, 4)
+    // Rounded DOWN from the derivation, so an 880px window that has always had
+    // her cannot lose her to a last-bit difference.
+    expect(BESIDE_PANEL_MIN_FIGURE_RATIO).toBeLessThan(besidePanelFigureRatio(880, 900))
+    // And it really is the floor over the whole desktop band: the ratio at 880
+    // is flat in height once both the panel and the canvas have saturated.
+    for (let vh = 780; vh <= 1600; vh += 20) {
+      expect({ vh, fits: besidePanelFits(880, vh) }).toEqual({ vh, fits: true })
+    }
+  })
+
+  // Why a width alone cannot express this: the same width lands in different
+  // places depending on the height it is asked at.
+  it('reads the same width differently at a phone height and a tablet height', () => {
+    expect(besidePanelFigureRatio(744, 393)).toBeGreaterThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
+    expect(besidePanelFigureRatio(744, 1133)).toBeLessThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
+  })
+
+  it('reads a viewport with no panel to stand beside as no room', () => {
+    expect(besidePanelFigureRatio(1440, 0)).toBe(0)
+    expect(besidePanelFits(1440, 0)).toBe(false)
   })
 
   it('stands in her own column for any fullscreen takeover above the phone', () => {
     expect(avatarPlacement('fullscreen', true, true)).toBe('column')
-    // From the md breakpoint (768px), below the 880px `wide` gate: a tablet
-    // window keeps her too, just smaller — avatarColumnBox handles the size.
+    // Above the md breakpoint (768px) but below the docked gate, which is now
+    // a real band again — a portrait tablet is exactly that — the fullscreen
+    // column keeps her, just smaller; avatarColumnBox handles the size.
     expect(avatarPlacement('fullscreen', false, true)).toBe('column')
   })
 
@@ -550,16 +622,21 @@ describe('avatar camera framing', () => {
     // Her body is centred in the canvas and covers this fraction of its width.
     const bodyLeft = (vw: number, vh: number) =>
       canvasLeft(vw, vh) + scaled(vw, vh) * ((1 - AVATAR_LAUNCHER_BODY_FRACTION) / 2)
-    // From the placement gate (880) upward, she never leaves the screen — at a
-    // tall window, where her box is biggest, and at a short one.
-    for (let vw = 880; vw <= 2560; vw += 4) {
-      for (const vh of [900, 640]) {
+    // Everywhere the placement is reachable she never leaves the screen — at a
+    // tall window, where her box is biggest, at a short one, and at the
+    // landscape phone height the gate was opened for.
+    for (let vw = 600; vw <= 2560; vw += 4) {
+      for (const vh of [900, 640, 393]) {
+        if (!besidePanelFits(vw, vh)) continue
         expect({ vw, vh, ok: bodyLeft(vw, vh) >= -1e-9 }).toEqual({ vw, vh, ok: true })
       }
     }
-    // And the margin is what absorbs it: at the gate the canvas itself does
-    // hang off, which is the trade this test now permits and pins.
-    expect(canvasLeft(880, 900)).toBeLessThan(0)
+    // And the margin is what absorbs it: at the narrowest window that reaches
+    // the placement the canvas itself does hang off, which is the trade this
+    // test permits and pins.
+    let narrowest = 600
+    while (!besidePanelFits(narrowest, 900)) narrowest++
+    expect(canvasLeft(narrowest, 900)).toBeLessThan(0)
     // Full size as soon as there is room for it, and never larger. The taller
     // canvas moved that threshold out from 1120px to ~1364px, which costs
     // nothing: once the scale binds, the on-screen canvas is (vw − 436) / 0.9096
@@ -573,7 +650,7 @@ describe('avatar camera framing', () => {
     expect(besidePanelScale(1920, boxW(900))).toBe(1)
     // Continuous, like the column: the owner rejected a step there, and a step
     // here would be the same jump in her size for one pixel of window.
-    for (let vw = 880; vw < 1400; vw++) {
+    for (let vw = 700; vw < 1400; vw++) {
       const d = besidePanelScale(vw + 1, boxW(900)) - besidePanelScale(vw, boxW(900))
       expect(Math.abs(d)).toBeLessThan(0.01)
     }

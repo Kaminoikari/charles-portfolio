@@ -25,6 +25,8 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
   禁止的是「收費再散佈模型檔案本身」與改標 CC0。本站免費展示，合規。
 - **行動版佈局**：launcher 態（面板收起）在所有viewport 都顯示 avatar；docked 面板開啟時，
   寬度 <880px 的裝置面板幾乎蓋滿螢幕，avatar 以 `display:none` 隱藏並停止渲染
+  （**2026-08-22 修訂**：閘門改成 `besidePanelFits`，看她相對面板的身高比例而不是寬度，
+  所以橫放手機這種「窄但矮」的視窗現在會顯示；直立手機與直立平板仍然隱藏，機制同下）
   （wrapper 不 unmount，VRM 不重載）。fullscreen 同前，一律隱藏（此句後由
   launcher 取代節推翻：寬且高足夠的 fullscreen 改站 rail）。
   placement 三態由純函式 `avatarPlacement(mode, wide)` 決定，有單元測試
@@ -65,8 +67,9 @@ tap/keypress 手勢內；**done／error 兩種在手勢外觸發（status 轉場
 所以這條只落在桌機~~（**2026-08-21 修訂：兩個 claim 都不再成立**。拍頭現在有兩條
 路徑：**點擊**走 `pointerup`，那是 tap-completed 手勢，不背 done／error 那份成本；
 **撫摸**才走 `pointermove`，只有它掛在 `(pointer: fine)` 後面。而且點擊路徑不分指標
-型別，`avatarPlacement` 的 `md`(≥768) 與 `wide`(≥880) 都只看寬度，所以 iPad 與橫置
-手機拍得到——「只落在桌機」是錯的。`avatarVoice.ts` 開頭的播放規則區塊寫的是修訂後
+型別，`avatarPlacement` 的 `md`(≥768) 與 docked 閘門都不看指標型別（docked 閘門寫這段
+時是 `wide`(≥880)，2026-08-22 改成 `besidePanelFits`，看的是她在面板旁的相對大小），
+所以 iPad 與橫置手機拍得到——「只落在桌機」是錯的。`avatarVoice.ts` 開頭的播放規則區塊寫的是修訂後
 的版本），而桌機在訪客有過任何一次互動後就放行。讓行規則現在是雙向的：
 串流結束前 0.9 秒內摸頭，笑聲會把該次 done 吃掉，她不會說「こんな感じ！どう？」。
 接受，理由與 ack 吃掉 done 相同：答案早已上屏，而摸頭是訪客當下的動作，
@@ -275,7 +278,12 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
    context 遺失時作為 fallback（context 遺失後膠囊**回歸**，角落不得留下隱形按鈕）；
    正常載入過程角落留空，首開不閃舊膠囊。
 2. 面板開啟時：docked＋寬 viewport（≥880px）avatar 站在面板左側（docked 只看寬度，
-   矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）；fullscreen 在 rail
+   矮視窗不降級——側欄空位與視窗高無關，單元測試明文釘住）
+   （**2026-08-22 修訂：這一句的三個 claim 都被推翻**。閘門不再是 ≥880px，也不再只看
+   寬度；「側欄空位與視窗高無關」正是 `besidePanelFigureRatio` 寫來反駁的命題——面板高度
+   隨視窗高長到 560px，她的身高卻在畫布頂到螢幕之後只由寬度決定，所以同一個寬度在不同
+   高度意義不同。當時「單元測試明文釘住」的那條也已不存在。現行規則：她的身高相對面板
+   高度 ≥0.4785 才站進來）；fullscreen 在 rail
    存在（≥768px）且高 ≥640px 時 avatar 縮小站在左側 rail 底部（管線一啟動建議即
    讓位，角色站位以 rail 末端**真 spacer 元素**保留，不被節點壓到）；docked＋窄，
    以及 fullscreen＋手機寬或矮 viewport，avatar 隱藏且渲染迴圈停止。全程持續反映對話狀態（idle 左右看／
@@ -518,6 +526,12 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   已知取捨：視窗寬 880–933px 時她的左側手勢邊界超出畫面（880px 實測 −53px，
   純邊界只有 38px，stretch 少約 15px 指尖）；fixed 元素向左溢出不產生捲軸
   （`scrollWidth` 實測未變）。
+  （**2026-08-22 修訂**：這兩個數字都被後續兩批推翻。209baeb 把 docked canvas
+  改成 `panelH / (1 - headroom)`，比面板更高，所以同一視窗下的畫布尺寸與溢出量
+  都不同（209baeb 是 2026-08-21）；隔日 docked 閘門從 `wide`(≥880) 改成
+  `besidePanelFits`（她的身高相對面板高度的比值，下限 0.4785 取自 880px **layout**
+  寬的桌機視窗在舊閘門下的出貨值），會落在縮放區的最窄視窗因此是橫放手機，不是窄桌機。溢出不產生捲軸這點仍成立，700×393 實測
+  `scrollWidth` 694，畫布左緣 −25.6px。）
 
 - **fullscreen 改 `column`，`rail` 站位整個移除**。mockup 比較三案後使用者選定
   「不開剛性第三欄、改給文字欄右內距」：她的身體只佔 canvas 約 80% 寬，其餘是透明

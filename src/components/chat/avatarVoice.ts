@@ -30,8 +30,10 @@
 //
 //     Taps are NOT desktop-only, which the previous version of this note said.
 //     Only the launcher placement is excluded (AvatarGuide gates on it), and
-//     the docked placement is gated on width alone — a coarse-pointer device
-//     at ≥880 CSS px, an iPad or a landscape phone, pats by tapping.
+//     the docked placement is gated on how big she reads beside the panel
+//     (besidePanelFits), not on the pointer, so a coarse-pointer device that
+//     clears it, an iPad in landscape or a phone held sideways, pats by
+//     tapping.
 
 import type { Locale } from '../../i18n'
 
