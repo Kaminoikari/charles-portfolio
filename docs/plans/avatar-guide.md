@@ -26,7 +26,9 @@ spring bones、lookAt 轉頭、visemes aa/ih/ou/ee/oh、tint 變色全部成立�
 - **行動版佈局**：launcher 態（面板收起）在所有viewport 都顯示 avatar；docked 面板開啟時，
   寬度 <880px 的裝置面板幾乎蓋滿螢幕，avatar 以 `display:none` 隱藏並停止渲染
   （**2026-08-22 修訂**：閘門改成 `besidePanelFits`，看她相對面板的身高比例而不是寬度，
-  所以橫放手機這種「窄但矮」的視窗現在會顯示；直立手機與直立平板仍然隱藏，機制同下）
+  所以橫放手機這種「窄但矮」的視窗現在會顯示；直立手機仍然隱藏，機制同下。
+  **同日第二批**：`besidePanelScale` 原本護住畫布寬的 0.9096，其中只有 0.39 是她的
+  身體，修正後她在窄視窗不再被無謂縮小，直立平板因此也一併顯示了，使用者已看過實圖同意）
   （wrapper 不 unmount，VRM 不重載）。fullscreen 同前，一律隱藏（此句後由
   launcher 取代節推翻：寬且高足夠的 fullscreen 改站 rail）。
   placement 三態由純函式 `avatarPlacement(mode, wide)` 決定，有單元測試
@@ -283,7 +285,7 @@ expressionManager 實際權重比對；表情/手勢：state 斷言＋多角度�
    寬度；「側欄空位與視窗高無關」正是 `besidePanelFigureRatio` 寫來反駁的命題——面板高度
    隨視窗高長到 560px，她的身高卻在畫布頂到螢幕之後只由寬度決定，所以同一個寬度在不同
    高度意義不同。當時「單元測試明文釘住」的那條也已不存在。現行規則：她的身高相對面板
-   高度 ≥0.4785 才站進來）；fullscreen 在 rail
+   高度 ≥0.5 才站進來；該下限 2026-08-22 當日先是 0.4785，同日第二批改為 0.5，原因見下）；fullscreen 在 rail
    存在（≥768px）且高 ≥640px 時 avatar 縮小站在左側 rail 底部（管線一啟動建議即
    讓位，角色站位以 rail 末端**真 spacer 元素**保留，不被節點壓到）；docked＋窄，
    以及 fullscreen＋手機寬或矮 viewport，avatar 隱藏且渲染迴圈停止。全程持續反映對話狀態（idle 左右看／
@@ -529,8 +531,10 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   （**2026-08-22 修訂**：這兩個數字都被後續兩批推翻。209baeb 把 docked canvas
   改成 `panelH / (1 - headroom)`，比面板更高，所以同一視窗下的畫布尺寸與溢出量
   都不同（209baeb 是 2026-08-21）；隔日 docked 閘門從 `wide`(≥880) 改成
-  `besidePanelFits`（她的身高相對面板高度的比值，下限 0.4785 取自 880px **layout**
-  寬的桌機視窗在舊閘門下的出貨值），會落在縮放區的最窄視窗因此是橫放手機，不是窄桌機。溢出不產生捲軸這點仍成立，700×393 實測
+  `besidePanelFits`（她的身高相對面板高度的比值）。下限當時取 0.4785，來源是 880px
+  **layout** 寬的桌機視窗在舊閘門下的出貨值；**同日第二批把它改成 0.5**，因為那個
+  出貨值本身就是 bug 的產物（`besidePanelScale` 護住 0.9096 的畫布，其中只有 0.39
+  是她的身體），從 bug 推導出來的下限只會把 bug 保存下來。溢出不產生捲軸這點仍成立，700×393 實測
   `scrollWidth` 694，畫布左緣 −25.6px。）
 
 - **fullscreen 改 `column`，`rail` 站位整個移除**。mockup 比較三案後使用者選定
@@ -649,6 +653,9 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
   3. **docked 態新增等比縮小** `besidePanelScale(vw)`。684px 畫布在窄桌機視窗會
      跑出左邊界：900px 時有 226px 在畫面外、其中 26px 是她的肩膀。改成連續縮放
      （沿用 column 那次「不要斷點退路」的決定），1120px 以上維持原尺寸。
+     （**2026-08-22 修訂**：這個分母後來被發現量錯了，護住的是畫布寬的 0.9096
+     而她的身體只佔 0.39，等於為空氣付錢。改成護住她實測的身體框之後，「維持
+     原尺寸」的門檻從 1120px 掉到 834px。）
 - **viewport 寬度改用 `clientWidth`**：`innerWidth` 含捲軸寬，而 fixed 定位是對
   版面視窗，兩者差 6px 就讓畫布掛在左邊界外 6px。
 - **像素驗證**（讀 canvas alpha，不受背後星空干擾）：
@@ -666,6 +673,9 @@ bounding box，並用這輪新增的 debug handle（`?mikadebug=1` 下的
     把它綁在 `AVATAR_CANVAS_LAUNCHER.w` 與 `AVATAR_LAUNCHER_BODY_FRACTION`
     （0.415，launcher 畫布上她連頭髮的實測寬度佔比）上：清空間必須 > 10px。
     mutation：改回 183 該測試轉紅。實測清空間 12px（手機 387px 寬）。
+    （**2026-08-22 修訂**：該常數改名 `AVATAR_WAISTUP_BODY_FRACTION`，因為
+    docked 站位也讀它；同時發現「她置中」是錯的，實測左右緣 0.3049／0.6863，中心在 0.496。改用實測
+    左緣算，真正的清空間是 **9.8px** 不是 12px，測試改成直接釘住這個值。）
 - **手指彎曲方向全部反了**（使用者手機特寫回報「不像人類的手的角度」）。
   `setHand` 的 curl 沿用了手臂 pin 的鏡像符號（左 +z），但手指收向掌心是
   **相反的**鏡像（左 −z、右 +z），所以每根「彎起來」的手指其實都往手背反折。

@@ -10,6 +10,8 @@ import {
   avatarColumnBox,
   avatarColumnRightInset,
   avatarDockedBox,
+  AVATAR_WAISTUP_BODY_RIGHT,
+  besidePanelScale,
   besidePanelFits,
   CHAT_BESIDE_PANEL_RIGHT,
   CHAT_DOCK_BOTTOM_CLASS,
@@ -57,6 +59,51 @@ const avatarStub = vi.hoisted(() => ({
 // setup helper narrows the property to `null` for the rest of THAT function, so
 // reading it there would need a cast that lies. The stub fills it in from a
 // React render, which the type checker cannot see either way.
+// jsdom has no layout, so the viewport the widget reads has to be planted.
+// clientWidth is the layout width (what the avatar is placed in) and
+// innerHeight the visual one, which is the pairing ChatWidget itself uses.
+function setViewport(vw: number, vh: number): void {
+  Object.defineProperty(document.documentElement, 'clientWidth', {
+    value: vw,
+    configurable: true,
+  })
+  Object.defineProperty(window, 'innerHeight', { value: vh, configurable: true })
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      // Answer the one query the widget still subscribes to honestly for this
+      // width, so a test cannot accidentally hand it a tablet's md at 600px.
+      matches: query === '(min-width: 768px)' && vw >= 768,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia,
+  )
+}
+
+// Opens the capability gate: it probes for a WebGL2 context and nothing else.
+function openGate(): void {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+    ((kind: string) =>
+      kind === 'webgl2'
+        ? { getExtension: () => null }
+        : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+  )
+}
+
+// The docked wrapper is ChatWidget's own div, identified by the layer it
+// declares — it carries no positional class any more, because where it sits is
+// computed from her canvas width.
+function dockedWrapper(): HTMLElement | undefined {
+  return [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
+    el.className.split(' ').includes(AVATAR_DOCKED_Z_CLASS),
+  )
+}
+
 function takePatCallback(): PatCallback {
   const pat = avatarStub.onPat
   if (!pat) throw new Error('the avatar stub never handed its pat callback out')
@@ -499,12 +546,10 @@ describe('ChatWidget fullscreen', () => {
     await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
 
     // The gate's 400ms latch means she is not mounted on the first frame, and
-    // the wrapper that carries her is the one hung off CHAT_BESIDE_PANEL_RIGHT.
+    // the wrapper that carries her is the one declaring the docked layer.
     await waitFor(
       () => {
-        const wrapper = [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
-          el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
-        )
+        const wrapper = dockedWrapper()
         expect(wrapper).toBeTruthy()
         expect(avatarStub.sizeStyle).not.toBeNull()
       },
@@ -514,13 +559,25 @@ describe('ChatWidget fullscreen', () => {
     const box = avatarDockedBox(vh)
     expect(avatarStub.sizeStyle).toEqual({ width: box.w, height: box.h })
 
-    // The box is only the height of the panel if the two hang off the SAME
-    // bottom edge, and avatarDockedBox subtracts that offset from the viewport
-    // to keep her canvas on screen. Both elements must therefore carry the
-    // shared class rather than each spelling its own.
-    const wrapper = [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
-      el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
-    ) as HTMLElement
+    // Her FIGURE is only the height of the panel if the two hang off the SAME
+    // bottom edge, which is the one thing this arrangement rests on now that
+    // nothing caps the box. Both elements must therefore carry the shared class
+    // rather than each spelling its own.
+    const wrapper = dockedWrapper() as HTMLElement
+    // Where it sits is arithmetic now, not a class: the wrapper is pulled right
+    // by the transparent strip between her body and the canvas edge, so the
+    // 16px the layout budgeted is the gap to HER. A class could not do it —
+    // the strip is a fraction of a canvas width that answers to the viewport.
+    // Checked as the property it exists for, not by calling the same function
+    // on both sides: her body's right edge has to land where the layout budget
+    // says, CHAT_BESIDE_PANEL_RIGHT from the viewport's right edge. A wrapper
+    // that ignored the inset would put it a whole transparent strip short.
+    const scale = besidePanelScale(vw, box.w)
+    const right = Number(/^([\d.]+)px$/.exec(wrapper.style.right)?.[1])
+    expect(Number.isFinite(right)).toBe(true)
+    const bodyRightFromViewportRight = right + box.w * scale * (1 - AVATAR_WAISTUP_BODY_RIGHT)
+    expect(bodyRightFromViewportRight).toBeCloseTo(CHAT_BESIDE_PANEL_RIGHT, 6)
+    expect(right).toBeLessThan(CHAT_BESIDE_PANEL_RIGHT)
     for (const el of [wrapper, screen.getByRole('dialog')]) {
       expect(el.className.split(' ')).toContain(CHAT_DOCK_BOTTOM_CLASS)
     }
@@ -549,48 +606,38 @@ describe('ChatWidget fullscreen', () => {
   })
 
   // The docked gate weighs width against height, and only the widget can feed
-  // it both. A portrait tablet is the viewport that tells the two apart: it is
-  // wider than any min-width this gate could plausibly carry, and she would
-  // stand there at a third of the panel's height. If this widget ever goes back
-  // to subscribing to a min-width, this is the test that catches it — the unit
-  // tests would stay green, because besidePanelFits itself would still be
-  // right; it just would not be the thing deciding.
-  it('keeps her off a portrait tablet, which a min-width gate would let her onto', async () => {
-    const vw = 810
-    const vh = 1080
+  // it both. These two renders are the same WIDTH at two heights, on opposite
+  // sides of the gate: no min-width can pass one and fail the other, so a
+  // widget that goes back to subscribing to a media query cannot make both
+  // green. The unit tests would stay green through that, because
+  // besidePanelFits itself would still be right; it just would not be the
+  // thing deciding.
+  it('stands her beside the panel on a short window of a width a tall one refuses', async () => {
+    const vw = 600
+    const vh = 393
+    expect(besidePanelFits(vw, vh)).toBe(true)
+    setViewport(vw, vh)
+    openGate()
+
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    await waitFor(() => expect(dockedWrapper()).toBeTruthy(), { timeout: 2000 })
+  })
+
+  it('keeps her off a tall window of exactly that width', async () => {
+    const vw = 600
+    const vh = 1024
     expect(besidePanelFits(vw, vh)).toBe(false)
-    Object.defineProperty(document.documentElement, 'clientWidth', {
-      value: vw,
-      configurable: true,
-    })
-    Object.defineProperty(window, 'innerHeight', { value: vh, configurable: true })
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn((query: string) => ({
-        matches: query === '(min-width: 768px)',
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })) as unknown as typeof window.matchMedia,
-    )
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-      ((kind: string) =>
-        kind === 'webgl2'
-          ? { getExtension: () => null }
-          : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
-    )
+    setViewport(vw, vh)
+    openGate()
 
     // An absence needs a positive signal that the moment it should have
     // appeared has passed. The stub handing its pat callback out is that
     // signal: it means the 400ms gate latch fired and the guide mounted. The
     // stub is module-level and nothing resets it, so it is cleared BEFORE the
     // render — an earlier test's callback would otherwise pass for one this
-    // render never made, and clearing it afterwards would leave it null until
-    // some later render happened to refill it.
+    // render never made.
     avatarStub.onPat = null
     avatarStub.sizeStyle = null
 
@@ -600,11 +647,7 @@ describe('ChatWidget fullscreen', () => {
     await waitFor(() => expect(avatarStub.onPat).not.toBeNull(), { timeout: 2000 })
 
     // Mounted, and placed nowhere: no docked wrapper, and no box handed to her.
-    expect(
-      [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
-        el.className.includes(`right-[${CHAT_BESIDE_PANEL_RIGHT}px]`),
-      ),
-    ).toBeUndefined()
+    expect(dockedWrapper()).toBeUndefined()
     expect(avatarStub.sizeStyle).toBeNull()
   })
 

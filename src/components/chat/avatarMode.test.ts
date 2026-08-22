@@ -10,7 +10,9 @@ import {
   AVATAR_COLUMN_BODY_RIGHT,
   AVATAR_FRAMING_COLUMN,
   AVATAR_FRAMING_DEFAULT,
-  AVATAR_LAUNCHER_BODY_FRACTION,
+  AVATAR_WAISTUP_BODY_FRACTION,
+  AVATAR_WAISTUP_BODY_LEFT,
+  AVATAR_WAISTUP_BODY_RIGHT,
   AVATAR_LAUNCHER_HIT_CLASS,
   AVATAR_LAUNCHER_HIT_INSET_PCT,
   avatarColumnBox,
@@ -21,6 +23,7 @@ import {
   avatarHeadBand,
   avatarMetresPerPixel,
   avatarDockedBox,
+  avatarDockedRight,
   AVATAR_LAUNCHER_SIZE_CLASS,
   AVATAR_WAISTUP_ASPECT,
   avatarPlacement,
@@ -95,28 +98,33 @@ describe('avatarPlacement', () => {
   // lowered so a phone held sideways could reach this placement — and a bare
   // width could not do that without also admitting every portrait tablet above
   // the same number, at a third of the figure. The device table below is the
-  // whole decision: each row is a device's own CSS viewport, and the ones that
-  // are out are out because she reads as a smudge there, not because they are
-  // narrow. These are the device numbers, not what a desktop harness measures:
+  // whole decision: each row is a device's own CSS viewport. The only rows left
+  // out are the two portrait phones, and they are out for the bluntest possible
+  // reason — the panel and its insets are 436px, so there is no width left to
+  // stand in and the scale reaches zero. These are the device numbers, not what
+  // a desktop harness measures:
   // phones and tablets use overlay scrollbars, so their layout width IS the
   // viewport width, which is what the gate reads.
-  it('admits a phone held sideways and keeps portrait tablets out', () => {
+  it('admits every window with room for a readable Mika, and only those', () => {
     const cases: [string, number, number, boolean][] = [
       // Landscape phones, in — the case this gate was changed for.
       ['iPhone 14 Pro landscape', 852, 393, true],
       ['iPhone 8 Plus landscape', 736, 414, true],
       ['iPhone 15 Pro Max landscape', 932, 430, true],
-      // An SE in landscape stays out: 0.46 of the panel is the size we judged
-      // reads as a smudge rather than as a character.
-      ['iPhone SE landscape', 667, 375, false],
+      // An SE in landscape is in as of 2026-08-22. It used to be the device
+      // just under the line at 0.46, and the line has not moved: correcting
+      // besidePanelScale to her body took it to the panel's full height.
+      ['iPhone SE landscape', 667, 375, true],
       // Portrait phones, out, including the widest — she is the launcher there.
       ['iPhone 15 Pro Max portrait', 430, 932, false],
       ['iPhone 14 portrait', 390, 844, false],
-      // Portrait tablets, out. These are the ones a bare 700px width let in at
-      // 0.33-0.40 of the panel, which is smaller than the SE row above.
-      ['iPad mini portrait', 744, 1133, false],
-      ['iPad portrait', 768, 1024, false],
-      ['iPad 10.2 portrait', 810, 1080, false],
+      // Portrait tablets, in as of 2026-08-22, and this is the one broadening
+      // the owner did not ask for. They were excluded when a bare 700px width
+      // would have shown them a 0.33 Mika; the same devices now compute 0.774,
+      // 0.835 and 0.940, so the reason for excluding them no longer holds.
+      ['iPad mini portrait', 744, 1133, true],
+      ['iPad portrait', 768, 1024, true],
+      ['iPad 10.2 portrait', 810, 1080, true],
       // Landscape tablets and desktop windows, in, exactly as before.
       ['iPad landscape', 1024, 768, true],
       ['desktop at the old width gate', 880, 900, true],
@@ -127,30 +135,69 @@ describe('avatarPlacement', () => {
     }
   })
 
-  // The floor is not a taste number: it is what the placement already shipped
-  // at 880 layout px, which is what makes the ratio a re-expression of the old
-  // width rule rather than a new rule with new losers. (The one window that
-  // does lose her is a desktop one whose scrollbar put it under 880 of layout
-  // width; ChatWidget argues that trade where the two widths meet.) Re-dolly
-  // the waist-up frame and this goes red, which is the point — the gate has to
-  // be re-decided, not silently dragged along by the camera.
-  it('sets the floor at the smallest figure this placement has ever shipped', () => {
-    expect(besidePanelFigureRatio(880, 900)).toBeCloseTo(BESIDE_PANEL_MIN_FIGURE_RATIO, 4)
-    // Rounded DOWN from the derivation, so an 880px window that has always had
-    // her cannot lose her to a last-bit difference.
-    expect(BESIDE_PANEL_MIN_FIGURE_RATIO).toBeLessThan(besidePanelFigureRatio(880, 900))
-    // And it really is the floor over the whole desktop band: the ratio at 880
-    // is flat in height once both the panel and the canvas have saturated.
-    for (let vh = 780; vh <= 1600; vh += 20) {
-      expect({ vh, fits: besidePanelFits(880, vh) }).toEqual({ vh, fits: true })
+  // The outcome the owner asked for, as its own assertion rather than as a
+  // corollary of the table: a phone held sideways gets her at the panel's full
+  // height, not merely somewhere above the floor. This is what the 0.9096
+  // mistake was costing — it held a 14 Pro in landscape at 0.79, and on a 16
+  // Pro it was worth 18% where the screen-top cap removed alongside it was
+  // worth 12.4%.
+  it('stands her the full height of the panel on every phone held sideways', () => {
+    for (const [name, vw, vh] of [
+      ['iPhone 16 Pro', 874, 402],
+      ['iPhone 14 Pro', 852, 393],
+      ['iPhone 8 Plus', 736, 414],
+      ['iPhone SE', 667, 375],
+    ] as [string, number, number][]) {
+      expect({ name, ratio: +besidePanelFigureRatio(vw, vh).toFixed(4) }).toEqual({ name, ratio: 1 })
     }
+  })
+
+  // She is not centred, and this is the only thing that says so. The body
+  // sweep below cannot: it reads the same constant the placement does, so
+  // moving that constant moves both and stays green — which is exactly how a
+  // centred model shipped and cut 3.3px off her left sleeve on a portrait
+  // tablet, where the scale binds hardest and there is no slack to hide in.
+  // Anyone "simplifying" the two edges back into a width plus symmetry has to
+  // come through here.
+  it('keeps her body box measured on both edges, because she is not centred', () => {
+    // The edges as measured, so moving either one costs a re-measurement.
+    expect(AVATAR_WAISTUP_BODY_LEFT).toBe(0.3)
+    expect(AVATAR_WAISTUP_BODY_RIGHT).toBe(0.69)
+    // And the midpoint as a VALUE. `not.toBe(0.5)` was the first attempt and it
+    // is worthless: the realistic regression is someone re-deriving the left
+    // edge from the width by symmetry, which lands at 0.31125 and a midpoint of
+    // 0.500625, and passes a not-equal check while being exactly the bug.
+    const centre = (AVATAR_WAISTUP_BODY_LEFT + AVATAR_WAISTUP_BODY_RIGHT) / 2
+    expect(centre).toBeCloseTo(0.495, 4)
+    // And the width is the two edges, never its own number to drift from them.
+    expect(AVATAR_WAISTUP_BODY_FRACTION).toBe(
+      AVATAR_WAISTUP_BODY_RIGHT - AVATAR_WAISTUP_BODY_LEFT,
+    )
+  })
+
+  // The floor is a taste number now, and the honest test of one is the width it
+  // puts the boundary at on real devices. Half the panel is the call; these are
+  // what half buys, and moving the number moves them.
+  it('puts the floor at half the panel, and these widths are what that costs', () => {
+    expect(BESIDE_PANEL_MIN_FIGURE_RATIO).toBe(0.5)
+    const narrowest = (vh: number) => {
+      let vw = 300
+      while (vw < 3000 && !besidePanelFits(vw, vh)) vw++
+      return vw
+    }
+    expect({ vh: 375, vw: narrowest(375) }).toEqual({ vh: 375, vw: 543 })
+    expect({ vh: 393, vw: narrowest(393) }).toEqual({ vh: 393, vw: 548 })
+    expect({ vh: 900, vw: narrowest(900) }).toEqual({ vh: 900, vw: 635 })
+    // A phone held upright is not near that boundary in any orientation of the
+    // question: the panel alone is 400px wide, so the scale hits zero first.
+    expect(besidePanelFigureRatio(430, 932)).toBe(0)
   })
 
   // Why a width alone cannot express this: the same width lands in different
   // places depending on the height it is asked at.
   it('reads the same width differently at a phone height and a tablet height', () => {
-    expect(besidePanelFigureRatio(744, 393)).toBeGreaterThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
-    expect(besidePanelFigureRatio(744, 1133)).toBeLessThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
+    expect(besidePanelFigureRatio(600, 393)).toBeGreaterThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
+    expect(besidePanelFigureRatio(600, 1133)).toBeLessThan(BESIDE_PANEL_MIN_FIGURE_RATIO)
   })
 
   it('reads a viewport with no panel to stand beside as no room', () => {
@@ -367,6 +414,12 @@ describe('avatarGuideEnabled', () => {
 })
 
 describe('avatar camera framing', () => {
+  const vhCanvasTop = (vh: number) => vh - CHAT_DOCK_BOTTOM - avatarDockedBox(vh).h
+  // The panel's own rule, spelled out here rather than imported from the
+  // module: a test that borrows the implementation's helper cannot notice the
+  // helper changing shape under it.
+  const panelH = (vh: number) => Math.min(CHAT_PANEL_HEIGHT_PX, (vh * CHAT_PANEL_HEIGHT_VH) / 100)
+
   // The fraction of the docked canvas that sits above her hair, from the framing
   // itself — the same expression avatarDockedBox uses, so a test that re-derives
   // it is reading the composition rather than a copied number.
@@ -435,29 +488,38 @@ describe('avatar camera framing', () => {
     expect(box.h).toBeGreaterThan(CHAT_PANEL_HEIGHT_PX * 1.2)
   })
 
-  // The headroom is only free while it is off nobody's screen. It overhangs the
-  // panel's top edge by design; overhanging the VIEWPORT's top edge would cut
-  // the raised hand it exists to hold, which is the same cut the framing was
-  // rewritten to stop — just made by the window instead of the canvas.
-  it('never lets the docked canvas run off the top of the screen', () => {
+  // The headroom overhangs the panel's top edge by design, and since
+  // 2026-08-22 the viewport's top edge as well. That second overhang does cut
+  // the raised hand it exists to hold, which is the price of her standing the
+  // panel's full height on a short window. What may never overhang is her
+  // figure, and that is what this checks.
+  it('lets the canvas run off the top of the screen but never her figure', () => {
+    let overhung = 0
     for (let vh = 320; vh <= 1600; vh += 4) {
-      const { h } = avatarDockedBox(vh)
-      expect({ vh, fits: h <= vh - CHAT_DOCK_BOTTOM + 1e-9 }).toEqual({ vh, fits: true })
+      const canvasTop = vh - CHAT_DOCK_BOTTOM - avatarDockedBox(vh).h
+      if (canvasTop < 0) overhung++
+      // Her hair top is the panel's top edge, and the panel is on screen at
+      // every height: at 80vh that edge sits at 0.2·vh − 20.
+      const hairTop = vh - CHAT_DOCK_BOTTOM - panelH(vh)
+      expect({ vh, ok: hairTop >= 0 }).toEqual({ vh, ok: true })
     }
-    // The cap is what binds on a short window, and she gives up height for it
-    // rather than the gesture: still most of the panel, never more than it.
+    // The overhang has to be REAL on short windows, or dropping the cap did
+    // nothing and she is quietly short again. 780px is where it starts.
+    expect(overhung).toBeGreaterThan(100)
+    expect(vhCanvasTop(800)).toBeGreaterThanOrEqual(0)
+    expect(vhCanvasTop(700)).toBeLessThan(0)
+    // And the figure is the panel's height wherever the width allows it, which
+    // is the whole point of paying for the headroom off the top of the screen.
     const short = avatarDockedBox(700)
     const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
     const air = (span.top - AVATAR_HEAD_TOP_Y) / avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, short.h)
-    const figure = short.h - air
-    expect(figure).toBeLessThan(CHAT_PANEL_HEIGHT_PX)
-    expect(figure / CHAT_PANEL_HEIGHT_PX).toBeGreaterThan(0.85)
+    expect(short.h - air).toBeCloseTo(panelH(700), 6)
   })
 
-  // The bottom edge the two boxes share, as a class and as the px number
-  // avatarDockedBox subtracts from the viewport. Moving the panel to bottom-8
-  // and leaving this at 20 would put her canvas 12px past the top of the screen
-  // on a short window, cutting the raised hand the cap exists to protect —
+  // The bottom edge the two boxes share, as a class and as the px number the
+  // test above measures her hair top with. Her figure is the panel's height
+  // ONLY because both hang from this same edge; move the panel to bottom-8 and
+  // leave this at 20 and her hair lands 12px off the panel's top edge —
   // silently, because nothing else in the file reads the class.
   it('keeps the docked bottom offset class and its px number in step', () => {
     const steps = /^bottom-(\d+)$/.exec(CHAT_DOCK_BOTTOM_CLASS)
@@ -475,20 +537,22 @@ describe('avatar camera framing', () => {
     expect(Number(m![2])).toBe(CHAT_PANEL_HEIGHT_VH)
   })
 
-  // Which of the two limits actually decides her height, spelled out because the
-  // answer is counter-intuitive and a comment in avatarMode.ts depends on it: at
-  // 80vh the panel's own vh branch never wins, because the height it asks for
-  // (1.085·vh) is always more than the screen cap allows (vh − 20). Lower the
-  // panel's vh and it would start winning, silently making that comment false
-  // and handing short windows a smaller Mika than the cap requires.
-  it('lets the screen cap, not the panel vh branch, bind on a short window', () => {
-    const ideal = CHAT_PANEL_HEIGHT_PX / (1 - dockedHeadroom())
-    for (let vh = 320; vh < 780; vh += 4) {
-      expect({ vh, h: avatarDockedBox(vh).h }).toEqual({ vh, h: vh - CHAT_DOCK_BOTTOM })
+  // One limit decides her height now, and it is the panel: min(560px, 80vh),
+  // divided by what is left after the headroom. There is no second limit to
+  // lose to — the screen cap that used to win on every short window was removed
+  // on 2026-08-22, which is why the vh branch below can be seen deciding at
+  // 500px of height where it never used to.
+  it('takes the box from the panel at every height, with no cap of its own', () => {
+    for (let vh = 320; vh <= 1600; vh += 4) {
+      expect({ vh, h: avatarDockedBox(vh).h }).toEqual({
+        vh,
+        h: panelH(vh) / (1 - dockedHeadroom()),
+      })
     }
-    for (const vh of [780, 900, 1080, 1600]) {
-      expect(avatarDockedBox(vh).h).toBeCloseTo(ideal, 6)
-    }
+    // Both branches of the panel's own min() still reach it: vh decides below
+    // 700px of height, the 560px literal above it.
+    expect(avatarDockedBox(500).h).toBeCloseTo(400 / (1 - dockedHeadroom()), 6)
+    expect(avatarDockedBox(1200).h).toBeCloseTo(CHAT_PANEL_HEIGHT_PX / (1 - dockedHeadroom()), 6)
   })
 
   // The head-pat hit test used to carry the band as two hardcoded canvas
@@ -562,8 +626,8 @@ describe('avatar camera framing', () => {
       ['launcher', AVATAR_FRAMING_DEFAULT, AVATAR_CANVAS_LAUNCHER],
       ['docked', AVATAR_FRAMING_DEFAULT, avatarDockedBox(900)],
       // The docked box is computed now, so it is checked on a short window too,
-      // where the top-of-screen cap and not the panel decides its height. The
-      // aspect has to survive that cap or her arms lose room as she shrinks.
+      // where the panel's vh branch decides its height. The aspect has to
+      // survive that branch or her arms lose room as she shrinks.
       ['docked@short', AVATAR_FRAMING_DEFAULT, avatarDockedBox(640)],
       // The column's box is computed, so it is checked at the two viewports
       // that bind it differently: 1440×900 where height decides, and 1024×900
@@ -617,11 +681,15 @@ describe('avatar camera framing', () => {
   it('shrinks the docked canvas rather than running HER off the screen', () => {
     const boxW = (vh: number) => avatarDockedBox(vh).w
     const scaled = (vw: number, vh: number) => boxW(vh) * besidePanelScale(vw, boxW(vh))
+    // The wrapper's own `right` now moves with the canvas, so the canvas's left
+    // edge has to be read through it rather than from the panel offset.
     const canvasLeft = (vw: number, vh: number) =>
-      vw - CHAT_BESIDE_PANEL_RIGHT - scaled(vw, vh)
-    // Her body is centred in the canvas and covers this fraction of its width.
+      vw - avatarDockedRight(boxW(vh), besidePanelScale(vw, boxW(vh))) - scaled(vw, vh)
+    // Her body's own left edge inside the canvas. Not (1 − fraction) / 2: she
+    // is not centred, and that assumption is what used to run her sleeve off
+    // the screen where the scale binds hardest.
     const bodyLeft = (vw: number, vh: number) =>
-      canvasLeft(vw, vh) + scaled(vw, vh) * ((1 - AVATAR_LAUNCHER_BODY_FRACTION) / 2)
+      canvasLeft(vw, vh) + scaled(vw, vh) * AVATAR_WAISTUP_BODY_LEFT
     // Everywhere the placement is reachable she never leaves the screen — at a
     // tall window, where her box is biggest, at a short one, and at the
     // landscape phone height the gate was opened for.
@@ -637,14 +705,12 @@ describe('avatar camera framing', () => {
     let narrowest = 600
     while (!besidePanelFits(narrowest, 900)) narrowest++
     expect(canvasLeft(narrowest, 900)).toBeLessThan(0)
-    // Full size as soon as there is room for it, and never larger. The taller
-    // canvas moved that threshold out from 1120px to ~1364px, which costs
-    // nothing: once the scale binds, the on-screen canvas is (vw − 436) / 0.9096
-    // whatever the box was, so a narrow window renders her the same size it did
-    // before the box grew.
-    const full = CHAT_BESIDE_PANEL_RIGHT + boxW(900) * 0.9096
-    expect(full).toBeGreaterThan(1300)
-    expect(full).toBeLessThan(1400)
+    // Full size as soon as there is room for it, and never larger. What "room"
+    // means is her BODY fitting, so the threshold is the panel offset plus her
+    // body width — 834px, down from the 1364px the 0.9096 mistake demanded.
+    const full = CHAT_BESIDE_PANEL_RIGHT + boxW(900) * AVATAR_WAISTUP_BODY_FRACTION
+    expect(full).toBeGreaterThan(820)
+    expect(full).toBeLessThan(845)
     expect(besidePanelScale(full, boxW(900))).toBeCloseTo(1, 6)
     expect(besidePanelScale(full - 100, boxW(900))).toBeLessThan(1)
     expect(besidePanelScale(1920, boxW(900))).toBe(1)
@@ -657,19 +723,24 @@ describe('avatar camera framing', () => {
   })
 
   // The bubble sits beside her head, so its offset is measured from the same
-  // corner her body is centred against. It has been corrected twice now, once
+  // corner her body is measured against. It has been corrected twice now, once
   // per canvas widening, each time only after it landed on her face on a phone.
   it('keeps the speech bubble clear of her body, at whatever width the canvas is', () => {
     const px = /right-\[(\d+)px\]/.exec(AVATAR_BUBBLE_RIGHT_CLASS)
     expect(px).not.toBeNull()
     expect(Number(px![1])).toBe(AVATAR_BUBBLE_RIGHT_PX)
-    // Her body is centred in the canvas, so its left edge is this far from the
-    // wrapper's right corner. The bubble's right edge has to be further out.
-    const bodyLeftEdge =
-      AVATAR_CANVAS_LAUNCHER.w / 2 + (AVATAR_CANVAS_LAUNCHER.w * AVATAR_LAUNCHER_BODY_FRACTION) / 2
+    // Her body's own left edge, this far from the wrapper's right corner. It
+    // used to be computed as half a body width left of centre, which is 1.9px
+    // optimistic: she is not centred, and the honest number moves the clearance
+    // below from the 11.7px that model claimed to the 9.8px she actually has.
+    // Pinned as a value rather than only as an inequality, because what matters
+    // is that a canvas resize MOVES it, and an inequality with slack hides that
+    // until the day it lands on her face.
+    const bodyLeftEdge = AVATAR_CANVAS_LAUNCHER.w * (1 - AVATAR_WAISTUP_BODY_LEFT)
     expect(AVATAR_BUBBLE_RIGHT_PX).toBeGreaterThan(bodyLeftEdge)
-    // With room to read as a separate object rather than a sticker on her arm.
-    expect(AVATAR_BUBBLE_RIGHT_PX - bodyLeftEdge).toBeGreaterThan(10)
+    // Enough to read as a separate object rather than a sticker on her arm.
+    expect(AVATAR_BUBBLE_RIGHT_PX - bodyLeftEdge).toBeCloseTo(9.8, 1)
+    expect(AVATAR_BUBBLE_RIGHT_PX - bodyLeftEdge).toBeGreaterThan(8)
   })
 
   // The click target is a percentage of a width, so it only stays ~180px while

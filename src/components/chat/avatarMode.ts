@@ -392,10 +392,12 @@ export const AVATAR_WAISTUP_ASPECT = AVATAR_CANVAS_LAUNCHER.w / AVATAR_CANVAS_LA
 export const CHAT_BESIDE_PANEL_RIGHT = 436
 
 // Both the panel and her canvas sit on `bottom-5`, which is what lines their
-// bottom edges up. avatarDockedBox reads it to know how much room is left above
-// her, so the two must be one number: move the panel off bottom-5 and she must
-// move with it, or the box grows past the top of the screen and takes the
-// raised hand with it.
+// bottom edges up, and that shared edge is the whole reason her figure is the
+// panel's height. So the two must be one number: move the panel off bottom-5
+// and leave this behind and her hair lands off the panel's top edge by the
+// difference. Nothing in production reads the px value any more — the class is
+// what positions both boxes — and it stays because the tests measure her hair
+// top with it, which is the only place that mismatch would show.
 //
 // The class is here for the same reason every other pair in this file is: the
 // px number cannot be interpolated into a Tailwind literal, so it is written
@@ -423,21 +425,71 @@ export const AVATAR_DOCKED_Z_CLASS = 'z-[45]'
 // browser default 16px, so a step is 4px. Only the test does this arithmetic.
 export const TAILWIND_SPACING_PX = 4
 
-// How much of the docked canvas the scale below keeps on screen, as a FRACTION
-// of its width. What the scale protects is her BODY, and the canvas carries
-// transparent gesture margin either side of it; defending those empty pixels
-// would shrink her to no visible end. It was written as 684 of a 752px canvas
-// until 2026-08-21 — the same 0.91, but as a px constant, which is a number the
-// next canvas resize has to remember to bring with it or she quietly stops being
-// protected at the width it was measured at. A gesture that runs off the left
-// edge is the trade the owner already accepted.
-const DOCKED_ON_SCREEN_FRACTION = 0.9096
+// Her body's box inside the waist-up canvas, as fractions of the canvas width,
+// read off the render at rest: alpha over 24 on a 438-sample sweep, with the
+// gesture frames left in and the quartiles taken. Everything outside it is
+// transparent margin her arms swing into.
+//
+// Two edges rather than a width and an assumption of symmetry. She is NOT
+// centred — the measured edges are 0.3049 and 0.6863, a middle of 0.496 — and
+// assuming she was is what ran 3.3px of her left sleeve off the screen on a
+// portrait tablet, where the scale binds hardest. Left is rounded DOWN from
+// that measurement and right UP, so ordinary resting sway stays inside the box;
+// the stored box's own middle is 0.495, which is the number the test pins.
+//
+// The launcher and the docked placement share the waist-up frame, so they share
+// these: the launcher places its speech bubble against her left edge,
+// besidePanelScale keeps exactly the width on screen, and avatarDockedRight
+// spends everything right of BODY_RIGHT. The launcher's click inset is NOT one
+// of them — it is a percentage pinned to its own px bounds by a test, and
+// wiring it here would be a refactor this change has no reason to make.
+//
+// The width was named for the launcher until 2026-08-22, while the docked scale
+// used a separate 0.9096 that was never her body at all.
+export const AVATAR_WAISTUP_BODY_LEFT = 0.3
+export const AVATAR_WAISTUP_BODY_RIGHT = 0.69
+export const AVATAR_WAISTUP_BODY_FRACTION =
+  AVATAR_WAISTUP_BODY_RIGHT - AVATAR_WAISTUP_BODY_LEFT
+
+// How much of the docked canvas has to stay on screen, and it is her body:
+// AVATAR_WAISTUP_BODY_FRACTION, the same silhouette the launcher's speech
+// bubble is placed against, because both placements use the same waist-up
+// frame. The rest of the canvas is transparent gesture margin and may run off
+// the left edge, which is the trade the owner accepted on 2026-08-19.
+//
+// This was 0.9096 until 2026-08-22, and that number was the bug rather than the
+// policy: the comment here said "what the scale protects is her BODY" while the
+// arithmetic protected 0.91 of the canvas, of which only 0.39 is her. Measured
+// off the render, her silhouette at rest spans 0.305 to 0.686 of the width, so
+// the old number defended 0.21 of empty air on her left and 0.21 on her right,
+// and paid for it by shrinking her on every window narrow enough for this to
+// bind. The body-on-screen test has always modelled it the correct way, which
+// is why it stayed green through the whole mistake.
 export function besidePanelScale(vw: number, canvasW: number): number {
-  const onScreen = canvasW * DOCKED_ON_SCREEN_FRACTION
-  // A zero-width canvas has nothing to keep on screen, and dividing by it would
+  const body = canvasW * AVATAR_WAISTUP_BODY_FRACTION
+  // A zero-width canvas has no body to keep on screen, and dividing by it would
   // hand the wrapper a NaN transform. Full size is the no-op answer.
-  if (onScreen <= 0) return 1
-  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / onScreen))
+  if (body <= 0) return 1
+  return Math.min(1, Math.max(0, (vw - CHAT_BESIDE_PANEL_RIGHT) / body))
+}
+
+// Everything right of AVATAR_WAISTUP_BODY_RIGHT is transparent, and until
+// 2026-08-22 that strip was what stood between her and the panel: 0.31 of a
+// 1020px canvas is 316px, so on a desktop she sat 332px from a panel the layout
+// claims to put 16px from her. This spends the strip instead of displaying it,
+// exactly as avatarColumnRightInset already does for the fullscreen column.
+// What ends up over the panel is transparent margin, and a gesture reaching
+// into it is drawn BEHIND the panel (z-[45] against z-50), so it is hidden
+// rather than painted on the conversation.
+//
+// The docked wrapper's `right`, in px, for a canvas of this width at this
+// scale. The 16px gap she ends up with is the one already inside
+// CHAT_BESIDE_PANEL_RIGHT — spending the strip is what finally measures that
+// gap to HER rather than to the edge of her canvas. It goes negative on a wide
+// canvas, which is fine: the overhang is transparent, takes no pointer events,
+// and a fixed box hanging right adds no scroll.
+export function avatarDockedRight(canvasW: number, scale: number): number {
+  return CHAT_BESIDE_PANEL_RIGHT - (1 - AVATAR_WAISTUP_BODY_RIGHT) * canvasW * scale
 }
 
 // The docked panel's height: the Tailwind literal ChatWidget applies, and the
@@ -445,13 +497,11 @@ export function besidePanelScale(vw: number, canvasW: number): number {
 // will not take an interpolated value, so the three spellings are held together
 // by a test that parses the class back.
 //
-// Only the px half reaches her box today. The vh half is the panel's own rule
-// and avatarDockedBox keeps it so the expression means "the panel's height"
-// rather than "560", but at 80vh it cannot decide the answer: the height it
-// asks for is 0.8·vh / 0.7372 = 1.085·vh, always more than the vh − 20 the
-// screen cap allows, so the cap binds first at every viewport where this branch
-// is live. Drop CHAT_PANEL_HEIGHT_VH under ~74 and it starts deciding again —
-// which is what the cap test below is written to notice.
+// Both halves reach her box, and which one wins is which one the panel itself
+// is on: the vh branch below 700px of height, the 560px literal above it. That
+// is new as of 2026-08-22. Until then a screen-top cap sat in front of them and
+// won every short window, so the vh half was dead code in her box and this note
+// said so.
 export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
 export const CHAT_PANEL_HEIGHT_PX = 560
 export const CHAT_PANEL_HEIGHT_VH = 80
@@ -490,41 +540,42 @@ function dockedHeadroom(): number {
 // cleared stays cleared, and she simply renders 1.36× larger.
 //
 // Width follows, because arm room is fixed in METRES: a 560px figure needs a
-// 1020px canvas, so full size wants a 1364px window where 1120px did before.
-// That threshold reads like a cost and is not one. Once besidePanelScale binds,
-// the canvas on screen is (vw − 436) / 0.9096 whatever the box was, so at every
-// width below 1364 she renders the size she rendered before this change (268px
-// at 880, 413px at 1120, to the pixel), and above it she is larger. No viewport
-// gets a smaller Mika. Below 880 there is no size to compare against: the gate
-// hid her there until 2026-08-22, so those widths gained her rather than
-// resized her.
+// 1020px canvas. What that costs in window width is decided by besidePanelScale,
+// and only her BODY has to fit: 0.39 of 1020px is 398px, so she is full size
+// from 834px of window up. The same arithmetic asked for 1364px until
+// 2026-08-22, when the scale was still dividing by 0.9096 of the canvas instead
+// of by her.
 //
-// The real bill is headroom. The canvas is taller than the panel and grows
-// upward from the shared bottom edge, so on a viewport under ~780px tall it
-// would run past the top of the screen, and a hand clipped by the SCREEN edge
-// is cut just as squarely as one clipped by the canvas. So it is capped at what
-// fits above her, and she gives up height rather than the gesture: ~89% of the
-// panel at vh 700, ~95% at 745, exact from 780 up. That cap is deliberately
-// measured against the whole canvas and not against the 1.809 hand: turning it
-// into the reach would buy ~5% more height on a short screen at the cost of
-// hand-copying a number that lives in rigProbe's measurements, and drifting
-// from it silently.
+// The bill is headroom, and on a short viewport it is paid off the top of the
+// screen. The canvas is taller than the panel and grows upward from the shared
+// bottom edge, so under ~780px of height it runs past y=0. Until 2026-08-22 it
+// was capped there and she gave up height instead. Measured on a 16 Pro held
+// sideways (874x402), that cap cost her 12.4%: with the divisor above fixed she
+// reaches 0.876 of the panel with it and 1.0 without. Removing it while the
+// divisor was still wrong would have bought nothing at all — 0.822 either way,
+// because a bound scale decides her height from width whatever the box is. Both
+// had to go. The cap is gone: what overhangs is the empty air above her hair,
+// and a raised hand reaching into it is clipped by the screen edge. That is the
+// same trade as a gesture running off the left edge, and the owner asked for it
+// in the same sentence.
+//
+// Her figure is never the thing that overhangs. Her hair top lands on the
+// panel's top edge by construction, and the panel is on screen at every height:
+// at 80vh the top edge sits at 0.2·vh − 20, positive for any window over 100px
+// tall.
 export function avatarDockedBox(vh: number): { w: number; h: number } {
-  const h = Math.max(
-    0,
-    Math.min(chatPanelHeight(vh) / (1 - dockedHeadroom()), vh - CHAT_DOCK_BOTTOM),
-  )
+  const h = Math.max(0, chatPanelHeight(vh) / (1 - dockedHeadroom()))
   return { w: h * AVATAR_WAISTUP_ASPECT, h }
 }
 
 // How tall her FIGURE stands as a fraction of the panel it is standing next to.
 // This is what the docked gate is really asking, and it needs both axes: once
-// the screen-top cap binds, her figure's height on screen is decided by WIDTH
-// alone (besidePanelScale normalises it to (vw − 436) / 0.9096 whatever the box
-// was), while the panel it is read against keeps growing with HEIGHT until it
-// hits 560px. A width-only gate therefore answers a two-axis question with one
-// number, and where you set that number depends on the height you happened to
-// test at.
+// besidePanelScale binds, her figure's height on screen is decided by WIDTH
+// alone (it normalises to (vw − 436) / her body fraction whatever the box was),
+// while the panel it is read against keeps growing with HEIGHT until it hits
+// 560px. A width-only gate therefore answers a two-axis
+// question with one number, and where you set that number depends on the height
+// you happened to test at.
 //
 // That is not theoretical: this gate WAS a bare width, and lowering it to 700
 // for a landscape phone (852x393, where she reaches 0.80 of the panel) also let
@@ -541,25 +592,22 @@ export function besidePanelFigureRatio(vw: number, vh: number): number {
   return (box.h * (1 - dockedHeadroom()) * besidePanelScale(vw, box.w)) / panelH
 }
 
-// The floor is the figure an 880px desktop window shipped under the old gate,
-// which works out at 0.478546…. "An 880px window" means 880px of LAYOUT width:
-// the old gate was a media query, so a classic scrollbar bought her in at 880
-// of OUTER width and shipped 0.462 there, under this floor and under the 0.465
-// of the landscape SE two paragraphs up. Pinning the gate
-// there is what makes this a re-expression of the old rule rather than a new
-// one: at 880 layout px it holds at every height, so what clears it on top of
-// that is exactly the landscape phones the change was asked for (686px of
-// width at 393 tall, 709 at 430), and no portrait tablet. The literal is
-// rounded DOWN from the derivation so floating-point noise cannot flip her off
-// an 880px window; a test pins it to besidePanelFigureRatio(880, 900) so
-// re-dollying the camera reopens the decision instead of silently moving the
-// gate.
+// The floor is a judgment, and it says half. Below half the panel's height she
+// stops reading as someone standing next to the conversation and starts reading
+// as decoration, which is the call the owner made when a landscape SE was the
+// only device near the line.
 //
-// One window does lose her, and deliberately: the media query this replaced
-// matched innerWidth, which counts a desktop scrollbar, and this reads the
-// layout width she is actually placed in. See the wiring in ChatWidget, which
-// is where that trade is argued.
-export const BESIDE_PANEL_MIN_FIGURE_RATIO = 0.4785
+// It used to be derived from what the placement had shipped, and that anchor is
+// gone: what shipped was besidePanelScale defending 0.9096 of a canvas that is
+// 0.39 her, so every window narrow enough for it to bind rendered her smaller
+// than the geometry required. Deriving a floor from a bug preserves the bug.
+//
+// What the floor decides now is only the narrow end, because the fix put every
+// landscape phone at the full panel height: 543px of width at 375 tall, 548 at
+// 393, 635 at a desktop height. A phone held upright is out by a wider margin
+// than any threshold in this range would move — the panel alone is 400px, so
+// the scale reaches zero before this is consulted.
+export const BESIDE_PANEL_MIN_FIGURE_RATIO = 0.5
 
 export function besidePanelFits(vw: number, vh: number): boolean {
   return besidePanelFigureRatio(vw, vh) >= BESIDE_PANEL_MIN_FIGURE_RATIO
@@ -698,12 +746,8 @@ export const AVATAR_LAUNCHER_HIT_INSET_PCT = 26
 // than spell its own copy, or the constant above pins nothing.
 export const AVATAR_LAUNCHER_HIT_CLASS = 'left-[26%] right-[26%]'
 
-// Where her body actually ends inside the launcher canvas, as a fraction of the
-// canvas width, read off the render at rest with her hair. Her body is CENTRED,
-// so widening the canvas walks her inland and walks this edge with her — which
-// is why the speech bubble beside her has now been nudged twice, once per
-// widening, with nothing tying the two together. The test below is that tie.
-export const AVATAR_LAUNCHER_BODY_FRACTION = 0.3775
+// AVATAR_WAISTUP_BODY_LEFT, which the speech bubble below is placed against, is
+// declared with the docked scale that shares her body box.
 // How far the bubble's right edge sits from the wrapper's right corner, so its
 // tail lands beside her head instead of on it.
 export const AVATAR_BUBBLE_RIGHT_PX = 273

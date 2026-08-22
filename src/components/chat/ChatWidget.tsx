@@ -15,6 +15,7 @@ import { Markdown } from './Markdown'
 import {
   AVATAR_FRAMING_COLUMN,
   avatarColumnRightInset,
+  avatarDockedRight,
   avatarGuideEnabledInBrowser,
   AVATAR_LAUNCHER_HIT_CLASS,
   avatarColumnBox,
@@ -634,17 +635,18 @@ export default function ChatWidget() {
   //                free. She grows up and to the left from the same bottom-5
   //                corner the panel sits on, so the panel never moves and the
   //                extra height overhangs its top edge.
-  //                Accepted cost: her left gesture margin runs past the screen
-  //                edge on any window narrow enough for the scale to bite, from
-  //                a landscape phone at the gate up to the desktop width where
-  //                she reaches full size. besidePanelScale shrinks her there
-  //                rather than cutting her. The taller canvas moves full size
-  //                out to ~1364px of width from 1120px, and costs nothing doing
-  //                it: below that threshold the scale normalises her to the
-  //                same on-screen size she had before. A fixed box overhanging
-  //                leftward adds no scroll (document.scrollWidth measured
-  //                unchanged at 880px, and at 700x393 it reads 694 with the
-  //                canvas 25.6px past the left edge).
+  //                Then pulled RIGHT by avatarDockedRight, so the 16px the
+  //                offset budgeted is the gap to her BODY rather than to the
+  //                transparent edge of her canvas. Before 2026-08-22 that edge
+  //                was 320px from her on a desktop, and she read as standing
+  //                somewhere near the chat rather than beside it.
+  //                Accepted cost: her gesture margin runs past the screen edge
+  //                on the left, and behind the panel on the right, on any
+  //                window narrow enough for the scale to bite. besidePanelScale
+  //                shrinks her there rather than cutting her body, and full
+  //                size arrives at 834px of window. A fixed box overhanging
+  //                either side adds no scroll (document.scrollWidth measured
+  //                unchanged at 1440x900 and at 810x1080).
   //  column        fullscreen: her wide, gesture-safe canvas overhangs the
   //                viewport's right edge by whatever her transparent margin is
   //                at this canvas width (avatarColumnRightInset), which lands
@@ -663,15 +665,14 @@ export default function ChatWidget() {
   //                engine paused, never unmounted.
   // Both axes, from the same viewport state the canvas is sized from, so the
   // gate and the size can never be answering different windows. That also
-  // settles which width: the media query this replaced matched on innerWidth,
+  // settles which width: the media query this once was matched on innerWidth,
   // which counts a desktop scrollbar, while everything the canvas is placed by
-  // uses clientWidth, which does not. So a window whose scrollbar leaves it
-  // under 880px of LAYOUT width now loses her, and should: the room beside the
-  // panel is room in the layout viewport, and 874px of it was never enough. The
-  // band that changes is one scrollbar wide, wherever that lands: outer widths
-  // 880-885 inclusive on the 6px scrollbars measured here, 880-895 on a 16px
-  // Windows one. Phones and tablets overlay their scrollbars, so nothing there
-  // moves.
+  // uses clientWidth, which does not. Reading anything else would have the gate
+  // reasoning about pixels she cannot be drawn in. The boundary it decides sits
+  // around 635px of layout width on a tall window, so what a scrollbar shifts
+  // is one scrollbar's worth of outer widths there, and nothing a phone or a
+  // tablet ever sees — those overlay their scrollbars, and their layout width
+  // is their viewport width.
   const placement = avatarPlacement(mode, besidePanelFits(viewport.vw, viewport.vh), md)
   // !avatarDead guards a context-loss race: a frame scheduled between the
   // webglcontextlost event and this commit could still report onLoaded, and
@@ -714,9 +715,10 @@ export default function ChatWidget() {
         placement === 'hidden'
           ? 'hidden'
           : placement === 'beside-panel'
-            ? // right-[436px] is CHAT_BESIDE_PANEL_RIGHT; the scale that keeps
-              // the canvas on screen at narrow widths rides in the style below.
-              `pointer-events-none fixed ${CHAT_DOCK_BOTTOM_CLASS} right-[436px] ${AVATAR_DOCKED_Z_CLASS}`
+            ? // No `right` class here: where this sits depends on how wide her
+              // canvas came out, so avatarDockedRight computes it in the style
+              // below along with the scale that keeps her body on screen.
+              `pointer-events-none fixed ${CHAT_DOCK_BOTTOM_CLASS} ${AVATAR_DOCKED_Z_CLASS}`
             : inColumn
               ? // The canvas overhangs the viewport at right, so the body reads
                 // right-aligned despite the frame's transparent gesture margin.
@@ -746,8 +748,18 @@ export default function ChatWidget() {
                 ' transition-[bottom] duration-500 max-[880px]:origin-bottom-right max-[880px]:scale-[0.72]'
       }
       style={
-        placement === 'beside-panel' && besideScale < 1
-          ? { transform: `scale(${besideScale})`, transformOrigin: 'bottom right' }
+        placement === 'beside-panel'
+          ? {
+              // Pull the wrapper right by the transparent strip between her
+              // body and the canvas edge, so the 16px the layout budgeted is
+              // measured to HER. Scale about the bottom-right corner, which is
+              // the corner both boxes hang from, so shrinking her never moves
+              // the edge this inset was computed against.
+              right: avatarDockedRight(dockedBox.w, besideScale),
+              ...(besideScale < 1
+                ? { transform: `scale(${besideScale})`, transformOrigin: 'bottom right' }
+                : {}),
+            }
           : inColumn
             ? { right: avatarColumnRightInset(columnBox.w) }
             : undefined
