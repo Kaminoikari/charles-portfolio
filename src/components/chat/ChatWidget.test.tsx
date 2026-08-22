@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, fireEvent, render, screen, waitFor, cleanup } from '@testing-library/react'
+import { act, render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
@@ -205,297 +205,39 @@ async function openAndAsk(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('ChatWidget size modes', () => {
-  // iOS Safari hangs its accessory bar — up/down arrows and a done tick — above
-  // the keyboard for every focused FORM CONTROL, and the page cannot suppress
-  // it. Keeping the draft field out of that family is the entire reason it is a
-  // contenteditable element, so the family membership is what this pins.
-  // `.chat-composer` carries the wrapping and the placeholder that came free
-  // with the textarea; jsdom computes no layout, so the class is the pin.
-  it('keeps the draft field out of the form-control family', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    expect(['TEXTAREA', 'INPUT', 'SELECT']).not.toContain(composer.tagName)
-    expect(composer.getAttribute('contenteditable')).toBeTruthy()
-    expect(composer.getAttribute('contenteditable')).not.toBe('false')
-    expect(composer.className).toContain('chat-composer')
-    // A div is not focusable on its own, and the panel's focus trap selects on
-    // `[tabindex]:not([tabindex="-1"])` — at -1 the composer drops out of it.
-    expect(composer).toHaveAttribute('tabindex', '0')
-  })
-
-  // The placeholder is CSS on this attribute rather than a real `placeholder`,
-  // and a contenteditable that has been typed into and cleared keeps a stray
-  // <br> that would defeat a `:empty` selector.
-  it('flags the composer empty for the placeholder, and again after the draft is sent', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    expect(composer).toHaveAttribute('data-empty', 'true')
-
-    await user.type(composer, 'what did he do?')
-    expect(composer).toHaveAttribute('data-empty', 'false')
-
-    await user.click(screen.getByRole('button', { name: /send question/i }))
-    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy())
-    // The element owns its own text, so clearing React state is not enough —
-    // the sent draft has to be wiped out of the DOM too or it stays on screen.
-    expect(composer.textContent).toBe('')
-    expect(composer).toHaveAttribute('data-empty', 'true')
-  })
-
-  // An editable div has no `maxLength`, so the cap is enforced by hand. It has
-  // to bite in the DOM: capping only the React copy would leave the field
-  // showing more than the question that actually gets sent.
-  it('cuts an over-long draft down to the cap in the field itself', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    composer.textContent = 'x'.repeat(205)
-    fireEvent.input(composer)
-
-    expect(composer.textContent).toHaveLength(200)
-  })
-
-  // The field is uncontrolled, so nothing puts the draft back on its own: the
-  // panel unmounts on minimise while `input` keeps the text, and a blank field
-  // with a sendable question behind it sends something the visitor cannot see.
-  it('still holds the draft after the panel is minimised and reopened', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-    await user.type(screen.getByLabelText(/ask anything about his work/i), 'half a question')
-
-    await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    expect(composer.textContent).toBe('half a question')
-    expect(composer).toHaveAttribute('data-empty', 'false')
-  })
-
-  // A browser that does not take the plaintext-only path breaks a line with a
-  // <br>, which `textContent` reads as nothing: the field would show two lines
-  // and the question sent would have them glued together.
-  it('reads a line break out of the draft as a newline', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    composer.append('第一行', document.createElement('br'), '第二行')
-    fireEvent.input(composer)
-
-    await user.click(screen.getByRole('button', { name: /send question/i }))
-    await waitFor(() => expect(screen.getByText(ANSWER)).toBeTruthy())
-    const sent = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
-      .map((call) => String((call[1] as RequestInit | undefined)?.body ?? ''))
-      .find((body) => body.includes('第一行'))
-    expect((JSON.parse(sent ?? '{}') as { question?: string }).question).toBe('第一行\n第二行')
-  })
-
-  // Clearing a contenteditable leaves the editor's own placeholder <br> behind.
-  // Counting it as a line would report the empty field as still holding a draft
-  // and the placeholder would never come back.
-  it('reports a field emptied down to the editor\'s stray <br> as empty', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    await user.type(composer, 'abc')
-    expect(composer).toHaveAttribute('data-empty', 'false')
-
-    composer.replaceChildren(document.createElement('br'))
-    fireEvent.input(composer)
-
-    expect(composer).toHaveAttribute('data-empty', 'true')
-  })
-
-  // A composition commits at the caret, so that is where its overflow is.
-  // Cutting the same count off the END would eat text the visitor wrote after
-  // the caret — the round-1 tail-slice defect, narrowed to IME users.
-  it('cuts an over-cap composition at the caret, not off the end', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    const head = 'H'.repeat(100)
-    const tail = 'T'.repeat(100)
-    // 100 head + a 3-syllable commit + 100 tail = 203, three over the cap.
-    composer.replaceChildren(document.createTextNode(head + '注音字' + tail))
-    const text = composer.firstChild as Text
-    const caret = document.createRange()
-    caret.setStart(text, head.length + 3)
-    caret.collapse(true)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(caret)
-
-    fireEvent.compositionEnd(composer)
-
-    expect(composer.textContent).toBe(head + tail)
-    expect(composer.textContent).toHaveLength(200)
-  })
-
-  // The clear control focuses the composer, and clearing the conversation does
-  // not clear the draft — so it focuses a field that still has text in it.
-  it('returns the caret to the end after the conversation is cleared', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await openAndAsk(user)
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    await user.type(composer, 'a follow-up')
-    await user.click(screen.getByRole('button', { name: /clear this conversation/i }))
-
-    const range = window.getSelection()?.getRangeAt(0)
-    expect(range?.collapsed).toBe(true)
-    expect(range?.startContainer).toBe(composer)
-    expect(range?.startOffset).toBe(composer.childNodes.length)
-  })
-
-  // Focusing an editable element puts the caret at offset 0, so a desktop
-  // visitor returning to a restored draft would type into the front of their
-  // own sentence.
-  it('returns the caret to the end of a restored draft', async () => {
-    vi.stubGlobal(
-      'matchMedia',
-      vi.fn((query: string) => ({
-        matches: query === '(pointer: fine)',
-        media: query,
-        onchange: null,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-      })) as unknown as typeof window.matchMedia,
+  it('wraps long drafts and grows the composer to their content height', async () => {
+    const singleLineHeight = 46
+    const wrappedContentHeight = 72
+    let scrollHeight = singleLineHeight
+    const scrollHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'scrollHeight',
     )
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-    await user.type(screen.getByLabelText(/ask anything about his work/i), 'half a question')
-    await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get: () => scrollHeight,
+    })
 
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    const range = window.getSelection()?.getRangeAt(0)
-    // Collapsed just past the last child of the composer, i.e. behind the text.
-    expect(range?.collapsed).toBe(true)
-    expect(range?.startContainer).toBe(composer)
-    expect(range?.startOffset).toBe(composer.childNodes.length)
+    try {
+      const user = userEvent.setup()
+      render(<ChatWidget />)
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+
+      const composer = screen.getByLabelText(/ask anything about his work/i)
+      expect(composer.tagName).toBe('TEXTAREA')
+      expect(composer).toHaveAttribute('wrap', 'soft')
+
+      scrollHeight = wrappedContentHeight
+      await user.type(composer, 'A draft that needs more than one line.')
+      expect(composer).toHaveStyle({ height: `${wrappedContentHeight}px` })
+    } finally {
+      if (scrollHeightDescriptor) {
+        Object.defineProperty(HTMLTextAreaElement.prototype, 'scrollHeight', scrollHeightDescriptor)
+      } else {
+        delete (HTMLTextAreaElement.prototype as { scrollHeight?: number }).scrollHeight
+      }
+    }
   })
-
-  // The whole reason the field is uncontrolled: a 注音 or kana buffer lives in
-  // the DOM until the IME commits it, and any React write during that window
-  // throws the half-assembled syllable away. Node identity is what proves it —
-  // rewriting `textContent` with the same string still replaces the text node
-  // the IME is writing into.
-  it('leaves the composing text node alone while an IME is running', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-
-    fireEvent.compositionStart(composer)
-    composer.textContent = 'ㄓㄨㄢ'
-    const composingNode = composer.firstChild
-    fireEvent(composer, new InputEvent('input', { bubbles: true, isComposing: true }))
-
-    expect(composer.firstChild).toBe(composingNode)
-    expect(composer.textContent).toBe('ㄓㄨㄢ')
-  })
-
-  // Cutting a composition down mid-syllable corrupts it, so the cap deliberately
-  // waits for the commit. Both halves of that deal are load-bearing: hold off
-  // while composing, then bite at compositionend.
-  it('holds the cap back until the IME commits, then applies it', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-
-    fireEvent.compositionStart(composer)
-    composer.textContent = 'x'.repeat(205)
-    fireEvent(composer, new InputEvent('input', { bubbles: true, isComposing: true }))
-    expect(composer.textContent).toHaveLength(205)
-
-    fireEvent.compositionEnd(composer)
-    expect(composer.textContent).toHaveLength(200)
-  })
-
-  // A div cannot carry `disabled`, so the blocked state is assembled out of
-  // three separate attributes. All three matter: contenteditable stops the
-  // typing, tabindex takes it out of the tab order, aria-disabled tells a
-  // screen reader and drives the dimmed styling.
-  it('locks the composer for a region-blocked visitor', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        if (String(input).startsWith('/api/geo')) {
-          return { ok: true, json: async () => ({ blocked: true }) } as unknown as Response
-        }
-        return { ok: true, body: sseStream([frame('done', { sources: [], answer: ANSWER })]) } as unknown as Response
-      }) as unknown as typeof fetch,
-    )
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = await screen.findByLabelText(/not available in your region/i)
-    expect(composer).toHaveAttribute('contenteditable', 'false')
-    expect(composer).toHaveAttribute('tabindex', '-1')
-    expect(composer).toHaveAttribute('aria-disabled', 'true')
-    expect(composer).toHaveAttribute('data-placeholder', expect.stringMatching(/not available in your region/i))
-  })
-
-  // Cutting the overflow off the END is wrong when the caret is in the middle:
-  // it eats the tail one keystroke at a time while the visitor types. The cap
-  // has to refuse the insertion instead, the way `maxLength` did.
-  it('refuses a keystroke that would overrun the cap instead of eating the tail', async () => {
-    const user = userEvent.setup()
-    render(<ChatWidget />)
-    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
-
-    const composer = screen.getByLabelText(/ask anything about his work/i)
-    composer.textContent = 'x'.repeat(200)
-    fireEvent.input(composer)
-
-    const refused = !fireEvent(
-      composer,
-      new InputEvent('beforeinput', {
-        bubbles: true,
-        cancelable: true,
-        inputType: 'insertText',
-        data: 'X',
-      }),
-    )
-    expect(refused).toBe(true)
-    expect(composer.textContent).toBe('x'.repeat(200))
-
-    // An IME commit at the cap must NOT be refused: `insertCompositionText` is
-    // not cancelable in a real browser, and refusing it mid-syllable corrupts
-    // the buffer. compositionend is where that overflow gets cut instead.
-    const compositionRefused = !fireEvent(
-      composer,
-      new InputEvent('beforeinput', {
-        bubbles: true,
-        cancelable: true,
-        inputType: 'insertCompositionText',
-        data: '專',
-      }),
-    )
-    expect(compositionRefused).toBe(false)
-  })
-
 
   it('sends a draft when Enter is pressed', async () => {
     const user = userEvent.setup()

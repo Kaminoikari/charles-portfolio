@@ -36,123 +36,6 @@ import AvatarGuide from './AvatarGuide'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
 import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideEngine'
 
-// Longest draft the composer accepts. It used to ride on the textarea's own
-// `maxLength`; an editable div has no such attribute, so it is enforced by the
-// beforeinput guard further down, with readDraft as the composition backstop.
-const COMPOSER_MAX_LENGTH = 200
-
-// How the draft field is made editable.
-//
-// It is NOT a <textarea>. iOS Safari hangs its form accessory bar — the strip
-// of up/down arrows and a done tick — above the keyboard whenever a FORM
-// CONTROL has focus, and no attribute, inputmode or enterkeyhint suppresses it.
-// WebKit only attaches that bar to form controls, so the field is a
-// contenteditable element instead, which is also why claude.ai's own composer
-// shows no such strip on an iPhone.
-//
-// `plaintext-only` is the value we want: it makes paste and autocorrect insert
-// text rather than markup, so the draft can be read straight off `textContent`.
-// Firefox and Chrome before 124 don't implement it, and `contenteditable` is an
-// enumerated attribute — an unrecognised value falls back to "inherit", i.e.
-// NOT editable, which would leave those browsers with a dead composer. So probe
-// for it and fall back to plain `true` plus a paste sanitiser.
-function detectPlaintextOnly(): boolean {
-  if (typeof document === 'undefined') return false
-  const probe = document.createElement('div')
-  probe.setAttribute('contenteditable', 'plaintext-only')
-  return probe.contentEditable === 'plaintext-only'
-}
-const COMPOSER_EDITABLE: 'plaintext-only' | true = detectPlaintextOnly() ? 'plaintext-only' : true
-
-// `textContent` reads a <br> as nothing at all, so a second line would arrive
-// glued to the first — the field shows two lines and the question sent has one.
-// Only the flat shape is handled, which is what both editable modes produce
-// here; anything more nested degrades to exactly what textContent gave before.
-function draftText(el: HTMLElement): string {
-  const nodes = el.childNodes
-  let text = ''
-  nodes.forEach((node, i) => {
-    if (node.nodeName !== 'BR') {
-      text += node.textContent ?? ''
-      return
-    }
-    // A trailing <br> is the editor's own placeholder for the line the caret
-    // rests on, not a line anyone typed — an emptied field is left holding one.
-    // Counting it would report a cleared composer as still having a draft, and
-    // the placeholder would never come back.
-    if (i < nodes.length - 1) text += '\n'
-  })
-  return text
-}
-
-// How much text an edit is about to replace. The document selection is the
-// wrong answer for the inputTypes that carry their own target range —
-// autocorrect's `insertReplacementText` fires with the caret collapsed, so
-// measuring the selection would score its replacement as pure growth and refuse
-// a correction near the cap.
-function replacedLength(e: InputEvent): number {
-  const targets = e.getTargetRanges?.() ?? []
-  if (targets.length > 0) {
-    return targets.reduce((total, target) => {
-      const range = document.createRange()
-      range.setStart(target.startContainer, target.startOffset)
-      range.setEnd(target.endContainer, target.endOffset)
-      return total + range.toString().length
-    }, 0)
-  }
-  const selection = window.getSelection()
-  return selection && !selection.isCollapsed ? selection.toString().length : 0
-}
-
-// Drops `count` characters from immediately before the caret. A composition
-// commits its text there, so that is where its overflow is — cutting the same
-// count off the END of the draft instead would eat whatever the visitor had
-// already written after the caret.
-function trimBeforeCaret(el: HTMLElement, count: number): boolean {
-  const selection = window.getSelection()
-  if (!selection || selection.rangeCount === 0) return false
-  const { startContainer, startOffset } = selection.getRangeAt(0)
-  if (!el.contains(startContainer) || startContainer.nodeType !== Node.TEXT_NODE) return false
-  if (startOffset < count) return false
-  ;(startContainer as Text).deleteData(startOffset - count, count)
-  const caret = document.createRange()
-  caret.setStart(startContainer, startOffset - count)
-  caret.collapse(true)
-  selection.removeAllRanges()
-  selection.addRange(caret)
-  return true
-}
-
-// Reads the draft back out of the composer, holding it to the length cap. The
-// cap is normally refused before the text lands (see the beforeinput guard
-// below); this is the backstop for the one path that cannot be refused — a
-// composition, which commits whatever the IME assembled. Capping only the React
-// copy would leave the field showing more than the question actually sent.
-function readDraft(el: HTMLElement): string {
-  const text = draftText(el)
-  if (text.length <= COMPOSER_MAX_LENGTH) return text
-  if (trimBeforeCaret(el, text.length - COMPOSER_MAX_LENGTH)) return draftText(el)
-  // No caret to cut at — take it off the end and put the caret behind it.
-  const capped = text.slice(0, COMPOSER_MAX_LENGTH)
-  el.textContent = capped
-  caretToEnd(el)
-  return capped
-}
-
-// Any write to the composer's text leaves the caret orphaned, because the node
-// it was anchored in is gone. Guarded on focus: moving the document selection
-// into a field the visitor is not typing in would yank the caret out of
-// wherever it actually is.
-function caretToEnd(el: HTMLElement): void {
-  if (document.activeElement !== el) return
-  const range = document.createRange()
-  range.selectNodeContents(el)
-  range.collapse(false)
-  const selection = window.getSelection()
-  selection?.removeAllRanges()
-  selection?.addRange(range)
-}
-
 // What Mika performs alongside each voice cue: an expression preset (name,
 // weight, hold seconds) and optionally a body gesture. Emotion holds outlast
 // their clip slightly so the face doesn't drop the moment the audio ends.
@@ -331,7 +214,7 @@ export default function ChatWidget() {
   const geoCheckedRef = useRef(false)
   const { messages, status, trace, send, retry, clear } = useChatStream()
   const bodyRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   // Tracks whether the panel has ever been open, so the first render doesn't
@@ -582,59 +465,15 @@ export default function ChatWidget() {
     return clear
   }, [avatarLoaded, open])
 
-  // The composer owns its own DOM (see COMPOSER_EDITABLE), so React has to put
-  // the draft back whenever the two disagree. They disagree on exactly two
-  // paths: sending wipes `input` while the typed text is still in the node, and
-  // minimising the panel unmounts the node while `input` keeps the draft, so the
-  // reopened field would come up blank with a sendable question behind it.
-  //
-  // Divergence is also the reason this is safe to run while an IME is
-  // composing: the composing text is read OUT of the node on every input event,
-  // so state already equals what is in there and the write below never fires.
-  // Only a change React itself made — a send, a remount — can differ, and
-  // neither can happen mid-composition.
+  // A native input is always one line tall. The composer uses a textarea so
+  // drafts wrap inside the unchanged chat width, then measures its rendered
+  // content after every edit to keep the field exactly as tall as the draft.
   useLayoutEffect(() => {
     const composer = inputRef.current
-    if (!composer || draftText(composer) === input) return
-    composer.textContent = input
-    caretToEnd(composer)
-  }, [input, open])
-
-  // The cap has to bite BEFORE the characters land, the way the textarea's
-  // `maxLength` did. Cutting the overflow off afterwards cuts it off the END,
-  // so typing into the middle of a full draft would silently chew its tail away
-  // one character per keystroke. Refusing the insertion instead leaves the
-  // existing text and the caret exactly where they were.
-  //
-  // Composition input is exempt: `insertCompositionText` is not cancelable, and
-  // refusing an IME mid-syllable corrupts the buffer. compositionend applies
-  // the cap to what the IME finally commits.
-  useEffect(() => {
-    const composer = inputRef.current
     if (!composer) return
-    const capInsertions = (e: InputEvent) => {
-      if (e.isComposing || e.inputType === 'insertCompositionText') return
-      // A line break carries no `data`, but it does cost a character. Anything
-      // else that carries none — a deletion, an undo — measures as zero and is
-      // let through by the comparison below, which is what should happen.
-      const inserted =
-        e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph'
-          ? '\n'
-          : (e.data ?? e.dataTransfer?.getData('text/plain') ?? '')
-      const room = COMPOSER_MAX_LENGTH - (draftText(composer).length - replacedLength(e))
-      if (inserted.length <= room) return
-      e.preventDefault()
-      // An over-long paste is trimmed to what fits rather than dropped whole,
-      // which is what `maxLength` did — a pasted question that silently does
-      // nothing reads as a broken field. This cannot loop: Chromium raises no
-      // beforeinput for an execCommand at all (measured), and an engine that
-      // does raises one measuring exactly the room its own text fills, which
-      // this guard lets through.
-      if (room > 0) document.execCommand('insertText', false, inserted.slice(0, room))
-    }
-    composer.addEventListener('beforeinput', capInsertions)
-    return () => composer.removeEventListener('beforeinput', capInsertions)
-  }, [open, regionBlocked])
+    composer.style.height = 'auto'
+    composer.style.height = `${composer.scrollHeight}px`
+  }, [input, open])
 
   // Auto-scroll to the newest message. Jump instantly while streaming (a smooth
   // scroll fired on every token fights itself and janks); smooth-scroll only
@@ -655,13 +494,7 @@ export default function ChatWidget() {
     if (open) {
       wasOpenRef.current = true
       const isFinePointer = window.matchMedia('(pointer: fine)').matches
-      if (isFinePointer && inputRef.current) {
-        inputRef.current.focus()
-        // A reopened panel can carry a restored draft, and focusing an editable
-        // element drops the caret at offset 0 — in front of the visitor's own
-        // half-written sentence.
-        caretToEnd(inputRef.current)
-      }
+      if (isFinePointer) inputRef.current?.focus()
     } else if (wasOpenRef.current) {
       // whichever launcher is live right now: the character once loaded,
       // otherwise the capsule
@@ -1301,12 +1134,7 @@ export default function ChatWidget() {
           <button
             onClick={() => {
               clear()
-              // Clearing the conversation leaves the draft alone, so this focus
-              // lands in a field that still has text in it.
-              if (inputRef.current) {
-                inputRef.current.focus()
-                caretToEnd(inputRef.current)
-              }
+              inputRef.current?.focus()
             }}
             className="mt-1 cursor-pointer self-start text-[12px] text-text-tertiary underline decoration-border underline-offset-4 transition-colors hover:text-text-muted hover:decoration-text-muted"
           >
@@ -1330,49 +1158,25 @@ export default function ChatWidget() {
               // ends up behind her skirt.
               style={columnGutter}
             >
-              <div
+              <textarea
                 ref={inputRef}
-                role="textbox"
-                aria-multiline="true"
-                tabIndex={regionBlocked ? -1 : 0}
-                contentEditable={regionBlocked ? false : COMPOSER_EDITABLE}
-                // The element owns its own text; the only writes come from the
-                // sync effect above, and only where the two have diverged.
-                suppressContentEditableWarning
-                onInput={(e) => {
-                  // While an IME is composing, take the text as it stands:
-                  // cutting the node mid-composition drops the syllables still
-                  // being assembled. compositionend re-reads and applies the cap.
-                  const composing = (e.nativeEvent as InputEvent).isComposing
-                  setInput(composing ? draftText(e.currentTarget) : readDraft(e.currentTarget))
-                }}
-
-                onCompositionEnd={(e) => setInput(readDraft(e.currentTarget))}
-                // Only wanted on the fallback path: `plaintext-only` already
-                // reduces a paste to text, plain `true` pastes markup.
-                onPaste={
-                  COMPOSER_EDITABLE === true
-                    ? (e) => {
-                        e.preventDefault()
-                        const composer = e.currentTarget
-                        document.execCommand('insertText', false, e.clipboardData.getData('text/plain'))
-                        setInput(readDraft(composer))
-                      }
-                    : undefined
-                }
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
                   e.preventDefault()
                   if (status !== 'streaming' && !regionBlocked) submit(input)
                 }}
+                placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
                 aria-label={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
-                aria-disabled={regionBlocked || undefined}
-                data-placeholder={regionBlocked ? t('chat.regionBlocked') : t('chat.inputPlaceholder')}
-                data-empty={input === '' ? 'true' : 'false'}
+                maxLength={200}
+                disabled={regionBlocked}
+                rows={1}
+                wrap="soft"
                 // 16px keeps iOS Safari from auto-zooming the viewport on focus (it
-                // zooms whenever a focused field is under 16px); the rest of the widget
+                // zooms whenever a focused input is under 16px); the rest of the widget
                 // keeps its denser 14px scale.
-                className="chat-composer min-h-[46px] min-w-0 flex-1 rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors focus:border-accent-cyan aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                className="min-h-[46px] min-w-0 flex-1 resize-none overflow-hidden rounded-[10px] border border-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50"
               />
               <button
                 type="submit"
