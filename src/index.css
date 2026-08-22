@@ -130,6 +130,36 @@ body {
 .chat-dots > span:nth-child(2) { animation-delay: 0.2s; }
 .chat-dots > span:nth-child(3) { animation-delay: 0.4s; }
 
+/* Chat composer. It is a contenteditable div rather than a <textarea> on
+   purpose: iOS Safari hangs its form accessory bar (the prev / next / done
+   strip) above the keyboard for every focused FORM CONTROL, and no page-side
+   attribute suppresses it. WebKit never attaches that bar to an editable
+   element that is not a form control, so the draft field is a div. The
+   placeholder that came free with the textarea has to be drawn here.
+   `data-empty` is driven by React state instead of `:empty` because a
+   contenteditable that has been typed into and cleared keeps a stray <br>,
+   which defeats `:empty` and leaves the placeholder permanently hidden. */
+.chat-composer {
+  position: relative;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.chat-composer[data-empty='true']::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  left: 0.875rem;
+  right: 0.875rem;
+  top: 0.625rem;
+  pointer-events: none;
+  color: var(--color-text-tertiary);
+  /* The pseudo-element is out of flow, so a placeholder that needs two lines
+     would paint straight through the bottom border instead of growing the box.
+     The longest one by far is the region-blocked notice in ja. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Chat fullscreen entrance + pipeline trace.
    These are hand-written classes, not Tailwind utilities, so a `motion-safe:`
    prefix on them in JSX generates nothing — the variant only applies to
