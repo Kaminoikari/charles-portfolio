@@ -130,3 +130,41 @@ export const MIKA_VOICE =
   '- Your voice never bends a fact. The citation rules, the refusal rules, and ' +
   'the ban on inventing anything about Charles all outrank tone. When they ' +
   'conflict, they win and you stay plain.'
+
+// The machine-checkable half of the voice above. These live here rather than in a
+// test file because two test files hold her to them (faq-audit.test.ts for the 57
+// cached answers, nodes.test.ts for STALL_NOTICE), and while nodes.test.ts kept
+// its own copy the two silently diverged: the copy still carried the version that
+// let 〜ましょ and 〜でしょう through after this one had been fixed.
+
+// Japanese 常体. Her 25 recorded lines never say です／ます, so 敬体 in a line of
+// HERS makes her a politer stranger. What FOLLOWS the ending is what separates a
+// polite form from a 常体 verb that merely contains those characters: a polite
+// form is followed by terminal punctuation, a closing mark, or a final particle
+// (〜ですよ。〜ますね。〜ますから！〜ですか？); 励ますんだ／だますわけ／ますます／いますぐ
+// are followed by something else. でしょう is listed and でしょ is not, because the
+// clipped form is one she is recorded using and the full one is 敬体.
+//
+// Two known limits, both accepted rather than chased. A 辞書形 verb ending in ます
+// before a particle (「あたしが励ますよ！」) is indistinguishable from 敬体 by suffix
+// alone and is rejected. 〜ませ as a polite imperative (いらっしゃいませ) is not
+// listed, because ませ also ends 常体 forms like 済ませて.
+export const JA_POLITE_ENDING =
+  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）\s*!?」』♪]|[よねかがからのでけどしなぞぜ]|$)/
+
+// Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
+// is a report. An exclamation mark used to clear this on its own, which meant
+// 「這比數量更重要！」 passed as speech; exactly one closer relied on that branch, so
+// it was rewritten and the branch removed.
+//
+// Known limits: 啊 and 嘛 are absent because the 25 zh recordings never use them,
+// which keeps the set inside her recorded register; and a word that merely ends in
+// one of these characters (「他最常去的是酒吧。」) clears it.
+export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
+
+// The same class, used to forbid a particle in the middle of a line, so a particle
+// that can end a line cannot also stack inside one. A leading interjection of three
+// characters or fewer is exempt; a longer one (「哎唷喂呀，」) or a clause whose last
+// word merely ends in one of these (「他常去的是酒吧，…」) is rejected.
+export const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦]$/
+export const ZH_INTERJECTION_MAX = 3

@@ -564,7 +564,7 @@ test('generate: an answer that finished normally carries no such notice', async 
 // `converse` is the half that was broken until 2026-08-26 — it introduced
 // itself as a nameless "portfolio assistant", one turn after she had said her
 // own name (docs/plans/mika-persona.md).
-import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
+import { JA_POLITE_ENDING, MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
 
 // A tier that answers like `answering` but keeps the messages it was handed.
 const capturing = (sink: { system: string }, content = 'ok'): Tier => ({
@@ -627,7 +627,8 @@ test('the blocked-output reply stays in her voice, in every locale', async () =>
 })
 
 // The last of the strings that reach a visitor with no model in the path: the
-// five in triage.ts, the blocked-output reply above, and this one. It is appended to a real
+// five in triage.ts, the 57 cached answers in faq-cache.ts, the blocked-output
+// reply above, and this one. It is appended to a real
 // answer, so a visitor meets it mid-conversation with the character already
 // established, and until 2026-08-26 it was written prose in zh and en and 敬体 in
 // ja. Nothing about it is reachable from a prompt, which is exactly why it drifted
@@ -651,9 +652,11 @@ test('the stall notice is appended in her voice, in every locale', async () => {
       `stall notice carries an emoji in ${language}`,
     )
     if (language === 'ja') {
-      // Same 常体 rule the cached answers are held to (rag/faq-audit.test.ts).
+      // The same regex the cached answers are held to, imported rather than
+      // copied: while this file kept its own copy the two drifted apart and this
+      // one still accepted 〜ましょ and 〜でしょう after the other was fixed.
       assert.equal(
-        /(?:です|ます|ません|でした|ました|ましょう|ください)(?![ょぐ])/.test(notice),
+        JA_POLITE_ENDING.test(notice),
         false,
         `stall notice is 敬体, which is not the register she is recorded in: ${notice}`,
       )

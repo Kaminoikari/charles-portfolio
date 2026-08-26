@@ -12,6 +12,12 @@ import assert from 'node:assert/strict'
 
 import { triage } from './triage.js'
 import { faqEntries } from './faq-cache.js'
+import {
+  JA_POLITE_ENDING,
+  ZH_INTERJECTION_MAX,
+  ZH_PARTICLE_AT_CLAUSE_END,
+  ZH_SPOKEN_ENDING,
+} from './persona.js'
 
 const ids = new Set(faqEntries.map((e) => e.id))
 
@@ -208,12 +214,14 @@ test('the Japanese answers say あたし, never 私', () => {
 // without a human noticing.
 //
 // Closing lines only, and the reason is the openers, not the entries. Measured
-// against these two regexes, 4 of 57 ja openers and 12 of 57 zh openers would
+// against these two regexes, 4 of 57 ja openers and 16 of 57 zh openers would
 // fail. All four ja ones are identity answers that correctly open on their own
-// content (「あたしは**ミカ**、…」); the zh twelve are those same four plus eight of
-// her own spoken lines that simply end on 。 rather than on a particle
+// content (「あたしは**ミカ**、…」); the zh sixteen are those same four plus twelve
+// of her own spoken lines that simply end on 。 rather than on a particle
 // (「五個喔！好，我一個一個講。」). A closing line is always an invitation, so the
-// marker is reliable there and noisy at the front.
+// marker is reliable there and noisy at the front. Both counts are asserted at
+// the bottom of this file, so a stale one turns the suite red instead of
+// misleading the next reader.
 
 // Japanese: 常体. Her clips never say です／ます, and 敬体 in her own line makes
 // her the polite stranger the earlier draft accidentally shipped.
@@ -235,8 +243,6 @@ test('the Japanese answers say あたし, never 私', () => {
 //
 // Known limit: 〜ませ as a polite imperative (いらっしゃいませ) is not listed,
 // because ませ also ends 常体 forms like 済ませて. No line has ever used it.
-const JA_POLITE_ENDING =
-  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）\s]|[よねかがからのでけどしなぞぜ]|$)/
 
 test("her Japanese closing lines stay 常体, the way she is voiced", () => {
   for (const entry of faqEntries) {
@@ -256,7 +262,6 @@ test("her Japanese closing lines stay 常体, the way she is voiced", () => {
 // An exclamation mark used to clear this on its own, which meant 「這比數量更重要！」
 // passed as speech. Exactly one closer relied on that branch, so it was rewritten
 // and the branch removed: a particle is the marker, and punctuation is not.
-const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
 
 test('her Chinese closing lines end the way speech does', () => {
   for (const entry of faqEntries) {
@@ -288,8 +293,6 @@ test('her Chinese closing lines end the way speech does', () => {
 // a line cannot stack in the middle of one. Known limit: an interjection longer
 // than three characters (「哎唷喂呀，」) fails here and has to be written as its own
 // sentence.
-const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦]$/
-const ZH_INTERJECTION_MAX = 3
 
 test('her Chinese voice lines carry one particle, not a stutter of them', () => {
   for (const entry of faqEntries) {
@@ -310,4 +313,76 @@ test('her Chinese voice lines carry one particle, not a stutter of them', () => 
       }
     }
   }
+})
+
+// Her Japanese identity answers open on their own content, so the closing-line
+// guard cannot see their first sentence, and for four rounds three of them
+// introduced her in 敬体 (「**ミカ**（Mika）です！」) while their closers were 常体.
+// That first sentence is her talking, whatever the rest of the paragraph is, so
+// it gets the same rule. Only the first sentence: the facts after it are body and
+// keep 敬体 by design.
+test('her Japanese self-introduction is 常体, even inside a content opener', () => {
+  for (const entry of faqEntries) {
+    const opener = entry.answers.ja.split('\n\n')[0]
+    const firstSentence = opener.split(/(?<=[。！？])/)[0]
+    assert.equal(
+      JA_POLITE_ENDING.test(firstSentence),
+      false,
+      `${entry.id} (ja) introduces her in 敬体: ${firstSentence}`,
+    )
+  }
+})
+
+// --- the numbers this file's comments quote ---------------------------------
+// Six review rounds running, the defect was a number in prose that the code no
+// longer supported: a ceiling measured before the lines got shorter, an opener
+// count measured against a regex that had since been replaced. Every one was
+// found by a reader rather than by the suite. The counts are cheap to measure, so
+// the suite measures them: edit a voice line and the comment that describes the
+// set goes red with it. Update both together or neither.
+const FIRST_PERSON_FOR_COUNT = FIRST_PERSON
+
+test('the counts quoted in the comments above are still the measured ones', () => {
+  const jaOpenersFailing = faqEntries.filter((e) =>
+    JA_POLITE_ENDING.test(e.answers.ja.split('\n\n')[0]),
+  ).length
+  const zhOpenersFailing = faqEntries.filter(
+    (e) => !ZH_SPOKEN_ENDING.test(e.answers['zh-TW'].split('\n\n')[0].trim()),
+  ).length
+  assert.equal(jaOpenersFailing, 4, 'the comment above says 4 of 57 ja openers would fail')
+  assert.equal(zhOpenersFailing, 16, 'the comment above says 16 of 57 zh openers would fail')
+
+  // The blind spots the opener/closer guards knowingly have: deleting the edge
+  // leaves a paragraph that still clears the ceiling or carries a pronoun.
+  let openerBlind = 0
+  let closerBlind = 0
+  for (const entry of faqEntries) {
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      const paras = entry.answers[locale].split('\n\n')
+      if (paras.length < 2) continue
+      const second = paras[1]
+      const penultimate = paras[paras.length - 2]
+      if (FIRST_PERSON_FOR_COUNT.test(second) || second.length <= VOICE_LINE_MAX[locale]) openerBlind++
+      if (FIRST_PERSON_FOR_COUNT.test(penultimate) || penultimate.length <= VOICE_LINE_MAX[locale])
+        closerBlind++
+    }
+  }
+  assert.equal(openerBlind, 53, 'the comment above says deleting an opener goes undetected in 53 pairs')
+  assert.equal(closerBlind, 33, 'the comment above says deleting a closer goes undetected in 33 pairs')
+
+  // The longest edge the ceiling actually governs, per language.
+  const longest: Record<string, number> = { en: 0, 'zh-TW': 0, ja: 0 }
+  for (const entry of faqEntries) {
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      const paras = entry.answers[locale].split('\n\n')
+      for (const edge of [paras[0], paras[paras.length - 1].trim()]) {
+        if (!FIRST_PERSON_FOR_COUNT.test(edge)) longest[locale] = Math.max(longest[locale], edge.length)
+      }
+    }
+  }
+  assert.deepEqual(
+    longest,
+    { en: 76, 'zh-TW': 25, ja: 40 },
+    'the comment above quotes en 76, zh 25, ja 40 as the longest edges the ceiling governs',
+  )
 })
