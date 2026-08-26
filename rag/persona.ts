@@ -148,23 +148,27 @@ export const MIKA_VOICE =
 //
 // Two known limits, both accepted rather than chased. A 辞書形 verb ending in ます
 // before a particle (「あたしが励ますよ！」) is indistinguishable from 敬体 by suffix
-// alone and is rejected. 〜ませ as a polite imperative (いらっしゃいませ) is not
+// alone and is rejected, whether a particle or terminal punctuation follows it
+// (「あたしが励ます！」 too). 〜ませ as a polite imperative (いらっしゃいませ) is not
 // listed, because ませ also ends 常体 forms like 済ませて.
 export const JA_POLITE_ENDING =
-  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）：\s*!?」』♪〜～ー…]|[よねかがからのでけどしなぞぜ]|$)/
+  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、（）：「」『』\s*!?♪〜～ー…]|[よねかがからのでけどしなぞぜ]|$)/
 
 // Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
 // is a report. An exclamation mark used to clear this on its own, which meant
 // 「這比數量更重要！」 passed as speech; exactly one closer relied on that branch, so
 // it was rewritten and the branch removed.
 //
-// A trailing 〜／～ is allowed after the particle, because the recordings use one
-// (mika-bye-1-zh3 「Bye bye～，下次見！」).
+// A trailing 〜／～ after the particle was tried and reverted. The recording cited
+// for it (mika-bye-1-zh3 「Bye bye～，下次見！」) puts its ～ after a Latin word in the
+// middle of the line, so it is not evidence for this position, and allowing it
+// here without allowing it in the stutter class below broke the invariant that
+// the two classes are the same: 「…都可以喔～，…那裡啦！」 cleared both guards.
 //
 // Known limits: 啊 and 嘛 are absent because the 25 zh recordings never use them,
 // which keeps the set inside her recorded register; and a word that merely ends in
 // one of these characters (「他最常去的是酒吧。」) clears it.
-export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][〜～]?[。！？]?$/
+export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
 
 // The same class, used to forbid a particle in the middle of a line, so a particle
 // that can end a line cannot also stack inside one. A leading interjection of three

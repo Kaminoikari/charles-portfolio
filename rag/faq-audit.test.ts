@@ -315,23 +315,33 @@ test('her Chinese voice lines carry one particle, not a stutter of them', () => 
   }
 })
 
-// Her Japanese identity answers open on their own content, so the closing-line
-// guard cannot see their opening, and for four rounds three of them introduced
-// her in 敬体 (「**ミカ**（Mika）です！」) while their closers were 常体.
+// Her Japanese openers get the same 常体 rule her closers do, read two ways,
+// because each selector alone leaves a hole the other covers.
 //
-// The sentence where she says her own name is her introducing herself, whatever
-// the rest of the paragraph is, so that is the one this reads. A first-sentence
-// check was tried and covers only two of the three: `bot-who-are-you` opens
-// 「あたしは Charles 本人じゃないよ。」 and introduces her in the sentence AFTER it.
-// Naming the sentence by its content rather than by its position covers all four,
-// and it leaves the mechanics of how she renders (「…あたしの口が動き…色づきます。」)
-// as the body 敬体 it is.
-test('the Japanese sentence where she names herself is 常体', () => {
-  let checked = 0
+// By position: the FIRST sentence of every ja opener. That is her line in the 52
+// answers whose opener is nothing but a voice line, and mutating one of them to
+// 敬体 (`philosophy`'s 「…ここから読むといいですよ。」) is caught only here.
+//
+// By content: any sentence that says her NAME, wherever it sits. Four answers
+// open on content rather than on a voice line, and in `bot-who-are-you` the
+// self-introduction is the SECOND sentence (「あたしは Charles 本人じゃないよ。
+// **ミカ**なの。」), which the positional check reads straight past. It was 敬体
+// there for four rounds.
+//
+// What neither reads is the rest of a content opener, which is body: 「…あたしの
+// 口が動き…色づきます。」 in `who-is-mika` is 敬体 by design.
+test('her Japanese openers are 常体 where she is the one talking', () => {
+  let namedSentences = 0
   for (const entry of faqEntries) {
-    for (const sentence of entry.answers.ja.split('\n\n')[0].split(/(?<=[。！？])/)) {
+    const sentences = entry.answers.ja.split('\n\n')[0].split(/(?<=[。！？])/)
+    assert.equal(
+      JA_POLITE_ENDING.test(sentences[0]),
+      false,
+      `${entry.id} (ja) opens in 敬体: ${sentences[0]}`,
+    )
+    for (const sentence of sentences.slice(1)) {
       if (!sentence.includes('ミカ')) continue
-      checked++
+      namedSentences++
       assert.equal(
         JA_POLITE_ENDING.test(sentence),
         false,
@@ -339,8 +349,8 @@ test('the Japanese sentence where she names herself is 常体', () => {
       )
     }
   }
-  // If a rename ever makes this match nothing, the test would pass vacuously.
-  assert.equal(checked, 4, 'four ja openers name her; this test must actually read them')
+  // Without this, renaming her would make the content half pass vacuously.
+  assert.equal(namedSentences, 1, 'one ja opener names her after its first sentence')
 })
 
 // --- the numbers this file's comments quote ---------------------------------
