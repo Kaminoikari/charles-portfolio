@@ -104,16 +104,37 @@ const IDENTITY_ENTRIES = [
   'bot-design-patterns',
 ]
 
-test('identity FAQ answers name her, in every locale', () => {
+// Of the identity entries, two are the visitor asking who she IS; the rest ask
+// how she was built, and answer that in the first person without needing to say
+// the name again. Splitting them is what makes the naming rule assertable: it
+// used to share one regex with the pronoun check, so an answer could drop the
+// name, keep an `I`, and pass a test called "name her".
+const NAMES_HER = ['who-is-mika', 'bot-who-are-you']
+
+const answerOf = (id: string) => {
+  const entry = faqEntries.find((e) => e.id === id)
+  assert.ok(entry, `identity entry missing: ${id}`)
+  return entry.answers
+}
+
+test('every identity answer speaks in the first person, in every locale', () => {
   for (const id of IDENTITY_ENTRIES) {
-    const entry = faqEntries.find((e) => e.id === id)
-    assert.ok(entry, `identity entry missing: ${id}`)
+    const answers = answerOf(id)
     for (const locale of ['en', 'zh-TW', 'ja'] as const) {
       assert.match(
-        entry.answers[locale],
-        /Mika|ミカ|あたし|私|\b(I|I'm|me|my|myself)\b|我/,
-        `${id} does not answer in her own voice in ${locale}`,
+        answers[locale],
+        /あたし|私|\b(I|I'm|me|my|myself)\b|我/,
+        `${id} does not answer in the first person in ${locale}`,
       )
+    }
+  }
+})
+
+test('the answers to "who are you" name her, in every locale', () => {
+  for (const id of NAMES_HER) {
+    const answers = answerOf(id)
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      assert.match(answers[locale], /Mika|ミカ/, `${id} does not name her in ${locale}`)
     }
   }
 })
@@ -184,7 +205,7 @@ test('every answer closes on one short line, not on the content', () => {
 // anyone speaking here" and useless for asking "who". The rule itself lives in
 // persona.ts, because the speech bubble on the page is held to it too.
 
-test('the Japanese answers say あたし, never 私', () => {
+test('the Japanese answers never say 私', () => {
   for (const entry of faqEntries) {
     const hit = entry.answers.ja.match(JA_FORMAL_I)
     assert.equal(

@@ -760,6 +760,8 @@ mutation 56 條全紅、零 abort，其中第十二輪新增 10 條：邀請句�
 （沒註明）。到第十二輪為止 `chat.*` 底下被改寫的是 7 條：三語 `emptyMessage`、三語
 `errorMessage`、zh `avatarBubble` 的句尾助詞，其餘 33 鍵未動。Non-goals 改寫成
 「她的台詞不算介面文案」，並把數字寫進去；第十一輪那句「不動它的文案內容」補上推翻註記。
+（第十四輪推翻這兩個數字：實際是 8 條，漏掉的第八條是 ja `avatarBubble`；未動的鍵是
+37 個，33 是拿 40 減字串數算出來的。正確版本見下面第十四輪第一項。）
 
 ### 四、日文 changelog 跳出全篇語體，並用了禁用句式
 
@@ -827,4 +829,50 @@ code reviewer FAIL，五項，並明確指出程式碼層面沒有缺陷：這�
 
 `npx tsc -b` exit 0，`npm run rag:test` 226 pass／0 fail，`npm test` 286 passed。
 mutation 61 條全紅、零 abort。生成層仍未被真實模型驅動過。
+
+## 2026-08-26 雙 reviewer 第十五輪：兩位都確認前一輪全部關閉，剩五項敘述
+
+code reviewer 三項、spec reviewer 兩項，重疊一項。兩位都逐條實測確認第十四輪那八項
+全部關閉，且都指出程式碼層面沒有缺陷、前十四輪的斷言沒有被縮小。
+
+### 一、第十四輪的編輯把 `persona.ts` 一個句子改壞了
+
+為了拿掉封閉清單，刪掉的範圍多含了「because more than one」，結果剩下
+「rather than in a test file holds her to them」，主語與連接詞都沒了，而「so it is
+not listed here」的 it 失去先行詞（被刪掉的正是那份清單）。這段唯一要講的機制
+（因為不只一個測試檔要用，定義才集中在這裡）整段讀不出來。重寫。
+
+### 二、`faq-audit.test.ts` 的兩條測試名承諾了它沒有斷言的事
+
+`the Japanese answers say あたし, never 私` 只斷言 `JA_FORMAL_I` 不命中，沒有任何一條
+斷言 あたし 出現，而 57 條日文答案只有 29 條含 あたし。改名為
+`the Japanese answers never say 私`。這正是第十三輪在 `chatVoice.test.ts` 改掉的形狀，
+而 faq-audit 這條是那個命名的來源，前兩輪掃蕩都沒掃到它。
+
+順著這條線把三個測試檔的測試名逐條對照斷言，又找到同型的第二個：
+`identity FAQ answers name her, in every locale` 用一條 regex 同時收名字與人稱代名詞，
+所以一個答案可以刪掉名字、留一個 `I` 就通過一條叫「name her」的測試。拆成兩條：
+11 條身分題全部要第一人稱；其中真正在問「你是誰」的兩條（`who-is-mika`、
+`bot-who-are-you`）另外要點名。mutation 55 釘住新的那半。
+
+### 三、日文 changelog 同一個清單裡三種語體
+
+`changelog.ja.ts` 的 `mika-persona` 清單三項分別是敬体、常体、体言止め，而同檔另外
+20 個 list 區塊的日文句子一律收在ます／ません。這是訪客讀得到的文案，而這則 entry 的
+主題就是語體一致。兩項改成敬体。（既有缺陷，從 `79fbb23` 起就在。）
+
+### 四、被證實為假的數字只改了被指名的那一處
+
+第十四輪修了 Non-goals 的「7 條／33 鍵」，但第十三輪那節原封留著同樣的兩個數字，
+而那不是歷史量測值，是寫下時就錯的。補上推翻註記，指向第十四輪的正確版本。
+
+### 五、plan 把疊用檢查寫成「三條 mutation」
+
+實際只有 50、51 驅動它，52 打的是句尾助詞、已被同輪第五項認領。改成兩條並註明。
+
+### 驗證
+
+`npx tsc -b` exit 0，`npm run rag:test` 227 pass／0 fail，`npm test` 286 passed
+（新增的那條在 faq-audit，走 tsx 的 rag:test，不在 vitest 那套）。
+mutation 62 條全紅、零 abort。生成層仍未被真實模型驅動過。
 
