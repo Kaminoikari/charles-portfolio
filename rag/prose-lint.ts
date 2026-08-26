@@ -21,9 +21,10 @@ export type Finding = { file: string; line: number; message: string }
  * because a fixture in this suite holds a line WITH a trailing comment inside a
  * string literal, and reading that as prose about the code makes the sweep fail
  * on its own test data. That is the only guard: an earlier version also required
- * whitespace before the `//`, which decided nothing the quote tracking had not
- * already decided (measured across every checked file), could not be mutated on
- * its own because the other guard covered it, and hid a comment written as
+ * whitespace before the `//`, which changed no finding in any checked file (the
+ * lines where it changed this function's return were all empty comment
+ * separators, which carry no numbers to find), could not be mutated on its own
+ * because the other guard covered it, and hid a comment written as
  * `const x =// note`.
  */
 export const trailingComment = (raw: string): string | null => {
@@ -89,6 +90,31 @@ export function commentLayout(file: string, source: string): Finding[] {
   return out
 }
 
+/**
+ * Two block comments with nothing between them. Inserting a function above
+ * another leaves the lower one's docblock describing the wrong symbol, and the
+ * text reads as a fact about code it no longer sits on. It has happened three
+ * times in this file alone, each caught by a reviewer rather than by anything
+ * that runs, and each time the docblock said something false about whatever it
+ * landed on.
+ *
+ * Adjacency is the mechanical signature: a comment that ends where another
+ * begins documents nothing. A block comment written on a single line counts on
+ * both sides: the first version looked only for a closing delimiter alone on its
+ * line, and a mutation inserting a one-liner stayed green.
+ */
+export function stackedDocblocks(file: string, source: string): Finding[] {
+  const lines = source.split('\n')
+  const out: Finding[] = []
+  lines.forEach((line, i) => {
+    if (!line.trim().endsWith('*/')) return
+    if ((lines[i + 1] ?? '').trim().startsWith('/*')) {
+      out.push({ file, line: i + 2, message: 'a block comment opens where another closed, so one of them documents nothing' })
+    }
+  })
+  return out
+}
+
 // Written by the user, in ~/.claude/CLAUDE.md: no dash standing in for a pause
 // mid-sentence, and no "X, not Y" contrast frame in any of the three languages.
 //
@@ -115,6 +141,24 @@ export function bannedCopy(file: string, passages: readonly string[]): Finding[]
   return out
 }
 
+/**
+ * Every line of prose in a source, with where it came from. A trailing comment
+ * is prose too: leaving it out let a count hide on the same line as the code it
+ * annotates, which is where a declaration list keeps its reasons. One function,
+ * so the two sweeps below cannot drift apart or shade each other's mutations.
+ */
+function proseLines(source: string): Array<{ line: number; prose: string; where: string }> {
+  const out: Array<{ line: number; prose: string; where: string }> = []
+  source.split('\n').forEach((line, i) => {
+    if (isProseLine(line)) out.push({ line: i + 1, prose: line, where: 'comment' })
+    else {
+      const trailing = trailingComment(line)
+      if (trailing != null) out.push({ line: i + 1, prose: trailing, where: 'trailing comment' })
+    }
+  })
+  return out
+}
+
 /** Every numeral in one line of prose that is a count of something. */
 const countsIn = (prose: string): number[] =>
   (prose.match(/(?<![\w.\-/])\d+(?![\w]|\.\d)/g) ?? [])
@@ -134,24 +178,6 @@ const countsIn = (prose: string): number[] =>
  * number appearing unaccounted for, and it keeps the measured ones true. It
  * cannot catch a false sentence built out of a number that is already declared.
  */
-/**
- * Every line of prose in a source, with where it came from. A trailing comment
- * is prose too: leaving it out let a count hide on the same line as the code it
- * annotates, which is where a declaration list keeps its reasons. One function,
- * so the two sweeps below cannot drift apart or shade each other's mutations.
- */
-function proseLines(source: string): Array<{ line: number; prose: string; where: string }> {
-  const out: Array<{ line: number; prose: string; where: string }> = []
-  source.split('\n').forEach((line, i) => {
-    if (isProseLine(line)) out.push({ line: i + 1, prose: line, where: 'comment' })
-    else {
-      const trailing = trailingComment(line)
-      if (trailing != null) out.push({ line: i + 1, prose: trailing, where: 'trailing comment' })
-    }
-  })
-  return out
-}
-
 export function undeclaredNumerals(file: string, source: string, declared: ReadonlySet<number>): Finding[] {
   const out: Finding[] = []
   proseLines(source).forEach(({ line: lineNo, prose, where }) => {
