@@ -185,10 +185,13 @@ test('every answer closes on one short line, not on the content', () => {
 // check above cannot see it: its regex accepts either pronoun, which is right for
 // asking "is anyone speaking here" and useless for asking "who".
 //
-// Matched by the following particle rather than by an exclusion list, so the
-// compound nouns that merely start with the character (私生活, 私立, 私費, 私有…)
-// never trip it and no future one has to be added here.
-const JA_FORMAL_I = /私(?=[はがをのにもへと])|私です|私だ/
+// Matched as the character itself, minus the four compound nouns that start with
+// it (私生活, 私立, 私費, 私有). An earlier version keyed on the FOLLOWING particle,
+// which let through exactly the shape her register uses: spoken Japanese drops the
+// particle, so 「私、ミカだよ！」 and 「私って…」 read as her and passed the test named
+// after them. A new compound would have to be added here, which is the price of
+// catching the bare pronoun.
+const JA_FORMAL_I = /私(?![生立費有])/
 
 test('the Japanese answers say あたし, never 私', () => {
   for (const entry of faqEntries) {
@@ -318,9 +321,11 @@ test('her Chinese voice lines carry one particle, not a stutter of them', () => 
 // Her Japanese openers get the same 常体 rule her closers do, read two ways,
 // because each selector alone leaves a hole the other covers.
 //
-// By position: the FIRST sentence of every ja opener. That is her line in the 52
+// By position: the FIRST sentence of every ja opener. That is her line in the 53
 // answers whose opener is nothing but a voice line, and mutating one of them to
-// 敬体 (`philosophy`'s 「…ここから読むといいですよ。」) is caught only here.
+// 敬体 (`philosophy`'s 「…ここから読むといいですよ。」) is caught here. The counts test
+// below reddens for it too, by arithmetic (4 becomes 5) rather than by saying what
+// is wrong, which is why this one exists.
 //
 // By content: any sentence that says her NAME, wherever it sits. Four answers
 // open on content rather than on a voice line, and in `bot-who-are-you` the
