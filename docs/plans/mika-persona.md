@@ -74,11 +74,12 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 
 ## PASS 的定義（2026-08-27 訂，第十八輪起生效）
 
-**凍結的範圍是判準，措辭則會被修。** Gate A 的四項、Gate B 的範圍與 BLOCKING／ADVISORY 分級、
-PASS＝BLOCKING 為零，這些不因輪次而改。措辭則會被修：第十九到二十二輪各改過幾句，多數是把敘述改成與程式碼相符或拿掉
-禁用句式，另有兩處是新增（第十九輪補上數字檢查反向那半的說明，第二十輪在 Gate C
-寫明「修正 BLOCKING 時可改寫既有段落」這個例外）。判準本身三項一個字都沒動。判準本身要改，得先在
-這裡寫明改了什麼、為什麼。
+**凍結的範圍是判準，措辭則會被修。** Gate A 的四項、Gate B 的範圍與 BLOCKING／
+ADVISORY 分級、PASS＝BLOCKING 為零，這三項的實質不因輪次而改。措辭則每輪都動：多數是
+把敘述改成與程式碼相符或拿掉禁用句式，也有純補充（第十九輪補上數字檢查反向那半的說明，
+第二十輪在 Gate C 寫明「修正 BLOCKING 時可改寫既有段落」這個例外，第二十一輪寫下這一段
+本身，第二十二輪在 Gate A 那格註明 `rag:test` 的 glob）。這些補充都沒有動到通過條件。
+判準本身要改，得先在這裡寫明改了什麼、為什麼。
 
 第十三到十七輪連續五輪 FAIL，發現全落在散文與命名準確度。診斷出來的原因有三個，
 都是流程本身造成的，不是產出本身還壞著：
@@ -149,12 +150,14 @@ mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一�
 | 18 | 2026-08-27 | code 2、spec 3（重疊 2） | 三個 sweep 斷言與十個禁用分支各補 mutation；檢查改為也吃 `/** */`；`prose-lint.test.ts` 納入受檢清單 |
 | 19 | 2026-08-27 | code 4、spec 3（重疊 3） | 補行尾註解盲區與其 fixture／mutation；死宣告改為會紅；區塊註解與句尾數字各補 fixture；修四處與程式碼不符的敘述 |
 | 20 | 2026-08-27 | code 4、spec 2（重疊 2） | 兩處 docblock 錯位歸位；兩個 sweep 抽出共用的 `proseLines`；拿掉與引號追蹤重疊的空白防禦；寬度檢查改為也讀行尾註解；新增 mutation 70 至 72 |
-| 22 | 2026-08-27 | code 1 | docblock 理由改成以「呼叫端會走到的行」為主詞（結論對、理由錯）；測試名收斂成它實際檢查的鄰接性；Gate A 註明 `rag:test` 的 glob 會納入無關檔案 |
 | 21 | 2026-08-27 | code 3、spec 2（重疊 2） | harness 新增 parse-error 防線（語法壞掉的 mutation 先前會印出假的紅）；mutation 70 改成語法正確的版本；docblock 錯位改由 `stackedDocblocks` 機械檢查；孤行閘門與小數點 lookahead 各補 mutation |
+| 22 | 2026-08-27 | code 1、spec 2（重疊 1） | 補上放寬方向的 mutation 77（相鄰判斷改成 `if (true)`）；docblock 理由改成以呼叫端會走到的行為主詞（結論對、理由錯）；測試名收斂成它實際檢查的鄰接性；Gate A 註明 `rag:test` 的 glob 會納入無關檔案 |
+| 23 | 2026-08-27 | code 1、spec 2（重疊 1） | `trailingComment` 的 docblock 拿掉「不會看到註解行」這句假敘述（實測進得到那裡的 1604 行有 47 行是註解）；拿掉與 sweep 互相遮蔽的乾淨-docblock 斷言（留與不留，基線加三條 mutation 共八種情形結果全同）；輪次表順序歸位 |
 
 ## 驗證計畫
 
-- `npm run rag:test` 全綠（基線 208 pass）。
+- `npm run rag:test` 全綠。本工作自己的數字看 `npx tsx --test rag/*.test.ts`，
+  現為 171 pass。
 - 新增測試釘住：兩個 prompt 都含 persona 定義（接線層，非注入層）；
   三語罐頭文案都以 Mika 第一人稱開場；FAQ 身分題答案含 Mika。
 - 每條新測試逐一 mutation 確認會轉紅。

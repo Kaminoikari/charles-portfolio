@@ -127,9 +127,13 @@ test('no block comment opens where another one closed', () => {
   // function in above the one a docblock belonged to.
   const stacked = ['/**', ' * One thing.', ' */', '/**', ' * A different thing.', ' */', 'const x = 1'].join('\n')
   assert.equal(stackedDocblocks('x.ts', stacked).length, 1, 'stacked docblocks went unseen')
-  assert.deepEqual(stackedDocblocks('x.ts', '/**\n * One thing.\n */\nconst x = 1'), [])
   // A one-liner on either side of the seam counts too.
   assert.equal(stackedDocblocks('x.ts', '/** One thing. */\n/** Another. */\nconst x = 1').length, 1)
+  // A fixture asserting a lone docblock goes unreported used to sit here. The
+  // sweep above is already that assertion: the seven files are full of lone
+  // docblocks, so anything that reports one turns it red. Measured across the
+  // baseline and the three mutations that reach this check, keeping the fixture
+  // or dropping it gave the same four results, so it pinned nothing of its own.
 })
 
 test('no comment was edited without reflowing its paragraph', () => {

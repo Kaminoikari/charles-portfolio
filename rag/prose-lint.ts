@@ -21,11 +21,12 @@ export type Finding = { file: string; line: number; message: string }
  * because a fixture in this suite holds a line WITH a trailing comment inside a
  * string literal, and reading that as prose about the code makes the sweep fail
  * on its own test data. That is the only guard: an earlier version also required
- * whitespace before the `//`. Both callers ask `isProseLine` first, so this
- * function only ever sees a line that is not itself a comment; among those, the
- * only lines whose return that rule changed were the empty comment separators,
- * which carry nothing to find. It changed no finding in any checked file, could
- * not be mutated on its own because the quote tracking covered it, and hid a
+ * whitespace before the `//`. Both callers ask `isProseLine` first, so what
+ * arrives here is every line it rejects: code, blank lines, and the bare `//`
+ * and block-comment delimiters that hold no prose. Among those, the only
+ * returns the whitespace rule changed were the bare `//` separators, which
+ * carry nothing to find. It changed no finding in any checked file, could not
+ * be mutated on its own because the quote tracking covered it, and hid a
  * comment written as `const x =// note`.
  */
 export const trailingComment = (raw: string): string | null => {
