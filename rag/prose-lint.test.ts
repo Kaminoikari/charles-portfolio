@@ -160,8 +160,8 @@ test('commentLayout sees the two shapes an unreflowed edit leaves', () => {
   // A short line that ENDS a paragraph is not an orphan.
   assert.deepEqual(commentLayout('x.ts', '// one had been fixed.\n//\n// Next paragraph.'), [])
 
-  // Block comments are prose too. This file is written in them, and reading
-  // only `//` left them outside the check while the plan said otherwise.
+  // Block comments are prose too. rag/prose-lint.ts is written in them, and
+  // reading only `//` left those outside the check while the plan said otherwise.
   const jsdoc = [
     '/**',
     ' * A polite form is followed by terminal punctuation, a colon, a trailing 〜／ー／…, a bracket or a quote on either side, or a final particle.',
@@ -174,6 +174,12 @@ test('commentLayout sees the two shapes an unreflowed edit leaves', () => {
   assert.equal(inBlock.filter((f) => f.message.includes('orphan')).length, 1, 'a JSDoc orphan went unseen')
   // The delimiters carry no prose, so they are not orphans.
   assert.deepEqual(commentLayout('x.ts', '/**\n * One sentence.\n */'), [])
+
+  // A line carrying a trailing comment is measured for width. It is not a
+  // wrapped paragraph, so the orphan rule does not apply to it.
+  const trailing = `  const ceiling = 92 // this annotation runs well past the ninety-two column ceiling the check enforces`
+  assert.equal(commentLayout('x.ts', trailing).length, 1, 'a wide trailing comment went unseen')
+  assert.deepEqual(commentLayout('x.ts', 'const a = 1 // short\n// next line of prose'), [])
 })
 
 // Every alternative in every banned pattern, one fixture each. The first
@@ -233,9 +239,11 @@ test('undeclaredNumerals sees a count nothing measures', () => {
     1,
     'a count in a trailing comment went unseen',
   )
-  // A comment inside a string literal is data, not prose about the code.
+  // A comment inside a string literal is data about the code, so reading it as
+  // prose about the code makes the sweep fail on its own fixtures. Quote
+  // tracking is the only thing standing between those two readings.
   assert.deepEqual(
-    undeclaredNumerals('x.ts', "    expect(lint('// the count is 99', d)).toEqual([])", declared),
+    undeclaredNumerals('x.ts', "    expect(lint('  128, // 99 of them', d)).toEqual([])", declared),
     [],
   )
   // Years and single digits are not counts of anything here.

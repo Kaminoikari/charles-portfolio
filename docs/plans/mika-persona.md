@@ -102,15 +102,16 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 `rag:test` 裡，涵蓋 `persona.ts`／`prose-lint.ts`／`prose-lint.test.ts`／
 `faq-audit.test.ts`／`nodes.test.ts`／`triage.test.ts`／`chatVoice.test.ts` 的每一行
 註解：整行 `//`、`/** */` 區塊裡的每一行、以及行尾註解（`isProseLine` 與
-`trailingComment` 決定，區塊的起訖符號不算），以及 `mika-persona` changelog 三語與
-`chat.*` 三語的每一個字串。
+`trailingComment` 決定，區塊的起訖符號不算）。孤行那一項只套用在整行註解上，因為行尾
+註解不是折行的段落。受檢的文案是 `mika-persona` changelog 三語與 `chat.*` 三語的每一
+個字串。
 
 綠要有意義，靠兩層：三個檢查器各有用壞輸入驅動的測試（第十七輪那些孤行與過長行的
 原文、差點出貨的 `ではなく` 段落、第十輪那個「52 應為 53」的形狀，以及禁用清單裡
 **每一個** alternation 分支各一條），而掃過真實檔案的那三條斷言各有一條資料側
 mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一個未申報數字、
 往日文 changelog 的 `mika-persona` entry 最後一段散文插一句 `ではなく`（該處在切片的
-91.8%，所以它證明的是切片至少延伸到那裡，不是切到最後一個字元）。
+91.8%，所以它證明的是切片至少延伸到那裡）。
 
 數字那條還有反向的一半：宣告了卻沒有任何註解引用的數字也會紅。少了它，一個死宣告會
 把那個數字對未來的註解永久豁免，而且它本身就是一句假的敘述。
@@ -130,13 +131,16 @@ mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一�
 
 ### Gate C：不再自我再生
 
-- 每輪不再新增敘述段落。輪次記錄改成下面的表格，一輪一行。
+- 每輪不再為「這輪做了什麼」新增敘述段落，輪次記錄改成下面的表格，一輪一行。
+  唯一的例外是修正 BLOCKING 時必須改寫或補充既有段落，那屬於修正本身，同樣記在表格。
+  第十九、二十輪各因此淨增 8 行上下，對照第十三到十七輪的平均 65.4 行。
 - 前十七輪的敘述段落保留為歷史，不再回頭改寫。
 
 | 輪次 | 日期 | BLOCKING | 處置 |
 |---|---|---|---|
 | 18 | 2026-08-27 | code 2、spec 3（重疊 2） | 三個 sweep 斷言與十個禁用分支各補 mutation；檢查改為也吃 `/** */`；`prose-lint.test.ts` 納入受檢清單 |
 | 19 | 2026-08-27 | code 4、spec 3（重疊 3） | 補行尾註解盲區與其 fixture／mutation；死宣告改為會紅；區塊註解與句尾數字各補 fixture；修四處與程式碼不符的敘述 |
+| 20 | 2026-08-27 | code 4、spec 2（重疊 2） | 兩處 docblock 錯位歸位；兩個 sweep 抽出共用的 `proseLines`；拿掉與引號追蹤重疊的空白防禦；寬度檢查改為也讀行尾註解；新增 mutation 70 至 72 |
 
 ## 驗證計畫
 
