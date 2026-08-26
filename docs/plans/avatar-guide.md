@@ -105,7 +105,9 @@ Docker（speaker 8）→ wav → afconvert AAC（不帶 -b，帶了會報 '!dat'
 辣妹感貼合黑肉街頭系造型＋兩音拍三語系都好念；Amika 避開（與參考站 mekahime 撞名圈）、
 Orihime 否決（神話人設＋BLEACH 撞名）。名字落地面：泡泡文案（i18n ×3）、FAQ cache
 新條目 who-is-mika（「你是誰」類 paraphrase 自 who-is-charles 移轉）、portfolio map
-SITE 節、generation persona（rag/nodes.ts）、changelog ×3、專案 memory。
+SITE 節、generation persona（**2026-08-26 起在 `rag/persona.ts`**，`converse` 與 `generate`
+兩個 prompt 共用；同日 triage 的罐頭招呼／擋注入／導向文案也改成她的第一人稱，
+見 docs/plans/mika-persona.md）、changelog ×3、專案 memory。
 aria-label 維持功能性描述（"Open the AI assistant"）不掛名字。
 
 - **launcher 態（C＋B）**：avatar 載入完成後取代膠囊。wrapper 維持常駐 `<div>`

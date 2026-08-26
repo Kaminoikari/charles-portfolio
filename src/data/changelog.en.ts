@@ -20,6 +20,61 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-persona',
+    date: '2026-08-26',
+    title: `Mika got a personality, and her voice finally matches her writing`,
+    tags: ['feature', 'design'],
+    body: [
+      `Mika has had two registers this whole time. Tap her, send a question, or blow the panel up to fullscreen and you hear someone with a lot of energy: "Nobody knows Charles better than me!" Then she types an answer and the tone goes flat, opening with "I'm Charles's portfolio assistant". Same character, and she sounded like two different people depending on whether she was speaking or writing.`,
+      `So we wrote her personality down, and made every path that produces a reply read from the same definition.`,
+      { kind: 'heading', text: `First, an audit: where does her tone actually come from` },
+      `We listed every place a reply can be produced. There are ten of them, and only some pass through an AI model.`,
+      `That distinction matters, because editing the AI's instructions only reaches the layers that go through the model. The greetings, the comeback when someone tries to hijack her, and 57 pre-written answers to common questions all hand you text directly, with the model sitting the whole thing out.`,
+      `The audit turned up three broken spots:`,
+      {
+        kind: 'list',
+        items: [
+          `Ask "what did I just ask you" and a different piece of code takes over. It had never been told it was Mika, so it fell back to being a nameless assistant.`,
+          `Type "hi" and she called herself a "portfolio assistant". Tap her and the recording says "I'm Mika!"`,
+          `Of the 57 pre-written answers, only 4 were written from her point of view.`,
+        ],
+      },
+      { kind: 'heading', text: `Who she is` },
+      `A personality has to match a face, so we started with hers: long purple-black hair with one teal streak, crossed red-and-blue clips, star pins, a black leather choker, a navy satin varsity jacket. That is Japanese jirai-kei crossed with Harajuku gyaru, and the voice she was cast with was picked to match it.`,
+      `Which makes the direction clear: **she is Charles's biggest fan and his agent, and she says the things he is too modest to say about himself.**`,
+      `That framing also solves an old problem with portfolio sites. The people reading this one are mostly hiring, and a person announcing "my products reached 7M+ people" sounds like bragging. Coming from her it lands. And whether her answers are accurate is itself the thing this site is demonstrating.`,
+      { kind: 'heading', text: `Why she does not just get to be cute` },
+      `Telling an AI to "sound cuter" costs you credibility, and credibility is what a recruiter came for. What they want is density.`,
+      `So the personality is layered. Her voice appears at the start and end of an answer, and the middle keeps what it always had: bold key terms, bullets, every number intact.`,
+      {
+        kind: 'table',
+        columns: [`Where`, `Intensity`, `What it looks like`],
+        rows: [
+          [`Greetings, goodbyes, deflecting attacks`, `100%`, `Fully in character`],
+          [`Questions about her, how she was built`, `70%`, `Voice in the intro, technical content still rigorous`],
+          [`Experience, projects, skills`, `20%`, `Voice in the first and last line only, briefing style in between`],
+          [`Declining, handing over to Charles`, `40%`, `Poise first, voice as a garnish`],
+        ],
+      },
+      `A few rules run the other way: at most one emoji per reply; no emoji at all when the portfolio does not cover something, just say so; no cutesy self-diminishing ("I don't know, sorry!" in that register destroys a recruiter's trust); and the citation and refusal rules always outrank tone.`,
+      { kind: 'heading', text: `Two traps in the Japanese` },
+      `All three languages are written separately, the same way her voice lines were, because this register does not survive translation.`,
+      `Japanese had two problems, and we walked into them three times running before catching them all.`,
+      `The first is that Japanese drops the subject freely. "That detail isn't in the portfolio" needs no word for "I" at all, and the result read like narration about the site, with nobody in it talking. Worse, a dropped subject attaches to whoever spoke last: writing "a tool built for himself" about one of his projects said she built it. Now the subject is named wherever dropping it would attach the sentence to the wrong person, and she calls herself あたし throughout, matching the recordings where she names herself at all.`,
+      `The second is register. A Japanese greeting can stay casual while an explanation lands on polite endings. We first pasted casual openers straight onto the existing polite paragraphs, switching twice inside one block, and she read as two people again.`,
+      { kind: 'heading', text: `Keeping it from breaking again` },
+      `Eleven tests now pin all of this down, and we broke each fix again one at a time to confirm the tests actually turn red.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '10', label: `layers producing tone` },
+          { value: '57', label: `cached answers re-voiced` },
+          { value: '3', label: `languages written separately` },
+        ],
+      },
+    ],
+  },
+  {
     id: 'mika-trilingual-voice',
     date: '2026-08-21',
     title: `Mika speaks Mandarin and English now, and all three languages are the same voice`,

@@ -76,3 +76,121 @@ test('content questions still pass through to RAG (not over-blocked)', () => {
     assert.equal(triage(q, 'en').kind, 'pass', `over-blocked: ${q}`)
   }
 })
+
+// --- the cached layer speaks as Mika ----------------------------------------
+// These answers are returned VERBATIM with no model in the path (qdrant.ts
+// faqLookup), so the persona prompt cannot reach them. Identity questions are
+// the ones a visitor asks her about herself, and memory
+// `feedback_mika_first_person` is explicit that they open in the first person.
+const IDENTITY_ENTRIES = [
+  'who-is-charles',
+  'who-is-mika',
+  'bot-how-made',
+  'bot-who-are-you',
+  'bot-why-qdrant',
+  'bot-cost-control',
+  'bot-why-designed',
+  'bot-corrective-loop',
+  'bot-injection-defense',
+  'bot-tech-stack',
+  'bot-design-patterns',
+]
+
+test('identity FAQ answers name her, in every locale', () => {
+  for (const id of IDENTITY_ENTRIES) {
+    const entry = faqEntries.find((e) => e.id === id)
+    assert.ok(entry, `identity entry missing: ${id}`)
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      assert.match(
+        entry.answers[locale],
+        /Mika|ミカ|あたし|私|\b(I|I'm|me|my|myself)\b|我/,
+        `${id} does not answer in her own voice in ${locale}`,
+      )
+    }
+  }
+})
+
+// The layering from docs/plans/mika-persona.md: her voice lives at the EDGES of
+// an answer, so an entry opens and closes on one short line of it and the
+// density a recruiter came for sits in between. The failure these catch is a NEW
+// entry written straight into the content, which reads as the pre-2026-08-26 bot
+// and is invisible in review once it is one of sixty.
+//
+// What they do NOT catch, measured rather than guessed: deleting an opener goes
+// undetected in 53 of 171 answer/locale pairs and deleting a closer in 33,
+// because the paragraph that would become the edge is itself short or carries a
+// first-person token. `philosophy`'s "Charles works by four principles:" is 33
+// characters, well under the English ceiling. The ceilings separate her lines
+// from a NORMAL content paragraph, and a short lead-in defeats them. Closing
+// that hole means lifting the opener and closer out of the answer string into
+// their own fields, so the type system demands them; that changes what
+// `answers` means and moves the ingest with it, so it is not done here.
+//
+// The ceilings are per language because they measure characters and the scripts
+// do not cost the same. Measured against what the tests actually iterate, which
+// is every answer's first and last paragraph rather than only the lines written
+// in this pass: the longest edge that clears its ceiling is 83 characters in
+// English (`bot-why-qdrant`'s opener), 36 in Chinese (`no-data-redirect`'s
+// opener), and 45 in Japanese (`who-is-charles`'s closing invitation, which
+// predates this work and sits exactly ON the ceiling). Japanese therefore has no
+// headroom left: a new ja voice line one character longer than that one fails
+// here, which is the right pressure for a line that is supposed to be short.
+const VOICE_LINE_MAX: Record<'en' | 'zh-TW' | 'ja', number> = { en: 90, 'zh-TW': 40, ja: 45 }
+
+// An identity answer IS her talking about herself, and a closing invitation
+// usually names her or the visitor, so a first-person token clears either edge
+// on its own.
+const FIRST_PERSON = /(\b(I|I'm|I'd|me|my|myself)\b|我|あたし|私)/
+
+test('every answer opens on one short line, not on the content', () => {
+  for (const entry of faqEntries) {
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      const first = entry.answers[locale].split('\n\n')[0]
+      assert.ok(
+        FIRST_PERSON.test(first) || first.length <= VOICE_LINE_MAX[locale],
+        `${entry.id} (${locale}) opens on ${first.length} chars of content, not on her voice`,
+      )
+    }
+  }
+})
+
+// The other half of 首末句. Before 2026-08-26 every cached answer stopped dead on
+// its last bullet, its last fact, or a bare contact list, which is the one shape
+// a chat reply should never have: the character who greeted you by name walks
+// off mid-sentence.
+test('every answer closes on one short line, not on the content', () => {
+  for (const entry of faqEntries) {
+    for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+      const paras = entry.answers[locale].split('\n\n')
+      const last = paras[paras.length - 1]
+      assert.ok(
+        FIRST_PERSON.test(last) || last.length <= VOICE_LINE_MAX[locale],
+        `${entry.id} (${locale}) ends on ${last.length} chars of content, not on her voice`,
+      )
+    }
+  }
+})
+
+// Her recordings never say 私: of the 28 ja clips in scripts/voice_lines.py,
+// three name her at all (mika-greet-5, mika-greet-9, mika-intro-1) and all three
+// say あたし, while the rest drop the pronoun the way spoken Japanese does. So a
+// cached answer that says 私 is a register the character has never been heard in.
+// Four identity answers did exactly that until 2026-08-26, and the first-person
+// check above cannot see it: its regex accepts either pronoun, which is right for
+// asking "is anyone speaking here" and useless for asking "who".
+//
+// Matched by the following particle rather than by an exclusion list, so the
+// compound nouns that merely start with the character (私生活, 私立, 私費, 私有…)
+// never trip it and no future one has to be added here.
+const JA_FORMAL_I = /私(?=[はがをのにもへと])|私です|私だ/
+
+test('the Japanese answers say あたし, never 私', () => {
+  for (const entry of faqEntries) {
+    const hit = entry.answers.ja.match(JA_FORMAL_I)
+    assert.equal(
+      hit,
+      null,
+      `${entry.id} (ja) uses 私 where every recording says あたし: ...${entry.answers.ja.slice(Math.max(0, (hit?.index ?? 0) - 30), (hit?.index ?? 0) + 20)}...`,
+    )
+  }
+})

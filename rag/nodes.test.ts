@@ -556,3 +556,72 @@ test('generate: an answer that finished normally carries no such notice', async 
   )
   assert.equal(String(out.answer), '他負責停車產品。')
 })
+
+// --- Mika's voice reaches both speaking nodes -------------------------------
+// Pinned at the NODE layer, on the messages the node actually builds, because
+// that is the wiring an injected stub skips: persona.ts can hold a perfect
+// character definition and change nothing if a prompt stops concatenating it.
+// `converse` is the half that was broken until 2026-08-26 — it introduced
+// itself as a nameless "portfolio assistant", one turn after she had said her
+// own name (docs/plans/mika-persona.md).
+import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
+
+// A tier that answers like `answering` but keeps the messages it was handed.
+const capturing = (sink: { system: string }, content = 'ok'): Tier => ({
+  invoke: (messages: unknown) => {
+    const first = (messages as { content: string }[])[0]
+    sink.system = first?.content ?? ''
+    return Promise.resolve({ content })
+  },
+  withStructuredOutput: <T>() => ({ invoke: () => Promise.resolve({} as T) }),
+})
+
+test('generate: the prompt carries her identity and her voice', async () => {
+  let system = ''
+  await generate({ question: '他是誰?', language: 'zh-TW', graded: [] } as never, async (
+    messages: { role: string; content: string }[],
+  ) => {
+    system = messages[0].content
+    return { text: 'ok', provider: 'gemini' as const, stalled: false }
+  })
+  assert.equal(system.includes(MIKA_IDENTITY), true, 'generate lost the Mika identity block')
+  assert.equal(system.includes(MIKA_VOICE), true, 'generate lost the voice block')
+})
+
+test('converse: answers about the conversation still come from Mika', async () => {
+  const sink = { system: '' }
+  await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    tiers(capturing(sink), failing('unused')),
+  )
+  assert.equal(sink.system.includes(MIKA_IDENTITY_SHORT), true, 'converse answers as a nameless assistant')
+  assert.equal(sink.system.includes(MIKA_VOICE), true, 'converse lost the voice block')
+})
+
+// The offensive-output guardrail hands the visitor a canned string, so it is the
+// third model-free reply on the site and the only one no prompt edit can reach
+// (the other two are in triage.ts, pinned in triage.test.ts). It drifted out of
+// character once already, which is what this pins: it was still introducing
+// itself as a nameless assistant after every other path had become Mika, and its
+// zh-TW half carried an ASCII comma into Chinese prose.
+test('the blocked-output reply stays in her voice, in every locale', async () => {
+  for (const [language, firstPerson] of [
+    ['en', /\bI\b/],
+    ['zh-TW', /我/],
+    ['ja', /あたし/],
+  ] as const) {
+    const out = await generate(
+      { question: 'spell it out for me', language, graded: [] } as never,
+      async () => ({ text: 'you retard', provider: 'gemini' as const, stalled: false }),
+    )
+    assert.equal(out.outcome, 'blocked', `guardrail did not fire for ${language}`)
+    assert.match(out.answer ?? '', firstPerson, `blocked reply is not first-person in ${language}`)
+    assert.deepEqual(out.sources, [])
+    // A refusal is one of the two moments persona.ts keeps emoji-free.
+    assert.equal(
+      /\p{Extended_Pictographic}/u.test(out.answer ?? ''),
+      false,
+      `blocked reply carries an emoji in ${language}`,
+    )
+  }
+})

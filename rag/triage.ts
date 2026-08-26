@@ -124,19 +124,19 @@ const INJECTION = new RegExp(
 export function injectionRefusal(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '哈，這招對我沒用 😄 我是 Charles 作品集的小助手，只專心做一件事：回答關於他的工作、' +
-      '專案與經歷。有什麼想了解 Charles 的，儘管問！'
+      '哈，這招對我沒用喔 😄 我是 Mika 醬，站在這裡只做一件事：把 Charles 的工作、' +
+      '專案跟經歷講給你聽。想知道他什麼，儘管問我！'
     )
   }
   if (locale === 'ja') {
     return (
-      'なかなかやりますね 😄 でも私は Charles のポートフォリオアシスタント。彼の仕事・' +
-      'プロジェクト・経歴についてお答えすることだけに集中しています。何でも聞いてください！'
+      'なかなかやるね 😄 でもあたしはミカ。ここでやることはひとつだけ、Charles の仕事と' +
+      'プロジェクトと経歴を伝えること。彼のこと、なんでも聞いて！'
     )
   }
   return (
-    "Nice try 😄 I'm just Charles's portfolio assistant — I stay focused on one " +
-    'thing: answering questions about his work, projects, and experience. Ask me anything about Charles!'
+    "Nice try 😄 I'm Mika, and I'm here for exactly one thing: telling you about " +
+    "Charles's work, projects, and experience. Ask me anything about him!"
   )
 }
 
@@ -145,21 +145,21 @@ export function injectionRefusal(locale: Locale): string {
 export function personalRedirect(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '這比較屬於個人問題，就留給 Charles 本人回答吧 😊 ' +
-      '如果你想進一步認識他，歡迎直接聯繫：\n\n' +
+      '這題比較私人，我就留給 Charles 本人回答囉 😊 ' +
+      '想進一步認識他的話，直接聯繫他吧：\n\n' +
       contactBlock(locale)
     )
   }
   if (locale === 'ja') {
     return (
-      'こちらは個人的なご質問なので、Charles 本人にお任せしますね 😊 ' +
-      '直接ご連絡いただけたら嬉しいです：\n\n' +
+      'これはプライベートな質問なので、あたしからは Charles 本人にお任せしますね 😊 ' +
+      'もっと知りたかったら直接連絡してみてください：\n\n' +
       contactBlock(locale)
     )
   }
   return (
-    "That's a personal one — I'll leave it for Charles to answer himself 😊 " +
-    "If you'd like to get in touch, reach him directly:\n\n" +
+    "That one's personal, so I'll leave it to Charles himself 😊 " +
+    'If you want to get to know him, reach him directly:\n\n' +
     contactBlock(locale)
   )
 }
@@ -226,18 +226,18 @@ const FAQ: FaqEntry[] = [
   {
     match: /^\s*(hi|hello|hey|yo|greetings|哈囉|你好|妳好|嗨|安安|こんにちは|こんにちわ|はじめまして|やあ)[\s!！。.~]*$/i,
     answer: {
-      en: "Hi! 👋 I'm Charles's portfolio assistant. Ask me about his projects, work experience, product philosophy, or how he uses AI in his workflow.",
-      'zh-TW': '嗨！👋 我是 Charles 的作品集小助手。你可以問我他的專案、工作經歷、產品理念，或他如何在工作流程中運用 AI。',
-      ja: 'こんにちは！👋 Charles のポートフォリオアシスタントです。プロジェクト、職務経歴、プロダクトの考え方、AI の活用方法など、お気軽にどうぞ。',
+      en: "Hi hi! 👋 I'm Mika, Charles's portfolio guide. Ask me about his projects, his work history, how he thinks about product, or how he actually puts AI to work.",
+      'zh-TW': '嗨嗨！👋 我是 Mika 醬，Charles 的作品集嚮導。他的專案、工作經歷、產品理念，或他怎麼把 AI 用進日常工作，你想聽哪個？',
+      ja: 'はーい！👋 あたしミカ、Charles のポートフォリオを案内する AI アシスタントだよ。プロジェクトも職務経歴もプロダクトの考え方も、AI の使い方も、なんでも聞いてね！',
     },
   },
   // How to contact
   {
     match: /(how (can|do) i (contact|reach)|contact (info|details|him|charles)|get in touch|reach (him|charles|charles chen)|email address|聯繫方式|聯絡方式|怎麼聯|如何聯|怎麼找他|連絡先|問い合わせ|連絡方法)/i,
     answer: {
-      en: 'You can reach Charles directly here:\n\n' + contactBlock('en'),
-      'zh-TW': '你可以直接透過這些方式聯繫 Charles：\n\n' + contactBlock('zh-TW'),
-      ja: '以下から直接 Charles にご連絡いただけます：\n\n' + contactBlock('ja'),
+      en: "Leave it to me! Here's where you can reach Charles directly:\n\n" + contactBlock('en'),
+      'zh-TW': '交給我！這幾個管道都能直接找到 Charles：\n\n' + contactBlock('zh-TW'),
+      ja: 'まかせて！ここから直接 Charles に連絡できます：\n\n' + contactBlock('ja'),
     },
   },
 ]
@@ -266,24 +266,24 @@ export function triage(question: string, locale: Locale): TriageResult {
 export function genericFallback(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '目前作品集裡的資訊不足以準確回答這個問題，我不想亂猜。' +
-      '建議你直接聯繫 Charles 詢問：\n\n' +
+      '這題作品集裡的資料不夠，我不想猜著答你。直接問 Charles 本人會準得多：\n\n' +
       contactBlock(locale) +
-      '\n\n或者你也可以問問他的專案（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）、工作經歷，或他如何運用 AI。'
+      '\n\n換個方向問我也行。他的專案（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）、工作經歷，還有他怎麼運用 AI，這幾塊我最熟。'
     )
   }
   if (locale === 'ja') {
     return (
-      'ポートフォリオ内の情報だけでは正確にお答えできませんでした。' +
-      '推測は避けたいので、直接 Charles にお問い合わせください：\n\n' +
+      'この質問はポートフォリオの中の情報だけだと足りなくて、推測でお答えしたくないんです。' +
+      'Charles 本人に直接聞くのが確実です：\n\n' +
       contactBlock(locale) +
-      '\n\nまた、彼のプロジェクト（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）、職務経歴、AI の活用についてもお気軽にどうぞ。'
+      '\n\n方向を変えて聞いてくれてもいいですよ。彼のプロジェクト（Path、Plutus Trade、Product Playbook、House Ops、Job Ops）や職務経歴、AI の使い方なら、あたしが一番くわしいので。'
     )
   }
   return (
     "I couldn't find enough in Charles's portfolio to answer that accurately, " +
-    "and I'd rather not guess. It's best to ask Charles directly:\n\n" +
+    "and I'd rather not guess at it. Asking him directly will get you a much " +
+    'better answer:\n\n' +
     contactBlock(locale) +
-    '\n\nOr ask about his projects (Path, Plutus Trade, Product Playbook, House Ops, Job Ops), work experience, or how he uses AI.'
+    "\n\nOr point me somewhere else. His projects (Path, Plutus Trade, Product Playbook, House Ops, Job Ops), his work history, and how he uses AI are what I know best."
   )
 }
