@@ -23,6 +23,27 @@ export type Finding = { file: string; line: number; message: string }
  * delimiters of a block comment, and blank continuation lines, carry no prose,
  * so they are not measured.
  */
+/**
+ * The prose in a trailing comment, or null if the line has none. Quote-aware,
+ * because a fixture in this suite holds a line WITH a trailing comment inside a
+ * string literal, and reading that as prose about the code makes the sweep fail
+ * on its own test data.
+ */
+export const trailingComment = (raw: string): string | null => {
+  let quote: string | null = null
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i]
+    if (quote) {
+      if (c === '\\') i++
+      else if (c === quote) quote = null
+      continue
+    }
+    if (c === '"' || c === "'" || c === '`') quote = c
+    else if (c === '/' && raw[i + 1] === '/' && /\s/.test(raw[i - 1] ?? '')) return raw.slice(i + 2)
+  }
+  return null
+}
+
 export const isProseLine = (raw: string): boolean => {
   const t = raw.trim()
   if (t === '//' || t === '*' || t === '*/' || t === '/**' || t === '/*') return false
@@ -65,10 +86,10 @@ export function commentLayout(file: string, source: string): Finding[] {
 // mid-sentence, and no "X, not Y" contrast frame in any of the three languages.
 //
 // The rule postdates most of this site's copy: the changelog's older entries
-// carry it throughout, and rewriting those is not this work. So
-// the caller passes the text this work owns (the mika-persona entry, the chat
-// strings) rather than whole files, and the older copy is left alone until
-// someone decides to sweep it.
+// carry it throughout, and rewriting those is not this work. So the caller
+// passes the text this work owns (the mika-persona entry, the chat strings)
+// rather than whole files, and the older copy is left alone until someone
+// decides to sweep it.
 const BANNED_COPY: Array<[RegExp, string]> = [
   [/[^\s]\s—\s[^\s]|——/u, 'an em-dash used as a mid-sentence pause'],
   [/ではなく/u, 'the ではなく contrast frame'],
@@ -100,20 +121,57 @@ export function bannedCopy(file: string, passages: readonly string[]): Finding[]
  * number appearing unaccounted for, and it keeps the measured ones true. It
  * cannot catch a false sentence built out of a number that is already declared.
  */
+/** Every numeral in one line of prose that is a count of something. */
+const countsIn = (prose: string): number[] =>
+  (prose.match(/(?<![\w.\-/])\d+(?![\w]|\.\d)/g) ?? [])
+    .filter((raw) => Number(raw) > 1 && !/^20\d\d$/.test(raw))
+    .map(Number)
+
+/**
+ * Numerals quoted in comments. A number in prose beside the data it counts has
+ * drifted in five separate rounds, always silently, because nothing reads it.
+ * Every numeral above 1 has to be declared: either it is measured from the data
+ * here, or it is registered as a constant that this data cannot move (a line
+ * reference, a character ceiling, an API quota, a number inside a quoted
+ * example). An undeclared one fails, which forces the choice at the moment the
+ * number is written.
+ *
+ * The limit, stated so nobody reads more into a green run: this catches a NEW
+ * number appearing unaccounted for, and it keeps the measured ones true. It
+ * cannot catch a false sentence built out of a number that is already declared.
+ */
 export function undeclaredNumerals(file: string, source: string, declared: ReadonlySet<number>): Finding[] {
   const out: Finding[] = []
   source.split('\n').forEach((line, i) => {
-    if (!isProseLine(line)) return
-    // `(?![\w])` alone let a numeral ending a sentence escape, because the full
-    // stop after it matched the `.` in the lookahead.
-    const nums = line.match(/(?<![\w.\-/])\d+(?![\w]|\.\d)/g) ?? []
-    for (const raw of nums) {
-      const n = Number(raw)
-      if (n <= 1 || /^20\d\d$/.test(raw)) continue
+    // A trailing comment is prose too. Leaving it out let a count hide on the
+    // same line as the code it annotates, which is where a declaration list
+    // keeps its reasons.
+    const prose = isProseLine(line) ? line : trailingComment(line)
+    if (prose == null) return
+    const where = isProseLine(line) ? 'comment' : 'trailing comment'
+    for (const n of countsIn(prose)) {
       if (!declared.has(n)) {
-        out.push({ file, line: i + 1, message: `comment quotes ${n}, which nothing measures or declares` })
+        out.push({ file, line: i + 1, message: `${where} quotes ${n}, which nothing measures or declares` })
       }
     }
   })
   return out
+}
+
+/**
+ * Every number the comments in these sources actually quote. A declaration for
+ * a number nobody quotes is dead: it exempts that number from the check forever
+ * and reads as a fact about the code. Two such declarations shipped before a
+ * reviewer read the list by eye.
+ */
+export function quotedNumerals(sources: readonly string[]): Set<number> {
+  const seen = new Set<number>()
+  for (const source of sources) {
+    for (const line of source.split('\n')) {
+      const prose = isProseLine(line) ? line : trailingComment(line)
+      if (prose == null) continue
+      for (const n of countsIn(prose)) seen.add(n)
+    }
+  }
+  return seen
 }

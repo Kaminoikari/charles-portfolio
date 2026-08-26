@@ -6,7 +6,14 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 import { faqEntries } from './faq-cache.js'
-import { MAX_COMMENT_WIDTH, MIN_WRAPPED_WIDTH, bannedCopy, commentLayout, undeclaredNumerals } from './prose-lint.js'
+import {
+  MAX_COMMENT_WIDTH,
+  MIN_WRAPPED_WIDTH,
+  bannedCopy,
+  commentLayout,
+  quotedNumerals,
+  undeclaredNumerals,
+} from './prose-lint.js'
 import en from '../src/i18n/strings/en.js'
 
 const read = (f: string) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8')
@@ -93,8 +100,8 @@ test('the numerals quoted in comments are measured or declared', () => {
     71, 114, // round 5: 71 of 114 zh voice lines were rewritten, a historical count
     200, // the ≤200-char ceiling on a visitor's own message
     233, // useChatStream.ts:233/239/246; the lookbehind yields only the first
-    128, // the width of the line round 17 found by hand, quoted in a fixture below
-    12, 10, 52, // counts quoted in the fixtures below, each verified in its comment
+    128, // the display width of the over-long line a fixture below quotes verbatim
+    52, // the count a fixture below quotes as the shape of a stale-number finding
     300, // the transcript clamp in the 2026-08-19 truncation incident
     429, // HTTP status
     649, // chars in the answer that incident truncated
@@ -103,6 +110,12 @@ test('the numerals quoted in comments are measured or declared', () => {
   const declared = new Set<number>([...measured.values(), ...assertedInFaqAudit, ...constants])
   const findings = PROSE_FILES.flatMap((f) => undeclaredNumerals(f, read(f), declared))
   assert.deepEqual(findings, [], findings.map((f) => `${f.file}:${f.line} ${f.message}`).join('\n'))
+
+  // The other direction. A declaration nobody quotes exempts that number from
+  // the check forever, and reads as a fact about the code that is not one.
+  const quoted = quotedNumerals(PROSE_FILES.map(read))
+  const dead = [...declared].filter((n) => !quoted.has(n)).sort((a, b) => a - b)
+  assert.deepEqual(dead, [], `declared but quoted nowhere: ${dead.join(', ')}`)
 })
 
 test('no comment was edited without reflowing its paragraph', () => {
@@ -146,12 +159,27 @@ test('commentLayout sees the two shapes an unreflowed edit leaves', () => {
 
   // A short line that ENDS a paragraph is not an orphan.
   assert.deepEqual(commentLayout('x.ts', '// one had been fixed.\n//\n// Next paragraph.'), [])
+
+  // Block comments are prose too. This file is written in them, and reading
+  // only `//` left them outside the check while the plan said otherwise.
+  const jsdoc = [
+    '/**',
+    ' * A polite form is followed by terminal punctuation, a colon, a trailing 〜／ー／…, a bracket or a quote on either side, or a final particle.',
+    ' * or a final particle',
+    ' * and the rest of the sentence continues here.',
+    ' */',
+  ].join('\n')
+  const inBlock = commentLayout('x.ts', jsdoc)
+  assert.equal(inBlock.filter((f) => f.message.includes('columns, over')).length, 1, 'a wide JSDoc line went unseen')
+  assert.equal(inBlock.filter((f) => f.message.includes('orphan')).length, 1, 'a JSDoc orphan went unseen')
+  // The delimiters carry no prose, so they are not orphans.
+  assert.deepEqual(commentLayout('x.ts', '/**\n * One sentence.\n */'), [])
 })
 
 // Every alternative in every banned pattern, one fixture each. The first
-// version drove three of ten, so six of the branches could be deleted and the
-// suite stayed green — including the em-dash rule, which is the one the user's
-// writing rule names first and the one CJK copy breaks most often.
+// version drove three of the ten, so every other branch could be deleted with
+// the suite still green. The em-dash rule was among them, and it is the one the
+// writing rule names first, as well as the one CJK copy breaks most often.
 const BANNED_FIXTURES: Array<[string, string]> = [
   ['spaced em-dash', '`她掛在角色旁邊的對話泡泡 — 面板打開時的那句邀請也是。`'],
   ['doubled em-dash', '`這三句都是 review 找出來的——面板裡的每一條文案都得標明身分。`'],
@@ -182,13 +210,34 @@ test('bannedCopy sees every pattern it declares', () => {
 
 test('undeclaredNumerals sees a count nothing measures', () => {
   const declared = new Set([57])
-  // The shape of round 10's finding: a comment saying 52 where the data said 53.
+  // The shape of an earlier finding: a comment saying 52 where the data said 53.
   assert.equal(
     undeclaredNumerals('x.ts', '// her line in the 52 answers whose opener is a voice line', declared).length,
     1,
     'an undeclared count went unseen',
   )
   assert.deepEqual(undeclaredNumerals('x.ts', '// the 57 cached answers', declared), [])
+  // A numeral ending a sentence. The lookahead has to exclude a decimal point
+  // without excluding a full stop; excluding both made this invisible.
+  assert.equal(
+    undeclaredNumerals('x.ts', '// the comment said 52.', declared).length,
+    1,
+    'a count at the end of a sentence went unseen',
+  )
+  assert.deepEqual(undeclaredNumerals('x.ts', '// a ratio of 1.5 is not a count', declared), [])
+  // A trailing comment is where a declaration list keeps its reasons, so it is
+  // where an undeclared number hides best. This one escaped until a reviewer
+  // read the list by eye.
+  assert.equal(
+    undeclaredNumerals('x.ts', '    128, // the width of the line round 17 found by hand', declared).length,
+    1,
+    'a count in a trailing comment went unseen',
+  )
+  // A comment inside a string literal is data, not prose about the code.
+  assert.deepEqual(
+    undeclaredNumerals('x.ts', "    expect(lint('// the count is 99', d)).toEqual([])", declared),
+    [],
+  )
   // Years and single digits are not counts of anything here.
   assert.deepEqual(undeclaredNumerals('x.ts', '// until 2026-08-26 it said 1 thing', declared), [])
 })
