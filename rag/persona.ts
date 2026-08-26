@@ -147,27 +147,28 @@ export const MIKA_VOICE =
 // here. Keeping a copy instead of importing is what goes wrong. While
 // nodes.test.ts kept its own copy of one of these the two silently diverged: the
 // copy still carried the version that let 〜ましょ and 〜でしょう through after this
-// one had been fixed.
-// Anything that reads one of these definitions imports it; nothing re-states it,
-// and `rg JA_POLITE_ENDING` finds every consumer without a comment's help.
+// one had been fixed. Anything that reads one of these definitions imports it;
+// nothing re-states it, and `rg JA_POLITE_ENDING` finds every consumer without a
+// comment's help.
 
 // Japanese 常体. Her 25 recorded lines never say です／ます, so 敬体 in a line of
 // HERS makes her a politer stranger. What FOLLOWS the ending is what separates a
 // polite form from a 常体 verb that merely contains those characters: a polite
 // form is followed by terminal punctuation, a colon (an edge that hands over to a
-// contact list ends on one), a trailing 〜／ー／…, a bracket or quote on either side,
-// or a final particle
-// (〜ですよ。〜ますね。〜ますから！〜ですか？); 励ますんだ／だますわけ／ますます／いますぐ
-// are followed by something else. でしょう is listed and でしょ is not, because the
-// clipped form is one she is recorded using and the full one is 敬体.
+// contact list ends on one), a trailing 〜／ー／…, a bracket or quote on either
+// side, or a final particle (〜ですよ。〜ますね。〜ますから！〜ですか？); while
+// 励ますんだ／だますわけ／ますます／いますぐ are followed by something else. でしょう is
+// listed and でしょ is not, because the clipped form is one she is recorded using
+// and the full one is 敬体.
 //
 // Two known limits, both accepted rather than chased. A 辞書形 verb ending in ます
 // before a particle (「あたしが励ますよ！」) is indistinguishable from 敬体 by suffix
 // alone and is rejected, whatever follows it: a particle, terminal punctuation
 // (「あたしが励ます！」), or an opening bracket (「Charles を励ます「相棒」だよ。」,
 // 「ますます（もっと）伸びるね。」). The brackets are in the lookahead because a polite
-// ending can sit right before an aside; the cost is this wider misfire. 〜ませ as a polite imperative (いらっしゃいませ) is not
-// listed, because ませ also ends 常体 forms like 済ませて.
+// ending can sit right before an aside; the cost is this wider misfire. 〜ませ as a
+// polite imperative (いらっしゃいませ) is not listed, because ませ also ends 常体
+// forms like 済ませて.
 export const JA_POLITE_ENDING =
   /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、（）：「」『』\s*!?♪〜～ー…]|[よねかがからのでけどしなぞぜ]|$)/
 
@@ -209,9 +210,10 @@ export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][�
 // identical to ZH_SPOKEN_ENDING: it reads one character wider, allowing a trailing
 // 〜／～, because a particle wearing one (「…都可以喔～，…那裡啦！」) is still a particle
 // stacked mid-line. The asymmetry has a direction. Widening THIS side can only
-// reject more; widening the ending side is what let a stacked line ship. A leading interjection of three
-// characters or fewer is exempt; a longer one (「哎唷喂呀，」) or a clause whose last
-// word merely ends in one of these (「他常去的是酒吧，…」) is rejected.
+// reject more; widening the ending side is what let a stacked line ship. A
+// leading interjection of three characters or fewer is exempt; a longer one
+// (「哎唷喂呀，」) or a clause whose last word merely ends in one of these
+// (「他常去的是酒吧，…」) is rejected.
 export const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][〜～]?$/
 export const ZH_INTERJECTION_MAX = 3
 

@@ -599,13 +599,13 @@ test('converse: answers about the conversation still come from Mika', async () =
 })
 
 // The offensive-output guardrail hands the visitor a canned string, so it is one
-// of the replies no prompt edit can reach; persona.ts states the rule and names
-// them all, and each is pinned where it lives (triage.test.ts, faq-audit.test.ts,
-// chatVoice.test.ts, and here). Enumerating them in this comment as well is what
-// went stale three times. It drifted out of
-// character once already, which is what this pins: it was still introducing
-// itself as a nameless assistant after every other path had become Mika, and its
-// zh-TW half carried an ASCII comma into Chinese prose.
+// of the replies no prompt edit can reach; persona.ts states the rule that
+// decides which strings those are, and each is pinned where it lives
+// (triage.test.ts, faq-audit.test.ts, chatVoice.test.ts, and here). Listing them
+// in this comment as well is what kept going stale. It drifted out of character
+// once already, which is what this pins: it was still introducing itself as a
+// nameless assistant after every other path had become Mika, and its zh-TW half
+// carried an ASCII comma into Chinese prose.
 test('the blocked-output reply stays in her voice, in every locale', async () => {
   for (const [language, firstPerson] of [
     ['en', /\bI\b/],

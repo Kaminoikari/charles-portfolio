@@ -919,10 +919,52 @@ of hers ever says 私」，並用 `rg` 掃過全 repo 確認沒有第四份。
 
 ### 五、`persona.ts` 的孤行與 plan 的歸屬錯誤
 
-上一輪插字後沒重排，留下一行 29 欄的孤行，同一句還連用兩個冒號；重排並改掉第二個冒號。
+上一輪插字後沒重排，留下一行 29 欄的孤行，同一句還連用兩個冒號；重排並把第一個冒號
+改成句號（第二個留著，它引出的是那份 regex 分歧的內容）。
 另外第十五輪第五項（疊用檢查的 mutation 條數）其實是第十四輪 spec reviewer 的發現、
 也在第十四輪的 commit 就改掉了，列在第十五輪是把上一個 commit 的編輯記成本輪，
 保留條目並更正歸屬。
+
+### 驗證
+
+`npx tsc -b` exit 0，`npm run rag:test` 227 pass／0 fail，`npm test` 286 passed。
+mutation 62 條全紅、零 abort。生成層仍未被真實模型驅動過。
+
+## 2026-08-26 雙 reviewer 第十七輪：四項，兩位都說功能面找不到缺陷
+
+code reviewer 兩項、spec reviewer 兩項，重疊一項。兩位都逐條實測確認第十六輪的修正
+全部落地、斷言一字未動、mutation 62 條不受更名影響。
+
+### 一、上一輪為了修分類而新寫的句子，自己把 11 條數成 10 條
+
+註解寫「nine ask what she is or how she was built, and `who-is-charles`」，加起來是
+10，而 `IDENTITY_ENTRIES` 有 11 條，漏掉的是 `who-is-mika`。那個 9 是另一個切法的
+數字（11 減 `NAMES_HER` 2），在同檔三行後用得正確，搬到以 `who-is-charles` 為分界的
+切法上就對不上，於是同一份清單在相鄰兩段註解裡被講成 10 與 11。
+
+這是第四次同一種形狀，所以這次不是把數字改對，是**把數字拿掉**：兩段註解改成
+「every one but `who-is-charles`」與「the rest」，陣列增減都不會讓它們變假。
+`faq-audit.test.ts` 底部的 counts 測試只斷言 opener 數、盲點對數與三個 ceiling，
+不涵蓋身分題的分類數，所以這類數字在這個檔案裡本來就沒有防線。
+
+### 二、「插字沒重排」也只掃了被指名的那一處
+
+第十六輪修掉 `persona.ts` 一行 29 欄的孤行，同檔同一區還有一行 22 欄的段落中孤行與
+一行 128 欄的過長行，同一次插字留下的。這次用一支量 East Asian Width 的腳本掃過
+`persona.ts`、`faq-audit.test.ts`、`chatVoice.test.ts`、`nodes.test.ts`、
+`triage.test.ts` 五個檔，找出並修掉全部：過長行 4 條（128／127／112／105 欄）、
+段落中孤行 3 條。掃完現在 0 條。
+
+### 三、plan 對自己編輯的描述又錯一次
+
+第十六輪寫「改掉第二個冒號」，實際改的是第一個（第二個引出的是 regex 分歧的內容，
+留著是對的）。改成實情。
+
+### 四、順帶修掉的鄰近敘述
+
+`nodes.test.ts` 的註解寫「persona.ts states the rule and names them all」，但
+`persona.ts` 現在對 i18n 那一側是指向 `chatVoice.test.ts` 的分類，不再自己列名。
+同段的「went stale three times」也是一個沒有防線的計數，一併改成不帶數字的說法。
 
 ### 驗證
 

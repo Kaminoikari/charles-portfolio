@@ -88,10 +88,11 @@ test('content questions still pass through to RAG (not over-blocked)', () => {
 // --- the cached layer speaks as Mika ----------------------------------------
 // These answers are returned VERBATIM with no model in the path (qdrant.ts
 // faqLookup), so the persona prompt cannot reach them. The entries below are the
-// ones a visitor cannot read without meeting her: nine ask what she is or how she
-// was built, and `who-is-charles` puts her in the room by asking her to introduce
-// the person she works for. Memory `feedback_mika_first_person` is explicit that
-// all of them open in the first person.
+// ones a visitor cannot read without meeting her: every one but `who-is-charles`
+// asks what she is or how she was built, and that one puts her in the room by
+// asking her to introduce the person she works for. Memory
+// `feedback_mika_first_person` is explicit that all of them open in the first
+// person.
 const IDENTITY_ENTRIES = [
   'who-is-charles',
   'who-is-mika',
@@ -107,8 +108,8 @@ const IDENTITY_ENTRIES = [
 ]
 
 // Two of those entries are the visitor asking who she IS, and only those two are
-// held to saying the name. The other nine answer in the first person without
-// needing to repeat it, whether they are describing the architecture or Charles.
+// held to saying the name. The rest answer in the first person without needing to
+// repeat it, whether they are describing the architecture or Charles.
 // Splitting the two rules is what makes the naming one assertable: it used to
 // share a regex with the pronoun check, so an answer could drop the name, keep an
 // `I`, and pass a test called "name her".
@@ -236,20 +237,20 @@ test('the Japanese answers never say 私', () => {
 // fail. All four ja ones are identity answers that correctly open on their own
 // content (「あたしは**ミカ**、…」); the zh sixteen are those same four plus twelve
 // of her own spoken lines that end on punctuation instead of a particle, seven on
-// 。 (「五個喔！好，我一個一個講。」), four on ！ and one on ：. A closing line is always an invitation, so the
-// marker is reliable there and noisy at the front. Both counts are asserted at
-// the bottom of this file, so a stale one turns the suite red instead of
-// misleading the next reader.
+// 。 (「五個喔！好，我一個一個講。」), four on ！ and one on ：. A closing line is
+// always an invitation, so the marker is reliable there and noisy at the front.
+// Both counts are asserted at the bottom of this file, so a stale one turns the
+// suite red instead of misleading the next reader.
 
 // Japanese: 常体. Her clips never say です／ます, and 敬体 in her own line makes
 // her the polite stranger the earlier draft accidentally shipped.
 //
 // Matched anywhere in the line rather than only before terminal punctuation. The
-// first version of this required the polite ending to sit immediately before 。！？,
-// which let through every shape a real 敬体 closer actually takes: HEAD's
-// 「…何でも聞いてください。」, and 〜ですよ。 〜ますね。 〜ますから！ 〜ですか？ 〜ましょう！.
-// Restoring the exact line this pass removed left the suite green, which is the
-// whole failure the guard exists to prevent.
+// first version of this required the polite ending to sit immediately before
+// 。！？, which let through every shape a real 敬体 closer actually takes:
+// HEAD's 「…何でも聞いてください。」, and 〜ですよ。 〜ますね。 〜ますから！ 〜ですか？
+// 〜ましょう！. Restoring the exact line this pass removed left the suite green,
+// which is the whole failure the guard exists to prevent.
 //
 // What follows the ending is what separates the two cases, so that is what the
 // lookahead reads. A polite form is followed by terminal punctuation or by a
