@@ -142,12 +142,12 @@ export const MIKA_VOICE =
   'conflict, they win and you stay plain.'
 
 // The machine-checkable half of the voice above. These live here rather than in a
-// test file because more than one test file holds her to them — today
-// faq-audit.test.ts, nodes.test.ts and src/i18n/chatVoice.test.ts, and the list
-// has grown every time a surface was found. While nodes.test.ts kept its own copy
-// the two silently diverged: the copy still carried the version that let 〜ましょ
-// and 〜でしょう through after this one had been fixed. Anything that reads one of
-// these definitions imports it; nothing re-states it.
+// test file holds her to them, and the set of those files has grown every time a
+// surface was found, so it is not listed here. While nodes.test.ts kept its own
+// copy of one of these the two silently diverged: the copy still carried the
+// version that let 〜ましょ and 〜でしょう through after this one had been fixed.
+// Anything that reads one of these definitions imports it; nothing re-states it,
+// and `rg JA_POLITE_ENDING` finds every consumer without a comment's help.
 
 // Japanese 常体. Her 25 recorded lines never say です／ます, so 敬体 in a line of
 // HERS makes her a politer stranger. What FOLLOWS the ending is what separates a
@@ -215,9 +215,9 @@ export const ZH_INTERJECTION_MAX = 3
 
 // A line's clauses, for the stutter check. Both 「，」 and 「、」 separate them: with
 // 「，」 alone, 「哪一層想問都可以喔、我告訴你…囉！」 and the very natural 「專案啦、經歷
-// 啦、…」 stacked freely. The ASCII 「,」 and 「;」 are in the class as well — Chinese
-// prose here should not carry them at all, but a particle sitting before one is
-// still stacked mid-line, and splitting on more can only reject more. 「。」「！」「？」
+// 啦、…」 stacked freely. 「；」 and the ASCII 「,」 「;」 are in the class as well. A
+// particle sitting before any of them is still stacked mid-line, and splitting on
+// more can only reject more. 「。」「！」「？」
 // are NOT separators, because a particle before one of those is ending a
 // sentence, which is what she is supposed to do.
 export const ZH_CLAUSE_SEPARATOR = /[，、,;；]/

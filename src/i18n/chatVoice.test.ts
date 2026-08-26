@@ -11,8 +11,8 @@
 // あたし, and the other two were still written prose (ja 敬体, zh with no
 // sentence-final particle) after the same sweep called the inventory complete.
 // That is why the classification below is an assertion and not a comment: a new
-// key under chat.* turns the first test red until someone decides which half it
-// belongs to.
+// key under chat.* turns the first test red until someone decides which of the
+// three groups it belongs to.
 //
 // The register rules come from rag/persona.ts, and these strings are held to every
 // one the 57 cached answers are held to: Japanese stays 常体 and never says 私,
@@ -90,7 +90,7 @@ const lines = (key: string) =>
   Object.entries(LOCALES).map(([locale, chat]) => [locale, (chat as Record<string, string>)[key]] as const)
 
 describe('the chat strings that are her talking', () => {
-  test('every key under chat.* is classified as hers or as chrome', () => {
+  test("every key under chat.* is classified as hers, as the visitor's, or as chrome", () => {
     const classified = [...HERS, ...VISITOR, ...CHROME].sort()
     for (const [locale, chat] of Object.entries(LOCALES)) {
       expect(Object.keys(chat).sort(), `${locale} has an unclassified chat string`).toEqual(classified)

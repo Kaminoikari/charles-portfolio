@@ -67,9 +67,9 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 - 不改引用規則、拒答規則、注入防禦 regex、scope 限制。
 - 不改 FAQ cache 的事實內容與數字，只改首末句的語氣包裝。
 - 前端介面文案（`src/i18n/strings/*.ts` 的 `chat.*`）預設不改，但**她的台詞不算介面文案**：
-  第六輪與第十二輪各跨過一次，改動範圍與理由記在那兩節。到第十二輪為止，`chat.*` 底下被
-  改寫的是 7 條：三語 `emptyMessage`、三語 `errorMessage`、以及 zh `avatarBubble` 的句尾
-  助詞。其餘 33 個鍵未動。
+  第六輪與第十二輪各跨過一次，改動範圍與理由記在那兩節。`chat.*` 三語共 120 條文案，到
+  第十三輪為止被改寫的是 8 條，落在 3 個鍵上：`emptyMessage`（三語）、`errorMessage`
+  （三語）、`avatarBubble`（ja 的人稱、zh 的句尾助詞）。其餘 37 個鍵未動。
 - 不做即時 TTS。
 
 ## 驗證計畫
@@ -743,14 +743,16 @@ mutation 56 條全紅、零 abort，其中第十二輪新增 10 條：邀請句�
 原因是新測試只 import 了 `ZH_SPOKEN_ENDING`，中文只驗句尾、沒有驗疊用，所以這三句被套
 的中文規則比 57 條快取答案少一條，而檔案標頭卻宣稱她的語域全站一套。文案改成
 「欸，沒送出去。檢查一下連線再試一次喔。」（開頭語氣詞一個字，落在豁免內），
-`chatVoice.test.ts` 補上與 `faq-audit.test.ts` 同一套的疊用檢查，三條 mutation 釘住。
+`chatVoice.test.ts` 補上與 `faq-audit.test.ts` 同一套的疊用檢查，兩條 mutation 釘住
+（50 失敗提示、51 邀請句；同輪新增的 52 打的是句尾助詞，記在下面第五項）。
 
 ### 二、`persona.ts` 自己留了一份封閉清單
 
 `:143-145` 寫「two test files hold her to them」，實際上第十一輪起就是三個
 （`faq-audit.test.ts`、`nodes.test.ts`、`chatVoice.test.ts`）。第十二輪的主題就是
 「把封閉清單換成規則」，卻沒掃到 `persona.ts` 自己身上、距離改過的區塊只有三十行的
-這一句。改成不再列舉消費端，只寫「讀這些定義的一律 import，不得自行複述」。
+這一句。第一次的修法只是把清單標成「today」，第十四輪 reviewer 指出那還是清單，所以
+現在整份拿掉，改寫成「讀這些定義的一律 import，不得自行複述，用 `rg` 就找得到消費端」。
 
 ### 三、Non-goals 被跨過兩次，只註明了第一次
 
@@ -782,4 +784,47 @@ mutation 56 條全紅、零 abort，其中第十二輪新增 10 條：邀請句�
 `npx tsc -b` exit 0，`npm run rag:test` 226 pass／0 fail，`npm test` 286 passed（13 檔）。
 mutation 59 條全紅、零 abort（第十三輪新增 3 條：中文失敗提示疊用、中文邀請句疊用、
 泡泡掉句尾助詞）。生成層仍未被真實模型驅動過。
+
+## 2026-08-26 雙 reviewer 第十四輪：沒有功能缺陷，剩下的全是敘述準確度
+
+code reviewer FAIL，五項，並明確指出程式碼層面沒有缺陷：這一輪的 diff 只有三語 i18n
+字串與註解，沒有任何 regex 被放寬，前十二輪的斷言也沒有被縮小。五項裡有兩項是
+「第十三輪為了修某個敘述而新寫的句子，自己又犯了同一個錯」。
+
+### 一、Non-goals 新寫的兩個數字都錯，還漏掉它要記的那次跨越
+
+第十三輪寫「`chat.*` 底下被改寫的是 7 條…其餘 33 個鍵未動」。實測
+`git diff 7247d1e..bb8b1c2 -- src/i18n/strings/`：實際是 **8 條**，漏掉的第八條正是
+第六輪那次跨越本身（ja `avatarBubble` 的 `私→あたし`）。而「33 個鍵」是拿 40 減 7，
+把字串數從鍵數裡減掉。現在寫成「三語共 120 條文案，被改寫 8 條，落在 3 個鍵上，
+其餘 37 個鍵未動」，三個數字彼此可驗算。
+
+### 二、擁有分類規則的檔案自己還寫二分類
+
+第十三輪把 `persona.ts` 與三語 changelog 的「二分類」改成三分類，卻沒改
+`chatVoice.test.ts` 自己：測試名還叫 `classified as hers or as chrome`，標頭還寫
+「decides which half it belongs to」，而它 `:94` 的斷言是三個常數相加。測試名描述的
+通過條件與斷言不符，正是第十三輪第五項的同一型態，一輪後出現在同一個檔案。
+
+### 三、plan 對自己修正的描述不實
+
+第十三輪宣稱把 `persona.ts` 的消費端清單「改成不再列舉」，實際只是在清單前面加了
+「today」。這次整份拿掉，改成用 `rg` 找消費端，plan 的敘述也改成實情。
+
+### 四、分隔符的說明少列一個成員，理由也對其中一個成員不成立
+
+字元集是五個成員，註解只點名 ASCII 的 `,` 與 `;`，全形 `；` 沒被提到。而
+`faq-audit.test.ts` 寫「沒有快取答案用到加寬的部分，所以資料驅動的測試看不見」，
+實測 `who-is-mika` 的中文開場句就含一個全形 `；`（新舊字元集把它切成 4 段與 3 段，
+結果不受影響，因為那幾段都不以語氣詞收尾）。兩處都改成只針對 ASCII 那一對。
+
+### 五、emoji 上限只有 0 的那一半被 mutation 覆蓋
+
+`carries at most one emoji` 對 `errorMessage` 是 0、對另外兩條是 ≤1，59 條 mutation
+只打了 0 的那半。補兩條（泡泡帶兩個 emoji、英文邀請句帶兩個 emoji）。
+
+### 驗證
+
+`npx tsc -b` exit 0，`npm run rag:test` 226 pass／0 fail，`npm test` 286 passed。
+mutation 61 條全紅、零 abort。生成層仍未被真實模型驅動過。
 
