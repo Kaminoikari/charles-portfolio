@@ -129,12 +129,12 @@ test('identity FAQ answers name her, in every locale', () => {
 // The ceilings are per language because they measure characters and the scripts
 // do not cost the same. Measured against what the tests actually iterate, which
 // is every answer's first and last paragraph rather than only the lines written
-// in this pass: the longest edge that clears its ceiling is 83 characters in
-// English (`bot-why-qdrant`'s opener), 36 in Chinese (`no-data-redirect`'s
-// opener), and 45 in Japanese (`who-is-charles`'s closing invitation, which
-// predates this work and sits exactly ON the ceiling). Japanese therefore has no
-// headroom left: a new ja voice line one character longer than that one fails
-// here, which is the right pressure for a line that is supposed to be short.
+// in this pass, and counting only the edges with no first-person token, since
+// those are the ones a ceiling actually governs: the longest is 76 characters in
+// English (`remote`'s closer), 26 in Chinese (`exp-pxpay`'s closer), and 40 in
+// Japanese (`who-is-charles`'s closing invitation).
+// Japanese has the least room left, 5 characters, which is the right pressure
+// for a line that is supposed to be short.
 const VOICE_LINE_MAX: Record<'en' | 'zh-TW' | 'ja', number> = { en: 90, 'zh-TW': 40, ja: 45 }
 
 // An identity answer IS her talking about herself, and a closing invitation
@@ -171,7 +171,7 @@ test('every answer closes on one short line, not on the content', () => {
   }
 })
 
-// Her recordings never say 私: of the 28 ja clips in scripts/voice_lines.py,
+// Her recordings never say 私: of the 25 ja lines in scripts/voice_lines.py,
 // three name her at all (mika-greet-5, mika-greet-9, mika-intro-1) and all three
 // say あたし, while the rest drop the pronoun the way spoken Japanese does. So a
 // cached answer that says 私 is a register the character has never been heard in.
@@ -192,5 +192,102 @@ test('the Japanese answers say あたし, never 私', () => {
       null,
       `${entry.id} (ja) uses 私 where every recording says あたし: ...${entry.answers.ja.slice(Math.max(0, (hit?.index ?? 0) - 30), (hit?.index ?? 0) + 20)}...`,
     )
+  }
+})
+
+// The register her lines are in, not just their length. This is the thing that
+// went wrong first: every voice line was short and first-person and still read
+// as an essay, because the grammar was written prose while her 25 recorded lines
+// per locale are spoken (scripts/voice_lines.py). Length alone cannot tell those
+// apart, so the two languages with a mechanical marker get one.
+//
+// English gets no guard here. Its spoken register lives in contractions and clause
+// count, and a grammatical written sentence satisfies both, so any regex would fire
+// on ordinary content instead. The reason is recorded in docs/plans/mika-persona.md
+// along with what would re-open it: an English voice line shipping as written prose
+// without a human noticing.
+//
+// Closing lines only, and the reason is the openers, not the entries. Measured
+// against these two regexes, 10 of 57 ja openers and 12 of 57 zh openers would
+// fail: about half are identity answers that correctly open on their own content
+// (「あたしは**ミカ**、…」), and the rest are her own spoken lines that simply end
+// on 。 rather than on a particle (「五個喔！好，我一個一個講。」). A closing line is
+// always an invitation, so the marker is reliable there and noisy at the front.
+
+// Japanese: 常体. Her clips never say です／ます, and 敬体 in her own line makes
+// her the polite stranger the earlier draft accidentally shipped.
+//
+// Matched anywhere in the line rather than only before terminal punctuation. The
+// first version of this required the polite ending to sit immediately before 。！？,
+// which let through every shape a real 敬体 closer actually takes: HEAD's
+// 「…何でも聞いてください。」, and 〜ですよ。 〜ますね。 〜ますから！ 〜ですか？ 〜ましょう！.
+// Restoring the exact line this pass removed left the suite green, which is the
+// whole failure the guard exists to prevent. The lookahead spares the two 常体
+// shapes that merely contain those characters: でしょ (an ending she is recorded
+// using) and いますぐ.
+const JA_POLITE_ENDING = /(?:です|ます|ません|でした|ました|ましょう|ください)(?![ょぐ])/
+
+test("her Japanese closing lines stay 常体, the way she is voiced", () => {
+  for (const entry of faqEntries) {
+    const paras = entry.answers.ja.split('\n\n')
+    const last = paras[paras.length - 1]
+    assert.equal(
+      JA_POLITE_ENDING.test(last),
+      false,
+      `${entry.id} (ja) closes in 敬体, which is not the register she is recorded in: ${last}`,
+    )
+  }
+})
+
+// Chinese: a sentence-final particle, or the exclamation/question mark that does
+// the same job. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」 is a report.
+const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷][。！？]?$|[！？]$/
+
+test('her Chinese closing lines end the way speech does', () => {
+  for (const entry of faqEntries) {
+    const paras = entry.answers['zh-TW'].split('\n\n')
+    const last = paras[paras.length - 1].trim()
+    assert.match(
+      last,
+      ZH_SPOKEN_ENDING,
+      `${entry.id} (zh-TW) closes on written prose, with no particle and no exclamation: ${last}`,
+    )
+  }
+})
+
+// The other half of the Chinese register, found only when a human read sixty
+// answers in a row: every line was ending on a particle AND carrying one in the
+// middle (「哪一層想問都可以喔，我告訴你它為什麼在那裡啦！」). 71 of 114 zh voice
+// lines were shaped like that, which reads as an impression of the character
+// rather than the character. Speech puts one particle at the end of a breath, not
+// two inside one sentence.
+//
+// A leading interjection is exempt, because 「齁，你想知道我怎麼省錢喔？」 opens the
+// way she is recorded opening. What makes it an interjection is that it is short:
+// the exemption is the first comma-delimited segment and only when it runs to 3
+// characters or fewer. 「哪一層想問都可以喔，…」 is a clause wearing a particle, and an
+// earlier version of this guard that exempted everything before the first comma
+// waved it straight through, so the rule is the length, not the position.
+const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶囉唷]$/
+const ZH_INTERJECTION_MAX = 3
+
+test('her Chinese voice lines carry one particle, not a stutter of them', () => {
+  for (const entry of faqEntries) {
+    const paras = entry.answers['zh-TW'].split('\n\n')
+    for (const [where, raw] of [
+      ['opener', paras[0]],
+      ['closer', paras[paras.length - 1]],
+    ] as const) {
+      const clauses = raw.trim().split('，')
+      // The last clause carries the line's one particle; every earlier one must not.
+      for (let i = 0; i < clauses.length - 1; i++) {
+        if (i === 0 && clauses[0].length <= ZH_INTERJECTION_MAX) continue
+        assert.equal(
+          ZH_PARTICLE_AT_CLAUSE_END.test(clauses[i]),
+          false,
+          `${entry.id} (zh-TW) ${where} stacks particles mid-sentence: ${raw.trim()}`,
+        )
+      }
+    }
   }
 })

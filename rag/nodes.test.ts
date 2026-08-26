@@ -535,9 +535,9 @@ async function promptWith(
 
 test('generate: an answer that stopped arriving says so, in the visitor’s language', async () => {
   for (const [language, marker] of [
-    ['zh-TW', '生成在這裡停住了'],
-    ['ja', '生成はここで止まりました'],
-    ['en', 'Generation stopped here'],
+    ['zh-TW', '生成在這裡卡住了'],
+    ['ja', '生成がここで止まっちゃった'],
+    ['en', 'generation stalled here'],
   ] as Array<[string, string]>) {
     const out = await promptWith(
       { question: 'q', language, graded: [DOC] },
@@ -623,5 +623,40 @@ test('the blocked-output reply stays in her voice, in every locale', async () =>
       false,
       `blocked reply carries an emoji in ${language}`,
     )
+  }
+})
+
+// The fourth string that reaches a visitor with no model in the path, after the
+// five in triage.ts and the blocked-output reply above. It is appended to a real
+// answer, so a visitor meets it mid-conversation with the character already
+// established, and until 2026-08-26 it was written prose in zh and en and 敬体 in
+// ja. Nothing about it is reachable from a prompt, which is exactly why it drifted
+// for four rounds without anyone noticing.
+test('the stall notice is appended in her voice, in every locale', async () => {
+  for (const [language, firstPerson] of [
+    ['en', /\bI\b/],
+    ['zh-TW', /我/],
+    ['ja', /あたし|よ？|ちゃった/],
+  ] as const) {
+    const out = await generate(
+      { question: 'what did he do at USPACE?', language, graded: [] } as never,
+      async () => ({ text: 'He led three product lines.', provider: 'gemini' as const, stalled: true }),
+    )
+    const notice = (out.answer ?? '').slice('He led three product lines.'.length)
+    assert.notEqual(notice.trim(), '', `no stall notice appended for ${language}`)
+    assert.match(notice, firstPerson, `stall notice is not in her voice in ${language}`)
+    assert.equal(
+      /\p{Extended_Pictographic}/u.test(notice),
+      false,
+      `stall notice carries an emoji in ${language}`,
+    )
+    if (language === 'ja') {
+      // Same 常体 rule the cached answers are held to (rag/faq-audit.test.ts).
+      assert.equal(
+        /(?:です|ます|ません|でした|ました|ましょう|ください)(?![ょぐ])/.test(notice),
+        false,
+        `stall notice is 敬体, which is not the register she is recorded in: ${notice}`,
+      )
+    }
   }
 })

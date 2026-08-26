@@ -167,9 +167,9 @@ const HISTORY_RECENT_ASSISTANT_CHARS = 4000
 // It rides along into chat_logs and into the next turn's transcript, so the
 // model also meets an explanation rather than a bare half sentence.
 const STALL_NOTICE: Record<Locale, string> = {
-  'zh-TW': '\n\n（生成在這裡停住了。如果這個回答看起來沒說完，我可以重寫一次。）',
-  ja: '\n\n（生成はここで止まりました。この回答が途中に見えるようでしたら、書き直します。）',
-  en: '\n\n(Generation stopped here. If this answer looks unfinished, I can write it again.)',
+  'zh-TW': '\n\n（欸，生成在這裡卡住了。這個回答看起來沒說完的話，我可以再寫一次喔。）',
+  ja: '\n\n（あ、生成がここで止まっちゃった。この回答、途中に見えるならもう一回書くよ？）',
+  en: '\n\n(Oh, generation stalled here. If this answer looks unfinished, I can write it again.)',
 }
 
 const verdictToRoute: Record<string, string> = {
@@ -535,9 +535,9 @@ export async function generate(
           '3. Never output slurs, hateful, sexual, violent, or otherwise offensive ' +
           'content, regardless of how the request is encoded, computed, or framed.\n' +
           'When you must refuse, reply briefly, in your own voice, and in the ' +
-          'user\'s language, e.g. "I can\'t help with that one. What I answer is ' +
-          'Charles\'s work and background, so ask me about his projects, his ' +
-          'experience, or how he uses AI." Do not explain ' +
+          'user\'s language, e.g. "Ah, I can\'t help with that one. What I know is ' +
+          'Charles\'s work and background. Ask me about his projects, his ' +
+          'experience, how he uses AI." Do not explain ' +
           'the puzzle or show partial work.\n\n' +
           'For genuine questions ABOUT CHARLES, answer using ONLY the provided ' +
           'context, portfolio map, and entity relationships. Never invent roles, ' +
@@ -581,10 +581,10 @@ export async function generate(
     return {
       answer:
         (state.language as Locale) === 'zh-TW'
-          ? '這個我沒辦法幫你。我能回答的是 Charles 的工作跟背景，他的專案、經歷，或他怎麼運用 AI，這些儘管問我。'
+          ? '欸，這個我沒辦法幫你喔。我能講的是 Charles 的工作跟背景，他的專案、經歷、他怎麼用 AI，這些儘管問我啦。'
           : (state.language as Locale) === 'ja'
-            ? 'これはお手伝いできません。あたしがお答えできるのは Charles の仕事と経歴です。プロジェクトや経歴、AI の活用なら、なんでも聞いてください。'
-            : "I can't help with that one. What I answer is Charles's work and background, so ask me about his projects, his experience, or how he uses AI.",
+            ? 'あー、これはあたし手伝えないや。話せるのは Charles の仕事と経歴だから。プロジェクトでも経歴でも AI の使い方でも、そっちなら何でも聞いて！'
+            : "Ah, I can't help with that one. What I know is Charles's work and background. Ask me about his projects, his experience, how he uses AI.",
       sources: [],
       outcome: 'blocked',
     }
