@@ -1,4 +1,4 @@
-// The three defect classes that eighteen rounds of review kept finding by eye,
+// The defect classes that round after round of review kept finding by eye,
 // turned into checks a machine runs first (docs/plans/mika-persona.md, the
 // "PASS 的定義" section).
 //
@@ -21,11 +21,12 @@ export type Finding = { file: string; line: number; message: string }
  * because a fixture in this suite holds a line WITH a trailing comment inside a
  * string literal, and reading that as prose about the code makes the sweep fail
  * on its own test data. That is the only guard: an earlier version also required
- * whitespace before the `//`, which changed no finding in any checked file (the
- * lines where it changed this function's return were all empty comment
- * separators, which carry no numbers to find), could not be mutated on its own
- * because the other guard covered it, and hid a comment written as
- * `const x =// note`.
+ * whitespace before the `//`. Both callers ask `isProseLine` first, so this
+ * function only ever sees a line that is not itself a comment; among those, the
+ * only lines whose return that rule changed were the empty comment separators,
+ * which carry nothing to find. It changed no finding in any checked file, could
+ * not be mutated on its own because the quote tracking covered it, and hid a
+ * comment written as `const x =// note`.
  */
 export const trailingComment = (raw: string): string | null => {
   let quote: string | null = null
@@ -94,9 +95,8 @@ export function commentLayout(file: string, source: string): Finding[] {
  * Two block comments with nothing between them. Inserting a function above
  * another leaves the lower one's docblock describing the wrong symbol, and the
  * text reads as a fact about code it no longer sits on. It has happened three
- * times in this file alone, each caught by a reviewer rather than by anything
- * that runs, and each time the docblock said something false about whatever it
- * landed on.
+ * times in this file alone. A reviewer caught each one; nothing that runs did,
+ * and each time the docblock said something false about whatever it landed on.
  *
  * Adjacency is the mechanical signature: a comment that ends where another
  * begins documents nothing. A block comment written on a single line counts on

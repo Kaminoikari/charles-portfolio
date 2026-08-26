@@ -74,9 +74,10 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 
 ## PASS 的定義（2026-08-27 訂，第十八輪起生效）
 
-**凍結的是判準，不是措辭。** Gate A 的四項、Gate B 的範圍與 BLOCKING／ADVISORY 分級、
-PASS＝BLOCKING 為零，這些不因輪次而改。措辭則會被修：第十九到二十一輪各改過幾句，
-全部是把敘述改成與程式碼相符或拿掉禁用句式，沒有一次放寬判準。判準本身要改，得先在
+**凍結的範圍是判準，措辭則會被修。** Gate A 的四項、Gate B 的範圍與 BLOCKING／ADVISORY 分級、
+PASS＝BLOCKING 為零，這些不因輪次而改。措辭則會被修：第十九到二十二輪各改過幾句，多數是把敘述改成與程式碼相符或拿掉
+禁用句式，另有兩處是新增（第十九輪補上數字檢查反向那半的說明，第二十輪在 Gate C
+寫明「修正 BLOCKING 時可改寫既有段落」這個例外）。判準本身三項一個字都沒動。判準本身要改，得先在
 這裡寫明改了什麼、為什麼。
 
 第十三到十七輪連續五輪 FAIL，發現全落在散文與命名準確度。診斷出來的原因有三個，
@@ -99,7 +100,7 @@ PASS＝BLOCKING 為零，這些不因輪次而改。措辭則會被修：第十�
 | 指令 | 通過條件 |
 |---|---|
 | `npx tsc -b` | exit 0（不是 `--noEmit`，根 tsconfig 是 `files: []` 的 solution 檔，`--noEmit` 什麼都不檢查） |
-| `npm run rag:test` | 0 fail |
+| `npm run rag:test` | 0 fail。它的 glob 含 `rag/**/*.test.ts`，會一併跑到工作樹上與本工作無關的 `rag/insights/*.test.ts`，所以本工作自己的數字要看 `npx tsx --test rag/*.test.ts` |
 | `npm test` | 0 fail |
 | `python3 <scratch>/mutate_r5.py` | 每條都有 fail、零 ABORT |
 
@@ -111,10 +112,11 @@ PASS＝BLOCKING 為零，這些不因輪次而改。措辭則會被修：第十�
 註解不是折行的段落。受檢的文案是 `mika-persona` changelog 三語與 `chat.*` 三語的每一
 個字串。
 
-綠要有意義，靠兩層：三個檢查器各有用壞輸入驅動的測試（第十七輪那些孤行與過長行的
+綠要有意義，靠兩層：每個檢查器各有用壞輸入驅動的測試（第十七輪那些孤行與過長行的
 原文、差點出貨的 `ではなく` 段落、第十輪那個「52 應為 53」的形狀，以及禁用清單裡
-**每一個** alternation 分支各一條），而掃過真實檔案的那三條斷言各有一條資料側
+**每一個** alternation 分支各一條），而掃過真實檔案的每一條斷言各有一條資料側
 mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一個未申報數字、
+把一個真的 docblock 用插入的函式擠開、
 往日文 changelog 的 `mika-persona` entry 最後一段散文插一句 `ではなく`（該處在切片的
 91.8%，所以它證明的是切片至少延伸到那裡）。
 
@@ -147,6 +149,7 @@ mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一�
 | 18 | 2026-08-27 | code 2、spec 3（重疊 2） | 三個 sweep 斷言與十個禁用分支各補 mutation；檢查改為也吃 `/** */`；`prose-lint.test.ts` 納入受檢清單 |
 | 19 | 2026-08-27 | code 4、spec 3（重疊 3） | 補行尾註解盲區與其 fixture／mutation；死宣告改為會紅；區塊註解與句尾數字各補 fixture；修四處與程式碼不符的敘述 |
 | 20 | 2026-08-27 | code 4、spec 2（重疊 2） | 兩處 docblock 錯位歸位；兩個 sweep 抽出共用的 `proseLines`；拿掉與引號追蹤重疊的空白防禦；寬度檢查改為也讀行尾註解；新增 mutation 70 至 72 |
+| 22 | 2026-08-27 | code 1 | docblock 理由改成以「呼叫端會走到的行」為主詞（結論對、理由錯）；測試名收斂成它實際檢查的鄰接性；Gate A 註明 `rag:test` 的 glob 會納入無關檔案 |
 | 21 | 2026-08-27 | code 3、spec 2（重疊 2） | harness 新增 parse-error 防線（語法壞掉的 mutation 先前會印出假的紅）；mutation 70 改成語法正確的版本；docblock 錯位改由 `stackedDocblocks` 機械檢查；孤行閘門與小數點 lookahead 各補 mutation |
 
 ## 驗證計畫

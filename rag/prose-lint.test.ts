@@ -1,4 +1,4 @@
-// Runs the three mechanical checks over the files this work owns. See
+// Runs the mechanical checks over the files this work owns. See
 // rag/prose-lint.ts for what each one can and cannot decide.
 
 import assert from 'node:assert/strict'
@@ -119,7 +119,7 @@ test('the numerals quoted in comments are measured or declared', () => {
   assert.deepEqual(dead, [], `declared but quoted nowhere: ${dead.join(', ')}`)
 })
 
-test('no docblock was orphaned by something inserted above the symbol it documents', () => {
+test('no block comment opens where another one closed', () => {
   const findings = PROSE_FILES.flatMap((f) => stackedDocblocks(f, read(f)))
   assert.deepEqual(findings, [], findings.map((f) => `${f.file}:${f.line} ${f.message}`).join('\n'))
 
@@ -244,9 +244,9 @@ test('undeclaredNumerals sees a count nothing measures', () => {
     1,
     'a count at the end of a sentence went unseen',
   )
-  // A decimal is one number, not two. The lookahead has to reject the integer
-  // part when a fraction follows it; `15.5` is what drives that half, because
-  // in `1.5` the integer is filtered as too small anyway.
+  // A decimal is a single number. The lookahead has to reject the integer part
+  // when a fraction follows it; `15.5` is what drives that half, because in
+  // `1.5` the integer is filtered as too small anyway.
   assert.deepEqual(undeclaredNumerals('x.ts', '// a ratio of 15.5 is not a count', declared), [])
   assert.deepEqual(undeclaredNumerals('x.ts', '// a ratio of 1.5 is not a count', declared), [])
   // A trailing comment is where a declaration list keeps its reasons, so it is
