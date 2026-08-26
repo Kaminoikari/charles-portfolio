@@ -154,6 +154,7 @@ mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一�
 | 22 | 2026-08-27 | code 1、spec 2（重疊 1） | 補上放寬方向的 mutation 77（相鄰判斷改成 `if (true)`）；docblock 理由改成以呼叫端會走到的行為主詞（結論對、理由錯）；測試名收斂成它實際檢查的鄰接性；Gate A 註明 `rag:test` 的 glob 會納入無關檔案 |
 | 23 | 2026-08-27 | code 1、spec 2（重疊 1） | `trailingComment` 的 docblock 拿掉「不會看到註解行」這句假敘述（實測進得到那裡的行包含 bare `//`、`/**`、`*/`、`*`，全都是註解）；拿掉與 sweep 互相遮蔽的乾淨-docblock 斷言（留與不留，基線加三條 mutation 共八種情形結果全同）；輪次表順序歸位 |
 | 24 | 2026-08-27 | code 1 | 第 23 列引用的行數是刪除那行之前量的（1604 對現值 1603），改成不隨樹漂移的寫法；docblock 把 bare `*` 併進 delimiter，改回 `isProseLine` 自己的說法；乾淨-docblock 的分佈由「七個檔案」收斂成實際的兩個 |
+| 25 | 2026-08-27 | 零（雙 reviewer 皆 PASS） | 收尾輪。兩位各自實測：兩個呼叫端都先問 `isProseLine`、抵達的 bare 形狀恰為 `//`／`/**`／`*/`／`*`、乾淨 docblock 收尾實為 11 個且集中在兩檔、92 條 anchor 在出貨樹各命中一次 |
 
 ## 驗證計畫
 
