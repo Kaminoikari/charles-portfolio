@@ -16,6 +16,19 @@
 
 export type Finding = { file: string; line: number; message: string }
 
+/**
+ * A line of comment prose, in either comment style. The first version read only
+ * `//`, which left the JSDoc blocks in this very file outside the checks while
+ * the plan claimed every comment line was covered. The opening and closing
+ * delimiters of a block comment, and blank continuation lines, carry no prose,
+ * so they are not measured.
+ */
+export const isProseLine = (raw: string): boolean => {
+  const t = raw.trim()
+  if (t === '//' || t === '*' || t === '*/' || t === '/**' || t === '/*') return false
+  return t.startsWith('//') || t.startsWith('*') || t.startsWith('/**') || t.startsWith('/*')
+}
+
 /** Display columns, counting CJK and full-width punctuation as two. */
 export const displayWidth = (s: string): number =>
   [...s].reduce((n, c) => n + (/[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]/.test(c) ? 2 : 1), 0)
@@ -36,14 +49,12 @@ export function commentLayout(file: string, source: string): Finding[] {
   const lines = source.split('\n')
   const out: Finding[] = []
   lines.forEach((line, i) => {
-    const t = line.trim()
-    if (!t.startsWith('//') || t === '//') return
+    if (!isProseLine(line)) return
     const w = displayWidth(line)
     if (w > MAX_COMMENT_WIDTH) {
       out.push({ file, line: i + 1, message: `comment line is ${w} columns, over ${MAX_COMMENT_WIDTH}` })
     }
-    const next = (lines[i + 1] ?? '').trim()
-    if (w < MIN_WRAPPED_WIDTH && next.startsWith('//') && next !== '//') {
+    if (w < MIN_WRAPPED_WIDTH && isProseLine(lines[i + 1] ?? '')) {
       out.push({ file, line: i + 1, message: `orphan line of ${w} columns in the middle of a paragraph` })
     }
   })
@@ -54,15 +65,15 @@ export function commentLayout(file: string, source: string): Finding[] {
 // mid-sentence, and no "X, not Y" contrast frame in any of the three languages.
 //
 // The rule postdates most of this site's copy: the changelog's older entries
-// carry it in over a hundred places, and rewriting those is not this work. So
+// carry it throughout, and rewriting those is not this work. So
 // the caller passes the text this work owns (the mika-persona entry, the chat
 // strings) rather than whole files, and the older copy is left alone until
 // someone decides to sweep it.
 const BANNED_COPY: Array<[RegExp, string]> = [
   [/[^\s]\s—\s[^\s]|——/u, 'an em-dash used as a mid-sentence pause'],
   [/ではなく/u, 'the ではなく contrast frame'],
-  [/不是[^，。！？]{0,20}而是|而非|是[^，。！？]{1,25}，不是/u, 'the 不是 X 而是 Y contrast frame'],
-  [/\bnot [a-z]+ but\b|, not |\brather than\b|\binstead of\b/i, 'an English contrast frame'],
+  [/不是[^。！？]{0,25}而是|而非|是[^，。！？]{1,25}，不是/u, 'the 不是 X 而是 Y contrast frame'],
+  [/\bnot [a-z ]+ but\b|, not |\brather than\b|\binstead of\b/i, 'an English contrast frame'],
 ]
 
 /** Banned writing patterns in one passage of visitor-facing copy. */
@@ -92,9 +103,10 @@ export function bannedCopy(file: string, passages: readonly string[]): Finding[]
 export function undeclaredNumerals(file: string, source: string, declared: ReadonlySet<number>): Finding[] {
   const out: Finding[] = []
   source.split('\n').forEach((line, i) => {
-    const t = line.trim()
-    if (!t.startsWith('//')) return
-    const nums = t.match(/(?<![\w.\-/])\d+(?![\w.])/g) ?? []
+    if (!isProseLine(line)) return
+    // `(?![\w])` alone let a numeral ending a sentence escape, because the full
+    // stop after it matched the `.` in the lookahead.
+    const nums = line.match(/(?<![\w.\-/])\d+(?![\w]|\.\d)/g) ?? []
     for (const raw of nums) {
       const n = Number(raw)
       if (n <= 1 || /^20\d\d$/.test(raw)) continue

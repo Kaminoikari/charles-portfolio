@@ -19,6 +19,7 @@ const PROSE_FILES = [
   'rag/nodes.test.ts',
   'rag/triage.test.ts',
   'src/i18n/chatVoice.test.ts',
+  'rag/prose-lint.test.ts',
 ]
 
 // What a visitor reads, restricted to what this work wrote. The banned-pattern
@@ -61,9 +62,12 @@ test('the numerals quoted in comments are measured or declared', () => {
     ['answer/locale pairs', faqEntries.length * 3],
     ['her recorded lines per locale', jaRecordedLines()],
     ['chat.* keys that are not hers', chatKeys - 3],
-    ['comment width ceiling', MAX_COMMENT_WIDTH],
-    ['shortest line that is not an orphan', MIN_WRAPPED_WIDTH],
   ])
+  // Not measurements: this module's own thresholds. They are asserted here
+  // because the fixtures below are written around these exact values, so moving
+  // one silently would make those fixtures test nothing.
+  assert.equal(MAX_COMMENT_WIDTH, 92)
+  assert.equal(MIN_WRAPPED_WIDTH, 45)
   assert.deepEqual(
     Object.fromEntries(measured),
     {
@@ -71,8 +75,6 @@ test('the numerals quoted in comments are measured or declared', () => {
       'answer/locale pairs': 171,
       'her recorded lines per locale': 25,
       'chat.* keys that are not hers': 37,
-      'comment width ceiling': 92,
-      'shortest line that is not an orphan': 45,
     },
     'a comment quotes one of these; re-measure and update both',
   )
@@ -90,7 +92,9 @@ test('the numerals quoted in comments are measured or declared', () => {
     20, // Gemini free tier, requests per day
     71, 114, // round 5: 71 of 114 zh voice lines were rewritten, a historical count
     200, // the ≤200-char ceiling on a visitor's own message
-    233, 239, 246, // useChatStream.ts line references
+    233, // useChatStream.ts:233/239/246; the lookbehind yields only the first
+    128, // the width of the line round 17 found by hand, quoted in a fixture below
+    12, 10, 52, // counts quoted in the fixtures below, each verified in its comment
     300, // the transcript clamp in the 2026-08-19 truncation incident
     429, // HTTP status
     649, // chars in the answer that incident truncated
@@ -120,8 +124,10 @@ test('visitor-facing copy carries none of the banned writing patterns', () => {
 
 // --- the checkers themselves, driven by inputs that are known to be bad -------
 // A checker over the current tree is green from the day it lands, which proves
-// nothing about whether it can see the defect it was written for. These feed it
-// the exact text that shipped, or nearly shipped, in earlier rounds.
+// nothing about whether it can see the defect it was written for. The layout
+// fixtures are the exact lines a reviewer found by hand in persona.ts; the rest
+// are written to drive one branch each, because a pattern nothing exercises can
+// be deleted with the suite still green.
 
 test('commentLayout sees the two shapes an unreflowed edit leaves', () => {
   // rag/persona.ts as of 7b18818: an orphan mid-paragraph and a 128-column line,
@@ -142,20 +148,36 @@ test('commentLayout sees the two shapes an unreflowed edit leaves', () => {
   assert.deepEqual(commentLayout('x.ts', '// one had been fixed.\n//\n// Next paragraph.'), [])
 })
 
-test('bannedCopy sees the patterns that reached review', () => {
-  // The Japanese paragraph written in round 12 and caught in review before it
-  // shipped, with the ではなく frame the global writing rule forbids.
-  const ja =
-    '`モデルを一切通らない文がほかに三つある。どれも棚卸しではなくレビューで見つかった。`'
-  assert.equal(bannedCopy('ja', [ja]).length, 1, 'ではなく went unseen')
+// Every alternative in every banned pattern, one fixture each. The first
+// version drove three of ten, so six of the branches could be deleted and the
+// suite stayed green — including the em-dash rule, which is the one the user's
+// writing rule names first and the one CJK copy breaks most often.
+const BANNED_FIXTURES: Array<[string, string]> = [
+  ['spaced em-dash', '`她掛在角色旁邊的對話泡泡 — 面板打開時的那句邀請也是。`'],
+  ['doubled em-dash', '`這三句都是 review 找出來的——面板裡的每一條文案都得標明身分。`'],
+  ['ではなく', '`モデルを一切通らない文が、どれも棚卸しではなくレビューで見つかりました。`'],
+  ['不是 X 而是 Y', '`這不是清單抓出來的，而是 review 抓出來的。`'],
+  ['而非', '`判準是她的錄音而非書面語法。`'],
+  ['是 X，不是 Y', '`這三句都是 review 抓出來的，不是清單抓出來的。`'],
+  ['not X but', '`It is not a demo but a product.`'],
+  ['comma not', '`A reviewer found all three, not the inventory.`'],
+  ['rather than', '`We rewrote each locale rather than translating one.`'],
+  ['instead of', '`She ends on a particle instead of a full stop.`'],
+]
 
-  const zh = '`這三句都是 review 抓出來的，不是清單抓出來的，所以每一條文案都得標明身分。`'
-  assert.equal(bannedCopy('zh', [zh]).length, 1, 'the 不是 X 而是 Y frame went unseen')
-
-  const en = '`A reviewer found all three, the inventory did not, rather than the list.`'
-  assert.equal(bannedCopy('en', [en]).length, 1, 'an English contrast frame went unseen')
-
-  assert.deepEqual(bannedCopy('ok', ['`每個答案都是從他真實的作品集裡撈出來的啦。`']), [])
+test('bannedCopy sees every pattern it declares', () => {
+  for (const [name, passage] of BANNED_FIXTURES) {
+    assert.equal(bannedCopy('fixture', [passage]).length, 1, `the ${name} frame went unseen`)
+  }
+  // Copy that is actually shipping, in all three languages, stays clean.
+  assert.deepEqual(
+    bannedCopy('ok', [
+      '`每個答案都是從他真實的作品集裡撈出來的啦。`',
+      '`答えはぜんぶ、あたしが彼の実際のポートフォリオから引っぱってくるよ。`',
+      "`Every answer comes straight out of his portfolio.`",
+    ]),
+    [],
+  )
 })
 
 test('undeclaredNumerals sees a count nothing measures', () => {

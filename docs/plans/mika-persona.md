@@ -78,7 +78,8 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 都是流程本身造成的，不是產出本身還壞著：
 
 1. **每輪產出新的可審查散文。** 那五輪我每輪往這份 plan 新增 43 到 128 行敘述，
-   平均 62 行，每一行都是新的可被證偽的宣稱。第十四輪起，每輪的發現有 40% 到 50%
+   平均 65.4 行（`git show --numstat` 的新增行數，五輪同一基準）。每一行都是新的
+   可被證偽的宣稱。第十四輪起，每輪的發現有 40% 到 50%
    是**上一輪的修正本身造成的**（重排註解留下孤行、數字在一段改對另一段沒改、
    為修語體而寫的段落自己跳語體）。修得比生得慢，所以永遠不會收斂。
 2. **我讓判準 drift。** 第十二輪起我在 reviewer prompt 裡加了「主動找同類的其他實例」，
@@ -98,11 +99,17 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 | `python3 <scratch>/mutate_r5.py` | 每條都有 fail、零 ABORT |
 
 第三類缺陷在這一輪變成 `rag/prose-lint.ts` 與 `rag/prose-lint.test.ts`，跑在
-`rag:test` 裡，涵蓋 `persona.ts`／`prose-lint.ts`／`faq-audit.test.ts`／
-`nodes.test.ts`／`triage.test.ts`／`chatVoice.test.ts` 的每一行註解，以及
-`mika-persona` changelog 三語與 `chat.*` 三語的每一個字串。三個檢查各自附一條用
-已知壞輸入驅動的測試（第十七輪那些孤行與過長行的原文、差點出貨的 `ではなく` 段落、
-第十輪那個「52 應為 53」的形狀），所以它們不是空轉的綠。
+`rag:test` 裡，涵蓋 `persona.ts`／`prose-lint.ts`／`prose-lint.test.ts`／
+`faq-audit.test.ts`／`nodes.test.ts`／`triage.test.ts`／`chatVoice.test.ts` 的每一行
+註解（`//` 與 `/** */` 兩種都算，`isProseLine` 決定），以及 `mika-persona` changelog
+三語與 `chat.*` 三語的每一個字串。
+
+綠要有意義，靠兩層：三個檢查器各有用壞輸入驅動的測試（第十七輪那些孤行與過長行的
+原文、差點出貨的 `ではなく` 段落、第十輪那個「52 應為 53」的形狀，以及禁用清單裡
+**每一個** alternation 分支各一條），而掃過真實檔案的那三條斷言各有一條資料側
+mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一個未申報數字、
+往日文 changelog 的 `mika-persona` entry **尾端**插一句 `ではなく`。最後這條同時證明
+字串切片有走到 entry 的結尾。
 
 ### Gate B：reviewer 的範圍與分級（凍結）
 
@@ -124,7 +131,7 @@ zh-TW 走台灣口語語氣詞、ja 走 gyaru 語體、en 走 casual American。
 
 | 輪次 | 日期 | BLOCKING | 處置 |
 |---|---|---|---|
-| 18 | 2026-08-27 | 待審 | 本節與 `rag/prose-lint.*` |
+| 18 | 2026-08-27 | 2（兩位 reviewer 收斂到同一組） | 三個 sweep 斷言與十個禁用分支各補 mutation；檢查改為也吃 `/** */`；`prose-lint.test.ts` 納入受檢清單 |
 
 ## 驗證計畫
 
