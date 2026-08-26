@@ -22,12 +22,12 @@ export type Finding = { file: string; line: number; message: string }
  * string literal, and reading that as prose about the code makes the sweep fail
  * on its own test data. That is the only guard: an earlier version also required
  * whitespace before the `//`. Both callers ask `isProseLine` first, so what
- * arrives here is every line it rejects: code, blank lines, and the bare `//`
- * and block-comment delimiters that hold no prose. Among those, the only
- * returns the whitespace rule changed were the bare `//` separators, which
- * carry nothing to find. It changed no finding in any checked file, could not
- * be mutated on its own because the quote tracking covered it, and hid a
- * comment written as `const x =// note`.
+ * arrives here is every line it rejects: code, blank lines, and the comment
+ * delimiters and blank continuations it holds to carry no prose. Among those,
+ * the only returns the whitespace rule changed were the bare `//` separators,
+ * which carry nothing to find. It changed no finding in any checked file,
+ * could not be mutated on its own because the quote tracking covered it, and
+ * hid a comment written as `const x =// note`.
  */
 export const trailingComment = (raw: string): string | null => {
   let quote: string | null = null

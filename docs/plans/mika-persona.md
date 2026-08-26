@@ -152,7 +152,8 @@ mutation：往 `persona.ts` 插一行過寬註解、往 `nodes.test.ts` 插一�
 | 20 | 2026-08-27 | code 4、spec 2（重疊 2） | 兩處 docblock 錯位歸位；兩個 sweep 抽出共用的 `proseLines`；拿掉與引號追蹤重疊的空白防禦；寬度檢查改為也讀行尾註解；新增 mutation 70 至 72 |
 | 21 | 2026-08-27 | code 3、spec 2（重疊 2） | harness 新增 parse-error 防線（語法壞掉的 mutation 先前會印出假的紅）；mutation 70 改成語法正確的版本；docblock 錯位改由 `stackedDocblocks` 機械檢查；孤行閘門與小數點 lookahead 各補 mutation |
 | 22 | 2026-08-27 | code 1、spec 2（重疊 1） | 補上放寬方向的 mutation 77（相鄰判斷改成 `if (true)`）；docblock 理由改成以呼叫端會走到的行為主詞（結論對、理由錯）；測試名收斂成它實際檢查的鄰接性；Gate A 註明 `rag:test` 的 glob 會納入無關檔案 |
-| 23 | 2026-08-27 | code 1、spec 2（重疊 1） | `trailingComment` 的 docblock 拿掉「不會看到註解行」這句假敘述（實測進得到那裡的 1604 行有 47 行是註解）；拿掉與 sweep 互相遮蔽的乾淨-docblock 斷言（留與不留，基線加三條 mutation 共八種情形結果全同）；輪次表順序歸位 |
+| 23 | 2026-08-27 | code 1、spec 2（重疊 1） | `trailingComment` 的 docblock 拿掉「不會看到註解行」這句假敘述（實測進得到那裡的行包含 bare `//`、`/**`、`*/`、`*`，全都是註解）；拿掉與 sweep 互相遮蔽的乾淨-docblock 斷言（留與不留，基線加三條 mutation 共八種情形結果全同）；輪次表順序歸位 |
+| 24 | 2026-08-27 | code 1 | 第 23 列引用的行數是刪除那行之前量的（1604 對現值 1603），改成不隨樹漂移的寫法；docblock 把 bare `*` 併進 delimiter，改回 `isProseLine` 自己的說法；乾淨-docblock 的分佈由「七個檔案」收斂成實際的兩個 |
 
 ## 驗證計畫
 
