@@ -599,8 +599,9 @@ test('converse: answers about the conversation still come from Mika', async () =
 })
 
 // The offensive-output guardrail hands the visitor a canned string, so it is one
-// of the replies no prompt edit can reach: the five in triage.ts, this one, and
-// the stall notice below (pinned in triage.test.ts and here). It drifted out of
+// of the replies no prompt edit can reach: the five in triage.ts, the 57 cached
+// answers in faq-cache.ts, this one, and the stall notice below (pinned in
+// triage.test.ts, faq-audit.test.ts and here). It drifted out of
 // character once already, which is what this pins: it was still introducing
 // itself as a nameless assistant after every other path had become Mika, and its
 // zh-TW half carried an ASCII comma into Chinese prose.

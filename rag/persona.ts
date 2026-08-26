@@ -140,7 +140,8 @@ export const MIKA_VOICE =
 // Japanese 常体. Her 25 recorded lines never say です／ます, so 敬体 in a line of
 // HERS makes her a politer stranger. What FOLLOWS the ending is what separates a
 // polite form from a 常体 verb that merely contains those characters: a polite
-// form is followed by terminal punctuation, a closing mark, or a final particle
+// form is followed by terminal punctuation, a colon (an edge that hands over to a
+// contact list ends on one), a trailing 〜／ー／…, a closing mark, or a final particle
 // (〜ですよ。〜ますね。〜ますから！〜ですか？); 励ますんだ／だますわけ／ますます／いますぐ
 // are followed by something else. でしょう is listed and でしょ is not, because the
 // clipped form is one she is recorded using and the full one is 敬体.
@@ -150,17 +151,20 @@ export const MIKA_VOICE =
 // alone and is rejected. 〜ませ as a polite imperative (いらっしゃいませ) is not
 // listed, because ませ also ends 常体 forms like 済ませて.
 export const JA_POLITE_ENDING =
-  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）\s*!?」』♪]|[よねかがからのでけどしなぞぜ]|$)/
+  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）：\s*!?」』♪〜～ー…]|[よねかがからのでけどしなぞぜ]|$)/
 
 // Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
 // is a report. An exclamation mark used to clear this on its own, which meant
 // 「這比數量更重要！」 passed as speech; exactly one closer relied on that branch, so
 // it was rewritten and the branch removed.
 //
+// A trailing 〜／～ is allowed after the particle, because the recordings use one
+// (mika-bye-1-zh3 「Bye bye～，下次見！」).
+//
 // Known limits: 啊 and 嘛 are absent because the 25 zh recordings never use them,
 // which keeps the set inside her recorded register; and a word that merely ends in
 // one of these characters (「他最常去的是酒吧。」) clears it.
-export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
+export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][〜～]?[。！？]?$/
 
 // The same class, used to forbid a particle in the middle of a line, so a particle
 // that can end a line cannot also stack inside one. A leading interjection of three
