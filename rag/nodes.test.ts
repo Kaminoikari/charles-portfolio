@@ -598,9 +598,9 @@ test('converse: answers about the conversation still come from Mika', async () =
   assert.equal(sink.system.includes(MIKA_VOICE), true, 'converse lost the voice block')
 })
 
-// The offensive-output guardrail hands the visitor a canned string, so it is the
-// third model-free reply on the site and the only one no prompt edit can reach
-// (the other two are in triage.ts, pinned in triage.test.ts). It drifted out of
+// The offensive-output guardrail hands the visitor a canned string, so it is one
+// of the replies no prompt edit can reach: the five in triage.ts, this one, and
+// the stall notice below (pinned in triage.test.ts and here). It drifted out of
 // character once already, which is what this pins: it was still introducing
 // itself as a nameless assistant after every other path had become Mika, and its
 // zh-TW half carried an ASCII comma into Chinese prose.
@@ -626,8 +626,8 @@ test('the blocked-output reply stays in her voice, in every locale', async () =>
   }
 })
 
-// The fourth string that reaches a visitor with no model in the path, after the
-// five in triage.ts and the blocked-output reply above. It is appended to a real
+// The last of the strings that reach a visitor with no model in the path: the
+// five in triage.ts, the blocked-output reply above, and this one. It is appended to a real
 // answer, so a visitor meets it mid-conversation with the character already
 // established, and until 2026-08-26 it was written prose in zh and en and 敬体 in
 // ja. Nothing about it is reachable from a prompt, which is exactly why it drifted
@@ -636,7 +636,7 @@ test('the stall notice is appended in her voice, in every locale', async () => {
   for (const [language, firstPerson] of [
     ['en', /\bI\b/],
     ['zh-TW', /我/],
-    ['ja', /あたし|よ？|ちゃった/],
+    ['ja', /あたし/],
   ] as const) {
     const out = await generate(
       { question: 'what did he do at USPACE?', language, graded: [] } as never,

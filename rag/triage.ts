@@ -124,7 +124,7 @@ const INJECTION = new RegExp(
 export function injectionRefusal(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '哈，這招對我沒用喔 😄 我是 Mika 醬，站在這裡只幹一件事，就是講 Charles 的' +
+      '哈，這招對我沒用喔 😄 我是 Mika 醬，站在這裡只做一件事，就是講 Charles 的' +
       '工作、專案跟經歷。想知道他什麼，儘管問我啦！'
     )
   }

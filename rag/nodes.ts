@@ -157,7 +157,7 @@ const HISTORY_RECENT_ASSISTANT_CHARS = 4000
 // stay: a provider swap over visible text is the thing the first-token gate
 // exists to prevent, so the answer cannot be replaced, only explained.
 //
-// The claim is deliberately narrow. "Generation stopped here" is observable;
+// The claim is deliberately narrow. "generation stalled here" is observable;
 // "this answer is incomplete" is not, because a provider that goes quiet after
 // a complete answer without closing its stream trips the same deadline, and
 // nothing downstream can tell the two apart. Saying only what is known is the
@@ -168,7 +168,7 @@ const HISTORY_RECENT_ASSISTANT_CHARS = 4000
 // model also meets an explanation rather than a bare half sentence.
 const STALL_NOTICE: Record<Locale, string> = {
   'zh-TW': '\n\n（欸，生成在這裡卡住了。這個回答看起來沒說完的話，我可以再寫一次喔。）',
-  ja: '\n\n（あ、生成がここで止まっちゃった。この回答、途中に見えるならもう一回書くよ？）',
+  ja: '\n\n（あ、生成がここで止まっちゃった。この回答、途中に見えるならあたしがもう一回書くよ？）',
   en: '\n\n(Oh, generation stalled here. If this answer looks unfinished, I can write it again.)',
 }
 

@@ -131,7 +131,7 @@ test('identity FAQ answers name her, in every locale', () => {
 // is every answer's first and last paragraph rather than only the lines written
 // in this pass, and counting only the edges with no first-person token, since
 // those are the ones a ceiling actually governs: the longest is 76 characters in
-// English (`remote`'s closer), 26 in Chinese (`exp-pxpay`'s closer), and 40 in
+// English (`remote`'s closer), 25 in Chinese (`exp-pxpay`'s closer), and 40 in
 // Japanese (`who-is-charles`'s closing invitation).
 // Japanese has the least room left, 5 characters, which is the right pressure
 // for a line that is supposed to be short.
@@ -208,11 +208,12 @@ test('the Japanese answers say あたし, never 私', () => {
 // without a human noticing.
 //
 // Closing lines only, and the reason is the openers, not the entries. Measured
-// against these two regexes, 10 of 57 ja openers and 12 of 57 zh openers would
-// fail: about half are identity answers that correctly open on their own content
-// (「あたしは**ミカ**、…」), and the rest are her own spoken lines that simply end
-// on 。 rather than on a particle (「五個喔！好，我一個一個講。」). A closing line is
-// always an invitation, so the marker is reliable there and noisy at the front.
+// against these two regexes, 4 of 57 ja openers and 12 of 57 zh openers would
+// fail. All four ja ones are identity answers that correctly open on their own
+// content (「あたしは**ミカ**、…」); the zh twelve are those same four plus eight of
+// her own spoken lines that simply end on 。 rather than on a particle
+// (「五個喔！好，我一個一個講。」). A closing line is always an invitation, so the
+// marker is reliable there and noisy at the front.
 
 // Japanese: 常体. Her clips never say です／ます, and 敬体 in her own line makes
 // her the polite stranger the earlier draft accidentally shipped.
@@ -222,10 +223,20 @@ test('the Japanese answers say あたし, never 私', () => {
 // which let through every shape a real 敬体 closer actually takes: HEAD's
 // 「…何でも聞いてください。」, and 〜ですよ。 〜ますね。 〜ますから！ 〜ですか？ 〜ましょう！.
 // Restoring the exact line this pass removed left the suite green, which is the
-// whole failure the guard exists to prevent. The lookahead spares the two 常体
-// shapes that merely contain those characters: でしょ (an ending she is recorded
-// using) and いますぐ.
-const JA_POLITE_ENDING = /(?:です|ます|ません|でした|ました|ましょう|ください)(?![ょぐ])/
+// whole failure the guard exists to prevent.
+//
+// What follows the ending is what separates the two cases, so that is what the
+// lookahead reads. A polite form is followed by terminal punctuation or by a
+// final particle (〜ですよ。〜ますね。〜ますから！〜ですか？); a 常体 verb that merely
+// contains those characters is followed by something else entirely (ますます、
+// 励ますんだ、だますわけ、いますぐ), and an earlier version of this guard rejected
+// all four. でしょう is listed and でしょ is not, because the clipped form is one
+// she is recorded using and the full one is 敬体.
+//
+// Known limit: 〜ませ as a polite imperative (いらっしゃいませ) is not listed,
+// because ませ also ends 常体 forms like 済ませて. No line has ever used it.
+const JA_POLITE_ENDING =
+  /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、）\s]|[よねかがからのでけどしなぞぜ]|$)/
 
 test("her Japanese closing lines stay 常体, the way she is voiced", () => {
   for (const entry of faqEntries) {
@@ -239,9 +250,13 @@ test("her Japanese closing lines stay 常体, the way she is voiced", () => {
   }
 })
 
-// Chinese: a sentence-final particle, or the exclamation/question mark that does
-// the same job. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」 is a report.
-const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷][。！？]?$|[！？]$/
+// Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
+// is a report.
+//
+// An exclamation mark used to clear this on its own, which meant 「這比數量更重要！」
+// passed as speech. Exactly one closer relied on that branch, so it was rewritten
+// and the branch removed: a particle is the marker, and punctuation is not.
+const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
 
 test('her Chinese closing lines end the way speech does', () => {
   for (const entry of faqEntries) {
@@ -268,7 +283,12 @@ test('her Chinese closing lines end the way speech does', () => {
 // characters or fewer. 「哪一層想問都可以喔，…」 is a clause wearing a particle, and an
 // earlier version of this guard that exempted everything before the first comma
 // waved it straight through, so the rule is the length, not the position.
-const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶囉唷]$/
+//
+// The class is the same one ZH_SPOKEN_ENDING accepts, so a particle that can end
+// a line cannot stack in the middle of one. Known limit: an interjection longer
+// than three characters (「哎唷喂呀，」) fails here and has to be written as its own
+// sentence.
+const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦]$/
 const ZH_INTERJECTION_MAX = 3
 
 test('her Chinese voice lines carry one particle, not a stutter of them', () => {
