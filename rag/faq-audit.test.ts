@@ -283,10 +283,12 @@ test('her Chinese closing lines end the way speech does', () => {
 // earlier version of this guard that exempted everything before the first comma
 // waved it straight through, so the rule is the length, not the position.
 //
-// A clause ends at 「，」 or 「、」 (persona.ts owns that too, because splitting on
-// the comma alone let 「…都可以喔、我告訴你…囉！」 through). Known limit: an
-// interjection longer than three characters (「哎唷喂呀，」) fails here and has to be
-// written as its own sentence.
+// A clause ends at 「，」, 「、」, or their ASCII and semicolon forms (persona.ts owns
+// that too, because splitting on the full-width comma alone let 「…都可以喔、我告訴
+// 你…囉！」 through). No entry uses the ASCII forms today, so the test below drives
+// the separator with synthetic lines rather than leaving that half of the class
+// unexercised. Known limit: an interjection longer than three characters
+// (「哎唷喂呀，」) fails here and has to be written as its own sentence.
 
 test('her Chinese voice lines carry one particle, not a stutter of them', () => {
   for (const entry of faqEntries) {
@@ -306,6 +308,24 @@ test('her Chinese voice lines carry one particle, not a stutter of them', () => 
         )
       }
     }
+  }
+})
+
+// The separator class, driven directly. Every character in it has to split, or a
+// line that stacks particles across that character is read as one clause and the
+// check above never looks at it. No cached answer uses the ASCII forms, so
+// widening the class was invisible to the data-driven test; this one fails if any
+// character is dropped from it.
+test('every clause separator splits, including the ASCII forms', () => {
+  const stacked = (sep: string) => `這一段可以問喔${sep}我講給你聽啦！`
+  for (const sep of ['，', '、', ',', ';', '；']) {
+    const clauses = stacked(sep).split(ZH_CLAUSE_SEPARATOR)
+    assert.equal(clauses.length, 2, `「${sep}」 does not split a line into clauses`)
+    assert.equal(
+      ZH_PARTICLE_AT_CLAUSE_END.test(clauses[0]),
+      true,
+      `a particle before 「${sep}」 is not seen as stacked`,
+    )
   }
 })
 

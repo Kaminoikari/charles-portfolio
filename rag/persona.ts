@@ -11,14 +11,23 @@
 //
 // The pre-recorded voice lines (scripts/voice_lines.py) are the other half of
 // this character and are NOT derived from these strings — they were written per
-// locale by hand, because a gyaru beat does not survive translation. Five other
-// surfaces are hand written for the same reason and cannot be reached by editing
-// these strings, because no model runs on their path: the canned triage replies
-// (triage.ts), the cached FAQ answers (faq-cache.ts), in nodes.ts both the
-// offensive-output reply and STALL_NOTICE, and the speech bubble she wears on the
-// page (src/i18n/strings/*.ts, chat.avatarBubble). Three of those five were found
-// missing by a reviewer rather than by this list, so when her voice changes, all
-// seven move together and this inventory is the checklist.
+// locale by hand, because a gyaru beat does not survive translation.
+//
+// The rule that decides what else has to move with them: a string a visitor reads
+// as Mika, with no model on its path, cannot be reached by editing anything here,
+// so it has to be written by hand in all three locales and held by a test. Those
+// are the canned triage replies (triage.ts), the cached FAQ answers
+// (faq-cache.ts), the offensive-output reply and STALL_NOTICE in nodes.ts, and
+// whatever src/i18n/chatVoice.test.ts classifies as hers — today the speech bubble
+// she wears on the page, the invitation the panel opens with, and the failure
+// notice that is patched into her own message bubble when a request dies.
+//
+// Counting them here is what kept going wrong: several rounds of review each
+// found a surface this comment had left out, and one found the count itself
+// wrong. So the i18n side is enumerated by assertion instead
+// (src/i18n/chatVoice.test.ts): every key under chat.* is classified there as
+// hers, as the visitor's own words, or as UI chrome, and adding a key without
+// classifying it turns that test red.
 
 // Who she is, in full. The `generate` node's visitors ask what she is and how
 // she was made, so this carries the architecture with it.
@@ -133,10 +142,12 @@ export const MIKA_VOICE =
   'conflict, they win and you stay plain.'
 
 // The machine-checkable half of the voice above. These live here rather than in a
-// test file because two test files hold her to them (faq-audit.test.ts for the 57
-// cached answers, nodes.test.ts for STALL_NOTICE), and while nodes.test.ts kept
-// its own copy the two silently diverged: the copy still carried the version that
-// let 〜ましょ and 〜でしょう through after this one had been fixed.
+// test file because more than one test file holds her to them — today
+// faq-audit.test.ts, nodes.test.ts and src/i18n/chatVoice.test.ts, and the list
+// has grown every time a surface was found. While nodes.test.ts kept its own copy
+// the two silently diverged: the copy still carried the version that let 〜ましょ
+// and 〜でしょう through after this one had been fixed. Anything that reads one of
+// these definitions imports it; nothing re-states it.
 
 // Japanese 常体. Her 25 recorded lines never say です／ます, so 敬体 in a line of
 // HERS makes her a politer stranger. What FOLLOWS the ending is what separates a
@@ -167,6 +178,11 @@ export const JA_POLITE_ENDING =
 // it (私生活, 私立, 私費, 私有). An earlier version keyed on the FOLLOWING particle,
 // which let through exactly the shape her register uses: spoken Japanese drops the
 // particle, so 「私、ミカだよ！」 and 「私って…」 read as her and passed.
+//
+// The exclusion list is closed, so a compound this does not know is a false
+// positive: 私鉄, 私服, 公私 and 私見 are all rejected today. None of them belongs in
+// her register, which is why the list has not grown; writing one deliberately
+// means adding it here.
 export const JA_FORMAL_I = /私(?![生立費有])/
 
 // Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
@@ -176,9 +192,10 @@ export const JA_FORMAL_I = /私(?![生立費有])/
 //
 // A trailing 〜／～ after the particle was tried and reverted. The recording cited
 // for it (mika-bye-1-zh3 「Bye bye～，下次見！」) puts its ～ after a Latin word in the
-// middle of the line, so it is not evidence for this position, and allowing it
-// here without allowing it in the stutter class below broke the invariant that
-// the two classes are the same: 「…都可以喔～，…那裡啦！」 cleared both guards.
+// middle of the line, so it is not evidence for this position. Widening only this
+// side also let 「…都可以喔～，…那裡啦！」 clear both guards, because the stutter class
+// below could no longer see the particle it was widened past — the two classes
+// are deliberately not identical, and the asymmetry is explained there.
 //
 // Known limits: 啊 and 嘛 are absent because the 25 zh recordings never use them,
 // which keeps the set inside her recorded register; and a word that merely ends in
@@ -198,6 +215,9 @@ export const ZH_INTERJECTION_MAX = 3
 
 // A line's clauses, for the stutter check. Both 「，」 and 「、」 separate them: with
 // 「，」 alone, 「哪一層想問都可以喔、我告訴你…囉！」 and the very natural 「專案啦、經歷
-// 啦、…」 stacked freely. 「。」「！」「？」 are NOT separators, because a particle before
-// one of those is ending a sentence, which is what she is supposed to do.
-export const ZH_CLAUSE_SEPARATOR = /[，、]/
+// 啦、…」 stacked freely. The ASCII 「,」 and 「;」 are in the class as well — Chinese
+// prose here should not carry them at all, but a particle sitting before one is
+// still stacked mid-line, and splitting on more can only reject more. 「。」「！」「？」
+// are NOT separators, because a particle before one of those is ending a
+// sentence, which is what she is supposed to do.
+export const ZH_CLAUSE_SEPARATOR = /[，、,;；]/

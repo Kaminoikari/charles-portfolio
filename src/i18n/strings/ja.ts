@@ -127,7 +127,7 @@ const ja: Strings = {
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',
     emptyMessage:
-      'Charles のプロジェクト、経歴、AI を使った開発手法など何でも聞いてください。回答はすべて彼の実際のポートフォリオに基づきます。',
+      'なんでも聞いて！Charles のプロジェクト、経歴、AI をどう使って作ってるか。答えはぜんぶ、あたしが彼の実際のポートフォリオから引っぱってくるよ。',
     previewLabel: '回答には実際に検索したチャンクと関連度スコアが付きます。例：',
     inputPlaceholder: '彼の仕事について何でも…',
     send: '送信',
@@ -135,7 +135,7 @@ const ja: Strings = {
     thinking: '検索中…',
     sourcesLabel: '検索されたコンテキスト',
     sourcesCount: '{{count}} 件',
-    errorMessage: '送信できませんでした。接続を確認してもう一度お試しください。',
+    errorMessage: '送れなかったみたい。接続を確かめて、もう一回試してみて？',
     rateLimited: '質問が多すぎます。少し待ってからもう一度お試しください。',
     regionBlocked: 'お住まいの地域ではこの機能をご利用いただけません。',
     retry: '再試行',

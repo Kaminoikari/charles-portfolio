@@ -102,7 +102,7 @@ const zhTW: Strings = {
   },
   chat: {
     launcherLabel: '問這個作品集',
-    avatarBubble: '我是 Mika 醬！想了解 Charles 就問我',
+    avatarBubble: '我是 Mika 醬！想了解 Charles 就問我喔',
     launcherTag: 'RAG',
     openAriaLabel: '開啟 AI 助理',
     minimiseAriaLabel: '縮到最小',
@@ -124,7 +124,7 @@ const zhTW: Strings = {
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',
     emptyMessage:
-      '任何關於 Charles 的專案、經歷、或他如何用 AI 打造產品的問題都可以問。每個答案都根據他真實的作品集而來。',
+      '什麼都可以問我喔！Charles 的專案、經歷、他怎麼用 AI 打造產品。每個答案都是從他真實的作品集裡撈出來的啦。',
     previewLabel: '每個回答都會附上實際檢索到的片段與相關度分數，像這樣：',
     inputPlaceholder: '問任何關於他的工作…',
     send: '送出',
@@ -132,7 +132,7 @@ const zhTW: Strings = {
     thinking: '檢索中…',
     sourcesLabel: '檢索到的內容',
     sourcesCount: '{{count}} 個片段',
-    errorMessage: '沒送出去，檢查一下連線再試一次。',
+    errorMessage: '欸，沒送出去。檢查一下連線再試一次喔。',
     rateLimited: '問題太頻繁了，稍等一下再試。',
     regionBlocked: '您所在的區域目前不支援此功能。',
     retry: '重試',

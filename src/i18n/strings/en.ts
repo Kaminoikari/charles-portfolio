@@ -181,7 +181,7 @@ const en: Strings = {
     title: 'Ask about Charles',
     subtitle: 'CRAG · RRF · RECALL@K',
     emptyMessage:
-      "Ask me anything about Charles's projects, experience, or how he builds with AI. Every answer is grounded in his actual portfolio.",
+      "Ask me anything! Charles's projects, his experience, how he builds with AI. Every answer comes straight out of his portfolio.",
     previewLabel: 'Each answer shows the real chunks it retrieved and their relevance scores, like this:',
     inputPlaceholder: 'Ask anything about his work…',
     send: 'Send',
@@ -189,7 +189,7 @@ const en: Strings = {
     thinking: 'Retrieving…',
     sourcesLabel: 'Retrieved context',
     sourcesCount: '{{count}} chunks',
-    errorMessage: "That didn't go through. Check your connection and try again.",
+    errorMessage: "That didn't go through! Check your connection and give it another go.",
     rateLimited: 'Too many questions for now, give it a moment and try again.',
     regionBlocked: 'This assistant is not available in your region.',
     retry: 'Retry',
