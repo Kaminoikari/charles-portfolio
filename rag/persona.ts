@@ -174,8 +174,11 @@ export const JA_POLITE_ENDING =
 export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
 
 // The same class, used to forbid a particle in the middle of a line, so a particle
-// that can end a line cannot also stack inside one. A leading interjection of three
+// that can end a line cannot also stack inside one. It reads one character wider
+// than ZH_SPOKEN_ENDING, allowing a trailing 〜／～, because a particle wearing one
+// (「…都可以喔～，…那裡啦！」) is still a particle stacked mid-line. Widening this side
+// only tightens; widening the ending side is what broke the invariant in round 8. A leading interjection of three
 // characters or fewer is exempt; a longer one (「哎唷喂呀，」) or a clause whose last
 // word merely ends in one of these (「他常去的是酒吧，…」) is rejected.
-export const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦]$/
+export const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][〜～]?$/
 export const ZH_INTERJECTION_MAX = 3
