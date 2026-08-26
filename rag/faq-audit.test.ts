@@ -13,7 +13,9 @@ import assert from 'node:assert/strict'
 import { triage } from './triage.js'
 import { faqEntries } from './faq-cache.js'
 import {
+  JA_FORMAL_I,
   JA_POLITE_ENDING,
+  ZH_CLAUSE_SEPARATOR,
   ZH_INTERJECTION_MAX,
   ZH_PARTICLE_AT_CLAUSE_END,
   ZH_SPOKEN_ENDING,
@@ -177,21 +179,10 @@ test('every answer closes on one short line, not on the content', () => {
   }
 })
 
-// Her recordings never say 私: of the 25 ja lines in scripts/voice_lines.py,
-// three name her at all (mika-greet-5, mika-greet-9, mika-intro-1) and all three
-// say あたし, while the rest drop the pronoun the way spoken Japanese does. So a
-// cached answer that says 私 is a register the character has never been heard in.
-// Four identity answers did exactly that until 2026-08-26, and the first-person
-// check above cannot see it: its regex accepts either pronoun, which is right for
-// asking "is anyone speaking here" and useless for asking "who".
-//
-// Matched as the character itself, minus the four compound nouns that start with
-// it (私生活, 私立, 私費, 私有). An earlier version keyed on the FOLLOWING particle,
-// which let through exactly the shape her register uses: spoken Japanese drops the
-// particle, so 「私、ミカだよ！」 and 「私って…」 read as her and passed the test named
-// after them. A new compound would have to be added here, which is the price of
-// catching the bare pronoun.
-const JA_FORMAL_I = /私(?![生立費有])/
+// Four identity answers said 私 until 2026-08-26, and the first-person check above
+// cannot see it: its regex accepts either pronoun, which is right for asking "is
+// anyone speaking here" and useless for asking "who". The rule itself lives in
+// persona.ts, because the speech bubble on the page is held to it too.
 
 test('the Japanese answers say あたし, never 私', () => {
   for (const entry of faqEntries) {
@@ -292,10 +283,10 @@ test('her Chinese closing lines end the way speech does', () => {
 // earlier version of this guard that exempted everything before the first comma
 // waved it straight through, so the rule is the length, not the position.
 //
-// The class is the same one ZH_SPOKEN_ENDING accepts, so a particle that can end
-// a line cannot stack in the middle of one. Known limit: an interjection longer
-// than three characters (「哎唷喂呀，」) fails here and has to be written as its own
-// sentence.
+// A clause ends at 「，」 or 「、」 (persona.ts owns that too, because splitting on
+// the comma alone let 「…都可以喔、我告訴你…囉！」 through). Known limit: an
+// interjection longer than three characters (「哎唷喂呀，」) fails here and has to be
+// written as its own sentence.
 
 test('her Chinese voice lines carry one particle, not a stutter of them', () => {
   for (const entry of faqEntries) {
@@ -304,7 +295,7 @@ test('her Chinese voice lines carry one particle, not a stutter of them', () => 
       ['opener', paras[0]],
       ['closer', paras[paras.length - 1]],
     ] as const) {
-      const clauses = raw.trim().split('，')
+      const clauses = raw.trim().split(ZH_CLAUSE_SEPARATOR)
       // The last clause carries the line's one particle; every earlier one must not.
       for (let i = 0; i < clauses.length - 1; i++) {
         if (i === 0 && clauses[0].length <= ZH_INTERJECTION_MAX) continue

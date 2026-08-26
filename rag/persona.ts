@@ -11,13 +11,14 @@
 //
 // The pre-recorded voice lines (scripts/voice_lines.py) are the other half of
 // this character and are NOT derived from these strings — they were written per
-// locale by hand, because a gyaru beat does not survive translation. Four other
+// locale by hand, because a gyaru beat does not survive translation. Five other
 // surfaces are hand written for the same reason and cannot be reached by editing
 // these strings, because no model runs on their path: the canned triage replies
-// (triage.ts), the cached FAQ answers (faq-cache.ts), and in nodes.ts both the
-// offensive-output reply and STALL_NOTICE. The last two were each found missing
-// by a reviewer rather than by this list, so when her voice changes, all six
-// move together and this inventory is the checklist.
+// (triage.ts), the cached FAQ answers (faq-cache.ts), in nodes.ts both the
+// offensive-output reply and STALL_NOTICE, and the speech bubble she wears on the
+// page (src/i18n/strings/*.ts, chat.avatarBubble). Three of those five were found
+// missing by a reviewer rather than by this list, so when her voice changes, all
+// seven move together and this inventory is the checklist.
 
 // Who she is, in full. The `generate` node's visitors ask what she is and how
 // she was made, so this carries the architecture with it.
@@ -157,6 +158,17 @@ export const MIKA_VOICE =
 export const JA_POLITE_ENDING =
   /(?:です|ます|ません|でした|ました|ましょう|ましょ|ください|でしょう)(?=[。！？、（）：「」『』\s*!?♪〜～ー…]|[よねかがからのでけどしなぞぜ]|$)/
 
+// Her recordings never say 私: of the 25 ja lines in scripts/voice_lines.py, three
+// name her at all (mika-greet-5, mika-greet-9, mika-intro-1) and all three say
+// あたし, while the rest drop the pronoun the way spoken Japanese does. So a line
+// that says 私 is a register the character has never been heard in.
+//
+// Matched as the character itself, minus the four compound nouns that start with
+// it (私生活, 私立, 私費, 私有). An earlier version keyed on the FOLLOWING particle,
+// which let through exactly the shape her register uses: spoken Japanese drops the
+// particle, so 「私、ミカだよ！」 and 「私って…」 read as her and passed.
+export const JA_FORMAL_I = /私(?![生立費有])/
+
 // Chinese: a sentence-final particle. 「…我喜歡這種欸。」 is her; 「…這比數量更重要。」
 // is a report. An exclamation mark used to clear this on its own, which meant
 // 「這比數量更重要！」 passed as speech; exactly one closer relied on that branch, so
@@ -173,12 +185,19 @@ export const JA_POLITE_ENDING =
 // one of these characters (「他最常去的是酒吧。」) clears it.
 export const ZH_SPOKEN_ENDING = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][。！？]?$/
 
-// The same class, used to forbid a particle in the middle of a line, so a particle
-// that can end a line cannot also stack inside one. It reads one character wider
-// than ZH_SPOKEN_ENDING, allowing a trailing 〜／～, because a particle wearing one
-// (「…都可以喔～，…那裡啦！」) is still a particle stacked mid-line. Widening this side
-// only tightens; widening the ending side is what broke the invariant in round 8. A leading interjection of three
+// The same particle class, used to forbid one in the middle of a line, so a
+// particle that can end a line cannot also stack inside one. Deliberately NOT
+// identical to ZH_SPOKEN_ENDING: it reads one character wider, allowing a trailing
+// 〜／～, because a particle wearing one (「…都可以喔～，…那裡啦！」) is still a particle
+// stacked mid-line. The asymmetry has a direction. Widening THIS side can only
+// reject more; widening the ending side is what let a stacked line ship. A leading interjection of three
 // characters or fewer is exempt; a longer one (「哎唷喂呀，」) or a clause whose last
 // word merely ends in one of these (「他常去的是酒吧，…」) is rejected.
 export const ZH_PARTICLE_AT_CLAUSE_END = /[喔喲啦欸齁呀耶吧嗎呢囉唷哦呦][〜～]?$/
 export const ZH_INTERJECTION_MAX = 3
+
+// A line's clauses, for the stutter check. Both 「，」 and 「、」 separate them: with
+// 「，」 alone, 「哪一層想問都可以喔、我告訴你…囉！」 and the very natural 「專案啦、經歷
+// 啦、…」 stacked freely. 「。」「！」「？」 are NOT separators, because a particle before
+// one of those is ending a sentence, which is what she is supposed to do.
+export const ZH_CLAUSE_SEPARATOR = /[，、]/
