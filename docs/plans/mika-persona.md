@@ -857,22 +857,75 @@ not listed here」的 it 失去先行詞（被刪掉的正是那份清單）。�
 
 ### 三、日文 changelog 同一個清單裡三種語體
 
-`changelog.ja.ts` 的 `mika-persona` 清單三項分別是敬体、常体、体言止め，而同檔另外
-20 個 list 區塊的日文句子一律收在ます／ません。這是訪客讀得到的文案，而這則 entry 的
-主題就是語體一致。兩項改成敬体。（既有缺陷，從 `79fbb23` 起就在。）
+`changelog.ja.ts` 的 `mika-persona` 清單只有三項，卻是三種語體：敬体、常体、体言止め。
+判準不需要跟別的 entry 比，同一個清單裡逐項換語體本身就讀得出來，而這則 entry 的主題
+正是語體一致。這是訪客讀得到的文案。後兩項改成敬体。（既有缺陷，從 `79fbb23` 起就在。）
+
+第一次寫這一節時給的理由是「同檔另外 20 個 list 區塊一律收在ます／ません」，兩位
+reviewer 各用一種量法都測出它是假的（項目結尾的体言止め另有兩項；若連項目內的句子
+一起數，含常体或体言止め的區塊有九個）。理由換成上面那個不依賴跨 entry 比較的說法。
 
 ### 四、被證實為假的數字只改了被指名的那一處
 
 第十四輪修了 Non-goals 的「7 條／33 鍵」，但第十三輪那節原封留著同樣的兩個數字，
 而那不是歷史量測值，是寫下時就錯的。補上推翻註記，指向第十四輪的正確版本。
 
-### 五、plan 把疊用檢查寫成「三條 mutation」
+### 五、（第十四輪的收尾，記在這裡是歸屬錯誤）
 
-實際只有 50、51 驅動它，52 打的是句尾助詞、已被同輪第五項認領。改成兩條並註明。
+plan 把疊用檢查寫成「三條 mutation」，實際只有 50、51 驅動它，52 打的是句尾助詞。
+這是第十四輪 spec reviewer 的發現，也在第十四輪的 commit `c0c25bc` 就改掉了，
+第十六輪 reviewer 指出把它列在這一節是把上一個 commit 的編輯記成本輪。保留條目、
+更正歸屬。
 
 ### 驗證
 
 `npx tsc -b` exit 0，`npm run rag:test` 227 pass／0 fail，`npm test` 286 passed
 （新增的那條在 faq-audit，走 tsx 的 rag:test，不在 vitest 那套）。
+mutation 62 條全紅、零 abort。生成層仍未被真實模型驅動過。
+
+## 2026-08-26 雙 reviewer 第十六輪：兩位都確認程式碼無缺陷，八項全在敘述
+
+code reviewer 五項、spec reviewer 三項，重疊兩項。兩位都逐條實測確認第十五輪的修正
+全部落地、覆蓋沒有變窄（新的第一人稱 regex 是舊 regex 去掉名字後的真子集，11 條身分
+題被收得更緊，點名另外釘在兩條上），也都明說程式碼層面沒有缺陷。
+
+### 一、上一輪新寫的測試註解把 11 條裡的第一條分錯類
+
+註解寫「兩條是問她是誰，其餘問她怎麼被做出來的」，但 `who-is-charles` 問的是 Charles。
+它三語的開場句也都點名，正好推翻同句的「不必再說一次名字」。連同它上面那段
+「Identity questions are the ones a visitor asks her about herself」一起改寫，
+因為那句對同一條也不成立。
+
+### 二、「carry one particle」也是承諾了沒有斷言的事
+
+`her Chinese voice lines carry one particle, not a stutter of them` 與
+`chatVoice.test.ts` 的同名測試都只斷言否定那半（非末尾子句不得帶語氣詞），沒有任何一條
+斷言這行「有一個」。實測 57 條中文答案有 12 條開場句完全不含語氣詞字集。兩條都改名為
+`never stack particles mid-sentence`。這是第十五輪那次掃蕩漏掉的第三個實例。
+
+### 三、斷言訊息裡第三份「錄音全部說 あたし」
+
+`faq-audit.test.ts` 的失敗訊息寫「uses 私 where every recording says あたし」，而第三輪
+就已實測這個說法為假（25 句日文台詞只有 3 句含 あたし，其餘 22 句沒有第一人稱）。
+第三輪改了 `persona.ts` 的 live prompt 與測試註解兩處，漏了這一處。改成「no recording
+of hers ever says 私」，並用 `rg` 掃過全 repo 確認沒有第四份。
+
+### 四、第十五輪自己給的理由是假的
+
+那一節寫「同檔另外 20 個 list 區塊的日文句子一律收在ます／ません」。兩位 reviewer 各用
+一種量法都測出它假：以項目結尾算，体言止め另有兩項；連項目內的句子一起算，含常体或
+体言止め的區塊有九個。理由換成不依賴跨 entry 比較的說法：同一個清單只有三項卻是三種
+語體，本身就讀得出來。
+
+### 五、`persona.ts` 的孤行與 plan 的歸屬錯誤
+
+上一輪插字後沒重排，留下一行 29 欄的孤行，同一句還連用兩個冒號；重排並改掉第二個冒號。
+另外第十五輪第五項（疊用檢查的 mutation 條數）其實是第十四輪 spec reviewer 的發現、
+也在第十四輪的 commit 就改掉了，列在第十五輪是把上一個 commit 的編輯記成本輪，
+保留條目並更正歸屬。
+
+### 驗證
+
+`npx tsc -b` exit 0，`npm run rag:test` 227 pass／0 fail，`npm test` 286 passed。
 mutation 62 條全紅、零 abort。生成層仍未被真實模型驅動過。
 

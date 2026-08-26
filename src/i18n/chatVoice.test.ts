@@ -137,7 +137,7 @@ describe('the chat strings that are her talking', () => {
   // The same rule faq-audit.test.ts holds the 57 cached answers to: a particle may
   // sit in a leading interjection of three characters or fewer, or at the very end.
   // One in between is the caricature 71 zh voice lines were rewritten to remove.
-  test('the Chinese strings carry one particle, not a stutter of them', () => {
+  test('the Chinese strings never stack particles mid-sentence', () => {
     for (const key of HERS) {
       const line = LOCALES['zh-TW'][key]
       const clauses = line.trim().split(ZH_CLAUSE_SEPARATOR)

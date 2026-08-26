@@ -144,10 +144,10 @@ export const MIKA_VOICE =
 // The machine-checkable half of the voice above. These live here rather than in a
 // test file because more than one test file holds her to them, and which files
 // those are has changed every time a surface was found, so they are not named
-// here. Keeping a copy instead of importing is what goes wrong: while
-// nodes.test.ts kept its own
-// copy of one of these the two silently diverged: the copy still carried the
-// version that let 〜ましょ and 〜でしょう through after this one had been fixed.
+// here. Keeping a copy instead of importing is what goes wrong. While
+// nodes.test.ts kept its own copy of one of these the two silently diverged: the
+// copy still carried the version that let 〜ましょ and 〜でしょう through after this
+// one had been fixed.
 // Anything that reads one of these definitions imports it; nothing re-states it,
 // and `rg JA_POLITE_ENDING` finds every consumer without a comment's help.
 

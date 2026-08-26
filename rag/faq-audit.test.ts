@@ -87,9 +87,11 @@ test('content questions still pass through to RAG (not over-blocked)', () => {
 
 // --- the cached layer speaks as Mika ----------------------------------------
 // These answers are returned VERBATIM with no model in the path (qdrant.ts
-// faqLookup), so the persona prompt cannot reach them. Identity questions are
-// the ones a visitor asks her about herself, and memory
-// `feedback_mika_first_person` is explicit that they open in the first person.
+// faqLookup), so the persona prompt cannot reach them. The entries below are the
+// ones a visitor cannot read without meeting her: nine ask what she is or how she
+// was built, and `who-is-charles` puts her in the room by asking her to introduce
+// the person she works for. Memory `feedback_mika_first_person` is explicit that
+// all of them open in the first person.
 const IDENTITY_ENTRIES = [
   'who-is-charles',
   'who-is-mika',
@@ -104,11 +106,12 @@ const IDENTITY_ENTRIES = [
   'bot-design-patterns',
 ]
 
-// Of the identity entries, two are the visitor asking who she IS; the rest ask
-// how she was built, and answer that in the first person without needing to say
-// the name again. Splitting them is what makes the naming rule assertable: it
-// used to share one regex with the pronoun check, so an answer could drop the
-// name, keep an `I`, and pass a test called "name her".
+// Two of those entries are the visitor asking who she IS, and only those two are
+// held to saying the name. The other nine answer in the first person without
+// needing to repeat it, whether they are describing the architecture or Charles.
+// Splitting the two rules is what makes the naming one assertable: it used to
+// share a regex with the pronoun check, so an answer could drop the name, keep an
+// `I`, and pass a test called "name her".
 const NAMES_HER = ['who-is-mika', 'bot-who-are-you']
 
 const answerOf = (id: string) => {
@@ -211,7 +214,7 @@ test('the Japanese answers never say 私', () => {
     assert.equal(
       hit,
       null,
-      `${entry.id} (ja) uses 私 where every recording says あたし: ...${entry.answers.ja.slice(Math.max(0, (hit?.index ?? 0) - 30), (hit?.index ?? 0) + 20)}...`,
+      `${entry.id} (ja) uses 私, which no recording of hers ever says: ...${entry.answers.ja.slice(Math.max(0, (hit?.index ?? 0) - 30), (hit?.index ?? 0) + 20)}...`,
     )
   }
 })
@@ -312,7 +315,7 @@ test('her Chinese closing lines end the way speech does', () => {
 // Known limit: an interjection longer than three characters
 // (「哎唷喂呀，」) fails here and has to be written as its own sentence.
 
-test('her Chinese voice lines carry one particle, not a stutter of them', () => {
+test('her Chinese voice lines never stack particles mid-sentence', () => {
   for (const entry of faqEntries) {
     const paras = entry.answers['zh-TW'].split('\n\n')
     for (const [where, raw] of [
