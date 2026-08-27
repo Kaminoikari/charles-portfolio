@@ -370,8 +370,10 @@ test('a particle wearing a ～ is still seen as stacked mid-line', () => {
     true,
     'a particle wearing a ～ reads as unstacked, so widening the ending class reopened the hole',
   )
-  // The other half of the pair: this line clears the ending class, which is what
-  // the widening did. Only the assertion above is stopping it now.
+  // The other half of the pair: the ending class accepts this line and always
+  // did, since it stops on 啦！ and the widening only added the ～ a line may now
+  // wear before that. So the ending class never caught this one, and the
+  // assertion above is the only thing that does.
   assert.equal(ZH_SPOKEN_ENDING.test(line), true, 'the ending class no longer accepts this line')
 })
 
