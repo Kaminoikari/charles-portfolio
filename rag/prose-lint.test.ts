@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 
 import { faqEntries } from './faq-cache.js'
+import { JA_POLITE_ENDING } from './persona.js'
 import {
   MAX_COMMENT_WIDTH,
   MIN_WRAPPED_WIDTH,
@@ -61,6 +62,15 @@ const jaRecordedLines = () => {
 
 const chatKeys = Object.keys(en.chat).length
 
+// Two numbers a comment quotes that the data can move. They were exempted once,
+// while each happened to equal a count asserted in faq-audit.test.ts; when those
+// counts moved on 2026-08-27 the cover went with them, and an exemption is
+// exactly what this file exists to refuse. Measured here instead.
+const jaVoiceLineOpeners = () =>
+  faqEntries.length - faqEntries.filter((e) => JA_POLITE_ENDING.test(e.answers.ja.split('\n\n')[0])).length
+const philosophyLeadIn = () =>
+  (faqEntries.find((e) => e.id === 'philosophy')?.answers.en.split('\n\n')[1] ?? '').length
+
 test('the numerals quoted in comments are measured or declared', () => {
   // Measured from the data the comments are talking about. If an FAQ entry or a
   // recording is added, the number in the comment stops matching and this fails
@@ -70,6 +80,8 @@ test('the numerals quoted in comments are measured or declared', () => {
     ['answer/locale pairs', faqEntries.length * 3],
     ['her recorded lines per locale', jaRecordedLines()],
     ['chat.* keys that are not hers', chatKeys - 3],
+    ['ja openers that are nothing but a voice line', jaVoiceLineOpeners()],
+    ["chars in philosophy's English lead-in", philosophyLeadIn()],
   ])
   // Not measurements: this module's own thresholds. They are asserted here
   // because the fixtures below are written around these exact values, so moving
@@ -83,6 +95,8 @@ test('the numerals quoted in comments are measured or declared', () => {
       'answer/locale pairs': 171,
       'her recorded lines per locale': 25,
       'chat.* keys that are not hers': 37,
+      'ja openers that are nothing but a voice line': 53,
+      "chars in philosophy's English lead-in": 33,
     },
     'a comment quotes one of these; re-measure and update both',
   )
@@ -95,9 +109,7 @@ test('the numerals quoted in comments are measured or declared', () => {
   // something else, not a count of her answers.
   const constants = [
     3, // ZH_INTERJECTION_MAX, and 「第 3 個問題」 inside a quoted example
-    33, // chars in `philosophy`'s English lead-in, quoted as a ceiling defeat
-    53, // ja answers whose opener is nothing but a voice line, and the fixture pair below
-    5, // the headroom left under the ja ceiling, and 「item 5」 in a quoted incident
+    5, // 「4 becomes 5」 in the ja-opener arithmetic, and 「item 5」 in a quoted incident
     8, // 「第 8 題」 inside a quoted example
     20, // Gemini free tier, requests per day
     71, 114, // round 5: 71 of 114 zh voice lines were rewritten, a historical count
