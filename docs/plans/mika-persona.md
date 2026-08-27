@@ -40,8 +40,10 @@
 emoji 那條在 2026-08-27 由「每則最多 1 個」收緊成「一個都不准」，來自作品集擁有者
 改寫的角色設定（澀谷辣妹＋大姊姊，紅線明列禁 emoji）。同一天 `injectionRefusal`、
 `personalRedirect` 與招呼罐頭三語共九條字串把 emoji 拿掉，`triage.test.ts` 原本釘住
-「恰好一個」的斷言改成零。本檔後面那段標題為「`personalRedirect` 違反 persona 自己的
-emoji 規則」的檢討，記錄的是收緊之前的判定，保留原樣當歷史。
+「恰好一個」的斷言改成零。`src/i18n/chatVoice.test.ts` 隨後跟上：泡泡與空狀態邀請句原本
+還留著 ≤1 的上限（實際是 0，所以行為沒變，變的是上限），現在三條一律 0。本檔後面兩段
+標題為「`personalRedirect` 違反 persona 自己的 emoji 規則」與「emoji 上限只有 0 的那一半
+被 mutation 覆蓋」的檢討，記錄的都是收緊之前的判定，保留原樣當歷史。
 
 ## 角色設定原文（使用者 2026-08-27 交付）
 
@@ -981,6 +983,9 @@ code reviewer FAIL，五項，並明確指出程式碼層面沒有缺陷：這�
 
 `carries at most one emoji` 對 `errorMessage` 是 0、對另外兩條是 ≤1，59 條 mutation
 只打了 0 的那半。補兩條（泡泡帶兩個 emoji、英文邀請句帶兩個 emoji）。
+
+> 2026-08-27 註記：≤1 那半已經不存在，三條一律 0，測試改名為
+> `carries no emoji at all, in any locale`。原因同本檔「角色設定原文」的紅線。
 
 ### 驗證
 

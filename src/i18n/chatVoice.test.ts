@@ -21,7 +21,7 @@
 // notice that stacked particles the way the cached answers were forbidden to.
 // English has no morphological marker to measure — 敬体 and 語氣詞 have no English
 // equivalent — so the English strings are held only to what is measurable across
-// all three: person, and the emoji budget.
+// all three: person, and the emoji ban.
 
 import { describe, expect, test } from 'vitest'
 
@@ -151,12 +151,17 @@ describe('the chat strings that are her talking', () => {
     }
   })
 
-  test('carries at most one emoji, and none in the failure notice', () => {
+  // Zero, not a budget of one. The ceiling used to be 1 for the two introductions
+  // and 0 for the failure notice, which was the register in force until the owner's
+  // 2026-08-27 spec made "全文禁用任何 Emoji 表情符號" a red line; rag/persona.ts now tells
+  // the model the same thing. The one pictograph left in her copy anywhere is the
+  // 🔗 that marks a project link inside a hand-written cached answer, and no
+  // chat.* string is one of those.
+  test('carries no emoji at all, in any locale', () => {
     for (const key of HERS) {
       for (const [locale, line] of lines(key)) {
         const emoji = line.match(/\p{Extended_Pictographic}/gu) ?? []
-        const ceiling = key === 'errorMessage' ? 0 : 1
-        expect(emoji.length, `${locale} ${key} carries ${emoji.length} emoji`).toBeLessThanOrEqual(ceiling)
+        expect(emoji, `${locale} ${key} carries ${emoji.length} emoji`).toEqual([])
       }
     }
   })
