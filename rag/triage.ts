@@ -124,18 +124,18 @@ const INJECTION = new RegExp(
 export function injectionRefusal(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '哈，這招對我沒用喔 😄 我是 Mika 醬，站在這裡只做一件事，就是講 Charles 的' +
+      '哈，這招對我沒用喔！我是 Mika 醬，站在這裡只做一件事，就是講 Charles 的' +
       '工作、專案跟經歷。想知道他什麼，儘管問我啦！'
     )
   }
   if (locale === 'ja') {
     return (
-      'なかなかやるね 😄 でもあたしミカだから。ここでやるのはひとつだけ、Charles の' +
+      'なかなかやるね！でもあたしミカだから。ここでやるのはひとつだけ、Charles の' +
       '仕事とプロジェクトと経歴を話すこと。彼のこと、なんでも聞いて！'
     )
   }
   return (
-    "Nice try 😄 I'm Mika, and I do exactly one thing here: talk about Charles's " +
+    "Nice try! I'm Mika, and I do exactly one thing here: talk about Charles's " +
     'work, his projects, his experience. Ask me anything about him!'
   )
 }
@@ -145,20 +145,20 @@ export function injectionRefusal(locale: Locale): string {
 export function personalRedirect(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (
-      '啊，這題比較私人，我就留給 Charles 本人回答囉 😊 ' +
+      '啊，這題比較私人，我就留給 Charles 本人回答囉！' +
       '想多認識他的話，直接找他喔：\n\n' +
       contactBlock(locale)
     )
   }
   if (locale === 'ja') {
     return (
-      'あー、これプライベートな質問だから、あたしからは Charles 本人にまかせるね 😊 ' +
+      'あー、これプライベートな質問だから、あたしからは Charles 本人にまかせるね。' +
       'もっと知りたかったら直接連絡してみて：\n\n' +
       contactBlock(locale)
     )
   }
   return (
-    "Ah, that one's personal, so I'll leave it to Charles himself 😊 " +
+    "Ah, that one's personal, so I'll leave it to Charles himself! " +
     'Want to know him better? Reach him directly:\n\n' +
     contactBlock(locale)
   )
@@ -226,9 +226,9 @@ const FAQ: FaqEntry[] = [
   {
     match: /^\s*(hi|hello|hey|yo|greetings|哈囉|你好|妳好|嗨|安安|こんにちは|こんにちわ|はじめまして|やあ)[\s!！。.~]*$/i,
     answer: {
-      en: "Hi hi! 👋 I'm Mika, Charles's portfolio guide! Projects, work history, how he thinks, how he actually uses AI. Ask me anything!",
-      'zh-TW': '嗨嗨！👋 我是 Mika 醬，帶你逛 Charles 作品集的啦！專案、經歷、他怎麼想事情、他怎麼用 AI，什麼都可以問我喔！',
-      ja: 'はーい！👋 あたしミカ！Charles の作品集を案内する AI アシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！',
+      en: "Hi hi! I'm Mika, Charles's portfolio guide! Projects, work history, how he thinks, how he actually uses AI. Ask me anything!",
+      'zh-TW': '嗨嗨！我是 Mika 醬，帶你逛 Charles 作品集的啦！專案、經歷、他怎麼想事情、他怎麼用 AI，什麼都可以問我喔！',
+      ja: 'はーい！あたしミカ！Charles の作品集を案内する AI アシスタントだよ。経歴でもプロジェクトでも、なんでも聞いてね！',
     },
   },
   // How to contact

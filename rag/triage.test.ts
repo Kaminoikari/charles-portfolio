@@ -169,13 +169,14 @@ test('an injection is batted away in character, in every locale', () => {
   }
 })
 
-// The two paths that hand a visitor over to Charles both speak in her voice and
-// differ on exactly one thing. A gap in the portfolio has to read as straight,
-// so it carries no emoji at all. Handing a personal question over keeps one,
-// because there the warmth is the content: without it the reply reads as a door
-// closing rather than as her passing you to him. These two are hand-written
-// strings with no model on their path, which is why they still carry one at all:
-// persona.ts bans the emoji outright for anything a model writes, and says so.
+// The two paths that hand a visitor over to Charles both speak in her voice, and
+// neither carries an emoji. The privacy handover used to keep one, on the
+// argument that the warmth there was the content and that without it the reply
+// read as a door closing. The owner's persona spec of 2026-08-27 makes no
+// exceptions, so the emoji is gone from both and the warmth is carried by the
+// words, which that spec also made warmer. These are hand-written strings with
+// no model on their path, so persona.ts cannot reach them: the ban is asserted
+// here instead.
 const EMOJI = /\p{Extended_Pictographic}/gu
 
 test('the portfolio-gap reply is first-person and carries no emoji', () => {
@@ -187,14 +188,14 @@ test('the portfolio-gap reply is first-person and carries no emoji', () => {
   }
 })
 
-test('the privacy handover is first-person and keeps exactly one emoji', () => {
+test('the privacy handover is first-person and carries no emoji', () => {
   for (const locale of ['en', 'zh-TW', 'ja'] as const) {
     const reply = personalRedirect(locale)
     assert.match(reply, /\bI\b|我|あたし/, `privacy reply is not first-person in ${locale}`)
     assert.equal(
       reply.match(EMOJI)?.length ?? 0,
-      1,
-      `privacy reply should carry exactly one emoji in ${locale}`,
+      0,
+      `privacy reply carries an emoji in ${locale}`,
     )
     assert.ok(reply.includes(CONTACT.email), `privacy reply drops the contact CTA in ${locale}`)
   }
