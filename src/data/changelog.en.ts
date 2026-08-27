@@ -34,7 +34,7 @@ export const changelog: ChangelogEntry[] = [
       `The old rule allowed one per reply and named two moments that kept theirs: batting away an attack, and handing a personal question over to Charles, where the warmth was the content. The new spec makes emoji a red line, so those two lost theirs as well.`,
       `The reasoning is that a visitor cannot tell which layer answered them. Type "hi" and a hard-coded greeting comes back; ask about a project and a model writes it. Two different faces on one character. The warmth is carried by the words now, and the new register runs warmer anyway.`,
       { kind: 'heading', text: `A laugh is not a particle` },
-      `Eight closing lines ended on 「…喔～嘻嘻！」. 「嘻嘻」 cannot satisfy the closing rule, and the new spec already lists 「嘻嘻～」 as an opening greeting, so those eight moved their laugh to the front. Five more stacked a second particle mid-sentence and became separate sentences.`,
+      `Eight closing lines hung a 「嘻嘻！」 off the end of their particle, as in 「…喔～嘻嘻！」. 「嘻嘻」 cannot satisfy the closing rule, and the new spec already lists 「嘻嘻～」 as an opening greeting, so those eight moved their laugh to the front. Five more stacked a second particle mid-sentence and became separate sentences.`,
       {
         kind: 'stats',
         items: [

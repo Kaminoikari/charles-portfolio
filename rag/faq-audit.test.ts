@@ -356,6 +356,25 @@ test('every clause separator splits, including the ASCII forms', () => {
   }
 })
 
+// The ～ that ZH_SPOKEN_ENDING was widened to accept on 2026-08-27 is only safe
+// while this class reads it too: a particle wearing one at a clause end is still
+// a particle stacked mid-line. The separator test above drives a bare particle,
+// so dropping the ～ from this class leaves it green and puts the hole back
+// without reddening anything. This drives the exact line that hole let through.
+test('a particle wearing a ～ is still seen as stacked mid-line', () => {
+  const line = '哪一層想問都可以喔～，我告訴你它為什麼在那裡啦！'
+  const clauses = line.split(ZH_CLAUSE_SEPARATOR)
+  assert.equal(clauses.length, 2, 'the line under test no longer splits into two clauses')
+  assert.equal(
+    ZH_PARTICLE_AT_CLAUSE_END.test(clauses[0]),
+    true,
+    'a particle wearing a ～ reads as unstacked, so widening the ending class reopened the hole',
+  )
+  // The other half of the pair: this line clears the ending class, which is what
+  // the widening did. Only the assertion above is stopping it now.
+  assert.equal(ZH_SPOKEN_ENDING.test(line), true, 'the ending class no longer accepts this line')
+})
+
 // Her Japanese openers get the same 常体 rule her closers do, read two ways,
 // because each selector alone leaves a hole the other covers.
 //
