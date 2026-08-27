@@ -173,7 +173,9 @@ test('an injection is batted away in character, in every locale', () => {
 // differ on exactly one thing. A gap in the portfolio has to read as straight,
 // so it carries no emoji at all. Handing a personal question over keeps one,
 // because there the warmth is the content: without it the reply reads as a door
-// closing rather than as her passing you to him (rag/persona.ts).
+// closing rather than as her passing you to him. These two are hand-written
+// strings with no model on their path, which is why they still carry one at all:
+// persona.ts bans the emoji outright for anything a model writes, and says so.
 const EMOJI = /\p{Extended_Pictographic}/gu
 
 test('the portfolio-gap reply is first-person and carries no emoji', () => {

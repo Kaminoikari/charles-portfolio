@@ -619,7 +619,8 @@ test('the blocked-output reply stays in her voice, in every locale', async () =>
     assert.equal(out.outcome, 'blocked', `guardrail did not fire for ${language}`)
     assert.match(out.answer ?? '', firstPerson, `blocked reply is not first-person in ${language}`)
     assert.deepEqual(out.sources, [])
-    // A refusal is one of the two moments persona.ts keeps emoji-free.
+    // persona.ts bans the emoji outright now, and a refusal is the moment that
+    // ban matters most: an emoji there reads as softening a no.
     assert.equal(
       /\p{Extended_Pictographic}/u.test(out.answer ?? ''),
       false,

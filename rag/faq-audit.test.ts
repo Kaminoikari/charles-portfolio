@@ -150,7 +150,7 @@ test('the answers to "who are you" name her, in every locale', () => {
 // and is invisible in review once it is one of sixty.
 //
 // What they do NOT catch, measured rather than guessed: deleting an opener goes
-// undetected in 53 of 171 answer/locale pairs and deleting a closer in 33,
+// undetected in 51 of 171 answer/locale pairs and deleting a closer in 30,
 // because the paragraph that would become the edge is itself short or carries a
 // first-person token. `philosophy`'s "Charles works by four principles:" is 33
 // characters, well under the English ceiling. The ceilings separate her lines
@@ -164,10 +164,11 @@ test('the answers to "who are you" name her, in every locale', () => {
 // is every answer's first and last paragraph rather than only the lines written
 // in this pass, and counting only the edges with no first-person token, since
 // those are the ones a ceiling actually governs: the longest is 76 characters in
-// English (`remote`'s closer), 25 in Chinese (`exp-pxpay`'s closer), and 40 in
+// English (`remote`'s closer), 40 in Chinese (`why-product`'s closer), and 40 in
 // Japanese (`who-is-charles`'s closing invitation).
-// Japanese has the least room left, 5 characters, which is the right pressure
-// for a line that is supposed to be short.
+// Chinese now has no room left at all: its longest governed edge sits exactly on
+// its ceiling, so the next zh line written one character longer without a
+// first-person token fails here rather than shipping.
 const VOICE_LINE_MAX: Record<'en' | 'zh-TW' | 'ja', number> = { en: 90, 'zh-TW': 40, ja: 45 }
 
 // An identity answer IS her talking about herself, and a closing invitation
@@ -233,11 +234,11 @@ test('the Japanese answers never say 私', () => {
 // without a human noticing.
 //
 // Closing lines only, and the reason is the openers, not the entries. Measured
-// against these two regexes, 4 of 57 ja openers and 16 of 57 zh openers would
+// against these two regexes, 4 of 57 ja openers and 19 of 57 zh openers would
 // fail. All four ja ones are identity answers that correctly open on their own
-// content (「あたしは**ミカ**、…」); the zh sixteen are those same four plus twelve
-// of her own spoken lines that end on punctuation instead of a particle, seven on
-// 。 (「五個喔！好，我一個一個講。」), four on ！ and one on ：. A closing line is
+// content (「あたしは**ミカ**、…」). The zh ones are her own spoken lines that end
+// on something other than a particle: most trail off on a bare ～ (「快聽 Mika 娓娓
+// 道來～」), the rest stop on ！ or hand over on ： . A closing line is
 // always an invitation, so the marker is reliable there and noisy at the front.
 // Both counts are asserted at the bottom of this file, so a stale one turns the
 // suite red instead of misleading the next reader.
@@ -412,7 +413,7 @@ test('the counts quoted in the comments above are still the measured ones', () =
     (e) => !ZH_SPOKEN_ENDING.test(e.answers['zh-TW'].split('\n\n')[0].trim()),
   ).length
   assert.equal(jaOpenersFailing, 4, 'the comment above says 4 of 57 ja openers would fail')
-  assert.equal(zhOpenersFailing, 16, 'the comment above says 16 of 57 zh openers would fail')
+  assert.equal(zhOpenersFailing, 19, 'the comment above says 19 of 57 zh openers would fail')
 
   // The blind spots the opener/closer guards knowingly have: deleting the edge
   // leaves a paragraph that still clears the ceiling or carries a pronoun.
@@ -429,8 +430,8 @@ test('the counts quoted in the comments above are still the measured ones', () =
         closerBlind++
     }
   }
-  assert.equal(openerBlind, 53, 'the comment above says deleting an opener goes undetected in 53 pairs')
-  assert.equal(closerBlind, 33, 'the comment above says deleting a closer goes undetected in 33 pairs')
+  assert.equal(openerBlind, 51, 'the comment above says deleting an opener goes undetected in 51 pairs')
+  assert.equal(closerBlind, 30, 'the comment above says deleting a closer goes undetected in 30 pairs')
 
   // The longest edge the ceiling actually governs, per language.
   const longest: Record<string, number> = { en: 0, 'zh-TW': 0, ja: 0 }
@@ -444,7 +445,7 @@ test('the counts quoted in the comments above are still the measured ones', () =
   }
   assert.deepEqual(
     longest,
-    { en: 76, 'zh-TW': 25, ja: 40 },
-    'the comment above quotes en 76, zh 25, ja 40 as the longest edges the ceiling governs',
+    { en: 76, 'zh-TW': 40, ja: 40 },
+    'the comment above quotes en 76, zh 40, ja 40 as the longest edges the ceiling governs',
   )
 })
