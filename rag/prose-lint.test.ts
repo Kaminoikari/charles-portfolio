@@ -34,13 +34,19 @@ const PROSE_FILES = [
 // What a visitor reads, restricted to what this work wrote. The banned-pattern
 // rule postdates most of the changelog, so the older entries are out of its
 // reach on purpose (rag/prose-lint.ts says why).
-const MIKA_ENTRY = (file: string) => {
-  const src = read(file)
-  const start = src.indexOf("id: 'mika-persona'")
-  assert.ok(start > 0, `${file} has no mika-persona entry`)
-  const after = src.indexOf("id: '", start + 20)
-  return [src.slice(start, after > 0 ? after : undefined)]
-}
+// The changelog entries this work wrote. bannedCopy reads only what this list
+// names, so an entry left out of it is an entry nothing checks: add the id here
+// the day the entry ships.
+const MIKA_ENTRY_IDS = ['mika-gal-register', 'mika-persona']
+
+const MIKA_ENTRY = (file: string) =>
+  MIKA_ENTRY_IDS.map((id) => {
+    const src = read(file)
+    const start = src.indexOf(`id: '${id}'`)
+    assert.ok(start > 0, `${file} has no ${id} entry`)
+    const after = src.indexOf("id: '", start + 20)
+    return src.slice(start, after > 0 ? after : undefined)
+  })
 
 // lastIndexOf, because each strings file opens with a type declaration that has
 // a `chat: {` of its own; indexOf lands there and slices the wrong block.

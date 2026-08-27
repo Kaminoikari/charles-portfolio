@@ -20,6 +20,32 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-gal-register',
+    date: '2026-08-27',
+    title: `Mika's Chinese moved to a gyaru register, and two rules gave way`,
+    tags: ['design'],
+    body: [
+      `The last release wrote her personality into the system. This one is the owner writing the lines himself: all 57 pre-written Chinese answers, rewritten by hand, with the character pinned down as Shibuya gyaru energy carried by a warm older sister.`,
+      `The interesting part is what happened next. The moment the new spec existed, it collided with the machine checks left behind by the old one.`,
+      { kind: 'heading', text: `The sentence-final wave` },
+      `The new spec asks for a 「～」 at the end of a sentence to give the line some movement. The guard requires her closing line to land on a sentence-final particle, and a 「～」 sitting after that particle read as no particle at all.`,
+      `That restriction had a reason. Loosen it and 「哪一層想問都可以喔～，我告訴你它為什麼在那裡啦！」 clears both checks while reading as an impression of the character. A second check was later widened to see that 「～」 itself, which closed the hole, and nobody went back to loosen the first one. It is loosened now, and the line above still gets caught.`,
+      { kind: 'heading', text: `Emoji went from one to none` },
+      `The old rule allowed one per reply and named two moments that kept theirs: batting away an attack, and handing a personal question over to Charles, where the warmth was the content. The new spec makes emoji a red line, so those two lost theirs as well.`,
+      `The reasoning is that a visitor cannot tell which layer answered them. Type "hi" and a hard-coded greeting comes back; ask about a project and a model writes it. Two different faces on one character. The warmth is carried by the words now, and the new register runs warmer anyway.`,
+      { kind: 'heading', text: `A laugh is not a particle` },
+      `Eight closing lines ended on 「…喔～嘻嘻！」. 「嘻嘻」 cannot satisfy the closing rule, and the new spec already lists 「嘻嘻～」 as an opening greeting, so those eight moved their laugh to the front. Five more stacked a second particle mid-sentence and became separate sentences.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '57', label: `Chinese answers rewritten by hand` },
+          { value: '16', label: `lines adjusted to clear the guards` },
+          { value: '9', label: `emoji removed` },
+        ],
+      },
+    ],
+  },
+  {
     id: 'mika-persona',
     date: '2026-08-26',
     title: `Mika got a personality, and her voice finally matches her writing`,
