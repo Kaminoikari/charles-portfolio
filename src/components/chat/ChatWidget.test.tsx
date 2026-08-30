@@ -53,26 +53,30 @@ const avatarStub = vi.hoisted(() => ({
   // so the real list cannot be named here; holding it in a field keeps the stub
   // from carrying a second hand-written copy of the ten clips.
   ready: [] as readonly AvatarMotionName[],
-  handle: {} as AvatarGuideHandle,
+  handle: {
+    setMode: vi.fn(),
+    setActive: vi.fn(),
+    setSpeech: vi.fn(),
+    setEmotion: vi.fn(),
+    playGesture: vi.fn(),
+    playMotion: vi.fn(() => true),
+    readyMotions: vi.fn((): readonly AvatarMotionName[] => []),
+    setFraming: vi.fn(),
+    setPlacement: vi.fn(),
+    dispose: vi.fn(),
+  },
 }))
 
-// `satisfies AvatarGuideHandle` is load-bearing. The stub was inferred before,
-// so adding readyMotions to the real handle compiled fine and then threw
-// "not a function" out of an effect, reddening four fullscreen tests that have
-// nothing to do with motions. Typed, the next method added to the handle fails
-// here at compile time and names itself.
-avatarStub.handle = {
-  setMode: vi.fn(),
-  setActive: vi.fn(),
-  setSpeech: vi.fn(),
-  setEmotion: vi.fn(),
-  playGesture: vi.fn(),
-  playMotion: vi.fn(() => true),
-  readyMotions: vi.fn(() => avatarStub.ready),
-  setFraming: vi.fn(),
-  setPlacement: vi.fn(),
-  dispose: vi.fn(),
-} satisfies AvatarGuideHandle
+// The contract check, as an assignment rather than a `satisfies` on the object
+// above. Both catch a stub that has drifted from the real handle, but annotating
+// the field narrows every property to the interface's signature, and the tests
+// below call .mockClear() on two of them.
+//
+// This is not decoration: the stub was inferred before, so adding readyMotions
+// to the real handle compiled and then threw "not a function" out of an effect,
+// reddening four fullscreen tests about nothing of the kind.
+const _handleMatchesTheRealOne: AvatarGuideHandle = avatarStub.handle
+void _handleMatchesTheRealOne
 
 // Read through a function on purpose: assigning `avatarStub.onPat = null` in a
 // setup helper narrows the property to `null` for the rest of THAT function, so

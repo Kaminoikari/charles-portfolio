@@ -93,8 +93,14 @@ const CHROME = [
 
 const INTRODUCES_HERSELF = ['avatarBubble', 'emptyMessage'] as const
 
+// `chat` stopped being flat when the motion labels arrived, so the value at a
+// key is no longer always a string. Every key this helper is called with is a
+// string one; reading through `unknown` says that without claiming the whole
+// object is flat, which is what the old cast claimed and the compiler refused.
 const lines = (key: string) =>
-  Object.entries(LOCALES).map(([locale, chat]) => [locale, (chat as Record<string, string>)[key]] as const)
+  Object.entries(LOCALES).map(
+    ([locale, chat]) => [locale, (chat as unknown as Record<string, string>)[key]] as const,
+  )
 
 describe('the chat strings that are her talking', () => {
   test("every key under chat.* is classified as hers, as the visitor's, or as chrome", () => {
