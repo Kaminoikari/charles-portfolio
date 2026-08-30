@@ -2,9 +2,10 @@
 // path: the speech bubble she wears on the page, the invitation the panel opens
 // with, and the failure notice, which useChatStream patches into her own message
 // bubble (useChatStream.ts:233/239/246) so a dead request makes that string her
-// entire turn. The other 37 keys split two ways: the six suggestion chips are the
-// visitor's own words and must not sound like her, and the rest is UI chrome —
-// labels, aria strings, pipeline node names — which stays written.
+// entire turn. The other 40 keys split two ways: the six suggestion chips are the
+// visitor's own words and must not sound like her, and the rest is UI chrome:
+// labels, aria strings, pipeline node names, and the motion strip's clip names,
+// which stays written.
 //
 // Each of the three was found by a reviewer rather than by the suite: the bubble's
 // Japanese still said 私 on 2026-08-26 after every other surface had moved to

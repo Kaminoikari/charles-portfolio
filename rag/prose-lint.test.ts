@@ -100,7 +100,7 @@ test('the numerals quoted in comments are measured or declared', () => {
       'cached answers': 57,
       'answer/locale pairs': 171,
       'her recorded lines per locale': 25,
-      'chat.* keys that are not hers': 37,
+      'chat.* keys that are not hers': 40,
       'ja openers that are nothing but a voice line': 53,
       "chars in philosophy's English lead-in": 33,
     },

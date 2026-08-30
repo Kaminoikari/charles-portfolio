@@ -12,12 +12,13 @@
 import { pathToFileURL } from 'node:url'
 
 import { scrollReportableLogs } from './chat-logs.js'
+import { questionSnapshots, snapshotFile, type QuestionRecordSource } from './records.js'
 
-export interface PulseRow {
-  type: 'open' | 'question' | null
-  visitor_id: string | null
-  ts: string | null
-}
+// The row shape this module reads, named in its own vocabulary so the
+// signatures below say what they take. It adds nothing to the record source, so
+// it is an alias: an empty interface extending one is the same type with an
+// extra declaration, which is what the linter objects to.
+export type PulseRow = QuestionRecordSource
 
 export interface Pulse {
   questions: number
@@ -49,6 +50,10 @@ async function main() {
   // The loader applies the report epoch and drops anonymous rows, so a reset
   // silences the poller the same way it silences the report.
   const { rows } = await scrollReportableLogs<PulseRow>()
+  if (process.argv.includes('--snapshot')) {
+    process.stdout.write(snapshotFile(questionSnapshots(rows)))
+    return
+  }
   console.log(formatPulse(summarizePulse(rows)))
 }
 
