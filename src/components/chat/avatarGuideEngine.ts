@@ -60,6 +60,8 @@ import {
 } from '@pixiv/three-vrm-animation'
 import {
   IDLE_MOTIONS,
+  IDLE_ROTATION_START,
+  nextIdleMotion,
   MOTION_URL,
   motionFrame,
   motionPan,
@@ -127,6 +129,12 @@ export type AvatarGuideHandle = {
   // downloading, which is not an error: the caller falls back to a procedural
   // beat and the clip is there for the next one.
   playMotion: (name: AvatarMotionName) => boolean
+  // Which clips can be played RIGHT NOW: eligible for the current placement and
+  // already downloaded. The motion strip in the composer needs this because a
+  // visitor tapping a name expects movement, and playMotion answers false for a
+  // clip still in flight. Dimming those until they land shows the truth instead
+  // of handing someone a control that silently does nothing.
+  readyMotions: () => readonly AvatarMotionName[]
   // Camera dolly for a placement that gets a taller canvas. Pass the distance
   // and the height the camera looks at; the tilt is preserved. Keeping
   // `distance / canvas height` constant keeps her on-screen size constant, so
@@ -691,6 +699,14 @@ export function initAvatarGuide(
     for (const name of IDLE_MOTIONS) loadMotion(name)
   }
 
+  // How often the first beat re-checks for the opening clip, and how long it
+  // keeps checking. 12s is comfortably past the point where a 2.5MB clip has
+  // either arrived or failed on any connection that got the 5.5MB model here,
+  // and giving up means falling into the ordinary rotation rather than standing
+  // still: a dance that 404s must not cost her every other performance.
+  const OPENING_RETRY = 0.4
+  const OPENING_GRACE = 12
+
   // Seconds a clip takes to take the bones OVER, at entry. The exit is a settle
   // instead, timed by distance and eased — see beginSettle and settleSeconds.
   const MOTION_FADE = 0.25
@@ -844,7 +860,17 @@ export function initAvatarGuide(
   // same act twice in a row.
   let idleActTimer = 2.5 + Math.random() * 1.5
   let lastIdleAct: GestureName | null = null
-  let lastMotion: AvatarMotionName | null = null
+  // Where the fixed clip rotation has got to. Replaced a random pick with a
+  // single re-roll on 2026-08-30: the re-roll only ever ruled out an IMMEDIATE
+  // repeat, so the same clip three times in five beats stayed as likely as it
+  // sounds, and the owner asked for a set order opening on the dance.
+  let rotation = IDLE_ROTATION_START
+  // How long the first beat has held out for the opening clip. The ten clips
+  // are requested together once the entrance has played and land in whatever
+  // order the network returns; the dance is the largest, so it is routinely not
+  // the first to arrive, and without this wait the opening would be whichever
+  // clip won that race.
+  let openingWaited = 0
   // A clip that is settling still owns its bones, so it has to keep being
   // advanced until its weight reaches zero. `settleDur > 0` is what says one is
   // under way, which is also what stops it being restarted every frame.
@@ -1010,21 +1036,38 @@ export function initAvatarGuide(
         }
         idleActTimer -= dt
         if (idleActTimer <= 0) {
-          const clips = motionsFor(placement).filter((name) => motionClips.has(name))
-          if (clips.length > 0 && Math.random() < 0.66) {
-            let pick = clips[(Math.random() * clips.length) | 0]
-            if (pick === lastMotion && clips.length > 1) {
-              pick = clips[(Math.random() * clips.length) | 0]
-            }
-            lastMotion = pick
+          const order = motionsFor(placement)
+          // The opening beat is never a gesture. The procedural acts are
+          // punctuation between clips, and letting one win the first roll would
+          // make her first move a shrug on two visits out of three.
+          const clipTurn = !rotation.opened || Math.random() < 0.66
+          const { pick, next } = clipTurn
+            ? nextIdleMotion(
+                order,
+                (name) => motionClips.has(name),
+                rotation,
+                openingWaited >= OPENING_GRACE,
+              )
+            : { pick: null, next: rotation }
+          rotation = next
+          if (pick) {
+            openingWaited = 0
             playMotion(pick)
+            idleActTimer = 2.5 + Math.random() * 1.5
+          } else if (clipTurn && !rotation.opened) {
+            // Still waiting on the dance. Come back sooner than a normal beat so
+            // she opens promptly once it lands, and count the wait so a clip
+            // that never arrives cannot hold the rotation shut for good. No
+            // early exit here: everything below still has to run this frame.
+            openingWaited += OPENING_RETRY
+            idleActTimer = OPENING_RETRY
           } else {
-            let pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
-            if (pick === lastIdleAct) pick = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
-            lastIdleAct = pick
-            gesture = { name: pick, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+            let act = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+            if (act === lastIdleAct) act = IDLE_ACTS[(Math.random() * IDLE_ACTS.length) | 0]
+            lastIdleAct = act
+            gesture = { name: act, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
+            idleActTimer = 2.5 + Math.random() * 1.5
           }
-          idleActTimer = 2.5 + Math.random() * 1.5
         }
       } else if (mode !== 'idle') {
         idleActTimer = Math.max(idleActTimer, 4)
@@ -1354,6 +1397,7 @@ export function initAvatarGuide(
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
     },
     playMotion,
+    readyMotions: () => motionsFor(placement).filter((name) => motionClips.has(name)),
     setPlacement: (next) => {
       const before = motionFrame(placement)
       placement = next

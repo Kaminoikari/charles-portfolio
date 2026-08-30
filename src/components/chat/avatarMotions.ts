@@ -339,9 +339,23 @@ export function settleWeight(elapsed: number, duration: number): number {
 
 export const MOTION_URL = (name: AvatarMotionName): string => `/avatar/animations/${name}.vrma`
 
-// What the idle timer may pick. All three read as something a person would do
-// unprompted while waiting; none of them needs a reason.
+// What the idle timer plays, IN THE ORDER IT PLAYS THEM. Every one reads as
+// something a person would do unprompted while waiting; none needs a reason.
+//
+// This was a set until 2026-08-30 and is a sequence now, because picking at
+// random repeated visibly: a single re-roll makes an immediate repeat unlikely
+// and does nothing about seeing the same clip three times in five beats. Adding
+// a clip here inserts it at that point in the rotation rather than adding a
+// face to a die.
+//
+// It is also the order the composer's motion strip lists them in, which is why
+// `dance` leads: it is the fixed opening (see OPENING_MOTION), and a strip whose
+// first chip was not the clip she opens on would be describing a different
+// rotation from the one that runs. Moving it here changes no behaviour — the
+// opening is chosen by name, and the lap that follows covers the same clips
+// either way.
 export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
+  'dance',
   'peaceSign',
   'modelPose',
   'spin',
@@ -351,7 +365,6 @@ export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
   'scratchHead',
   'idleLoop',
   'stretch',
-  'dance',
 ]
 
 /** The frame a placement composes to, or null where no avatar renders. */
@@ -387,4 +400,73 @@ export function motionsFor(placement: AvatarPlacement): readonly AvatarMotionNam
   const frame = motionFrame(placement)
   if (!frame) return []
   return IDLE_MOTIONS.filter((name) => AVATAR_MOTIONS[name].placements.includes(frame))
+}
+
+/**
+ * The clip her first performance is always made of.
+ *
+ * Asked for by the owner on 2026-08-30: whatever else the rotation does, a
+ * visitor's first sight of her performing is the dance.
+ */
+export const OPENING_MOTION: AvatarMotionName = 'dance'
+
+/** Where the rotation has got to. Owned by the caller so this stays pure. */
+export interface IdleRotation {
+  /** Index into the placement's list for the clip to try NEXT. */
+  cursor: number
+  /** Whether the fixed opening has been dealt with, by playing or by expiring. */
+  opened: boolean
+}
+
+export const IDLE_ROTATION_START: IdleRotation = { cursor: 0, opened: false }
+
+/**
+ * The next clip to play, and where that leaves the rotation.
+ *
+ * Split out of the engine's rAF loop so it can be tested at all: the engine
+ * needs a WebGLRenderer in its first frames and jsdom cannot build one, so a
+ * rule that lives inside the loop is a rule nothing checks.
+ *
+ * `ready` rather than a pre-filtered list, because the ten clips are fetched in
+ * parallel after the entrance and arrive in whatever order the network returns
+ * them. Filtering first would silently renumber the rotation every time another
+ * clip landed, and the opening would become "the first clip to arrive" — which
+ * is rarely the dance, since it is the largest of the ten.
+ *
+ * `openingExpired` bounds the wait for that opening. A clip that 404s or fails
+ * to parse never reaches the cache, and waiting for it forever would trade a
+ * missing dance for a character who never performs at all.
+ *
+ * Returns a null pick when nothing can play yet; the caller keeps its timer
+ * running and asks again.
+ */
+export function nextIdleMotion(
+  order: readonly AvatarMotionName[],
+  ready: (name: AvatarMotionName) => boolean,
+  state: IdleRotation,
+  openingExpired = false,
+): { pick: AvatarMotionName | null; next: IdleRotation } {
+  if (order.length === 0) return { pick: null, next: state }
+
+  if (!state.opened) {
+    const at = order.indexOf(OPENING_MOTION)
+    if (at >= 0 && ready(OPENING_MOTION)) {
+      return { pick: OPENING_MOTION, next: { cursor: at + 1, opened: true } }
+    }
+    // Not yet, or not offered in this frame at all. Hold the rotation until the
+    // wait runs out, then carry on from the top rather than stalling.
+    if (at >= 0 && !openingExpired) return { pick: null, next: state }
+    state = { cursor: 0, opened: true }
+  }
+
+  // Forward from the cursor, wrapping once. A clip still in flight is stepped
+  // over rather than waited for, so a slow download costs its turn and not the
+  // whole rotation; it comes back round next lap.
+  for (let step = 0; step < order.length; step++) {
+    const at = (state.cursor + step) % order.length
+    if (ready(order[at])) {
+      return { pick: order[at], next: { cursor: at + 1, opened: true } }
+    }
+  }
+  return { pick: null, next: state }
 }

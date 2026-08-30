@@ -29,12 +29,17 @@ import {
 } from './avatarMode'
 import {
   AVATAR_MOTIONS,
+  IDLE_MOTIONS,
+  IDLE_ROTATION_START,
   MAX_HIPS_SINK,
   motionPan,
   motionsFor,
+  nextIdleMotion,
+  OPENING_MOTION,
   settleSeconds,
   settleWeight,
   type AvatarMotionName,
+  type IdleRotation,
   type MotionFrame,
 } from './avatarMotions'
 
@@ -580,6 +585,104 @@ describe('the idle pool', () => {
   it('offers dance wherever she is rendered', () => {
     for (const placement of ['launcher', 'beside-panel', 'column'] as const) {
       expect(motionsFor(placement), `dance is missing from ${placement}`).toContain('dance')
+    }
+  })
+
+  it('always opens on the dance, whatever else has loaded', () => {
+    // The ten clips are fetched together and arrive in network order, and the
+    // dance is the largest of them, so the beat that opens has to WAIT rather
+    // than take what is there. Every other clip ready and the dance missing is
+    // exactly the state that used to hand the opening to whoever won the race.
+    const order = motionsFor('column')
+    const everythingElse = (name: AvatarMotionName) => name !== OPENING_MOTION
+    const held = nextIdleMotion(order, everythingElse, IDLE_ROTATION_START)
+    expect(held.pick, 'opened on something other than the dance').toBeNull()
+    expect(held.next.opened).toBe(false)
+
+    const opened = nextIdleMotion(order, () => true, IDLE_ROTATION_START)
+    expect(opened.pick).toBe(OPENING_MOTION)
+    expect(opened.next.opened).toBe(true)
+  })
+
+  it('plays the rotation in declared order, not at random', () => {
+    // Ten beats from a cold start on a body with every clip ready. The dance
+    // leads because the opening says so, then IDLE_MOTIONS from the top. Any
+    // repeat inside one lap means the cursor is not advancing.
+    const order = motionsFor('column')
+    const played: AvatarMotionName[] = []
+    let state: IdleRotation = IDLE_ROTATION_START
+    for (let i = 0; i < order.length; i++) {
+      const { pick, next } = nextIdleMotion(order, () => true, state)
+      state = next
+      if (pick) played.push(pick)
+    }
+    expect(played[0]).toBe(OPENING_MOTION)
+    expect(new Set(played).size, `repeated inside one lap: ${played.join(', ')}`).toBe(played.length)
+    const rest = order.filter((n) => n !== OPENING_MOTION)
+    expect(played.slice(1)).toEqual(rest.slice(0, played.length - 1))
+  })
+
+  it('wraps back to the top instead of stopping at the end', () => {
+    const order = motionsFor('column')
+    let state: IdleRotation = IDLE_ROTATION_START
+    const played: AvatarMotionName[] = []
+    for (let i = 0; i < order.length * 2; i++) {
+      const { pick, next } = nextIdleMotion(order, () => true, state)
+      state = next
+      if (pick) played.push(pick)
+    }
+    expect(played).toHaveLength(order.length * 2)
+    expect(played.slice(order.length)).toEqual(played.slice(0, order.length).map((_, i) =>
+      played[order.length + i]))
+    // The second lap covers the same set as the first.
+    expect(new Set(played.slice(order.length))).toEqual(new Set(played.slice(0, order.length)))
+  })
+
+  it('steps over a clip that has not arrived rather than waiting for it', () => {
+    // A slow download costs that clip its turn, never the rotation. Waiting
+    // here would freeze every performance behind one file.
+    const order = motionsFor('column')
+    const missing = order.find((n) => n !== OPENING_MOTION)!
+    let state: IdleRotation = { cursor: 0, opened: true }
+    const played: AvatarMotionName[] = []
+    for (let i = 0; i < order.length; i++) {
+      const { pick, next } = nextIdleMotion(order, (n) => n !== missing, state)
+      state = next
+      if (pick) played.push(pick)
+    }
+    expect(played).not.toContain(missing)
+    expect(played).toHaveLength(order.length)
+  })
+
+  it('gives up on a dance that never arrives instead of never performing', () => {
+    // An unbounded wait trades a missing opening for a character who stands
+    // still for the life of the page, which is far worse than the wrong clip.
+    const order = motionsFor('column')
+    const withoutDance = (name: AvatarMotionName) => name !== OPENING_MOTION
+    const { pick, next } = nextIdleMotion(order, withoutDance, IDLE_ROTATION_START, true)
+    expect(pick, 'expired and still played nothing').not.toBeNull()
+    expect(pick).not.toBe(OPENING_MOTION)
+    expect(next.opened).toBe(true)
+  })
+
+  it('holds its place when nothing at all has loaded', () => {
+    const order = motionsFor('column')
+    const state: IdleRotation = { cursor: 3, opened: true }
+    const { pick, next } = nextIdleMotion(order, () => false, state)
+    expect(pick).toBeNull()
+    expect(next).toEqual(state)
+  })
+
+  it('offers every idle clip somewhere, so the rotation can reach them all', () => {
+    // motionsFor filters by frame. A clip listed in IDLE_MOTIONS that no
+    // placement offers is one the rotation steps over forever.
+    const reachable = new Set([
+      ...motionsFor('launcher'),
+      ...motionsFor('beside-panel'),
+      ...motionsFor('column'),
+    ])
+    for (const name of IDLE_MOTIONS) {
+      expect(reachable.has(name), `${name} is in the rotation but no placement offers it`).toBe(true)
     }
   })
 
