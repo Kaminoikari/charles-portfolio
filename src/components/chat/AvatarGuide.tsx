@@ -13,6 +13,7 @@ import {
   type AvatarPlacement,
 } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
+import { variantUrl } from './avatarVariants'
 
 // Head-pat pacing. The streak window is what makes three pats read as "in a
 // row" rather than as three unrelated pats over a coffee break; the two
@@ -30,12 +31,9 @@ const PAT_STREAK_WINDOW_MS = 20000
 const PAT_STROKE_COOLDOWN_MS = 8000
 const PAT_TAP_COOLDOWN_MS = 120
 
-// _webp = same model repacked with EXT_texture_webp textures (15.4MB→5.5MB,
-// scripts/compress_vrm_webp.py). /avatar/* is cached immutable, so any
-// content change MUST come with a new filename. WebP support is a safe
-// assumption here: the avatar gate already requires WebGL2, which every
-// WebP-capable browser generation ships with.
-const VRM_URL = '/avatar/AvatarSample_B_webp.vrm'
+// Which body loads is a declaration in avatarVariants, not a constant here.
+// One VRoid project exports one file per outfit or face, and the component that
+// draws her should not be the place that decides which of them is on screen.
 
 export default function AvatarGuide({
   mode,
@@ -118,7 +116,7 @@ export default function AvatarGuide({
       if (cancelled || !canvasRef.current) return
       handleRef.current = initAvatarGuide(
         canvas,
-        VRM_URL,
+        variantUrl(),
         () => {
           if (!cancelled) onLoadedRef.current?.()
         },
