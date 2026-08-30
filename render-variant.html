@@ -1,0 +1,172 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>variant render</title>
+<style>html,body{margin:0;background:#111}canvas{display:block}</style>
+<canvas id="c" width="640" height="800"></canvas>
+<script type="module">
+import * as THREE from 'three'
+import { VRMLoaderPlugin } from '@pixiv/three-vrm'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+
+const url = new URLSearchParams(location.search).get('vrm')
+const canvas = document.getElementById('c')
+// The site's own renderer settings (avatarGuideEngine.ts). They stay in on
+// purpose: ACES tone mapping and a cyan fill light are exactly the distortion
+// the calibration step has to undo, so a render without them would let the
+// pipeline pass a test it has not earned.
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, preserveDrawingBuffer: true })
+renderer.setClearColor(0x000000, 0)
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 1.25
+
+const scene = new THREE.Scene()
+const lights = [new THREE.AmbientLight(0xffffff, 1.1), new THREE.DirectionalLight(0xffffff, 1.4), new THREE.DirectionalLight(0x00d9ff, 0.3)]
+lights[1].position.set(1, 2, 3); lights[2].position.set(-2, 1, -1)
+lights.forEach(l => scene.add(l))
+
+function read() {
+  const g = renderer.getContext()
+  const px = new Uint8Array(canvas.width * canvas.height * 4)
+  g.readPixels(0, 0, canvas.width, canvas.height, g.RGBA, g.UNSIGNED_BYTE, px)
+  return px
+}
+
+const loader = new GLTFLoader()
+loader.register((p) => new VRMLoaderPlugin(p))
+loader.load(url, (gltf) => {
+  const vrm = gltf.userData.vrm
+  scene.add(vrm.scene)
+  vrm.scene.rotation.y = Math.PI          // VRM0 faces -Z; turn her to the camera
+  const box = new THREE.Box3().setFromObject(vrm.scene)
+  const top = box.max.y, bottom = box.min.y
+  // Two framings, because one cannot serve both ends of this. At a framing wide
+  // enough to hold the hair and the jacket, the iris covered ONE pixel, and a
+  // colour averaged over one pixel is not a measurement. The caller asks for
+  // each in turn and merges per region, keeping whichever framing saw more of
+  // it, so hair and clothes come from the wide shot and eyes from the close one.
+  const shot = new URLSearchParams(location.search).get('shot') || 'wide'
+  const cam = new THREE.PerspectiveCamera(28, canvas.width / canvas.height, 0.1, 20)
+  if (shot === 'face') {
+    const head = vrm.humanoid.getNormalizedBoneNode('head')
+    const at = new THREE.Vector3()
+    head.getWorldPosition(at)
+    at.y += 0.06                               // the eyes sit above the head bone
+    cam.position.set(0, at.y, at.z + 0.42)
+    cam.lookAt(at)
+  } else {
+    const aim = new THREE.Vector3(0, top - (top - bottom) * 0.30, 0)
+    cam.position.set(0, aim.y, 2.0)
+    cam.lookAt(aim)
+  }
+
+  renderer.render(scene, cam)
+  const shaded = read()
+
+  // A second pass where every material is one flat colour. That is an exact
+  // segmentation of the first pass: no clustering, no spatial guesswork, so any
+  // error left in the result belongs to the shading model rather than to a mask
+  // that put half the collar in with the hair.
+  const originals = new Map()
+  const names = []
+  // The id goes in the red channel as a multiple of 8, which readPixels gives
+  // back exactly. Packing ids into a hex colour instead put every material
+  // within a few levels of every other and of black, so antialiasing alone
+  // moved pixels between materials.
+  //
+  // MToon draws its outline as a second, larger, back-faced hull. Left in, that
+  // hull is what the mask pass sees, and the answer comes back describing the
+  // outlines rather than the surfaces. It is hidden here and only here: the
+  // shaded pass keeps it, because it is part of what she looks like.
+  vrm.scene.traverse((o) => {
+    if (!o.isMesh && !o.isSkinnedMesh) return
+    const mats = Array.isArray(o.material) ? o.material : [o.material]
+    o.userData._flat = mats.map((m) => {
+      const outline = /outline/i.test(m.name || '')
+      if (outline) return new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+      let id = names.indexOf(m.name)
+      if (id < 0) { id = names.length; names.push(m.name) }
+      // The id is flat but the CUTOUT is not, and the geometry is SKINNED.
+      //
+      // A plain opaque material made every transparent surface solid, and the
+      // eye highlight — mostly transparent, sitting in front of the iris —
+      // swallowed the iris whole: 18,000 pixels for the highlight and none for
+      // the iris. Replacing it with a hand-written ShaderMaterial fixes the
+      // cutout and breaks something worse, because that shader has no skinning
+      // and would draw the mask in bind pose while the shaded pass is posed.
+      //
+      // So: keep three's own material, keep its map so the UVs and alphaTest
+      // are wired exactly as they were, and overwrite the colour on the last
+      // line of the fragment shader — after the discard, after tone mapping,
+      // after the colour-space conversion, none of which an id may go through.
+      const flat = new THREE.MeshBasicMaterial({ map: m.map || null, alphaTest: 0.5, side: m.side })
+      const id8 = ((id + 1) * 8 / 255).toFixed(6)
+      flat.onBeforeCompile = (sh) => {
+        sh.fragmentShader = sh.fragmentShader.replace(/\}\s*$/, `gl_FragColor = vec4(${id8}, 0.0, 0.0, 1.0);\n}`)
+      }
+      // Without this every mask material compiles to the SAME program. three
+      // caches compiled shaders by the material's parameters, and onBeforeCompile
+      // is not part of that key by default, so a dozen materials that differ only
+      // in the id they write share whichever id compiled first — which showed up
+      // as one region covering 280,000 pixels and the hair reporting none.
+      flat.customProgramCacheKey = () => `flatid-${id}`
+      return flat
+    })
+    originals.set(o, o.material)
+    o.material = Array.isArray(o.material) ? o.userData._flat : o.userData._flat[0]
+  })
+  // Linear output as well as no tone mapping. The renderer encodes to sRGB by
+  // default, which is right for a picture and wrong for an id: 8/255 does not
+  // come back as 8, so every mask pixel failed the "multiple of 8" test and the
+  // first run returned no regions at all.
+  renderer.toneMapping = THREE.NoToneMapping
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace
+  renderer.render(scene, cam)
+  const mask = read()
+  window.__maskHist = (() => {
+    const h = {}
+    for (let i = 0; i < mask.length; i += 4) if (mask[i + 3] > 128) h[mask[i]] = (h[mask[i]] || 0) + 1
+    return h
+  })()
+  window.__names = names
+  for (const [o, m] of originals) o.material = m
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.render(scene, cam)
+
+  // Per material: circular-mean hue, mean saturation, mean lightness of the
+  // shaded pass over exactly that material's pixels.
+  const acc = new Map()
+  for (let i = 0; i < mask.length; i += 4) {
+    if (mask[i + 3] < 128 || shaded[i + 3] < 128) continue
+    if (mask[i] === 0 || mask[i] % 8 !== 0 || mask[i + 1] > 4 || mask[i + 2] > 4) continue
+    const key = mask[i] / 8 - 1
+    const r = shaded[i] / 255, g = shaded[i + 1] / 255, b = shaded[i + 2] / 255
+    const hi = Math.max(r, g, b), lo = Math.min(r, g, b), l = (hi + lo) / 2
+    let h = 0, s = 0
+    if (hi !== lo) {
+      const d = hi - lo
+      s = l > 0.5 ? d / (2 - hi - lo) : d / (hi + lo)
+      h = hi === r ? (g - b) / d + (g < b ? 6 : 0) : hi === g ? (b - r) / d + 2 : (r - g) / d + 4
+      h /= 6
+    }
+    let a = acc.get(key)
+    if (!a) { a = { x: 0, y: 0, s: 0, l: 0, n: 0 }; acc.set(key, a) }
+    a.x += Math.cos(h * 2 * Math.PI); a.y += Math.sin(h * 2 * Math.PI)
+    a.s += s; a.l += l; a.n++
+  }
+  // Map each flat colour back to the material it stood for. The renderer writes
+  // the colour it was given, so recovering the id is a lookup, not a guess.
+  const result = {}
+  for (const [key, a] of acc) {
+    const name = names[key]
+    if (!name) continue
+    if (a.n < 200) continue                          // too few pixels to average
+    result[name] = {
+      hue: ((Math.atan2(a.y, a.x) * 180 / Math.PI) % 360 + 360) % 360,
+      sat: a.s / a.n, light: a.l / a.n, px: a.n,
+    }
+  }
+  window.__stats = result
+  document.title = 'ready'
+}, undefined, (e) => { document.title = 'error: ' + e.message })
+</script>
