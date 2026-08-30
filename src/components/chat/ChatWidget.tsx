@@ -35,6 +35,8 @@ import { playVoiceCue, type VoiceCue } from './avatarVoice'
 import AvatarGuide from './AvatarGuide'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
 import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideEngine'
+import { MotionStrip } from './MotionStrip'
+import { motionsFor, type AvatarMotionName } from './avatarMotions'
 
 // What Mika performs alongside each voice cue: an expression preset (name,
 // weight, hold seconds) and optionally a body gesture. Emotion holds outlast
@@ -235,6 +237,13 @@ export default function ChatWidget() {
   // expressions, gestures. Optional-chained everywhere — the voice works
   // fine before the handle exists, just without the face acting.
   const avatarHandleRef = useRef<AvatarGuideHandle | null>(null)
+  // Which clips the strip may offer as tappable. The ten are fetched in
+  // parallel once her entrance has played, so this starts empty on every mount
+  // and fills in over the next moment; polling is what turns each chip live as
+  // its file lands. There is no event to subscribe to — the loader is inside
+  // the engine's own GLTFLoader callbacks — and the poll stops itself as soon
+  // as the placement's clips are all in, so it is not a permanent timer.
+  const [readyMotions, setReadyMotions] = useState<readonly AvatarMotionName[]>([])
   const avatarMode = voiceSpeaking ? 'speaking' : deriveAvatarMode(input, status)
   // Viewport size IS tracked live (rotate a phone, resize a window): it moves
   // the avatar between launcher / beside-panel / column. It lives in React
@@ -682,6 +691,35 @@ export default function ChatWidget() {
   // cheap enough (six multiplications) not to be worth gating.
   const columnBox = avatarColumnBox(viewport.vw, viewport.vh)
   const inColumn = placement === 'column'
+  // Keep the strip's tappable set in step with what has downloaded. Stops as
+  // soon as everything this placement offers is in, and re-arms when the
+  // placement changes because the two frames offer different clips.
+  const offered = motionsFor(placement)
+  const offeredCount = offered.length
+  useEffect(() => {
+    if (offeredCount === 0) {
+      setReadyMotions([])
+      return
+    }
+    let cancelled = false
+    const tick = () => {
+      if (cancelled) return
+      const next = avatarHandleRef.current?.readyMotions() ?? []
+      setReadyMotions((prev) =>
+        prev.length === next.length && prev.every((n, i) => n === next[i]) ? prev : next,
+      )
+      return next.length
+    }
+    if (tick() === offeredCount) return
+    const id = window.setInterval(() => {
+      if (tick() === offeredCount) window.clearInterval(id)
+    }, 600)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [offeredCount, placement])
+
   // Same deal as columnBox: recomputed per resize frame, only read beside the
   // panel. Her canvas is TALLER than the panel there (avatarDockedBox), so the
   // box has to be known here rather than left to a Tailwind literal — the scale
@@ -1150,7 +1188,7 @@ export default function ChatWidget() {
                 submit(input)
               }}
               className={
-                'flex flex-none items-end gap-2.5 border-t border-border ' +
+                'flex flex-none flex-col gap-2 border-t border-border ' +
                 (fullscreen ? 'mx-auto w-full px-6 pb-5 pt-3.5' : 'p-3.5')
               }
               // Same gutter as the body above: the composer shares the thread's
@@ -1158,6 +1196,12 @@ export default function ChatWidget() {
               // ends up behind her skirt.
               style={columnGutter}
             >
+              <MotionStrip
+                motions={offered}
+                ready={readyMotions}
+                onPlay={(name) => avatarHandleRef.current?.playMotion(name)}
+              />
+              <div className="flex items-end gap-2.5">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -1186,6 +1230,7 @@ export default function ChatWidget() {
               >
                 {t('chat.send')}
               </button>
+              </div>
             </form>
           </div>
         </div>

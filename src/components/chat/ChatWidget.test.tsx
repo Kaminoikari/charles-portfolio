@@ -20,6 +20,8 @@ import {
 } from './avatarMode'
 import { VOICE_LINES } from './avatarVoice'
 import { PAT_EMOTION } from './avatarMode'
+import type { AvatarGuideHandle } from './avatarGuideEngine'
+import { IDLE_MOTIONS, type AvatarMotionName } from './avatarMotions'
 
 // The head-pat detector lives in AvatarGuide (tested there against real
 // pointer maths); what this file owns is the other half — what the widget
@@ -42,18 +44,35 @@ const avatarStub = vi.hoisted(() => ({
   // turns this into the canvas's inline style; the stub renders nothing, so
   // this is where a wiring assertion has to read it.
   sizeStyle: null as { width: number; height: number } | null,
-  handle: {
-    setMode: vi.fn(),
-    setActive: vi.fn(),
-    setSpeech: vi.fn(),
-    setEmotion: vi.fn(),
-    playGesture: vi.fn(),
-    playMotion: vi.fn(() => true),
-    setFraming: vi.fn(),
-    setPlacement: vi.fn(),
-    dispose: vi.fn(),
-  },
+  // `satisfies AvatarGuideHandle` is load-bearing. This stub was inferred before,
+  // so adding readyMotions to the real handle compiled fine and then threw
+  // "not a function" out of an effect, reddening four fullscreen tests that have
+  // nothing to do with motions. Typed, the next method added to the handle fails
+  // here at compile time and names itself.
+  // Filled from IDLE_MOTIONS in beforeEach. vi.hoisted runs before the imports,
+  // so the real list cannot be named here; holding it in a field keeps the stub
+  // from carrying a second hand-written copy of the ten clips.
+  ready: [] as readonly AvatarMotionName[],
+  handle: {} as AvatarGuideHandle,
 }))
+
+// `satisfies AvatarGuideHandle` is load-bearing. The stub was inferred before,
+// so adding readyMotions to the real handle compiled fine and then threw
+// "not a function" out of an effect, reddening four fullscreen tests that have
+// nothing to do with motions. Typed, the next method added to the handle fails
+// here at compile time and names itself.
+avatarStub.handle = {
+  setMode: vi.fn(),
+  setActive: vi.fn(),
+  setSpeech: vi.fn(),
+  setEmotion: vi.fn(),
+  playGesture: vi.fn(),
+  playMotion: vi.fn(() => true),
+  readyMotions: vi.fn(() => avatarStub.ready),
+  setFraming: vi.fn(),
+  setPlacement: vi.fn(),
+  dispose: vi.fn(),
+} satisfies AvatarGuideHandle
 
 // Read through a function on purpose: assigning `avatarStub.onPat = null` in a
 // setup helper narrows the property to `null` for the rest of THAT function, so
@@ -176,6 +195,9 @@ function stubFetch(frames: string[] = [frame('done', { sources: [], answer: ANSW
 }
 
 beforeEach(() => {
+  // Every clip downloaded, which is the steady state the widget spends almost
+  // all of its life in; the strip's own tests cover the moments before that.
+  avatarStub.ready = IDLE_MOTIONS
   vi.restoreAllMocks()
   // jsdom ships neither of these and the widget uses both on open.
   vi.stubGlobal(

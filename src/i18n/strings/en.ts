@@ -60,6 +60,15 @@ interface Strings {
     errorMessage: string; rateLimited: string; regionBlocked: string; retry: string
     suggested1: string; suggested2: string; suggested3: string
     suggested4: string; suggested5: string; suggested6: string
+    // The motion strip above the composer. Keyed by AvatarMotionName so a clip
+    // added to IDLE_MOTIONS without a label here fails to compile rather than
+    // showing a visitor an identifier.
+    motionsLabel: string
+    motionsAriaLabel: string
+    motions: {
+      dance: string; peaceSign: string; modelPose: string; spin: string; squat: string
+      akimbo: string; playFingers: string; scratchHead: string; idleLoop: string; stretch: string
+    }
   }
   defaults: { documentTitle: string }
 }
@@ -199,6 +208,20 @@ const en: Strings = {
     suggested4: 'How does he make product decisions?',
     suggested5: 'What did he do at USPACE?',
     suggested6: 'Why should a team hire him?',
+    motionsLabel: 'Motions',
+    motionsAriaLabel: 'Play a motion',
+    motions: {
+      dance: 'Dance',
+      peaceSign: 'Peace sign',
+      modelPose: 'Model pose',
+      spin: 'Spin',
+      squat: 'Squat',
+      akimbo: 'Hands on hips',
+      playFingers: 'Fidget',
+      scratchHead: 'Scratch head',
+      idleLoop: 'Idle',
+      stretch: 'Stretch',
+    },
   },
   defaults: {
     documentTitle: 'AI Product Manager in Taiwan | Charles Chen Portfolio',

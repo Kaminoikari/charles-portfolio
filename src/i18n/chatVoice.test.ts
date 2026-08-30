@@ -70,6 +70,13 @@ const CHROME = [
   'nodeGenerate',
   'nodeFallback',
   'clearLabel',
+  // The motion strip. `motions` is a nested object of clip names rather than a
+  // string, and it is chrome for the same reason the node names are: a visitor
+  // reads it as a control, and she never says any of it. The strip's own tests
+  // hold the labels to one language at a time.
+  'motionsLabel',
+  'motionsAriaLabel',
+  'motions',
   'title',
   'subtitle',
   'previewLabel',
