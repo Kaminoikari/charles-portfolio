@@ -20,4 +20,16 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // The CLI tools print aligned tables of Chinese labels, and the character
+    // that aligns a column of CJK glyphs is U+3000, whose width matches them;
+    // an ASCII space is half as wide and leaves the columns ragged. The rule is
+    // right to flag an invisible character in code, so it stays on everywhere
+    // else and stays on for these files outside a template literal — only the
+    // report strings themselves are exempt.
+    files: ['scripts/**/*.ts'],
+    rules: {
+      'no-irregular-whitespace': ['error', { skipTemplates: true }],
+    },
+  },
 ])

@@ -140,31 +140,43 @@ function takePatCallback(): PatCallback {
 // ChatWidget's own, so stubbing the canvas away costs the assertion nothing.
 vi.mock('./AvatarGuide', async () => {
   const { useEffect } = await import('react')
-  return {
-    default: ({
-      onLoaded,
-      onPat,
-      onHandle,
-      sizeStyle,
-    }: {
-      onLoaded?: () => void
-      onPat?: (kind: 'happy' | 'annoyed') => void
-      onHandle?: (handle: unknown) => void
-      sizeStyle?: { width: number; height: number }
-    }) => {
-      // The widget keeps the corner EMPTY until the guide reports its first
-      // frame, so a stub that never loads takes the launcher button with it.
-      useEffect(() => {
-        onLoaded?.()
-        // The real engine handle is what receives the performance beats; the
-        // spy stands in for it so a cue's face can be asserted.
-        onHandle?.(avatarStub.handle)
-      }, [onLoaded, onHandle])
+  // Named, and named with a capital, because the hooks lint rule identifies a
+  // component by its name: an anonymous arrow assigned straight to `default` is
+  // a function called "default" that calls useEffect, which the rule reports and
+  // is right to. The name changes nothing at runtime — the module's default
+  // export is still this function.
+  const AvatarGuideStub = ({
+    onLoaded,
+    onPat,
+    onHandle,
+    sizeStyle,
+  }: {
+    onLoaded?: () => void
+    onPat?: (kind: 'happy' | 'annoyed') => void
+    onHandle?: (handle: unknown) => void
+    sizeStyle?: { width: number; height: number }
+  }) => {
+    // The widget keeps the corner EMPTY until the guide reports its first
+    // frame, so a stub that never loads takes the launcher button with it.
+    useEffect(() => {
+      onLoaded?.()
+      // The real engine handle is what receives the performance beats; the
+      // spy stands in for it so a cue's face can be asserted.
+      onHandle?.(avatarStub.handle)
+    }, [onLoaded, onHandle])
+    // Deliberately no dependency array: this captures whatever the widget
+    // handed over on THIS render, and sizeStyle is a fresh object every time.
+    // It has to be an effect rather than two lines in the body, because writing
+    // to something outside the component during render is a side effect in the
+    // render phase; React Testing Library renders inside act, so the effect has
+    // still run by the time render() returns and the assertions read these.
+    useEffect(() => {
       avatarStub.onPat = onPat ?? null
       avatarStub.sizeStyle = sizeStyle ?? null
-      return null
-    },
+    })
+    return null
   }
+  return { default: AvatarGuideStub }
 })
 
 // Build a ReadableStream that emits the given SSE frames then closes.

@@ -555,7 +555,7 @@ export function initAvatarGuide(
   let mtoons: MToonLike[] = []
   // The face/skin materials only, for `pale`: a whole-body blue reads as a
   // lighting change, a bluish face reads as 青ざめ.
-  let faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
+  const faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
   const PALE = new THREE.Color(...FACE_PALE_TINT)
   const RIM_COLOR = new THREE.Color(0xe8652b)
   const rimScratch = new THREE.Color()
