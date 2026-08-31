@@ -1263,13 +1263,22 @@ def build(src, dst, manifest_path, out_manifest):
     # section here is ASSIGNED rather than created fresh -- so a key that some
     # earlier stage already put in the manifest keeps its old slot while a new
     # one lands at the end. Building from a clean out/ therefore produced the
-    # same manifest with `shapes` and `palette` swapped: identical content, a
-    # 78-line diff. Nothing reads the order, but a shipped file that reorders
-    # itself depending on what was on disk is a diff no one can dismiss at a
-    # glance, and pinning it costs one line.
-    manifest = {k: manifest[k] for k in
-                ('source', 'parts', 'palette', 'shapes', 'landmarks')
-                if k in manifest}
+    # same manifest with `shapes` and `palette` swapped: identical content, but
+    # the `shapes` block moving wholesale, 78 lines deleted and 78 re-added.
+    # Nothing reads the order, but a shipped file that reorders itself depending
+    # on what was on disk is a diff no one can dismiss at a glance.
+    #
+    # Sorted rather than picked from a white-list. A white-list pins the order
+    # just as well and silently DROPS any section a future stage adds, which is
+    # a worse failure than the one being fixed here: the reorder was loud and
+    # cost a diff, a dropped section is invisible and nothing downstream would
+    # catch it (verify.py never opens this file, and selftest only reads parts,
+    # palette and shapes). Unknown keys sort to the tail, in name order, so they
+    # survive and are still deterministic.
+    ORDER = ('source', 'parts', 'palette', 'shapes', 'landmarks')
+    manifest = dict(sorted(manifest.items(),
+                           key=lambda kv: (ORDER.index(kv[0]) if kv[0] in ORDER
+                                           else len(ORDER), kv[0])))
     json.dump(manifest, open(out_manifest, 'w'), indent=2, ensure_ascii=False)
     return added, size, lm
 

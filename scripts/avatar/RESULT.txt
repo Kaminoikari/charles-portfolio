@@ -1,10 +1,18 @@
 Milfy 復刻的交付紀錄，對應 ~/milfy-refs/GOAL.md 的四組要求。
 第一版定稿 2026-08-31（sha256 開頭 d34c44b6905cfe86）。
 第二版同日，見下面的「第二版」一節：面數上限取消、服裝改為全解析度、廠商
-shape key 接回、描邊與邊光改由模型宣告、死材質清掉，加上雙 reviewer 第一輪
-FAIL 之後的十二項修正、第二輪再補的兩項（第二版第五節）。
-出貨檔 sha256 開頭 b2de2d7dcd48fdbd（11,551,728 bytes），
+shape key 接回、描邊與邊光改由模型宣告、死材質清掉，再加上雙 reviewer 逐輪
+指出的修正（逐項內容與輪次見第二版第五節，該節自己編號）。這裡刻意不複述件
+數：同一個計數寫在兩個地方，改了一邊忘了另一邊，已經在這份文件裡發生過一次。
+出貨檔 sha256 開頭 015cca16bc902f71（11,551,728 bytes），
 vertex sha b9807e3cb3dc7fc6。
+
+檔案 sha 怎麼讀：`make.py` 的位元組不是決定性的（Blender 匯出器對兩顆髮髻的
+索引陣列每次排序不同，見最後一節），所以**每跑一次 make.py 就換一個檔案
+sha，而模型一模一樣**。穩定的識別碼是 vertex sha b9807e3cb3dc7fc6，它從第二
+版定稿至今沒變過。本文其他地方出現的 sha（b2de2d7dcd48fdbd、389c189edcf23b4f、
+48b687baa91e514d）都是當時那一次建置的值，用來說明「兩個檔案相不相同」這種
+比較，不是在指現在 public/avatar/ 裡的那一份。
 
 底下的章節有三種：一是「第二版」那一節，全部是第二版寫的；二是六道 gate 的
 逐字輸出與「對照圖」「production VRM」「npm test」，都已換成第二版出貨檔的
@@ -247,10 +255,11 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
 面數由 1,096 降到 544（錐形比放樣的環便宜），總面數 39,722 → 39,170。
 【第二版：總面數現在是 103,116；蝴蝶結自己仍是 544 面。】
 
-# 六道 gate 一次跑完，全部對 out/mika-milfy.vrm，在所有程式與 manifest 改動
-# 之後才跑（起跑 13:47:00，跑完 14:05:10）。起跑與跑完各記一次 shasum，
-# VRM 兩次都是 b2de2d7dcd48fdbd、manifest 兩次都是 1339868bb59e4cac，
-# out/ 與 public/avatar/ 兩份也相同。逐字全文在 scratchpad/gates.log。
+# 六道 gate 一次跑完，全部對 out/mika-milfy.vrm，在 build.py 的 manifest
+# 鍵序改動與 make.py 重建之後才跑（起跑 14:56:59，跑完 15:14:05）。四份出
+# 貨物的 mtime 都是 14:55:31，早於起跑，所以 gate 期間沒有任何一份被寫過；
+# 受測檔的 sha 起跑與跑完各記一次，兩次都是 015cca16bc902f71。逐字全文在
+# scratchpad/gates.log。
 === verify（出貨檔 vs baseline）===
 == out/mika-milfy.vrm
    tris 103116  materials 34  images 43  nodes 144  bones 54
@@ -297,15 +306,15 @@ at rest, skin pixels showing through each garment:
   total 6   PASS
 
 === selftest 20 輪隨機刪件＋換色（只列最後一輪，20 輪逐輪在 gates.log）===
-seed 705562
+seed 598644
   deletable parts available: 25
-  dropping: Hair_Ear_R, Acc_Bandage_Thigh, Hair_Twintail_L
-  retinting Milfy_Gold -> [0.834, 0.027, 0.183]
-  retinting Mellow_Belt_Acc -> [0.978, 0.622, 0.175]
-  removed 11 primitives, swept 123 accessors / 177 bufferViews
-  shape keys left with nothing to move: Hutomomo_big, Hutomomo_slim
-  materials left painting nothing: Mellow_Leg_Acc
-  triangles 103116 -> 93130 (expected 93130)
+  dropping: Acc_Ribbon_Waist, Outfit_Cardigan, Hair_Ahoge
+  retinting Mellow_Skirt_Cloth -> [0.681, 0.501, 0.47]
+  retinting Milfy_GoldInner -> [0.885, 0.441, 0.012]
+  removed 4 primitives, swept 65 accessors / 103 bufferViews
+  shape keys left with nothing to move: (No bra)Breasts_Cow
+  materials left painting nothing: Mellow_Outer, Milfy_MintDark
+  triangles 103116 -> 88370 (expected 88370)
   [ok] still a VRM0
   [ok] triangles match the manifest
   [ok] no orphan accessors
@@ -317,8 +326,8 @@ seed 705562
   [ok] retinted materials are still on the model
   [ok] every palette entry names live parts
   [ok] every shape key names live parts
-  [ok] 4 shape keys in the manifest still displace
-  [ok] 4 shape keys in the file are all in the manifest
+  [ok] 5 shape keys in the manifest still displace
+  [ok] 5 shape keys in the file are all in the manifest
   [ok] every mesh keeps one morph target count
   [ok] no material is left painting nothing
   [ok] every palette entry names a material still in the file
@@ -405,8 +414,12 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                           本模型照實機分成 Hair_Ear_* 與
                                           Hair_Bun_*。
 2  皇冠（夾在兩髻中間偏一側）      DONE   Acc_Crown 200 tris，內外兩層兩材質。
+                                          以下四個比值的分母「耳徑」一律是單耳
+                                          bbox 的高 81.4mm（耳是 80.8 寬 x 81.4
+                                          高，不是圓的，改用寬當分母每個比值會
+                                          差約 0.007，所以分母必須寫出來）。
                                           冠寬/耳徑 0.83（實機 0.84）、冠高/耳徑
-                                          0.91（實機 0.94）、冠心離中線 0.85 耳徑
+                                          0.91（實機 0.94）、冠心離中線 0.86 耳徑
                                           （實機 0.83）。殘差：冠心只高於耳心
                                           0.09 耳徑（算圖空間）／0.12（網格空
                                           間），實機是 0.29——「緊貼髮面」把它壓
@@ -747,10 +760,13 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   21 manifest 的鍵順序取決於 out/ 是不是乾淨的。build.py 結尾對 palette 與
     shapes 是「賦值」而不是重建 dict，Python 保留插入順序，於是先前階段已經放
     進去的鍵保住舊位置、新鍵接在後面。從乾淨的 out/ 跑會得到 shapes 排在
-    palette 之前：內容完全相同，卻是 78 行的純換位 diff。build.py 結尾改成依固
-    定鍵序 ('source','parts','palette','shapes','landmarks') 重建一次。兩條路徑
-    現在連 manifest 都逐位元組相同（sha 1339868bb59e4cac）；VRM 的 sha 不受影
-    響（manifest 是在 VRM 存檔之後才寫的），仍是 b2de2d7dcd48fdbd。
+    palette 之前：內容完全相同，但 shapes 那一段整塊搬家——78 行刪掉、同樣 78
+    行加回來（`diff -u` 連標頭共 174 行）。原先只寫「78 行的 diff」，第五輪兩個
+    讀者從這句話算出兩個不同的數字，所以改寫成量得出來的說法。build.py 結尾改
+    成依固定鍵序 ('source','parts','palette','shapes','landmarks') 排序一
+    次。兩條路徑現在連 manifest 都逐位元組相同（sha 1339868bb59e4cac）；VRM
+    的 sha 不受這一改影響，因為 manifest 是在 VRM 存檔之後才寫的（當時那次建
+    置是 b2de2d7dcd48fdbd）。
   22 上面第 15 項用「selftest 十七條、verify 九項」描述修正前的狀態，而 17 與 9
     是修正後的數字——第十七條正是為了抓那個缺陷才加的，寫成 17 會讓人以為缺陷
     是從一個既有檢查底下溜過去的。修正前是十六條與八項，已改。
@@ -762,33 +778,63 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   25 第 10 項的大腿環 x 範圍寫 -0.147..-0.009，出貨檔量到 -0.1466..-0.0076，上
     界差 1.4mm。已改成量到的值。「只在一條腿上」這個論點不受影響。
 
-六、新增的守衛（每一條都用 mutation 驗過會紅，收據在
-    scratchpad/mutations.md）
+  第五輪：code reviewer PASS（連四輪），spec reviewer FAIL。抓到的：
+
+  26 上一輪修鍵序用的是白名單（只挑那五個鍵重建 dict），它把「順序漂移」換成
+    了「未來新增的區段被靜默丟掉」，而後者更糟：漂移會產生一份誰都看得見的
+    diff，丟區段沒有任何下游擋得住——verify.py 從不開這個檔、selftest 只讀
+    parts／palette／shapes、make.py 不比對鍵集合，三處都確認過。同一份程式碼
+    的 customise.py:87-91 對同一類缺陷採的還是相反立場。改成排序：已知鍵照固
+    定順序，未知鍵按名字排在尾端，順序一樣釘死而丟不掉東西。
+  27 第五節上一版的守衛表寫「每一條都用 mutation 驗過會紅」，但 loud_outlines、
+    undeclared_rims、ragged_targets、SHAPE_KEY_MIN_MEAN 與前端那五條在
+    mutations.md 裡都沒有收據。這五項的 mutation 這一輪補跑了（收據 11–13），
+    另外發現 selftest 的「每個 mesh 只有一個 target 數」也沒有任何一條收據點得
+    亮，補了收據 14。表格改成逐道標收據編號，全稱宣告會把缺口藏起來，逐道標號
+    不會。
+  28 文件開頭寫「第一輪十二項、第二輪兩項」，停在 12＋2，而第五節自己已經編到
+    25 項。改成指向第五節、不再複述件數——同一個計數寫在兩個地方就是這個下場。
+  29 第 2 項皇冠的四個比值，分母「耳徑」從來沒寫出來。耳不是圓的（80.8 寬 x
+    81.4 高），用高當分母得 0.83／0.91／0.12，用寬得 0.83／0.92／0.13，每個比
+    值差約 0.007。已標明分母是單耳 bbox 的高 81.4mm；在同一把尺下「冠心離中線」
+    量到 0.86 而不是原本寫的 0.85（兩個 primitive 分開量是 0.859 與 0.861），已
+    改。另外三個數字在這把尺下逐一重現，所以錯的只有這一個。
+
+六、新增的守衛，以及每一道的 mutation 收據編號
+    收據全文在 scratchpad/mutations.md，編號就是該檔的節號。這裡逐道標編號而
+    不寫「每一條都驗過」：上一輪那句全稱宣告是錯的，當時 loud_outlines、
+    undeclared_rims、ragged_targets、SHAPE_KEY_MIN_MEAN 與前端那五條都沒有收
+    據，而全稱句把缺口藏起來了，逐道標號則會讓缺口自己露出來。
   verify.py  loud_outlines      任何 _OutlineColor 的 chroma > 0.04 就 FAIL
-             undeclared_rims    任何材質沒宣告 _RimColor 就 FAIL
-             unused_materials   任何材質沒有 primitive 用就 FAIL
+                                [收據 11]
+             undeclared_rims    任何材質沒宣告 _RimColor 就 FAIL（宣告成黑色
+                                等同沒宣告，兩條路都攔）  [收據 11]
+             unused_materials   任何材質沒有 primitive 用就 FAIL  [收據 6]
              misaligned_material_properties
                                 materials 與 VRM materialProperties 的名字沒有
                                 逐位置對上（VRM0 按位置配對，錯位會讓每個
                                 MToon 設定掛到別的表面而所有計數仍合法）
+                                [收據 9]
              loose_sparse_bounds
                                 sparse accessor 宣告的 min/max 與它解析出來的
                                 資料不符（整個 primitive 都被 patch 時無條件併
-                                入 0.0 就會這樣）
+                                入 0.0 就會這樣）  [收據 4]
              ragged_targets     同一 mesh 的 primitive 宣告不同數量的 target
+                                [收據 11]
              torn_shapes        新增的 key 驅到 1.0 時邊長膨脹 >3x 或面法線翻面
                                 （表情網格跳過，用 blendShapeMaster 的 binds
-                                認，不靠 baseline：閉眼本來就會翻面）
-  build.py   SHAPE_KEY_MIN_MEAN 動不了東西的 key 不出貨
+                                認，不靠 baseline：閉眼本來就會翻面）  [收據 5]
+  build.py   SHAPE_KEY_MIN_MEAN 動不了東西的 key 不出貨  [收據 12]
   customise  prune_shapes       刪件之後不再位移任何東西的 key，從檔案與
-                                manifest 兩邊一起拿掉
+                                manifest 兩邊一起拿掉  [收據 1、2、7]
              sweep_materials    刪件之後沒有網格用的材質，從 materials 與
-                                materialProperties 兩邊一起拿掉
-  selftest   shape key 名字指到活的部件、manifest 指名的 key 仍會位移、檔案宣
-             告的 key 都在 manifest 裡、每個 mesh 只有一個 target 數、沒有材質
-             塗不到東西、palette 每一項都指得到還在的材質、materialProperties
-             與 materials 逐位置對得上
-  前端       src/components/chat/avatarRim.test.ts，5 條，5 種 mutation 各自紅
+                                materialProperties 兩邊一起拿掉  [收據 6、9]
+  selftest   shape key 名字指到活的部件 [1]、manifest 指名的 key 仍會位移 [1]、
+             檔案宣告的 key 都在 manifest 裡 [2]、每個 mesh 只有一個 target 數
+             [14]、沒有材質塗不到東西 [6]、palette 每一項都指得到還在的材質
+             [3]、materialProperties 與 materials 逐位置對得上 [9]
+  前端       src/components/chat/avatarRim.test.ts，5 條，5 種 mutation 各自
+             只紅對應的那一條，沒有互相遮蔽  [收據 13]
 
   另外把 avatarGuideEngine.ts 的 preserveDrawingBuffer 綁到 ?mikadebug=1。它是
   我為了截圖加的，長期開著會讓瀏覽器替每個訪客保留後備緩衝。沒有它 toDataURL
@@ -825,9 +871,13 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
 git diff --stat public/avatar/mika-pink.vrm public/avatar/AvatarSample_B_webp.vrm -> 空
 
 === 對照圖 ===
-【第二版：以下每一張都是對出貨檔 b2de2d7dcd48fdbd 重新產生的。第一次交付時
-這一節有四張是第一版（39,170 面、修描邊與邊光之前）的算圖而沒有標註，審查抓
-到，重跑後換掉。】
+【第二版：第一次交付時這一節有四張是第一版（39,170 面、修描邊與邊光之前）的
+算圖而沒有標註，審查抓到，重跑後換掉。目前的出處分兩種，都標在這裡：四張固
+定機位是現在這份出貨檔 015cca16bc902f71 的算圖（make.py 這次重跑時產生）；
+compare.png、mtoon-*.png、side-check.png 是對前一份位元組
+b2de2d7dcd48fdbd 產生的，而那兩份位元組的差別只有兩顆髮髻索引陣列的排列順
+序，逐像素比對四個機位差異像素為 0，所以畫面上沒有任何差別。推導與量測見
+「第二版的瀏覽器驗證」一節。】
 四張固定機位（無光照，本專案的 numpy 算圖）：
   scripts/avatar/out/final-{front,back,three_quarter,face}.png
 與參考並排：scripts/avatar/out/compare.png（1762x2674，四列）
@@ -854,18 +904,29 @@ renderer.render 畫過一次（drew:true）——MToon 的描邊 pass 剔除正�
 
 === 第二版的瀏覽器驗證 ===
 同一個 browser-check.html，對第二版出貨檔：
-{"ok":true,"errors":[],"bytes":11551728,"sha256_first8":"b2de2d7dcd48fdbd",
+{"ok":true,"errors":[],"bytes":11551728,"sha256_first8":"015cca16bc902f71",
  "spec":"0","bones":54,"expressions":15,"clips":10,"drew":true}
 三個機位（front／quarter／face）各跑一次，三次都回同一個 sha。頁面自算的
-sha 前 8 bytes 是 b2de2d7dcd48fdbd，與 shell 的 `shasum -a 256
+sha 前 8 bytes 是 015cca16bc902f71，與 shell 的 `shasum -a 256
 out/mika-milfy.vrm` 及 `shasum -a 256 public/avatar/mika-milfy.vrm` 三者相同。
+頁面唯一的 console error 是 favicon 404；兩則 warning 來自 three-vrm 對
+.vrma 檔的提醒（VRMLookAtQuaternionProxy、VRMA specVersion 未宣告），都不是
+模型的問題。
 
-這一節重跑過兩次，兩次都是被同一條規矩逼出來的：瀏覽器驗證必須排在最後一次
-build 之後。第一次記的是 48b687baa91e514d，改註解重跑 build 就過期；第二次
-記的是 389c189edcf23b4f，審查抓到 sparse accessor 的 min/max 寫錯之後又重跑
-一次（見下面第五節），出貨檔變成現在的 b2de2d7dcd48fdbd。上面 out/ 的四張
-定機位算圖、compare.png、mtoon-*.png、side-check.png 全部是在這一份位元組之
-後重新產生的。
+這一節重跑過四次，每次都是被同一條規矩逼出來的：瀏覽器驗證必須排在最後一次
+build 之後。前三次記的是 48b687baa91e514d、389c189edcf23b4f、
+b2de2d7dcd48fdbd；第四次是第五輪 review 之後改了 build.py 的 manifest 鍵序、
+重跑 make.py，出貨檔變成現在的 015cca16bc902f71。
+
+那次重跑只換了檔案 sha，模型沒有變，而且這件事是量出來的不是推論的：拿前一
+份位元組（out/milfy.rerun.vrm）與現在這份逐一比對，1026 個 bufferView 裡只有
+2 個不同，都是 Hair001.baked 第 61、64 個 primitive 的 INDICES——也就是
+Hair_Bun_L 與 Hair_Bun_R；兩者的三角形集合相同、只有排列順序不同，POSITION
+逐位元組相同，JSON chunk 完全相同，vertex sha 兩份都是 b9807e3cb3dc7fc6。
+再把兩份位元組各自送進同一支 render.py，四個固定機位逐像素相減，差異像素
+0、最大通道差 0，四張全部完全相同。所以 compare.png、mtoon-*.png、
+side-check.png 雖然是對前一份位元組產生的，畫面上與現在這份沒有任何差別；上
+面 out/ 的四張定機位算圖則是這次 make.py 重新產生的。
 
 另外三項只有瀏覽器能驗，numpy 算圖看不到：
 
@@ -915,7 +976,7 @@ EarInner_L/R、Crown、CrownInner、Ahoge 三項全同。釘死 PYTHONHASHSEED �
 同。重跑 make.py 會換一個檔案 sha 而模型不變。沒有修，因為它在 Blender 匯出
 器裡面。
 
-現在 public/avatar/ 裡那一份的 sha 是 b2de2d7dcd48fdbd、vertex sha
+現在 public/avatar/ 裡那一份的 sha 是 015cca16bc902f71、vertex sha
 b9807e3cb3dc7fc6，記在文件開頭與「第二版的瀏覽器驗證」一節；上面那幾個是第
 一版實驗當時的值。
 
