@@ -17,9 +17,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import kit  # noqa: E402
 
 # These sit on the side of the head and are perhaps forty pixels across in the
-# comparison renders. At the default sweep resolution they cost 1,928 triangles,
-# which is more than the skirt of an entire imported outfit gets after
-# decimation; halving it is invisible and pays for the boots.
+# comparison renders. At the default sweep resolution they cost 1,928 triangles
+# to draw a shape that is a few pixels wide; halving it changes nothing anyone
+# can see. (This was once about paying for the boots out of a triangle budget.
+# The budget is gone as of 2026-08-31 and the value stays anyway, because
+# spending 1,928 triangles on forty pixels was never the good part.)
 RES = 4
 
 OUT = sys.argv[-1]

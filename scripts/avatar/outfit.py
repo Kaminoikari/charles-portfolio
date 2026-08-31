@@ -317,9 +317,27 @@ def pieces(bundle, doc, views, joint_slot=None):
                     for node in np.unique(j[:, k]):
                         slots[j[:, k] == node, k] = joint_slot[sjoints[node]]
 
+            # The vendor's shape keys, carried across as displacement fields
+            # rather than as positions. The fit above is affine per vertex --
+            # one global matrix plus a per-vertex translation blended from the
+            # bone corrections -- so a delta transforms by the matrix alone and
+            # the translation cancels. What happens downstream of the fit (hug,
+            # loosen, drape) is NOT affine and the delta is NOT carried through
+            # it: build.py grafts these fields onto the settled garment as they
+            # stand, so the key rides on top of wherever the cloth ended up.
+            names = mesh.get('extras', {}).get('targetNames') or []
+            targets = {}
+            for ti, tgt in enumerate(pr.get('targets', ())):
+                if 'POSITION' not in tgt:
+                    continue
+                d = glb.read_accessor(src, sviews, tgt['POSITION']).astype(np.float64)
+                key = names[ti] if ti < len(names) else f'{mesh.get("name")}#{ti}'
+                targets[key] = d @ a[:3, :3].T
+
             out.append({
                 'name': mesh.get('name'), 'prim': pi,
                 'material': pr.get('material'),
+                'targets': targets,
                 'piece': {'pos': moved, 'nrm': mn, 'uv': uv,
                           'joints': slots, 'weights': w.astype(np.float32),
                           'tris': tri},

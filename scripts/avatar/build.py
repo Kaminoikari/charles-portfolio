@@ -55,8 +55,9 @@ GOLD_RAMP = (0.74, 1.0, 1.0)
 CROWN_LIGHT = (-0.30, 0.62, -0.73)
 
 # The imported outfit, if it has been converted. Every garment this file builds
-# by hand is a stand-in for it, so when the file is there they step aside: the
-# triangle budget has room for one outfit, not two. Hair, head accessories, body
+# by hand is a stand-in for it, so when the file is there they step aside:
+# wearing both would put two skirts and two bodices on the same body, each
+# hugging the same skin and z-fighting the other. Hair, head accessories, body
 # and face are unaffected -- the package does not ship those.
 # Two files, because the package ships the bodice set and the cardigan as
 # separate FBXs with separate armatures; see blender/mellow.py.
@@ -90,6 +91,16 @@ MELLOW_SHIFT = {'Acc_Bandage_Thigh': -0.045}
 # Extra room a garment needs for the poses rather than for the rest pose, ramped
 # from nothing at its top to this at its hem. See outfit.loosen.
 MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
+
+# And a key is only shipped if the vertices it moves go somewhere a person could
+# see: the mean displacement over its moved vertices, on at least one garment,
+# has to clear this.
+#
+# `Side adjustment` fails it because it is empty in the FBX itself, every delta
+# exactly zero -- a named key the vendor shipped without ever authoring. Keeping
+# it would advertise a slider that does nothing, which is the silent no-op this
+# pipeline keeps guarding against.
+SHAPE_KEY_MIN_MEAN = 0.001
 # Its base maps are greyscale -- the vendor colours them in a Unity shader from
 # a mask -- so the colour is ours to choose and it stays on named materials.
 MELLOW_TINT = {
@@ -163,6 +174,21 @@ BROW_SHIFT, BROW_SAT = 140.0, 0.35
 # skin textures are solved onto it so the neck seam cannot split.
 SKIN_TARGET = (246, 237, 230)
 
+# The outline colour, derived from the skin rather than written down. The base
+# model's is VRoid's wine (0.275, 0.090, 0.125), drawn to sit on Mika's salmon
+# pink; on Milfy's near-white skin the same line renders rust, and it traces the
+# whole figure. An unlit renderer draws no outline pass at all, so every gate
+# and all four contract cameras are blind to it -- the same class of defect as
+# the floating bow, and it needs the same kind of guard, which is in verify.py.
+# Taking the hue from SKIN_TARGET and dropping it to OUTLINE_VALUE keeps one
+# definition: move the skin and the line moves with it.
+OUTLINE_VALUE = 0.20
+OUTLINE_COLOR = tuple(round(c / max(SKIN_TARGET) * OUTLINE_VALUE, 4)
+                      for c in SKIN_TARGET)
+# The hair's line is black and stays black: black is not a paler version of a
+# hue, and rotating it toward the skin would just make it brown.
+OUTLINE_KEEP = tuple(f'F00_000_Hair_00_HAIR_0{i}' for i in range(1, 7))
+
 # The base model's eyes are blue; the reference's are a warm neutral grey, hue
 # 350 at a tenth the saturation. Read off the official expression sheet's irises
 # with the pupil and the catchlight excluded, then put back through the render's
@@ -206,6 +232,14 @@ PALETTE = {
     'Milfy_Ink':      ((0.373, 0.365, 0.384), (0.286, 0.278, 0.298)),
 }
 
+# The parametric rim colour, which is her own mint rather than a new number.
+# The site draws every body with one hard-coded accent (mars orange, in
+# avatarGuideEngine.ts) because no VRM it has loaded ever declared `_RimColor`;
+# on a near-white blouse and a near-black cardigan that accent is the rust glow
+# along every fold. Reading it off PALETTE keeps the sash, the hair bow and the
+# rim on one value: retint the mint and the edge light follows.
+RIM_COLOR = PALETTE['Milfy_Mint'][0]
+
 
 def add_material(doc, name, base, shade, texture=None):
     """One MToon material, in both the glTF and the VRM tables.
@@ -244,12 +278,62 @@ def add_material(doc, name, base, shade, texture=None):
         'vectorProperties': {
             '_Color': [*base, 1.0], '_ShadeColor': [*shade, 1.0],
             '_MainTex': [0, 0, 1, 1], '_ShadeTexture': [0, 0, 1, 1],
-            '_OutlineColor': [0.2, 0.18, 0.18, 1],
+            '_OutlineColor': [*OUTLINE_COLOR, 1],
+            '_RimColor': [*RIM_COLOR, 1],
         },
         'keywordMap': {'MTOON_OUTLINE_COLOR_MIXED': True},
         'tagMap': {'RenderType': 'Opaque'},
     })
     return len(doc['materials']) - 1
+
+
+def graft_shapes(doc, views, mesh_name, shapes):
+    """Write per-primitive shape keys onto a mesh, padding the primitives without.
+
+    Returns the key names in the order they were written.
+
+    glTF's rule is that every primitive of a mesh declares the SAME targets in
+    the SAME order, and the outfit shares Body.baked with the body itself and
+    with every accessory grafted onto it. So a key that moves only the skirt
+    still has to exist on the boots, on the torso and on the waist bow. Those
+    get a sparse accessor holding one zero, which is the smallest thing the spec
+    allows -- an empty sparse block is invalid.
+
+    The names go in `mesh.extras.targetNames`, which is where glTF puts them and
+    where three.js reads `morphTargetDictionary` from. They are deliberately NOT
+    added to VRM's blendShapeMaster: that list is the expression system, driven
+    by name from the chat widget, and a body-shape slider appearing there would
+    read as a face this model can pull.
+    """
+    mesh = next(m for m in doc['meshes'] if m.get('name') == mesh_name)
+    if any(pr.get('targets') for pr in mesh['primitives']):
+        raise SystemExit(f'{mesh_name} 已經有 morph target，再加會弄亂既有的順序')
+    # A key that moves nothing anywhere is dropped rather than shipped. The
+    # vendor's `Side adjustment` is one: it is a named key with every delta at
+    # zero, in the FBX itself, so keeping it would advertise a slider that does
+    # nothing -- the exact silent no-op this pipeline keeps guarding against.
+    effect = {}
+    for keys in shapes.values():
+        for name, (hit, delta) in keys.items():
+            mean = (float(np.linalg.norm(delta, axis=1).mean())
+                    if len(hit) else 0.0)
+            effect[name] = max(effect.get(name, 0.0), mean)
+    weak = sorted((n, e) for n, e in effect.items() if e < SHAPE_KEY_MIN_MEAN)
+    if weak:
+        print('   丟掉動不了東西的 shape key：' + '，'.join(
+            f'{n} 平均 {e * 1000:.2f}mm' for n, e in weak))
+    names = sorted(n for n, e in effect.items() if e >= SHAPE_KEY_MIN_MEAN)
+    for pi, pr in enumerate(mesh['primitives']):
+        count = doc['accessors'][pr['attributes']['POSITION']]['count']
+        keys = shapes.get(pi, {})
+        pr['targets'] = []
+        for name in names:
+            hit, delta = keys.get(name, (np.zeros(0, np.int64), np.zeros((0, 3))))
+            pr['targets'].append({
+                'POSITION': glb.add_sparse_accessor(doc, views, count, hit, delta),
+            })
+    mesh.setdefault('extras', {})['targetNames'] = names
+    return names
 
 
 def bowl_texture(doc, views, name, size=128):
@@ -677,6 +761,30 @@ def build(src, dst, manifest_path, out_manifest):
     if mellow:
         pushed = {}
         belt_pos = []
+        # part name -> {key: (vertex indices, deltas)}, filled as each garment
+        # settles. Written into the mesh after the loop, because glTF wants
+        # every primitive of a mesh to declare the same targets and that is only
+        # knowable once every garment has been through.
+        shapes = {}
+
+        def settle(piece, clear, shift, loosen_amount):
+            """Run the whole placement chain on a copy, return the positions.
+
+            The chain is shift, then hug, then loosen; everything after it --
+            bind, drape -- assigns weights and moves nothing. It is a function
+            rather than three inline statements so that the one thing which must
+            NOT go through it, the shape key deltas below, is visibly not going
+            through it.
+            """
+            work = dict(piece)
+            work['pos'] = np.array(piece['pos'])
+            if shift:
+                work['pos'][:, 1] += shift
+            moved = outfit.hug(work, pool['pos'], pool['nrm'], clear)
+            if loosen_amount is not None:
+                outfit.loosen(work, loosen_amount)
+            return work['pos'], moved
+
         for path in mellow_files:
             bundle = outfit.load(path, doc, views, add_material, MELLOW_TINT,
                                  MELLOW_GAIN)
@@ -687,12 +795,27 @@ def build(src, dst, manifest_path, out_manifest):
                 if spec is None:
                     continue
                 name, clear = spec
-                if name in MELLOW_SHIFT:
-                    item['piece']['pos'][:, 1] += MELLOW_SHIFT[name]
-                moved = outfit.hug(item['piece'], pool['pos'], pool['nrm'], clear)
-                if name in MELLOW_LOOSEN:
-                    outfit.loosen(item['piece'], MELLOW_LOOSEN[name])
+                shift = MELLOW_SHIFT.get(name, 0.0)
+                loosen_amount = MELLOW_LOOSEN.get(name)
+                settled, moved = settle(item['piece'], clear, shift, loosen_amount)
+                item['piece']['pos'] = settled
                 pushed[name] = max(pushed.get(name, 0.0), moved)
+
+                # The vendor's shape keys ride ON TOP of the settled garment,
+                # as the displacement fields they are. Re-settling the keyed
+                # shape and subtracting was tried first and tears the mesh: hug
+                # is discontinuous -- `max(margin - gap, 0)` behind a normal-
+                # agreement gate -- so a vertex that flips from "clear" to
+                # "pushed" jumps by the whole margin while its neighbours do
+                # not, and the difference of two hugs is a field full of spikes.
+                # It showed as long thin triangles fanning off the neck ribbon
+                # under Breast_small, and numerically as a 7.41mm maximum on a
+                # key whose mean was 0.23mm.
+                keyed_deltas = {}
+                for key, delta in item.get('targets', {}).items():
+                    hit = np.flatnonzero(
+                        np.abs(delta).max(axis=1) > glb.MORPH_EPSILON)
+                    keyed_deltas[key] = (hit, delta[hit])
                 # Re-bound to this body's own weights, and the skirt draped on
                 # top of that, exactly as the hand-built one was. The vendor's
                 # rig is discarded here on purpose: it is correct for Milfy and
@@ -703,8 +826,10 @@ def build(src, dst, manifest_path, out_manifest):
                     belt_pos.append(bound['pos'])
                 if name == 'Outfit_Bottom':
                     bound = drape(bound)
-                garment.attach(doc, views, 'Body.baked', bound,
-                               bundle['materials'][item['material']], name)
+                at = garment.attach(doc, views, 'Body.baked', bound,
+                                    bundle['materials'][item['material']], name)
+                if keyed_deltas:
+                    shapes[at] = keyed_deltas
                 added[f'{name}#{item["prim"]}'] = (len(bound['tris']), 'Body.baked')
         print('   貼身外推最大位移：' + '，'.join(
             f'{k} {v * 1000:.0f}mm' for k, v in sorted(pushed.items())))
@@ -727,6 +852,29 @@ def build(src, dst, manifest_path, out_manifest):
                 raise SystemExit(
                     f'蝴蝶結離腰封 {near:.0f}mm，超過 {BOW_GAP_MAX:.0f}mm：'
                     'blender/bow.py 的 OUTLINE 與現在的衣服對不上了')
+
+        if shapes:
+            names = graft_shapes(doc, views, 'Body.baked', shapes)
+            moved = {k: [0, 0.0] for k in names}
+            for keys in shapes.values():
+                for k, (hit, delta) in keys.items():
+                    if k not in moved:
+                        continue
+                    moved[k][0] += len(hit)
+                    if len(delta):
+                        moved[k][1] += float(np.linalg.norm(delta, axis=1).sum()) * 1000.0
+            # Mean over the vertices it moves, not the maximum. A maximum is
+            # one vertex and flatters a key that barely moves: Waist_slim's
+            # 14,393 moved vertices average 0.56mm and peak at 2.01mm, and it is
+            # the 0.56 that says a waist slider does almost nothing on this
+            # body while the 2.01 suggests it does something. A key usually
+            # lands on several garments, so the norms and the counts are summed
+            # separately and divided once here -- a max over the per-garment
+            # means would be neither statistic, printed under the word 平均.
+            print('   服裝 shape key：' + '，'.join(
+                f'{k} {moved[k][0]} 點/平均 '
+                f'{(moved[k][1] / moved[k][0]) if moved[k][0] else 0.0:.1f}mm'
+                for k in names))
 
     # --- head: bear ears, buns, crown, ahoge, clips. Bound rigidly to the
     #     head joint, which is what an accessory sitting on the skull does. ---
@@ -982,6 +1130,20 @@ def build(src, dst, manifest_path, out_manifest):
                                       EYE_TARGET, mid=(60, 215))
     print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} 提亮 {lift:.2f}')
 
+    # --- outlines. Everything above moved colour that a texture or a factor
+    #     carries; this moves the one that the second draw pass carries. ---
+    moved = customise.outline(doc, OUTLINE_COLOR, skip=OUTLINE_KEEP)
+    was = sorted({tuple(w) for _, w in moved if w is not None})
+    print(f'   描邊統一為 {OUTLINE_COLOR}，改了 {len(moved)} 個材質，'
+          f'原本有 {len(was)} 種：{was}')
+    rimmed = customise.rim(doc, RIM_COLOR)
+    print(f'   邊光宣告為 {RIM_COLOR}，寫進 {len(rimmed)} 個材質')
+
+    # Last, after every branch has had its chance to use one.
+    gone = customise.sweep_materials(doc)
+    if gone:
+        print(f'   掃掉沒有網格用的材質 {len(gone)} 個：{gone}')
+
     blob = glb.rebuild(doc, views)
     size = glb.save(dst, doc, blob)
 
@@ -1054,7 +1216,60 @@ def build(src, dst, manifest_path, out_manifest):
             'shade': [round(float(v), 4) for v in shade],
             'parts': sorted(n for n, e in parts.items() if name in e['materials']),
         }
+    # Shape keys, read back the same way and for the same reason. A key is only
+    # reachable if a tool knows its name, which mesh carries it and which parts
+    # it moves; without that the customiser's only option is to drive all of
+    # them and watch. `mm` is the mean displacement over the vertices the key
+    # actually moves, which is the number that says whether a slider does
+    # anything -- a maximum is one vertex and flatters a key that barely moves.
+    # One part can span several primitives, so the sum of displacements and the
+    # count of moved vertices are accumulated separately and divided once at the
+    # end. Taking a max over the per-primitive means instead would report a
+    # number that is neither a mean nor a maximum, and nothing downstream could
+    # say which.
+    manifest['shapes'] = {}
+    part_of = {}
+    for pname, e in parts.items():
+        for pi in e['primitives']:
+            part_of[(e['mesh'], pi)] = pname
+    for mesh in doc['meshes']:
+        names = mesh.get('extras', {}).get('targetNames') or []
+        if not names or mesh.get('name') == 'Face.baked':
+            continue     # Face.baked's 56 are expressions, in blendShapeMaster
+        for ti, key in enumerate(names):
+            moves = {}
+            for pi, pr in enumerate(mesh['primitives']):
+                targets = pr.get('targets') or []
+                if ti >= len(targets) or 'POSITION' not in targets[ti]:
+                    continue
+                d = glb.read_accessor(doc, views, targets[ti]['POSITION'])
+                mag = np.linalg.norm(d.astype(np.float64), axis=1)
+                hit = mag > glb.MORPH_EPSILON
+                if not hit.any():
+                    continue
+                where = part_of.get((mesh.get('name'), pi), f'primitive {pi}')
+                prev = moves.get(where, (0, 0.0))
+                moves[where] = (prev[0] + int(hit.sum()),
+                                prev[1] + float(mag[hit].sum()) * 1000.0)
+            manifest['shapes'][key] = {
+                'mesh': mesh.get('name'),
+                'index': ti,
+                'parts': {k: {'vertices': n, 'mm': round(total / n, 2)}
+                          for k, (n, total) in sorted(moves.items())},
+            }
+
     manifest['landmarks'] = lm
+    # Written in a fixed key order. Python dicts keep insertion order, and every
+    # section here is ASSIGNED rather than created fresh -- so a key that some
+    # earlier stage already put in the manifest keeps its old slot while a new
+    # one lands at the end. Building from a clean out/ therefore produced the
+    # same manifest with `shapes` and `palette` swapped: identical content, a
+    # 78-line diff. Nothing reads the order, but a shipped file that reorders
+    # itself depending on what was on disk is a diff no one can dismiss at a
+    # glance, and pinning it costs one line.
+    manifest = {k: manifest[k] for k in
+                ('source', 'parts', 'palette', 'shapes', 'landmarks')
+                if k in manifest}
     json.dump(manifest, open(out_manifest, 'w'), indent=2, ensure_ascii=False)
     return added, size, lm
 

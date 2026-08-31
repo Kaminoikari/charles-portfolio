@@ -13,6 +13,8 @@ import os
 import random
 import sys
 
+import numpy as np
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, '/Users/charles/vtuber-kit/bin')
 
@@ -53,15 +55,31 @@ def run(model, manifest_path, seed=None):
     tri_before = sum(before['accessors'][pr['indices']]['count'] // 3
                      for m in before['meshes'] for pr in m['primitives'])
 
-    result = customise.apply(model, out, manifest_path, drop=drop, tints=tints)
+    # The manifest a customiser reads next is the one `apply` WRITES, not the
+    # one it was handed. Auditing the input manifest passes while the output
+    # names deleted parts -- which it did, until prune_shapes was added.
+    out_manifest = os.path.join(BASE, 'out', 'selftest.parts.json')
+    result = customise.apply(model, out, manifest_path, drop=drop, tints=tints,
+                             manifest_out=out_manifest)
     print(f'  removed {result["primitives_removed"]} primitives, '
           f'swept {result["accessors_dropped"]} accessors / '
           f'{result["views_dropped"]} bufferViews')
+    if result['shape_keys_dropped']:
+        print(f'  shape keys left with nothing to move: '
+              f'{", ".join(result["shape_keys_dropped"])}')
+    if result['materials_dropped']:
+        print(f'  materials left painting nothing: '
+              f'{", ".join(result["materials_dropped"])}')
+    after = json.load(open(out_manifest))
 
     doc, binary = glb.load(out)
+    binary_views = glb.views_of(doc, binary)
     tri_after = sum(doc['accessors'][pr['indices']]['count'] // 3
                     for m in doc['meshes'] for pr in m['primitives'])
     expected = tri_before - sum(manifest['parts'][d]['tris'] for d in drop)
+    # From here on the manifest under audit is `after`, the one apply wrote.
+    # `manifest` stays the input, and is only read for what the deletion
+    # removed -- those entries are gone from `after` by design.
 
     checks = []
     checks.append(('still a VRM0', 'VRM' in doc.get('extensions', {})))
@@ -93,8 +111,68 @@ def run(model, manifest_path, seed=None):
     # And the manifest's own claim, which is what a swap tool reads before it
     # touches anything: every palette entry names parts, and those parts exist.
     checks.append(('every palette entry names live parts', all(
-        e.get('parts') and all(p in manifest['parts'] for p in e['parts'])
-        for e in palette.values())))
+        e.get('parts') and all(p in after['parts'] for p in e['parts'])
+        for e in after.get('palette', {}).values())))
+
+    # The shape keys have to survive the same treatment, and they are the part
+    # most likely to survive it wrong. Their deltas live in sparse accessors
+    # whose storage is reachable only through the sparse block, so a sweep that
+    # follows accessors the obvious way frees those views (351 of them at seed
+    # 15, against 191 correctly) and writes a file whose morph targets read back
+    # as garbage -- caught here rather than by whoever loads it next.
+    shapes = after.get('shapes', {})
+    checks.append(('every shape key names live parts', all(
+        e.get('parts') and all(p in after['parts'] for p in e['parts'])
+        for e in shapes.values())))
+    # Two directions, because each misses what the other catches. Every key the
+    # manifest still names has to actually displace something in the file, and
+    # every key the FILE still declares outside the expression meshes has to be
+    # one the manifest names -- a target left behind after its garment was
+    # deleted is a slider that drives to 1.0 and does nothing, and only the
+    # second direction sees it.
+    expression_meshes = {b['mesh'] for g in
+                         doc['extensions']['VRM']['blendShapeMaster']['blendShapeGroups']
+                         for b in g.get('binds', ())}
+    moved, declared = {}, set()
+    for mi, mesh in enumerate(doc['meshes']):
+        names = mesh.get('extras', {}).get('targetNames') or []
+        if mi in expression_meshes:
+            continue
+        declared |= set(names)
+        for pr in mesh['primitives']:
+            for ti, tgt in enumerate(pr.get('targets', ())):
+                if ti >= len(names) or 'POSITION' not in tgt:
+                    continue
+                d = glb.read_accessor(doc, binary_views, tgt['POSITION'])
+                if np.abs(d).max() > glb.MORPH_EPSILON:
+                    moved[names[ti]] = True
+    checks.append((f'{len(shapes)} shape keys in the manifest still displace',
+                   all(moved.get(k) for k in shapes)))
+    checks.append((f'{len(declared)} shape keys in the file are all in the manifest',
+                   declared == set(shapes)))
+    counts = {m.get('name'): {len(pr.get('targets') or []) for pr in m['primitives']}
+              for m in doc['meshes']}
+    checks.append(('every mesh keeps one morph target count',
+                   all(len(c) <= 1 for c in counts.values())))
+    # The material half of the same asymmetry. `verify.unused_materials` is a
+    # FAIL condition on the build's own output, so a customiser that leaves the
+    # deletion's stranded materials behind ships a file the project's own health
+    # check rejects -- deleting Acc_Crown strands Milfy_Gold and Milfy_GoldInner.
+    live_mats = {pr['material'] for m in doc['meshes'] for pr in m['primitives']
+                 if 'material' in pr}
+    checks.append(('no material is left painting nothing',
+                   live_mats == set(range(len(doc['materials'])))))
+    mat_names = {m.get('name') for m in doc['materials']}
+    checks.append(('every palette entry names a material still in the file',
+                   all(k in mat_names for k in after.get('palette', {}))))
+    # The OTHER half of sweep_materials. VRM0 pairs materials[i] with
+    # materialProperties[i] by position, and pruning one array without the other
+    # puts every MToon setting on the wrong surface while every count stays
+    # plausible -- the check above cannot see it, because it only counts.
+    props = doc['extensions']['VRM']['materialProperties']
+    checks.append(('materialProperties still line up with materials',
+                   [m.get('name') for m in doc['materials']]
+                   == [m.get('name') for m in props]))
 
     print(f'  triangles {tri_before} -> {tri_after} (expected {expected})')
     for label, ok in checks:

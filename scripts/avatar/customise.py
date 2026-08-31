@@ -52,6 +52,98 @@ def drop_parts(doc, views, manifest, names):
     return removed
 
 
+def prune_shapes(doc, views, manifest):
+    """Drop grafted morph targets the deletion left with nothing to move.
+
+    Returns the names dropped.
+
+    A shape key on this model lives on the garments, not on the body: the six
+    vendor keys move `Outfit_Top`, `Acc_Bandage_Thigh` and so on. Delete the
+    garment and the key is still declared on every surviving primitive of the
+    same mesh, still named in `extras.targetNames`, and now displaces nothing --
+    a slider a customiser can find, drive to 1.0, and watch do nothing. That is
+    the same silent no-op `SHAPE_KEY_MIN_MEAN` refuses at build time, arriving
+    by the other door, and the manifest reports it worse than the file does: its
+    `shapes` entry goes on naming a part that no longer exists.
+
+    Meshes any `blendShapeMaster` group binds to are left alone whatever they
+    measure. Those are the expression meshes, their targets are driven by name
+    from the chat widget, and a face is entitled to an expression that happens
+    to move nothing on this body.
+
+    Runs before `sweep`, so the accessors it orphans are collected in the same
+    pass rather than riding along as dead weight.
+    """
+    # `shapes` may be absent -- an older manifest, or a stage of the build that
+    # runs before build.py writes the section. That must NOT gate the file-side
+    # cleanup: whether a target still moves anything is a fact about the binary,
+    # and leaving a dead slider in the VRM because a JSON section was missing is
+    # the coupling this function exists to remove.
+    shapes = manifest.get('shapes') or {}
+    groups = (doc.get('extensions', {}).get('VRM', {})
+              .get('blendShapeMaster', {}).get('blendShapeGroups', ()))
+    bound = {b['mesh'] for g in groups for b in g.get('binds', ())}
+
+    # Rebuilt from what is measured below, so entries for meshes this function
+    # does NOT walk have to be carried over rather than dropped on the floor.
+    # On this model there are none -- build.py only records the garment keys --
+    # but a manifest that silently loses a section is the harder bug of the two.
+    walked = {m.get('name') for mi, m in enumerate(doc['meshes'])
+              if mi not in bound and (m.get('extras', {}).get('targetNames'))}
+    dropped = []
+    manifest['shapes'] = {k: e for k, e in shapes.items()
+                          if e.get('mesh') not in walked}
+    for mi, mesh in enumerate(doc['meshes']):
+        names = mesh.get('extras', {}).get('targetNames') or []
+        if not names or mi in bound:
+            continue
+        survives, moves = [], {}
+        for ti, key in enumerate(names):
+            where = {}
+            for pr in mesh['primitives']:
+                targets = pr.get('targets') or []
+                if ti >= len(targets) or 'POSITION' not in targets[ti]:
+                    continue
+                d = glb.read_accessor(doc, views, targets[ti]['POSITION'])
+                mag = np.linalg.norm(d.astype(np.float64), axis=1)
+                hit = mag > glb.MORPH_EPSILON
+                if not hit.any():
+                    continue
+                part = pr.get('extras', {}).get('part', 'unlabelled')
+                prev = where.get(part, (0, 0.0))
+                where[part] = (prev[0] + int(hit.sum()),
+                               prev[1] + float(mag[hit].sum()) * 1000.0)
+            if where:
+                survives.append((ti, key))
+                moves[key] = where
+            else:
+                dropped.append(key)
+
+        # Two independent writes, deliberately not chained through each other:
+        # the file loses the target, and the manifest is rebuilt from `moves` by
+        # NAME. An earlier version derived the manifest key from the position
+        # left after the deletion, which made the two impossible to break one at
+        # a time -- and a guard you cannot break one at a time is a guard you
+        # cannot show is doing anything.
+        keep = {ti for ti, _ in survives}
+        for ti in reversed(range(len(names))):
+            if ti in keep:
+                continue
+            for pr in mesh['primitives']:
+                targets = pr.get('targets') or []
+                if ti < len(targets):
+                    del targets[ti]
+            del names[ti]
+        for new_i, (_, key) in enumerate(survives):
+            manifest['shapes'][key] = {
+                'mesh': mesh.get('name'),
+                'index': new_i,
+                'parts': {p: {'vertices': n, 'mm': round(total / n, 2)}
+                          for p, (n, total) in sorted(moves[key].items())},
+            }
+    return dropped
+
+
 def sweep(doc, views):
     """Drop unreferenced accessors and bufferViews, renumbering what survives."""
     live_acc, live_view = set(), set()
@@ -70,9 +162,24 @@ def sweep(doc, views):
             live_acc.update((s['input'], s['output']))
 
     for i in live_acc:
-        bv = doc['accessors'][i].get('bufferView')
+        acc = doc['accessors'][i]
+        bv = acc.get('bufferView')
         if bv is not None:
             live_view.add(bv)
+        # A sparse accessor keeps its indices and values in views of their own,
+        # reachable only through the sparse block. Collecting the accessor's
+        # own bufferView and stopping leaves those two orphaned, and this half
+        # and the renumbering half below have to go together. Measured on this
+        # model with selftest seed 15 (drops Acc_Ribbon_Hair, Acc_Bandage_Thigh,
+        # Hair_Side_L): with both halves removed the sweep frees 351 views
+        # instead of 191, writes a file that looks valid, and the next read of
+        # any morph target indexes off the end of its own vertex array. With
+        # only this half removed the renumbering below raises KeyError during
+        # the sweep, which is the loud failure of the two.
+        sp = acc.get('sparse')
+        if sp:
+            live_view.add(sp['indices']['bufferView'])
+            live_view.add(sp['values']['bufferView'])
     for group in REFERENCED_BY_VIEW:
         for item in doc.get(group, ()):
             if 'bufferView' in item:
@@ -95,6 +202,10 @@ def sweep(doc, views):
     for acc in kept_acc:
         if 'bufferView' in acc:
             acc['bufferView'] = view_map[acc['bufferView']]
+        sp = acc.get('sparse')
+        if sp:
+            sp['indices']['bufferView'] = view_map[sp['indices']['bufferView']]
+            sp['values']['bufferView'] = view_map[sp['values']['bufferView']]
     for group in REFERENCED_BY_VIEW:
         for item in doc.get(group, ()):
             if 'bufferView' in item:
@@ -120,6 +231,52 @@ def sweep(doc, views):
     doc['accessors'] = kept_acc
     doc['bufferViews'] = kept_view_defs
     return kept_views, dropped
+
+
+def sweep_materials(doc):
+    """Drop materials no primitive uses, and the VRM block that shadows them.
+
+    Returns the names dropped.
+
+    They accumulate two ways and neither announces itself. Stripping the base
+    model's own outfit leaves its cloth materials behind with nothing to paint,
+    and every material this build declares up front stays declared even when the
+    branch that would have used it never ran -- the hand-modelled cardigan, sock
+    and ribbon are all still declared for the case where the purchased outfit is
+    missing, and are unused every time it is present.
+
+    VRM0 pairs `materials[i]` with `extensions.VRM.materialProperties[i]` by
+    POSITION, so the two arrays are pruned together or the file ends up with
+    every MToon setting attached to the wrong surface. `blendShapeMaster` can
+    also name a material, in `materialValues`; a group naming one that is about
+    to go is refused rather than quietly broken.
+    """
+    used = {pr['material'] for mesh in doc['meshes'] for pr in mesh['primitives']
+            if 'material' in pr}
+    names = [m.get('name') for m in doc['materials']]
+    props = doc['extensions']['VRM']['materialProperties']
+    if [m.get('name') for m in props] != names:
+        raise SystemExit('materialProperties 與 materials 不同序，不能按位置刪')
+
+    doomed = {i for i in range(len(names)) if i not in used}
+    if not doomed:
+        return []
+    spoken = {mv.get('materialName')
+              for g in doc['extensions']['VRM']['blendShapeMaster']['blendShapeGroups']
+              for mv in g.get('materialValues', ())}
+    clash = sorted({names[i] for i in doomed} & spoken)
+    if clash:
+        raise SystemExit(f'{clash} 沒有網格用，但 blendShapeGroup 指名了它們')
+
+    keep = [i for i in range(len(names)) if i not in doomed]
+    remap = {old: new for new, old in enumerate(keep)}
+    doc['materials'] = [doc['materials'][i] for i in keep]
+    doc['extensions']['VRM']['materialProperties'] = [props[i] for i in keep]
+    for mesh in doc['meshes']:
+        for pr in mesh['primitives']:
+            if 'material' in pr:
+                pr['material'] = remap[pr['material']]
+    return sorted(names[i] for i in doomed)
 
 
 def _greyscale(doc, views, texture_index, tolerance=12):
@@ -161,6 +318,59 @@ def tint(doc, material_name, rgb, views=None):
     if not hit:
         raise SystemExit(f'找不到材質 {material_name}')
     return hit
+
+
+def _set_colour(doc, prop, rgb, skip=()):
+    """Write one MToon vector property on every material, report what moved.
+
+    Returns (name, previous rgb or None) per material actually changed, so the
+    caller can print what the model was carrying before. Materials already on
+    the value are left alone so the report only names real changes.
+    """
+    moved = []
+    for mat in doc['extensions']['VRM']['materialProperties']:
+        if mat['name'] in skip:
+            continue
+        vec = mat.setdefault('vectorProperties', {})
+        was = vec.get(prop)
+        if was is not None and max(abs(a - b) for a, b in zip(was[:3], rgb)) < 1e-4:
+            continue
+        vec[prop] = [rgb[0], rgb[1], rgb[2], 1.0 if was is None else was[3]]
+        moved.append((mat['name'], None if was is None else tuple(was[:3])))
+    return moved
+
+
+def outline(doc, rgb, skip=()):
+    """Put every MToon outline on one colour, and report the ones that moved.
+
+    A VRM carries its outline colours over from whatever model it started as,
+    and an unlit renderer cannot see them: the outline is a second draw pass
+    over inflated back faces, so a numpy render of the mesh shows none of it and
+    neither does any gate built on one. The base model's are VRoid's wine,
+    (0.275, 0.090, 0.125), drawn to sit on salmon-pink skin. On a near-white
+    body that same line reads as rust, and it traces the whole figure.
+
+    `skip` names materials that keep their own line -- the hair's is black on
+    purpose, and black is not a paler version of anything.
+    """
+    return _set_colour(doc, '_OutlineColor', rgb, skip)
+
+
+def rim(doc, rgb):
+    """Declare the MToon parametric rim colour, which the base model omits.
+
+    Neither the base VRM nor its repaints carry `_RimColor` at all, and the site
+    that draws them fills the gap with one hard-coded site accent for every body
+    (avatarGuideEngine.ts). That accent is mars orange, chosen against pink hair
+    and salmon skin; on this body it edges a near-white blouse and a near-black
+    cardigan in rust. The colour belongs to the body, so the body states it, and
+    the site scales whatever it finds rather than choosing it.
+
+    Only the colour. How hard the rim burns and how tight it sits are the site's
+    to decide -- it swells while she answers, which is a behaviour of the widget
+    and not a property of the outfit.
+    """
+    return _set_colour(doc, '_RimColor', rgb)
 
 
 def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
@@ -271,9 +481,25 @@ def remap(doc, manifest, dropped=()):
     face survives: it is never split and carries no labels. Parts named in
     `dropped` leave the manifest entirely: they are gone from the file, and an
     entry with no primitives behind it is worse than no entry at all.
+
+    The manifest's `shapes` section is NOT this function's to fix. A shape key
+    can outlive a deletion on one garment and die on another, so deciding its
+    fate needs the binary; prune_shapes does it earlier in `apply`, where the
+    views are still open, and this function must not undo that.
     """
     for name in dropped:
         manifest['parts'].pop(name, None)
+
+    # The palette is a list of parts per material, and a deletion shortens some
+    # of those lists. A material every one of whose parts is gone leaves the
+    # manifest: a customiser reading it would offer a colour that lands on
+    # nothing. (This is the palette half of what prune_shapes does for the
+    # shape keys; the selftest check that audits the WRITTEN manifest went red
+    # here the first time it was pointed at the right file.)
+    for pal in manifest.get('palette', {}).values():
+        pal['parts'] = [p for p in pal.get('parts', ()) if p in manifest['parts']]
+    manifest['palette'] = {n: e for n, e in manifest.get('palette', {}).items()
+                           if e['parts']}
 
     found = {}
     for mesh in doc['meshes']:
@@ -302,10 +528,21 @@ def apply(src, dst, manifest_path, drop=(), tints=(), hues=(), manifest_out=None
     manifest = json.load(open(manifest_path))
 
     n = drop_parts(doc, views, manifest, drop) if drop else 0
+    # Before the sweep: a key the deletion emptied has to lose its accessors in
+    # the same pass, and prune_shapes rewrites manifest['shapes'] whether or not
+    # the manifest is written out, because the file it edits is the file that
+    # ships either way.
+    orphan_keys = prune_shapes(doc, views, manifest) if drop else []
     for name, rgb in tints:
         tint(doc, name, rgb, views)
     for name, deg in hues:
         hue(doc, views, name, deg)
+    # And the materials the deletion stranded, for the same reason: the build
+    # sweeps its own dead materials at the end and `verify.unused_materials` is
+    # a FAIL condition, so a customiser that skips this ships a file its own
+    # health check rejects. Deleting Acc_Crown leaves Milfy_Gold and
+    # Milfy_GoldInner painting nothing.
+    idle_materials = sweep_materials(doc) if drop else []
     views, dropped = sweep(doc, views)
 
     blob = glb.rebuild(doc, views)
@@ -314,7 +551,9 @@ def apply(src, dst, manifest_path, drop=(), tints=(), hues=(), manifest_out=None
         remap(doc, manifest, drop)
         json.dump(manifest, open(manifest_out, 'w'), indent=1)
     return {'primitives_removed': n, 'accessors_dropped': dropped[0],
-            'views_dropped': dropped[1], 'bytes': size}
+            'views_dropped': dropped[1], 'bytes': size,
+            'shape_keys_dropped': orphan_keys,
+            'materials_dropped': idle_materials}
 
 
 if __name__ == '__main__':

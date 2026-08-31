@@ -36,8 +36,10 @@
 // Rendering & entrance (Batch 2):
 //   - ACESFilmic tone mapping (exposure-compensated) at DPR ≤2; low cyan fill
 //     light; fake radial contact shadow at her feet (no shadow-map pass)
-//   - MToon parametric rim in mars orange, swelling while she answers — the
-//     body multiply-tint is halved so the rim carries the answering look
+//   - MToon parametric rim swelling while she answers — the body multiply-tint
+//     is halved so the rim carries the answering look. The hue comes from the
+//     model when it declares `_RimColor`, and falls back to mars orange for the
+//     bodies that do not (see RIM_FALLBACK)
 //   - materialize entrance, once, from the first rendered frame: cyan flash
 //     (>1 channels overdrive under ACES — glow without bloom/EffectComposer,
 //     which stays a Non-goal), back-out scale pop, rising particle column
@@ -318,6 +320,32 @@ const IDLE_ACTS: readonly GestureName[] = [
   'toeLook',
 ]
 
+/**
+ * The site's rim accent, for a body that states none of its own.
+ *
+ * Mars orange, picked against pink hair and salmon skin. It is a fallback and
+ * not a default: a body that states `_RimColor` is drawn in its own colour.
+ */
+export const RIM_FALLBACK = 0xe8652b
+
+/**
+ * The rim hue to draw a material with: its own, or the site's.
+ *
+ * three-vrm imports an absent VRM0 `_RimColor` as black — verified against
+ * mika-pink, which declares the property on none of its 19 materials and whose
+ * MToons all arrive at (0,0,0) in the browser. Black is therefore
+ * "this model states nothing" rather than "this model wants no rim", so it is
+ * the one value that hands the choice back to the site. A body that genuinely
+ * wants no rim states a colour near black instead of exactly black.
+ *
+ * Returns a clone, because the caller writes the scaled colour back into the
+ * material every frame and would otherwise scale its own base away.
+ */
+export function rimBase(stated: THREE.Color | undefined): THREE.Color {
+  if (stated && (stated.r > 0 || stated.g > 0 || stated.b > 0)) return stated.clone()
+  return new THREE.Color(RIM_FALLBACK)
+}
+
 export function initAvatarGuide(
   canvas: HTMLCanvasElement,
   vrmUrl: string,
@@ -347,7 +375,20 @@ export function initAvatarGuide(
   // Deliberately not the real box numbers — those live in AVATAR_CANVAS_*.
   const W = canvas.clientWidth || 1
   const H = canvas.clientHeight || 1
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
+  // `preserveDrawingBuffer` only under ?mikadebug=1. Reading the canvas back
+  // with toDataURL returns a blank PNG without it — and a blank PNG still looks
+  // like a successful screenshot, which is how an afternoon of avatar captures
+  // once got verified against nothing. Leaving it on always makes the browser
+  // hold the back buffer for every visitor, which is a real cost on a phone for
+  // a debugging convenience.
+  const capturable =
+    typeof location !== 'undefined' && new URLSearchParams(location.search).has('mikadebug')
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+    preserveDrawingBuffer: capturable,
+  })
   renderer.setSize(W, H, false)
   // DPR 2 (was 1.5): at this size the character costs little at full res,
   // and the line work (toon shading, hair) is exactly where 1.5 aliased.
@@ -545,19 +586,21 @@ export function initAvatarGuide(
   // tinted endpoint is a pure function of the base, so it's precomputed here
   // rather than allocated per material per frame inside the render loop.
   let mats: { m: THREE.Material & { color: THREE.Color }; base: THREE.Color; tinted: THREE.Color }[] = []
-  // MToon materials additionally get a parametric rim (mars orange) whose
-  // intensity rides the speaking tint — the rim carries the "answering" look
-  // now, which is why the body tint below is halved.
+  // MToon materials additionally get a parametric rim whose intensity rides the
+  // speaking tint — the rim carries the "answering" look now, which is why the
+  // body tint below is halved. Its hue is the material's own (see rimBase).
   type MToonLike = THREE.Material & {
     parametricRimColorFactor: THREE.Color
     parametricRimFresnelPowerFactor: number
   }
-  let mtoons: MToonLike[] = []
+  // Each MToon with the rim hue that material was loaded with. The widget used
+  // to impose one site accent on every body; the hue belongs to the body, so
+  // the model states it in `_RimColor` and this only scales what it finds.
+  let mtoons: { m: MToonLike; base: THREE.Color }[] = []
   // The face/skin materials only, for `pale`: a whole-body blue reads as a
   // lighting change, a bluish face reads as 青ざめ.
   const faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
   const PALE = new THREE.Color(...FACE_PALE_TINT)
-  const RIM_COLOR = new THREE.Color(0xe8652b)
   const rimScratch = new THREE.Color()
 
   const loader = new GLTFLoader()
@@ -619,7 +662,10 @@ export function initAvatarGuide(
           const mtoon = m as Partial<MToonLike> & THREE.Material
           if (mtoon.parametricRimColorFactor) {
             mtoon.parametricRimFresnelPowerFactor = 6 // tight edge highlight
-            mtoons.push(mtoon as MToonLike)
+            mtoons.push({
+              m: mtoon as MToonLike,
+              base: rimBase(mtoon.parametricRimColorFactor),
+            })
           }
         }
       })
@@ -1273,13 +1319,13 @@ export function initAvatarGuide(
           headY: head ? head.rotation.y : 0,
           headZ: head ? head.rotation.z : 0,
           scale: vrm.scene.scale.x,
-          rimR: mtoons.length > 0 ? mtoons[0].parametricRimColorFactor.r : -1,
+          rimR: mtoons.length > 0 ? mtoons[0].m.parametricRimColorFactor.r : -1,
           shadowOp: shadow.visible ? shadowMat.opacity : -1,
         }
       }
 
       // Answering look, lerped both directions so nothing snaps. The body
-      // tint is halved from Batch 1-era so the mars parametric rim (below)
+      // tint is halved from Batch 1-era so the parametric rim (below)
       // reads as the "answering" signal; the materialize cyan flash rides the
       // same consolidated colour write so the two never fight over m.color.
       const target = mode === 'speaking' ? 1 : 0
@@ -1317,10 +1363,12 @@ export function initAvatarGuide(
         for (const { m, base } of mats) m.color.copy(base)
         colorDirty = false
       }
-      // Mars rim: always faintly present (separates her from the dark page),
-      // swelling while she answers.
-      rimScratch.copy(RIM_COLOR).multiplyScalar(0.22 + tint * 0.5)
-      for (const m of mtoons) m.parametricRimColorFactor.copy(rimScratch)
+      // The rim: always faintly present (separates her from the dark page),
+      // swelling while she answers. Only the strength is the site's; the hue is
+      // whatever that material was loaded with.
+      const rimScale = 0.22 + tint * 0.5
+      for (const { m, base } of mtoons)
+        m.parametricRimColorFactor.copy(rimScratch.copy(base).multiplyScalar(rimScale))
 
       vrm.expressionManager?.update()
       vrm.update(dt) // spring bones (hair, skirt) advance here

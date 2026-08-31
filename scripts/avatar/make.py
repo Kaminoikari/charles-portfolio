@@ -70,8 +70,8 @@ HEAD_FACTOR = 1.06
 # The geometry authored in Blender rather than by formula: ribbons and bows,
 # which are flat strips following a path and were unconvincing as swept rings.
 BLENDER_STEMS = ['bow', 'neckribbon', 'hairbow', 'details', 'head']
-# The imported outfit, converted by the same Blender step so that editing its
-# triangle budget cannot leave a stale .glb behind. Leaving bow.py out of this
+# The imported outfit, converted by the same Blender step so that editing
+# mellow.py cannot leave a stale .glb behind. Leaving bow.py out of this
 # list once cost a full rebuild that produced a byte-identical model and no
 # warning, because a missing part is skipped by design and a stale one is
 # quieter still.
@@ -134,6 +134,14 @@ def main():
                             drop=DROP, manifest_out=p('parts.json'))
         print(f'   removed {r["primitives_removed"]} primitives, '
               f'{r["accessors_dropped"]} accessors swept')
+        # The strip strands the VRoid outfit's own materials, and apply now
+        # clears them here rather than leaving them for build.py's sweep at the
+        # end. Printed because the count moving between the two steps is the
+        # only visible sign of that, and a silent zero here would read as
+        # "nothing was stranded" rather than "this step no longer looks".
+        if r['materials_dropped']:
+            print(f'   swept {len(r["materials_dropped"])} stranded materials: '
+                  f'{", ".join(r["materials_dropped"])}')
         gate('strip', p('stripped.vrm'))
 
     with step("3. strip the outfit VRoid PAINTED on the body"):

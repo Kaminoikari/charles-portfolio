@@ -50,7 +50,13 @@ FACES = 'official/expression-sheet-6.jpg'
 # failed that check (the skirt box crossed the mint sash at spread 37, the crown
 # box sat on hair and forehead at spread 41) and were moved.
 SAMPLES = [
-    ('髮', 'Milfy_Hair', SHEET, (155, 125, 200, 175), None),
+    # The texture, not `Milfy_Hair`. That material was declared for a
+    # hand-modelled head this build stopped using, and by the time the sample
+    # ran no primitive painted with it -- so this row reported the delta of a
+    # colour that was on screen nowhere. The hair's colour lives in six VRoid
+    # maps that build.py rotates; F00_000_Hair_00_01 is the base one, and the
+    # four still in use agree to within (233,232,231) vs (227,218,208).
+    ('髮', None, SHEET, (155, 125, 200, 175), 'F00_000_Hair_00_01'),
     ('膚', None,         SHEET, (205, 620, 235, 680), 'F00_000_00_Body_00'),
     ('瞳', None,         FACES, (471, 776, 489, 791), 'F00_000_00_EyeIris_00'),
     # The cardigan is the one garment the imported outfit and the reference
