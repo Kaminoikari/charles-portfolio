@@ -1,0 +1,78 @@
+<!doctype html><meta charset="utf-8"><title>vrm check</title>
+<body style="margin:0;background:#222"><pre id="out" style="color:#0f0;font:12px monospace"></pre>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js",
+"three/addons/":"/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
+"@pixiv/three-vrm-animation":"/node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+const R = { ok:false, errors:[] };
+const log = () => document.getElementById('out').textContent = JSON.stringify(R,null,1);
+try {
+  const url = '/avatar/mika-milfy.vrm';
+  const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+  R.bytes = bytes.length;
+  const h = await crypto.subtle.digest('SHA-256', bytes);
+  R.sha256_first8 = [...new Uint8Array(h)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const loader = new GLTFLoader();
+  loader.register(p => new VRMLoaderPlugin(p));
+  const gltf = await loader.parseAsync(bytes.buffer, '');
+  const vrm = gltf.userData.vrm;
+  VRMUtils.rotateVRM0(vrm);
+  R.spec = vrm.meta?.metaVersion ?? '0';
+  R.bones = Object.keys(vrm.humanoid.humanBones).length;
+  R.expressions = Object.keys(vrm.expressionManager.expressionMap).length;
+  const scene = new THREE.Scene(); scene.add(vrm.scene);
+  const mixer = new THREE.AnimationMixer(vrm.scene);
+  const aloader = new GLTFLoader(); aloader.register(p => new VRMAnimationLoaderPlugin(p));
+  const clips = JSON.parse(document.getElementById('clips').textContent);
+  R.clips = 0;
+  for (const name of clips) {
+    try {
+      const g = await aloader.loadAsync('/avatar/animations/' + name);
+      const va = g.userData.vrmAnimations[0];
+      const clip = createVRMAnimationClip(va, vrm);
+      const act = mixer.clipAction(clip); act.play();
+      mixer.update(0.5); mixer.update(0.5); act.stop();
+      R.clips++;
+    } catch (e) { R.errors.push(name + ': ' + e.message); }
+  }
+  for (const k of Object.keys(vrm.expressionManager.expressionMap)) {
+    try { vrm.expressionManager.setValue(k, 1.0); vrm.update(0.016);
+          vrm.expressionManager.setValue(k, 0.0); vrm.update(0.016); }
+    catch (e) { R.errors.push('expr ' + k + ': ' + e.message); }
+  }
+  vrm.update(0.016);
+  // 真的畫一次。VRM 的缺陷有一整類（描邊塗黑、材質沒接上、法線翻面）在無光
+  // 照的 numpy 算圖裡看不見，只有 MToon 自己畫過才會現形。
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false,
+    // Without this the canvas reads back black after the draw, so a
+    // capture taken from the page is a blank PNG that still looks like a
+    // successful screenshot.
+    preserveDrawingBuffer: true });
+  renderer.setSize(560, 900); renderer.setPixelRatio(1);
+  renderer.setClearColor(0x2a2a30, 1);
+  document.body.appendChild(renderer.domElement);
+  scene.add(new THREE.DirectionalLight(0xffffff, 2.4).translateZ(1));
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const cam = new THREE.PerspectiveCamera(24, 560 / 900, 0.1, 20);
+  const head = vrm.humanoid.getNormalizedBoneNode('head').getWorldPosition(new THREE.Vector3());
+  const view = new URLSearchParams(location.search).get('view') || 'front';
+  const at = view === 'face' ? head : new THREE.Vector3(0, head.y * 0.55, 0);
+  const dist = view === 'face' ? 1.15 : 4.2;
+  const ang = view === 'quarter' ? Math.PI * 0.22 : 0;
+  cam.position.set(at.x + Math.sin(ang) * dist, at.y, at.z + Math.cos(ang) * dist);
+  cam.lookAt(at);
+  renderer.render(scene, cam);
+  R.drew = true;
+  R.ok = R.errors.length === 0;
+} catch (e) { R.errors.push(String(e && e.stack || e)); }
+log();
+window.__RESULT__ = R;
+</script>
+<script type="application/json" id="clips">["akimbo.vrma", "dance.vrma", "idleLoop.vrma", "modelPose.vrma", "peaceSign.vrma", "playFingers.vrma", "scratchHead.vrma", "spin.vrma", "squat.vrma", "stretch.vrma"]</script>

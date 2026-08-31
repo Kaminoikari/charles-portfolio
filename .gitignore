@@ -35,3 +35,19 @@ docs/shot-*.png
 # Only the packed public/avatar/voice/*.m4a ship; the wavs are reproducible.
 build/
 scripts/__pycache__/
+
+# Milfy 復刻管線（scripts/avatar）。只有原始碼進版控：
+#   out/          建置產物，96MB，跑 make.py 就會重生
+#   baseline.vrm  與已進版控的 public/avatar/mika-pink.vrm 位元組相同
+#   mika-milfy.*  出貨模型 8MB。public/ 底下的東西會部署到線上被公開下載，
+#                 而這是逆向復刻的模型，刻意留在本機（2026-08-31 使用者決定）
+scripts/avatar/out/*
+# ...除了這一個：它不是 make.py 產的，是手動跑 envelope.py 掃十支 .vrma 掃出
+# 來的（而且要先有完成的模型才掃得動）。缺了它 envelope.load 回 None、裙子
+# 少掉貼腿的外框，建置照樣成功不會警告。
+!scripts/avatar/out/leg-envelope.json
+scripts/avatar/__pycache__/
+scripts/avatar/blender/__pycache__/
+scripts/avatar/baseline.vrm
+public/avatar/mika-milfy.vrm
+public/avatar/mika-milfy.parts.json

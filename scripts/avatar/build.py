@@ -1,0 +1,1067 @@
+"""Build the Milfy-referenced outfit onto the partitioned base.
+
+Every measurement here is a fraction of this body's own landmarks, read out of
+the file rather than typed as a world coordinate: the waist is where the torso
+is narrowest, the hem sits between hip and knee. Hard-coding heights would make
+the script correct for exactly one body, and the point of a template is that the
+next body gets the same garment without a rewrite.
+
+Colour lives in PALETTE and nowhere else. Each entry becomes one flat MToon
+material, which is what makes "change one material, change the whole colourway"
+true rather than aspirational.
+"""
+import io
+import json
+import math
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+from scipy.spatial import cKDTree
+
+import customise
+import envelope
+import garment
+import glb
+import outfit
+import twintail
+import weld
+
+# 頭上的獸耳、髮髻、皇冠、呆毛都在這一個檔裡，見 blender/head.py。
+HEAD = 'blender/head.glb'
+# 耳圈、髮髻與呆毛吃 VRoid 自己的髮絲貼圖，不用平色材質：髮色的色相旋轉作用
+# 在貼圖上，走同一個材質才會被一起帶到，而且新部件才有髮絲明暗。內耳不在這條
+# 路上，理由見下面 EAR_INNER。
+HEAD_HAIR = 'F00_000_Hair_00_HAIR_02'
+# 內耳。純色版在算圖裡量到的通道標準差是 (1.0, 0.7, 6.1)，參考圖同一塊是
+# (21.9, 16.3, 15.7)——一塊完全沒有明暗的粉色圓片，正是「和原圖差距很大」的
+# 那個手感。所以它改成髮絲花紋乘上這個顏色。花紋是自己烘的一張內耳明暗
+# 圖（見 bowl_texture），不是共用髮絲貼圖：共用會讓 manifest 說謊，因為
+# palette 對每個 Milfy_* 材質都宣告一個底色、換裝工具應該設得動，而一個係數
+# 乘在有色貼圖上得不到它被設定的那個顏色——customise.tint 正是為這件事擋下
+# 它的，selftest 也確實抓到了。
+EAR_INNER = (0.886, 0.820, 0.808)
+EAR_INNER_SHADE = (0.779, 0.721, 0.711)
+# 內耳貼圖歸一化後的均值。要 >= EAR_INNER 最大的通道，否則係數被夾掉。
+BOWL_MEAN = 0.90
+# 皇冠的環帶是圓的，平色會讓它讀成一片剪紙——正面算圖裡整頂冠的通道標準差
+# 是 0.00，真實 MToon 打光下也只有 3.8。參考的金自己就有 74 階的明暗分界。
+# 這道由暗到亮的斜坡由每個面自己的法線鋪上去（uv_facet），背對光的那些面才
+# 會暗下來。
+GOLD_RAMP = (0.74, 1.0, 1.0)
+# 上面那道斜坡的光向，前上方偏模型左。整條管線的算圖是無光照的（見
+# render.rasterise），明暗一律烘進貼圖或 UV，所以這裡也一樣。
+CROWN_LIGHT = (-0.30, 0.62, -0.73)
+
+# The imported outfit, if it has been converted. Every garment this file builds
+# by hand is a stand-in for it, so when the file is there they step aside: the
+# triangle budget has room for one outfit, not two. Hair, head accessories, body
+# and face are unaffected -- the package does not ship those.
+# Two files, because the package ships the bodice set and the cardigan as
+# separate FBXs with separate armatures; see blender/mellow.py.
+MELLOW = 'blender/mellow.glb'
+MELLOW_OUTER = 'blender/mellow_outer.glb'
+# mesh -> (our part name, how far it must clear the body). The clearances are
+# what each garment is: a boot hugs the calf, a bodice sits on a layer of air,
+# a skirt hangs off the hips and mostly does not touch at all.
+# Socks were 4mm and grazed the inner ankle by 2mm at rest, and the boot at the
+# same 4mm let the toes through its toe box; both are hugging garments, but not
+# through the skin. 8mm left the ankles still grazing by 1.1mm, which is under
+# the eye but not under the gate once it counts small parts by their own area. The skirt stays at 14mm: what it needed was not a bigger
+# rest clearance but room to swing, which is MELLOW_LOOSEN below.
+# Belt 進 Acc_Belt_Waist 而不是 Acc_Ribbon_Waist：量過廠商的 Belt 網格，它是
+# 一條 27mm 高的腰封加一片 104x25x13mm 的正面裝飾板，沒有任何前突的結或環，
+# 當不了 goal 第 8 項的「腰帶蝴蝶結」。蝴蝶結由 blender/bow.py 生成，兩者合起
+# 來是一條腰封加一個繫在上面的蝴蝶結，正好是參考圖的構造。
+# Belt 的 20mm 是要它坐在裙腰帶上而不是坐在身體上：裙子自己留 14mm，比裙子再
+# 外推 6mm 才是一條繫在裙外的腰帶。Leg_belt 綁在裸露的大腿上，和襪子同量級。
+MELLOW_PARTS = {'Inner': ('Outfit_Top', 0.010), 'Skirt': ('Outfit_Bottom', 0.014),
+                'Socks': ('Outfit_Socks', 0.010), 'Shoes': ('Outfit_Shoes', 0.009),
+                'Main_Ribbon': ('Acc_Ribbon_Neck', 0.012),
+                'Belt': ('Acc_Belt_Waist', 0.020),
+                'Leg_belt': ('Acc_Bandage_Thigh', 0.008),
+                'Outer': ('Outfit_Cardigan', 0.020)}
+# 沿 y 平移，套在擬合之後、貼身之前。大腿繃帶是唯一需要的一件：廠商把它放在
+# Milfy 自己的大腿中段，本模型過了 proportion 之後裙襬落在 y=0.693，繃帶原位
+# 0.668-0.729 有六成埋在裙子裡，正面只露出 25mm 的一條。往下 45mm 讓它整條落
+# 在裸露的大腿上，也就是參考圖上它該在的位置。
+MELLOW_SHIFT = {'Acc_Bandage_Thigh': -0.045}
+# Extra room a garment needs for the poses rather than for the rest pose, ramped
+# from nothing at its top to this at its hem. See outfit.loosen.
+MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
+# Its base maps are greyscale -- the vendor colours them in a Unity shader from
+# a mask -- so the colour is ours to choose and it stays on named materials.
+MELLOW_TINT = {
+    'Inner':      ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Inner_Sub':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Lace':       ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Skirt_Cloth': ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Shoes':      ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
+    'Sub_Acc':    ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
+    'Belt_Acc':   ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
+    'Leg_Acc':    ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
+    # 同一個金抄成兩份只動一份就會分岔，所以跟著 Milfy_Gold 一起提藍。
+    'Jewel':      ((0.867, 0.753, 0.660), (0.758, 0.637, 0.520)),
+    'Underwear':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Outer':      ((0.341, 0.333, 0.361), (0.231, 0.224, 0.247)),
+}
+# 底圖的曝光，見 outfit._materials。不是指數，是「乘一個對比再加一個偏移」。
+# 廠商把黑外套、黑百褶裙、黑樂福鞋的明暗直接畫進底圖（外套那張逐三角取樣，在
+# 自己的 UV 上均值只有 69／255），而顏色在本專案是 baseColorFactor，係數是乘
+# 法又被 glTF 夾在 1 以下：底圖多暗，成品就多暗，白色的裙子和鞋子在原樣的底圖
+# 上做不出來。每組兩個數字都是照著算圖量出來的，不是猜的。
+MELLOW_GAIN = {
+    'Skirt_Cloth': (0.55, 0.83),
+    'Shoes': (0.55, 0.83),
+    'Outer': (0.55, 0.64),
+    'Belt_Acc': (0.55, 0.68),
+    'Leg_Acc': (0.55, 0.62),
+    'Jewel': (0.55, 0.45),
+}
+# What the hand-built outfit contributes. Suppressed wholesale when the imported
+# one is present; the head and hair lists below are not in here on purpose.
+HAND_GARMENTS = {
+    'Outfit_Top', 'Outfit_Bottom', 'Outfit_Cardigan', 'Outfit_Shoes',
+    'Outfit_Socks', 'Acc_Frill_Bust', 'Acc_Frill_Hem', 'Acc_Collar',
+    'Acc_Buttons', 'Acc_Bow_Skirt', 'Acc_Ribbon_Neck',
+    'Acc_Bear_Face', 'Acc_Bandage_Thigh', 'Acc_Bandage_Calf',
+    'Acc_Bandage_Ankle',
+}
+
+# Parts lofted in Blender, by file stem. Missing files are skipped, so the build
+# still runs where Blender is not installed.
+# 蝴蝶結在腰封高度那一段，離腰封的最近距離上限。
+BOW_GAP_MAX = 8.0
+
+# 第四欄是同一個匯出檔裡要換材質的網格：{網格名: (材質, 標籤)}。腰間蝴蝶結的
+# 結是唯一一個。它和兩片環同檔，因為它的位置是從環推出來的；它不能同色，因為
+# 這個算圖器沒有光，同色的結在兩片同色的環中間就不存在。
+BLENDER_PARTS = [
+    ('bow', 'Milfy_Mint', 'Acc_Ribbon_Waist',
+     {'knot': ('Milfy_MintDark', 'Acc_Ribbon_Waist#knot')}),
+    ('hairbow', 'Milfy_Mint', 'Acc_Ribbon_Hair', {}),
+    ('neckribbon', 'Milfy_Ribbon', 'Acc_Ribbon_Neck', {}),
+    ('details', 'Milfy_Ribbon', 'Acc_Bow_Skirt', {}),
+]
+
+# Hue rotation, saturation scale, and pull-toward-white for the hair textures.
+# The last two were fitted, not eyeballed: measure.py samples the reference
+# sheet, inverts the render's own light (gain and ambient, solved from the
+# three materials whose hue already matched) and asks what base colour would
+# have produced those pixels. The answer was a paler, much less saturated
+# blonde than the first pass shipped.
+HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.58, 0.48
+# Accent streaks further than this from the hair's own hue are folded onto it
+# before the rotation; see customise.hue.
+HAIR_UNIFY = 60.0
+BROW_SHIFT, BROW_SAT = 140.0, 0.35
+
+# Mika's own skin is a deliberate salmon pink (the body texture's median is
+# 242,177,165). Milfy's is nearly white. This is the base colour the reference
+# sheet's thigh implies once the render's own light is taken back out, and both
+# skin textures are solved onto it so the neck seam cannot split.
+SKIN_TARGET = (246, 237, 230)
+
+# The base model's eyes are blue; the reference's are a warm neutral grey, hue
+# 350 at a tenth the saturation. Read off the official expression sheet's irises
+# with the pupil and the catchlight excluded, then put back through the render's
+# light the same way the skin was.
+EYE_TARGET = (145, 121, 121)
+
+# Read off the reference sheets. Shade is the MToon shadow colour: a toon model
+# with shade == base looks flat, and with shade too dark looks bruised, so each
+# one is the base pulled toward its own hue rather than toward black.
+PALETTE = {
+    'Milfy_White':    ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
+    'Milfy_Cardigan': ((0.129, 0.129, 0.145), (0.086, 0.086, 0.102)),
+    'Milfy_Mint':     ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
+    # 腰間蝴蝶結的結。0.72 倍薄荷，也就是把緞帶自己的暗面當成結的固有色——在
+    # 有光的參考圖裡結和環本來就是同一塊布，分得出來靠的是它被夾住的那圈陰影。
+    # 這個算圖器不打光，所以那圈陰影只能烘進顏色裡。
+    'Milfy_MintDark': ((0.373, 0.564, 0.559), (0.278, 0.459, 0.466)),
+    'Milfy_Ribbon':   ((0.110, 0.110, 0.125), (0.071, 0.071, 0.086)),
+    'Milfy_Bandage':  ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
+    # Its own entry rather than sharing Milfy_Bandage, even though the two start
+    # the same white. The template's promise is that one material is one
+    # garment's colour; sharing would mean recolouring the socks also recoloured
+    # the three bandages, which is a surprise the manifest does not warn about.
+    'Milfy_Sock':     ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
+    # B 由 0.604 提到 0.660：measure 的皇冠取樣點顯示參考的金是 (228,202,175)，
+    # 紅藍差 53，先前這裡是 67，去亮度 ΔE 6.2。金屬的暖度靠 R-G，不是靠壓藍。
+    'Milfy_Gold':     ((0.867, 0.753, 0.660), (0.758, 0.637, 0.520)),
+    'Milfy_Hair':     ((0.929, 0.882, 0.855), (0.818, 0.760, 0.727)),
+    'Milfy_Bear':     ((0.965, 0.953, 0.937), (0.867, 0.847, 0.827)),
+    # 內耳。參考圖上內耳 (227,209,206) 對髮色 (240,227,225) 的比值，套到本
+    # 模型上色後髮絲貼圖最亮處 (233,228,223) 算出來的，不是目測挑的粉色。
+    # 皇冠齒縫裡露出來的內側面。同樣由參考圖的比值來：暗面 (174,147,135) 對
+    # 亮面 (234,208,181)，把這個比值乘上 Milfy_Gold 自己的顏色。
+    'Milfy_GoldInner': ((0.645, 0.533, 0.451), (0.548, 0.446, 0.372)),
+    # OK 繃與橫槓髮夾。取樣要取本模型這個配色的那張參考圖：
+    # official/front-back-with-cardigan.jpg 上 OK 繃是 (204,225,226) 的淡薄荷、
+    # 橫槓是接近炭黑的 (95,93,98)。ingame/01 是冰白配色的另一個版本，那張上面
+    # OK 繃是淡藍、橫槓是藍灰——照那張取樣會把整個頭飾的色調帶到另一個配色去，
+    # 這正是上一輪犯的錯。先前 OK 繃借用 Milfy_Mint (132,200,198) 則是太濃。
+    'Milfy_Plaster':  ((0.800, 0.882, 0.886), (0.686, 0.780, 0.788)),
+    'Milfy_Ink':      ((0.373, 0.365, 0.384), (0.286, 0.278, 0.298)),
+}
+
+
+def add_material(doc, name, base, shade, texture=None):
+    """One MToon material, in both the glTF and the VRM tables.
+
+    `texture` is a glTF texture index, used by the imported outfit: its maps are
+    greyscale pattern and the colour arrives as the factor multiplying them, so
+    the same named-material colour policy covers textured pieces too.
+    """
+    doc['materials'].append({
+        'name': name,
+        'pbrMetallicRoughness': {
+            'baseColorFactor': [*base, 1.0],
+            'metallicFactor': 0, 'roughnessFactor': 0.9,
+            **({'baseColorTexture': {'index': texture}} if texture is not None else {}),
+        },
+        'emissiveFactor': [0, 0, 0],
+        'doubleSided': True,
+        'alphaMode': 'OPAQUE',
+        'extensions': {'KHR_materials_unlit': {}},
+    })
+    doc['extensions']['VRM']['materialProperties'].append({
+        'name': name,
+        'renderQueue': 2000,
+        'shader': 'VRM/MToon',
+        'floatProperties': {
+            '_Cutoff': 0.5, '_BumpScale': 1, '_ReceiveShadowRate': 1,
+            '_ShadingGradeRate': 1, '_ShadeShift': -1, '_ShadeToony': 1,
+            '_LightColorAttenuation': 0, '_IndirectLightIntensity': 0.1,
+            '_OutlineWidth': 0.08, '_OutlineScaledMaxDistance': 1,
+            '_OutlineLightingMix': 1, '_DebugMode': 0, '_BlendMode': 0,
+            '_OutlineWidthMode': 1, '_OutlineColorMode': 1, '_CullMode': 0,
+            '_OutlineCullMode': 1, '_SrcBlend': 1, '_DstBlend': 0, '_ZWrite': 1,
+        },
+        'textureProperties': ({'_MainTex': texture, '_ShadeTexture': texture}
+                              if texture is not None else {}),
+        'vectorProperties': {
+            '_Color': [*base, 1.0], '_ShadeColor': [*shade, 1.0],
+            '_MainTex': [0, 0, 1, 1], '_ShadeTexture': [0, 0, 1, 1],
+            '_OutlineColor': [0.2, 0.18, 0.18, 1],
+        },
+        'keywordMap': {'MTOON_OUTLINE_COLOR_MIXED': True},
+        'tagMap': {'RenderType': 'Opaque'},
+    })
+    return len(doc['materials']) - 1
+
+
+def bowl_texture(doc, views, name, size=128):
+    """The inner ear's own shading, baked: a rim shadow and a soft edge.
+
+    The first version cropped the hair map for its strands. It gave the bowl
+    pixels that move, but moving in the wrong way -- vertical strands printed
+    flat across a 25mm dish, when what makes a dish read as a dish is the
+    crescent of shadow the rim casts across its upper half. That crescent is
+    what the reference has and what a flat renderer will never derive on its
+    own, so it is painted here.
+
+    Returns (texture index, mean brightness as a fraction of white) so the
+    caller can divide its target colour by the mean and have the piece render
+    at the colour it asked for.
+    """
+    y, x = np.mgrid[0:size, 0:size] / (size - 1.0)
+    dx, dy = (x - 0.5) * 2.0, (y - 0.5) * 2.0
+    r = np.hypot(dx, dy)
+    # uv_bowl puts the bowl's top at row 0, so the rim shadow lives there.
+    rim = np.clip((0.42 - y) / 0.42, 0.0, 1.0) ** 1.4
+    edge = np.clip((r - 0.55) / 0.45, 0.0, 1.0) ** 1.6
+    strand = 0.030 * np.sin(x * np.pi * 7.0) * np.clip(1.0 - r, 0.0, 1.0)
+    a = np.clip(1.0 - 0.46 * rim - 0.24 * edge + strand, 0.0, 1.0)
+    # 深度先畫足，再整張縮放到 BOWL_MEAN，不是反過來。第一版把深度直接寫死在
+    # 係數裡：加深一分，均值就掉一分，呼叫端拿 EAR_INNER 去除均值就會超過 1、
+    # 被 glTF 夾掉，於是能畫多深由「不許超過 1」決定，而不是由參考圖的調變量
+    # 決定。縮放之後這兩件事分開了——均值固定在這裡，深淺由上面的係數自己說了
+    # 算，代價只是最亮的一小塊會頂到白。
+    # 用二分找縮放倍率，不是直接除以均值再夾。夾在 1.0 這一步本身會把均值拉
+    # 回來，所以「除以均值」得到的成品均值一定小於目標，呼叫端除下去就超過 1
+    # ——第一次改深就是這樣讓建置在守衛那裡停掉的。夾完之後的均值對倍率是單
+    # 調的，二分四十次即可。
+    # 圓盤半徑 0.9 不是 1.0：uv_bowl 把碗鋪成 0.5 ± 0.45 * d/radius，模型讀到的
+    # 最外一圈就落在 r = 0.9。用 r <= 1.0 取平均會把外面那一圈從來沒被讀到的暗
+    # 邊算進來，均值偏低、呼叫端除出來的係數偏高，成品比 EAR_INNER 指定的顏色
+    # 亮 4.3%——docstring 說「取樣區才算」，但當時算的不是取樣區。
+    seen = r <= 0.9
+    lo_k, hi_k = 0.0, 10.0
+    for _ in range(40):
+        k = (lo_k + hi_k) / 2.0
+        if np.clip(a * k, 0.0, 1.0)[seen].mean() < BOWL_MEAN:
+            lo_k = k
+        else:
+            hi_k = k
+    a = np.clip(a * k, 0.0, 1.0) * 255.0
+    quantised = a.astype(np.uint8).astype(np.float64)
+    # The mean is taken over the disc the bowl actually samples, not the whole
+    # square, and that disc is r <= 0.9 because that is what uv_bowl reaches.
+    # The corners are painted but never read, and letting them into the mean
+    # makes the caller divide by a darkness nothing on the model receives.
+    # `seen` is set above, where the same disc decides the scale.
+    im = Image.fromarray(a.astype(np.uint8), 'L').convert('RGBA')
+    buf = io.BytesIO()
+    im.save(buf, format='WEBP', quality=95, method=4)
+    doc['images'].append({'name': name, 'mimeType': 'image/webp',
+                          'bufferView': glb.add_view(doc, views, buf.getvalue())})
+    doc.setdefault('samplers', []).append({'wrapS': 33071, 'wrapT': 33071})
+    doc['textures'].append({'sampler': len(doc['samplers']) - 1,
+                            'source': len(doc['images']) - 1})
+    # 回傳量化後的均值，不是二分求出來的那個目標值。著色器讀到的是 uint8 的
+    # 那份，兩者差 0.002；差在安全的方向（回傳偏小 → 係數偏大），但呼叫端拿
+    # 它去算「除下去會不會超過 1」，那個判斷該用著色器真正會讀到的數。
+    return len(doc['textures']) - 1, float(quantised[seen].mean() / 255.0)
+
+
+def ramp_texture(doc, views, name, lo, hi, height=64, gamma=1.0):
+    """A one-dimensional dark-to-light ramp, as its own texture.
+
+    Same reason as bowl_texture: the colour stays in the factor so the manifest
+    keeps telling the truth about what a swap tool can set, and the texture
+    carries nothing but shading.
+
+    `gamma` below 1 bends the ramp towards its bright end. That is not a
+    cosmetic knob: the factor is the palette colour divided by this image's
+    mean, and glTF clamps a factor above 1, so widening the ramp by lowering
+    `lo` alone drags the mean under the palette's brightest channel and the
+    colour silently goes dark. Bending the curve buys the same tonal range back
+    at an unchanged mean -- 0.60..1.0 at gamma 0.45 has the same mean as
+    0.78..1.0 straight, and nearly twice the swing between a lit facet and a
+    turned-away one.
+    """
+    v = (lo + (hi - lo) * np.linspace(0.0, 1.0, height) ** gamma)[:, None]
+    a = np.repeat(np.clip(v * 255.0, 0, 255), 8, axis=1)
+    im = Image.fromarray(a.astype(np.uint8), 'L').convert('RGBA')
+    buf = io.BytesIO()
+    im.save(buf, format='WEBP', quality=95, method=4)
+    doc['images'].append({'name': name, 'mimeType': 'image/webp',
+                          'bufferView': glb.add_view(doc, views, buf.getvalue())})
+    doc.setdefault('samplers', []).append({'wrapS': 33071, 'wrapT': 33071})
+    doc['textures'].append({'sampler': len(doc['samplers']) - 1,
+                            'source': len(doc['images']) - 1})
+    return len(doc['textures']) - 1, float(a.mean() / 255.0)
+
+
+def sink(pieces, surface, embed=0.006, radius=0.020, limit=0.032):
+    """Drop an accessory onto the hair it rests on, as one rigid move.
+
+    Placed at a fixed height a crown floats. The skull is not flat, so its rim
+    stands clear at some azimuths, and what shows in the gap is the open
+    underside of the band, which is the one thing that says "not attached" at a
+    glance. The gap that first motivated this ran 2.7mm to 27.9mm with a median
+    of 12.9mm; the build prints the drop it actually measures on each run, so
+    read that line rather than this sentence for the current number.
+
+    The whole piece translates; the first version moved the low vertices only
+    and that stretched the band 29mm taller, turning a crown into a bucket. The
+    fall is the median gap over the lowest ring, so one rim point sitting over a
+    parting cannot drive it, and `limit` caps it so a bad surface read cannot
+    bury the spikes. Every piece in `pieces` gets the same translation, which is
+    what keeps the two shells of the band aligned.
+    """
+    pos = np.concatenate([p['pos'] for p in pieces])
+    rim = pos[pos[:, 1] < pos[:, 1].min() + 0.008]
+    gaps = []
+    for v in rim:
+        near = surface[(np.abs(surface[:, 0] - v[0]) < radius)
+                       & (np.abs(surface[:, 2] - v[2]) < radius)]
+        if len(near) >= 4:
+            gaps.append(v[1] - (float(np.percentile(near[:, 1], 90)) - embed))
+    if not gaps:
+        return pieces, 0.0
+    fall = float(np.clip(np.median(gaps), 0.0, limit))
+    return ([dict(p, pos=p['pos'] - np.array([0.0, fall, 0.0])) for p in pieces],
+            fall)
+
+
+def landmarks(pool):
+    """Body heights this outfit is measured against, found from the mesh."""
+    p = pool['pos']
+    torso = [(y, np.percentile(np.hypot(p[m][:, 0], p[m][:, 2]), 85))
+             for y in np.arange(0.88, 1.16, 0.01)
+             if (m := np.abs(p[:, 1] - y) < 0.012).sum() > 12]
+    waist_y = min(torso, key=lambda t: t[1])[0]
+    return {
+        'waist': waist_y,
+        'waist_r': dict(torso)[waist_y],
+        'foot': p[:, 1].min(),
+    }
+
+
+def build(src, dst, manifest_path, out_manifest):
+    doc, binary = glb.load(src)
+    views = glb.views_of(doc, binary)
+    manifest = json.load(open(manifest_path))
+
+    # 背面的長髮先分成兩束再做其他事。這一步同時動幾何、骨鏈與權重，
+    # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本。
+    tails = twintail.apply(doc, views, manifest['parts'])
+    for name, r in tails.items():
+        print(f'   {name} 位移最大 {r["moved_mm"]:.1f}mm，新骨鏈 {len(r["chain"])} 節')
+
+    mats = {n: add_material(doc, n, b, s) for n, (b, s) in PALETTE.items()}
+    pool = garment.body_pool(doc, views, manifest, 'Body_Skin')
+    lm = landmarks(pool)
+    p, added = pool['pos'], {}
+
+    skin = doc['skins'][0]
+    bones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+
+    hip, knee, ankle = 0.843, 0.501, 0.118
+    arm_r = 0.54                                   # hand x at rest, both sides
+
+    mellow_files = [os.path.join(os.path.dirname(dst), f)
+                    for f in (MELLOW, MELLOW_OUTER)]
+    mellow_files = [f for f in mellow_files if os.path.exists(f)]
+    mellow = bool(mellow_files)
+
+    def put(piece, material, name, mesh='Body.baked', tag=None):
+        if mellow and name in HAND_GARMENTS:
+            return
+        garment.attach(doc, views, mesh, piece,
+                       material if isinstance(material, int) else mats[material],
+                       name)
+        added[tag or name] = (len(piece['tris']), mesh)
+
+    # --- top: a bandeau, not a vest. Its upper edge stops at the frill's own
+    #     height, which is what makes the frill read as the top of a garment
+    #     rather than a white plank laid across the chest. Running the cloth up
+    #     to the collarbone instead left the frill trapped between two white
+    #     surfaces with nothing to be the edge of. ---
+    torso = (p[:, 1] < 1.181) & (p[:, 1] > lm['waist'] - 0.055) & (np.abs(p[:, 0]) < 0.105)
+    # Two straps over the shoulders, part of the top rather than a separate
+    # accessory: the reference shows them crossing the bare shoulder ABOVE the
+    # cardigan, which is the detail that makes the cardigan read as worn off the
+    # shoulder instead of merely starting low. They are shelled off the body in
+    # the same pass as the bodice so they wrap the trapezius instead of floating
+    # over it, and they are 36mm wide, which is the width the sheet shows
+    # against a 210mm shoulder span.
+    strap = ((p[:, 1] > 1.168) & (p[:, 1] < 1.252)
+             & (np.abs(p[:, 0]) > 0.052) & (np.abs(p[:, 0]) < 0.088))
+    put(garment.shell(pool, torso | strap, 0.012), 'Milfy_White', 'Outfit_Top')
+
+    # --- cardigan: off the shoulder. Three things make that read, and all three
+    #     are subtractions: it starts below the shoulder line, it leaves the
+    #     front centre open, and the sleeve begins out on the upper arm rather
+    #     than at the joint. The offset is the thickness of the knit: too thin
+    #     and a turning shoulder comes up through the sleeve's top edge, too
+    #     thick and the sleeve is a black rod round a 30mm arm. ---
+    shoulder_top = 1.215
+    wrist = arm_r * 0.84                           # stop before the hand
+    sleeve = ((np.abs(p[:, 0]) > 0.105) & (np.abs(p[:, 0]) < wrist)
+              & (p[:, 1] > 1.155) & (p[:, 1] < shoulder_top + 0.02))
+    torso_back = ((p[:, 1] < shoulder_top - 0.045) & (p[:, 1] > lm['waist'] - 0.105)
+                  & (np.abs(p[:, 0]) < 0.155)
+                  & ~((p[:, 2] < -0.015) & (np.abs(p[:, 0]) < 0.052)))
+    cardigan = garment.shell(pool, sleeve | torso_back, 0.021)
+    put(cardigan, 'Milfy_Cardigan', 'Outfit_Cardigan')
+
+    # 前襟上的三顆鈕扣，位置從外套自己的頂點讀出來，不是猜的。第一次用固定
+    # 座標 z=-0.108，結果整排被抹胸擋住：抹胸的前表面在 z=-0.123，比外套還
+    # 前面，鈕扣就埋在兩層布中間了。
+    cp = cardigan['pos']
+    buttons = []
+    near_chest = int(np.argmin(np.abs(p[:, 1] - 1.02)))
+    for y in (0.945, 1.005, 1.065):
+        band = cp[(np.abs(cp[:, 1] - y) < 0.022) & (cp[:, 0] < -0.020)
+                  & (cp[:, 0] > -0.080) & (cp[:, 2] < 0)]
+        if not len(band):
+            continue
+        edge = band[int(np.argmin(band[:, 2]))]
+        buttons.append(garment.sphere(
+            [float(edge[0]), y, float(edge[2]) - 0.005], 0.0070,
+            pool['joints'][near_chest], pool['weights'][near_chest],
+            lat=5, lon=8, squash=(1.0, 1.0, 0.55)))
+    if buttons:
+        put(garment.bind(pool, garment.merge(buttons)), 'Milfy_Bear', 'Acc_Buttons')
+
+    # --- neck frill and its ribbon, and the sash bow at the waist. These two
+    #     carry most of the character's read at a glance. ---
+    neck_y = 1.243
+    near_neck = int(np.argmin(np.abs(p[:, 1] - neck_y)))
+    put(garment.bind(pool, garment.collar(pool, neck_y - 0.014, 0.026, 0.62)),
+        'Milfy_White', 'Acc_Collar')
+    # 頸部黑緞帶改由 Blender 生成，見 blender/neckribbon.py。參數化版本把蝴蝶結
+    # 放在 y=1.19 的胸口，參考圖是繫在領口白色蕾絲上，兩者讀起來是不同的東西。
+
+    # 腰間的薄荷緞帶在 blender/bow.py：兩片錐形的環、一個結、兩條放樣的帶尾。
+    # 這裡走過兩次錯路，成因相同——這個算圖器不打光，讀得到的只有輪廓。參數化
+    # 版本是兩顆壓扁的球；改成沿封閉路徑放樣的緞帶環之後，帶子寬過環圍出來的
+    # 洞，洞閉起來又變回兩顆球。錐形是有腰身的，掐緊的那一端在輪廓上就看得見。
+    bl_dir = os.path.join(os.path.dirname(dst), 'blender')
+    bow_pos = []
+    for stem, material, part_name, split in BLENDER_PARTS:
+        path = os.path.join(bl_dir, f'{stem}.glb')
+        piece = weld.part(path, skip=tuple(split))
+        if piece is None:
+            continue
+        put(garment.bind(pool, piece), material, part_name)
+        if part_name == 'Acc_Ribbon_Waist':
+            bow_pos.append(piece['pos'])
+        for sub_name, (sub_material, tag) in split.items():
+            sub = weld.part(path, only=(sub_name,))
+            put(garment.bind(pool, sub), sub_material, part_name, tag=tag)
+            if part_name == 'Acc_Ribbon_Waist':
+                bow_pos.append(sub['pos'])
+
+    # --- bottom: flared skirt off the waist, hem between hip and knee, and the
+    #     ruffle that hangs off it. The reference's hem is gathered cloth, and a
+    #     plain cone reads as a costume prop next to it. ---
+    env = envelope.load(os.path.join(os.path.dirname(dst), 'leg-envelope.json'))
+    waist_y, hem_y = lm['waist'] - 0.02, hip - (hip - knee) * 0.34
+    hem = garment.skirt(pool, waist_y, hem_y, flare=1.25, clear=(0.018, 0.006),
+                        envelope=lambda y: envelope.radii_at(env, y))
+
+    def drape(piece):
+        """Weight a skirt so it follows the body at the top and the legs below.
+
+        Three failures got it here. Bound rigidly to the waist, the thigh walked
+        straight through the front when the hip bent. Weighting it to the two
+        upper legs fixed most of that and left the waistband pierced by the
+        belly, because the waistband was on `hips` while the abdomen above it is
+        driven by the spine: bend at the waist and the stomach swings forward
+        while the band stays behind. Widening the band twice did nothing, since
+        the gap was never the problem.
+
+        So the top of the skirt simply borrows the body's own weights from the
+        skin beneath it, whatever they happen to be, and the leg weights fade in
+        going down. The known cost stays: a wide stride stretches the cloth
+        between the legs, because there is no bone in the middle to hold it up.
+        """
+        js = doc['skins'][0]['joints']
+        left_j = js.index(bones['leftUpperLeg'])
+        right_j = js.index(bones['rightUpperLeg'])
+        q = piece['pos']
+        near = ((q[:, None, :] - pool['pos'][None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
+        base_j, base_w = pool['joints'][near], pool['weights'][near]
+
+        drop = np.clip((waist_y - q[:, 1]) / max(waist_y - hem_y, 1e-6), 0.0, 1.0)
+        follow = 0.75 * drop ** 1.5
+        sx = np.clip(q[:, 0] / 0.12, -1.0, 1.0)
+        left = (1.0 - sx) / 2.0
+
+        joints = np.zeros((len(q), 4), dtype=np.uint16)
+        weights = np.zeros((len(q), 4), dtype=np.float32)
+        for i in range(len(q)):
+            acc = {}
+            for c in range(base_j.shape[1]):
+                w = float(base_w[i, c]) * (1.0 - follow[i])
+                if w > 0:
+                    acc[int(base_j[i, c])] = acc.get(int(base_j[i, c]), 0.0) + w
+            for j, w in ((left_j, follow[i] * left[i]),
+                         (right_j, follow[i] * (1.0 - left[i]))):
+                if w > 0:
+                    acc[j] = acc.get(j, 0.0) + w
+            top = sorted(acc.items(), key=lambda kv: -kv[1])[:4]
+            total = sum(w for _, w in top) or 1.0
+            for c, (j, w) in enumerate(top):
+                joints[i, c] = j
+                weights[i, c] = w / total
+        piece['joints'], piece['weights'] = joints, weights
+        return piece
+
+    put(drape(hem), 'Milfy_White', 'Outfit_Bottom')
+    put(drape(garment.frill(hem['hem'], depth=0.034, waves=15)),
+        'Milfy_White', 'Acc_Frill_Hem')
+
+    # --- the camisole's own frill, across the bust above the cardigan line ---
+    put(garment.bind(pool,
+                     garment.frill(garment.ring_at(pool, 1.176, max_radius=0.135,
+                                                   clear=0.017),
+                                   depth=0.024, waves=11, amplitude=0.006,
+                                   flare=0.10)),
+        'Milfy_White', 'Acc_Frill_Bust')
+
+    # --- socks. The goal names an Outfit_Socks slot with the cuff above the
+    #     knee, and the reference sheet disagrees with it: a vertical scan down
+    #     the front figure's leg from the shorts hem at y=590 to the slipper at
+    #     y=900 is one continuous skin tone with no cuff edge anywhere. Both are
+    #     served by building the slot and letting it be deleted -- that is what a
+    #     part template is for -- so the sock is here, sized off the leg, and
+    #     listed as deletable like every other garment.
+    #
+    #     Sized from the leg's own rings rather than a cylinder: a VRoid calf is
+    #     nowhere near round, and an offset shell follows the ankle taper that a
+    #     tube cannot. The cuff sits 40mm above the knee joint, which is what
+    #     "over the knee" means on a leg this length.
+    cuff_y = knee + 0.040
+    socks = ((p[:, 1] < cuff_y) & (p[:, 1] > ankle - 0.010))
+    put(garment.shell(pool, socks, 0.006), 'Milfy_Sock', 'Outfit_Socks')
+
+    # --- slippers: a rounded shell over each foot, plus two ears ---
+    feet = p[:, 1] < ankle + 0.035
+    shoes = [garment.shell(pool, feet, 0.014)]
+    # Each ear is placed on its OWN slipper and weighted to that foot. Fixed
+    # coordinates put all four at one height beside the ankles, 19mm clear of the
+    # shoe, and bound every one of them to a single vertex: they rendered as four
+    # loose balls floating next to the left leg and followed it around.
+    for sx in (-1, 1):
+        idx = np.where(feet & (np.sign(p[:, 0]) == sx))[0]
+        top = float(p[idx][:, 1].max())
+        near = idx[int(np.argmin(np.abs(p[idx][:, 1] - top)))]
+        cx = float(np.median(p[idx][:, 0]))
+        cz = float(np.median(p[idx][:, 2]))
+        for ex in (-0.016, 0.016):
+            shoes.append(garment.sphere(
+                [cx + ex, top + 0.009, cz - 0.012], 0.013,
+                pool['joints'][near], pool['weights'][near], lat=6, lon=8))
+    put(garment.merge(shoes), 'Milfy_Bear', 'Outfit_Shoes')
+
+    # 拖鞋的熊臉。兩顆眼睛與一個鼻子，貼在鞋頭外表面上。
+    face_bits = []
+    for sx in (-1, 1):
+        cx = sx * 0.045
+        for ex in (-0.017, 0.017):
+            face_bits.append(garment.sphere(
+                [cx + ex, 0.066, -0.128], 0.0055,
+                pool['joints'][np.argmin(np.abs(p[:, 1] - ankle))],
+                pool['weights'][np.argmin(np.abs(p[:, 1] - ankle))], lat=5, lon=8))
+        face_bits.append(garment.sphere(
+            [cx, 0.052, -0.132], 0.0065,
+            pool['joints'][np.argmin(np.abs(p[:, 1] - ankle))],
+            pool['weights'][np.argmin(np.abs(p[:, 1] - ankle))],
+            lat=5, lon=8, squash=(1.4, 0.9, 0.8)))
+    put(garment.bind(pool, garment.merge(face_bits)), 'Milfy_Ribbon', 'Acc_Bear_Face')
+
+    # --- bandages. Three of them, asymmetric, as the reference wears them: one
+    #     high on the left thigh, one up the right shin, one at the left ankle.
+    #     Mirroring any of them would be wrong. ---
+    def wrap(name, y, side, half_height, thickness=0.012):
+        """A band round one limb, sized by everything it has to cover.
+
+        Both earlier versions sized it from a single ring of the mesh, and both
+        failed the same way. A VRoid shin carries its rings 40mm apart and some
+        of them are five vertices of a UV island: the calf wrap came out 37mm
+        too small and vanished inside the leg from every angle but the front.
+        Measuring across the tube's whole height cannot miss the leg, and taking
+        the widest radius in each half keeps the taper without letting either end
+        end up inside.
+
+        The offset is 12mm, not the 5mm that looks right on a bare leg: the sock
+        is a 6mm shell over the same limb, and at 5mm the calf and ankle wraps
+        ended up inside it -- present in the file, invisible in every view.
+
+        The centre is one median for the whole span, not one per end. Measuring
+        each end separately sounds better and is not: the nearest rings to the
+        two ends can sit 40mm apart with different centres, and the wrap came out
+        as a wedge leaning off the shin.
+        """
+        on = np.sign(p[:, 0]) == side
+        span = on & (np.abs(p[:, 1] - y) < half_height + 0.012)
+        leg = p[span]
+        cx, cz = float(np.median(leg[:, 0])), float(np.median(leg[:, 2]))
+        radius = np.hypot(leg[:, 0] - cx, leg[:, 2] - cz)
+        lower = leg[:, 1] <= y
+        r0 = float(radius[lower].max()) if lower.any() else float(radius.max())
+        r1 = float(radius[~lower].max()) if (~lower).any() else float(radius.max())
+
+        near = int(np.argmin(np.abs(p[:, 1] - y) + np.abs(p[:, 0] - cx) * 3))
+        put(garment.bind(pool,
+                         garment.tube([cx, y - half_height, cz],
+                                      [cx, y + half_height, cz],
+                                      r0 + thickness, r1 + thickness,
+                                      pool['joints'][near], pool['weights'][near],
+                                      segments=24, rings=3)),
+            'Milfy_Bandage', name)
+
+    wrap('Acc_Bandage_Thigh', 0.652, -1, 0.032)
+    wrap('Acc_Bandage_Calf', ankle + (knee - ankle) * 0.38, 1, 0.046)
+    wrap('Acc_Bandage_Ankle', ankle + 0.030, -1, 0.018)
+
+    # --- the imported outfit. Everything it needs was measured off the two
+    #     files; see outfit.py for why it is a global fit plus a per-bone
+    #     correction rather than a single transform. ---
+    if mellow:
+        pushed = {}
+        belt_pos = []
+        for path in mellow_files:
+            bundle = outfit.load(path, doc, views, add_material, MELLOW_TINT,
+                                 MELLOW_GAIN)
+            print(f'   服裝擬合 {os.path.basename(path)}：縮放 x{bundle["scale"]:.3f}，'
+                  f'對位骨最大殘差 {bundle["residual_mm"]:.2f}mm')
+            for item in outfit.pieces(bundle, doc, views):
+                spec = MELLOW_PARTS.get(item['name'])
+                if spec is None:
+                    continue
+                name, clear = spec
+                if name in MELLOW_SHIFT:
+                    item['piece']['pos'][:, 1] += MELLOW_SHIFT[name]
+                moved = outfit.hug(item['piece'], pool['pos'], pool['nrm'], clear)
+                if name in MELLOW_LOOSEN:
+                    outfit.loosen(item['piece'], MELLOW_LOOSEN[name])
+                pushed[name] = max(pushed.get(name, 0.0), moved)
+                # Re-bound to this body's own weights, and the skirt draped on
+                # top of that, exactly as the hand-built one was. The vendor's
+                # rig is discarded here on purpose: it is correct for Milfy and
+                # wrong for this body, and the failure it causes is invisible
+                # at rest.
+                bound = garment.bind(pool, item['piece'])
+                if name == 'Acc_Belt_Waist':
+                    belt_pos.append(bound['pos'])
+                if name == 'Outfit_Bottom':
+                    bound = drape(bound)
+                garment.attach(doc, views, 'Body.baked', bound,
+                               bundle['materials'][item['material']], name)
+                added[f'{name}#{item["prim"]}'] = (len(bound['tris']), 'Body.baked')
+        print('   貼身外推最大位移：' + '，'.join(
+            f'{k} {v * 1000:.0f}mm' for k, v in sorted(pushed.items())))
+        # 蝴蝶結是唯一一個「戴在別的衣服上」的部件，它的 z 寫在 blender/bow.py
+        # 的 OUTLINE 裡，而 OUTLINE 是量出來的常數。衣服一改，那個常數就過期，
+        # 而四個約定機位都看不出來——實際發生過：整組蝴蝶結離腰封 27mm，正面
+        # 看毫無異狀，側面才看得到。所以這裡拿完成後的衣面重量一次。
+        if bow_pos and belt_pos:
+            bow = np.concatenate(bow_pos)
+            belt = np.concatenate(belt_pos)
+            # 只量腰封高度那一段，不是整組。整組取最小值會被垂到裙擺的帶尾
+            # 掩蓋：帶尾總有一點貼著裙子，於是「環與結浮在腰封前方」這個真正
+            # 的缺陷永遠測不到。第 8 項要的是「繫在腰封上」，量的就該是繫的
+            # 那一段。
+            lo, hi = belt[:, 1].min(), belt[:, 1].max()
+            tied = bow[(bow[:, 1] >= lo) & (bow[:, 1] <= hi)]
+            near = cKDTree(belt).query(tied, k=1)[0].min() * 1000.0
+            print(f'   蝴蝶結對腰封最近距離 {near:.0f}mm')
+            if near > BOW_GAP_MAX:
+                raise SystemExit(
+                    f'蝴蝶結離腰封 {near:.0f}mm，超過 {BOW_GAP_MAX:.0f}mm：'
+                    'blender/bow.py 的 OUTLINE 與現在的衣服對不上了')
+
+    # --- head: bear ears, buns, crown, ahoge, clips. Bound rigidly to the
+    #     head joint, which is what an accessory sitting on the skull does. ---
+    hj = np.array([skin['joints'].index(bones['head']), 0, 0, 0], dtype=np.uint16)
+    hw = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32)
+
+    hair = garment.body_pool(doc, views, manifest, 'Hair_Back')
+    crown_y = float(np.percentile(hair['pos'][:, 1], 99))
+    skull_r = 0.085
+
+    def rigid(piece, uv=None):
+        piece = dict(piece)
+        n = len(piece['pos'])
+        piece['joints'] = np.tile(hj, (n, 1))
+        piece['weights'] = np.tile(hw, (n, 1))
+        if uv is not None:
+            piece['uv'] = uv
+        return piece
+
+    # UV for the pieces whose shading comes from a texture rather than a flat
+    # factor. The VRoid hair map is a vertical ramp: v around 0.05 is the warm
+    # sand of a root, v around 0.74 is its palest. So an ear ring runs sand at
+    # the crease against the inner ear and pale at its outer rim, a bun darkens
+    # towards its top, and a strand runs root to tip. u is given some lateral
+    # travel so the painted strands show as streaks instead of one flat column
+    # of colour. The inner ear and the crown have their own generated textures,
+    # so uv_bowl and uv_round map into those instead.
+    def uv_disc(pos):
+        c = pos.mean(axis=0)
+        d = pos - c
+        radius = max(float(np.hypot(d[:, 0], d[:, 1]).max()), 1e-6)
+        r = np.hypot(d[:, 0], d[:, 1]) / radius
+        ang = np.arctan2(d[:, 1], d[:, 0])
+        return np.stack([0.12 + 0.44 * (0.5 + 0.5 * np.cos(ang)),
+                         0.14 + 0.58 * r ** 2], axis=1)
+
+    def uv_facet(piece):
+        """每個面自己的法線決定它在金色斜坡上的位置。
+
+        先前這裡是依方位角的斜坡（uv_round）：位置連續，所以一頂外層 60 面、
+        內層 40 面的冠算出來是一片平滑漸層，齒和環帶之間沒有交界，正面看就是一塊桃色
+        板子。皇冠之所以讀得出來是冠，靠的是相鄰兩個面亮度突然差一階——參考
+        圖裡每一支齒的兩個側面亮暗分明，那是折角不是曲面。
+
+        法線能這樣用是因為皇冠在 Blender 裡是平面著色的：每個面自己一組頂
+        點，匯出時就分開了（實測 head.glb 的 Crown 是 240 頂點 120 三角形，
+        每個頂點只被兩個三角形用，同一個三角形內的法線離散為 0），所以一個
+        頂點的法線就是它所屬那個面的法線，指定到頂點的 UV 等於指定到面。耳圈
+        與髮髻是 shade_smooth（同一份實測，一個頂點最多被 26 個三角形共用），
+        同樣的算法在那裡會被插值抹平，所以它們留在各自的鋪法。
+        """
+        n = piece['nrm']
+        lit = n @ (np.array(CROWN_LIGHT) / np.linalg.norm(CROWN_LIGHT))
+        # 攤到這一層自己的最暗與最亮之間，不是直接用 0.5+0.5*lit。斜坡的均值
+        # 決定了係數（見 ramp_texture），所以斜坡只能有那麼寬；把只用到中間
+        # 六成的 v 攤開，等於在同樣的均值下把可用的對比翻倍。內外兩層各自攤
+        # 各自的範圍，兩層的最暗面顏色不同，本來就該分開對映。
+        span = max(float(lit.max() - lit.min()), 1e-6)
+        return np.stack([np.full(len(n), 0.5),
+                         np.clip((lit - lit.min()) / span, 0.02, 0.98)], axis=1)
+
+    def uv_bowl(pos):
+        c = pos.mean(axis=0)
+        d = pos - c
+        radius = max(float(np.hypot(d[:, 0], d[:, 1]).max()), 1e-6)
+        # 平面投影，不是半徑投影。照半徑鋪會讓髮絲繞成同心圓弧，一塊 25mm 的
+        # 碗上讀起來是指紋；平面鋪讓髮絲跟頭髮同一個方向。
+        return np.stack([np.clip(0.5 + 0.45 * d[:, 0] / radius, 0.02, 0.98),
+                         np.clip(0.5 - 0.45 * d[:, 1] / radius, 0.02, 0.98)], axis=1)
+
+    def uv_ball(pos):
+        c = pos.mean(axis=0)
+        d = pos - c
+        radius = max(float(np.abs(d[:, 1]).max()), 1e-6)
+        ang = np.arctan2(d[:, 2], d[:, 0])
+        return np.stack([0.12 + 0.44 * (0.5 + 0.5 * np.cos(2 * ang)),
+                         0.20 + 0.55 * (0.5 - 0.5 * d[:, 1] / radius)], axis=1)
+
+    def uv_strand(pos):
+        t = pos[:, 0]
+        t = (t - t.min()) / max(float(t.max() - t.min()), 1e-6)
+        return np.stack([np.full(len(pos), 0.30), 0.12 + 0.73 * t], axis=1)
+
+    head_path = os.path.join(os.path.dirname(dst), HEAD)
+    head_pieces = weld.pieces(head_path) if os.path.exists(head_path) else {}
+    hair_mat = next(i for i, m in enumerate(doc['materials'])
+                    if m['name'] == HEAD_HAIR)
+    bowl, bowl_mean = bowl_texture(doc, views, 'Milfy_EarInner_shade')
+    mats['Milfy_EarInner'] = add_material(
+        doc, 'Milfy_EarInner', tuple(c / bowl_mean for c in EAR_INNER),
+        tuple(c / bowl_mean for c in EAR_INNER_SHADE), texture=bowl)
+    if max(doc['materials'][mats['Milfy_EarInner']]
+           ['pbrMetallicRoughness']['baseColorFactor'][:3]) > 1.0:
+        raise SystemExit('內耳除以貼圖均值後超過 1.0，係數會被 glTF 截掉')
+
+    # One part per side, not one merged Hair_Bun_Ears. The template's whole
+    # claim is that a tool can address a piece by name, and a single part
+    # covering both sides cannot answer "remove the left bun".
+    if head_pieces:
+        for label in ('L', 'R'):
+            ear = head_pieces[f'Ear_{label}']
+            put(rigid(ear, uv_disc(ear['pos'])), hair_mat, f'Hair_Ear_{label}',
+                mesh='Hair001.baked')
+            inner = head_pieces[f'EarInner_{label}']
+            put(rigid(inner, uv_bowl(inner['pos'])), 'Milfy_EarInner',
+                f'Hair_Ear_{label}',
+                mesh='Hair001.baked', tag=f'Hair_Ear_{label}#inner')
+            bun = head_pieces[f'Bun_{label}']
+            put(rigid(bun, uv_ball(bun['pos'])), hair_mat, f'Hair_Bun_{label}',
+                mesh='Hair001.baked')
+        ahoge = head_pieces['Ahoge']
+        put(rigid(ahoge, uv_strand(ahoge['pos'])), hair_mat, 'Hair_Ahoge',
+            mesh='Hair001.baked')
+        # 補在既有材質上，不是用同名再建一份。建第二份會讓出貨檔裡出現兩個
+        # Milfy_Gold，manifest 的 palette 以名字為鍵、後者蓋前者，宣告出去的
+        # 底色就變成沒有人挑過也沒被算圖用到的那一組；customise.tint 又會走訪
+        # 所有同名材質，一次改色寫進兩份，其中一份是死的。
+        gold, gold_mean = ramp_texture(doc, views, 'Milfy_Gold_ramp',
+                                      GOLD_RAMP[0], GOLD_RAMP[1],
+                                      gamma=GOLD_RAMP[2])
+        for name in ('Milfy_Gold', 'Milfy_GoldInner'):
+            mat = doc['materials'][mats[name]]
+            pbr = mat['pbrMetallicRoughness']
+            pbr['baseColorTexture'] = {'index': gold}
+            pbr['baseColorFactor'] = [c / gold_mean for c
+                                      in pbr['baseColorFactor'][:3]] + [1.0]
+            props = doc['extensions']['VRM']['materialProperties'][mats[name]]
+            props['textureProperties'] = {'_MainTex': gold, '_ShadeTexture': gold}
+            props['vectorProperties']['_Color'] = list(pbr['baseColorFactor'])
+        for name in ('Milfy_Gold', 'Milfy_GoldInner'):
+            # 兩個都要查。上面那個迴圈改的是兩個材質，守衛先前只看外層，把
+            # GoldInner 調亮到 0.87 以上照樣建置成功，glTF 靜默夾成 1.0。
+            if max(doc['materials'][mats[name]]
+                   ['pbrMetallicRoughness']['baseColorFactor'][:3]) > 1.0:
+                raise SystemExit(f'{name} 除以斜坡均值後超過 1.0，'
+                                 f'係數會被 glTF 截掉')
+        # 兩層用同一個髮面池沉下去。沉完才算 UV 只是順手，不是必要：uv_facet
+        # 只讀法線，而 sink 是剛體平移不動法線，先算後算等價。
+        skull = np.concatenate([
+            garment.body_pool(doc, views, manifest, n)['pos']
+            for n in ('Hair_Bangs', 'Hair_Side_L', 'Hair_Side_R', 'Hair_Back')])
+        shells, fell = sink([head_pieces['Crown'], head_pieces['CrownInner']],
+                            skull)
+        print(f'   皇冠整體下沉 {fell * 1000:.0f}mm 貼上髮面')
+        for piece, colour, tag in zip(shells, ('Milfy_Gold', 'Milfy_GoldInner'),
+                                      (None, 'Acc_Crown#inner')):
+            put(rigid(piece, uv_facet(piece)), colour, 'Acc_Crown',
+                mesh='Hair001.baked', tag=tag)
+    else:
+        # No Blender on this machine. These are the parametric shapes the
+        # measured ones replaced: a sphere with two smaller spheres stuck on
+        # top for each side, and a five-spike ring with no thickness. They read
+        # as coloured blocks next to the reference. They cover Hair_Bun_L/R and
+        # Acc_Crown only -- Hair_Ear_L/R and Hair_Ahoge have no parametric
+        # version and are simply absent on a machine without Blender, which is
+        # a degraded build and not an equivalent one.
+        for side, label in ((-1, 'L'), (1, 'R')):
+            c = [side * skull_r * 0.92, crown_y - 0.012, 0.012]
+            bun = [garment.sphere(c, 0.046, hj, hw, lat=10, lon=14,
+                                  squash=(1.0, 0.94, 0.98))]
+            for ear_x, ear_z in ((-0.026, -0.004), (0.026, -0.004)):
+                bun.append(garment.sphere(
+                    [c[0] + ear_x, c[1] + 0.036, c[2] + ear_z], 0.019, hj, hw,
+                    lat=6, lon=10, squash=(1.0, 1.0, 0.62)))
+            put(garment.merge(bun), 'Milfy_Hair', f'Hair_Bun_{label}',
+                mesh='Hair001.baked')
+        put(garment.crown([0.028, crown_y + 0.026, 0.004], 0.030, 0.036, 5, hj, hw),
+            'Milfy_Gold', 'Acc_Crown', mesh='Hair001.baked')
+
+    # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
+    # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有
+    # 分束與髮絲明暗，只是把烘在上面的髮夾貼片切成 Acc_HairClip_Base 丟掉
+    # （見 partition.hair_name 與 make.DROP）。
+
+    # Plaster clip: two crossed bars. Bear clip: a head and two round ears.
+    # z 由 -0.062 移到 -0.136：髮夾別在瀏海「上面」，不是夾在瀏海和額頭中間。
+    # 原本的深度會把三個髮飾整組藏到瀏海後面；-0.136 在殼狀瀏海與後來換回的
+    # 原生瀏海底下都成立，臉部特寫裡三個都露在外面。
+    #
+    # 左右：本模型 leftUpperArm 在 x=-0.081，臉朝 -z，所以正面視角裡 +x 是畫
+    # 面左側。參考的兩張插畫和 ingame/07 的實機正面都是「橫槓在畫面左、OK 繃
+    # 和小熊在畫面右」，換算成 +x 橫槓、-x 小熊。原本橫槓和小熊各自擺在相反
+    # 邊，三個髮飾裡只有 OK 繃是對的。
+    clip_z = -0.136
+    px, py = -0.016, crown_y - 0.086
+    arm, wide, deep = 0.015, 0.0056, 0.0026
+    # OK 繃是斜交叉的 X，兩條膠布直身圓頭，中間壓一塊較亮的紗布墊。角度取
+    # official/front-back-with-cardigan.jpg，也就是本模型這個配色的那張；照
+    # ingame/01 取樣過一次是錯的，那張是冰白配色的另一個版本，跟著它改成的
+    # 軸對齊「＋」在臉部近拍裡和參考差得比改之前還遠。
+    # 圓頭用球而不是把整條做成橢球：橢球的兩端是尖的，做出來是四角星。
+    TILT = 0.55
+
+    def bandage(rot):
+        """一條膠布：直的身體，兩端各一個圓頭，整條繞 z 轉 rot。"""
+        out = [garment.box([px, py, clip_z], (arm, wide, deep), hj, hw,
+                           rot_z=rot)]
+        for end in (-arm, arm):
+            # 圓頭要跟著身體一起轉，所以端點自己算過旋轉；garment.sphere 沒有
+            # rot_z，但球是旋轉對稱的，只有位置需要轉。
+            out.append(garment.sphere(
+                [px + end * math.cos(rot), py + end * math.sin(rot), clip_z],
+                wide, hj, hw, lat=4, lon=6, squash=(1.0, 1.0, deep / wide)))
+        return out
+
+    put(garment.merge(bandage(TILT) + bandage(TILT - math.pi / 2)),
+        'Milfy_Plaster', 'Acc_HairClip_Plaster', mesh='Hair001.baked')
+    put(garment.box([px, py, clip_z - deep], (0.0090, 0.0066, 0.0016), hj, hw,
+                    rot_z=TILT),
+        'Milfy_White', 'Acc_HairClip_Plaster', mesh='Hair001.baked',
+        tag='Acc_HairClip_Plaster#pad')
+
+    bear = [garment.sphere([-0.064, crown_y - 0.078, clip_z + 0.010], 0.015,
+                           hj, hw, lat=6, lon=10)]
+    for ex in (-0.013, 0.013):
+        bear.append(garment.sphere([-0.064 + ex, crown_y - 0.067, clip_z + 0.010],
+                                   0.007, hj, hw, lat=4, lon=6))
+    put(garment.merge(bear), 'Milfy_Bear', 'Acc_HairClip_Bear', mesh='Hair001.baked')
+    # 兩眼一鼻。少了這三點，小熊在近拍裡是一顆長了兩隻耳朵的白球，而參考圖上
+    # 它是有臉的——這是整個頭部特寫裡最便宜的一項辨識度。
+    face = [garment.sphere([-0.064 + ex, crown_y - 0.079 + ey, clip_z - 0.004],
+                           r, hj, hw, lat=3, lon=5)
+            for ex, ey, r in ((-0.005, 0.003, 0.0022), (0.005, 0.003, 0.0022),
+                              (0.000, -0.002, 0.0026))]
+    put(garment.merge(face), 'Milfy_Ink', 'Acc_HairClip_Bear',
+        mesh='Hair001.baked', tag='Acc_HairClip_Bear#face')
+
+    # 兩條不是三條，改細改深。官方圖上這一組是兩條炭黑細槓；先前是三塊 7mm
+    # 厚的純白方塊，在近拍裡像三張貼紙。
+    bars = [garment.box([0.047, crown_y - 0.112 + i * 0.012, clip_z + 0.018],
+                        (0.019, 0.0022, 0.004), hj, hw, rot_z=0.12)
+            for i in range(2)]
+    put(garment.merge(bars), 'Milfy_Ink', 'Acc_HairClip_Bars', mesh='Hair001.baked')
+
+    # --- hair colour. It lives in six textures, not in a material factor, so
+    #     the only way to move it is to rotate the textures themselves. The base
+    #     model is pink at hue 350 / sat 0.49 / lightness 0.71; the reference is
+    #     a pale sand around hue 33 / sat 0.24 / lightness 0.79. ---
+    for i in range(1, 7):
+        customise.hue(doc, views, f'F00_000_Hair_00_0{i}',
+                      HAIR_SHIFT, HAIR_SAT, lift=HAIR_LIFT, unify=HAIR_UNIFY)
+
+    # --- brows. The base model's are periwinkle, hue 250, to go with pink hair;
+    #     the reference's are a warm grey-brown. They are their own texture, so
+    #     this is one rotation and not a repaint. ---
+    customise.hue(doc, views, 'F00_000_00_FaceBrow_00', BROW_SHIFT, BROW_SAT)
+
+    # --- skin. Same story as the hair, in two textures that must agree. ---
+    for name in ('F00_000_00_Face_00', 'F00_000_00_Body_00'):
+        deg, sat, lift = customise.retone(doc, views, name, SKIN_TARGET)
+        print(f'   {name} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} 提亮 {lift:.2f}')
+    deg, sat, lift = customise.retone(doc, views, 'F00_000_00_EyeIris_00',
+                                      EYE_TARGET, mid=(60, 215))
+    print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} 提亮 {lift:.2f}')
+
+    blob = glb.rebuild(doc, views)
+    size = glb.save(dst, doc, blob)
+
+    # Rebuild the manifest from the file we just wrote, not from the one we
+    # read. Indices recorded before the strip step are stale by exactly the
+    # number of primitives that step removed, and a stale index is how a
+    # downstream delete takes its neighbour with it.
+    locked = {'Face', 'Body_Skin'}
+    parts = {}
+    for mesh in doc['meshes']:
+        mname = mesh.get('name')
+        if mname == 'Face.baked':
+            parts['Face'] = {
+                'mesh': mname,
+                'primitives': list(range(len(mesh['primitives']))),
+                'tris': sum(doc['accessors'][pr['indices']]['count'] // 3
+                            for pr in mesh['primitives']),
+                'materials': sorted({doc['materials'][pr['material']]['name']
+                                     for pr in mesh['primitives']}),
+                'deletable': False,
+                'note': 'carries the 56 morph targets; splitting it breaks blendShapeMaster',
+            }
+            continue
+        for i, pr in enumerate(mesh['primitives']):
+            label = pr.get('extras', {}).get('part')
+            if label is None:
+                continue
+            e = parts.setdefault(label, {
+                'mesh': mname, 'primitives': [], 'tris': 0,
+                'materials': [], 'deletable': label not in locked,
+            })
+            e['primitives'].append(i)
+            e['tris'] += doc['accessors'][pr['indices']]['count'] // 3
+            mat = doc['materials'][pr['material']]['name']
+            if mat not in e['materials']:
+                e['materials'].append(mat)
+    for e in parts.values():
+        e['materials'].sort()
+
+    # The slot a swap tool addresses. Every part name here is already one slot,
+    # which is the point of the naming rule; `group` says which of them are
+    # alternatives to each other, so a tool can offer "another Outfit_Bottom"
+    # without a hardcoded list, and `locked` parts are the ones with nothing to
+    # swap in -- the body and the face, whose morph tables the rest depends on.
+    group_of = {'Outfit': 'outfit', 'Acc': 'accessory', 'Hair': 'hair',
+                'Body': 'body', 'Face': 'face'}
+    for name, e in parts.items():
+        e['slot'] = name
+        e['group'] = group_of.get(name.split('_')[0], 'other')
+    manifest['parts'] = parts
+
+    # Read back off the finished model, not off the constants above. The
+    # manifest's whole claim is that a swap tool can drive the model from it,
+    # and listing the constants let it drift: after the imported outfit took
+    # over, the palette still advertised Milfy_Cardigan, Milfy_Ribbon,
+    # Milfy_Bandage and Milfy_Sock, which no part used any more, and said
+    # nothing about the eight Mellow_* materials that actually carried the
+    # colour. The self-test retinted names that painted nothing and passed.
+    by_name = {m['name']: m for m in doc['materials']}
+    shade_of = {m['name']: m.get('vectorProperties', {}).get('_ShadeColor')
+                for m in doc['extensions']['VRM']['materialProperties']}
+    manifest['palette'] = {}
+    for name in sorted({m for e in parts.values() for m in e['materials']}):
+        if not name.startswith(('Milfy_', 'Mellow_')):
+            continue     # the VRoid body, face and hair are coloured in texture
+        base = by_name[name]['pbrMetallicRoughness']['baseColorFactor'][:3]
+        shade = (shade_of.get(name) or list(base) + [1.0])[:3]
+        manifest['palette'][name] = {
+            'base': [round(float(v), 4) for v in base],
+            'shade': [round(float(v), 4) for v in shade],
+            'parts': sorted(n for n, e in parts.items() if name in e['materials']),
+        }
+    manifest['landmarks'] = lm
+    json.dump(manifest, open(out_manifest, 'w'), indent=2, ensure_ascii=False)
+    return added, size, lm
+
+
+if __name__ == '__main__':
+    added, size, lm = build(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    print(f'wrote {sys.argv[2]} ({size} bytes)')
+    print(f'landmarks: waist y={lm["waist"]:.3f} r={lm["waist_r"]:.4f}')
+    for k, (v, mesh) in added.items():
+        print(f'  + {k:<22} {v:>6} tris  -> {mesh}')

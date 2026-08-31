@@ -1,0 +1,479 @@
+Milfy 復刻的交付紀錄，對應 ~/milfy-refs/GOAL.md 的四組要求。
+定稿 2026-08-31，出貨檔 sha256 開頭 d34c44b6905cfe86。
+
+是 .txt 不是 .md：底下的固定寬度表格與六道 gate 的逐字輸出，用 markdown
+算圖會散掉，而「實際腳本輸出」正是 GOAL 第四組要的東西。
+
+管線本身的結構性陷阱另外記在 memory：
+  ~/.claude/projects/-Users-charles-portfolio/memory/project_milfy_replica_pipeline.md
+每個決策的理由寫在對應的原始碼 docstring 裡（build.py、blender/bow.py、
+blender/head.py、blender/mellow.py、outfit.py 都有長註解）。
+
+================================================================================
+
+  wrote out/final-front.png
+  wrote out/final-back.png
+  wrote out/final-three_quarter.png
+  wrote out/final-face.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-front.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-back.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-three_quarter.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-face.png
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (6.3s)
+1. partition
+   13 parts
+  gate partition: compare=[] bones=54
+   (0.0s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+  gate strip: compare=[] bones=54
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54
+   (2.2s)
+4. proportion
+   5.91 -> 5.64 heads tall, height 1.5046
+  gate proportion: compare=[] bones=54
+   (0.0s)
+5. build the outfit
+   Hair_Twintail_L 位移最大 172.1mm，新骨鏈 7 節
+   Hair_Twintail_R 位移最大 173.7mm，新骨鏈 7 節
+   服裝擬合 mellow.glb：縮放 x1.172，對位骨最大殘差 0.00mm
+   服裝擬合 mellow_outer.glb：縮放 x1.153，對位骨最大殘差 0.00mm
+   貼身外推最大位移：Acc_Bandage_Thigh 14mm，Acc_Belt_Waist 24mm，Acc_Ribbon_Neck 11mm，Outfit_Bottom 17mm，Outfit_Cardigan 11mm，Outfit_Shoes 10mm，Outfit_Socks 17mm，Outfit_Top 18mm
+   蝴蝶結對腰封最近距離 4mm
+   皇冠整體下沉 3mm 貼上髮面
+   F00_000_00_Face_00 轉色相 +27.9° 飽和 x0.77 提亮 0.71
+   F00_000_00_Body_00 轉色相 +16.9° 飽和 x0.63 提亮 0.67
+   F00_000_00_EyeIris_00 轉色相 +156.4° 飽和 x0.32 提亮 0.16
+   +33 parts, 8135292 bytes, waist y=0.960
+  gate build: compare=[] bones=54
+   (12.7s)
+6. health check
+== /Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm
+   tris 39170  materials 44  images 43  nodes 144  bones 54
+   springs 11  colliders 12  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   22788 tris  targets 0
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha ecaa6457bf5e5280
+   backwards-wound primitives: 0
+   dangling joint references: 0
+   compare(baseline, this) = []
+   PASS
+   (0.0s)
+
+shipped /Users/charles/portfolio/public/avatar/mika-milfy.vrm
+
+=== 這一輪處理的四件事（使用者 2026-08-31 的指示）===
+1 皇冠懸空          已修。sink() 從髮面量出下沉量，這一版量到 3mm；環帶下緣
+                    埋進髮面 6mm（先前 12mm，埋太深反而被瀏海吞掉半頂）。
+                    形狀也重做：高寬比由 0.73 改成 1.10（實機量到 1.12，出
+                    貨檔量到高 74.0mm／寬 67.4mm＝1.099），著色由
+                    「沿 z 的平滑漸層」改成「每個面自己的法線查金色斜坡」，
+                    正面近拍裡五支齒和 V 形齒縫這一版才讀得出來。
+2 內耳做不到就找現成 不需要，用現有技術做到了，沒有下載任何第三方配件。
+                    bowl_texture 先把明暗畫足、再二分縮放到固定均值（先前是
+                    「除以均值」，加深就會讓係數超過 1 被 glTF 夾掉，能畫多深
+                    等於由夾限決定）。數字見下面「內耳」一節。
+3 依實機隨機應變      照做。過程中推翻了自己的一次誤讀（皇冠比例）也接受了
+                    reviewer 指出的另一次誤讀（OK 繃形狀），兩次都寫在下面。
+4 服裝模組能不能全套  已逐件盤點，見下節。原本 6 件套用中，這一版 8 件。
+
+=== 內耳（第 2 點的數字）===
+量測方式寫明取樣框，讓數字可以被重跑：
+
+  模型   final-face.png 的 Hair_Ear_L 內碗 primitive，用 partmap 的部件標籤取
+         像素（9,765 px）
+         mean (228,211,208)   std (27.7,25.8,25.3)
+         宣告值：材質係數 (0.9866,0.9131,0.8997) × 貼圖在 r<=0.9 內的均值
+         0.8986 × 255 = (226.1,209.2,206.2)，等於 EAR_INNER × 255 =
+         (225.9,209.1,206.0)，差 0.2 是 WEBP 有損編碼。算圖比宣告值高 2 是
+         rasteriser 的邊緣像素
+  參考   official/front-back-with-cardigan.jpg，框 (327,74)-(357,100)，也就是
+         正面那個人物的右熊耳內碗
+         mean (220,200,197)   std (13.5,18.1,19.2)
+
+  先前這裡寫的參考值 (227,209,206) / std (21.9,16.3,15.7) 沒有記錄取樣框，我
+  重跑不出來，已作廢。內耳的 std 對取樣框很敏感（框裡含多少上緣暗環決定一
+  切），所以上面兩組都附框。以這個框比較：模型的調變量高於參考，均值高 7。
+  宣告成立的是「這一版的內耳有碗的明暗結構」，不是「精確等於參考的某個數字」。
+
+=== 你給的服裝包逐件盤點（MellowHeart_Dream1.05 / Milfy_Inner + Milfy_Outer）===
+包裡 Milfy 這一套共 13 個網格（直接解 FBX 數過）。全部都能走同一條通用管線
+（擬合→貼身→重新綁權重），沒有任何一件是技術上套不上的。
+
+  網格           原始面數  狀態      去向 / 不套的理由
+  Inner            9,706   套用      Outfit_Top（GOAL 6 白色荷葉邊上衣）
+  Skirt           17,160   套用      Outfit_Bottom
+  Shoes           14,492   套用      Outfit_Shoes
+  Socks            7,532   套用      Outfit_Socks
+  Main_Ribbon      4,142   套用      Acc_Ribbon_Neck（GOAL 5 頸部緞帶）
+  Outer           14,070   套用      Outfit_Cardigan（GOAL 7 外套）
+  Belt             4,890   本輪新增  Acc_Belt_Waist（腰封，不是蝴蝶結，見下）
+  Leg_belt         5,498   本輪新增  Acc_Bandage_Thigh（GOAL 10 單邊大腿）
+  Underwear        2,424   不套      在裙子底下，任何機位都看不到
+  Pouch            4,933   不套      腰包，GOAL 十二項裡沒有這一項
+  Outer_Pin        1,888   不套      外套別針，40,000 面上限下優先給前八件
+  Outer_Ribbon     2,280   不套      同上
+  Outer_tag          166   不套      同上。目前餘裕 830 面（39,170/40,000），
+                                     要加得從別處挪，不是「隨時可加」
+
+  Belt 進的是 Acc_Belt_Waist 而不是 GOAL 第 8 項的 Acc_Ribbon_Waist。量過廠商
+  的 Belt 網格：一條 27mm 高的腰封加一片 104x25x13mm 的正面裝飾板，沒有任何
+  前突的結或環，當不了「腰帶蝴蝶結」。先前那一版把它標成第 8 項是灌水，已改。
+  蝴蝶結改由 blender/bow.py 生成（544 面，兩個環＋結＋兩條帶尾垂到裙上），繫
+  在那條腰封上——腰封加蝴蝶結正好是參考圖的構造。
+
+  面數是從既有幾件挪出來的：Inner 2,850→2,450、Skirt 2,750→2,450、
+  Outer 2,900→1,600（減面後實得 1,599）、Shoes 2,900→2,800、Belt 1,400→650、
+  Leg_belt 1,500→1,300。
+  Belt/Leg_belt 第一次只給 700／600，腰封糊成一團薄荷色、腿環在大腿上散成幾
+  片三角形，所以先加到 1,400／1,500；確認 Belt 只需要讀成一條帶子之後再退回
+  650，把面數讓給蝴蝶結。
+
+=== 貼圖變體：包裡本來就有，先前沒用 ===
+廠商把明暗直接畫進底圖，而本專案的顏色是 baseColorFactor，係數是乘法又被
+glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑的：
+
+  部位      先前算圖      這一版        怎麼做的
+  裙子      (71,70,69)    (214,213,208) Inner_1_2.png（包裡的無花紋變體）＋曝光
+  鞋子      (15,14,15)    (208,206,202) Shoes_1.png ＋曝光
+  襪子      (173,171,167) (232,229,224) Lace_2.png（同一張蕾絲的亮版：逐三角
+                                        取樣，襪子 UV 上 Lace_1 均值 33、
+                                        Lace_2 均值 214）
+  外套      (7,7,8)       (63,61,66)    Outer_1.png ＋曝光；參考取樣 (65,65,74)，
+                                        ΔE 由 13.7 降到 3.0
+  腰封      —             (130,196,194) Sub_acc_5.png ＋曝光，薄荷
+  大腿環    —             (224,221,216) Sub_acc_5.png ＋曝光，白
+
+  「這一版」欄是該部件在 out/final-front.png 上自己那塊像素的均值，不是中位數
+  ——兩者在有貼圖花紋的件上差得到：腰封那條薄荷帶均值 (130,196,194)、中位數
+  (132,199,197)，後者剛好等於材質係數 ×255 (132.1,199.9,197.9)，因為中位數會
+  落在沒有花紋的那一片。
+
+  曝光是「乘一個對比再加一個偏移」。裙子那張底圖在裙子自己的 UV 上均值 74.2，
+  出貨的 (0.55, 0.83) 把它推到 237.3，夾白 17.9%。純乘法也到得了同一個均值——
+  上限是 237.8——但那是靠把 93% 的像素推成純白換來的；連推到 210 都要 5.19 倍
+  並夾白 43.8%，而出貨組更亮且只夾 17.9%。對比則決定底圖自己的明暗留下多少：
+  同樣停在 237.3 這個均值，對比 1.0 讓貼圖自己的 std 留在 15.6，0.55 留在 11.1。
+
+=== 髮飾（本輪修了兩次，第二次是修第一次修壞的）===
+  OK 繃  原本是兩個各轉 ±31 度的薄荷色方塊。這一輪先照 ingame/01 改成一橫一
+         豎的淡藍十字——那是錯的：ingame/01 是冰白配色的另一個版本，而且角度
+         也讀錯了。official/front-back-with-cardigan.jpg（本模型這個配色）上
+         它是斜交叉的 X、淡薄荷 (204,225,226)。現在是斜 32 度的 X，兩條膠布
+         直身圓頭，中間一塊較亮的紗布墊，材質 Milfy_Plaster (204,225,226)。
+  小熊   加了兩眼一鼻（三顆小球，90 面）。先前是一顆長了兩隻耳朵的白球。
+  橫槓   官方圖上是兩條炭黑細槓，不是三條藍灰。現在是兩條，(95,93,98)，每條
+         38.0 x 4.4 x 8.0mm，材質 Milfy_Ink。（先前寫「厚 2.2mm」是錯的：
+         garment.box 收的是半邊長，2.2 是半值。）
+
+=== 腰間蝴蝶結重做（reviewer 第二、三輪指出的兩個問題）===
+第一版的環是沿封閉路徑放樣的緞帶：34mm 寬的帶子繞一圈只圍出 48mm，洞閉起來，
+兩個環都算成實心的薄荷球；結（22x13x20mm 立方體）在兩環之間、同色同材質、又
+比環的前緣退後 21mm，三張算圖都讀不出來。第二版把形態修好之後，spec reviewer
+量出更嚴重的一件事：整組蝴蝶結離腰封 27mm，什麼都沒碰到。四個約定機位都看不
+出來，只有側視圖看得到。
+
+兩個問題的成因是同一個：z 是由「量出來的常數 ＋ 一串手挑的偏移」湊出來的。
+
+  OUTLINE 過期  blender/bow.py 的 OUTLINE 是身體的前緣輪廓，註解寫「sampled
+                off the built model」，但它記的是 0.132–0.137，而現在這版模型
+                穿好衣服之後的腰際前緣是 0.113–0.128（逐三角取樣 Outfit_Bottom
+                ＋ Acc_Belt_Waist ＋ Outfit_Top，|x| < 40mm）。差 15–20mm。
+  偏移相加      OUTLINE 之上再加 clear 8mm，再加環的 −14mm、結的 −30mm。每一
+                個單獨看都合理，加起來就是 27mm。
+
+改法是把 z 全部改成推導的：
+
+  stand(y, depth)  傳厚度而不是傳偏移，回傳「這個厚度的東西貼在該高度衣面上」
+                   的中心 z。環、帶尾都走這個函式，背面落在衣面上是構造保證的。
+  結               由環的兩個面推導，兩邊都不寫死：前緣站在環最前緣之前
+                   KNOT_PROUD 12mm（那一階加上自己的暗色才讀得出是結），後緣
+                   嵌進環在掐緊端的表面 KNOT_EMBED 3mm。深度是這兩個面之間的
+                   距離除以 SUBSURF_SHRINK。先前把深度與偏移都寫死時，側視圖
+                   上結與環之間有 6mm 的空隙——環在掐緊端比在外緣淺，而偏移是
+                   照外緣量的。
+  OUTLINE          換成這一版模型量到的 (1.02,0.113) (0.98,0.119) (0.86,0.119)
+                   (0.82,0.121) (0.78,0.128)，仍是由上往下的跑動最大值。
+
+出貨檔量到：
+  蝴蝶結在腰封高度那一段，對腰封的三維最近距離     4.3mm（先前 27.0mm）
+  結前緣超出環前緣                                12.0mm
+  結後緣嵌入環（掐緊端）                           3.0mm
+  結尺寸                                          16.8 x 25.2 x 19.6mm
+  帶尾兩片，腰封下緣以下的三維最近距離             46.6mm（全段 24.1mm）
+    （46.6 是逐三角重心取樣量的；只取頂點會得到 49.7，因為兩片最接近的位置
+     落在面上不在頂點上。24.1 兩種量法相同。）
+  環在算圖上 (132,199,197)，結 (95,143,142)
+
+守衛：build.py 在服裝貼合完成之後，用完成的腰封重量一次蝴蝶結在腰封高度那一段
+的最近距離，超過 BOW_GAP_MAX 8mm 就中止建置並指名 OUTLINE。這道守衛存在的理
+由就是這次的缺陷：常數會過期，而四個約定機位看不出來。三次 mutation 各自確認
+會紅（乾淨版 4mm）：
+
+  OUTLINE 換回壞掉那一版 (1.10,0.132)…    9mm  中止
+  OUTLINE 整體 +25mm                      19mm  中止
+  CLEAR 由 2mm 改成 20mm                  12mm  中止
+
+面數由 1,096 降到 544（錐形比放樣的環便宜），總面數 39,722 → 39,170。
+
+=== verify (出貨檔 vs baseline) ===
+== out/mika-milfy.vrm
+   tris 39170  materials 44  images 43  nodes 144  bones 54
+   springs 11  colliders 12  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   22788 tris  targets 0
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha ecaa6457bf5e5280
+   backwards-wound primitives: 0
+   dangling joint references: 0
+   PASS
+
+=== pierce 靜止穿模 ===
+at rest, skin pixels showing through each garment:
+  Outfit_Cardigan              9 px  of   150 allowed (33849 px on screen)
+  Outfit_Socks                 6 px  of    66 allowed (3294 px on screen)
+  Outfit_Shoes                 5 px  of    73 allowed (3637 px on screen)
+  Acc_Bandage_Thigh            1 px  of    30 allowed (608 px on screen)
+  total 21   PASS
+
+=== selftest 20 輪隨機刪件＋換色 ===
+  deletable parts available: 25
+  dropping: Hair_Bun_L, Hair_Side_R, Acc_Ribbon_Waist
+  retinting Milfy_GoldInner -> [0.869, 0.912, 0.797]
+  retinting Milfy_Mint -> [0.895, 0.718, 0.346]
+  removed 12 primitives, swept 75 accessors / 75 bufferViews
+  triangles 39170 -> 37908 (expected 37908)
+  [ok] still a VRM0
+  [ok] triangles match the manifest
+  [ok] no orphan accessors
+  [ok] skeleton unmoved
+  [ok] 54 humanoid bones
+  [ok] 56 face morph targets intact
+  [ok] 15 blendShapeGroups intact
+  [ok] tints landed
+  [ok] retinted materials are still on the model
+  [ok] every palette entry names live parts
+  PASS
+
+20 rounds: PASS
+
+=== retarget 十支 vrma ===
+GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
+  akimbo.vrma            worst  +0.00 deg
+  dance.vrma             worst  +0.00 deg
+  idleLoop.vrma          worst  +1.94 deg
+  modelPose.vrma         worst  +0.00 deg
+  peaceSign.vrma         worst  +0.00 deg
+  playFingers.vrma       worst  +0.00 deg
+  scratchHead.vrma       worst  +0.00 deg
+  spin.vrma              worst  +0.00 deg
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS
+
+=== measure 顏色與比例 ===
+顏色：官方參考圖取樣 vs 模型（CIE76 ΔE，1 約等於肉眼可辨的最小差）
+  髮   Milfy_Hair             參考 (254,249,245)  模型 (237,225,218)  ΔE   8.5  去亮度   3.0  取樣區內色差 16.6
+  膚   F00_000_00_Body_00     參考 (254,248,246)  模型 (245,237,229)  ΔE   5.0  去亮度   3.2  取樣區內色差  3.5
+  瞳   F00_000_00_EyeIris_00  參考 (157,137,142)  模型 (143,119,119)  ΔE   7.5  去亮度   3.3  取樣區內色差 39.6
+  外套  Mellow_Outer           參考 ( 65, 65, 74)  模型 ( 63, 61, 66)  ΔE   3.0  去亮度   2.5  取樣區內色差  4.8
+  皇冠  Milfy_Gold             參考 (228,202,175)  模型 (221,192,168)  ΔE   4.0  去亮度   2.0  取樣區內色差 22.5
+  5 個取樣點最差去亮度 ΔE 3.3
+
+服裝材質（換裝後參考圖無對應，只記錄選色）
+  Mellow_Inner       (244,241,236)
+  Mellow_Lace        (244,241,236)
+  Mellow_Sub_Acc     (132,200,198)
+  Mellow_Shoes       (242,239,234)
+  Mellow_Jewel       (221,192,168)
+
+關鍵點高度比例（0 = 腳底，1 = 頭頂）
+  頭頂   參考  1.000   模型  1.000   差 +0.000
+  下巴   參考  0.820   模型  0.814   差 -0.006
+  肩    參考  0.786   模型  0.759   差 -0.027
+  腰    參考  0.586   模型  0.617   差 +0.031
+  胯    參考  0.456   模型  0.486   差 +0.030
+  膝    參考  0.248   模型  0.315   差 +0.067
+  踝    參考  0.068   模型  0.072   差 +0.004
+  七點最大差 0.067（參考值以 64px 網格目視讀出，約 ±0.011）
+  全高 1.5774 m
+
+=== motion 十支 vrma 穿模 ===
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  0.66 of limit
+  dance.vrma             worst  0.23 of limit
+  idleLoop.vrma          worst  0.09 of limit
+  modelPose.vrma         worst  0.59 of limit
+  peaceSign.vrma         worst  0.29 of limit
+  playFingers.vrma       worst  0.11 of limit
+  scratchHead.vrma       worst  0.31 of limit
+  spin.vrma              worst  0.21 of limit
+  squat.vrma             worst  0.32 of limit
+  stretch.vrma           worst  0.23 of limit
+
+  worst per part across every clip and frame:
+    Outfit_Bottom               99 px  of   150 allowed (10183 px on screen)   0.66x  akimbo.vrma t=1.33s
+    Outfit_Socks                26 px  of    81 allowed (4070 px on screen)   0.32x  squat.vrma t=7.2s
+    Outfit_Cardigan             43 px  of   150 allowed (22998 px on screen)   0.29x  peaceSign.vrma t=10.22s
+    Acc_Bandage_Thigh            7 px  of    30 allowed (758 px on screen)   0.23x  dance.vrma t=16.75s
+    Outfit_Shoes                 7 px  of    53 allowed (2656 px on screen)   0.13x  stretch.vrma t=1.7s
+    Outfit_Top                   2 px  of   100 allowed (5008 px on screen)   0.02x  squat.vrma t=10.08s
+
+  PASS
+
+=== 外觀特徵逐項（GOAL 二，十二項）===
+1  熊耳髮髻（頭頂兩顆圓球）        DONE   Hair_Ear_L/R 各 428 tris，外圈＋凹碗。
+                                          內碗數字與取樣框見上面「內耳」一節。
+                                          名詞說明：GOAL 把頂上兩顆叫「髮髻」，
+                                          實機那兩顆是耳朵、髮髻在雙馬尾根部，
+                                          本模型照實機分成 Hair_Ear_* 與
+                                          Hair_Bun_*。
+2  皇冠（夾在兩髻中間偏一側）      DONE   Acc_Crown 200 tris，內外兩層兩材質。
+                                          冠寬/耳徑 0.83（實機 0.84）、冠高/耳徑
+                                          0.91（實機 0.94）、冠心離中線 0.85 耳徑
+                                          （實機 0.83）。殘差：冠心只高於耳心
+                                          0.09 耳徑（算圖空間）／0.12（網格空
+                                          間），實機是 0.29——「緊貼髮面」把它壓
+                                          在頭殼上，兩者不能同時滿足，優先給了
+                                          貼合，因為那是這一輪的指示。
+3  雙馬尾（綁點在髻正下方＋緞帶）  PARTIAL 雙馬尾與 Acc_Ribbon_Hair 都在，綁點在
+                                          腦後不是髻正下方。
+4  瀏海髮夾三組                    DONE   Plaster 228 / Bear 306 / Bars 24 tris。
+                                          形狀與顏色照 official 那張（本模型的
+                                          配色）：OK 繃是斜 32 度的薄荷 X、橫槓
+                                          兩條炭黑、小熊有臉。中途照 ingame/01
+                                          改成正十字＋淡藍是錯的，已改回。
+5  頸部荷葉邊加緞帶蝴蝶結          DONE   MellowHeart Main_Ribbon：白色荷葉領＋
+                                          黑色緞帶蝴蝶結，和參考同一個構造。
+6  白色荷葉邊上衣                  DONE   Outfit_Top = Mellow Inner，算圖
+                                          (234,231,226)。
+7  落肩外套（獨立網格）            PARTIAL 獨立網格 ✓、黑色 ✓（ΔE 3.0）、寬袖蓋
+                                          手 ✓；肩部開口大 ✗、上衣肩帶露在外套
+                                          之上 ✗。廠商的 Outer 是包肩的開襟外
+                                          套，理由見最後一節。
+8  腰帶蝴蝶結（正面，尾垂到裙後）  DONE   Acc_Ribbon_Waist 544 tris，由
+                                          blender/bow.py 生成：兩片環、一個結、
+                                          兩條帶尾垂到裙上，繫在 Acc_Belt_Waist
+                                          那條薄荷腰封（650 tris）上。
+                                          真的繫在上面：蝴蝶結在腰封高度那一
+                                          段，對腰封的三維最近距離 4.3mm。
+                                          三個特徵在算圖上分得出來：環是梯形
+                                          面，往結那端收到外緣高度的 45%；結
+                                          前緣突出在兩環前緣之前 12.0mm、後緣
+                                          嵌進環 3.0mm，材質 Milfy_MintDark，
+                                          算圖上量到 (95,143,142) 對環的
+                                          (132,199,197)；帶尾斷面 26mm 配
+                                          0.85→1.40 的漸變，兩片在腰封下緣以
+                                          下的三維最近距離 46.6mm。
+                                          與 GOAL 字面的差別：帶尾垂在裙子正
+                                          面，不是繞到裙後——官方圖上也是垂在
+                                          正面，所以照圖不照字。
+                                          仍與參考不同的形態：參考的環是有摺
+                                          痕的軟布，這裡是平的多邊形面；參考
+                                          的帶尾末端是斜切，這裡是平口；參考
+                                          的結是亮的、靠陰影分界，這裡只能用
+                                          暗色分界（算圖器不打光）。
+                                          修正紀錄：第一版把廠商 Belt 標成這一
+                                          項是灌水，Belt 沒有蝴蝶結；第二版的
+                                          環是沿封閉路徑放樣的緞帶，帶寬過環
+                                          圍出來的洞，兩環都算成實心圓球；第
+                                          三版形態對了但整組離腰封 27mm，什麼
+                                          都沒碰到，見上面「腰間蝴蝶結重做」。
+9  A 字蓬裙加荷葉邊下擺            PARTIAL A 字 ✓、白色 ✓（(214,213,208)，先前是
+                                          (71,70,69) 的灰格）；荷葉邊下擺 ✗，
+                                          廠商的 Skirt 是百褶不是荷葉。
+10 大腿繃帶（單邊不對稱）          PARTIAL 只在一條腿上 ✓（x 全在 -0.147..-0.009），
+                                          Acc_Bandage_Thigh 1,300 tris。
+                                          型態是兩條綁帶加一個小吊飾，不是纏繞
+                                          的繃帶；邊在模型左腿而參考在右腿（鏡
+                                          像會翻繞向，MToon 描邊會整片塗黑）。
+                                          兩項都不符，所以和第 9 項同一把尺，
+                                          標 PARTIAL 不標 DONE。
+11 過膝襪（襪口在膝上）            NOT DONE 廠商的 Socks 襪口在 y=0.222、膝在
+                                          y≈0.497，是腳踝高的荷葉邊短襪，網格
+                                          本身就沒有到膝上的部分。
+12 熊耳拖鞋                        NOT DONE 廠商只有一雙樂福鞋，包裡沒有拖鞋。
+                                          顏色已由黑改白 (208,206,202)，和參考的
+                                          白色熊耳拖鞋同色系，形狀不同。
+
+=== 老實說：做不到的地方，以及為什麼 ===
+第 9 項的荷葉下擺、第 11 項過膝襪、第 12 項熊耳拖鞋，還有第 7 項的落肩與第 10
+項的纏繞繃帶，共同的原因只有一個：你指定要套用的 MellowHeart Dream 是另一套
+衣服。包裡的 Milfy_Inner／Milfy_Outer 是「照 Milfy 的身形做的 MellowHeart 制
+服」，不是 Milfy 自己那件白洋裝。包裡八個角色 × 兩個檔案（FBX 目錄 16 個檔）
+都翻過了，沒有荷葉下擺的 A 字裙、沒有過膝襪、沒有熊耳拖鞋、沒有落肩的外套這
+幾個網格。
+
+另外三項沒有做到 GOAL 的字面要求，理由不同：
+
+  七點比例  膝差 +0.067，是參考值讀取誤差（±0.011）的六倍，不能算「收斂」。
+            其餘六點差 0.000 到 0.031。膝的位置由 proportion 那一步的整段比例
+            決定，把它單獨拉下去會連帶動到胯與踝，而那兩點現在是對的。取捨是
+            保住六點，留下膝這一點。
+  六點 ΔE   GOAL 指定髮、膚、瞳、上衣、緞帶、鞋六個取樣點，交付的是髮、膚、
+            瞳、外套、皇冠五個。上衣、緞帶、鞋換成 MellowHeart 的件之後，官
+            方參考圖上沒有對應的東西可比，硬比是拿兩件不同的衣服算 ΔE。
+  帶尾方向  GOAL 第 8 項寫「帶尾垂到裙後」，官方圖上是垂在正面，照圖不照字。
+
+  能補的都補了：Leg_belt 補上第 10 項的「單邊」、blender/bow.py 的蝴蝶結補上
+  第 8 項、Inner_1_2 讓裙子變白、Lace_2 讓襪子變白、Shoes_1 加曝光讓鞋子變
+  白，除了蝴蝶結以外全部取自包裡本來就有的東西。
+  剩下的要嘛手刻（你說過服裝不要手刻），要嘛另外買一套有這些部件的服裝包。
+  這是你的決定，不是我的。
+
+=== production VRM ===
+git diff --stat public/avatar/mika-pink.vrm public/avatar/AvatarSample_B_webp.vrm -> 空
+
+=== 對照圖 ===
+四張固定機位（無光照，本專案的 numpy 算圖）：
+  scripts/avatar/out/final-{front,back,three_quarter,face}.png
+與參考並排：scripts/avatar/out/compare.png（1762x2674，四列）
+真瀏覽器 MToon 算圖（three-vrm 3.5.0 + WebGL，有光照）：
+  scripts/avatar/out/mtoon-{front,quarter,face}.png
+側視圖（診斷用，不是約定的四張）：scripts/avatar/out/side-check.png，azimuth
+270。用來看配件有沒有浮起來——四個約定機位都看不到這一類缺陷，蝴蝶結離腰封
+27mm 就是這樣漏掉的。
+
+=== 瀏覽器（three-vrm 3.5.0，真 Chromium + WebGL）===
+頁面：scripts/avatar/browser-check.html（?view=front|quarter|face）
+{"ok":true,"errors":[],"bytes":8135292,"sha256_first8":"d34c44b6905cfe86",
+ "spec":"0","bones":54,"clips":10,"expressions":15,"drew":true}
+
+三個機位各跑一次，三次都回同一個 sha。頁面自己對抓到的位元組做 SHA-256，前
+8 bytes 是 d34c44b6905cfe86；shell 的 `shasum -a 256
+public/avatar/mika-milfy.vrm` 開頭也是 d34c44b6905cfe86，兩者相同，所以瀏覽
+器載入的確實是出貨的那份位元組。十支 vrma 逐一建 clip 並推進兩
+幀、15 個 expression 逐一設到 1.0 再歸零，errors 為空。最後真的呼叫
+renderer.render 畫過一次（drew:true）——MToon 的描邊 pass 剔除正面，繞向錯的
+網格會整片變黑，那是本專案無光照的 numpy 算圖永遠看不見的一類缺陷。
+
+=== 範圍外：建置的位元組不是決定性的 ===
+同一份輸入連跑 make.py，每次得到不同的檔案 sha（實測六次六個值）。差異只在兩
+個索引陣列：Hair_Bun_L 與 Hair_Bun_R 各 120 個三角形，兩份檔案的三角形集合完
+全相同、只是列出的順序不同；JSON chunk 逐位元組相同，verify 的 vertex sha 每
+次都是 ecaa6457bf5e5280。
+
+來源在 blender/head.py：單獨跑它三次就得到三個不同的 .glb（bow.py 與
+mellow.py 各跑兩次都相同）。逐網格比對那三份輸出，九個網格裡只有 Bun_L 與
+Bun_R 的索引順序在動，座標陣列與三角形集合三次都逐位元組相同；Ear_L/R、
+EarInner_L/R、Crown、CrownInner、Ahoge 三項全同。釘死 PYTHONHASHSEED 無效，
+所以不是 Python 自己的 hash 隨機化。
+
+沒有把機制查到底。一個現成的猜測「shade_smooth 的網格在匯出時要拆點」不成
+立：Ear_L/R 與 EarInner_L/R 同樣是 shade_smooth 卻三次相同。兩顆髮髻與其他
+網格的實際分野是它們是這個檔裡唯一用 primitive_uv_sphere_add 造的（有 UV 接
+縫），但我沒有驗證那就是原因，只是記錄這個相關性。
+
+不影響任何一項驗收：幾何、面數、材質、骨架、動作全部相同，只有位元組排列不
+同。上面記的 sha 對應的是現在 public/avatar/ 裡的那一份，重跑 make.py 會換一
+個 sha 而模型不變。沒有修，因為它在 Blender 匯出器裡面。
+
+=== npm test ===
+17 files / 321 tests 全綠（vitest，/Users/charles/portfolio）
