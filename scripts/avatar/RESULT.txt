@@ -234,9 +234,11 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
   結前緣超出環前緣                                12.0mm
   結後緣嵌入環（掐緊端）                           3.0mm
   結尺寸                                          16.8 x 25.2 x 19.6mm
-  帶尾兩片，腰封下緣以下的三維最近距離             46.6mm（全段 24.1mm）
-    （46.6 是逐三角重心取樣量的；只取頂點會得到 49.7，因為兩片最接近的位置
-     落在面上不在頂點上。24.1 兩種量法相同。）
+  帶尾兩片的三維最近距離（全段）                   24.1mm
+    （這個數字撐的論證是「兩片不會糊在一起」，只需要最窄處，而 24.1 用頂點和
+     用逐三角重心量都相同。原本另外寫了一個「腰封下緣以下 46.6mm」，第六輪
+     reviewer 重量不出來：逐三角重心得 51.6，面上密取樣得 46.8，而它對切線
+     高度每 0.5mm 就漂約 1mm。既然不承載論證，直接刪掉而不是再換一個。）
   環在算圖上 (132,199,197)，結 (95,143,142)
 
 守衛：build.py 在服裝貼合完成之後，用完成的腰封重量一次蝴蝶結在腰封高度那一段
@@ -416,8 +418,9 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
 2  皇冠（夾在兩髻中間偏一側）      DONE   Acc_Crown 200 tris，內外兩層兩材質。
                                           以下四個比值的分母「耳徑」一律是單耳
                                           bbox 的高 81.4mm（耳是 80.8 寬 x 81.4
-                                          高，不是圓的，改用寬當分母每個比值會
-                                          差約 0.007，所以分母必須寫出來）。
+                                          高，不是圓的）。改用寬當分母，前三個
+                                          比值各差 0.006–0.007，第四個只差
+                                          0.0009，所以分母必須寫出來。
                                           冠寬/耳徑 0.83（實機 0.84）、冠高/耳徑
                                           0.91（實機 0.94）、冠心離中線 0.86 耳徑
                                           （實機 0.83）。殘差：冠心只高於耳心
@@ -455,8 +458,8 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                           嵌進環 3.0mm，材質 Milfy_MintDark，
                                           算圖上量到 (95,143,142) 對環的
                                           (132,199,197)；帶尾斷面 26mm 配
-                                          0.85→1.40 的漸變，兩片在腰封下緣以
-                                          下的三維最近距離 46.6mm。
+                                          0.85→1.40 的漸變，兩片的三維最近距
+                                          離（全段）24.1mm。
                                           與 GOAL 字面的差別：帶尾垂在裙子正
                                           面，不是繞到裙後——官方圖上也是垂在
                                           正面，所以照圖不照字。
@@ -720,8 +723,10 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     收尾——刪掉 Acc_Crown 之後 Milfy_Gold 與 Milfy_GoldInner 還在檔案裡塗不到
     任何東西，拿 verify.py 驗任何 customiser 產出都會紅。這跟第 1 項是同一種
     檔案／manifest 不對稱，方向相反：那次是 manifest 沒清，這次是檔案沒清。
-    apply 在 sweep 之前加一次 sweep_materials，selftest 加兩條檢查（沒有材質
-    塗不到東西、palette 每一項都指得到檔案裡還在的材質）。mutation 過。
+    apply 在 sweep 之前加一次 sweep_materials，selftest 加兩條檢查：「沒有材
+    質塗不到東西」（收據 6）與「palette 每一項都指得到檔案裡還在的材質」（收
+    據 15）。verify.py 那一側另有收據 16。三條各自單獨可斷，不寫成一句「都
+    mutation 過」——第 27 項就是被那種全稱句咬到的。
     這個改動也落在 make.py 第 2 步上（那一步也是走 apply），所以我把
     partition → strip → skin → proportion → build 整條重跑一次比對：最終位元
     組完全相同（b2de2d7dcd48fdbd）。變的只有中間過程的計數，見第四節的標註。
@@ -761,8 +766,9 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     shapes 是「賦值」而不是重建 dict，Python 保留插入順序，於是先前階段已經放
     進去的鍵保住舊位置、新鍵接在後面。從乾淨的 out/ 跑會得到 shapes 排在
     palette 之前：內容完全相同，但 shapes 那一段整塊搬家——78 行刪掉、同樣 78
-    行加回來（`diff -u` 連標頭共 174 行）。原先只寫「78 行的 diff」，第五輪兩個
-    讀者從這句話算出兩個不同的數字，所以改寫成量得出來的說法。build.py 結尾改
+    行加回來。原先只寫「78 行的 diff」，第五輪兩個讀者從這句話算出兩個不同的
+    數字；第六輪補的「連標頭共 174 行」又讓兩個讀者算出 174 與 172，所以那個
+    總數直接刪掉——它不承載任何論證，論證整個由「78 刪 78 加」撐住。build.py 結尾改
     成依固定鍵序 ('source','parts','palette','shapes','landmarks') 排序一
     次。兩條路徑現在連 manifest 都逐位元組相同（sha 1339868bb59e4cac）；VRM
     的 sha 不受這一改影響，因為 manifest 是在 VRM 存檔之後才寫的（當時那次建
@@ -795,10 +801,34 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   28 文件開頭寫「第一輪十二項、第二輪兩項」，停在 12＋2，而第五節自己已經編到
     25 項。改成指向第五節、不再複述件數——同一個計數寫在兩個地方就是這個下場。
   29 第 2 項皇冠的四個比值，分母「耳徑」從來沒寫出來。耳不是圓的（80.8 寬 x
-    81.4 高），用高當分母得 0.83／0.91／0.12，用寬得 0.83／0.92／0.13，每個比
-    值差約 0.007。已標明分母是單耳 bbox 的高 81.4mm；在同一把尺下「冠心離中線」
+    81.4 高），用高當分母得 0.83／0.91／0.12，用寬得 0.83／0.92／0.13。前三個
+    比值各差 0.006–0.007；殘差那一個其實只差 0.0009（0.1249 對 0.1258），印出
+    來從 0.12 跳到 0.13 是四捨五入跨界，不是真的差一個級距。已標明分母是單耳
+    bbox 的高 81.4mm；在同一把尺下「冠心離中線」
     量到 0.86 而不是原本寫的 0.85（兩個 primitive 分開量是 0.859 與 0.861），已
     改。另外三個數字在這把尺下逐一重現，所以錯的只有這一個。
+
+  第六輪：code reviewer PASS（連五輪），spec reviewer FAIL。抓到的：
+
+  30 上一輪把全稱句改成逐道標收據編號，但標錯了兩個對象，缺口照樣被藏住——這
+    正是第 27 項要消除的失效模式，同一類連兩輪出現。錯的是：selftest 的
+    「palette 每一項都指得到還在的材質」標成收據 3，而收據 3 紅的其實是另一條
+    「指得到還在的部件」；於是前者沒有任何收據，後者根本沒列進表。另外
+    verify.unused_materials 標成收據 6，但收據 6 全程沒跑 verify.py。兩個缺口
+    都補上實跑的收據（15、16），表格改成兩條 palette 檢查分列。
+  31 收據 15 做的時候先撞到一次假陰性，值得記下來：注入「palette 鍵指向不存在
+    的材質」時第一次挑到 Mellow_Belt_Acc，兩條檢查都綠——因為它唯一的部件正好
+    在那顆種子的刪除名單裡，整個條目在名字檢查之前就被「沒有部件就丟掉」清掉
+    了。注入的缺陷要先確認它活到被檢查的那一刻。換成 Mellow_Inner 之後只有那
+    一條紅，另一條保持綠，兩條確認互相獨立可斷。
+  32 第 21 項第六輪補的「`diff -u` 連標頭共 174 行」，兩個讀者又算出 174 與
+    172（差在空白 context 行）。同一句話連兩輪因為一個總數出事，而那個總數不
+    承載論證，已刪除，只留「78 行刪、78 行加」。
+  33 兩個量測的定義問題：帶尾「腰封下緣以下 46.6mm」重量不出來（逐三角重心
+    51.6、面上密取樣 46.8，且對切線高度每 0.5mm 漂約 1mm），它不承載論證，已
+    刪除，留下全段最近距離 24.1mm；皇冠那句「每個比值差約 0.007」對第四個比值
+    不成立（只差 0.0009），已改成逐項寫。EVIDENCE.md 凍結清單有兩個時刻寫成概
+    略值而與實際不符，已改成實際時刻。
 
 六、新增的守衛，以及每一道的 mutation 收據編號
     收據全文在 scratchpad/mutations.md，編號就是該檔的節號。這裡逐道標編號而
@@ -809,7 +839,7 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                 [收據 11]
              undeclared_rims    任何材質沒宣告 _RimColor 就 FAIL（宣告成黑色
                                 等同沒宣告，兩條路都攔）  [收據 11]
-             unused_materials   任何材質沒有 primitive 用就 FAIL  [收據 6]
+             unused_materials   任何材質沒有 primitive 用就 FAIL  [收據 16]
              misaligned_material_properties
                                 materials 與 VRM materialProperties 的名字沒有
                                 逐位置對上（VRM0 按位置配對，錯位會讓每個
@@ -831,8 +861,9 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                 materialProperties 兩邊一起拿掉  [收據 6、9]
   selftest   shape key 名字指到活的部件 [1]、manifest 指名的 key 仍會位移 [1]、
              檔案宣告的 key 都在 manifest 裡 [2]、每個 mesh 只有一個 target 數
-             [14]、沒有材質塗不到東西 [6]、palette 每一項都指得到還在的材質
-             [3]、materialProperties 與 materials 逐位置對得上 [9]
+             [14]、沒有材質塗不到東西 [6]、palette 每一項都指得到還在的**部件**
+             [3]、palette 每一項都指得到還在的**材質** [15]、
+             materialProperties 與 materials 逐位置對得上 [9]
   前端       src/components/chat/avatarRim.test.ts，5 條，5 種 mutation 各自
              只紅對應的那一條，沒有互相遮蔽  [收據 13]
 
