@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'なぜ 99.9% の努力する人は成功できないのか？戦術のやみくもな収集から、人生の戦略を設計するまで',
+    subtitle: '漠然とした不安から転職成功へ：「戦略思考」で凡庸のループを断ち切った方法。',
+    url: 'https://charlestychen.substack.com/p/999',
+    platform: 'Substack',
+    date: '2026-08-31',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/09a45f32-2b48-4d9e-92d4-c27b119f3413_1024x1536.png',
+  },
+  {
     title: 'なぜあなたの採用プロセスは凡庸を量産するのか？元 Facebook・現 Cursor 採用責任者が明かす「破滅のファネル」とトップチームの秘密',
     subtitle:
       "Facebook や Pinterest で採用を率い、現在 Cursor の採用責任者を務める Adam Ward が Lenny's Podcast で語った。従来の採用ファネルが最後に採るのは「残り物」だ。人材密度の高いチームづくりは、このファネルを壊すことから始まる。",

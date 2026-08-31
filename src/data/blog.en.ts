@@ -33,6 +33,15 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'Why Do 99.9% of Hard-Working People Still Fail? From Hoarding Tactics to Designing a Life Strategy',
+    subtitle:
+      'From blind anxiety to a successful career switch: how strategic thinking broke my cycle of mediocrity.',
+    url: 'https://charlestychen.substack.com/p/999',
+    platform: 'Substack',
+    date: '2026-08-31',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/09a45f32-2b48-4d9e-92d4-c27b119f3413_1024x1536.png',
+  },
+  {
     title: "Why Your Hiring Process Manufactures Mediocrity: the Ex-Facebook, Now-Cursor Head of Recruiting on the 'Funnel of Doom'",
     subtitle:
       "Adam Ward led recruiting at Facebook and Pinterest and now heads talent at Cursor. On Lenny's Podcast he argues the classic hiring funnel ends in 'remainder hiring': you employ whoever survives the sieve. Building real talent density starts with tearing that funnel down.",

@@ -25,6 +25,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '為什麼 99.9% 努力的人依然無法成功？從盲目收集戰術，到設計我的人生戰略',
+    subtitle: '從盲目焦慮到成功轉職：我如何透過「戰略思考」打破平庸循環。',
+    url: 'https://charlestychen.substack.com/p/999',
+    platform: 'Substack',
+    date: '2026-08-31',
+    cover: 'https://substack-post-media.s3.amazonaws.com/public/images/09a45f32-2b48-4d9e-92d4-c27b119f3413_1024x1536.png',
+  },
+  {
     title: '為什麼你的招聘流程在製造平庸？前 Facebook、Cursor 人才招募總監揭露「末日漏斗」與頂尖團隊的秘密',
     subtitle:
       "Adam Ward 在 Lenny's Podcast 拋出顛覆性觀點：把招聘當銷售漏斗，層層篩選後錄用的只是「殘餘者」。想打造高人才密度團隊，得先拆掉這座末日漏斗。",
