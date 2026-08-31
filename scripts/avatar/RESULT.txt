@@ -855,16 +855,47 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     頂點是 24.09（已改成只寫用了哪一種量法）；守衛表沒寫範圍，讀者無法判斷那五
     處 fail-fast `raise` 為什麼不在表上（已補範圍說明）。
 
+  第八輪：兩位 reviewer 都 FAIL，而且都打在同一個地方——第 35 項那支
+  receipts.py 本身。這是我第一次拿到 code reviewer 的 FAIL，抓得對：
+
+  38 **我寫來擋「宣稱的涵蓋率大於證據」的工具，自己就是那個缺陷。** 它的判準是
+    「收據裡提到該守衛失敗時印出的字串」，但 `verify.report()` 是無條件印出每
+    一道偵測器的名字的——通過時印 `coloured outlines: 0`——所以一段全綠輸出裡
+    十六個字串全都在。spec reviewer 造了一份「一個 mutation 都沒跑」、只貼全綠
+    輸出的檔案，拿到 16/16、exit 0。code reviewer 從另一個角度打穿同一處：刪掉
+    收據 3，那一列改由收據 15 的**散文**滿足，而收據 15 自己寫著它的 mutation
+    「分不開就等於沒有單獨釘住其中任何一條」。
+  39 它還只查十九列中的十六列：customise.prune_shapes、customise.sweep_materials
+    與前端那列根本不在清單裡，刪掉它們的收據不會變紅，而表頭卻寫「不再靠人工
+    比對」。宣稱比程式做的多，正是第 27、30、34 項那一類。
+  40 改法：判準改成從**這張表**讀出每一列引用的收據編號，再要求被引用的那份收
+    據帶有 `EVIDENCE guard=… control=… mutated=…` 且兩值不同；十九列全部納入；
+    表裡出現的收據編號若不屬於任何已知守衛也會紅（漏列不再是靜默的）。用
+    reviewer 那份零 mutation 檔重測：0/19、exit 1；control 與 mutated 寫成相同
+    值：0/19、exit 1；刪收據 3：18/19、exit 1；刪收據 13：18/19、exit 1；完整
+    收據檔：19/19、exit 0。（刪收據 7 仍是綠的，這是對的——prune_shapes 引用
+    1、2、7 三份，前兩份仍帶著它的 EVIDENCE。）
+  41 兩處計數：fail-fast `raise` 是六處不是五處（glb.py 有兩處：`_dense_twin`
+    的 NotImplementedError 與 `add_sparse_accessor` 的 ValueError），而且六處都
+    在 b3da0f1 一個 commit 裡，不是「同兩個 commit」。已改。
+
 六、新增的守衛，以及每一道的 mutation 收據編號
     **範圍：這張表只收「會靜默的偵測器」**——也就是壞掉時檔案照樣寫得出來、計
-    數照樣合法、要靠檢查才看得見的那一類。同兩個 commit 另外加了五處 fail-fast
-    `raise`（customise.sweep_materials 兩處、build.py、glb.py、blender/mellow.py
-    各一處），它們壞掉時當場中止建置，不需要收據也不會靜默，所以不列在這裡。
+    數照樣合法、要靠檢查才看得見的那一類。commit b3da0f1 另外加了六處 fail-fast
+    `raise`（customise.sweep_materials 兩處、glb.py 兩處、build.py 與
+    blender/mellow.py 各一處），它們壞掉時當場中止建置，不需要收據也不會靜默，
+    所以不列在這裡。
     收據全文在 scratchpad/mutations.md，編號就是該檔的節號。
-    這張表與收據檔的對應由 `scripts/avatar/receipts.py` 機械檢查，不再靠人工
-    比對：判準是每一列的收據必須提到該守衛失敗時印出的字串，或實作它的函式／
-    常數名。用「印出來的字串」當判準正是為了抓連三輪出現的那個錯——把 verify.py
-    的守衛記到一個只跑了 selftest、對同一不變量用不同措辭的收據上。這裡逐道標編號而
+    這張表與收據檔的對應由 `scripts/avatar/receipts.py` 機械檢查：它從**這張表**
+    讀出每一列引用的收據編號，再要求被引用的那一份收據帶有一行
+    `EVIDENCE guard=<名字> control=<值> mutated=<值>`，而且兩個值必須不同。
+    第一版的判準是「收據裡提到該守衛失敗時印出的字串」，那是錯的，第八輪兩位
+    reviewer 各自打穿了它：`verify.report()` 是**無條件**印出每一道偵測器的名
+    字（通過時印的是 `coloured outlines: 0`），所以一段全綠的輸出照樣含有全部
+    十六個字串——reviewer 用一份「一個 mutation 都沒跑」的檔案拿到 16/16、
+    exit 0。改成 EVIDENCE 行之後同一份檔案得 0/19、exit 1。
+    這支檢查器證明的是「表與收據互相對得上」，不是「mutation 真的跑過」；收據
+    本身才是跑過的紀錄，它擋的是表去引用一份講別件事的收據。這裡逐道標編號而
     不寫「每一條都驗過」：上一輪那句全稱宣告是錯的，當時 loud_outlines、
     undeclared_rims、ragged_targets、SHAPE_KEY_MIN_MEAN 與前端那五條都沒有收
     據，而全稱句把缺口藏起來了，逐道標號則會讓缺口自己露出來。
