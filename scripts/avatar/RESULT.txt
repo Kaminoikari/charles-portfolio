@@ -4,20 +4,25 @@ Milfy 復刻的交付紀錄，對應 ~/milfy-refs/GOAL.md 的四組要求。
 shape key 接回、描邊與邊光改由模型宣告、死材質清掉，再加上雙 reviewer 逐輪
 指出的修正（逐項內容與輪次見第二版第五節，該節自己編號）。這裡刻意不複述件
 數：同一個計數寫在兩個地方，改了一邊忘了另一邊，已經在這份文件裡發生過一次。
-出貨檔 sha256 開頭 015cca16bc902f71（11,551,728 bytes），
-vertex sha b9807e3cb3dc7fc6。
+第三版 2026-09-01，見「第三版」一節：大腿腿帶縮到腿上、雙馬尾與短髮簇的彈簧
+修抖動、髮膚改成「貼圖基底 × MToon 乘色」的雙層定義、描邊加上色度上限，並補
+四個測試檔與一頁本機動態預覽。
+出貨檔 sha256 開頭 95b79fd3910eb98a（11,898,736 bytes），
+vertex sha 3881035dd0955b71。
 
 檔案 sha 怎麼讀：`make.py` 的位元組不是決定性的（Blender 匯出器對兩顆髮髻的
 索引陣列每次排序不同，見最後一節），所以**每跑一次 make.py 就換一個檔案
-sha，而模型一模一樣**。穩定的識別碼是 vertex sha b9807e3cb3dc7fc6，它從第二
-版定稿至今沒變過。本文其他地方出現的 sha（b2de2d7dcd48fdbd、389c189edcf23b4f、
+sha，而模型一模一樣**。穩定的識別碼是 vertex sha，它只在幾何真的改動時換：
+第二版定稿到第三版之前一直是 b9807e3cb3dc7fc6，第三版因為腿帶縮放與貼身重算
+換成 3881035dd0955b71。本文其他地方出現的 sha（b2de2d7dcd48fdbd、389c189edcf23b4f、
 48b687baa91e514d）都是當時那一次建置的值，用來說明「兩個檔案相不相同」這種
 比較，不是在指現在 public/avatar/ 裡的那一份。
 
-底下的章節有三種：一是「第二版」那一節，全部是第二版寫的；二是六道 gate 的
-逐字輸出與「對照圖」「production VRM」「npm test」，都已換成第二版出貨檔的
-實測；其餘都是第一版寫的。凡是與第二版衝突的地方以第二版為準，衝突處就地用
-【第二版：…】標註。第一版的 make.py 全程輸出與第一版的瀏覽器結果整段保留原
+底下的章節有四種：一是「第二版」「第三版」那兩節，各自成篇；二是六道 gate
+的逐字輸出與「production VRM」「npm test」，都已換成第三版出貨檔的實測；三
+是「對照圖」與兩節瀏覽器驗證，各版的紀錄並列、段首標明對象；其餘都是第一版
+寫的。凡是版本間衝突的地方以較晚的版本為準，衝突處就地用【第二版：…】
+【第三版：…】標註。第一版的 make.py 全程輸出與第一版的瀏覽器結果整段保留原
 樣（各自在段首標明），因為它們是那一次建置的紀錄，不是對現況的宣稱。
 
 是 .txt 不是 .md：底下的固定寬度表格與六道 gate 的逐字輸出，用 markdown
@@ -259,19 +264,19 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
 面數由 1,096 降到 544（錐形比放樣的環便宜），總面數 39,722 → 39,170。
 【第二版：總面數現在是 103,116；蝴蝶結自己仍是 544 面。】
 
-# 六道 gate 一次跑完，全部對 out/mika-milfy.vrm，在 build.py 的 manifest
-# 鍵序改動與 make.py 重建之後才跑（起跑 14:56:59，跑完 15:14:05）。四份出
-# 貨物的 mtime 都是 14:55:31，早於起跑，所以 gate 期間沒有任何一份被寫過；
-# 受測檔的 sha 起跑與跑完各記一次，兩次都是 015cca16bc902f71。逐字全文在
-# scratchpad/gates.log。
-=== verify（出貨檔 vs baseline）===
+# 六道 gate 一次跑完，全部對 out/mika-milfy.vrm，在第三版（大腿腿帶縮放、雙
+# 馬尾彈簧、髮膚雙層定義）之後才跑（起跑 09-02 07:57:54，跑完 08:07:34）。
+# 出貨物（out 與 public 的 .vrm 與 .parts.json）mtime 都是 09-01 18:23，早
+# 於起跑，gate 期間沒有任何一份被寫過；受測檔的 sha 起跑與跑完各記一次，兩
+# 次都是 95b79fd3910eb98a。逐字全文在 scratchpad/gates-0902.log。
+=== verify（帶 baseline）===
 == out/mika-milfy.vrm
    tris 103116  materials 34  images 43  nodes 144  bones 54
-   springs 11  colliders 12  blendShapeGroups 15
+   springs 4  colliders 12  blendShapeGroups 15
    Face.baked        10 prim    3158 tris  targets 56
    Body.baked        23 prim   86734 tris  targets 6
    Hair001.baked     73 prim   13224 tris  targets 0
-   vertex sha b9807e3cb3dc7fc6
+   vertex sha 3881035dd0955b71
    backwards-wound primitives: 0
    coloured outlines: 0
    materials no primitive uses: 0
@@ -284,14 +289,21 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
    compare(baseline, this) = []
    PASS
 
+  【第三版：springs 11 → 4。twintail.py 把 VRoid 留下的七組 HairJoint 短簇
+  彈簧整組拿掉（動捕快動作時 60Hz 單幀過衝約 29°，畫面上是抖動），雙馬尾自
+  己那組保留、hitRadius 由 96mm 收到 35mm、colliderGroups 清空（碰撞投影在
+  dance 中產生 27° 單幀跳動）。剩下四組：Bust、TopsUpperArm、Skirt、
+  Twintails。vertex sha 換成 3881035dd0955b71 是幾何真的動了：腿帶縮放與貼
+  身重算，見「第三版」一節。】
+
 === verify（不帶 baseline，同樣必須過）===
 == out/mika-milfy.vrm
    tris 103116  materials 34  images 43  nodes 144  bones 54
-   springs 11  colliders 12  blendShapeGroups 15
+   springs 4  colliders 12  blendShapeGroups 15
    Face.baked        10 prim    3158 tris  targets 56
    Body.baked        23 prim   86734 tris  targets 6
    Hair001.baked     73 prim   13224 tris  targets 0
-   vertex sha b9807e3cb3dc7fc6
+   vertex sha 3881035dd0955b71
    backwards-wound primitives: 0
    coloured outlines: 0
    materials no primitive uses: 0
@@ -303,22 +315,21 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
    dangling joint references: 0
    PASS
 
-=== pierce 靜止穿模 ===
+=== pierce ===
 at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           15 px  of    30 allowed (499 px on screen)
   Outfit_Cardigan              4 px  of   150 allowed (33848 px on screen)
   Outfit_Top                   2 px  of   150 allowed (7865 px on screen)
-  total 6   PASS
+  total 21   PASS
 
-=== selftest 20 輪隨機刪件＋換色（只列最後一輪，20 輪逐輪在 gates.log）===
-seed 598644
+=== selftest 20 輪隨機刪件＋換色（只列最後一輪，20 輪逐輪在 gates-0902.log）===
+seed 369891
   deletable parts available: 25
-  dropping: Acc_Ribbon_Waist, Outfit_Cardigan, Hair_Ahoge
-  retinting Mellow_Skirt_Cloth -> [0.681, 0.501, 0.47]
-  retinting Milfy_GoldInner -> [0.885, 0.441, 0.012]
-  removed 4 primitives, swept 65 accessors / 103 bufferViews
-  shape keys left with nothing to move: (No bra)Breasts_Cow
-  materials left painting nothing: Mellow_Outer, Milfy_MintDark
-  triangles 103116 -> 88370 (expected 88370)
+  dropping: Hair_Ear_R, Acc_Ribbon_Hair, Acc_HairClip_Bars
+  retinting Mellow_Inner -> [0.895, 0.874, 0.061]
+  retinting Milfy_EarInner -> [0.369, 0.012, 0.432]
+  removed 4 primitives, swept 33 accessors / 39 bufferViews
+  triangles 103116 -> 101696 (expected 101696)
   [ok] still a VRM0
   [ok] triangles match the manifest
   [ok] no orphan accessors
@@ -330,8 +341,8 @@ seed 598644
   [ok] retinted materials are still on the model
   [ok] every palette entry names live parts
   [ok] every shape key names live parts
-  [ok] 5 shape keys in the manifest still displace
-  [ok] 5 shape keys in the file are all in the manifest
+  [ok] 6 shape keys in the manifest still displace
+  [ok] 6 shape keys in the file are all in the manifest
   [ok] every mesh keeps one morph target count
   [ok] no material is left painting nothing
   [ok] every palette entry names a material still in the file
@@ -340,7 +351,7 @@ seed 598644
 
 20 rounds: PASS
 
-=== retarget 十支 vrma ===
+=== retarget ===
 GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
   akimbo.vrma            worst  +0.00 deg
   dance.vrma             worst  +0.00 deg
@@ -355,14 +366,14 @@ GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees o
 
   PASS
 
-=== measure 顏色與比例 ===
+=== measure ===
 顏色：官方參考圖取樣 vs 模型（CIE76 ΔE，1 約等於肉眼可辨的最小差）
-  髮   F00_000_Hair_00_01     參考 (254,249,245)  模型 (227,218,208)  ΔE  11.3  去亮度   3.5  取樣區內色差 16.6
-  膚   F00_000_00_Body_00     參考 (254,248,246)  模型 (245,237,229)  ΔE   5.0  去亮度   3.2  取樣區內色差  3.5
+  髮   F00_000_Hair_00_01     參考 (254,249,245)  模型 (207,185,161)  ΔE  25.3  去亮度  12.9  取樣區內色差 16.6
+  膚   F00_000_00_Body_00     參考 (254,248,246)  模型 (221,178,164)  ΔE  27.5  去亮度  16.5  取樣區內色差  3.5
   瞳   F00_000_00_EyeIris_00  參考 (157,137,142)  模型 (143,119,119)  ΔE   7.5  去亮度   3.3  取樣區內色差 39.6
   外套  Mellow_Outer           參考 ( 65, 65, 74)  模型 ( 63, 61, 66)  ΔE   3.0  去亮度   2.5  取樣區內色差  4.8
   皇冠  Milfy_Gold             參考 (228,202,175)  模型 (221,192,168)  ΔE   4.0  去亮度   2.0  取樣區內色差 22.5
-  5 個取樣點最差去亮度 ΔE 3.5
+  5 個取樣點最差去亮度 ΔE 16.5
 
 服裝材質（換裝後參考圖無對應，只記錄選色）
   Mellow_Inner       (244,241,236)
@@ -382,32 +393,44 @@ GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees o
   七點最大差 0.067（參考值以 64px 網格目視讀出，約 ±0.011）
   全高 1.5774 m
 
-=== motion 十支 vrma 穿模 ===
+  【第三版：numpy 的髮膚 ΔE 比第二版的 11.3／5.0 大很多，這是量測層的差，
+  畫面沒有退步。第三版把髮膚的顏色定義拆成三層：貼圖調到暖而偏暗的基底、
+  MToon 乘色（baseColorFactor／_Color／_ShadeColor 三者同值）、瀏覽器的光照
+  與 ACES 曝光把它提回 Milfy 的近白。measure 的算圖無光照，只看得到第一層。
+  用生產設定（avatarGuideEngine.ts 的 ACES 1.25 曝光＋三盞燈）逐材質深度遮
+  罩實測畫面中位數：髮 (207,206,195) 去亮度 ΔE 4.0、膚 (215,203,196) 去亮度
+  3.6，與第二版出貨時的 numpy 3.5 同級。皇冠在同一實測是 14.0，但皇冠常數第
+  三版沒動，那是 ACES 把暖金洗淡的既有性質，與這一批改動無關。實測步驟與全
+  部數字在 scratchpad/colorprobe-0902.md。】
+
+=== motion ===
 GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
   akimbo.vrma            worst  0.59 of limit
-  dance.vrma             worst  0.23 of limit
-  idleLoop.vrma          worst  0.05 of limit
+  dance.vrma             worst  0.67 of limit
+  idleLoop.vrma          worst  0.40 of limit
   modelPose.vrma         worst  0.59 of limit
-  peaceSign.vrma         worst  0.17 of limit
-  playFingers.vrma       worst  0.04 of limit
-  scratchHead.vrma       worst  0.43 of limit
-  spin.vrma              worst  0.25 of limit
-  squat.vrma             worst  0.34 of limit
-  stretch.vrma           worst  0.22 of limit
+  peaceSign.vrma         worst  0.63 of limit
+  playFingers.vrma       worst  0.37 of limit
+  scratchHead.vrma       worst  0.53 of limit
+  spin.vrma              worst  0.53 of limit
+  squat.vrma             worst  0.53 of limit
+  stretch.vrma           worst  0.47 of limit
 
   worst per part across every clip and frame:
+    Acc_Bandage_Thigh           20 px  of    30 allowed (639 px on screen)   0.67x  dance.vrma t=16.75s
     Outfit_Bottom               89 px  of   150 allowed (10125 px on screen)   0.59x  akimbo.vrma t=6.67s
     Outfit_Socks                25 px  of    74 allowed (3724 px on screen)   0.34x  squat.vrma t=7.2s
     Outfit_Cardigan             36 px  of   150 allowed (18022 px on screen)   0.24x  modelPose.vrma t=0.94s
-    Acc_Bandage_Thigh            7 px  of    30 allowed (765 px on screen)   0.23x  dance.vrma t=16.75s
     Acc_Ribbon_Hair              1 px  of    30 allowed (382 px on screen)   0.03x  dance.vrma t=10.05s
     Outfit_Top                   3 px  of   100 allowed (5012 px on screen)   0.03x  squat.vrma t=10.08s
 
   PASS
 
-  【第二版：上面是全解析度（103,116 面）版的實測。第一版 39,170 面時最差是
-  Outfit_Bottom 99px／0.66x（akimbo t=1.33s）。布料變密之後最差降到 89px／
-  0.59x，Outfit_Shoes 整個掉出榜外，換上來的 Acc_Ribbon_Hair 是 1px。】
+  【第三版：Acc_Bandage_Thigh 由 7px／0.23x 升到 20px／0.67x，多數 clip 的
+  worst 也跟著換成它——這是腿帶縮到大腿上（間隙 8mm → 3mm、貼身收尾 4mm）
+  的直接代價：布貼得越近，動作中露出皮膚的像素越多。仍在它自己的 30px 上限
+  內；其他各件與第二版持平。第二版同一輪的最差是 Outfit_Bottom 89px／0.59x，
+  這一版仍是 89px。】
 
 
 === 外觀特徵逐項（GOAL 二，十二項）===
@@ -480,7 +503,10 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                           (71,70,69) 的灰格）；荷葉邊下擺 ✗，
                                           廠商的 Skirt 是百褶不是荷葉。
 10 大腿繃帶（單邊不對稱）          PARTIAL 只在一條腿上 ✓（出貨檔量到 x 全在
-                                          -0.1466..-0.0076），
+                                          -0.1137..-0.0063；第二版是
+                                          -0.1466..-0.0076，第三版的
+                                          fit_ring_to_limb 把環縮到大腿
+                                          上，範圍跟著窄），
                                           Acc_Bandage_Thigh 5,498 tris
                                           （第一版減面後是 1,300）。
                                           型態是兩條綁帶加一個小吊飾，不是纏繞
@@ -772,7 +798,8 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     數字；第六輪補的「連標頭共 174 行」又讓兩個讀者算出 174 與 172，所以那個
     總數直接刪掉——它不承載任何論證，論證整個由「78 刪 78 加」撐住。build.py 結尾改
     成依固定鍵序 ('source','parts','palette','shapes','landmarks') 排序一
-    次。兩條路徑現在連 manifest 都逐位元組相同（sha 1339868bb59e4cac）；VRM
+    次。兩條路徑自此連 manifest 都逐位元組相同（第二版當時是
+    1339868bb59e4cac；第三版重建後是 e64058b08ed3b546，鍵序規則不變）；VRM
     的 sha 不受這一改影響，因為 manifest 是在 VRM 存檔之後才寫的（當時那次建
     置是 b2de2d7dcd48fdbd）。
   22 上面第 15 項用「selftest 十七條、verify 九項」描述修正前的狀態，而 17 與 9
@@ -969,6 +996,83 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   我為了截圖加的，長期開著會讓瀏覽器替每個訪客保留後備緩衝。沒有它 toDataURL
   抓回來是全黑 PNG，而全黑 PNG 看起來像一張成功的截圖。
 
+=== 第三版（2026-09-01，使用者在瀏覽器實機檢視後指出的三個問題）===
+
+改動在四個檔案：build.py +66/-20、outfit.py +57/-0、customise.py +47/-5、
+twintail.py +28/-1，另加四個測試檔與 live-preview 四件；模型重建一次（out
+與 public 同位元組，sha 95b79fd3910eb98a、vertex sha 3881035dd0955b71）。做
+這批改動的 session 沒有留下 build 全程輸出；本節的檔案內數字（sha、範圍、
+位移、hitRadius、springs 數）都在收尾時對出貨檔或第二版位元組重新量測，量測
+輸出在 scratchpad/gates-0902.log、colorprobe-0902.md、mutations-0902.md。
+三個動態現象的度數（27°、29° 的單幀跳動與過衝）出自 twintail.py 的註解，是
+改動當時在瀏覽器裡觀察到的值，收尾時沒有重現的管道，照註解引述。
+
+一、大腿腿帶浮在腿外
+    廠商的 Leg_belt 是照 Milfy 自己的大腿做的環，套上本模型後直徑過大；hug
+    只把埋進身體的頂點往外推，推不動一個本來就過大的環。新增
+    outfit.fit_ring_to_limb：以主環材質（Leg_Acc）的截面定直徑，把整組
+    primitive（含吊飾）用同一個 XZ 仿射變換縮到「大腿直徑＋2×間隙」，y 不
+    動，法線與 morph delta 一起帶。間隙由 8mm 收到 3mm，再以 4mm 貼身收尾。
+    出貨檔實測：Acc_Bandage_Thigh 的 x 範圍 -0.1137..-0.0063（第二版
+    -0.1466..-0.0076），仍全在單邊；Hutomomo_big／Hutomomo_slim 的位移經縮
+    放後是 5.24mm／4.48mm（第二版 5.97／4.68），selftest 的 shape key 檢查
+    全過。代價記在 pierce 與 motion：靜止 15px、dance 最差 20px，皆在
+    30px 上限內，見 gate 輸出後的【第三版】註。
+
+二、髮膚在瀏覽器裡白到與白衣分不開
+    第二版把貼圖直接解到近白（SKIN_TARGET 246,237,230），瀏覽器的 MToon 光
+    照與 ACES 1.25 曝光再提亮一層，畫面上皮膚與白色布料融在一起。第三版拆
+    成雙層：貼圖解到暖而偏暗的基底（SKIN_TARGET 222,178,165；髮
+    HAIR_SAT 0.75、HAIR_LIFT 0），再由新增的
+    customise.tone_textured_materials 寫一組 MToon 乘色（膚 0.96,0.90,0.87、
+    髮 0.92,0.84,0.80），baseColorFactor／_Color／_ShadeColor 三者同值；
+    materialProperties 與 materials 不同序時直接 SystemExit，不帶病同步。
+    customise.retone 同時補了「目標比來源暗」的路徑（回傳多一個 lighten 分
+    量）：非負的 lift 到不了比來源中位數更暗的目標。畫面驗證：生產打光下髮
+    去亮度 ΔE 4.0、膚 3.6，見 measure 輸出後的【第三版】註與
+    colorprobe-0902.md。
+    描邊同步上鎖：OUTLINE_COLOR 仍從 SKIN_TARGET 推導（膚動線跟動），新增
+    OUTLINE_CHROMA_MAX 0.038 當色度地板，膚色變暖之後描邊不會跟著變成鏽色。
+
+三、雙馬尾與短髮簇在動作中抖動
+    twintail.py 三個改動：雙馬尾彈簧的 hitRadius 由源模型髮簾的 96mm 收到
+    35mm（原半徑讓前兩節在靜止時就埋在頭部 collider 裡，three-vrm 的第一個
+    物理幀把重疊解開，畫面上是一次跳動）；該組 colliderGroups 清空（半徑合
+    身之後，碰撞投影在 dance 中仍有 27° 的單幀跳動，自由彈簧平滑且保有慣
+    性）；VRoid 留下的七組 HairJoint 短簇彈簧整組移除（動捕快動作時 60Hz 單
+    幀過衝約 29°，短簇改為跟頭剛性移動）。springs 11 → 4：Bust、
+    TopsUpperArm、Skirt、Twintails。
+
+四、新增的守衛，與收尾時的紅燈驗證
+    outfit_test.py      fit_ring_to_limb 的四個行為各一條：主環直徑＝肢體
+                        直徑＋2×間隙、同組 primitive 同一仿射、y 不動、
+                        morph delta 跟著縮放。四個 mutation（主環以外不變
+                        換、間隙只加一倍、y 被平移、delta 不縮放）逐一落
+                        地（替換前先斷言 pattern 命中數＝1）各自轉紅，
+                        位元組副本還原後全綠。
+    customise_test.py   retone 撞到更暗目標時真的變暗。mutation（lighten
+                        永遠 1.0）轉紅，還原後綠。
+    appearance_test.py  出貨檔的髮膚貼圖中位數夠暗且有彩度、MToon 乘色三值
+                        同步且非白、腿帶／大腿直徑比在 1.0–1.15。
+    spring_test.py      雙馬尾彈簧無 colliderGroups、全檔無 HairJoint 彈簧。
+    後兩檔整包指向第二版位元組（out/milfy.rerun.vrm，b2de2d7dcd48fdbd）重
+    跑是 7/7 全紅、指回出貨檔 7/7 全綠；「還原修正會紅」用真的第二版模型證
+    明，不必為此重建。
+    live-preview.html／.ts／.test.ts／-config.ts：用生產的 avatarGuideEngine
+    載本模型的本機預覽頁（10 動作／9 手勢／8 表情）。vitest 4 條綠；
+    Playwright 實機載入 state=ready、「10 支動作已就緒」、console 0 error。
+
+=== 第三版的瀏覽器驗證 ===
+同一個 browser-check.html，對第三版出貨檔，三個機位（front／quarter／face）
+各跑一次，三次都回：
+{"ok":true,"errors":[],"bytes":11898736,"sha256_first8":"95b79fd3910eb98a",
+ "spec":"0","bones":54,"expressions":15,"clips":10,"drew":true}
+頁面自算的 sha 與 shell 對 out/ 及 public/ 兩份的 shasum 相同，三者一致。
+console 只有 three-vrm 對 .vrma 檔的兩則既有 warning（VRMLookAtQuaternionProxy
+自動補建、VRMA specVersion 未宣告），與第二版時相同，都與模型無關。模型建於
+09-01 18:23，此驗證跑於 09-02 08:13，中間無任何重建，符合「瀏覽器驗證必須排
+在最後一次 build 之後」。
+
 === 老實說：做不到的地方，以及為什麼 ===
 第 9 項的荷葉下擺、第 11 項過膝襪、第 12 項熊耳拖鞋，還有第 7 項的落肩與第 10
 項的纏繞繃帶，共同的原因只有一個：你指定要套用的 MellowHeart Dream 是另一套
@@ -988,6 +1092,9 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
             方參考圖上沒有對應的東西可比，硬比是拿兩件不同的衣服算 ΔE。
             【第二版：其中「髮」那一點第一版比錯了對象，詳見第二版第四節；
             改正後五點最差去亮度 ΔE 是 3.5，不是 3.3。】
+            【第三版：numpy 的五點最差去亮度變成 16.5，量的是刻意調暗的貼
+            圖基底；生產打光下的畫面實測髮 4.0／膚 3.6，與 3.5 同級。機制
+            與實測見 measure 輸出後的【第三版】註。】
   帶尾方向  GOAL 第 8 項寫「帶尾垂到裙後」，官方圖上是垂在正面，照圖不照字。
 
   能補的都補了：Leg_belt 補上第 10 項的「單邊」、blender/bow.py 的蝴蝶結補上
@@ -1002,11 +1109,15 @@ git diff --stat public/avatar/mika-pink.vrm public/avatar/AvatarSample_B_webp.vr
 === 對照圖 ===
 【第二版：第一次交付時這一節有四張是第一版（39,170 面、修描邊與邊光之前）的
 算圖而沒有標註，審查抓到，重跑後換掉。目前的出處分兩種，都標在這裡：四張固
-定機位是現在這份出貨檔 015cca16bc902f71 的算圖（make.py 這次重跑時產生）；
+定機位是當時出貨檔 015cca16bc902f71 的算圖（make.py 那次重跑時產生）；
 compare.png、mtoon-*.png、side-check.png 是對前一份位元組
 b2de2d7dcd48fdbd 產生的，而那兩份位元組的差別只有兩顆髮髻索引陣列的排列順
 序，逐像素比對四個機位差異像素為 0，所以畫面上沒有任何差別。推導與量測見
 「第二版的瀏覽器驗證」一節。】
+【第三版：四張固定機位已隨 09-01 的重建換成 95b79fd3910eb98a 的算圖（與模型
+同分同秒產生，mtime 09-01 18:23）；compare.png、mtoon-*.png、side-check.png
+仍是第二版位元組的畫面，第三版的畫面驗證改由 colorprobe-0902.md 的逐材質實測
+與「第三版的瀏覽器驗證」承擔。】
 四張固定機位（無光照，本專案的 numpy 算圖）：
   scripts/avatar/out/final-{front,back,three_quarter,face}.png
 與參考並排：scripts/avatar/out/compare.png（1762x2674，四列）
@@ -1045,7 +1156,7 @@ out/mika-milfy.vrm` 及 `shasum -a 256 public/avatar/mika-milfy.vrm` 三者相�
 這一節重跑過四次，每次都是被同一條規矩逼出來的：瀏覽器驗證必須排在最後一次
 build 之後。前三次記的是 48b687baa91e514d、389c189edcf23b4f、
 b2de2d7dcd48fdbd；第四次是第五輪 review 之後改了 build.py 的 manifest 鍵序、
-重跑 make.py，出貨檔變成現在的 015cca16bc902f71。
+重跑 make.py，出貨檔變成第二版出貨的 015cca16bc902f71。
 
 那次重跑只換了檔案 sha，模型沒有變，而且這件事是量出來的不是推論的：拿前一
 份位元組（out/milfy.rerun.vrm）與現在這份逐一比對，1026 個 bufferView 裡只有
@@ -1105,10 +1216,14 @@ EarInner_L/R、Crown、CrownInner、Ahoge 三項全同。釘死 PYTHONHASHSEED �
 同。重跑 make.py 會換一個檔案 sha 而模型不變。沒有修，因為它在 Blender 匯出
 器裡面。
 
-現在 public/avatar/ 裡那一份的 sha 是 015cca16bc902f71、vertex sha
-b9807e3cb3dc7fc6，記在文件開頭與「第二版的瀏覽器驗證」一節；上面那幾個是第
-一版實驗當時的值。
+這一節寫成時 public/avatar/ 裡那一份的 sha 是 015cca16bc902f71、vertex sha
+b9807e3cb3dc7fc6（第三版起是 95b79fd3910eb98a／3881035dd0955b71，見文件開
+頭）；上面那幾個是第一版實驗當時的值。
 
 === npm test ===
 第一版：17 files / 321 tests 全綠。
 第二版：18 files / 326 tests 全綠（新增 avatarRim.test.ts 的 5 條）。
+第三版：19 files / 330 tests 全綠（src/ 沒有改動；新增 live-preview.test.ts
+的 4 條進了 vitest 收集範圍）。scripts/avatar 自己的 Python 測試（outfit 4、
+customise 1、spring 2、appearance 5）收尾時全部重跑過，全綠；紅燈驗證見第三
+版第四節與 scratchpad/mutations-0902.md。

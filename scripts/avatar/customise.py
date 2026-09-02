@@ -320,6 +320,44 @@ def tint(doc, material_name, rgb, views=None):
     return hit
 
 
+def tone_textured_materials(doc, image_names, rgb):
+    """Apply one MToon multiplier to every material using named images.
+
+    three-vrm reads the glTF factor while VRM0 renderers read `_Color` and
+    `_ShadeColor`. Keeping all three equal prevents bright live lighting from
+    washing a warm texture back toward white.
+    """
+    image_indices = {
+        index for index, image in enumerate(doc.get('images', ()))
+        if image.get('name') in image_names
+    }
+    texture_indices = {
+        index for index, texture in enumerate(doc.get('textures', ()))
+        if texture.get('source') in image_indices
+    }
+    materials = doc.get('materials', ())
+    properties = doc['extensions']['VRM']['materialProperties']
+    if len(properties) != len(materials):
+        raise SystemExit('materialProperties 與 materials 不同序，不能同步乘色')
+
+    changed = []
+    for index, material in enumerate(materials):
+        pbr = material.get('pbrMetallicRoughness', {})
+        texture_index = pbr.get('baseColorTexture', {}).get('index')
+        if texture_index not in texture_indices:
+            continue
+        alpha = pbr.get('baseColorFactor', [1, 1, 1, 1])[3]
+        factor = [*rgb, alpha]
+        pbr['baseColorFactor'] = factor
+        vectors = properties[index].setdefault('vectorProperties', {})
+        vectors['_Color'] = list(factor)
+        vectors['_ShadeColor'] = list(factor)
+        changed.append(material.get('name', f'材質 {index}'))
+    if not changed:
+        raise SystemExit(f'找不到使用指定貼圖的材質：{sorted(image_names)}')
+    return changed
+
+
 def _set_colour(doc, prop, rgb, skip=()):
     """Write one MToon vector property on every material, report what moved.
 
@@ -433,8 +471,9 @@ def retone(doc, views, image_name, target, mid=None):
     against the same target makes a mismatch impossible by construction.
 
     Only the median is moved. Everything the texture says relative to that -- the
-    blush, the lips, the shading under the chin -- keeps its offset, which is why
-    the lift is the pull-toward-white kind and not a multiply.
+    blush, the lips, the shading under the chin -- keeps its ordering. A lighter
+    target uses the pull-toward-white lift; a darker target scales lightness down,
+    because a non-negative lift cannot reach a tone below the source median.
 
     `mid` is a (low, high) brightness window narrowing which pixels define the
     tone. An iris texture needs it: half its area is a near-black pupil and a
@@ -461,9 +500,12 @@ def retone(doc, views, image_name, target, mid=None):
     h1, l1, s1 = colorsys.rgb_to_hls(*(np.asarray(target, dtype=np.float64) / 255.0))
     degrees = ((h1 - h0 + 0.5) % 1.0 - 0.5) * 360.0
     saturate = 0.0 if s0 <= 0 else s1 / s0
-    lift = 0.0 if l0 >= 1 else np.clip((l1 - l0) / (1.0 - l0), 0.0, 1.0)
-    hue(doc, views, image_name, degrees, saturate, lift=float(lift))
-    return degrees, saturate, float(lift)
+    lighten = 1.0 if l0 <= l1 else l1 / max(l0, 1e-9)
+    lift = (0.0 if l0 >= l1 or l0 >= 1
+            else np.clip((l1 - l0) / (1.0 - l0), 0.0, 1.0))
+    hue(doc, views, image_name, degrees, saturate,
+        lighten=float(lighten), lift=float(lift))
+    return degrees, saturate, float(lighten), float(lift)
 
 
 def remap(doc, manifest, dropped=()):

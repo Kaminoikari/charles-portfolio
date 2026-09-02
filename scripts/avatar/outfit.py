@@ -435,6 +435,63 @@ def loosen(piece, amount):
     return float(amount)
 
 
+def _cross_section(points):
+    """Return the XZ centre and diameter of a point cloud."""
+    low = points[:, [0, 2]].min(axis=0)
+    high = points[:, [0, 2]].max(axis=0)
+    return (low + high) * 0.5, high - low
+
+
+def _apply_xz_fit(item, scale, translation):
+    """Apply one XZ affine fit to geometry, normals, and morph deltas."""
+    piece = item['piece']
+    piece['pos'][:, [0, 2]] = piece['pos'][:, [0, 2]] * scale + translation
+
+    normal_scale = 1.0 / scale
+    piece['nrm'][:, [0, 2]] *= normal_scale
+    length = np.linalg.norm(piece['nrm'], axis=1, keepdims=True)
+    piece['nrm'] /= np.where(length == 0, 1.0, length)
+
+    for delta in item.get('targets', {}).values():
+        delta[:, [0, 2]] *= scale
+
+
+def fit_ring_to_limb(items, body_pos, source_materials, item_name,
+                     ring_material, y_shift, clearance):
+    """Resize every primitive of a vendor ring to the limb beneath it.
+
+    `hug` only pushes embedded vertices outward, so an oversized source ring
+    remains oversized. The fabric primitive defines the ring diameter while
+    every companion primitive, such as a buckle or jewel, receives the same
+    affine transform and stays attached. The requested clearance is radial,
+    therefore the fitted diameter is the limb diameter plus twice that value.
+    """
+    ring_items = [item for item in items if item['name'] == item_name]
+    main_items = [item for item in ring_items
+                  if source_materials[item['material']].get('name') == ring_material]
+    if not main_items:
+        raise SystemExit(f'{item_name} 找不到主環材質 {ring_material}')
+
+    main_pos = np.concatenate([item['piece']['pos'] for item in main_items])
+    shifted_y = main_pos[:, 1] + y_shift
+    side = np.sign(float(np.median(main_pos[:, 0])))
+    limb_mask = ((np.sign(body_pos[:, 0]) == side)
+                 & (body_pos[:, 1] >= shifted_y.min())
+                 & (body_pos[:, 1] <= shifted_y.max()))
+    limb = body_pos[limb_mask]
+    if not len(limb):
+        raise SystemExit(f'{item_name} 的高度範圍找不到同側肢體')
+
+    ring_center, ring_diameter = _cross_section(main_pos)
+    limb_center, limb_diameter = _cross_section(limb)
+    target_diameter = limb_diameter + 2.0 * clearance
+    scale = target_diameter / ring_diameter
+    translation = limb_center - ring_center * scale
+    for item in ring_items:
+        _apply_xz_fit(item, scale, translation)
+    return scale, ring_center, limb_center, limb_diameter
+
+
 def hug(piece, body_pos, body_nrm, margin, smooth=2, k=6):
     """Push a garment out until it clears the body, and no further.
 

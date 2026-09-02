@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Mika Milfy 動態預覽</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Space Grotesk", "Noto Sans TC", sans-serif;
+        font-synthesis: none;
+        --ink: oklch(96% 0.012 65);
+        --muted: oklch(70% 0.018 65);
+        --quiet: oklch(49% 0.014 65);
+        --ground: oklch(13% 0.012 48);
+        --surface: oklch(17% 0.015 48);
+        --line: oklch(31% 0.022 48);
+        --mars: oklch(65% 0.18 43);
+        --mars-soft: oklch(30% 0.07 43);
+        --mint: oklch(78% 0.12 175);
+        background: var(--ground);
+        color: var(--ink);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 20rem;
+        min-height: 100svh;
+        overflow: hidden;
+        background:
+          linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 4rem 4rem,
+          linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 4rem 4rem,
+          var(--ground);
+      }
+
+      .preview-shell {
+        display: grid;
+        min-height: 100svh;
+        grid-template-columns: minmax(19rem, 25rem) minmax(0, 1fr);
+      }
+
+      .control-deck {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        max-height: 100svh;
+        flex-direction: column;
+        overflow-y: auto;
+        border-right: 1px solid var(--line);
+        background: var(--surface);
+        padding: clamp(1.5rem, 3vw, 3rem);
+      }
+
+      .eyebrow {
+        margin: 0 0 0.5rem;
+        color: var(--mars);
+        font: 600 0.75rem/1.5 "SFMono-Regular", Consolas, monospace;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 8ch;
+        margin: 0;
+        font-size: clamp(2.25rem, 4vw, 4.5rem);
+        font-weight: 600;
+        letter-spacing: -0.06em;
+        line-height: 0.92;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        min-height: 3rem;
+        margin: 1.5rem 0 0;
+        color: var(--muted);
+        font-size: 0.875rem;
+        line-height: 1.6;
+      }
+
+      .status::before {
+        width: 0.5rem;
+        height: 0.5rem;
+        flex: 0 0 auto;
+        margin-right: 0.75rem;
+        border-radius: 50%;
+        background: var(--mint);
+        content: "";
+      }
+
+      .status[data-state="loading"]::before {
+        animation: breathe 1.1s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+        background: var(--mars);
+      }
+
+      .status[data-state="error"]::before {
+        background: oklch(68% 0.2 25);
+      }
+
+      .control-section {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .control-section h2 {
+        margin: 0;
+        color: var(--quiet);
+        font: 600 0.6875rem/1.5 "SFMono-Regular", Consolas, monospace;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .control-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+
+      button {
+        min-height: 2.75rem;
+        border: 1px solid var(--line);
+        border-radius: 0;
+        background: var(--ground);
+        color: var(--ink);
+        cursor: pointer;
+        font: inherit;
+        font-size: 0.8125rem;
+        text-align: left;
+        transition:
+          border-color 140ms cubic-bezier(0.25, 1, 0.5, 1),
+          color 140ms cubic-bezier(0.25, 1, 0.5, 1),
+          transform 140ms cubic-bezier(0.25, 1, 0.5, 1);
+      }
+
+      button:hover {
+        border-color: var(--mars);
+        color: var(--mars);
+        transform: translateY(-1px);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      button:focus-visible {
+        outline: 2px solid var(--mars);
+        outline-offset: 2px;
+      }
+
+      button[aria-pressed="true"] {
+        border-color: var(--mars);
+        background: var(--mars-soft);
+        color: var(--ink);
+      }
+
+      button:disabled {
+        border-color: var(--line);
+        color: var(--quiet);
+        cursor: wait;
+        opacity: 0.45;
+        transform: none;
+      }
+
+      .stage {
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 62% 45%, oklch(25% 0.055 44), transparent 34%),
+          linear-gradient(140deg, oklch(14% 0.016 48), oklch(10% 0.01 48));
+      }
+
+      .stage::before {
+        position: absolute;
+        top: clamp(1.5rem, 4vw, 4rem);
+        right: clamp(1.5rem, 4vw, 4rem);
+        color: var(--quiet);
+        content: "LOCAL MODEL LAB / 01";
+        font: 600 0.6875rem/1.5 "SFMono-Regular", Consolas, monospace;
+        letter-spacing: 0.12em;
+      }
+
+      .stage::after {
+        position: absolute;
+        right: 5%;
+        bottom: 6%;
+        left: 5%;
+        height: 1px;
+        background: var(--line);
+        content: "";
+      }
+
+      #mika-canvas {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .local-note {
+        position: absolute;
+        z-index: 2;
+        right: clamp(1.5rem, 4vw, 4rem);
+        bottom: clamp(1.5rem, 4vw, 4rem);
+        max-width: 28ch;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.75rem;
+        line-height: 1.6;
+        text-align: right;
+      }
+
+      @keyframes breathe {
+        from { opacity: 0.4; transform: scale(0.75); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      @media (max-width: 48rem) {
+        body {
+          overflow: auto;
+        }
+
+        .preview-shell {
+          grid-template-columns: 1fr;
+          grid-template-rows: minmax(28rem, 58svh) auto;
+        }
+
+        .stage {
+          grid-row: 1;
+        }
+
+        .control-deck {
+          grid-row: 2;
+          max-height: none;
+          border-top: 1px solid var(--line);
+          border-right: 0;
+          padding-bottom: max(2rem, env(safe-area-inset-bottom));
+        }
+
+        h1 {
+          max-width: none;
+        }
+
+        .local-note {
+          display: none;
+        }
+      }
+
+      @media (hover: none) and (pointer: coarse) {
+        button {
+          min-height: 3rem;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="preview-shell">
+      <aside class="control-deck" aria-label="Mika Milfy 動態控制台">
+        <p class="eyebrow">Avatar performance lab</p>
+        <h1>Mika Milfy</h1>
+        <p id="preview-status" class="status" data-state="loading" role="status" aria-live="polite">
+          正在載入 3D 模型。
+        </p>
+
+        <section class="control-section" aria-labelledby="motion-heading">
+          <h2 id="motion-heading">Motion capture</h2>
+          <div id="motion-controls" class="control-list"></div>
+        </section>
+
+        <section class="control-section" aria-labelledby="gesture-heading">
+          <h2 id="gesture-heading">Procedural gesture</h2>
+          <div id="gesture-controls" class="control-list"></div>
+        </section>
+
+        <section class="control-section" aria-labelledby="emotion-heading">
+          <h2 id="emotion-heading">Expression</h2>
+          <div id="emotion-controls" class="control-list"></div>
+        </section>
+
+        <section class="control-section" aria-labelledby="mode-heading">
+          <h2 id="mode-heading">State</h2>
+          <div id="mode-controls" class="control-list"></div>
+        </section>
+      </aside>
+
+      <section class="stage" aria-label="Mika Milfy 3D 動態畫面">
+        <canvas id="mika-canvas" aria-hidden="true"></canvas>
+        <p class="local-note">此模型只在本機載入，不會加入正式網站或部署產物。</p>
+      </section>
+    </main>
+    <script type="module" src="/scripts/avatar/live-preview.ts"></script>
+  </body>
+</html>

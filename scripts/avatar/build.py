@@ -81,13 +81,15 @@ MELLOW_PARTS = {'Inner': ('Outfit_Top', 0.010), 'Skirt': ('Outfit_Bottom', 0.014
                 'Socks': ('Outfit_Socks', 0.010), 'Shoes': ('Outfit_Shoes', 0.009),
                 'Main_Ribbon': ('Acc_Ribbon_Neck', 0.012),
                 'Belt': ('Acc_Belt_Waist', 0.020),
-                'Leg_belt': ('Acc_Bandage_Thigh', 0.008),
+                'Leg_belt': ('Acc_Bandage_Thigh', 0.003),
                 'Outer': ('Outfit_Cardigan', 0.020)}
 # 沿 y 平移，套在擬合之後、貼身之前。大腿繃帶是唯一需要的一件：廠商把它放在
 # Milfy 自己的大腿中段，本模型過了 proportion 之後裙襬落在 y=0.693，繃帶原位
 # 0.668-0.729 有六成埋在裙子裡，正面只露出 25mm 的一條。往下 45mm 讓它整條落
 # 在裸露的大腿上，也就是參考圖上它該在的位置。
 MELLOW_SHIFT = {'Acc_Bandage_Thigh': -0.045}
+THIGH_BAND_SOURCE_MATERIAL = 'Leg_Acc'
+THIGH_BAND_FINAL_CLEARANCE = 0.004
 # Extra room a garment needs for the poses rather than for the rest pose, ramped
 # from nothing at its top to this at its hem. See outfit.loosen.
 MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
@@ -157,22 +159,20 @@ BLENDER_PARTS = [
 ]
 
 # Hue rotation, saturation scale, and pull-toward-white for the hair textures.
-# The last two were fitted, not eyeballed: measure.py samples the reference
-# sheet, inverts the render's own light (gain and ambient, solved from the
-# three materials whose hue already matched) and asks what base colour would
-# have produced those pixels. The answer was a paler, much less saturated
-# blonde than the first pass shipped.
-HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.58, 0.48
+# The browser's MToon ambient and ACES exposure lift the final texture again,
+# so the asset retains a warm beige base and visible strand contrast here.
+HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.75, 0.0
+HAIR_MATERIAL_TONE = (0.92, 0.84, 0.80)
 # Accent streaks further than this from the hair's own hue are folded onto it
 # before the rotation; see customise.hue.
 HAIR_UNIFY = 60.0
 BROW_SHIFT, BROW_SAT = 140.0, 0.35
 
-# Mika's own skin is a deliberate salmon pink (the body texture's median is
-# 242,177,165). Milfy's is nearly white. This is the base colour the reference
-# sheet's thigh implies once the render's own light is taken back out, and both
-# skin textures are solved onto it so the neck seam cannot split.
-SKIN_TARGET = (246, 237, 230)
+# Both skin textures are solved onto one warm base so the neck seam stays
+# closed. MToon's final exposure lifts this base into Milfy's pale on-screen
+# tone while preserving enough chroma to separate her skin from white cloth.
+SKIN_TARGET = (222, 178, 165)
+SKIN_MATERIAL_TONE = (0.96, 0.90, 0.87)
 
 # The outline colour, derived from the skin rather than written down. The base
 # model's is VRoid's wine (0.275, 0.090, 0.125), drawn to sit on Mika's salmon
@@ -183,8 +183,10 @@ SKIN_TARGET = (246, 237, 230)
 # Taking the hue from SKIN_TARGET and dropping it to OUTLINE_VALUE keeps one
 # definition: move the skin and the line moves with it.
 OUTLINE_VALUE = 0.20
-OUTLINE_COLOR = tuple(round(c / max(SKIN_TARGET) * OUTLINE_VALUE, 4)
-                      for c in SKIN_TARGET)
+OUTLINE_CHROMA_MAX = 0.038
+_outline_raw = tuple(c / max(SKIN_TARGET) * OUTLINE_VALUE for c in SKIN_TARGET)
+_outline_floor = max(_outline_raw) - OUTLINE_CHROMA_MAX
+OUTLINE_COLOR = tuple(round(max(c, _outline_floor), 4) for c in _outline_raw)
 # The hair's line is black and stays black: black is not a paler version of a
 # hue, and rotating it toward the skin would just make it brown.
 OUTLINE_KEEP = tuple(f'F00_000_Hair_00_HAIR_0{i}' for i in range(1, 7))
@@ -790,7 +792,9 @@ def build(src, dst, manifest_path, out_manifest):
                                  MELLOW_GAIN)
             print(f'   服裝擬合 {os.path.basename(path)}：縮放 x{bundle["scale"]:.3f}，'
                   f'對位骨最大殘差 {bundle["residual_mm"]:.2f}mm')
-            for item in outfit.pieces(bundle, doc, views):
+            items = outfit.pieces(bundle, doc, views)
+            accepted = []
+            for item in items:
                 spec = MELLOW_PARTS.get(item['name'])
                 if spec is None:
                     continue
@@ -800,6 +804,33 @@ def build(src, dst, manifest_path, out_manifest):
                 settled, moved = settle(item['piece'], clear, shift, loosen_amount)
                 item['piece']['pos'] = settled
                 pushed[name] = max(pushed.get(name, 0.0), moved)
+                accepted.append((item, name))
+
+            accepted_items = [item for item, _ in accepted]
+            if any(item['name'] == 'Leg_belt' for item in accepted_items):
+                band_name, band_clear = MELLOW_PARTS['Leg_belt']
+                band_scale, _, _, thigh_diameter = outfit.fit_ring_to_limb(
+                    accepted_items,
+                    pool['pos'],
+                    bundle['src']['materials'],
+                    'Leg_belt',
+                    THIGH_BAND_SOURCE_MATERIAL,
+                    0.0,
+                    band_clear,
+                )
+                print('   大腿腿帶截面縮放 '
+                      f'x={band_scale[0]:.3f} z={band_scale[1]:.3f}，'
+                      f'大腿直徑 {thigh_diameter[0] * 1000:.0f}x'
+                      f'{thigh_diameter[1] * 1000:.0f}mm')
+                for band_item in accepted_items:
+                    if band_item['name'] != 'Leg_belt':
+                        continue
+                    final_move = outfit.hug(
+                        band_item['piece'], pool['pos'], pool['nrm'],
+                        THIGH_BAND_FINAL_CLEARANCE)
+                    pushed[band_name] = max(pushed.get(band_name, 0.0), final_move)
+
+            for item, name in accepted:
 
                 # The vendor's shape keys ride ON TOP of the settled garment,
                 # as the displacement fields they are. Re-settling the keyed
@@ -1124,11 +1155,26 @@ def build(src, dst, manifest_path, out_manifest):
 
     # --- skin. Same story as the hair, in two textures that must agree. ---
     for name in ('F00_000_00_Face_00', 'F00_000_00_Body_00'):
-        deg, sat, lift = customise.retone(doc, views, name, SKIN_TARGET)
-        print(f'   {name} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} 提亮 {lift:.2f}')
-    deg, sat, lift = customise.retone(doc, views, 'F00_000_00_EyeIris_00',
-                                      EYE_TARGET, mid=(60, 215))
-    print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} 提亮 {lift:.2f}')
+        deg, sat, light, lift = customise.retone(doc, views, name, SKIN_TARGET)
+        print(f'   {name} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
+              f'明度 x{light:.2f} 提亮 {lift:.2f}')
+    deg, sat, light, lift = customise.retone(
+        doc, views, 'F00_000_00_EyeIris_00', EYE_TARGET, mid=(60, 215))
+    print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
+          f'明度 x{light:.2f} 提亮 {lift:.2f}')
+
+    skin_materials = customise.tone_textured_materials(
+        doc,
+        {'F00_000_00_Face_00', 'F00_000_00_Body_00'},
+        SKIN_MATERIAL_TONE,
+    )
+    hair_materials = customise.tone_textured_materials(
+        doc,
+        {f'F00_000_Hair_00_0{i}' for i in range(1, 7)},
+        HAIR_MATERIAL_TONE,
+    )
+    print(f'   膚色 MToon 乘色 {SKIN_MATERIAL_TONE}，改了 {len(skin_materials)} 個材質')
+    print(f'   髮色 MToon 乘色 {HAIR_MATERIAL_TONE}，改了 {len(hair_materials)} 個材質')
 
     # --- outlines. Everything above moved colour that a texture or a factor
     #     carries; this moves the one that the second draw pass carries. ---

@@ -32,6 +32,7 @@ TIE_X, TIE_Y, TIE_Z = 0.072, 1.450, 0.086
 DROP = 0.690          # tie to tip; the curtain's own lowest vertex is y=0.749
 SEGMENTS = 6          # one more than the chain it replaces, same segment length
 BLEND = 0.040         # above the tie the scalp is left alone
+TAIL_HIT_RADIUS = 0.035
 
 
 def axis(side, t):
@@ -234,7 +235,33 @@ def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
         other['inverseBindMatrices'] = skin['inverseBindMatrices']
 
     # The spring that drove the single centre chain now drives the two tails.
-    for group in doc['extensions']['VRM']['secondaryAnimation']['boneGroups']:
+    secondary = doc['extensions']['VRM']['secondaryAnimation']
+    for group in secondary['boneGroups']:
         if old[0] in group.get('bones', []):
             group['bones'] = [report[p]['chain'][0] for p in report]
+            # The source curtain used a 96mm collision radius. The two rebuilt
+            # tails are much narrower, and keeping that radius places their
+            # first two segments inside the head colliders at rest. three-vrm
+            # resolves the overlap on its first physics frame as a visible
+            # snap, then repeats it whenever a motion brings the head back
+            # across the collider boundary.
+            group['hitRadius'] = TAIL_HIT_RADIUS
+            # Even with a fitted radius, collider projection produces 27°
+            # single-frame jumps during dance. Free tail springs remain smooth
+            # and keep their inertia, so they do not project against the source
+            # model's head and arm collider set.
+            group['colliderGroups'] = []
+            group['comment'] = 'Twintails'
+
+    # The remaining VRoid HairJoint chains only drive small upper-hair tufts.
+    # During quick mocap they overshoot by roughly 29 degrees in one 60 Hz
+    # frame, producing the visible twitch. The rebuilt HairTail chains retain
+    # secondary motion, while these short tufts follow the head rigidly.
+    secondary['boneGroups'] = [
+        group for group in secondary['boneGroups']
+        if not any(
+            doc['nodes'][root].get('name', '').startswith('HairJoint-')
+            for root in group.get('bones', ())
+        )
+    ]
     return report
