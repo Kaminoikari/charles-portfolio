@@ -65,6 +65,16 @@ class RingFitTest(unittest.TestCase):
         self.fit()
         np.testing.assert_array_equal(self.main['piece']['pos'][:, 1], y_before)
 
+    def test_fit_bends_normals_by_the_inverse_scale(self):
+        scale, _, _, _ = self.fit()
+        expected = np.array([1.0 / scale[0], 0.0, 1.0 / scale[1]])
+        expected /= np.linalg.norm(expected)
+        np.testing.assert_allclose(
+            self.main['piece']['nrm'],
+            np.tile(expected, (len(self.main['piece']['nrm']), 1)), atol=1e-9)
+        lengths = np.linalg.norm(self.jewel['piece']['nrm'], axis=1)
+        np.testing.assert_allclose(lengths, 1.0, atol=1e-9)
+
     def test_fit_scales_morph_deltas(self):
         delta_before = self.main['targets']['wide'].copy()
         scale, _, _, _ = self.fit()

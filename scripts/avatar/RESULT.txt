@@ -400,8 +400,10 @@ GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees o
   用生產設定（avatarGuideEngine.ts 的 ACES 1.25 曝光＋三盞燈）逐材質深度遮
   罩實測畫面中位數：髮 (207,206,195) 去亮度 ΔE 4.0、膚 (215,203,196) 去亮度
   3.6，與第二版出貨時的 numpy 3.5 同級。皇冠在同一實測是 14.0，但皇冠常數第
-  三版沒動，那是 ACES 把暖金洗淡的既有性質，與這一批改動無關。實測步驟與全
-  部數字在 scratchpad/colorprobe-0902.md。】
+  三版沒動，那是 ACES 把暖金洗淡的既有性質，與這一批改動無關。瞳沒有瀏覽器
+  實測值：全身構圖下虹膜太小，遮罩侵蝕 2px 後剩 0 個樣本，只能用上表 numpy
+  的去亮度 3.3（瞳的常數第三版也沒動）。實測步驟與全部數字在
+  scratchpad/colorprobe-0902.md。】
 
 === motion ===
 GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
@@ -812,6 +814,7 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     的數。已改成 13 並註明兩個檔各幾個。
   25 第 10 項的大腿環 x 範圍寫 -0.147..-0.009，出貨檔量到 -0.1466..-0.0076，上
     界差 1.4mm。已改成量到的值。「只在一條腿上」這個論點不受影響。
+    【第三版：縮環之後量到 -0.1137..-0.0063，第 10 項那格已就地更新。】
 
   第五輪：code reviewer PASS（連四輪），spec reviewer FAIL。抓到的：
 
@@ -1003,7 +1006,8 @@ twintail.py +28/-1，另加四個測試檔與 live-preview 四件；模型重建
 與 public 同位元組，sha 95b79fd3910eb98a、vertex sha 3881035dd0955b71）。做
 這批改動的 session 沒有留下 build 全程輸出；本節的檔案內數字（sha、範圍、
 位移、hitRadius、springs 數）都在收尾時對出貨檔或第二版位元組重新量測，量測
-輸出在 scratchpad/gates-0902.log、colorprobe-0902.md、mutations-0902.md。
+輸出在 scratchpad/gates-0902.log、colorprobe-0902.md、mutations-0902.md、
+remeasure-0902.md（範圍、位移與 hitRadius 的量測腳本與逐字輸出在最後這份）。
 三個動態現象的度數（27°、29° 的單幀跳動與過衝）出自 twintail.py 的註解，是
 改動當時在瀏覽器裡觀察到的值，收尾時沒有重現的管道，照註解引述。
 
@@ -1014,9 +1018,11 @@ twintail.py +28/-1，另加四個測試檔與 live-preview 四件；模型重建
     primitive（含吊飾）用同一個 XZ 仿射變換縮到「大腿直徑＋2×間隙」，y 不
     動，法線與 morph delta 一起帶。間隙由 8mm 收到 3mm，再以 4mm 貼身收尾。
     出貨檔實測：Acc_Bandage_Thigh 的 x 範圍 -0.1137..-0.0063（第二版
-    -0.1466..-0.0076），仍全在單邊；Hutomomo_big／Hutomomo_slim 的位移經縮
-    放後是 5.24mm／4.48mm（第二版 5.97／4.68），selftest 的 shape key 檢查
-    全過。代價記在 pierce 與 motion：靜止 15px、dance 最差 20px，皆在
+    -0.1466..-0.0076），仍全在單邊；Hutomomo_big／Hutomomo_slim 在檔內的
+    最終位移是 5.24mm／4.48mm，對第二版位元組同一把尺量到 7.00／5.48，比
+    值 0.749／0.817 與 xz 各向縮放相容（第二版節記的 5.97／4.68 是 graft
+    當下在服裝自身空間量的，另一個定義，兩者不可互比），selftest 的
+    shape key 檢查全過。代價記在 pierce 與 motion：靜止 15px、dance 最差 20px，皆在
     30px 上限內，見 gate 輸出後的【第三版】註。
 
 二、髮膚在瀏覽器裡白到與白衣分不開
@@ -1042,18 +1048,29 @@ twintail.py +28/-1，另加四個測試檔與 live-preview 四件；模型重建
     性）；VRoid 留下的七組 HairJoint 短簇彈簧整組移除（動捕快動作時 60Hz 單
     幀過衝約 29°，短簇改為跟頭剛性移動）。springs 11 → 4：Bust、
     TopsUpperArm、Skirt、Twintails。
+    代價一筆：verify 的「colliders 12」兩版都寫 12，但被引用的從 10 組變
+    成 2 組（只剩 Skirt 引用兩腿 UpperLeg 那兩組），其餘 10 組定義成了無
+    人引用的死資料。不清它們，因為清掉要重建、位元組會換；verify 只數個
+    數不查孤兒，這一塊是目前管線唯一沒有守衛的死資料。
 
 四、新增的守衛，與收尾時的紅燈驗證
-    outfit_test.py      fit_ring_to_limb 的四個行為各一條：主環直徑＝肢體
+    outfit_test.py      fit_ring_to_limb 的五個行為各一條：主環直徑＝肢體
                         直徑＋2×間隙、同組 primitive 同一仿射、y 不動、
-                        morph delta 跟著縮放。四個 mutation（主環以外不變
-                        換、間隙只加一倍、y 被平移、delta 不縮放）逐一落
+                        morph delta 跟著縮放、法線走 1/scale 再歸一（第五
+                        條是 code reviewer 第一輪指出的缺口，收尾時補上；
+                        fixture 的 xz 縮放各向不同，寫反必紅）。五個
+                        mutation（主環以外不變換、間隙只加一倍、y 被平
+                        移、delta 不縮放、normal_scale 寫成 scale）逐一落
                         地（替換前先斷言 pattern 命中數＝1）各自轉紅，
                         位元組副本還原後全綠。
     customise_test.py   retone 撞到更暗目標時真的變暗。mutation（lighten
                         永遠 1.0）轉紅，還原後綠。
     appearance_test.py  出貨檔的髮膚貼圖中位數夠暗且有彩度、MToon 乘色三值
-                        同步且非白、腿帶／大腿直徑比在 1.0–1.15。
+                        同步且非白、腿帶／大腿直徑比在 1.0–1.15。已知脆
+                        度（審查第一輪量出）：比值實測 [1.140, 1.057]，x
+                        向離上限只剩約 0.9mm 帶寬，且大腿取樣段只有 13 個
+                        低模頂點；重建時微移可能翻紅，翻紅時先重量再調門
+                        檻。
     spring_test.py      雙馬尾彈簧無 colliderGroups、全檔無 HairJoint 彈簧。
     後兩檔整包指向第二版位元組（out/milfy.rerun.vrm，b2de2d7dcd48fdbd）重
     跑是 7/7 全紅、指回出貨檔 7/7 全綠；「還原修正會紅」用真的第二版模型證
@@ -1061,6 +1078,10 @@ twintail.py +28/-1，另加四個測試檔與 live-preview 四件；模型重建
     live-preview.html／.ts／.test.ts／-config.ts：用生產的 avatarGuideEngine
     載本模型的本機預覽頁（10 動作／9 手勢／8 表情）。vitest 4 條綠；
     Playwright 實機載入 state=ready、「10 支動作已就緒」、console 0 error。
+    已知限制（審查第一輪指出，dev 專用頁，決定不修）：clip 載入失敗時
+    300ms 輪詢不會停；載入完成前每拍的 placement 探測會撞正在緩動的相
+    機；gesture 清單那條測試斷言的是自己的常數，擋不住引擎新增手勢後預
+    覽頁漏列。頁面只在 dev server 可達，不進生產包。
 
 === 第三版的瀏覽器驗證 ===
 同一個 browser-check.html，對第三版出貨檔，三個機位（front／quarter／face）
@@ -1093,8 +1114,9 @@ console 只有 three-vrm 對 .vrma 檔的兩則既有 warning（VRMLookAtQuatern
             【第二版：其中「髮」那一點第一版比錯了對象，詳見第二版第四節；
             改正後五點最差去亮度 ΔE 是 3.5，不是 3.3。】
             【第三版：numpy 的五點最差去亮度變成 16.5，量的是刻意調暗的貼
-            圖基底；生產打光下的畫面實測髮 4.0／膚 3.6，與 3.5 同級。機制
-            與實測見 measure 輸出後的【第三版】註。】
+            圖基底；生產打光下的畫面實測髮 4.0／膚 3.6，與 3.5 同級（瞳在
+            瀏覽器實測中取不到樣本，沿用 numpy 的 3.3）。機制與實測見
+            measure 輸出後的【第三版】註。】
   帶尾方向  GOAL 第 8 項寫「帶尾垂到裙後」，官方圖上是垂在正面，照圖不照字。
 
   能補的都補了：Leg_belt 補上第 10 項的「單邊」、blender/bow.py 的蝴蝶結補上
@@ -1114,8 +1136,8 @@ compare.png、mtoon-*.png、side-check.png 是對前一份位元組
 b2de2d7dcd48fdbd 產生的，而那兩份位元組的差別只有兩顆髮髻索引陣列的排列順
 序，逐像素比對四個機位差異像素為 0，所以畫面上沒有任何差別。推導與量測見
 「第二版的瀏覽器驗證」一節。】
-【第三版：四張固定機位已隨 09-01 的重建換成 95b79fd3910eb98a 的算圖（與模型
-同分同秒產生，mtime 09-01 18:23）；compare.png、mtoon-*.png、side-check.png
+【第三版：四張固定機位已隨 09-01 的重建換成 95b79fd3910eb98a 的算圖（同一次
+建置產生：模型 mtime 18:23:05，四張 18:23:08–18:23:14）；compare.png、mtoon-*.png、side-check.png
 仍是第二版位元組的畫面，第三版的畫面驗證改由 colorprobe-0902.md 的逐材質實測
 與「第三版的瀏覽器驗證」承擔。】
 四張固定機位（無光照，本專案的 numpy 算圖）：
