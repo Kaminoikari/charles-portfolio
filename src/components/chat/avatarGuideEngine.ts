@@ -622,6 +622,13 @@ export function initAvatarGuide(
         return
       }
       const loaded = gltf.userData.vrm as VRM
+      // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
+      // to measure and adjust materials under THIS scene's lights, not a
+      // reconstruction of them — the probe that copied the light constants by
+      // hand drifted from the real key position and mistuned a whole pass.
+      if (debugTap) {
+        ;(window as unknown as { __mikaVrm?: VRM }).__mikaVrm = loaded
+      }
       VRMUtils.removeUnnecessaryVertices(gltf.scene)
       VRMUtils.combineSkeletons(gltf.scene) // removeUnnecessaryJoints is deprecated in three-vrm 3.x
       VRMUtils.rotateVRM0(loaded) // VRM0 faces +Z; turn it toward the camera

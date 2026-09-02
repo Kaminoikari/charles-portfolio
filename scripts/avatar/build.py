@@ -50,6 +50,11 @@ BOWL_MEAN = 0.90
 # 這道由暗到亮的斜坡由每個面自己的法線鋪上去（uv_facet），背對光的那些面才
 # 會暗下來。
 GOLD_RAMP = (0.74, 1.0, 1.0)
+# 皇冠往中線與瀏海方向的剛體平移，套在 sink 之前；為什麼移、量怎麼來的，見
+# sink 呼叫處的註解。y 的 -10mm 是因為前移後皇冠落在外凸的瀏海面上，sink
+# 只會往下落（這次落了 0mm），不往上也不往內：不給 y 它就整頂浮在髮頂，
+# 參考圖上冠緣是半埋進髮際的。
+CROWN_SHIFT = (-0.025, -0.010, -0.020)
 # 上面那道斜坡的光向，前上方偏模型左。整條管線的算圖是無光照的（見
 # render.rasterise），明暗一律烘進貼圖或 UV，所以這裡也一樣。
 CROWN_LIGHT = (-0.30, 0.62, -0.73)
@@ -93,6 +98,14 @@ THIGH_BAND_FINAL_CLEARANCE = 0.004
 # Extra room a garment needs for the poses rather than for the rest pose, ramped
 # from nothing at its top to this at its hem. See outfit.loosen.
 MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
+# 外套的動作間隙。跟 loosen 是同一類需求（rest 量不到、動作才拖出來的穿模），
+# 但機制不能共用：外套有 13% 頂點是法線朝內的 teal 內裡 shell，沿自身法線外推
+# 會把內裡推「進」襯衫，modelPose 兩側胸口的鋸齒 teal 三角就是內裡刺穿襯衫。
+# 所以走 outfit.standoff：法線帶符號（內裡翻向，與外層平行同向移動，厚度不變）、
+# 只取水平分量（肩頂法線朝上，自然當錨點，領口不浮）、|x| 羽化排除袖管（袖子
+# 沒有病灶，量過軀幹片延伸到 |x|≈0.30，袖管在 0.30 之外）。10mm 是 akimbo 腰際
+# 手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm rest 間隙之上。
+MELLOW_STANDOFF = {'Outfit_Cardigan': 0.010}
 
 # And a key is only shipped if the vertices it moves go somewhere a person could
 # see: the mean displacement over its moved vertices, on at least one garment,
@@ -114,8 +127,10 @@ MELLOW_TINT = {
     'Sub_Acc':    ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
     'Belt_Acc':   ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
     'Leg_Acc':    ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
-    # 同一個金抄成兩份只動一份就會分岔，所以跟著 Milfy_Gold 一起提藍。
-    'Jewel':      ((0.867, 0.753, 0.660), (0.758, 0.637, 0.520)),
+    # 同一個金抄成兩份只動一份就會分岔，所以跟著 Milfy_Gold 一起動。數值與
+    # PALETTE 的 Milfy_Gold 不同字面：那邊過 ramp 貼圖（factor 要除 0.87 均值），
+    # 這裡無 ramp 直寫 factor，兩邊都以真引擎頁上解出的同一組 factor 為準。
+    'Jewel':      ((1.0, 0.600, 0.360), (0.945, 0.508, 0.283)),
     'Underwear':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
     'Outer':      ((0.341, 0.333, 0.361), (0.231, 0.224, 0.247)),
 }
@@ -171,7 +186,11 @@ BROW_SHIFT, BROW_SAT = 140.0, 0.35
 # Both skin textures are solved onto one warm base so the neck seam stays
 # closed. MToon's final exposure lifts this base into Milfy's pale on-screen
 # tone while preserving enough chroma to separate her skin from white cloth.
-SKIN_TARGET = (222, 178, 165)
+# 2026-09-02 由 (222,178,165) 再提亮：使用者要臉再淡一點。提亮量在真引擎頁
+# （live-preview.html?mikadebug=1，ACES＋正式打光）上以 factor 乘數解出
+# [1.24, 1.1548, 1.1007]，換算到線性空間乘回本值。臉和身體共用這一個目標，
+# 頸縫才不會開。
+SKIN_TARGET = (244, 190, 172)
 SKIN_MATERIAL_TONE = (0.96, 0.90, 0.87)
 
 # The outline colour, derived from the skin rather than written down. The base
@@ -215,16 +234,22 @@ PALETTE = {
     # garment's colour; sharing would mean recolouring the socks also recoloured
     # the three bandages, which is a surprise the manifest does not warn about.
     'Milfy_Sock':     ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
-    # B 由 0.604 提到 0.660：measure 的皇冠取樣點顯示參考的金是 (228,202,175)，
-    # 紅藍差 53，先前這裡是 67，去亮度 ΔE 6.2。金屬的暖度靠 R-G，不是靠壓藍。
-    'Milfy_Gold':     ((0.867, 0.753, 0.660), (0.758, 0.637, 0.520)),
+    # 2026-09-02 整組換成真引擎頁解出的值：numpy 量測看不見打光層，先前照
+    # 參考表 (228,202,175) 解的 (0.867,0.753,0.660) 在 ACES＋正式打光下渲染成
+    # 近白，使用者反映皇冠太淡。在 live-preview.html?mikadebug=1 上直接調
+    # factor 收斂到畫面讀值 (225±4, 205±4, 180±6)（idle 手勢造成 ±6 噪音底），
+    # 這裡存的是該 factor 乘回 ramp 均值 0.87 的 PALETTE 值；r 取 0.869 而不是
+    # 0.870，給「除以均值後不得超過 1.0」的守衛留浮點餘裕。
+    'Milfy_Gold':     ((0.869, 0.522, 0.313), (0.945, 0.508, 0.283)),
     'Milfy_Hair':     ((0.929, 0.882, 0.855), (0.818, 0.760, 0.727)),
     'Milfy_Bear':     ((0.965, 0.953, 0.937), (0.867, 0.847, 0.827)),
     # 內耳。參考圖上內耳 (227,209,206) 對髮色 (240,227,225) 的比值，套到本
     # 模型上色後髮絲貼圖最亮處 (233,228,223) 算出來的，不是目測挑的粉色。
-    # 皇冠齒縫裡露出來的內側面。同樣由參考圖的比值來：暗面 (174,147,135) 對
-    # 亮面 (234,208,181)，把這個比值乘上 Milfy_Gold 自己的顏色。
-    'Milfy_GoldInner': ((0.645, 0.533, 0.451), (0.548, 0.446, 0.372)),
+    # 皇冠齒縫裡露出來的內側面。原本按參考圖暗亮面比值從 Milfy_Gold 推導；
+    # 2026-09-02 改隨 Milfy_Gold 一起在真引擎頁上解，兩者各自乘同一組提暖係數
+    # （Gold 的 r 被 1.0 夾住、這裡沒有，比值在 r 上因此偏離舊構造）。lit 同樣
+    # 是頁上 factor 乘回 ramp 均值 0.87。
+    'Milfy_GoldInner': ((0.700, 0.370, 0.214), (0.683, 0.355, 0.202)),
     # OK 繃與橫槓髮夾。取樣要取本模型這個配色的那張參考圖：
     # official/front-back-with-cardigan.jpg 上 OK 繃是 (204,225,226) 的淡薄荷、
     # 橫槓是接近炭黑的 (95,93,98)。ingame/01 是冰白配色的另一個版本，那張上面
@@ -769,14 +794,14 @@ def build(src, dst, manifest_path, out_manifest):
         # knowable once every garment has been through.
         shapes = {}
 
-        def settle(piece, clear, shift, loosen_amount):
+        def settle(piece, clear, shift, loosen_amount, standoff_amount):
             """Run the whole placement chain on a copy, return the positions.
 
-            The chain is shift, then hug, then loosen; everything after it --
-            bind, drape -- assigns weights and moves nothing. It is a function
-            rather than three inline statements so that the one thing which must
-            NOT go through it, the shape key deltas below, is visibly not going
-            through it.
+            The chain is shift, then hug, then loosen, then standoff; everything
+            after it -- bind, drape -- assigns weights and moves nothing. It is
+            a function rather than four inline statements so that the one thing
+            which must NOT go through it, the shape key deltas below, is visibly
+            not going through it.
             """
             work = dict(piece)
             work['pos'] = np.array(piece['pos'])
@@ -785,6 +810,8 @@ def build(src, dst, manifest_path, out_manifest):
             moved = outfit.hug(work, pool['pos'], pool['nrm'], clear)
             if loosen_amount is not None:
                 outfit.loosen(work, loosen_amount)
+            if standoff_amount is not None:
+                outfit.standoff(work, standoff_amount)
             return work['pos'], moved
 
         for path in mellow_files:
@@ -801,7 +828,9 @@ def build(src, dst, manifest_path, out_manifest):
                 name, clear = spec
                 shift = MELLOW_SHIFT.get(name, 0.0)
                 loosen_amount = MELLOW_LOOSEN.get(name)
-                settled, moved = settle(item['piece'], clear, shift, loosen_amount)
+                standoff_amount = MELLOW_STANDOFF.get(name)
+                settled, moved = settle(item['piece'], clear, shift,
+                                        loosen_amount, standoff_amount)
                 item['piece']['pos'] = settled
                 pushed[name] = max(pushed.get(name, 0.0), moved)
                 accepted.append((item, name))
@@ -1047,6 +1076,12 @@ def build(src, dst, manifest_path, out_manifest):
         skull = np.concatenate([
             garment.body_pool(doc, views, manifest, n)['pos']
             for n in ('Hair_Bangs', 'Hair_Side_L', 'Hair_Side_R', 'Hair_Back')])
+        # 2026-09-02 使用者指出皇冠壓住右熊耳太多：出貨檔量到皇冠 x 質心 +0.067
+        # 幾乎正對耳盤 +0.075，前視圖 x 重疊佔耳寬 84%。往中線收又往瀏海前移，
+        # sink 會讓它順著瀏海坡面落定。位置常數會靜默過期（appearance_test 的
+        # test_crown_rides_the_bangs_not_the_ear 釘住移完的相對關係）。
+        for shell_piece in (head_pieces['Crown'], head_pieces['CrownInner']):
+            shell_piece['pos'] = shell_piece['pos'] + np.array(CROWN_SHIFT)
         shells, fell = sink([head_pieces['Crown'], head_pieces['CrownInner']],
                             skull)
         print(f'   皇冠整體下沉 {fell * 1000:.0f}mm 貼上髮面')
@@ -1074,6 +1109,29 @@ def build(src, dst, manifest_path, out_manifest):
                 mesh='Hair001.baked')
         put(garment.crown([0.028, crown_y + 0.026, 0.004], 0.030, 0.036, 5, hj, hw),
             'Milfy_Gold', 'Acc_Crown', mesh='Hair001.baked')
+
+    # 後腦掃髮帽。使用者從背面看到「禿頭」：Hair_Back 只剩 y[1.44,1.54] 的辮底
+    # 一圈（長髮簾全被收進兩側雙馬尾），枕骨從髮際到頭頂裸出一條鑰匙孔形皮膚，
+    # 而且辮底帶內中央髮面 z 0.120 還比頭骨 0.124 低。參考圖背面（official/
+    # front-back-with-cardigan.jpg 右）後腦整片有髮、只在頸背露一小塊 V 形皮膚。
+    # 所以從 Body_Skin 的後半球切殼外推 5mm 當掃髮帽：下緣 1.335 是枕骨轉頸的
+    # 位置（z-y 剖面上 z 從 0.06 收到 0.04 處），z>0.03 排除人耳並把前緣留給
+    # 瀏海與髮髻蓋。UV 用 uv_ball：v 隨高度走完髮絲斜坡、u 繞軸給側向紋，讀起
+    # 來是從髮旋往下攏的髮流。appearance_test 的 test_back_skull_is_covered_
+    # by_hair 釘住「枕骨帶內髮面必須高過頭骨」這個機制本身。
+    body_pool_full = garment.body_pool(doc, views, manifest, 'Body_Skin')
+    bp = body_pool_full['pos']
+    nape_mask = (bp[:, 1] > 1.335) & (bp[:, 2] > 0.03)
+    nape_cap = garment.shell(body_pool_full, nape_mask, 0.005)
+    # uv_ball 的 v 會走到斜坡最淡端（0.75），帽的下半就比兩側髮簾亮一階，背
+    # 面看是一塊色差。把 v 壓回髮簾中段（0.14-0.44），帽色和左右髮流才是同
+    # 一頭頭髮。
+    cap_uv = uv_ball(nape_cap['pos'])
+    cap_uv[:, 1] = 0.14 + (cap_uv[:, 1] - 0.20) * (0.30 / 0.55)
+    put(rigid(nape_cap, cap_uv), hair_mat, 'Hair_Nape',
+        mesh='Hair001.baked')
+    print(f'   後腦掃髮帽 {len(nape_cap["pos"])} 頂點，'
+          f'y[{nape_cap["pos"][:, 1].min():.3f}, {nape_cap["pos"][:, 1].max():.3f}]')
 
     # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
     # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有

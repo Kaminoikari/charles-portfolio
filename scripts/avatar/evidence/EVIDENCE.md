@@ -1,3 +1,8 @@
+> 【入庫註記 2026-09-02】本檔是第二版第 9 輪 review 當時的凍結索引，整份原樣
+> 搬入 repo。它點名的部分工作檔（review-diff.txt、adv-*.md、bcheck.html、
+> gates-final.log 等）屬那一輪 session 的 scratchpad，未一併入庫；本檔在這裡
+> 的角色是收據內容的原文出處，不是 evidence/ 目錄的索引。
+
 # Milfy 第二版 — 稽核用證據索引（第 9 輪，兩位 reviewer 第 8 輪皆 FAIL 後）
 
 出貨檔：public/avatar/mika-milfy.vrm

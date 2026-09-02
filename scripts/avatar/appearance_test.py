@@ -16,7 +16,10 @@ import glb  # noqa: E402
 BASE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy.vrm')
 MANIFEST = MODEL.replace('.vrm', '.parts.json')
-SKIN_MAX_CHANNEL = 222
+# 2026-09-02 隨 SKIN_TARGET (222,178,165)→(244,190,172) 重校：上限給 +4 容差，
+# 下限釘住「使用者要求的提亮確實有發生」，回退到舊值 222 會低於下限轉紅。
+SKIN_MAX_CHANNEL = 248
+SKIN_MIN_CHANNEL = 238
 SKIN_MIN_CHROMA = 40
 HAIR_MAX_CHANNEL = 208
 HAIR_MIN_CHROMA = 40
@@ -91,9 +94,59 @@ class AppearanceTest(unittest.TestCase):
 
     def test_skin_texture_keeps_visible_tone_under_mtoon_lighting(self):
         median = self.texture_median('F00_000_00_Body_00')
-        has_natural_tone = (float(median.max()) <= SKIN_MAX_CHANNEL
+        has_natural_tone = (SKIN_MIN_CHANNEL <= float(median.max()) <= SKIN_MAX_CHANNEL
                             and float(np.ptp(median)) >= SKIN_MIN_CHROMA)
         self.assertTrue(has_natural_tone, f'膚色中位數為 {median}')
+
+    def test_back_skull_is_covered_by_hair(self):
+        """後腦骨面凸出髮面就是「禿頭」，這裡釘機制不釘某一片髮的存在。
+
+        v3-v5 的實況：Hair_Back 只剩辮底一圈，枕骨帶 (y 1.36-1.50) 中央的頭骨
+        z 0.124 高過髮面 0.120，背視圖從髮際到頭頂裸出鑰匙孔形皮膚。修法是
+        Hair_Nape 掃髮帽；本測試對「任何 Hair_* 部件的聯集」量，帽被改名或
+        換實作都不會誤紅，帽被拿掉或沉進頭骨就會紅。
+        """
+        skull = self.part_points('Body_Skin')
+        hair = np.concatenate([
+            self.part_points(name) for name in self.manifest['parts']
+            if name.startswith('Hair_')
+        ])
+        for y_low in (1.36, 1.40, 1.44, 1.48):
+            band = (
+                lambda p: p[(p[:, 1] >= y_low) & (p[:, 1] < y_low + 0.04)
+                            & (p[:, 2] > 0.0) & (np.abs(p[:, 0]) < 0.03)]
+            )
+            skull_z = float(band(skull)[:, 2].max())
+            hair_z = float(band(hair)[:, 2].max())
+            self.assertGreaterEqual(
+                hair_z, skull_z + 0.002,
+                f'y {y_low:.2f} 帶：髮面 z {hair_z:.3f} 沒有蓋過頭骨 z {skull_z:.3f}')
+
+    def test_crown_rides_the_bangs_not_the_ear(self):
+        """使用者指出皇冠壓住右熊耳太多；修正後它騎在瀏海側。
+
+        釘的是相對關係：皇冠對耳盤的前視圖 x 重疊，修正前佔耳寬 84%、修正後
+        54%；皇冠質心 z 修正前 -0.032、修正後 -0.057（前移到瀏海坡上）。
+        """
+        crown = self.part_points('Acc_Crown')
+        ear = self.part_points('Hair_Ear_R')
+        overlap = max(0.0, min(crown[:, 0].max(), ear[:, 0].max())
+                      - max(crown[:, 0].min(), ear[:, 0].min()))
+        self.assertLessEqual(overlap / float(np.ptp(ear[:, 0])), 0.60)
+        self.assertLessEqual(float(crown[:, 2].mean()), -0.045)
+
+    def test_crown_gold_stays_warm(self):
+        """皇冠曾在真引擎的 ACES＋打光下渲染成近白（使用者回報「顏色太淡」）。
+
+        病灶是 factor 的紅藍差太小：褪色前 (0.997,0.866,0.759) 差 0.24，
+        解完後 (0.999,0.600,0.360) 差 0.64。門檻取 0.5，回退舊值轉紅。
+        """
+        materials = self.textured_materials('Milfy_Gold_ramp')
+        self.assertTrue(materials, '找不到 Milfy_Gold_ramp 的材質')
+        for material, _ in materials:
+            base = material['pbrMetallicRoughness']['baseColorFactor'][:3]
+            self.assertGreaterEqual(max(base) - min(base), 0.5,
+                                    f'{material["name"]} 乘色為 {base}')
 
     def test_hair_texture_keeps_visible_tone_under_mtoon_lighting(self):
         median = self.texture_median('F00_000_Hair_00_01')

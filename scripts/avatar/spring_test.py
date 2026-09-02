@@ -98,12 +98,18 @@ class PruneTest(unittest.TestCase):
 
     def test_nothing_changes_when_every_group_is_used(self):
         doc = self.make_doc()
-        for group in doc['extensions']['VRM']['secondaryAnimation']['boneGroups']:
+        secondary = doc['extensions']['VRM']['secondaryAnimation']
+        for group in secondary['boneGroups']:
             group['colliderGroups'] = [0, 1, 2, 3]
+        groups_before = secondary['colliderGroups']
+        references_before = [g['colliderGroups'] for g in secondary['boneGroups']]
         removed = twintail.prune_stranded_collider_groups(doc)
         self.assertEqual([], removed)
-        self.assertEqual(
-            4, len(doc['extensions']['VRM']['secondaryAnimation']['colliderGroups']))
+        # 釘住 early-return：list 物件必須原樣留下，不是等值重建。重建等值列表
+        # 也能過等值斷言，但那代表 no-op 路徑其實走了重寫，守衛就沒守到。
+        self.assertIs(groups_before, secondary['colliderGroups'])
+        for before, group in zip(references_before, secondary['boneGroups']):
+            self.assertIs(before, group['colliderGroups'])
 
 
 if __name__ == '__main__':

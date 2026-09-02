@@ -435,6 +435,44 @@ def loosen(piece, amount):
     return float(amount)
 
 
+def standoff(piece, amount, torso_x=0.26, sleeve_x=0.32):
+    """Push a lined garment horizontally off the body, both shells in parallel.
+
+    loosen cannot serve the cardigan: 13% of its vertices are the teal inner
+    lining, whose normals face the body, and a push along the vertex's own
+    normal drives that lining INTO the blouse -- the very poke this exists to
+    remove. So the direction is the normal with its sign flipped wherever it
+    points at the garment's own XZ centroid: a lining vertex then moves the
+    same way as the outer-shell vertex it doubles, the pair translates rigidly
+    and the knit keeps its thickness.
+
+    The y component is dropped rather than ramped. Shoulder-top normals point
+    up, so a horizontal push pins the collar to the shoulders for free -- the
+    hoop problem loosen solves with its hem ramp never arises. And the sleeves
+    are excluded by a fade over |x| (torso panels reach |x|~0.30, the sleeve
+    tubes live beyond it): they have no poke to fix, and the sign test is
+    unreliable on a tube whose axis passes near the centroid.
+    """
+    pos = piece['pos']
+    nrm = piece['nrm']
+    centre = pos.mean(axis=0)
+    radial = pos - centre
+    outward = nrm[:, 0] * radial[:, 0] + nrm[:, 2] * radial[:, 2]
+    # The flip must be smooth, not a hard sign: where a rim curls, neighbouring
+    # vertices straddle the boundary, and a hard sign pushes them 2x amount
+    # apart -- the health check caught the cardigan's Breasts_Cow shape key
+    # stretching such an edge 1.8x and flipping faces. A cosine ramp sends the
+    # push to zero at the boundary instead, so no edge ever shears.
+    length = np.hypot(radial[:, 0], radial[:, 2]) * np.hypot(nrm[:, 0], nrm[:, 2])
+    cosine = outward / np.maximum(length, 1e-9)
+    sign = np.clip(cosine / 0.3, -1.0, 1.0)
+    horizontal = np.array(nrm)
+    horizontal[:, 1] = 0.0
+    fade = np.clip((sleeve_x - np.abs(pos[:, 0])) / (sleeve_x - torso_x), 0.0, 1.0)
+    piece['pos'] = pos + amount * (sign * fade)[:, None] * horizontal
+    return float(amount)
+
+
 def _cross_section(points):
     """Return the XZ centre and diameter of a point cloud."""
     low = points[:, [0, 2]].min(axis=0)

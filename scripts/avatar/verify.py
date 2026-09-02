@@ -361,7 +361,8 @@ def stranded_collider_groups(path):
     file to that, the same pairing as every other write-plus-guard here.
     """
     doc, _ = glb.load(path)
-    secondary = doc['extensions']['VRM']['secondaryAnimation']
+    secondary = doc.get('extensions', {}).get('VRM', {}).get(
+        'secondaryAnimation', {})
     used = {index
             for group in secondary.get('boneGroups', [])
             for index in group.get('colliderGroups', [])}
