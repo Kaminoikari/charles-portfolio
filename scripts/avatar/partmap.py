@@ -93,9 +93,11 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
     if cut.any():
         tris, ids = tris[~cut], ids[~cut]
 
-    texmap = {i: (np.array([[list(palette[n]) + [255]]]), False)
+    # 三元組是 render.textures 的格式（影像、是否要取樣、兩軸是否 REPEAT）。
+    # 這裡全是 1x1 的純色，取樣旗標是 False，包裝方式因此永遠用不到。
+    texmap = {i: (np.array([[list(palette[n]) + [255]]]), False, (False, False))
               for i, n in enumerate(names)}
-    texmap[-1] = (np.array([[[20.0, 20.0, 20.0, 255.0]]]), False)
+    texmap[-1] = (np.array([[[20.0, 20.0, 20.0, 255.0]]]), False, (False, False))
 
     if facing:
         normals = np.concatenate([glb.read_accessor(doc, views, pr['attributes']['NORMAL'])
@@ -120,7 +122,8 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
         vside = np.concatenate(vside)
         # Six ids: limb * 2 + outward. Spread across the greyscale so that
         # rounding the rasterised value back to an id cannot land on a neighbour.
-        extra = {k: (np.array([[[20.0 + 40 * k] * 3 + [255.0]]]), False) for k in range(6)}
+        extra = {k: (np.array([[[20.0 + 40 * k] * 3 + [255.0]]]), False, (False, False))
+                 for k in range(6)}
 
     world = render.world_matrices(doc)
     head = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}

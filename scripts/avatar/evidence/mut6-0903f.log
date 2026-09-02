@@ -1,0 +1,11 @@
+=== M2 逐欄去趨勢 -> 整張往中位數收 85%（重跑並留檔）: patched customise.py
+M2 逐欄去趨勢 -> 整張往中位數收 85%（重跑並留檔）: mutant sha 55b8a71b436076a2
+M2 逐欄去趨勢 -> 整張往中位數收 85%（重跑並留檔）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+M2 逐欄去趨勢 -> 整張往中位數收 85%（重跑並留檔）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> RED  AssertionError: 0.013725490196078494 not greater than or equal to 0.025 : F00_000_Hair_00_01 亮度 p10-p90 只剩 0.014，髮絲被壓平了
+M2 逐欄去趨勢 -> 整張往中位數收 85%（重跑並留檔）: kept as public/avatar/probe-even.vrm
+=== B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0）: patched build.py
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0）: mutant sha 7ed54e5b287fa16f
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 50.0 not less than or equal to 12.0 : 貼頭層暖度 81.0，自由段 31.0，差 50.0
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0）: kept as public/avatar/probe-b0.vrm
+restored; ship 66871116b6263fb9

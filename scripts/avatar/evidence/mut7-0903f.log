@@ -1,0 +1,6 @@
+=== B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0），膚色仍是新的: patched build.py
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0），膚色仍是新的: mutant sha b4a83f5a4dfea7f7
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0），膚色仍是新的: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 50.0 not less than or equal to 12.0 : 貼頭層暖度 81.0，自由段 31.0，差 50.0
+B0 第五版髮色常數且不去趨勢（HAIR_SAT/LIFT 0.75/0.0、FLATTEN 0），膚色仍是新的: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+kept as public/avatar/probe-b0.vrm
+restored; ship 66871116b6263fb9

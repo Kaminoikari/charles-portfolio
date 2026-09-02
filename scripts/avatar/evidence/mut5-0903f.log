@@ -1,0 +1,6 @@
+=== B1 完整重現第五版出貨的配色：SKIN_TARGET (244,190,172)、HAIR 0.75/0.0、不去趨勢: patched build.py
+B1 完整重現第五版出貨的配色：SKIN_TARGET (244,190,172)、HAIR 0.75/0.0、不去趨勢: mutant sha d622ddc9af6ce3ac
+kept as public/avatar/probe-v5.vrm
+restored; ship 66871116b6263fb9
+build.py byte-identical: True
+customise.py byte-identical: True

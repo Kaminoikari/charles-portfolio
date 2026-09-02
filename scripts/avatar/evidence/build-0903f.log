@@ -1,0 +1,71 @@
+/Users/charles/portfolio/scripts/avatar/customise.py:441: RuntimeWarning: All-NaN slice encountered
+  rows = np.nanmedian(np.where(mask, block, np.nan), axis=1)
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-front.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-back.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-three_quarter.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-face.png
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (8.6s)
+1. partition
+   13 parts
+  gate partition: compare=[] bones=54
+   (0.0s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+   swept 5 stranded materials: F00_000_Hair_00_HAIR_03, F00_000_Hair_00_HAIR_06, F00_001_01_Bottoms_01_CLOTH, F00_006_01_Shoes_01_CLOTH, F00_008_01_Tops_01_CLOTH
+  gate strip: compare=[] bones=54
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54
+   (2.3s)
+4. proportion
+   5.91 -> 5.64 heads tall, height 1.5046
+  gate proportion: compare=[] bones=54
+   (0.0s)
+5. build the outfit
+   Hair_Twintail_L 位移最大 172.1mm，新骨鏈 7 節
+   Hair_Twintail_R 位移最大 173.7mm，新骨鏈 7 節
+   服裝擬合 mellow.glb：縮放 x1.172，對位骨最大殘差 0.00mm
+   大腿腿帶截面縮放 x=0.749 z=0.818，大腿直徑 94x111mm
+   服裝擬合 mellow_outer.glb：縮放 x1.153，對位骨最大殘差 0.00mm
+   貼身外推最大位移：Acc_Bandage_Thigh 8mm，Acc_Belt_Waist 24mm，Acc_Ribbon_Neck 12mm，Outfit_Bottom 19mm，Outfit_Cardigan 15mm，Outfit_Shoes 12mm，Outfit_Socks 18mm，Outfit_Top 19mm
+   蝴蝶結對腰封最近距離 2mm
+   丟掉動不了東西的 shape key：Side adjustment 平均 0.00mm
+   服裝 shape key：(No bra)Breasts_Cow 6214 點/平均 5.2mm，Breast_big 7621 點/平均 6.7mm，Breast_small 5354 點/平均 5.7mm，Hutomomo_big 3839 點/平均 3.6mm，Hutomomo_slim 3843 點/平均 3.1mm，Waist_slim 14393 點/平均 0.6mm
+   皇冠整體下沉 0mm 貼上髮面
+   F00_000_00_Face_00 轉色相 +14.3° 飽和 x1.41 明度 x1.00 提亮 0.00 位移 +0.147
+   F00_000_00_Body_00 轉色相 +3.3° 飽和 x1.16 明度 x1.00 提亮 0.00 位移 +0.116
+   F00_000_00_EyeIris_00 轉色相 +156.4° 飽和 x0.32 明度 x1.00 提亮 0.00 位移 +0.094
+   膚色 MToon 乘色 (0.96, 0.9, 0.87)，改了 2 個材質
+   髮色 MToon 乘色 (0.92, 0.84, 0.8)，改了 4 個材質
+   描邊統一為 (0.2, 0.1762, 0.1698)，改了 10 個材質，原本有 1 種：[(0.274509817, 0.09019608, 0.1254902)]
+   邊光宣告為 (0.518, 0.784, 0.776)，寫進 14 個材質
+   掃掉沒有網格用的材質 5 個：['Milfy_Bandage', 'Milfy_Cardigan', 'Milfy_Hair', 'Milfy_Ribbon', 'Milfy_Sock']
+   +33 parts, 11884432 bytes, waist y=0.960
+  gate build: compare=[] bones=54
+   (19.7s)
+6. health check
+== /Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm
+   tris 103116  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 2  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha ae7f90eecb9784d9
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+   (0.1s)
+
+shipped /Users/charles/portfolio/public/avatar/mika-milfy.vrm

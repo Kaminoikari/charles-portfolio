@@ -14,8 +14,15 @@ vertex sha 3881035dd0955b71（與第三版同：清 collider 只動 JSON，幾�
 第五版同日下午，見「第五版」一節：金色與膚色改在真引擎頁上解再烘焙（numpy
 量測看不見打光層，是前四版皇冠偏淡的根因）、外套加 standoff 動作間隙、皇冠
 移位讓出耳盤，以及把 twintail 的分流修好、讓貼頭皮那層留在頭上修禿頭。
-出貨檔 sha256 開頭 63e4ea29837ac3a9（11,915,828 bytes），
+該版出貨檔 sha256 開頭 63e4ea29837ac3a9（11,915,828 bytes），
 vertex sha ae7f90eecb9784d9。
+第六版 2026-09-03，見「第六版」一節，兩件事都在調色那一層：一是後腦那塊色差，
+真因不在幾何，是 VRoid 髮片貼圖沿 v 的「根暖梢淡」漸層被 Milfy 髮型的髮髻擺到
+了自己的另一端旁邊，修法是逐欄區塊去趨勢，只拿走沿 v 的漸層、留住沿 u 的髮絲；
+二是使用者接著問「膚色跟髮色都跟參考圖一樣嗎」，量出來不一樣——髮與膚都比參考
+暖一倍，而且 measure.py 用來證明它們一樣的那兩個取樣框，一個落在背景、一個落在
+大腿繃帶上。框重放、顏色重解。出貨檔 sha256 開頭 66871116b6263fb9
+（11,884,432 bytes），vertex sha 仍是 ae7f90eecb9784d9（只換貼圖，幾何未動）。
 
 檔案 sha 怎麼讀：`make.py` 的位元組不是決定性的（Blender 匯出器對兩顆髮髻的
 索引陣列每次排序不同，見最後一節），所以**每跑一次 make.py 就換一個檔案
@@ -25,7 +32,9 @@ sha，而模型一模一樣**。穩定的識別碼是 vertex sha，它只在幾�
 48b687baa91e514d）都是當時那一次建置的值，用來說明「兩個檔案相不相同」這種
 比較，不是在指現在 public/avatar/ 裡的那一份。
 
-底下的章節有四種：一是各版自己的專節（節名即「第 N 版」），各自成篇；二是
+底下的章節有四種：一是各版自己的專節（節名即「第 N 版」），各自成篇（注意
+「第 N 版」不等於「第 N 輪修正」：第五版那一節同時收了第六、第七輪的重做，因
+為它們處理的是同一批使用者指示）；二是
 六道 gate 的逐字輸出與「production VRM」「npm test」，一律換成最新版出貨檔的
 實測；三
 是「對照圖」與各版的「瀏覽器驗證」節，紀錄並列、段首標明對象；其餘都是第一版
@@ -274,19 +283,69 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
 面數由 1,096 降到 544（錐形比放樣的環便宜），總面數 39,722 → 39,170。
 【第二版：總面數現在是 103,116；蝴蝶結自己仍是 544 面。】
 
-# 六道 gate 一次跑完，全部對 out/mika-milfy.vrm，在第四版（collider 清理）
-# 重建之後才跑（起跑 09-02 09:23:51，跑完 09:33:22）。重建只重跑
-# make.py 第 5-6 步，輸入都是 09-01 的原件；build 全程輸出在
-# evidence/build-0902.log。受測檔的 sha 起跑與跑完各記一次，兩次都是
-# 5b3f6492c075472a。逐字全文在 evidence/gates-0902b.log。
+# 六道 gate 一次跑完，全部對出貨位元組 66871116b6263fb9（vertex sha
+# ae7f90eecb9784d9）。受測檔是 public/avatar/mika-milfy.vrm，與
+# out/mika-milfy.vrm 位元組相同。
+#
+# 時序（2026-09-03）。多數項可以用檔案時間戳或 log 自印的時間戳查。查不到的有三
+# 項：03:10:48（mtime 已被後續兩次重建的還原覆蓋）、03:45:46（第四次重建的驅動腳
+# 本沒有印時間戳，那是我啟動它的時刻；第五次的有印在 log 首尾）、03:47:47（那一
+# 次的測試輸出只留在 scratch）。三項都在下面各自標明：
+#   02:11 之前  出貨位元組 66871116b6263fb9 已經存在（mut-0903f.log 的 02:11:39
+#             末行就印著 restored; ship 66871116b6263fb9）。產它的那一次建置是
+#             哪一次，見下面的說明——指認不出來
+#   03:10:48  第三次等價重建跑完、把出貨位元組放回去；全部 mutation 還原在此之
+#             前。這個時刻讀自出貨對與 parts.json 當時的 mtime，後面兩次重建的
+#             還原又把那批 mtime 覆蓋掉（現在是 04:22:07），所以查檔案看不到它
+#   03:11:06–03:11:23  gate 六道（evidence/gates-0903g.log 首尾兩行）
+#   03:11:29–03:26:09  motion gate 十支 clip（evidence/motion-0903f.log）
+#   03:12:15  三張驗收截圖
+#   03:45:46–03:46:28  第四次等價重建（evidence/build-0903h-equiv3.log）：證明
+#                      **現行原始碼**產出的模型與出貨位元組等價，跑完把出貨位元
+#                      組原樣放回，log 首尾都印 66871116b6263fb9
+#   03:46:55–03:47:00  四張約定機位算圖，直接拿出貨位元組跑 render.py
+#   03:47:47  30 條 python 測試重跑全綠（appearance_test.py 03:18 改過，先前那次
+#             綠燈已經過期，所以重跑）。這一次的輸出只留在 scratch
+#   03:47:56–03:48:14  gate 六道重跑，25 行 PASS、0 個 FAIL
+#                      （evidence/gates-0903h.log）
+#   04:14–04:20  依第三輪 review 又改過 appearance_test.py、build.py、
+#             customise.py 三個檔的註解與 docstring，更正三個量不回來的數字。
+#             其中 04:15:01 夾了一次 30 條全綠（evidence/pytests-0903i.log），
+#             那時 build.py 與 customise.py 還沒改，所以它不是最終的那次
+#   04:21:28–04:22:07  第五次等價重建（evidence/build-0903j-equiv5.log）：建置
+#                      sha 956d8784999f7660、vertex sha 仍是 ae7f90eecb9784d9、
+#                      43 張貼圖逐索引位元組全同、四張約定機位算圖差異像素各為
+#                      0，跑完把出貨位元組原樣放回。這是最後一次建置
+#   04:22:17  30 條最後一次全綠（evidence/pytests-0903k.log）。此後只改 .txt／.md
+#
+# 六道 gate 與 motion 沒有隨最後兩次改動重跑，因為它們量的是出貨位元組本身，而
+# 那份位元組從 03:11 到現在一個 byte 都沒變（每一次等價重建都原樣放回，sha 逐次
+# 印在各自的 log 首尾）。改動只落在註解與 docstring，不進檔案。
+#
+# 出貨檔與 out/mika-milfy.vrm 的 mtime 是 04:22:07，那是第五次等價重建之後把位元
+# 組放回去的時間，不是產生它們的時間；sha 與大小都沒變（66871116b6263fb9、
+# 11,884,432 bytes）。四張 out/final-*.png 的 mtime 同樣是 04:22:07（放回去的時
+# 間），內容是 03:46:55–03:47:00 由出貨位元組算的那一組——第五次重建當下算出來的
+# 那一組與它們四張逐像素比對，差異像素都是 0。
+#
+# 出貨位元組本身是哪一次 make.py 產的，已經指認不出來（make.py 不印檔案 sha，兩
+# 份 0903 建置 log 內容幾乎逐行相同，而 mut-0903f.log 在 02:11 就已經印
+# restored; ship 66871116b6263fb9）。詳見 evidence/EVIDENCE.md 的「出貨建置的
+# log 指認不出來」。內容的可信度不靠這個：由第四次等價重建
+# evidence/build-0903h-equiv3.log 直接驗過。
+#
+# 01:58 那次建置的全程輸出在 evidence/build-0903f.log，gate 逐字全文在
+# evidence/gates-0903g.log（下面引用的是這一份；03:47 那次重跑在
+# evidence/gates-0903h.log，selftest 是亂數抽部件，兩次抽到的部件不同，其餘逐行
+# 相同），motion 另檔在 evidence/motion-0903f.log。
 === verify（帶 baseline）===
-== out/mika-milfy.vrm
+== ../../public/avatar/mika-milfy.vrm
    tris 103116  materials 34  images 43  nodes 144  bones 54
    springs 4  colliders 2  blendShapeGroups 15
    Face.baked        10 prim    3158 tris  targets 56
    Body.baked        23 prim   86734 tris  targets 6
    Hair001.baked     73 prim   13224 tris  targets 0
-   vertex sha 3881035dd0955b71
+   vertex sha ae7f90eecb9784d9
    backwards-wound primitives: 0
    coloured outlines: 0
    materials no primitive uses: 0
@@ -300,25 +359,14 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
    compare(baseline, this) = []
    PASS
 
-  【第三版：springs 11 → 4。twintail.py 把 VRoid 留下的七組 HairJoint 短簇
-  彈簧整組拿掉（動捕快動作時 60Hz 單幀過衝約 29°，畫面上是抖動），雙馬尾自
-  己那組保留、hitRadius 由 96mm 收到 35mm、colliderGroups 清空（碰撞投影在
-  dance 中產生 27° 單幀跳動）。剩下四組：Bust、TopsUpperArm、Skirt、
-  Twintails。vertex sha 換成 3881035dd0955b71 是幾何真的動了：腿帶縮放與貼
-  身重算，見「第三版」一節。】
-  【第四版：colliders 12 → 2。第三版遺下的 10 組孤兒 collider 已由
-  twintail.prune_stranded_collider_groups 清掉並重映射引用，「collider
-  groups no spring uses」是本版新增的偵測器行，見「第四版」一節。vertex
-  sha 未變：清 collider 只動 JSON。】
-
 === verify（不帶 baseline，同樣必須過）===
-== out/mika-milfy.vrm
+== ../../public/avatar/mika-milfy.vrm
    tris 103116  materials 34  images 43  nodes 144  bones 54
    springs 4  colliders 2  blendShapeGroups 15
    Face.baked        10 prim    3158 tris  targets 56
    Body.baked        23 prim   86734 tris  targets 6
    Hair001.baked     73 prim   13224 tris  targets 0
-   vertex sha 3881035dd0955b71
+   vertex sha ae7f90eecb9784d9
    backwards-wound primitives: 0
    coloured outlines: 0
    materials no primitive uses: 0
@@ -333,20 +381,34 @@ glTF 夾在 1 以下——底圖多暗成品就多暗。先前四件因此是黑
 
 === pierce ===
 at rest, skin pixels showing through each garment:
-  Acc_Bandage_Thigh           15 px  of    30 allowed (499 px on screen)
-  Outfit_Cardigan              4 px  of   150 allowed (33848 px on screen)
-  Outfit_Top                   2 px  of   150 allowed (7865 px on screen)
-  total 21   PASS
+  Acc_Bandage_Thigh           16 px  of    30 allowed (491 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (36151 px on screen)
+  total 20   PASS
 
-=== selftest 20 輪隨機刪件＋換色（只列最後一輪，20 輪逐輪在 gates-0902b.log）===
-seed 831644
+=== retarget ===
+GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
+  akimbo.vrma            worst  +0.00 deg
+  dance.vrma             worst  +0.00 deg
+  idleLoop.vrma          worst  +1.94 deg
+  modelPose.vrma         worst  +0.00 deg
+  peaceSign.vrma         worst  +0.00 deg
+  playFingers.vrma       worst  +0.00 deg
+  scratchHead.vrma       worst  +0.00 deg
+  spin.vrma              worst  +0.00 deg
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS
+
+=== selftest 20 輪隨機刪件＋換色（只列最後一輪，20 輪逐輪在 gates-0903g.log）===
+seed 537334
   deletable parts available: 25
-  dropping: Acc_HairClip_Bars, Acc_Crown, Hair_Side_R
-  retinting Milfy_Plaster -> [0.653, 0.95, 0.062]
-  retinting Milfy_Mint -> [0.22, 0.696, 0.564]
+  dropping: Hair_Side_R, Acc_HairClip_Bars, Acc_HairClip_Plaster
+  retinting Milfy_Gold -> [0.506, 0.993, 0.793]
+  retinting Mellow_Inner_Sub -> [0.414, 0.377, 0.326]
   removed 12 primitives, swept 75 accessors / 75 bufferViews
-  materials left painting nothing: Milfy_Gold, Milfy_GoldInner
-  triangles 103116 -> 102294 (expected 102294)
+  materials left painting nothing: Milfy_Plaster, Milfy_White
+  triangles 103116 -> 102266 (expected 102266)
   [ok] still a VRM0
   [ok] triangles match the manifest
   [ok] no orphan accessors
@@ -368,94 +430,76 @@ seed 831644
 
 20 rounds: PASS
 
-=== retarget ===
-GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
-  akimbo.vrma            worst  +0.00 deg
-  dance.vrma             worst  +0.00 deg
-  idleLoop.vrma          worst  +1.94 deg
-  modelPose.vrma         worst  +0.00 deg
-  peaceSign.vrma         worst  +0.00 deg
-  playFingers.vrma       worst  +0.00 deg
-  scratchHead.vrma       worst  +0.00 deg
-  spin.vrma              worst  +0.00 deg
-  squat.vrma             worst  +0.00 deg
-  stretch.vrma           worst  +0.00 deg
-
-  PASS
-
 === measure ===
 顏色：官方參考圖取樣 vs 模型（CIE76 ΔE，1 約等於肉眼可辨的最小差）
-  髮   F00_000_Hair_00_01     參考 (254,249,245)  模型 (207,185,161)  ΔE  25.3  去亮度  12.9  取樣區內色差 16.6
-  膚   F00_000_00_Body_00     參考 (254,248,246)  模型 (221,178,164)  ΔE  27.5  去亮度  16.5  取樣區內色差  3.5
-  瞳   F00_000_00_EyeIris_00  參考 (157,137,142)  模型 (143,119,119)  ΔE   7.5  去亮度   3.3  取樣區內色差 39.6
+  髮   F00_000_Hair_00_01     參考 (245,231,223)  模型 (225,214,201)  ΔE   7.0  去亮度   2.8  取樣區內色差  1.5
+  膚   F00_000_00_Body_00     參考 (253,239,236)  模型 (252,221,213)  ΔE   8.7  去亮度   7.0  取樣區內色差  1.1
+  瞳   F00_000_00_EyeIris_00  參考 (157,137,142)  模型 (138,114,114)  ΔE   9.3  去亮度   3.3  取樣區內色差 39.6
   外套  Mellow_Outer           參考 ( 65, 65, 74)  模型 ( 63, 61, 66)  ΔE   3.0  去亮度   2.5  取樣區內色差  4.8
-  皇冠  Milfy_Gold             參考 (228,202,175)  模型 (221,192,168)  ΔE   4.0  去亮度   2.0  取樣區內色差 22.5
-  5 個取樣點最差去亮度 ΔE 16.5
+  皇冠  Milfy_Gold             參考 (228,202,175)  模型 (221,177,140)  ΔE  12.6  去亮度  10.0  取樣區內色差 22.5
+  5 個取樣點最差去亮度 ΔE 10.0
 
 服裝材質（換裝後參考圖無對應，只記錄選色）
   Mellow_Inner       (244,241,236)
   Mellow_Lace        (244,241,236)
   Mellow_Sub_Acc     (132,200,198)
   Mellow_Shoes       (242,239,234)
-  Mellow_Jewel       (221,192,168)
+  Mellow_Jewel       (255,203,162)
 
 關鍵點高度比例（0 = 腳底，1 = 頭頂）
   頭頂   參考  1.000   模型  1.000   差 +0.000
-  下巴   參考  0.820   模型  0.814   差 -0.006
-  肩    參考  0.786   模型  0.759   差 -0.027
-  腰    參考  0.586   模型  0.617   差 +0.031
-  胯    參考  0.456   模型  0.486   差 +0.030
-  膝    參考  0.248   模型  0.315   差 +0.067
-  踝    參考  0.068   模型  0.072   差 +0.004
-  七點最大差 0.067（參考值以 64px 網格目視讀出，約 ±0.011）
-  全高 1.5774 m
+  下巴   參考  0.820   模型  0.817   差 -0.003
+  肩    參考  0.786   模型  0.762   差 -0.024
+  腰    參考  0.586   模型  0.620   差 +0.034
+  胯    參考  0.456   模型  0.488   差 +0.032
+  膝    參考  0.248   模型  0.316   差 +0.068
+  踝    參考  0.068   模型  0.072   差 +0.005
+  七點最大差 0.068（參考值以 64px 網格目視讀出，約 ±0.011）
+  全高 1.5709 m
 
-  【第三版：numpy 的髮膚 ΔE 比第二版的 11.3／5.0 大很多，這是量測層的差，
-  畫面沒有退步。第三版把髮膚的顏色定義拆成三層：貼圖調到暖而偏暗的基底、
-  MToon 乘色（baseColorFactor／_Color／_ShadeColor 三者同值）、瀏覽器的光照
-  與 ACES 曝光把它提回 Milfy 的近白。measure 的算圖無光照，只看得到第一層。
-  用生產設定（avatarGuideEngine.ts 的 ACES 1.25 曝光＋三盞燈）逐材質深度遮
-  罩實測畫面中位數：髮 (207,206,195) 去亮度 ΔE 4.0、膚 (215,203,196) 去亮度
-  3.6，與第二版出貨時的 numpy 3.5 同級。皇冠在同一實測是 14.0，但皇冠常數第
-  三版沒動，那是 ACES 把暖金洗淡的既有性質，與這一批改動無關。瞳沒有瀏覽器
-  實測值：全身構圖下虹膜太小，遮罩侵蝕 2px 後剩 0 個樣本，只能用上表 numpy
-  的去亮度 3.3（瞳的常數第三版也沒動）。實測步驟與全部數字在
-  evidence/colorprobe-0902.md，第四版位元組的複測在同檔末段。】
+  這張表比的是「模型貼圖的原始像素」對「參考圖上打光後的像素」，中間隔著
+  MToon 乘色與整套打光，所以它是粗篩，不是判「像不像」的依據。判準在
+  「第六版之二」那一節：同一份位元組在真引擎上以材質遮罩量，膚的去亮度 ΔE
+  1.24、髮 1.51。measure.py 的模組 docstring 也寫著同一句。
 
-  【第五版：上面那句「ACES 把暖金洗淡的既有性質」正是使用者這輪抱怨的東西，
-  不再接受。金與膚改成直接在真引擎頁上解，解完烘回貼圖與 factor；代價是
-  numpy 這張表的皇冠列變成 ΔE 12.6、膚列去亮度 21.6——這兩列從此只證明
-  「貼圖乘色和參考表不同」，而那正是為了讓打光後的畫面和參考表相同。金膚
-  的驗證面是瀏覽器量測與截圖，見「第五版」一節。】
+  【第三版：第三版把髮膚的顏色定義拆成三層——貼圖調到暖而偏暗的基底、MToon
+  乘色（baseColorFactor／_Color／_ShadeColor 三者同值）、瀏覽器的光照與 ACES
+  曝光把它提回近白。measure 的算圖無光照，只看得到第一層，所以這張表的髮膚
+  ΔE 從第二版的 11.3／5.0 跳上去，畫面沒有退步。當時的實測步驟與數字在
+  evidence/colorprobe-0902.md。】
+
+  【第五版：金與膚改成直接在真引擎頁上解，解完烘回貼圖與 factor。代價是這張
+  表的皇冠列與膚列從此只證明「貼圖乘色和參考表不同」，而那正是為了讓打光後
+  的畫面和參考表相同。】
+
+  【第六版：上表髮列與膚列的「參考」欄，在第五版之前是 (254,249,245) 與
+  (254,248,246)——那不是髮也不是膚，是版面的米色背景與大腿上的白繃帶。
+  measure.py 的取樣框放錯了，而放框的準則「框內色差小＝框在一塊平坦的畫面上」
+  對背景與繃帶同樣成立，所以三版的報告都照抄了這兩個數字。框已改到內衣圖
+  （official/nude-body-front-back.jpg）上，髮在左馬尾 (20,612)-(60,652)、膚在
+  腹部 (304,544)-(344,584)，上表的參考欄是新框讀出來的值。】
 
 === motion ===
 GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
-  akimbo.vrma            worst  0.59 of limit
+  akimbo.vrma            worst  0.61 of limit
   dance.vrma             worst  0.67 of limit
   idleLoop.vrma          worst  0.40 of limit
   modelPose.vrma         worst  0.59 of limit
   peaceSign.vrma         worst  0.63 of limit
   playFingers.vrma       worst  0.37 of limit
-  scratchHead.vrma       worst  0.53 of limit
-  spin.vrma              worst  0.53 of limit
-  squat.vrma             worst  0.53 of limit
+  scratchHead.vrma       worst  0.57 of limit
+  spin.vrma              worst  0.63 of limit
+  squat.vrma             worst  0.50 of limit
   stretch.vrma           worst  0.47 of limit
 
   worst per part across every clip and frame:
-    Acc_Bandage_Thigh           20 px  of    30 allowed (639 px on screen)   0.67x  dance.vrma t=16.75s
-    Outfit_Bottom               89 px  of   150 allowed (10125 px on screen)   0.59x  akimbo.vrma t=6.67s
-    Outfit_Socks                25 px  of    74 allowed (3724 px on screen)   0.34x  squat.vrma t=7.2s
-    Outfit_Cardigan             36 px  of   150 allowed (18022 px on screen)   0.24x  modelPose.vrma t=0.94s
-    Acc_Ribbon_Hair              1 px  of    30 allowed (382 px on screen)   0.03x  dance.vrma t=10.05s
-    Outfit_Top                   3 px  of   100 allowed (5012 px on screen)   0.03x  squat.vrma t=10.08s
+    Acc_Bandage_Thigh           20 px  of    30 allowed (638 px on screen)   0.67x  dance.vrma t=16.75s
+    Outfit_Bottom               92 px  of   150 allowed (10171 px on screen)   0.61x  akimbo.vrma t=1.33s
+    Outfit_Socks                21 px  of    75 allowed (3732 px on screen)   0.28x  squat.vrma t=7.2s
+    Outfit_Cardigan             36 px  of   150 allowed (18675 px on screen)   0.24x  modelPose.vrma t=0.94s
+    Outfit_Top                   2 px  of   103 allowed (5134 px on screen)   0.02x  playFingers.vrma t=1.8s
 
   PASS
-
-  【第三版：Acc_Bandage_Thigh 由 7px／0.23x 升到 20px／0.67x，多數 clip 的
-  worst 也跟著換成它——這是腿帶縮到大腿上（間隙 8mm → 3mm、貼身收尾 4mm）
-  的直接代價：布貼得越近，動作中露出皮膚的像素越多。仍在它自己的 30px 上限
-  內；其他各件與第二版持平。第二版同一輪的最差是 Outfit_Bottom 89px／0.59x，
-  這一版仍是 89px。第四版與第三版的 motion 輸出逐行相同。】
 
 
 === 外觀特徵逐項（GOAL 二，十二項）===
@@ -1058,7 +1102,9 @@ remeasure-0902.md（範圍、位移與 hitRadius 的量測腳本與逐字輸出�
     第二版把貼圖直接解到近白（SKIN_TARGET 246,237,230），瀏覽器的 MToon 光
     照與 ACES 1.25 曝光再提亮一層，畫面上皮膚與白色布料融在一起。第三版拆
     成雙層：貼圖解到暖而偏暗的基底（SKIN_TARGET 222,178,165；髮
-    HAIR_SAT 0.75、HAIR_LIFT 0），再由新增的
+    HAIR_SAT 0.75、HAIR_LIFT 0）【第五版：SKIN_TARGET 改 244,190,172；第六版
+    再改 252,222,214，髮改 SAT 0.65／LIFT 0.42 並加上逐欄去趨勢，見「第六版
+    之二」】，再由新增的
     customise.tone_textured_materials 寫一組 MToon 乘色（膚 0.96,0.90,0.87、
     髮 0.92,0.84,0.80），baseColorFactor／_Color／_ShadeColor 三者同值；
     materialProperties 與 materials 不同序時直接 SystemExit，不帶病同步。
@@ -1275,9 +1321,11 @@ live-preview 實機（Playwright，載入後輪詢 preview-status）：
   下來」，貼頭皮那段仍然在頭上。twintail.apply 因此依「離體表距離」分流，
   free = clip((d - 20mm) / 15mm, 0, 1)：free=0 的頂點位置完全不動、權重全部回
   到頭骨，free=1 的照舊收成尾巴，中間 15mm 是過渡帶，位置與權重都按 free 混
-  合，避免在交界撕開。結果是貼頭層 778 個頂點留在原位（左 394、右 384），頭骨
-  權重 1.000、尾巴權重 0.000，自由段 5239 個頂點尾巴權重 1.000，權重和處處為
-  1。裸露皮膚縮到 y[1.285,1.374]，那是頸背，與參考圖一致
+  合，避免在交界撕開。結果（free 用轉換前的位置算，與 twintail 內部一致）：貼頭
+  層 778 個頂點留在原位（左 394、右 384），頭骨權重 1.000、尾巴權重 0.000；過渡
+  帶 269 個；自由段 5167 個，尾巴權重中位 1.000、平均 0.947、最小 0.066（基底檔
+  本來就在靠頭皮那段混了頭骨影響，twintail 只改寫舊彈簧鏈的槽位，沒有動它們）。
+  權重和處處為 1。裸露皮膚縮到 y[1.285,1.374]，那是頸背，與參考圖一致
   （official/front-back-with-cardigan.jpg 右：後腦整片有髮，只在頸背露一小塊）。
   20mm 與 15mm 的依據：以 20mm 選出的頂點在 y[1.363,1.490] 每一格都高過頭骨
   （最窄一格 0.1312 對 0.1244），30mm 與 45mm 只多收下擺、枕骨那段一個頂點也
@@ -1304,7 +1352,9 @@ live-preview 實機（Playwright，載入後輪詢 preview-status）：
     test_curtain_keeps_a_layer_lying_on_the_skull 釘位置：枕骨高度帶內離體表
     20mm 以內的髮簾頂點 ≥600 個。拿掉 fade *= free 之後轉紅。
     test_scalp_layer_carries_no_tail_weight 釘權重：貼頭層的尾巴骨權重必須
-    <0.005。拿掉權重改綁之後轉紅，而位置閘門被拿掉時它仍然是綠的。
+    <0.005，並要求自由段的尾巴權重中位數 ≥0.9（防止骨頭槽位認錯時整條空轉）。
+    拿掉權重改綁只紅這一條；拿掉位置閘門會兩條都紅，因為這條的取樣集合在整片
+    髮被搬走之後就塌了。兩道防禦仍各有專屬 mutation，不是互相遮蔽。
     test_back_skull_is_covered_by_hair 續用，釘「枕骨帶內髮面必須高過頭骨」這
     個機制本身，不釘某一片髮的存在。
 
@@ -1350,6 +1400,275 @@ PASS、selftest 20 輪 PASS、motion 十支 clip 全 PASS（外套最差 0.24 �
 時抓幀；目視挑的量測框會悄悄吃進鄰近部件，部件級的讀數一律用「把該部件塗成
 標記色重算一張」得到的遮罩。
 
+=== 第六版（2026-09-03，使用者第二次指出後腦色差）===
+使用者的原話是「你再確認一次背面，那樣你跟我說無色塊？很明顯後腦勺的髮色非
+常不均勻」。第五版的收尾宣稱後腦「沒有色塊」，那句話是錯的：重看同一張背面
+截圖，髮髻與其下的枕骨之間有一條清楚的界線，上淡下暖。
+
+真因：VRoid 把每一片髮畫成沿 v 的漸層，髮根暖而飽和、髮梢淡而近中性。用一張
+「橫軸 u、縱軸 v」的漸層貼圖取代髮色貼圖重算一張背面，讀出來的取樣位置是：枕
+骨 v 中位數 0.094（p10 0.059、p90 0.125），髮髻 0.314，馬尾 0.32。這條漸層在
+基底模型上看不見，因為它的髮梢垂到肩膀以下，後腦整片都是髮根那一端；把
+baseline.vrm 從背面算圖出來，後腦是一整片均勻的飽和粉。Milfy 髮型把髮梢盤成頭
+頂的兩顆髮髻，於是同一條漸層的兩端第一次貼在一起。
+
+漸層有多陡，在 baseline.vrm 上量（每 0.1 個 v 帶取 alpha>200 像素的 R−B 中位
+數，貼圖都是 512×1024，u 的左四分之三是髮束卡片、右四分之一是一條淡色底層）：
+
+              v0.0  v0.1  v0.2  v0.3  v0.4  v0.5  v0.6  v0.7  v0.8
+  HAIR_01 髮絲   99    88    81    83    32    48    42    37    37
+  HAIR_01 平色帶  93    88    85    53    33    35    40    40    40
+  HAIR_02 髮絲   93    88    85    59    35    33    31    25    41
+  HAIR_02 平色帶  31    31    25    24    24    23    23    22    20
+
+customise.hue 原本只有 unify 抹平色相，漸層原封不動地活過旋轉。
+
+修法：customise.hue 新增 flatten，把飽和與明度兩個通道各做一次**逐欄區塊去趨
+勢**（customise._flatten_v）。色帶沿 v、髮絲細節沿 u，減掉每一列自己的中位數只
+拿走前者。build.HAIR_FLATTEN_BLOCKS = 16。
+
+為什麼是逐欄分塊而不是整列：上表的 HAIR_01 平色帶跟著髮絲一起漸層（93→40），
+HAIR_02 的平色帶不跟（31→20，幾乎是平的）。整列共用一條趨勢會被髮絲那一側主
+導，把它的漸層反向刻進 HAIR_02 的平色帶。切成 16 個欄區塊之後每一條帶子都落在
+自己的區塊裡，兩條各走各的。16 不是解出來的最佳值，是那個區間的中央：8 與 32
+建置出來兩條守衛都是綠的，貼圖層的差異在小數點第三位（收據
+evidence/mutations-0903c.md 的 S8／S32）。
+
+沒有採用的三條路，各自的否決理由記在這裡以免重走：
+  改枕骨那片的 UV，讓它取樣到貼圖右側那條平色帶（u≥0.75）。這是補片，使用者
+  上一輪已經否決過補片式修法，而且與馬尾交界處會多出一條新的接縫。
+  逐列去趨勢（每一列減掉自己的中位數，不分欄）。理由同上一段：兩張圖的平色帶
+  對漸層的態度相反，一體套用必然弄壞其中一張。
+  值域上的「整張往中位數收 85%」——這是第六版最初真的寫進去的版本，被 reviewer
+  擋下來。它確實壓平色帶，但它分不出「色帶」與「髮絲」，兩者一起壓：HAIR_01 的
+  貼圖亮度 p10–p90 由 0.0373 掉到 0.0137，HAIR_02 由 0.1020 掉到 0.0216，等於
+  一張接近純色的髮圖。逐欄去趨勢是位置上的，只拿走沿 v 的那一部分。
+
+驗證（真引擎，backprobe.html 依 avatarGuideEngine.ts 逐項複製打光：ACES
+exposure 1.25、AmbientLight 1.1、key (0.6,1.6,2.2) 強度 1.4、fill 0x00d9ff
+(-0.4,-1.0,1.8) 強度 0.3、每個 MToon 疊 parametric rim 0.22 / fresnel 6）。四
+份建置、同一組六個像素框、同一段程式碼；B0 是使用者抱怨的那個狀態（第五版的髮
+色常數，且不去趨勢），中間兩欄各只動一個機制。四個 sha 各自的建置收據都在
+evidence/mutations-0903c.md 指名的 log 裡：
+
+              B0 第五版髮色   只重解髮色     只去趨勢      出貨
+              b4a83f5a       29ee00a8      2fb0127c     66871116
+  枕骨        (198,164,120)  (207,191,173) (196,175,151) (207,195,185)
+  髮髻左      (198,173,145)  (207,195,183) (196,175,151) (207,196,185)
+  髮髻右      (198,173,144)  (207,195,182) (196,175,151) (207,196,185)
+  馬尾左      (199,184,168)  (209,200,192) (196,175,152) (207,196,185)
+  馬尾右      (199,184,168)  (208,200,192) (196,175,150) (207,195,185)
+  髮髻下方    (199,162,116)  (207,190,172) (196,175,151) (207,196,185)
+  藍通道極差       52             20            2            0
+
+讀法：均不均勻由**去趨勢**決定（只去趨勢那一欄已經收到 2，而它用的是舊髮
+色），髮色的深淺由 HAIR_SAT／HAIR_LIFT 決定（只重解髮色那一欄整體亮了，色帶仍
+在，20 是看得見的一塊）。兩件事互相獨立，所以「重解髮色」不能拿來當色帶的修
+法。逐網格看也一致：兩條雙馬尾在 manifest 裡各有 7 個圖元、共 14 個，我逐個量的
+是其中八個（Hair_Twintail_L 的圖元 20–23、
+Hair_Twintail_R 的 52–55）與兩片側髮簾（Hair_Side_L 的 18、Hair_Side_R 的
+29），出貨檔的中位數都在 (206–209, 195–200, 184–192) 之內。
+
+截圖三張，前兩張是這一項的驗收畫面：
+  evidence/back-v10-before.png    修正前（B0 建置 b4a83f5a），探針機位
+  evidence/browser-v10-back.png   出貨位元組，同一頁、同一機位、同一組光
+  evidence/browser-v8-back-complaint.png
+      使用者指出色差時的實機畫面。那是 live-preview 在 spin 動作中的一幀，與探
+      針不同機位，只作定性對照，不能拿來比數字。
+
+前兩張可以逐像素比：同樣 700×700、同樣六個框，框內取樣像素數逐框相同（14000、
+8400、8435、10756、10823、3000），因為兩份建置的幾何一模一樣，只有貼圖不同。
+
+為什麼驗收畫面用探針頁而不是 live-preview：探針頁把 avatarGuideEngine.ts 的打光
+逐項抄過來，而且會把它 fetch 到的位元組自己算一次 sha，與量到的中位數印在同一段
+JSON 裡，拍圖時一併讀走。要說清楚的是：sha 進的是頁面的 #out，不是 PNG——存下來
+的圖檔本身不帶 sha，歸屬靠的是同一次載入印出來的那段 JSON 與檔案的時間戳。
+live-preview 那一頁在 Playwright 的軟體 WebGL 下 rAF 會被餓
+死（動作不前進，連拍三張都是同一幀），瞄不準背面那一幀。live-preview 這一輪只留
+正面的載入檢查 evidence/live-preview-v10.png（0 個 console error）。
+
+全部原始 JSON、框的定義、貼圖層逐值比較在 evidence/colorprobe-0903.md。
+
+順帶記一個量測層的坑，它讓第五版的判讀整個錯掉：render.py 當時用 np.clip 取
+樣 UV，而這個檔案裡 43 個 sampler 有 41 個宣告 REPEAT，髮片 UV 跑到 u≈1.75。
+夾住取樣讀到的是圖的邊緣，跟畫面上不是同一個顏色（(199,172,151) 對
+(188.6,142,100.8)）。
+
+這個坑修了兩次。第五版（commit 16a8200）把 np.clip 換成無條件取模，並在註解裡
+斷言「檔案裡每一個 sampler 都是 REPEAT」——那句斷言本身是錯的：43 個裡有 2 個是
+CLAMP_TO_EDGE（build.py 自己產生的 bowl_texture 與 ramp_texture 兩張 ramp），對
+它們取模會把最亮端接到最暗端。改成逐貼圖讀自己宣告的 wrap 是**這一輪**的改動
+（render.py 的 textures()／rasterise()，連帶 partmap.py 的兩個手搭 texmap 字面
+量要跟著改成三元組）。這一輪所有的貼圖數字都是在第二次修好之後量的。
+
+守門測試兩條，各擋一側，缺任何一條都會讓一種壞掉的實作出貨：
+
+  appearance_test.test_hair_reads_as_one_tone_from_scalp_to_tail
+    把貼頭層（離體表 20mm 內）與自由段（35mm 外）各自的 UV 取樣進髮色貼圖，比
+    兩者的暖度（R−B，上限 12）與明度（上限 0.02）。現況暖度 23 對 23 差 0、明
+    度 0.8275 對 0.8275 差 0.0000。
+  appearance_test.test_hair_texture_keeps_its_strand_contrast
+    兩張髮色貼圖的亮度 p10–p90 ≥ 0.025。現況 HAIR_01 0.0373、HAIR_02 0.1020。
+
+這兩條是互補的，不是重複的：把整張貼圖壓成純色，第一條會給出 0 並且轉綠，第二
+條才會紅；只去趨勢而不壓平，第二條綠而第一條紅。收據 mutations-0903c.md 的
+M1（去趨勢關掉，第一條紅 24、第二條綠）與 M2（換回整張收 85%，第一條綠、第二
+條紅 0.0137）。
+
+第一條原本只斷言暖度，那是不夠的，而且是這一輪自己抓到的：_flatten_v 對飽和與
+明度各去一次趨勢，拿掉明度那一行重建（M3），暖度差只有 8.5、過得了上限 12（8.5
+是當時另外量的，斷言通過時 unittest 不印數字，log 裡只有那一格的 GREEN），而枕
+骨與髮梢的明度差 0.065 是一條看得見的亮暗帶。補上明度斷言之後 M3 轉紅
+（0.0647 > 0.02），拿掉飽和那一行（M4）暖度 34 對 20 差 14 也是紅的。兩行程式
+各去一個通道的趨勢，就要有兩個斷言。
+
+HAIR_LIFT 與 HAIR_SAT 也壓同一條色帶，與 flatten 互相遮蔽。它們各自的 mutation
+落在髮色帶那兩條測試上（M8／M9／M10），逐一確認會紅；其中 M8（髮色退回第五版
+但保留去趨勢）對色帶那條是綠的，正好證明兩個機制互不頂替。
+
+所有 mutation 都先斷言 pattern 命中數為 1、且檔案內容真的變了才重建，重建走完
+整的 make.py（不是單獨呼叫 build.py，所以沒有「少 10 個材質」那種口徑差）；還
+原用位元組副本（修正尚未 commit，git checkout 會連修正一起抹掉），還原後
+build.py、customise.py 與出貨檔三者逐位元組比對，全部回到原狀。
+
+=== 第六版的 gate ===
+六道 gate 對最終位元組 66871116b6263fb9（vertex sha ae7f90eecb9784d9）重跑：
+verify 帶／不帶 baseline PASS、pierce PASS（total 20）、retarget PASS（最差
+idleLoop +1.94 度，上限 3.0）、selftest 20 輪 PASS，逐字輸出在
+evidence/gates-0903g.log（本文「六道 gate」那一節逐字引用它，但不是全文：
+selftest 的 20 輪只列最後一輪，而那一節另外接了 measure 與 motion 兩段，兩者
+都不在 gate log 裡）；motion 十支
+clip 全 PASS，最差 Acc_Bandage_Thigh 20 px／30 px（0.67 倍上限，dance
+t=16.75s），Outfit_Bottom 92 px／150 px（0.61 倍，akimbo t=1.33s），逐字輸出在
+evidence/motion-0903f.log。01:58 那次建置的全程輸出在 evidence/build-0903f.log
+（它不一定是出貨那一次，見檔頭的說明）。Python 的
+unittest 四個模組 30 條全綠（appearance 14、outfit 8、spring 7、customise 1；
+retarget_test.py 沒有 unittest case，它是以 __main__ 當上面那道 retarget gate
+跑的），npm test 19 files 330 條全綠。
+
+這 30 條最後一次跑是 04:22:17（evidence/pytests-0903k.log），在最後一次改動程式
+檔與最後一次等價重建之後。appearance_test.py 在 03:18 又改過（補上「髮的守
+衛只列 01／02，而模型有四個髮材質」那段覆蓋範圍註記），比 gate 那次跑的時間晚，
+所以先前那次綠燈對現在的檔案證明不了什麼，重跑一次。六道 gate 也在同一批重跑
+（03:47:56–03:48:14，25 行 PASS、0 個 FAIL，evidence/gates-0903h.log）；下面引用
+的仍是 03:11 那份 gates-0903g.log，兩份的差別只有 selftest 亂數抽到的部件不同。
+npm test 沒有重跑，src/ 這一輪一個字都沒動。
+
+這一輪順帶修掉一個 gate 腳本的缺陷：本輪臨時寫的那份腳本用 `python3 -m pytest
+retarget_test.py` 跑 retarget，而這台機器沒有安裝 pytest，那一格印的是
+`No module named pytest`、退出碼被 shell 吞掉，等於六道 gate 只跑了五道。汙染範
+圍限於本輪的中間產物（那兩份 log 沒有進 repo，也沒有任何一版的宣稱建立在它們
+上面）；第五版引用的 evidence/gates-0903b.log 裡 retarget 有完整的逐 clip 輸出
+與 PASS，那一份是直接呼叫腳本跑的，不受影響。改成呼叫 `retarget_test.py` 自己的
+`__main__`（它自己 sys.exit 0/1）之後整份重跑，上面的數字是重跑的結果。
+
+=== 第六版之二：髮色與膚色對參考圖（使用者問「你確定都一樣嗎」）===
+答案是色相與彩度一樣了，亮度追不上，而且原本用來證明「一樣」的量測是壞的。
+
+measure.py 的五個取樣框裡，髮框落在版面的米色背景上、膚框落在大腿的白繃帶上。
+兩個框回報的中位數是 (254,249,245) 與 (254,248,246)，與這張圖的背景色
+(254,249,245) 相差不到一個單位。原本的放框準則是「框內色差夠小就代表框在一塊
+平坦的畫面上」，那個準則必要但不充分：背景與繃帶本來就是平的。兩個框改到內衣
+圖（official/nude-body-front-back.jpg）上——髮在左馬尾 (20,612)-(60,652)、膚在
+腹部 (304,544)-(344,584)，框內通道極差最大值 11 與 6——並把框畫回圖上目視確認落
+點。新的參考值是髮 (245,231,223)、膚 (253,239,236)（到中位數的中位歐氏距離 1.4
+與 1.7）。
+
+（「框內有多平」在這份文件裡出現三種統計，別混著讀：**通道極差最大值**（上面的
+11／6）、**到中位數的中位歐氏距離**（1.4／1.7，下面旁證框那一欄用的也是它）、以
+及 measure.py 那張表最右欄印的「取樣區內色差」（各通道標準差的平均，同樣這兩個
+框是 1.5 與 1.1）。三個都是對同一個框算的，數字不同只是定義不同。）髮色在別的官
+方圖上也落在同一族，四個旁證框連座標記在 evidence/colorprobe-0903.md：讀值跨
+(229,215,210) 到 (240,223,220)，主參考落在這個範圍的亮端，因為它取的是馬尾受光
+最足的一段。那四個框的離散度是 10–25，遠高於主參考框，所以它們界定範圍，不是確
+認一個點值。
+
+實機顏色不用目視框，改用材質遮罩量（colourprobe.html，打光逐項照
+avatarGuideEngine.ts）：把某一組材質整批塗成洋紅算一張，命中的像素就是那組材質
+的真實覆蓋範圍，不會吃進背景或鄰近部件。
+
+  修正前 d622ddc9         出貨 66871116           參考
+  膚 (222,193,179) R−B 43    (222,210,205) R−B 17     (253,239,236) R−B 17
+  髮 (200,185,169) R−B 31    (207,196,186) R−B 21     (245,231,223) R−B 22
+
+「修正前」那一欄不是翻舊紀錄抄來的：把 SKIN_TARGET 退回 (244,190,172)、
+HAIR_SAT／HAIR_LIFT 退回 0.75／0.0、HAIR_FLATTEN_BLOCKS 退回 0 重建一份
+（d622ddc9af6ce3ac，完整重現第五版出貨的配色），再用同一個探針頁、同一組光、
+同一組材質遮罩量一次。兩欄可以直接比。
+
+以 CIE Lab 看，去掉亮度軸的 ΔE：膚 8.62 → 1.24，髮 4.52 → 1.51。含亮度的 ΔE
+是膚 17.56 → 10.50、髮 17.16 → 12.84。也就是色相與彩度現在都在肉眼可辨的門檻
+附近，剩下的差幾乎全在亮度軸上。
+
+measure.py 那張表**不能拿來比前後**：修正前那一版的髮列與膚列取樣在版面背景與
+大腿繃帶上（見上一段），換框之後參考欄整個換了對象，兩邊的數字不是同一個量。
+現況（新框）是髮去亮度 ΔE 2.8、膚 7.0，五個取樣點最差 10.0（皇冠）。那張表是
+粗篩，判「像不像」用上面的實機量測，兩者的口徑差寫在 measure.py 的模組
+docstring 與該節的註解裡。
+
+亮度追不上，而且追不上的原因量得出來：colourprobe.html 的 ?ceiling=1 把膚色那
+組材質換成純白 albedo（貼圖拿掉、色乘 1,1,1、陰影色也白），在同一組光、同一個
+遮罩下再算一次，量到的是 (226,229,229)，L* 90.7；髮用**髮自己那組遮罩**量，天花
+板同樣是 (226,229,229)／L* 90.7。參考的膚是 L* 95.4。也就是說
+這個引擎（ACES、exposure 1.25、ambient 1.1 + key 1.4 + cyan fill 0.3）對任何材
+質的上限都低於參考圖的膚色亮度，差 4.7 個 L*。現況 L* 85.0，離天花板還有 5.7，
+那 5.7 是膚色自己的色調佔掉的。要再往上只能改引擎的打光或曝光，那會動到整個
+avatar 體驗的每一個材質，不在這一輪的範圍。這個量測從出貨位元組本身算得出來，
+不依賴另外保留一份白模建置。
+
+調色的手法換了一種，因為第一次解出來的版本把嘴唇洗掉了。retone 對「目標比原色
+淡」一律用 lift（l + (1-l)·k）：它保順序，但把每一段亮度差都乘上 (1-k)。臉解出
+來的 k 是 0.630，等於拿走唇與臉頰之間 63% 的距離，實機上嘴只剩一條看不見的淡
+痕，而所有關於膚色的數字都是對的。改成加法位移（l + d）之後中位數移動量相同、
+每一段距離都不變，代價是會夾到高光，所以 retone 先用 _burn 數「原本低於 0.98、
+位移後越過 1.0」的像素比例，超過 CLIP_BUDGET（1%）才退回 lift。臉解出來位移
++0.147、燒掉 0.33%，身體 +0.116、燒掉 0.01%，兩張都走位移（建置輸出那兩行的
+「提亮 0.00 位移 +0.147／+0.116」就是它）。量出來的臉部貼圖亮度 p10–p90 距離是
+0.410（lift 版只有 0.151）。
+
+守門測試四條，各自的 mutation 收據在 evidence/mutations-0903c.md：
+  test_neck_seam_keeps_one_skin_tone_across_two_textures
+    臉與身體是兩張貼圖兩個材質，接縫橫過脖子。retone 把兩張解到同一個
+    SKIN_TARGET 就是為了讓這條縫關著，而那個設計原本沒有守衛：所有膚色斷言都
+    以「單張貼圖的中位數」為指標，換掉其中一張的目標，每一條都還是綠的。這一
+    條取兩個網格真正相鄰（2mm 內）的頂點，各自取樣自己那張貼圖比 ΔE，上限
+    3.0。現況縫上臉側 (251,208,196.5)、身側 (251,206,194)，ΔE 1.04；baseline
+    是 15.77。兩個數字取的是中位數的浮點值，與斷言評估的是同一個量（截斷成整
+    數再算是 0.97 與 15.93，那是另一種量，別混著引用）。M11 把身體那張改解到
+    (252,216,208)——刻意挑一個仍落在膚色帶內的目標——只有這一條紅（4.38），其餘
+    膚色斷言全綠。
+    （順帶記一個判讀：畫面上脖子比臉粉一點，那是打光，下巴下方在陰影裡。整片
+    材質的實機中位數臉 (223,218,214) 對身 (222,210,204) 差 ΔE 3.67，那 3.67
+    幾乎全是打光與可見範圍造成的。所以守衛量的是縫上的頂點，不是整片中位數。）
+  test_face_texture_keeps_the_contrast_its_features_live_in
+    臉的貼圖亮度 p10–p90 ≥ 0.30。M5 把 CLIP_BUDGET 設成 0（等於停用位移）重
+    建，掉到 0.151，紅。
+  test_skin_texture_keeps_visible_tone_under_mtoon_lighting
+    Body 與 Face 的貼圖中位數：最亮通道 ≥ 245，暖度（R−B）落在 [22,48]。M6 把
+    SKIN_TARGET 退回 (244,190,172)，最亮通道 244，紅；M7 換成一樣亮但偏橘的
+    (252,200,180)，暖度 73，紅。兩側各有專屬 mutation。
+  test_hair_texture_keeps_visible_tone_under_mtoon_lighting
+    01 與 02 的貼圖中位數：最亮通道 ≥ 215，暖度落在 [14,30]。M8 退回舊的
+    SAT 0.75／LIFT 0.0，最亮通道 206，紅；M9 保持提亮但把 SAT 拉到 1.20，暖度
+    43，紅；M10 只把 LIFT 歸零，最亮通道 203，紅。
+
+上面四條裡，後兩條（膚色帶與髮色帶）取代的是已 commit 的 appearance_test.py 裡
+那兩條，形狀各自不同：髮那條是「最亮通道上限 208 ＋ 色度下限 40」，膚那條是「最
+亮通道 238–248 的雙側帶 ＋ 色度下限 40」。兩條擋不住的是同一件事——色度下限只在
+乎顏色會不會太灰，而實際發生的缺陷是太暖（R−B 偏大），色度下限對太暖沒有意見，
+膚那條的通道雙側帶也管不到色相。新寫法把暖度本身做成雙側帶，兩側各有專屬
+mutation。前兩條（頸縫與臉部對比）不是取代，是這一輪新增的守衛。
+
+截圖：evidence/browser-v10-front.png（正面全身，材質遮罩機位）、
+evidence/browser-v10-head.png（頭部特寫，嘴唇與腮紅仍在）、
+evidence/browser-v10-back.png（背面，後腦均勻）。三張都在 03:12:15 拍，也就是
+03:10:48 那次等價重建把出貨位元組放回去、全部 mutation 還原之後，gate 起跑之後；
+那三次載入探針頁時，頁面對 fetch 到的位元組各算了一次 sha，印在 #out 的 JSON
+裡，三次都是 66871116b6263fb9（sha 只進頁面，PNG 檔本身不帶 sha）。
+
+另外 evidence/live-preview-v10.png 是真實 live-preview 頁面載入出貨模型的正面畫
+面（0 個 console error），當這一輪的進入點檢查。
+
 === 老實說：做不到的地方，以及為什麼 ===
 第 9 項的荷葉下擺、第 11 項過膝襪、第 12 項熊耳拖鞋，還有第 7 項的落肩與第 10
 項的纏繞繃帶，共同的原因只有一個：你指定要套用的 MellowHeart Dream 是另一套
@@ -1358,21 +1677,29 @@ PASS、selftest 20 輪 PASS、motion 十支 clip 全 PASS（外套最差 0.24 �
 都翻過了，沒有荷葉下擺的 A 字裙、沒有過膝襪、沒有熊耳拖鞋、沒有落肩的外套這
 幾個網格。
 
-另外三項沒有做到 GOAL 的字面要求，理由不同：
+另外四項沒有做到 GOAL 的字面要求，理由不同：
 
-  七點比例  膝差 +0.067，是參考值讀取誤差（±0.011）的六倍，不能算「收斂」。
-            其餘六點差 0.000 到 0.031。膝的位置由 proportion 那一步的整段比例
+  七點比例  膝差 +0.068，是參考值讀取誤差（±0.011）的六倍，不能算「收斂」。
+            其餘六點差 0.000 到 0.034。膝的位置由 proportion 那一步的整段比例
             決定，把它單獨拉下去會連帶動到胯與踝，而那兩點現在是對的。取捨是
             保住六點，留下膝這一點。
   六點 ΔE   GOAL 指定髮、膚、瞳、上衣、緞帶、鞋六個取樣點，交付的是髮、膚、
             瞳、外套、皇冠五個。上衣、緞帶、鞋換成 MellowHeart 的件之後，官
             方參考圖上沒有對應的東西可比，硬比是拿兩件不同的衣服算 ΔE。
-            【第二版：其中「髮」那一點第一版比錯了對象，詳見第二版第四節；
-            改正後五點最差去亮度 ΔE 是 3.5，不是 3.3。】
-            【第三版：numpy 的五點最差去亮度變成 16.5，量的是刻意調暗的貼
-            圖基底；生產打光下的畫面實測髮 4.0／膚 3.6，與 3.5 同級（瞳在
-            瀏覽器實測中取不到樣本，沿用 numpy 的 3.3）。機制與實測見
-            measure 輸出後的【第三版】註。】
+            交付的五點，出貨位元組的現況（measure.py 的貼圖對參考表）：外套
+            去亮度 ΔE 2.5、髮 2.8、瞳 3.3、膚 7.0、皇冠 10.0。判「像不像」不
+            用這張表，用真引擎的材質遮罩量測：膚 1.24、髮 1.51。
+            【第二版、第三版當時報的 3.5／16.5／4.0／3.6 都是舊量法的值：第
+            三版之前髮與膚那兩格的「參考」欄取樣在版面背景與大腿繃帶上，整
+            個比錯了對象，詳見「第六版之二」。】
+  亮度上限  這一項是**永久做不到**，不是還沒做：把材質換成純白 albedo，在生
+            產打光下實機只到 L* 90.7（膚與髮各用自己那組遮罩量，兩組同值），
+            而參考圖的膚是 L* 95.4。引擎（ACES、exposure 1.25、ambient 1.1 +
+            key 1.4 + cyan fill 0.3）對任何材質的亮度上限就比參考圖低 4.7 個
+            L*。現況膚 L* 85.0、髮 L* 79.8，離各自的天花板還有 5.7 與 10.9，
+            那是色調本身佔掉的。要再往上只能改 avatarGuideEngine.ts 的打光或
+            曝光，那會動到整個 avatar 體驗的每一個材質，超出這一輪的範圍。量
+            測在 evidence/colorprobe-0903.md。
   帶尾方向  GOAL 第 8 項寫「帶尾垂到裙後」，官方圖上是垂在正面，照圖不照字。
 
   能補的都補了：Leg_belt 補上第 10 項的「單邊」、blender/bow.py 的蝴蝶結補上
@@ -1402,6 +1729,13 @@ sha 未變、measure 輸出與第三版逐行相同、瀏覽器逐材質探測�
 colorprobe-0902.md 末段），實機截圖在 evidence/live-preview-v4-{idle,squat}.png。】
 四張固定機位（無光照，本專案的 numpy 算圖）：
   scripts/avatar/out/final-{front,back,three_quarter,face}.png
+【第六版：磁碟上這四張是**直接拿出貨位元組 66871116b6263fb9 跑 render.py 算
+的**（03:46:55–03:47:00，在第四次等價重建把出貨位元組放回去之後），不是某一次
+建置的副產品，所以不必再推導它們對應哪一份位元組。第五次等價重建（04:21）把四張
+都比過一次，差異像素各為 0。（第四次只比到 front 與 back，因為比對腳本的機位名單
+寫錯，這件事記在 evidence/mutations-0903c.md 的等價檢查那一節；第五次把名單修好
+才有這四張的數字。）同一段【第二版】講的 compare.png、
+mtoon-*.png、side-check.png 沒有隨本輪重算，仍是各自當時的產物。】
 與參考並排：scripts/avatar/out/compare.png（1762x2674，四列）
 真瀏覽器 MToon 算圖（three-vrm 3.5.0 + WebGL，有光照）：
   scripts/avatar/out/mtoon-{front,quarter,face}.png
@@ -1520,3 +1854,11 @@ spring 7、appearance 10 全綠：新增 StandoffTest 三條，以及皇冠暖�
 驗證見 evidence/mutations-0902c.md、-0902d.md 與 -0903a.md；-0903a.md 是後
 腦那一項改回 twintail 分流之後重取的，同時說明 -0902d.md 裡「掃髮帽色」那一
 格連同它守的補丁一起被刪除。
+第六版：19 files / 330 tests 全綠（src/ 沒有改動）。Python 測試 outfit 8、
+customise 1、spring 7、appearance 14 全綠：appearance 新增四條——髮色色帶（貼
+頭層與自由段的暖度差與明度差）、臉部貼圖對比（p10–p90）、髮絲對比（p10–p90，
+擋「壓平色帶時把髮絲一起壓平」）、頸縫（臉與身體兩張貼圖在接縫上的 ΔE），並把
+膚色與髮色那兩條從單邊斷言改成雙側帶。紅燈驗證見 evidence/mutations-0903c.md
+的 M1–M11，加上兩個穩定性檢查 S8／S32 與兩份重現舊配色的建置 B0／B1。同一天早
+先那份 evidence/mutations-0903b.md 是「整張往中位數收 85%」那個被換掉的機制的
+收據，數字全部失效，留著只為對照。

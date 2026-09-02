@@ -1,0 +1,22 @@
+03:11:29 起跑
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  0.61 of limit
+  dance.vrma             worst  0.67 of limit
+  idleLoop.vrma          worst  0.40 of limit
+  modelPose.vrma         worst  0.59 of limit
+  peaceSign.vrma         worst  0.63 of limit
+  playFingers.vrma       worst  0.37 of limit
+  scratchHead.vrma       worst  0.57 of limit
+  spin.vrma              worst  0.63 of limit
+  squat.vrma             worst  0.50 of limit
+  stretch.vrma           worst  0.47 of limit
+
+  worst per part across every clip and frame:
+    Acc_Bandage_Thigh           20 px  of    30 allowed (638 px on screen)   0.67x  dance.vrma t=16.75s
+    Outfit_Bottom               92 px  of   150 allowed (10171 px on screen)   0.61x  akimbo.vrma t=1.33s
+    Outfit_Socks                21 px  of    75 allowed (3732 px on screen)   0.28x  squat.vrma t=7.2s
+    Outfit_Cardigan             36 px  of   150 allowed (18675 px on screen)   0.24x  modelPose.vrma t=0.94s
+    Outfit_Top                   2 px  of   103 allowed (5134 px on screen)   0.02x  playFingers.vrma t=1.8s
+
+  PASS
+03:26:09 跑完

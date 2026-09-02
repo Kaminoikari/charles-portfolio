@@ -12,9 +12,15 @@ Both a total and a chroma-only ΔE are printed, and only the second is fair. The
 sheets are lit renders and a baseColorFactor is not, so every material reads
 darker than its own pixels in the artwork by however much that lighting adds.
 The chroma term drops the lightness axis and is what says whether the HUE is
-right. The size of the gap between the two columns is itself the check: it is
-10.7 for the near-black cardigan and 5.5 for the near-white skin, which is what
-an additive ambient does and not what a wrong colour does.
+right.
+
+貼圖對插畫是粗篩，不是判準。這張表比的是模型的**貼圖**與參考圖的**打光後像
+素**，中間隔著 MToon 乘色與整套打光，所以連色度都會偏：2026-09-03 這一版膚色
+在這裡是去亮度 ΔE 7.0，同一份位元組在真引擎上以材質遮罩量出來是 1.24（髮是
+2.8 對 1.51）。判「像不像」要用後者（scripts/avatar/colourprobe.html，原始數
+字與遮罩定義在 evidence/colorprobe-0903.md，敘述在 RESULT.txt「第六版之二」）；
+這張表的用處是抓「差很多」，以及釘住取樣框有沒有落在該落的地方——2026-09-03 之
+前它有兩個框根本沒有。
 """
 import os
 import subprocess
@@ -32,6 +38,11 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 REFS = os.path.expanduser('~/milfy-refs')
 SHEET = 'official/front-back-with-cardigan.jpg'
 FACES = 'official/expression-sheet-6.jpg'
+# 髮與膚改到內衣圖上取樣。穿衣圖沒有一塊夠大的裸露皮膚，而它的髮在正面被外套
+# 與背景夾住：先前那兩個框一個落在背景、一個落在大腿繃帶上，量了兩版都是白色
+# (254,249,245) 與 (254,248,246)，等於在拿背景跟模型比。內衣圖有整片腹部與一
+# 條不被遮住的馬尾。
+NUDE = 'official/nude-body-front-back.jpg'
 
 # The goal asks for six sample points: hair, skin, iris, top, ribbon, shoes.
 # Three of those six still have something to compare against, and the cardigan
@@ -49,15 +60,28 @@ FACES = 'official/expression-sheet-6.jpg'
 # and one that does not is straddling two things. Two of the first placements
 # failed that check (the skirt box crossed the mint sash at spread 37, the crown
 # box sat on hair and forehead at spread 41) and were moved.
+#
+# 2026-09-03: the spread check is necessary and was not sufficient. The hair and
+# skin boxes both reported a low-ish spread while sitting on the sheet's cream
+# background and on the thigh bandage, because both of those ARE flat. Their
+# medians came back (254,249,245) and (254,248,246) -- the background colour to
+# within a unit -- and three versions of this document quoted the resulting ΔE
+# as if it described the hair and the skin. A flat box is not the same as a box
+# on the right thing. Both were re-placed on the underwear sheet and checked by
+# drawing them back onto the image and looking, and the new medians (245,231,223)
+# and (253,239,236) are no longer the background.
 SAMPLES = [
     # The texture, not `Milfy_Hair`. That material was declared for a
     # hand-modelled head this build stopped using, and by the time the sample
     # ran no primitive painted with it -- so this row reported the delta of a
     # colour that was on screen nowhere. The hair's colour lives in six VRoid
     # maps that build.py rotates; F00_000_Hair_00_01 is the base one, and the
-    # four still in use agree to within (233,232,231) vs (227,218,208).
-    ('髮', None, SHEET, (155, 125, 200, 175), 'F00_000_Hair_00_01'),
-    ('膚', None,         SHEET, (205, 620, 235, 680), 'F00_000_00_Body_00'),
+    # four still in use are 01 (225,214,201)、02 (223,213,200)、04 (231,229,229)、
+    # 05 (245,228,208)（2026-09-03 從出貨位元組量，alpha>200 的中位數；03 與 06
+    # 的材質在 strip 那一步被掃掉了。01 與 02 是實際蓋住頭的兩張，佔畫面 7.2% 與
+    # 92.4%，04 與 05 只有 0.18% 與 0.25%）。
+    ('髮', None, NUDE, (20, 612, 60, 652), 'F00_000_Hair_00_01'),
+    ('膚', None,         NUDE, (304, 544, 344, 584), 'F00_000_00_Body_00'),
     ('瞳', None,         FACES, (471, 776, 489, 791), 'F00_000_00_EyeIris_00'),
     # The cardigan is the one garment the imported outfit and the reference
     # agree on -- both are a black oversized off-shoulder knit -- so it is the

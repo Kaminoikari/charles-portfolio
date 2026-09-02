@@ -218,7 +218,8 @@ spec reviewer FAIL，一項實質、三項次要。**實質那項是第 27 項�
      據 3 紅的是「指得到還在的部件」。於是前者沒有收據，後者沒列進表。
    - `verify.unused_materials` 標成收據 6，但收據 6 沒跑過 verify.py。
    兩個缺口都補了實跑的收據（15、16），守衛表把兩條 palette 檢查分列。
-   我先試了 reviewer 建議的破法（拿掉 `customise.py:501` 的 palette 過濾），
+   我先試了 reviewer 建議的破法（拿掉 `customise.remap` 尾端那道 palette 過濾，
+   現在在 `customise.py:659-662`），
    結果兩條一起紅，**分不開等於沒單獨釘住任何一條**；改用只有材質那條抓得到
    的缺陷形狀（palette 鍵指向不存在的材質、其部件仍活著）才分開。
 2. 做收據 15 時撞到一次假陰性：第一個 victim 的部件正好在刪除名單裡，條目在名
@@ -364,31 +365,39 @@ adv-no7 仍綠是正確的，不是漏抓：`prune_shapes` 引用 1、2、7 三�
 
 ---
 
-## 追加：第五／第六版的檔案（2026-09-02）
+## 追加：2026-09-02 那一天的檔案（RESULT.txt 的第五版）
 
-本檔上面的內容是第二版凍結索引，原樣保留。第五、第六版新增的證據檔如下，
+**版號在本檔有兩套，這裡先說清楚**：RESULT.txt 用「第 N 版」數交付版本，本檔
+早先的段落用「第 N 輪」數 reviewer 迴圈，兩套數字不一樣。以下一律寫「第 N
+輪」，指的是 reviewer 迴圈；這一整天的產出在 RESULT.txt 裡都屬於**第五版**。
+本檔最後一節的「第六版」是 RESULT.txt 的版號，指 2026-09-03 的調色那一輪。
+
+本檔上面的內容是第二版凍結索引，原樣保留。這一天新增的證據檔如下，
 RESULT.txt 的對應章節逐項引用它們：
 
 - `gates-0902f.log` / `gates-0902k.log` — 六道 gate 一次跑完的逐字輸出，f 是
-  第五版、k 是第六版（雙 reviewer FAIL 後的重建）。檔頭記受測檔的 sha。
-- `motion-0902f.log` / `motion-0902k.log` — motion gate 另檔，因為它單獨跑要
-  十分鐘，併進上面那份會讓 gate 起跑時間失去意義。
-- `selftest-0902f.log` — selftest 20 輪（第六版的 20 輪併在 gates-0902k.log）。
+  第 5 輪、k 是第 6 輪（雙 reviewer FAIL 後的重建）。檔頭記受測檔的 sha。
+- `motion-0902f.log` — motion gate 另檔，因為它單獨跑要十分鐘，併進上面那份
+  會讓 gate 起跑時間失去意義。第 6 輪那一次的 motion 輸出沒有留成檔（原本的
+  `motion-0902k.log` 是 0 bytes，已刪），那一輪的 motion 結果沒有可稽核的證
+  據；真正被引用的是下一節的 `motion-0903b.log`。
+- `selftest-0902f.log` — selftest 20 輪（第 6 輪的 20 輪併在 gates-0902k.log）。
 - `build-0902f.log` / `build-0902k.log` — 對應版本的建置全程輸出。
-- `mutations-0902c.md` — 第五版的守衛紅燈收據。**其中兩格已被 -0902d.md 取
+- `mutations-0902c.md` — 第 5 輪的守衛紅燈收據。**其中兩格已被 -0902d.md 取
   代**（y 歸零那條當時是空測試），讀的時候要一起看。
-- `mutations-0902d.md` — 第六版重取的收據，含失效原因。
+- `mutations-0902d.md` — 第 6 輪重取的收據，含失效原因。
 - `clip-v4-*.png` / `clip-v5-*.png` — 外套穿模的前後對照。
 - `back-v4-bald.png` / `back-v5-covered.png` / `back-v6-cap.png` — 後腦禿頭
   →補帽→帽色修正的三個階段。
 - `browser-v5-*.png` / `browser-v6-*.png` — 真引擎畫面驗證。v6 的 front 與
-  back34 是最終版；v5 的 akimbo／modelpose 續用，因為 standoff 自那之後未再
-  改動（見 RESULT.txt 第五版第 3 點）。
+  back34 是**第 6 輪**（補片式後腦）的畫面，不是最終版；最終版是下一節的
+  `browser-v7-*.png`。v5 的 akimbo／modelpose 續用，因為 standoff 自那之後未
+  再改動（見 RESULT.txt 第五版第 3 點）。
 
 ## 追加：後腦改回根因那一輪（2026-09-02 深夜）
 
-使用者看過第六版後指出後腦仍然是「東補西補」。第七輪把修正從「另做一片補上
-去」改成「twintail 不要把貼頭皮那層帶走」，證據檔如下：
+使用者看過第 6 輪的畫面後指出後腦仍然是「東補西補」。第 7 輪把修正從「另做一
+片補上去」改成「twintail 不要把貼頭皮那層帶走」，證據檔如下：
 
 - `gates-0903b.log` — verify（帶／不帶 baseline）、pierce、retarget 的逐字輸
   出，對最終位元組 `63e4ea29837ac3a9`（vertex sha `ae7f90eecb9784d9`）跑的。
@@ -402,3 +411,120 @@ RESULT.txt 的對應章節逐項引用它們：
 - `nape-v6-patch.png` / `nape-v7-continuous.png` — 同一機位的前後對照。v6 那
   張的實機中位數已經與四周髮完全相同 (199,171,132)，畫面仍是補丁；這組是
   「中位數不是顏色不均的判準」的證據。
+
+## 第六版：色帶壓平與髮膚重解（2026-09-03）
+
+「第六版」在這一節是 **RESULT.txt 的版號**，指 2026-09-03 調色那一輪；本檔前面
+幾節用的是 reviewer 迴圈的「第 N 輪」，兩套數字不一樣。
+
+同一天分兩件事，都在調色那一層，證據合在一組，對最終位元組
+`66871116b6263fb9`（vertex sha `ae7f90eecb9784d9`，只換貼圖，11,884,432 bytes）：
+
+- `build-0903f.log` — 01:58 那次 `make.py` 的全程輸出。（**不要當成「出貨那一次」
+  引用**，理由見下面「出貨建置的 log 指認不出來」。）
+- `build-0903f-recheck.log` — 註解與 docstring 改完之後的第二次等價重建，用來證
+  明那些改動沒有動到輸出（43 張貼圖逐索引位元組相同、vertex sha 相同）。
+- `build-0903h-equiv3.log` — 第四次等價重建（03:45:46–03:46:28）。前面幾次蓋不到
+  03:05 那次 `np.errstate` → `warnings.catch_warnings()` 的改動，這一份蓋得到：
+  建置 sha `356bb89cc4af1c9c`、vertex sha 仍是 `ae7f90eecb9784d9`、43 張貼圖逐索
+  引位元組全同，跑完把出貨位元組原樣放回（首尾都印 `66871116b6263fb9`）。它的驅
+  動腳本把 `make.py` 的 stderr 分開接住、只在非空時印出來，而這份 log 裡沒有那個
+  區塊，也搜不到 `RuntimeWarning`——前兩份的第一行都還印著
+  `All-NaN slice encountered`。靜音那次改動的收據就是這一點。
+### 出貨建置的 log 指認不出來
+
+產出出貨位元組 `66871116b6263fb9` 的那一次 `make.py`，**它自己的建置輸出已經指認
+不出來了**。`make.py` 不印檔案 sha，兩份 0903 的建置 log（`build-0903f.log`
+01:58、`build-0903f-recheck.log` 02:34）內容除了時間戳幾乎逐行相同，而
+`mut-0903f.log`（02:11:39）末行已經印 `restored; ship 66871116b6263fb9`——出貨位
+元組在 02:11 之前就存在了。等價檢查那張表把 01:58 那次記成建置 sha
+`ff418d7f630b6ac4`，若那筆記錄為真，`build-0903f.log` 就不是出貨那一次。兩種讀法
+我都沒有辦法用留下來的檔案裁決，所以這裡不指派。
+
+這件事不影響出貨物的可信度：出貨位元組的內容由第四次等價重建
+（`build-0903h-equiv3.log`）直接驗過——現行原始碼跑出來的模型與它 vertex sha 相
+同、43 張貼圖逐索引位元組相同。那道收據不需要知道原始的建置 log 是哪一份。
+
+- `build-0903j-equiv5.log` — 第五次也是最後一次等價重建（04:21:28–04:22:07）。
+  04:14–04:20 依第三輪 review 改過三個程式檔的註解與 docstring，這一份把收據補
+  齊：建置 sha `956d8784999f7660`、vertex sha 仍是 `ae7f90eecb9784d9`、43 張貼圖
+  逐索引位元組全同、**四張**約定機位算圖差異像素各為 0（第四次的比對腳本機位名單
+  寫錯只比到兩張，這次修好了），跑完把出貨位元組原樣放回。
+- `pytests-0903i.log` / `pytests-0903k.log` — 四個模組 30 條 python 測試的逐字輸
+  出，兩次都全綠。`-k` 是最後一次（04:22:17），在最後一次改程式檔與最後一次等價
+  重建之後。（開頭那行 `ResourceWarning: unclosed file` 是 `glb.py:44` 讀出貨檔
+  沒關檔柄，與這一輪的改動無關，也不影響斷言。）
+- `gates-0903h.log` — 六道 gate 在第四次等價重建之後重跑一次（03:47:56–
+  03:48:14），25 行 PASS、0 個 FAIL。selftest 是亂數抽部件，兩次抽到的部件不同，
+  其餘與 `gates-0903g.log` 逐行相同；RESULT.txt 引用的仍是 `-0903g`。
+
+這一輪動到的程式檔，完整清單（七個裡六個有行為改動，只有 `twintail.py` 純改文
+字）：`customise.py`、`build.py`、`appearance_test.py`、`measure.py`，以及
+`render.py`／`partmap.py`（`render.py` 新增 `REPEAT`、`textures()` 由二元組改回
+三元組並讀 sampler 的 wrapS／wrapT，`partmap.py` 的兩處 texmap 字面量跟著改成三
+元組——這是第六版的量測層修正，會改變量到的數字）、`twintail.py`（docstring 與註
+解更正，沒有行為改動）。文件端另外補了
+`mutations-0902d.md` 與 `mutations-0903a.md` 兩份舊收據的稽核註記。
+- `gates-0903g.log` — verify（帶／不帶 baseline）、pierce、retarget、selftest
+  20 輪，一次跑完的逐字輸出。RESULT.txt 的「六道 gate」那一節逐字引用它，但**不
+  是全文**：selftest 只列最後一輪（20 輪全在這裡），而那一節後面另接 measure 與
+  motion 兩段，兩者都不出自這份 log。
+  **先前那一輪的 gate 腳本用 `python3 -m pytest` 跑 retarget，而這台機器沒有
+  pytest**，那一格印的是 `No module named pytest`、什麼也沒驗到；腳本改成呼叫
+  `retarget_test.py` 自己的進入點後整份重跑，這一份是重跑的結果。
+- `motion-0903f.log` — motion gate 十支 clip，另檔（單獨跑十幾分鐘）。
+- `mutations-0903c.md` — 這一輪的紅燈收據：M1–M11、穩定性檢查 S8／S32、兩份重
+  現舊配色的建置 B0／B1，以及註解改動之後的等價重建檢查。逐字輸出分六份：
+  `mut-0903f.log`（M1–M10、S8、S32）、`mut2-0903f.log`（補明度斷言後重跑
+  M1／M3／M4）、`mut4-0903f.log`（M11，含第一次選錯目標那一次）、
+  `mut5-0903f.log`（B1）、`mut6-0903f.log`（M2 與 B0 重跑並留檔）、
+  `mut7-0903f.log`（B0 再跑一次，背面「修正前」那張圖量的就是這一份）。收據裡每
+  一個 mutant sha 都指得回其中一份。
+- `mutations-0903b.md` — **已被 -0903c.md 取代**。它是同一天早先「整張往中位數
+  收 85%」那個機制的收據；機制在同一天換成逐欄去趨勢，那一份的每一個數字都失
+  效，留著只為對照，不要拿它的數字當現況。
+- `colorprobe-0903.md` — 畫面顏色的量測收據：探針怎麼重跑、遮罩與框怎麼定義、
+  正面／背面的原始 JSON、四份建置的背面對照、貼圖層的漸層逐值比較、頸縫量測、
+  參考色的出處與 ΔE。RESULT.txt 引用的每一個顏色數字都能在這裡查到來源。
+- `browser-v10-back.png` — 背面，後腦與四周同一個色調（探針機位）。
+- `browser-v10-front.png` / `browser-v10-head.png` — 正面全身與頭部特寫。頭部
+  那張是「嘴唇與腮紅沒有被提亮洗掉」的驗收畫面。
+- `back-v10-before.png` — 同一個探針機位、同一組光，跑在重現第五版髮色且不去趨
+  勢的建置（B0，`b4a83f5a`，收據在 `mut7-0903f.log`）上。這是「修正前」的定量對照，與 `browser-v10-back.png`
+  可以逐像素比。
+- `browser-v8-back-complaint.png` — 使用者指出色差時的實機畫面，作定性對照；機
+  位是 live-preview 的 spin 幀，與探針不同，不能拿來比數字。
+- `live-preview-v10.png` — 真實 live-preview 頁面載入出貨模型的正面畫面
+  （0 個 console error），這一輪的進入點檢查。背面的驗收畫面沒有用這一頁：它在
+  Playwright 的軟體 WebGL 下 rAF 會被餓死（連拍三張都是同一幀），瞄不準轉身那
+  一幀；探針頁逐項複製了同一組打光，而且會把受測位元組的 sha 印在 `#out` 的
+  JSON 裡（印在頁面，不在 PNG 上）。
+
+時序（本檔與 RESULT.txt 一致）。多數項可以用檔案時間戳或 log 自印的時間戳查；
+03:10:48（mtime 已被後續的重建覆蓋）、03:45:46（第四次重建的驅動腳本沒有印時間
+戳，那是我啟動它的時刻）、03:47:47（那一次的測試輸出只留在 scratch）這三項查不
+到，照實標在這裡。04:15:01 與 04:22:17 那兩次測試都有留檔
+（`pytests-0903i.log`／`pytests-0903k.log`），第五次等價重建的起訖時間也印在它自
+己的 log 首尾兩行：
+出貨位元組 `66871116b6263fb9` 在 **02:11 之前**就已經存在（`mut-0903f.log` 的
+02:11:39 末行印著 `restored; ship 66871116b6263fb9`），產它的那一次建置指認不出
+來（見上一節）。**03:10:48** 是第三次等價重建把它放回去的時刻，全部 mutation 還
+原在此之前；gate 03:11:06 起跑、03:11:23 跑完（時間戳在 log 首尾兩行）；motion
+03:11:29–03:26:09；三張 `browser-v10-*.png` 03:12:15 拍。之後為了補上「現行原始
+碼與出貨位元組等價」這道收據，03:45:46–03:46:28 又跑了第四次等價重建
+（`build-0903h-equiv3.log`），跑完把出貨位元組原樣放回（log 首尾都印
+`66871116b6263fb9`）；接著 03:46:55–03:47:00 拿出貨位元組重跑 `render.py` 產出四
+張約定機位算圖，03:47:47 重跑 30 條 python 測試（`appearance_test.py` 03:18 改
+過，先前那次綠燈已過期），03:47:56–03:48:14 重跑六道 gate（`gates-0903h.log`，25
+行 PASS）。04:15:01 又跑了一次 30 條全綠（`pytests-0903i.log`）。04:14–04:20 依
+第三輪 review 改過 `appearance_test.py`、`build.py`、`customise.py` 三個檔的註解
+與 docstring（更正三個量不回來的數字），所以 04:21:28–04:22:07 跑了第五次也是最
+後一次等價重建（`build-0903j-equiv5.log`，四張算圖全比、差異像素各為 0），
+04:22:17 再跑一次 30 條全綠（`pytests-0903k.log`）；那之後只改 `.txt`／`.md`。出
+貨檔與四張 `out/final-*.png` 的 mtime 因此是 04:22:07——那是放回去的時間，不是產
+生它們的時間，sha 與大小都沒變。`back-v10-before.png` 是 03:09:52 拍的，它量的是 B0 那份建置，本來就不該是出貨位元
+組。每一次探針載入都會把 fetch 到的位元組自己算一次 sha，印在與量測值同一段
+JSON 裡：三張 `browser-v10-*.png` 那幾次都是 `66871116b6263fb9`，
+`back-v10-before.png` 那次是 `b4a83f5a4dfea7f7`（收據 `mut7-0903f.log`）。sha 只
+進頁面的 `#out`，PNG 檔本身不帶 sha，所以歸屬靠的是那段 JSON 加檔案時間戳，不是
+圖自己。

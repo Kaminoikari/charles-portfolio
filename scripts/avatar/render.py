@@ -100,15 +100,27 @@ def gather(doc, views, posed=None):
             np.concatenate(tri_parts), np.concatenate(mat_parts))
 
 
+REPEAT = 10497
+
+
 def textures(doc, views):
-    """material index -> (RGBA array, has_alpha) or None."""
+    """material index -> (RGBA array, has_alpha, wraps) or None.
+
+    `wraps` is (wrapS is REPEAT, wrapT is REPEAT), read off the texture's own
+    sampler. It matters because this file mixes both: the VRoid textures are
+    REPEAT and the hair's UVs genuinely run past u=1, while the two textures
+    build.py generates itself (bowl_texture, ramp_texture) are CLAMP_TO_EDGE
+    and are ramps, where wrapping v=1 round to row 0 would turn the brightest
+    end of the ramp into the darkest.
+    """
     cache, out = {}, {}
     for mi, mat in enumerate(doc.get('materials', [])):
         pbr = mat.get('pbrMetallicRoughness', {})
         tex = pbr.get('baseColorTexture', {}).get('index')
         if tex is None:
             f = pbr.get('baseColorFactor', [0.8, 0.8, 0.8, 1.0])
-            out[mi] = (np.array([[[c * 255 for c in f]]], dtype=np.float64), False)
+            out[mi] = (np.array([[[c * 255 for c in f]]], dtype=np.float64),
+                       False, (False, False))
             continue
         src = doc['textures'][tex].get('source')
         if src is None:
@@ -128,7 +140,12 @@ def textures(doc, views):
         f = pbr.get('baseColorFactor')
         if f and any(abs(c - 1.0) > 1e-6 for c in f):
             img = img * np.array(f, dtype=np.float64)
-        out[mi] = (img, True)
+        sampler = doc.get('samplers', [])
+        index = doc['textures'][tex].get('sampler')
+        entry = sampler[index] if index is not None and index < len(sampler) else {}
+        out[mi] = (img, True,
+                   (entry.get('wrapS', REPEAT) == REPEAT,
+                    entry.get('wrapT', REPEAT) == REPEAT))
     return out
 
 
@@ -213,7 +230,7 @@ def rasterise(screen, uv, tris, mats, texmap, size):
             rgba = np.array([200.0, 200.0, 200.0, 255.0])
             px = np.broadcast_to(rgba, win.shape + (4,))
         else:
-            img, sampled = tex
+            img, sampled, wraps = tex
             if not sampled:
                 px = np.broadcast_to(img[0, 0], win.shape + (4,))
             else:
@@ -221,12 +238,16 @@ def rasterise(screen, uv, tris, mats, texmap, size):
                 u = w2 * ta[0] + w1 * tb[0] + w0 * tc[0]
                 v = w2 * ta[1] + w1 * tb[1] + w0 * tc[1]
                 ih, iw = img.shape[:2]
-                # 取模，不是夾擠：這個檔案裡每一個 sampler 的 wrapS/wrapT 都
-                # 是 REPEAT (10497)，而髮的 UV 本來就跑到 u≈1.5。夾擠會把整
-                # 排超界的髮束畫成貼圖最後一欄的顏色，算出來的髮色比瀏覽器
-                # 淡得多：2026-09-02 的後腦補髮就是照著這個假髮色連解錯三輪。
-                ui = (u * iw).astype(int) % iw
-                vi = (v * ih).astype(int) % ih
+                # 照該貼圖自己的 sampler 決定超界怎麼取，不要一律夾擠：VRoid
+                # 的髮貼圖是 REPEAT，而髮的 UV 本來就跑到 u≈1.5，夾擠會把整
+                # 排超界的髮束畫成貼圖最後一欄的顏色，算出來的髮色比瀏覽器淡
+                # 得多（2026-09-02 的後腦補髮就是照著這個假髮色連解錯三輪）。
+                # 反過來，build.py 自己生的 bowl/ramp 兩張是 CLAMP_TO_EDGE 的
+                # 縱向漸層，對它們取模會把最亮端捲回最暗端。
+                ui = (u * iw).astype(int)
+                vi = (v * ih).astype(int)
+                ui = ui % iw if wraps[0] else np.clip(ui, 0, iw - 1)
+                vi = vi % ih if wraps[1] else np.clip(vi, 0, ih - 1)
                 px = img[vi, ui]
 
         op = px[..., 3] / 255.0

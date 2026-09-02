@@ -1,0 +1,9 @@
+04:22:17 起跑（python3 -m unittest appearance_test outfit_test spring_test customise_test）
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy.vrm'>
+  raw = open(path, 'rb').read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..............................
+----------------------------------------------------------------------
+Ran 30 tests in 1.282s
+
+OK

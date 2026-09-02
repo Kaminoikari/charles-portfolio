@@ -44,3 +44,29 @@ mutations-0902c.md 與 -0902d.md 記的是膚色、皇冠暖度、皇冠讓耳�
 四項，那些判準與門檻本輪沒有改動，收據續用。-0902d.md 裡「掃髮帽色」那一格
 （`test_nape_cap_matches_the_curtains`）已失效：該測試連同它守的那片補丁一起被
 刪掉了，取代它的是本文這兩條。
+
+---
+
+## 補記（同日稍晚，code reviewer FAIL 之後）
+
+reviewer 指出兩件事，兩件都成立，收據因此重取：
+
+1. `test_scalp_layer_carries_no_tail_weight` 的 docstring 與 RESULT.txt 都寫了
+   「位置閘門被拿掉時它仍然是綠的」，與上面表格自己記的 M1 = RED 相反。相反的
+   是那句話，不是表格：這條測試第一行就是 `assertGreaterEqual(on_skull.sum(),
+   600)`，位置閘門一拿掉，取樣集合塌掉，必然先紅。敘述已改成與表格一致。
+2. `tail_slots()` 靠節點名前綴 `HairTail` 找骨頭，前綴一改就回空 list，
+   `np.isin(joints, [])` 全 False，尾巴權重恆為 0，這條會綠給你看。已補一句正
+   向對照：自由段（離體表 ≥35mm）的尾巴權重中位數必須 ≥0.9。
+
+三個 mutation 重取（守衛更新後）：
+
+| mutation | test_curtain_keeps_a_layer_lying_on_the_skull | test_scalp_layer_carries_no_tail_weight |
+|---|---|---|
+| M1 位置閘門拔除 | **RED** | RED |
+| M2 權重改綁拔除 | GREEN | **RED** |
+| M3 尾巴骨改名（`HairTail` → `TailBone`） | GREEN | **RED** |
+
+M3 是為第 2 點補的：它不動幾何（vertex sha 仍是 `ae7f90eecb9784d9`），只把骨頭
+改名，正向對照因此失效而轉紅，證明那句斷言不是裝飾。M1 `234dc15ae5298a9a`、
+M2 `5d6dcf2b4f2bfada` 與正確版不同，確認 mutation 進到了出貨檔。

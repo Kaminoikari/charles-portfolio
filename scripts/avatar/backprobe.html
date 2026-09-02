@@ -1,0 +1,91 @@
+<!doctype html><meta charset="utf-8"><title>back probe</title>
+<body style="margin:0;background:#111"><pre id="out" style="color:#0f0;font:12px monospace;white-space:pre-wrap"></pre>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js",
+"three/addons/":"/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+const out = document.getElementById('out'); const R = {};
+const W = 700, H = 700;
+try {
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, preserveDrawingBuffer:true, alpha:true });
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+  const bytes = new Uint8Array(await (await fetch((new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy.vrm') + '?t=' + Date.now())).arrayBuffer());
+  const hh = await crypto.subtle.digest('SHA-256', bytes);
+  R.sha = [...new Uint8Array(hh)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const loader = new GLTFLoader(); loader.register(p => new VRMLoaderPlugin(p));
+  const vrm = (await loader.parseAsync(bytes.buffer, '')).userData.vrm;
+  VRMUtils.rotateVRM0(vrm);
+  const scene = new THREE.Scene(); scene.add(vrm.scene);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(0.6,1.6,2.2); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x00d9ff, 0.3); fill.position.set(-0.4,-1.0,1.8); scene.add(fill);
+  // 引擎對每個 MToon 疊的 parametric rim（avatarGuideEngine.ts:1383）：閒置時
+  // rimScale = 0.22 + 0*0.5。抄過來是為了讓探針與實機是同一組光。實測它對後腦
+  // 那塊色差沒有貢獻（開關兩次量到同一組中位數），真因是貼圖的色帶。
+  const mtoons = [];
+  vrm.scene.traverse(o => {
+    if (!(o.isMesh||o.isSkinnedMesh)) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+      if (m && m.parametricRimColorFactor) mtoons.push({ m, base: m.parametricRimColorFactor.clone() });
+    }
+  });
+  const applyRim = k => { for (const { m, base } of mtoons) {
+    m.parametricRimFresnelPowerFactor = 6;
+    m.parametricRimColorFactor.copy(base).multiplyScalar(k); } };
+  applyRim(0.22);
+  R.mtoons = mtoons.length;
+  R.rimBase = mtoons.length ? mtoons[0].base.toArray().map(v=>+v.toFixed(3)) : null;
+  const cam = new THREE.OrthographicCamera(-0.22,0.22,0.22,-0.22,0.01,10);
+  cam.position.set(0,1.38,-1); cam.lookAt(0,1.38,0);
+  const meshes = []; vrm.scene.traverse(o => { if (o.isMesh||o.isSkinnedMesh) meshes.push(o); });
+  const read = () => { const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    const c2=cv.getContext('2d'); c2.drawImage(canvas,0,0); return c2.getImageData(0,0,W,H).data; };
+  renderer.render(scene, cam); const plain = read();
+  const MAG = new THREE.MeshBasicMaterial({ color:0xff00ff, side:THREE.DoubleSide });
+  const rows = [];
+  for (const m of meshes) {
+    if (!m.name.startsWith('Hair001')) continue;
+    const keep = m.material; m.material = MAG;
+    renderer.render(scene, cam); const probe = read(); m.material = keep;
+    const ch=[[],[],[]]; let n=0, ymin=1e9, ymax=-1, xmin=1e9, xmax=-1;
+    for (let i=0;i<W*H;i++) {
+      const r=probe[i*4], g=probe[i*4+1], b=probe[i*4+2], a=probe[i*4+3];
+      if (!(a>200 && r+b-2*g>90)) continue;
+      n++; const y=(i/W)|0, x=i%W;
+      if (y<ymin) ymin=y; if (y>ymax) ymax=y; if (x<xmin) xmin=x; if (x>xmax) xmax=x;
+      ch[0].push(plain[i*4]); ch[1].push(plain[i*4+1]); ch[2].push(plain[i*4+2]);
+    }
+    if (n < 200) continue;
+    const q=c=>{const s=[...c].sort((a,b)=>a-b);return s[s.length>>1];};
+    rows.push({ mesh:m.name, mat:(Array.isArray(m.material)?m.material[0]:m.material).name,
+      n, y:[ymin,ymax], x:[xmin,xmax], med:ch.map(q) });
+  }
+
+  rows.sort((a,b)=>b.n-a.n);
+  R.rows = rows;
+  {
+    const box = (x0,x1,y0,y1) => { const ch=[[],[],[]];
+      for (let y=y0;y<y1;y++) for (let x=x0;x<x1;x++) { const i=y*W+x;
+        if (plain[i*4+3]<200) continue;
+        ch[0].push(plain[i*4]); ch[1].push(plain[i*4+1]); ch[2].push(plain[i*4+2]); }
+      const q=c=>{const s2=[...c].sort((a,b)=>a-b);return s2[s2.length>>1];};
+      return ch[0].length ? ch.map(q) : null; };
+    R.box = { occiput: box(300,400,330,470), bunL: box(180,280,90,180),
+              bunR: box(420,520,90,180), tailL: box(120,200,330,470),
+              tailR: box(500,580,330,470), cap: box(320,380,180,230) };
+  }
+  await fetch('http://127.0.0.1:8907/' +
+    (new URLSearchParams(location.search).get('tag') || 'backprobe'),
+    { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+      body: canvas.toDataURL('image/png') });
+
+} catch(e) { R.error = String(e&&e.stack||e); }
+out.textContent = JSON.stringify(R);
+</script>

@@ -1,0 +1,144 @@
+<!doctype html><meta charset="utf-8"><title>colour probe</title>
+<body style="margin:0;background:#111"><pre id="out" style="color:#0f0;font:12px monospace;white-space:pre-wrap"></pre>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js",
+"three/addons/":"/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+const out = document.getElementById('out'); const R = {};
+const W = 700, H = 1200;
+try {
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, preserveDrawingBuffer:true, alpha:true });
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+  const file = new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy.vrm';
+  const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
+  const hh = await crypto.subtle.digest('SHA-256', bytes);
+  R.sha = [...new Uint8Array(hh)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
+  const loader = new GLTFLoader(); loader.register(p => new VRMLoaderPlugin(p));
+  const vrm = (await loader.parseAsync(bytes.buffer, '')).userData.vrm;
+  VRMUtils.rotateVRM0(vrm);
+  const scene = new THREE.Scene(); scene.add(vrm.scene);
+  // avatarGuideEngine.ts 的打光原樣抄過來，色彩才與實機同一組。
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(0.6,1.6,2.2); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x00d9ff, 0.3); fill.position.set(-0.4,-1.0,1.8); scene.add(fill);
+  const rims = [];
+  vrm.scene.traverse(o => { if (!(o.isMesh||o.isSkinnedMesh)) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material]))
+      if (m && m.parametricRimColorFactor) rims.push({ m, base: m.parametricRimColorFactor.clone() }); });
+  for (const { m, base } of rims) {
+    m.parametricRimFresnelPowerFactor = 6;
+    m.parametricRimColorFactor.copy(base).multiplyScalar(0.22);
+  }
+  const box = new THREE.Box3().setFromObject(vrm.scene);
+  const top = box.max.y, bottom = box.min.y, span = top - bottom;
+  // ?head=1 換成頭部機位。全身圖上臉只有 60 px 高，嘴唇與腮紅在那個尺度下
+  // 判斷不出來，而提亮量正是先把它們洗掉。
+  const head = new URLSearchParams(location.search).get('head') === '1';
+  const centre = head ? (vrm.humanoid.getNormalizedBoneNode('head').getWorldPosition(
+                          new THREE.Vector3()).y + 0.06) : (top + bottom) / 2;
+  const half = head ? 0.13 : span * 0.52;
+  const cam = new THREE.OrthographicCamera(-half*W/H, half*W/H, half, -half, 0.01, 20);
+  cam.position.set(0, centre, 3); cam.lookAt(0, centre, 0);
+  const read = () => { const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    const c2=cv.getContext('2d'); c2.drawImage(canvas,0,0); return c2.getImageData(0,0,W,H).data; };
+  renderer.render(scene, cam); const lit = read();
+  await fetch('http://127.0.0.1:8907/' +
+    (new URLSearchParams(location.search).get('tag') || 'colourprobe'),
+    { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+      body: canvas.toDataURL('image/png') });
+
+  // 遮罩用材質畫，不用目視框：把某一組材質整批塗成洋紅算一張，命中的像素就是
+  // 那一組材質在畫面上的真實覆蓋範圍。目視框會悄悄吃進背景與鄰近部件，量到的
+  // 是別的東西（measure.py 的髮框吃到背景、膚框吃到繃帶就是這樣來的）。
+  //
+  // 一個已知且無害的偏差：洋紅是不透明的 MeshBasicMaterial，而髮的材質是
+  // alphaMode MASK、_Cutoff 0.5，所以遮罩畫的是**幾何覆蓋**，不是 alpha 裁切
+  // 之後的覆蓋。實務上沒有污染——若混進背景或膚色，百分位會立刻炸開，而髮那組
+  // 的 p25–p75 只有三、四個單位寬。要收緊就得把裁切也複製一份到遮罩材質上。
+  const MAG = new THREE.MeshBasicMaterial({ color:0xff00ff, side:THREE.DoubleSide });
+  const groups = { skin: /F00_000_00_(Face|Body)_00_SKIN/,
+                   face: /F00_000_00_Face_00_SKIN/, body: /F00_000_00_Body_00_SKIN/,
+                   hair: /F00_000_Hair_00_HAIR/, iris: /EyeIris/ };
+  const meshes = []; vrm.scene.traverse(o => { if (o.isMesh||o.isSkinnedMesh) meshes.push(o); });
+  R.groups = {};
+  for (const [name, re] of Object.entries(groups)) {
+    const saved = [];
+    for (const m of meshes) {
+      const mats = Array.isArray(m.material) ? m.material : [m.material];
+      if (mats.some(x => x && re.test(x.name))) { saved.push([m, m.material]); m.material = MAG; }
+    }
+    if (!saved.length) { R.groups[name] = 'no material matched'; continue; }
+    renderer.render(scene, cam); const probe = read();
+    for (const [m, keep] of saved) m.material = keep;
+    const ch = [[],[],[]];
+    for (let i = 0; i < W*H; i++) {
+      const r = probe[i*4], g = probe[i*4+1], b = probe[i*4+2], a = probe[i*4+3];
+      if (!(a > 200 && r + b - 2*g > 90)) continue;
+      ch[0].push(lit[i*4]); ch[1].push(lit[i*4+1]); ch[2].push(lit[i*4+2]);
+    }
+    const q = c => { const s = [...c].sort((a,b)=>a-b); return s[s.length>>1]; };
+    const p = (c,k) => { const s = [...c].sort((a,b)=>a-b); return s[Math.floor(s.length*k)]; };
+    R.groups[name] = ch[0].length < 200 ? `only ${ch[0].length} px`
+      : { n: ch[0].length, med: ch.map(q), p25: ch.map(c=>p(c,0.25)), p75: ch.map(c=>p(c,0.75)) };
+  }
+
+  // ?ceiling=1：把膚色那組材質換成純白 albedo（貼圖拿掉、色乘 1,1,1、陰影色也
+  // 白），在同一組光、同一個遮罩下再量一次。量到的就是「這座算圖台能把一個材質
+  // 推到多亮」的上限。它是從出貨檔本身算出來的，不需要另外保留一份白模建置。
+  if (new URLSearchParams(location.search).get('ceiling') === '1') {
+    // 膚與髮各量一次。天花板隨遮罩而異（不同的法線、不同的受光位置），拿膚的
+    // 天花板去減髮的亮度是在比兩組不同的像素。
+    R.ceiling = {};
+    for (const [name, re] of [['skin', /F00_000_00_(Face|Body)_00_SKIN/],
+                              ['hair', /F00_000_Hair_00_HAIR/]]) {
+      // 以材質物件去重，不是以「網格 × 材質」。同一個材質被兩個網格共用時，第
+      // 二次會把已經改成 null 的 map 當成原狀存起來，還原時後寫的那份會把它留在
+      // null——畫面從此是白模，而且不會報錯。
+      const saved = [], seen = new Set();
+      for (const m of meshes) for (const x of (Array.isArray(m.material)?m.material:[m.material])) {
+        if (!(x && re.test(x.name)) || seen.has(x)) continue;
+        seen.add(x);
+        saved.push([x, x.map, x.color.clone(), x.shadeMultiplyTexture,
+                    x.shadeColorFactor && x.shadeColorFactor.clone()]);
+        x.map = null; x.color.setRGB(1,1,1);
+        if ('shadeMultiplyTexture' in x) x.shadeMultiplyTexture = null;
+        if (x.shadeColorFactor) x.shadeColorFactor.setRGB(1,1,1);
+        x.needsUpdate = true;
+      }
+      // 遮罩重算一次：材質換過，覆蓋範圍不變，但得用同一段程式碼才算同一個口徑。
+      const keepMats = [];
+      for (const m of meshes) {
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        if (mats.some(x => x && re.test(x.name))) { keepMats.push([m, m.material]); m.material = MAG; }
+      }
+      renderer.render(scene, cam); const probe = read();
+      for (const [m, keep] of keepMats) m.material = keep;
+      renderer.render(scene, cam); const white = read();
+      const ch = [[],[],[]];
+      for (let i = 0; i < W*H; i++) {
+        const r = probe[i*4], g = probe[i*4+1], b = probe[i*4+2], a = probe[i*4+3];
+        if (!(a > 200 && r + b - 2*g > 90)) continue;
+        ch[0].push(white[i*4]); ch[1].push(white[i*4+1]); ch[2].push(white[i*4+2]);
+      }
+      const q = c => { const s = [...c].sort((a,b)=>a-b); return s[s.length>>1]; };
+      const p = (c,k) => { const s = [...c].sort((a,b)=>a-b); return s[Math.floor(s.length*k)]; };
+      R.ceiling[name] = { n: ch[0].length, med: ch.map(q), p25: ch.map(c=>p(c,0.25)),
+                          p75: ch.map(c=>p(c,0.75)), p95: ch.map(c=>p(c,0.95)) };
+      for (const [x, map, color, shTex, shCol] of saved) {
+        x.map = map; x.color.copy(color);
+        if ('shadeMultiplyTexture' in x) x.shadeMultiplyTexture = shTex;
+        if (shCol) x.shadeColorFactor.copy(shCol);
+        x.needsUpdate = true;
+      }
+    }
+  }
+} catch(e) { R.error = String(e&&e.stack||e); }
+out.textContent = JSON.stringify(R);
+</script>

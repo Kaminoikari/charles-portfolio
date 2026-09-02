@@ -19,6 +19,8 @@ import io
 import json
 import sys
 
+import warnings
+
 import numpy as np
 from PIL import Image
 
@@ -411,8 +413,59 @@ def rim(doc, rgb):
     return _set_colour(doc, '_RimColor', rgb)
 
 
+def _flatten_v(channel, opaque, blocks):
+    """Remove a channel's vertical trend, column block by column block.
+
+    VRoid paints each hair card as a root-to-tip ramp down the v axis. Pulling
+    the whole channel toward its median removes the ramp, but it removes the
+    strand-to-strand variation with it -- the same amount, because a value-space
+    knob cannot tell the two apart. This can: the ramp runs down v and the strand
+    detail runs across u, so subtracting each row's own median takes out the
+    first and leaves the second untouched.
+
+    Per column block rather than per whole row, because the strips in one hair
+    atlas do not share a trend. Measured on what this function actually receives
+    (the hue rotation, saturate and lift already applied), `F00_000_Hair_00_02`
+    has strand cards over the left three quarters whose R-B falls 42.6 to 11.7
+    down v, and a flat under-layer strip on the right that runs 13.9 to 9.8; one
+    row median is dominated by the cards and would carve their ramp, inverted,
+    into the strip. The two atlases disagree about this, which is why no single
+    whole-row correction can be right for both: in `baseline.vrm`,
+    `F00_000_Hair_00_01`'s strip ramps with its cards (93 to 40) while
+    `F00_000_Hair_00_02`'s does not (31 to 20).
+
+    Sixteen blocks puts every strip well inside its own, and the result is
+    insensitive to the count: at 8, 16 and 32 this atlas's lightness p10-p90 is
+    0.100, 0.102 and 0.102 -- an absolute spread, not a fraction of anything --
+    and `F00_000_Hair_00_01`'s is 0.039, 0.037 and 0.039. Over the same three the
+    cards stop ramping: their R-B at the v=0.75 end reads 23.1, 22.6 and 22.7
+    against 22.9, 22.6 and 22.7 at v=0.05 (the un-flattened atlas falls 42.6 to
+    11.7 across that span). Built at all three, both guards stay green --
+    receipts in evidence/mutations-0903c.md (S8, S32) and
+    evidence/colorprobe-0903.md.
+    """
+    out = channel.copy()
+    edges = np.linspace(0, channel.shape[1], blocks + 1).astype(int)
+    for start, end in zip(edges[:-1], edges[1:]):
+        block, mask = channel[:, start:end], opaque[:, start:end]
+        if mask.sum() < 100:
+            continue
+        whole = float(np.median(block[mask]))
+        # `np.errstate` 擋不住這一個：All-NaN slice 是 numpy 用 warnings.warn 發的
+        # RuntimeWarning，不是浮點狀態旗標。整列都在遮罩外（髮片之間的空白）是這張
+        # 圖的常態，下一行本來就會把它換成 whole，所以這裡明確地把它靜音，而不是留
+        # 一個看起來有擋、其實每次建置都照印的 with。
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'All-NaN slice encountered',
+                                    RuntimeWarning)
+            rows = np.nanmedian(np.where(mask, block, np.nan), axis=1)
+        rows = np.where(np.isnan(rows), whole, rows)
+        out[:, start:end] = block - rows[:, None] + whole
+    return np.clip(out, 0.0, 1.0)
+
+
 def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
-        unify=None):
+        unify=None, flatten=0, offset=0.0):
     """Rotate a texture's hue, keeping its shading and its alpha.
 
     `lift` pulls lightness toward white by a fraction rather than scaling
@@ -422,6 +475,14 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
     strands flatten into a white sheet. l + (1-l)*lift never clips and keeps
     the ordering between shadow and highlight intact.
 
+    `offset` adds to lightness instead. It keeps the ORDERING like lift does and
+    also keeps the SPACING, which lift does not: lift multiplies every gap by
+    (1-lift), so a face texture lifted by 0.63 loses 63% of the distance between
+    the lips and the cheek and the mouth stops reading as a mouth. The price is
+    that an offset can clip, so the caller has to check the histogram first --
+    `retone` does, and falls back to lift when too much of the texture would
+    burn out. Use one or the other, not both.
+
     `unify` is an angle in degrees. Pixels further than that from the texture's
     own median hue are moved onto the median before the rotation. The base
     model's hair carries deliberate accent streaks -- 1.7% of one map sits at
@@ -429,6 +490,17 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
     turning the pink to sand turns the teal to lavender, and two lavender locks
     down the middle of the fringe are the first thing the eye finds. The
     reference hair is one tone throughout.
+
+    `flatten` carries the same idea to the ramp down the v axis, as a number of
+    column blocks passed to `_flatten_v`; 0 leaves the texture alone. VRoid
+    paints each hair card warm and saturated where it leaves the scalp and pale
+    at its end, and `unify` only levels the hue, so that ramp survives a rotation
+    intact. It is invisible on the base model, whose tips hang past the
+    shoulders, and unmissable on this one, which coils the tips into buns at the
+    crown: the palest and the warmest ends of one ramp end up side by side across
+    the back of the head. The reference asset has no ramp at all, root and tip
+    are the same ash, so removing it is not a stylisation, it is the thing being
+    copied.
     """
     hit = 0
     for image in doc.get('images', ()):
@@ -449,6 +521,13 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
         s = np.clip(s * saturate, 0, 1)
         l = np.clip(l * lighten, 0, 1)
         l = np.clip(l + (1.0 - l) * lift, 0, 1)
+        l = np.clip(l + offset, 0, 1)
+        if flatten:
+            opaque = a > 0.8
+            if not opaque.any():
+                raise SystemExit(f'{image_name} 全透明，flatten 無從取中位數')
+            s = _flatten_v(s, opaque, flatten)
+            l = _flatten_v(l, opaque, flatten)
         r, g, b = np.vectorize(colorsys.hls_to_rgb)(h, l, s)
         out = np.stack([r, g, b, a], axis=-1)
         buf = io.BytesIO()
@@ -461,6 +540,36 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
     return hit
 
 
+# 加法位移允許燒掉的比例，以及「本來就白」的界線。臉的貼圖有一整片眼白、牙齒與
+# 高光坐在 0.98 以上，把它們算進預算等於在懲罰位移做對了的事，所以只數原本低於
+# ALREADY_WHITE、位移後才越過 1.0 的像素。
+#
+# 2026-09-03 這一版解出來：臉位移 +0.147 燒掉 0.33%，身體位移 +0.116 燒掉
+# 0.01%。同一步改走 lift 的話係數是 0.630 與 0.573，臉的貼圖亮度 p10–p90 會從
+# 0.410 掉到 0.151，唇就不見了。1% 的預算比實測值寬三倍（換一張貼圖不至於翻
+# 盤），又遠低於「整片都在燒」的量級。
+CLIP_BUDGET = 0.01
+ALREADY_WHITE = 0.98
+
+
+def _burn(doc, views, image_name, offset):
+    """位移之後才被夾在 1.0、而且原本不算白的不透明像素比例。"""
+    for image in doc.get('images', ()):
+        if image.get('name') != image_name:
+            continue
+        arr = np.asarray(
+            Image.open(io.BytesIO(bytes(views[image['bufferView']]))).convert('RGBA'),
+            dtype=np.float64) / 255.0
+        rgb, a = arr[..., :3], arr[..., 3]
+        _, l, _ = np.vectorize(colorsys.rgb_to_hls)(rgb[..., 0], rgb[..., 1], rgb[..., 2])
+        opaque = a > 0.8
+        if not opaque.any():
+            return 1.0
+        lit = l[opaque]
+        return float(np.mean((lit < ALREADY_WHITE) & (lit + offset > 1.0)))
+    raise SystemExit(f'找不到貼圖 {image_name}')
+
+
 def retone(doc, views, image_name, target, mid=None):
     """Move a texture's overall skin tone onto `target`, and report what it did.
 
@@ -471,9 +580,18 @@ def retone(doc, views, image_name, target, mid=None):
     against the same target makes a mismatch impossible by construction.
 
     Only the median is moved. Everything the texture says relative to that -- the
-    blush, the lips, the shading under the chin -- keeps its ordering. A lighter
-    target uses the pull-toward-white lift; a darker target scales lightness down,
-    because a non-negative lift cannot reach a tone below the source median.
+    blush, the lips, the shading under the chin -- keeps its ordering. A darker
+    target scales lightness down, because a non-negative lift cannot reach a tone
+    below the source median.
+
+    A lighter target is where the choice is. Keeping the ordering turned out not
+    to be enough: `lift` also multiplies every lightness GAP by (1-lift), and the
+    2026-09-03 solve needed 0.63 on the face, which took 63% of the distance
+    between the lips and the cheek with it. On screen the mouth stopped reading
+    as a mouth while every number about the skin was correct. So a lighter target
+    now prefers an additive offset, which moves the median by exactly as much and
+    changes no gap at all, and only falls back to lift when `_burn` says the
+    offset would clip more than CLIP_BUDGET of the texture.
 
     `mid` is a (low, high) brightness window narrowing which pixels define the
     tone. An iris texture needs it: half its area is a near-black pupil and a
@@ -503,9 +621,12 @@ def retone(doc, views, image_name, target, mid=None):
     lighten = 1.0 if l0 <= l1 else l1 / max(l0, 1e-9)
     lift = (0.0 if l0 >= l1 or l0 >= 1
             else np.clip((l1 - l0) / (1.0 - l0), 0.0, 1.0))
+    offset = 0.0
+    if lift and _burn(doc, views, image_name, l1 - l0) <= CLIP_BUDGET:
+        offset, lift = float(l1 - l0), 0.0
     hue(doc, views, image_name, degrees, saturate,
-        lighten=float(lighten), lift=float(lift))
-    return degrees, saturate, float(lighten), float(lift)
+        lighten=float(lighten), lift=float(lift), offset=offset)
+    return degrees, saturate, float(lighten), float(lift), offset
 
 
 def remap(doc, manifest, dropped=()):

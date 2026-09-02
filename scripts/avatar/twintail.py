@@ -11,8 +11,11 @@ cardigan is fully modelled and completely hidden.
 The rig said the same thing more plainly: there is ONE hair chain down the back,
 root node 27, six joints from y=1.325 to y=0.768, and it starts at x=-0.026,
 which is the middle. No rotation of any existing bone can make two tails out of
-one chain in the centre, so this adds two, one under each tie, and moves both the
-vertices and their weights onto them.
+one chain in the centre, so this adds two, one under each tie, and moves the
+free-hanging vertices and their weights onto them. Not all of them: the 778
+vertices that lie on the skull stay where they are and go back onto the head
+bone, because hair lying on the scalp does not leave the scalp when it is tied
+(see SCALP_GAP).
 
 Three things have to agree afterwards or the model breaks in a way that only
 shows in motion:
@@ -249,6 +252,9 @@ def apply(doc, views, manifest, scalp_pos,
                 # 用滿四格（被借走那格的權重最大值是 0.0），但那是這份資料的
                 # 性質不是保證：換一份用滿四格的髮，靜默覆寫會吃掉一個真的骨
                 # 頭影響，畫面上是一小塊髮跟錯關節。寧可在這裡停下來。
+                # 門檻量的是乘過 free 之後的值，所以 free 極小時一個真實影響
+                # 可能低於 1e-6 而過關；那一段的頂點本來就要 100% 綁頭骨，被
+                # 覆寫的影響也已經被 free 縮到看不見。
                 taken = w[rows, slot]
                 if float(taken.max()) > 1e-6:
                     raise SystemExit(

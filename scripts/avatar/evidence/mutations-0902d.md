@@ -62,3 +62,13 @@ Milfy_GoldInner 兩個材質（共用 Milfy_Gold_ramp 貼圖），門檻咬在�
 
 膚色上下限、後腦覆蓋、皇冠讓耳三條的紅燈驗證在 mutations-0902c.md，第六版沒
 有改動它們的判準或門檻，收據續用。
+
+---
+
+**2026-09-02 深夜補註（稽核用）。** 上面「掃髮帽色」那一格記的
+`test_nape_cap_matches_the_curtains`，以及它守的那片 `Hair_Nape` 掃髮帽，都只
+存在於未 commit 的工作區狀態，從來沒有進過任何一個 commit：parent `f7a8679` 的
+appearance_test 是 8 條，取代它的 `16a8200` 是 10 條，兩邊都沒有這個名字。因此
+那一格**無法被重新稽核**，讀的時候要當成歷程紀錄而不是收據。取代它的是
+mutations-0903a.md 的兩條（貼頭層還在、貼頭層不掛尾巴骨權重），那兩條守的是已
+commit 的機制。

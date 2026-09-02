@@ -1,0 +1,49 @@
+=== M1  HAIR_FLATTEN_BLOCKS 16 -> 0: patched build.py
+M1  HAIR_FLATTEN_BLOCKS 16 -> 0: mutant sha 29ee00a8f83b09b3
+M1  HAIR_FLATTEN_BLOCKS 16 -> 0: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 24.0 not less than or equal to 12.0 : 貼頭層暖度 40.0，自由段 16.0，差 24.0
+M1  HAIR_FLATTEN_BLOCKS 16 -> 0: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+M1  HAIR_FLATTEN_BLOCKS 16 -> 0: kept as public/avatar/probe-nofl.vrm
+=== M2  逐欄去趨勢 -> 整張往中位數收 85%（舊 even）: patched customise.py
+M2  逐欄去趨勢 -> 整張往中位數收 85%（舊 even）: mutant sha 7d94626044355943
+M2  逐欄去趨勢 -> 整張往中位數收 85%（舊 even）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+M2  逐欄去趨勢 -> 整張往中位數收 85%（舊 even）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> RED  AssertionError: 0.013725490196078494 not greater than or equal to 0.025 : F00_000_Hair_00_01 亮度 p10-p90 只剩 0.014，髮絲被壓平了
+=== M3  _flatten_v 只做飽和（拿掉明度那一行）: patched customise.py
+M3  _flatten_v 只做飽和（拿掉明度那一行）: mutant sha 28b81121286c76bc
+M3  _flatten_v 只做飽和（拿掉明度那一行）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+M3  _flatten_v 只做飽和（拿掉明度那一行）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+=== M4  _flatten_v 只做明度（拿掉飽和那一行）: patched customise.py
+M4  _flatten_v 只做明度（拿掉飽和那一行）: mutant sha 8953f54ce453eece
+M4  _flatten_v 只做明度（拿掉飽和那一行）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 14.0 not less than or equal to 12.0 : 貼頭層暖度 34.0，自由段 20.0，差 14.0
+M4  _flatten_v 只做明度（拿掉飽和那一行）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+=== M5  CLIP_BUDGET 0.01 -> 0.0（停用加法位移，退回 lift）: patched customise.py
+M5  CLIP_BUDGET 0.01 -> 0.0（停用加法位移，退回 lift）: mutant sha 7389eb6de71a6a6c
+M5  CLIP_BUDGET 0.01 -> 0.0（停用加法位移，退回 lift）: appearance_test.AppearanceTest.test_face_texture_keeps_the_contrast_its_features_live_in -> RED  AssertionError: 0.15098039215686276 not greater than or equal to 0.3 : 臉的貼圖亮度 p10-p90 只剩 0.151，五官被壓平了
+M5  CLIP_BUDGET 0.01 -> 0.0（停用加法位移，退回 lift）: appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting -> GREEN  
+=== M6  SKIN_TARGET 退回 (244,190,172): patched build.py
+M6  SKIN_TARGET 退回 (244,190,172): mutant sha 58163bc20a3b6942
+M6  SKIN_TARGET 退回 (244,190,172): appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 244.0 not greater than or equal to 245 : F00_000_00_Body_00 中位數 [244. 190. 171.]，最亮通道太暗
+=== M7  SKIN_TARGET -> (252,200,180)（一樣亮但偏橘）: patched build.py
+M7  SKIN_TARGET -> (252,200,180)（一樣亮但偏橘）: mutant sha d647c3dc7e030117
+M7  SKIN_TARGET -> (252,200,180)（一樣亮但偏橘）: appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 73.0 not less than or equal to 48 : F00_000_00_Body_00 中位數 [252. 200. 179.]，暖度 73 太高（偏橘）
+=== M8  HAIR_SAT, HAIR_LIFT 退回 0.75, 0.0: patched build.py
+M8  HAIR_SAT, HAIR_LIFT 退回 0.75, 0.0: mutant sha 2fb0127c082fb247
+M8  HAIR_SAT, HAIR_LIFT 退回 0.75, 0.0: appearance_test.AppearanceTest.test_hair_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 206.0 not greater than or equal to 215 : F00_000_Hair_00_01 中位數 [206. 185. 159.]，最亮通道太暗
+M8  HAIR_SAT, HAIR_LIFT 退回 0.75, 0.0: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+M8  HAIR_SAT, HAIR_LIFT 退回 0.75, 0.0: kept as public/avatar/probe-old.vrm
+=== M9  HAIR_SAT -> 1.20（保持提亮，飽和拉高）: patched build.py
+M9  HAIR_SAT -> 1.20（保持提亮，飽和拉高）: mutant sha e5f950b23ab574cd
+M9  HAIR_SAT -> 1.20（保持提亮，飽和拉高）: appearance_test.AppearanceTest.test_hair_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 43.0 not less than or equal to 30 : F00_000_Hair_00_01 中位數 [234. 215. 191.]，暖度 43 太高（偏橘）
+=== M10 HAIR_LIFT -> 0.0（保持 SAT 與逐欄去趨勢）: patched build.py
+M10 HAIR_LIFT -> 0.0（保持 SAT 與逐欄去趨勢）: mutant sha 2769f3a430a35fad
+M10 HAIR_LIFT -> 0.0（保持 SAT 與逐欄去趨勢）: appearance_test.AppearanceTest.test_hair_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 203.0 not greater than or equal to 215 : F00_000_Hair_00_01 中位數 [203. 184. 162.]，最亮通道太暗
+=== S8  HAIR_FLATTEN_BLOCKS 16 -> 8（不是 mutation，驗區塊數不敏感）: patched build.py
+S8  HAIR_FLATTEN_BLOCKS 16 -> 8（不是 mutation，驗區塊數不敏感）: mutant sha 7d63c6fc5a889438
+S8  HAIR_FLATTEN_BLOCKS 16 -> 8（不是 mutation，驗區塊數不敏感）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+S8  HAIR_FLATTEN_BLOCKS 16 -> 8（不是 mutation，驗區塊數不敏感）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+=== S32 HAIR_FLATTEN_BLOCKS 16 -> 32（同上）: patched build.py
+S32 HAIR_FLATTEN_BLOCKS 16 -> 32（同上）: mutant sha 1d13ce0749ccc431
+S32 HAIR_FLATTEN_BLOCKS 16 -> 32（同上）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> GREEN  
+S32 HAIR_FLATTEN_BLOCKS 16 -> 32（同上）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+restored; ship 66871116b6263fb9 out 66871116b6263fb9
+build.py restored byte-identical: True
+customise.py restored byte-identical: True

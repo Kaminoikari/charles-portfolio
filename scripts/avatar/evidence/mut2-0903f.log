@@ -1,0 +1,15 @@
+=== M1 HAIR_FLATTEN_BLOCKS 16 -> 0（加了明度斷言之後重跑）: patched build.py
+M1 HAIR_FLATTEN_BLOCKS 16 -> 0（加了明度斷言之後重跑）: mutant sha bbceb567f198fc84
+M1 HAIR_FLATTEN_BLOCKS 16 -> 0（加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 24.0 not less than or equal to 12.0 : 貼頭層暖度 40.0，自由段 16.0，差 24.0
+M1 HAIR_FLATTEN_BLOCKS 16 -> 0（加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+=== M3 _flatten_v 只做飽和（拿掉明度那一行，加了明度斷言之後重跑）: patched customise.py
+M3 _flatten_v 只做飽和（拿掉明度那一行，加了明度斷言之後重跑）: mutant sha 4543cda0090724f7
+M3 _flatten_v 只做飽和（拿掉明度那一行，加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 0.06470588235294117 not less than or equal to 0.02 : 貼頭層明度 0.7922，自由段 0.8569，差 0.0647
+M3 _flatten_v 只做飽和（拿掉明度那一行，加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+=== M4 _flatten_v 只做明度（拿掉飽和那一行，加了明度斷言之後重跑）: patched customise.py
+M4 _flatten_v 只做明度（拿掉飽和那一行，加了明度斷言之後重跑）: mutant sha ce89a5662a8354f8
+M4 _flatten_v 只做明度（拿掉飽和那一行，加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail -> RED  AssertionError: 14.0 not less than or equal to 12.0 : 貼頭層暖度 34.0，自由段 20.0，差 14.0
+M4 _flatten_v 只做明度（拿掉飽和那一行，加了明度斷言之後重跑）: appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast -> GREEN  
+restored; ship 66871116b6263fb9
+build.py byte-identical: True
+customise.py byte-identical: True

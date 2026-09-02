@@ -176,10 +176,21 @@ BLENDER_PARTS = [
     ('details', 'Milfy_Ribbon', 'Acc_Bow_Skirt', {}),
 ]
 
-# Hue rotation, saturation scale, and pull-toward-white for the hair textures.
-# The browser's MToon ambient and ACES exposure lift the final texture again,
-# so the asset retains a warm beige base and visible strand contrast here.
-HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.75, 0.0
+# 髮色貼圖的旋鈕：色相旋轉、飽和縮放、往白拉，以及把 VRoid 的髮根→髮梢色帶逐欄
+# 去趨勢時要切成幾個欄區塊（見 customise.hue 的 `flatten` 與 `_flatten_v`）。
+#
+# 2026-09-03 依參考圖重解。前五版留著 LIFT 0.0 與 SAT 0.75，理由寫的是「瀏覽器
+# 的環境光與 ACES 會再提亮一次，所以資產這邊保留暖米底與髮絲對比」——量過之後那
+# 個理由不成立：那一組常數在生產打光下的實機髮色是 (200,185,169)，去掉亮度軸的
+# ΔE 4.52，而參考圖的髮是 (245,231,223)。提亮沒有發生。現況 1.51。
+#
+# 這三個旋鈕壓的都是同一條色帶，會互相遮蔽；改動任何一個之前，先看
+# evidence/mutations-0903c.md 哪一個 mutation 釘住哪一個。特別是 LIFT 與 SAT 同
+# 時也會壓掉髮絲對比（每一段亮度差乘 (1-LIFT)：HAIR_01 的貼圖亮度 p10–p90 由
+# 0.1490 掉到 0.0843），逐欄去趨勢再拿掉沿 v 的那一部分（0.0843 → 0.0373）。兩
+# 段各自量得出來，數字在 evidence/colorprobe-0903.md。
+HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.65, 0.42
+HAIR_FLATTEN_BLOCKS = 16
 HAIR_MATERIAL_TONE = (0.92, 0.84, 0.80)
 # Accent streaks further than this from the hair's own hue are folded onto it
 # before the rotation; see customise.hue.
@@ -187,13 +198,19 @@ HAIR_UNIFY = 60.0
 BROW_SHIFT, BROW_SAT = 140.0, 0.35
 
 # Both skin textures are solved onto one warm base so the neck seam stays
-# closed. MToon's final exposure lifts this base into Milfy's pale on-screen
-# tone while preserving enough chroma to separate her skin from white cloth.
-# 2026-09-02 由 (222,178,165) 再提亮：使用者要臉再淡一點。提亮量在真引擎頁
-# （live-preview.html?mikadebug=1，ACES＋正式打光）上以 factor 乘數解出
-# [1.24, 1.1548, 1.1007]，換算到線性空間乘回本值。臉和身體共用這一個目標，
-# 頸縫才不會開。
-SKIN_TARGET = (244, 190, 172)
+# closed. 臉和身體共用這一個目標，頸縫才不會開。
+#
+# 2026-09-03 由 (244,190,172) 重解，因為使用者問「膚色跟髮色都跟參考圖一樣嗎」，
+# 量出來不一樣：那一組常數在生產打光下的實機膚色是 (222,193,179)，暖度（R−B）
+# 43，去掉亮度軸的 ΔE 8.62；參考圖的裸膚是 (253,239,236)，暖度 17。現況 1.24。
+#
+# 亮度追不上，而且追不上的原因量得出來：colourprobe.html 的 ?ceiling=1 把膚色那
+# 組材質換成純白 albedo（貼圖拿掉、色乘 1,1,1、陰影色也白）在同一組光下再算一
+# 次，量到 (226,229,229)、L* 90.7，而參考是 L* 95.4。這個引擎對任何材質的上限就
+# 低於參考圖的膚色亮度，不是這一組常數能補的。那個量測從出貨檔本身算得出來，不
+# 依賴另外保留一份白模建置。收據在 evidence/colorprobe-0903.md，敘述在
+# RESULT.txt「第六版之二」。
+SKIN_TARGET = (252, 222, 214)
 SKIN_MATERIAL_TONE = (0.96, 0.90, 0.87)
 
 # The outline colour, derived from the skin rather than written down. The base
@@ -1190,7 +1207,8 @@ def build(src, dst, manifest_path, out_manifest):
     #     a pale sand around hue 33 / sat 0.24 / lightness 0.79. ---
     for i in range(1, 7):
         customise.hue(doc, views, f'F00_000_Hair_00_0{i}',
-                      HAIR_SHIFT, HAIR_SAT, lift=HAIR_LIFT, unify=HAIR_UNIFY)
+                      HAIR_SHIFT, HAIR_SAT, lift=HAIR_LIFT, unify=HAIR_UNIFY,
+                      flatten=HAIR_FLATTEN_BLOCKS)
 
     # --- brows. The base model's are periwinkle, hue 250, to go with pink hair;
     #     the reference's are a warm grey-brown. They are their own texture, so
@@ -1199,13 +1217,13 @@ def build(src, dst, manifest_path, out_manifest):
 
     # --- skin. Same story as the hair, in two textures that must agree. ---
     for name in ('F00_000_00_Face_00', 'F00_000_00_Body_00'):
-        deg, sat, light, lift = customise.retone(doc, views, name, SKIN_TARGET)
+        deg, sat, light, lift, shift = customise.retone(doc, views, name, SKIN_TARGET)
         print(f'   {name} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
-              f'明度 x{light:.2f} 提亮 {lift:.2f}')
-    deg, sat, light, lift = customise.retone(
+              f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
+    deg, sat, light, lift, shift = customise.retone(
         doc, views, 'F00_000_00_EyeIris_00', EYE_TARGET, mid=(60, 215))
     print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
-          f'明度 x{light:.2f} 提亮 {lift:.2f}')
+          f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
 
     skin_materials = customise.tone_textured_materials(
         doc,

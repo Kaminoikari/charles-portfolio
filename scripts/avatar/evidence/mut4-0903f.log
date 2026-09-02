@@ -1,0 +1,16 @@
+=== M11 身體貼圖改解到別的目標 (252,210,196)，臉不動: patched build.py
+M11 身體貼圖改解到別的目標 (252,210,196)，臉不動: mutant sha 073b257559804f96
+M11 身體貼圖改解到別的目標 (252,210,196)，臉不動: appearance_test.AppearanceTest.test_neck_seam_keeps_one_skin_tone_across_two_textures -> RED  AssertionError: 8.658550253441794 not less than or equal to 3.0 : 縫上臉側 (251, 208, 196)、身側 (252, 194, 175)，ΔE 8.66
+M11 身體貼圖改解到別的目標 (252,210,196)，臉不動: appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting -> RED  AssertionError: 57.0 not less than or equal to 48 : F00_000_00_Body_00 中位數 [252. 210. 195.]，暖度 57 太高（偏橘）
+M11 身體貼圖改解到別的目標 (252,210,196)，臉不動: appearance_test.AppearanceTest.test_face_texture_keeps_the_contrast_its_features_live_in -> GREEN  
+restored; ship 66871116b6263fb9
+build.py byte-identical: False
+customise.py byte-identical: False
+=== M11 身體貼圖改解到別的目標 (252,216,208)，臉不動: patched build.py
+M11 身體貼圖改解到別的目標 (252,216,208)，臉不動: mutant sha 19852b7dacda2077
+M11 身體貼圖改解到別的目標 (252,216,208)，臉不動: appearance_test.AppearanceTest.test_neck_seam_keeps_one_skin_tone_across_two_textures -> RED  AssertionError: 4.383231982652412 not less than or equal to 3.0 : 縫上臉側 (251, 208, 196)、身側 (251, 199, 188)，ΔE 4.38
+M11 身體貼圖改解到別的目標 (252,216,208)，臉不動: appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting -> GREEN  
+M11 身體貼圖改解到別的目標 (252,216,208)，臉不動: appearance_test.AppearanceTest.test_face_texture_keeps_the_contrast_its_features_live_in -> GREEN  
+restored; ship 66871116b6263fb9
+build.py byte-identical: True
+customise.py byte-identical: True
