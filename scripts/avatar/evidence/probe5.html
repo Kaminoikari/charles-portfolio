@@ -1,0 +1,45 @@
+<!doctype html><meta charset="utf-8"><title>rim probe</title>
+<body style="margin:0;background:#222"><pre id="out" style="color:#0f0;font:12px monospace"></pre>
+<script type="importmap">
+{"imports":{"three":"http://localhost:5173/node_modules/three/build/three.module.js",
+"three/addons/":"http://localhost:5173/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"http://localhost:5173/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin } from '@pixiv/three-vrm';
+const R = { errors: [] };
+const log = () => document.getElementById('out').textContent = JSON.stringify(R, null, 1);
+// rimBase() from avatarGuideEngine.ts, reproduced: black means "the model states
+// nothing", so the site's own accent stands in.
+const RIM_FALLBACK = 0xe8652b;
+function rimBase(c) {
+  if (c && (c.r > 0 || c.g > 0 || c.b > 0)) return c.clone();
+  return new THREE.Color(RIM_FALLBACK);
+}
+async function read(url) {
+  const loader = new GLTFLoader();
+  loader.register((p) => new VRMLoaderPlugin(p));
+  const gltf = await loader.loadAsync(url);
+  const vrm = gltf.userData.vrm;
+  const seen = new Map();
+  vrm.scene.traverse((o) => {
+    for (const m of [].concat(o.material || [])) {
+      if (!m || !m.parametricRimColorFactor) continue;
+      const b = rimBase(m.parametricRimColorFactor);
+      // 0.22 is the widget's resting rim scale (tint 0).
+      const k = [b.r, b.g, b.b].map((v) => +(v * 0.22).toFixed(4)).join(',');
+      seen.set(k, (seen.get(k) || 0) + 1);
+    }
+  });
+  return { materials: [...seen.values()].reduce((a, b) => a + b, 0),
+           restingRim: [...seen.entries()].map(([k, n]) => ({ rgb: k, count: n })) };
+}
+try {
+  R.milfy = await read('http://localhost:5173/avatar/mika-milfy.vrm');
+  R.pink = await read('http://localhost:5173/avatar/mika-pink.vrm');
+  R.done = true;
+} catch (e) { R.errors.push(String(e)); }
+log();
+</script>

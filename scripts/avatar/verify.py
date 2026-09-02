@@ -351,6 +351,25 @@ def torn_shapes(path, baseline=None, limit=SHAPE_STRETCH_MAX):
     return bad
 
 
+def stranded_collider_groups(path):
+    """Collider groups no bone group references.
+
+    Bone groups address collider groups by index, so a stranded group is not
+    just dead weight: any later edit that compacts the list without remapping
+    silently repoints every surviving spring. The builder prunes these in
+    twintail.prune_stranded_collider_groups; this detector holds the shipped
+    file to that, the same pairing as every other write-plus-guard here.
+    """
+    doc, _ = glb.load(path)
+    secondary = doc['extensions']['VRM']['secondaryAnimation']
+    used = {index
+            for group in secondary.get('boneGroups', [])
+            for index in group.get('colliderGroups', [])}
+    return [(index, doc['nodes'][group.get('node')].get('name', ''))
+            for index, group in enumerate(secondary.get('colliderGroups', []))
+            if index not in used]
+
+
 def report(path, baseline=None):
     s = stats(path)
     print(f'== {path}')
@@ -439,6 +458,13 @@ def report(path, baseline=None):
     for name, pi, top, si, n in bad[:5]:
         print(f'   FAIL {name}#{pi} uses joint {top}, skin {si} has {n}')
     if bad:
+        ok = False
+
+    stranded = stranded_collider_groups(path)
+    print(f'   collider groups no spring uses: {len(stranded)}')
+    for index, node in stranded[:5]:
+        print(f'   FAIL colliderGroups[{index}] ({node}) is referenced by no bone group')
+    if stranded:
         ok = False
 
     if baseline:

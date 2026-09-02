@@ -51,3 +51,6 @@ scripts/avatar/blender/__pycache__/
 scripts/avatar/baseline.vrm
 public/avatar/mika-milfy.vrm
 public/avatar/mika-milfy.parts.json
+
+# delivery-record evidence for scripts/avatar (RESULT.txt cites these)
+!scripts/avatar/evidence/*.log

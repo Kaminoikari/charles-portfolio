@@ -17,6 +17,10 @@ import {
 } from './live-preview-config'
 
 const READY_POLL_MS = 300
+// Ten small clips land in seconds on a local dev server; a minute of polling
+// means one of them failed, and an interval with no exit would spin until the
+// tab closes.
+const READY_POLL_DEADLINE_MS = 60_000
 const EMOTION_HOLD_SECONDS = 3
 const COLUMN_ONLY_MOTION: AvatarMotionName = 'squat'
 
@@ -50,7 +54,7 @@ function makeButton(label: string, onPress: () => void): HTMLButtonElement {
   return button
 }
 
-function usePlacement(handle: AvatarGuideHandle, placement: AvatarPlacement): void {
+function applyPlacement(handle: AvatarGuideHandle, placement: AvatarPlacement): void {
   currentPlacement = placement
   handle.setPlacement(placement)
   const framing = placement === 'column' ? AVATAR_FRAMING_COLUMN : AVATAR_FRAMING_DEFAULT
@@ -58,13 +62,12 @@ function usePlacement(handle: AvatarGuideHandle, placement: AvatarPlacement): vo
 }
 
 function collectReadyMotions(handle: AvatarGuideHandle): Set<AvatarMotionName> {
+  // Both placements are asked about by parameter. An earlier version flipped
+  // setPlacement back and forth to get the same union, which landed the
+  // camera pan twice every poll tick while clips were still downloading.
   const ready = new Set<AvatarMotionName>()
-  const restorePlacement = currentPlacement
-  handle.setPlacement('launcher')
-  handle.readyMotions().forEach((name) => ready.add(name))
-  handle.setPlacement('column')
-  handle.readyMotions().forEach((name) => ready.add(name))
-  handle.setPlacement(restorePlacement)
+  handle.readyMotions('launcher').forEach((name) => ready.add(name))
+  handle.readyMotions('column').forEach((name) => ready.add(name))
   return ready
 }
 
@@ -84,13 +87,13 @@ const handle = initAvatarGuide(
 
 handle.setActive(true)
 handle.setMode('idle')
-usePlacement(handle, currentPlacement)
+applyPlacement(handle, currentPlacement)
 
 const motionButtons = new Map<AvatarMotionName, HTMLButtonElement>()
 for (const motion of PREVIEW_MOTIONS) {
   const button = makeButton(motion.label, () => {
     const placement: AvatarPlacement = motion.name === COLUMN_ONLY_MOTION ? 'column' : 'launcher'
-    usePlacement(handle, placement)
+    applyPlacement(handle, placement)
     if (handle.playMotion(motion.name)) {
       announce(`正在播放：${motion.label}。`)
       return
@@ -139,27 +142,43 @@ for (const mode of modes) {
   modeControls.append(button)
 }
 
-function refreshMotionButtons(): void {
-  const ready = collectReadyMotions(handle)
-  for (const [name, button] of motionButtons) button.disabled = !ready.has(name)
-  announce(
-    ready.size === PREVIEW_MOTIONS.length
-      ? `10 支動作已就緒，Mika Milfy 可以開始表演。`
-      : `動作準備中：${ready.size}／${PREVIEW_MOTIONS.length}。`,
-    ready.size === PREVIEW_MOTIONS.length ? 'ready' : 'loading',
-  )
-  if (ready.size === PREVIEW_MOTIONS.length && readyPollId !== null) {
+function stopReadyPoll(): void {
+  if (readyPollId !== null) {
     window.clearInterval(readyPollId)
     readyPollId = null
   }
 }
 
+const pollStartedAt = Date.now()
+
+function refreshMotionButtons(): void {
+  const ready = collectReadyMotions(handle)
+  for (const [name, button] of motionButtons) button.disabled = !ready.has(name)
+  if (ready.size === PREVIEW_MOTIONS.length) {
+    stopReadyPoll()
+    announce(`10 支動作已就緒，Mika Milfy 可以開始表演。`, 'ready')
+    return
+  }
+  if (Date.now() - pollStartedAt > READY_POLL_DEADLINE_MS) {
+    stopReadyPoll()
+    const missing = PREVIEW_MOTIONS.filter((motion) => !ready.has(motion.name))
+      .map((motion) => motion.label)
+      .join('、')
+    announce(`這些動作載入失敗：${missing}。其餘可以直接使用。`, 'error')
+    return
+  }
+  announce(`動作準備中：${ready.size}／${PREVIEW_MOTIONS.length}。`, 'loading')
+}
+
 readyPollId = window.setInterval(refreshMotionButtons, READY_POLL_MS)
 refreshMotionButtons()
 
-window.addEventListener('beforeunload', () => {
+function teardown(): void {
   if (isDisposed) return
   isDisposed = true
-  if (readyPollId !== null) window.clearInterval(readyPollId)
+  stopReadyPoll()
   handle.dispose()
-})
+}
+
+window.addEventListener('beforeunload', teardown)
+window.addEventListener('pagehide', teardown)

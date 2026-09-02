@@ -131,12 +131,14 @@ export type AvatarGuideHandle = {
   // downloading, which is not an error: the caller falls back to a procedural
   // beat and the clip is there for the next one.
   playMotion: (name: AvatarMotionName) => boolean
-  // Which clips can be played RIGHT NOW: eligible for the current placement and
-  // already downloaded. The motion strip in the composer needs this because a
-  // visitor tapping a name expects movement, and playMotion answers false for a
-  // clip still in flight. Dimming those until they land shows the truth instead
-  // of handing someone a control that silently does nothing.
-  readyMotions: () => readonly AvatarMotionName[]
+  // Which clips can be played RIGHT NOW: eligible for the placement asked
+  // about (the current one by default) and already downloaded. The motion strip
+  // in the composer needs this because a visitor tapping a name expects
+  // movement, and playMotion answers false for a clip still in flight. Dimming
+  // those until they land shows the truth instead of handing someone a control
+  // that silently does nothing. The parameter exists so a caller can ask about
+  // another placement without setPlacement's camera landing as a side effect.
+  readyMotions: (placement?: AvatarPlacement) => readonly AvatarMotionName[]
   // Camera dolly for a placement that gets a taller canvas. Pass the distance
   // and the height the camera looks at; the tilt is preserved. Keeping
   // `distance / canvas height` constant keeps her on-screen size constant, so
@@ -308,6 +310,11 @@ const GESTURES: Record<GestureName, GestureDef> = {
     },
   },
 }
+
+// The gesture table's own key list, exported so a page that enumerates her
+// gestures (the dev live-preview) can be tested against the engine instead of
+// against a copy of itself.
+export const GESTURE_NAMES = Object.keys(GESTURES) as readonly GestureName[]
 
 // What the idle timer may pick from. Cue gestures and the pat response stay
 // out — they belong to their own triggers.
@@ -1445,7 +1452,8 @@ export function initAvatarGuide(
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
     },
     playMotion,
-    readyMotions: () => motionsFor(placement).filter((name) => motionClips.has(name)),
+    readyMotions: (asked = placement) =>
+      motionsFor(asked).filter((name) => motionClips.has(name)),
     setPlacement: (next) => {
       const before = motionFrame(placement)
       placement = next

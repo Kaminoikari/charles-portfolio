@@ -264,4 +264,32 @@ def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
             for root in group.get('bones', ())
         )
     ]
+    prune_stranded_collider_groups(doc)
     return report
+
+
+def prune_stranded_collider_groups(doc):
+    """Drop collider groups no spring references, remapping the survivors.
+
+    The two edits above orphan most of the source model's collider set: the
+    tails stop referencing the head and arm groups, and the removed HairJoint
+    springs take their references with them. Bone groups address collider
+    groups BY INDEX, so the survivors' references must be rewritten in the
+    same pass that compacts the list -- dropping without remapping would point
+    the skirt at whatever slid into positions 10 and 11.
+    """
+    secondary = doc['extensions']['VRM']['secondaryAnimation']
+    groups = secondary.get('colliderGroups', [])
+    used = sorted({index
+                   for group in secondary.get('boneGroups', [])
+                   for index in group.get('colliderGroups', [])})
+    if len(used) == len(groups):
+        return []
+    remap = {old_index: new_index for new_index, old_index in enumerate(used)}
+    removed = [(index, doc['nodes'][groups[index].get('node')].get('name', ''))
+               for index in range(len(groups)) if index not in remap]
+    secondary['colliderGroups'] = [groups[index] for index in used]
+    for group in secondary.get('boneGroups', []):
+        group['colliderGroups'] = [remap[index]
+                                   for index in group.get('colliderGroups', [])]
+    return removed

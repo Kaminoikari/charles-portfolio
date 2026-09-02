@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { GESTURE_NAMES } from '../../src/components/chat/avatarGuideEngine'
 import { AVATAR_MOTIONS } from '../../src/components/chat/avatarMotions'
 import {
   MIKA_MILFY_MODEL_URL,
@@ -20,17 +21,7 @@ describe('Mika Milfy live preview config', () => {
   })
 
   it('offers every procedural gesture exposed by the avatar handle', () => {
-    expect(PREVIEW_GESTURES.map(({ name }) => name)).toEqual([
-      'bow',
-      'nod',
-      'wiggle',
-      'tilt',
-      'glance',
-      'swayStep',
-      'bounce',
-      'hipTwist',
-      'toeLook',
-    ])
+    expect(new Set(PREVIEW_GESTURES.map(({ name }) => name))).toEqual(new Set(GESTURE_NAMES))
   })
 
   it('gives every preview control a unique label', () => {
