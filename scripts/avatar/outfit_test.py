@@ -91,7 +91,13 @@ class StandoffTest(unittest.TestCase):
     def make_piece(self):
         # Indices: 0 outer front panel, 1 its lining twin (normal faces the
         # body), 2 shoulder top (normal straight up), 3/4 sleeve pair at
-        # |x|=0.45, 5/6 back panel pair keeping the centroid near the origin.
+        # |x|=0.45, 5/6 back panel pair keeping the centroid near the origin,
+        # 7 a collar vertex with a MIXED normal (up-and-forward). Vertex 7 is
+        # the one that actually pins the y-drop: vertex 2's normal is pure +y,
+        # so its horizontal part is zero and it moves nothing whether or not
+        # the y component is dropped -- a fixture with only vertex 2 lets the
+        # y-drop line be deleted with every test still green (round-4 code
+        # review caught exactly that).
         pos = np.array([
             [0.05, 1.00, -0.100],
             [0.05, 1.00, -0.095],
@@ -100,6 +106,7 @@ class StandoffTest(unittest.TestCase):
             [-0.45, 1.20, -0.050],
             [0.05, 1.00, 0.100],
             [-0.15, 1.00, 0.095],
+            [0.10, 1.22, -0.090],
         ])
         nrm = np.array([
             [0.0, 0.0, -1.0],
@@ -109,6 +116,7 @@ class StandoffTest(unittest.TestCase):
             [0.0, 0.0, -1.0],
             [0.0, 0.0, 1.0],
             [0.0, 0.0, 1.0],
+            [0.0, 0.8, -0.6],
         ])
         return {'pos': pos.astype(np.float64), 'nrm': nrm.astype(np.float64)}
 
@@ -137,6 +145,10 @@ class StandoffTest(unittest.TestCase):
         before = np.array(piece['pos'])
         outfit.standoff(piece, self.AMOUNT)
         np.testing.assert_allclose(piece['pos'][:, 1], before[:, 1], atol=1e-9)
+        # 順帶釘住「頂點 7 真的有被推」：它的 y 不動必須是因為 y 被丟掉，
+        # 不是因為它根本沒動（那是頂點 2 的空測試陷阱）。
+        moved = piece['pos'][7] - before[7]
+        self.assertGreater(abs(float(moved[2])), 1e-4)
 
 
 if __name__ == '__main__':

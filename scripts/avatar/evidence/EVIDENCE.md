@@ -361,3 +361,44 @@ adv-no7 仍綠是正確的，不是漏抓：`prune_shapes` 引用 1、2、7 三�
    另外跑過一次 selftest（seed 2）確認 17 條全綠。
 4. 收據 15、16 產生的中間檔（mut-unused.vrm、bad-palette2.parts.json、probe.*）
    留在 scratchpad 供覆核，它們不是出貨物。
+
+---
+
+## 追加：第五／第六版的檔案（2026-09-02）
+
+本檔上面的內容是第二版凍結索引，原樣保留。第五、第六版新增的證據檔如下，
+RESULT.txt 的對應章節逐項引用它們：
+
+- `gates-0902f.log` / `gates-0902k.log` — 六道 gate 一次跑完的逐字輸出，f 是
+  第五版、k 是第六版（雙 reviewer FAIL 後的重建）。檔頭記受測檔的 sha。
+- `motion-0902f.log` / `motion-0902k.log` — motion gate 另檔，因為它單獨跑要
+  十分鐘，併進上面那份會讓 gate 起跑時間失去意義。
+- `selftest-0902f.log` — selftest 20 輪（第六版的 20 輪併在 gates-0902k.log）。
+- `build-0902f.log` / `build-0902k.log` — 對應版本的建置全程輸出。
+- `mutations-0902c.md` — 第五版的守衛紅燈收據。**其中兩格已被 -0902d.md 取
+  代**（y 歸零那條當時是空測試），讀的時候要一起看。
+- `mutations-0902d.md` — 第六版重取的收據，含失效原因。
+- `clip-v4-*.png` / `clip-v5-*.png` — 外套穿模的前後對照。
+- `back-v4-bald.png` / `back-v5-covered.png` / `back-v6-cap.png` — 後腦禿頭
+  →補帽→帽色修正的三個階段。
+- `browser-v5-*.png` / `browser-v6-*.png` — 真引擎畫面驗證。v6 的 front 與
+  back34 是最終版；v5 的 akimbo／modelpose 續用，因為 standoff 自那之後未再
+  改動（見 RESULT.txt 第五版第 3 點）。
+
+## 追加：後腦改回根因那一輪（2026-09-02 深夜）
+
+使用者看過第六版後指出後腦仍然是「東補西補」。第七輪把修正從「另做一片補上
+去」改成「twintail 不要把貼頭皮那層帶走」，證據檔如下：
+
+- `gates-0903b.log` — verify（帶／不帶 baseline）、pierce、retarget 的逐字輸
+  出，對最終位元組 `63e4ea29837ac3a9`（vertex sha `ae7f90eecb9784d9`）跑的。
+- `selftest-0903b.log` — selftest 20 輪。
+- `motion-0903b.log` — motion gate 十支 clip，最差 Outfit_Cardigan 36 px／
+  150 px（0.24 倍上限，modelPose t=0.94s）。
+- `mutations-0903a.md` — 新機制兩道防禦的紅燈收據，並說明 -0902d.md 裡「掃髮
+  帽色」那一格已隨補丁一起刪除。
+- `browser-v7-back.png` / `browser-v7-front.png` — live-preview.html 上 spin
+  動作的正背面與正面幀，最終位元組拍的。背面那張是這一項的驗收畫面。
+- `nape-v6-patch.png` / `nape-v7-continuous.png` — 同一機位的前後對照。v6 那
+  張的實機中位數已經與四周髮完全相同 (199,171,132)，畫面仍是補丁；這組是
+  「中位數不是顏色不均的判準」的證據。

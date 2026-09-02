@@ -449,9 +449,13 @@ def standoff(piece, amount, torso_x=0.26, sleeve_x=0.32):
     The y component is dropped rather than ramped. Shoulder-top normals point
     up, so a horizontal push pins the collar to the shoulders for free -- the
     hoop problem loosen solves with its hem ramp never arises. And the sleeves
-    are excluded by a fade over |x| (torso panels reach |x|~0.30, the sleeve
-    tubes live beyond it): they have no poke to fix, and the sign test is
-    unreliable on a tube whose axis passes near the centroid.
+    are excluded by a fade over |x|: torso panels reach |x|~0.30 and the
+    sleeve tubes live beyond it, and the fade band [torso_x, sleeve_x] is
+    deliberately laid ACROSS that boundary rather than after it -- the outer
+    4cm of torso panel tapers from full push to none, so the seam where the
+    pushed torso meets the untouched sleeve never shows a step. The sleeves
+    themselves have no poke to fix, and the sign test is unreliable on a tube
+    whose axis passes near the centroid.
     """
     pos = piece['pos']
     nrm = piece['nrm']

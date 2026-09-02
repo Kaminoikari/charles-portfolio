@@ -221,8 +221,12 @@ def rasterise(screen, uv, tris, mats, texmap, size):
                 u = w2 * ta[0] + w1 * tb[0] + w0 * tc[0]
                 v = w2 * ta[1] + w1 * tb[1] + w0 * tc[1]
                 ih, iw = img.shape[:2]
-                ui = np.clip((u * iw).astype(int), 0, iw - 1)
-                vi = np.clip((v * ih).astype(int), 0, ih - 1)
+                # 取模，不是夾擠：這個檔案裡每一個 sampler 的 wrapS/wrapT 都
+                # 是 REPEAT (10497)，而髮的 UV 本來就跑到 u≈1.5。夾擠會把整
+                # 排超界的髮束畫成貼圖最後一欄的顏色，算出來的髮色比瀏覽器
+                # 淡得多：2026-09-02 的後腦補髮就是照著這個假髮色連解錯三輪。
+                ui = (u * iw).astype(int) % iw
+                vi = (v * ih).astype(int) % ih
                 px = img[vi, ui]
 
         op = px[..., 3] / 255.0

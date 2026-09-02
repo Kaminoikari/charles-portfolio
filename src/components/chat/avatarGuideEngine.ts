@@ -1527,8 +1527,10 @@ export function initAvatarGuide(
       // Every handle method closes over renderer/scene/camera/vrm, so leaving
       // the debug global set would pin the whole parsed VRM scene graph for the
       // life of the page — exactly the teardown a context-loss unmount runs to
-      // avoid. (__mikaState needs no such cleanup: it holds only numbers.)
+      // avoid. __mikaVrm holds the loaded VRM directly, same invariant.
+      // (__mikaState needs no such cleanup: it holds only numbers.)
       delete (window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle
+      delete (window as unknown as { __mikaVrm?: VRM }).__mikaVrm
     },
   }
 

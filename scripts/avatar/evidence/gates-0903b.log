@@ -1,0 +1,37 @@
+=== verify (帶 baseline) ===
+== ../../public/avatar/mika-milfy.vrm
+   tris 103116  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 2  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha ae7f90eecb9784d9
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+=== verify (不帶 baseline) ===
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   PASS
+=== pierce ===
+at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           16 px  of    30 allowed (491 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (36151 px on screen)
+  total 20   PASS
+=== retarget ===
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS

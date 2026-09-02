@@ -1,0 +1,86 @@
+# 第六版 gate（motion 另檔 motion-0902k.log）。起跑 09-02 21:18:28
+#   out/mika-milfy.vrm             f4f8fa35676194ae
+#   public/avatar/mika-milfy.vrm   f4f8fa35676194ae
+
+=== verify（帶 baseline）===
+== out/mika-milfy.vrm
+   tris 103236  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 2  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     74 prim   13344 tris  targets 0
+   vertex sha d1954c48561f863b
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+
+=== verify（不帶 baseline）===
+== out/mika-milfy.vrm
+   tris 103236  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 2  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     74 prim   13344 tris  targets 0
+   vertex sha d1954c48561f863b
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   PASS
+
+=== pierce ===
+at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           16 px  of    30 allowed (491 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (36151 px on screen)
+  total 20   PASS
+
+=== retarget ===
+  stretch.vrma           worst  +0.00 deg
+
+  PASS
+
+=== selftest 20 輪（只列末尾）===
+  PASS
+
+20 rounds: PASS
+
+=== measure ===
+  髮   F00_000_Hair_00_01     參考 (254,249,245)  模型 (207,185,161)  ΔE  25.3  去亮度  12.9  取樣區內色差 16.6
+  膚   F00_000_00_Body_00     參考 (254,248,246)  模型 (244,190,171)  ΔE  27.3  去亮度  21.6  取樣區內色差  3.5
+  瞳   F00_000_00_EyeIris_00  參考 (157,137,142)  模型 (143,119,119)  ΔE   7.5  去亮度   3.3  取樣區內色差 39.6
+  外套  Mellow_Outer           參考 ( 65, 65, 74)  模型 ( 63, 61, 66)  ΔE   3.0  去亮度   2.5  取樣區內色差  4.8
+  皇冠  Milfy_Gold             參考 (228,202,175)  模型 (221,177,140)  ΔE  12.6  去亮度  10.0  取樣區內色差 22.5
+  5 個取樣點最差去亮度 ΔE 21.6
+
+服裝材質（換裝後參考圖無對應，只記錄選色）
+  Mellow_Inner       (244,241,236)
+  Mellow_Lace        (244,241,236)
+  Mellow_Sub_Acc     (132,200,198)
+  Mellow_Shoes       (242,239,234)
+  Mellow_Jewel       (255,203,162)
+
+關鍵點高度比例（0 = 腳底，1 = 頭頂）
+  頭頂   參考  1.000   模型  1.000   差 +0.000
+  下巴   參考  0.820   模型  0.817   差 -0.003
+  肩    參考  0.786   模型  0.762   差 -0.024
+  腰    參考  0.586   模型  0.620   差 +0.034
+  胯    參考  0.456   模型  0.488   差 +0.032
+  膝    參考  0.248   模型  0.316   差 +0.068
+  踝    參考  0.068   模型  0.072   差 +0.005
+  七點最大差 0.068（參考值以 64px 網格目視讀出，約 ±0.011）
+  全高 1.5709 m

@@ -23,6 +23,7 @@ Skip the third and the hair renders in the right place at rest and explodes the
 moment anything moves.
 """
 import numpy as np
+from scipy.spatial import cKDTree
 
 import glb
 
@@ -33,6 +34,14 @@ DROP = 0.690          # tie to tip; the curtain's own lowest vertex is y=0.749
 SEGMENTS = 6          # one more than the chain it replaces, same segment length
 BLEND = 0.040         # above the tie the scalp is left alone
 TAIL_HIT_RADIUS = 0.035
+# 貼著頭骨那一層不跟著收進尾巴。真髮的雙馬尾是「髮從頭皮往上收到綁點，綁點以
+# 下才垂下來」：綁點以下貼在頭皮上的那段仍然在頭上。把整片後髮無差別收到側面
+# 會讓枕骨從 y[1.40,1.478] 裸出一塊皮膚，使用者看到的「後腦勺像禿頭」就是它。
+# 20mm 是這一層的判準：以它選出的頂點在 y[1.363,1.490] 每一格都高過頭骨（最窄
+# 一格 0.1312 對 0.1244），30mm 與 45mm 只多收下擺、枕骨那段一個頂點也沒多。
+# 15mm 過渡帶讓髮片從「貼著頭皮」漸變到「收進尾巴」，避免在交界撕開。
+SCALP_GAP = 0.020
+SCALP_BAND = 0.015
 
 
 def axis(side, t):
@@ -109,8 +118,18 @@ def _chain(doc, head, side, name):
     return made, worlds
 
 
-def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
-    """Rebuild the back hair as two tails. Returns what it moved, per part."""
+def apply(doc, views, manifest, scalp_pos,
+          parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
+    """Rebuild the back hair as two tails. Returns what it moved, per part.
+
+    `scalp_pos` is the body's own vertices. The curtain's innermost layer lies
+    ON the skull, and hair that lies on the skull stays there when it is tied
+    into tails: only what hangs free is gathered. Without that split the whole
+    sheet leaves the occiput and the skull shows through from behind. The split
+    has to happen here rather than be patched afterwards, because a copy left
+    behind would be the same triangles twice, bound to two different bones, and
+    they would come apart the moment a tail swings.
+    """
     nodes = doc['nodes']
     skin = doc['skins'][0]
     joints = skin['joints']
@@ -131,6 +150,8 @@ def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
             i = parent[i]
 
     head_world = world_of(head_node)
+    head_slot = joints.index(head_node)
+    scalp = cKDTree(scalp_pos)
 
     # The chain being replaced, as skin-joint indices, deepest last.
     old = [27]
@@ -186,6 +207,9 @@ def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
         for pr, p in zip(prims, pos):
             t = np.clip((TIE_Y - p[:, 1]) / DROP, 0.0, 1.0)
             fade = np.clip((TIE_Y + BLEND - p[:, 1]) / BLEND, 0.0, 1.0)
+            # 貼著頭骨的那一層留在原位：free 0 是完全不動、1 是完全收進尾巴。
+            free = np.clip((scalp.query(p)[0] - SCALP_GAP) / SCALP_BAND, 0.0, 1.0)
+            fade = fade * free
             cx = np.interp(p[:, 1], mids, centre[:, 0])
             cz = np.interp(p[:, 1], mids, centre[:, 1])
             sp = np.maximum(np.interp(p[:, 1], mids, spread), 1e-4)
@@ -211,6 +235,29 @@ def apply(doc, views, manifest, parts=('Hair_Twintail_L', 'Hair_Twintail_R')):
             j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0']).copy()
             for a_slot, b_slot in zip(old_slots, new_slots):
                 j[j == a_slot] = b_slot
+            # 留在頭皮上的頂點也要留在頭骨的權重上，否則尾巴一甩它就跟著飛。
+            # 過渡帶按 free 混合：尾巴那份權重乘 free，缺的補成頭骨影響，塞進
+            # 該頂點權重最小的那一格（VRoid 的髮很少用滿四格）。
+            held = free < 1.0
+            if held.any():
+                w = glb.read_accessor(doc, views, pr['attributes']['WEIGHTS_0']).copy()
+                w = w.astype(np.float32)
+                rows = np.nonzero(held)[0]
+                w[rows] *= free[rows, None]
+                slot = np.argmin(w[rows], axis=1)
+                # 借來放頭骨影響的那一格必須是空的。這個模型的髮沒有一個頂點
+                # 用滿四格（被借走那格的權重最大值是 0.0），但那是這份資料的
+                # 性質不是保證：換一份用滿四格的髮，靜默覆寫會吃掉一個真的骨
+                # 頭影響，畫面上是一小塊髮跟錯關節。寧可在這裡停下來。
+                taken = w[rows, slot]
+                if float(taken.max()) > 1e-6:
+                    raise SystemExit(
+                        f'{part} 有頂點四格權重全滿（最小格 {taken.max():.4f}），'
+                        '無處安放頭骨影響')
+                j[rows, slot] = head_slot
+                w[rows, slot] += 1.0 - free[rows]
+                w[rows] /= np.maximum(w[rows].sum(axis=1, keepdims=True), 1e-9)
+                _overwrite(doc, views, pr['attributes']['WEIGHTS_0'], w)
             _overwrite(doc, views, pr['attributes']['JOINTS_0'], j)
 
         report[part] = {'side': side, 'moved_mm': moved * 1000, 'chain': chain}

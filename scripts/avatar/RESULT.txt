@@ -13,9 +13,9 @@ shape key 接回、描邊與邊光改由模型宣告、死材質清掉，再加�
 vertex sha 3881035dd0955b71（與第三版同：清 collider 只動 JSON，幾何未動）。
 第五版同日下午，見「第五版」一節：金色與膚色改在真引擎頁上解再烘焙（numpy
 量測看不見打光層，是前四版皇冠偏淡的根因）、外套加 standoff 動作間隙、皇冠
-移位讓出耳盤、後腦補掃髮帽修禿頭。
-出貨檔 sha256 開頭 6534d609ce0e9265（11,922,208 bytes），
-vertex sha 884d4a14dd4f350f。
+移位讓出耳盤，以及把 twintail 的分流修好、讓貼頭皮那層留在頭上修禿頭。
+出貨檔 sha256 開頭 63e4ea29837ac3a9（11,915,828 bytes），
+vertex sha ae7f90eecb9784d9。
 
 檔案 sha 怎麼讀：`make.py` 的位元組不是決定性的（Blender 匯出器對兩顆髮髻的
 索引陣列每次排序不同，見最後一節），所以**每跑一次 make.py 就換一個檔案
@@ -25,11 +25,12 @@ sha，而模型一模一樣**。穩定的識別碼是 vertex sha，它只在幾�
 48b687baa91e514d）都是當時那一次建置的值，用來說明「兩個檔案相不相同」這種
 比較，不是在指現在 public/avatar/ 裡的那一份。
 
-底下的章節有四種：一是「第二版」「第三版」「第四版」那三節，各自成篇；二是
-六道 gate 的逐字輸出與「production VRM」「npm test」，都已換成第四版出貨檔的
+底下的章節有四種：一是各版自己的專節（節名即「第 N 版」），各自成篇；二是
+六道 gate 的逐字輸出與「production VRM」「npm test」，一律換成最新版出貨檔的
 實測；三
 是「對照圖」與各版的「瀏覽器驗證」節，紀錄並列、段首標明對象；其餘都是第一版
-寫的。凡是版本間衝突的地方以較晚的版本為準，衝突處就地用【第二版：…】等
+寫的。（這裡刻意不列版本清單也不寫節數：上一版就是在這句寫死「那三節」，加
+了第五版之後整句變假。）凡是版本間衝突的地方以較晚的版本為準，衝突處就地用【第二版：…】等
 版本標註。證據檔（gate 逐字 log、mutation 收據、量測輸出、瀏覽器截圖）自第
 四版起收在 scripts/avatar/evidence/，本文的 evidence/ 路徑都指那裡。第一版的 make.py 全程輸出與第一版的瀏覽器結果整段保留原
 樣（各自在段首標明），因為它們是那一次建置的紀錄，不是對現況的宣稱。
@@ -423,7 +424,7 @@ GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees o
 
   【第五版：上面那句「ACES 把暖金洗淡的既有性質」正是使用者這輪抱怨的東西，
   不再接受。金與膚改成直接在真引擎頁上解，解完烘回貼圖與 factor；代價是
-  numpy 這張表的皇冠列變成 ΔE 40.1、膚列去亮度 21.6——這兩列從此只證明
+  numpy 這張表的皇冠列變成 ΔE 12.6、膚列去亮度 21.6——這兩列從此只證明
   「貼圖乘色和參考表不同」，而那正是為了讓打光後的畫面和參考表相同。金膚
   的驗證面是瀏覽器量測與截圖，見「第五版」一節。】
 
@@ -479,9 +480,10 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                                           貼合，因為那是這一輪的指示。
                                           【第五版：使用者指示皇冠讓出耳盤並
                                           前移到瀏海側，CROWN_SHIFT 之後冠心
-                                          離中線變 0.52 耳徑，與實機 0.83 拉
-                                          開是指示的取捨，見「第五版」第 4
-                                          點。】
+                                          離中線變 0.52 耳徑，與實機的 0.83
+                                          （這一列上面三行的對照對象一律是實
+                                          機，不是參考表）拉開是指示的取捨，
+                                          見「第五版」第 4 點。】
 3  雙馬尾（綁點在髻正下方＋緞帶）  PARTIAL 雙馬尾與 Acc_Ribbon_Hair 都在，綁點在
                                           腦後不是髻正下方。
 4  瀏海髮夾三組                    DONE   Plaster 228 / Bear 306 / Bars 24 tris。
@@ -1202,28 +1204,35 @@ live-preview 實機（Playwright，載入後輪詢 preview-status）：
                                       浮空；雙馬尾自然垂下。
 
 === 第五版（2026-09-02 下午，使用者在瀏覽器實機檢視後的五項指示）===
-五項指示與處置，依提出順序：
+五項指示與處置，依提出順序。第 1 項的第一次修正被雙 reviewer 判定未達成，第 5
+項在使用者第二次回報之後又試了六種補法才回到根因；兩項都完整記在下面，包含錯
+的那些版，因為錯法本身是這個管線的結構性陷阱。
 
 1「皇冠的顏色有點太淡，請確認顏色跟我一開始提供給你的截圖相同」
   根因是量測層選錯：先前的金色 (0.867,0.753,0.660) 是對著 numpy 算圖解的
   （該層 ΔE 4.0，見 measure 表），但 numpy 算圖沒有打光層，真引擎
   （ACES tone mapping、曝光 1.25、環境光 1.1、主光 1.4）把它抬成近白。
-  這一版直接在正式引擎頁（live-preview.html?mikadebug=1，材質遮罩交集取
-  穩健中位數，idle 手勢造成 ±6 sRGB 噪音底）上解 factor，收斂到畫面讀值
-  (225±4, 205±4, 180±6) 對參考表取樣 (228,202,175)，再把解出的 factor 乘回
-  ramp 均值 0.87 烘進 PALETTE：Milfy_Gold lit (0.869,0.522,0.313)／shade
-  (0.945,0.508,0.283)，GoldInner、MELLOW_TINT 的 Jewel 同步（Jewel 無 ramp
-  直寫）。代價寫明：numpy 層的 measure 皇冠列從 ΔE 4.0 變 40.1——那一列
-  量的是沒有打光的貼圖乘色，金色的驗證面從此是瀏覽器量測，不是那張表。
-  守衛：appearance_test 的 test_crown_gold_stays_warm 釘 factor 紅藍差
-  ≥0.5（舊值 0.238 會紅）。
+  改在正式引擎頁（live-preview.html?mikadebug=1）上直接寫
+  material.color 收斂，再烘回 PALETTE。
+  第一次烘焙錯在座標系：頁上 setRGB 寫的是線性值，而 glTF loader 把
+  baseColorFactor 當 sRGB 讀進來轉線性——把線性值直接當 factor 存等於少做
+  一次 linear→sRGB，二次 gamma 讓皇冠從「太淡」翻到另一邊，畫面
+  (230,174,114) 的飽和琥珀橙（round-4 spec reviewer 量出來的）。
+  第六版補上換算：頁上解出的線性值先過 linear→sRGB，lit 再乘 ramp 均值
+  0.87。烘完在真引擎頁複測三次，讀值都是 (225,208,187)；參考截圖
+  official/front-back-with-cardigan.jpg 的皇冠自身分佈是中位 (212,188,178)、
+  亮面 p85 (237,212,189)，出貨值落在其間，暖度 R−B=38 對參考的 34–48。
+  代價照舊寫明：numpy 層的 measure 皇冠列從 ΔE 4.0 變 12.6——那一列量的是
+  沒有打光的貼圖乘色，金色的驗證面從此是瀏覽器量測，不是那張表。
+  守衛：test_crown_gold_stays_warm_but_not_amber 把 factor 的紅藍差夾在
+  [0.30, 0.45]，兩種退化各釘一邊（褪色版 0.24、琥珀版 0.64 都會紅）。
 
 2「臉的膚色可以再淡一點點」
   在同一頁上解出乘數 [1.24, 1.1548, 1.1007]（畫面落點 (225,207,191) 對目標
   (224,206,190)），換算到線性空間乘回貼圖目標：SKIN_TARGET (222,178,165)
   → (244,190,172)。臉與身體共用同一目標，頸縫不開；OUTLINE_COLOR 從
   SKIN_TARGET 推導，自動跟動。守衛：SKIN_MIN_CHANNEL 238 新增下限，回退
-  舊值 222 會紅；上限 248。
+  舊值 222 會紅；上限 248。這一項兩位 reviewer 都判定成立，未再改動。
 
 3「外套跟雙手在某些動作互動下看起來有點穿模」
   實況截圖（evidence/clip-v4-akimbo-hips.png 等）：akimbo 插腰時手掌陷進
@@ -1232,61 +1241,114 @@ live-preview 實機（Playwright，載入後輪詢 preview-status）：
   shell，手臂動作把前襟拖進襯衫網格，靜態 hug 的 20mm rest 間隙蓋不住。
   修法是 outfit.standoff（MELLOW_STANDOFF 外套 10mm）：法線帶符號水平外
   推——內裡對質心翻符號後與外層平行同向移動、厚度不變；y 分量捨棄讓肩頂
-  自然定錨；|x| 0.26→0.32 羽化排除袖管。第一次落地被健檢擋下：硬符號在
-  翻符號邊界讓相鄰頂點反向推 20mm，外套的 Breasts_Cow shape key 拉伸邊
-  1.8 倍翻 4 面；改成 cos/0.3 平滑過渡後通過。驗證：真引擎重拍同三個動
-  作，三處全消（evidence/clip-v5-akimbo-hips.png、browser-v5-akimbo.png）；
-  motion gate 全部 clip PASS（外套最差 36px／限額 150）。
-  守衛：outfit_test 的 StandoffTest 三條，翻符號／y 歸零／袖管羽化逐道
-  mutation 各紅（evidence/mutations-0902c.md）。
+  自然定錨；|x| 0.26→0.32 羽化，羽化帶刻意跨在軀幹與袖管的交界上，讓被推
+  的軀幹片在接縫前漸縮到零。第一次落地被健檢擋下：硬符號在翻符號邊界讓相
+  鄰頂點反向推 20mm，外套的 Breasts_Cow shape key 拉伸邊 1.8 倍翻 4 面；
+  改成 cos/0.3 平滑過渡後通過。驗證：真引擎重拍同三個動作，三處全消
+  （evidence/clip-v5-akimbo-hips.png、browser-v5-akimbo.png）；motion gate
+  全部 clip PASS（外套最差 36px／限額 150）。
+  守衛：outfit_test 的 StandoffTest 三條。這三條第一次寫的時候有一條是空
+  的：釘 y 歸零的那條，fixture 裡唯一帶 y 分量的頂點法線是純 +y，水平分量
+  為零，cos 平滑化之後它的推力係數剛好是 0，拿掉 y 歸零那行測試照樣綠
+  （round-4 code reviewer 抓到）。第六版補了一個混合法線的領口頂點
+  ([0,0.8,-0.6])，三道 mutation 這才各自轉紅，收據見
+  evidence/mutations-0902d.md。
 
 4「皇冠的位置往瀏海方向前面一點？現在蓋住其中一側的裝飾耳朵有點太多」
   量到皇冠 x 質心 +0.067 幾乎正對右耳盤 +0.075，前視圖 x 重疊佔耳寬
   84%。CROWN_SHIFT (-0.025, -0.010, -0.020) 在 sink 之前平移：向中線收、
   往瀏海前移；前移後皇冠落在外凸的瀏海面上、sink（只往下落）量到 0mm，
   所以 y 的 -10mm 由常數自己給，讓冠緣半埋進髮際，和參考圖一致。移完
-  重疊 54%、質心 z -0.052。這使第 2 項的「冠心離中線 0.86 耳徑」變成
-  0.52：與參考表的 0.83 拉開是使用者指示的取捨，耳盤讓位優先。
+  重疊 53.8%、質心 z -0.052。這使第 2 項的「冠心離中線 0.86 耳徑」變成
+  0.52：與實機的 0.83 拉開是使用者指示的取捨，耳盤讓位優先。
   守衛：test_crown_rides_the_bangs_not_the_ear 釘重疊 ≤0.60 與質心 z
   ≤ -0.045（v3 位置兩項皆紅）。
 
-5「頭髮髮色從背面看非常怪，後腦勺看起來很像禿頭，請即刻修正」
-  對照確認是 v3 起就有的缺陷（v3 背面算圖同一條膚色帶），使用者第一次
-  從背面看才發現。根因：雙馬尾改制把長髮簾全收進兩側，Hair_Back 只剩
-  y[1.44,1.54] 的辮底一圈，枕骨（骨面延伸到 y≈1.32、z 最凸 0.124）從髮
-  際到頭頂裸出鑰匙孔形皮膚；辮底帶內中央髮面 z 0.120 還比頭骨低 4mm。
-  參考圖背面（official/front-back-with-cardigan.jpg 右）後腦整片有髮、
-  只在頸背露一小塊 V 形。修法：從 Body_Skin 後半球（y>1.335、z>0.03）
-  切殼外推 5mm 生成 Hair_Nape 掃髮帽（82 頂點），髮材質；uv_ball 的 v
-  再壓回髮簾中段（0.14-0.44），否則帽的下半走到斜坡最淡端、背面看是一
-  塊色差。驗證：numpy 背面算圖帽色與髮簾一致、只剩頸背 V（evidence/
-  back-v5-covered.png 對 back-v4-bald.png）；真引擎背面兩個姿勢同結論
-  （browser-v5-back.png）。
-  守衛：test_back_skull_is_covered_by_hair 對「任何 Hair_* 部件的聯集」
-  釘四個枕骨高度帶的髮面 z 必須高過頭骨 z + 2mm——釘機制不釘某片髮的存
-  在，帽改名或換實作不誤紅，拿掉或沉進頭骨就紅（v3 兩項皆紅，見
-  evidence/mutations-0902c.md）。
+5「頭髮髮色從背面看非常怪，很不均勻，後腦勺看起來很像禿頭」與後續的「頭皮
+  的顏色跟其他區塊的頭髮顏色仍然有落差」
+  真因在 twintail.apply：它把 tie（y 1.45）以下的後髮無差別收成兩束帶到側
+  面，連貼在頭皮上的那一層一起帶走。基底檔在枕骨每一條 20mm 帶內有 3388 個髮
+  頂點，成品只剩 8-44 個。把皮膚材質塗成品紅重算背視圖，裸露皮膚落在
+  y[1.40,1.478]（1507 px）：顱頂帽 Hair_Back 的下緣停在 1.441，雙馬尾又從
+  1.45 起被收走，中間那一段沒有東西留下。
+  修法在製造缺陷的那一步：真髮的雙馬尾是「髮從頭皮往上收到綁點，綁點以下才垂
+  下來」，貼頭皮那段仍然在頭上。twintail.apply 因此依「離體表距離」分流，
+  free = clip((d - 20mm) / 15mm, 0, 1)：free=0 的頂點位置完全不動、權重全部回
+  到頭骨，free=1 的照舊收成尾巴，中間 15mm 是過渡帶，位置與權重都按 free 混
+  合，避免在交界撕開。結果是貼頭層 778 個頂點留在原位（左 394、右 384），頭骨
+  權重 1.000、尾巴權重 0.000，自由段 5239 個頂點尾巴權重 1.000，權重和處處為
+  1。裸露皮膚縮到 y[1.285,1.374]，那是頸背，與參考圖一致
+  （official/front-back-with-cardigan.jpg 右：後腦整片有髮，只在頸背露一小塊）。
+  20mm 與 15mm 的依據：以 20mm 選出的頂點在 y[1.363,1.490] 每一格都高過頭骨
+  （最窄一格 0.1312 對 0.1244），30mm 與 45mm 只多收下擺、枕骨那段一個頂點也
+  沒多；15mm 過渡帶對應基底檔裡貼頭層那 36 個掛著舊彈簧鏈的頂點（最大 8.4%，
+  尾尖位移 172mm，等於 14mm 漂移）。
+  這一項前後試了七種做法才收斂，前六種都是補丁，記在這裡是因為錯法本身有教學
+  價值：
+    - 從 Body_Skin 切一片光滑殼再配 UV，做了三次（目測挑 v 段、換貼圖掃窗對齊
+      均色、單調 u 想做出髮絲），三次都是補丁。
+    - 把瀏海鏡射到後腦再解 UV 位移。這一版把實機中位數調到與四周髮完全相同
+      (199,171,132)、標準差 15.0 對 16.2，畫面仍然是一塊白底橘條的補丁。本輪
+      最重要的一課：中位數不是「顏色不均」的判準，兩塊圖案不同的區域可以有相
+      同的中位數。
+    - 把顱頂帽的枕骨半片鏡射拉伸或下移再貼回。hug 沿體表法線推，把片子的頂緣
+      往上推了 5cm；drape（投影到體表偏移面）則把它重新攤平成殼。
+    - 在轉尾之前把貼頭層複製一份放回原位。畫面是對的，但同一批三角形存在兩
+      處，副本綁頭骨、本體綁尾巴骨，尾巴一甩就分家。使用者指出這仍是東補西
+      補，才回到 twintail 本身。
+  順帶修掉一個讓前幾輪一直解錯的量測層 bug：render.py 取樣用 np.clip 夾擠，但
+  這個檔案裡每一個 sampler 的 wrapS/wrapT 都是 REPEAT，而髮的 UV 本來就跑到
+  u≈1.5。夾擠會把整排超界的髮束畫成貼圖最後一欄的顏色：同一張背視圖，夾擠版
+  讀到四周髮 (199,172,151)，取模版讀到 (188.6,142,100.8)，實機是後者。
+  守衛（兩道防禦兩條測試，各自的 mutation 各自轉紅）：
+    test_curtain_keeps_a_layer_lying_on_the_skull 釘位置：枕骨高度帶內離體表
+    20mm 以內的髮簾頂點 ≥600 個。拿掉 fade *= free 之後轉紅。
+    test_scalp_layer_carries_no_tail_weight 釘權重：貼頭層的尾巴骨權重必須
+    <0.005。拿掉權重改綁之後轉紅，而位置閘門被拿掉時它仍然是綠的。
+    test_back_skull_is_covered_by_hair 續用，釘「枕骨帶內髮面必須高過頭骨」這
+    個機制本身，不釘某一片髮的存在。
 
-本版出貨檔 sha256 開頭 6534d609ce0e9265（11,922,208 bytes），vertex sha
-884d4a14dd4f350f（金與膚只動貼圖與 factor 不動幾何；換 sha 的是 standoff、
-CROWN_SHIFT、Hair_Nape 三處幾何）。
+腰封與胸口蝴蝶結的寶石（Mellow_Jewel）與皇冠金同源，前一版的二次 gamma 讓它
+一起變成鮮橘 (255,153,92)；換算修好之後是 (255,203,162) 的淡金，與參考圖一
+致。同源色一起改的規則見 MELLOW_TINT 的 Jewel 註解。
+
+本版出貨檔 sha256 開頭 63e4ea29837ac3a9（11,915,828 bytes），vertex sha
+ae7f90eecb9784d9。
 
 === 第五版的 gate 與瀏覽器驗證 ===
-六道 gate 對最終位元組重跑（evidence/gates-0902f.log、motion-0902f.log、
-selftest-0902f.log）：verify 帶／不帶 baseline PASS、pierce PASS、retarget
-PASS、selftest 20 輪 PASS、motion 十支 clip 全 PASS。measure 是記錄不是
-gate：皇冠列 ΔE 40.1 的解讀見上面第 1 點。
+六道 gate 對最終位元組重跑（evidence/gates-0903b.log、motion-0903b.log、
+selftest-0903b.log）：verify 帶／不帶 baseline PASS、pierce PASS、retarget
+PASS、selftest 20 輪 PASS、motion 十支 clip 全 PASS（外套最差 0.24 倍上限，
+36 px／150 px，modelPose t=0.94s）。五個 python 測試模組 26 條全綠。measure
+是記錄不是 gate：皇冠列的解讀見上面第 1 點。
 
 真引擎（live-preview.html?mikadebug=1，Chromium+WebGL，canvas.toDataURL）：
-  browser-v5-front.png     正面：皇冠暖金半埋髮際、右耳盤完整可見、臉更
+  browser-v6-front.png     正面：皇冠暖金半埋髮際、右耳盤完整可見、臉更
                            淡、外套黑、胸口無 teal 三角。
-  browser-v5-akimbo.png    akimbo 6.7s：插腰處無皮膚透出。
-  browser-v5-modelpose.png modelPose 1.2s：胸側乾淨。
-  browser-v5-back.png      背面：後腦整片有髮、僅頸背 V 形露膚。
-兩個量測層陷阱這輪各踩到一次，記下以免復發：頁面載入後約 13 秒是進場狀
-態（黑底、cyan 粒子、冷光），該狀態下截圖外套會讀成淡藍；引擎會按自己的
-狀態機轉動模型，直接寫 vrm.scene.rotation 會被蓋掉，背面截圖靠引擎自己
-轉過去時抓幀。
+  browser-v7-back.png      spin 動作轉到正背面（依 hips 四元數的 w 取最接近
+                           180 度那一幀）：後腦是一整片連續的髮，沒有補丁、
+                           沒有色塊、沒有接縫，只頸背露一小塊。這一張是最終
+                           位元組拍的。
+  browser-v7-front.png     同一次 spin 的正面幀：皇冠、瀏海、髮夾與外套未受
+                           這次改動影響。
+  browser-v6-back34.png    前一版（補片式）的 3/4 背面，留作對照。
+  nape-v6-patch.png        補片式最後一版的特寫：實機中位數已與四周髮完全相
+                           同 (199,171,132)，畫面仍是一塊白底橘條的補丁。
+  nape-v7-continuous.png   同一機位的現況：連續髮面，無邊界。
+  browser-v5-akimbo.png    akimbo 6.7s：插腰處無皮膚透出（第五版拍的，
+                           standoff 自那之後未再改動）。
+  browser-v5-modelpose.png modelPose 1.2s：胸側乾淨（同上）。
+  皇冠色三次量測 (225,208,187) 是前一版在 live-preview.html 上量的。本輪只動
+  頭髮的位置與權重，皇冠的幾何與乘色都沒有被碰到：對最終位元組重量，皇冠對耳
+  盤 x 重疊 53.8%、質心 z -0.0517，與前一版逐位數相同；Milfy_Gold
+  (0.9989,0.7977,0.6345) 與 Milfy_GoldInner (0.908,0.6839,0.5333) 也未變，
+  test_crown_gold_stays_warm_but_not_amber 在最終位元組上是綠的。因此沿用該量
+  測，未在不同的量測鏡位上重取一個不可比的數字。
+三個量測層陷阱這輪各踩到一次，記下以免復發：頁面載入後約 13 秒是進場狀態
+（黑底、cyan 粒子、冷光），該狀態下截圖外套會讀成淡藍；引擎按自己的狀態機
+轉動模型，直接寫 vrm.scene.rotation 會被蓋掉，背面畫面要靠 spin 動作轉過去
+時抓幀；目視挑的量測框會悄悄吃進鄰近部件，部件級的讀數一律用「把該部件塗成
+標記色重算一張」得到的遮罩。
 
 === 老實說：做不到的地方，以及為什麼 ===
 第 9 項的荷葉下擺、第 11 項過膝襪、第 12 項熊耳拖鞋，還有第 7 項的落肩與第 10
@@ -1452,6 +1514,9 @@ Python 測試 outfit 5、customise 1、spring 7、appearance 5 全綠；紅燈�
 evidence/mutations-0902b.md。
 第五版：19 files / 330 tests 全綠（src/ 只動了 avatarGuideEngine.ts 的
 ?mikadebug=1 除錯出口，不進測試面）。Python 測試 outfit 8、customise 1、
-spring 7、appearance 8 全綠：新增 StandoffTest 三條、皇冠暖度、膚色下限、
-後腦覆蓋、皇冠讓耳四條守衛；spring 的 no-op 測試補 assertIs 釘 early-
-return。紅燈驗證見 evidence/mutations-0902c.md。
+spring 7、appearance 10 全綠：新增 StandoffTest 三條，以及皇冠暖度、膚色下
+限、後腦覆蓋、皇冠讓耳四條守衛，加上後腦改回根因之後的兩條（貼頭層還在、貼
+頭層不掛尾巴骨權重）；spring 的 no-op 測試補 assertIs 釘 early-return。紅燈
+驗證見 evidence/mutations-0902c.md、-0902d.md 與 -0903a.md；-0903a.md 是後
+腦那一項改回 twintail 分流之後重取的，同時說明 -0902d.md 裡「掃髮帽色」那一
+格連同它守的補丁一起被刪除。

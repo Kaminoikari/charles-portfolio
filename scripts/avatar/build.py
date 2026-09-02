@@ -103,8 +103,10 @@ MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
 # 會把內裡推「進」襯衫，modelPose 兩側胸口的鋸齒 teal 三角就是內裡刺穿襯衫。
 # 所以走 outfit.standoff：法線帶符號（內裡翻向，與外層平行同向移動，厚度不變）、
 # 只取水平分量（肩頂法線朝上，自然當錨點，領口不浮）、|x| 羽化排除袖管（袖子
-# 沒有病灶，量過軀幹片延伸到 |x|≈0.30，袖管在 0.30 之外）。10mm 是 akimbo 腰際
-# 手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm rest 間隙之上。
+# 沒有病灶；軀幹片延伸到 |x|≈0.30，羽化帶 0.26-0.32 刻意跨在軀幹與袖管的交界
+# 上，讓被推的軀幹片在接縫前就漸縮到零，不在肩袖交界留下階梯）。10mm 是
+# akimbo 腰際手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm
+# rest 間隙之上。
 MELLOW_STANDOFF = {'Outfit_Cardigan': 0.010}
 
 # And a key is only shipped if the vertices it moves go somewhere a person could
@@ -128,9 +130,10 @@ MELLOW_TINT = {
     'Belt_Acc':   ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
     'Leg_Acc':    ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
     # 同一個金抄成兩份只動一份就會分岔，所以跟著 Milfy_Gold 一起動。數值與
-    # PALETTE 的 Milfy_Gold 不同字面：那邊過 ramp 貼圖（factor 要除 0.87 均值），
-    # 這裡無 ramp 直寫 factor，兩邊都以真引擎頁上解出的同一組 factor 為準。
-    'Jewel':      ((1.0, 0.600, 0.360), (0.945, 0.508, 0.283)),
+    # PALETTE 的 Milfy_Gold 不同字面：那邊過 ramp 貼圖（factor 要除 0.87 均
+    # 值），這裡無 ramp 直寫 factor；兩邊同源於真引擎頁解出的同一組線性值，
+    # 一樣要先 linear→sRGB（換算見 PALETTE 的 Milfy_Gold 註解）。
+    'Jewel':      ((1.0, 0.798, 0.634), (0.975, 0.741, 0.568)),
     'Underwear':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
     'Outer':      ((0.341, 0.333, 0.361), (0.231, 0.224, 0.247)),
 }
@@ -236,20 +239,25 @@ PALETTE = {
     'Milfy_Sock':     ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
     # 2026-09-02 整組換成真引擎頁解出的值：numpy 量測看不見打光層，先前照
     # 參考表 (228,202,175) 解的 (0.867,0.753,0.660) 在 ACES＋正式打光下渲染成
-    # 近白，使用者反映皇冠太淡。在 live-preview.html?mikadebug=1 上直接調
-    # factor 收斂到畫面讀值 (225±4, 205±4, 180±6)（idle 手勢造成 ±6 噪音底），
-    # 這裡存的是該 factor 乘回 ramp 均值 0.87 的 PALETTE 值；r 取 0.869 而不是
-    # 0.870，給「除以均值後不得超過 1.0」的守衛留浮點餘裕。
-    'Milfy_Gold':     ((0.869, 0.522, 0.313), (0.945, 0.508, 0.283)),
+    # 近白，使用者反映皇冠太淡。在 live-preview.html?mikadebug=1 上以
+    # setRGB 直寫 material.color 收斂，烘完在同一頁複測三次讀值都是
+    # (225,208,187)（方法、遮罩與參考截圖的分佈見 RESULT.txt「第五版」第 1
+    # 點）。座標系是這裡最容易錯的一步：setRGB 寫的是「線性」值，而 glTF
+    # loader 把 baseColorFactor 當 sRGB 轉線性讀，所以解出的線性值必須先過
+    # linear→sRGB 再進 PALETTE。第一次烘焙把線性值直接當 factor 存，二次
+    # gamma 讓皇冠變成過飽和的琥珀橙（畫面 (230,174,114)，reviewer 抓到）。
+    # lit 另乘回 ramp 均值 0.87；r 取 0.869
+    # 而不是 0.870，給「除以均值後不得超過 1.0」的守衛留浮點餘裕。
+    'Milfy_Gold':     ((0.869, 0.694, 0.552), (0.975, 0.741, 0.568)),
     'Milfy_Hair':     ((0.929, 0.882, 0.855), (0.818, 0.760, 0.727)),
     'Milfy_Bear':     ((0.965, 0.953, 0.937), (0.867, 0.847, 0.827)),
     # 內耳。參考圖上內耳 (227,209,206) 對髮色 (240,227,225) 的比值，套到本
     # 模型上色後髮絲貼圖最亮處 (233,228,223) 算出來的，不是目測挑的粉色。
     # 皇冠齒縫裡露出來的內側面。原本按參考圖暗亮面比值從 Milfy_Gold 推導；
     # 2026-09-02 改隨 Milfy_Gold 一起在真引擎頁上解，兩者各自乘同一組提暖係數
-    # （Gold 的 r 被 1.0 夾住、這裡沒有，比值在 r 上因此偏離舊構造）。lit 同樣
-    # 是頁上 factor 乘回 ramp 均值 0.87。
-    'Milfy_GoldInner': ((0.700, 0.370, 0.214), (0.683, 0.355, 0.202)),
+    # （Gold 的 r 被 1.0 夾住、這裡沒有，比值在 r 上因此偏離舊構造）。空間換
+    # 算與 Milfy_Gold 同一條規則：頁上線性值先 linear→sRGB，lit 再乘 0.87。
+    'Milfy_GoldInner': ((0.790, 0.595, 0.464), (0.845, 0.630, 0.487)),
     # OK 繃與橫槓髮夾。取樣要取本模型這個配色的那張參考圖：
     # official/front-back-with-cardigan.jpg 上 OK 繃是 (204,225,226) 的淡薄荷、
     # 橫槓是接近炭黑的 (95,93,98)。ingame/01 是冰白配色的另一個版本，那張上面
@@ -509,7 +517,8 @@ def build(src, dst, manifest_path, out_manifest):
 
     # 背面的長髮先分成兩束再做其他事。這一步同時動幾何、骨鏈與權重，
     # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本。
-    tails = twintail.apply(doc, views, manifest['parts'])
+    tails = twintail.apply(doc, views, manifest['parts'],
+                           garment.body_pool(doc, views, manifest, 'Body_Skin')['pos'])
     for name, r in tails.items():
         print(f'   {name} 位移最大 {r["moved_mm"]:.1f}mm，新骨鏈 {len(r["chain"])} 節')
 
@@ -1109,29 +1118,6 @@ def build(src, dst, manifest_path, out_manifest):
                 mesh='Hair001.baked')
         put(garment.crown([0.028, crown_y + 0.026, 0.004], 0.030, 0.036, 5, hj, hw),
             'Milfy_Gold', 'Acc_Crown', mesh='Hair001.baked')
-
-    # 後腦掃髮帽。使用者從背面看到「禿頭」：Hair_Back 只剩 y[1.44,1.54] 的辮底
-    # 一圈（長髮簾全被收進兩側雙馬尾），枕骨從髮際到頭頂裸出一條鑰匙孔形皮膚，
-    # 而且辮底帶內中央髮面 z 0.120 還比頭骨 0.124 低。參考圖背面（official/
-    # front-back-with-cardigan.jpg 右）後腦整片有髮、只在頸背露一小塊 V 形皮膚。
-    # 所以從 Body_Skin 的後半球切殼外推 5mm 當掃髮帽：下緣 1.335 是枕骨轉頸的
-    # 位置（z-y 剖面上 z 從 0.06 收到 0.04 處），z>0.03 排除人耳並把前緣留給
-    # 瀏海與髮髻蓋。UV 用 uv_ball：v 隨高度走完髮絲斜坡、u 繞軸給側向紋，讀起
-    # 來是從髮旋往下攏的髮流。appearance_test 的 test_back_skull_is_covered_
-    # by_hair 釘住「枕骨帶內髮面必須高過頭骨」這個機制本身。
-    body_pool_full = garment.body_pool(doc, views, manifest, 'Body_Skin')
-    bp = body_pool_full['pos']
-    nape_mask = (bp[:, 1] > 1.335) & (bp[:, 2] > 0.03)
-    nape_cap = garment.shell(body_pool_full, nape_mask, 0.005)
-    # uv_ball 的 v 會走到斜坡最淡端（0.75），帽的下半就比兩側髮簾亮一階，背
-    # 面看是一塊色差。把 v 壓回髮簾中段（0.14-0.44），帽色和左右髮流才是同
-    # 一頭頭髮。
-    cap_uv = uv_ball(nape_cap['pos'])
-    cap_uv[:, 1] = 0.14 + (cap_uv[:, 1] - 0.20) * (0.30 / 0.55)
-    put(rigid(nape_cap, cap_uv), hair_mat, 'Hair_Nape',
-        mesh='Hair001.baked')
-    print(f'   後腦掃髮帽 {len(nape_cap["pos"])} 頂點，'
-          f'y[{nape_cap["pos"][:, 1].min():.3f}, {nape_cap["pos"][:, 1].max():.3f}]')
 
     # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
     # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有
