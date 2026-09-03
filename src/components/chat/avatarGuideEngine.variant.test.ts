@@ -80,6 +80,17 @@ describe('a body swap is the first load, run again', () => {
     expect(body.indexOf('disposeParticles()')).toBeLessThan(body.indexOf('matzT = -1'))
   })
 
+  it('keeps the cyan flash for the first body only', () => {
+    // The entrance runs on every body, but its COLOUR half does not: lerping a
+    // replacement body 75% toward cyan for a second reads as broken colour
+    // rather than as an arrival, which is how the owner reported it. Deleting
+    // the counter term here brings that back, and no other test can see it.
+    expect(fnBody('installVrm')).toMatch(/bodiesInstalled\+\+/)
+    expect(SOURCE).toMatch(
+      /const flashW =\s*bodiesInstalled === 1 && matzT >= 0 && matzT <= 1 \? \(1 - Math\.min\(matzT, 1\)\) \* 0\.75 : 0/,
+    )
+  })
+
   it('drops a result that a newer request, a teardown or a lost context overtook', () => {
     expect(fnBody('loadVariant')).toMatch(
       /if \(disposed \|\| contextLost \|\| seq !== loadSeq\) \{\s*VRMUtils\.deepDispose\(gltf\.scene\)\s*resolve\(false\)\s*return/,

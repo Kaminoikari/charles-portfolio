@@ -633,6 +633,15 @@ export function initAvatarGuide(
   let shownUrl: string | null = null
   let loadSeq = 0
   let pendingSeq: number | null = null
+  // How many bodies have been installed. The entrance's cyan flash is for the
+  // FIRST one only: arriving out of a flash reads as materialising when there
+  // was nobody there, and reads as broken colour when a body the visitor is
+  // already looking at is replaced by one they just asked for. The owner
+  // reported it as exactly that on 2026-09-03 ("漸層顏色約 1-2 秒，最後才變成
+  // 正確的顏色"), measured at 1.05s of the whole body lerped up to 75% toward
+  // CYAN_FLASH. The scale pop and the particles stay: those read as a change
+  // rather than as a fault.
+  let bodiesInstalled = 0
 
   function installVrm(loaded: VRM, url: string): void {
     // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
@@ -704,6 +713,7 @@ export function initAvatarGuide(
     )
     vrm = loaded
     shownUrl = url
+    bodiesInstalled++
     // Clips are built against a body (createVRMAnimationClip binds them to its
     // bone nodes), so whatever the previous body had is rebuilt from source for
     // this one. On the first load there is nothing here yet: the clips are
@@ -1424,7 +1434,8 @@ export function initAvatarGuide(
       const target = mode === 'speaking' ? 1 : 0
       tint += (target - tint) * Math.min(1, dt * 4)
       if (tint < 0.001) tint = 0
-      const flashW = matzT >= 0 && matzT <= 1 ? (1 - Math.min(matzT, 1)) * 0.75 : 0
+      const flashW =
+        bodiesInstalled === 1 && matzT >= 0 && matzT <= 1 ? (1 - Math.min(matzT, 1)) * 0.75 : 0
       // `pale` rides the same consolidated colour write as the answering tint
       // and the entrance flash, so no two of them ever fight over m.color.
       const paleW =
