@@ -2,7 +2,7 @@
 // path: the speech bubble she wears on the page, the invitation the panel opens
 // with, and the failure notice, which useChatStream patches into her own message
 // bubble (useChatStream.ts:233/239/246) so a dead request makes that string her
-// entire turn. The other 40 keys split two ways: the six suggestion chips are the
+// entire turn. The other 43 keys split two ways: the six suggestion chips are the
 // visitor's own words and must not sound like her, and the rest is UI chrome:
 // labels, aria strings, pipeline node names, and the motion strip's clip names,
 // which stays written.
