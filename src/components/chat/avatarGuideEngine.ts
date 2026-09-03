@@ -1,7 +1,8 @@
 // Framework-free engine for the 3D avatar guide (mirrors the faceHero.ts
 // pattern: a React shell mounts a canvas, this module owns everything inside).
 //
-// Loads a VRM humanoid and drives it from AvatarMode:
+// Loads a VRM humanoid (and swaps it for another declared body on request —
+// loadVariant, the same path the first load takes) and drives it from AvatarMode:
 //   idle      → head holds the viewer, with a slow drift (bone rotation, never
 //               translation); looking away is the `glance` idle act's job
 //   listening → head tilts up/down
@@ -147,6 +148,13 @@ export type AvatarGuideHandle = {
   // Which composition she is rendered in. Gates which motion-capture clips are
   // eligible: a clip is only played in a frame it has been measured to fit.
   setPlacement: (placement: AvatarPlacement) => void
+  // Put another declared body on screen (avatarVariants.ts) while this one
+  // keeps rendering: the file is fetched and parsed in the background and the
+  // swap happens in one frame, followed by the materialize entrance. Resolves
+  // true once the new body is installed; false when the fetch failed, a later
+  // call superseded this one, or the engine was torn down meanwhile — in every
+  // false case the body on screen is whatever it was before.
+  loadVariant: (url: string) => Promise<boolean>
   dispose: () => void
 }
 
@@ -606,99 +614,163 @@ export function initAvatarGuide(
   let mtoons: { m: MToonLike; base: THREE.Color }[] = []
   // The face/skin materials only, for `pale`: a whole-body blue reads as a
   // lighting change, a bluish face reads as 青ざめ.
-  const faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
+  let faceMats: Array<{ m: THREE.Material & { color: THREE.Color }; base: THREE.Color; pale: THREE.Color }> = []
   const PALE = new THREE.Color(...FACE_PALE_TINT)
   const rimScratch = new THREE.Color()
 
+  // ---- the body -----------------------------------------------------------
+  //
+  // One loader path for the first body and for every swap after it
+  // (loadVariant), so the two cannot drift apart: whatever the first load sets
+  // up — arm pins, material captures, expression names, rest positions, motion
+  // clips — a swap sets up through the same function, and what a swap releases
+  // is what dispose releases.
   const loader = new GLTFLoader()
   loader.register((p) => new VRMLoaderPlugin(p))
-  loader.load(
-    vrmUrl,
-    (gltf) => {
-      if (disposed) {
-        // Disposed while the 5.5MB VRM was still parsing: nobody else will ever
-        // see this scene, so release its geometry/textures here or leak them.
-        VRMUtils.deepDispose(gltf.scene)
-        return
-      }
-      const loaded = gltf.userData.vrm as VRM
-      // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
-      // to measure and adjust materials under THIS scene's lights, not a
-      // reconstruction of them — the probe that copied the light constants by
-      // hand drifted from the real key position and mistuned a whole pass.
-      if (debugTap) {
-        ;(window as unknown as { __mikaVrm?: VRM }).__mikaVrm = loaded
-      }
-      VRMUtils.removeUnnecessaryVertices(gltf.scene)
-      VRMUtils.combineSkeletons(gltf.scene) // removeUnnecessaryJoints is deprecated in three-vrm 3.x
-      VRMUtils.rotateVRM0(loaded) // VRM0 faces +Z; turn it toward the camera
-      scene.add(loaded.scene)
-      if (loaded.lookAt) loaded.lookAt.target = eyeTarget
-      pinArms(loaded)
-      const restHipsNode = loaded.humanoid?.getNormalizedBoneNode('hips')
-      if (restHipsNode) restHips.copy(restHipsNode.position)
-      // Where the pinned rest pose puts her wrists. Every settle measures how
-      // far it has to travel against these, so it has to be read here, from the
-      // pose pinArms just wrote, before any clip has touched a bone.
-      loaded.scene.updateMatrixWorld(true)
-      loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWristL)
-      loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWristR)
-      // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
-      // and builds this itself, with a console warning, if the scene has none.
-      // None of the bundled clips carries such a track, so this exists purely
-      // to keep the console clean; her gaze stays on eyeTarget throughout.
-      if (loaded.lookAt) {
-        const proxy = new VRMLookAtQuaternionProxy(loaded.lookAt)
-        proxy.name = 'VRMLookAtQuaternionProxy'
-        loaded.scene.add(proxy)
-      }
-      const seen = new Set<THREE.Material>()
-      loaded.scene.traverse((o) => {
-        const material = (o as THREE.Mesh).material
-        if (!material) return
-        for (const m of Array.isArray(material) ? material : [material]) {
-          if (seen.has(m)) continue // shared materials must be tinted once, not once per mesh
-          seen.add(m)
-          const withColor = m as THREE.Material & { color?: THREE.Color }
-          if (withColor.color) {
-            mats.push({
+  // The URL of the body on screen, and the sequence of the latest request. A
+  // result that is no longer the latest is a body nobody asked for any more
+  // (the visitor tapped twice); it is disposed rather than installed.
+  let shownUrl: string | null = null
+  let loadSeq = 0
+  let pendingSeq: number | null = null
+
+  function installVrm(loaded: VRM, url: string): void {
+    // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
+    // to measure and adjust materials under THIS scene's lights, not a
+    // reconstruction of them — the probe that copied the light constants by
+    // hand drifted from the real key position and mistuned a whole pass.
+    if (debugTap) {
+      ;(window as unknown as { __mikaVrm?: VRM }).__mikaVrm = loaded
+    }
+    // loaded.scene IS the glTF scene (three-vrm hands the same object back).
+    VRMUtils.removeUnnecessaryVertices(loaded.scene)
+    VRMUtils.combineSkeletons(loaded.scene) // removeUnnecessaryJoints is deprecated in three-vrm 3.x
+    VRMUtils.rotateVRM0(loaded) // VRM0 faces +Z; turn it toward the camera
+    scene.add(loaded.scene)
+    if (loaded.lookAt) loaded.lookAt.target = eyeTarget
+    pinArms(loaded)
+    const restHipsNode = loaded.humanoid?.getNormalizedBoneNode('hips')
+    if (restHipsNode) restHips.copy(restHipsNode.position)
+    // Where the pinned rest pose puts her wrists. Every settle measures how
+    // far it has to travel against these, so it has to be read here, from the
+    // pose pinArms just wrote, before any clip has touched a bone.
+    loaded.scene.updateMatrixWorld(true)
+    loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWristL)
+    loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWristR)
+    // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
+    // and builds this itself, with a console warning, if the scene has none.
+    // None of the bundled clips carries such a track, so this exists purely
+    // to keep the console clean; her gaze stays on eyeTarget throughout.
+    if (loaded.lookAt) {
+      const proxy = new VRMLookAtQuaternionProxy(loaded.lookAt)
+      proxy.name = 'VRMLookAtQuaternionProxy'
+      loaded.scene.add(proxy)
+    }
+    const seen = new Set<THREE.Material>()
+    loaded.scene.traverse((o) => {
+      const material = (o as THREE.Mesh).material
+      if (!material) return
+      for (const m of Array.isArray(material) ? material : [material]) {
+        if (seen.has(m)) continue // shared materials must be tinted once, not once per mesh
+        seen.add(m)
+        const withColor = m as THREE.Material & { color?: THREE.Color }
+        if (withColor.color) {
+          mats.push({
+            m: withColor as never,
+            base: withColor.color.clone(),
+            tinted: ANSWER_TINT.clone().multiply(withColor.color),
+          })
+          if (/face|skin/i.test(m.name))
+            faceMats.push({
               m: withColor as never,
               base: withColor.color.clone(),
-              tinted: ANSWER_TINT.clone().multiply(withColor.color),
+              pale: PALE.clone().multiply(withColor.color),
             })
-            if (/face|skin/i.test(m.name))
-              faceMats.push({
-                m: withColor as never,
-                base: withColor.color.clone(),
-                pale: PALE.clone().multiply(withColor.color),
-              })
-          }
-          const mtoon = m as Partial<MToonLike> & THREE.Material
-          if (mtoon.parametricRimColorFactor) {
-            mtoon.parametricRimFresnelPowerFactor = 6 // tight edge highlight
-            mtoons.push({
-              m: mtoon as MToonLike,
-              base: rimBase(mtoon.parametricRimColorFactor),
-            })
-          }
         }
-      })
-      // Which emotion presets this model actually ships (VRM0 naming trap:
-      // check the manager, never assume — see module header).
-      availableEmotions = new Set(
-        (loaded.expressionManager?.expressions ?? []).map((e) => e.expressionName),
+        const mtoon = m as Partial<MToonLike> & THREE.Material
+        if (mtoon.parametricRimColorFactor) {
+          mtoon.parametricRimFresnelPowerFactor = 6 // tight edge highlight
+          mtoons.push({
+            m: mtoon as MToonLike,
+            base: rimBase(mtoon.parametricRimColorFactor),
+          })
+        }
+      }
+    })
+    // Which emotion presets this model actually ships (VRM0 naming trap:
+    // check the manager, never assume — see module header).
+    availableEmotions = new Set(
+      (loaded.expressionManager?.expressions ?? []).map((e) => e.expressionName),
+    )
+    vrm = loaded
+    shownUrl = url
+    // Clips are built against a body (createVRMAnimationClip binds them to its
+    // bone nodes), so whatever the previous body had is rebuilt from source for
+    // this one. On the first load there is nothing here yet: the clips are
+    // fetched after the entrance (requestMotions) and bound as they land.
+    for (const [name, animation] of motionSources)
+      motionClips.set(name, createVRMAnimationClip(animation, loaded))
+    // The camera comes home with the body: nothing is playing on a fresh one,
+    // so the pan target is 0 and the cut lands there instead of easing.
+    framePan = panTargetNow()
+    aimCamera()
+    // Materialize again. A swap can land while the previous body's entrance is
+    // still running, so its particles are released before the flag re-arms.
+    disposeParticles()
+    matzT = -1
+  }
+
+  function uninstallVrm(): void {
+    if (!vrm) return
+    stopMotion()
+    mixer = null
+    motionClips.clear()
+    scene.remove(vrm.scene)
+    VRMUtils.deepDispose(vrm.scene)
+    vrm = null
+    shownUrl = null
+    mats = []
+    faceMats = []
+    mtoons = []
+    colorDirty = false
+    availableEmotions = new Set()
+    delete (window as unknown as { __mikaVrm?: VRM }).__mikaVrm
+  }
+
+  function loadVariant(url: string): Promise<boolean> {
+    // Already on screen with nothing newer in flight: nothing to do.
+    if (vrm && shownUrl === url && pendingSeq === null) return Promise.resolve(true)
+    const seq = ++loadSeq
+    pendingSeq = seq
+    return new Promise((resolve) => {
+      loader.load(
+        url,
+        (gltf) => {
+          if (seq === pendingSeq) pendingSeq = null
+          // Superseded, torn down, or the context is gone: nobody will ever see
+          // this scene, so release its geometry/textures here or leak them.
+          if (disposed || contextLost || seq !== loadSeq) {
+            VRMUtils.deepDispose(gltf.scene)
+            resolve(false)
+            return
+          }
+          uninstallVrm()
+          installVrm(gltf.userData.vrm as VRM, url)
+          resolve(true)
+        },
+        undefined,
+        () => {
+          if (seq === pendingSeq) pendingSeq = null
+          // Loading is best-effort chrome — no visitor-facing error. With a body
+          // already on screen she simply keeps it, and the promise says so. With
+          // none (the first load) the widget is holding the capsule back for a
+          // healthy load, so silence here would leave the corner empty forever.
+          if (!disposed && !vrm && seq === loadSeq) onLoadFailed?.()
+          resolve(false)
+        },
       )
-      vrm = loaded
-      // onLoaded intentionally NOT fired here — see the frame loop, which
-      // reports after the first real render instead.
-    },
-    undefined,
-    // Loading is best-effort chrome — no visitor-facing error, but the widget
-    // must know so it can release the held-back capsule launcher.
-    () => {
-      if (!disposed) onLoadFailed?.()
-    },
-  )
+    })
+  }
 
   // ---- motion-capture playback ------------------------------------------
   //
@@ -712,6 +784,9 @@ export function initAvatarGuide(
   let motionAction: THREE.AnimationAction | null = null
   let motionName: AvatarMotionName | null = null
   const motionClips = new Map<AvatarMotionName, THREE.AnimationClip>()
+  // The parsed VRMA behind each clip. A clip is bound to ONE body's bones, so
+  // a body swap rebuilds every clip from here rather than fetching again.
+  const motionSources = new Map<AvatarMotionName, VRMAnimation>()
   let motionsRequested = false
   // Where the hips sit at rest. A clip animates hips POSITION, and the
   // procedural layer only ever writes hips rotation, so without restoring this
@@ -740,6 +815,7 @@ export function initAvatarGuide(
         // contextLost as well as disposed: a reclaimed context unmounts the
         // whole wrapper, and building clips for a dead VRM just holds ~2.5MB.
         if (!animation || !vrm || disposed || contextLost) return
+        motionSources.set(name, animation)
         motionClips.set(name, createVRMAnimationClip(animation, vrm))
       },
       undefined,
@@ -847,7 +923,8 @@ export function initAvatarGuide(
   let tint = 0
   let colorDirty = false
   // Materialize entrance: -1 = waiting for the first rendered frame,
-  // [0,1] = running, 2 = done (never replays).
+  // [0,1] = running, 2 = done. A body swap (installVrm) re-arms it to -1, so a
+  // new body arrives the same way the first one did.
   let matzT = -1
   let particles: THREE.Points | null = null
   let particleVel: Float32Array | null = null
@@ -977,8 +1054,8 @@ export function initAvatarGuide(
     const t = nowMs / 1000
 
     if (vrm) {
-      // Materialize entrance: cyan flash + scale pop + rising particles, once,
-      // starting on the very first frame the character is visible. Applies
+      // Materialize entrance: cyan flash + scale pop + rising particles, once
+      // per body, starting on the very first frame that body is visible. Applies
       // the p=0 state before this frame renders so the swap-in never shows a
       // single full-scale frame first.
       if (matzT === -1) {
@@ -1307,6 +1384,8 @@ export function initAvatarGuide(
           motionW: motionAction ? motionAction.getEffectiveWeight() : 0,
           motionClips: motionClips.size,
           placement,
+          // Which file the body on screen came from, for the swap check.
+          body: shownUrl,
           // Hips WORLD height: the one number that says whether a clip's hips
           // translation track reached the model at all. `squat` is meant to
           // take her from 0.878 down to 0.660.
@@ -1410,6 +1489,14 @@ export function initAvatarGuide(
       onLoaded?.()
     }
   }
+  // The first body, deliberately started HERE and not beside loadVariant's own
+  // definition: installVrm closes over state declared further down (motionClips,
+  // motionSources, restHips, matzT), and calling it up there works only because
+  // GLTFLoader always defers its callbacks, even on a THREE.Cache hit. Starting
+  // it below every declaration it touches makes that a fact about this file
+  // rather than a fact about the loader.
+  void loadVariant(vrmUrl)
+
   running = true
   rafId = window.requestAnimationFrame(frame)
 
@@ -1461,6 +1548,7 @@ export function initAvatarGuide(
     playMotion,
     readyMotions: (asked = placement) =>
       motionsFor(asked).filter((name) => motionClips.has(name)),
+    loadVariant,
     setPlacement: (next) => {
       const before = motionFrame(placement)
       placement = next

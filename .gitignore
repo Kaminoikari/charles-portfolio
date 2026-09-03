@@ -39,8 +39,7 @@ scripts/__pycache__/
 # Milfy 復刻管線（scripts/avatar）。只有原始碼進版控：
 #   out/          建置產物，96MB，跑 make.py 就會重生
 #   baseline.vrm  與已進版控的 public/avatar/mika-pink.vrm 位元組相同
-#   mika-milfy.*  出貨模型 8MB。public/ 底下的東西會部署到線上被公開下載，
-#                 而這是逆向復刻的模型，刻意留在本機（2026-08-31 使用者決定）
+#   mika-milfy.parts.json  建置用的部件對照表，執行期用不到
 scripts/avatar/out/*
 # ...除了這一個：它不是 make.py 產的，是手動跑 envelope.py 掃十支 .vrma 掃出
 # 來的（而且要先有完成的模型才掃得動）。缺了它 envelope.load 回 None、裙子
@@ -49,7 +48,11 @@ scripts/avatar/out/*
 scripts/avatar/__pycache__/
 scripts/avatar/blender/__pycache__/
 scripts/avatar/baseline.vrm
-public/avatar/mika-milfy.vrm
+# public/avatar/mika-milfy.vrm 從 2026-09-03 起進版控並上線：它是網站的第三個
+# 造型（avatarVariants.ts）。2026-08-31 曾決定只留本機，理由是「逆向復刻的模型
+# 不該被公開下載」；使用者在 2026-09-03 推翻該決定，依據是管線的輸入端只有
+# VRoid 官方範例模型與 18 張參考「圖片」，原作的模型檔從來不是輸入，所以檔案
+# 裡沒有任何可還原成原作資料的東西。
 public/avatar/mika-milfy.parts.json
 
 # delivery-record evidence for scripts/avatar (RESULT.txt cites these)

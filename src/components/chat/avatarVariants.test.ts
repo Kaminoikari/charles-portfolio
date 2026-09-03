@@ -4,8 +4,8 @@
 // notice: AvatarGuide could resolve a variant and then load a constant, and
 // every test of `variantUrl` would still pass while the site rendered the same
 // body forever. That is the injection-bypasses-wiring shape, so the last test
-// here reads AvatarGuide's source and requires the resolved URL to be what
-// reaches the engine.
+// here reads ChatWidget's and AvatarGuide's source and requires the resolved
+// URL to be what reaches the engine.
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -13,16 +13,17 @@ import { describe, expect, it } from 'vitest'
 import { ACTIVE_VARIANT, AVATAR_VARIANTS, variantUrl } from './avatarVariants'
 
 /** Just enough of the glTF document to compare two bodies. */
+interface GltfNode {
+  translation?: number[]
+  rotation?: number[]
+  scale?: number[]
+  children?: number[]
+}
 interface VrmDoc {
-  nodes: unknown
-  skins?: unknown
-  scenes: unknown
-  scene?: number
-  meshes: unknown
-  accessors: unknown
+  nodes: GltfNode[]
   extensions: {
     VRM: {
-      humanoid: unknown
+      humanoid: { humanBones: { bone: string; node: number }[] }
       blendShapeMaster: { blendShapeGroups: { name: string }[] }
     }
   }
@@ -53,17 +54,38 @@ function gltfOf(url: string): VrmDoc {
   return doc
 }
 
-/** Everything that has to be identical across variants, as one comparable string. */
-function skeletonOf(doc: VrmDoc): string {
-  return JSON.stringify([
-    doc.nodes,
-    doc.skins,
-    doc.scenes,
-    doc.scene ?? 0,
-    doc.meshes,
-    doc.accessors,
-    doc.extensions.VRM.humanoid,
-  ])
+/**
+ * The rig, as one comparable string: every humanoid bone's rest transform,
+ * the transforms of any helper nodes between it and the nearest humanoid bone
+ * above it, and which bone that is. Two bodies with the same string pose the
+ * same way under every clip, whatever mesh hangs off the bones.
+ *
+ * The helper nodes are included because a VRoid export can put an unnamed
+ * node between two humanoid bones; a translation on one of those moves the
+ * bone below it in the world while the bone's own transform stays identical.
+ */
+function rigOf(doc: VrmDoc): string {
+  const parentOf = new Map<number, number>()
+  doc.nodes.forEach((n, i) => n.children?.forEach((c) => parentOf.set(c, i)))
+  const boneOfNode = new Map<number, string>()
+  for (const hb of doc.extensions.VRM.humanoid.humanBones) boneOfNode.set(hb.node, hb.bone)
+  const transform = (n: GltfNode) => [n.translation ?? [0, 0, 0], n.rotation ?? [0, 0, 0, 1], n.scale ?? [1, 1, 1]]
+  const rows = doc.extensions.VRM.humanoid.humanBones
+    .map((hb) => {
+      const chain = [transform(doc.nodes[hb.node])]
+      let parentBone: string | null = null
+      for (let p = parentOf.get(hb.node); p !== undefined; p = parentOf.get(p)) {
+        const bone = boneOfNode.get(p)
+        if (bone) {
+          parentBone = bone
+          break
+        }
+        chain.push(transform(doc.nodes[p]))
+      }
+      return [hb.bone, chain, parentBone] as const
+    })
+    .sort((a, b) => a[0].localeCompare(b[0]))
+  return JSON.stringify(rows)
 }
 
 describe('avatar variants', () => {
@@ -97,20 +119,36 @@ describe('avatar variants', () => {
     expect(new Set(ids).size, `duplicate variant ids: ${ids.join(', ')}`).toBe(ids.length)
   })
 
-  it('gives every variant the same skeleton', () => {
+  it('gives every variant its own url', () => {
+    // ChatWidget maps a settled URL back to an id with a first-match find, so
+    // two entries sharing a file would mark the wrong chip as the body on
+    // screen. Cheap to forbid here; invisible in the component.
+    const urls = AVATAR_VARIANTS.map((v) => v.url)
+    expect(new Set(urls).size, `two variants share a file: ${urls.join(', ')}`).toBe(urls.length)
+  })
+
+  it('gives every variant the same rig', () => {
     // The whole point of a variant registry is that the ten motion clips are
     // shared. Those clips' clearance numbers are absolute world-space distances
     // measured against one body, so a variant whose bones moved is a different
     // body wearing another body's numbers, and what a visitor sees is a hand
     // through a face. A repaint cannot move a bone; an export from a project
     // with a nudged body slider can, and looks identical in a file listing.
+    //
+    // Compared at the RIG, not the whole node/mesh/accessor set: an outfit is
+    // different geometry on the same bones, which is exactly what this list is
+    // for, and byte-identical meshes would forbid every real variant. What a
+    // new mesh changes that the rig does not — a fingertip's distance to the
+    // face, hair against the frame's top edge — is scripts/measure-motions.ts's
+    // job, run per body before it is declared.
     const bodies = AVATAR_VARIANTS.map((v) => ({ id: v.id, doc: gltfOf(v.url) }))
     const [first, ...rest] = bodies
+    expect(first.doc.extensions.VRM.humanoid.humanBones.length).toBeGreaterThan(50)
     for (const other of rest) {
       expect(
-        skeletonOf(other.doc),
-        `${other.id} does not share ${first.id}'s skeleton; the motion clips' clearances were measured on ${first.id}`,
-      ).toBe(skeletonOf(first.doc))
+        rigOf(other.doc),
+        `${other.id} does not share ${first.id}'s rig; the motion clips' clearances were measured on ${first.id}`,
+      ).toBe(rigOf(first.doc))
     }
   })
 
@@ -134,22 +172,38 @@ describe('avatar variants', () => {
   it('loads the resolved variant rather than a constant of its own', () => {
     // Structural, and deliberately so: AvatarGuide builds a WebGLRenderer in
     // its first frames, so jsdom cannot run the load. What this can say is that
-    // the URL handed to the engine comes from the registry. Reintroducing a
-    // `const VRM_URL = '/avatar/....vrm'` and passing it is exactly the change
-    // that leaves every other test in this file green.
-    const source = readFileSync(
-      path.join(process.cwd(), 'src', 'components', 'chat', 'AvatarGuide.tsx'),
-      'utf8',
+    // the URL handed to the engine comes from the registry through the
+    // visitor's pick. Reintroducing a `const VRM_URL = '/avatar/....vrm'` in
+    // either file and passing it is exactly the change that leaves every other
+    // test in this file green.
+    const read = (file: string) =>
+      readFileSync(path.join(process.cwd(), 'src', 'components', 'chat', file), 'utf8')
+    const widget = read('ChatWidget.tsx')
+    const guide = read('AvatarGuide.tsx')
+    for (const [name, source] of [
+      ['ChatWidget', widget],
+      ['AvatarGuide', guide],
+    ] as const) {
+      expect(
+        source,
+        `${name} must not carry a .vrm path of its own; declare it in avatarVariants`,
+      ).not.toMatch(/['"][^'"]*\.vrm['"]/)
+    }
+    // The widget resolves the visitor's pick and hands the guide the URL...
+    expect(widget, 'ChatWidget must resolve the wanted variant for the guide').toMatch(
+      /vrmUrl=\{variantUrl\(variantWanted\)\}/,
     )
-    expect(source, 'AvatarGuide must resolve the variant').toMatch(/\bvariantUrl\(\)/)
-    expect(
-      source,
-      'AvatarGuide must not carry a .vrm path of its own; declare it in avatarVariants',
-    ).not.toMatch(/['"][^'"]*\.vrm['"]/)
-    // And the resolved value has to be the argument the engine is initialised
-    // with, not merely mentioned somewhere in the file.
-    expect(source, 'the resolved URL must be what initAvatarGuide receives').toMatch(
-      /initAvatarGuide\(\s*canvas,\s*variantUrl\(\)/,
+    expect(widget, 'the strip must offer the registry, not a list of its own').toMatch(
+      /variants=\{AVATAR_VARIANTS\}/,
+    )
+    // ...which is what the engine is initialised with, and what a later change
+    // of it is swapped to. Both, because dropping either leaves a body that
+    // loads once and never changes, with every test above still green.
+    expect(guide, 'the prop must be what initAvatarGuide receives').toMatch(
+      /initAvatarGuide\(\s*canvas,\s*vrmUrlRef\.current/,
+    )
+    expect(guide, 'a change of the prop must reach the engine as a swap').toMatch(
+      /loadVariant\(vrmUrl\)/,
     )
   })
 })

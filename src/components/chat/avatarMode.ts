@@ -19,8 +19,9 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 }
 
 // Where the avatar stands for a given widget mode and viewport width.
-// 'hidden' means display:none, never unmount: the wrapper stays mounted so the
-// 5.5MB VRM is fetched and parsed exactly once per page.
+// 'hidden' means display:none, never unmount: the wrapper stays mounted so a
+// 5.5MB VRM is never re-fetched or re-parsed for a placement change (only a
+// look swap, which the visitor asks for, loads a body after the first).
 //  launcher      stowed panel — the character IS the launcher button
 //  beside-panel  docked panel on a viewport big enough for her to read
 //                beside it, side by side

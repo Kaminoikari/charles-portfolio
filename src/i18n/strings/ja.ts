@@ -159,6 +159,13 @@ const ja: Strings = {
       idleLoop: '待機',
       stretch: 'のび',
     },
+    looksLabel: '見た目',
+    looksAriaLabel: '見た目を選ぶ',
+    looks: {
+      pink: 'ピンク髪',
+      milfy: 'ツインテール',
+      base: '紫髪',
+    },
   },
   defaults: {
     documentTitle: '台湾の AI Product Manager | Charles Chen Portfolio',

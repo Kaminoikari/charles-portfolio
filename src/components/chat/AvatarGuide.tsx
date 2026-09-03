@@ -13,7 +13,6 @@ import {
   type AvatarPlacement,
 } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
-import { variantUrl } from './avatarVariants'
 
 // Head-pat pacing. The streak window is what makes three pats read as "in a
 // row" rather than as three unrelated pats over a coffee break; the two
@@ -31,12 +30,16 @@ const PAT_STREAK_WINDOW_MS = 20000
 const PAT_STROKE_COOLDOWN_MS = 8000
 const PAT_TAP_COOLDOWN_MS = 120
 
-// Which body loads is a declaration in avatarVariants, not a constant here.
-// One VRoid project exports one file per outfit or face, and the component that
-// draws her should not be the place that decides which of them is on screen.
+// Which body loads is the `vrmUrl` prop, which ChatWidget resolves from the
+// avatarVariants registry and the visitor's pick. One VRoid project exports one
+// file per outfit or face, and the component that draws her should not be the
+// place that decides which of them is on screen. A change of the prop after
+// mount is a swap: the engine fetches the new body while the old one keeps
+// rendering, and reports back through onVariantSettled.
 
 export default function AvatarGuide({
   mode,
+  vrmUrl,
   active = true,
   sizeClass,
   sizeStyle,
@@ -47,8 +50,11 @@ export default function AvatarGuide({
   onLoaded,
   onContextLost,
   onLoadFailed,
+  onVariantSettled,
 }: {
   mode: AvatarMode
+  // The body to show, from avatarVariants.variantUrl(). Changing it swaps her.
+  vrmUrl: string
   active?: boolean
   // Tailwind height/width for the canvas box: AVATAR_LAUNCHER_SIZE_CLASS, the
   // one placement whose box is a fixed pair of numbers. The engine matches its
@@ -86,6 +92,11 @@ export default function AvatarGuide({
   // Relayed when the VRM fetch/parse fails — the widget keeps the corner
   // empty during a healthy load, so a failure has to announce itself.
   onLoadFailed?: () => void
+  // Relayed once a swap requested by a `vrmUrl` change has settled: `ok` is
+  // whether that body is now on screen. A false means she kept the previous
+  // body (fetch failed, or a newer swap overtook this one), so the widget can
+  // put its selection back where the body actually is.
+  onVariantSettled?: (url: string, ok: boolean) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<AvatarGuideHandle | null>(null)
@@ -98,13 +109,19 @@ export default function AvatarGuide({
   const onLoadedRef = useRef(onLoaded)
   const onContextLostRef = useRef(onContextLost)
   const onLoadFailedRef = useRef(onLoadFailed)
+  const onVariantSettledRef = useRef(onVariantSettled)
+  // The URL the engine is initialised with is read from here at the moment the
+  // dynamic import resolves, so a swap requested during that wait is folded
+  // into the first load rather than run as a second one.
+  const vrmUrlRef = useRef(vrmUrl)
   useEffect(() => {
     onHandleRef.current = onHandle
     onPatRef.current = onPat
     onLoadedRef.current = onLoaded
     onContextLostRef.current = onContextLost
     onLoadFailedRef.current = onLoadFailed
-  }, [onHandle, onPat, onLoaded, onContextLost, onLoadFailed])
+    onVariantSettledRef.current = onVariantSettled
+  }, [onHandle, onPat, onLoaded, onContextLost, onLoadFailed, onVariantSettled])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -116,7 +133,7 @@ export default function AvatarGuide({
       if (cancelled || !canvasRef.current) return
       handleRef.current = initAvatarGuide(
         canvas,
-        variantUrl(),
+        vrmUrlRef.current,
         () => {
           if (!cancelled) onLoadedRef.current?.()
         },
@@ -149,6 +166,24 @@ export default function AvatarGuide({
     modeRef.current = mode
     handleRef.current?.setMode(mode)
   }, [mode])
+
+  // A body swap. Before the engine exists this only updates the ref the mount
+  // effect reads, so the first load already carries the latest URL. The stale
+  // flag covers a second change landing before this one settles: the engine
+  // resolves the overtaken load false, and reporting that would flip the
+  // widget's selection back for a swap that is still on its way.
+  useEffect(() => {
+    vrmUrlRef.current = vrmUrl
+    const h = handleRef.current
+    if (!h) return
+    let stale = false
+    void h.loadVariant(vrmUrl).then((ok) => {
+      if (!stale) onVariantSettledRef.current?.(vrmUrl, ok)
+    })
+    return () => {
+      stale = true
+    }
+  }, [vrmUrl])
 
   useEffect(() => {
     placementRef.current = placement

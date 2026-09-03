@@ -5,7 +5,7 @@
 // Mounted once, globally (see AppRoutes). All copy is i18n; the panel reads in
 // the visitor's locale and the backend answers in the question's language.
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useLocale, useT } from '../../i18n'
 import { useChatStream, type ChatMessage } from './useChatStream'
 import { useChatMode } from './useChatMode'
@@ -36,7 +36,10 @@ import AvatarGuide from './AvatarGuide'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
 import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideEngine'
 import { MotionStrip } from './MotionStrip'
+import { LookStrip } from './LookStrip'
 import { motionsFor, type AvatarMotionName } from './avatarMotions'
+import { AVATAR_VARIANTS, variantUrl, type AvatarVariantId } from './avatarVariants'
+import { initialVariantId, rememberVariant } from './avatarVariantChoice'
 
 // What Mika performs alongside each voice cue: an expression preset (name,
 // weight, hold seconds) and optionally a body gesture. Emotion holds outlast
@@ -325,6 +328,34 @@ export default function ChatWidget() {
   // load failed, load slower than the patience window, context lost.
   const [avatarLoaded, setAvatarLoaded] = useState(false)
   const [avatarFailed, setAvatarFailed] = useState(false)
+  // Which body she wears, as two facts that only differ while a swap is in
+  // flight: the one the visitor asked for (what AvatarGuide is told to load)
+  // and the one on screen (what the look strip marks as pressed). A failed
+  // swap sets the ask back to the shown one; a successful one moves the shown
+  // one up and remembers it for the next visit.
+  const [variantWanted, setVariantWanted] = useState<AvatarVariantId>(initialVariantId)
+  const [variantShown, setVariantShown] = useState<AvatarVariantId>(variantWanted)
+  // Read by the settle callback below, which is stable so AvatarGuide's ref
+  // effect does not re-run per render; the ref is how it sees the latest value.
+  const variantShownRef = useRef(variantShown)
+  variantShownRef.current = variantShown
+  const onVariantSettled = useCallback((url: string, ok: boolean) => {
+    const id = AVATAR_VARIANTS.find((v) => v.url === url)?.id
+    if (!id) return
+    if (ok) {
+      // A settle for the body already on screen is not a pick: after a failed
+      // swap the ask is put back to the shown body, the guide re-asks the
+      // engine for it, and the engine answers true at once. Remembering that
+      // would write the OLD body over whatever the visitor had stored, so a
+      // failed swap would quietly change their next visit.
+      if (id !== variantShownRef.current) rememberVariant(id)
+      setVariantShown(id)
+    } else {
+      // Only if the visitor still wants the body that failed: a newer pick is
+      // its own swap and reports for itself.
+      setVariantWanted((wanted) => (wanted === id ? variantShownRef.current : wanted))
+    }
+  }, [])
   // Set when the browser reclaims the WebGL context. A lost-context canvas is
   // not merely blank — Chrome composites it as an opaque white box — so the
   // whole wrapper unmounts (which also disposes the engine and stops its rAF
@@ -619,8 +650,9 @@ export default function ChatWidget() {
   ]
 
   // One persistent avatar wrapper across every placement: the wrapper element
-  // type never changes, so React never remounts the canvas and the 5.5MB VRM is
-  // fetched and parsed exactly once. The interactive parts (launcher button,
+  // type never changes, so React never remounts the canvas and a 5.5MB VRM is
+  // never re-fetched or re-parsed for a placement change; only a look swap the
+  // visitor asks for loads another body. The interactive parts (launcher button,
   // ground ring, bubble) are conditional SIBLINGS of the canvas inside it —
   // they may come and go without touching the engine.
   //
@@ -805,6 +837,8 @@ export default function ChatWidget() {
     >
       <AvatarGuide
         mode={avatarMode}
+        vrmUrl={variantUrl(variantWanted)}
+        onVariantSettled={onVariantSettled}
         active={placement !== 'hidden'}
         // Gates which motion-capture clips she may play: each one is measured
         // against a composed frame, and the two frames crop differently.
@@ -1196,6 +1230,17 @@ export default function ChatWidget() {
               // ends up behind her skirt.
               style={columnGutter}
             >
+              {avatarOn && !avatarDead && placement !== 'hidden' && (
+                <LookStrip
+                  variants={AVATAR_VARIANTS}
+                  shown={variantShown}
+                  // Disabled until she has landed, and again while a swap is on
+                  // its way: the same "disabled rather than hidden" rule as the
+                  // motion chips, so the strip never reshuffles under a finger.
+                  busy={!avatarLoaded || variantWanted !== variantShown}
+                  onPick={setVariantWanted}
+                />
+              )}
               <MotionStrip
                 motions={offered}
                 ready={readyMotions}

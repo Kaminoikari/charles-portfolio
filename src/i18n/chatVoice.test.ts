@@ -78,6 +78,11 @@ const CHROME = [
   'motionsLabel',
   'motionsAriaLabel',
   'motions',
+  // The look strip, same standing: a control the visitor reads, never a line
+  // she says. `looks` is the nested object of body names.
+  'looksLabel',
+  'looksAriaLabel',
+  'looks',
   'title',
   'subtitle',
   'previewLabel',

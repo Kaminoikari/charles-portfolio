@@ -20,6 +20,38 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-look-switch',
+    date: '2026-09-03',
+    title: `Mika can change her look, and the site remembers which one you chose`,
+    tags: ['feature', 'technical'],
+    body: [
+      `Mika has three looks now: the pink-haired repaint she has been wearing, the twin-tailed rebuild that came out of the Blender pipeline, and the untouched purple VRoid export she started from. Which one you saw used to be a constant in the code. A small strip above the composer offers all three, and a tap swaps her in place.`,
+      `The rebuild is the interesting one to have in the list, because it is a different mesh on the same 54 bones: its own hair, crown and outfit, modelled in Blender. The other two are texture repaints of one export. Sharing the skeleton is what lets all three borrow the ten motion clips unchanged.`,
+      { kind: 'heading', text: `What a swap actually does` },
+      `A VRM bakes the body, face, hair and clothes into one file, so an outfit is a different file. The engine fetches the new one in the background while the current body keeps idling, installs it in a single frame, and replays the materialize entrance, so the change reads as her arriving again. The ten motion clips are rebound to the new bones from their parsed sources, so nothing downloads twice, and expressions and lip sync carry over because both bodies ship the same blendshape names.`,
+      `The first load and every swap now run through one code path. That was the main engineering decision: a separate swap routine would drift from the first load the moment someone added a setup step to one and forgot the other, and no test can load a body to notice.`,
+      { kind: 'heading', text: `Small things that matter` },
+      {
+        kind: 'list',
+        items: [
+          `Hovering or focusing a chip warms the browser cache for that body, so the tap itself only has to parse the file.`,
+          `Every chip is disabled while a body is on its way. A second tap mid-download would only queue a download the first one made pointless.`,
+          `A failed swap leaves her in the body she had, puts the selection back where the body is, and remembers nothing.`,
+          `Your pick is remembered in this browser once it has actually loaded. A link with \`?mika=base\` opens on that body without touching that memory.`,
+          `Every body in the registry is held to the same rig and the same expression names by a test that reads the files, so a variant whose bones moved cannot be declared.`,
+        ],
+      },
+      {
+        kind: 'stats',
+        items: [
+          { value: '3', label: `bodies on offer` },
+          { value: '1', label: `loader path for the first load and every swap` },
+          { value: '34', label: `tests added` },
+        ],
+      },
+    ],
+  },
+  {
     id: 'mika-gal-register',
     date: '2026-08-27',
     title: `Mika's Chinese moved to a gyaru register, and two rules gave way`,

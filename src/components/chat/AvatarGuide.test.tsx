@@ -26,20 +26,28 @@ const handle = {
   setEmotion: vi.fn(),
   playGesture: vi.fn(),
   playMotion: vi.fn(() => true),
+  loadVariant: vi.fn(() => Promise.resolve(true)),
   setFraming: vi.fn(),
   setPlacement: vi.fn(),
   dispose: vi.fn(),
 }
+// The URL the engine was created with, for the body-swap tests below.
+const engineInit = { url: '' }
 vi.mock('./avatarGuideEngine', () => ({
   initAvatarGuide: (
     _canvas: HTMLCanvasElement,
-    _url: string,
+    url: string,
     onLoaded: () => void,
   ) => {
+    engineInit.url = url
     onLoaded()
     return handle
   },
 }))
+
+const BODY_A = '/avatar/a.vrm'
+const BODY_B = '/avatar/b.vrm'
+const BODY_C = '/avatar/c.vrm'
 
 // Her launcher box, laid out at the origin: midX 188. avatarHeadBand() puts
 // her head at y 66–148 and x 150–226 in this box under the default framing;
@@ -99,7 +107,7 @@ async function mount(
   const onHandle = vi.fn()
   render(
     <AvatarGuide
-      mode="idle"
+      mode="idle" vrmUrl={BODY_A}
       placement={placement}
       sizeClass="h-[280px] w-[376px]"
       onPat={onPat}
@@ -121,7 +129,7 @@ describe('AvatarGuide canvas box', () => {
   it('applies a px box as an inline style and drops the class', () => {
     render(
       <AvatarGuide
-        mode="idle"
+        mode="idle" vrmUrl={BODY_A}
         placement="beside-panel"
         sizeClass="h-[280px] w-[376px]"
         sizeStyle={{ width: 1020, height: 760 }}
@@ -139,7 +147,7 @@ describe('AvatarGuide canvas box', () => {
 
   it('falls back to the class when no px box is given', () => {
     render(
-      <AvatarGuide mode="idle" placement="launcher" sizeClass="h-[280px] w-[376px]" onHandle={vi.fn()} />,
+      <AvatarGuide mode="idle" vrmUrl={BODY_A} placement="launcher" sizeClass="h-[280px] w-[376px]" onHandle={vi.fn()} />,
     )
     const canvas = document.querySelector('canvas') as HTMLCanvasElement
     expect(canvas.className).toContain('h-[280px]')
@@ -280,7 +288,7 @@ describe('AvatarGuide head taps', () => {
     // silence every stroke for the eight seconds AFTER she is finally ready.
     render(
       <AvatarGuide
-        mode="idle"
+        mode="idle" vrmUrl={BODY_A}
         placement="beside-panel"
         sizeClass="h-[280px] w-[376px]"
         onPat={onPat}
@@ -296,5 +304,75 @@ describe('AvatarGuide head taps', () => {
     stroke(BACK_AND_FORTH)
 
     expect(onPat).toHaveBeenCalledWith('happy')
+  })
+})
+
+// The shell owns two things about the body: which URL the engine starts with,
+// and turning a later change of that URL into a swap the engine performs while
+// the old body keeps rendering. Neither is visible in the DOM, so both are
+// asserted against the spy handle.
+describe('AvatarGuide body swap', () => {
+  function draw(vrmUrl: string, onVariantSettled = vi.fn()) {
+    const onHandle = vi.fn()
+    const utils = render(
+      <AvatarGuide
+        mode="idle"
+        vrmUrl={vrmUrl}
+        placement="launcher"
+        sizeClass="h-[280px] w-[376px]"
+        onHandle={onHandle}
+        onVariantSettled={onVariantSettled}
+      />,
+    )
+    const again = (url: string, mode: 'idle' | 'listening' = 'idle') =>
+      utils.rerender(
+        <AvatarGuide
+          mode={mode}
+          vrmUrl={url}
+          placement="launcher"
+          sizeClass="h-[280px] w-[376px]"
+          onHandle={onHandle}
+          onVariantSettled={onVariantSettled}
+        />,
+      )
+    return { onHandle, again, onVariantSettled }
+  }
+
+  it('starts the engine on the URL it was given', async () => {
+    const { onHandle } = draw(BODY_A)
+    await waitFor(() => expect(onHandle).toHaveBeenCalledWith(handle))
+    expect(engineInit.url).toBe(BODY_A)
+    expect(handle.loadVariant).not.toHaveBeenCalled()
+  })
+
+  it('swaps through the engine when the URL changes, and reports the outcome', async () => {
+    const { onHandle, again, onVariantSettled } = draw(BODY_A)
+    await waitFor(() => expect(onHandle).toHaveBeenCalledWith(handle))
+    again(BODY_B)
+    expect(handle.loadVariant).toHaveBeenCalledTimes(1)
+    expect(handle.loadVariant).toHaveBeenCalledWith(BODY_B)
+    await waitFor(() => expect(onVariantSettled).toHaveBeenCalledWith(BODY_B, true))
+    // A re-render for any other reason is not a swap.
+    again(BODY_B, 'listening')
+    expect(handle.loadVariant).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports only the swap that is still wanted when a newer one overtakes it', async () => {
+    const settles: Array<(ok: boolean) => void> = []
+    handle.loadVariant.mockImplementation(
+      () => new Promise<boolean>((resolve) => settles.push(resolve)),
+    )
+    const { onHandle, again, onVariantSettled } = draw(BODY_A)
+    await waitFor(() => expect(onHandle).toHaveBeenCalledWith(handle))
+    again(BODY_B)
+    again(BODY_C)
+    expect(settles).toHaveLength(2)
+    // The engine resolves the overtaken load false and the winner true. Only
+    // the winner may reach the widget: a false for B would put its selection
+    // back to A while C is on its way.
+    settles[0](false)
+    settles[1](true)
+    await waitFor(() => expect(onVariantSettled).toHaveBeenCalledWith(BODY_C, true))
+    expect(onVariantSettled).toHaveBeenCalledTimes(1)
   })
 })

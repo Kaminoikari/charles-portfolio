@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act, render, screen, waitFor, cleanup } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
@@ -22,6 +22,8 @@ import { VOICE_LINES } from './avatarVoice'
 import { PAT_EMOTION } from './avatarMode'
 import type { AvatarGuideHandle } from './avatarGuideEngine'
 import { IDLE_MOTIONS, type AvatarMotionName } from './avatarMotions'
+import { variantUrl } from './avatarVariants'
+import { VARIANT_STORAGE_KEY } from './avatarVariantChoice'
 
 // The head-pat detector lives in AvatarGuide (tested there against real
 // pointer maths); what this file owns is the other half — what the widget
@@ -53,6 +55,8 @@ const avatarStub = vi.hoisted(() => ({
   // so the real list cannot be named here; holding it in a field keeps the stub
   // from carrying a second hand-written copy of the ten clips.
   ready: [] as readonly AvatarMotionName[],
+  // The body URL the widget handed the guide on its last render.
+  vrmUrl: null as string | null,
   handle: {
     setMode: vi.fn(),
     setActive: vi.fn(),
@@ -61,6 +65,7 @@ const avatarStub = vi.hoisted(() => ({
     playGesture: vi.fn(),
     playMotion: vi.fn(() => true),
     readyMotions: vi.fn((): readonly AvatarMotionName[] => []),
+    loadVariant: vi.fn<(url: string) => Promise<boolean>>(() => Promise.resolve(true)),
     setFraming: vi.fn(),
     setPlacement: vi.fn(),
     dispose: vi.fn(),
@@ -139,7 +144,7 @@ function takePatCallback(): PatCallback {
 // mounts has to be a stub. The wrapper DIV that carries the positioning is
 // ChatWidget's own, so stubbing the canvas away costs the assertion nothing.
 vi.mock('./AvatarGuide', async () => {
-  const { useEffect } = await import('react')
+  const { useEffect, useRef } = await import('react')
   // Named, and named with a capital, because the hooks lint rule identifies a
   // component by its name: an anonymous arrow assigned straight to `default` is
   // a function called "default" that calls useEffect, which the rule reports and
@@ -150,11 +155,15 @@ vi.mock('./AvatarGuide', async () => {
     onPat,
     onHandle,
     sizeStyle,
+    vrmUrl,
+    onVariantSettled,
   }: {
     onLoaded?: () => void
     onPat?: (kind: 'happy' | 'annoyed') => void
     onHandle?: (handle: unknown) => void
     sizeStyle?: { width: number; height: number }
+    vrmUrl: string
+    onVariantSettled?: (url: string, ok: boolean) => void
   }) => {
     // The widget keeps the corner EMPTY until the guide reports its first
     // frame, so a stub that never loads takes the launcher button with it.
@@ -170,10 +179,35 @@ vi.mock('./AvatarGuide', async () => {
     // to something outside the component during render is a side effect in the
     // render phase; React Testing Library renders inside act, so the effect has
     // still run by the time render() returns and the assertions read these.
+    const settleRef = useRef(onVariantSettled)
     useEffect(() => {
       avatarStub.onPat = onPat ?? null
       avatarStub.sizeStyle = sizeStyle ?? null
+      avatarStub.vrmUrl = vrmUrl
+      settleRef.current = onVariantSettled
     })
+    // The guide's swap contract, as its prop comment states it: a change of
+    // `vrmUrl` after mount is handed to the engine's loadVariant, and the
+    // engine's answer comes back through onVariantSettled. The stub performs
+    // that rather than letting a test call the settle by hand, because the
+    // widget reacts to a failed swap by asking for the shown body AGAIN, and
+    // the bug that path hides (remembering the old body as a fresh pick) is
+    // invisible to a stub that never re-asks. The real shell's own version of
+    // this effect is pinned by AvatarGuide.test.tsx.
+    const mountedRef = useRef(false)
+    useEffect(() => {
+      if (!mountedRef.current) {
+        mountedRef.current = true
+        return
+      }
+      let stale = false
+      void avatarStub.handle.loadVariant(vrmUrl).then((ok) => {
+        if (!stale) settleRef.current?.(vrmUrl, ok)
+      })
+      return () => {
+        stale = true
+      }
+    }, [vrmUrl])
     return null
   }
   return { default: AvatarGuideStub }
@@ -914,5 +948,110 @@ describe('ChatWidget fullscreen', () => {
 
       expect(document.body.style.position).not.toBe('fixed')
     })
+  })
+})
+
+// The look strip is wired through three modules — the registry, the visitor's
+// choice, and the guide's swap contract — and only the widget joins them. The
+// stub guide records the URL it is told to load and asks the (spy) engine for
+// every change of it, so a test can tap a chip, see the ask reach the engine,
+// and then answer as the engine would, both ways.
+describe('the look strip', () => {
+  const PINK = variantUrl('pink')
+  const BASE = variantUrl('base')
+  // Every loadVariant the stub guide issues, in order, unanswered until the
+  // test answers it: the engine's fetch is asynchronous and the widget's
+  // in-flight state is what the tests are about.
+  let asks: Array<{ url: string; answer: (ok: boolean) => void }> = []
+
+  async function openWithHer() {
+    // Wide and tall enough that the open panel docks her beside it: the strip
+    // is only offered while she has somewhere to stand.
+    setViewport(1280, 800)
+    openGate()
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    const strip = await screen.findByRole('group', { name: /choose a look/i }, { timeout: 2000 })
+    return { user, strip }
+  }
+  const chip = (name: RegExp) => screen.getByRole('button', { name })
+  const pressed = (el: HTMLElement) => el.getAttribute('aria-pressed') === 'true'
+
+  beforeEach(() => {
+    localStorage.removeItem(VARIANT_STORAGE_KEY)
+    avatarStub.vrmUrl = null
+    asks = []
+    avatarStub.handle.loadVariant.mockImplementation(
+      (url) => new Promise<boolean>((answer) => asks.push({ url, answer })),
+    )
+    window.history.replaceState({}, '', '/')
+  })
+  afterEach(() => {
+    avatarStub.handle.loadVariant.mockImplementation(() => Promise.resolve(true))
+  })
+
+  it('offers every declared body with the default pressed, and swaps on a tap', async () => {
+    const { user } = await openWithHer()
+    expect(avatarStub.vrmUrl).toBe(PINK)
+    expect(pressed(chip(/pink hair/i))).toBe(true)
+    expect(pressed(chip(/purple hair/i))).toBe(false)
+
+    await user.click(chip(/purple hair/i))
+    // The ask reaches the engine at once; the strip marks nothing new until
+    // the engine says the body is on screen, and takes no second tap meanwhile.
+    await waitFor(() => expect(asks.map((a) => a.url)).toEqual([BASE]))
+    expect(avatarStub.vrmUrl).toBe(BASE)
+    expect(pressed(chip(/pink hair/i))).toBe(true)
+    expect((chip(/purple hair/i) as HTMLButtonElement).disabled).toBe(true)
+
+    await act(async () => asks[0].answer(true))
+    await waitFor(() => expect(pressed(chip(/purple hair/i))).toBe(true))
+    expect(pressed(chip(/pink hair/i))).toBe(false)
+    expect((chip(/pink hair/i) as HTMLButtonElement).disabled).toBe(false)
+    // Remembered only now, once it is really on screen; and a success asks the
+    // engine for nothing further.
+    expect(localStorage.getItem(VARIANT_STORAGE_KEY)).toBe('base')
+    expect(asks).toHaveLength(1)
+  })
+
+  it('puts the selection back where the body is when a swap fails, and remembers nothing new', async () => {
+    // The remembered body and the one on screen DIFFER (a ?mika= link put
+    // pink on screen over a remembered base), so a wrong write is visible as
+    // a change. With the two equal, writing the shown body back would write
+    // the same value and this test would pass against the bug it exists for.
+    localStorage.setItem(VARIANT_STORAGE_KEY, 'base')
+    window.history.replaceState({}, '', '/?mika=pink')
+    const { user } = await openWithHer()
+    expect(avatarStub.vrmUrl).toBe(PINK)
+    await user.click(chip(/purple hair/i))
+    await waitFor(() => expect(asks.map((a) => a.url)).toEqual([BASE]))
+
+    await act(async () => asks[0].answer(false))
+    // The guide is asked for the body that is actually standing there again,
+    // and the engine answers that at once (it is already on screen). That
+    // answer is a settle for the shown body, not a pick: it must not be
+    // written over what the visitor had remembered.
+    await waitFor(() => expect(asks.map((a) => a.url)).toEqual([BASE, PINK]))
+    await act(async () => asks[1].answer(true))
+    await waitFor(() => expect((chip(/purple hair/i) as HTMLButtonElement).disabled).toBe(false))
+    expect(pressed(chip(/pink hair/i))).toBe(true)
+    expect(pressed(chip(/purple hair/i))).toBe(false)
+    expect(localStorage.getItem(VARIANT_STORAGE_KEY)).toBe('base')
+  })
+
+  it('opens on the body a ?mika= link names, without remembering it', async () => {
+    window.history.replaceState({}, '', '/?mika=base')
+    await openWithHer()
+    expect(avatarStub.vrmUrl).toBe(BASE)
+    expect(pressed(chip(/purple hair/i))).toBe(true)
+    expect(localStorage.getItem(VARIANT_STORAGE_KEY)).toBeNull()
+  })
+
+  it('opens on the remembered body', async () => {
+    localStorage.setItem(VARIANT_STORAGE_KEY, 'base')
+    await openWithHer()
+    expect(avatarStub.vrmUrl).toBe(BASE)
+    expect(pressed(chip(/purple hair/i))).toBe(true)
   })
 })

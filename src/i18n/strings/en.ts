@@ -69,6 +69,11 @@ interface Strings {
       dance: string; peaceSign: string; modelPose: string; spin: string; squat: string
       akimbo: string; playFingers: string; scratchHead: string; idleLoop: string; stretch: string
     }
+    // The look strip above the motions. Keyed by AvatarVariantId so a body
+    // declared in avatarVariants without a label here fails to compile.
+    looksLabel: string
+    looksAriaLabel: string
+    looks: { pink: string; milfy: string; base: string }
   }
   defaults: { documentTitle: string }
 }
@@ -221,6 +226,13 @@ const en: Strings = {
       scratchHead: 'Scratch head',
       idleLoop: 'Idle',
       stretch: 'Stretch',
+    },
+    looksLabel: 'Look',
+    looksAriaLabel: 'Choose a look',
+    looks: {
+      pink: 'Pink hair',
+      milfy: 'Twin tails',
+      base: 'Purple hair',
     },
   },
   defaults: {

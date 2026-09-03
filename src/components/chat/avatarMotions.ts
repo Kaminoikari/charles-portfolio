@@ -264,6 +264,17 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //                   frame's 0.560 bottom edge either way.
   //
   // Nothing else in the pool is touched by either number.
+  //
+  // MEASURED ON THE VRoid BODIES, and left alone when `milfy` joined the
+  // registry on 2026-09-03. That body was not swept: a sweep is 18 runs of a
+  // 20s clip and this one is the thin margin, so what was checked instead is
+  // the term the sweep is dominated by. Milfy's topmost vertex in bind pose is
+  // 1.5757 against 1.5820 on the other two — its hair reaches 6.3mm LOWER,
+  // with the head bone at the same 1.3200 — so the number below stays the
+  // conservative one for it. What is NOT covered is the swing: its twin tails
+  // are a different spring chain, and the 4.4mm this leaves at the column's
+  // top edge is the translucent fringe, not hair anyone can see (36mm). So a
+  // milfy sweep would risk reddening this guard, not cutting a visible frame.
   dance: {
     placements: ['waistUp', 'column'],
     showsPalm: true,

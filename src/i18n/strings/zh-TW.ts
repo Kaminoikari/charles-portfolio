@@ -156,6 +156,13 @@ const zhTW: Strings = {
       idleLoop: '待機',
       stretch: '伸懶腰',
     },
+    looksLabel: '造型',
+    looksAriaLabel: '選擇造型',
+    looks: {
+      pink: '粉髮',
+      milfy: '雙馬尾',
+      base: '紫髮',
+    },
   },
   defaults: {
     documentTitle: '台灣 AI Product Manager | Charles Chen Portfolio',
