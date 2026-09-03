@@ -588,7 +588,7 @@ describe('ChatWidget fullscreen', () => {
   // The avatar canvas is sized FROM the docked panel's height, so she stands as
   // tall as it. avatarMode.ts holds that class and the px/vh pair
   // avatarDockedBox computes with to each other, but only if the panel actually
-  // renders the shared one — spelling 'h-[min(560px,80vh)]' inline here again
+  // renders the shared one — spelling 'h-[min(560px,80dvh)]' inline here again
   // would satisfy that unit test while letting the panel drift away from her on
   // the next edit. This drives the real component and reads what reached the DOM.
   it('renders the docked panel at the height the avatar is sized to', async () => {
@@ -724,7 +724,7 @@ describe('ChatWidget fullscreen', () => {
     expect(classes).not.toContain(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
   })
 
-  // On a landscape phone the panel is 80vh and its top edge, which is her hair
+  // On a landscape phone the panel is 80dvh and its top edge, which is her hair
   // top at full size, sits at 0.2·vh − 20: 59px into a 77px nav bar at 393px of
   // height, and 852px of width is enough for full size. The below-the-nav layer
   // the 1080px test pins took the top of her head off there, so the widget has

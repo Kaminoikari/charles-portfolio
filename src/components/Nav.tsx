@@ -21,7 +21,7 @@ import {
 // AVATAR_DOCKED_Z_CLASS.
 //
 // The exception is a window so short that her HEAD lands inside the bar, which
-// 80vh makes of every landscape phone. There she steps above it instead: a bar
+// 80dvh makes of every landscape phone. There she steps above it instead: a bar
 // that hides a raised hand is chrome doing its job, a bar that takes the top
 // off her face is a defect. That call is made from her hair top against
 // NAV_HEIGHT_PX, in avatarMode's dockedAvatarZClass.

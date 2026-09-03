@@ -149,9 +149,10 @@ body {
 /* The panel's own geometry cannot be transitioned between the two sizes: docked
    sets width/height with `left`/`top` auto, fullscreen sets all four insets
    with width/height auto, and `auto` has nothing to interpolate. Sizing both
-   states in interpolatable units would mean deriving the docked box from `vh`,
-   which on iOS Safari resolves taller than the visible area and would put the
-   composer under the address bar. So the takeover grows into place instead. */
+   states in interpolatable units would mean writing the fullscreen box as a
+   width and height too, and the docked one is in dvh precisely because plain
+   `vh` on iOS Safari resolves taller than the visible area (it would put the
+   composer under the address bar). So the takeover grows into place instead. */
 @keyframes chat-panel-grow {
   from { opacity: 0.5; transform: scale(0.975); }
   to { opacity: 1; transform: none; }

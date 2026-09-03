@@ -276,8 +276,11 @@ export default function ChatWidget() {
   // Width comes from clientWidth, not innerWidth: everything measured against
   // it is positioned against the LAYOUT viewport, which a classic desktop
   // scrollbar makes narrower. innerWidth's extra 6px is what left her canvas
-  // hanging 6px off the left edge at 900px. Height stays innerHeight, because
-  // the panel it is compared against is sized in CSS vh.
+  // hanging 6px off the left edge at 900px. Height stays innerHeight, and the
+  // panel it is compared against is sized in CSS dvh, which is the unit
+  // innerHeight reports: on a phone both shrink by the browser toolbar while it
+  // is showing, where plain vh would hold the toolbar-hidden height and leave
+  // her canvas 16% shorter than the panel (CHAT_PANEL_HEIGHT_CLASS).
   const [viewport, setViewport] = useState(() => ({
     vw: document.documentElement.clientWidth,
     vh: window.innerHeight,

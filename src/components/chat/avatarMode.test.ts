@@ -503,7 +503,7 @@ describe('avatar camera framing', () => {
       const canvasTop = vh - CHAT_DOCK_BOTTOM - avatarDockedBox(vh).h
       if (canvasTop < 0) overhung++
       // Her hair top is the panel's top edge, and the panel is on screen at
-      // every height: at 80vh that edge sits at 0.2·vh − 20.
+      // every height: at 80dvh that edge sits at 0.2·vh − 20.
       const hairTop = vh - CHAT_DOCK_BOTTOM - panelH(vh)
       expect({ vh, ok: hairTop >= 0 }).toEqual({ vh, ok: true })
     }
@@ -521,7 +521,7 @@ describe('avatar camera framing', () => {
   })
 
   // Her hair top is on screen at every height (above), but on a short one it is
-  // inside the nav bar: at full size 80vh puts the panel's top edge at
+  // inside the nav bar: at full size 80dvh puts the panel's top edge at
   // 0.2·vh − 20, which a 77px bar covers below 485px of height, and that is
   // every landscape phone wide enough for full size (the narrow ones are the
   // next test). The layer follows that one number, so it is swept against the same hairTop
@@ -585,14 +585,31 @@ describe('avatar camera framing', () => {
   // The panel height is one number in three spellings: the class ChatWidget
   // applies, and the px/vh pair avatarDockedBox computes her box from. Raising
   // the panel in the class alone would leave her sized to the old one.
+  //
+  // The class is two utilities, and the one that ships on a phone is the dvh
+  // one. Her box is computed from window.innerHeight, which is the DYNAMIC
+  // viewport: on iOS Safari it shrinks by the toolbar when the toolbar is
+  // showing, while `vh` stays the large viewport (toolbar hidden) whatever the
+  // toolbar is doing. Sized in vh alone the panel held 0.8 × 393 on a landscape
+  // 852×393 phone with the toolbar out while her canvas was computed from 331, and
+  // she stood at 0.84 of the panel (2026-09-03). `dvh` is the unit innerHeight
+  // reports, so it is the one the panel has to be in; plain vh stays only as
+  // the fallback for a browser without dvh, behind the same supports-[] gate
+  // the hero uses for svh.
   it('keeps the panel height class and its numbers in step', () => {
-    const m = /^h-\[min\((\d+)px,(\d+)vh\)\]$/.exec(CHAT_PANEL_HEIGHT_CLASS)
+    const [base, dynamic, ...rest] = CHAT_PANEL_HEIGHT_CLASS.split(' ')
+    expect(rest).toEqual([])
+    const m = /^h-\[min\((\d+)px,(\d+)vh\)\]$/.exec(base)
     expect(m).not.toBeNull()
     expect(Number(m![1])).toBe(CHAT_PANEL_HEIGHT_PX)
     expect(Number(m![2])).toBe(CHAT_PANEL_HEIGHT_VH)
+    const d = /^supports-\[height:1dvh\]:h-\[min\((\d+)px,(\d+)dvh\)\]$/.exec(dynamic)
+    expect(d).not.toBeNull()
+    expect(Number(d![1])).toBe(CHAT_PANEL_HEIGHT_PX)
+    expect(Number(d![2])).toBe(CHAT_PANEL_HEIGHT_VH)
   })
 
-  // One limit decides her height now, and it is the panel: min(560px, 80vh),
+  // One limit decides her height now, and it is the panel: min(560px, 80dvh),
   // divided by what is left after the headroom. There is no second limit to
   // lose to — the screen cap that used to win on every short window was removed
   // on 2026-08-22, which is why the vh branch below can be seen deciding at

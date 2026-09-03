@@ -428,7 +428,7 @@ export const CHAT_DOCK_BOTTOM_CLASS = 'bottom-5'
 // first place.
 export const AVATAR_DOCKED_Z_CLASS = 'z-[45]'
 
-// The layer she paints on when her HEAD is inside the nav bar, which 80vh makes
+// The layer she paints on when her HEAD is inside the nav bar, which 80dvh makes
 // of a landscape phone wide enough to show her at full size: the panel's top
 // edge sits at 0.2·vh − 20, her hair top lands on that edge (avatarDockedBox),
 // and at 393px of height that is 59px into a 77px bar. (A narrow one, 568×320,
@@ -556,13 +556,30 @@ export function avatarDockedRight(canvasW: number, scale: number): number {
 // is new as of 2026-08-22. Until then a screen-top cap sat in front of them and
 // won every short window, so the vh half was dead code in her box and this note
 // said so.
-export const CHAT_PANEL_HEIGHT_CLASS = 'h-[min(560px,80vh)]'
+//
+// The viewport unit is dvh, because her box is computed from window.innerHeight
+// and that is the DYNAMIC viewport: on iOS Safari (and Chrome on Android) it
+// shrinks by the toolbar while the toolbar is showing, whereas plain `vh` is
+// the LARGE viewport, the toolbar-hidden height, whatever the toolbar is doing.
+// Sized in vh the panel stood at 0.8 × 393 on a landscape 852×393 phone in both
+// toolbar states while her box was computed from 331 with the toolbar out, so
+// she rendered at 0.84 of the panel there and at 1.0 once the toolbar slid
+// away, which the owner read as her shrinking at random (2026-09-03). In dvh
+// the panel and her box read the same height, and the panel also stops
+// running under the toolbar: in vh its top edge ran past the top of that window.
+// The vh spelling stays as the fallback for a browser without dvh (iOS < 15.4,
+// Chrome < 108), behind the supports-[] gate TextHero uses for svh; on such a
+// browser the mismatch above is back, and accepted.
+export const CHAT_PANEL_HEIGHT_CLASS =
+  'h-[min(560px,80vh)] supports-[height:1dvh]:h-[min(560px,80dvh)]'
 export const CHAT_PANEL_HEIGHT_PX = 560
 export const CHAT_PANEL_HEIGHT_VH = 80
 
-// The panel's rendered height, from the class above. Two things measure
-// themselves against it — her box and the gate that decides whether she stands
-// beside it at all — and they must not be able to disagree.
+// The panel's rendered height, from the class above; `vh` is window.innerHeight
+// here and throughout this module, the number the dvh half of the class
+// resolves against. Two things measure themselves against it — her box and the
+// gate that decides whether she stands beside it at all — and they must not be
+// able to disagree.
 function chatPanelHeight(vh: number): number {
   return Math.min(CHAT_PANEL_HEIGHT_PX, (vh * CHAT_PANEL_HEIGHT_VH) / 100)
 }
@@ -615,7 +632,7 @@ function dockedHeadroom(): number {
 //
 // Her figure is never the thing that overhangs. Her hair top lands on the
 // panel's top edge by construction, and the panel is on screen at every height:
-// at 80vh the top edge sits at 0.2·vh − 20, positive for any window over 100px
+// at 80dvh the top edge sits at 0.2·vh − 20, positive for any window over 100px
 // tall.
 export function avatarDockedBox(vh: number): { w: number; h: number } {
   const h = Math.max(0, chatPanelHeight(vh) / (1 - dockedHeadroom()))
