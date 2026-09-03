@@ -3,6 +3,7 @@
 // Run:  npx tsx rag/insights/report.ts  (needs QDRANT_*).
 import { gatherInsights, TIME_ZONE } from './collect.js'
 import { countryLabel } from './country.js'
+import { readSnapshots } from './records.js'
 
 // Emitted as monospace text (and wrapped by the HTML dashboard's <pre> fallback),
 // so space-padded columns line up. One label width keeps every block left-aligned.
@@ -24,7 +25,10 @@ const pct1 = (n: number) => `${n.toFixed(1)}%`
 const pct0 = (n: number) => `${n.toFixed(0)}%`
 
 async function main() {
-  const ins = await gatherInsights()
+  const recordPath = process.argv.indexOf('--records')
+  const records = recordPath >= 0 ? readSnapshots(process.argv[recordPath + 1] ?? '') : undefined
+  if (recordPath >= 0 && !records) throw new Error(`invalid records file: ${process.argv[recordPath + 1] ?? ''}`)
+  const ins = await gatherInsights({ questionHashes: records ? new Set(records.map((record) => record.hash)) : undefined })
   if (!ins) {
     console.log('No chat activity in the current reporting window yet.')
     return

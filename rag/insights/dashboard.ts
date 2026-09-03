@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { Resvg } from '@resvg/resvg-js'
 import { gatherInsights, TIME_ZONE, type Insights, type Metric } from './collect.js'
 import { countryLabel } from './country.js'
+import { readSnapshots } from './records.js'
 
 // ── palette (dark cinematic, matching the site brand) ───────────────────────
 const C = {
@@ -359,6 +360,11 @@ function renderEmpty(): string {
 </body></html>`
 }
 
+function optionValue(flag: string): string | undefined {
+  const index = process.argv.indexOf(flag)
+  return index >= 0 ? process.argv[index + 1] : undefined
+}
+
 function resolveAssetDir(): string {
   const i = process.argv.indexOf('--assets')
   const dir = i >= 0 ? process.argv[i + 1] : process.env.INSIGHTS_ASSET_DIR || process.cwd()
@@ -366,9 +372,17 @@ function resolveAssetDir(): string {
   return dir
 }
 
+function resolveQuestionHashes(): ReadonlySet<string> | undefined {
+  const path = optionValue('--records')
+  if (!path) return undefined
+  const records = readSnapshots(path)
+  if (!records) throw new Error(`invalid records file: ${path}`)
+  return new Set(records.map((record) => record.hash))
+}
+
 async function main() {
   const assetDir = resolveAssetDir()
-  const ins = await gatherInsights()
+  const ins = await gatherInsights({ questionHashes: resolveQuestionHashes() })
   console.log(ins ? renderHtml(ins, assetDir) : renderEmpty())
 }
 

@@ -2,6 +2,7 @@
 // computes every metric the plain-text report and the HTML dashboard need, so
 // both renderers stay pure presentation over a single source of truth.
 import { REPORT_EPOCH_MS, scrollReportableLogs } from './chat-logs.js'
+import { questionHash } from './records.js'
 
 export const TIME_ZONE = 'Asia/Taipei'
 
@@ -69,6 +70,10 @@ export interface Insights {
   recent: RecentItem[]
 }
 
+export interface GatherInsightsOptions {
+  questionHashes?: ReadonlySet<string>
+}
+
 function median(xs: number[]): number {
   if (xs.length === 0) return 0
   const s = [...xs].sort((a, b) => a - b)
@@ -126,14 +131,20 @@ function tallyMetric(
     .map(([label, count]) => ({ label, count, pct: base > 0 ? (count / base) * 100 : 0 }))
 }
 
-export async function gatherInsights(): Promise<Insights | null> {
+export async function gatherInsights(options: GatherInsightsOptions = {}): Promise<Insights | null> {
   // The loader has already dropped anonymous rows and everything before the
   // report epoch, so what comes back is exactly what the report may show.
   const { rows: identified, truncated } = await scrollReportableLogs<LogRow>()
   if (identified.length === 0) return null
 
-  const openRows = identified.filter((r) => r.type === 'open')
-  const questionRows = identified.filter((r) => r.type !== 'open')
+  const isDeltaReport = options.questionHashes !== undefined
+  const allQuestionRows = identified.filter((r) => r.type !== 'open')
+  const questionRows = options.questionHashes
+    ? allQuestionRows.filter((row) => options.questionHashes?.has(questionHash(row)))
+    : allQuestionRows
+  if (isDeltaReport && questionRows.length === 0) return null
+  const displayedRows = isDeltaReport ? questionRows : identified
+  const openRows = displayedRows.filter((r) => r.type === 'open')
   const distinct = (rs: LogRow[]) => new Set(rs.map((r) => r.visitor_id).filter(Boolean)).size
   const uniqueOpeners = distinct(openRows)
   const uniqueAskers = distinct(questionRows)
@@ -142,7 +153,10 @@ export async function gatherInsights(): Promise<Insights | null> {
   // The report always covers a fixed window: the epoch reset point through the
   // instant this runs. Range end is generation time, not the last event, so a
   // quiet stretch still reads "noon → now" instead of collapsing onto one event.
-  const windowStartMs = REPORT_EPOCH_MS
+  const firstQuestionMs = Math.min(
+    ...questionRows.map((row) => Date.parse(row.ts ?? '')).filter((ms) => !Number.isNaN(ms)),
+  )
+  const windowStartMs = isDeltaReport && Number.isFinite(firstQuestionMs) ? firstQuestionMs : REPORT_EPOCH_MS
   const windowEndMs = Date.now()
   const spanDays = (windowEndMs - windowStartMs) / 86_400_000
   // Floor the denominator at one day so a same-day report shows the raw count as
@@ -164,7 +178,7 @@ export async function gatherInsights(): Promise<Insights | null> {
 
   // Daily activity, oldest → newest, capped to the last 21 active days.
   const byDay = new Map<string, { questions: number; opens: number }>()
-  for (const r of identified) {
+  for (const r of displayedRows) {
     const t = Date.parse(r.ts ?? '')
     if (Number.isNaN(t)) continue
     const key = dayKey(t)
@@ -205,7 +219,7 @@ export async function gatherInsights(): Promise<Insights | null> {
     windowEndMs,
     spanDays,
     truncated,
-    identifiedCount: identified.length,
+    identifiedCount: displayedRows.length,
     opens: { total: openRows.length, unique: uniqueOpeners, perDay: perDay(openRows.length) },
     questions: {
       total: questionRows.length,
