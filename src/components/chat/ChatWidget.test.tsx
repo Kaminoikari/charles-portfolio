@@ -3,9 +3,10 @@ import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import ChatWidget from './ChatWidget'
-import { NAV_Z_CLASS } from '../Nav'
+import { NAV_HEIGHT_PX, NAV_Z_CLASS } from '../Nav'
 import { UNIVERSE_LABEL_Z_CLASS } from '../UniverseSection'
 import {
+  AVATAR_DOCKED_OVER_NAV_Z_CLASS,
   AVATAR_DOCKED_Z_CLASS,
   avatarColumnBox,
   avatarColumnRightInset,
@@ -17,6 +18,7 @@ import {
   CHAT_DOCK_BOTTOM_CLASS,
   CHAT_PANEL_HEIGHT_CLASS,
   CHAT_PANEL_HEIGHT_PX,
+  dockedFigureTop,
 } from './avatarMode'
 import { VOICE_LINES } from './avatarVoice'
 import { PAT_EMOTION } from './avatarMode'
@@ -125,11 +127,28 @@ function openGate(): void {
 
 // The docked wrapper is ChatWidget's own div, identified by the layer it
 // declares — it carries no positional class any more, because where it sits is
-// computed from her canvas width.
+// computed from her canvas width. Two layers count, because the layer answers
+// to the window's width and height (dockedAvatarZClass); which one a given
+// window gets is asserted by the tests that care, never assumed here. The fullscreen column
+// shares the upper layer, so the dock's bottom class is required as well: the
+// column hangs from bottom-4, and the panel, which does share bottom-5, is z-50.
+const DOCKED_Z_CLASSES = [AVATAR_DOCKED_Z_CLASS, AVATAR_DOCKED_OVER_NAV_Z_CLASS]
 function dockedWrapper(): HTMLElement | undefined {
-  return [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) =>
-    el.className.split(' ').includes(AVATAR_DOCKED_Z_CLASS),
-  )
+  return [...document.querySelectorAll<HTMLElement>('div.fixed')].find((el) => {
+    const classes = el.className.split(' ')
+    return (
+      classes.includes(CHAT_DOCK_BOTTOM_CLASS) &&
+      classes.some((cls) => DOCKED_Z_CLASSES.includes(cls))
+    )
+  })
+}
+
+// A Tailwind z class back to its number, so layers are compared rather than
+// string-matched: `z-50` and `z-[45]` both parse.
+function layer(cls: string): number {
+  const m = /^z-(?:(\d+)|\[(\d+)\])$/.exec(cls)
+  if (!m) throw new Error(`unparseable z class: ${cls}`)
+  return Number(m[1] ?? m[2])
 }
 
 function takePatCallback(): PatCallback {
@@ -658,13 +677,11 @@ describe('ChatWidget fullscreen', () => {
     // hand just below its top edge, so it overlaps the nav bar. Equal z-indexes
     // are settled by DOM order and the widget mounts last, which drew that hand
     // OVER the nav links until 2026-08-21. Reading Nav's own class rather than a
-    // copy of it is what makes raising the nav's layer show up here.
-    const layer = (cls: string) => {
-      const m = /^z-(?:(\d+)|\[(\d+)\])$/.exec(cls)
-      if (!m) throw new Error(`unparseable z class: ${cls}`)
-      return Number(m[1] ?? m[2])
-    }
+    // copy of it is what makes raising the nav's layer show up here. At 1080px
+    // of height only that hand reaches the bar, so this is the below-the-nav
+    // layer; the landscape-phone test further down pins the other one.
     expect(wrapper.className.split(' ')).toContain(AVATAR_DOCKED_Z_CLASS)
+    expect(wrapper.className.split(' ')).not.toContain(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
     // Strictly between the two, with no ties: a tie is settled by DOM order,
     // which is the invisible rule that put her hand on the nav to begin with.
     // The skills labels are the other side of it — they sit in the same root
@@ -695,6 +712,44 @@ describe('ChatWidget fullscreen', () => {
     render(<ChatWidget />)
     await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
     await waitFor(() => expect(dockedWrapper()).toBeTruthy(), { timeout: 2000 })
+    // Short, but not wide: at this width besidePanelScale is 0.73, the canvas
+    // shrinks about its bottom-right corner, and her hair top comes down to
+    // 142px, 65px clear of the nav bar. So she stays on the below-the-nav layer
+    // here, and the widget has to have fed the function the WIDTH for that: a
+    // height-only reading would lift her at any 393px window, and pay for it
+    // with gestures over the transcript on a window whose bar never touched her.
+    expect(dockedFigureTop(vw, vh)).toBeGreaterThan(NAV_HEIGHT_PX)
+    const classes = (dockedWrapper() as HTMLElement).className.split(' ')
+    expect(classes).toContain(AVATAR_DOCKED_Z_CLASS)
+    expect(classes).not.toContain(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
+  })
+
+  // On a landscape phone the panel is 80vh and its top edge, which is her hair
+  // top at full size, sits at 0.2·vh − 20: 59px into a 77px nav bar at 393px of
+  // height, and 852px of width is enough for full size. The below-the-nav layer
+  // the 1080px test pins took the top of her head off there, so the widget has
+  // to hand this window the other layer, above the nav. Read off the rendered
+  // class rather than by calling dockedAvatarZClass on both sides: a widget
+  // that kept the z-[45] literal would leave that function green and her head
+  // under the bar.
+  it('lifts her above the nav bar on a landscape phone, where her head is inside it', async () => {
+    const vw = 852
+    const vh = 393
+    expect(besidePanelFits(vw, vh)).toBe(true)
+    expect(dockedFigureTop(vw, vh)).toBeLessThan(NAV_HEIGHT_PX)
+    setViewport(vw, vh)
+    openGate()
+
+    const user = userEvent.setup()
+    render(<ChatWidget />)
+    await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+    await waitFor(() => expect(dockedWrapper()).toBeTruthy(), { timeout: 2000 })
+    const classes = (dockedWrapper() as HTMLElement).className.split(' ')
+    expect(classes).toContain(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
+    expect(classes).not.toContain(AVATAR_DOCKED_Z_CLASS)
+    // Above the nav, with no tie: a tie is settled by DOM order, which is the
+    // rule the 2026-08-21 split exists to keep out of this.
+    expect(layer(AVATAR_DOCKED_OVER_NAV_Z_CLASS)).toBeGreaterThan(layer(NAV_Z_CLASS))
   })
 
   it('keeps her off a tall window of exactly that width', async () => {

@@ -21,7 +21,6 @@ import {
   avatarColumnBox,
   avatarPlacement,
   AVATAR_BUBBLE_RIGHT_CLASS,
-  AVATAR_DOCKED_Z_CLASS,
   AVATAR_LAUNCHER_SIZE_CLASS,
   besidePanelFits,
   avatarDockedBox,
@@ -29,8 +28,10 @@ import {
   besidePanelScale,
   CHAT_PANEL_HEIGHT_CLASS,
   deriveAvatarMode,
+  dockedAvatarZClass,
   PAT_EMOTION,
 } from './avatarMode'
+import { NAV_HEIGHT_PX } from '../Nav'
 import { playVoiceCue, type VoiceCue } from './avatarVoice'
 import AvatarGuide from './AvatarGuide'
 import { VOICE_VISEMES } from './voiceVisemes.gen'
@@ -683,7 +684,10 @@ export default function ChatWidget() {
   //                somewhere near the chat rather than beside it.
   //                Accepted cost: her gesture margin runs past the screen edge
   //                on the left, and behind the panel on the right, on any
-  //                window narrow enough for the scale to bite. besidePanelScale
+  //                window narrow enough for the scale to bite; on a window
+  //                short enough to put her head in the nav bar she stands
+  //                above the nav and the panel both (dockedAvatarZClass), and
+  //                a gesture into that margin shows. besidePanelScale
   //                shrinks her there rather than cutting her body, and full
   //                size arrives at 834px of window. A fixed box overhanging
   //                either side adds no scroll (document.scrollWidth measured
@@ -787,8 +791,12 @@ export default function ChatWidget() {
           : placement === 'beside-panel'
             ? // No `right` class here: where this sits depends on how wide her
               // canvas came out, so avatarDockedRight computes it in the style
-              // below along with the scale that keeps her body on screen.
-              `pointer-events-none fixed ${CHAT_DOCK_BOTTOM_CLASS} ${AVATAR_DOCKED_Z_CLASS}`
+              // below along with the scale that keeps her body on screen. The
+              // layer answers to where her hair top lands, which is the height
+              // and, through that scale, the width: below the nav while only a
+              // hand can reach it, above the nav (and the panel) on a window
+              // short and wide enough to put her head inside the bar.
+              `pointer-events-none fixed ${CHAT_DOCK_BOTTOM_CLASS} ${dockedAvatarZClass(viewport.vw, viewport.vh, NAV_HEIGHT_PX)}`
             : inColumn
               ? // The canvas overhangs the viewport at right, so the body reads
                 // right-aligned despite the frame's transparent gesture margin.

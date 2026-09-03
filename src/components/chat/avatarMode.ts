@@ -408,20 +408,71 @@ export const CHAT_BESIDE_PANEL_RIGHT = 436
 export const CHAT_DOCK_BOTTOM = 20
 export const CHAT_DOCK_BOTTOM_CLASS = 'bottom-5'
 
-// The layer her docked canvas paints on, and it must stay BELOW the nav's
-// (Nav.tsx's NAV_Z_CLASS). Both were z-50 until 2026-08-21, which was harmless
-// while her canvas was the panel's height and started 188px down a 768px
-// window. Now it starts at 0 there, `stretch` puts a hand 43px below its top,
-// and the nav bar is 77px tall: at equal z-indexes the later element in the DOM
-// wins, the widget mounts after the nav, so that hand was painted over the nav
-// links. Below the nav it is occluded instead, which costs her nothing — her
-// head is 26% down the canvas and never reaches this band.
+// The layer her docked canvas paints on when only a HAND can reach the nav bar,
+// and there it must stay BELOW the nav's (Nav.tsx's NAV_Z_CLASS). Both were
+// z-50 until 2026-08-21, which was harmless while her canvas was the panel's
+// height and started 188px down a 768px window. Now it starts at 0 there,
+// `stretch` puts a hand 43px below its top, and the nav bar is 77px tall: at
+// equal z-indexes the later element in the DOM wins, the widget mounts after
+// the nav, so that hand was painted over the nav links. Below the nav it is
+// occluded instead, which costs her nothing on such a window: at full size her
+// hair top is the panel's top edge, 0.2·vh − 20 until the panel caps at 700px
+// of height, so it clears the bar from 485px of height up, and once the width
+// shrinks her (besidePanelScale) it sits lower still. Only when it is inside
+// the bar does dockedAvatarZClass hand the layer to
+// AVATAR_DOCKED_OVER_NAV_Z_CLASS instead.
 //
 // 45 rather than 40, so no layer in the site ties with hers: the nav is 50, the
 // skills labels are UniverseSection's 40, and a tie is settled by DOM order,
 // which is exactly the invisible rule that put a hand on top of the nav in the
 // first place.
 export const AVATAR_DOCKED_Z_CLASS = 'z-[45]'
+
+// The layer she paints on when her HEAD is inside the nav bar, which 80vh makes
+// of a landscape phone wide enough to show her at full size: the panel's top
+// edge sits at 0.2·vh − 20, her hair top lands on that edge (avatarDockedBox),
+// and at 393px of height that is 59px into a 77px bar. (A narrow one, 568×320,
+// is shrunk by besidePanelScale and its hair top sits 114px down, clear of the
+// bar, so it keeps the layer above.) Until 2026-09-03 she stayed at z-[45] on
+// the wide ones too and the bar
+// took the top of her head off, which the owner read as her being cut down to
+// fit under the nav. A bar that hides a raised hand is chrome doing its job; a
+// bar that hides a face is a defect, so here she steps above it.
+//
+// 55 is the column's layer, and it beats the panel's z-50 as well. That is the
+// cost: the transparent strip avatarDockedRight tucks behind the panel is in
+// FRONT of it here, so a gesture swinging into the strip is painted over the
+// transcript rather than hidden by it. The fullscreen column accepted the same
+// trade for the same reason (a hand across the text's right edge is deliberate
+// there), and it is confined to windows short enough for her head to be in the
+// bar, under 485px of height at full size, so a window of desktop height never
+// sees it.
+export const AVATAR_DOCKED_OVER_NAV_Z_CLASS = 'z-[55]'
+
+// Where her hair top lands on screen beside the docked panel. Both boxes hang
+// from CHAT_DOCK_BOTTOM and avatarDockedBox is built so the air above her head
+// is exactly the canvas's overhang of the panel, so at full size it is the
+// panel's top edge, the `hairTop` avatarMode.test.ts sweeps. When the width
+// binds, besidePanelScale shrinks the canvas about its bottom-right corner
+// (ChatWidget's transform) and her figure with it, so the top comes DOWN by the
+// same factor: at 393px tall a 600px window puts it 142px from the top, 65px
+// clear of the bar, while 852px puts it at 59. Height alone would call both of
+// those "in the bar", and pay the over-the-transcript trade on the first for
+// nothing. Both axes, then, the same pair the docked gate takes.
+export function dockedFigureTop(vw: number, vh: number): number {
+  const scale = besidePanelScale(vw, avatarDockedBox(vh).w)
+  return vh - CHAT_DOCK_BOTTOM - chatPanelHeight(vh) * scale
+}
+
+// Which of the two layers above her docked canvas takes, from the one question
+// that separates them: is her hair top inside the nav bar. The bar's height is
+// passed in rather than imported, because Nav.tsx is a component with router
+// imports and this module is also loaded by the Node-side probes.
+export function dockedAvatarZClass(vw: number, vh: number, navHeight: number): string {
+  return dockedFigureTop(vw, vh) < navHeight
+    ? AVATAR_DOCKED_OVER_NAV_Z_CLASS
+    : AVATAR_DOCKED_Z_CLASS
+}
 // Tailwind's spacing scale: one step is 0.25rem, and the root font size is the
 // browser default 16px, so a step is 4px. Only the test does this arithmetic.
 export const TAILWIND_SPACING_PX = 4
@@ -481,7 +532,9 @@ export function besidePanelScale(vw: number, canvasW: number): number {
 // exactly as avatarColumnRightInset already does for the fullscreen column.
 // What ends up over the panel is transparent margin, and a gesture reaching
 // into it is drawn BEHIND the panel (z-[45] against z-50), so it is hidden
-// rather than painted on the conversation.
+// rather than painted on the conversation. Except on a window short enough to
+// put her head in the nav bar, where dockedAvatarZClass lifts her above both
+// and the gesture shows; see AVATAR_DOCKED_OVER_NAV_Z_CLASS for that trade.
 //
 // The docked wrapper's `right`, in px, for a canvas of this width at this
 // scale. The 16px gap she ends up with is the one already inside

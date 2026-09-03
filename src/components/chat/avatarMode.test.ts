@@ -24,6 +24,10 @@ import {
   avatarMetresPerPixel,
   avatarDockedBox,
   avatarDockedRight,
+  AVATAR_DOCKED_OVER_NAV_Z_CLASS,
+  AVATAR_DOCKED_Z_CLASS,
+  dockedAvatarZClass,
+  dockedFigureTop,
   AVATAR_LAUNCHER_SIZE_CLASS,
   AVATAR_WAISTUP_ASPECT,
   avatarPlacement,
@@ -514,6 +518,57 @@ describe('avatar camera framing', () => {
     const span = avatarViewSpan(AVATAR_FRAMING_DEFAULT)
     const air = (span.top - AVATAR_HEAD_TOP_Y) / avatarMetresPerPixel(AVATAR_FRAMING_DEFAULT, short.h)
     expect(short.h - air).toBeCloseTo(panelH(700), 6)
+  })
+
+  // Her hair top is on screen at every height (above), but on a short one it is
+  // inside the nav bar: at full size 80vh puts the panel's top edge at
+  // 0.2·vh − 20, which a 77px bar covers below 485px of height, and that is
+  // every landscape phone wide enough for full size (the narrow ones are the
+  // next test). The layer follows that one number, so it is swept against the same hairTop
+  // the test above uses, and the crossing is pinned to the px: a change to the
+  // panel's height rule or the dock offset moves it and shows up here.
+  it('steps above the nav bar exactly where her hair top enters it', () => {
+    const NAV = 77
+    // Wide enough that besidePanelScale is 1 at every height swept, so her hair
+    // top IS the panel's top edge and the crossing is the height's alone.
+    const wide = 4000
+    for (let vh = 320; vh <= 1600; vh += 1) {
+      expect(besidePanelScale(wide, avatarDockedBox(vh).w)).toBe(1)
+      const hairTop = vh - CHAT_DOCK_BOTTOM - panelH(vh)
+      expect(dockedFigureTop(wide, vh)).toBeCloseTo(hairTop, 9)
+      const want = hairTop < NAV ? AVATAR_DOCKED_OVER_NAV_Z_CLASS : AVATAR_DOCKED_Z_CLASS
+      expect({ vh, cls: dockedAvatarZClass(wide, vh, NAV) }).toEqual({ vh, cls: want })
+    }
+    // 0.2 × 485 − 20 = 77: on the bar's edge she is still below it.
+    expect(dockedAvatarZClass(wide, 484, NAV)).toBe(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
+    expect(dockedAvatarZClass(wide, 485, NAV)).toBe(AVATAR_DOCKED_Z_CLASS)
+    // A landscape phone is on the near side, a laptop on the far side.
+    expect(dockedAvatarZClass(wide, 393, NAV)).toBe(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
+    expect(dockedAvatarZClass(wide, 768, NAV)).toBe(AVATAR_DOCKED_Z_CLASS)
+    // And the two are different layers, the phone one the higher.
+    const layer = (cls: string) => Number(/^z-\[(\d+)\]$/.exec(cls)?.[1])
+    expect(layer(AVATAR_DOCKED_OVER_NAV_Z_CLASS)).toBeGreaterThan(layer(AVATAR_DOCKED_Z_CLASS))
+  })
+
+  // The other axis. Where the width binds, besidePanelScale shrinks the canvas
+  // about its bottom-right corner (the transform ChatWidget applies) and her
+  // figure with it, so her hair top comes DOWN by the scale: same 393px of
+  // height, a 600px window binds to 0.73 and puts it at 142px, 65px clear of
+  // the bar, while 852px is full size and puts it at 59. A height-only reading
+  // would lift her on the first as well and pay the over-the-transcript trade
+  // where the bar never touched her.
+  it('reads her hair top through the docked scale, so a narrow short window stays below the nav', () => {
+    const NAV = 77
+    const s = besidePanelScale(600, avatarDockedBox(393).w)
+    expect(s).toBeGreaterThan(0.7)
+    expect(s).toBeLessThan(0.75)
+    expect(dockedFigureTop(600, 393)).toBeCloseTo(393 - CHAT_DOCK_BOTTOM - panelH(393) * s, 9)
+    expect(dockedFigureTop(600, 393)).toBeGreaterThan(NAV)
+    expect(dockedAvatarZClass(600, 393, NAV)).toBe(AVATAR_DOCKED_Z_CLASS)
+    // Same height, full size: in the bar.
+    expect(besidePanelScale(852, avatarDockedBox(393).w)).toBe(1)
+    expect(dockedFigureTop(852, 393)).toBeLessThan(NAV)
+    expect(dockedAvatarZClass(852, 393, NAV)).toBe(AVATAR_DOCKED_OVER_NAV_Z_CLASS)
   })
 
   // The bottom edge the two boxes share, as a class and as the px number the

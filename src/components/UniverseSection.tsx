@@ -8,7 +8,8 @@ import { useT } from '../i18n'
 
 // The layer the two skill labels ride on, above everything else this section
 // draws (its own layers stop at z-30) and below the chat avatar, who floats
-// over the whole page at AVATAR_DOCKED_Z_CLASS. It was z-50 until 2026-08-21,
+// over the whole page at AVATAR_DOCKED_Z_CLASS, or higher on a landscape phone
+// (AVATAR_DOCKED_OVER_NAV_Z_CLASS). It was z-50 until 2026-08-21,
 // which is site-chrome territory: the section is `relative` with no z-index of
 // its own, so it opens no stacking context and these labels were competing
 // with the nav and the docked avatar in the root one. Nothing here needs to

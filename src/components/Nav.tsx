@@ -12,13 +12,28 @@ import {
 } from '../i18n'
 
 // The nav is site chrome and sits above the page at this layer. It is exported
-// because the docked avatar has to stay BELOW it: her canvas grew past the top
-// of the screen on 2026-08-21 so that her figure could match the chat panel's
-// height, and `stretch` puts a hand 43px below the canvas top — inside this bar
-// on any window under ~800px tall. Equal z-indexes are decided by DOM order and
-// the widget mounts after the nav, so without the two being held apart a raised
-// hand is painted over the nav links. See AVATAR_DOCKED_Z_CLASS.
+// because the docked avatar has to stay BELOW it on a desktop window: her canvas
+// grew past the top of the screen on 2026-08-21 so that her figure could match
+// the chat panel's height, and `stretch` puts a hand 43px below the canvas top,
+// inside this bar on any window under ~800px tall. Equal z-indexes are decided
+// by DOM order and the widget mounts after the nav, so without the two being
+// held apart a raised hand is painted over the nav links. See
+// AVATAR_DOCKED_Z_CLASS.
+//
+// The exception is a window so short that her HEAD lands inside the bar, which
+// 80vh makes of every landscape phone. There she steps above it instead: a bar
+// that hides a raised hand is chrome doing its job, a bar that takes the top
+// off her face is a defect. That call is made from her hair top against
+// NAV_HEIGHT_PX, in avatarMode's dockedAvatarZClass.
 export const NAV_Z_CLASS = 'z-50'
+
+// The bar's rendered height from md up: py-4 (2 × 16px) around a 44px control,
+// plus the 1px border-b. Below md the header is py-3 and the bar is 69px; the
+// taller number is the one the docked avatar compares her hair top against, so
+// on a narrow window she steps above the bar up to 8px before she has to, and
+// never after. jsdom has no layout, so no test can measure this; like
+// CHAT_PANEL_HEADER_H it is read off the shipped design.
+export const NAV_HEIGHT_PX = 77
 
 const RAPID_CLICK_COUNT = 5
 const RAPID_CLICK_WINDOW_MS = 2000
