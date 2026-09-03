@@ -23,10 +23,79 @@ import warnings
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 import glb
+import skin as skin_mod
 
 REFERENCED_BY_VIEW = ('images',)
+
+
+def skin_pixels(rgb):
+    """Which texels of an RGB array are skin, by the pipeline's one definition.
+
+    Delegates to skin.is_skin rather than restating the predicate: that module
+    already had to separate skin from painted clothing to strip the body's
+    printed bodice, and a second copy here would be a rule that can drift while
+    every test stays green.
+    """
+    return skin_mod.is_skin(rgb)
+
+
+def _hue_deg(rgb):
+    """Hue in degrees for an (h, w, 3) uint8-valued float array."""
+    h, _, _ = np.vectorize(colorsys.rgb_to_hls)(
+        rgb[..., 0] / 255.0, rgb[..., 1] / 255.0, rgb[..., 2] / 255.0)
+    return h * 360.0
+
+
+def scalp_pixels(rgb, alpha, hue_centre, window=45.0, min_sat=0.18):
+    """The hair-coloured cap VRoid paints into the FACE texture.
+
+    VRoid bakes a scalp in the hair's colour under the hairline so a parting
+    shows hair rather than skin. It lives in the face atlas, which means every
+    step that treats that atlas as skin also treats the scalp as skin: the
+    2026-09-03 build rotated it by the SKIN solve and left a bright violet cap
+    under blonde hair, showing through every parting as purple streaks.
+
+    It is separated by hue because that is what actually distinguishes it here:
+    the cap sits at the base model's original hair hue (~260 on both the
+    untouched export and the pink repaint, neither of which recoloured it),
+    while the skin around it is at ~9 and the lips at ~0. A window is used
+    rather than a painted region so the mask follows the texture instead of
+    being a set of coordinates that expires the next time the atlas changes.
+    """
+    hue = _hue_deg(rgb)
+    _, _, sat = np.vectorize(colorsys.rgb_to_hls)(
+        rgb[..., 0] / 255.0, rgb[..., 1] / 255.0, rgb[..., 2] / 255.0)
+    off = np.abs(((hue - hue_centre + 180.0) % 360.0) - 180.0)
+    return (alpha > 200) & (off <= window) & (sat >= min_sat)
+
+
+def image_rgba(doc, views, image_name):
+    """The named texture as a float RGBA array, 0-255."""
+    for image in doc.get('images', ()):
+        if image.get('name') != image_name:
+            continue
+        im = Image.open(io.BytesIO(bytes(views[image['bufferView']]))).convert('RGBA')
+        return np.asarray(im, dtype=np.float64)
+    raise SystemExit(f'找不到貼圖 {image_name}')
+
+
+def median_hue(doc, views, image_names):
+    """Median RGB over the opaque pixels of several textures, as one population.
+
+    Used to derive what the scalp cap has to become: whatever the hair textures
+    actually ended up as, read back after they were transformed, rather than a
+    colour written down beside the transform that would go stale the first time
+    the transform moved.
+    """
+    pool = []
+    for name in image_names:
+        a = image_rgba(doc, views, name)
+        pool.append(a[..., :3][a[..., 3] > 200])
+    stacked = np.concatenate(pool, axis=0)
+    return np.median(stacked, axis=0)
 
 
 def drop_parts(doc, views, manifest, names):
@@ -465,8 +534,14 @@ def _flatten_v(channel, opaque, blocks):
 
 
 def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
-        unify=None, flatten=0, offset=0.0):
+        unify=None, flatten=0, offset=0.0, where=None):
     """Rotate a texture's hue, keeping its shading and its alpha.
+
+    `where` is a boolean mask limiting which texels are written; the rest keep
+    what they had. It exists because the face atlas holds two different
+    materials' worth of colour -- skin, and the hair-coloured scalp cap -- and
+    one transform cannot serve both. Without it the only way to move one was to
+    move the whole image, which is the shape of the 2026-09-03 purple scalp.
 
     `lift` pulls lightness toward white by a fraction rather than scaling
     it. Scaling is what a first pass reaches for and it is wrong here: the
@@ -517,11 +592,16 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
                 mid = float(np.median(h[solid]))
                 off = np.abs(((h - mid + 0.5) % 1.0) - 0.5) * 360.0
                 h = np.where(solid & (off > unify), mid, h)
+        h0, l0, s0 = h, l, s
         h = (h + degrees / 360.0) % 1.0
         s = np.clip(s * saturate, 0, 1)
         l = np.clip(l * lighten, 0, 1)
         l = np.clip(l + (1.0 - l) * lift, 0, 1)
         l = np.clip(l + offset, 0, 1)
+        if where is not None:
+            h = np.where(where, h, h0)
+            s = np.where(where, s, s0)
+            l = np.where(where, l, l0)
         if flatten:
             opaque = a > 0.8
             if not opaque.any():
@@ -549,6 +629,9 @@ def hue(doc, views, image_name, degrees, saturate=1.0, lighten=1.0, lift=0.0,
 # 0.410 掉到 0.151，唇就不見了。1% 的預算比實測值寬三倍（換一張貼圖不至於翻
 # 盤），又遠低於「整片都在燒」的量級。
 CLIP_BUDGET = 0.01
+# How many times retone re-measures and corrects, and how close (in 0-255) the
+# masked median has to land before it stops.
+#
 ALREADY_WHITE = 0.98
 
 
@@ -570,14 +653,23 @@ def _burn(doc, views, image_name, offset):
     raise SystemExit(f'找不到貼圖 {image_name}')
 
 
-def retone(doc, views, image_name, target, mid=None):
+def retone(doc, views, image_name, target, mid=None, stat=None, where=None):
     """Move a texture's overall skin tone onto `target`, and report what it did.
 
-    The parameters are solved from the texture rather than written down, because
-    the face and the body are two images with two different medians (hue 358 and
-    hue 9 here) and the one thing that must not happen is for them to land on
-    different tones: the seam runs across the neck, in plain view. Solving both
-    against the same target makes a mismatch impossible by construction.
+    `stat` is a boolean mask of the texels that DEFINE the tone, and `where` of
+    the texels the solve is applied to. Both default to every opaque texel.
+    They exist because the face atlas holds two materials' worth of colour: the
+    skin, and the hair-coloured scalp cap VRoid paints into it, which until
+    2026-09-03 was rotated along with the skin and came out purple. The cap is
+    now solved onto the hair colour through these two masks, and kept out of
+    the skin's sample and the skin's transform.
+
+    This is for ONE texture. The two skin atlases go through `retone_together`,
+    which solves them as a single population; solving each against the target on
+    its own is what put the face and the neck on different tones (see there).
+
+    The parameters are solved from the texture rather than written down, so a
+    change of source texture moves the solve with it.
 
     Only the median is moved. Everything the texture says relative to that -- the
     blush, the lips, the shading under the chin -- keeps its ordering. A darker
@@ -598,21 +690,56 @@ def retone(doc, views, image_name, target, mid=None):
     white catchlight, and a median taken over all of it describes neither the
     colour a person sees nor anything else.
     """
-    med = None
-    for image in doc.get('images', ()):
-        if image.get('name') != image_name:
-            continue
-        im = Image.open(io.BytesIO(bytes(views[image['bufferView']]))).convert('RGBA')
-        a = np.asarray(im, dtype=np.float64)
-        px = a[..., :3][a[..., 3] > 200]
+    return _solve_and_apply(doc, views, [image_name], target, mid=mid,
+                           stats={image_name: stat}, wheres={image_name: where})
+
+
+def retone_together(doc, views, image_names, target, stats=None, wheres=None):
+    """Solve ONE tone transform across several textures and apply it to all of them.
+
+    Solving each atlas separately is what put a visible line across Mika's neck.
+    The face atlas and the body atlas hold two halves of one skin, but their
+    medians are not the same colour -- the face's carries the lips, the brows and
+    the blush -- so aiming each median at a single target hands the two halves two
+    different transforms, and the difference lands exactly on the seam.
+
+    It is worse than a seam, because an additive lightness offset does not move
+    chroma, it SHRINKS it: in HLS a colour at lightness l can hold at most
+    2(1-l) of chroma, so an offset that takes the face's brightest, most visible
+    skin to l = 0.99 leaves it room for 5 values of red over blue no matter what
+    saturation asks for. On 2026-09-03 that is what shipped -- the visible face
+    measured (232, 231, 229) against a neck at (231, 209, 202), a flat grey face
+    on a warm body, and the source it was built from had (231, 210, 204) there.
+
+    One transform for both halves cannot do that. Whatever agreement VRoid
+    painted between the two atlases survives, because the same rotation, the same
+    saturation and the same offset land on both.
+    """
+    return _solve_and_apply(doc, views, list(image_names), target,
+                            stats=stats, wheres=wheres)
+
+
+def _solve_and_apply(doc, views, image_names, target, mid=None, stats=None,
+                     wheres=None):
+    """Shared body of `retone` and `retone_together`."""
+    stats = stats or {}
+    wheres = wheres or {}
+    px = []
+    for name in image_names:
+        a = image_rgba(doc, views, name)
+        keep = a[..., 3] > 200
+        stat = stats.get(name)
+        if stat is not None:
+            keep = keep & stat
+        if not keep.any():
+            raise SystemExit(f'{name} 的取樣遮罩是空的')
+        sample = a[..., :3][keep]
         if mid is not None:
-            keep = (px.mean(axis=1) > mid[0]) & (px.mean(axis=1) < mid[1])
-            if keep.sum() > 100:
-                px = px[keep]
-        med = np.median(px, axis=0) / 255.0
-        break
-    if med is None:
-        raise SystemExit(f'找不到貼圖 {image_name}')
+            window = (sample.mean(axis=1) > mid[0]) & (sample.mean(axis=1) < mid[1])
+            if window.sum() > 100:
+                sample = sample[window]
+        px.append(sample)
+    med = np.median(np.concatenate(px), axis=0) / 255.0
 
     h0, l0, s0 = colorsys.rgb_to_hls(*med)
     h1, l1, s1 = colorsys.rgb_to_hls(*(np.asarray(target, dtype=np.float64) / 255.0))
@@ -620,13 +747,14 @@ def retone(doc, views, image_name, target, mid=None):
     saturate = 0.0 if s0 <= 0 else s1 / s0
     lighten = 1.0 if l0 <= l1 else l1 / max(l0, 1e-9)
     lift = (0.0 if l0 >= l1 or l0 >= 1
-            else np.clip((l1 - l0) / (1.0 - l0), 0.0, 1.0))
+            else float(np.clip((l1 - l0) / (1.0 - l0), 0.0, 1.0)))
     offset = 0.0
-    if lift and _burn(doc, views, image_name, l1 - l0) <= CLIP_BUDGET:
+    if lift and max(_burn(doc, views, n, l1 - l0) for n in image_names) <= CLIP_BUDGET:
         offset, lift = float(l1 - l0), 0.0
-    hue(doc, views, image_name, degrees, saturate,
-        lighten=float(lighten), lift=float(lift), offset=offset)
-    return degrees, saturate, float(lighten), float(lift), offset
+    for name in image_names:
+        hue(doc, views, name, degrees, saturate, lighten=float(lighten),
+            lift=lift, offset=offset, where=wheres.get(name))
+    return degrees, saturate, float(lighten), lift, offset
 
 
 def remap(doc, manifest, dropped=()):
@@ -723,3 +851,131 @@ if __name__ == '__main__':
     src, dst, mani = sys.argv[1], sys.argv[2], sys.argv[3]
     names = sys.argv[4].split(',') if len(sys.argv) > 4 and sys.argv[4] else []
     print(apply(src, dst, mani, drop=names))
+
+
+def uv_mask(shape, uv, triangles, feather=0.0117):
+    """A texel mask covering the UV triangles listed, with a feathered edge.
+
+    The mask is rasterised from the model rather than picked out by colour,
+    because the thing it has to select -- the band of neck that VRoid paints as
+    permanent shadow -- is defined by where it sits on the body, not by what
+    colour it happens to be. A colour rule would also catch the shading under
+    the nose and inside the ears.
+
+    `feather` is a radius as a FRACTION OF THE ATLAS WIDTH. A hard edge in UV
+    space is a hard edge on the model, and a tone correction that stops dead in
+    the middle of a shoulder draws a line there; the returned weight ramps from 1
+    inside to 0 that far out, so the correction fades instead. It is a fraction
+    rather than a texel count so that two atlases at two resolutions fade over
+    the same piece of model.
+    """
+    height, width = shape
+    hit = np.zeros((height, width), dtype=bool)
+    px = np.stack([uv[:, 0] * width, uv[:, 1] * height], axis=-1)
+    for tri in triangles:
+        p = px[tri]
+        x0 = max(int(np.floor(p[:, 0].min())), 0)
+        x1 = min(int(np.ceil(p[:, 0].max())) + 1, width)
+        y0 = max(int(np.floor(p[:, 1].min())), 0)
+        y1 = min(int(np.ceil(p[:, 1].max())) + 1, height)
+        if x1 <= x0 or y1 <= y0:
+            continue
+        ys, xs = np.mgrid[y0:y1, x0:x1]
+        ax, ay = p[0]
+        bx, by = p[1]
+        cx, cy = p[2]
+        det = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+        if abs(det) < 1e-12:
+            # A triangle with no area in UV covers no texels. Filling its
+            # bounding box instead is what the first version did, and a single
+            # degenerate triangle whose three vertices sit at opposite corners
+            # of the atlas then paints most of the atlas: the seam ring came out
+            # at 248,963 texels, 152,969 of them the scalp cap, which it repainted
+            # in skin and quietly undid the fix for the purple hair.
+            continue
+        u = ((by - cy) * (xs - cx) + (cx - bx) * (ys - cy)) / det
+        w = ((cy - ay) * (xs - cx) + (ax - cx) * (ys - cy)) / det
+        inside = (u >= -0.001) & (w >= -0.001) & (u + w <= 1.001)
+        hit[ys[inside], xs[inside]] = True
+    if not feather:
+        return hit.astype(np.float64)
+    # `feather` is a fraction of the atlas width for the same reason the blur is:
+    # two atlases at two resolutions have to fade over the same piece of model.
+    radius = max(int(round(feather * width)), 1)
+    grown = ndimage.binary_dilation(hit, iterations=radius)
+    near = ndimage.distance_transform_edt(~hit)
+    weight = np.clip(1.0 - near / float(radius), 0.0, 1.0)
+    return np.where(hit, 1.0, np.where(grown, weight, 0.0))
+
+
+# Both are FRACTIONS OF THE ATLAS WIDTH, not texel counts. The face atlas is
+# 1024 wide and the body's is 2048, so a radius written in texels covers twice
+# as much of the model on one as on the other -- and this correction has to land
+# on the same physical band of neck in both, or the seam between them opens
+# exactly where the two radii disagree. That is what left the seam at delta-E
+# 4.7 when these were 96 and 24 texels flat.
+NECK_BLUR = 96.0 / 2048.0
+NECK_FEATHER = 24.0 / 2048.0
+
+
+def lift_region(doc, views, image_name, weight, target, blur=NECK_BLUR):
+    """Flatten the painted shading out of one weighted region, onto `target`.
+
+    Three attempts stand behind this one, and each failed for a reason worth
+    keeping. Matching the region's MEDIAN moved nothing (-0.004 of lightness on
+    the face atlas): the band is mostly ordinary skin with a narrow ring of
+    painted shadow inside it, so the median describes the skin. A FLOOR on
+    lightness left the seam at delta-E 4.9, because raising a dark texel's
+    lightness caps its chroma at 2(1-l) without saying what that chroma is. A
+    PROPORTIONAL pull toward the target left it at 5.2, because the two atlases
+    paint the same ring at different saturations and a proportional move takes
+    each of them the same fraction of a different distance.
+
+    What actually has to go is a low-frequency field: VRoid paints the throat
+    dark, broadly, because the base model's collar hides it, and MToon draws no
+    shading of its own on that surface. So subtract the region's own local
+    average and put `target` back in its place. Detail finer than `blur` texels
+    survives untouched, the broad shadow does not, and both atlases end with the
+    same low-frequency tone -- which is what closes the seam across the throat,
+    since the seam's two sides are then two halves of one flat field.
+
+    The average is a normalised convolution over `weight`, so texels outside the
+    region never leak into it, and the correction is scaled by `weight` so it
+    fades out at the edge instead of drawing a line there.
+
+    Returns (how far the darkest decile moved, texels at full weight).
+    """
+    a = image_rgba(doc, views, image_name)
+    solid = (a[..., 3] > 200) & (weight > 0.5)
+    if solid.sum() < 100:
+        raise SystemExit(f'{image_name} 的區域遮罩只剩 {int(solid.sum())} 個像素')
+    goal = np.asarray(target, dtype=np.float64) / 255.0
+
+    for image in doc.get('images', ()):
+        if image.get('name') != image_name:
+            continue
+        bv = image['bufferView']
+        arr = np.asarray(
+            Image.open(io.BytesIO(bytes(views[bv]))).convert('RGBA'),
+            dtype=np.float64) / 255.0
+        rgb, alpha = arr[..., :3], alpha_of(arr)
+        _, l0, _ = np.vectorize(colorsys.rgb_to_hls)(rgb[..., 0], rgb[..., 1], rgb[..., 2])
+        before = float(np.percentile(l0[solid], 10))
+        m = (weight > 0.0) & (arr[..., 3] > 0.8)
+        sigma = blur * rgb.shape[1]
+        norm = ndimage.gaussian_filter(m.astype(np.float64), sigma)
+        low = np.stack([ndimage.gaussian_filter(rgb[..., c] * m, sigma) /
+                        np.maximum(norm, 1e-6) for c in range(3)], axis=-1)
+        out = np.clip(rgb + weight[..., None] * (goal - low), 0.0, 1.0)
+        _, l1, _ = np.vectorize(colorsys.rgb_to_hls)(out[..., 0], out[..., 1], out[..., 2])
+        buf = io.BytesIO()
+        Image.fromarray((np.concatenate([out, alpha[..., None]], axis=-1) * 255
+                         ).astype(np.uint8)).save(buf, format='WEBP', lossless=True)
+        views[bv] = bytearray(buf.getvalue())
+        image['mimeType'] = 'image/webp'
+        return float(np.percentile(l1[solid], 10)) - before, int(solid.sum())
+    raise SystemExit(f'找不到貼圖 {image_name}')
+
+
+def alpha_of(arr):
+    return arr[..., 3]

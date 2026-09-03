@@ -167,10 +167,14 @@ def main():
         if not ok:
             raise SystemExit('健檢未過')
 
-    dest = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy.vrm')
+    # /avatar/* is served cache-immutable for a year, so a model whose bytes
+    # changed has to arrive under a new name; the registry in
+    # src/components/chat/avatarVariants.ts points at this one. -2: 2026-09-03,
+    # the scalp, the shared skin solve and the neck band.
+    dest = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.vrm')
     shutil.copy(p('mika-milfy.vrm'), dest)
     shutil.copy(p('mika-milfy.parts.json'),
-                os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy.parts.json'))
+                os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.parts.json'))
     print(f'\nshipped {os.path.normpath(dest)}')
 
     subprocess.run([sys.executable, 'render.py', p('mika-milfy.vrm'), p('final')],

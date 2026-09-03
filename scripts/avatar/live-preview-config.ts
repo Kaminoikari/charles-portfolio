@@ -6,7 +6,7 @@ export interface PreviewControl<Name extends string> {
   label: string
 }
 
-export const MIKA_MILFY_MODEL_URL = '/avatar/mika-milfy.vrm'
+export const MIKA_MILFY_MODEL_URL = '/avatar/mika-milfy-2.vrm'
 
 export const PREVIEW_MOTIONS: readonly PreviewControl<AvatarMotionName>[] = [
   { name: 'dance', label: '跳舞' },

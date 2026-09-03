@@ -11,7 +11,7 @@ import {
 
 describe('Mika Milfy live preview config', () => {
   it('loads the local-only Mika Milfy model', () => {
-    expect(MIKA_MILFY_MODEL_URL).toBe('/avatar/mika-milfy.vrm')
+    expect(MIKA_MILFY_MODEL_URL).toBe('/avatar/mika-milfy-2.vrm')
   })
 
   it('offers every motion supported by the avatar engine', () => {

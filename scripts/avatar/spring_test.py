@@ -10,7 +10,7 @@ import twintail  # noqa: E402
 
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy.vrm')
+MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.vrm')
 class SpringTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

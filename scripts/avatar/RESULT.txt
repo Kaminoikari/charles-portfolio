@@ -1862,3 +1862,33 @@ customise 1、spring 7、appearance 14 全綠：appearance 新增四條——髮
 的 M1–M11，加上兩個穩定性檢查 S8／S32 與兩份重現舊配色的建置 B0／B1。同一天早
 先那份 evidence/mutations-0903b.md 是「整張往中位數收 85%」那個被換掉的機制的
 收據，數字全部失效，留著只為對照。
+
+======================================================================
+第七版　2026-09-03　頭皮紫線與脖子膚色（同日第二版，出貨檔改名 -2）
+======================================================================
+
+出貨 public/avatar/mika-milfy-2.vrm，sha256 dae1df5918f28d46…，11,932,536 bytes。
+上一版 66871116b6263fb9… 已從版控移除；/avatar/* 快取一年不可變，換內容必須換名。
+
+使用者在造型切換上線後回報：頭髮上有紫色線條、脖子與臉的膚色不一致。兩者都在
+貼圖層，根因與量測全在 evidence/neck-scalp-0903.md，這裡只留結論與改了哪裡。
+
+改了什麼（scripts/avatar）
+  customise.py  scalp_pixels／median_hue／image_rgba；hue() 與 retone() 多了
+                stat／where 遮罩；retone_together() 一組解套兩張皮膚貼圖；
+                uv_mask()（從模型光柵化 UV 三角形，羽化以貼圖寬度比例計）；
+                lift_region()（帶內低頻攤平到目標，normalised convolution）
+  build.py      頭皮先解到髮色再排除；膚色改共用解；頸部帶由頸骨到頭骨界定，
+                兩張貼圖同時攤平；NECK_MARGIN 0.03
+  skin.py       未變（試過「只從受光皮膚取樣補值」，接縫會開，已還原）
+  appearance_test.py
+                新增 test_scalp_cap_wears_the_hair_colour（門檻 5.0）、
+                test_neck_and_face_are_one_skin（門檻 4.0，骨架界定取樣）；
+                接縫測試加 SEAM_BAND 高度限制（它原本量的不是喉嚨）；對比測試
+                排除頭皮、門檻 0.30→0.075（由 mutation 重推）
+  colourprobe.html
+                ?albedo=1／?white=1／?dims=／?off=／?mag=green，見 evidence
+
+畫面（頭部機位）臉對脖子 ΔE：14.39 → 2.03。頭皮對髮色 ΔE 1.23。
+Python 32 條全綠；mutation MA／MC／MD 各自轉紅；MB／ME 綠，對應的測試與步驟已刪。
+vitest：src/components/chat 18 檔 335 條全綠；avatarVariants.test 8 條含 rig 比對。

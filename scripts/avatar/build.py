@@ -25,6 +25,7 @@ import envelope
 import garment
 import glb
 import outfit
+import render
 import twintail
 import weld
 
@@ -196,6 +197,20 @@ HAIR_MATERIAL_TONE = (0.92, 0.84, 0.80)
 # before the rotation; see customise.hue.
 HAIR_UNIFY = 60.0
 BROW_SHIFT, BROW_SAT = 140.0, 0.35
+
+# The hue the scalp cap sits at BEFORE anything here touches it. VRoid paints a
+# hair-coloured cap into the face atlas so a parting shows hair and not skin,
+# and neither the untouched export nor the pink repaint moved it: it is still
+# the original purple, 265 on the export and 257 on the repaint. A window either
+# side catches both without reaching the skin at 9 or the lips at 0.
+SCALP_HUE, SCALP_WINDOW = 261.0, 45.0
+
+# The neck band, in metres of overshoot past the neck and head bones. The
+# overshoot exists so the feather ramps down on skin that is still neck rather
+# than stopping dead on the collarbone. It is geometry, not colour, so it
+# survives a change of palette. The feather width itself lives in customise,
+# where it is a fraction of each atlas's own width.
+NECK_MARGIN = 0.03
 
 # Both skin textures are solved onto one warm base so the neck seam stays
 # closed. 臉和身體共用這一個目標，頸縫才不會開。
@@ -1215,11 +1230,111 @@ def build(src, dst, manifest_path, out_manifest):
     #     this is one rotation and not a repaint. ---
     customise.hue(doc, views, 'F00_000_00_FaceBrow_00', BROW_SHIFT, BROW_SAT)
 
-    # --- skin. Same story as the hair, in two textures that must agree. ---
-    for name in ('F00_000_00_Face_00', 'F00_000_00_Body_00'):
-        deg, sat, light, lift, shift = customise.retone(doc, views, name, SKIN_TARGET)
-        print(f'   {name} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
-              f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
+    # --- the scalp cap. It is HAIR, and it lives in the face's skin texture.
+    #     VRoid paints it there so a parting shows hair rather than scalp, which
+    #     means every step that treats that atlas as skin also drags the cap
+    #     along: the first Milfy build rotated it by the SKIN solve and shipped a
+    #     violet cap under blonde hair, visible through every parting. It is
+    #     recoloured here, onto the hair's OWN post-transform median rather than
+    #     onto a colour written down beside it, and the mask is taken now so the
+    #     skin solve below can exclude the same pixels. ---
+    face_rgba = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
+    scalp = customise.scalp_pixels(face_rgba[..., :3], face_rgba[..., 3],
+                                   SCALP_HUE, SCALP_WINDOW)
+    hair_med = customise.median_hue(
+        doc, views, [f'F00_000_Hair_00_0{i}' for i in range(1, 7)])
+    deg, sat, light, lift, shift = customise.retone(
+        doc, views, 'F00_000_00_Face_00', tuple(hair_med),
+        stat=scalp, where=scalp)
+    print(f'   頭皮色塊 {int(scalp.sum())} px → 髮色 '
+          f'{tuple(int(v) for v in hair_med)} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
+          f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
+
+    # --- skin. Two textures, one skin, so ONE solve across both. Solving each
+    #     atlas against the target separately is what desaturated the face: the
+    #     face atlas's median carries the lips, the brows and the blush and sits
+    #     well below its own visible cheek, so its offset came out larger, and an
+    #     offset that lands the visible face at lightness 0.99 leaves chroma a
+    #     ceiling of 2(1-l) whatever saturation asks for. Measured on the shipped
+    #     2026-09-03 build: visible face (232, 231, 229) against a neck at
+    #     (231, 209, 202), built from a source whose face reads (231, 210, 204).
+    #     The scalp cap is out of both the sample and the transform: it has just
+    #     been solved onto the hair and must not be moved again. ---
+    skin_names = ('F00_000_00_Face_00', 'F00_000_00_Body_00')
+    stats = {n: customise.image_rgba(doc, views, n)[..., 3] > 200 for n in skin_names}
+    stats['F00_000_00_Face_00'] &= ~scalp
+    deg, sat, light, lift, shift = customise.retone_together(
+        doc, views, skin_names, SKIN_TARGET, stats=stats,
+        wheres={'F00_000_00_Face_00': ~scalp})
+    print(f'   膚色 {sum(int(m.sum()) for m in stats.values())} px（臉與身共用一組解）'
+          f' 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
+          f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
+    # --- the neck. VRoid paints a band of permanent shadow round the throat,
+    #     from the collarbone up under the jaw, because the base model wears a
+    #     collar and it is never seen. This one wears a scoop neck, so it is on
+    #     screen from the first frame, and this renderer draws no shading of its
+    #     own there: a white-albedo render puts the face and the neck at the same
+    #     (226, 229, 229), so the painted band is the whole of what the eye gets.
+    #     Shipped 2026-09-03 it read (243, 187, 174) against a face at
+    #     (252, 232, 226), delta-E 20 in the texture and 14.4 on screen, which is
+    #     the "脖子的膚色跟臉的膚色不一致" this fixes.
+    #
+    #     The band crosses BOTH atlases -- the face mesh keeps a stub of neck
+    #     below the jaw -- so both are lifted by one solve against one target.
+    #     Lifting only the body's half moves the mismatch onto the seam instead
+    #     of removing it, which is what the first attempt did (seam delta-E 1.0
+    #     to 8.9, and a visible step 5 mm under the jaw).
+    #
+    #     Rig landmarks, not written-down heights: the band runs from the neck
+    #     bone to the head bone, with NECK_MARGIN of overshoot at each end so the
+    #     feather has somewhere to land. ---
+    world = render.world_matrices(doc)
+    bones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    neck_y = float(world[bones['neck']][1, 3])
+    head_y = float(world[bones['head']][1, 3])
+    lo, hi = neck_y - NECK_MARGIN, head_y + NECK_MARGIN
+    weights, band_px = {}, {}
+    for mesh_name, mat_name, image in (
+            ('Face.baked', 'F00_000_00_Face_00_SKIN', 'F00_000_00_Face_00'),
+            ('Body.baked', 'F00_000_00_Body_00_SKIN', 'F00_000_00_Body_00')):
+        mesh = next(m for m in doc['meshes'] if m.get('name') == mesh_name)
+        shape = customise.image_rgba(doc, views, image).shape[:2]
+        uvs, tris, base = [], [], 0
+        for p in mesh['primitives']:
+            if doc['materials'][p['material']].get('name') != mat_name:
+                continue
+            pos = glb.read_accessor(doc, views, p['attributes']['POSITION'])
+            uv = glb.read_accessor(doc, views, p['attributes']['TEXCOORD_0'])
+            idx = glb.read_accessor(doc, views, p['indices']).reshape(-1, 3).astype(int)
+            band = (pos[:, 1] >= lo) & (pos[:, 1] <= hi)
+            keep = band[idx].all(axis=1)
+            uvs.append(uv)
+            tris.extend(idx[keep] + base)
+            base += len(uv)
+        if not tris:
+            raise SystemExit(f'{mesh_name} 在頸部帶裡取不到三角形')
+        weights[image] = customise.uv_mask(shape, np.concatenate(uvs), tris)
+        band_px[image] = int((weights[image] > 0.5).sum())
+
+    # The target is the skin OUTSIDE the band, over both atlases together: the
+    # chest, the arms and the face, which is the tone the neck has to disappear
+    # into. Taking it from one atlas would put the other one's half of the band
+    # somewhere else.
+    outside = []
+    for image in weights:
+        a = customise.image_rgba(doc, views, image)
+        pick = (a[..., 3] > 200) & (weights[image] < 0.01)
+        if image == 'F00_000_00_Face_00':
+            pick &= ~scalp
+        outside.append(a[..., :3][pick])
+    neck_target = np.median(np.concatenate(outside), axis=0)
+    for image, weight in weights.items():
+        off, n = customise.lift_region(doc, views, image, weight, neck_target)
+        print(f'   頸部帶 {image} {band_px[image]} px 最暗十分位抬升 {off:+.3f}')
+
+    print(f'   頸部目標 ({neck_target[0]:.0f}, {neck_target[1]:.0f}, {neck_target[2]:.0f})'
+          f' 取自帶外的皮膚')
+
     deg, sat, light, lift, shift = customise.retone(
         doc, views, 'F00_000_00_EyeIris_00', EYE_TARGET, mid=(60, 215))
     print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '

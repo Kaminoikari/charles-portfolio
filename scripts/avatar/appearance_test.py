@@ -12,15 +12,20 @@ from scipy.spatial import cKDTree
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import build  # noqa: E402
+import customise  # noqa: E402
 import glb  # noqa: E402
 import measure  # noqa: E402
+import render  # noqa: E402
 
 # glTF 的 REPEAT；取樣要照每張貼圖自己宣告的 wrap 走。
 REPEAT = 10497
 
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy.vrm')
+MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.vrm')
+# 建置的輸入。baseline.vrm 與它位元組相同，但那份不進版控，所以測試讀這一份。
+SOURCE_MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 MANIFEST = MODEL.replace('.vrm', '.parts.json')
 # 2026-09-03 依參考圖重解：膚與髮的貼圖從單邊上限改成雙側帶，因為這一輪的缺陷
 # 是「太暖」，而只有下限的斷言對太暖完全沒有意見。帶子釘的是貼圖，實機色由
@@ -40,10 +45,15 @@ SKIN_MIN_CHANNEL = 245
 SKIN_WARMTH = (22, 48)      # 解出來 39（Body）／28（Face），舊值 72
 HAIR_MIN_CHANNEL = 215
 HAIR_WARMTH = (14, 30)      # 解出來 24（01）／23（02），舊值 45
-# 臉的貼圖亮度 p10 到 p90 的距離。唇、腮紅、下巴陰影全靠這段距離存在。位移版
-# 0.410、位移之前 0.322，把同一步改成 retone 的 lift（0.63）之後只剩 0.151。
-# 0.30 夾在中間，離兩個好值有 0.02 以上、離壞值有 0.15。
-FACE_CONTRAST_MIN = 0.30
+# 臉部皮膚（排除頭皮色塊）的亮度 p10–p90 下限。之前這個數是 0.30，量的是整張臉
+# 部貼圖，而它的 p10 一直是那塊深紫頭皮 (78, 46, 161)，所以 0.408 這個「對比」講
+# 的是頭皮有多暗，不是嘴唇有多清楚。頭皮解到髮色之後同一個量法掉到 0.122，這條就
+# 在一個與五官無關的理由下轉紅。
+#
+# 現在的量法排除頭皮。出貨是 0.102；把 customise.CLIP_BUDGET 改成 0（停用加法位
+# 移、強制走 lift 0.58）重建是 0.0431，唇就不見了。0.075 夾在中間，離出貨 1.36
+# 倍、離退化 1.74 倍。
+FACE_CONTRAST_MIN = 0.075
 # 髮的同一件事。壓平色帶的手法決定要付多少：逐欄去趨勢（現行）留下 01 = 0.037、
 # 02 = 0.102；換成「整張往中位數收 85%」是 0.014／0.022，收 100% 是 0.000——一張
 # 純色髮圖，而它的中位數、暖度、色帶差全部更漂亮，所有以中位數為指標的斷言都會
@@ -72,6 +82,21 @@ HAIR_LIGHTNESS_GAP_MAX = 0.02
 # 言評估的是同一個量；把中位數截斷成整數再算會得到 0.97 與 15.93，那是另一種
 # 量。失敗訊息也印到小數一位，讀者拿訊息重算得到的就是斷言用的那個數。
 SEAM_DELTA_E_MAX = 3.0
+# 頭皮色塊：VRoid 把一塊髮色頭皮畫進臉的貼圖，讓髮片分岔時露出的是頭髮不是皮
+# 膚。它住在膚色貼圖裡，所以每一個「把這張當皮膚處理」的步驟都會順手帶走它：
+# 2026-09-03 的建置用膚色解去轉它，金髮底下留下一塊亮紫，從每一道髮縫透出來。
+# 量的是這塊色塊的中位數對髮色中位數的 ΔE。壞掉那版是 66.11（頭皮
+# (143,51,230) 對髮 (231,214,196)），修好是解到髮色上。上限 12 給算圖與壓縮留
+# 餘裕，離壞值有五倍。
+NECK_TO_FACE_DELTA_E_MAX = 4.0
+# 「在縫上」除了要離另一個網格近，還要離縫的高度近，單位公尺。縫是喉嚨上的一圈，
+# 而這兩張皮膚在頭部另有一段互相貼著的幾何，只問距離會把那一段一起算進來。
+SEAM_BAND = 0.02
+# 頭皮色塊對髮色的 ΔE 上限。出貨 1.23。兩種退化各在帶外：沒解到髮色時它留在原
+# 髮色的紫上（ΔE 66），而被別的步驟塗成膚色時是 ΔE 8.85——後者正是 2026-09-03 發
+# 生過的事（接縫環的遮罩選錯，把頭皮一起攤平成膚色），而當時門檻 12.0 讓它靜靜地
+# 過了。5.0 離出貨 4 倍、離「塗成膚色」1.8 倍。
+SCALP_TO_HAIR_DELTA_E_MAX = 5.0
 THIGH_BAND_DIAMETER_RATIO_MIN = 1.0
 THIGH_BAND_DIAMETER_RATIO_MAX = 1.15
 
@@ -91,6 +116,13 @@ class AppearanceTest(unittest.TestCase):
             dtype=np.float64,
         )
         return np.median(rgba[..., :3][rgba[..., 3] > 200], axis=0)
+
+    def texture_rgba(self, name):
+        image = next(image for image in self.doc['images'] if image.get('name') == name)
+        return np.asarray(
+            Image.open(io.BytesIO(bytes(self.views[image['bufferView']]))).convert('RGBA'),
+            dtype=np.float64,
+        )
 
     def part_points(self, name, material_name=None):
         part = self.manifest['parts'][name]
@@ -157,6 +189,42 @@ class AppearanceTest(unittest.TestCase):
     def test_skin_texture_keeps_visible_tone_under_mtoon_lighting(self):
         self.assert_texture_band('F00_000_00_Body_00', SKIN_MIN_CHANNEL, SKIN_WARMTH)
         self.assert_texture_band('F00_000_00_Face_00', SKIN_MIN_CHANNEL, SKIN_WARMTH)
+
+    def test_scalp_cap_wears_the_hair_colour(self):
+        """臉的貼圖裡那塊頭皮要是髮色，不是上一任髮色。
+
+        它從髮縫透出來，所以差多少就有多明顯。壞掉那版是紫的，因為 retone 用膚
+        色解轉了整張臉的貼圖，連這塊一起。
+
+        遮罩取自**輸入模型**（public/avatar/mika-pink.vrm，與 baseline.vrm 位元
+        組相同），不是出貨檔：修好之後那塊色塊不再落在原髮色的色相窗裡，拿出貨
+        檔自己找就找不到它，而「找不到」與「已經修好」在斷言裡不能是同一件事。
+        """
+        source_doc, source_binary = glb.load(SOURCE_MODEL)
+        source_views = glb.views_of(source_doc, source_binary)
+        source_face = customise.image_rgba(source_doc, source_views,
+                                           'F00_000_00_Face_00')
+        scalp = customise.scalp_pixels(source_face[..., :3], source_face[..., 3],
+                                       build.SCALP_HUE, build.SCALP_WINDOW)
+        self.assertGreater(int(scalp.sum()), 10000, '輸入模型裡找不到頭皮色塊')
+        shipped = self.texture_rgba('F00_000_00_Face_00')
+        self.assertEqual(shipped.shape[:2], source_face.shape[:2],
+                         '兩張貼圖尺寸不同，遮罩對不上')
+        cap = np.median(shipped[..., :3][scalp], axis=0)
+        hair = self.hair_median()
+        gap, _ = measure.delta_e(cap, hair)
+        self.assertLessEqual(
+            gap, SCALP_TO_HAIR_DELTA_E_MAX,
+            f'頭皮 {tuple(round(float(v), 1) for v in cap)}、'
+            f'髮色 {tuple(round(float(v), 1) for v in hair)}，ΔE {gap:.2f}')
+
+    def hair_median(self):
+        """六張髮圖不透明像素合起來的中位數。"""
+        pool = []
+        for i in range(1, 7):
+            rgba = self.texture_rgba(f'F00_000_Hair_00_0{i}')
+            pool.append(rgba[..., :3][rgba[..., 3] > 200])
+        return np.median(np.concatenate(pool, axis=0), axis=0)
 
     def test_back_skull_is_covered_by_hair(self):
         """後腦骨面凸出髮面就是「禿頭」，這裡釘機制不釘某一片髮的存在。
@@ -385,22 +453,73 @@ class AppearanceTest(unittest.TestCase):
             self.assertGreaterEqual(spread, 0.30, f'{material["name"]} 乘色為 {base}')
             self.assertLessEqual(spread, 0.45, f'{material["name"]} 乘色為 {base}')
 
+    def scalp_mask(self):
+        """輸入模型上那塊頭皮色塊，用來把它排除在臉的量測之外。"""
+        doc, binary = glb.load(SOURCE_MODEL)
+        views = glb.views_of(doc, binary)
+        face = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
+        return customise.scalp_pixels(face[..., :3], face[..., 3],
+                                      build.SCALP_HUE, build.SCALP_WINDOW)
+
     def test_face_texture_keeps_the_contrast_its_features_live_in(self):
         """臉不能被提亮壓平，否則嘴唇就不再是嘴唇。
 
         調色要把膚色往參考圖的淡拉，而 retone 的 lift 是「往白拉一個比例」：它
-        保順序，但把每一段亮度差都乘上 (1-lift)。解出來的 0.63 等於拿走唇與臉頰
-        之間 63% 的距離，實機上嘴只剩一條幾乎看不見的淡痕，而所有關於膚色的數字
+        保順序，但把每一段亮度差都乘上 (1-lift)。解出來的係數等於拿走唇與臉頰之
+        間同樣比例的距離，實機上嘴只剩一條幾乎看不見的淡痕，而所有關於膚色的數字
         都是對的——這條測的就是那些數字看不見的東西。retone 因此改成優先用加法位
         移，只有在 _burn 說會燒掉超過 CLIP_BUDGET 時才退回 lift。
 
-        把 customise.CLIP_BUDGET 改成 0（等於停用位移、一律走 lift）重建，這段距
-        離從 0.410 掉到 0.151，這條轉紅（收據 evidence/mutations-0903c.md 的 M5）。
+        頭皮色塊要排除，而且這一條之前就是栽在這裡：那塊在基底模型上是深紫
+        (78, 46, 161)，整張臉的 p10 一直是它，量到的 0.408 從頭到尾都是「這張貼
+        圖上有一塊很暗的頭皮」，與嘴唇無關。把頭皮解到髮色之後同一個量法掉到
+        0.122，而皮膚自己的 p10–p90 在修前修後都是 0.1235——沒有任何五官被壓平。
+        遮罩取自輸入模型，理由與頭皮那條相同。
         """
-        spread = self.texture_contrast('F00_000_00_Face_00')
+        spread = self.texture_contrast('F00_000_00_Face_00', ~self.scalp_mask())
         self.assertGreaterEqual(
             spread, FACE_CONTRAST_MIN,
             f'臉的貼圖亮度 p10-p90 只剩 {spread:.3f}，五官被壓平了')
+
+    def test_neck_and_face_are_one_skin(self):
+        """露出來的脖子和臉必須是同一個膚色。
+
+        這是使用者 2026-09-03 回報的那一條。VRoid 把整圈喉嚨畫成常駐陰影，因為基
+        底模型穿的是高領、那塊永遠看不到；這個角色穿的是圓領，開場第一幀就在畫面
+        上。而這台算圖對那塊表面不畫任何自己的陰影——白反照率算圖下臉與脖子都是
+        (226, 229, 229)——所以畫上去的那道陰影就是眼睛看到的全部。出貨那版脖子是
+        (243, 187, 174)、臉是 (252, 232, 226)，貼圖 ΔE 20.1、畫面 ΔE 14.4。
+
+        兩塊都用骨架界定，不用色彩分類：臉是頭骨以上的臉部皮膚，脖子是頸骨到頭骨
+        之間的身體皮膚。色彩分類會隨著調色本身改變它挑中的像素，等於讓受測的那一
+        步決定自己被怎麼量。
+
+        把 build.py 的頸部攤平與接縫環兩步拿掉重建，這條轉紅。
+        """
+        world = render.world_matrices(self.doc)
+        bones = {b['bone']: b['node']
+                 for b in self.doc['extensions']['VRM']['humanoid']['humanBones']}
+        neck_y = float(world[bones['neck']][1, 3])
+        head_y = float(world[bones['head']][1, 3])
+        face_pos, face_uv = self.skin_seam_side('Face.baked',
+                                                'F00_000_00_Face_00_SKIN')
+        body_pos, body_uv = self.skin_seam_side('Body.baked',
+                                                'F00_000_00_Body_00_SKIN')
+        on_face = face_pos[:, 1] > head_y
+        on_neck = (body_pos[:, 1] > neck_y) & (body_pos[:, 1] < head_y)
+        # 頸骨到頭骨之間只有 93 個身體皮膚頂點，這一段本來就短。50 是「選取塌
+        # 掉了」的界線，不是量出來的目標。
+        self.assertGreaterEqual(int(on_face.sum()), 50, '取不到臉的頂點')
+        self.assertGreaterEqual(int(on_neck.sum()), 50, '取不到脖子的頂點')
+        face = np.median(
+            self.sample_texture('F00_000_00_Face_00', face_uv[on_face]), axis=0)
+        neck = np.median(
+            self.sample_texture('F00_000_00_Body_00', body_uv[on_neck]), axis=0)
+        gap, _ = measure.delta_e(face, neck)
+        self.assertLessEqual(
+            gap, NECK_TO_FACE_DELTA_E_MAX,
+            f'臉 {tuple(round(float(v), 1) for v in face)}、'
+            f'脖子 {tuple(round(float(v), 1) for v in neck)}，ΔE {gap:.2f}')
 
     def test_neck_seam_keeps_one_skin_tone_across_two_textures(self):
         """臉與身體是兩張貼圖，接縫橫過脖子，兩側不能是兩個膚色。
@@ -424,9 +543,16 @@ class AppearanceTest(unittest.TestCase):
                                                 'F00_000_00_Body_00_SKIN')
         face_gap = cKDTree(body_pos).query(face_pos)[0]
         body_gap = cKDTree(face_pos).query(body_pos)[0]
-        face_on, body_on = face_gap < 0.002, body_gap < 0.002
-        self.assertGreaterEqual(int(face_on.sum()), 30, '臉側取不到縫上的頂點')
-        self.assertGreaterEqual(int(body_on.sum()), 30, '身側取不到縫上的頂點')
+        # 高度也要限制，不只是「兩個網格靠得近」。這一條原本只問距離，取到的 88
+        # 個臉側頂點橫跨 y 1.295 到 1.517——兩張皮膚在頭部另有一段互相貼著的幾何，
+        # 而它不是縫，多半也看不到。真正在喉嚨上的只有 6 個，而整條的數字被那 82
+        # 個非縫的點主導：2026-09-03 量到的 4.81 裡，喉嚨那 6 個是 ΔE 1。
+        seam_y = float(face_pos[:, 1].min())
+        near = lambda p: np.abs(p[:, 1] - seam_y) < SEAM_BAND
+        face_on = (face_gap < 0.002) & near(face_pos)
+        body_on = (body_gap < 0.002) & near(body_pos)
+        self.assertGreaterEqual(int(face_on.sum()), 5, '臉側取不到縫上的頂點')
+        self.assertGreaterEqual(int(body_on.sum()), 3, '身側取不到縫上的頂點')
         face_rgb = self.sample_texture('F00_000_00_Face_00', face_uv[face_on])
         body_rgb = self.sample_texture('F00_000_00_Body_00', body_uv[body_on])
         face_med = np.median(face_rgb, axis=0)
@@ -467,8 +593,8 @@ class AppearanceTest(unittest.TestCase):
         row = (uv[:, 1] * height).astype(int) % height
         return rgb[row, column]
 
-    def texture_contrast(self, name):
-        """一張貼圖不透明像素的亮度 p10–p90 距離。"""
+    def texture_contrast(self, name, mask=None):
+        """一張貼圖不透明像素的亮度 p10–p90 距離，可再加一層遮罩。"""
         image = next(image for image in self.doc['images']
                      if image.get('name') == name)
         rgba = np.asarray(
@@ -478,7 +604,10 @@ class AppearanceTest(unittest.TestCase):
         rgb, alpha = rgba[..., :3], rgba[..., 3]
         _, lightness, _ = np.vectorize(colorsys.rgb_to_hls)(
             rgb[..., 0], rgb[..., 1], rgb[..., 2])
-        opaque = lightness[alpha > 0.8]
+        keep = alpha > 0.8
+        if mask is not None:
+            keep = keep & mask
+        opaque = lightness[keep]
         self.assertGreater(opaque.size, 1000, f'{name} 幾乎沒有不透明像素')
         return float(np.percentile(opaque, 90) - np.percentile(opaque, 10))
 

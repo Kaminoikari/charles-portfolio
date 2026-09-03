@@ -48,12 +48,13 @@ scripts/avatar/out/*
 scripts/avatar/__pycache__/
 scripts/avatar/blender/__pycache__/
 scripts/avatar/baseline.vrm
-# public/avatar/mika-milfy.vrm 從 2026-09-03 起進版控並上線：它是網站的第三個
+# public/avatar/mika-milfy-2.vrm 從 2026-09-03 起進版控並上線：它是網站的第三個
 # 造型（avatarVariants.ts）。2026-08-31 曾決定只留本機，理由是「逆向復刻的模型
 # 不該被公開下載」；使用者在 2026-09-03 推翻該決定，依據是管線的輸入端只有
 # VRoid 官方範例模型與 18 張參考「圖片」，原作的模型檔從來不是輸入，所以檔案
-# 裡沒有任何可還原成原作資料的東西。
-public/avatar/mika-milfy.parts.json
+# 裡沒有任何可還原成原作資料的東西。檔名帶 -2 是因為 /avatar/* 快取一年不可變，
+# 位元組換了就得換名字（同日第二版：頭皮、共用膚色解、頸部帶）。
+public/avatar/mika-milfy-2.parts.json
 
 # delivery-record evidence for scripts/avatar (RESULT.txt cites these)
 !scripts/avatar/evidence/*.log

@@ -16,7 +16,7 @@ try {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, preserveDrawingBuffer:true, alpha:true });
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
-  const file = new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy.vrm';
+  const file = new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy-2.vrm';
   const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
   const hh = await crypto.subtle.digest('SHA-256', bytes);
   R.sha = [...new Uint8Array(hh)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -36,6 +36,33 @@ try {
     m.parametricRimFresnelPowerFactor = 6;
     m.parametricRimColorFactor.copy(base).multiplyScalar(0.22);
   }
+  // ?off=matcap|rim|shade：把膚色那組材質的某一項關掉再量。脖子與臉在畫面上
+  // 差多少是使用者回報的缺陷，而貼圖接縫是關著的（appearance_test 量到 ΔE
+  // 1.04），所以差異來自算圖端的某一項，這個開關就是拿來一項一項拆的。
+  const off = (new URLSearchParams(location.search).get('off') || '').split(',');
+  if (off[0]) {
+    const skin = /F00_000_00_(Face|Body)_00_SKIN/;
+    const seen = new Set();
+    vrm.scene.traverse(o => { if (!(o.isMesh||o.isSkinnedMesh)) return;
+      for (const m of (Array.isArray(o.material)?o.material:[o.material])) {
+        if (!(m && skin.test(m.name)) || seen.has(m)) continue;
+        seen.add(m);
+        if (off.includes('matcap')) { m.matcapTexture = null;
+          if (m.matcapFactor) m.matcapFactor.setRGB(0,0,0); }
+        if (off.includes('rim')) { m.rimMultiplyTexture = null;
+          if (m.parametricRimColorFactor) m.parametricRimColorFactor.setRGB(0,0,0);
+          if ('rimLightingMixFactor' in m) m.rimLightingMixFactor = 0; }
+        if (off.includes('shade')) { m.shadingToonyFactor = 0.9;
+          m.shadingShiftFactor = -0.95; }
+        const dim = parseFloat(new URLSearchParams(location.search).get('dim') || '0');
+        if (dim > 0) { m.color.multiplyScalar(dim);
+          if (m.shadeColorFactor) m.shadeColorFactor.multiplyScalar(dim); }
+        m.needsUpdate = true;
+      }
+    });
+    R.off = off.join('+');
+  }
+
   const box = new THREE.Box3().setFromObject(vrm.scene);
   const top = box.max.y, bottom = box.min.y, span = top - bottom;
   // ?head=1 換成頭部機位。全身圖上臉只有 60 px 高，嘴唇與腮紅在那個尺度下
@@ -62,7 +89,16 @@ try {
   // alphaMode MASK、_Cutoff 0.5，所以遮罩畫的是**幾何覆蓋**，不是 alpha 裁切
   // 之後的覆蓋。實務上沒有污染——若混進背景或膚色，百分位會立刻炸開，而髮那組
   // 的 p25–p75 只有三、四個單位寬。要收緊就得把裁切也複製一份到遮罩材質上。
-  const MAG = new THREE.MeshBasicMaterial({ color:0xff00ff, side:THREE.DoubleSide });
+  // ?mag=green：遮罩改用純綠。洋紅偵測（R+B−2G>90）在**粉膚**的模型上會把膚色
+  // 本身判成遮罩——mika-pink 的膚是 (221,134,154)，算出來 107，直接過關——量到的
+  // 就不是那組材質的覆蓋範圍。要拿 pink 當對照組就得換一個膚色不可能落進去的顏
+  // 色。判準是 G 同時高過 R 與 B 三十以上：任何膚色的 G 都低於 R，而純綠經過
+  // ACES 之後只剩大約 (92, 219, 48)，用洋紅那條 R+B−2G>90 的門檻會全部落空。
+  const green = new URLSearchParams(location.search).get('mag') === 'green';
+  const MAG = new THREE.MeshBasicMaterial({ color: green ? 0x00ff00 : 0xff00ff,
+                                            side:THREE.DoubleSide });
+  const isMask = (r, g, b, a) => a > 200 &&
+    (green ? (g - r > 30 && g - b > 30) : r + b - 2*g > 90);
   const groups = { skin: /F00_000_00_(Face|Body)_00_SKIN/,
                    face: /F00_000_00_Face_00_SKIN/, body: /F00_000_00_Body_00_SKIN/,
                    hair: /F00_000_Hair_00_HAIR/, iris: /EyeIris/ };
@@ -79,14 +115,115 @@ try {
     for (const [m, keep] of saved) m.material = keep;
     const ch = [[],[],[]];
     for (let i = 0; i < W*H; i++) {
-      const r = probe[i*4], g = probe[i*4+1], b = probe[i*4+2], a = probe[i*4+3];
-      if (!(a > 200 && r + b - 2*g > 90)) continue;
+      if (!isMask(probe[i*4], probe[i*4+1], probe[i*4+2], probe[i*4+3])) continue;
       ch[0].push(lit[i*4]); ch[1].push(lit[i*4+1]); ch[2].push(lit[i*4+2]);
     }
     const q = c => { const s = [...c].sort((a,b)=>a-b); return s[s.length>>1]; };
     const p = (c,k) => { const s = [...c].sort((a,b)=>a-b); return s[Math.floor(s.length*k)]; };
     R.groups[name] = ch[0].length < 200 ? `only ${ch[0].length} px`
       : { n: ch[0].length, med: ch.map(q), p25: ch.map(c=>p(c,0.25)), p75: ch.map(c=>p(c,0.75)) };
+  }
+
+  // ?dims=0.9,0.8：把膚色那組材質的乘色逐段調暗再量一次臉與脖子。臉在出貨設定
+  // 下已經頂到算圖天花板（p75 等於中位數），而 ACES 在接近白的地方會去飽和，所
+  // 以受光的臉洗成中性灰、陰影裡的脖子留著暖調——那正是使用者回報的「脖子跟臉
+  // 膚色不一致」。這個掃描量的是「調暗到哪裡兩者才合得起來」。
+  const dims = (new URLSearchParams(location.search).get('dims') || '')
+    .split(',').map(parseFloat).filter(x => x > 0);
+  if (dims.length) {
+    const skinRe = /F00_000_00_(Face|Body)_00_SKIN/;
+    const skinMats = [], seenDim = new Set();
+    vrm.scene.traverse(o => { if (!(o.isMesh||o.isSkinnedMesh)) return;
+      for (const m of (Array.isArray(o.material)?o.material:[o.material]))
+        if (m && skinRe.test(m.name) && !seenDim.has(m)) { seenDim.add(m);
+          skinMats.push([m, m.color.clone(),
+                         m.shadeColorFactor && m.shadeColorFactor.clone()]); } });
+    const masks = {};
+    for (const [name, re] of [['face', /F00_000_00_Face_00_SKIN/],
+                              ['body', /F00_000_00_Body_00_SKIN/]]) {
+      const saved = [];
+      for (const m of meshes) {
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        if (mats.some(x => x && re.test(x.name))) { saved.push([m, m.material]); m.material = MAG; }
+      }
+      renderer.render(scene, cam); const probe = read();
+      for (const [m, keep] of saved) m.material = keep;
+      const idx = [];
+      for (let i = 0; i < W*H; i++)
+        if (isMask(probe[i*4], probe[i*4+1], probe[i*4+2], probe[i*4+3])) idx.push(i);
+      masks[name] = idx;
+    }
+    const q = c => { const s = [...c].sort((a,b)=>a-b); return s[s.length>>1]; };
+    R.dims = {};
+    // ?albedo=1：把膚色材質換成無光照的 MeshBasicMaterial（保留同一張貼圖與
+    // 同一組 UV），量到的就是「畫面上那一片臉／脖子，貼圖本身是什麼顏色」。
+    // 用頂點法線挑「看得到的臉」只取到一百多個點，會被嘴唇與鼻影帶偏；這個做
+    // 法一個像素都不漏，且與受光那張用的是同一個遮罩。
+    if (new URLSearchParams(location.search).get('albedo') === '1') {
+      const swap = [];
+      for (const m of meshes) {
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        if (!mats.some(x => x && skinRe.test(x.name))) continue;
+        swap.push([m, m.material]);
+        m.material = (Array.isArray(m.material) ? m.material : [m.material]).map(
+          x => new THREE.MeshBasicMaterial({ map: x.map, transparent:false, side:THREE.DoubleSide }));
+        if (!Array.isArray(swap[swap.length-1][1])) m.material = m.material[0];
+      }
+      // tone mapping 關掉：這一次要讀的是「那塊畫面用到的 texel 原值」，ACES 會
+      // 把兩塊不同亮度的區域壓成不同程度的去飽和，量到的就不再是貼圖本身。
+      const keepTone = renderer.toneMapping;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.render(scene, cam); const apx = read();
+      renderer.toneMapping = keepTone;
+      // 中位數不夠：臉是「蒼白的中臉 + 有腮紅的臉頰」的混合，只報一個數會讓人
+      // 以為整片都是那個顏色。分位數與上下半各報一次，才看得出是哪一塊在拉。
+      const pk = (c,k) => { const t=[...c].sort((a,b)=>a-b); return t[Math.floor(t.length*k)]; };
+      const stat = idx => ({ n: idx.length,
+        med: [0,1,2].map(c => q(idx.map(i => apx[i*4+c]))),
+        p10: [0,1,2].map(c => pk(idx.map(i => apx[i*4+c]), 0.10)),
+        p90: [0,1,2].map(c => pk(idx.map(i => apx[i*4+c]), 0.90)) });
+      R.albedo = {};
+      for (const [name, idx] of Object.entries(masks)) {
+        R.albedo[name] = stat(idx);
+        const rows = idx.map(i => Math.floor(i / W));
+        const mid = rows.slice().sort((a,b)=>a-b)[rows.length>>1];
+        R.albedo[name + '_upper'] = stat(idx.filter(i => Math.floor(i / W) < mid));
+        R.albedo[name + '_lower'] = stat(idx.filter(i => Math.floor(i / W) >= mid));
+      }
+      for (const [m, keep] of swap) m.material = keep;
+    }
+
+    // ?white=1：把膚色材質的貼圖拿掉、乘色與陰影色都設成純白，再量同一組遮罩。
+    // 臉與脖子在這種狀態下若仍不同色，差異就是打光與材質造成的；若相同，差異
+    // 全部來自貼圖。這是把「貼圖」與「算圖」兩個嫌疑人分開的那一刀。
+    if (new URLSearchParams(location.search).get('white') === '1') {
+      for (const [m] of skinMats) {
+        m.map = null; m.color.setRGB(1,1,1);
+        if ('shadeMultiplyTexture' in m) m.shadeMultiplyTexture = null;
+        if (m.shadeColorFactor) m.shadeColorFactor.setRGB(1,1,1);
+        m.needsUpdate = true;
+      }
+      renderer.render(scene, cam); const wpx = read();
+      R.white = {};
+      for (const [name, idx] of Object.entries(masks))
+        R.white[name] = [0,1,2].map(c => q(idx.map(i => wpx[i*4+c])));
+    }
+    for (const d of dims) {
+      for (const [m, base, shade] of skinMats) {
+        m.color.copy(base).multiplyScalar(d);
+        if (shade) m.shadeColorFactor.copy(shade).multiplyScalar(d);
+        m.needsUpdate = true;
+      }
+      renderer.render(scene, cam); const px = read();
+      const row = {};
+      for (const [name, idx] of Object.entries(masks))
+        row[name] = [0,1,2].map(c => q(idx.map(i => px[i*4+c])));
+      R.dims[d] = row;
+    }
+    for (const [m, base, shade] of skinMats) {
+      m.color.copy(base); if (shade) m.shadeColorFactor.copy(shade);
+      m.needsUpdate = true;
+    }
   }
 
   // ?ceiling=1：把膚色那組材質換成純白 albedo（貼圖拿掉、色乘 1,1,1、陰影色也
@@ -123,8 +260,7 @@ try {
       renderer.render(scene, cam); const white = read();
       const ch = [[],[],[]];
       for (let i = 0; i < W*H; i++) {
-        const r = probe[i*4], g = probe[i*4+1], b = probe[i*4+2], a = probe[i*4+3];
-        if (!(a > 200 && r + b - 2*g > 90)) continue;
+        if (!isMask(probe[i*4], probe[i*4+1], probe[i*4+2], probe[i*4+3])) continue;
         ch[0].push(white[i*4]); ch[1].push(white[i*4+1]); ch[2].push(white[i*4+2]);
       }
       const q = c => { const s = [...c].sort((a,b)=>a-b); return s[s.length>>1]; };
