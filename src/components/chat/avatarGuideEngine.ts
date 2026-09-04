@@ -41,9 +41,11 @@
 //     is halved so the rim carries the answering look. The hue comes from the
 //     model when it declares `_RimColor`, and falls back to mars orange for the
 //     bodies that do not (see RIM_FALLBACK)
-//   - materialize entrance, once, from the first rendered frame: cyan flash
-//     (>1 channels overdrive under ACES — glow without bloom/EffectComposer,
-//     which stays a Non-goal), back-out scale pop, rising particle column
+//   - materialize entrance, once per body, from the first rendered frame:
+//     back-out scale pop, rising particle column, contact shadow fading in.
+//     It used to open with a cyan colour flash (>1 channels overdriven under
+//     ACES); the owner read that as her colours being wrong for a second on
+//     every visit (2026-09-04), so the entrance no longer touches m.color
 //
 // Learned in the PoC (scratchpad/poc.html, 2026-08-13) and load-bearing here:
 //   - three-vrm normalises VRM0 blendshape names to VRM1: a/i/u/e/o become
@@ -633,16 +635,6 @@ export function initAvatarGuide(
   let shownUrl: string | null = null
   let loadSeq = 0
   let pendingSeq: number | null = null
-  // How many bodies have been installed. The entrance's cyan flash is for the
-  // FIRST one only: arriving out of a flash reads as materialising when there
-  // was nobody there, and reads as broken colour when a body the visitor is
-  // already looking at is replaced by one they just asked for. The owner
-  // reported it as exactly that on 2026-09-03 ("漸層顏色約 1-2 秒，最後才變成
-  // 正確的顏色"), measured at 1.05s of the whole body lerped up to 75% toward
-  // CYAN_FLASH. The scale pop and the particles stay: those read as a change
-  // rather than as a fault.
-  let bodiesInstalled = 0
-
   function installVrm(loaded: VRM, url: string): void {
     // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
     // to measure and adjust materials under THIS scene's lights, not a
@@ -713,7 +705,6 @@ export function initAvatarGuide(
     )
     vrm = loaded
     shownUrl = url
-    bodiesInstalled++
     // Clips are built against a body (createVRMAnimationClip binds them to its
     // bone nodes), so whatever the previous body had is rebuilt from source for
     // this one. On the first load there is nothing here yet: the clips are
@@ -939,7 +930,6 @@ export function initAvatarGuide(
   let particles: THREE.Points | null = null
   let particleVel: Float32Array | null = null
   // Channels >1 overdrive toward white under ACES — a glow without bloom.
-  const CYAN_FLASH = new THREE.Color(0.35, 1.2, 1.6)
   let randViseme = -1
   let visemeTimer = 0
   let visemeHold = 0.11
@@ -1064,7 +1054,7 @@ export function initAvatarGuide(
     const t = nowMs / 1000
 
     if (vrm) {
-      // Materialize entrance: cyan flash + scale pop + rising particles, once
+      // Materialize entrance: scale pop + rising particles + shadow, once
       // per body, starting on the very first frame that body is visible. Applies
       // the p=0 state before this frame renders so the swap-in never shows a
       // single full-scale frame first.
@@ -1429,15 +1419,15 @@ export function initAvatarGuide(
 
       // Answering look, lerped both directions so nothing snaps. The body
       // tint is halved from Batch 1-era so the parametric rim (below)
-      // reads as the "answering" signal; the materialize cyan flash rides the
-      // same consolidated colour write so the two never fight over m.color.
+      // reads as the "answering" signal. The entrance no longer writes colour
+      // at all: a body arriving 75% cyan and fading over a second read as
+      // "Mika changes colour every time the site opens" (owner, 2026-09-04),
+      // first on swapped bodies (fixed 2026-09-03) and then on the first one.
       const target = mode === 'speaking' ? 1 : 0
       tint += (target - tint) * Math.min(1, dt * 4)
       if (tint < 0.001) tint = 0
-      const flashW =
-        bodiesInstalled === 1 && matzT >= 0 && matzT <= 1 ? (1 - Math.min(matzT, 1)) * 0.75 : 0
-      // `pale` rides the same consolidated colour write as the answering tint
-      // and the entrance flash, so no two of them ever fight over m.color.
+      // `pale` rides the same consolidated colour write as the answering tint,
+      // so the two never fight over m.color.
       const paleW =
         (emoName && EMOTION_RECIPES[emoName].paleTint ? emoShown : 0) +
         (emoFade && EMOTION_RECIPES[emoFade.name].paleTint ? emoFade.w : 0)
@@ -1456,11 +1446,8 @@ export function initAvatarGuide(
         const s = 0.15 * (0.85 + 0.15 * markW)
         angerMark.scale.set(s, s, 1)
       }
-      if (tint > 0 || flashW > 0 || paleW > 0.003) {
-        for (const { m, base, tinted } of mats) {
-          m.color.copy(base).lerp(tinted, tint * 0.5)
-          if (flashW > 0) m.color.lerp(CYAN_FLASH, flashW)
-        }
+      if (tint > 0 || paleW > 0.003) {
+        for (const { m, base, tinted } of mats) m.color.copy(base).lerp(tinted, tint * 0.5)
         if (paleW > 0.003) for (const { m, pale } of faceMats) m.color.lerp(pale, Math.min(1, paleW))
         colorDirty = true
       } else if (colorDirty) {

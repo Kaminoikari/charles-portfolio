@@ -80,15 +80,15 @@ describe('a body swap is the first load, run again', () => {
     expect(body.indexOf('disposeParticles()')).toBeLessThan(body.indexOf('matzT = -1'))
   })
 
-  it('keeps the cyan flash for the first body only', () => {
-    // The entrance runs on every body, but its COLOUR half does not: lerping a
-    // replacement body 75% toward cyan for a second reads as broken colour
-    // rather than as an arrival, which is how the owner reported it. Deleting
-    // the counter term here brings that back, and no other test can see it.
-    expect(fnBody('installVrm')).toMatch(/bodiesInstalled\+\+/)
-    expect(SOURCE).toMatch(
-      /const flashW =\s*bodiesInstalled === 1 && matzT >= 0 && matzT <= 1 \? \(1 - Math\.min\(matzT, 1\)\) \* 0\.75 : 0/,
-    )
+  it('never writes colour during the entrance', () => {
+    // The entrance used to open every body 75% toward cyan and fade over a
+    // second. On a swapped body that read as broken colour (fixed 2026-09-03,
+    // first body only); on the first body the owner read it as "Mika changes
+    // colour every time the site opens" (2026-09-04). The scale pop, the
+    // particles and the shadow stay; m.color is the answering tint's and the
+    // pale emotion's alone. Re-adding a flash term brings both reports back.
+    expect(SOURCE).not.toMatch(/CYAN_FLASH|flashW|bodiesInstalled/)
+    expect(SOURCE).toMatch(/if \(tint > 0 \|\| paleW > 0\.003\) \{/)
   })
 
   it('drops a result that a newer request, a teardown or a lost context overtook', () => {
