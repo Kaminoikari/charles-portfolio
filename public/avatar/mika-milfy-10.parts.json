@@ -386,24 +386,11 @@
       "slot": "Hair_Bun_R",
       "group": "hair"
     },
-    "Hair_Ahoge": {
-      "mesh": "Hair001.baked",
-      "primitives": [
-        65
-      ],
-      "tris": 132,
-      "materials": [
-        "F00_000_Hair_00_HAIR_02"
-      ],
-      "deletable": true,
-      "slot": "Hair_Ahoge",
-      "group": "hair"
-    },
     "Acc_Crown": {
       "mesh": "Hair001.baked",
       "primitives": [
-        66,
-        67
+        65,
+        66
       ],
       "tris": 200,
       "materials": [
@@ -417,8 +404,8 @@
     "Acc_HairClip_Plaster": {
       "mesh": "Hair001.baked",
       "primitives": [
-        68,
-        69
+        67,
+        68
       ],
       "tris": 228,
       "materials": [
@@ -432,8 +419,8 @@
     "Acc_HairClip_Bear": {
       "mesh": "Hair001.baked",
       "primitives": [
-        70,
-        71
+        69,
+        70
       ],
       "tris": 306,
       "materials": [
@@ -447,7 +434,7 @@
     "Acc_HairClip_Bars": {
       "mesh": "Hair001.baked",
       "primitives": [
-        72
+        71
       ],
       "tris": 24,
       "materials": [
