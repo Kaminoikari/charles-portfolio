@@ -14,7 +14,7 @@ import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-v
 const R = { ok:false, errors:[] };
 const log = () => document.getElementById('out').textContent = JSON.stringify(R,null,1);
 try {
-  const url = '/avatar/mika-milfy-3.vrm';
+  const url = '/avatar/mika-milfy-4.vrm';
   const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
   R.bytes = bytes.length;
   const h = await crypto.subtle.digest('SHA-256', bytes);

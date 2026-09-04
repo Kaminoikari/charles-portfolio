@@ -78,8 +78,10 @@ BLENDER_STEMS = ['bow', 'neckribbon', 'hairbow', 'details', 'head']
 MELLOW_SETS = ['inner', 'outer']
 BLENDER = shutil.which('blender')
 # The file name the site loads (avatarVariants.ts). Bump it with every byte
-# change: /avatar/* is served cache-immutable.
-SHIPPED = 'mika-milfy-3.vrm'
+# change: /avatar/* is served cache-immutable. -3: 2026-09-04, the twintails
+# hang outside the cardigan; -4: same day, proportion scales the face's morph
+# deltas with the head, so the >< eyes clear the skin again.
+SHIPPED = 'mika-milfy-4.vrm'
 
 
 @contextlib.contextmanager
@@ -156,7 +158,8 @@ def main():
         before, _, _ = proportion.ratio(p('bare.vrm'))
         n, _ = proportion.apply(p('bare.vrm'), p('proportioned.vrm'), HEAD_FACTOR)
         after, lo, hi = proportion.ratio(p('proportioned.vrm'))
-        print(f'   {before:.2f} -> {after:.2f} heads tall, height {hi - lo:.4f}')
+        print(f'   {before:.2f} -> {after:.2f} heads tall, height {hi - lo:.4f}, '
+              f'{n} position/morph accessors rescaled')
         gate('proportion', p('proportioned.vrm'))
 
     with step('5. build the outfit'):
@@ -175,6 +178,8 @@ def main():
     # src/components/chat/avatarVariants.ts points at this one. -2: 2026-09-03,
     # the scalp, the shared skin solve and the neck band. -3: 2026-09-04, the
     # twintails hang outside the cardigan and collide with it (twintail.py).
+    # -4: same day, proportion scales the face's morph deltas with the head so
+    # the >< eyes clear the skin (proportion.py).
     dest = os.path.join(BASE, '..', '..', 'public', 'avatar', SHIPPED)
     shutil.copy(p('mika-milfy.vrm'), dest)
     shutil.copy(p('mika-milfy.parts.json'),

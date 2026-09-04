@@ -1990,3 +1990,64 @@ build.py（順序與守衛）、make.py（檔名），新增 springsim.ts／spri
     2026-09-03 已對換身體的情況關掉，這次連第一具也拿掉（scale pop、粒子、影子
     保留）；variant.test 改釘「來源裡沒有 CYAN_FLASH／flashW／bodiesInstalled」，
     把 flashW 放回顏色寫入該條就紅（R9）。
+
+=== 第八版（2026-09-04，使用者指出雙馬尾造型「興奮」時眼睛顯示方式與粉髮／紫髮不同）===
+
+出貨檔換名 mika-milfy-4.vrm（proportion.py、proportion_test.py、make.py 的 SHIPPED、
+motionprobe.html 的 expr=／hide= 模式；收據 evidence/proportion-0904.log P1–P9b，
+對照圖 evidence/proportion-0904-extra-eyes.jpg）。
+
+一、現象與根因
+    「興奮」= EMOTION_RECIPES.excited = 模型自己的 Extra 表情（>< 眼）。粉髮與紫髮
+    是完整的黑色 ><，雙馬尾只剩內眼角兩個黑尖。兩檔的 Face.baked 頂點差平均 7.5mm、
+    最大 14mm（頭頂，= 0.231m × 0.06，就是放大 6% 的量；P10）、56 個 morph target 逐位
+    元組相同、眼部材質在 three-vrm 裡的 depthTest／depthWrite／renderOrder／
+    transparent 全部相同（motionprobe 頁 window.__vrm 讀出來比對，P8），所以第一
+    輪往渲染端找是白費的。線索是 Extra 綁了兩個 target：25 閉
+    眼、55 把 EyeExtra 面板（>< 貼圖所在）往前推 30.8mm。沿正視線量面板對臉皮的淨
+    空：粉髮 +1.23mm（面板剛好凸出皮膚，透明 pass 畫得出來），雙馬尾 -0.77mm（被
+    皮膚的深度擋掉，只有位移最大的兩個尖端探出來）。
+    差那 2mm 的來源是 make.py 第 4 步 proportion.apply：頭沿下巴放大 HEAD_FACTOR
+    1.06（臉皮面積 557→626cm²），但只縮放了 POSITION，56 個 target 的位移量沒跟著
+    乘。位移是同一座標系裡兩個位置的差，網格乘 1.06 它就得乘 1.06；其他表情只是
+    幅度小了 6%，靠絕對距離成立的 Extra 直接壞。
+    用 motionprobe.html?expr=Extra&hide=Eyeline,Eyelash;EyeExtra;Face_00_SKIN;
+    EyeWhite,EyeIris,EyeHighlight 逐材質隱藏定位的：粉髮隱藏 EyeExtra 時 >< 消失
+    （>< 就是那塊面板）；雙馬尾隱藏 Face_00_SKIN 時完整的 >< 出現（被臉皮擋住）。
+
+二、修法（在弄壞它的那一步）
+    proportion.apply 現在對每個 primitive 的 morph target POSITION 位移，凡是頭部
+    列（該 primitive 的頂點 y ≥ 下巴）一律乘同一個 factor；均勻縮放，法線位移不
+    動。VRoid 匯出的 target accessor 每個獨占一個 bufferView、offset 0、stride 12、
+    非 sparse、且沒有別的 accessor 共用那個 bufferView，_write 用 assert 釘住這四
+    個前提。bare.vrm 上實測（P5）：120 個 accessor（64 個位置＋56 個臉部 target）
+    改寫，54 個有位移的 target 比值全部 1.06000，Extra 的前推 30.8→32.6mm；make.py
+    第 4 步從此把這個數印進建置 log。出貨檔 -4 的 >< 淨空 +1.31mm（= 輸入 +1.23 ×
+    1.06，P2 的紅燈訊息裡有兩個數）。
+
+三、守衛與紅燈（evidence/proportion-0904.log）
+    proportion_test.py 五條，各自的紅燈：
+    - rescale 單元 → 拿掉 rescale 裡的 z 縮放那行，紅（P6）。
+    - rescale_deltas 單元（合成的一列頭、一列身體；出貨臉整張在下巴以上，遮罩的
+      身體那一側只有這裡會走到）→ 把遮罩拿掉、每列都乘，紅（P9）。
+    - 出貨臉 = 輸入臉 × HEAD_FACTOR → 把測試指向建置的輸入檔 mika-pink.vrm（等於
+      factor 1.0），紅（P7）。
+    - 每個 Face.baked target 的位移向量 = 輸入 × HEAD_FACTOR（逐分量，容差
+      0.01mm；比長度會放過軸被換掉或反號的位移）→ 舊出貨檔 -3 紅，差 4.47mm
+      （P2'）；輸入檔也紅（P7'）。
+    - 沿正視線量的 >< 面板淨空 = 輸入淨空 × HEAD_FACTOR（±0.5mm）→ 舊出貨檔 -3
+      紅，-0.77mm 對 +1.31mm（P2'）。
+    對 -4 五條綠（P2'）。重構成 rescale_deltas 之後 bare.vrm 的輸出與重構前逐位元
+    組相同（P9b），出貨檔沒有重建。建置 log 六道 gate compare=[] bones=54、外套守衛
+    -59mm／0%（P1）；python 41 條 OK（P3'）；vitest 370 條、springsim.test 對 -4 綠
+    （P4）。
+
+四、瀏覽器證據
+    純 three-vrm（motionprobe.html，無站上引擎的材質處理）正面特寫：粉髮 Extra 完整
+    ><；-3 Extra 兩個黑尖；-4 Extra 完整 ><；-4 靜止正常（proportion-0904-extra-
+    eyes.jpg）。生產引擎頁（live-preview.html?mikadebug=1 → __mikaHandle.setEmotion
+    ('excited')）在 -3 上拍到的就是使用者描述的兩個黑尖，是這輪的起點。
+
+五、副作用
+    其他 14 個表情（Extra 以外的 52 個有位移的 target）幅度同步放大 6%，等於回到
+    VRoid 在這顆頭上該有的比例（閉眼閉到底、嘴型開到底）；-3 以前是縮小版。

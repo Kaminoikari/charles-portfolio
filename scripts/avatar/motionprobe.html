@@ -3,7 +3,7 @@
   Render the model at chosen moments of a clip, with three-vrm's own springs
   stepped at a FIXED 1/60 s, on whatever GPU the browser has.
 
-    /scripts/avatar/motionprobe.html?f=/avatar/mika-milfy-3.vrm&clip=dance&t=0,1.6,12.9,17.2
+    /scripts/avatar/motionprobe.html?f=/avatar/mika-milfy-4.vrm&clip=dance&t=0,1.6,12.9,17.2
 
   Why fixed steps: this machine's headless browser runs software WebGL at
   about one frame a second with the engine's dt clamped to 50 ms, which is a
@@ -39,13 +39,14 @@ try {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
   renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.setClearColor(0x1a1a1f, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
-  const file = q.get('f') || '/avatar/mika-milfy-3.vrm';
+  const file = q.get('f') || '/avatar/mika-milfy-4.vrm';
   const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
   const loader = new GLTFLoader();
   loader.register((p) => new VRMLoaderPlugin(p));
   loader.register((p) => new VRMAnimationLoaderPlugin(p));
   const vrm = (await loader.parseAsync(bytes.buffer, '')).userData.vrm;
   VRMUtils.rotateVRM0(vrm);
+  window.__vrm = vrm; // for poking materials from the console / Playwright
   say(`model ${file} loaded, springs ${vrm.springBoneManager?.joints.size ?? 0}`);
   const scene = new THREE.Scene(); scene.add(vrm.scene);
   scene.add(new THREE.AmbientLight(0xffffff, 1.1));
@@ -64,7 +65,32 @@ try {
   };
   const settle = (steps) => { for (let i = 0; i < steps; i++) vrm.update(DT); };
   const pitch = q.get('pitch');
-  if (pitch) {
+  const expr = q.get('expr');
+  if (expr) {
+    // Face close-up with one expression at full weight, for comparing how a
+    // body renders an emotion (2026-09-04: Milfy's >< eyes were not the pink
+    // body's). Plain three-vrm, none of the engine's material handling.
+    const head = vrm.humanoid.getNormalizedBoneNode('head');
+    const hp = new THREE.Vector3(); head.getWorldPosition(hp);
+    for (const cam of Object.values(cams)) { cam.position.set(hp.x, hp.y + 0.06, hp.z + 0.55); cam.lookAt(hp.x, hp.y + 0.06, hp.z); cam.fov = 22; cam.updateProjectionMatrix(); }
+    delete cams.back; delete cams.side;
+    // hide=a,b;c renders the expression once per ';'-group with every material
+    // whose name contains a listed substring made invisible, to bisect which
+    // mesh draws (or covers) what.
+    const hideSets = (q.get('hide') || '').split(';').map((g) => g.split(',').filter(Boolean)).filter((g) => g.length);
+    const mats = []; vrm.scene.traverse((o) => { for (const m of [].concat(o.material || [])) mats.push(m); });
+    settle(Math.round(PREROLL / DT));
+    snap('rest');
+    vrm.expressionManager.setValue(expr, 1);
+    settle(30);
+    snap(`expr-${expr}`);
+    hideSets.forEach((set, i) => {
+      for (const m of mats) m.visible = !set.some((h) => (m.name || '').includes(h));
+      snap(`expr-${expr}-hide${i}-${set.join('+')}`);
+    });
+    for (const m of mats) m.visible = true;
+    say(`expressions: ${vrm.expressionManager.expressions.map((e) => e.expressionName).join(' ')}`);
+  } else if (pitch) {
     settle(Math.round(PREROLL / DT));
     snap('rest');
     const head = vrm.humanoid.getNormalizedBoneNode('head');

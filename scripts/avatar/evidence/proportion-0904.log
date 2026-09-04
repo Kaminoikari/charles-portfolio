@@ -1,0 +1,225 @@
+proportion-0904：第八版（mika-milfy-4）>< 眼的收據。舊出貨檔 = git HEAD 的 public/avatar/mika-milfy-3.vrm。時序與取代關係：
+  P1  建置 log（當時 make.py 還沒印 accessor 數；數字在 P5）。
+  P2  proportion_test 首版（比位移長度）：-4 綠、-3 兩條紅 → 被 P2'（改比向量）取代，留著是因為淨空那條的數字沒變。
+  P3  python discover 40 條（加第五條單元測試前）→ 被 P3'（41 條，所有改動之後）取代。
+  P4  vitest 370 條（-4 建置後；之後沒有再動 TypeScript）。
+  P5  proportion.py 單獨跑 out/bare.vrm：120 個 accessor、54/56 個 target 比值 1.06000、Extra 前推 30.8→32.6mm。
+  P6  mutation：rescale 拿掉 z 縮放 → 單元測試紅。
+  P7  mutation：檔案級測試指向建置輸入 mika-pink.vrm → 臉縮放與位移兩條紅 → 位移那條的訊息由 P7' 取代。
+  P7b 加上 _write 的 bufferView 獨占 assert 之後，-4 四條綠。
+  P2'/P7' 位移測試改成逐分量比向量之後重跑：-3 差 4.47mm 紅、輸入檔紅、-4 五條綠。
+  P9  mutation：rescale_deltas 拿掉頭部遮罩、每列都乘 → 合成身體列那條紅。
+  P9b 重構成 rescale_deltas 之後單獨跑 out/bare.vrm，輸出與 P5 逐位元組相同（出貨檔沒有重建）。
+  P8  three-vrm 載入後眼部材質旗標，粉髮與 -4 逐行相同。
+  P9c 把 target accessor 的去重改回逐 target 檢查之後：-4 五條綠、bare.vrm 輸出仍與 P5 相同。
+  P3' python discover 41 條，所有改動之後。
+  P10 RESULT 一「頂點差平均 7.5mm、最大 14mm」的量測（舊 -3 對輸入 mika-pink 的 Face.baked 頂點）。
+
+=== [P1] make-v4.log：出貨檔建置 log（proportion 那步與六道 gate） ===
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-front.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-back.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-three_quarter.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-face.png
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (7.9s)
+1. partition
+   13 parts
+  gate partition: compare=[] bones=54
+   (0.1s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+   swept 5 stranded materials: F00_000_Hair_00_HAIR_03, F00_000_Hair_00_HAIR_06, F00_001_01_Bottoms_01_CLOTH, F00_006_01_Shoes_01_CLOTH, F00_008_01_Tops_01_CLOTH
+  gate strip: compare=[] bones=54
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54
+   (2.4s)
+4. proportion
+   5.91 -> 5.64 heads tall, height 1.5046
+  gate proportion: compare=[] bones=54
+   (0.1s)
+5. build the outfit
+   服裝擬合 mellow.glb：縮放 x1.172，對位骨最大殘差 0.00mm
+   大腿腿帶截面縮放 x=0.749 z=0.818，大腿直徑 94x111mm
+   服裝擬合 mellow_outer.glb：縮放 x1.153，對位骨最大殘差 0.00mm
+   貼身外推最大位移：Acc_Bandage_Thigh 8mm，Acc_Belt_Waist 24mm，Acc_Ribbon_Neck 12mm，Outfit_Bottom 19mm，Outfit_Cardigan 15mm，Outfit_Shoes 12mm，Outfit_Socks 18mm，Outfit_Top 19mm
+   蝴蝶結對腰封最近距離 2mm
+   丟掉動不了東西的 shape key：Side adjustment 平均 0.00mm
+   服裝 shape key：(No bra)Breasts_Cow 6214 點/平均 5.2mm，Breast_big 7621 點/平均 6.7mm，Breast_small 5354 點/平均 5.7mm，Hutomomo_big 3839 點/平均 3.6mm，Hutomomo_slim 3843 點/平均 3.1mm，Waist_slim 14393 點/平均 0.6mm
+   外套珠子 54 顆/側，半徑 70mm，高度 1.10→0.80，每層 9 顆
+   Hair_Twintail_L 位移最大 254.7mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   Hair_Twintail_R 位移最大 256.4mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   雙馬尾在外套輪廓內最深 -59mm，≥5mm 的頂點佔 0.0%
+   皇冠整體下沉 0mm 貼上髮面
+   頭皮色塊 231170 px → 髮色 (224, 214, 202) 轉色相 +136.0° 飽和 x0.47 明度 x1.00 提亮 0.72 位移 +0.000
+   膚色 5011710 px（臉與身共用一組解） 轉色相 +2.6° 飽和 x1.15 明度 x1.00 提亮 0.00 位移 +0.118
+   頸部帶 F00_000_00_Face_00 256827 px 最暗十分位抬升 +0.068
+   頸部帶 F00_000_00_Body_00 346603 px 最暗十分位抬升 +0.069
+   頸部目標 (252, 222, 213) 取自帶外的皮膚
+   F00_000_00_EyeIris_00 轉色相 +156.4° 飽和 x0.32 明度 x1.00 提亮 0.00 位移 +0.094
+   膚色 MToon 乘色 (0.96, 0.9, 0.87)，改了 2 個材質
+   髮色 MToon 乘色 (0.92, 0.84, 0.8)，改了 4 個材質
+   描邊統一為 (0.2, 0.1762, 0.1698)，改了 10 個材質，原本有 1 種：[(0.274509817, 0.09019608, 0.1254902)]
+   邊光宣告為 (0.518, 0.784, 0.776)，寫進 14 個材質
+   掃掉沒有網格用的材質 5 個：['Milfy_Bandage', 'Milfy_Cardigan', 'Milfy_Hair', 'Milfy_Ribbon', 'Milfy_Sock']
+   +33 parts, 11953920 bytes, waist y=0.960
+  gate build: compare=[] bones=54
+   (40.8s)
+6. health check
+== /Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm
+   tris 103116  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 17  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha b8126ca141a56e2a
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+   (0.1s)
+
+shipped /Users/charles/portfolio/public/avatar/mika-milfy-4.vrm
+exit 0
+
+=== [P2] proportion_test：出貨檔 -4 綠；舊檔 -3 兩條紅（delta 比值 1.00 ≠ 1.06；>< 淨空 -0.77mm 對輸入 +1.23mm×1.06） ===
+== proportion_test on the shipped mika-milfy-4.vrm ==
+Ran 4 tests in 0.059s
+OK
+== proportion_test on the previous shipped file (git HEAD mika-milfy-3.vrm exported to /private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/milfy-3-head.vrm; deltas unscaled) ==
+FAIL: test_every_face_morph_delta_scales_with_the_head (__main__.ShippedFaceTest.test_every_face_morph_delta_scales_with_the_head)
+AssertionError: 0.06000000000000005 not less than 0.002 : a face morph delta is not HEAD_FACTOR x the input (off by 0.0600)
+FAIL: test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does (__main__.ShippedFaceTest.test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does)
+AssertionError: np.float64(-0.7725242840503563) != np.float64(1.30858438770586) within 0.5 delta (np.float64(2.0811086717562164) difference) : >< clearance -0.77mm, input +1.23mm x 1.06
+Ran 4 tests in 0.059s
+FAILED (failures=2)
+
+=== [P3] python3 -m unittest discover -s scripts/avatar -p '*_test.py'（-4 建置後，40 條） ===
+13:01:55 python3 -m unittest discover -s scripts/avatar -p '*_test.py' (after the -4 build)
+........
+----------------------------------------------------------------------
+Ran 40 tests in 3.546s
+
+OK
+
+=== [P4] npx vitest run（-4 建置後；springsim.test.ts 走 avatarVariants 的 -4） ===
+301: ✓ scripts/avatar/springsim.test.ts (2 tests) 8157ms
+607: ✓ src/components/chat/avatarGuideEngine.variant.test.ts (9 tests) 4ms
+610: ✓ scripts/avatar/live-preview.test.ts (4 tests) 2ms
+613: Test Files  24 passed (24)
+614:      Tests  370 passed (370)
+616:   Duration  22.45s (transform 711ms, setup 746ms, collect 2.51s, tests 32.04s, environment 5.70s, prepare 943ms)
+618:exit 0
+
+=== [P5] proportion.py standalone on out/bare.vrm (after the fix; the accessor count make.py now also prints). 前三行是 proportion.py 自己印的，後兩行是接著跑的 numpy 比對腳本（bare.vrm 對輸出檔逐 target 比） ===
+120 position/morph accessors rescaled by 1.06
+  heads tall 5.91 -> 5.64
+  height 1.4895 -> 1.5046  (feet 0.0343 -> 0.0343)
+face targets with movement: 54 of 56; delta ratio out/in min 1.06000 max 1.06000
+target 55 (Extra: EyeExtra forward push) mean 30.8mm -> 32.6mm
+
+=== [P6] mutation: rescale() without the z scaling (p[head, 2] *= factor removed) -> RescaleTest ==
+mutation applied
+FAIL: test_rescale_grows_the_head_about_the_chin_and_leaves_the_body (__main__.RescaleTest.test_rescale_grows_the_head_about_the_chin_and_leaves_the_body)
+AssertionError: 
+Mismatched elements: 1 / 3 (33.3%)
+Mismatch at index:
+Ran 1 test in 0.004s
+FAILED (failures=1)
+restored (byte copy)
+
+=== [P7] mutation: point the file-level tests at the build's INPUT (public/avatar/mika-pink.vrm, factor 1.0) -> face-scale and delta tests red ==
+FAIL: test_every_face_morph_delta_scales_with_the_head (__main__.ShippedFaceTest.test_every_face_morph_delta_scales_with_the_head)
+AssertionError: 0.06000000000000005 not less than 0.002 : a face morph delta is not HEAD_FACTOR x the input (off by 0.0600)
+FAIL: test_face_is_the_input_face_scaled_by_head_factor (__main__.ShippedFaceTest.test_face_is_the_input_face_scaled_by_head_factor)
+AssertionError: 
+Ran 4 tests in 0.090s
+FAILED (failures=2)
+
+=== [P7b] proportion_test on the shipped -4 after the _write/owners edit ===
+Ran 4 tests in 0.066s
+OK
+
+=== [P2'] proportion_test (vector form) on the shipped -4, then on the old -3 (git HEAD export) ==
+Ran 5 tests in 0.056s
+OK
+FAIL: test_every_face_morph_delta_scales_with_the_head (__main__.ShippedFaceTest.test_every_face_morph_delta_scales_with_the_head)
+AssertionError: 4.4737462699413335 not less than 0.01 : a face morph delta is not HEAD_FACTOR x the input (off by 4.4737mm)
+FAIL: test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does (__main__.ShippedFaceTest.test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does)
+AssertionError: np.float64(-0.7725242840503563) != np.float64(1.30858438770586) within 0.5 delta (np.float64(2.0811086717562164) difference) : >< clearance -0.77mm, input +1.23mm x 1.06
+Ran 5 tests in 0.051s
+FAILED (failures=2)
+
+=== [P7'] the file-level tests pointed at the build's input mika-pink.vrm (factor 1.0) ==
+FAIL: test_every_face_morph_delta_scales_with_the_head (__main__.ShippedFaceTest.test_every_face_morph_delta_scales_with_the_head)
+AssertionError: 4.4737462699413335 not less than 0.01 : a face morph delta is not HEAD_FACTOR x the input (off by 4.4737mm)
+FAIL: test_face_is_the_input_face_scaled_by_head_factor (__main__.ShippedFaceTest.test_face_is_the_input_face_scaled_by_head_factor)
+AssertionError: 
+Ran 5 tests in 0.036s
+FAILED (failures=2)
+
+=== [P9] mutation: rescale_deltas scales every row (mask dropped) -> the synthetic body row turns red ==
+mutation applied
+FAIL: test_rescale_deltas_scales_head_rows_only_on_all_three_axes (__main__.RescaleTest.test_rescale_deltas_scales_head_rows_only_on_all_three_axes)
+Ran 5 tests in 0.056s
+FAILED (failures=1)
+restored (byte copy)
+
+=== [P9b] proportion.py standalone on out/bare.vrm after the refactor: same 120 accessors, same ratios ==
+120 position/morph accessors rescaled by 1.06
+  heads tall 5.91 -> 5.64
+  height 1.4895 -> 1.5046  (feet 0.0343 -> 0.0343)
+byte-identical to the pre-refactor run (prop-check.vrm)
+
+=== [P8] three-vrm 載入後的眼部材質旗標（motionprobe.html?expr=Extra 的 window.__vrm 走訪，Playwright 讀出）：粉髮與 -4 逐行相同；材質在 -3 與 -4 之間沒有改動（這次只改 morph 位移），所以 -3 也是同一組 ===
+pink /avatar/mika-pink.vrm
+F00_000_00_EyeWhite_00_EYE Facebaked_1 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0 blending=1 isOutline=false
+F00_000_00_FaceEyeline_00_FACE Facebaked_2 depthTest=true depthWrite=false transparent=true renderOrder=18 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_FaceEyelash_00_FACE Facebaked_3 depthTest=true depthWrite=false transparent=true renderOrder=19 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_EyeIris_00_EYE Facebaked_5 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0.5 blending=1 isOutline=false
+F00_000_00_EyeHighlight_00_EYE Facebaked_6 depthTest=true depthWrite=false transparent=true renderOrder=18 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_Face_00_SKIN Facebaked_7 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0 blending=1 isOutline=false
+F00_000_00_Face_00_SKIN (Outline) Facebaked_7 depthTest=true depthWrite=true transparent=false renderOrder=19 side=1 alphaTest=0 blending=1 isOutline=true
+F00_000_00_Face_00_SKIN (Outline) Facebaked_8 depthTest=true depthWrite=true transparent=false renderOrder=19 side=1 alphaTest=0 blending=1 isOutline=true
+F00_000_00_EyeExtra_01_EYE Facebaked_9 depthTest=true depthWrite=false transparent=true renderOrder=18 side=0 alphaTest=0 blending=1 isOutline=false
+
+milfy-4 /avatar/mika-milfy-4.vrm
+F00_000_00_EyeWhite_00_EYE Facebaked_1 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0 blending=1 isOutline=false
+F00_000_00_FaceEyeline_00_FACE Facebaked_2 depthTest=true depthWrite=false transparent=true renderOrder=18 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_FaceEyelash_00_FACE Facebaked_3 depthTest=true depthWrite=false transparent=true renderOrder=19 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_EyeIris_00_EYE Facebaked_5 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0.5 blending=1 isOutline=false
+F00_000_00_EyeHighlight_00_EYE Facebaked_6 depthTest=true depthWrite=false transparent=true renderOrder=18 side=2 alphaTest=0 blending=1 isOutline=false
+F00_000_00_Face_00_SKIN Facebaked_7 depthTest=true depthWrite=true transparent=false renderOrder=19 side=0 alphaTest=0 blending=1 isOutline=false
+F00_000_00_Face_00_SKIN (Outline) Facebaked_7 depthTest=true depthWrite=true transparent=false renderOrder=19 side=1 alphaTest=0 blending=1 isOutline=true
+F00_000_00_Face_00_SKIN (Outline) Facebaked_8 depthTest=true depthWrite=true transparent=false renderOrder=19 side=1 alphaTest=0 blending=1 isOutline=true
+F00_000_00_EyeExtra_01_EYE Facebaked_9 depthTest=true depthWrite=false transparent=true renderOrder=18 side=0 alphaTest=0 blending=1 isOutline=false
+
+diff pink vs milfy-4 (header line aside):
+identical
+
+=== [P9c] after the per-target dedupe: proportion_test on -4, and the standalone bare.vrm run byte-identical to prop-check.vrm ==
+Ran 5 tests in 0.047s
+OK
+120 position/morph accessors rescaled by 1.06
+byte-identical to the first post-fix run (prop-check.vrm)
+
+=== [P3'] python3 -m unittest discover -s scripts/avatar -p '*_test.py'（所有改動之後，41 條） ===
+14:08:29 python3 -m unittest discover -s scripts/avatar -p '*_test.py' (after every edit)
+........
+----------------------------------------------------------------------
+Ran 41 tests in 3.196s
+
+OK
+
+=== [P10] Face.baked 頂點位移，舊 -3 對輸入 mika-pink（RESULT 一那兩個數） ===
+Face.baked vertex displacement, old -3 vs input mika-pink: mean 7.51mm  median 7.66mm  max 14.11mm at y=1.5034 (crown - chin 1.272 = 0.2314m, x 0.06 = 13.9mm)

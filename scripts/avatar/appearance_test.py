@@ -23,7 +23,7 @@ REPEAT = 10497
 
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-3.vrm')
+MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-4.vrm')
 # 建置的輸入。baseline.vrm 與它位元組相同，但那份不進版控，所以測試讀這一份。
 SOURCE_MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 MANIFEST = MODEL.replace('.vrm', '.parts.json')
