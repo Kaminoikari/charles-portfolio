@@ -1,0 +1,95 @@
+<!doctype html><meta charset="utf-8"><title>motion probe</title>
+<!--
+  Render the model at chosen moments of a clip, with three-vrm's own springs
+  stepped at a FIXED 1/60 s, on whatever GPU the browser has.
+
+    /scripts/avatar/motionprobe.html?f=/avatar/mika-milfy-3.vrm&clip=dance&t=0,1.6,12.9,17.2
+
+  Why fixed steps: this machine's headless browser runs software WebGL at
+  about one frame a second with the engine's dt clamped to 50 ms, which is a
+  different physics from a visitor's 60 Hz. Physics is cheap and rendering is
+  what is slow, so the clip is advanced 60 times a second WITHOUT rendering
+  and the scene is drawn only at the requested times, from a front and a back
+  camera. The result is the same pose springsim.ts reports numbers for, as
+  pixels. `pitch=<deg>` instead of a clip bows the head that far and holds it
+  for a second, for the gravity-0 question.
+
+  Frames land in window.__frames as PNG data URLs; window.__done flips when
+  every one is there; window.__status carries progress or the error.
+-->
+<body style="margin:0;background:#111"><pre id="out" style="color:#0f0;font:12px monospace;white-space:pre-wrap"></pre>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js",
+"three/addons/":"/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
+"@pixiv/three-vrm-animation":"/node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+const out = document.getElementById('out');
+const say = (s) => { out.textContent += s + '\n'; window.__status = s; };
+window.__frames = {}; window.__done = false;
+const q = new URLSearchParams(location.search);
+const W = 560, H = 900, DT = 1 / 60, PREROLL = 2;
+try {
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.setClearColor(0x1a1a1f, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+  const file = q.get('f') || '/avatar/mika-milfy-3.vrm';
+  const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
+  const loader = new GLTFLoader();
+  loader.register((p) => new VRMLoaderPlugin(p));
+  loader.register((p) => new VRMAnimationLoaderPlugin(p));
+  const vrm = (await loader.parseAsync(bytes.buffer, '')).userData.vrm;
+  VRMUtils.rotateVRM0(vrm);
+  say(`model ${file} loaded, springs ${vrm.springBoneManager?.joints.size ?? 0}`);
+  const scene = new THREE.Scene(); scene.add(vrm.scene);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(0.6, 1.6, 2.2); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x00d9ff, 0.3); fill.position.set(-0.4, -1.0, 1.8); scene.add(fill);
+  const cams = {
+    front: (() => { const c = new THREE.PerspectiveCamera(28, W / H, 0.1, 20); c.position.set(0, 1.0, 3.9); c.lookAt(0, 0.95, 0); return c; })(),
+    back: (() => { const c = new THREE.PerspectiveCamera(28, W / H, 0.1, 20); c.position.set(0, 1.0, -3.9); c.lookAt(0, 0.95, 0); return c; })(),
+    side: (() => { const c = new THREE.PerspectiveCamera(28, W / H, 0.1, 20); c.position.set(3.9, 1.0, 0); c.lookAt(0, 0.95, 0); return c; })(),
+  };
+  const snap = (label) => {
+    for (const [name, cam] of Object.entries(cams)) {
+      renderer.render(scene, cam);
+      window.__frames[`${label}-${name}`] = canvas.toDataURL('image/png');
+    }
+  };
+  const settle = (steps) => { for (let i = 0; i < steps; i++) vrm.update(DT); };
+  const pitch = q.get('pitch');
+  if (pitch) {
+    settle(Math.round(PREROLL / DT));
+    snap('rest');
+    const head = vrm.humanoid.getNormalizedBoneNode('head');
+    const neck = vrm.humanoid.getNormalizedBoneNode('neck');
+    const rad = THREE.MathUtils.degToRad(Number(pitch));
+    // Ease in over half a second, hold a second, like the engine's bow.
+    for (let i = 0; i <= 30; i++) { const k = i / 30; head.rotation.x = rad * 0.6 * k; neck.rotation.x = rad * 0.4 * k; vrm.update(DT); }
+    for (let i = 0; i < 60; i++) vrm.update(DT);
+    snap(`pitch${pitch}`);
+  } else {
+    const clipName = q.get('clip') || 'dance';
+    const gltf = await loader.loadAsync(`/avatar/animations/${clipName}.vrma`);
+    const clip = createVRMAnimationClip(gltf.userData.vrmAnimations[0], vrm);
+    const mixer = new THREE.AnimationMixer(vrm.scene);
+    const action = mixer.clipAction(clip); action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; action.play();
+    mixer.update(0); vrm.humanoid.update();
+    settle(Math.round(PREROLL / DT));
+    const times = (q.get('t') || '0').split(',').map(Number).sort((a, b) => a - b);
+    let t = 0;
+    for (const target of times) {
+      while (t + DT / 2 < target) { mixer.update(DT); vrm.update(DT); t += DT; }
+      say(`t=${t.toFixed(2)}s`);
+      snap(`t${target}`);
+    }
+  }
+  say('done'); window.__done = true;
+} catch (e) { say('ERROR ' + (e && e.stack || e)); window.__done = true; }
+</script>

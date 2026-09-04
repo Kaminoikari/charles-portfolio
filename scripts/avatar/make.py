@@ -77,6 +77,9 @@ BLENDER_STEMS = ['bow', 'neckribbon', 'hairbow', 'details', 'head']
 # quieter still.
 MELLOW_SETS = ['inner', 'outer']
 BLENDER = shutil.which('blender')
+# The file name the site loads (avatarVariants.ts). Bump it with every byte
+# change: /avatar/* is served cache-immutable.
+SHIPPED = 'mika-milfy-3.vrm'
 
 
 @contextlib.contextmanager
@@ -170,11 +173,13 @@ def main():
     # /avatar/* is served cache-immutable for a year, so a model whose bytes
     # changed has to arrive under a new name; the registry in
     # src/components/chat/avatarVariants.ts points at this one. -2: 2026-09-03,
-    # the scalp, the shared skin solve and the neck band.
-    dest = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.vrm')
+    # the scalp, the shared skin solve and the neck band. -3: 2026-09-04, the
+    # twintails hang outside the cardigan and collide with it (twintail.py).
+    dest = os.path.join(BASE, '..', '..', 'public', 'avatar', SHIPPED)
     shutil.copy(p('mika-milfy.vrm'), dest)
     shutil.copy(p('mika-milfy.parts.json'),
-                os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-2.parts.json'))
+                os.path.join(BASE, '..', '..', 'public', 'avatar',
+                             SHIPPED.replace('.vrm', '.parts.json')))
     print(f'\nshipped {os.path.normpath(dest)}')
 
     subprocess.run([sys.executable, 'render.py', p('mika-milfy.vrm'), p('final')],

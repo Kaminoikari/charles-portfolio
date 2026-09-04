@@ -1892,3 +1892,101 @@ customise 1、spring 7、appearance 14 全綠：appearance 新增四條——髮
 畫面（頭部機位）臉對脖子 ΔE：14.39 → 2.03。頭皮對髮色 ΔE 1.23。
 Python 32 條全綠；mutation MA／MC／MD 各自轉紅；MB／ME 綠，對應的測試與步驟已刪。
 vitest：src/components/chat 18 檔 335 條全綠；avatarVariants.test 8 條含 rig 比對。
+
+=== 第七版（2026-09-04，使用者指出雙馬尾轉身時穿模、正面從縫隙看到外套後面的髮、背面陷進外套）===
+
+出貨檔換名 mika-milfy-3.vrm（make.py 的 SHIPPED；健檢 springs 4／colliders 17、
+gate build compare=[] bones=54）。改動在 twintail.py（軸線、彈簧、蒙皮）、
+build.py（順序與守衛）、make.py（檔名），新增 springsim.ts／springsim.test.ts
+（彈簧模擬與守衛）與 motionprobe.html（動態擷取頁），spring_test.py 改寫。
+
+一、三個現象是同一件事：馬尾掛在外套「裡面」
+    材質全是 OPAQUE／MASK、_ZWrite 1，繪製順序沒有問題（使用者猜的圖層錯不成立）。
+    量出貨檔 -2：馬尾軸線由 twintail.axis 從綁點往外推 125mm、往後 40mm，那是對
+    裸身軀幹算的；外套後片在胸線以下離皮膚 60–170mm（髖部：皮膚 z 0.072、外套
+    0.202），軸線在髖部高度 z≈0.116 對外套後片 0.163，抽樣 45% 的馬尾頂點在外套殼
+    內。twintail.apply 在 build.py 第 552 行執行，外套要到第 858 行才載入，軸線從
+    來沒看過外套。背面「陷進去」是被外套後片蓋住；正面「從縫隙看到」是開襟外套
+    的前襟之間看到掛在身後外套內的髮。跟蝴蝶結那次是同一型缺陷（位置寫成量出來
+    的常數，衣服一改就過期）。
+
+二、修法：軸線從外套輪廓推導，彈簧補回 collider，重力歸零，蒙皮重配
+    a. twintail.py：CoatContour 以脊椎軸為中心、2cm 高度帶 × 10° 扇區記外套軀幹片
+       的最外半徑（袖子以權重主導骨為 Arm/Hand/Shoulder 或 T-pose |x|>0.30 剔除）。
+       waypoints 在每個高度取「輪廓＋髮束半徑＋4mm」與「珠子包絡＋hitRadius＋4mm」（TAIL_COAT_GAP）
+       的較大者，方位角沿用 design 線（綁點 50°→尾端 33°），每個路標取相鄰兩段的
+       最大值讓整段弦都在外面，半徑向下單調（垂到最寬處之後打直）。綁點不動。
+       出貨檔：軸線離身軸 112→332mm；靜止時馬尾在外套輪廓內最深 -59mm（全在外面）。
+    b. build.py：twintail.apply 移到 Mellow 服裝貼合之後，吃 garment.bind 之後的
+       外套頂點（只留軀幹片）。新守衛 twintail.coat_intrusion：≥5mm 在輪廓內的頂點
+       ≤1%、最深 ≤5mm（5mm 與 springsim.test.ts 的 REST_COAT_MAX_MM 同一個數字，量
+       法不同，見 build.py 的註解）。
+       以出貨檔內的外套頂點重算：舊檔 -2 是 50.7mm／25.8%，守衛會停；新檔 -59.5mm
+       ／0%，與建置 log 的 -59mm 一致（evidence/twintail-0904.log R5）。
+    c. 彈簧 collider：-2 把雙馬尾的 colliderGroups 清空，理由是註解裡「27° 單幀跳
+       動」，收尾時自己承認沒有重現管道。springsim.ts 用 three-vrm 自己的
+       VRMSpringBoneManager（走 _v0Import，Node 端 60Hz 固定步進）量出貨檔 -2：
+       dance 不帶 collider 也有 16.7° 的單幀轉角，那個數字是舞本身。現在雙馬尾撞
+       頭／頸／上胸／脊椎／雙臂雙手（源模型的 VRoid 組）加上「外套珠子」：VRM0 只有
+       球，外套截面是橢圓，一顆球包住 15–90° 那段弧會在馬尾方位角上多凸 86mm（鎖
+       在中線上再多 60mm，馬尾被推到離身軸 40cm 外）；改成每 6cm 一層、每層 9 顆半徑
+       7cm 的珠子沿輪廓 -20°→90° 排（-20° 是因為轉身時馬尾會甩過身側，鋪到 10° 時
+       量到從 φ=-7° 鑽進側翼 78mm），球心埋在外殼內、球面凸出「髮束半徑－hitRadius
+       ＋4mm」。下襬三層（y 0.80／0.86／0.92）各再掛一份到同側大腿骨：外套下襬一半頂點主導骨是大腿
+       （髖 439／左腿 427／右腿 427）。最高一層放 y=1.10 以下：肩線那圈在 T-pose
+       連著袖子（|x| 0.29），放 1.16 時珠子被撐到 198mm、把綁點下方第一節頂到 40cm。
+       靜止時每個關節對所有 collider 的間隙 ≥0（twintail._assert_rest_clearance，
+       建置期 SystemExit）。
+    d. gravityPower 0.5→0：three-vrm 的平衡方向 ∝ 0.8·rest ＋ 0.5·down，傾斜的弦
+       在瀏覽器裡會塌到約六成的斜度，設計好的披掛會折回外套裡；重力 0 讓 bind 姿
+       勢就是瀏覽器的平衡姿勢，本目錄所有靜態算圖與 gate 對馬尾才是真的。基底模
+       型 8 組髮彈簧有 7 組本來就是 0。代價：低頭時馬尾跟著頭走的成分變大（35° 低
+       頭的擷取見 evidence/twintail-0904-pitch35.jpg）。
+    e. 蒙皮：原本 `j[j==舊第k節]=新第k節`。舊髮簾的鏈從 y=1.325 起算、新鏈從綁點
+       1.45 起算，每個頂點都綁到比自己高一節（12.5cm）的關節；靜止是 bind pose 看
+       不出來，尾巴一彎髮絲就繞錯的支點抄近路。springsim 抓到：轉身那幀關節都被珠
+       子擋在 r=0.32，一個靜止 y=1.039 的頂點卻 95% 綁在 y=1.22 的第 2 節、被帶到
+       r=0.195 鑽進側翼 45mm。改成按高度線性蒙皮（第 k 段分給第 k、k+1 節，尾尖以
+       下全給末節，頭皮那份仍給頭骨）。
+
+三、數字（springsim.ts，60Hz，2s 預熱，髮頂點每 2 取 1；evidence/twintail-0904.log R7 舊檔、R8 新檔）
+    出貨檔 -2 十支 clip：外套內最深 123–271mm、最糟一幀 26–40% 的馬尾頂點在外套裡
+    ≥5mm；dance 271mm／26%，單幀 16.7°。
+    出貨檔 -3：八支 0mm；dance 38mm、spin 32mm（最糟一幀 ≥5mm 的頂點 0%，是單根
+    髮尖）；身體最深 dance 50mm（手臂掃過髮束；髮束半徑 70mm、hitRadius 35mm，這
+    是上限）、其餘 17–39mm（17mm 是頭皮層對頭皮，與 -2 相同；akimbo 39mm 是叉腰
+    的手臂）；單幀最大 dance 21.7°、squat
+    12.7°、spin 12.4°。手臂六組 collider（左右上臂、前臂、手）拿掉再跑 dance，三個
+    數字不變（外套 38mm／身體 50mm／單幀 21.7°，R11 有兩次的 collider 清單），保留
+    是為了不讓髮軸整根穿過手臂，這一點沒有單獨量。
+
+四、守衛與紅燈（收據都在 evidence/twintail-0904.log，編號 R1–R11）
+    spring_test 11 條全綠：SpringTest 8 條開檔量測＋PruneTest 3 條純函式（R2）。
+    檔案級 mutation 各自紅：清空 colliderGroups→3 條紅（collide_with_her_body／
+    collide_with_the_cardigan／every_collider_group_referenced）、gravityPower 改回
+    0.5→1 條紅、髖骨珠子半徑 +5cm→rest_clearance 的 SystemExit 與 cardigan 兩條紅
+    （R2）；只拆掉脊椎的身體 collider 組（珠子組還在）→collide_with_her_body 紅，
+    而原本只比節點名字的斷言會放行它，所以斷言改成只數不含珠子的組（R4）。蒙皮守
+    衛 skinned_to_the_joint_at_its_own_height 的紅燈基準是舊出貨檔 -2（它就是舊的
+    逐節對應）：4925／4925 個頂點綁在不在自己高度的關節，同檔 collider／gravity
+    共四條紅（R3）。springsim.test.ts（dance＋spin，門檻外套 ≤60mm／≥5mm 佔比 ≤2%
+    ／身體 ≤60mm／單幀 ≤25°／靜止 ≤5mm）對 -3 綠（R10）、對 -2 兩條都紅（靜止
+    176mm／92mm，R6）。build.py 的外套守衛：舊檔 50.7mm／25.8% 超過 5mm／1% 會
+    SystemExit，新檔 -59.5mm／0%；珠子半徑不夠撐的 SystemExit 用 hitRadius−0.10 觸
+    發（R5）。
+
+五、瀏覽器證據（Playwright，software WebGL；motionprobe.html 以 1/60 固定步進物理、
+    只在指定時刻算圖，所以與 60Hz 實機是同一套物理）
+    dance t=0／1.6／12.9／17.2s 前後側三機位，-2 與 -3 並排：-2 在 t=0 背面馬尾肩下
+    就消失進外套、12.9s 轉身時馬尾在外套裡；-3 四個時刻馬尾都披在外套外側，轉身
+    時沒有進外套（evidence/twintail-0904-dance-front.jpg、-dance-back-side.jpg）。
+    同頁 pitch=35（低頭 35° 持續 1 秒）的擷取記錄 gravity 0 的代價：馬尾跟著頭前
+    傾，沒有新的穿模（evidence/twintail-0904-pitch35.jpg）。三張只證明這一版的位
+    元組，下一次重建後就過期。
+
+六、同輪順手：引擎登場的青色閃光整個拿掉
+    使用者：「每次開網站時 Mika 一開始都會變色」。那是 avatarGuideEngine 的
+    materialize 登場：第一具身體 1.05 秒內整身往 CYAN_FLASH 拉到 75% 再淡回。
+    2026-09-03 已對換身體的情況關掉，這次連第一具也拿掉（scale pop、粒子、影子
+    保留）；variant.test 改釘「來源裡沒有 CYAN_FLASH／flashW／bodiesInstalled」，
+    把 flashW 放回顏色寫入該條就紅（R9）。

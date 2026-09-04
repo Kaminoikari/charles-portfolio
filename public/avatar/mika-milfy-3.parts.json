@@ -1,0 +1,854 @@
+{
+  "source": "/Users/charles/portfolio/scripts/avatar/baseline.vrm",
+  "parts": {
+    "Face": {
+      "mesh": "Face.baked",
+      "primitives": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "tris": 3158,
+      "materials": [
+        "F00_000_00_EyeExtra_01_EYE",
+        "F00_000_00_EyeHighlight_00_EYE",
+        "F00_000_00_EyeIris_00_EYE",
+        "F00_000_00_EyeWhite_00_EYE",
+        "F00_000_00_FaceBrow_00_FACE",
+        "F00_000_00_FaceEyelash_00_FACE",
+        "F00_000_00_FaceEyeline_00_FACE",
+        "F00_000_00_FaceMouth_00_FACE",
+        "F00_000_00_Face_00_SKIN"
+      ],
+      "deletable": false,
+      "note": "carries the 56 morph targets; splitting it breaks blendShapeMaster",
+      "slot": "Face",
+      "group": "face"
+    },
+    "Body_Skin": {
+      "mesh": "Body.baked",
+      "primitives": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "tris": 7732,
+      "materials": [
+        "F00_000_00_Body_00_SKIN"
+      ],
+      "deletable": false,
+      "slot": "Body_Skin",
+      "group": "body"
+    },
+    "Acc_Ribbon_Waist": {
+      "mesh": "Body.baked",
+      "primitives": [
+        4,
+        5
+      ],
+      "tris": 544,
+      "materials": [
+        "Milfy_Mint",
+        "Milfy_MintDark"
+      ],
+      "deletable": true,
+      "slot": "Acc_Ribbon_Waist",
+      "group": "accessory"
+    },
+    "Acc_Ribbon_Hair": {
+      "mesh": "Body.baked",
+      "primitives": [
+        6
+      ],
+      "tris": 968,
+      "materials": [
+        "Milfy_Mint"
+      ],
+      "deletable": true,
+      "slot": "Acc_Ribbon_Hair",
+      "group": "accessory"
+    },
+    "Acc_Belt_Waist": {
+      "mesh": "Body.baked",
+      "primitives": [
+        7,
+        8
+      ],
+      "tris": 4890,
+      "materials": [
+        "Mellow_Belt_Acc",
+        "Mellow_Jewel"
+      ],
+      "deletable": true,
+      "slot": "Acc_Belt_Waist",
+      "group": "accessory"
+    },
+    "Outfit_Top": {
+      "mesh": "Body.baked",
+      "primitives": [
+        9,
+        10
+      ],
+      "tris": 9706,
+      "materials": [
+        "Mellow_Inner",
+        "Mellow_Inner_Sub"
+      ],
+      "deletable": true,
+      "slot": "Outfit_Top",
+      "group": "outfit"
+    },
+    "Acc_Bandage_Thigh": {
+      "mesh": "Body.baked",
+      "primitives": [
+        11,
+        12
+      ],
+      "tris": 5498,
+      "materials": [
+        "Mellow_Jewel",
+        "Mellow_Leg_Acc"
+      ],
+      "deletable": true,
+      "slot": "Acc_Bandage_Thigh",
+      "group": "accessory"
+    },
+    "Acc_Ribbon_Neck": {
+      "mesh": "Body.baked",
+      "primitives": [
+        13,
+        14
+      ],
+      "tris": 4142,
+      "materials": [
+        "Mellow_Inner_Sub",
+        "Mellow_Jewel"
+      ],
+      "deletable": true,
+      "slot": "Acc_Ribbon_Neck",
+      "group": "accessory"
+    },
+    "Outfit_Shoes": {
+      "mesh": "Body.baked",
+      "primitives": [
+        15,
+        16,
+        17
+      ],
+      "tris": 14492,
+      "materials": [
+        "Mellow_Jewel",
+        "Mellow_Lace",
+        "Mellow_Shoes"
+      ],
+      "deletable": true,
+      "slot": "Outfit_Shoes",
+      "group": "outfit"
+    },
+    "Outfit_Bottom": {
+      "mesh": "Body.baked",
+      "primitives": [
+        18,
+        19
+      ],
+      "tris": 17160,
+      "materials": [
+        "Mellow_Skirt_Cloth",
+        "Mellow_Sub_Acc"
+      ],
+      "deletable": true,
+      "slot": "Outfit_Bottom",
+      "group": "outfit"
+    },
+    "Outfit_Socks": {
+      "mesh": "Body.baked",
+      "primitives": [
+        20,
+        21
+      ],
+      "tris": 7532,
+      "materials": [
+        "Mellow_Lace",
+        "Mellow_Underwear"
+      ],
+      "deletable": true,
+      "slot": "Outfit_Socks",
+      "group": "outfit"
+    },
+    "Outfit_Cardigan": {
+      "mesh": "Body.baked",
+      "primitives": [
+        22
+      ],
+      "tris": 14070,
+      "materials": [
+        "Mellow_Outer"
+      ],
+      "deletable": true,
+      "slot": "Outfit_Cardigan",
+      "group": "outfit"
+    },
+    "Hair_Bangs": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        0,
+        1,
+        4,
+        5,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "tris": 1122,
+      "materials": [
+        "F00_000_Hair_00_HAIR_01"
+      ],
+      "deletable": true,
+      "slot": "Hair_Bangs",
+      "group": "hair"
+    },
+    "Hair_Back": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        2,
+        3,
+        7,
+        8,
+        9,
+        35,
+        36,
+        37,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46
+      ],
+      "tris": 852,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Back",
+      "group": "hair"
+    },
+    "Hair_Side_L": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        6,
+        10,
+        18,
+        19,
+        27,
+        28,
+        33,
+        34,
+        38
+      ],
+      "tris": 586,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02",
+        "F00_000_Hair_00_HAIR_04",
+        "F00_000_Hair_00_HAIR_05"
+      ],
+      "deletable": true,
+      "slot": "Hair_Side_L",
+      "group": "hair"
+    },
+    "Hair_Twintail_L": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        20,
+        21,
+        22,
+        23,
+        49,
+        50,
+        51
+      ],
+      "tris": 4060,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Twintail_L",
+      "group": "hair"
+    },
+    "Hair_Side_R": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        24,
+        25,
+        26,
+        29,
+        30,
+        31,
+        32,
+        47,
+        48
+      ],
+      "tris": 598,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02",
+        "F00_000_Hair_00_HAIR_04"
+      ],
+      "deletable": true,
+      "slot": "Hair_Side_R",
+      "group": "hair"
+    },
+    "Hair_Twintail_R": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58
+      ],
+      "tris": 4020,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Twintail_R",
+      "group": "hair"
+    },
+    "Hair_Ear_L": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        59,
+        60
+      ],
+      "tris": 428,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02",
+        "Milfy_EarInner"
+      ],
+      "deletable": true,
+      "slot": "Hair_Ear_L",
+      "group": "hair"
+    },
+    "Hair_Bun_L": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        61
+      ],
+      "tris": 120,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Bun_L",
+      "group": "hair"
+    },
+    "Hair_Ear_R": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        62,
+        63
+      ],
+      "tris": 428,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02",
+        "Milfy_EarInner"
+      ],
+      "deletable": true,
+      "slot": "Hair_Ear_R",
+      "group": "hair"
+    },
+    "Hair_Bun_R": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        64
+      ],
+      "tris": 120,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Bun_R",
+      "group": "hair"
+    },
+    "Hair_Ahoge": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        65
+      ],
+      "tris": 132,
+      "materials": [
+        "F00_000_Hair_00_HAIR_02"
+      ],
+      "deletable": true,
+      "slot": "Hair_Ahoge",
+      "group": "hair"
+    },
+    "Acc_Crown": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        66,
+        67
+      ],
+      "tris": 200,
+      "materials": [
+        "Milfy_Gold",
+        "Milfy_GoldInner"
+      ],
+      "deletable": true,
+      "slot": "Acc_Crown",
+      "group": "accessory"
+    },
+    "Acc_HairClip_Plaster": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        68,
+        69
+      ],
+      "tris": 228,
+      "materials": [
+        "Milfy_Plaster",
+        "Milfy_White"
+      ],
+      "deletable": true,
+      "slot": "Acc_HairClip_Plaster",
+      "group": "accessory"
+    },
+    "Acc_HairClip_Bear": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        70,
+        71
+      ],
+      "tris": 306,
+      "materials": [
+        "Milfy_Bear",
+        "Milfy_Ink"
+      ],
+      "deletable": true,
+      "slot": "Acc_HairClip_Bear",
+      "group": "accessory"
+    },
+    "Acc_HairClip_Bars": {
+      "mesh": "Hair001.baked",
+      "primitives": [
+        72
+      ],
+      "tris": 24,
+      "materials": [
+        "Milfy_Ink"
+      ],
+      "deletable": true,
+      "slot": "Acc_HairClip_Bars",
+      "group": "accessory"
+    }
+  },
+  "palette": {
+    "Mellow_Belt_Acc": {
+      "base": [
+        0.518,
+        0.784,
+        0.776
+      ],
+      "shade": [
+        0.386,
+        0.638,
+        0.647
+      ],
+      "parts": [
+        "Acc_Belt_Waist"
+      ]
+    },
+    "Mellow_Inner": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Outfit_Top"
+      ]
+    },
+    "Mellow_Inner_Sub": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Acc_Ribbon_Neck",
+        "Outfit_Top"
+      ]
+    },
+    "Mellow_Jewel": {
+      "base": [
+        1.0,
+        0.798,
+        0.634
+      ],
+      "shade": [
+        0.975,
+        0.741,
+        0.568
+      ],
+      "parts": [
+        "Acc_Bandage_Thigh",
+        "Acc_Belt_Waist",
+        "Acc_Ribbon_Neck",
+        "Outfit_Shoes"
+      ]
+    },
+    "Mellow_Lace": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Outfit_Shoes",
+        "Outfit_Socks"
+      ]
+    },
+    "Mellow_Leg_Acc": {
+      "base": [
+        0.949,
+        0.937,
+        0.918
+      ],
+      "shade": [
+        0.848,
+        0.828,
+        0.812
+      ],
+      "parts": [
+        "Acc_Bandage_Thigh"
+      ]
+    },
+    "Mellow_Outer": {
+      "base": [
+        0.341,
+        0.333,
+        0.361
+      ],
+      "shade": [
+        0.231,
+        0.224,
+        0.247
+      ],
+      "parts": [
+        "Outfit_Cardigan"
+      ]
+    },
+    "Mellow_Shoes": {
+      "base": [
+        0.949,
+        0.937,
+        0.918
+      ],
+      "shade": [
+        0.848,
+        0.828,
+        0.812
+      ],
+      "parts": [
+        "Outfit_Shoes"
+      ]
+    },
+    "Mellow_Skirt_Cloth": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Outfit_Bottom"
+      ]
+    },
+    "Mellow_Sub_Acc": {
+      "base": [
+        0.518,
+        0.784,
+        0.776
+      ],
+      "shade": [
+        0.386,
+        0.638,
+        0.647
+      ],
+      "parts": [
+        "Outfit_Bottom"
+      ]
+    },
+    "Mellow_Underwear": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Outfit_Socks"
+      ]
+    },
+    "Milfy_Bear": {
+      "base": [
+        0.965,
+        0.953,
+        0.937
+      ],
+      "shade": [
+        0.867,
+        0.847,
+        0.827
+      ],
+      "parts": [
+        "Acc_HairClip_Bear"
+      ]
+    },
+    "Milfy_EarInner": {
+      "base": [
+        0.9866,
+        0.9131,
+        0.8997
+      ],
+      "shade": [
+        0.8674,
+        0.8028,
+        0.7917
+      ],
+      "parts": [
+        "Hair_Ear_L",
+        "Hair_Ear_R"
+      ]
+    },
+    "Milfy_Gold": {
+      "base": [
+        0.9989,
+        0.7977,
+        0.6345
+      ],
+      "shade": [
+        0.975,
+        0.741,
+        0.568
+      ],
+      "parts": [
+        "Acc_Crown"
+      ]
+    },
+    "Milfy_GoldInner": {
+      "base": [
+        0.908,
+        0.6839,
+        0.5333
+      ],
+      "shade": [
+        0.845,
+        0.63,
+        0.487
+      ],
+      "parts": [
+        "Acc_Crown"
+      ]
+    },
+    "Milfy_Ink": {
+      "base": [
+        0.373,
+        0.365,
+        0.384
+      ],
+      "shade": [
+        0.286,
+        0.278,
+        0.298
+      ],
+      "parts": [
+        "Acc_HairClip_Bars",
+        "Acc_HairClip_Bear"
+      ]
+    },
+    "Milfy_Mint": {
+      "base": [
+        0.518,
+        0.784,
+        0.776
+      ],
+      "shade": [
+        0.386,
+        0.638,
+        0.647
+      ],
+      "parts": [
+        "Acc_Ribbon_Hair",
+        "Acc_Ribbon_Waist"
+      ]
+    },
+    "Milfy_MintDark": {
+      "base": [
+        0.373,
+        0.564,
+        0.559
+      ],
+      "shade": [
+        0.278,
+        0.459,
+        0.466
+      ],
+      "parts": [
+        "Acc_Ribbon_Waist"
+      ]
+    },
+    "Milfy_Plaster": {
+      "base": [
+        0.8,
+        0.882,
+        0.886
+      ],
+      "shade": [
+        0.686,
+        0.78,
+        0.788
+      ],
+      "parts": [
+        "Acc_HairClip_Plaster"
+      ]
+    },
+    "Milfy_White": {
+      "base": [
+        0.957,
+        0.945,
+        0.925
+      ],
+      "shade": [
+        0.855,
+        0.835,
+        0.82
+      ],
+      "parts": [
+        "Acc_HairClip_Plaster"
+      ]
+    }
+  },
+  "shapes": {
+    "(No bra)Breasts_Cow": {
+      "mesh": "Body.baked",
+      "index": 0,
+      "parts": {
+        "Outfit_Cardigan": {
+          "vertices": 6214,
+          "mm": 5.19
+        }
+      }
+    },
+    "Breast_big": {
+      "mesh": "Body.baked",
+      "index": 1,
+      "parts": {
+        "Acc_Ribbon_Neck": {
+          "vertices": 3167,
+          "mm": 0.13
+        },
+        "Outfit_Top": {
+          "vertices": 4454,
+          "mm": 11.44
+        }
+      }
+    },
+    "Breast_small": {
+      "mesh": "Body.baked",
+      "index": 2,
+      "parts": {
+        "Acc_Ribbon_Neck": {
+          "vertices": 564,
+          "mm": 1.53
+        },
+        "Outfit_Top": {
+          "vertices": 4790,
+          "mm": 6.23
+        }
+      }
+    },
+    "Hutomomo_big": {
+      "mesh": "Body.baked",
+      "index": 3,
+      "parts": {
+        "Acc_Bandage_Thigh": {
+          "vertices": 3839,
+          "mm": 3.64
+        }
+      }
+    },
+    "Hutomomo_slim": {
+      "mesh": "Body.baked",
+      "index": 4,
+      "parts": {
+        "Acc_Bandage_Thigh": {
+          "vertices": 3843,
+          "mm": 3.14
+        }
+      }
+    },
+    "Waist_slim": {
+      "mesh": "Body.baked",
+      "index": 5,
+      "parts": {
+        "Acc_Belt_Waist": {
+          "vertices": 3994,
+          "mm": 1.16
+        },
+        "Outfit_Bottom": {
+          "vertices": 9517,
+          "mm": 0.28
+        },
+        "Outfit_Top": {
+          "vertices": 882,
+          "mm": 0.77
+        }
+      }
+    }
+  },
+  "landmarks": {
+    "waist": 0.9600000000000001,
+    "waist_r": 0.1000041168057943,
+    "foot": 0.0343145877122879
+  }
+}

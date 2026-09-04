@@ -1,0 +1,333 @@
+twintail-0904：第七版（mika-milfy-3）雙馬尾／外套的收據。R1（建置 log，跑在 12mm／2% 舊門檻下）與 R2（spring_test，跑在 collide_with_her_body 收緊前）是改動前的原始 log；R3–R11 在最後一次程式改動之後跑，收緊後的綠燈在 R4 末段與 R10。
+舊出貨檔 = git HEAD 的 public/avatar/mika-milfy-2.vrm（git show 匯出到 scratch 的 milfy-2-head.vrm，parts 清單沿用 -3 的：兩檔 mesh／primitive／材質／索引數逐一相同，腳本已驗）。
+
+=== [R1] make-v3.log：出貨檔建置 log（含 build.py 的外套守衛與健檢） ===
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-front.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-back.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-three_quarter.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-face.png
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (12.1s)
+1. partition
+   13 parts
+  gate partition: compare=[] bones=54
+   (0.1s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+   swept 5 stranded materials: F00_000_Hair_00_HAIR_03, F00_000_Hair_00_HAIR_06, F00_001_01_Bottoms_01_CLOTH, F00_006_01_Shoes_01_CLOTH, F00_008_01_Tops_01_CLOTH
+  gate strip: compare=[] bones=54
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54
+   (2.4s)
+4. proportion
+   5.91 -> 5.64 heads tall, height 1.5046
+  gate proportion: compare=[] bones=54
+   (0.0s)
+5. build the outfit
+   服裝擬合 mellow.glb：縮放 x1.172，對位骨最大殘差 0.00mm
+   大腿腿帶截面縮放 x=0.749 z=0.818，大腿直徑 94x111mm
+   服裝擬合 mellow_outer.glb：縮放 x1.153，對位骨最大殘差 0.00mm
+   貼身外推最大位移：Acc_Bandage_Thigh 8mm，Acc_Belt_Waist 24mm，Acc_Ribbon_Neck 12mm，Outfit_Bottom 19mm，Outfit_Cardigan 15mm，Outfit_Shoes 12mm，Outfit_Socks 18mm，Outfit_Top 19mm
+   蝴蝶結對腰封最近距離 2mm
+   丟掉動不了東西的 shape key：Side adjustment 平均 0.00mm
+   服裝 shape key：(No bra)Breasts_Cow 6214 點/平均 5.2mm，Breast_big 7621 點/平均 6.7mm，Breast_small 5354 點/平均 5.7mm，Hutomomo_big 3839 點/平均 3.6mm，Hutomomo_slim 3843 點/平均 3.1mm，Waist_slim 14393 點/平均 0.6mm
+   外套珠子 54 顆/側，半徑 70mm，高度 1.10→0.80，每層 9 顆
+   Hair_Twintail_L 位移最大 254.7mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   Hair_Twintail_R 位移最大 256.4mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   雙馬尾在外套輪廓內最深 -59mm，≥5mm 的頂點佔 0.0%
+   皇冠整體下沉 0mm 貼上髮面
+   頭皮色塊 231170 px → 髮色 (224, 214, 202) 轉色相 +136.0° 飽和 x0.47 明度 x1.00 提亮 0.72 位移 +0.000
+   膚色 5011710 px（臉與身共用一組解） 轉色相 +2.6° 飽和 x1.15 明度 x1.00 提亮 0.00 位移 +0.118
+   頸部帶 F00_000_00_Face_00 256827 px 最暗十分位抬升 +0.068
+   頸部帶 F00_000_00_Body_00 346603 px 最暗十分位抬升 +0.069
+   頸部目標 (252, 222, 213) 取自帶外的皮膚
+   F00_000_00_EyeIris_00 轉色相 +156.4° 飽和 x0.32 明度 x1.00 提亮 0.00 位移 +0.094
+   膚色 MToon 乘色 (0.96, 0.9, 0.87)，改了 2 個材質
+   髮色 MToon 乘色 (0.92, 0.84, 0.8)，改了 4 個材質
+   描邊統一為 (0.2, 0.1762, 0.1698)，改了 10 個材質，原本有 1 種：[(0.274509817, 0.09019608, 0.1254902)]
+   邊光宣告為 (0.518, 0.784, 0.776)，寫進 14 個材質
+   掃掉沒有網格用的材質 5 個：['Milfy_Bandage', 'Milfy_Cardigan', 'Milfy_Hair', 'Milfy_Ribbon', 'Milfy_Sock']
+   +33 parts, 11952360 bytes, waist y=0.960
+  gate build: compare=[] bones=54
+   (39.3s)
+6. health check
+== /Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm
+   tris 103116  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 17  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     73 prim   13224 tris  targets 0
+   vertex sha b8126ca141a56e2a
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+   (0.2s)
+
+shipped /Users/charles/portfolio/public/avatar/mika-milfy-3.vrm
+python3 -W ignore make.py  51.33s user 5.11s system 88% cpu 1:04.13 total
+
+=== [R2] spring_test：出貨檔綠燈與三個檔案級 mutation（collider 清空／gravity 0.5／髖骨珠子 +5cm） ===
+== spring_test on shipped public/avatar/mika-milfy-3.vrm ==
+Ran 11 tests in 0.016s
+OK
+== spring_test on shipped mika-milfy-3 ==
+/opt/homebrew/opt/python@3.14/bin/python3.14: No module named pytest
+== spring_test on mutation nocolliders ==
+== spring_test on mutation gravity ==
+== spring_test on mutation bead ==
+== spring_test on mutation nocolliders (/private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/mut-nocolliders.vrm) ==
+FAIL: test_every_collider_group_is_referenced_by_a_spring (__main__.SpringTest.test_every_collider_group_is_referenced_by_a_spring)
+FAIL: test_twintails_collide_with_her_body (__main__.SpringTest.test_twintails_collide_with_her_body)
+FAIL: test_twintails_collide_with_the_cardigan (__main__.SpringTest.test_twintails_collide_with_the_cardigan)
+Ran 11 tests in 0.016s
+FAILED (failures=3)
+== spring_test on mutation gravity (/private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/mut-gravity.vrm) ==
+FAIL: test_twintails_run_at_zero_gravity (__main__.SpringTest.test_twintails_run_at_zero_gravity)
+Ran 11 tests in 0.022s
+FAILED (failures=1)
+== spring_test on mutation bead (/private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/mut-bead.vrm) ==
+ERROR: test_no_tail_joint_rests_inside_a_collider (__main__.SpringTest.test_no_tail_joint_rests_inside_a_collider)
+FAIL: test_twintails_collide_with_the_cardigan (__main__.SpringTest.test_twintails_collide_with_the_cardigan)
+Ran 11 tests in 0.022s
+FAILED (failures=1, errors=1)
+
+=== [R3] spring_test：舊出貨檔（蒙皮守衛、collider、gravity 四條紅） ===
+== spring_test on OLD shipped file (git HEAD mika-milfy-2.vrm, copied to /private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/milfy-2-head.vrm; parts manifest = -3's, primitive layout verified identical) ==
+FAIL: test_tail_hair_is_skinned_to_the_joint_at_its_own_height (__main__.SpringTest.test_tail_hair_is_skinned_to_the_joint_at_its_own_height)
+AssertionError: 0 != 4925 : 4925 of 4925 tail vertices lead on a joint not above them
+FAIL: test_twintails_collide_with_her_body (__main__.SpringTest.test_twintails_collide_with_her_body)
+AssertionError: False is not true : ['J_Bip_C_Head', 'J_Bip_C_Neck', 'J_Bip_C_Spine', 'J_Bip_C_UpperChest', 'J_Bip_L_Hand', 'J_Bip_L_LowerArm', 'J_Bip_L_UpperArm', 'J_Bip_R_Hand', 'J_Bip_R_LowerArm', 'J_Bip_R_UpperArm']
+FAIL: test_twintails_collide_with_the_cardigan (__main__.SpringTest.test_twintails_collide_with_the_cardigan)
+AssertionError: False is not true : {}
+FAIL: test_twintails_run_at_zero_gravity (__main__.SpringTest.test_twintails_run_at_zero_gravity)
+AssertionError: 0.0 != 0.5
+Ran 11 tests in 0.019s
+FAILED (failures=4)
+
+=== [R4] spring_test：脊椎的身體 collider 組拆線（珠子組還在）；舊的只比名字的斷言會放行，收緊後紅 ===
+tail spring groups: 1
+body (non-bead) collider group on J_Bip_C_Spine: [0]
+old name-only check (set(TAIL_BODY_COLLIDERS) <= names): True <- would still PASS
+wrote /private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/mut-bodyspine.vrm
+== spring_test on mut-bodyspine (spine's body collider group unwired from the tails; bead group still there) ==
+FAIL: test_every_collider_group_is_referenced_by_a_spring (__main__.SpringTest.test_every_collider_group_is_referenced_by_a_spring)
+AssertionError: Lists differ: [] != [(0, 'J_Bip_C_Spine')]
+FAIL: test_twintails_collide_with_her_body (__main__.SpringTest.test_twintails_collide_with_her_body)
+AssertionError: False is not true : ['J_Bip_C_Spine']
+Ran 11 tests in 0.017s
+FAILED (failures=2)
+== spring_test on shipped mika-milfy-3 after tightening the body test ==
+Ran 11 tests in 0.016s
+OK
+
+=== [R5] build.py 外套守衛（twintail.coat_intrusion）對舊檔／新檔，與珠子半徑的 SystemExit（腳本 coatgate_receipt.py） ===
+"""Receipt: build.py's coat gate (TAIL_COAT_INTRUSION_MAX / TAIL_COAT_INSIDE_SHARE_MAX)
+measured on the OLD shipped file and on the new one, and twintail's bead-radius
+SystemExit. Reads the coat torso vertices back from the file the same way
+build.py selects them (Mellow_Outer primitives of Body.baked, vertices whose
+dominant joint is not an Arm/Hand/Shoulder bone)."""
+import json, sys
+import numpy as np
+sys.path.insert(0, '/Users/charles/portfolio/scripts/avatar')
+import glb, twintail
+import build
+
+def coat_vertices(doc, views):
+    mesh = next(m for m in doc['meshes'] if m['name'] == 'Body.baked')
+    skin = doc['skins'][0]
+    out = []
+    for pr in mesh['primitives']:
+        if doc['materials'][pr['material']]['name'] != 'Mellow_Outer':
+            continue
+        pos = glb.read_accessor(doc, views, pr['attributes']['POSITION']).astype(np.float64)
+        j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0'])
+        w = glb.read_accessor(doc, views, pr['attributes']['WEIGHTS_0'])
+        lead = j[np.arange(len(j)), w.argmax(axis=1)]
+        names = np.array([doc['nodes'][skin['joints'][int(k)]].get('name', '') for k in lead])
+        torso = np.array([not any(t in n for t in ('Arm', 'Hand', 'Shoulder')) for n in names])
+        out.append(pos[torso])
+    return np.concatenate(out)
+
+for label, path in (('OLD mika-milfy-2 (git HEAD)', sys.argv[1]), ('NEW mika-milfy-3', sys.argv[2])):
+    doc, binary = glb.load(path)
+    views = glb.views_of(doc, binary)
+    manifest = json.load(open(path.replace('.vrm', '.parts.json')))['parts']
+    coat = coat_vertices(doc, views)
+    deepest, share = twintail.coat_intrusion(doc, views, manifest, coat)
+    verdict = ('SystemExit (gate trips)' if deepest > build.TAIL_COAT_INTRUSION_MAX
+               or share > build.TAIL_COAT_INSIDE_SHARE_MAX else 'passes')
+    print(f'{label}: coat torso vertices {len(coat)}, deepest {deepest:.1f}mm '
+          f'(limit {build.TAIL_COAT_INTRUSION_MAX:.0f}), share>=5mm {share*100:.1f}% '
+          f'(limit {build.TAIL_COAT_INSIDE_SHARE_MAX*100:.0f}%) -> {verdict}')
+    if label.startswith('NEW'):
+        contour = twintail.CoatContour(coat)
+        n = len(twintail.coat_spheres(contour, twintail.TAIL_HIT_RADIUS))
+        print(f'bead-radius invariant: coat_spheres with hitRadius {twintail.TAIL_HIT_RADIUS} -> {n} beads')
+        try:
+            twintail.coat_spheres(contour, twintail.TAIL_HIT_RADIUS - 0.10)
+            print('bead-radius invariant: hitRadius-0.10 did NOT raise  <-- guard broken')
+        except SystemExit as e:
+            print(f'bead-radius invariant: hitRadius-0.10 -> SystemExit: {e}')
+--- output ---
+OLD mika-milfy-2 (git HEAD): coat torso vertices 3502, deepest 50.7mm (limit 5), share>=5mm 25.8% (limit 1%) -> SystemExit (gate trips)
+NEW mika-milfy-3: coat torso vertices 3502, deepest -59.5mm (limit 5), share>=5mm 0.0% (limit 1%) -> passes
+bead-radius invariant: coat_spheres with hitRadius 0.035 -> 54 beads
+bead-radius invariant: hitRadius-0.10 -> SystemExit: 外套珠子的半徑比它要撐出來的量還小，球心會落在外套外面
+
+=== [R6] springsim.test.ts 對舊出貨檔（SPRINGSIM_TEST_MODEL）兩條紅 ===
+== springsim.test.ts on OLD shipped file (/private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/milfy-2-head.vrm) ==
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/avatar/springsim.test.ts (2 tests | 2 failed) 6464ms
+   × Milfy twintails through the spring solver > dance: the tails stay outside the cardigan and out of her body 4608ms
+     → at rest, inside the coat: expected 176.38993436064447 to be less than or equal to 5
+   × Milfy twintails through the spring solver > spin: the tails stay outside the cardigan and out of her body 1855ms
+     → at rest, inside the coat: expected 92.47823497444801 to be less than or equal to 5
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  scripts/avatar/springsim.test.ts > Milfy twintails through the spring solver > dance: the tails stay outside the cardigan and out of her body
+AssertionError: at rest, inside the coat: expected 176.38993436064447 to be less than or equal to 5
+ ❯ scripts/avatar/springsim.test.ts:43:61
+     41|       const args = parseArgs([MODEL, `--clip=${clip}`, '--stride=3'])
+     42|       const r = await runClip(args, path.resolve('public/avatar/animat…
+     43|       expect(r.restCoatDepthMm, 'at rest, inside the coat').toBeLessTh…
+       |                                                             ^
+     44|       expect(r.coatDepthMm, `deepest into the coat @${r.coatWorstT.toF…
+     45|       expect(r.coatAtWorst, 'share of the tail ≥5mm inside at the wors…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+ FAIL  scripts/avatar/springsim.test.ts > Milfy twintails through the spring solver > spin: the tails stay outside the cardigan and out of her body
+AssertionError: at rest, inside the coat: expected 92.47823497444801 to be less than or equal to 5
+ ❯ scripts/avatar/springsim.test.ts:43:61
+     41|       const args = parseArgs([MODEL, `--clip=${clip}`, '--stride=3'])
+     42|       const r = await runClip(args, path.resolve('public/avatar/animat…
+     43|       expect(r.restCoatDepthMm, 'at rest, inside the coat').toBeLessTh…
+       |                                                             ^
+     44|       expect(r.coatDepthMm, `deepest into the coat @${r.coatWorstT.toF…
+     45|       expect(r.coatAtWorst, 'share of the tail ≥5mm inside at the wors…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  10:26:55
+   Duration  7.05s (transform 67ms, setup 49ms, collect 93ms, tests 6.46s, environment 302ms, prepare 37ms)
+
+=== [R7] springsim.ts 十支 clip，舊檔 ===
+== springsim.ts --clip=all --stride=2 on OLD shipped file /private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/milfy-2-head.vrm (git HEAD mika-milfy-2.vrm) ==
+model ../../../private/tmp/claude-501/-Users-charles-portfolio/46bd8673-262a-4c5e-b093-44fca340f15f/scratchpad/milfy-2-head.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+akimbo           117mm     156mm     126mm       38%   0.33s     1°      30mm   0.40s    1.2°   9.88s  HairTailR_5
+dance            176mm     271mm     222mm       26%   1.63s     9°      50mm   7.37s   16.7°   8.15s  HairTailL_4
+idleLoop         129mm     141mm     104mm       37%   6.13s    -2°      17mm   0.00s    0.2°   5.27s  HairTailL_5
+modelPose         94mm     182mm     156mm       27%   0.87s   -28°      49mm   0.37s    1.4°   0.75s  HairTailR_5
+peaceSign        122mm     168mm     118mm       34%   0.83s    13°      28mm   9.67s    0.9°   0.90s  HairTailR_5
+playFingers      117mm     123mm      99mm       36%   3.73s    -0°      27mm   4.77s    0.7°   4.28s  HairTailR_0
+scratchHead      117mm     177mm     146mm       40%   4.57s   -15°      50mm   2.93s    1.6°   0.28s  HairTailR_5
+spin              91mm     165mm     149mm       38%   6.53s   -14°      41mm   1.77s   12.9°   2.10s  HairTailL_5
+squat            109mm     183mm     158mm       37%   1.03s    -0°      37mm   1.03s    2.1°   1.07s  HairTailR_5
+stretch          117mm     133mm     106mm       35%   0.27s     0°      26mm   4.53s    1.3°   0.28s  HairTailR_5
+
+=== [R8] springsim.ts 十支 clip，新檔 ===
+== springsim.ts --clip=all --stride=2 on shipped /Users/charles/portfolio/public/avatar/mika-milfy-3.vrm ==
+model public/avatar/mika-milfy-3.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+akimbo             0mm       0mm       0mm        0%   0.00s    -0°      39mm   1.20s    2.5°   9.88s  HairTailR_5
+dance              0mm      38mm      38mm        0%  17.23s  -107°      50mm   0.53s   21.7°   1.03s  HairTailR_5
+idleLoop           0mm       0mm       0mm        0%   0.00s    -3°      17mm   0.00s    0.3°   9.32s  HairTailL_5
+modelPose          0mm       0mm       0mm        0%   0.00s    -3°      17mm   1.90s    5.0°   3.98s  HairTailR_5
+peaceSign          0mm       0mm       0mm        0%   0.00s     4°      17mm   0.00s    4.5°  10.50s  HairTailL_5
+playFingers        0mm       0mm       0mm        0%   0.00s    -0°      17mm   2.40s    1.9°   5.18s  HairTailL_5
+scratchHead        0mm       0mm       0mm        0%   0.00s    -0°      18mm   1.70s    3.5°   0.47s  HairTailR_5
+spin               0mm      32mm      32mm        0%   1.90s  -158°      17mm   1.63s   12.4°   2.02s  HairTailL_2
+squat              0mm       0mm       0mm        0%   0.00s     0°      17mm   2.53s   12.7°   3.27s  HairTailR_5
+stretch            0mm       0mm       0mm        0%   0.00s    -0°      17mm   0.30s    3.5°   3.87s  HairTailL_5
+
+=== [R9] avatarGuideEngine.variant.test.ts：把 flashW 放回顏色寫入 → 紅；還原用位元組備份（sha 7278b11a8f482428 前後相同） ===
+== avatarGuideEngine.variant.test.ts with the entrance flash re-added (flashW term back in the colour write) ==
+   ✓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one 1ms
+   ✓ a body swap is the first load, run again > exposes the swap on the handle 0ms
+   ✓ a body swap is the first load, run again > releases the old body before installing the new one 0ms
+   ✓ a body swap is the first load, run again > releases the old body's scene, clips and mixer 0ms
+   ✓ a body swap is the first load, run again > rebinds every motion clip to the new bones instead of fetching again 0ms
+   ✓ a body swap is the first load, run again > materializes the new body the way it did the first 0ms
+   × a body swap is the first load, run again > never writes colour during the entrance 4ms
+     → expected '// Framework-free engine for the 3D a…' not to match /CYAN_FLASH|flashW|bodiesInstalled/
+   ✓ a body swap is the first load, run again > drops a result that a newer request, a teardown or a lost context overtook 0ms
+   ✓ a body swap is the first load, run again > keeps the body on screen when a swap fails, and reports a failure only with none 0ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarGuideEngine.variant.test.ts > a body swap is the first load, run again > never writes colour during the entrance
+AssertionError: expected '// Framework-free engine for the 3D a…' not to match /CYAN_FLASH|flashW|bodiesInstalled/
+  // 2× into a 256px canvas so the outline stays crisp on her hair.
+
+=== [R10] 全套 vitest（見 RESULT.txt 第七版；重跑於收據之後，摘要行附在下面） ===
+--- npx vitest run（收據之後、含 springsim.test.ts 與 variant.test 的綠燈）---
+4: ✓ src/components/chat/avatarGuideEngine.variant.test.ts (9 tests) 2ms
+227: ✓ scripts/avatar/springsim.test.ts (2 tests) 6860ms
+613: Test Files  24 passed (24)
+614:      Tests  370 passed (370)
+616:   Duration  19.52s (transform 470ms, setup 534ms, collect 1.65s, tests 29.42s, environment 4.43s, prepare 748ms)
+618:exit 0
+--- python3 -m unittest discover -s scripts/avatar -p '*_test.py' ---
+10:37:12 python3 -m unittest discover -s scripts/avatar -p '*_test.py'
+  cls.manifest = json.load(open(MODEL.replace('.vrm', '.parts.json')))['parts']
+........
+----------------------------------------------------------------------
+Ran 36 tests in 3.339s
+
+OK
+
+=== [R11] springsim.ts dance, stride 2, shipped -3：帶手臂 collider 與 --no-arms（拿掉 /Arm|Hand/ 的六組），SPRINGSIM_DEBUG=1 印出實際載入的 collider 組 ===
+--- with arms ---
+model public/avatar/mika-milfy-3.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+  tail colliders: J_Bip_C_Spine×1 J_Bip_C_UpperChest×3 J_Bip_C_Neck×1 J_Bip_C_Head×1 J_Bip_L_UpperArm×3 J_Bip_L_LowerArm×4 J_Bip_L_Hand×1 J_Bip_R_UpperArm×3 J_Bip_R_LowerArm×4 J_Bip_R_Hand×1 J_Bip_C_Chest×36 J_Bip_C_Spine×18 J_Bip_C_Hips×54 J_Bip_L_UpperLeg×33 J_Bip_R_UpperLeg×33
+  bind check Hair_Twintail_L: skin 2, 1561 verts, max |skinned - rest| 0.00mm
+  bind check Hair_Twintail_R: skin 2, 1546 verts, max |skinned - rest| 0.00mm
+  bind check coat: skin 1, 3224 verts, max |skinned - rest| 0.00mm
+  bind check body: skin 1, 4648 verts, max |skinned - rest| 0.00mm
+  bind check face: skin 0, 4108 verts, max |skinned - rest| 0.00mm
+  pre-roll end: hips yaw -8°
+    J_Bip_C_Hips   (0.044, 0.839, -0.101)
+    J_Bip_C_Head   (0.008, 1.279, -0.139)
+    HairTailR_0    (0.062, 1.400, -0.034)
+    HairTailR_1    (0.121, 1.287, -0.020)
+    HairTailR_2    (0.207, 1.175, 0.013)
+    HairTailR_3    (0.264, 1.065, 0.015)
+    HairTailR_4    (0.319, 0.959, 0.009)
+    HairTailR_5    (0.364, 0.854, -0.008)
+    HairTailR_6    (0.407, 0.748, -0.025)
+  rest Hair_Twintail_L: worst hair vertex (-0.062, 1.416, -0.027) depth 0mm
+  rest Hair_Twintail_R: worst hair vertex (0.060, 1.435, -0.059) depth 0mm
+dance              0mm      38mm      38mm        0%  17.23s  -107°      50mm   0.53s   21.7°   1.03s  HairTailR_5
+    worst coat frame: R hair (0.30,0.96,0.04) [local y 0.040 r 0.189 φ 68°] coat (0.33,0.95,0.07) [local y 0.021 r 0.227 φ 63°] rest (-0.15,0.95,0.15)
+--- --no-arms ---
+model public/avatar/mika-milfy-3.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+  tail colliders: J_Bip_C_Spine×1 J_Bip_C_UpperChest×3 J_Bip_C_Neck×1 J_Bip_C_Head×1 J_Bip_C_Chest×36 J_Bip_C_Spine×18 J_Bip_C_Hips×54 J_Bip_L_UpperLeg×33 J_Bip_R_UpperLeg×33
+  bind check Hair_Twintail_L: skin 2, 1561 verts, max |skinned - rest| 0.00mm
+  bind check Hair_Twintail_R: skin 2, 1546 verts, max |skinned - rest| 0.00mm
+  bind check coat: skin 1, 3224 verts, max |skinned - rest| 0.00mm
+  bind check body: skin 1, 4648 verts, max |skinned - rest| 0.00mm
+  bind check face: skin 0, 4108 verts, max |skinned - rest| 0.00mm
+  pre-roll end: hips yaw -8°
+    J_Bip_C_Hips   (0.044, 0.839, -0.101)
+    J_Bip_C_Head   (0.008, 1.279, -0.139)
+    HairTailR_0    (0.062, 1.400, -0.034)
+    HairTailR_1    (0.121, 1.287, -0.020)
+    HairTailR_2    (0.207, 1.175, 0.013)
+    HairTailR_3    (0.264, 1.065, 0.015)
+    HairTailR_4    (0.319, 0.959, 0.009)
+    HairTailR_5    (0.364, 0.854, -0.008)
+    HairTailR_6    (0.407, 0.748, -0.025)
+  rest Hair_Twintail_L: worst hair vertex (-0.062, 1.416, -0.027) depth 0mm
+  rest Hair_Twintail_R: worst hair vertex (0.060, 1.435, -0.059) depth 0mm
+dance              0mm      38mm      38mm        0%  17.23s  -107°      50mm   0.53s   21.7°   1.03s  HairTailR_5
+    worst coat frame: R hair (0.30,0.96,0.04) [local y 0.040 r 0.189 φ 68°] coat (0.33,0.95,0.07) [local y 0.021 r 0.227 φ 63°] rest (-0.15,0.95,0.15)

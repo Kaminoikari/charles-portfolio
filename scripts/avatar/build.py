@@ -109,6 +109,13 @@ MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
 # akimbo 腰際手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm
 # rest 間隙之上。
 MELLOW_STANDOFF = {'Outfit_Cardigan': 0.010}
+# 雙馬尾對外套的守衛（量法見 twintail.coat_intrusion）。乾淨的建置量到
+# -59mm／0%（最靠裡的髮頂點也在輪廓外 59mm），舊出貨檔 -2 是 50.7mm／25.8%。
+# 5mm 與 springsim.test.ts 的 REST_COAT_MAX_MM 是同一個數字，量法不同（這裡量
+# bind mesh、世界座標、x 對折、不切前方；springsim 量彈簧安定後的蒙皮網格、脊椎
+# 座標系、-10° 前切）；1% 是髮絲取 90 百分位粗細之後允許零星幾根探進輪廓。
+TAIL_COAT_INTRUSION_MAX = 5.0
+TAIL_COAT_INSIDE_SHARE_MAX = 0.01
 
 # And a key is only shipped if the vertices it moves go somewhere a person could
 # see: the mean displacement over its moved vertices, on at least one garment,
@@ -547,13 +554,10 @@ def build(src, dst, manifest_path, out_manifest):
     views = glb.views_of(doc, binary)
     manifest = json.load(open(manifest_path))
 
-    # 背面的長髮先分成兩束再做其他事。這一步同時動幾何、骨鏈與權重，
-    # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本。
-    tails = twintail.apply(doc, views, manifest['parts'],
-                           garment.body_pool(doc, views, manifest, 'Body_Skin')['pos'])
-    for name, r in tails.items():
-        print(f'   {name} 位移最大 {r["moved_mm"]:.1f}mm，新骨鏈 {len(r["chain"])} 節')
-
+    # 背面的長髮要分成兩束，但要等外套穿好之後（見下方 twintail.apply 的呼叫）：
+    # 馬尾掛在外套外面，軸線與彈簧的 collider 都是從外套貼合後的外殼推導的。
+    # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本；目前只有頭飾那段
+    # （crown_y 讀 Hair_Back），它在更後面。
     mats = {n: add_material(doc, n, b, s) for n, (b, s) in PALETTE.items()}
     pool = garment.body_pool(doc, views, manifest, 'Body_Skin')
     lm = landmarks(pool)
@@ -826,6 +830,7 @@ def build(src, dst, manifest_path, out_manifest):
     # --- the imported outfit. Everything it needs was measured off the two
     #     files; see outfit.py for why it is a global fit plus a per-bone
     #     correction rather than a single transform. ---
+    coat_pos = []
     if mellow:
         pushed = {}
         belt_pos = []
@@ -925,6 +930,17 @@ def build(src, dst, manifest_path, out_manifest):
                 bound = garment.bind(pool, item['piece'])
                 if name == 'Acc_Belt_Waist':
                     belt_pos.append(bound['pos'])
+                if name == 'Outfit_Cardigan':
+                    # 只留軀幹片：權重主要落在手臂／肩／手的是袖子。T-pose 的
+                    # 袖口在馬尾經過肩膀的方位角上伸到半徑 0.22-0.27，瀏覽器裡
+                    # 那截袖子卻是垂在身側的，算進輪廓會把馬尾第一節頂到 40cm 外。
+                    lead = bound['joints'][np.arange(len(bound['joints'])),
+                                           bound['weights'].argmax(axis=1)]
+                    lead_name = np.array([doc['nodes'][skin['joints'][j]].get('name', '')
+                                          for j in lead])
+                    torso = np.array([not any(k in n for k in ('Arm', 'Hand', 'Shoulder'))
+                                      for n in lead_name])
+                    coat_pos.append(bound['pos'][torso])
                 if name == 'Outfit_Bottom':
                     bound = drape(bound)
                 at = garment.attach(doc, views, 'Body.baked', bound,
@@ -976,6 +992,27 @@ def build(src, dst, manifest_path, out_manifest):
                 f'{k} {moved[k][0]} 點/平均 '
                 f'{(moved[k][1] / moved[k][0]) if moved[k][0] else 0.0:.1f}mm'
                 for k in names))
+
+    # --- the twintails, now that the coat they hang over has settled. ---
+    coat = np.concatenate(coat_pos) if coat_pos else None
+    tails = twintail.apply(doc, views, manifest['parts'], pool['pos'], coat_pos=coat)
+    for name, r in tails.items():
+        w = r['points']
+        print(f'   {name} 位移最大 {r["moved_mm"]:.1f}mm，新骨鏈 {len(r["chain"])} 節，'
+              f'軸線離身軸 {np.hypot(w[0, 0], w[0, 2]) * 1000:.0f}→'
+              f'{np.hypot(w[-1, 0], w[-1, 2]) * 1000:.0f}mm')
+    if coat is not None:
+        # 髮束表面對外套外殼的間隙是設計出來的（TAIL_COAT_GAP），這裡量的是
+        # 「還有多少髮頂點在外套輪廓裡面」。髮束的粗細取 90 百分位，所以一成的
+        # 髮絲本來就會伸出設計半徑之外，允許幾毫米；但 2026-09-04 修之前是
+        # 176mm／45%，門檻擋的是那個量級。
+        deepest, share = twintail.coat_intrusion(doc, views, manifest['parts'], coat)
+        print(f'   雙馬尾在外套輪廓內最深 {deepest:.0f}mm，≥5mm 的頂點佔 {share * 100:.1f}%')
+        if deepest > TAIL_COAT_INTRUSION_MAX or share > TAIL_COAT_INSIDE_SHARE_MAX:
+            raise SystemExit(
+                f'雙馬尾陷進外套：最深 {deepest:.0f}mm（上限 {TAIL_COAT_INTRUSION_MAX:.0f}）、'
+                f'≥5mm 佔 {share * 100:.1f}%（上限 {TAIL_COAT_INSIDE_SHARE_MAX * 100:.0f}%）；'
+                'twintail.waypoints 與現在的外套對不上了')
 
     # --- head: bear ears, buns, crown, ahoge, clips. Bound rigidly to the
     #     head joint, which is what an accessory sitting on the skull does. ---
