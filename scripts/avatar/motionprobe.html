@@ -3,7 +3,7 @@
   Render the model at chosen moments of a clip, with three-vrm's own springs
   stepped at a FIXED 1/60 s, on whatever GPU the browser has.
 
-    /scripts/avatar/motionprobe.html?f=/avatar/mika-milfy-4.vrm&clip=dance&t=0,1.6,12.9,17.2
+    /scripts/avatar/motionprobe.html?f=/avatar/mika-milfy-5.vrm&clip=dance&t=0,1.6,12.9,17.2
 
   Why fixed steps: this machine's headless browser runs software WebGL at
   about one frame a second with the engine's dt clamped to 50 ms, which is a
@@ -39,7 +39,7 @@ try {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
   renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.setClearColor(0x1a1a1f, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
-  const file = q.get('f') || '/avatar/mika-milfy-4.vrm';
+  const file = q.get('f') || '/avatar/mika-milfy-5.vrm';
   const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
   const loader = new GLTFLoader();
   loader.register((p) => new VRMLoaderPlugin(p));

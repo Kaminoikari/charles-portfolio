@@ -72,6 +72,54 @@ def scalp_pixels(rgb, alpha, hue_centre, window=45.0, min_sat=0.18):
     return (alpha > 200) & (off <= window) & (sat >= min_sat)
 
 
+def hair_paint_pixels(rgb, alpha, hue_centre, window=45.0, min_sat=0.18,
+                      fringe_to=345.0, fringe_min_sat=0.12):
+    """Hair-coloured paint in a SKIN atlas: the core `scalp_pixels` finds, plus
+    its anti-aliased edge. Returns (core, fringe), two boolean masks.
+
+    The 2026-09-03 build recoloured the core only. A painted region has an
+    edge that blends toward the skin around it, and along that edge the hue
+    walks from the cap (261) through magenta to the skin (9), leaving the hue
+    window at 306 and only reaching skin at about 345. Those texels were left
+    to the SKIN solve, which turned them mauve, and the owner saw them on
+    2026-09-04 as purple lines behind the neck and along the hairline.
+
+    The fringe is every opaque texel whose hue sits on that arc (from the far
+    side of the window up to `fringe_to`) with enough chroma not to be skin,
+    AND which is connected to the core. Connectivity is what keeps the lips and
+    the blush out: they are at hue 0-9 and never touch the cap.
+    """
+    hue = _hue_deg(rgb)
+    _, _, sat = np.vectorize(colorsys.rgb_to_hls)(
+        rgb[..., 0] / 255.0, rgb[..., 1] / 255.0, rgb[..., 2] / 255.0)
+    opaque = alpha > 200
+    off = np.abs(((hue - hue_centre + 180.0) % 360.0) - 180.0)
+    start = (hue_centre + window) % 360.0
+    ahead = (hue - start) % 360.0
+    span = (fringe_to - start) % 360.0
+    candidate = opaque & (sat >= fringe_min_sat) & ((off <= window) | (ahead <= span))
+    core = opaque & (off <= window) & (sat >= min_sat)
+    labels, _ = ndimage.label(candidate | core)
+    touching = np.unique(labels[core])
+    connected = np.isin(labels, touching[touching > 0])
+    return core, connected & candidate & ~core
+
+
+def paint_weights(rgb, alpha, core, fringe, ring=6):
+    """How much of each fringe texel is paint (1.0) rather than skin (0.0),
+    read off the texture BEFORE anything recolours it: the texel projected
+    onto the line from the skin just outside the region to the core's median.
+    Zero everywhere outside the fringe."""
+    region = core | fringe
+    around = ndimage.binary_dilation(region, iterations=ring) & ~region & (alpha > 200)
+    if not around.any() or not core.any():
+        return np.zeros(rgb.shape[:2])
+    skin_ref = np.median(rgb[around], axis=0)
+    axis = np.median(rgb[core], axis=0) - skin_ref
+    w = ((rgb - skin_ref) @ axis) / max(float(axis @ axis), 1e-6)
+    return np.clip(w, 0.0, 1.0) * fringe
+
+
 def image_rgba(doc, views, image_name):
     """The named texture as a float RGBA array, 0-255."""
     for image in doc.get('images', ()):
@@ -391,12 +439,16 @@ def tint(doc, material_name, rgb, views=None):
     return hit
 
 
-def tone_textured_materials(doc, image_names, rgb):
+def tone_textured_materials(doc, image_names, rgb, shade=None):
     """Apply one MToon multiplier to every material using named images.
 
     three-vrm reads the glTF factor while VRM0 renderers read `_Color` and
-    `_ShadeColor`. Keeping all three equal prevents bright live lighting from
-    washing a warm texture back toward white.
+    `_ShadeColor`. Keeping the factor and `_Color` equal prevents bright live
+    lighting from washing a warm texture back toward white. `_ShadeColor` is
+    the same value unless `shade` is given: with it equal, MToon draws no
+    shading of its own on that surface, which is what a flat skin wants and
+    what the hair did NOT want -- with the hair's shade equal to its lit tone
+    the whole head read as one flat sheet next to the skin (2026-09-04).
     """
     image_indices = {
         index for index, image in enumerate(doc.get('images', ()))
@@ -422,7 +474,7 @@ def tone_textured_materials(doc, image_names, rgb):
         pbr['baseColorFactor'] = factor
         vectors = properties[index].setdefault('vectorProperties', {})
         vectors['_Color'] = list(factor)
-        vectors['_ShadeColor'] = list(factor)
+        vectors['_ShadeColor'] = [*shade, alpha] if shade is not None else list(factor)
         changed.append(material.get('name', f'材質 {index}'))
     if not changed:
         raise SystemExit(f'找不到使用指定貼圖的材質：{sorted(image_names)}')
@@ -975,6 +1027,66 @@ def lift_region(doc, views, image_name, weight, target, blur=NECK_BLUR):
         image['mimeType'] = 'image/webp'
         return float(np.percentile(l1[solid], 10)) - before, int(solid.sum())
     raise SystemExit(f'找不到貼圖 {image_name}')
+
+
+def _put_rgba(doc, views, image_name, rgba):
+    """Write a 0-255 float RGBA array back over the named texture."""
+    for image in doc.get('images', ()):
+        if image.get('name') != image_name:
+            continue
+        buf = io.BytesIO()
+        Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8)).save(
+            buf, format='WEBP', lossless=True)
+        views[image['bufferView']] = bytearray(buf.getvalue())
+        image['mimeType'] = 'image/webp'
+        return
+    raise SystemExit(f'找不到貼圖 {image_name}')
+
+
+def blend_fringe(doc, views, image_name, core, fringe, weight):
+    """Give the edge of a recoloured paint region its own colour, LAST.
+
+    The core was solved onto the hair and the skin around it onto the skin
+    target; the fringe belongs to neither and was excluded from both. Each
+    fringe texel becomes `weight` of the nearest solved core texel plus the
+    rest of the nearest solved skin texel, so the edge blends the same two
+    colours it blended in the source, in the same proportion, and never a
+    third one. Run after every other pass over this atlas, or the pass after
+    it will move the edge again.
+    """
+    a = image_rgba(doc, views, image_name)
+    rgb, alpha = a[..., :3], a[..., 3]
+    _, core_idx = ndimage.distance_transform_edt(~core, return_indices=True)
+    skin = (alpha > 200) & ~(core | fringe)
+    _, skin_idx = ndimage.distance_transform_edt(~skin, return_indices=True)
+    ys, xs = np.nonzero(fringe)
+    paint = rgb[core_idx[0][ys, xs], core_idx[1][ys, xs]]
+    bare = rgb[skin_idx[0][ys, xs], skin_idx[1][ys, xs]]
+    w = weight[ys, xs][:, None]
+    rgb[ys, xs] = w * paint + (1.0 - w) * bare
+    _put_rgba(doc, views, image_name, a)
+    return int(len(ys))
+
+
+def fill_from_surroundings(doc, views, image_name, mask, blur=1.5):
+    """Replace masked texels with the skin around them.
+
+    Each masked texel takes the nearest unmasked opaque texel, then the copy is
+    blurred inside the mask so a strip a dozen texels wide does not carry a
+    seam down its middle. For paint that has no business being there at all:
+    the base hairstyle's nape strands in the body atlas, under a hairstyle
+    that covers the nape with its own hair.
+    """
+    a = image_rgba(doc, views, image_name)
+    rgb, alpha = a[..., :3], a[..., 3]
+    skin = (alpha > 200) & ~mask
+    _, idx = ndimage.distance_transform_edt(~skin, return_indices=True)
+    filled = rgb.copy()
+    filled[mask] = rgb[idx[0][mask], idx[1][mask]]
+    soft = np.stack([ndimage.gaussian_filter(filled[..., c], blur) for c in range(3)], axis=-1)
+    rgb[mask] = soft[mask]
+    _put_rgba(doc, views, image_name, a)
+    return int(mask.sum())
 
 
 def alpha_of(arr):

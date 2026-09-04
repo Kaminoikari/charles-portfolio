@@ -80,8 +80,10 @@ BLENDER = shutil.which('blender')
 # The file name the site loads (avatarVariants.ts). Bump it with every byte
 # change: /avatar/* is served cache-immutable. -3: 2026-09-04, the twintails
 # hang outside the cardigan; -4: same day, proportion scales the face's morph
-# deltas with the head, so the >< eyes clear the skin again.
-SHIPPED = 'mika-milfy-4.vrm'
+# deltas with the head, so the >< eyes clear the skin again; -5: same day,
+# blonde hair with its own shade tone, and the hair-coloured paint in both skin
+# atlases (cap edge, nape strips) no longer ships violet.
+SHIPPED = 'mika-milfy-5.vrm'
 
 
 @contextlib.contextmanager
@@ -179,7 +181,8 @@ def main():
     # the scalp, the shared skin solve and the neck band. -3: 2026-09-04, the
     # twintails hang outside the cardigan and collide with it (twintail.py).
     # -4: same day, proportion scales the face's morph deltas with the head so
-    # the >< eyes clear the skin (proportion.py).
+    # the >< eyes clear the skin (proportion.py). -5: same day, blonde hair with
+    # a shade tone; cap edge and nape strips recoloured (customise.py).
     dest = os.path.join(BASE, '..', '..', 'public', 'avatar', SHIPPED)
     shutil.copy(p('mika-milfy.vrm'), dest)
     shutil.copy(p('mika-milfy.parts.json'),

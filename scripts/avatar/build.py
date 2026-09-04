@@ -197,9 +197,22 @@ BLENDER_PARTS = [
 # 時也會壓掉髮絲對比（每一段亮度差乘 (1-LIFT)：HAIR_01 的貼圖亮度 p10–p90 由
 # 0.1490 掉到 0.0843），逐欄去趨勢再拿掉沿 v 的那一部分（0.0843 → 0.0373）。兩
 # 段各自量得出來，數字在 evidence/colorprobe-0903.md。
-HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 43.0, 0.65, 0.42
+#
+# 2026-09-04 改金髮（使用者：「只修髮不修膚的話，我希望髮色改成金髮」）。前一版
+# 把髮解到參考圖的灰米色均值 (245,231,223)，代價是 LIFT 0.42 把髮絲對比壓到
+# 0.037、_ShadeColor 又與 _Color 同值，實機上髮是一片 ±15 的平米色 (208,197,187)
+# 貼在膚色 (222,210,204) 旁邊，兩者讀成同一種材質。金髮的色相從粉紅 350 轉到
+# 45，飽和留九成，提亮降到 0.25 讓髮絲回來；亮暗兩個乘色在真引擎頁上解（見
+# HAIR_SHADE_TONE）。
+HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 55.0, 0.9, 0.25
 HAIR_FLATTEN_BLOCKS = 16
-HAIR_MATERIAL_TONE = (0.92, 0.84, 0.80)
+# 亮部與陰影兩個乘色，在 live-preview.html?mikadebug=1 上以 material.color／
+# shadeColorFactor 直寫收斂，頁上線性值經 linear→sRGB 後才寫進這裡（同
+# PALETTE 的 Milfy_Gold 那條規則，少一次轉換就是二次 gamma）。陰影對亮部的比值
+# 取參考圖馬尾陰影 (170,149,144) 對亮部 (254,249,245) 的線性比 (0.59,0.46,0.33)：
+# 髮要靠明暗範圍與膚分開，均值不夠。
+HAIR_MATERIAL_TONE = (1.0, 0.8295, 0.4962)
+HAIR_SHADE_TONE = (0.7918, 0.585, 0.2923)
 # Accent streaks further than this from the hair's own hue are folded onto it
 # before the rotation; see customise.hue.
 HAIR_UNIFY = 60.0
@@ -211,6 +224,14 @@ BROW_SHIFT, BROW_SAT = 140.0, 0.35
 # the original purple, 265 on the export and 257 on the repaint. A window either
 # side catches both without reaching the skin at 9 or the lips at 0.
 SCALP_HUE, SCALP_WINDOW = 261.0, 45.0
+# The cap's anti-aliased edge. Along it the hue walks from the cap (261)
+# through magenta to the skin (9): it leaves the window at 306 and only reaches
+# skin at about 345. Recolouring the window alone left that edge to the SKIN
+# solve, which turned it mauve -- the purple lines behind the neck and along the
+# hairline the owner reported on 2026-09-04, still there after the 09-03 fix.
+# Texels on the arc with chroma above SCALP_FRINGE_SAT that touch the cap are
+# the fringe; the lips (0) and the blush (9) sit past the end and never touch it.
+SCALP_FRINGE_TO, SCALP_FRINGE_SAT = 345.0, 0.12
 
 # The neck band, in metres of overshoot past the neck and head bones. The
 # overshoot exists so the feather ramps down on skin that is still neck rather
@@ -1275,17 +1296,46 @@ def build(src, dst, manifest_path, out_manifest):
     #     recoloured here, onto the hair's OWN post-transform median rather than
     #     onto a colour written down beside it, and the mask is taken now so the
     #     skin solve below can exclude the same pixels. ---
+    #     The cap has an edge. Its anti-aliased boundary blends the paint into
+    #     the skin, and those texels belong to neither solve: rotated with the
+    #     core they turn green (a blend rotated by the core's angle), rotated
+    #     with the skin they turn mauve (the 09-03 build, seen as purple lines
+    #     at the nape on 09-04). They are kept out of both and painted LAST, as
+    #     the same mix of solved hair and solved skin they were in the source
+    #     (customise.blend_fringe); their mix is read now, before anything
+    #     moves. ---
     face_rgba = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
-    scalp = customise.scalp_pixels(face_rgba[..., :3], face_rgba[..., 3],
-                                   SCALP_HUE, SCALP_WINDOW)
+    cap, cap_fringe = customise.hair_paint_pixels(
+        face_rgba[..., :3], face_rgba[..., 3], SCALP_HUE, SCALP_WINDOW,
+        fringe_to=SCALP_FRINGE_TO, fringe_min_sat=SCALP_FRINGE_SAT)
+    cap_weight = customise.paint_weights(face_rgba[..., :3], face_rgba[..., 3],
+                                         cap, cap_fringe)
+    scalp = cap | cap_fringe
     hair_med = customise.median_hue(
         doc, views, [f'F00_000_Hair_00_0{i}' for i in range(1, 7)])
     deg, sat, light, lift, shift = customise.retone(
         doc, views, 'F00_000_00_Face_00', tuple(hair_med),
-        stat=scalp, where=scalp)
-    print(f'   頭皮色塊 {int(scalp.sum())} px → 髮色 '
+        stat=cap, where=cap)
+    print(f'   頭皮色塊 {int(cap.sum())} px → 髮色 '
           f'{tuple(int(v) for v in hair_med)} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
-          f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
+          f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}；'
+          f'邊緣 {int(cap_fringe.sum())} px 留到最後混色')
+
+    # --- the nape. The same paint in the BODY atlas: VRoid draws the base
+    #     hairstyle's nape strands as two hair-coloured strips down the back of
+    #     the neck. The 09-03 fix never looked in this atlas, the skin solve
+    #     barely moves a hue that far from skin, and the two strips shipped
+    #     violet, running from under the hair down both sides of the neck. They
+    #     are not a parting -- this hairstyle covers the nape with its own hair
+    #     -- so they are filled from the skin around them here, before the skin
+    #     solve, and go through it as skin. ---
+    body_rgba = customise.image_rgba(doc, views, 'F00_000_00_Body_00')
+    nape_core, nape_fringe = customise.hair_paint_pixels(
+        body_rgba[..., :3], body_rgba[..., 3], SCALP_HUE, SCALP_WINDOW,
+        fringe_to=SCALP_FRINGE_TO, fringe_min_sat=SCALP_FRINGE_SAT)
+    filled = customise.fill_from_surroundings(
+        doc, views, 'F00_000_00_Body_00', nape_core | nape_fringe)
+    print(f'   後頸髮根條 {filled} px（核心 {int(nape_core.sum())}）填回周圍膚色')
 
     # --- skin. Two textures, one skin, so ONE solve across both. Solving each
     #     atlas against the target separately is what desaturated the face: the
@@ -1371,6 +1421,10 @@ def build(src, dst, manifest_path, out_manifest):
 
     print(f'   頸部目標 ({neck_target[0]:.0f}, {neck_target[1]:.0f}, {neck_target[2]:.0f})'
           f' 取自帶外的皮膚')
+    # The cap's edge, last: both sides of it are now their final colours.
+    blended = customise.blend_fringe(doc, views, 'F00_000_00_Face_00',
+                                     cap, cap_fringe, cap_weight)
+    print(f'   頭皮蓋邊緣 {blended} px 依來源的髮／膚比例混色')
 
     deg, sat, light, lift, shift = customise.retone(
         doc, views, 'F00_000_00_EyeIris_00', EYE_TARGET, mid=(60, 215))
@@ -1386,9 +1440,11 @@ def build(src, dst, manifest_path, out_manifest):
         doc,
         {f'F00_000_Hair_00_0{i}' for i in range(1, 7)},
         HAIR_MATERIAL_TONE,
+        shade=HAIR_SHADE_TONE,
     )
     print(f'   膚色 MToon 乘色 {SKIN_MATERIAL_TONE}，改了 {len(skin_materials)} 個材質')
-    print(f'   髮色 MToon 乘色 {HAIR_MATERIAL_TONE}，改了 {len(hair_materials)} 個材質')
+    print(f'   髮色 MToon 乘色 {HAIR_MATERIAL_TONE} 陰影 {HAIR_SHADE_TONE}，'
+          f'改了 {len(hair_materials)} 個材質')
 
     # --- outlines. Everything above moved colour that a texture or a factor
     #     carries; this moves the one that the second draw pass carries. ---
