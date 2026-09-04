@@ -286,7 +286,9 @@ def thickness(t):
 
 def smooth_normals(positions, indices):
     """Vertex normals of the mesh `positions`/`indices` actually describe: the
-    area-weighted average of each vertex's adjacent triangle normals.
+    angle-weighted average of each vertex's adjacent triangle normals (Max
+    1999) -- each face's unit normal weighted by the interior angle IT
+    SUBTENDS AT THAT VERTEX, not by its area.
 
     Rolling a flat curtain into a round bundle is not a local scale -- the
     curtain's normals mostly face one way (front/back), the bundle's face
@@ -300,19 +302,88 @@ def smooth_normals(positions, indices):
     neighbours agreeing which way is out -- turns into a folded, self-
     -occluding dark patch. Reading the normal off the deformed triangles
     instead is correct by construction: it cannot disagree with the surface
-    that is actually there. Measured against the previous (deleted)
-    normal_horizontal_scale on the shipped -6 build: up to 90 degrees off
-    at some vertices, on both tails, spanning nearly the whole tail length
-    -- not confined to the tie/scalp transition bands that formula named.
+    that is actually there.
+
+    The first version of this function (shipped as -7) weighted each face by
+    AREA instead of angle. That shipped clean on a full dance-clip sweep, but
+    the user then reported the two former gap sites as "unnatural bumps" that
+    do not read as one piece with the surrounding hair. Root cause: rolling
+    the curtain's edge into the tube leaves a few thin "seam" triangles that
+    bridge a close vertex cluster to one ~40mm further round the tube --
+    Hair_Twintail_L primitive 6 vertex 164 is one, with interior angles of
+    70.5/11.7/51.1 degrees across its three adjacent triangles. That sliver's
+    OWN corner angle at the vertex (11.7 degrees) says it should barely count
+    -- its two long edges make it nearly collinear there -- but its area is
+    comparable to its well-formed neighbours, since area grows with how far
+    the far cluster is, not with how sharp the corner is. Area-weighting
+    therefore let the sliver pull the vertex normal towards its own
+    (very different) face direction about as hard as either well-formed
+    triangle, producing one bright, hard-edged, off-field normal precisely
+    where the geometry pinches -- the "bump". Angle-weighting scores each
+    face by the angle it actually occupies at that vertex, so the sliver's
+    11.7-degree sliver of the vertex counts for 11.7 degrees, not for its
+    full share of the mesh's surface area: a fair vote among the triangles
+    that actually meet there, not among however much of the mesh happens to
+    be attached to them.
     """
     tris = indices.reshape(-1, 3)
     p0, p1, p2 = positions[tris[:, 0]], positions[tris[:, 1]], positions[tris[:, 2]]
-    face = np.cross(p1 - p0, p2 - p0)  # length = 2*area, direction = the triangle's winding
+    face = np.cross(p1 - p0, p2 - p0)  # direction = the triangle's winding
+    face_len = np.linalg.norm(face, axis=1, keepdims=True)
+    unit_face = face / np.maximum(face_len, 1e-12)
+
+    def corner_angle(a, b, c):
+        """Interior angle of the triangle at corner `a`, between edges a->b and a->c."""
+        u, v = b - a, c - a
+        cos = np.sum(u * v, axis=1) / np.maximum(
+            np.linalg.norm(u, axis=1) * np.linalg.norm(v, axis=1), 1e-12)
+        return np.arccos(np.clip(cos, -1.0, 1.0))
+
+    weight = [corner_angle(p0, p1, p2), corner_angle(p1, p2, p0), corner_angle(p2, p0, p1)]
     out = np.zeros_like(positions)
     for corner in range(3):
-        np.add.at(out, tris[:, corner], face)
+        np.add.at(out, tris[:, corner], unit_face * weight[corner][:, None])
     norm = np.linalg.norm(out, axis=1, keepdims=True)
     return out / np.maximum(norm, 1e-9)
+
+
+def smooth_scalar(values, indices, passes=2):
+    """Blend each vertex's scalar value halfway towards its triangle-adjacent
+    neighbours' average, `passes` times.
+
+    Written for `free` in apply(): scalp distance is a per-vertex nearest-
+    -neighbour query against a point cloud, which has no notion of "these two
+    vertices are on the same strand". 2026-09-04, third round: a vertex could
+    land at free=0.00 (fully on the scalp) with its topological neighbour, on
+    the SAME triangle, at free=0.63 -- both individually correct readings of
+    "how far is the nearest scalp point", but nothing requires that reading to
+    change smoothly from one triangle corner to the next. SCALP_BAND exists to
+    turn that into a gradual transition, and does, in DISTANCE; it says
+    nothing about how that distance is laid out over the mesh's own vertices,
+    so two vertices ~15mm apart on the actual surface can end up on opposite
+    ends of the band anyway, and the position blend downstream (line ~524)
+    then places them tens of centimetres apart in the finished tail -- a real
+    fold, not a shading artefact, which is why switching normal-averaging
+    schemes (smooth_normals) could not remove it. Averaging over the mesh's
+    own triangles, the same move smooth_normals makes for normals, can only
+    disagree with a vertex's real neighbours by as much as they actually
+    disagree with EACH OTHER, not by however sharp scalp.query happened to
+    land at that one vertex.
+    """
+    tris = indices.reshape(-1, 3)
+    out = values.astype(np.float64).copy()
+    for _ in range(passes):
+        acc = np.zeros_like(out)
+        cnt = np.zeros_like(out)
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            ia, ib = tris[:, a], tris[:, b]
+            np.add.at(acc, ia, out[ib])
+            np.add.at(cnt, ia, 1.0)
+            np.add.at(acc, ib, out[ia])
+            np.add.at(cnt, ib, 1.0)
+        neighbour_avg = acc / np.maximum(cnt, 1.0)
+        out = np.where(cnt > 0, 0.5 * out + 0.5 * neighbour_avg, out)
+    return out
 
 
 def _prims(doc, manifest, part):
@@ -472,10 +543,18 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
 
         moved = 0.0
         for pr, p in zip(prims, pos):
+            if pr.get('mode', 4) != 4 or 'indices' not in pr:
+                raise SystemExit(f'{part} 的圖元不是索引三角形，無法從實際幾何算法向量')
+            idx = glb.read_accessor(doc, views, pr['indices']).astype(np.int64)
+
             t = np.clip((TIE_Y - p[:, 1]) / DROP, 0.0, 1.0)
             fade = np.clip((TIE_Y + BLEND - p[:, 1]) / BLEND, 0.0, 1.0)
             # 貼著頭骨的那一層留在原位：free 0 是完全不動、1 是完全收進尾巴。
+            # scalp.query 是逐頂點各自對點雲最近鄰查詢，不知道「這兩點在同一根
+            # 髮束上」，鄰接頂點可能落在 SCALP_BAND 的兩端（見 smooth_scalar）；
+            # 拓樸平滑讓 free 場跟著網格本身的鄰接關係走，不是逐點各判各的。
             free = np.clip((scalp.query(p)[0] - SCALP_GAP) / SCALP_BAND, 0.0, 1.0)
+            free = smooth_scalar(free, idx)
             fade = fade * free
             cx = np.interp(p[:, 1], mids, centre[:, 0])
             cz = np.interp(p[:, 1], mids, centre[:, 1])
@@ -499,9 +578,6 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
                 # (fade, r) -- the latter twice produced a normal FIELD that
                 # disagreed with itself badly enough to fold the MToon
                 # outline shell into a dark gap (evidence/twintail-gap-0904.md).
-                if pr.get('mode', 4) != 4 or 'indices' not in pr:
-                    raise SystemExit(f'{part} 的圖元不是索引三角形，無法從實際幾何算法向量')
-                idx = glb.read_accessor(doc, views, pr['indices']).astype(np.int64)
                 n = smooth_normals(out.astype(np.float64), idx)
                 _overwrite(doc, views, pr['attributes']['NORMAL'], n.astype(np.float32))
 

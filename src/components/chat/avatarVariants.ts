@@ -72,7 +72,7 @@ export interface AvatarVariant {
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm' },
-  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-7.vrm' },
+  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-9.vrm' },
   { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm' },
 ]
 

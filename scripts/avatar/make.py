@@ -91,8 +91,28 @@ BLENDER = shutil.which('blender')
 # near the seam), so it was still folding the outline elsewhere along both
 # tails. Normals are now read off the deformed triangles themselves
 # (twintail.smooth_normals), which cannot disagree with the surface that is
-# actually there.
-SHIPPED = 'mika-milfy-7.vrm'
+# actually there; -8: same week, -7's smooth_normals weighted each adjacent
+# triangle by area, which let a thin "seam" triangle at the tube's pinch
+# points (small angle at the vertex, but an area comparable to its
+# well-formed neighbours because its far edge is long) pull the vertex
+# normal towards its own face nearly as hard as either neighbour -- a
+# bright, hard-edged "bump" at exactly the two sites -7 had just fixed.
+# Weighting by the angle each triangle actually subtends at the vertex
+# (Max 1999) instead of by area helps but does not fix it -- measured on -8,
+# the worst normal-field creases (up to ~80 degrees between triangle-adjacent
+# vertices) barely move between area- and angle-weighting, because they are
+# not a normal-averaging artefact at all. `free` in twintail.apply() -- how
+# much a vertex is pulled off the scalp into the tail -- comes from a raw
+# nearest-neighbour query against the scalp mesh, which has no notion of
+# mesh adjacency: two vertices ~15mm apart on the SAME strand can land at
+# free=0.00 and free=0.63, both individually correct, and the position blend
+# downstream then places them tens of centimetres apart -- a real fold in
+# the geometry, which is why no normal scheme could hide it. -8's fix was
+# real (it does reduce error elsewhere) but was answering the wrong
+# question for this bug. -9: `free` is smoothed across the mesh's own
+# triangle adjacency (twintail.smooth_scalar) before it drives the position
+# blend, the same move smooth_normals already made for normals.
+SHIPPED = 'mika-milfy-9.vrm'
 
 
 @contextlib.contextmanager

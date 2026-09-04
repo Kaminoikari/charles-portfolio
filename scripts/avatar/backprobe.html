@@ -16,7 +16,7 @@ try {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, preserveDrawingBuffer:true, alpha:true });
   renderer.setPixelRatio(1); renderer.setSize(W, H, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
-  const bytes = new Uint8Array(await (await fetch((new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy-7.vrm') + '?t=' + Date.now())).arrayBuffer());
+  const bytes = new Uint8Array(await (await fetch((new URLSearchParams(location.search).get('f') || '/avatar/mika-milfy-9.vrm') + '?t=' + Date.now())).arrayBuffer());
   const hh = await crypto.subtle.digest('SHA-256', bytes);
   R.sha = [...new Uint8Array(hh)].slice(0,8).map(b=>b.toString(16).padStart(2,'0')).join('');
   const loader = new GLTFLoader(); loader.register(p => new VRMLoaderPlugin(p));
