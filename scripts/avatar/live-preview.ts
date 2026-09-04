@@ -81,7 +81,7 @@ const handle = initAvatarGuide(
     announce('WebGL context 已中斷，請重新整理頁面。', 'error')
   },
   () => {
-    announce('模型載入失敗，請確認本機存在 public/avatar/mika-milfy-9.vrm。', 'error')
+    announce('模型載入失敗，請確認本機存在 public/avatar/mika-milfy-10.vrm。', 'error')
   },
 )
 

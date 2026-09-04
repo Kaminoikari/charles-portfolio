@@ -553,8 +553,8 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
             # scalp.query 是逐頂點各自對點雲最近鄰查詢，不知道「這兩點在同一根
             # 髮束上」，鄰接頂點可能落在 SCALP_BAND 的兩端（見 smooth_scalar）；
             # 拓樸平滑讓 free 場跟著網格本身的鄰接關係走，不是逐點各判各的。
-            free = np.clip((scalp.query(p)[0] - SCALP_GAP) / SCALP_BAND, 0.0, 1.0)
-            free = smooth_scalar(free, idx)
+            free_raw = np.clip((scalp.query(p)[0] - SCALP_GAP) / SCALP_BAND, 0.0, 1.0)
+            free = smooth_scalar(free_raw, idx)
             fade = fade * free
             cx = np.interp(p[:, 1], mids, centre[:, 0])
             cz = np.interp(p[:, 1], mids, centre[:, 1])
@@ -599,7 +599,19 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
                 seg = np.clip(np.floor(tv * SEGMENTS), 0, SEGMENTS - 1).astype(int)
                 frac = np.clip(tv * SEGMENTS - seg, 0.0, 1.0)
                 slots = np.array(new_slots)
-                fr = free[moved_rows].astype(np.float32)
+                # 權重跟位置/法向量共用同一個平滑值 `free` 會漏權重：一個自己的
+                # 原始距離判定「就貼在頭皮上」（free_raw==0，appearance_test 的
+                # on_skull 也是同一條 SCALP_GAP 界線）的頂點，會從隔壁高 free 的
+                # 鄰居借到骨架權重（縫出現過的 0.28），bind pose 看不出來，尾巴
+                # 一甩就露餡（見 test_scalp_layer_carries_no_tail_weight 的
+                # 「後腦禿頭」事故記錄）。但整段都改回未平滑的 free_raw 會在貼皮
+                # 層跟尾巴層的交界處重新造出鋸齒：那正是 smooth_scalar 當初要解
+                # 的同一種「網格相鄰、查詢各自為政」問題，只是這次發生在權重場
+                # 而不是位置場。折衷：只在「自己的原始距離就是 0」這一條線上鎖
+                # 死為 0（滿足上面那條測試的界線），線外（free_raw>0，哪怕只
+                # 大一點點）仍吃平滑值，跟位置/法向量用同一份連續場。
+                weight_free = np.where(free_raw > 0.0, free, 0.0)
+                fr = weight_free[moved_rows].astype(np.float32)
                 j[moved_rows] = 0
                 w[moved_rows] = 0.0
                 j[moved_rows, 0], w[moved_rows, 0] = slots[seg], fr * (1.0 - frac)

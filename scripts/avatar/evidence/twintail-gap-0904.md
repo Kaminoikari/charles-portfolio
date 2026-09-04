@@ -229,3 +229,69 @@ rest pose 兩側尾尖（受外套袖子部分遮擋處也單獨裁切放大）�
 自然凸點」。判定：不修——沒有可見瑕疵可以拿來當回歸測試的錨點，貿然修改
 `twintail.apply()` 只會冒風險（改壞尾尖形狀或頭皮覆蓋）卻換不到可驗證的視
 覺改善。若之後使用者真的截圖回報這個位置有瑕疵，屆時再重新排查。
+
+## 第四輪：第三輪的修正洩漏進權重，貼頭層跟著尾巴甩
+
+移除呆毛（`Hair_Ahoge`，見下一節）之後照慣例跑 `python3 -m unittest
+discover`，`appearance_test.test_scalp_layer_carries_no_tail_weight` 紅：貼
+頭層（離 `Body_Skin` ≤20mm）有 130 個頂點掛著尾巴骨權重，最大 0.281。回頭
+用已 commit 的出貨檔 `mika-milfy-9.vrm` 直接讀，同一個數字已經在裡面——第
+三輪的 `smooth_scalar` 修正（cfab633）帶著這個副作用一起上線了，不是這輪新
+introduce 的。
+
+**根因**：第三輪把 `free`（0=完全貼頭皮、1=完全收進尾巴）套 `smooth_scalar`
+是為了修位置／法向量的接縫（見上面「第三輪」一節），但 `apply()` 讓同一個
+`free` 也驅動蒙皮權重（`fr = free[moved_rows]`）。`smooth_scalar` 沿網格拓
+樸平均，一個自己原始距離判定「就貼在頭皮上」（`free_raw`＝0，跟
+`appearance_test` 的 `on_skull` 判準是同一條 `SCALP_GAP`＝20mm 界線）的頂
+點，只要網格上緊鄰一個 `free_raw` 很高的鄰居（量到 0.70），平滑後就會借到
+一截尾巴骨權重（0.28）。bind pose 看不出來（此時所有關節在原點，蒙皮結果
+等於 bind pose，權重怎麼分都一樣），尾巴一甩就是
+`test_scalp_layer_carries_no_tail_weight` docstring 記錄的那個「後腦禿頭」
+事故的同一種機制：貼頭層被權重拖走。
+
+**排除的兩條路**：
+- 加大 `smooth_scalar` 的 `passes`：用 `out/proportioned.vrm` 快取的頭皮點
+  雲＋`build.build()` 之外的獨立腳本掃過 1/2/4/8/16/32/64 passes，洩漏頂點
+  數與最大權重隨 passes 單調上升（1 pass：17 頂點／0.168；64 passes：161
+  頂點／0.821），方向錯誤，排除。
+- 蒙皮改用未平滑的 `free_raw`：直接消除洩漏（見下），但把整段權重場的平滑
+  都拿掉，在貼頭層／尾巴層交界處重新造出鋸齒——用合成的尾巴根骨擺動測試
+  （見下）量到相對「洩漏版」多達 12% 的畫面像素改變，肉眼可見尾根附近的髮
+  束邊緣多出鋸齒狀黑色缺口，是第三輪剛修掉的那種「網格相鄰、查詢各自為
+  政」問題換了個場（位置場→權重場）重新出現。
+
+**修正**：位置／法向量繼續吃平滑後的 `free`（第三輪的接縫修正不動）；權重
+場改成「只在 `free_raw==0` 這條線上鎖死為 0，線外（哪怕只大一點點）仍吃平
+滑值」——`weight_free = np.where(free_raw > 0.0, free, 0.0)`。這條線正好是
+`appearance_test` 的 `on_skull` 判準本身，所以貼頭層精確歸零；線外沿用平
+滑場，保住第三輪要的拓樸連續性。`twintail.py` 的 `apply()`，`fr =
+weight_free[moved_rows]`。
+
+**驗證**：
+- `python3 -m unittest discover -s scripts/avatar -p '*_test.py'`：52/52
+  綠，含 `test_scalp_layer_carries_no_tail_weight`。mutation（`weight_free
+  = free`，拿掉 on_skull 鎖）還原後轉紅，數字與修正前的原始洩漏完全一致
+  （130 頂點／最大 0.2812683582305908），改回修正再次全綠——證明這條線是
+  真正擋住洩漏的機制，不是巧合過關。
+- `npx vitest run`：24 檔 370 條全綠（`SHIPPED` 沒有換名，這輪沒動前端引
+  用的檔名常數）。
+- `python3 make.py`：六道 gate 全 `compare=[]`，健檢十項全 0，骨架不變
+  （bones=54）。
+- 幾何連續性沒有跟著壞：對出貨檔重跑第三輪用過的「頂點對相鄰頂點法向量夾
+  角」全網格掃描，`>30°` 邊數 L/R＝773／851（第三輪 -9 量到 790／860，同
+  一量級的雜訊差），尾尖區最大夾角 72.3°／73.6°（第三輪已判定範圍外的
+  56–72° 區間內）——第三輪的接縫修正沒有被這輪動到。
+- 動畫層的驗證：`render.py` 只做 rest pose，不含關節矩陣，測不到蒙皮權重
+  差異在動畫中的樣子。改用臨時探針 `swingprobe.html`（診斷用，未進版，
+  three.js＋@pixiv/three-vrm 經 importmap 載入，直接旋轉
+  `HairTailL_0`/`HairTailR_0`（尾巴鏈最靠近頭的根骨）而非重放 `dance.vrma`
+  ——`dance.vrma` 是 `VRMC_vrm_animation`，55 個節點沒有一個叫
+  `HairTail*`，尾巴的動作全部來自另一套（`springsim.ts` 離線模擬，見
+  `project_milfy_replica_pipeline` memory 的「headless 實錄是另一套物理」），
+  播放 vrma 本身不會動到這批骨頭）。Z 軸（左右甩）15–60°、X 軸（前後甩）
+  ±30–60° 共 10 個姿勢，比較「洩漏版」（`smooth_scalar` 後的 `free` 直接
+  當權重，即第三輪原樣）與這輪修正版：像素差從最壞 12.01%（X60°，`free`
+  全用 raw 的簡單版）降到 3.24%（`weight_free` 折衷版），肉眼比對兩版差異
+  集中在單根髮束邊緣的細鋸齒（正常 antialiasing 級別），不是缺口或撕裂形
+  狀。探針、伺服器與所有臨時輸出已清除。

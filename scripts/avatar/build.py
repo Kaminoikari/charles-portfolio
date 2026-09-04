@@ -1144,9 +1144,12 @@ def build(src, dst, manifest_path, out_manifest):
             bun = head_pieces[f'Bun_{label}']
             put(rigid(bun, uv_ball(bun['pos'])), hair_mat, f'Hair_Bun_{label}',
                 mesh='Hair001.baked')
-        ahoge = head_pieces['Ahoge']
-        put(rigid(ahoge, uv_strand(ahoge['pos'])), hair_mat, 'Hair_Ahoge',
-            mesh='Hair001.baked')
+        # The Blender head piece still has an Ahoge loop -- head_pieces['Ahoge']
+        # -- dropped on request 2026-09-04 (a single strand rooted at the
+        # crown, arcing up and back down; not part of the base VRoid hair, no
+        # morph targets, no material of its own to strand). Left un-put()
+        # rather than built-then-DROP'd: the pipeline's DROP mechanism runs at
+        # customise.apply(), step 2, before this part exists at all.
         # 補在既有材質上，不是用同名再建一份。建第二份會讓出貨檔裡出現兩個
         # Milfy_Gold，manifest 的 palette 以名字為鍵、後者蓋前者，宣告出去的
         # 底色就變成沒有人挑過也沒被算圖用到的那一組；customise.tint 又會走訪
@@ -1193,9 +1196,9 @@ def build(src, dst, manifest_path, out_manifest):
         # measured ones replaced: a sphere with two smaller spheres stuck on
         # top for each side, and a five-spike ring with no thickness. They read
         # as coloured blocks next to the reference. They cover Hair_Bun_L/R and
-        # Acc_Crown only -- Hair_Ear_L/R and Hair_Ahoge have no parametric
-        # version and are simply absent on a machine without Blender, which is
-        # a degraded build and not an equivalent one.
+        # Acc_Crown only -- Hair_Ear_L/R has no parametric version and is
+        # simply absent on a machine without Blender, which is a degraded
+        # build and not an equivalent one.
         for side, label in ((-1, 'L'), (1, 'R')):
             c = [side * skull_r * 0.92, crown_y - 0.012, 0.012]
             bun = [garment.sphere(c, 0.046, hj, hw, lat=10, lon=14,

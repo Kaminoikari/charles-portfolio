@@ -111,8 +111,24 @@ BLENDER = shutil.which('blender')
 # real (it does reduce error elsewhere) but was answering the wrong
 # question for this bug. -9: `free` is smoothed across the mesh's own
 # triangle adjacency (twintail.smooth_scalar) before it drives the position
-# blend, the same move smooth_normals already made for normals.
-SHIPPED = 'mika-milfy-9.vrm'
+# blend, the same move smooth_normals already made for normals. -10: same
+# week, the loop-shaped Hair_Ahoge strand at the crown dropped on request; and
+# -9's smoothed `free` turned out to leak into twintail.apply()'s skin weight
+# too (it drives both), so a vertex whose OWN scalp distance says "on the
+# scalp" could still inherit a slice of its tail-bound neighbour's weight
+# (measured: 130 vertices, up to 28%) -- invisible at rest, but exactly the
+# "8.4% weight -> 14mm drift" failure appearance_test.py's
+# test_scalp_layer_carries_no_tail_weight was written against. Fixed by
+# keeping the smoothed value for position/normal (still needed for -9's
+# crease fix) and only forcing weight to zero on vertices whose OWN raw,
+# unsmoothed distance is inside SCALP_GAP -- everywhere outside that line
+# still takes the smoothed weight, which matters: forcing every vertex to its
+# raw value re-opened the same kind of mesh-adjacency jaggedness -9 had just
+# fixed, now in the weight field instead of the position field (measured via
+# a synthetic tail-bone swing, up to 12% of frame pixels changed vs. the
+# leak; clamping only the exact on_skull set brought that to ~3%, concentrated
+# on ordinary strand-edge antialiasing rather than a visible tear).
+SHIPPED = 'mika-milfy-10.vrm'
 
 
 @contextlib.contextmanager
