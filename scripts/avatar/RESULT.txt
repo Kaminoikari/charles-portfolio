@@ -2051,3 +2051,99 @@ motionprobe.html 的 expr=／hide= 模式；收據 evidence/proportion-0904.log 
 五、副作用
     其他 14 個表情（Extra 以外的 52 個有位移的 target）幅度同步放大 6%，等於回到
     VRoid 在這顆頭上該有的比例（閉眼閉到底、嘴型開到底）；-3 以前是縮小版。
+
+======================================================================
+第九版　2026-09-04（同日第五版）　金髮＋脖子兩側後方紫線
+======================================================================
+
+出貨檔換名 mika-milfy-5.vrm。使用者依序提出兩個請求：「只修髮不修膚的話，我希
+望髮色改成金髮」，執行中插入「脖子兩側後方還是有紫色線條出現，請排查root
+cause並修復」。膚色不動是明確約束。收據 evidence/mutations-0904-blonde.md、
+evidence/build-0904-blonde-final.log、evidence/pytests-0904-blonde.log、
+evidence/blonde-0904-front.jpg、evidence/blonde-0904-nape-back.jpg。
+
+一、現象與根因
+    紫線：VRoid 把髮色像素畫進兩張皮膚貼圖，不是一張。頭皮蓋核心
+    （customise.scalp_pixels 找的那塊）09-03 已解到髮色，但它的反鋸齒**邊緣**
+    沒有：沿邊緣色相從頭皮的 261 走過洋紅到膚色的 9，離開色相窗在 306、真正
+    碰到膚色要到 345，那段落在窗外的像素被 SKIN 那道解一起轉了，金髮底下留下
+    一圈藕紫。Body 貼圖的後頸另有兩條髮根條（VRoid 畫給貼頭原生髮型用的），
+    離膚色太遠、共用膚色解幾乎不動它們，出貨後仍是原本的紫 (148,85,236)，這
+    就是使用者講的「脖子兩側後方」。
+
+二、修法
+    customise.hair_paint_pixels(rgb, alpha, hue_centre, window, fringe_to,
+    fringe_min_sat) 回傳 (core, fringe) 兩個遮罩：fringe 是色相落在窗外到
+    fringe_to 之間、飽和夠、且跟 core 用 ndimage.label 判定相連的像素（相連
+    這個條件把嘴唇、腮紅這類同樣落在色相弧上、但從不跟頭皮蓋碰在一起的區域
+    排除掉）。Face 圖：cap 的邊緣像素**留到所有其他步驟跑完之後**才處理：
+    customise.blend_fringe 把每個邊緣像素寫成「離它最近的已解髮色核心」與
+    「離它最近的已解膚色」的加權混合，權重（customise.paint_weights）在**原
+    始貼圖**上算，取像素往「周圍膚色中位→核心中位」那條線的投影。Body 圖：
+    後頸兩條髮根條在膚色解**之前**用 customise.fill_from_surroundings 直接
+    拿周圍膚色填掉（不是一道漸層混色，是真的填掉：這片不是分線，是這套髮
+    型本來就該蓋住的地方，不留任何髮色）。
+    金髮：build.HAIR_SHIFT/SAT/LIFT 從 43.0/0.65/0.42 改成 55.0/0.9/0.25（色
+    相轉到金色、飽和留九成、提亮降低讓髮絲對比留住）。髮的 MToon 乘色第一次
+    分成亮／暗兩組：HAIR_MATERIAL_TONE=(1.0,0.8295,0.4962)、
+    HAIR_SHADE_TONE=(0.7918,0.585,0.2923)（陰影比亮部暗，兩者在
+    live-preview.html?mikadebug=1 上直讀 material.color／shadeColorFactor 解
+    出，線性值換算過 sRGB 才寫回常數，同一份 gamma 陷阱這條線之前踩過一次）。
+    _ShadeColor 跟 _Color 同值會讓 MToon 不畫自己的陰影，整顆頭讀成一片平
+    面；分開之後髮要靠明暗範圍跟旁邊的膚分開，不是靠色相或均值。
+
+    副作用（膚色遮罩外的殘留位移）：拿 -4 對 -5 逐 texel 比對、排除頭皮蓋／後頸
+    遮罩之後，Body 圖仍有 55,517 個 texel 差 1–5（佔膚色像素的 1.5%）、Face 圖
+    829 個 texel 差 ≤1。來源是共用膚色解的取樣集合變了（cap 邊緣、後頸髮根條
+    不再算進膚色取樣），解出的頸部帶與位移量跟著微幅重估，屬預期；SKIN_TARGET
+    與 SKIN_MATERIAL_TONE 兩個常數本身沒有改，膚色測試組全綠（第三節）。
+
+三、守衛與紅燈
+    建置完成後既有守衛紅三條，門檻全部是舊值假設髮是灰米色，撞上新的金髮：
+    - test_hair_material_preserves_tone_after_live_exposure：改成
+      shade_ratio（每通道 shade/base 比值要落在 [0.45,0.90]）＋
+      HAIR_WARM_FACTOR_BAND（R−B 落在 [0.32,0.68]，取代舊的單邊亮度上限，
+      那個上限擋不住 R=1.0 的金髮）。四道 mutation 各自單獨轉紅：shade 疊回
+      base（比值 1.0）、shade 收向黑（比值 0.30）、tone 退回舊灰米色
+      （warm 0.12）、tone 推成過飽和琥珀（warm 0.85）。
+    - test_hair_texture_keeps_visible_tone_under_mtoon_lighting：
+      HAIR_WARMTH 從 (14,30) 改成 (36,46)，出貨 42／40。LIFT 退回舊值 0.42
+      單獨踩下限（32<36），SAT 推到 1.3 單獨踩上限（60>46）。
+    - test_skin_texture_keeps_visible_tone_under_mtoon_lighting：Face 那一半
+      加上 scalp_mask()（現在含頭皮蓋核心＋邊緣）排除，出貨排除後暖度 43，
+      落回既有帶內，不必動 SKIN_WARMTH。
+    新增 test_skin_atlases_carry_no_hair_paint：偵測窗沿用
+    evidence/purple_where-0904.py 抓過壞掉那
+    版的窗（色相 240–330、飽和 >0.15、明度 (0.1,0.95)），門檻 250（出貨
+    Face=0、Body=105）。兩道獨立 mutation：SCALP_FRINGE_SAT 設到不可能命中
+    的 2.0 讓 Face 單獨紅（6983）；只拿掉 Body 的 fill_from_surroundings 讓
+    Body 單獨紅（1123）而 Face 仍是 0。
+    customise_test.py 新增 HairPaintPixelsTest：合成圖釘住「邊緣要跟核心相
+    連才算」，拿掉 hair_paint_pixels 的連通性過濾器（只留色相／飽和判定）會
+    把一座跟核心不相鄰的同色相孤島也算進 fringe，紅。
+    第二輪 code reviewer 抓到一個沒被釘住的面：paint_weights（邊緣像素混多少
+    髮色、多少膚色的權重）改成恆傳回 0，test_skin_atlases_carry_no_hair_paint
+    量的是「有沒有紫」不是「混色比例對不對」，量不到；blend_fringe 的遮罩選取
+    另有 mutation 釘著，但混色權重本身沒有。補了 customise_test.py 的
+    PaintWeightsTest：合成三個邊緣像素分別是膚／髮混色 0%／50%／100%，斷言
+    paint_weights 解回同一個比例（容差 0.01）；把函式改成恆傳回 0 重建後單獨
+    紅（50% 那點量到 0.000）。
+    每道門檻的重建數字與各自 mutation 的收據見 evidence/mutations-0904-blonde.md。
+
+四、瀏覽器證據
+    live-preview.html?mikadebug=1 只驗過正面就暫停過一次工作；恢復後用
+    motionprobe.html?f=/avatar/mika-milfy-5.vrm&clip=spin&t=0,0.5,1,1.5,2,2.5,3
+    的 back 相機在五個轉身角度看後頸與雙馬尾陰影，用 canvas.toDataURL 存幀（
+    Playwright 的 screenshot 在這頁會 timeout，見交接筆記），沒有一幀在脖子
+    後方看到紫線，髮在陰影側讀出可見的暗部（_ShadeColor 生效），亮部與參考
+    圖的金髮一致。blonde-0904-nape-back.jpg／blonde-0904-front.jpg 各存一幀。
+
+五、驗證
+    python 44 條全綠（原 41 條加這輪新增的三條，evidence/pytests-0904-
+    blonde.log）；vitest 全 repo 24 個檔案 370 條全綠（這輪沒有動 src/ 或既有
+    vitest 的斷言，avatarVariants.ts／live-preview-config.ts／
+    live-preview.ts／live-preview.test.ts／springsim.ts 只是把檔名跟著 -4→-5
+    沿用同一個 sed；avatarVariants.test.ts 與 springsim.test.ts 本身不帶版號，
+    不需要動）。建置 log 六道 gate
+    compare=[]、健檢十項完整性計數全 0、PASS，vertex sha b8126ca141a56e2a
+    （evidence/build-0904-blonde-final.log）。

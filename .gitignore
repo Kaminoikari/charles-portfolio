@@ -48,13 +48,14 @@ scripts/avatar/out/*
 scripts/avatar/__pycache__/
 scripts/avatar/blender/__pycache__/
 scripts/avatar/baseline.vrm
-# public/avatar/mika-milfy-*.vrm 從 2026-09-03 起進版控並上線（現行 -4）：它是網站的第三個
+# public/avatar/mika-milfy-*.vrm 從 2026-09-03 起進版控並上線（現行 -5）：它是網站的第三個
 # 造型（avatarVariants.ts）。2026-08-31 曾決定只留本機，理由是「逆向復刻的模型
 # 不該被公開下載」；使用者在 2026-09-03 推翻該決定，依據是管線的輸入端只有
 # VRoid 官方範例模型與 18 張參考「圖片」，原作的模型檔從來不是輸入，所以檔案
 # 裡沒有任何可還原成原作資料的東西。檔名帶版號是因為 /avatar/* 快取一年不可變，
 # 位元組換了就得換名字（-2 同日第二版：頭皮、共用膚色解、頸部帶；-3 2026-09-04：
-# 雙馬尾披到外套外面並與外套碰撞；-4 同日：表情位移跟著頭一起放大，>< 眼不再沉進臉裡）。旁邊的 .parts.json 從 -3 起也進版控：
+# 雙馬尾披到外套外面並與外套碰撞；-4 同日：表情位移跟著頭一起放大，>< 眼不再沉進臉裡；
+# -5 同日：金髮，頭皮蓋邊緣與後頸兩條髮根條不再透出紫線）。旁邊的 .parts.json 從 -3 起也進版控：
 # scripts/avatar/springsim.test.ts 靠它找出雙馬尾的 primitive，CI 沒有它就紅。
 
 # delivery-record evidence for scripts/avatar (RESULT.txt cites these)

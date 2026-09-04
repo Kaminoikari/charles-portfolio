@@ -42,9 +42,17 @@ MANIFEST = MODEL.replace('.vrm', '.parts.json')
 # 亮度只留下限：這一輪往上走，而往上的盡頭是引擎自己的天花板（純白反照率在實機
 # 上是 (226,229,229)），不必再訂一個上限去猜它。
 SKIN_MIN_CHANNEL = 245
-SKIN_WARMTH = (22, 48)      # 解出來 39（Body）／28（Face），舊值 72
+SKIN_WARMTH = (22, 48)      # 解出來 39（Body）／28（Face，未排除頭皮蓋時），舊值
+                            # 72；2026-09-04 起 Face 排除頭皮蓋量，解出來 43（見
+                            # test_skin_texture_keeps_visible_tone_under_mtoon_
+                            # lighting 與 scalp_mask）
 HAIR_MIN_CHANNEL = 215
-HAIR_WARMTH = (14, 30)      # 解出來 24（01）／23（02），舊值 45
+# 2026-09-04 改金髮，暖度整段往上搬：出貨 42（01）／40（02），舊值 24／23、舊帶
+# (14,30)。下限 36 夾在退化與出貨之間：HAIR_LIFT 退回舊值 0.42（其餘不動）重建
+# 得 32／31，單獨踩「太低」那條斷言；出貨比 36 高 4-6。上限 46 同樣夾在中
+# 間：HAIR_SAT 推到 1.3（其餘不動）重建得 60／58，單獨踩「太高」那條；出貨比
+# 46 低 4-6。兩道 mutation 各自只踩自己那一側，不互相遮蔽。
+HAIR_WARMTH = (36, 46)
 # 臉部皮膚（排除頭皮色塊）的亮度 p10–p90 下限。之前這個數是 0.30，量的是整張臉
 # 部貼圖，而它的 p10 一直是那塊深紫頭皮 (78, 46, 161)，所以 0.408 這個「對比」講
 # 的是頭皮有多暗，不是嘴唇有多清楚。頭皮解到髮色之後同一個量法掉到 0.122，這條就
@@ -61,7 +69,19 @@ FACE_CONTRAST_MIN = 0.075
 # 卡死 01，再往下就擋不住整張壓平那一種寫法。
 HAIR_CONTRAST_MIN = 0.025
 SKIN_FACTOR_MAX = 0.96
-HAIR_FACTOR_MAX = 0.92
+# 金髮的乘色 base=(1.0, 0.8295, 0.4962) 撞破舊的單邊上限（HAIR_FACTOR_MAX 0.92
+# 擋不住 R=1.0），而膚那條要的「夠亮就好」對髮沒有意義：髮要靠 R−B 落在金髮的
+# 暖度帶，不是靠絕對亮度。出貨 0.5038。下限 0.32：把 HAIR_MATERIAL_TONE 退回
+# 舊的灰米色 (0.92,0.84,0.80) 重建得 0.12，比 0.32 低 0.20；出貨比 0.32 高 0.18。
+# 上限 0.68：把乘色推成過飽和琥珀 (1.0,0.55,0.15) 重建得 0.85，比 0.68 高 0.17；
+# 出貨比 0.68 低 0.18。四個數字都是 2026-09-04 用同一份出貨模型重建量出來的。
+HAIR_WARM_FACTOR_BAND = (0.32, 0.68)
+# _ShadeColor 現在刻意比 base 暗（陰影乘色），每通道比值要落在這個帶內。出貨
+# [0.7918, 0.7052, 0.5891]。下限 0.45：把 _ShadeColor 收到接近黑
+# (0.3,0.25,0.15) 重建得 [0.30, 0.30, 0.30]，比 0.45 低 0.15；出貨最低通道比
+# 0.45 高 0.14。上限 0.90：把 _ShadeColor 疊回 base（沒有陰影）重建得
+# [1.0, 1.0, 1.0]，比 0.90 高 0.10；出貨最高通道比 0.90 低 0.11。
+HAIR_SHADE_RATIO = (0.45, 0.90)
 MATERIAL_FACTOR_MIN_CHROMA = 0.08
 # 髮片貼圖沿 v 從髮根走到髮梢，VRoid 把它畫成「根暖梢淡」。枕骨採到 v≈0.09、
 # 髮髻與馬尾採到 v≈0.31，兩端差多少就是後腦那塊色差有多明顯。這裡量的是貼圖
@@ -97,6 +117,19 @@ SEAM_BAND = 0.02
 # 生過的事（接縫環的遮罩選錯，把頭皮一起攤平成膚色），而當時門檻 12.0 讓它靜靜地
 # 過了。5.0 離出貨 4 倍、離「塗成膚色」1.8 倍。
 SCALP_TO_HAIR_DELTA_E_MAX = 5.0
+# 紫線本身：兩張皮膚貼圖不能再帶著髮色的紫／洋紅殘留。偵測沿用
+# evidence/purple_where-0904.py 抓過壞掉那版
+# 用的窗（色相 240–330、飽和 >0.15、明度落在 (0.1,0.95) 排除純黑純白），因為
+# 那正是使用者回報「脖子兩側後方還是有紫色線條」時拿來定位那兩條線的量法。
+# 出貨 Face 0、Body 105（頭皮蓋邊緣以外零星幾點，兩條髮根條已不成形）。上限
+# 250：拿掉 cap_fringe（SCALP_FRINGE_SAT 設到不可能命中的 2.0）重建，Face 回到
+# 6,983、Body 回到 1,156；只關掉 Body 的 fill_from_surroundings 重建，Body 回
+# 到 1,123、Face 仍是 0（兩道防禦各自的 mutation 都很乾淨地只動自己那條）。250
+# 離出貨 Body 105 有 2.4 倍餘裕，離兩種退化都還差 4-5 倍。
+PURPLE_HUE_BAND = (240.0, 330.0)
+PURPLE_MIN_SAT = 0.15
+PURPLE_LIGHTNESS_BAND = (0.1, 0.95)
+HAIR_PAINT_RESIDUAL_MAX = 250
 THIGH_BAND_DIAMETER_RATIO_MIN = 1.0
 THIGH_BAND_DIAMETER_RATIO_MAX = 1.15
 
@@ -109,13 +142,16 @@ class AppearanceTest(unittest.TestCase):
         with open(MANIFEST, encoding='utf-8') as manifest_file:
             cls.manifest = json.load(manifest_file)
 
-    def texture_median(self, name):
+    def texture_median(self, name, mask=None):
         image = next(image for image in self.doc['images'] if image.get('name') == name)
         rgba = np.asarray(
             Image.open(io.BytesIO(bytes(self.views[image['bufferView']]))).convert('RGBA'),
             dtype=np.float64,
         )
-        return np.median(rgba[..., :3][rgba[..., 3] > 200], axis=0)
+        keep = rgba[..., 3] > 200
+        if mask is not None:
+            keep = keep & mask
+        return np.median(rgba[..., :3][keep], axis=0)
 
     def texture_rgba(self, name):
         image = next(image for image in self.doc['images'] if image.get('name') == name)
@@ -155,7 +191,19 @@ class AppearanceTest(unittest.TestCase):
             .get('baseColorTexture', {}).get('index') in texture_indices
         ]
 
-    def assert_material_tone(self, image_prefix, max_factor):
+    def assert_material_tone(self, image_prefix, max_factor=None,
+                             shade_ratio=None, warm_band=None):
+        """乘色（`_Color`＝factor）要有可見色調；`_ShadeColor` 依材質分兩種規則。
+
+        膚：`shade_ratio`／`warm_band` 都不給，維持舊規則：陰影跟亮部同一個值
+        （MToon 不額外畫陰影），亮部本身有絕對亮度上限 `max_factor`。
+
+        髮：`shade_ratio` 給的時候，陰影不必等於亮部，但每個通道的 shade/base
+        比值要落在帶內（金髮靠明暗範圍跟膚分開，同值會把整顆頭讀成一片平面，
+        見 build.tone_textured_materials 的說明）。`warm_band` 給的時候，亮部
+        的可見色調改成量 R−B 落在金髮的暖度帶，不是量絕對亮度上限（那個上限
+        擋不住 R=1.0 的金髮）。
+        """
         materials = self.textured_materials(image_prefix)
         self.assertTrue(materials, f'找不到 {image_prefix} 的材質')
         for material, properties in materials:
@@ -164,20 +212,36 @@ class AppearanceTest(unittest.TestCase):
             color = vectors['_Color'][:3]
             shade = vectors['_ShadeColor'][:3]
             self.assertEqual(base, color, material['name'])
-            self.assertEqual(base, shade, material['name'])
-            has_visible_tone = (max(base) <= max_factor
-                                and max(base) - min(base)
-                                >= MATERIAL_FACTOR_MIN_CHROMA)
-            self.assertTrue(has_visible_tone, f'{material["name"]} 乘色為 {base}')
+            if shade_ratio is None:
+                self.assertEqual(base, shade, material['name'])
+            else:
+                for channel, (b, s) in enumerate(zip(base, shade)):
+                    ratio = s / b if b else 0.0
+                    self.assertTrue(
+                        shade_ratio[0] <= ratio <= shade_ratio[1],
+                        f'{material["name"]} 通道 {channel} shade/base 比值 '
+                        f'{ratio:.3f} 不在帶內（shade={shade} base={base}）')
+            self.assertGreaterEqual(
+                max(base) - min(base), MATERIAL_FACTOR_MIN_CHROMA,
+                f'{material["name"]} 乘色為 {base}，太接近灰階')
+            if warm_band is not None:
+                warm = base[0] - base[2]
+                self.assertTrue(
+                    warm_band[0] <= warm <= warm_band[1],
+                    f'{material["name"]} 乘色 R−B {warm:.3f} 不在金髮帶內（{base}）')
+            else:
+                self.assertLessEqual(max(base), max_factor,
+                                     f'{material["name"]} 乘色為 {base}')
 
-    def assert_texture_band(self, name, min_channel, warmth):
+    def assert_texture_band(self, name, min_channel, warmth, mask=None):
         """貼圖中位數要落在「夠亮」且「暖度在帶內」的雙側帶裡。
 
         暖度用 R−B。這一輪使用者問的是「膚色跟髮色跟參考圖一樣嗎」，量出來不一
         樣的地方正是暖度：膚在實機上 R−B 43、參考 17。單邊的亮度下限對這件事沒
-        有意見，所以帶子必須兩側都有。
+        有意見，所以帶子必須兩側都有。`mask` 可再排除不屬於這個量測的區域（例如
+        臉貼圖裡髮色的頭皮蓋，見 scalp_mask）。
         """
-        median = self.texture_median(name)
+        median = self.texture_median(name, mask)
         warm = float(median[0] - median[2])
         self.assertGreaterEqual(float(median.max()), min_channel,
                                 f'{name} 中位數 {median}，最亮通道太暗')
@@ -188,7 +252,11 @@ class AppearanceTest(unittest.TestCase):
 
     def test_skin_texture_keeps_visible_tone_under_mtoon_lighting(self):
         self.assert_texture_band('F00_000_00_Body_00', SKIN_MIN_CHANNEL, SKIN_WARMTH)
-        self.assert_texture_band('F00_000_00_Face_00', SKIN_MIN_CHANNEL, SKIN_WARMTH)
+        # 臉的中位數要排除頭皮蓋：那塊现在是金色，231k 個 texel 把中位數拖往暖
+        # 端，量到的「暖度太高」講的是頭皮有多金，不是臉本身的膚色變了（排除後
+        # -4 與 -5 同為 (251,217,208)，見 scalp_mask 與 evidence）。
+        self.assert_texture_band('F00_000_00_Face_00', SKIN_MIN_CHANNEL, SKIN_WARMTH,
+                                 mask=~self.scalp_mask())
 
     def test_scalp_cap_wears_the_hair_colour(self):
         """臉的貼圖裡那塊頭皮要是髮色，不是上一任髮色。
@@ -404,7 +472,7 @@ class AppearanceTest(unittest.TestCase):
         HAIR_02）。髮色帶與髮絲對比那兩條列舉的也只有 01 與 02。模型上實際用到
         的髮材質有四個：01 佔畫面 7.2%、02 佔 92.4%、04 佔 0.18%、05 佔 0.25%。
         04 取樣到的是近中性灰（整張 alpha>200 的中位數 (231,229,229)，暖度 2，
-        在 HAIR_WARMTH [14,30] 之外）、05 取樣到的貼圖像
+        在 HAIR_WARMTH [36,46] 之外）、05 取樣到的貼圖像
         素 alpha 全在門檻以下（等於看不見）。在 0.4% 的面積上這不構成畫面缺陷，
         所以刻意不擴大列舉；但守衛釘的是「這兩張」而不是「模型用到的每一張」，
         這件事記在這裡，免得下一輪誤以為髮色整體都被釘住了。
@@ -454,12 +522,21 @@ class AppearanceTest(unittest.TestCase):
             self.assertLessEqual(spread, 0.45, f'{material["name"]} 乘色為 {base}')
 
     def scalp_mask(self):
-        """輸入模型上那塊頭皮色塊，用來把它排除在臉的量測之外。"""
+        """輸入模型上那塊頭皮色塊（核心＋邊緣），用來把它排除在臉的量測之外。
+
+        邊緣（cap_fringe）也排進去：它是核心與周圍膚色的反鋸齒混色，2026-09-04
+        之前只排核心，邊緣留給膚色量測，量到的其實是「邊緣有多紫」而不是臉的膚
+        色本身。核心＋邊緣合計 243,965 px，佔臉貼圖全部 1,048,576 個不透明像素
+        的 23%，排除後 test_face_texture_keeps_the_contrast_its_features_
+        live_in 仍量到 0.102（門檻 0.075），沒有排過頭。
+        """
         doc, binary = glb.load(SOURCE_MODEL)
         views = glb.views_of(doc, binary)
         face = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
-        return customise.scalp_pixels(face[..., :3], face[..., 3],
-                                      build.SCALP_HUE, build.SCALP_WINDOW)
+        core, fringe = customise.hair_paint_pixels(
+            face[..., :3], face[..., 3], build.SCALP_HUE, build.SCALP_WINDOW,
+            fringe_to=build.SCALP_FRINGE_TO, fringe_min_sat=build.SCALP_FRINGE_SAT)
+        return core | fringe
 
     def test_face_texture_keeps_the_contrast_its_features_live_in(self):
         """臉不能被提亮壓平，否則嘴唇就不再是嘴唇。
@@ -641,7 +718,36 @@ class AppearanceTest(unittest.TestCase):
         self.assert_material_tone('F00_000_00_Body_00', SKIN_FACTOR_MAX)
 
     def test_hair_material_preserves_tone_after_live_exposure(self):
-        self.assert_material_tone('F00_000_Hair_00_', HAIR_FACTOR_MAX)
+        self.assert_material_tone('F00_000_Hair_00_', shade_ratio=HAIR_SHADE_RATIO,
+                                  warm_band=HAIR_WARM_FACTOR_BAND)
+
+    def test_skin_atlases_carry_no_hair_paint(self):
+        """兩張皮膚貼圖不能再帶著髮色的紫／洋紅殘留，這是使用者回報的那條線本身。
+
+        頭皮蓋核心 2026-09-03 已經解到髮色，但它的反鋸齒邊緣、以及後頸兩條髮根
+        條（在 Body 圖，不在 Face 圖），2026-09-04 才修：見
+        customise.hair_paint_pixels／blend_fringe／fill_from_surroundings 與
+        build.py 的頭皮／後頸兩段。偵測窗與門檻見 PURPLE_* 常數。
+
+        兩道 mutation 各自確認：SCALP_FRINGE_SAT 設到不可能命中的 2.0（cap_fringe
+        與 nape_fringe 都不再長出來，兩個解都退回舊的核心-only 版本）讓 Face 回
+        到 6,983、Body 回到 1,156；只關掉 Body 的 fill_from_surroundings 讓 Body
+        回到 1,123 而 Face 仍是 0，兩道防禦不互相遮蔽。
+        """
+        for name in ('F00_000_00_Face_00', 'F00_000_00_Body_00'):
+            rgba = self.texture_rgba(name) / 255.0
+            rgb, alpha = rgba[..., :3], rgba[..., 3]
+            hue, lightness, sat = np.vectorize(colorsys.rgb_to_hls)(
+                rgb[..., 0], rgb[..., 1], rgb[..., 2])
+            hue = hue * 360.0
+            purple = ((alpha > 0.5)
+                      & (hue > PURPLE_HUE_BAND[0]) & (hue < PURPLE_HUE_BAND[1])
+                      & (sat > PURPLE_MIN_SAT)
+                      & (lightness > PURPLE_LIGHTNESS_BAND[0])
+                      & (lightness < PURPLE_LIGHTNESS_BAND[1]))
+            self.assertLessEqual(
+                int(purple.sum()), HAIR_PAINT_RESIDUAL_MAX,
+                f'{name} 還有 {int(purple.sum())} 個髮色紫／洋紅殘留 texel')
 
     def test_thigh_band_diameter_matches_the_thigh(self):
         band = self.part_points('Acc_Bandage_Thigh', 'Mellow_Leg_Acc')

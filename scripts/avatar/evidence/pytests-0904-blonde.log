@@ -1,0 +1,77 @@
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-5.vrm'>
+  raw = open(path, 'rb').read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+test_back_skull_is_covered_by_hair (appearance_test.AppearanceTest.test_back_skull_is_covered_by_hair)
+後腦骨面凸出髮面就是「禿頭」，這裡釘機制不釘某一片髮的存在。 ... ok
+test_crown_gold_stays_warm_but_not_amber (appearance_test.AppearanceTest.test_crown_gold_stays_warm_but_not_amber)
+皇冠的兩種對立退化各釘一邊，指標是 factor 的紅藍差。 ... ok
+test_crown_rides_the_bangs_not_the_ear (appearance_test.AppearanceTest.test_crown_rides_the_bangs_not_the_ear)
+使用者指出皇冠壓住右熊耳太多；修正後它騎在瀏海側。 ... ok
+test_curtain_keeps_a_layer_lying_on_the_skull (appearance_test.AppearanceTest.test_curtain_keeps_a_layer_lying_on_the_skull)
+雙馬尾不能把貼著頭骨那一層一起收到側面去。 ... ok
+test_face_texture_keeps_the_contrast_its_features_live_in (appearance_test.AppearanceTest.test_face_texture_keeps_the_contrast_its_features_live_in)
+臉不能被提亮壓平，否則嘴唇就不再是嘴唇。 ... /Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-pink.vrm'>
+  raw = open(path, 'rb').read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_hair_material_preserves_tone_after_live_exposure (appearance_test.AppearanceTest.test_hair_material_preserves_tone_after_live_exposure) ... ok
+test_hair_reads_as_one_tone_from_scalp_to_tail (appearance_test.AppearanceTest.test_hair_reads_as_one_tone_from_scalp_to_tail)
+後腦跟四周的髮不能是兩種顏色。 ... ok
+test_hair_texture_keeps_its_strand_contrast (appearance_test.AppearanceTest.test_hair_texture_keeps_its_strand_contrast)
+壓平髮根→髮梢色帶不能連髮絲一起壓平。 ... ok
+test_hair_texture_keeps_visible_tone_under_mtoon_lighting (appearance_test.AppearanceTest.test_hair_texture_keeps_visible_tone_under_mtoon_lighting) ... ok
+test_neck_and_face_are_one_skin (appearance_test.AppearanceTest.test_neck_and_face_are_one_skin)
+露出來的脖子和臉必須是同一個膚色。 ... ok
+test_neck_seam_keeps_one_skin_tone_across_two_textures (appearance_test.AppearanceTest.test_neck_seam_keeps_one_skin_tone_across_two_textures)
+臉與身體是兩張貼圖，接縫橫過脖子，兩側不能是兩個膚色。 ... ok
+test_scalp_cap_wears_the_hair_colour (appearance_test.AppearanceTest.test_scalp_cap_wears_the_hair_colour)
+臉的貼圖裡那塊頭皮要是髮色，不是上一任髮色。 ... ok
+test_scalp_layer_carries_no_tail_weight (appearance_test.AppearanceTest.test_scalp_layer_carries_no_tail_weight)
+留在頭皮上的髮不能殘留尾巴骨的權重，否則尾巴一甩它就跟著飛。 ... ok
+test_skin_atlases_carry_no_hair_paint (appearance_test.AppearanceTest.test_skin_atlases_carry_no_hair_paint)
+兩張皮膚貼圖不能再帶著髮色的紫／洋紅殘留，這是使用者回報的那條線本身。 ... ok
+test_skin_material_preserves_tone_after_live_exposure (appearance_test.AppearanceTest.test_skin_material_preserves_tone_after_live_exposure) ... ok
+test_skin_texture_keeps_visible_tone_under_mtoon_lighting (appearance_test.AppearanceTest.test_skin_texture_keeps_visible_tone_under_mtoon_lighting) ... ok
+test_thigh_band_diameter_matches_the_thigh (appearance_test.AppearanceTest.test_thigh_band_diameter_matches_the_thigh) ... ok
+test_fringe_arc_only_counts_when_touching_the_core (customise_test.HairPaintPixelsTest.test_fringe_arc_only_counts_when_touching_the_core) ... ok
+test_weight_tracks_position_between_skin_and_core_colour (customise_test.PaintWeightsTest.test_weight_tracks_position_between_skin_and_core_colour) ... ok
+test_retone_can_reduce_texture_lightness (customise_test.RetoneTest.test_retone_can_reduce_texture_lightness) ... ok
+test_companion_primitive_uses_the_same_affine_fit (outfit_test.RingFitTest.test_companion_primitive_uses_the_same_affine_fit) ... ok
+test_fit_bends_normals_by_the_inverse_scale (outfit_test.RingFitTest.test_fit_bends_normals_by_the_inverse_scale) ... ok
+test_fit_preserves_vertical_positions (outfit_test.RingFitTest.test_fit_preserves_vertical_positions) ... ok
+test_fit_scales_morph_deltas (outfit_test.RingFitTest.test_fit_scales_morph_deltas) ... ok
+test_main_ring_matches_limb_diameter_with_clearance (outfit_test.RingFitTest.test_main_ring_matches_limb_diameter_with_clearance) ... ok
+test_lining_moves_with_the_outer_shell (outfit_test.StandoffTest.test_lining_moves_with_the_outer_shell) ... ok
+test_push_is_horizontal_everywhere (outfit_test.StandoffTest.test_push_is_horizontal_everywhere) ... ok
+test_shoulder_top_and_sleeves_stay_put (outfit_test.StandoffTest.test_shoulder_top_and_sleeves_stay_put) ... ok
+test_rescale_deltas_scales_head_rows_only_on_all_three_axes (proportion_test.RescaleTest.test_rescale_deltas_scales_head_rows_only_on_all_three_axes) ... ok
+test_rescale_grows_the_head_about_the_chin_and_leaves_the_body (proportion_test.RescaleTest.test_rescale_grows_the_head_about_the_chin_and_leaves_the_body) ... ok
+test_every_face_morph_delta_scales_with_the_head (proportion_test.ShippedFaceTest.test_every_face_morph_delta_scales_with_the_head)
+Vector for vector, not length for length: a permuted or negated ... ok
+test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does (proportion_test.ShippedFaceTest.test_extra_pushes_the_eye_plane_as_far_proud_of_the_skin_as_the_input_does)
+The one expression the bug showed on, measured the way it fails. ... ok
+test_face_is_the_input_face_scaled_by_head_factor (proportion_test.ShippedFaceTest.test_face_is_the_input_face_scaled_by_head_factor) ... ok
+test_nothing_changes_when_every_group_is_used (spring_test.PruneTest.test_nothing_changes_when_every_group_is_used) ... ok
+test_stranded_groups_are_removed_and_named (spring_test.PruneTest.test_stranded_groups_are_removed_and_named) ... ok
+test_surviving_references_are_remapped_to_the_same_groups (spring_test.PruneTest.test_surviving_references_are_remapped_to_the_same_groups) ... ok
+/Users/charles/portfolio/scripts/avatar/spring_test.py:43: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-5.parts.json' mode='r' encoding='UTF-8'>
+  cls.manifest = json.load(open(MODEL.replace('.vrm', '.parts.json')))['parts']
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+test_every_collider_group_is_referenced_by_a_spring (spring_test.SpringTest.test_every_collider_group_is_referenced_by_a_spring) ... ok
+test_no_tail_joint_rests_inside_a_collider (spring_test.SpringTest.test_no_tail_joint_rests_inside_a_collider)
+An overlap at bind is a snap on the first physics frame (and on every ... ok
+test_short_hair_does_not_use_unstable_legacy_springs (spring_test.SpringTest.test_short_hair_does_not_use_unstable_legacy_springs) ... ok
+test_skirt_spring_still_collides_with_the_legs (spring_test.SpringTest.test_skirt_spring_still_collides_with_the_legs) ... ok
+test_tail_hair_is_skinned_to_the_joint_at_its_own_height (spring_test.SpringTest.test_tail_hair_is_skinned_to_the_joint_at_its_own_height)
+Every tail vertex leads on the joint whose bone it hangs from. ... ok
+test_twintails_collide_with_her_body (spring_test.SpringTest.test_twintails_collide_with_her_body)
+Head, neck, chest, spine and both arms: the VRoid set the curtain had. ... ok
+test_twintails_collide_with_the_cardigan (spring_test.SpringTest.test_twintails_collide_with_the_cardigan)
+The bead proxy of the coat, on the torso bones AND both upper legs. ... ok
+test_twintails_run_at_zero_gravity (spring_test.SpringTest.test_twintails_run_at_zero_gravity)
+Bind chord = rest direction = settled pose only at gravityPower 0; ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 5.700s
+
+OK
