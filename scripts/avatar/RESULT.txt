@@ -2147,3 +2147,41 @@ evidence/blonde-0904-front.jpg、evidence/blonde-0904-nape-back.jpg。
     不需要動）。建置 log 六道 gate
     compare=[]、健檢十項完整性計數全 0、PASS，vertex sha b8126ca141a56e2a
     （evidence/build-0904-blonde-final.log）。
+
+================================================================================
+
+第十版　2026-09-04（同日第六版）　雙馬尾在轉身／跳舞時各自露出一個缺口
+
+一、使用者回報
+    「Mika 雙馬尾造型，兩邊的頭髮各自有一個缺口，在轉身或跳舞時非常明顯」。
+
+二、根因
+    twintail.py: apply() 幫頂點法向量做水平逆轉置縮放時，只看
+    `fade > 0` 就整段套用 fade=1 才對的 `1/r`；SCALP_GAP／SCALP_BAND／BLEND
+    三個過渡帶（正是綁點與頭皮交界，缺口出現的位置）裡 fade 幾乎全部落在
+    (0,1) 之間，真正的水平 Jacobian 應該是 `1/(1 - fade*(1-r))`，過渡帶內
+    最多錯了到 5 倍（尖端 r≈0.2）。法向量錯到這個程度，MToon 描邊 pass（沿
+    法向量外擠、背面剔除畫外框）的殼在那一圈自己摺疊，從特定轉身角度看就是
+    一塊黑斑；靜態幾何（含 UV、蒙皮、位置）完全連續，用材質替換／關描邊兩
+    步分別排除掉幾何洞與 alphaTest 兩個嫌疑，定位到描邊。詳細排查過程、每
+    一步的截圖見 evidence/twintail-gap-0904.md。
+
+三、修法
+    抽成 `twintail.normal_horizontal_scale(fade, r)`，回傳正確的 s，呼叫端
+    `inv = 1/max(s, 1e-3)`。純函式改動，不動任何常數、不動位置/權重。新增
+    scripts/avatar/twintail_test.py 四條：兩端點吻合舊公式、過渡帶算出的 s
+    遠離舊公式的答案、單調、把公式還原成舊的二元判斷後兩條轉紅（未 commit
+    前用檔案備份對換，不用 git checkout --）。
+
+四、驗證
+    python 48 條全綠（44＋新增 4 條，evidence/pytests-0904-gapfix.log）；
+    vitest 24 檔 370 條全綠（未動 src/ 斷言，only avatarVariants.ts 等隨
+    -5→-6 沿用同一個 sed）。build.py 六道 gate compare=[]、健檢全 0、PASS
+    （evidence/build-0904-gapfix.log），vertex sha 換成
+    16931555129553cb（法向量真的改了）；coat_intrusion 讀數與上一版相同
+    （-59mm／0.0%），確認位置未受影響。motionprobe.html 對出貨檔（含真實
+    描邊與 alphaTest）在 spin.vrma 的 t=0,1,1.5,2,3,4,4.5,5,5.5,6 各拍
+    back／three-quarter 四個相機，修正前明顯的缺口（t1–t1.5 與 t4–t6 一
+    帶）在修正後的同一批幀裡全部消失，t0 靜止幀本來就沒有變化。範圍外：
+    右肩外套上一條獨立的接縫裂紋與雙馬尾無關，未處理。出貨檔
+    mika-milfy-6.vrm，12,041,476 bytes。

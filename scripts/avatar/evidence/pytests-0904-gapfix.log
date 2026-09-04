@@ -1,0 +1,14 @@
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-6.vrm'>
+  raw = open(path, 'rb').read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+..../Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-pink.vrm'>
+  raw = open(path, 'rb').read()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+................................/Users/charles/portfolio/scripts/avatar/spring_test.py:43: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-6.parts.json' mode='r' encoding='UTF-8'>
+  cls.manifest = json.load(open(MODEL.replace('.vrm', '.parts.json')))['parts']
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+............
+----------------------------------------------------------------------
+Ran 48 tests in 6.159s
+
+OK

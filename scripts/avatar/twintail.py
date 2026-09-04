@@ -284,6 +284,19 @@ def thickness(t):
     return 0.042 + 0.034 * np.sin(np.pi * np.clip(t, 0.0, 1.0))
 
 
+def normal_horizontal_scale(fade, r):
+    """The horizontal Jacobian scale of `out = p + (T(p) - p) * fade`, where T
+    scales the horizontal offset from centre by r: diag(s, 1, s) with
+    s = 1 - fade*(1 - r). At fade=1 that is diag(r,1,r) (the fully-tied
+    bundle); at fade=0 it is the identity (untouched scalp hair). Only the two
+    ends were ever right if this were computed as `where(fade > 0, r, 1)`: at
+    every fade strictly between 0 and 1 -- which is most of the SCALP_GAP and
+    BLEND transition bands, exactly where the tie meets the scalp -- that
+    jumps straight to the fade=1 answer no matter how small fade actually is.
+    """
+    return 1.0 - fade * (1.0 - r)
+
+
 def _prims(doc, manifest, part):
     mesh = next(m for m in doc['meshes'] if m.get('name') == manifest[part]['mesh'])
     return [mesh['primitives'][i] for i in manifest[part]['primitives']]
@@ -464,9 +477,16 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
 
             if 'NORMAL' in pr['attributes']:
                 n = glb.read_accessor(doc, views, pr['attributes']['NORMAL']).astype(np.float64)
-                # A scale of r across the horizontal plane sends normals through
-                # its inverse transpose, which for diag(r,1,r) is diag(1/r,1,1/r).
-                inv = np.where(fade > 0, 1.0 / np.maximum(r, 1e-3), 1.0)
+                # See normal_horizontal_scale(): the old `where(fade>0, 1/r, 1)`
+                # only matched the true Jacobian at fade=1, and was wrong
+                # everywhere in the transition bands. Wrong enough there that
+                # the MToon outline shell (extruded along the normal) folded
+                # over itself and rendered as a dark gap at the tie/scalp
+                # boundary, worst at the swing angles that face it toward the
+                # camera -- reported as "each twintail has a gap that shows up
+                # turning or dancing", root-caused with a weight/outline debug
+                # probe (evidence/twintail-gap-0904.md).
+                inv = 1.0 / np.maximum(normal_horizontal_scale(fade, r), 1e-3)
                 n = np.stack([n[:, 0] * inv, n[:, 1], n[:, 2] * inv], axis=1)
                 n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-9)
                 _overwrite(doc, views, pr['attributes']['NORMAL'], n.astype(np.float32))

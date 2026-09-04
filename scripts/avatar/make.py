@@ -82,8 +82,11 @@ BLENDER = shutil.which('blender')
 # hang outside the cardigan; -4: same day, proportion scales the face's morph
 # deltas with the head, so the >< eyes clear the skin again; -5: same day,
 # blonde hair with its own shade tone, and the hair-coloured paint in both skin
-# atlases (cap edge, nape strips) no longer ships violet.
-SHIPPED = 'mika-milfy-5.vrm'
+# atlases (cap edge, nape strips) no longer ships violet; -6: same week, the
+# twintail normal transform used the wrong Jacobian in the tie/scalp
+# transition band, folding the MToon outline shell into a dark gap that only
+# showed once the tail was mid-swing (twintail.normal_horizontal_scale).
+SHIPPED = 'mika-milfy-6.vrm'
 
 
 @contextlib.contextmanager
