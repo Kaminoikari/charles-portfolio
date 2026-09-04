@@ -2185,3 +2185,43 @@ evidence/blonde-0904-front.jpg、evidence/blonde-0904-nape-back.jpg。
     帶）在修正後的同一批幀裡全部消失，t0 靜止幀本來就沒有變化。範圍外：
     右肩外套上一條獨立的接縫裂紋與雙馬尾無關，未處理。出貨檔
     mika-milfy-6.vrm，12,041,476 bytes。
+
+================================================================================
+
+第十一版　2026-09-04（同日第七版）　-6 只修好綁點附近，馬尾中段的缺口還在
+
+一、使用者回報
+    -6 上線後，使用者在實際網站（fullscreen 角色軌）截兩張圖，缺口位置在馬
+    尾中段（肩到手肘高度），不是第十版修的綁點附近。
+
+二、根因（比第十版更深一層）
+    用 `AVATAR_FRAMING_DEFAULT` 的相機參數＋dance.vrma 在 t4–t5 重現同一種
+    黑色楔形缺口。權重除錯確認該處 100% 綁尾巴鏈（fade 恆為 1），第十版的
+    公式在 fade=1 時本來就等於舊公式，這裡的缺口與那條公式無關。關掉描邊，
+    缺口一樣消失，仍是 MToon 描邊 pass 折疊。
+
+    真正的根因：把一片瀏海捲成圓管狀馬尾，不是水平縮放能描述的操作——原始
+    瀏海法向量大多朝前後，捲成圓管要朝四面八方，相鄰頂點的法向量要轉近
+    90°。任何「只看自己 (fade, r)」的逐頂點解析公式（第十版的
+    normal_horizontal_scale 也不例外）算不出這種場級的連續性。實測比對
+    -6 出貨檔的法向量與從實際變形後三角形重算的平滑法向量，最大夾角到
+    90°，分布在兩條尾巴近乎全長，不只是過渡帶。
+
+三、修法
+    刪掉 normal_horizontal_scale，改用 twintail.smooth_normals(positions,
+    indices)：對變形後的實際三角形做面積加權平均，直接讀「網格實際變形成
+    什麼樣子」，不會跟真實幾何矛盾。twintail_test.py 全部重寫成四條：平坦
+    四邊形、翻轉纏繞方向會翻正負號（mutation 交換 cross 運算元順序，三條
+    轉紅）、90° 折線共用頂點時算出兩面平均、以及證明單一頂點的縮放公式不
+    可能同時對兩個相差 90° 的面都對。
+
+四、驗證
+    python 48 條全綠（evidence/pytests-0904-gapfix2.log）；vitest 24 檔
+    370 條全綠。build.py 六道 gate compare=[]、健檢全 0（含 backwards-wound
+    primitives: 0）、PASS（evidence/build-0904-gapfix2.log），vertex sha
+    換成 ced0856058098d77。出貨檔（-7，真實材質）重繪 dance.vrma 完整
+    0–18 秒（0.5s 一幀，front／back 兩相機）目視巡過一輪，全程沒有暗斑；
+    第二輪缺口所在的 t4–t5 用貼近相機重繪，缺口消失
+    （evidence/twintail-gap-0904-second-after.png 對照 -before.png，同一
+    相機同一幀）；第十版修的綁點附近位置（spin.vrma t1.5）也重新確認仍然
+    乾淨，沒有因為換掉公式而退化。出貨檔 mika-milfy-7.vrm。

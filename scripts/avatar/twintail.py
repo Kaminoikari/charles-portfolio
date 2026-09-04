@@ -284,17 +284,35 @@ def thickness(t):
     return 0.042 + 0.034 * np.sin(np.pi * np.clip(t, 0.0, 1.0))
 
 
-def normal_horizontal_scale(fade, r):
-    """The horizontal Jacobian scale of `out = p + (T(p) - p) * fade`, where T
-    scales the horizontal offset from centre by r: diag(s, 1, s) with
-    s = 1 - fade*(1 - r). At fade=1 that is diag(r,1,r) (the fully-tied
-    bundle); at fade=0 it is the identity (untouched scalp hair). Only the two
-    ends were ever right if this were computed as `where(fade > 0, r, 1)`: at
-    every fade strictly between 0 and 1 -- which is most of the SCALP_GAP and
-    BLEND transition bands, exactly where the tie meets the scalp -- that
-    jumps straight to the fade=1 answer no matter how small fade actually is.
+def smooth_normals(positions, indices):
+    """Vertex normals of the mesh `positions`/`indices` actually describe: the
+    area-weighted average of each vertex's adjacent triangle normals.
+
+    Rolling a flat curtain into a round bundle is not a local scale -- the
+    curtain's normals mostly face one way (front/back), the bundle's face
+    outward all the way around, so a normal near the seam has to turn by
+    close to 90 degrees between neighbouring vertices. No SINGLE per-vertex
+    formula computed from that vertex's own (fade, r) can produce that: two
+    tries did (normal_horizontal_scale's predecessor, then that function
+    itself), and both left every vertex's normal individually defensible
+    while the FIELD across vertices was not, which is exactly what an
+    outline pass -- built by extruding along the normal and relying on
+    neighbours agreeing which way is out -- turns into a folded, self-
+    -occluding dark patch. Reading the normal off the deformed triangles
+    instead is correct by construction: it cannot disagree with the surface
+    that is actually there. Measured against the previous (deleted)
+    normal_horizontal_scale on the shipped -6 build: up to 90 degrees off
+    at some vertices, on both tails, spanning nearly the whole tail length
+    -- not confined to the tie/scalp transition bands that formula named.
     """
-    return 1.0 - fade * (1.0 - r)
+    tris = indices.reshape(-1, 3)
+    p0, p1, p2 = positions[tris[:, 0]], positions[tris[:, 1]], positions[tris[:, 2]]
+    face = np.cross(p1 - p0, p2 - p0)  # length = 2*area, direction = the triangle's winding
+    out = np.zeros_like(positions)
+    for corner in range(3):
+        np.add.at(out, tris[:, corner], face)
+    norm = np.linalg.norm(out, axis=1, keepdims=True)
+    return out / np.maximum(norm, 1e-9)
 
 
 def _prims(doc, manifest, part):
@@ -476,19 +494,15 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
             _overwrite(doc, views, pr['attributes']['POSITION'], out.astype(np.float32))
 
             if 'NORMAL' in pr['attributes']:
-                n = glb.read_accessor(doc, views, pr['attributes']['NORMAL']).astype(np.float64)
-                # See normal_horizontal_scale(): the old `where(fade>0, 1/r, 1)`
-                # only matched the true Jacobian at fade=1, and was wrong
-                # everywhere in the transition bands. Wrong enough there that
-                # the MToon outline shell (extruded along the normal) folded
-                # over itself and rendered as a dark gap at the tie/scalp
-                # boundary, worst at the swing angles that face it toward the
-                # camera -- reported as "each twintail has a gap that shows up
-                # turning or dancing", root-caused with a weight/outline debug
-                # probe (evidence/twintail-gap-0904.md).
-                inv = 1.0 / np.maximum(normal_horizontal_scale(fade, r), 1e-3)
-                n = np.stack([n[:, 0] * inv, n[:, 1], n[:, 2] * inv], axis=1)
-                n /= np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-9)
+                # See smooth_normals(): reads the normal off the deformed
+                # triangles instead of computing each vertex's from its own
+                # (fade, r) -- the latter twice produced a normal FIELD that
+                # disagreed with itself badly enough to fold the MToon
+                # outline shell into a dark gap (evidence/twintail-gap-0904.md).
+                if pr.get('mode', 4) != 4 or 'indices' not in pr:
+                    raise SystemExit(f'{part} 的圖元不是索引三角形，無法從實際幾何算法向量')
+                idx = glb.read_accessor(doc, views, pr['indices']).astype(np.int64)
+                n = smooth_normals(out.astype(np.float64), idx)
                 _overwrite(doc, views, pr['attributes']['NORMAL'], n.astype(np.float32))
 
             j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0']).copy()

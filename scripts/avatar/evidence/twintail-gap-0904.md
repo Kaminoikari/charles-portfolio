@@ -68,3 +68,58 @@ fade 恆為 1。SCALP_GAP／SCALP_BAND／BLEND 三個過渡帶裡 fade 幾乎全
 
 `fixed-t6-Rback.png` 右肩外套上有一條獨立的深色裂紋，是外套網格自己的接縫，
 與雙馬尾無關，未處理。
+
+## 第二輪：-6 出貨後使用者截圖同一種缺口仍在
+
+使用者在實際網站（fullscreen 角色軌、`AVATAR_FRAMING_DEFAULT` 那顆相機）截
+到兩張圖，缺口位置在馬尾中段（大約肩到手肘高度），不是綁點附近。用同一顆
+相機參數（fov 27、`(0, lookAtY+0.1, distance)`、`lookAt(0, lookAtY, 0)`）＋
+`dance.vrma` 重跑，t4–t5 附近同樣的位置重現黑色楔形缺口——證實 -6 沒有修好
+使用者實際看到的那個缺口，只修了綁點附近那一個。
+
+**排除幾何洞**（同法）：`t5` 這個缺口位置的權重全綠（100% 綁尾巴鏈），代表
+是完全在 SCALP_GAP/BLEND 過渡帶「之外」（`fade` 恆為 1）的位置，`fade=1`
+時新舊公式的答案相同（`s=r`）——**這裡的缺口跟第一輪修的那個公式無關，是
+另一個機制**。同一位置關掉描邊，缺口一樣消失，確認仍是描邊 pass 折疊。
+
+新增 `debug=normals` 探針，把每個頂點的法向量編碼成 RGB 頂點色（標準
+normal-map 慣例）直接畫出來：缺口位置有一塊邊界清楚的白色三角形，跟周圍
+連續的黃綠色漸層明顯不連續，肉眼就能看出法向量場在那裡斷開。
+
+**根因（第二層）**：把一片相對扁平的瀏海捲成一束接近圓形的馬尾，不是單純
+的水平縮放——原始瀏海的法向量大多朝前後（±z），捲成圓管後要朝四面八方，
+相鄰頂點的法向量要轉將近 90°。`normal_horizontal_scale` 這類「每個頂點只
+看自己的 (fade, r)」的解析公式，本質上只能算單一頂點的縮放，算不出「這一
+帶的法向量場需要整體怎麼轉」。用 Python 直接讀出貨檔（-6，已套第一輪修
+正），對每個雙馬尾頂點比較「公式算出的法向量」與「從實際變形後三角形重
+算出的平滑法向量」，兩者最大夾角到 **90°**，分布在兩條尾巴的近乎全長（rest
+y 從 0.77 到 1.37，涵蓋綁點到近尾尖），不只是過渡帶。
+
+## 第二輪修法
+
+刪掉 `normal_horizontal_scale`，改用 `twintail.smooth_normals(positions,
+indices)`：對變形後的實際三角形做面積加權平均（`cross(p1-p0, p2-p0)` 逐面
+算面法向量，用 `np.add.at` 累加到三個頂點，最後正規化）。直接讀「已經變形
+好的網格本身在哪裡」，不會跟真實幾何矛盾。`twintail_test.py` 改成四條測平
+坦四邊形、翻轉纏繞方向會翻正負號（mutation：交換 `cross` 兩個運算元順序，
+三條轉紅）、折線（hinge）兩片 90° 夾角面共用頂點時算出來是兩個面法向量的平
+均而非任一單面、以及直接證明「單一頂點的縮放公式不可能同時對兩個相差 90°
+的面都對」。
+
+## 第二輪驗證
+
+- `python3 twintail_test.py`：4/4 綠；把 `cross(p1-p0,p2-p0)` 換成
+  `cross(p2-p0,p1-p0)`（纏繞方向 mutation）後 3/4 轉紅，改回修正後再次全綠
+  （檔案備份對換，未 commit 前不用 `git checkout --`）。
+- `python3 -m unittest discover -s scripts/avatar -p '*_test.py'`：48/48 綠
+  （`pytests-0904-gapfix2.log`）。
+- `npx vitest run`：24 檔 370 條全綠。
+- `python3 make.py`：六道 gate 全 `compare=[]`，健檢十項全 0，`backwards-
+  wound primitives: 0`，PASS（`build-0904-gapfix2.log`）。vertex sha 換成
+  ced0856058098d77。
+- 出貨檔（-7，真實材質）重繪 `dance.vrma` 完整 0–18 秒（0.5s 一幀，front／
+  back 兩相機）目視巡過一輪，兩條尾巴全程沒有暗斑；原本第二輪缺口所在的
+  t4–t5 用同一顆貼近相機（`?wide=1` 的 zoomL）重繪，缺口消失
+  （`twintail-gap-0904-second-after.png` 對照 `-before.png`，同一相機同一
+  幀）；第一輪修的綁點附近位置（`spin.vrma` t1.5）也重新確認仍然乾淨，沒
+  有因為換掉公式而退化。

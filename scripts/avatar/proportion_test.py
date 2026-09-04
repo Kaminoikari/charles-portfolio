@@ -25,7 +25,7 @@ from make import HEAD_FACTOR  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.environ.get('PROPORTION_TEST_MODEL') or os.path.join(
-    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-6.vrm')
+    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-7.vrm')
 SOURCE_MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
 

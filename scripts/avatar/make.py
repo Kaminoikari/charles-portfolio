@@ -85,8 +85,14 @@ BLENDER = shutil.which('blender')
 # atlases (cap edge, nape strips) no longer ships violet; -6: same week, the
 # twintail normal transform used the wrong Jacobian in the tie/scalp
 # transition band, folding the MToon outline shell into a dark gap that only
-# showed once the tail was mid-swing (twintail.normal_horizontal_scale).
-SHIPPED = 'mika-milfy-6.vrm'
+# showed once the tail was mid-swing; -7: same week, -6 only fixed that one
+# band -- a per-vertex analytic normal has no way to represent a curtain
+# rolling into a round bundle (up to 90 degrees of turn between neighbours
+# near the seam), so it was still folding the outline elsewhere along both
+# tails. Normals are now read off the deformed triangles themselves
+# (twintail.smooth_normals), which cannot disagree with the surface that is
+# actually there.
+SHIPPED = 'mika-milfy-7.vrm'
 
 
 @contextlib.contextmanager
