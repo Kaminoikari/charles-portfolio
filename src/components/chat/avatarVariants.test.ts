@@ -11,23 +11,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { ACTIVE_VARIANT, AVATAR_VARIANTS, variantUrl } from './avatarVariants'
-
-/** Just enough of the glTF document to compare two bodies. */
-interface GltfNode {
-  translation?: number[]
-  rotation?: number[]
-  scale?: number[]
-  children?: number[]
-}
-interface VrmDoc {
-  nodes: GltfNode[]
-  extensions: {
-    VRM: {
-      humanoid: { humanBones: { bone: string; node: number }[] }
-      blendShapeMaster: { blendShapeGroups: { name: string }[] }
-    }
-  }
-}
+import { readExpressions, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
 
 /**
  * The glTF JSON chunk of a served .vrm, parsed.
@@ -37,9 +21,9 @@ interface VrmDoc {
  * loader, which matters because jsdom cannot build the WebGLRenderer that the
  * real load path starts with.
  */
-const parsed = new Map<string, VrmDoc>()
+const parsed = new Map<string, GltfJson>()
 
-function gltfOf(url: string): VrmDoc {
+function gltfOf(url: string): GltfJson {
   // Memoised because each body is a 5.5MB file with a multi-megabyte JSON chunk,
   // and the tests below ask for the same two files repeatedly. Parsing them per
   // assertion put enough CPU into the shared worker pool to time out an
@@ -49,43 +33,9 @@ function gltfOf(url: string): VrmDoc {
   const raw = readFileSync(path.join(process.cwd(), 'public', url.replace(/^\//, '')))
   const view = new DataView(raw.buffer, raw.byteOffset, raw.byteLength)
   const jsonLength = view.getUint32(12, true)
-  const doc = JSON.parse(new TextDecoder().decode(raw.subarray(20, 20 + jsonLength))) as VrmDoc
+  const doc = JSON.parse(new TextDecoder().decode(raw.subarray(20, 20 + jsonLength))) as GltfJson
   parsed.set(url, doc)
   return doc
-}
-
-/**
- * The rig, as one comparable string: every humanoid bone's rest transform,
- * the transforms of any helper nodes between it and the nearest humanoid bone
- * above it, and which bone that is. Two bodies with the same string pose the
- * same way under every clip, whatever mesh hangs off the bones.
- *
- * The helper nodes are included because a VRoid export can put an unnamed
- * node between two humanoid bones; a translation on one of those moves the
- * bone below it in the world while the bone's own transform stays identical.
- */
-function rigOf(doc: VrmDoc): string {
-  const parentOf = new Map<number, number>()
-  doc.nodes.forEach((n, i) => n.children?.forEach((c) => parentOf.set(c, i)))
-  const boneOfNode = new Map<number, string>()
-  for (const hb of doc.extensions.VRM.humanoid.humanBones) boneOfNode.set(hb.node, hb.bone)
-  const transform = (n: GltfNode) => [n.translation ?? [0, 0, 0], n.rotation ?? [0, 0, 0, 1], n.scale ?? [1, 1, 1]]
-  const rows = doc.extensions.VRM.humanoid.humanBones
-    .map((hb) => {
-      const chain = [transform(doc.nodes[hb.node])]
-      let parentBone: string | null = null
-      for (let p = parentOf.get(hb.node); p !== undefined; p = parentOf.get(p)) {
-        const bone = boneOfNode.get(p)
-        if (bone) {
-          parentBone = bone
-          break
-        }
-        chain.push(transform(doc.nodes[p]))
-      }
-      return [hb.bone, chain, parentBone] as const
-    })
-    .sort((a, b) => a[0].localeCompare(b[0]))
-  return JSON.stringify(rows)
 }
 
 describe('avatar variants', () => {
@@ -143,7 +93,7 @@ describe('avatar variants', () => {
     // job, run per body before it is declared.
     const bodies = AVATAR_VARIANTS.map((v) => ({ id: v.id, doc: gltfOf(v.url) }))
     const [first, ...rest] = bodies
-    expect(first.doc.extensions.VRM.humanoid.humanBones.length).toBeGreaterThan(50)
+    expect(Object.keys(readHumanoid(first.doc).bones).length).toBeGreaterThan(50)
     for (const other of rest) {
       expect(
         rigOf(other.doc),
@@ -158,9 +108,14 @@ describe('avatar variants', () => {
     // and a missing name is a silent no-op: she simply stops making that face,
     // with no error anywhere. So the names are part of what a variant has to
     // keep, exactly as much as the bones are.
-    const names = (url: string) =>
-      gltfOf(url).extensions.VRM.blendShapeMaster.blendShapeGroups.map((g) => g.name).join(',')
+    // readExpressions throws on a file with neither VRM extension, and the
+    // reference list is checked for the names the engine actually plays, so
+    // "every body has no expressions" cannot pass as "every body has the same".
+    const names = (url: string) => readExpressions(gltfOf(url)).join(',')
     const [first, ...rest] = AVATAR_VARIANTS
+    const reference = readExpressions(gltfOf(first.url))
+    expect(reference).toContain('Blink')
+    expect(reference).toContain('A')
     for (const other of rest) {
       expect(
         names(other.url),

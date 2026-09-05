@@ -1,0 +1,11 @@
+$ python3 ~/vtuber-kit/bin/check_variants.py            # kit 的 models/ 是空的：這是 CLI 自己的空目錄訊息，不是 import 失敗
+/Users/charles/vtuber-kit/models 裡沒有 .vrm 檔。匯出方式見 /Users/charles/vtuber-kit/models/README.md
+exit=1
+
+$ python3 ~/vtuber-kit/bin/check_variants.py --models ~/portfolio/public/avatar
+基準：AvatarSample_B_webp.vrm　（54 根 humanoid 骨頭）
+（骨架相同代表動作在這批變體之間共用。10 支動作的間隙仍要對這個基準身體重量一次，見 models/README.md）
+
+✓ mika-milfy-10.vrm　骨架跟基準完全相同，動作在這批變體之間共用。
+✓ mika-pink.vrm　骨架跟基準完全相同，動作在這批變體之間共用。
+exit=0

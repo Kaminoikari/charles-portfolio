@@ -26,6 +26,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import motion  # noqa: E402
 import pose as pose_mod  # noqa: E402
 
@@ -52,8 +53,7 @@ def clip_world(path, at, rest=False):
     """humanoid bone -> world position, posing the clip on its OWN skeleton."""
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
-    ext = doc['extensions']['VRMC_vrm_animation']
-    bones = {k: v['node'] for k, v in ext['humanoid']['humanBones'].items()}
+    bones = humanoid.animation_bones(doc)
 
     anim = doc['animations'][0]
     local = {}

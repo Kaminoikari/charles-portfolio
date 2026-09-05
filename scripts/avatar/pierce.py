@@ -81,6 +81,7 @@ from scipy.spatial import cKDTree
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import partmap  # noqa: E402
 import render  # noqa: E402
 
@@ -119,8 +120,7 @@ def _arm_triangles(doc, views, parts, posed=None):
     """
     skin = doc['skins'][0]
     names = [doc['nodes'][j].get('name', '') for j in skin['joints']]
-    bone = {b['node']: b['bone'] for b
-            in doc['extensions']['VRM']['humanoid']['humanBones']}
+    bone = humanoid.node_bone(doc)
     arm = np.array([any(a.lower() in bone.get(j, names[k]).lower() for a in ARM)
                     for k, j in enumerate(skin['joints'])])
     flesh = {(parts[n]['mesh'], i) for n in SKIN if n in parts

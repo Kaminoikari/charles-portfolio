@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import build  # noqa: E402
 import customise  # noqa: E402
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import measure  # noqa: E402
 import render  # noqa: E402
 
@@ -574,8 +575,7 @@ class AppearanceTest(unittest.TestCase):
         把 build.py 的頸部攤平與接縫環兩步拿掉重建，這條轉紅。
         """
         world = render.world_matrices(self.doc)
-        bones = {b['bone']: b['node']
-                 for b in self.doc['extensions']['VRM']['humanoid']['humanBones']}
+        bones = humanoid.bones(self.doc)
         neck_y = float(world[bones['neck']][1, 3])
         head_y = float(world[bones['head']][1, 3])
         face_pos, face_uv = self.skin_seam_side('Face.baked',

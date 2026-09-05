@@ -1,7 +1,7 @@
 """Rasterise a VRM to a PNG without a GPU, a browser, or a scene graph library.
 
 This machine's Playwright runs software WebGL, where rendered frames are
-unreliable (see ~/vtuber-kit/bin/vrmrig.py's header). Numbers read out of a file
+unreliable (see vrmrig.py's header). Numbers read out of a file
 are reliable, and so is a rasteriser we write ourselves: same camera, same
 pixels, every run. That determinism is the whole point — these images get
 compared against each other across steps, so a renderer that dithers or
@@ -18,6 +18,7 @@ import numpy as np
 from PIL import Image
 
 import glb
+import humanoid
 
 # Camera presets: (azimuth degrees around Y, elevation, framing)
 #
@@ -267,7 +268,7 @@ def render(path, out_prefix, size=(700, 1200), only=None, posed=None):
     pos, uv, tris, mats = gather(doc, views, posed)
     texmap = textures(doc, views)
     world = world_matrices(doc)
-    head = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    head = humanoid.bones(doc)
     head_y = float(world[head['head']][1, 3]) if 'head' in head else None
     made = []
     for name, (az, el, framing) in VIEWS.items():

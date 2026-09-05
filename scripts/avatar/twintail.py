@@ -48,6 +48,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 import glb
+import humanoid
 
 # The tie the ribbons are already wrapped around, from blender/hairbow.py. If
 # that moves, this moves with it.
@@ -464,8 +465,7 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     skin = doc['skins'][0]
     joints = skin['joints']
 
-    head_node = next(b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']
-                     if b['bone'] == 'head')
+    head_node = humanoid.bones(doc)['head']
     parent = {c: i for i, n in enumerate(nodes) for c in n.get('children', ())}
 
     def world_of(i):

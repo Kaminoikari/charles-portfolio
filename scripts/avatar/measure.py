@@ -33,6 +33,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 REFS = os.path.expanduser('~/milfy-refs')
@@ -273,7 +274,7 @@ def landmarks(model):
             crotch = float(h)
             break
 
-    bones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    bones = humanoid.bones(doc)
     import render
     world = render.world_matrices(doc)
     knee = float(world[bones['leftLowerLeg']][1, 3])

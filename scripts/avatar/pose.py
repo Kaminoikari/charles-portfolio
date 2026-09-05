@@ -12,6 +12,7 @@ delta shows up as a vertex flung across the room long before it looks subtle).
 import numpy as np
 
 import glb
+import humanoid
 from render import world_matrices
 
 # A garment vertex further than this from any skin vertex is not resting on the
@@ -93,8 +94,7 @@ POSES = {
 
 
 def bones(doc):
-    return {b['bone']: b['node']
-            for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    return humanoid.bones(doc)
 
 
 def skinned_normals(doc, views, rotations=None, replace=False):

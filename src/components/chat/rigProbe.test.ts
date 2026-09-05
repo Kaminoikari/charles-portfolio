@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
+import { readHumanoid, type GltfJson } from './vrmHumanoid'
 import {
   applyMotion,
   buildMotion,
@@ -45,6 +46,49 @@ import {
 
 const asset = (...parts: string[]): Uint8Array =>
   new Uint8Array(readFileSync(path.join(process.cwd(), 'public', 'avatar', ...parts)))
+
+/**
+ * The shipped body rewritten as a VRM 1.0 export would be: humanoid map as a
+ * record under VRMC_vrm, no VRM block, and every scene root hung under one
+ * node turned π about Y so the body faces +Z. Only the JSON chunk changes; the
+ * binary chunk is copied through.
+ */
+function vrm1Twin(data: Uint8Array): Uint8Array {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
+  const jsonLength = view.getUint32(12, true)
+  const doc = JSON.parse(new TextDecoder().decode(data.subarray(20, 20 + jsonLength))) as GltfJson & {
+    extensions: NonNullable<GltfJson['extensions']>
+  }
+  const { bones } = readHumanoid(doc)
+  const record: Record<string, { node: number }> = {}
+  for (const [bone, node] of Object.entries(bones)) record[bone] = { node }
+  delete doc.extensions.VRM
+  doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record } }
+  doc.extensionsUsed = [...(doc.extensionsUsed ?? []).filter((e) => e !== 'VRM'), 'VRMC_vrm']
+  const scene = doc.scenes![doc.scene ?? 0]
+  doc.nodes.push({ name: 'vrm1-root', rotation: [0, 1, 0, 0], children: scene.nodes })
+  scene.nodes = [doc.nodes.length - 1]
+
+  let blob = new TextEncoder().encode(JSON.stringify(doc))
+  const pad = (4 - (blob.length % 4)) % 4
+  if (pad) {
+    const padded = new Uint8Array(blob.length + pad)
+    padded.set(blob)
+    padded.fill(0x20, blob.length)
+    blob = padded
+  }
+  const rest = data.subarray(20 + jsonLength)
+  const out = new Uint8Array(20 + blob.length + rest.length)
+  const dv = new DataView(out.buffer)
+  dv.setUint32(0, 0x46546c67, true)
+  dv.setUint32(4, 2, true)
+  dv.setUint32(8, out.length, true)
+  dv.setUint32(12, blob.length, true)
+  dv.setUint32(16, view.getUint32(16, true), true)
+  out.set(blob, 20)
+  out.set(rest, 20 + blob.length)
+  return out
+}
 
 let cachedRig: Rig | null = null
 function rig(): Rig {
@@ -115,6 +159,18 @@ describe('rigProbe', () => {
     // Her eyes are in FRONT of the head bone, which is what fixes -Z as her
     // forward direction and so which way "palm toward the viewer" points.
     expect(r.restPosition.leftEye.z).toBeLessThan(r.restPosition.head.z)
+  })
+
+  it('accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it', () => {
+    // The same bones, the map spelled the 1.0 way (a record under VRMC_vrm
+    // instead of a list under VRM), the whole scene turned to face +Z as a
+    // 1.0 export does. Nothing else changes, so every rest position must come
+    // back the same up to that half turn -- x and z negated, y untouched.
+    const r = buildRig(vrm1Twin(asset('AvatarSample_B_webp.vrm')))
+    expect(r.restPosition.leftUpperArm.x).toBeCloseTo(+0.081, 3)
+    expect(r.restPosition.rightUpperArm.x).toBeCloseTo(-0.081, 3)
+    expect(r.restPosition.head.y).toBeCloseTo(1.32, 2)
+    expect(r.restPosition.leftEye.z).toBeGreaterThan(r.restPosition.head.z)
   })
 
   // The two measurements below are the ones the old width-only check could not

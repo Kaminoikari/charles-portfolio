@@ -24,6 +24,7 @@ import customise
 import envelope
 import garment
 import glb
+import humanoid
 import outfit
 import render
 import twintail
@@ -585,7 +586,7 @@ def build(src, dst, manifest_path, out_manifest):
     p, added = pool['pos'], {}
 
     skin = doc['skins'][0]
-    bones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    bones = humanoid.bones(doc)
 
     hip, knee, ankle = 0.843, 0.501, 0.118
     arm_r = 0.54                                   # hand x at rest, both sides
@@ -1379,7 +1380,7 @@ def build(src, dst, manifest_path, out_manifest):
     #     bone to the head bone, with NECK_MARGIN of overshoot at each end so the
     #     feather has somewhere to land. ---
     world = render.world_matrices(doc)
-    bones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    bones = humanoid.bones(doc)
     neck_y = float(world[bones['neck']][1, 3])
     head_y = float(world[bones['head']][1, 3])
     lo, hi = neck_y - NECK_MARGIN, head_y + NECK_MARGIN

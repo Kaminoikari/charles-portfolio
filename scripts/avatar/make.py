@@ -25,7 +25,6 @@ build silently rather than failing it:
                          the last run left.
   ~/Downloads/MellowHeart_Dream1.05
                          the purchased outfit, path in blender/mellow.py.
-  ~/vtuber-kit/bin       vrmrig.py, the skeleton comparison every gate calls.
   public/avatar/mika-pink.vrm
                          baseline.vrm is a byte-identical copy of it; it is the
                          model being modified and the baseline compare() runs
@@ -43,7 +42,6 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, '/Users/charles/vtuber-kit/bin')
 
 import build as build_mod  # noqa: E402
 import customise  # noqa: E402
@@ -51,7 +49,7 @@ import partition  # noqa: E402
 import proportion  # noqa: E402
 import skin  # noqa: E402
 import verify  # noqa: E402
-import vrmrig  # noqa: E402
+import humanoid  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, 'out')
@@ -147,8 +145,8 @@ def step(title):
 
 
 def gate(label, path):
-    diffs = vrmrig.compare(vrmrig.read(BASELINE), vrmrig.read(path))
-    bones = len(vrmrig.human_bones(vrmrig.read(path)))
+    diffs = humanoid.compare(humanoid.read(BASELINE), humanoid.read(path))
+    bones = len(humanoid.bones(humanoid.read(path)))
     print(f'  gate {label}: compare={diffs} bones={bones}')
     if diffs or bones != 54:
         raise SystemExit(f'{label} 動到骨架了')

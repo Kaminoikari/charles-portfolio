@@ -34,55 +34,34 @@ import * as THREE from 'three'
 import { VRMSpringBoneLoaderPlugin, type VRMSpringBoneManager } from '@pixiv/three-vrm'
 
 import { buildMotion, type Motion } from '../../src/components/chat/rigProbe'
+import {
+  parseGlb,
+  readAccessorRows,
+  readHumanoid,
+  type GltfAccessor,
+  type GltfBufferView,
+  type GltfJson,
+  type GltfNode,
+  type Vrm0BoneGroup,
+  type Vrm0ColliderGroup,
+  type Vrm0SecondaryAnimation,
+} from '../../src/components/chat/vrmHumanoid'
 
 // ---- glTF ------------------------------------------------------------------
+//
+// The container reader and the humanoid map come from vrmHumanoid.ts, the one
+// place that knows both VRM versions. What stays here is the narrowing this
+// simulator relies on: a body it can simulate has meshes, skins and, for now,
+// a VRM 0.x secondaryAnimation block -- the 1.0 branch is Phase 6a's work.
 
-interface GltfNode {
-  name?: string
-  children?: number[]
-  translation?: number[]
-  rotation?: number[]
-  scale?: number[]
-  matrix?: number[]
-  mesh?: number
-  skin?: number
-}
-interface GltfAccessor {
-  bufferView: number
-  byteOffset?: number
-  componentType: number
-  count: number
-  type: string
-  normalized?: boolean
-}
-interface GltfBufferView {
-  byteOffset?: number
-  byteLength: number
-  byteStride?: number
-}
 interface GltfPrimitive {
   attributes: Record<string, number>
   material: number
 }
-interface ColliderGroup {
-  node: number
-  colliders: { offset: { x: number; y: number; z: number }; radius: number }[]
-}
-interface BoneGroup {
-  comment?: string
-  bones?: number[]
-  colliderGroups?: number[]
-  hitRadius?: number
-  gravityPower?: number
-  stiffiness?: number
-  dragForce?: number
-  center?: number
-}
-interface Gltf {
-  extensionsUsed?: string[]
-  scene?: number
+type ColliderGroup = Vrm0ColliderGroup
+type BoneGroup = Vrm0BoneGroup
+interface Gltf extends GltfJson {
   scenes: { nodes: number[] }[]
-  nodes: GltfNode[]
   meshes: { name: string; primitives: GltfPrimitive[] }[]
   materials: { name: string }[]
   skins: { joints: number[]; inverseBindMatrices: number }[]
@@ -90,59 +69,9 @@ interface Gltf {
   bufferViews: GltfBufferView[]
   extensions: {
     VRM: {
-      humanoid: { humanBones: { bone: string; node: number }[] }
-      secondaryAnimation: { boneGroups: BoneGroup[]; colliderGroups: ColliderGroup[] }
+      secondaryAnimation: Vrm0SecondaryAnimation
     }
   }
-}
-
-function parseGlb(buf: Buffer): { json: Gltf; bin: Buffer } {
-  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength)
-  if (dv.getUint32(0, true) !== 0x46546c67) throw new Error('not a GLB')
-  const total = dv.getUint32(8, true)
-  let off = 12
-  let json: Gltf | null = null
-  let bin: Buffer | null = null
-  while (off < total) {
-    const len = dv.getUint32(off, true)
-    const type = dv.getUint32(off + 4, true)
-    const data = buf.subarray(off + 8, off + 8 + len)
-    if (type === 0x4e4f534a) json = JSON.parse(data.toString('utf8')) as Gltf
-    else if (type === 0x004e4942) bin = data
-    off += 8 + len
-  }
-  if (!json || !bin) throw new Error('GLB without JSON or BIN chunk')
-  return { json, bin }
-}
-
-const NCOMP: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 }
-
-/** Accessor as plain numbers, de-strided, de-normalized. */
-function readAccessor(json: Gltf, bin: Buffer, index: number): { data: Float64Array; ncomp: number } {
-  const acc = json.accessors[index]
-  const view = json.bufferViews[acc.bufferView]
-  const ncomp = NCOMP[acc.type]
-  const start = bin.byteOffset + (view.byteOffset ?? 0) + (acc.byteOffset ?? 0)
-  const out = new Float64Array(acc.count * ncomp)
-  const ctor = {
-    5120: Int8Array,
-    5121: Uint8Array,
-    5122: Int16Array,
-    5123: Uint16Array,
-    5125: Uint32Array,
-    5126: Float32Array,
-  }[acc.componentType]
-  if (!ctor) throw new Error(`componentType ${acc.componentType}`)
-  const size = ctor.BYTES_PER_ELEMENT
-  const stride = view.byteStride ?? ncomp * size
-  const norm = acc.normalized
-    ? { 5120: 127, 5121: 255, 5122: 32767, 5123: 65535 }[acc.componentType] ?? 1
-    : 1
-  for (let i = 0; i < acc.count; i++) {
-    const row = new ctor(bin.buffer, start + i * stride, ncomp)
-    for (let c = 0; c < ncomp; c++) out[i * ncomp + c] = row[c] / norm
-  }
-  return { data: out, ncomp }
 }
 
 // ---- node tree + springs -----------------------------------------------------
@@ -209,7 +138,7 @@ function tailGroup(json: Gltf): BoneGroup {
 
 /** Give the twintails the base model's hair collider set, looked up by node name. */
 function restoreVroidColliders(json: Gltf, includeArms: boolean): void {
-  const base = parseGlb(readFileSync(BASELINE)).json
+  const base = parseGlb<Gltf>(readFileSync(BASELINE)).json
   const nameToNode = new Map(json.nodes.map((n, i) => [n.name ?? '', i]))
   const sec = json.extensions.VRM.secondaryAnimation
   const indexOfNode = new Map(sec.colliderGroups.map((g, i) => [g.node, i]))
@@ -253,17 +182,17 @@ function meshNode(json: Gltf, meshName: string): GltfNode {
   return node
 }
 
-function gather(json: Gltf, bin: Buffer, label: string, meshName: string, prims: number[], stride = 1): SkinSet {
+function gather(json: Gltf, bin: Uint8Array, label: string, meshName: string, prims: number[], stride = 1): SkinSet {
   const mesh = json.meshes.find((m) => m.name === meshName)
   if (!mesh) throw new Error(`no mesh ${meshName}`)
   const node = meshNode(json, meshName)
   const parts = prims.map((pi) => {
     const p = mesh.primitives[pi]
     return {
-      pos: readAccessor(json, bin, p.attributes.POSITION).data,
-      nrm: readAccessor(json, bin, p.attributes.NORMAL).data,
-      joints: readAccessor(json, bin, p.attributes.JOINTS_0).data,
-      weights: readAccessor(json, bin, p.attributes.WEIGHTS_0).data,
+      pos: readAccessorRows({ json, bin }, p.attributes.POSITION).data,
+      nrm: readAccessorRows({ json, bin }, p.attributes.NORMAL).data,
+      joints: readAccessorRows({ json, bin }, p.attributes.JOINTS_0).data,
+      weights: readAccessorRows({ json, bin }, p.attributes.WEIGHTS_0).data,
     }
   })
   const n = parts.reduce((s, p) => s + p.pos.length / 3, 0)
@@ -323,12 +252,12 @@ class Skinner {
   private readonly boneMats: Float64Array
   constructor(
     private readonly json: Gltf,
-    bin: Buffer,
+    bin: Uint8Array,
     private readonly objs: THREE.Object3D[],
     private readonly skinIndex: number,
   ) {
     const skin = json.skins[skinIndex]
-    this.ibm = readAccessor(json, bin, skin.inverseBindMatrices).data
+    this.ibm = readAccessorRows({ json, bin }, skin.inverseBindMatrices).data
     this.boneMats = new Float64Array(skin.joints.length * 16)
   }
   /** World-space bone matrices for this frame. Call once per frame. */
@@ -545,7 +474,7 @@ class Poser {
   private readonly human = new Map<string, THREE.Object3D>()
   private readonly hipsRest = new THREE.Vector3()
   constructor(json: Gltf, private readonly objs: THREE.Object3D[]) {
-    for (const { bone, node } of json.extensions.VRM.humanoid.humanBones) this.human.set(bone, objs[node])
+    for (const [bone, node] of Object.entries(readHumanoid(json).bones)) this.human.set(bone, objs[node])
     const hips = this.human.get('hips')
     if (!hips) throw new Error('no hips')
     this.hipsRest.copy(hips.position)
@@ -652,7 +581,8 @@ const INSIDE_MM = 5
 
 export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const raw = readFileSync(args.model)
-  const { json, bin } = parseGlb(raw)
+  const { json, bin } = parseGlb<Gltf>(raw)
+  if (!bin) throw new Error('GLB without a BIN chunk')
   // Fresh tree per clip: the solver keeps state on the nodes.
   if (args.colliders !== 'asis') restoreVroidColliders(json, args.colliders === 'vroid')
   const group = tailGroup(json)
@@ -688,9 +618,9 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const coat = gather(json, bin, 'coat', 'Body.baked', primsByMaterial(json, 'Body.baked', 'Mellow_Outer'))
   outerShellOnly(coat)
   dropSleeves(json, coat)
-  const spineNode = json.extensions.VRM.humanoid.humanBones.find((b) => b.bone === 'spine')
-  if (!spineNode) throw new Error('no spine')
-  const spine = objs[spineNode.node]
+  const spineIndex: number | undefined = readHumanoid(json).bones.spine
+  if (spineIndex === undefined) throw new Error('no spine')
+  const spine = objs[spineIndex]
   const body = gather(json, bin, 'body', 'Body.baked', primsByMaterial(json, 'Body.baked', 'F00_000_00_Body_00_SKIN'))
   const face = gather(json, bin, 'face', 'Face.baked', primsByMaterial(json, 'Face.baked', 'F00_000_00_Face_00_SKIN'))
   const sets = [...hair, coat, body, face]

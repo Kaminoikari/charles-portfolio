@@ -21,10 +21,9 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, '/Users/charles/vtuber-kit/bin')
 
 import glb  # noqa: E402
-import vrmrig  # noqa: E402
+import humanoid  # noqa: E402
 
 
 def stats(path):
@@ -37,12 +36,11 @@ def stats(path):
         'nodes': len(doc.get('nodes', [])),
         'tris': 0,
     }
-    vrm = doc['extensions']['VRM']
-    out['bones'] = len(vrm['humanoid']['humanBones'])
-    out['groups'] = [g['name'] for g in vrm['blendShapeMaster']['blendShapeGroups']]
-    sec = vrm.get('secondaryAnimation', {})
-    out['springs'] = len(sec.get('boneGroups', []))
-    out['colliders'] = len(sec.get('colliderGroups', []))
+    out['bones'] = len(humanoid.bones(doc))
+    out['groups'] = humanoid.expression_names(doc)
+    springs = humanoid.springs(doc)
+    out['springs'] = len(springs['groups'])
+    out['colliders'] = len(springs['colliderGroups'])
 
     mats = [m.get('name', f'#{i}') for i, m in enumerate(doc.get('materials', []))]
     for mesh in doc['meshes']:
@@ -469,8 +467,8 @@ def report(path, baseline=None):
         ok = False
 
     if baseline:
-        a, b = vrmrig.read(baseline), vrmrig.read(path)
-        diffs = vrmrig.compare(a, b)
+        a, b = humanoid.read(baseline), humanoid.read(path)
+        diffs = humanoid.compare(a, b)
         print(f'   compare(baseline, this) = {diffs}')
         if diffs:
             print('   FAIL skeleton moved')

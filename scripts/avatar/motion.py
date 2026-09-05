@@ -18,9 +18,9 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, '/Users/charles/vtuber-kit/bin')
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import pierce  # noqa: E402
 import pose as pose_mod  # noqa: E402
 
@@ -136,8 +136,7 @@ def retarget(path, at, model_doc):
     """
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
-    bone_node = {k: v['node'] for k, v
-                 in doc['extensions']['VRMC_vrm_animation']['humanoid']['humanBones'].items()}
+    bone_node = humanoid.animation_bones(doc)
 
     par = node_parents(doc)
     order = tree_order(doc, par)
@@ -153,8 +152,7 @@ def retarget(path, at, model_doc):
     mpar = node_parents(model_doc)
     morder = tree_order(model_doc, mpar)
     mrest = globals_of(model_doc, mpar, morder)
-    mbone = {b['node']: b['bone'] for b
-             in model_doc['extensions']['VRM']['humanoid']['humanBones']}
+    mbone = humanoid.node_bone(model_doc)
 
     world, out = {}, {}
     for i in morder:

@@ -49,6 +49,7 @@ from PIL import Image
 from scipy.spatial import cKDTree
 
 import glb
+import humanoid
 import render
 
 # The bones that exist in both rigs. `.L` is the character's left in both, which
@@ -138,7 +139,7 @@ def load(path, doc, views, add_material, tint, gain=None):
     sjoints = src['skins'][0]['joints']
 
     tworld = render.world_matrices(doc)
-    tbones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    tbones = humanoid.bones(doc)
 
     pairs = [(i, tbones[MAP[_key(snames[i])]]) for i in sjoints
              if _key(snames.get(i)) in MAP and MAP[_key(snames[i])] in tbones]
@@ -355,7 +356,7 @@ def add_bones(bundle, doc, views):
     """
     skin = doc['skins'][0]
     joints = skin['joints']
-    tbones = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    tbones = humanoid.bones(doc)
     sjoints, snames = bundle['sjoints'], bundle['snames']
     sparent, sworld = bundle['sparent'], bundle['sworld']
     a, correction, mapped = bundle['a'], bundle['correction'], bundle['mapped']

@@ -29,113 +29,9 @@
 import * as THREE from 'three'
 import { VRMHumanBoneParentMap, type VRMHumanBoneName } from '@pixiv/three-vrm'
 
+import { parseGlb, readAccessor, readAnimationBones, readHumanoid, type GltfNode } from './vrmHumanoid'
+
 const IDENTITY_QUAT = new THREE.Quaternion()
-
-// ---- glTF container --------------------------------------------------------
-
-interface GltfNode {
-  children?: number[]
-  matrix?: number[]
-  translation?: number[]
-  rotation?: number[]
-  scale?: number[]
-}
-
-interface GltfAccessor {
-  bufferView: number
-  byteOffset?: number
-  componentType: number
-  count: number
-  type: string
-}
-
-interface GltfBufferView {
-  byteOffset?: number
-  byteLength: number
-}
-
-interface GltfAnimationSampler {
-  input: number
-  output: number
-  interpolation?: string
-}
-
-interface GltfAnimation {
-  channels: { sampler: number; target: { node: number; path: string } }[]
-  samplers: GltfAnimationSampler[]
-}
-
-interface GltfJson {
-  nodes: GltfNode[]
-  accessors?: GltfAccessor[]
-  bufferViews?: GltfBufferView[]
-  animations?: GltfAnimation[]
-  extensions?: {
-    // VRM 0.x: the humanoid map is a list of {bone, node} pairs.
-    VRM?: { humanoid: { humanBones: { bone: string; node: number }[] } }
-    // VRM Animation (VRM 1.0 lineage): a record keyed by bone name.
-    VRMC_vrm_animation?: { humanoid: { humanBones: Record<string, { node: number }> } }
-  }
-}
-
-const GLB_MAGIC = 0x46546c67
-const CHUNK_JSON = 0x4e4f534a
-const CHUNK_BIN = 0x004e4942
-
-interface Glb {
-  json: GltfJson
-  bin: Uint8Array | null
-}
-
-function parseGlb(data: Uint8Array): Glb {
-  const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
-  if (view.getUint32(0, true) !== GLB_MAGIC) throw new Error('not a GLB container')
-  let offset = 12
-  let json: GltfJson | null = null
-  let bin: Uint8Array | null = null
-  while (offset + 8 <= data.byteLength) {
-    const length = view.getUint32(offset, true)
-    const type = view.getUint32(offset + 4, true)
-    const body = data.subarray(offset + 8, offset + 8 + length)
-    if (type === CHUNK_JSON) json = JSON.parse(new TextDecoder().decode(body)) as GltfJson
-    if (type === CHUNK_BIN) bin = body
-    // Chunks are 4-byte aligned; the padding is not counted in `length`.
-    offset += 8 + length + ((4 - (length % 4)) % 4)
-  }
-  if (!json) throw new Error('GLB has no JSON chunk')
-  return { json, bin }
-}
-
-const COMPONENT_ARRAY = {
-  5120: Int8Array,
-  5121: Uint8Array,
-  5122: Int16Array,
-  5123: Uint16Array,
-  5125: Uint32Array,
-  5126: Float32Array,
-} as const
-
-const TYPE_COMPONENTS: Record<string, number> = {
-  SCALAR: 1,
-  VEC2: 2,
-  VEC3: 3,
-  VEC4: 4,
-  MAT4: 16,
-}
-
-function readAccessor(glb: Glb, index: number): Float32Array {
-  const accessor = glb.json.accessors?.[index]
-  const bufferView = accessor && glb.json.bufferViews?.[accessor.bufferView]
-  if (!accessor || !bufferView || !glb.bin) throw new Error(`accessor ${index} is unreadable`)
-  const Ctor = COMPONENT_ARRAY[accessor.componentType as keyof typeof COMPONENT_ARRAY]
-  if (!Ctor) throw new Error(`accessor ${index} has an unsupported component type`)
-  const start =
-    glb.bin.byteOffset + (bufferView.byteOffset ?? 0) + (accessor.byteOffset ?? 0)
-  const count = accessor.count * TYPE_COMPONENTS[accessor.type]
-  const buffer = glb.bin.buffer as ArrayBuffer
-  const raw = new Ctor(buffer, start, count)
-  return raw instanceof Float32Array ? raw : Float32Array.from(raw)
-}
 
 // ---- the rig ---------------------------------------------------------------
 
@@ -210,15 +106,13 @@ function parentIndices(nodes: GltfNode[]): number[] {
  */
 export function buildRig(vrmData: Uint8Array): Rig {
   const glb = parseGlb(vrmData)
-  const humanBones = glb.json.extensions?.VRM?.humanoid.humanBones
-  if (!humanBones) throw new Error('not a VRM 0.x model: no VRM.humanoid extension')
+  const humanoid = readHumanoid(glb.json)
 
   const nodes = glb.json.nodes
   const parentOf = parentIndices(nodes)
   const worldMatrix = worldMatrices(nodes)
 
-  const nodeOfBone: Record<string, number> = {}
-  for (const { bone, node } of humanBones) nodeOfBone[bone] = node
+  const nodeOfBone: Record<string, number> = { ...humanoid.bones }
 
   const restPosition: Record<string, THREE.Vector3> = {}
   for (const [bone, node] of Object.entries(nodeOfBone)) {
@@ -334,9 +228,9 @@ export interface Motion {
  */
 export function buildMotion(vrmaData: Uint8Array): Motion {
   const glb = parseGlb(vrmaData)
-  const humanBones = glb.json.extensions?.VRMC_vrm_animation?.humanoid.humanBones
   const animation = glb.json.animations?.[0]
-  if (!humanBones || !animation) throw new Error('not a VRM Animation file')
+  if (!animation) throw new Error('not a VRM Animation file')
+  const humanBones = readAnimationBones(glb.json)
 
   const nodes = glb.json.nodes
   const parentOf = parentIndices(nodes)
@@ -347,12 +241,12 @@ export function buildMotion(vrmaData: Uint8Array): Motion {
   const restWorld = new Map<string, THREE.Quaternion>()
   const scratchV = new THREE.Vector3()
   const hipsParentMatrix = new THREE.Matrix4()
-  for (const [bone, entry] of Object.entries(humanBones)) {
+  for (const [bone, node] of Object.entries(humanBones)) {
     const q = new THREE.Quaternion()
-    worldMatrix(entry.node).decompose(scratchV, q, new THREE.Vector3())
+    worldMatrix(node).decompose(scratchV, q, new THREE.Vector3())
     restWorld.set(bone, q)
     if (bone === 'hips') {
-      const parent = parentOf[entry.node]
+      const parent = parentOf[node]
       if (parent >= 0) hipsParentMatrix.copy(worldMatrix(parent))
       const pq = new THREE.Quaternion()
       hipsParentMatrix.decompose(scratchV, pq, new THREE.Vector3())
@@ -373,7 +267,7 @@ export function buildMotion(vrmaData: Uint8Array): Motion {
   let hipsTranslation: Track | null = null
   let duration = 0
   const boneOfNode = new Map<number, string>()
-  for (const [bone, { node }] of Object.entries(humanBones)) boneOfNode.set(node, bone)
+  for (const [bone, node] of Object.entries(humanBones)) boneOfNode.set(node, bone)
 
   for (const channel of animation.channels) {
     const sourceBone = boneOfNode.get(channel.target.node)
@@ -420,7 +314,7 @@ export function buildMotion(vrmaData: Uint8Array): Motion {
   // parent chain instead, which ignores every ancestor rotation, understated
   // this rig's height, and blew the motion up until her head travelled half a
   // metre forward.
-  const hipsNode = humanBones.hips?.node
+  const hipsNode: number | undefined = humanBones.hips
   const restHipsY =
     hipsNode === undefined
       ? 0

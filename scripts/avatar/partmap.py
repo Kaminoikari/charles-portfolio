@@ -15,6 +15,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import render  # noqa: E402
 
 
@@ -103,8 +104,7 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
         normals = np.concatenate([glb.read_accessor(doc, views, pr['attributes']['NORMAL'])
                                   for mesh in doc['meshes']
                                   for pr in mesh['primitives']]).astype(np.float64)
-        bone = {b['node']: b['bone'] for b
-                in doc['extensions']['VRM']['humanoid']['humanBones']}
+        bone = humanoid.node_bone(doc)
         joints = doc['skins'][0]['joints'] if doc.get('skins') else []
         jname = [bone.get(j, doc['nodes'][j].get('name', '')).lower() for j in joints]
         jside = np.array([1 if n.startswith('left') else 2 if n.startswith('right') else 0
@@ -126,7 +126,7 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
                  for k in range(6)}
 
     world = render.world_matrices(doc)
-    head = {b['bone']: b['node'] for b in doc['extensions']['VRM']['humanoid']['humanBones']}
+    head = humanoid.bones(doc)
     head_y = float(world[head['head']][1, 3])
     made, labels = [], {}
     for name, (az, el, framing) in render.VIEWS.items():

@@ -16,12 +16,11 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, '/Users/charles/vtuber-kit/bin')
 
 import customise  # noqa: E402
 import glb  # noqa: E402
 import verify  # noqa: E402
-import vrmrig  # noqa: E402
+import humanoid  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 BASELINE = os.path.join(BASE, 'baseline.vrm')
@@ -86,9 +85,9 @@ def run(model, manifest_path, seed=None):
     checks.append(('triangles match the manifest', tri_after == expected))
     checks.append(('no orphan accessors',
                    result['accessors_dropped'] > 0 or not drop))
-    diffs = vrmrig.compare(vrmrig.read(BASELINE), vrmrig.read(out))
+    diffs = humanoid.compare(humanoid.read(BASELINE), humanoid.read(out))
     checks.append(('skeleton unmoved', diffs == []))
-    checks.append(('54 humanoid bones', len(vrmrig.human_bones(vrmrig.read(out))) == 54))
+    checks.append(('54 humanoid bones', len(humanoid.bones(humanoid.read(out))) == 54))
     checks.append(('56 face morph targets intact', any(
         len(pr.get('targets', [])) == 56
         for m in doc['meshes'] if m.get('name') == 'Face.baked'
