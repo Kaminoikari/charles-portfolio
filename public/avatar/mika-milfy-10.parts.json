@@ -800,7 +800,7 @@
       "parts": {
         "Acc_Bandage_Thigh": {
           "vertices": 3839,
-          "mm": 3.64
+          "mm": 3.75
         }
       }
     },
@@ -810,7 +810,7 @@
       "parts": {
         "Acc_Bandage_Thigh": {
           "vertices": 3843,
-          "mm": 3.14
+          "mm": 3.19
         }
       }
     },

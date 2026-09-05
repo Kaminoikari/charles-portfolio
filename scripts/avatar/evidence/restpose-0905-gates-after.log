@@ -1,0 +1,45 @@
+=== pierce.py (after, Phase 2 build) ===
+at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           10 px  of    30 allowed (687 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (39577 px on screen)
+  Outfit_Shoes                 1 px  of    73 allowed (3644 px on screen)
+  total 15   PASS
+exit 0
+=== retarget_test.py (after) ===
+GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
+  akimbo.vrma            worst  +0.00 deg
+  dance.vrma             worst  +0.00 deg
+  idleLoop.vrma          worst  +1.94 deg
+  modelPose.vrma         worst  +0.00 deg
+  peaceSign.vrma         worst  +0.00 deg
+  playFingers.vrma       worst  +0.00 deg
+  scratchHead.vrma       worst  +0.00 deg
+  spin.vrma              worst  +0.00 deg
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS
+exit 0
+=== motion.py (after) ===
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  0.63 of limit
+  dance.vrma             worst  0.33 of limit
+  idleLoop.vrma          worst  0.20 of limit
+  modelPose.vrma         worst  0.57 of limit
+  peaceSign.vrma         worst  0.47 of limit
+  playFingers.vrma       worst  0.20 of limit
+  scratchHead.vrma       worst  0.43 of limit
+  spin.vrma              worst  0.37 of limit
+  squat.vrma             worst  0.33 of limit
+  stretch.vrma           worst  0.23 of limit
+
+  worst per part across every clip and frame:
+    Outfit_Bottom               94 px  of   150 allowed (10137 px on screen)   0.63x  akimbo.vrma t=1.33s
+    Acc_Bandage_Thigh           14 px  of    30 allowed (509 px on screen)   0.47x  peaceSign.vrma t=1.46s
+    Outfit_Cardigan             37 px  of   150 allowed (21826 px on screen)   0.25x  modelPose.vrma t=0.94s
+    Outfit_Socks                 5 px  of    77 allowed (3864 px on screen)   0.06x  peaceSign.vrma t=7.3s
+    Outfit_Top                   2 px  of   104 allowed (5213 px on screen)   0.02x  playFingers.vrma t=0.6s
+    Outfit_Shoes                 1 px  of    72 allowed (3584 px on screen)   0.01x  squat.vrma t=1.44s
+
+  PASS
+exit 0

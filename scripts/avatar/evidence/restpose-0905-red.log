@@ -1,0 +1,77 @@
+FFFEFFEF
+======================================================================
+ERROR: test_an_identical_rig_gets_no_rotation_and_the_translation_field_bit_for_bit (scripts.avatar.outfit_test.RestPose.test_an_identical_rig_gets_no_rotation_and_the_translation_field_bit_for_bit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 386, in test_an_identical_rig_gets_no_rotation_and_the_translation_field_bit_for_bit
+    self.assertAlmostEqual(abs(bundle['yaw_deg']), 180.0, places=6)
+                               ~~~~~~^^^^^^^^^^^
+KeyError: 'yaw_deg'
+
+======================================================================
+ERROR: test_the_fit_solves_its_yaw_and_refuses_a_quarter_turn (scripts.avatar.outfit_test.RestPose.test_the_fit_solves_its_yaw_and_refuses_a_quarter_turn)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 409, in test_the_fit_solves_its_yaw_and_refuses_a_quarter_turn
+    a, scale, solved = outfit._fit(src, dst)
+                       ^^^^^^^^^^^
+AttributeError: module 'outfit' has no attribute '_fit'
+
+======================================================================
+FAIL: test_a_garment_chain_bone_inherits_its_anchors_rotation_in_add_bones (scripts.avatar.outfit_test.RestPose.test_a_garment_chain_bone_inherits_its_anchors_rotation_in_add_bones)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 455, in test_a_garment_chain_bone_inherits_its_anchors_rotation_in_add_bones
+    self.assertLess(off, 0.001, f'chain bone off our shin line by {off * 1000:.1f}mm')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.03283702609950026) not less than 0.001 : chain bone off our shin line by 32.8mm
+
+======================================================================
+FAIL: test_a_garment_chain_bone_inherits_its_anchors_rotation_in_pieces (scripts.avatar.outfit_test.RestPose.test_a_garment_chain_bone_inherits_its_anchors_rotation_in_pieces)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 444, in test_a_garment_chain_bone_inherits_its_anchors_rotation_in_pieces
+    self.assertLess(off.max(), 0.001, f'frill off our shin line by {off.max() * 1000:.1f}mm')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.06567405384844788) not less than 0.001 : frill off our shin line by 65.7mm
+
+======================================================================
+FAIL: test_a_splayed_shin_lands_on_our_shin_line (scripts.avatar.outfit_test.RestPose.test_a_splayed_shin_lands_on_our_shin_line)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 401, in test_a_splayed_shin_lands_on_our_shin_line
+    self.assertLess(off.max(), 0.001, f'shin axis off our shin line by {off.max() * 1000:.1f}mm')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.06567405384844788) not less than 0.001 : shin axis off our shin line by 65.7mm
+
+======================================================================
+FAIL: test_morph_deltas_on_a_turned_segment_turn_with_it (scripts.avatar.outfit_test.RestPose.test_morph_deltas_on_a_turned_segment_turn_with_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 436, in test_morph_deltas_on_a_turned_segment_turn_with_it
+    self.assertLess(across.max(), 1e-6, f'deltas lean {np.degrees(np.arcsin(across.max())):.2f} deg off our shin')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.17364817470279953) not less than 1e-06 : deltas lean 10.00 deg off our shin
+
+======================================================================
+FAIL: test_normals_on_a_turned_segment_turn_with_it (scripts.avatar.outfit_test.RestPose.test_normals_on_a_turned_segment_turn_with_it)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 425, in test_normals_on_a_turned_segment_turn_with_it
+    self.assertLess(along.max(), 1e-6, f'ring normals lean {np.degrees(np.arcsin(along.max())):.2f} deg along our shin')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(0.17364818253298778) not less than 1e-06 : ring normals lean 10.00 deg along our shin
+
+======================================================================
+FAIL: test_trunk_bones_stay_translation_only (scripts.avatar.outfit_test.RestPose.test_trunk_bones_stay_translation_only)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/outfit_test.py", line 463, in test_trunk_bones_stay_translation_only
+    self.assertIsNone(rot, f'{name} was rotated; the trunk is translation-only by design')
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: np.float64(3.771873893023553e-06) is not None : hips was rotated; the trunk is translation-only by design
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.012s
+
+FAILED (failures=6, errors=2)

@@ -73,10 +73,12 @@ MELLOW = 'blender/mellow.glb'
 MELLOW_OUTER = 'blender/mellow_outer.glb'
 # The vendor's bonemap file: the one name the generic table cannot read (the
 # thumb) and, more importantly, the ignore list that keeps the cardigan's
-# forearm, hand and thumb OFF the fit anchors until the fit can rotate.
-# Emptying that ignore list re-fits the cardigan on sixteen bones and tears a
-# grafted shape key (evidence/bonemap-0905-16anchors.log); dropping the whole
-# file would fit on fourteen (no thumb alias), a build nobody has run.
+# forearm, hand and thumb OFF the fit anchors. Emptying that ignore list
+# re-fits the cardigan on sixteen bones and a grafted shape key flips faces at
+# the left armpit, with the translation-only fit and with the rotation-aware
+# one alike (evidence/bonemap-0905-16anchors.log, evidence/restpose-0905.md);
+# dropping the whole file would fit on fourteen (no thumb alias), a build
+# nobody has run.
 MELLOW_BONEMAP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               'bonemap', 'mellowheart.json')
 # mesh -> (our part name, how far it must clear the body). The clearances are
@@ -894,9 +896,13 @@ def build(src, dst, manifest_path, out_manifest):
         for path in mellow_files:
             bundle = outfit.load(path, doc, views, add_material, MELLOW_TINT,
                                  MELLOW_GAIN, override=MELLOW_BONEMAP)
+            turned = sorted(bundle['snames'][i] for i, (rot, _, _) in bundle['correction'].items()
+                            if i in bundle['mapped'] and rot is not None)
             print(f'   服裝擬合 {os.path.basename(path)}：縮放 x{bundle["scale"]:.3f}，'
+                  f'yaw {bundle["yaw_deg"]:.2f}°，'
                   f'對位骨最大殘差 {bundle["residual_mm"]:.2f}mm，'
-                  f'錨點 {len(bundle["mapping"]["pairs"])} 根')
+                  f'錨點 {len(bundle["mapping"]["pairs"])} 根，'
+                  f'轉向 {len(turned)} 根' + (f'（{"、".join(turned)}）' if turned else ''))
             print(bonemap.table(bundle['mapping'], bundle['src']))
             items = outfit.pieces(bundle, doc, views)
             accepted = []

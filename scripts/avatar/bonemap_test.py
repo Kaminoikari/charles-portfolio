@@ -454,8 +454,10 @@ class VendorFiles(unittest.TestCase):
 
     def test_the_vendor_file_keeps_the_cardigan_on_the_ten_anchors_it_was_tuned_on(self):
         """Fitting on all sixteen moves the cardigan's scale x1.153 -> x1.188
-        and tears the grafted Breasts_Cow shape key (mellowheart.json). Until
-        Phase 2 the file pins the ten; this test pins the file."""
+        and the grafted Breasts_Cow shape key flips faces at the armpit: one
+        face with the translation-only fit, five with the rotation-aware one
+        (mellowheart.json, evidence/restpose-0905.md). The file pins the ten;
+        this test pins the file."""
         doc, _ = glb.load(self.OUTER)
         mapping = bonemap.resolve(doc, TARGET, self.override)
         self.assertEqual(names_of(mapping, doc), self.TODAY_OUTER)

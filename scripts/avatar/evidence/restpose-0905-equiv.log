@@ -1,0 +1,121 @@
+起跑 16:51:45
+已備份 8 個檔到 /private/tmp/claude-501/-Users-charles-portfolio/798dbdda-986c-453f-82f9-d25295834161/scratchpad/equiv-phase2a
+出貨位元組 sha（重建前）: e6a2272871063584
+vertex sha（重建前）: ad8f3adc45f87430
+--- make.py stdout ---
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-front.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-back.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-three_quarter.png
+  wrote /Users/charles/portfolio/scripts/avatar/out/final-face.png
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (6.3s)
+1. partition
+   13 parts
+  gate partition: compare=[] bones=54
+   (0.0s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+   swept 5 stranded materials: F00_000_Hair_00_HAIR_03, F00_000_Hair_00_HAIR_06, F00_001_01_Bottoms_01_CLOTH, F00_006_01_Shoes_01_CLOTH, F00_008_01_Tops_01_CLOTH
+  gate strip: compare=[] bones=54
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54
+   (2.2s)
+4. proportion
+   5.91 -> 5.64 heads tall, height 1.5046, 120 position/morph accessors rescaled
+  gate proportion: compare=[] bones=54
+   (0.0s)
+5. build the outfit
+   服裝擬合 mellow.glb：縮放 x1.172，yaw -180.00°，對位骨最大殘差 0.00mm，錨點 16 根，轉向 8 根（Foot.L、Foot.R、Lower_leg.L、Lower_leg.R、Toe.L、Toe.R、Upper_leg.L、Upper_leg.R）
+   Neck                         → neck                 (alias)
+   Upper_arm.L                  → leftUpperArm         (alias)
+   Shoulder.L                   → leftShoulder         (alias)
+   Upper_arm.R                  → rightUpperArm        (alias)
+   Shoulder.R                   → rightShoulder        (alias)
+   Chest                        → chest                (alias)
+   Spine                        → spine                (alias)
+   Toe.L                        → leftToes             (alias)
+   Foot.L                       → leftFoot             (alias)
+   Lower_leg.L                  → leftLowerLeg         (alias)
+   Upper_leg.L                  → leftUpperLeg         (alias)
+   Toe.R                        → rightToes            (alias)
+   Foot.R                       → rightFoot            (alias)
+   Lower_leg.R                  → rightLowerLeg        (alias)
+   Upper_leg.R                  → rightUpperLeg        (alias)
+   Hips                         → hips                 (alias)
+   未對應的來源骨 181 根（服裝鏈骨，跟著錨點走）：breast×6, butt×4, mainr×6, mainrroot, mainrunder×4, pouch×4, pouchroot, shoesacc001×2, shoesacc002×2, shoesribbon1×2, shoesribbon1001×2, shoesribbon2×2, shoesribbon2001×2, shoesribbonroot×2, skirt1×14, skirt10×14, skirt2×14, skirt3×14, skirt4×14, skirt5×14, skirt6×14, skirt7×14, skirt8×14, skirt9×14, skirtroot
+   大腿腿帶截面縮放 x=0.771 z=0.818，大腿直徑 94x111mm
+   服裝擬合 mellow_outer.glb：縮放 x1.153，yaw 180.00°，對位骨最大殘差 0.00mm，錨點 10 根，轉向 0 根
+   Neck                         → neck                 (alias)
+   Upper_arm_L                  → leftUpperArm         (alias)
+   Shoulder_L                   → leftShoulder         (alias)
+   Upper_arm_R                  → rightUpperArm        (alias)
+   Shoulder_R                   → rightShoulder        (alias)
+   Chest                        → chest                (alias)
+   Spine                        → spine                (alias)
+   Upper_leg_L                  → leftUpperLeg         (alias)
+   Upper_leg_R                  → rightUpperLeg        (alias)
+   Hips                         → hips                 (alias)
+   未對應的來源骨 118 根（服裝鏈骨，跟著錨點走）：breast×6, hand×2, lowerarm×2, outerbone1×10, outerbone2×10, outerbone3×10, outerbone4×10, outerbone5×10, outerbone6×10, outerbone7×10, outerribbon1×10, outerribbon2×12, outerribbonroot×2, outerroot, outertag×2, outertagroot, supportbone×8, thumbproximal×2
+   貼身外推最大位移：Acc_Bandage_Thigh 8mm，Acc_Belt_Waist 24mm，Acc_Ribbon_Neck 12mm，Outfit_Bottom 19mm，Outfit_Cardigan 15mm，Outfit_Shoes 13mm，Outfit_Socks 18mm，Outfit_Top 19mm
+   蝴蝶結對腰封最近距離 2mm
+   丟掉動不了東西的 shape key：Side adjustment 平均 0.00mm
+   服裝 shape key：(No bra)Breasts_Cow 6214 點/平均 5.2mm，Breast_big 7621 點/平均 6.7mm，Breast_small 5354 點/平均 5.7mm，Hutomomo_big 3839 點/平均 3.8mm，Hutomomo_slim 3843 點/平均 3.2mm，Waist_slim 14393 點/平均 0.6mm
+   外套珠子 54 顆/側，半徑 70mm，高度 1.10→0.80，每層 9 顆
+   Hair_Twintail_L 位移最大 254.7mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   Hair_Twintail_R 位移最大 256.4mm，新骨鏈 7 節，軸線離身軸 112→332mm
+   雙馬尾在外套輪廓內最深 -59mm，≥5mm 的頂點佔 0.0%
+   皇冠整體下沉 0mm 貼上髮面
+   頭皮色塊 231170 px → 髮色 (221, 211, 181) 轉色相 +148.3° 飽和 x0.67 明度 x1.00 提亮 0.64 位移 +0.000；邊緣 12795 px 留到最後混色
+   後頸髮根條 1264 px（核心 820）填回周圍膚色
+   膚色 4998915 px（臉與身共用一組解） 轉色相 +2.6° 飽和 x1.15 明度 x1.00 提亮 0.00 位移 +0.118
+   頸部帶 F00_000_00_Face_00 256827 px 最暗十分位抬升 +0.068
+   頸部帶 F00_000_00_Body_00 346603 px 最暗十分位抬升 +0.069
+   頸部目標 (252, 222, 213) 取自帶外的皮膚
+   頭皮蓋邊緣 12795 px 依來源的髮／膚比例混色
+   F00_000_00_EyeIris_00 轉色相 +156.4° 飽和 x0.32 明度 x1.00 提亮 0.00 位移 +0.094
+   膚色 MToon 乘色 (0.96, 0.9, 0.87)，改了 2 個材質
+   髮色 MToon 乘色 (1.0, 0.8295, 0.4962) 陰影 (0.7918, 0.585, 0.2923)，改了 4 個材質
+   描邊統一為 (0.2, 0.1762, 0.1698)，改了 10 個材質，原本有 1 種：[(0.274509817, 0.09019608, 0.1254902)]
+   邊光宣告為 (0.518, 0.784, 0.776)，寫進 14 個材質
+   掃掉沒有網格用的材質 5 個：['Milfy_Bandage', 'Milfy_Cardigan', 'Milfy_Hair', 'Milfy_Ribbon', 'Milfy_Sock']
+   +32 parts, 12034572 bytes, waist y=0.960
+  gate build: compare=[] bones=54
+   (41.3s)
+6. health check
+== /Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm
+   tris 102984  materials 34  images 43  nodes 144  bones 54
+   springs 4  colliders 17  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     72 prim   13092 tris  targets 0
+   vertex sha 73cfb472ca1cb1c3
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   PASS
+   (0.1s)
+
+shipped /Users/charles/portfolio/public/avatar/mika-milfy-10.vrm
+
+make.py exit 0
+重建位元組 sha: df599a45ed8304d8
+vertex sha（重建後）: 73cfb472ca1cb1c3   !!! 不同
+算圖 final-front.png 差異像素 72575
+算圖 final-back.png 差異像素 62780
+算圖 final-three_quarter.png 差異像素 66826
+算圖 final-face.png 差異像素 0
+--keep：保留重建輸出，備份在 /private/tmp/claude-501/-Users-charles-portfolio/798dbdda-986c-453f-82f9-d25295834161/scratchpad/equiv-phase2a
+出貨位元組 sha（還原後）: df599a45ed8304d8
+結束 16:52:44
+exit 0

@@ -1,0 +1,43 @@
+=== pierce.py (before, shipped build ad8f3adc45f87430) ===
+at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           16 px  of    30 allowed (483 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (39662 px on screen)
+  total 20   PASS
+exit 0
+=== retarget_test.py (before) ===
+GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
+  akimbo.vrma            worst  +0.00 deg
+  dance.vrma             worst  +0.00 deg
+  idleLoop.vrma          worst  +1.94 deg
+  modelPose.vrma         worst  +0.00 deg
+  peaceSign.vrma         worst  +0.00 deg
+  playFingers.vrma       worst  +0.00 deg
+  scratchHead.vrma       worst  +0.00 deg
+  spin.vrma              worst  +0.00 deg
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS
+exit 0
+=== motion.py (before) ===
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  0.63 of limit
+  dance.vrma             worst  0.67 of limit
+  idleLoop.vrma          worst  0.50 of limit
+  modelPose.vrma         worst  0.57 of limit
+  peaceSign.vrma         worst  0.67 of limit
+  playFingers.vrma       worst  0.47 of limit
+  scratchHead.vrma       worst  0.57 of limit
+  spin.vrma              worst  0.63 of limit
+  squat.vrma             worst  0.50 of limit
+  stretch.vrma           worst  0.47 of limit
+
+  worst per part across every clip and frame:
+    Acc_Bandage_Thigh           20 px  of    30 allowed (637 px on screen)   0.67x  dance.vrma t=16.75s
+    Outfit_Bottom               94 px  of   150 allowed (10148 px on screen)   0.63x  akimbo.vrma t=6.67s
+    Outfit_Socks                21 px  of    75 allowed (3732 px on screen)   0.28x  squat.vrma t=7.2s
+    Outfit_Cardigan             36 px  of   150 allowed (25470 px on screen)   0.24x  stretch.vrma t=0.57s
+    Outfit_Top                   2 px  of   107 allowed (5371 px on screen)   0.02x  scratchHead.vrma t=5.63s
+
+  PASS
+exit 0

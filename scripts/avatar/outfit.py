@@ -21,30 +21,41 @@ the answer:
   starting alignment and the per-bone correction after it does the real work.
 
 The transform is therefore in two stages. A global similarity A puts the two
-skeletons roughly on top of each other, fitted by least squares over the
-humanoid bones that exist in both (which bones those are is bonemap.py's
-answer, from the vendor's names and the rig's shape; the bodice set gives
-sixteen, the cardigan ten, because its forearm, hand and thumb bones are held
-back by the vendor file until the fit can rotate -- see bonemap/mellowheart.json).
-Then each source bone contributes a pure TRANSLATION
-that slides its neighbourhood the rest of the way, and every vertex moves by the
-blend of the translations of the bones it is weighted to.
+skeletons roughly on top of each other: uniform scale, translation and a yaw
+that is solved from the landmarks and then snapped to a half turn (_fit),
+fitted over the humanoid bones that exist in both (which bones those are is
+bonemap.py's answer, from the vendor's names and the rig's shape). Then each
+source bone contributes a rigid correction that carries its neighbourhood the
+rest of the way: a translation that lands the bone on ours and, for the limb
+bones, the rotation that turns the garment's segment (upper leg to lower leg,
+lower leg to foot, and so on down the arms) onto ours. Every vertex moves by
+the blend, over the bones it is weighted to, of those corrections.
 
-Translation, not the full bone-to-bone matrix, and this is the one thing that
-has to be got right. Writing it as M_target(b) . inverse(A . M_source(b)) is the
-textbook retarget and it is wrong across these two rigs, because a bone matrix
-carries an orientation and the two rigs do not agree on what a bone's local axes
-mean: Blender points a bone along its own length, VRoid leaves every rest
-rotation at identity. Transferring through those frames re-plants the cloth in a
-rotated basis. The ankle socks came out as white tubes running from the thigh to
-the ankle, and the shoes smeared up the shin with them -- the geometry was
-intact and pointing the wrong way. Both skeletons rest in a T-pose with vertical
-legs, so nothing needs rotating per bone, and dropping the rotation makes the
-whole question moot.
+The rotation comes from segment DIRECTIONS, never from the bone matrices, and
+this is the one thing that has to be got right. Writing the correction as
+M_target(b) . inverse(A . M_source(b)) is the textbook retarget and it is wrong
+across these two rigs, because a bone matrix carries an orientation and the two
+rigs do not agree on what a bone's local axes mean: Blender points a bone along
+its own length, VRoid leaves every rest rotation at identity. Transferring
+through those frames re-plants the cloth in a rotated basis. The ankle socks
+came out as white tubes running from the thigh to the ankle, and the shoes
+smeared up the shin with them -- the geometry was intact and pointing the wrong
+way. A segment direction is a property of the rig's shape, which both rigs
+agree on; a bone frame is a property of the exporter.
 
-Garment-only bones have no target to land on. They inherit the offset of the
-nearest ancestor that does, so a skirt panel is carried by the hips it hangs
-from and keeps its shape relative to them.
+The trunk (hips up to the head) and the shoulders get no rotation at all. Their
+segments run wherever the rigger put the joints, not where the torso surface
+points: hips-to-spine differs by about 10 degrees and spine-to-chest by 6
+between the vendor rigs and this body (measured 2026-09-05) with neither torso
+leaning, and turning the hips by 10 degrees would swing a 0.4m skirt hem 70mm.
+A limb segment IS the limb's axis, so its cloth turns. Where the two rigs'
+segments already agree, every rotation is identity and the result is bit for
+bit the translation field this used to be.
+
+Garment-only bones have no target to land on. They inherit the correction of
+the nearest ancestor that does, so a skirt panel is carried by the hips it
+hangs from and keeps its shape relative to them, and a sock's own bones turn
+with the shin they sit on.
 """
 import io
 
@@ -57,10 +68,27 @@ import glb
 import humanoid
 import render
 
-# `.L` is the character's left in both rigs, which is why the mapping carries
-# no side swap: after the yaw, Milfy's Shoulder.L lands on the same side as
-# our leftShoulder. Checked numerically, not by name.
-YAW = np.diag([-1.0, 1.0, -1.0, 1.0])
+# How far the solved yaw may sit from a half turn before the garment is
+# declared authored sideways. Both vendor files solve to a half turn, +-180.00
+# (2026-09-05).
+YAW_TOLERANCE_DEG = 5.0
+
+# The segment each limb bone starts, as the humanoid part name of its child:
+# a bone here turns its cloth by the rotation taking that segment's direction
+# in the garment onto ours. Hand, Toes and the fingers have no entry and
+# inherit the turn of the bone above them; so does a bone here whose child the
+# mapping did not find (the cardigan's upper arm, whose forearm the vendor file
+# keeps off the anchors). The shoulder is deliberately absent: it is a trunk
+# bone in all but name, its segment running wherever the rigger put the
+# clavicle, and like the trunk it inherits nothing but None.
+CHILD_OF = {
+    'UpperArm': 'LowerArm', 'LowerArm': 'Hand',
+    'UpperLeg': 'LowerLeg', 'LowerLeg': 'Foot', 'Foot': 'Toes',
+}
+
+
+class BadFit(Exception):
+    """The garment's landmarks cannot be fitted onto ours; the message says why."""
 
 
 def _decompose(m):
@@ -85,22 +113,74 @@ def _decompose(m):
     return t, np.array([q[0], q[1], q[2], w]), s
 
 
-def _similarity(src_pts, dst_pts):
-    """Uniform scale and translation taking YAW-turned source points onto dst.
+def _fit(src_pts, dst_pts):
+    """Uniform scale, yaw and translation taking source landmarks onto ours.
 
-    Rotation is not solved for, it is asserted: the two rigs differ by exactly a
-    half turn about Y and fitting a free rotation to a dozen-odd noisy landmarks
-    would introduce a small spurious tilt that shows up as a garment leaning.
+    Returns (A, scale, yaw_deg). The yaw is SOLVED, as the rotation about Y
+    that best turns the centred source landmarks onto the centred target ones
+    (Kabsch in the XZ plane), and then SNAPPED to the nearest half turn: a
+    garment is authored facing +Z or -Z, so the solved value says which way
+    this one faces and nothing more. A solved yaw further than
+    YAW_TOLERANCE_DEG from either is a garment authored sideways, and that is
+    refused with BadFit rather than fitted. A free three-axis rotation is not
+    solved for at all: fitting one to a dozen-odd noisy landmarks introduces a
+    small spurious tilt that shows up as the garment leaning.
+
+    The snapped half turn is built as an exact diagonal, not from the solved
+    angle's sine and cosine, so a rig that faces the other way gets the same
+    bytes the old hard-wired YAW produced.
     """
-    q = src_pts @ YAW[:3, :3].T
-    mq, md = q.mean(axis=0), dst_pts.mean(axis=0)
-    num = float(((dst_pts - md) * (q - mq)).sum())
-    den = float(((q - mq) ** 2).sum())
+    p = src_pts - src_pts.mean(axis=0)
+    q = dst_pts - dst_pts.mean(axis=0)
+    # Rotation about +Y by t maps (x, z) to (x cos t + z sin t, -x sin t + z cos t).
+    cos_sum = float((q[:, 0] * p[:, 0] + q[:, 2] * p[:, 2]).sum())
+    sin_sum = float((q[:, 0] * p[:, 2] - q[:, 2] * p[:, 0]).sum())
+    yaw = float(np.degrees(np.arctan2(sin_sum, cos_sum)))
+    k = int(round(yaw / 180.0))
+    if abs(yaw - 180.0 * k) > YAW_TOLERANCE_DEG:
+        raise BadFit(f'服裝擬合：解出的 yaw {yaw:.1f}° 離 0°/180° 超過 '
+                     f'{YAW_TOLERANCE_DEG:g}°，這份服裝檔不是朝 ±Z 作的')
+    rot = np.diag([1.0, 1.0, 1.0]) if k % 2 == 0 else np.diag([-1.0, 1.0, -1.0])
+    turned = src_pts @ rot.T
+    mq, md = turned.mean(axis=0), dst_pts.mean(axis=0)
+    num = float(((dst_pts - md) * (turned - mq)).sum())
+    den = float(((turned - mq) ** 2).sum())
     s = num / den if den else 1.0
     a = np.eye(4)
-    a[:3, :3] = s * YAW[:3, :3]
+    a[:3, :3] = s * rot
     a[:3, 3] = md - s * mq
-    return a, s
+    return a, s, yaw
+
+
+def _turn(u, v):
+    """The smallest rotation taking direction u onto direction v.
+
+    None when they already agree to within a microradian, which is floating
+    point noise from the similarity and not a turn; keeping it None is what
+    lets pieces() and add_bones() take the exact translation-only path.
+    Opposite directions have no smallest rotation and are refused: a garment
+    segment pointing the other way from ours is a mapping error, not a pose.
+    """
+    u = u / np.linalg.norm(u)
+    v = v / np.linalg.norm(v)
+    axis = np.cross(u, v)
+    sin = float(np.linalg.norm(axis))
+    cos = float(u @ v)
+    if sin < 1e-6:
+        if cos > 0:
+            return None
+        raise BadFit('segment points the opposite way')
+    x, y, z = axis / sin
+    k = np.array([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+    return np.eye(3) + sin * k + (1.0 - cos) * (k @ k)
+
+
+def _part(vrm):
+    """('left'|'right', part) for a sided humanoid name, (None, None) otherwise."""
+    for side in ('left', 'right'):
+        if vrm.startswith(side):
+            return side, vrm[len(side):]
+    return None, None
 
 
 def _weighted_joints(src, sviews):
@@ -138,11 +218,12 @@ def load(path, doc, views, add_material, tint, gain=None, override=None):
     mapping = bonemap.resolve(src, tbones, override)
     bonemap.require(mapping, src, _weighted_joints(src, sviews))
     pairs = mapping['pairs']
-    a_mat, scale = _similarity(np.array([sworld[i][:3, 3] for i, _ in pairs]),
-                               np.array([tworld[j][:3, 3] for _, j in pairs]))
+    a_mat, scale, yaw = _fit(np.array([sworld[i][:3, 3] for i, _ in pairs]),
+                             np.array([tworld[j][:3, 3] for _, j in pairs]))
 
     sparent = {c: i for i, n in enumerate(src['nodes']) for c in n.get('children', ())}
     mapped = {i: j for i, j in pairs}
+    names = mapping['names']
 
     def nearest_mapped(i):
         while i is not None:
@@ -151,23 +232,53 @@ def load(path, doc, views, add_material, tint, gain=None, override=None):
             i = sparent.get(i)
         return None
 
+    def aligned(i):
+        return (a_mat @ sworld[i])[:3, 3]
+
+    # Each mapped bone's turn, parents first so a bone can inherit. None is
+    # "no turn" and is kept as None on purpose: see _turn and the module
+    # docstring on why the trunk never turns.
+    turn = {}
+    for i in sorted(mapped, key=lambda i: _depth(i, sparent)):
+        side, part = _part(names[i])
+        if part is None:
+            turn[i] = None
+            continue
+        inherited = turn.get(nearest_mapped(sparent.get(i)))
+        child_name = side + CHILD_OF.get(part, '')
+        child = next((c for c in mapped if names[c] == child_name), None) \
+            if part in CHILD_OF else None
+        if child is None:
+            turn[i] = inherited
+            continue
+        try:
+            turn[i] = _turn(aligned(child) - aligned(i),
+                            tworld[mapped[child]][:3, 3] - tworld[mapped[i]][:3, 3])
+        except BadFit as e:
+            raise BadFit(f'服裝擬合：{snames[i]}→{snames[child]}（{names[i]}）{e}') from e
+
+    # (rotation or None, pivot, translation) per source joint: the vertex x
+    # moves to rotation . (x - pivot) + pivot + translation. Pivot and
+    # translation are the anchor's, so a garment chain rides rigidly with the
+    # bone it hangs from.
     correction, residual = {}, []
     for i in sjoints:
         anchor = nearest_mapped(i)
         if anchor is None:
-            correction[i] = np.zeros(3)
+            correction[i] = (None, np.zeros(3), np.zeros(3))
             continue
-        d = tworld[mapped[anchor]][:3, 3] - (a_mat @ sworld[anchor])[:3, 3]
-        correction[i] = d
+        pivot = aligned(anchor)
+        d = tworld[mapped[anchor]][:3, 3] - pivot
+        correction[i] = (turn[anchor], pivot, d)
         if i in mapped:
-            landed = (a_mat @ sworld[i])[:3, 3] + d
+            landed = aligned(i) + d
             residual.append(np.linalg.norm(landed - tworld[mapped[i]][:3, 3]))
 
     return {
         'src': src, 'sviews': sviews, 'sworld': sworld, 'snames': snames,
         'sjoints': sjoints, 'sparent': sparent, 'mapped': mapped,
         'mapping': mapping,
-        'a': a_mat, 'scale': scale, 'correction': correction,
+        'a': a_mat, 'scale': scale, 'yaw_deg': yaw, 'correction': correction,
         'residual_mm': float(np.max(residual) * 1000) if residual else 0.0,
         'materials': _materials(src, doc, views, sviews, add_material,
                                 tint, gain),
@@ -290,19 +401,40 @@ def pieces(bundle, doc, views, joint_slot=None):
             aligned = pos @ a[:3, :3].T + a[:3, 3]
             an = nrm @ a[:3, :3].T
 
-            # The blended offset. Normals are untouched: the whole transform is
-            # a translation field plus one global rotation already applied above,
-            # neither of which turns a surface.
+            # The blended correction. Per vertex the map is affine: x goes to
+            # x + sum_k w_k [(R_k - I)(x - p_k) + d_k], whose linear part is
+            # I + sum_k w_k (R_k - I). `spin` accumulates that sum, and only
+            # once some bone on this primitive actually turns: a bone with no
+            # turn adds nothing but its translation, exactly as before, so a
+            # garment whose segments all agree with ours takes the old path
+            # byte for byte.
             offset = np.zeros_like(aligned)
+            spin = None
             for k in range(j.shape[1]):
                 wk = w[:, k:k + 1]
                 if not wk.any():
                     continue
                 for node in np.unique(j[:, k]):
                     sel = (j[:, k] == node) & (wk[:, 0] > 0)
-                    if sel.any():
-                        offset[sel] += wk[sel] * correction[sjoints[node]]
+                    if not sel.any():
+                        continue
+                    rot, pivot, d = correction[sjoints[node]]
+                    if rot is None:
+                        offset[sel] += wk[sel] * d
+                        continue
+                    delta = rot - np.eye(3)
+                    offset[sel] += wk[sel] * ((aligned[sel] - pivot) @ delta.T + d)
+                    if spin is None:
+                        spin = np.zeros((len(aligned), 3, 3))
+                    spin[sel] += wk[sel][:, :, None] * delta
             moved = aligned + offset
+            # Normals go through the same blended linear part and are then
+            # re-normalised. Strictly a normal wants the inverse transpose,
+            # but a blend of small rotations is orthogonal to within the
+            # angle between them, and re-normalising absorbs the rest; dual
+            # quaternions would be overkill for segments a few degrees apart.
+            if spin is not None:
+                an = an + np.einsum('nij,nj->ni', spin, an)
             length = np.linalg.norm(an, axis=1, keepdims=True)
             mn = an / np.where(length == 0, 1.0, length)
 
@@ -314,12 +446,13 @@ def pieces(bundle, doc, views, joint_slot=None):
 
             # The vendor's shape keys, carried across as displacement fields
             # rather than as positions. The fit above is affine per vertex --
-            # one global matrix plus a per-vertex translation blended from the
-            # bone corrections -- so a delta transforms by the matrix alone and
-            # the translation cancels. What happens downstream of the fit (hug,
-            # loosen, drape) is NOT affine and the delta is NOT carried through
-            # it: build.py grafts these fields onto the settled garment as they
-            # stand, so the key rides on top of wherever the cloth ended up.
+            # one global matrix, then the blended bone corrections whose
+            # linear part is the `spin` above -- so a delta transforms by the
+            # linear parts alone and the translations and pivots cancel. What
+            # happens downstream of the fit (hug, loosen, drape) is NOT affine
+            # and the delta is NOT carried through it: build.py grafts these
+            # fields onto the settled garment as they stand, so the key rides
+            # on top of wherever the cloth ended up.
             names = mesh.get('extras', {}).get('targetNames') or []
             targets = {}
             for ti, tgt in enumerate(pr.get('targets', ())):
@@ -327,7 +460,10 @@ def pieces(bundle, doc, views, joint_slot=None):
                     continue
                 d = glb.read_accessor(src, sviews, tgt['POSITION']).astype(np.float64)
                 key = names[ti] if ti < len(names) else f'{mesh.get("name")}#{ti}'
-                targets[key] = d @ a[:3, :3].T
+                d = d @ a[:3, :3].T
+                if spin is not None:
+                    d = d + np.einsum('nij,nj->ni', spin, d)
+                targets[key] = d
 
             out.append({
                 'name': mesh.get('name'), 'prim': pi,
@@ -371,7 +507,13 @@ def add_bones(bundle, doc, views):
             slot[i] = joints.index(mapped[i])
             continue
         w = a @ sworld[i]
-        w[:3, 3] += correction[i]
+        rot, pivot, d = correction[i]
+        if rot is not None:
+            # The chain rides rigidly with its anchor: turned about the
+            # anchor's pivot, then carried by the anchor's translation.
+            w[:3, :3] = rot @ w[:3, :3]
+            w[:3, 3] = rot @ (w[:3, 3] - pivot) + pivot
+        w[:3, 3] += d
         p = sparent.get(i)
         pnode = node_of.get(p)
         if pnode is None:

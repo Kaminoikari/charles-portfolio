@@ -1,0 +1,57 @@
+before /private/tmp/claude-501/-Users-charles-portfolio/798dbdda-986c-453f-82f9-d25295834161/scratchpad/before-shipped.vrm vertex sha ad8f3adc45f87430
+after  public/avatar/mika-milfy-10.vrm vertex sha 73cfb472ca1cb1c3
+
+== 0. segment directions, vendor rig vs ours (degrees) ==
+  mellow.glb: anchors 16, solved yaw -180.00
+              hips -> spine            9.9  (trunk, no turn)
+             spine -> chest            6.0  (trunk, no turn)
+             chest -> leftShoulder    13.6  (trunk, no turn)
+             chest -> rightShoulder   13.6  (trunk, no turn)
+      leftShoulder -> leftUpperArm    10.5  (trunk, no turn)
+     rightShoulder -> rightUpperArm   10.5  (trunk, no turn)
+      leftUpperLeg -> leftLowerLeg     3.5  (turns)
+      leftLowerLeg -> leftFoot         2.4  (turns)
+          leftFoot -> leftToes         3.4  (turns)
+     rightUpperLeg -> rightLowerLeg    3.5  (turns)
+     rightLowerLeg -> rightFoot        2.4  (turns)
+         rightFoot -> rightToes        3.4  (turns)
+  mellow_outer.glb: anchors 16, solved yaw 180.00
+              hips -> spine           10.2  (trunk, no turn)
+             spine -> chest            6.0  (trunk, no turn)
+             chest -> leftShoulder     7.7  (trunk, no turn)
+             chest -> rightShoulder    7.7  (trunk, no turn)
+      leftShoulder -> leftUpperArm    12.9  (trunk, no turn)
+     rightShoulder -> rightUpperArm   12.9  (trunk, no turn)
+      leftUpperArm -> leftLowerArm     2.7  (turns)
+      leftLowerArm -> leftHand         2.4  (turns)
+     rightUpperArm -> rightLowerArm    2.7  (turns)
+     rightLowerArm -> rightHand        2.4  (turns)
+
+== 1. per-primitive displacement (after vs before) ==
+primitives before 105 after 105
+  Body.baked#11 (Mellow_Leg_Acc) max    7.6mm  mean   3.5mm  moved(>0.5mm)  99.9%  n=3520
+  Body.baked#12 (Mellow_Jewel) max    5.0mm  mean   4.7mm  moved(>0.5mm) 100.0%  n=323
+  Body.baked#15 (Mellow_Jewel) max    1.3mm  mean   0.8mm  moved(>0.5mm) 100.0%  n=320
+  Body.baked#16 (Mellow_Shoes) max   13.2mm  mean   2.9mm  moved(>0.5mm)  98.2%  n=10914
+  Body.baked#17 (Mellow_Lace) max    7.1mm  mean   3.9mm  moved(>0.5mm) 100.0%  n=190
+  Body.baked#20 (Mellow_Lace) max   19.3mm  mean  11.8mm  moved(>0.5mm) 100.0%  n=3396
+  Body.baked#21 (Mellow_Underwear) max   16.4mm  mean   5.9mm  moved(>0.5mm)  99.6%  n=1506
+primitives unchanged: 98, moved: 7
+lowest vertex y: before 4.8mm, after 2.0mm (what re-frames the renders)
+
+== 2. four renders with one framing (bounds of `after`) ==
+  front: differing pixels 11710  (>60) 3111  bands top->bottom [0, 0, 0, 0, 0, 1200, 29, 0, 5403, 5078]
+  back: differing pixels 11202  (>60) 2658  bands top->bottom [0, 0, 0, 0, 0, 1057, 29, 0, 5596, 4520]
+  three_quarter: differing pixels 12452  (>60) 3130  bands top->bottom [0, 0, 0, 0, 0, 1136, 18, 0, 5267, 6031]
+  face: differing pixels 0  (>60) 0  bands top->bottom [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+== torn triangles in the shipped file mika-milfy-10.vrm (verify.torn_shapes limit) ==
+  Body.baked#22: max stretch 1.79 (limit 3.0), flipped faces 0, worst tris [4251, 3063, 3062] centre [-0.144  1.183  0.084]
+
+== 3. Breasts_Cow stretch off outfit.pieces(), four anchor/turn variants ==
+  10 anchors (shipped ignore)        scale x1.153 anchors 10 turned 0  max stretch 1.67 at tris [3063, 4251, 3062] centre [-0.129  1.171  0.076]
+  16 anchors                         scale x1.188 anchors 16 turned 8  max stretch 1.77 at tris [4251, 3063, 3062] centre [-0.143  1.181  0.076]
+  16 anchors, no turns               scale x1.188 anchors 16 turned 0  max stretch 1.71 at tris [4251, 3063, 3062] centre [-0.143  1.183  0.077]
+  16 anchors, legs turn only         scale x1.188 anchors 16 turned 0  max stretch 1.71 at tris [4251, 3063, 3062] centre [-0.143  1.183  0.077]
+
+analysis exit 0
