@@ -274,9 +274,9 @@ def spring_bones(doc: dict) -> dict:
     return {'groups': groups, 'colliderGroups': colliders}
 
 
-def rest_positions(doc: dict) -> dict:
-    """Humanoid bone name -> world-space rest position, from the scene root."""
-    bones = human_bones(doc)
+def world_matrices(doc: dict) -> dict:
+    """Node index -> 4x4 world matrix (nested lists) for every node reachable
+    from the scene root. Pure Python, so it runs inside Blender too."""
     nodes = doc.get('nodes') or []
     scenes = doc.get('scenes') or []
     index = doc.get('scene', 0)
@@ -301,6 +301,13 @@ def rest_positions(doc: dict) -> dict:
         world[idx] = m
         for child in nodes[idx].get('children', ()):
             stack.append((child, m))
+    return world
+
+
+def rest_positions(doc: dict) -> dict:
+    """Humanoid bone name -> world-space rest position, from the scene root."""
+    bones = human_bones(doc)
+    world = world_matrices(doc)
 
     out = {}
     orphans = []

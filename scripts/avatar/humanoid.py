@@ -77,6 +77,15 @@ def rest_world(doc):
     return render.world_matrices(doc)
 
 
+def node_world(doc):
+    """Node index -> 4x4 world matrix as nested lists, pure Python.
+
+    The same walk as rest_world without numpy or PIL, for callers that run
+    inside Blender's own interpreter (bonemap.py under inspect_fbx.py --map).
+    """
+    return vrmrig.world_matrices(doc)
+
+
 def body_skin(doc, manifest):
     """Index of the skin the body mesh uses, read through the manifest.
 

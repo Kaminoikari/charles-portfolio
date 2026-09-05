@@ -1,0 +1,26 @@
+$ blender -b --python scripts/avatar/blender/inspect_fbx.py -- --map "…/MellowHeart_Dream1.05/FBX/Milfy_Outer.fbx"
+  MAP (bonemap.resolve, generic table + shape, no vendor override)
+  axis check: hips world y +0.675 (Blender z -> glTF y; height must be here)
+   Hips                         → hips                 (alias)
+   Spine                        → spine                (alias)
+   Chest                        → chest                (alias)
+   Neck                         → neck                 (alias)
+   Shoulder_R                   → rightShoulder        (alias)
+   Upper_arm_R                  → rightUpperArm        (alias)
+   Lower_arm_R                  → rightLowerArm        (alias)
+   Hand_R                       → rightHand            (alias)
+   Shoulder_L                   → leftShoulder         (alias)
+   Upper_arm_L                  → leftUpperArm         (alias)
+   Lower_arm_L                  → leftLowerArm         (alias)
+   Hand_L                       → leftHand             (alias)
+   Upper_leg_L                  → leftUpperLeg         (alias)
+   Upper_leg_R                  → rightUpperLeg        (alias)
+   未對應的來源骨 114 根（服裝鏈骨，跟著錨點走）：breast×6, outerbone1×10, outerbone2×10, outerbone3×10, outerbone4×10, outerbone5×10, outerbone6×10, outerbone7×10, outerribbon1×10, outerribbon2×12, outerribbonroot×2, outerroot, outertag×2, outertagroot, supportbone×8, thumbproximal×2
+  MESH Outer  verts 7215  tris 14070 polys 7136
+    materials ['Outer']
+    vertex groups (77): ['Hips', 'Spine', 'Chest', 'Shoulder_R', 'Hand_R', 'Thumb Proximal_R', 'Support_bone.003.R', 'Support_bone.004.R', 'Support_bone.001.R', 'Support_bone.002.R', 'Shoulder_L', 'Hand_L', 'Thumb Proximal_L', 'Support_bone.003.L', 'Support_bone.004.L', 'Support_bone.001.L', 'Support_bone.002.L', 'Breast_L', 'Breast_L.001', 'Breast_R', 'Breast_R.001', 'Outer_bone_1.001.L', 'Outer_bone_1.002.L', 'Outer_bone_1.003.L'] ...
+    shape keys 3
+  MESH Outer_Pin  verts 1032  tris 1888 polys 944
+    materials ['Outer']
+    vertex groups (18): ['Spine', 'Chest', 'Outer_bone_1.003.L', 'Outer_bone_2.002.L', 'Outer_bone_2.003.L', 'Outer_bone_2.004.L', 'Outer_bone_3.002.L', 'Outer_bone_3.003.L', 'Outer_bone_3.004.L', 'Outer_bone_4.003.L', 'Outer_bone_4.004.L', 'Outer_bone_1.004.R', 'Outer_bone_2.003.R', 'Outer_bone_2.004.R', 'Outer_bone_3.003.R', 'Outer_bone_3.004.R', 'Outer_bone_4.003.R', 'Outer_bone_4.004.R']
+    shape keys 0

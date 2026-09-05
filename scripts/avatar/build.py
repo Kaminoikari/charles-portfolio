@@ -22,6 +22,7 @@ from scipy.spatial import cKDTree
 
 import customise
 import envelope
+import bonemap
 import garment
 import glb
 import humanoid
@@ -70,6 +71,14 @@ CROWN_LIGHT = (-0.30, 0.62, -0.73)
 # separate FBXs with separate armatures; see blender/mellow.py.
 MELLOW = 'blender/mellow.glb'
 MELLOW_OUTER = 'blender/mellow_outer.glb'
+# The vendor's bonemap file: the one name the generic table cannot read (the
+# thumb) and, more importantly, the ignore list that keeps the cardigan's
+# forearm, hand and thumb OFF the fit anchors until the fit can rotate.
+# Emptying that ignore list re-fits the cardigan on sixteen bones and tears a
+# grafted shape key (evidence/bonemap-0905-16anchors.log); dropping the whole
+# file would fit on fourteen (no thumb alias), a build nobody has run.
+MELLOW_BONEMAP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              'bonemap', 'mellowheart.json')
 # mesh -> (our part name, how far it must clear the body). The clearances are
 # what each garment is: a boot hugs the calf, a bodice sits on a layer of air,
 # a skirt hangs off the hips and mostly does not touch at all.
@@ -884,9 +893,11 @@ def build(src, dst, manifest_path, out_manifest):
 
         for path in mellow_files:
             bundle = outfit.load(path, doc, views, add_material, MELLOW_TINT,
-                                 MELLOW_GAIN)
+                                 MELLOW_GAIN, override=MELLOW_BONEMAP)
             print(f'   服裝擬合 {os.path.basename(path)}：縮放 x{bundle["scale"]:.3f}，'
-                  f'對位骨最大殘差 {bundle["residual_mm"]:.2f}mm')
+                  f'對位骨最大殘差 {bundle["residual_mm"]:.2f}mm，'
+                  f'錨點 {len(bundle["mapping"]["pairs"])} 根')
+            print(bonemap.table(bundle['mapping'], bundle['src']))
             items = outfit.pieces(bundle, doc, views)
             accepted = []
             for item in items:

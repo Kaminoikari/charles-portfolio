@@ -5,9 +5,44 @@ import unittest
 
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 
+import glb  # noqa: E402
+import humanoid  # noqa: E402
 import outfit  # noqa: E402
+
+
+class LoadWiring(unittest.TestCase):
+    """outfit.load has to ask bonemap for its anchors. A resolver nobody calls
+    (memory: feedback_injection_bypasses_wiring) would leave the fit on
+    whatever table happened to be left behind."""
+    OUTER = os.path.join(HERE, 'out', 'blender', 'mellow_outer.glb')
+    BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
+    OVERRIDE = os.path.join(HERE, 'bonemap', 'mellowheart.json')
+
+    def setUp(self):
+        if not (os.path.exists(self.OUTER) and os.path.exists(self.BODY)):
+            self.skipTest('mellow_outer.glb 或 mika-pink.vrm 不在')
+
+    def test_load_uses_the_resolver(self):
+        doc, binary = glb.load(self.BODY)
+        views = glb.views_of(doc, binary)
+        # tint={} means no material is copied, so add_material is never called
+        # and the test stays about the skeleton.
+        bundle = outfit.load(self.OUTER, doc, views, None, {}, override=self.OVERRIDE)
+        mapping = bundle['mapping']
+        named = set(mapping['names'].values())
+        # The generic table would name the forearm; only the vendor file's
+        # ignore list keeps it off the anchors, so its absence proves the file
+        # reached the resolver and the resolver reached the fit.
+        self.assertNotIn('leftLowerArm', named)
+        self.assertIn('Lower_arm_L', mapping['unmapped_nodes'])
+        self.assertEqual(set(mapping['how'].values()), {'alias'})
+        tbones = humanoid.bones(doc)
+        self.assertEqual(sorted(bundle['mapped'].values()),
+                         sorted(tbones[n] for n in named if n in tbones))
+        self.assertEqual(len(mapping['pairs']), 10)
 
 
 class RingFitTest(unittest.TestCase):

@@ -1,0 +1,11 @@
+{
+  "_comment": [
+    "MellowHeart Dream (booth 6975498), Milfy fitting. The body bones alias on their own; the thumb is the one name the generic table does not carry.",
+    "The cardigan's forearm, hand and thumb bones are IGNORED for now. Fitting on all sixteen of its bones instead of the ten the shipped build was tuned on moves the cardigan's similarity scale from x1.153 to x1.188 and the translation-only correction tears the grafted (No bra)Breasts_Cow shape key (an edge stretched 2.0x, one face flipped; verify.py refuses the build). The chains under those bones still follow the upper arm, which is where they were before 2026-09-05. Phase 2's rotation-aware fit is what makes those anchors safe; lift the ignore there, with a receipt."
+  ],
+  "aliases": {
+    "Thumb Proximal": "thumbProximal"
+  },
+  "ignore": ["Lower_arm_*", "Hand_*", "Thumb Proximal_*"],
+  "mirror": false
+}

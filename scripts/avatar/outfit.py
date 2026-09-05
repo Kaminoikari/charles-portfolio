@@ -21,8 +21,12 @@ the answer:
   starting alignment and the per-bone correction after it does the real work.
 
 The transform is therefore in two stages. A global similarity A puts the two
-skeletons roughly on top of each other, fitted by least squares over the sixteen
-bones that exist in both. Then each source bone contributes a pure TRANSLATION
+skeletons roughly on top of each other, fitted by least squares over the
+humanoid bones that exist in both (which bones those are is bonemap.py's
+answer, from the vendor's names and the rig's shape; the bodice set gives
+sixteen, the cardigan ten, because its forearm, hand and thumb bones are held
+back by the vendor file until the fit can rotate -- see bonemap/mellowheart.json).
+Then each source bone contributes a pure TRANSLATION
 that slides its neighbourhood the rest of the way, and every vertex moves by the
 blend of the translations of the bones it is weighted to.
 
@@ -48,41 +52,14 @@ import numpy as np
 from PIL import Image
 from scipy.spatial import cKDTree
 
+import bonemap
 import glb
 import humanoid
 import render
 
-# The bones that exist in both rigs. `.L` is the character's left in both, which
-# is why there is no swap here: after the yaw, Milfy's Shoulder.L lands on the
-# same side as our leftShoulder. Checked numerically, not by name.
-MAP = {
-    'Hips': 'hips', 'Spine': 'spine', 'Chest': 'chest', 'Neck': 'neck',
-    'Shoulder.L': 'leftShoulder', 'Shoulder.R': 'rightShoulder',
-    'Upper_arm.L': 'leftUpperArm', 'Upper_arm.R': 'rightUpperArm',
-    'Upper_leg.L': 'leftUpperLeg', 'Upper_leg.R': 'rightUpperLeg',
-    'Lower_leg.L': 'leftLowerLeg', 'Lower_leg.R': 'rightLowerLeg',
-    'Foot.L': 'leftFoot', 'Foot.R': 'rightFoot',
-    'Toe.L': 'leftToes', 'Toe.R': 'rightToes',
-}
-
-
-def _key(name):
-    """MAP's key for a source bone, whichever side separator the file uses.
-
-    The package's two FBXs disagree: the bodice set names its bones Shoulder.L
-    and the cardigan names them Shoulder_L. Matching only the first form paired
-    four bones out of the cardigan's rig -- the four with no side -- and the fit
-    refused to run. The separator is the only difference, so it is normalised
-    here rather than by listing every bone twice.
-    """
-    if name is None:
-        return None
-    for suffix in ('_L', '_R'):
-        if name.endswith(suffix):
-            return name[:-2] + '.' + suffix[1]
-    return name
-
-
+# `.L` is the character's left in both rigs, which is why the mapping carries
+# no side swap: after the yaw, Milfy's Shoulder.L lands on the same side as
+# our leftShoulder. Checked numerically, not by name.
 YAW = np.diag([-1.0, 1.0, -1.0, 1.0])
 
 
@@ -112,7 +89,7 @@ def _similarity(src_pts, dst_pts):
     """Uniform scale and translation taking YAW-turned source points onto dst.
 
     Rotation is not solved for, it is asserted: the two rigs differ by exactly a
-    half turn about Y and fitting a free rotation to sixteen noisy landmarks
+    half turn about Y and fitting a free rotation to a dozen-odd noisy landmarks
     would introduce a small spurious tilt that shows up as a garment leaning.
     """
     q = src_pts @ YAW[:3, :3].T
@@ -126,11 +103,26 @@ def _similarity(src_pts, dst_pts):
     return a, s
 
 
-def load(path, doc, views, add_material, tint, gain=None):
+def _weighted_joints(src, sviews):
+    """Source joints (node indices) some vertex is weighted to above 0.05."""
+    sjoints = src['skins'][0]['joints']
+    hit = set()
+    for mesh in src['meshes']:
+        for pr in mesh['primitives']:
+            att = pr['attributes']
+            j = glb.read_accessor(src, sviews, att['JOINTS_0']).astype(np.int64)
+            w = glb.read_accessor(src, sviews, att['WEIGHTS_0']).astype(np.float64)
+            hit.update(int(s) for s in np.unique(j[w > 0.05]))
+    return {sjoints[s] for s in hit}
+
+
+def load(path, doc, views, add_material, tint, gain=None, override=None):
     """Read the garment file and return everything needed to attach it.
 
     `add_material` is build.py's, so colour policy stays in one place; `tint`
-    maps the garment's own material names onto ours.
+    maps the garment's own material names onto ours. `override` is the vendor's
+    bonemap file (a path or its parsed dict) for bones the generic table cannot
+    name; None means the table and the rig's shape have to be enough.
     """
     src, binary = glb.load(path)
     sviews = glb.views_of(src, binary)
@@ -141,10 +133,11 @@ def load(path, doc, views, add_material, tint, gain=None):
     tworld = render.world_matrices(doc)
     tbones = humanoid.bones(doc)
 
-    pairs = [(i, tbones[MAP[_key(snames[i])]]) for i in sjoints
-             if _key(snames.get(i)) in MAP and MAP[_key(snames[i])] in tbones]
-    if len(pairs) < 8:
-        raise SystemExit(f'只對上 {len(pairs)} 根骨，不足以擬合')
+    if isinstance(override, str):
+        override = bonemap.load_override(override)
+    mapping = bonemap.resolve(src, tbones, override)
+    bonemap.require(mapping, src, _weighted_joints(src, sviews))
+    pairs = mapping['pairs']
     a_mat, scale = _similarity(np.array([sworld[i][:3, 3] for i, _ in pairs]),
                                np.array([tworld[j][:3, 3] for _, j in pairs]))
 
@@ -173,6 +166,7 @@ def load(path, doc, views, add_material, tint, gain=None):
     return {
         'src': src, 'sviews': sviews, 'sworld': sworld, 'snames': snames,
         'sjoints': sjoints, 'sparent': sparent, 'mapped': mapped,
+        'mapping': mapping,
         'a': a_mat, 'scale': scale, 'correction': correction,
         'residual_mm': float(np.max(residual) * 1000) if residual else 0.0,
         'materials': _materials(src, doc, views, sviews, add_material,
@@ -350,7 +344,7 @@ def add_bones(bundle, doc, views):
     """Give the garment's own bones a home in our skeleton.
 
     Returns source-joint -> our skin-joint slot. Bones that already exist here
-    (the sixteen humanoid ones) resolve to the slot they already occupy;
+    (the humanoid ones the mapping found) resolve to the slot they already occupy;
     everything else -- skirt panels, the ribbon, the shoe laces -- is appended as
     a new node under whichever of ours its source parent maps to.
     """
