@@ -135,7 +135,7 @@ BLENDER = shutil.which('blender')
 # now reads hip/knee/ankle/hand off the skeleton instead of typed numbers,
 # which moves the skirt's drape weights by at most 0.0008 and no vertex
 # (evidence/gates-0905.md).
-SHIPPED = 'mika-milfy-11.vrm'
+SHIPPED = 'mika-milfy-12.vrm'
 
 
 @contextlib.contextmanager

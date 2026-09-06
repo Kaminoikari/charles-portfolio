@@ -233,7 +233,7 @@ def skirt(pool, waist_y, hem_y, flare, segments=48, rings=6, joint_from=None,
     }
 
 
-def bind(pool, piece):
+def bind(pool, piece, smooth=0):
     """Give every vertex the skin weights of the body vertex nearest to it.
 
     A ring bound to one sample point moves exactly as that point moves. The
@@ -245,11 +245,82 @@ def bind(pool, piece):
     Not for everything. A skirt bound this way would have its hem follow whichever
     leg happened to be nearest and tear in two when the legs part; a skirt is
     supposed to hang off the hips as one piece, so it keeps a single binding.
+
+    `smooth` diffuses the copied weights over the garment's own edges that
+    many times (half self, half neighbours, seams welded by position), then
+    keeps the four largest per vertex. Nearest-vertex copying is exact where
+    the cloth lies on one surface and wrong wherever the body creases: at the
+    armpit the nearest skin to one sleeve vertex is the ribs and to the next
+    the upper arm, so the weights jump from all-chest to all-arm across a
+    single edge, and lowering the arm pulls an 11mm edge to 74mm. The body's
+    own skin blends the same crease over several centimetres, which is what
+    the diffusion gives the cloth. Measured with the real skinning on the
+    cardigan (evidence/armpit-0906.md): the worst edge grows 77mm at 0
+    passes, 27mm at 4, 15mm at 16 -- the body's own armpit grows 15mm, its
+    elbow 17mm -- and smoothing beyond that starts losing weight to the
+    four-slot cap. Off by default, because a piece bound to smooth skin gains
+    nothing from it and the skirt's drape overwrites the weights anyway.
     """
     d = ((piece['pos'][:, None, :] - pool['pos'][None, :, :]) ** 2).sum(axis=2)
     k = d.argmin(axis=1)
     piece['joints'] = pool['joints'][k]
     piece['weights'] = pool['weights'][k]
+    if smooth:
+        smooth_weights(piece, smooth)
+    return piece
+
+
+def welded_edges(piece):
+    """(vertex -> welded id, unique edges over welded ids) for a piece.
+
+    Welded by rounded position, as shell() does: a garment split into UV
+    islands duplicates every vertex along the seam, and a diffusion that walks
+    only the triangle edges stops dead there and leaves the seam as sharp as
+    it found it.
+    """
+    key = np.round(piece['pos'], 5)
+    _, seam = np.unique(key, axis=0, return_inverse=True)
+    seam = seam.ravel()
+    tris = piece['tris']
+    edges = np.concatenate([tris[:, [0, 1]], tris[:, [1, 2]], tris[:, [2, 0]]])
+    edges = np.unique(np.sort(seam[edges], axis=1), axis=0)
+    return seam, edges[edges[:, 0] != edges[:, 1]]
+
+
+def smooth_weights(piece, passes, keep=4):
+    """Diffuse a piece's skin weights over its welded edges, in place.
+
+    Each pass replaces a vertex's weights with half its own and half the mean
+    of its neighbours'; copies of one welded vertex are averaged first and
+    written back together. The result is cut to the `keep` largest joints per
+    vertex and re-normalised, since that is what JOINTS_0/WEIGHTS_0 can hold.
+    """
+    seam, edges = welded_edges(piece)
+    joints = np.asarray(piece['joints'], dtype=np.int64)
+    weights = np.asarray(piece['weights'], dtype=np.float64)
+    slots = int(joints.max()) + 1
+    n = int(seam.max()) + 1
+    dense = np.zeros((n, slots))
+    for c in range(joints.shape[1]):
+        np.add.at(dense, (seam, joints[:, c]), weights[:, c])
+    copies = np.bincount(seam, minlength=n).astype(np.float64)[:, None]
+    dense /= copies
+    degree = np.bincount(edges.ravel(), minlength=n).astype(np.float64)
+    degree[degree == 0] = 1.0
+    for _ in range(passes):
+        acc = np.zeros_like(dense)
+        np.add.at(acc, edges[:, 0], dense[edges[:, 1]])
+        np.add.at(acc, edges[:, 1], dense[edges[:, 0]])
+        dense = 0.5 * dense + 0.5 * acc / degree[:, None]
+    dense = dense[seam]
+    if slots < keep:
+        dense = np.pad(dense, ((0, 0), (0, keep - slots)))
+    top = np.argsort(-dense, axis=1)[:, :keep]
+    kept = np.take_along_axis(dense, top, axis=1)
+    total = kept.sum(axis=1, keepdims=True)
+    kept = kept / np.where(total == 0, 1.0, total)
+    piece['joints'] = top.astype(np.asarray(piece['joints']).dtype)
+    piece['weights'] = kept.astype(np.asarray(piece['weights']).dtype)
     return piece
 
 

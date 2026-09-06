@@ -1,0 +1,28 @@
+== mika-milfy-11.vrm: worst edge growth per skinned primitive and bend (verify.torn_bindings, limit 25.0mm), top 12
+   Body.baked#22  rightUpperArm   +60    77.1mm
+   Body.baked#22  leftUpperArm    -60    71.9mm
+   Body.baked#22  rightUpperArm   -60    70.0mm
+   Body.baked#22  leftUpperArm    +60    63.2mm
+   Body.baked#22  rightLowerArm   +90    51.6mm
+   Body.baked#22  leftLowerArm    +90    49.2mm
+   Body.baked#0   leftLowerArm    +90    17.3mm
+   Body.baked#9   rightUpperArm   +60    15.5mm
+   Body.baked#9   leftUpperArm    -60    15.5mm
+   Body.baked#0   rightUpperArm   +60    14.7mm
+   Body.baked#0   leftUpperArm    -60    14.7mm
+   Body.baked#0   rightLowerArm   +90    13.1mm
+   over limit: [('Body.baked', 22, 'leftUpperArm', 60, 63.2), ('Body.baked', 22, 'leftUpperArm', -60, 71.9), ('Body.baked', 22, 'rightUpperArm', 60, 77.1), ('Body.baked', 22, 'rightUpperArm', -60, 70.0), ('Body.baked', 22, 'leftLowerArm', 90, 49.2), ('Body.baked', 22, 'rightLowerArm', 90, 51.6)]
+== mika-milfy-12.vrm: worst edge growth per skinned primitive and bend (verify.torn_bindings, limit 25.0mm), top 12
+   Body.baked#0   leftLowerArm    +90    17.3mm
+   Body.baked#22  leftUpperArm    -60    14.9mm
+   Body.baked#22  rightUpperArm   +60    14.8mm
+   Body.baked#0   rightUpperArm   +60    14.7mm
+   Body.baked#0   leftUpperArm    -60    14.7mm
+   Body.baked#0   rightLowerArm   +90    13.1mm
+   Body.baked#22  rightLowerArm   +90    10.0mm
+   Body.baked#22  leftLowerArm    +90     9.9mm
+   Body.baked#22  rightUpperArm   -60     9.3mm
+   Body.baked#22  leftUpperArm    +60     9.2mm
+   Body.baked#9   rightUpperArm   +60     5.5mm
+   Body.baked#9   leftUpperArm    -60     5.5mm
+   over limit: []

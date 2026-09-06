@@ -12,8 +12,8 @@ sys.path.insert(0, HERE)
 import humanoid  # noqa: E402
 import vrmrig_test  # noqa: E402
 
-REAL_VRM = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
-REAL_MANIFEST = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-11.parts.json')
+REAL_VRM = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-12.vrm')
+REAL_MANIFEST = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-12.parts.json')
 
 NODES = [{'translation': [0, 1, 0], 'children': [1]}, {'translation': [0, 0.5, 0]}]
 BONES = {'hips': 0, 'spine': 1}

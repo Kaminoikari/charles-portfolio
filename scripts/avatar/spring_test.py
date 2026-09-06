@@ -20,7 +20,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 # previous shipped file (git HEAD's mika-milfy-2.vrm, which still carries the
 # old joint remap and no colliders) is shown to fail them.
 MODEL = os.environ.get('SPRING_TEST_MODEL') or os.path.join(
-    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
+    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-12.vrm')
 class SpringTest(unittest.TestCase):
     """The shipped file's spring wiring for the twintails (twintail.apply).
 

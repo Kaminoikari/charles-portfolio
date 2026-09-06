@@ -1,5 +1,5 @@
 {
-  "source": "public/avatar/mika-pink.vrm",
+  "source": "/Users/charles/portfolio/scripts/avatar/baseline.vrm",
   "parts": {
     "Face": {
       "mesh": "Face.baked",

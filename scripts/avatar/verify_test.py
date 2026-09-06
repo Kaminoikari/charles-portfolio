@@ -22,7 +22,7 @@ sys.path.insert(0, HERE)
 import glb  # noqa: E402
 import verify  # noqa: E402
 
-SHIPPED = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
+SHIPPED = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-12.vrm')
 
 
 def perturbed(drop):
@@ -46,7 +46,7 @@ class Report(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if not os.path.exists(SHIPPED):
-            raise unittest.SkipTest('public/avatar/mika-milfy-11.vrm 不在')
+            raise unittest.SkipTest('public/avatar/mika-milfy-12.vrm 不在')
 
     def test_a_model_without_an_optional_bone_passes(self):
         ok, text = quiet_report(perturbed(('upperChest',)))
@@ -57,6 +57,57 @@ class Report(unittest.TestCase):
         ok, text = quiet_report(perturbed(('leftHand',)))
         self.assertFalse(ok)
         self.assertIn('leftHand', text)
+
+
+def snapped_weights(part_name):
+    """The shipped file with one part's weights snapped to each vertex's
+    dominant joint: the hard handovers a nearest-vertex copy leaves at the
+    armpit, everywhere."""
+    import json
+    doc, binary = glb.load(SHIPPED)
+    views = glb.views_of(doc, binary)
+    manifest = json.load(open(SHIPPED.replace('.vrm', '.parts.json')))
+    info = manifest['parts'][part_name]
+    mesh = next(m for m in doc['meshes'] if m['name'] == info['mesh'])
+    for pi in info['primitives']:
+        acc = doc['accessors'][mesh['primitives'][pi]['attributes']['WEIGHTS_0']]
+        assert acc['componentType'] == 5126 and acc['type'] == 'VEC4'
+        view = views[acc['bufferView']]
+        off = acc.get('byteOffset', 0)
+        w = np.frombuffer(bytes(view[off:off + acc['count'] * 16]), dtype='<f4').reshape(-1, 4)
+        snapped = np.zeros_like(w)
+        np.put_along_axis(snapped, w.argmax(axis=1)[:, None], 1.0, axis=1)
+        view[off:off + acc['count'] * 16] = snapped.astype('<f4').tobytes()
+    path = os.path.join(tempfile.mkdtemp(), 'snapped.vrm')
+    glb.save(path, doc, glb.rebuild(doc, views))
+    return path
+
+
+class TornBindings(unittest.TestCase):
+    """No garment on the shipped model tears when an arm bends, and one whose
+    weights hand over hard between joints is named. The file-level half of
+    garment_test.Smoothing: that one proves the smoothing spreads a handover,
+    this one proves the shipped build went through it."""
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(SHIPPED):
+            raise unittest.SkipTest('public/avatar/mika-milfy-12.vrm 不在')
+
+    def test_the_shipped_garments_survive_an_arm_bend(self):
+        self.assertEqual(verify.torn_bindings(SHIPPED), [])
+
+    def test_hard_handovers_on_the_cardigan_are_named(self):
+        bad = verify.torn_bindings(snapped_weights('Outfit_Cardigan'))
+        self.assertTrue(bad, 'snapped cardigan weights should tear')
+        self.assertEqual({(b[0], b[1]) for b in bad}, {('Body.baked', 22)})
+        self.assertGreater(max(b[4] for b in bad), verify.BIND_GROWTH_MAX_MM)
+
+    def test_report_fails_a_torn_binding(self):
+        ok, text = quiet_report(snapped_weights('Outfit_Cardigan'))
+        self.assertFalse(ok)
+        self.assertIn('tear when an arm bends: ', text)
+        self.assertIn('Body.baked#22 grows an edge', text)
 
 
 class DanglingJoints(unittest.TestCase):

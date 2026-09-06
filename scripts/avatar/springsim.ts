@@ -550,7 +550,7 @@ export interface Args {
 
 export function parseArgs(argv: string[]): Args {
   const args: Args = {
-    model: path.resolve('public/avatar/mika-milfy-11.vrm'),
+    model: path.resolve('public/avatar/mika-milfy-12.vrm'),
     clip: 'dance',
     colliders: 'asis',
     hit: null,

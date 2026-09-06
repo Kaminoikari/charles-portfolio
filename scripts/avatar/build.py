@@ -121,6 +121,18 @@ MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
 # akimbo 腰際手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm
 # rest 間隙之上。
 MELLOW_STANDOFF = {'Outfit_Cardigan': 0.010}
+# 匯入服裝綁定後的權重擴散次數（garment.smooth_weights 的 passes），按部件。最
+# 近頂點抄權重在身體的皺褶處會跳：腋下一個袖子頂點最近的皮膚是肋骨、隔壁那個
+# 是上臂，權重在一條邊上從全胸跳到全臂，手臂一放下一條 11mm 的邊被拉到 74mm
+# ——使用者 2026-09-06 回報的兩側腋下黑色與薄荷色碎片，跳舞時放下手臂就出現，
+# T-pose 的四個機位與六道 gate 全看不到。16 次是真蒙皮量出來的：外套最壞的邊
+# 0 次 77mm、4 次 27mm、16 次 15mm（身體自己的皮膚腋下 15mm、手肘 17mm），再
+# 多就開始被四槽上限吃掉權重（evidence/armpit-0906.md）。
+# 只給跨過腋下的兩件上身衣。貼著肢體的管狀件（襪、鞋、腿帶、腰封）本來就沒有
+# 皺褶要跨，抄最近頂點就是對的；把襪子也擴散過，膝蓋一彎小腿就從襪子穿出來
+# （motion gate scratchHead t=4.02s 從 5px 變 233px）。守衛：撕裂在
+# verify.torn_bindings，穿模在 motion.py。
+MELLOW_BIND_SMOOTH = {'Outfit_Cardigan': 16, 'Outfit_Top': 16}
 # 雙馬尾對外套的守衛（量法見 twintail.coat_intrusion）。乾淨的建置量到
 # -59mm／0%（最靠裡的髮頂點也在輪廓外 59mm），舊出貨檔 -2 是 50.7mm／25.8%。
 # 5mm 與 springsim.test.ts 的 REST_COAT_MAX_MM 是同一個數字，量法不同（這裡量
@@ -987,7 +999,9 @@ def build(src, dst, manifest_path, out_manifest):
                 # top of that, exactly as the hand-built one was. The vendor's
                 # rig is discarded here on purpose: it is correct for Milfy and
                 # wrong for this body, and the failure it causes is invisible
-                # at rest.
+                # at rest. The bodice garments are then smoothed, because the
+                # nearest-vertex copy tears at the armpit and the elbow
+                # (MELLOW_BIND_SMOOTH).
                 bound = garment.bind(pool, item['piece'])
                 if name == 'Acc_Belt_Waist':
                     belt_pos.append(bound['pos'])
@@ -995,6 +1009,10 @@ def build(src, dst, manifest_path, out_manifest):
                     # 只留軀幹片：權重主要落在手臂／肩／手的是袖子。T-pose 的
                     # 袖口在馬尾經過肩膀的方位角上伸到半徑 0.22-0.27，瀏覽器裡
                     # 那截袖子卻是垂在身側的，算進輪廓會把馬尾第一節頂到 40cm 外。
+                    # 讀的是平滑前的最近頂點權重：平滑會把肩袖交界一圈頂點的
+                    # 主導骨換邊，輪廓跟著變，雙馬尾軸線因此移了 15mm，貼頭層
+                    # 有一個頂點落進 20mm 帶內（appearance_test 抓到）。馬尾掛
+                    # 在外套上的位置不該隨綁定的平滑程度變。
                     lead = bound['joints'][np.arange(len(bound['joints'])),
                                            bound['weights'].argmax(axis=1)]
                     lead_name = np.array([doc['nodes'][skin['joints'][j]].get('name', '')
@@ -1002,6 +1020,8 @@ def build(src, dst, manifest_path, out_manifest):
                     torso = np.array([not any(k in n for k in ('Arm', 'Hand', 'Shoulder'))
                                       for n in lead_name])
                     coat_pos.append(bound['pos'][torso])
+                if MELLOW_BIND_SMOOTH.get(name):
+                    garment.smooth_weights(bound, MELLOW_BIND_SMOOTH[name])
                 if name == 'Outfit_Bottom':
                     bound = drape(bound)
                 at = garment.attach(doc, views, 'Body.baked', bound,

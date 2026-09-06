@@ -24,6 +24,25 @@ import numpy as np
 
 import glb  # noqa: E402
 import humanoid  # noqa: E402
+import pose  # noqa: E402
+
+# How much one edge of a skinned primitive may grow, in millimetres, when a
+# single joint turns through the bends below. Absolute, not a ratio: the ratio
+# is owned by 1mm edges at the bust that quadruple without anyone seeing it,
+# while the tear the owner saw was 11mm edges pulled to 74mm. Calibrated on
+# 2026-09-06 (evidence/armpit-0906.md): the body's own skin reaches 17mm, the
+# cardigan re-bound by garment.bind(smooth=16) 15mm, at 4 passes 27mm, and the
+# nearest-vertex binding it replaced 77mm at the armpit and 52mm at the elbow
+# -- the black and mint shards under both arms in the dance.
+BIND_GROWTH_MAX_MM = 25.0
+# (humanoid bone, axis, degrees). The upper arm is bent both ways because the
+# armpit folds differently when the arm rises than when it drops, and the
+# idle pose holds it about 60 degrees below the T-pose.
+BIND_BENDS = (
+    ('leftUpperArm', (0, 0, 1), 60), ('leftUpperArm', (0, 0, 1), -60),
+    ('rightUpperArm', (0, 0, 1), 60), ('rightUpperArm', (0, 0, 1), -60),
+    ('leftLowerArm', (0, 0, 1), 90), ('rightLowerArm', (0, 0, 1), 90),
+)
 
 
 def stats(path):
@@ -352,6 +371,50 @@ def torn_shapes(path, baseline=None, limit=SHAPE_STRETCH_MAX):
     return bad
 
 
+def torn_bindings(path, limit=BIND_GROWTH_MAX_MM, bends=BIND_BENDS):
+    """Primitives whose skin weights tear the mesh when one arm joint turns.
+
+    A garment bound by copying the nearest body vertex's weights looks right at
+    rest and is wrong wherever the body creases: at the armpit the nearest skin
+    to one cloth vertex is the ribs and to its neighbour the upper arm, so the
+    weights jump from all-chest to all-arm across a single edge. Lower the arm
+    60 degrees and an 11mm edge is pulled to 74mm on the cardigan shipped on
+    2026-09-05, rendering as folded black outline shells and lining lit mint by
+    the fill light. Every gate and every contract camera is blind to it,
+    because they all see the T-pose.
+
+    Real linear blend skinning (pose.skinned), one joint bent at a time, every
+    skinned primitive measured, the worst edge's growth in millimetres. A part
+    that does not hang from the bent joint keeps its edges where they were and
+    never trips this.
+    """
+    doc, binary = glb.load(path)
+    views = glb.views_of(doc, binary)
+    bones = humanoid.bones(doc)
+    rest = pose.skinned(doc, views)
+    edges = {}
+    for mesh in doc['meshes']:
+        for pi, pr in enumerate(mesh['primitives']):
+            if 'JOINTS_0' not in pr['attributes']:
+                continue
+            tri = glb.read_accessor(doc, views, pr['indices']).astype(np.int64).reshape(-1, 3)
+            e = np.concatenate([tri[:, [0, 1]], tri[:, [1, 2]], tri[:, [2, 0]]])
+            edges[(mesh.get('name'), pi)] = np.unique(np.sort(e, axis=1), axis=0)
+    bad = []
+    for bone, axis, degrees in bends:
+        if bone not in bones:
+            continue
+        posed = pose.skinned(doc, views, {bones[bone]: pose.quat(axis, degrees)})
+        for key, e in edges.items():
+            p0, p1 = rest[key], posed[key]
+            l0 = np.linalg.norm(p0[e[:, 0]] - p0[e[:, 1]], axis=1)
+            l1 = np.linalg.norm(p1[e[:, 0]] - p1[e[:, 1]], axis=1)
+            growth = float((l1 - l0).max()) * 1000.0
+            if growth > limit:
+                bad.append((key[0], key[1], bone, degrees, growth))
+    return bad
+
+
 def stranded_collider_groups(path):
     """Collider groups no bone group references.
 
@@ -452,6 +515,14 @@ def report(path, baseline=None):
         print(f'   FAIL {mname}#{pi} "{key}" stretches an edge {stretch:.1f}x '
               f'and flips {flipped} faces')
     if torn:
+        ok = False
+
+    ripped = torn_bindings(path)
+    print(f'   skinned primitives that tear when an arm bends: {len(ripped)}')
+    for mname, pi, bone, degrees, growth in ripped[:5]:
+        print(f'   FAIL {mname}#{pi} grows an edge by {growth:.0f}mm with '
+              f'{bone} at {degrees:+d} degrees (limit {BIND_GROWTH_MAX_MM:.0f}mm)')
+    if ripped:
         ok = False
 
     quiet = undeclared_rims(path)

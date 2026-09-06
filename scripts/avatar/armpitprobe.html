@@ -1,0 +1,97 @@
+<!doctype html><meta charset="utf-8"><title>armpit probe</title>
+<!--
+  Close-ups of both armpits with the upper arms lowered from the T-pose by a
+  list of angles, or at chosen moments of a clip. Diagnostic only.
+
+    /scripts/avatar/armpitprobe.html?f=/avatar/mika-milfy-12.vrm&arm=0,15,30,45,60
+    /scripts/avatar/armpitprobe.html?f=/avatar/mika-milfy-12.vrm&clip=dance&t=1,2,3
+
+  hide=a,b hides every material whose name contains a listed substring.
+  Frames land in window.__frames as PNG data URLs; window.__done flips when
+  every one is there.
+-->
+<body style="margin:0;background:#111"><pre id="out" style="color:#0f0;font:12px monospace;white-space:pre-wrap"></pre>
+<script type="importmap">
+{"imports":{"three":"/node_modules/three/build/three.module.js",
+"three/addons/":"/node_modules/three/examples/jsm/",
+"@pixiv/three-vrm":"/node_modules/@pixiv/three-vrm/lib/three-vrm.module.js",
+"@pixiv/three-vrm-animation":"/node_modules/@pixiv/three-vrm-animation/lib/three-vrm-animation.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationClip } from '@pixiv/three-vrm-animation';
+const out = document.getElementById('out');
+const say = (s) => { out.textContent += s + '\n'; window.__status = s; };
+window.__frames = {}; window.__done = false;
+const q = new URLSearchParams(location.search);
+const W = 480, H = 480, DT = 1 / 60;
+try {
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
+  renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.setClearColor(0x1a1a1f, 1);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.25;
+  const file = q.get('f') || '/avatar/mika-milfy-12.vrm';
+  const bytes = new Uint8Array(await (await fetch(file + '?t=' + Date.now())).arrayBuffer());
+  const loader = new GLTFLoader();
+  loader.register((p) => new VRMLoaderPlugin(p));
+  loader.register((p) => new VRMAnimationLoaderPlugin(p));
+  const vrm = (await loader.parseAsync(bytes.buffer, '')).userData.vrm;
+  VRMUtils.rotateVRM0(vrm);
+  window.__vrm = vrm;
+  const scene = new THREE.Scene(); scene.add(vrm.scene);
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(0.6, 1.6, 2.2); scene.add(key);
+  const fill = new THREE.DirectionalLight(0x00d9ff, 0.3); fill.position.set(-0.4, -1.0, 1.8); scene.add(fill);
+  const hide = (q.get('hide') || '').split(',').filter(Boolean);
+  if (hide.length) vrm.scene.traverse((o) => { for (const m of [].concat(o.material || [])) if (hide.some((h) => (m.name || '').includes(h))) m.visible = false; });
+  const cam = new THREE.PerspectiveCamera(18, 1, 0.05, 20);
+  const shoulder = (side) => { const p = new THREE.Vector3(); vrm.humanoid.getNormalizedBoneNode(side + 'UpperArm').getWorldPosition(p); return p; };
+  const snap = (label) => {
+    vrm.scene.updateMatrixWorld(true);
+    for (const side of ['left', 'right']) {
+      const s = shoulder(side);
+      const inward = side === 'left' ? -0.02 : 0.02;
+      const at = new THREE.Vector3(s.x + inward, s.y - 0.09, s.z);
+      for (const [view, off] of [['front', [0, 0.02, 0.6]], ['low', [0, -0.3, 0.5]], ['back', [0, 0.02, -0.6]]]) {
+        cam.position.set(at.x + off[0], at.y + off[1], at.z + off[2]); cam.lookAt(at); cam.updateProjectionMatrix();
+        renderer.render(scene, cam);
+        window.__frames[`${label}-${side}-${view}`] = canvas.toDataURL('image/png');
+      }
+    }
+    // whole torso from the production camera, for orientation
+    cam.fov = 30; cam.position.set(0, 1.27, 2.3); cam.lookAt(0, 1.17, 0); cam.updateProjectionMatrix();
+    renderer.render(scene, cam);
+    window.__frames[`${label}-torso`] = canvas.toDataURL('image/png');
+    cam.fov = 18;
+  };
+  const settle = (steps) => { for (let i = 0; i < steps; i++) vrm.update(DT); };
+  const clipName = q.get('clip');
+  if (clipName) {
+    const gltf = await loader.loadAsync(`/avatar/animations/${clipName}.vrma`);
+    const clip = createVRMAnimationClip(gltf.userData.vrmAnimations[0], vrm);
+    const mixer = new THREE.AnimationMixer(vrm.scene);
+    const action = mixer.clipAction(clip); action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; action.play();
+    mixer.update(0); vrm.humanoid.update(); settle(120);
+    const times = (q.get('t') || '0').split(',').map(Number).sort((a, b) => a - b);
+    let t = 0;
+    for (const target of times) {
+      while (t + DT / 2 < target) { mixer.update(DT); vrm.update(DT); t += DT; }
+      say(`t=${t.toFixed(2)}s`); snap(`t${target}`);
+    }
+  } else {
+    const angles = (q.get('arm') || '0,30,60').split(',').map(Number);
+    const L = vrm.humanoid.getNormalizedBoneNode('leftUpperArm');
+    const R = vrm.humanoid.getNormalizedBoneNode('rightUpperArm');
+    for (const deg of angles) {
+      const rad = THREE.MathUtils.degToRad(deg);
+      // +z lowers the left arm on this rig (checked: -z raised it).
+      L.rotation.set(0, 0, rad); R.rotation.set(0, 0, -rad);
+      settle(60);
+      say(`arm=${deg}`); snap(`arm${deg}`);
+    }
+  }
+  say('done'); window.__done = true;
+} catch (e) { say('ERROR ' + (e && e.stack || e)); window.__done = true; }
+</script>
