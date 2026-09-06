@@ -11,10 +11,10 @@ import {
 import type { AvatarMotionName } from '../../src/components/chat/avatarMotions'
 import {
   MIKA_MILFY_FAMILY,
-  MIKA_MILFY_MODEL_URL,
   PREVIEW_EMOTIONS,
   PREVIEW_GESTURES,
   PREVIEW_MOTIONS,
+  resolvePreviewModel,
 } from './live-preview-config'
 
 const READY_POLL_MS = 300
@@ -72,9 +72,13 @@ function collectReadyMotions(handle: AvatarGuideHandle): Set<AvatarMotionName> {
   return ready
 }
 
+const requested = resolvePreviewModel(window.location.search)
+if (requested.problem) announce(requested.problem, 'error')
+const modelUrl = requested.url
+
 const handle = initAvatarGuide(
   canvas,
-  MIKA_MILFY_MODEL_URL,
+  modelUrl,
   () => {
     announce('Mika Milfy 已進入場景，正在準備 10 支動作。', 'loading')
   },
@@ -82,7 +86,7 @@ const handle = initAvatarGuide(
     announce('WebGL context 已中斷，請重新整理頁面。', 'error')
   },
   () => {
-    announce('模型載入失敗，請確認本機存在 public/avatar/mika-milfy-12.vrm。', 'error')
+    announce(`模型載入失敗，請確認本機存在 public${modelUrl}。`, 'error')
   },
   MIKA_MILFY_FAMILY,
 )

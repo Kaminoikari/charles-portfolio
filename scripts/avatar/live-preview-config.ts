@@ -22,6 +22,32 @@ export const MIKA_MILFY_MODEL_URL = '/avatar/mika-milfy-12.vrm'
  */
 export const MIKA_MILFY_FAMILY: AvatarFamilyId = 'vroid-sample-b'
 
+/**
+ * Which body the page loads: `?model=/avatar/whatever.vrm` overrides the URL
+ * above.
+ *
+ * The point of this tool is to try a build before it is declared anywhere, and
+ * the build worth trying is not always the next Milfy: Phase 3.5's VRM 1.0 →
+ * 0.x conversion and Phase 4's rebound weights each produce a file whose only
+ * honest check is a browser. Editing this file to look at one and editing it
+ * back is how a temporary URL gets committed.
+ *
+ * Same-origin absolute paths only. An absolute URL, a protocol-relative one or
+ * a path that climbs out is reported and ignored rather than fetched, because
+ * whatever comes back is handed to the engine as a body.
+ */
+export function resolvePreviewModel(search: string): { url: string; problem?: string } {
+  const asked = new URLSearchParams(search).get('model')
+  if (!asked) return { url: MIKA_MILFY_MODEL_URL }
+  if (!asked.startsWith('/') || asked.startsWith('//') || asked.includes('..')) {
+    return {
+      url: MIKA_MILFY_MODEL_URL,
+      problem: `?model= 必須是本站的絕對路徑（收到：${asked}），改用預設的 ${MIKA_MILFY_MODEL_URL}。`,
+    }
+  }
+  return { url: asked }
+}
+
 export const PREVIEW_MOTIONS: readonly PreviewControl<AvatarMotionName>[] = [
   { name: 'dance', label: '跳舞' },
   { name: 'peaceSign', label: '比 Yeah' },
