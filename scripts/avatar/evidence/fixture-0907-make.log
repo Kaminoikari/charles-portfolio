@@ -1,0 +1,38 @@
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (6.7s)
+0b. base body as VRM 0.x
+   seed-san.vrm 是 VRM 1.0，轉成 0.x 寫到 base-vrm0.vrm（10922948 bytes）
+   捨棄：表情 happy 的 overrideBlink=blend，0.x 沒有 override
+   捨棄：表情 relaxed 的 overrideBlink=block，0.x 沒有 override
+   捨棄：表情 relaxed 的 overrideLookAt=block，0.x 沒有 override
+   捨棄：meta.copyrightInformation='VirtualCast, Inc.'，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowPoliticalOrReligiousUsage=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowAntisocialOrHateUsage=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.creditNotation='required'，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowRedistribution=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.modification='allowModificationRedistribution'，0.x 的 meta 沒有這個欄位
+   捨棄：23 個節點的 VRMC_node_constraint，0.x 沒有 constraint
+   近似：節點 4 的 capsule 改成 2 顆球
+   近似：節點 5 的 capsule 改成 3 顆球
+   近似：節點 5 的 capsule 改成 2 顆球
+   近似：節點 137 的 capsule 改成 6 顆球
+   近似：節點 138 的 capsule 改成 7 顆球
+   近似：節點 130 的 capsule 改成 6 顆球
+   近似：節點 131 的 capsule 改成 7 顆球
+   近似：spring TailHair 的 stiffness 逐關節不同，取根關節的
+   近似：spring RoboWire 的 hitRadius 逐關節不同，取根關節的
+   近似：材質 hair 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 huku_bake 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 body_bake 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 eye 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 eye_trans 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 arm_mat 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 body_nm 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   近似：材質 robo_face 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+   (0.0s)
+1. partition
+/Users/charles/portfolio/scripts/avatar/out/base-vrm0.vrm 不是這一步認得的 VRoid 匯出，拒絕命名：
+  - 沒有名為 Face.baked 的 mesh（有的是：hair, hair_tail, head, robo_arm, wear）
+  - 沒有名為 Body.baked 的 mesh，因此 BODY_NAMES 的 primitive 編號對不到任何東西
+  這一步的部件名稱來自 VRoid 的 mesh 名、primitive 編號與髮絲位置，換一具身體推不出來。硬跑會產生一份讀起來合理但是虛構的 parts.json，後面每一步都會相信它。

@@ -8,6 +8,7 @@ the VRM spec requires (humanoid.required_missing). Every test here drives the
 real make.gate on JSON-perturbed copies of the shipped base body written to a
 temporary directory; the binary chunk is carried over untouched.
 """
+import copy
 import os
 import re
 import sys
@@ -20,6 +21,7 @@ sys.path.insert(0, HERE)
 import glb  # noqa: E402
 import humanoid  # noqa: E402
 import make  # noqa: E402
+import partition  # noqa: E402
 
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
@@ -64,6 +66,63 @@ class Gate(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             make.gate('one-sided', self.no_upper_chest, self.body)
         self.assertIn('upperChest', str(cm.exception))
+
+
+class PartitionRecognises(unittest.TestCase):
+    """The one step that needs a particular body has to say so, not guess.
+
+    partition names Body's parts by primitive INDEX and the hair by where a
+    strand sits in this body's space. Neither survives a change of body, and
+    before recognise() nothing said so: a mesh matching neither name fell
+    through to hair_name for every primitive, so the 2026-09-07 Seed-san
+    fixture run wrote a parts.json calling a robot's arm and clothes
+    Hair_Twintail_R, Hair_Bangs and Hair_Side_L. It loaded. It read plausibly.
+    Every later step would have believed it.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(BODY):
+            raise unittest.SkipTest('public/avatar/mika-pink.vrm 不在')
+        cls.doc = glb.load(BODY)[0]
+
+    def test_the_body_this_step_was_written_for_is_recognised(self):
+        self.assertEqual(partition.recognise(self.doc), [])
+
+    def test_a_body_without_the_face_mesh_is_refused_by_name(self):
+        doc = copy.deepcopy(self.doc)
+        for m in doc['meshes']:
+            if m.get('name') == partition.FACE_MESH:
+                m['name'] = 'head'
+        reasons = partition.recognise(doc)
+        self.assertTrue(any(partition.FACE_MESH in r for r in reasons), reasons)
+        # And it names what IS there, because that is the useful half to
+        # somebody holding a body this step has never seen.
+        self.assertTrue(any('head' in r for r in reasons), reasons)
+
+    def test_a_body_whose_body_mesh_has_a_different_primitive_count_is_refused(self):
+        # The subtler half. A mesh CALLED Body.baked with eight primitives is
+        # not this body: BODY_NAMES stops at index 6, so primitive 7 would
+        # raise a KeyError deep inside the loop, and one with six would name
+        # only part of the outfit and silently leave the rest as Body_Skin.
+        doc = copy.deepcopy(self.doc)
+        for m in doc['meshes']:
+            if m.get('name') == partition.BODY_MESH:
+                m['primitives'] = m['primitives'][:-1]
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('BODY_NAMES' in r for r in reasons), reasons)
+
+    def test_partition_refuses_rather_than_naming_a_stranger(self):
+        doc = copy.deepcopy(self.doc)
+        for m in doc['meshes']:
+            m['name'] = 'not-a-vroid-mesh'
+        path = os.path.join(tempfile.mkdtemp(), 'stranger.vrm')
+        glb.save(path, doc, glb.load(BODY)[1])
+        out = os.path.join(tempfile.mkdtemp(), 'parted.vrm')
+        with self.assertRaises(SystemExit) as caught:
+            partition.partition(path, out, out + '.json')
+        self.assertIn('拒絕命名', str(caught.exception))
+        self.assertFalse(os.path.exists(out), 'refused, but wrote a file anyway')
 
 
 class Wiring(unittest.TestCase):

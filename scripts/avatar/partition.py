@@ -13,6 +13,11 @@ them is a way to silently break every expression while the file still loads.
 Names come from geometry, not from guesswork: the long strands that fall below
 the waist are the twintails, the ones sitting in front of the face at negative Z
 are the bangs, and HAIR_06 is the ornament pair the reference does not have.
+
+That geometry is a VRoid export's, and this is the one step in the pipeline
+that admits to needing a particular body. `recognise()` says so out loud and
+`partition()` refuses rather than naming a stranger's meshes by these rules --
+see the comment above it for what that produced before the check existed.
 """
 import json
 import sys
@@ -36,6 +41,48 @@ BODY_NAMES = {0: 'Body_Skin', 1: 'Body_Skin', 2: 'Body_Skin', 3: 'Body_Skin',
 # dropping the whole fringe to be rid of these left a smooth offset shell over
 # the forehead that read as a swim cap.
 CLIP_DECALS = ('HAIR_03', 'HAIR_05')
+
+# What every name below is read off. Face is found by name, Body's parts by
+# PRIMITIVE INDEX, and the hair by where a strand sits in this body's space --
+# all three are facts about a VRoid Studio export, and none of them is derivable
+# from an arbitrary VRM.
+#
+# So this step is the one place in the pipeline that is allowed to require a
+# particular body, and recognise() is where it says so. Everything upstream of
+# here (the humanoid map, the VRM1 entry conversion, the skeleton gates, the
+# per-mesh skins) was generalised precisely so that a strange body reaches this
+# step; what it must not do is get labelled anyway. Before this check, a body
+# with neither mesh fell through to hair_name for every primitive it had, and
+# the 2026-09-07 Seed-san fixture run came out with a robot's arm and its
+# clothes labelled Hair_Twintail_R, Hair_Bangs and Hair_Side_L -- a manifest
+# that loads, reads plausibly, and is entirely fiction. A refusal that names
+# what it wanted is the cheap outcome; a plausible wrong manifest is the
+# expensive one, because every later step believes it.
+FACE_MESH = 'Face.baked'
+BODY_MESH = 'Body.baked'
+
+
+def recognise(doc):
+    """Reasons this file is not the VRoid export the naming below assumes.
+
+    Empty list = recognised. Each reason names what was wanted and what is
+    there, because the useful thing to a person holding a strange body is which
+    assumption broke, not that one did.
+    """
+    meshes = {m.get('name'): m for m in doc['meshes']}
+    reasons = []
+    if FACE_MESH not in meshes:
+        reasons.append(f'沒有名為 {FACE_MESH} 的 mesh（有的是：'
+                       f'{", ".join(sorted(str(n) for n in meshes))}）')
+    body = meshes.get(BODY_MESH)
+    if body is None:
+        reasons.append(f'沒有名為 {BODY_MESH} 的 mesh，因此 BODY_NAMES 的 '
+                       f'primitive 編號對不到任何東西')
+    elif len(body['primitives']) != len(BODY_NAMES):
+        reasons.append(f'{BODY_MESH} 有 {len(body["primitives"])} 個 primitive，'
+                       f'BODY_NAMES 只認得 {len(BODY_NAMES)} 個'
+                       f'（{", ".join(sorted(set(BODY_NAMES.values())))}）')
+    return reasons
 
 
 def hair_name(material, centroid, ymin):
@@ -87,11 +134,20 @@ def partition(src, dst, parts_path):
     views = glb.views_of(doc, binary)
     mats = [m.get('name', f'#{i}') for i, m in enumerate(doc['materials'])]
 
+    reasons = recognise(doc)
+    if reasons:
+        raise SystemExit(
+            f'{src} 不是這一步認得的 VRoid 匯出，拒絕命名：\n'
+            + '\n'.join(f'  - {r}' for r in reasons)
+            + '\n  這一步的部件名稱來自 VRoid 的 mesh 名、primitive 編號與髮絲位置，'
+              '換一具身體推不出來。硬跑會產生一份讀起來合理但是虛構的 parts.json，'
+              '後面每一步都會相信它。')
+
     manifest = {'source': src, 'parts': {}}
 
     for mesh in doc['meshes']:
         name = mesh.get('name')
-        if name == 'Face.baked':
+        if name == FACE_MESH:
             manifest['parts']['Face'] = {
                 'mesh': name,
                 'primitives': list(range(len(mesh['primitives']))),
@@ -106,7 +162,7 @@ def partition(src, dst, parts_path):
 
         rebuilt, labels = [], []
         for i, prim in enumerate(mesh['primitives']):
-            if name == 'Body.baked':
+            if name == BODY_MESH:
                 label = BODY_NAMES[i]
             else:
                 pos = glb.read_accessor(doc, views, prim['attributes']['POSITION'])
