@@ -1,0 +1,32 @@
+== out/base-vrm0.vrm
+   tris 45058  materials 17  images 15  nodes 148  bones 51
+   springs 9  colliders 6  blendShapeGroups 18
+   hair               2 prim    7880 tris  targets 0
+   hair_tail          1 prim     238 tris  targets 0
+   head               3 prim   10550 tris  targets 43
+   robo_arm           3 prim    3016 tris  targets 0
+   wear              12 prim   23374 tris  targets 0
+   vertex sha a13d295227ac5e3a
+   backwards-wound primitives: 0
+   coloured outlines: 2
+   FAIL huku_bake outline (0.424, 0.473, 0.505) chroma 0.082 exceeds 0.04
+   FAIL body_bake outline (0.524, 0.461, 0.429) chroma 0.094 exceeds 0.04
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   skinned primitives that tear when an arm bends: 2
+   FAIL wear#3 grows an edge by 36mm with leftUpperArm at +60 degrees (limit 25mm)
+   FAIL wear#3 grows an edge by 36mm with rightUpperArm at -60 degrees (limit 25mm)
+   materials with no rim colour: 14
+   FAIL hair states no _RimColor, so it takes the site accent
+   FAIL huku_bake states no _RimColor, so it takes the site accent
+   FAIL body_bake states no _RimColor, so it takes the site accent
+   FAIL eye states no _RimColor, so it takes the site accent
+   FAIL eye_trans states no _RimColor, so it takes the site accent
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   compare(baseline, this) = []
+   FAIL
+report ok: False

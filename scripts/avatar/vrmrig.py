@@ -157,6 +157,18 @@ def forward_z(doc: dict) -> int:
     return -1 if vrm_version(doc) == '0' else 1
 
 
+
+# VRM 1.0 spells the thumb joints Metacarpal/Proximal/Distal; VRM 0.x spells the
+# same three Proximal/Intermediate/Distal. A .vrma uses the 1.0 names, so the
+# word "Proximal" means the middle joint in a clip and the base joint in a 0.x
+# body. three-vrm renames a 0.x body's on import (thumbBoneNameMap); the writer
+# in vrm1to0.py renames the other way when it downgrades a body.
+V1_TO_V0_THUMB = {
+    'leftThumbMetacarpal': 'leftThumbProximal', 'leftThumbProximal': 'leftThumbIntermediate',
+    'rightThumbMetacarpal': 'rightThumbProximal', 'rightThumbProximal': 'rightThumbIntermediate',
+}
+
+
 # ------------------------------------------------------------------ skeleton ---
 def human_bones(doc: dict) -> dict:
     """Humanoid bone name -> node index, for either VRM version."""
@@ -324,6 +336,33 @@ def rest_positions(doc: dict) -> dict:
     return out
 
 
+def _as_vrm0(doc: dict, positions: dict) -> dict:
+    """Rest positions written the 0.x way, whichever version the file is.
+
+    Two things differ between the versions and neither is a moved bone:
+
+      facing  0.x faces −Z and 1.0 faces +Z, so the same skeleton written both
+              ways is one π yaw apart and every bone off the centre line reads
+              as moved by twice its offset.
+      thumbs  1.0 spells the three joints Metacarpal/Proximal/Distal and 0.x
+              Proximal/Intermediate/Distal, so `leftThumbProximal` names the
+              base joint in one file and the middle joint in the other -- a
+              32mm difference on the shipped body, plus two bones that look
+              like they exist on one side only.
+
+    Both were reported as 「skeleton moved」 about the converted Seed-san
+    fixture on 2026-09-07, a file whose skeleton nobody had touched.
+
+    This changes nothing when both sides are the same version, which every
+    build-time gate is: both get the same treatment, so the distances are
+    identical.
+    """
+    if vrm_version(doc) == '0':
+        return positions
+    return {V1_TO_V0_THUMB.get(bone, bone): (-x, y, -z)
+            for bone, (x, y, z) in positions.items()}
+
+
 def compare(a: dict, b: dict, tolerance: float = TOLERANCE) -> list:
     """Bones whose rest position differs, worst first.
 
@@ -331,7 +370,8 @@ def compare(a: dict, b: dict, tolerance: float = TOLERANCE) -> list:
     back with `distance` None rather than 0 — reporting 0 would read as "these
     match" in every summary that sorts or sums.
     """
-    pa, pb = rest_positions(a), rest_positions(b)
+    pa = _as_vrm0(a, rest_positions(a))
+    pb = _as_vrm0(b, rest_positions(b))
     diffs = []
     for bone in sorted(set(pa) | set(pb)):
         if bone not in pa or bone not in pb:

@@ -126,6 +126,68 @@ class Versions(unittest.TestCase):
         self.assertEqual(vrmrig.rest_positions(v1), vrmrig.rest_positions(v0))
         self.assertEqual(vrmrig.compare(v0, v1), [])
 
+    def test_the_same_skeleton_written_both_ways_has_not_moved(self):
+        """A 1.0 export is the body turned round, and that is not a moved bone.
+
+        The fixture above puts every bone on the centre line, where the half
+        turn is invisible. This one has a hand out to the side, which is where
+        it shows: in file space that hand is 0.4m from its 0.x twin's, and
+        verify.report said 「skeleton moved」 about the converted Seed-san
+        fixture on 2026-09-07 for exactly that reason -- a file whose skeleton
+        nobody had touched.
+        """
+        nodes = [{'translation': [0, 1, 0], 'children': [1]},
+                 {'translation': [0.2, 0.1, 0.05]}]
+        bones = {'hips': 0, 'leftHand': 1}
+        v0 = gltf(nodes, bones, version='0')
+        turned = nodes + [{'name': 'vrm1-root', 'rotation': [0, 1, 0, 0], 'children': [0]}]
+        v1 = gltf(turned, bones, scene_roots=(2,), version='1')
+        self.assertEqual(vrmrig.rest_positions(v0)['leftHand'], (0.2, 1.1, 0.05))
+        self.assertEqual(vrmrig.rest_positions(v1)['leftHand'], (-0.2, 1.1, -0.05))
+        self.assertEqual(vrmrig.compare(v0, v1), [],
+                         '同一副骨架寫成兩個版本，只是轉了半圈')
+        # Both orders: the normalisation has to reach whichever side is the 1.0
+        # one, and a baseline is a 1.0 file exactly as often as the file under
+        # test is (the fixture run compares a converted 0.x file against the 1.0
+        # original it came from).
+        self.assertEqual(vrmrig.compare(v1, v0), [], '換邊比也一樣')
+
+    def test_the_thumbs_are_compared_joint_for_joint_not_name_for_name(self):
+        """1.0's leftThumbProximal is 0.x's leftThumbIntermediate.
+
+        Compared by name, the same hand reads as two bones missing from each
+        side and a third 32mm out of place -- which is the rest of what
+        verify.report said about the converted fixture once the half turn was
+        accounted for.
+        """
+        nodes = [{'translation': [0, 1, 0], 'children': [1]},
+                 {'translation': [0.1, 0, 0], 'children': [2]},
+                 {'translation': [0.03, 0, 0], 'children': [3]},
+                 {'translation': [0.02, 0, 0]}]
+        v0 = gltf(nodes, {'hips': 0, 'leftThumbProximal': 1,
+                          'leftThumbIntermediate': 2, 'leftThumbDistal': 3}, version='0')
+        turned = nodes + [{'name': 'vrm1-root', 'rotation': [0, 1, 0, 0], 'children': [0]}]
+        v1 = gltf(turned, {'hips': 0, 'leftThumbMetacarpal': 1,
+                           'leftThumbProximal': 2, 'leftThumbDistal': 3},
+                  scene_roots=(4,), version='1')
+        self.assertEqual(vrmrig.compare(v0, v1), [],
+                         '同一隻拇指，兩個版本的拼法不同而已')
+        self.assertEqual(vrmrig.compare(v1, v0), [], '換邊比也一樣')
+
+    def test_a_bone_that_really_moved_is_still_caught_across_the_versions(self):
+        # The other half: turning the 1.0 side back must not turn the check off.
+        nodes = [{'translation': [0, 1, 0], 'children': [1]},
+                 {'translation': [0.2, 0.1, 0.05]}]
+        bones = {'hips': 0, 'leftHand': 1}
+        v0 = gltf(nodes, bones, version='0')
+        moved = [{'translation': [0, 1, 0], 'children': [1]},
+                 {'translation': [0.21, 0.1, 0.05]},
+                 {'name': 'vrm1-root', 'rotation': [0, 1, 0, 0], 'children': [0]}]
+        v1 = gltf(moved, bones, scene_roots=(2,), version='1')
+        diffs = vrmrig.compare(v0, v1)
+        self.assertEqual([d['bone'] for d in diffs], ['leftHand'])
+        self.assertAlmostEqual(diffs[0]['distance'], 0.01, places=6)
+
     def test_the_version_is_reported(self):
         self.assertEqual(vrmrig.vrm_version(gltf(self.NODES, self.BONES, version='0')), '0')
         self.assertEqual(vrmrig.vrm_version(gltf(self.NODES, self.BONES, version='1')), '1')

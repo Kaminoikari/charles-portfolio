@@ -54,16 +54,10 @@ def expression_names(doc):
 def springs(doc):
     return vrmrig.spring_bones(doc)
 
-
-# VRM 1.0 spells the thumb joints Metacarpal/Proximal/Distal; VRM 0.x spells the
-# same three Proximal/Intermediate/Distal. A .vrma uses the 1.0 names, so the
-# word "Proximal" means the middle joint in a clip and the base joint in a 0.x
-# body. three-vrm renames a 0.x body's on import (thumbBoneNameMap); the writer
-# in vrm1to0.py renames the other way when it downgrades a body.
-V1_TO_V0_THUMB = {
-    'leftThumbMetacarpal': 'leftThumbProximal', 'leftThumbProximal': 'leftThumbIntermediate',
-    'rightThumbMetacarpal': 'rightThumbProximal', 'rightThumbProximal': 'rightThumbIntermediate',
-}
+# The VRM0/VRM1 thumb naming, defined once in vrmrig beside the rest of the
+# version differences and re-exported here for the callers that read it off
+# this module.
+V1_TO_V0_THUMB = vrmrig.V1_TO_V0_THUMB
 
 
 def model_bone_name(doc, clip_bone):

@@ -122,6 +122,48 @@ conversion and the first gate and stops where the plan predicted it would:
   (`evidence/mutations-0907-fixture.md`, P1–P5) hold it, P5 being the positive
   half so that "refuse everything" cannot pass as a guard.
 
+## verify.report against the original
+
+The plan's acceptance for the fixture was `verify.report` run with it as the
+baseline. `verify.report('out/base-vrm0.vrm', baseline='fixtures/seed-san.vrm')`
+asks one question the baseline is actually for -- did the conversion move a bone
+-- and a dozen it asks of any file. Log in `evidence/fixture-0907-verify.log`.
+
+**The baseline comparison passes: `compare(baseline, this) = []`.** It did not
+on the first run, and neither reason was a moved bone:
+
+- the conversion turns the body π about Y (0.x faces −Z, 1.0 faces +Z), so every
+  bone off the centre line read as moved by twice its offset;
+- the two versions spell the thumb joints differently (Metacarpal/Proximal/
+  Distal against Proximal/Intermediate/Distal), so `leftThumbProximal` was
+  measured against the joint one along, 32mm away, and two bones per hand looked
+  like they existed on one side only.
+
+`vrmrig.compare` now expresses both sides the 0.x way before measuring. Within
+one version -- every build-time gate -- nothing changes: both sides get the same
+treatment. Seven mutations in `evidence/mutations-0907-compare.md`, all RED,
+two of them the positive half (a bone that really moved is still caught, across
+the versions and within one).
+
+The report still returns False, on three checks that are this site's art
+direction rather than anything about a VRM:
+
+| check | what it says | whose |
+|---|---|---|
+| `loud_outlines` | two materials outline at chroma 0.08 and 0.09 against a 0.04 cap | the site's flat-black outline look |
+| `undeclared_rims` | five materials state no `_RimColor`, so they would take the site accent | the site's rim convention |
+| `torn_bindings` | `wear#3` grows an edge 36mm with an upper arm at 60° | Seed-san's own garment weighting |
+
+The third is the one worth being sure about, because it is the check Phase 4
+exists for. It reads **35.666022291444214mm on the original 1.0 file and
+35.666022291444214mm on the conversion** -- identical to the last digit, so the
+conversion did not touch the skinning. It is how VirtualCast weighted that
+garment, not something this pipeline did to it.
+
+Out of scope, noted rather than fixed: `verify.loud_outlines` raises a bare
+`KeyError: 'VRM'` on a 1.0 file. Everything verify checks is a 0.x output of
+this pipeline, so it is never handed one in normal use.
+
 ## What this run settles, and what it does not
 
 **Settled: Phases 0–4 generalise.** The plan predicted the fixture would be
