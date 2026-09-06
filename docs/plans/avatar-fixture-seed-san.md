@@ -60,10 +60,13 @@ than waived quietly:
 
 - **Height.** The plan wanted a body ≥10% away from 1.5046. Seed-san stands
   1.5801 against the base's 1.5815 — 0.1% apart. So this fixture does not
-  exercise the scale-dependent absolute constants (`build.py`'s 1.181 /
-  1.168–1.252 / 1.155, `twintail.TIE_Y`, `COAT_LEG_BAND_TOP`,
-  `proportion.CHIN_Y`). That dimension stays with the synthetic scaled body
-  Phase 5 already uses, which is the fixture that can vary height alone.
+  exercise the scale-dependent absolute constants. Three of the ones this note
+  first listed are gone: `build.py`'s 1.181 / 1.168–1.252 / 1.155 became
+  fractions of the body's own waist-to-shoulder span on 2026-09-07, and
+  `proportion.CHIN_Y` became a fraction of the band between the neck joint and
+  the lowest head-owned vertex the same day. `twintail.TIE_Y` and
+  `COAT_LEG_BAND_TOP` remain. That dimension stays with the synthetic scaled
+  body Phase 5 already uses, which is the fixture that can vary height alone.
 - **A-pose or non-vertical legs.** Seed-san's upper-to-lower leg segment sits
   0.9° off vertical and its arm 0.5° off horizontal; the base is 3.4° and 2.7°.
   It is closer to a T-pose, not further. The requirement was a proxy for

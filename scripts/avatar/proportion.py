@@ -26,11 +26,49 @@ import sys
 import numpy as np
 
 import glb
+import humanoid
 
-CHIN_Y = 1.272        # where the jaw meets the neck on this body
+# Where the cut that the head is scaled about sits, between the neck joint and
+# the lowest vertex the head bone owns.
+#
+# It was a height in metres (1.272) until 2026-09-07, read once off this VRoid
+# body. The cut has to be below every head-owned vertex, or part of the head is
+# left behind at the old size and a seam opens across the jaw; and above the
+# neck joint, or the neck itself gets stretched. That band is a property of the
+# body, and on this one it is 37.4mm deep with the cut 59.2% of the way up it.
+# Keeping the fraction rather than the height is what lets a longer neck carry
+# the cut with it.
+CHIN_FRACTION = 0.592
 
 
-def rescale(pos, factor, chin=CHIN_Y):
+def chin_height(doc, views):
+    """The cut for one body: `CHIN_FRACTION` up from its neck joint towards the
+    lowest vertex its head bone owns."""
+    world, bones = humanoid.rest_world(doc), humanoid.bones(doc)
+    neck_y = float(world[bones['neck']][:3, 3][1])
+    lowest = np.inf
+    for node in doc['nodes']:
+        if node.get('mesh') is None or 'skin' not in node:
+            continue
+        joints = np.array(doc['skins'][node['skin']]['joints'])
+        seen = set()
+        for pr in doc['meshes'][node['mesh']]['primitives']:
+            a = pr['attributes']
+            if 'JOINTS_0' not in a or a['POSITION'] in seen:
+                continue
+            seen.add(a['POSITION'])
+            pos = glb.read_accessor(doc, views, a['POSITION'])
+            jo = glb.read_accessor(doc, views, a['JOINTS_0'])
+            we = glb.read_accessor(doc, views, a['WEIGHTS_0'])
+            owned = joints[jo[np.arange(len(jo)), np.argmax(we, axis=1)]] == bones['head']
+            if owned.any():
+                lowest = min(lowest, float(pos[owned][:, 1].min()))
+    if not np.isfinite(lowest):
+        raise SystemExit('沒有任何頂點以 head 為主要骨骼，推不出下巴高度')
+    return neck_y + (lowest - neck_y) * CHIN_FRACTION
+
+
+def rescale(pos, factor, chin):
     """Grow the head about the chin. The body is left exactly alone.
 
     An earlier version also compressed the body to keep total height constant.
@@ -53,7 +91,7 @@ def rescale(pos, factor, chin=CHIN_Y):
     return p
 
 
-def rescale_deltas(delta, pos, factor, chin=CHIN_Y):
+def rescale_deltas(delta, pos, factor, chin):
     """A morph target's deltas for the mesh `rescale` grew: head rows (the
     vertex sits at or above the chin) scale by the same factor, body rows are
     left alone. A delta is a difference of two positions in one frame, and the
@@ -79,9 +117,11 @@ def _write(doc, views, acc, out, owners):
     a['max'] = [float(v) for v in out.max(axis=0)]
 
 
-def apply(src, dst, factor, chin=CHIN_Y):
+def apply(src, dst, factor, chin=None):
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
+    if chin is None:
+        chin = chin_height(doc, views)
     owners = collections.Counter(a['bufferView'] for a in doc['accessors'] if 'bufferView' in a)
     touched = 0
     seen = set()
@@ -111,10 +151,12 @@ def apply(src, dst, factor, chin=CHIN_Y):
     return touched, size
 
 
-def ratio(path, chin=CHIN_Y):
+def ratio(path, chin=None):
     """Heads-tall, measured off the mesh: total height over chin-to-crown."""
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
+    if chin is None:
+        chin = chin_height(doc, views)
     lo, hi = np.inf, -np.inf
     seen = set()
     for mesh in doc['meshes']:

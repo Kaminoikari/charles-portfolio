@@ -20,6 +20,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import proportion  # noqa: E402
 from make import HEAD_FACTOR  # noqa: E402
 
@@ -32,6 +33,7 @@ SOURCE_MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-pink.vrm
 def _face_targets(path):
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
+    _face_targets.chin = proportion.chin_height(doc, views)
     mesh = next(m for m in doc['meshes'] if m['name'].startswith('Face'))
     pr = mesh['primitives'][0]
     pos = glb.read_accessor(doc, views, pr['attributes']['POSITION']).astype(np.float64)
@@ -58,18 +60,71 @@ class RescaleTest(unittest.TestCase):
         np.testing.assert_allclose(delta[0], [0.01, -0.02, 0.03], err_msg='input mutated')
 
 
+class ChinTest(unittest.TestCase):
+    """The cut the head is scaled about, which was the height 1.272 until
+    2026-09-07."""
+
+    def test_the_cut_lands_where_it_was_typed_in(self):
+        doc, binary = glb.load(SOURCE_MODEL)
+        views = glb.views_of(doc, binary)
+        self.assertAlmostEqual(proportion.chin_height(doc, views), 1.272, delta=0.0001)
+
+    def test_the_cut_clears_the_head_and_the_neck_joint(self):
+        # The two things the cut has to do, stated against the body rather than
+        # against the number: nothing the head bone owns may be below it (that
+        # part would keep the old size), and it may not reach the neck joint
+        # (the neck would stretch).
+        doc, binary = glb.load(SOURCE_MODEL)
+        views = glb.views_of(doc, binary)
+        chin = proportion.chin_height(doc, views)
+        world, bones = humanoid.rest_world(doc), humanoid.bones(doc)
+        self.assertGreater(chin, float(world[bones['neck']][:3, 3][1]))
+        mesh = next(m for m in doc['meshes'] if m['name'].startswith('Face'))
+        pos = glb.read_accessor(doc, views, mesh['primitives'][0]['attributes']['POSITION'])
+        self.assertLess(chin, float(pos[:, 1].min()))
+
+    def test_a_longer_neck_carries_the_cut_up_with_it(self):
+        # The generalisation: a body whose neck joint sits 5cm higher has its
+        # cut 5cm × (1 − CHIN_FRACTION) higher, because the band the cut lives
+        # in is anchored at that joint. A typed-in height would have stayed
+        # where it was and cut the new body through the collarbone.
+        doc, binary = glb.load(SOURCE_MODEL)
+        views = glb.views_of(doc, binary)
+        before = proportion.chin_height(doc, views)
+        neck = doc['nodes'][humanoid.bones(doc)['neck']]
+        neck['translation'] = [neck.get('translation', [0.0, 0.0, 0.0])[0],
+                               neck.get('translation', [0.0, 0.0, 0.0])[1] + 0.05,
+                               neck.get('translation', [0.0, 0.0, 0.0])[2]]
+        after = proportion.chin_height(doc, views)
+        self.assertAlmostEqual(after - before, 0.05 * (1 - proportion.CHIN_FRACTION), places=6)
+
+
+class WiringTest(unittest.TestCase):
+    """chin_height being right proves nothing if apply() still passes the old
+    height beside it (memory: feedback_injection_bypasses_wiring)."""
+
+    def test_the_entry_points_derive_the_cut(self):
+        with open(os.path.join(BASE, 'proportion.py'), encoding='utf-8') as fh:
+            src = fh.read()
+        self.assertEqual(src.count('        chin = chin_height(doc, views)'), 2,
+                         'apply() and ratio() each derive the cut when none is given')
+        self.assertNotRegex(src, r'chin=1\.', 'proportion.py types the cut in again')
+        self.assertNotRegex(src, r'CHIN_Y', 'the typed-in height is back')
+
+
 class ShippedFaceTest(unittest.TestCase):
     """The shipped body's expressions against the input's, delta by delta."""
 
     @classmethod
     def setUpClass(cls):
         cls.pos_src, cls.deltas_src = _face_targets(SOURCE_MODEL)
+        cls.chin = _face_targets.chin      # the input's own chin, which is the one apply() used
         cls.pos_out, cls.deltas_out = _face_targets(MODEL)
 
     def test_face_is_the_input_face_scaled_by_head_factor(self):
-        head = self.pos_src[:, 1] >= proportion.CHIN_Y
+        head = self.pos_src[:, 1] >= self.chin
         self.assertTrue(head.all(), 'the whole face sits above the chin')
-        expect = proportion.rescale(self.pos_src, HEAD_FACTOR)
+        expect = proportion.rescale(self.pos_src, HEAD_FACTOR, self.chin)
         # Later steps repaint the face and move nothing on it.
         np.testing.assert_allclose(self.pos_out, expect, atol=1e-4)
 
