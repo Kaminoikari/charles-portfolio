@@ -12,8 +12,8 @@ sys.path.insert(0, HERE)
 import humanoid  # noqa: E402
 import vrmrig_test  # noqa: E402
 
-REAL_VRM = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-10.vrm')
-REAL_MANIFEST = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-10.parts.json')
+REAL_VRM = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
+REAL_MANIFEST = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-milfy-11.parts.json')
 
 NODES = [{'translation': [0, 1, 0], 'children': [1]}, {'translation': [0, 0.5, 0]}]
 BONES = {'hips': 0, 'spine': 1}
@@ -79,6 +79,27 @@ class Facade(unittest.TestCase):
         doc['skins'][2]['joints'] = [0]
         self.assertEqual(humanoid.skins_sharing(doc, 1), [0, 1])
 
+    def test_mesh_skin_follows_the_node_and_refuses_two_answers(self):
+        doc = with_skins(vrmrig_test.gltf(NODES, BONES), body_skin=2)
+        self.assertEqual(humanoid.mesh_skin(doc), {0: 0, 1: 2, 2: 1})
+        self.assertEqual(humanoid.skin_of_mesh(doc, 'Hair.baked'), 1)
+        doc['nodes'].append({'name': 'Body again', 'mesh': 1, 'skin': 0})
+        with self.assertRaises(humanoid.BadRig) as cm:
+            humanoid.mesh_skin(doc)
+        self.assertIn('mesh 1', str(cm.exception))
+
+    def test_all_joints_is_the_union_in_first_seen_order(self):
+        """A garment file whose skins list different joints (or the same ones
+        in another order) still has to be fitted and mapped per joint NODE."""
+        doc = with_skins(vrmrig_test.gltf(NODES, BONES))
+        self.assertEqual(humanoid.all_joints(doc), [0, 1])
+        doc['skins'][1]['joints'] = [1, 0]
+        doc['skins'][2]['joints'] = [1]
+        doc['nodes'].append({'name': 'Extra'})
+        doc['skins'].append({'joints': [len(doc['nodes']) - 1, 0]})
+        self.assertEqual(humanoid.all_joints(doc), [0, 1, len(doc['nodes']) - 1])
+        self.assertEqual(humanoid.all_joints({'nodes': []}), [])
+
     def test_rest_world_matches_rest_positions(self):
         doc = vrmrig_test.gltf(NODES, BONES)
         world = humanoid.rest_world(doc)
@@ -111,19 +132,29 @@ class Wiring(unittest.TestCase):
     # `~/vtuber-kit/bin` an expanduser() would take, or a bare join().
     KIT_PATH = 'vtuber-kit'
     ALLOWED = {'humanoid.py', 'vrmrig.py', 'vrmrig_test.py', 'humanoid_test.py'}
+    # Tests that WRITE perturbed VRM 0.x fixtures (a bone dropped from a copy
+    # of the real file) touch the map's spelling by necessity, and one reads a
+    # bone COUNT back off the fixture it wrote; none resolves a bone through
+    # it. Exempt from the inline-read check only: the import, kit-path and
+    # skins[0] scans still cover them.
+    FIXTURE_WRITERS = {'gate_test.py', 'verify_test.py', 'selftest_test.py'}
     SCRIPTS = os.path.normpath(os.path.join(HERE, '..'))
 
-    def sources(self):
+    def sources(self, skip=()):
         # Every Python file under scripts/, not just this package: the two
         # other VRM tools (repaint_vrm.py, compress_vrm_webp.py) live one level up.
         for path in sorted(glob.glob(os.path.join(self.SCRIPTS, '**', '*.py'), recursive=True)):
-            if os.path.basename(path) in self.ALLOWED:
+            if os.path.basename(path) in self.ALLOWED or os.path.basename(path) in skip:
+                continue
+            # evidence/ holds receipts: mutation harnesses whose strings ARE the
+            # forbidden spellings, and analysis scripts. Nothing imports them.
+            if 'evidence' in path.split(os.sep):
                 continue
             with open(path, encoding='utf-8') as fh:
                 yield os.path.relpath(path, self.SCRIPTS), fh.read()
 
     def test_no_module_reads_the_humanoid_map_inline(self):
-        offenders = [name for name, src in self.sources()
+        offenders = [name for name, src in self.sources(skip=self.FIXTURE_WRITERS)
                      if self.INLINE.search(src) or self.ANIM_INLINE.search(src)]
         self.assertEqual(offenders, [], f'這些檔案自己讀 humanBones，沒走 humanoid.py：{offenders}')
 
@@ -134,6 +165,16 @@ class Wiring(unittest.TestCase):
     def test_no_module_hardcodes_the_kit_path(self):
         offenders = [name for name, src in self.sources() if self.KIT_PATH in src]
         self.assertEqual(offenders, [], f'這些檔案寫死 ~/vtuber-kit 路徑：{offenders}')
+
+    # A VRoid export carries three skins over one joint list, so reading the
+    # first skin for every mesh happened to work until a bone was appended to
+    # one skin and not the others (twintail.py's history). A mesh's skin is the
+    # one its node names: humanoid.mesh_skin / skin_of_mesh / body_skin.
+    FIRST_SKIN = re.compile(r"\[['\"]skins['\"]\]\s*\[\s*0\s*\]")
+
+    def test_no_module_reads_the_first_skin_for_every_mesh(self):
+        offenders = [name for name, src in self.sources() if self.FIRST_SKIN.search(src)]
+        self.assertEqual(offenders, [], f'這些檔案拿 skins[0] 當每個 mesh 的 skin：{offenders}')
 
 
 if __name__ == '__main__':

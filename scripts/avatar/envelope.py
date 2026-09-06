@@ -25,6 +25,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import motion  # noqa: E402
 import pose as pose_mod  # noqa: E402
 
@@ -36,7 +37,7 @@ BAND = 0.020
 def leg_vertices(doc, views, parts, part='Body_Skin'):
     """Mask of body vertices a leg joint actually drives."""
     bones = pose_mod.bones(doc)
-    joints = doc['skins'][0]['joints']
+    joints = doc['skins'][humanoid.skin_of_mesh(doc, parts[part]['mesh'])]['joints']
     wanted = {joints.index(bones[b]) for b in bones
               if 'Leg' in b or 'Foot' in b or 'Toes' in b}
     src = next(m for m in doc['meshes'] if m.get('name') == parts[part]['mesh'])

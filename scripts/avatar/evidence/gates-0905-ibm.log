@@ -1,0 +1,13 @@
+IBM accessor indices per skin [760, 760, 760]
+skin0 vs skin1: ibm max diff 0.000e+00, differing matrices 0/139
+skin0 vs skin2: ibm max diff 0.000e+00, differing matrices 0/139
+skin1 vs skin2: ibm max diff 0.000e+00, differing matrices 0/139
+skins joints equal True
+mesh->skin {0: 0, 1: 1, 2: 2} ['Face.baked', 'Body.baked', 'Hair001.baked']
+part Outfit_Bottom Body.baked [18, 19]
+part Hair_Bun_L Hair001.baked [61]
+part Hair_Bun_R Hair001.baked [64]
+Body.baked 18 material Mellow_Sub_Acc verts 8486
+Body.baked 19 material Mellow_Skirt_Cloth verts 2838
+Hair001.baked 61 material F00_000_Hair_00_HAIR_02 verts 89
+Hair001.baked 64 material F00_000_Hair_00_HAIR_02 verts 89

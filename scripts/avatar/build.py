@@ -568,17 +568,35 @@ def sink(pieces, surface, embed=0.006, radius=0.020, limit=0.032):
             fall)
 
 
-def landmarks(pool):
-    """Body heights this outfit is measured against, found from the mesh."""
+def landmarks(pool, doc):
+    """Body heights this outfit is measured against: the waist and the foot are
+    found from the mesh, the joint heights from the skeleton's rest pose.
+
+    The joint heights were typed in as world numbers (`hip, knee, ankle =
+    0.843, 0.501, 0.118`, `arm_r = 0.54`) until 2026-09-05, read once off this
+    one VRoid body and never off the file; a second body would have had its
+    socks cut at another body's ankle. They are the left side's; the right
+    side is its mirror on every body this pipeline accepts.
+    """
     p = pool['pos']
     torso = [(y, np.percentile(np.hypot(p[m][:, 0], p[m][:, 2]), 85))
              for y in np.arange(0.88, 1.16, 0.01)
              if (m := np.abs(p[:, 1] - y) < 0.012).sum() > 12]
     waist_y = min(torso, key=lambda t: t[1])[0]
+    world, bones = humanoid.rest_world(doc), humanoid.bones(doc)
+
+    def at(bone):
+        return world[bones[bone]][:3, 3]
     return {
         'waist': waist_y,
         'waist_r': dict(torso)[waist_y],
         'foot': p[:, 1].min(),
+        'hip': float(at('leftUpperLeg')[1]),
+        'knee': float(at('leftLowerLeg')[1]),
+        'ankle': float(at('leftFoot')[1]),
+        'shoulder': float(at('leftUpperArm')[1]),
+        'neck': float(at('neck')[1]),
+        'hand_x': float(abs(at('leftHand')[0])),
     }
 
 
@@ -593,14 +611,16 @@ def build(src, dst, manifest_path, out_manifest):
     # （crown_y 讀 Hair_Back），它在更後面。
     mats = {n: add_material(doc, n, b, s) for n, (b, s) in PALETTE.items()}
     pool = garment.body_pool(doc, views, manifest, 'Body_Skin')
-    lm = landmarks(pool)
+    lm = landmarks(pool, doc)
     p, added = pool['pos'], {}
 
-    skin = doc['skins'][0]
+    # The body's skin, by the node that draws the body mesh. VRoid puts it on
+    # skin 1 of three that list the same joints; the first is the face's.
+    skin = doc['skins'][humanoid.body_skin(doc, manifest)]
     bones = humanoid.bones(doc)
 
-    hip, knee, ankle = 0.843, 0.501, 0.118
-    arm_r = 0.54                                   # hand x at rest, both sides
+    hip, knee, ankle = lm['hip'], lm['knee'], lm['ankle']
+    arm_r = lm['hand_x']                           # hand x at rest, both sides
 
     mellow_files = [os.path.join(os.path.dirname(dst), f)
                     for f in (MELLOW, MELLOW_OUTER)]
@@ -638,7 +658,7 @@ def build(src, dst, manifest_path, out_manifest):
     #     than at the joint. The offset is the thickness of the knit: too thin
     #     and a turning shoulder comes up through the sleeve's top edge, too
     #     thick and the sleeve is a black rod round a 30mm arm. ---
-    shoulder_top = 1.215
+    shoulder_top = lm['shoulder']                  # the upper-arm joint's height
     wrist = arm_r * 0.84                           # stop before the hand
     sleeve = ((np.abs(p[:, 0]) > 0.105) & (np.abs(p[:, 0]) < wrist)
               & (p[:, 1] > 1.155) & (p[:, 1] < shoulder_top + 0.02))
@@ -669,7 +689,9 @@ def build(src, dst, manifest_path, out_manifest):
 
     # --- neck frill and its ribbon, and the sash bow at the waist. These two
     #     carry most of the character's read at a glance. ---
-    neck_y = 1.243
+    # The collar sits 7mm below the neck joint: on the reference the lace
+    # rides the base of the neck, and the joint is at the top of the trapezius.
+    neck_y = lm['neck'] - 0.007
     near_neck = int(np.argmin(np.abs(p[:, 1] - neck_y)))
     put(garment.bind(pool, garment.collar(pool, neck_y - 0.014, 0.026, 0.62)),
         'Milfy_White', 'Acc_Collar')
@@ -720,7 +742,7 @@ def build(src, dst, manifest_path, out_manifest):
         going down. The known cost stays: a wide stride stretches the cloth
         between the legs, because there is no bone in the middle to hold it up.
         """
-        js = doc['skins'][0]['joints']
+        js = skin['joints']
         left_j = js.index(bones['leftUpperLeg'])
         right_j = js.index(bones['rightUpperLeg'])
         q = piece['pos']
@@ -1055,7 +1077,12 @@ def build(src, dst, manifest_path, out_manifest):
 
     # --- head: bear ears, buns, crown, ahoge, clips. Bound rigidly to the
     #     head joint, which is what an accessory sitting on the skull does. ---
-    hj = np.array([skin['joints'].index(bones['head']), 0, 0, 0], dtype=np.uint16)
+    # The slot is the head joint's index in the skin of the mesh these pieces
+    # are attached to (the hair mesh), not the body's: JOINTS_0 indexes the
+    # joint list of the skin the drawing node names.
+    head_mesh = manifest['parts']['Hair_Back']['mesh']
+    head_skin = doc['skins'][humanoid.skin_of_mesh(doc, head_mesh)]
+    hj = np.array([head_skin['joints'].index(bones['head']), 0, 0, 0], dtype=np.uint16)
     hw = np.array([1.0, 0.0, 0.0, 0.0], dtype=np.float32)
 
     hair = garment.body_pool(doc, views, manifest, 'Hair_Back')
@@ -1154,14 +1181,14 @@ def build(src, dst, manifest_path, out_manifest):
         for label in ('L', 'R'):
             ear = head_pieces[f'Ear_{label}']
             put(rigid(ear, uv_disc(ear['pos'])), hair_mat, f'Hair_Ear_{label}',
-                mesh='Hair001.baked')
+                mesh=head_mesh)
             inner = head_pieces[f'EarInner_{label}']
             put(rigid(inner, uv_bowl(inner['pos'])), 'Milfy_EarInner',
                 f'Hair_Ear_{label}',
-                mesh='Hair001.baked', tag=f'Hair_Ear_{label}#inner')
+                mesh=head_mesh, tag=f'Hair_Ear_{label}#inner')
             bun = head_pieces[f'Bun_{label}']
             put(rigid(bun, uv_ball(bun['pos'])), hair_mat, f'Hair_Bun_{label}',
-                mesh='Hair001.baked')
+                mesh=head_mesh)
         # The Blender head piece still has an Ahoge loop -- head_pieces['Ahoge']
         # -- dropped on request 2026-09-04 (a single strand rooted at the
         # crown, arcing up and back down; not part of the base VRoid hair, no
@@ -1208,7 +1235,7 @@ def build(src, dst, manifest_path, out_manifest):
         for piece, colour, tag in zip(shells, ('Milfy_Gold', 'Milfy_GoldInner'),
                                       (None, 'Acc_Crown#inner')):
             put(rigid(piece, uv_facet(piece)), colour, 'Acc_Crown',
-                mesh='Hair001.baked', tag=tag)
+                mesh=head_mesh, tag=tag)
     else:
         # No Blender on this machine. These are the parametric shapes the
         # measured ones replaced: a sphere with two smaller spheres stuck on
@@ -1226,9 +1253,9 @@ def build(src, dst, manifest_path, out_manifest):
                     [c[0] + ear_x, c[1] + 0.036, c[2] + ear_z], 0.019, hj, hw,
                     lat=6, lon=10, squash=(1.0, 1.0, 0.62)))
             put(garment.merge(bun), 'Milfy_Hair', f'Hair_Bun_{label}',
-                mesh='Hair001.baked')
+                mesh=head_mesh)
         put(garment.crown([0.028, crown_y + 0.026, 0.004], 0.030, 0.036, 5, hj, hw),
-            'Milfy_Gold', 'Acc_Crown', mesh='Hair001.baked')
+            'Milfy_Gold', 'Acc_Crown', mesh=head_mesh)
 
     # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
     # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有
@@ -1267,10 +1294,10 @@ def build(src, dst, manifest_path, out_manifest):
         return out
 
     put(garment.merge(bandage(TILT) + bandage(TILT - math.pi / 2)),
-        'Milfy_Plaster', 'Acc_HairClip_Plaster', mesh='Hair001.baked')
+        'Milfy_Plaster', 'Acc_HairClip_Plaster', mesh=head_mesh)
     put(garment.box([px, py, clip_z - deep], (0.0090, 0.0066, 0.0016), hj, hw,
                     rot_z=TILT),
-        'Milfy_White', 'Acc_HairClip_Plaster', mesh='Hair001.baked',
+        'Milfy_White', 'Acc_HairClip_Plaster', mesh=head_mesh,
         tag='Acc_HairClip_Plaster#pad')
 
     bear = [garment.sphere([-0.064, crown_y - 0.078, clip_z + 0.010], 0.015,
@@ -1278,7 +1305,7 @@ def build(src, dst, manifest_path, out_manifest):
     for ex in (-0.013, 0.013):
         bear.append(garment.sphere([-0.064 + ex, crown_y - 0.067, clip_z + 0.010],
                                    0.007, hj, hw, lat=4, lon=6))
-    put(garment.merge(bear), 'Milfy_Bear', 'Acc_HairClip_Bear', mesh='Hair001.baked')
+    put(garment.merge(bear), 'Milfy_Bear', 'Acc_HairClip_Bear', mesh=head_mesh)
     # 兩眼一鼻。少了這三點，小熊在近拍裡是一顆長了兩隻耳朵的白球，而參考圖上
     # 它是有臉的——這是整個頭部特寫裡最便宜的一項辨識度。
     face = [garment.sphere([-0.064 + ex, crown_y - 0.079 + ey, clip_z - 0.004],
@@ -1286,14 +1313,14 @@ def build(src, dst, manifest_path, out_manifest):
             for ex, ey, r in ((-0.005, 0.003, 0.0022), (0.005, 0.003, 0.0022),
                               (0.000, -0.002, 0.0026))]
     put(garment.merge(face), 'Milfy_Ink', 'Acc_HairClip_Bear',
-        mesh='Hair001.baked', tag='Acc_HairClip_Bear#face')
+        mesh=head_mesh, tag='Acc_HairClip_Bear#face')
 
     # 兩條不是三條，改細改深。官方圖上這一組是兩條炭黑細槓；先前是三塊 7mm
     # 厚的純白方塊，在近拍裡像三張貼紙。
     bars = [garment.box([0.047, crown_y - 0.112 + i * 0.012, clip_z + 0.018],
                         (0.019, 0.0022, 0.004), hj, hw, rot_z=0.12)
             for i in range(2)]
-    put(garment.merge(bars), 'Milfy_Ink', 'Acc_HairClip_Bars', mesh='Hair001.baked')
+    put(garment.merge(bars), 'Milfy_Ink', 'Acc_HairClip_Bars', mesh=head_mesh)
 
     # --- hair colour. It lives in six textures, not in a material factor, so
     #     the only way to move it is to rotate the textures themselves. The base

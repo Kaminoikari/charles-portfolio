@@ -1,0 +1,82 @@
+seed 277485
+  deletable parts available: 24
+  dropping: Acc_Ribbon_Neck, Hair_Side_R, Outfit_Socks
+  retinting Mellow_Inner_Sub -> [0.719, 0.407, 0.622]
+  retinting Milfy_Gold -> [0.31, 0.626, 0.03]
+  removed 13 primitives, swept 105 accessors / 129 bufferViews
+  materials left painting nothing: Mellow_Underwear
+  triangles 102984 -> 90712 (expected 90712)
+  [ok] still a VRM0
+  [ok] triangles match the manifest
+  [ok] no orphan accessors
+  [ok] skeleton unmoved
+  [ok] 54 humanoid bones
+  [ok] 56 face morph targets intact
+  [ok] 15 blendShapeGroups intact
+  [ok] tints landed
+  [ok] retinted materials are still on the model
+  [ok] every palette entry names live parts
+  [ok] every shape key names live parts
+  [ok] 6 shape keys in the manifest still displace
+  [ok] 6 shape keys in the file are all in the manifest
+  [ok] every mesh keeps one morph target count
+  [ok] no material is left painting nothing
+  [ok] every palette entry names a material still in the file
+  [ok] materialProperties still line up with materials
+  PASS
+seed 714986
+  deletable parts available: 24
+  dropping: Hair_Side_L, Acc_Ribbon_Neck, Acc_Bandage_Thigh
+  retinting Milfy_Bear -> [0.939, 0.153, 0.938]
+  retinting Mellow_Outer -> [0.859, 0.082, 0.225]
+  removed 13 primitives, swept 143 accessors / 205 bufferViews
+  shape keys left with nothing to move: Hutomomo_big, Hutomomo_slim
+  materials left painting nothing: F00_000_Hair_00_HAIR_05, Mellow_Leg_Acc
+  triangles 102984 -> 92758 (expected 92758)
+  [ok] still a VRM0
+  [ok] triangles match the manifest
+  [ok] no orphan accessors
+  [ok] skeleton unmoved
+  [ok] 54 humanoid bones
+  [ok] 56 face morph targets intact
+  [ok] 15 blendShapeGroups intact
+  [ok] tints landed
+  [ok] retinted materials are still on the model
+  [ok] every palette entry names live parts
+  [ok] every shape key names live parts
+  [ok] 4 shape keys in the manifest still displace
+  [ok] 4 shape keys in the file are all in the manifest
+  [ok] every mesh keeps one morph target count
+  [ok] no material is left painting nothing
+  [ok] every palette entry names a material still in the file
+  [ok] materialProperties still line up with materials
+  PASS
+seed 199218
+  deletable parts available: 24
+  dropping: Acc_Ribbon_Waist, Hair_Bangs, Outfit_Bottom
+  retinting Mellow_Inner_Sub -> [0.51, 0.804, 0.677]
+  retinting Milfy_GoldInner -> [0.788, 0.419, 0.409]
+  removed 15 primitives, swept 117 accessors / 141 bufferViews
+  materials left painting nothing: F00_000_Hair_00_HAIR_01, Mellow_Skirt_Cloth, Mellow_Sub_Acc, Milfy_MintDark
+  triangles 102984 -> 84158 (expected 84158)
+  [ok] still a VRM0
+  [ok] triangles match the manifest
+  [ok] no orphan accessors
+  [ok] skeleton unmoved
+  [ok] 54 humanoid bones
+  [ok] 56 face morph targets intact
+  [ok] 15 blendShapeGroups intact
+  [ok] tints landed
+  [ok] retinted materials are still on the model
+  [ok] every palette entry names live parts
+  [ok] every shape key names live parts
+  [ok] 6 shape keys in the manifest still displace
+  [ok] 6 shape keys in the file are all in the manifest
+  [ok] every mesh keeps one morph target count
+  [ok] no material is left painting nothing
+  [ok] every palette entry names a material still in the file
+  [ok] materialProperties still line up with materials
+  PASS
+
+3 rounds: PASS
+exit 0

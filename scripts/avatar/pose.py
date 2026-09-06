@@ -52,22 +52,34 @@ def joint_matrices(doc, rotations=None, replace=False):
     return world_matrices({**doc, 'nodes': nodes})
 
 
+def skin_matrices(doc, views, rotations=None, replace=False):
+    """Per skin index, the joint matrix of every slot: posed world times
+    inverse bind. A mesh is skinned with the matrices of the skin ITS node
+    names (humanoid.mesh_skin); a file whose skins list different joints, or
+    the same joints in another order, poses each mesh with its own."""
+    world = joint_matrices(doc, rotations, replace)
+    out = {}
+    for si, skin in enumerate(doc.get('skins') or []):
+        inv = glb.read_accessor(doc, views, skin['inverseBindMatrices'])
+        inv = inv.reshape(-1, 4, 4).transpose(0, 2, 1)
+        out[si] = np.stack([world[n] @ inv[i] for i, n in enumerate(skin['joints'])])
+    return out
+
+
 def skinned(doc, views, rotations=None, replace=False):
     """Every primitive's vertices in the posed world, keyed by (mesh, prim)."""
-    skin = doc['skins'][0]
-    inv = glb.read_accessor(doc, views, skin['inverseBindMatrices'])
-    inv = inv.reshape(-1, 4, 4).transpose(0, 2, 1)
-    world = joint_matrices(doc, rotations, replace)
-    mats = np.stack([world[n] @ inv[i] for i, n in enumerate(skin['joints'])])
+    by_skin = skin_matrices(doc, views, rotations, replace)
+    skin_of = humanoid.mesh_skin(doc)
 
     out = {}
     for mi, mesh in enumerate(doc['meshes']):
         for pi, pr in enumerate(mesh['primitives']):
             a = pr['attributes']
             p = glb.read_accessor(doc, views, a['POSITION']).astype(np.float64)
-            if 'JOINTS_0' not in a:
+            if 'JOINTS_0' not in a or mi not in skin_of:
                 out[(mesh.get('name'), pi)] = p
                 continue
+            mats = by_skin[skin_of[mi]]
             j = glb.read_accessor(doc, views, a['JOINTS_0']).astype(np.int64)
             w = glb.read_accessor(doc, views, a['WEIGHTS_0']).astype(np.float64)
             total = w.sum(axis=1, keepdims=True)
@@ -99,20 +111,19 @@ def bones(doc):
 
 def skinned_normals(doc, views, rotations=None, replace=False):
     """Per-primitive normals rotated by the same joint matrices as the points."""
-    skin = doc['skins'][0]
-    inv = glb.read_accessor(doc, views, skin['inverseBindMatrices'])
-    inv = inv.reshape(-1, 4, 4).transpose(0, 2, 1)
-    world = joint_matrices(doc, rotations, replace)
-    mats = np.stack([world[n] @ inv[i] for i, n in enumerate(skin['joints'])])
+    by_skin = skin_matrices(doc, views, rotations, replace)
+    skin_of = humanoid.mesh_skin(doc)
 
     out = {}
-    for mesh in doc['meshes']:
+    for mi, mesh in enumerate(doc['meshes']):
         for pi, pr in enumerate(mesh['primitives']):
             a = pr['attributes']
             if 'NORMAL' not in a:
                 continue
             n = glb.read_accessor(doc, views, a['NORMAL']).astype(np.float64)
-            if 'JOINTS_0' not in a:
+            if 'JOINTS_0' in a and mi in skin_of:
+                mats = by_skin[skin_of[mi]]
+            if 'JOINTS_0' not in a or mi not in skin_of:
                 out[(mesh.get('name'), pi)] = n
                 continue
             j = glb.read_accessor(doc, views, a['JOINTS_0']).astype(np.int64)

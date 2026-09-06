@@ -1,5 +1,5 @@
 {
-  "source": "/Users/charles/portfolio/scripts/avatar/baseline.vrm",
+  "source": "public/avatar/mika-pink.vrm",
   "parts": {
     "Face": {
       "mesh": "Face.baked",
@@ -836,6 +836,12 @@
   "landmarks": {
     "waist": 0.9600000000000001,
     "waist_r": 0.1000041168057943,
-    "foot": 0.0343145877122879
+    "foot": 0.0343145877122879,
+    "hip": 0.8433834330000001,
+    "knee": 0.5009524330000001,
+    "ankle": 0.11832673300000013,
+    "shoulder": 1.2151105402,
+    "neck": 1.2498337002,
+    "hand_x": 0.5403423845279132
   }
 }

@@ -11,6 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import bonemap  # noqa: E402
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 
 # A VRoid-shaped skeleton, world positions in metres, +X the character's left.
 # (name, parent, position). The names here are the generic ones each spelling
@@ -430,7 +431,7 @@ class VendorFiles(unittest.TestCase):
         doc, _ = glb.load(self.INNER)
         mapping = bonemap.resolve(doc, TARGET, self.override)
         self.assertEqual(names_of(mapping, doc), self.TODAY)
-        bonemap.require(mapping, doc, set(doc['skins'][0]['joints']))
+        bonemap.require(mapping, doc, set(humanoid.all_joints(doc)))
 
     TODAY_OUTER = {  # the ten the hand table paired on the cardigan set
         'Hips': 'hips', 'Spine': 'spine', 'Chest': 'chest', 'Neck': 'neck',
@@ -450,7 +451,7 @@ class VendorFiles(unittest.TestCase):
             self.assertIn(name, got.values(), name)
         for name in ('leftLowerLeg', 'leftFoot', 'leftToes'):
             self.assertNotIn(name, got.values(), 'the cardigan has no leg bones below the thigh')
-        bonemap.require(mapping, doc, set(doc['skins'][0]['joints']))
+        bonemap.require(mapping, doc, set(humanoid.all_joints(doc)))
 
     def test_the_vendor_file_keeps_the_cardigan_on_the_ten_anchors_it_was_tuned_on(self):
         """Fitting on all sixteen moves the cardigan's scale x1.153 -> x1.188
@@ -462,7 +463,7 @@ class VendorFiles(unittest.TestCase):
         mapping = bonemap.resolve(doc, TARGET, self.override)
         self.assertEqual(names_of(mapping, doc), self.TODAY_OUTER)
         self.assertIn('Lower_arm_L', mapping['unmapped_nodes'])
-        bonemap.require(mapping, doc, set(doc['skins'][0]['joints']))
+        bonemap.require(mapping, doc, set(humanoid.all_joints(doc)))
 
 
 if __name__ == '__main__':

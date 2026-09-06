@@ -185,15 +185,16 @@ def _part(vrm):
 
 def _weighted_joints(src, sviews):
     """Source joints (node indices) some vertex is weighted to above 0.05."""
-    sjoints = src['skins'][0]['joints']
+    skin_of = humanoid.mesh_skin(src)
     hit = set()
-    for mesh in src['meshes']:
+    for mi, mesh in enumerate(src['meshes']):
+        sjoints = src['skins'][skin_of[mi]]['joints']    # JOINTS_0 indexes THIS skin
         for pr in mesh['primitives']:
             att = pr['attributes']
             j = glb.read_accessor(src, sviews, att['JOINTS_0']).astype(np.int64)
             w = glb.read_accessor(src, sviews, att['WEIGHTS_0']).astype(np.float64)
-            hit.update(int(s) for s in np.unique(j[w > 0.05]))
-    return {sjoints[s] for s in hit}
+            hit.update(sjoints[int(s)] for s in np.unique(j[w > 0.05]))
+    return hit
 
 
 def load(path, doc, views, add_material, tint, gain=None, override=None):
@@ -208,7 +209,10 @@ def load(path, doc, views, add_material, tint, gain=None, override=None):
     sviews = glb.views_of(src, binary)
     sworld = render.world_matrices(src)
     snames = {i: n.get('name') for i, n in enumerate(src['nodes'])}
-    sjoints = src['skins'][0]['joints']
+    # Every joint node any of the garment's skins lists. The fit and the
+    # correction are per NODE; which skin a mesh reads its slots through is
+    # resolved where the slots are read (pieces, add_bones).
+    sjoints = humanoid.all_joints(src)
 
     tworld = render.world_matrices(doc)
     tbones = humanoid.bones(doc)
@@ -383,9 +387,11 @@ def pieces(bundle, doc, views, joint_slot=None):
     skirt and the ribs through the bodice under half the animation clips.
     """
     src, sviews = bundle['src'], bundle['sviews']
-    a, correction, sjoints = bundle['a'], bundle['correction'], bundle['sjoints']
+    a, correction = bundle['a'], bundle['correction']
+    skin_of = humanoid.mesh_skin(src)
     out = []
-    for mesh in src['meshes']:
+    for mi, mesh in enumerate(src['meshes']):
+        sjoints = src['skins'][skin_of[mi]]['joints']    # JOINTS_0 indexes THIS skin
         for pi, pr in enumerate(mesh['primitives']):
             att = pr['attributes']
             pos = glb.read_accessor(src, sviews, att['POSITION']).astype(np.float64)
@@ -476,16 +482,27 @@ def pieces(bundle, doc, views, joint_slot=None):
     return out
 
 
-def add_bones(bundle, doc, views):
+def add_bones(bundle, doc, views, skin_index=0):
     """Give the garment's own bones a home in our skeleton.
 
     Returns source-joint -> our skin-joint slot. Bones that already exist here
     (the humanoid ones the mapping found) resolve to the slot they already occupy;
     everything else -- skirt panels, the ribbon, the shoe laces -- is appended as
     a new node under whichever of ours its source parent maps to.
+
+    `skin_index` is the skin the garment mesh will be drawn with; the slots
+    returned index ITS joint list. Every other skin listing the same joints is
+    grown alongside it (see below), so on a VRoid body the choice only decides
+    which skin's inverse bind matrices the new bones are appended to.
     """
-    skin = doc['skins'][0]
+    # The skin the garment's slots are meant for, and with it every skin that
+    # lists the same joints: a mesh on another of VRoid's three skins indexes
+    # JOINTS_0 into ITS skin's list, so a bone appended to one alone is a
+    # dangling slot on the others (verify.dangling_joints). The sharing set is
+    # taken now, before this skin's list grows past the others'.
+    skin = doc['skins'][skin_index]
     joints = skin['joints']
+    sharing = humanoid.skins_sharing(doc, skin_index)
     tbones = humanoid.bones(doc)
     sjoints, snames = bundle['sjoints'], bundle['snames']
     sparent, sworld = bundle['sparent'], bundle['sworld']
@@ -538,6 +555,12 @@ def add_bones(bundle, doc, views):
 
     skin['inverseBindMatrices'] = glb.add_accessor(
         doc, views, ibm.reshape(-1, 16).astype(np.float32))
+    for si in sharing:
+        other = doc['skins'][si]
+        if other is skin:
+            continue
+        other['joints'] = list(joints)
+        other['inverseBindMatrices'] = skin['inverseBindMatrices']
     return slot
 
 

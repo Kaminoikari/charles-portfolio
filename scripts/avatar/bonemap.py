@@ -206,7 +206,9 @@ def resolve(src, target_bones, override=None):
     ignore = list(override.get('ignore') or [])
     mirror = bool(override.get('mirror', False))
     nodes = src['nodes']
-    joints = list(src['skins'][0]['joints']) if src.get('skins') else list(range(len(nodes)))
+    # Every joint any skin lists: a mapping is per joint NODE, and a file whose
+    # skins list different joints still has to map all of them.
+    joints = humanoid.all_joints(src) if src.get('skins') else list(range(len(nodes)))
 
     def ignored(i):
         # `.` and `_` are the same separator to a pattern: one vendor's two
@@ -509,4 +511,4 @@ if __name__ == '__main__':
     m = resolve(src, humanoid.bones(tgt), ov)
     print(table(m, src))
     if os.environ.get('BONEMAP_REQUIRE', '1') == '1':
-        require(m, src, set(src['skins'][0]['joints']))
+        require(m, src, set(humanoid.all_joints(src)))

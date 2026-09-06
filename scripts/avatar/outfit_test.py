@@ -303,16 +303,17 @@ class RestPose(unittest.TestCase):
                 nodes[names.index(p)].setdefault('children', []).append(i)
         slot = {n: i for i, n in enumerate(names)}
 
+        skin = {'joints': list(range(len(names)))}
         doc = {'asset': {'version': '2.0'}, 'scene': 0, 'scenes': [{'nodes': [0]}],
                'nodes': nodes, 'bufferViews': [], 'accessors': [], 'meshes': [],
-               'skins': [{'joints': list(range(len(names)))}]}
+               'skins': [skin]}
         views = []
         ibm = np.zeros((len(names), 4, 4))
         for i, n in enumerate(names):
             m = np.eye(4)
             m[:3, :3], m[:3, 3] = rot_world[n], world[n]
             ibm[i] = np.linalg.inv(m)
-        doc['skins'][0]['inverseBindMatrices'] = glb.add_accessor(
+        skin['inverseBindMatrices'] = glb.add_accessor(
             doc, views, ibm.transpose(0, 2, 1).reshape(-1, 16).astype(np.float32))
 
         def primitive(pos, nrm, joint, delta=None):
@@ -372,6 +373,13 @@ class RestPose(unittest.TestCase):
         collar = world['leftShoulder'] + np.array([[0.0, 0.03, 0.0], [-0.03, 0.03, 0.0], [0.0, 0.03, 0.03]])
         doc['meshes'].append({'name': 'Collar', 'primitives': [
             primitive(collar, np.tile([0.0, 1.0, 0.0], (3, 1)), slot['leftShoulder'])]})
+
+        # A node drawing each mesh through the skin, as a Blender export has:
+        # glTF resolves a skin per node, and outfit reads each mesh's slots
+        # through the skin its node names (humanoid.mesh_skin).
+        for mi in range(len(doc['meshes'])):
+            doc['nodes'].append({'name': doc['meshes'][mi]['name'], 'mesh': mi, 'skin': 0})
+            doc['scenes'][0]['nodes'].append(len(doc['nodes']) - 1)
 
         path = os.path.join(tempfile.mkdtemp(), 'garment.glb')
         glb.save(path, doc, glb.rebuild(doc, views))
@@ -469,16 +477,39 @@ class RestPose(unittest.TestCase):
         off = self.dist_to_line(items['Frill']['piece']['pos'], origin, direction)
         self.assertLess(off.max(), 0.001, f'frill off our shin line by {off.max() * 1000:.1f}mm')
 
+    # The one skin target() builds; add_bones is told which skin it is
+    # growing and the slots it returns index that skin's list.
+    SKIN = 0
+
     def test_a_garment_chain_bone_inherits_its_anchors_rotation_in_add_bones(self):
         path, ref = self.garment(splay_deg=10.0)
         doc, views, bundle, _ = self.fit(path)
-        slot = outfit.add_bones(bundle, doc, views)
+        slot = outfit.add_bones(bundle, doc, views, skin_index=self.SKIN)
         world = humanoid.rest_world(doc)
-        node = doc['skins'][0]['joints'][slot[ref['slot']['cloth']]]
+        node = doc['skins'][self.SKIN]['joints'][slot[ref['slot']['cloth']]]
         self.assertEqual(doc['nodes'][node]['name'], 'Mellow_Cloth_1.L')
         origin, direction = self.target_shin()
         off = self.dist_to_line(world[node][:3, 3][None], origin, direction)[0]
         self.assertLess(off, 0.001, f'chain bone off our shin line by {off * 1000:.1f}mm')
+
+    def test_add_bones_grows_every_skin_that_shares_the_joint_list(self):
+        """VRoid draws face, body and hair through three skins over one joint
+        list. A bone appended to one alone is a dangling slot on the others
+        (verify.dangling_joints); a skin over a different list is not touched."""
+        path, _ = self.garment(splay_deg=10.0)
+        doc, views, bundle, _ = self.fit(path)
+        first = doc['skins'][self.SKIN]
+        before = list(first['joints'])
+        doc['skins'].append({'joints': list(before),
+                             'inverseBindMatrices': first['inverseBindMatrices']})
+        doc['skins'].append({'joints': before[:2],
+                             'inverseBindMatrices': first['inverseBindMatrices']})
+        outfit.add_bones(bundle, doc, views, skin_index=self.SKIN)
+        self.assertGreater(len(first['joints']), len(before), 'add_bones appended nothing')
+        twin, other = doc['skins'][1], doc['skins'][2]
+        self.assertEqual(twin['joints'], first['joints'], '共享 joint list 的 skin 沒有跟著長')
+        self.assertEqual(twin['inverseBindMatrices'], first['inverseBindMatrices'])
+        self.assertEqual(other['joints'], before[:2], '不共享的 skin 不該被動到')
 
     # (h) --------------------------------------------------------------
     def test_a_bone_whose_segment_is_not_mapped_inherits_the_turn_above_it(self):

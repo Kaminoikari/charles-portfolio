@@ -462,7 +462,9 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     and collide with the body only.
     """
     nodes = doc['nodes']
-    skin = doc['skins'][0]
+    # The hair mesh's own skin, by the node that draws it (VRoid: the third of
+    # three over one joint list). The tails' JOINTS_0 index into THIS list.
+    skin = doc['skins'][humanoid.skin_of_mesh(doc, manifest[parts[0]]['mesh'])]
     joints = skin['joints']
 
     head_node = humanoid.bones(doc)['head']
@@ -653,12 +655,13 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     skin['inverseBindMatrices'] = glb.add_accessor(
         doc, views, ibm.reshape(-1, 16).astype(np.float32))
 
-    # Every skin, not just skins[0]. The VRoid export carries three -- face,
+    # Every skin, not just the hair's. The VRoid export carries three -- face,
     # body and hair -- over the same joint list, and the hair mesh is on the
-    # third. Appending the tail bones to the first alone left the rewritten
-    # JOINTS_0 pointing at slots 125..136 of a 125-slot skin. Nothing in this
-    # pipeline noticed, because it skins from skins[0] throughout; three.js
-    # loaded the file, reported all 54 humanoid bones, and then threw reading
+    # third. An earlier version appended the tail bones to the FIRST skin and
+    # stopped, which left the rewritten JOINTS_0 pointing at slots 125..136 of
+    # a 125-slot skin. Nothing in this pipeline noticed, because until
+    # 2026-09-05 it skinned from the first skin throughout; three.js loaded the
+    # file, reported every humanoid bone, and then threw reading
     # `skeleton.bones[i].matrixWorld` the moment it drew a frame -- the model
     # was unusable in a browser and every gate here was green.
     for other in doc['skins']:

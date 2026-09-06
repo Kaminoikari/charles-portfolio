@@ -73,11 +73,14 @@ def dangling_joints(path):
 
     glTF resolves a skin index per NODE, and a VRoid export carries three skins
     -- face, body, hair -- listing the same joints. Code that appends a bone to
-    doc['skins'][0] and stops there leaves any mesh on another skin pointing at
-    a slot that does not exist. Nothing in this pipeline can see it, because it
-    skins from skins[0] everywhere; three.js loads the file, reports all 54
-    humanoid bones, and then throws on `skeleton.bones[i].matrixWorld` the first
-    time it draws, which is the whole model gone with every local gate green.
+    the first skin and stops there leaves any mesh on another skin pointing at
+    a slot that does not exist. Until 2026-09-05 nothing in this pipeline could
+    see it, because it skinned from the first skin everywhere; three.js loads
+    the file, reports every humanoid bone, and then throws on
+    `skeleton.bones[i].matrixWorld` the first time it draws, which is the whole
+    model gone with every local gate green. Every reader now takes the skin
+    off the mesh's own node (humanoid.mesh_skin), and this detector stays as
+    the file-level proof.
     """
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
@@ -384,8 +387,14 @@ def report(path, baseline=None):
     print(f'   vertex sha {s["vertex_sha"]}')
 
     ok = True
-    if s['bones'] != 54:
-        print(f'   FAIL humanoid bones {s["bones"]}, expected 54')
+    # No bone count. There was an `== 54` here until 2026-09-05, VRoid's count
+    # and nobody else's; what a finished file must have is every bone the VRM
+    # spec requires, and what it must not have lost is judged against the
+    # baseline below.
+    missing = humanoid.required_missing(humanoid.read(path))
+    if missing:
+        print(f'   FAIL humanoid bones {s["bones"]}, missing required '
+              f'{", ".join(missing)}')
         ok = False
     # No triangle ceiling. There was a 40,000 cap here until 2026-08-31; it was
     # a project constraint rather than a limit any consumer imposes, and while

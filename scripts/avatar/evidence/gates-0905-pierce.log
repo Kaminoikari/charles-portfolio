@@ -1,0 +1,6 @@
+at rest, skin pixels showing through each garment:
+  Acc_Bandage_Thigh           10 px  of    30 allowed (687 px on screen)
+  Outfit_Cardigan              4 px  of   150 allowed (39577 px on screen)
+  Outfit_Shoes                 1 px  of    73 allowed (3644 px on screen)
+  total 15   PASS
+exit 0

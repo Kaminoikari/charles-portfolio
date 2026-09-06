@@ -1,0 +1,25 @@
+## Phase 2 shipped (9c1faab) vs Phase 3 default build
+vertex sha a=73cfb472ca1cb1c3 b=0ef55e617ea791cd
+JOINTS_0 changed primitives: 1
+    (105.0, 'Body.baked', 18, 5)
+WEIGHTS_0 changed primitives: 2
+    (0.0008433163166046143, 'Body.baked', 19, 1336)
+    (0.00025916099548339844, 'Body.baked', 18, 7872)
+indices changed primitives: 2
+    ('Hair001.baked', 64, 'same triangle set ignoring order: True')
+    ('Hair001.baked', 61, 'same triangle set ignoring order: True')
+nodes equal True ; skins equal True
+
+## Phase 3 default build vs --base mika-pink.vrm build
+vertex sha a=0ef55e617ea791cd b=0ef55e617ea791cd
+indices changed primitives: 2
+    ('Hair001.baked', 64, 'same triangle set ignoring order: True')
+    ('Hair001.baked', 61, 'same triangle set ignoring order: True')
+nodes equal True ; skins equal True
+
+## round-1 Phase 3 build (shoulder/neck still typed) vs round-2 default build
+vertex sha a=0ef55e617ea791cd b=0ef55e617ea791cd
+indices changed primitives: 2
+    ('Hair001.baked', 64, 'same triangle set ignoring order: True')
+    ('Hair001.baked', 61, 'same triangle set ignoring order: True')
+nodes equal True ; skins equal True

@@ -118,43 +118,48 @@ def _arm_triangles(doc, views, parts, posed=None):
     arm-driven cloth within SLEEVE of it is left in: it is wearing a sleeve, and
     a sleeve is something an arm can pierce.
     """
-    skin = doc['skins'][0]
-    names = [doc['nodes'][j].get('name', '') for j in skin['joints']]
     bone = humanoid.node_bone(doc)
-    arm = np.array([any(a.lower() in bone.get(j, names[k]).lower() for a in ARM)
-                    for k, j in enumerate(skin['joints'])])
+    skin_of = humanoid.mesh_skin(doc)
+
+    def arm_slots(si):
+        # JOINTS_0 indexes the joint list of the skin THIS mesh's node names.
+        joints = doc['skins'][si]['joints']
+        names = [doc['nodes'][j].get('name', '') for j in joints]
+        return np.array([any(a.lower() in bone.get(j, names[k]).lower() for a in ARM)
+                         for k, j in enumerate(joints)])
+    arm = {si: arm_slots(si) for si in set(skin_of.values())}
     flesh = {(parts[n]['mesh'], i) for n in SKIN if n in parts
              for i in parts[n]['primitives']}
     cloth = {(parts[n]['mesh'], i) for n in parts
              if n.startswith(('Outfit_', 'Acc_'))
              for i in parts[n]['primitives']}
 
-    def read(mesh, pi, pr):
+    def read(mi, mesh, pi, pr):
         key = (mesh.get('name'), pi)
         pos = (posed[key] if posed and key in posed
                else glb.read_accessor(doc, views, pr['attributes']['POSITION']))
         j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0'])
         w = glb.read_accessor(doc, views, pr['attributes']['WEIGHTS_0']).astype(np.float64)
         return (np.asarray(pos, dtype=np.float64),
-                arm[j[np.arange(len(j)), np.argmax(w, axis=1)]])
+                arm[skin_of[mi]][j[np.arange(len(j)), np.argmax(w, axis=1)]])
 
     sleeves = []
-    for mesh in doc['meshes']:
+    for mi, mesh in enumerate(doc['meshes']):
         for pi, pr in enumerate(mesh['primitives']):
             if (mesh.get('name'), pi) in cloth:
-                pos, on_arm = read(mesh, pi, pr)
+                pos, on_arm = read(mi, mesh, pi, pr)
                 sleeves.append(pos[on_arm])
     sleeves = np.concatenate(sleeves) if sleeves else np.zeros((0, 3))
     tree = cKDTree(sleeves) if len(sleeves) else None
 
     mask = []
-    for mesh in doc['meshes']:
+    for mi, mesh in enumerate(doc['meshes']):
         for pi, pr in enumerate(mesh['primitives']):
             idx = glb.read_accessor(doc, views, pr['indices']).astype(np.int64).reshape(-1, 3)
             if (mesh.get('name'), pi) not in flesh:
                 mask.append(np.zeros(len(idx), bool))
                 continue
-            pos, on_arm = read(mesh, pi, pr)
+            pos, on_arm = read(mi, mesh, pi, pr)
             bare = on_arm.copy()
             if tree is not None and on_arm.any():
                 d, _ = tree.query(pos[on_arm])

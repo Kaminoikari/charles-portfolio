@@ -86,28 +86,70 @@ def node_world(doc):
     return vrmrig.world_matrices(doc)
 
 
+def mesh_skin(doc):
+    """Mesh index -> index of the skin the node drawing it names.
+
+    glTF resolves a skin per NODE. A VRoid export carries three skins over the
+    same joint list (face 0, body 1, hair 2), which is why reading the first
+    skin for every mesh happened to work until a bone was appended to one skin
+    and not the others. A mesh no node draws with a skin is absent here. glTF
+    lets two nodes draw one mesh through different skins; every reader here
+    wants ONE answer per mesh, so that case is refused rather than resolved
+    by whichever node came last.
+    """
+    out = {}
+    for index, node in enumerate(doc.get('nodes') or []):
+        if 'mesh' not in node or 'skin' not in node:
+            continue
+        if out.get(node['mesh'], node['skin']) != node['skin']:
+            raise BadRig(f'mesh {node["mesh"]} 被兩個節點用不同的 skin 畫'
+                         f'（skin {out[node["mesh"]]} 與 {node["skin"]}，節點 {index}）')
+        out[node['mesh']] = node['skin']
+    return out
+
+
+def skin_of_mesh(doc, mesh_name):
+    """Index of the skin the mesh called `mesh_name` is drawn with."""
+    meshes = doc.get('meshes') or []
+    mesh_index = next((i for i, m in enumerate(meshes) if m.get('name') == mesh_name), None)
+    if mesh_index is None:
+        raise BadRig(f'檔案裡沒有叫 {mesh_name} 的 mesh')
+    skin = mesh_skin(doc).get(mesh_index)
+    if skin is None:
+        raise BadRig(f'沒有任何節點帶著 skin 畫 {mesh_name}，這個 mesh 沒有蒙皮')
+    return skin
+
+
 def body_skin(doc, manifest):
     """Index of the skin the body mesh uses, read through the manifest.
 
-    A VRoid export carries three skins over the same joint list and puts the
-    body on the SECOND one (face 0, body 1, hair 2). `doc['skins'][0]` is the
-    face's skin, which happens to list the same joints, which is why the
-    assumption never showed until a bone was appended to one skin and not the
-    others. The manifest names the body mesh; the node that draws that mesh
-    names the skin.
+    The manifest names the body mesh; the node that draws that mesh names the
+    skin (see mesh_skin).
     """
     try:
         mesh_name = manifest['parts']['Body_Skin']['mesh']
     except (KeyError, TypeError):
         raise BadRig('manifest 裡沒有 parts.Body_Skin.mesh，找不到身體用的是哪個 skin')
-    meshes = doc.get('meshes') or []
-    mesh_index = next((i for i, m in enumerate(meshes) if m.get('name') == mesh_name), None)
-    if mesh_index is None:
-        raise BadRig(f'檔案裡沒有叫 {mesh_name} 的 mesh，manifest 跟檔案對不上')
-    for node in doc.get('nodes') or []:
-        if node.get('mesh') == mesh_index and 'skin' in node:
-            return node['skin']
-    raise BadRig(f'沒有任何節點帶著 skin 畫 {mesh_name}，這個身體沒有蒙皮')
+    try:
+        return skin_of_mesh(doc, mesh_name)
+    except BadRig as e:
+        raise BadRig(f'{e}，manifest 跟檔案對不上') from e
+
+
+def all_joints(doc):
+    """Every node any skin lists as a joint, first-seen order, no repeats.
+
+    For a file whose skins share one list this IS that list; for one whose
+    skins differ it is their union, which is what a fit or a mapping that
+    works per joint node rather than per skin slot needs.
+    """
+    seen, out = set(), []
+    for skin in doc.get('skins') or []:
+        for j in skin['joints']:
+            if j not in seen:
+                seen.add(j)
+                out.append(j)
+    return out
 
 
 def skins_sharing(doc, skin_index):

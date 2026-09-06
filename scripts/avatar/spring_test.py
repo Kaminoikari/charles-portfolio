@@ -9,6 +9,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb  # noqa: E402
+import humanoid  # noqa: E402
 import twintail  # noqa: E402
 
 
@@ -19,7 +20,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 # previous shipped file (git HEAD's mika-milfy-2.vrm, which still carries the
 # old joint remap and no colliders) is shown to fail them.
 MODEL = os.environ.get('SPRING_TEST_MODEL') or os.path.join(
-    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-10.vrm')
+    BASE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
 class SpringTest(unittest.TestCase):
     """The shipped file's spring wiring for the twintails (twintail.apply).
 
@@ -113,7 +114,8 @@ class SpringTest(unittest.TestCase):
         height; the old remap put it 12.5-24cm above.
         """
         joints = self.tail_joints()
-        skin = self.doc['skins'][0]
+        hair = self.manifest['Hair_Twintail_L']['mesh']
+        skin = self.doc['skins'][humanoid.skin_of_mesh(self.doc, hair)]
         slot_y = {k: joints[self.nodes[n]['name']][1] for k, n in enumerate(skin['joints'])
                   if self.nodes[n].get('name', '') in joints}
         segment = twintail.DROP / twintail.SEGMENTS

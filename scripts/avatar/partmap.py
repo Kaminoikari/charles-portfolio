@@ -105,20 +105,26 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
                                   for mesh in doc['meshes']
                                   for pr in mesh['primitives']]).astype(np.float64)
         bone = humanoid.node_bone(doc)
-        joints = doc['skins'][0]['joints'] if doc.get('skins') else []
-        jname = [bone.get(j, doc['nodes'][j].get('name', '')).lower() for j in joints]
-        jside = np.array([1 if n.startswith('left') else 2 if n.startswith('right') else 0
-                          for n in jname])
+        skin_of = humanoid.mesh_skin(doc)
+
+        def side_of_slots(si):
+            # Per skin: JOINTS_0 indexes the joint list of the skin the mesh's
+            # own node names, and VRoid's three skins need not stay identical.
+            joints = doc['skins'][si]['joints']
+            jname = [bone.get(j, doc['nodes'][j].get('name', '')).lower() for j in joints]
+            return np.array([1 if n.startswith('left') else 2 if n.startswith('right') else 0
+                             for n in jname])
+        jside = {si: side_of_slots(si) for si in set(skin_of.values())}
         vside = []
-        for mesh in doc['meshes']:
+        for mi, mesh in enumerate(doc['meshes']):
             for pr in mesh['primitives']:
                 n = len(glb.read_accessor(doc, views, pr['attributes']['POSITION']))
-                if 'JOINTS_0' not in pr['attributes'] or not len(jside):
+                if 'JOINTS_0' not in pr['attributes'] or mi not in skin_of:
                     vside.append(np.zeros(n, np.int64))
                     continue
                 j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0'])
                 w = glb.read_accessor(doc, views, pr['attributes']['WEIGHTS_0']).astype(np.float64)
-                vside.append(jside[j[np.arange(len(j)), np.argmax(w, axis=1)]])
+                vside.append(jside[skin_of[mi]][j[np.arange(len(j)), np.argmax(w, axis=1)]])
         vside = np.concatenate(vside)
         # Six ids: limb * 2 + outward. Spread across the greyscale so that
         # rounding the rasterised value back to an id cannot land on a neighbour.

@@ -1,0 +1,9 @@
+..................................................................................................................................................
+----------------------------------------------------------------------
+Ran 146 tests in 6.552s
+
+OK
+  gate 53: compare=[] bones=53 required_missing=[]
+  gate one-sided: compare=[{'bone': 'upperChest', 'distance': None, 'note': '只有一邊有這根骨頭'}] bones=53 required_missing=[]
+  gate hand: compare=[] bones=53 required_missing=['leftHand']
+  gate self: compare=[] bones=54 required_missing=[]

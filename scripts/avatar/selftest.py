@@ -23,10 +23,16 @@ import verify  # noqa: E402
 import humanoid  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-BASELINE = os.path.join(BASE, 'baseline.vrm')
 
 
-def run(model, manifest_path, seed=None):
+def run(model, manifest_path, seed=None, out=None):
+    """Drop three parts and retint two, then audit what customise.apply wrote.
+
+    Every expectation is read off `model` at run time: its bone count, its
+    face morph target count, its blendShapeGroup count, and its skeleton for
+    the compare. Until 2026-09-05 they were VRoid's numbers typed in (54, 56,
+    15) against baseline.vrm, so the test could only ever audit one body.
+    """
     seed = random.randrange(10**6) if seed is None else seed
     rng = random.Random(seed)
     manifest = json.load(open(manifest_path))
@@ -49,15 +55,20 @@ def run(model, manifest_path, seed=None):
     for name, rgb in tints:
         print(f'  retinting {name} -> {rgb}')
 
-    out = os.path.join(BASE, 'out', 'selftest.vrm')
+    out = out or os.path.join(BASE, 'out', 'selftest.vrm')
     before = glb.load(model)[0]
     tri_before = sum(before['accessors'][pr['indices']]['count'] // 3
                      for m in before['meshes'] for pr in m['primitives'])
+    n_bones = len(humanoid.bones(before))
+    n_targets = max((len(pr.get('targets', []))
+                     for m in before['meshes'] if m.get('name') == 'Face.baked'
+                     for pr in m['primitives']), default=0)
+    n_groups = len(before['extensions']['VRM']['blendShapeMaster']['blendShapeGroups'])
 
     # The manifest a customiser reads next is the one `apply` WRITES, not the
     # one it was handed. Auditing the input manifest passes while the output
     # names deleted parts -- which it did, until prune_shapes was added.
-    out_manifest = os.path.join(BASE, 'out', 'selftest.parts.json')
+    out_manifest = out[:-len('.vrm')] + '.parts.json' if out.endswith('.vrm') else out + '.parts.json'
     result = customise.apply(model, out, manifest_path, drop=drop, tints=tints,
                              manifest_out=out_manifest)
     print(f'  removed {result["primitives_removed"]} primitives, '
@@ -85,16 +96,17 @@ def run(model, manifest_path, seed=None):
     checks.append(('triangles match the manifest', tri_after == expected))
     checks.append(('no orphan accessors',
                    result['accessors_dropped'] > 0 or not drop))
-    diffs = humanoid.compare(humanoid.read(BASELINE), humanoid.read(out))
+    diffs = humanoid.compare(before, humanoid.read(out))
     checks.append(('skeleton unmoved', diffs == []))
-    checks.append(('54 humanoid bones', len(humanoid.bones(humanoid.read(out))) == 54))
-    checks.append(('56 face morph targets intact', any(
-        len(pr.get('targets', [])) == 56
+    checks.append((f'{n_bones} humanoid bones',
+                   len(humanoid.bones(humanoid.read(out))) == n_bones))
+    checks.append((f'{n_targets} face morph targets intact', any(
+        len(pr.get('targets', [])) == n_targets
         for m in doc['meshes'] if m.get('name') == 'Face.baked'
         for pr in m['primitives'])))
-    checks.append(('15 blendShapeGroups intact',
+    checks.append((f'{n_groups} blendShapeGroups intact',
                    len(doc['extensions']['VRM']['blendShapeMaster']
-                       ['blendShapeGroups']) == 15))
+                       ['blendShapeGroups']) == n_groups))
     applied = {m['name']: m['pbrMetallicRoughness']['baseColorFactor'][:3]
                for m in doc['materials'] if m['name'] in dict(tints)}
     checks.append(('tints landed', all(

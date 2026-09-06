@@ -1,0 +1,20 @@
+== 0. derived joint landmarks vs the typed world numbers ==
+  hip     derived 0.843383  typed 0.843  delta +0.383mm
+  knee    derived 0.500952  typed 0.501  delta -0.048mm
+  ankle   derived 0.118327  typed 0.118  delta +0.327mm
+  hand_x  derived 0.540342  typed 0.540  delta +0.342mm
+  shoulder derived 1.215111  (new, no typed counterpart)
+  neck    derived 1.249834  (new, no typed counterpart)
+  waist   derived 0.960000  (new, no typed counterpart)
+
+== 1. per-primitive displacement (after vs before) ==
+primitives before 105 after 105
+primitives unchanged: 105, moved: 0
+lowest vertex y: before 2.0mm, after 2.0mm (what re-frames the renders)
+
+== 2. four renders with one framing (bounds of `after`) ==
+  front: differing pixels 0  (>60) 0  bands top->bottom [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  back: differing pixels 0  (>60) 0  bands top->bottom [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  three_quarter: differing pixels 0  (>60) 0  bands top->bottom [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  face: differing pixels 0  (>60) 0  bands top->bottom [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+

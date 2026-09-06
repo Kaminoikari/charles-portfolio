@@ -24,7 +24,7 @@ REPEAT = 10497
 
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-10.vrm')
+MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-milfy-11.vrm')
 # 建置的輸入。baseline.vrm 與它位元組相同，但那份不進版控，所以測試讀這一份。
 SOURCE_MODEL = os.path.join(BASE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 MANIFEST = MODEL.replace('.vrm', '.parts.json')
@@ -367,7 +367,10 @@ class AppearanceTest(unittest.TestCase):
             f'枕骨高度帶內只剩 {int(close.sum())} 個貼頭骨的髮簾頂點')
 
     def tail_slots(self):
-        joints = self.doc['skins'][0]['joints']
+        # The hair mesh's own skin (VRoid: the third of three), which is the
+        # list the tails' JOINTS_0 index into.
+        hair = self.manifest['parts']['Hair_Twintail_L']['mesh']
+        joints = self.doc['skins'][humanoid.skin_of_mesh(self.doc, hair)]['joints']
         return [joints.index(index) for index, node in enumerate(self.doc['nodes'])
                 if str(node.get('name', '')).startswith('HairTail') and index in joints]
 

@@ -25,10 +25,13 @@ build silently rather than failing it:
                          the last run left.
   ~/Downloads/MellowHeart_Dream1.05
                          the purchased outfit, path in blender/mellow.py.
-  public/avatar/mika-pink.vrm
-                         baseline.vrm is a byte-identical copy of it; it is the
-                         model being modified and the baseline compare() runs
-                         against.
+  --base <vrm>           the model being modified and the skeleton every gate
+                         compare()s against. Default baseline.vrm, a
+                         byte-identical copy of public/avatar/mika-pink.vrm;
+                         `--base public/avatar/mika-pink.vrm` builds the same
+                         file. Any other body has to carry every bone the VRM
+                         spec requires (gate) and the manifest's part names
+                         (partition); nothing here demands VRoid's bone count.
   public/avatar/animations/*.vrma
                          the ten clips retarget, motion and envelope sweep.
   ~/milfy-refs           the 18 reference images measure.py and compare_sheet.py
@@ -125,8 +128,14 @@ BLENDER = shutil.which('blender')
 # fixed, now in the weight field instead of the position field (measured via
 # a synthetic tail-bone swing, up to 12% of frame pixels changed vs. the
 # leak; clamping only the exact on_skull set brought that to ~3%, concentrated
-# on ordinary strand-edge antialiasing rather than a visible tear).
-SHIPPED = 'mika-milfy-10.vrm'
+# on ordinary strand-edge antialiasing rather than a visible tear). -11:
+# 2026-09-05, two changes that had no name of their own: the rotation-aware
+# garment fit (outfit.py, evidence/restpose-0905.md: seven leg primitives
+# moved, socks lace up to 19mm) shipped under -10 by mistake, and build.py
+# now reads hip/knee/ankle/hand off the skeleton instead of typed numbers,
+# which moves the skirt's drape weights by at most 0.0008 and no vertex
+# (evidence/gates-0905.md).
+SHIPPED = 'mika-milfy-11.vrm'
 
 
 @contextlib.contextmanager
@@ -144,15 +153,26 @@ def step(title):
     print(f'   ({time.time() - start:.1f}s)')
 
 
-def gate(label, path):
-    diffs = humanoid.compare(humanoid.read(BASELINE), humanoid.read(path))
-    bones = len(humanoid.bones(humanoid.read(path)))
-    print(f'  gate {label}: compare={diffs} bones={bones}')
-    if diffs or bones != 54:
-        raise SystemExit(f'{label} 動到骨架了')
+def gate(label, path, base):
+    """Stop if the step at `path` moved, lost or grew a bone `base` has, or
+    left out a bone the VRM spec requires.
+
+    No bone count. Until 2026-09-05 this also demanded `bones == 54`, VRoid's
+    count and nobody else's: a base body without upperChest or toes was
+    refused here before any step had run. compare() already reports a bone
+    present on one side only, so the set is held by it; required_missing()
+    holds the spec's floor. The count is printed, not judged.
+    """
+    doc = humanoid.read(path)
+    diffs = humanoid.compare(humanoid.read(base), doc)
+    missing = humanoid.required_missing(doc)
+    print(f'  gate {label}: compare={diffs} bones={len(humanoid.bones(doc))} '
+          f'required_missing={missing}')
+    if diffs or missing:
+        raise SystemExit(f'{label} 動到骨架了：compare={diffs} required_missing={missing}')
 
 
-def main():
+def main(base=BASELINE):
     p = lambda n: os.path.join(OUT, n)
 
     with step('0. Blender geometry'):
@@ -175,9 +195,9 @@ def main():
                   f'{len(MELLOW_SETS)} 組匯入服裝重新輸出')
 
     with step('1. partition'):
-        m, _ = partition.partition(BASELINE, p('parted.vrm'), p('parts.json'))
+        m, _ = partition.partition(base, p('parted.vrm'), p('parts.json'))
         print(f'   {len(m["parts"])} parts')
-        gate('partition', p('parted.vrm'))
+        gate('partition', p('parted.vrm'), base)
 
     with step('2. strip the VRoid outfit'):
         r = customise.apply(p('parted.vrm'), p('stripped.vrm'), p('parts.json'),
@@ -192,12 +212,12 @@ def main():
         if r['materials_dropped']:
             print(f'   swept {len(r["materials_dropped"])} stranded materials: '
                   f'{", ".join(r["materials_dropped"])}')
-        gate('strip', p('stripped.vrm'))
+        gate('strip', p('stripped.vrm'), base)
 
     with step("3. strip the outfit VRoid PAINTED on the body"):
         share, _ = skin.apply(p('stripped.vrm'), p('bare.vrm'))
         print(f'   repainted {share * 100:.1f}% of the body texture as skin')
-        gate('skin', p('bare.vrm'))
+        gate('skin', p('bare.vrm'), base)
 
     with step('4. proportion'):
         before, _, _ = proportion.ratio(p('bare.vrm'))
@@ -205,16 +225,16 @@ def main():
         after, lo, hi = proportion.ratio(p('proportioned.vrm'))
         print(f'   {before:.2f} -> {after:.2f} heads tall, height {hi - lo:.4f}, '
               f'{n} position/morph accessors rescaled')
-        gate('proportion', p('proportioned.vrm'))
+        gate('proportion', p('proportioned.vrm'), base)
 
     with step('5. build the outfit'):
         added, size, lm = build_mod.build(p('proportioned.vrm'), p('mika-milfy.vrm'),
                                           p('parts.json'), p('mika-milfy.parts.json'))
         print(f'   +{len(added)} parts, {size} bytes, waist y={lm["waist"]:.3f}')
-        gate('build', p('mika-milfy.vrm'))
+        gate('build', p('mika-milfy.vrm'), base)
 
     with step('6. health check'):
-        ok, stats = verify.report(p('mika-milfy.vrm'), BASELINE)
+        ok, stats = verify.report(p('mika-milfy.vrm'), base)
         if not ok:
             raise SystemExit('健檢未過')
 
@@ -238,4 +258,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    ap = argparse.ArgumentParser(description='Rebuild Milfy from a base body.')
+    ap.add_argument('--base', default=BASELINE,
+                    help='the VRM being modified and the skeleton every gate '
+                         'compares against (default: baseline.vrm)')
+    main(ap.parse_args().base)

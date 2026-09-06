@@ -1,0 +1,134 @@
+EEEE.FFFF
+======================================================================
+ERROR: test_a_base_with_fewer_bones_passes_against_its_own_kind (scripts.avatar.gate_test.Gate.test_a_base_with_fewer_bones_passes_against_its_own_kind)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/gate_test.py", line 53, in test_a_base_with_fewer_bones_passes_against_its_own_kind
+    make.gate('53', self.no_upper_chest, self.no_upper_chest)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: gate() takes 2 positional arguments but 3 were given
+
+======================================================================
+ERROR: test_a_bone_present_on_one_side_only_fails_through_compare (scripts.avatar.gate_test.Gate.test_a_bone_present_on_one_side_only_fails_through_compare)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/gate_test.py", line 64, in test_a_bone_present_on_one_side_only_fails_through_compare
+    make.gate('one-sided', self.no_upper_chest, self.body)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: gate() takes 2 positional arguments but 3 were given
+
+======================================================================
+ERROR: test_a_missing_required_bone_is_named_even_when_the_base_lacks_it_too (scripts.avatar.gate_test.Gate.test_a_missing_required_bone_is_named_even_when_the_base_lacks_it_too)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/gate_test.py", line 59, in test_a_missing_required_bone_is_named_even_when_the_base_lacks_it_too
+    make.gate('hand', self.no_left_hand, self.no_left_hand)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: gate() takes 2 positional arguments but 3 were given
+
+======================================================================
+ERROR: test_the_base_passes_against_itself (scripts.avatar.gate_test.Gate.test_the_base_passes_against_itself)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/gate_test.py", line 47, in test_the_base_passes_against_itself
+    make.gate('self', self.body, self.body)
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: gate() takes 2 positional arguments but 3 were given
+
+======================================================================
+FAIL: test_a_model_missing_a_required_bone_is_named (scripts.avatar.verify_test.Report.test_a_model_missing_a_required_bone_is_named)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/verify_test.py", line 59, in test_a_model_missing_a_required_bone_is_named
+    self.assertIn('leftHand', text)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+AssertionError: 'leftHand' not found in '== /var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpdv5akwj5/model.vrm\n   tris 102984  materials 34  images 43  nodes 144  bones 53\n   springs 4  colliders 17  blendShapeGroups 15\n   Face.baked        10 prim    3158 tris  targets 56\n   Body.baked        23 prim   86734 tris  targets 6\n   Hair001.baked     72 prim   13092 tris  targets 0\n   vertex sha 73cfb472ca1cb1c3\n   FAIL humanoid bones 53, expected 54\n   backwards-wound primitives: 0\n   coloured outlines: 0\n   materials no primitive uses: 0\n   materials out of step with materialProperties: 0\n   sparse accessors with wrong min/max: 0\n   meshes with uneven morph target counts: 0\n   grafted shape keys that tear their mesh: 0\n   materials with no rim colour: 0\n   dangling joint references: 0\n   collider groups no spring uses: 0\n   FAIL\n'
+
+======================================================================
+FAIL: test_a_model_without_an_optional_bone_passes (scripts.avatar.verify_test.Report.test_a_model_without_an_optional_bone_passes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/verify_test.py", line 53, in test_a_model_without_an_optional_bone_passes
+    self.assertTrue(ok, text)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^
+AssertionError: False is not true : == /var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpv1i4bhz_/model.vrm
+   tris 102984  materials 34  images 43  nodes 144  bones 53
+   springs 4  colliders 17  blendShapeGroups 15
+   Face.baked        10 prim    3158 tris  targets 56
+   Body.baked        23 prim   86734 tris  targets 6
+   Hair001.baked     72 prim   13092 tris  targets 0
+   vertex sha 73cfb472ca1cb1c3
+   FAIL humanoid bones 53, expected 54
+   backwards-wound primitives: 0
+   coloured outlines: 0
+   materials no primitive uses: 0
+   materials out of step with materialProperties: 0
+   sparse accessors with wrong min/max: 0
+   meshes with uneven morph target counts: 0
+   grafted shape keys that tear their mesh: 0
+   materials with no rim colour: 0
+   dangling joint references: 0
+   collider groups no spring uses: 0
+   FAIL
+
+
+======================================================================
+FAIL: test_a_mesh_on_the_second_skin_follows_its_own_joint_order (scripts.avatar.pose_test.OwnSkin.test_a_mesh_on_the_second_skin_follows_its_own_joint_order)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/pose_test.py", line 63, in test_a_mesh_on_the_second_skin_follows_its_own_joint_order
+    np.testing.assert_allclose(posed[('M1', 0)][0], [-2.0, 0.0, 0.0], atol=1e-9)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/numpy/testing/_private/utils.py", line 1768, in assert_allclose
+    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         verbose=verbose, header=header, equal_nan=equal_nan,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         strict=strict)
+                         ^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/numpy/testing/_private/utils.py", line 983, in assert_array_compare
+    raise AssertionError(msg)
+AssertionError: 
+Not equal to tolerance rtol=1e-07, atol=1e-09
+
+Mismatched elements: 2 / 3 (66.7%)
+Mismatch at indices:
+ [0]: -1.0 (ACTUAL), -2.0 (DESIRED)
+ [1]: 1.0 (ACTUAL), 0.0 (DESIRED)
+Max absolute difference among violations: 1.
+Max relative difference among violations: 0.5
+ ACTUAL: array([-1.,  1.,  0.])
+ DESIRED: array([-2.,  0.,  0.])
+
+======================================================================
+FAIL: test_normals_on_the_second_skin_turn_with_their_own_bone (scripts.avatar.pose_test.OwnSkin.test_normals_on_the_second_skin_turn_with_their_own_bone)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/pose_test.py", line 70, in test_normals_on_the_second_skin_turn_with_their_own_bone
+    np.testing.assert_allclose(normals[('M1', 0)][0], [-1.0, 0.0, 0.0], atol=1e-9)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/numpy/testing/_private/utils.py", line 1768, in assert_allclose
+    assert_array_compare(compare, actual, desired, err_msg=str(err_msg),
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         verbose=verbose, header=header, equal_nan=equal_nan,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                         strict=strict)
+                         ^^^^^^^^^^^^^^
+  File "/opt/homebrew/lib/python3.14/site-packages/numpy/testing/_private/utils.py", line 983, in assert_array_compare
+    raise AssertionError(msg)
+AssertionError: 
+Not equal to tolerance rtol=1e-07, atol=1e-09
+
+Mismatched elements: 2 / 3 (66.7%)
+Mismatch at indices:
+ [0]: 0.0 (ACTUAL), -1.0 (DESIRED)
+ [1]: 1.0 (ACTUAL), 0.0 (DESIRED)
+Max absolute difference among violations: 1.
+Max relative difference among violations: 1.
+ ACTUAL: array([0., 1., 0.])
+ DESIRED: array([-1.,  0.,  0.])
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.306s
+
+FAILED (failures=4, errors=4)
