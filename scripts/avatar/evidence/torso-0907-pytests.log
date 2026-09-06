@@ -1,0 +1,13 @@
+  gate 53: compare=[] bones=53 required_missing=[]
+  gate one-sided: compare=[{'bone': 'upperChest', 'distance': None, 'note': '只有一邊有這根骨頭'}] bones=53 required_missing=[]
+  gate hand: compare=[] bones=53 required_missing=['leftHand']
+  gate self: compare=[] bones=54 required_missing=[]
+  parity shipped: worst bone modelPose@2.82s rightIndexDistal 0.0746° (limit 0.5°)
+  parity twin: worst bone modelPose@2.82s rightIndexDistal 0.0746° (limit 0.5°)
+   mika-pink.vrm 已是 VRM 0.x
+   twin.vrm 是 VRM 1.0，轉成 0.x 寫到 base-vrm0.vrm（5526444 bytes）
+......................................................................................................................................................................................................................................
+----------------------------------------------------------------------
+Ran 230 tests in 9.150s
+
+OK

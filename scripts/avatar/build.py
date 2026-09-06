@@ -613,6 +613,27 @@ def landmarks(pool, doc):
     }
 
 
+# Where the three torso edges of the hand-modelled outfit sit, as fractions of
+# the waist→shoulder span. They were absolute heights (1.181, 1.168, 1.155)
+# until 2026-09-07, read once off this VRoid body: on a longer torso the
+# bandeau would have kept its height while the ribs it is supposed to cover
+# moved, and the sleeve would have started somewhere else on the arm. The
+# fractions are where those edges sit on the body the outfit was drawn against,
+# and on that body they reproduce the old heights to within 0.1mm — the three
+# vertex masks come out identical.
+TORSO_EDGES = {
+    'bandeau_top': 0.866,   # the bandeau's upper edge, at the frill's own height
+    'strap_bottom': 0.815,  # where the shoulder straps come off the trapezius
+    'sleeve_bottom': 0.764, # the cardigan sleeve's lower edge on the upper arm
+}
+
+
+def torso_edges(lm):
+    """The heights in TORSO_EDGES for one body, from its own waist and shoulder."""
+    span = lm['shoulder'] - lm['waist']
+    return {name: lm['waist'] + span * f for name, f in TORSO_EDGES.items()}
+
+
 def build(src, dst, manifest_path, out_manifest):
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
@@ -679,7 +700,8 @@ def build(src, dst, manifest_path, out_manifest):
     #     rather than a white plank laid across the chest. Running the cloth up
     #     to the collarbone instead left the frill trapped between two white
     #     surfaces with nothing to be the edge of. ---
-    torso = (p[:, 1] < 1.181) & (p[:, 1] > lm['waist'] - 0.055) & (np.abs(p[:, 0]) < 0.105)
+    edge = torso_edges(lm)
+    torso = (p[:, 1] < edge['bandeau_top']) & (p[:, 1] > lm['waist'] - 0.055) & (np.abs(p[:, 0]) < 0.105)
     # Two straps over the shoulders, part of the top rather than a separate
     # accessory: the reference shows them crossing the bare shoulder ABOVE the
     # cardigan, which is the detail that makes the cardigan read as worn off the
@@ -687,7 +709,10 @@ def build(src, dst, manifest_path, out_manifest):
     # the same pass as the bodice so they wrap the trapezius instead of floating
     # over it, and they are 36mm wide, which is the width the sheet shows
     # against a 210mm shoulder span.
-    strap = ((p[:, 1] > 1.168) & (p[:, 1] < 1.252)
+    # Their top is the neck joint: the strap ends where the trapezius does, and
+    # on this body that is 2.2mm below the 1.252 it used to say, a gap holding
+    # no vertex at all.
+    strap = ((p[:, 1] > edge['strap_bottom']) & (p[:, 1] < lm['neck'])
              & (np.abs(p[:, 0]) > 0.052) & (np.abs(p[:, 0]) < 0.088))
     put(garment.shell(pool, torso | strap, 0.012), 'Milfy_White', 'Outfit_Top',
         origin='shell')
@@ -701,7 +726,7 @@ def build(src, dst, manifest_path, out_manifest):
     shoulder_top = lm['shoulder']                  # the upper-arm joint's height
     wrist = arm_r * 0.84                           # stop before the hand
     sleeve = ((np.abs(p[:, 0]) > 0.105) & (np.abs(p[:, 0]) < wrist)
-              & (p[:, 1] > 1.155) & (p[:, 1] < shoulder_top + 0.02))
+              & (p[:, 1] > edge['sleeve_bottom']) & (p[:, 1] < shoulder_top + 0.02))
     torso_back = ((p[:, 1] < shoulder_top - 0.045) & (p[:, 1] > lm['waist'] - 0.105)
                   & (np.abs(p[:, 0]) < 0.155)
                   & ~((p[:, 2] < -0.015) & (np.abs(p[:, 0]) < 0.052)))

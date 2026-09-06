@@ -65,6 +65,49 @@ class Landmarks(unittest.TestCase):
         self.assertEqual(b['waist'], a['waist'])
 
 
+class TorsoEdges(unittest.TestCase):
+    """The three garment edges on the torso, which were absolute heights until
+    2026-09-07. The body they were measured on has its waist at 0.960000 and
+    its left upper-arm joint at 1.215111 (build.landmarks on out/bare.rerun.vrm,
+    2026-09-07)."""
+
+    MEASURED = {'waist': 0.960000, 'shoulder': 1.215111}
+    DRAWN_AT = {'bandeau_top': 1.181, 'strap_bottom': 1.168, 'sleeve_bottom': 1.155}
+
+    def test_the_edges_land_where_the_outfit_was_drawn(self):
+        # The fractions are only meaningful if they still put the edges where
+        # the reference sheet has them on the body it was drawn against. 0.1mm,
+        # which is the tolerance at which the vertex masks were checked to be
+        # identical.
+        got = build.torso_edges(self.MEASURED)
+        for name, y in self.DRAWN_AT.items():
+            self.assertAlmostEqual(got[name], y, delta=0.0001, msg=name)
+
+    def test_a_longer_torso_moves_every_edge(self):
+        # The whole point: raise the shoulder without moving the waist and the
+        # bandeau, the straps and the sleeve all ride up with the ribs they sit
+        # on, each by its own share of the 10cm.
+        short = self.MEASURED
+        tall = {'waist': short['waist'], 'shoulder': short['shoulder'] + 0.1}
+        a, b = build.torso_edges(short), build.torso_edges(tall)
+        for name, f in build.TORSO_EDGES.items():
+            self.assertAlmostEqual(b[name] - a[name], 0.1 * f, places=9, msg=name)
+        # And they stay in the order the garment needs: sleeve under strap
+        # under bandeau, on either body.
+        for edges in (a, b):
+            self.assertLess(edges['sleeve_bottom'], edges['strap_bottom'])
+            self.assertLess(edges['strap_bottom'], edges['bandeau_top'])
+        # A body with longer legs and the same torso: waist and shoulder both
+        # 5cm up, so every edge is 5cm up and not a millimetre more. Raising
+        # only the shoulder cannot tell a waist-to-shoulder span from a
+        # shoulder-to-floor one -- both grow by the same 10cm -- and this is
+        # the case that can.
+        lifted = {k: v + 0.05 for k, v in short.items()}
+        c = build.torso_edges(lifted)
+        for name in build.TORSO_EDGES:
+            self.assertAlmostEqual(c[name] - a[name], 0.05, places=9, msg=name)
+
+
 class Wiring(unittest.TestCase):
     """landmarks() being right proves nothing if build() still types the
     numbers in beside it (memory: feedback_injection_bypasses_wiring)."""
@@ -78,6 +121,19 @@ class Wiring(unittest.TestCase):
         self.assertRegex(src, r"neck_y = lm\['neck'\] - 0\.007")
         for typed in (r"hip, knee, ankle = 0\.", r"shoulder_top = 1\.", r"\n    neck_y = 1\."):
             self.assertNotRegex(src, typed, 'build() types a landmark height in again')
+
+    def test_build_cuts_the_torso_edges_at_the_derived_fractions(self):
+        with open(os.path.join(HERE, 'build.py'), encoding='utf-8') as fh:
+            src = fh.read()
+        self.assertRegex(src, r"edge = torso_edges\(lm\)")
+        for name in ('bandeau_top', 'strap_bottom', 'sleeve_bottom'):
+            self.assertRegex(src, r"edge\['%s'\]" % name)
+        self.assertRegex(src, r"p\[:, 1\] < lm\['neck'\]")
+        # The heights these replaced, so a revert cannot pass by leaving the
+        # derivation in place beside a typed-in comparison.
+        for typed in (r"p\[:, 1\] < 1\.181", r"p\[:, 1\] > 1\.168",
+                      r"p\[:, 1\] < 1\.252", r"p\[:, 1\] > 1\.155"):
+            self.assertNotRegex(src, typed, 'build() types a torso edge in again')
 
 
 if __name__ == '__main__':

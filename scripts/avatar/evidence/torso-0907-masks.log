@@ -1,0 +1,19 @@
+Do the derived torso edges select a different set of body vertices than the
+absolute heights they replaced? Measured 2026-09-07 on the shipped base body.
+
+landmarks on the shipped base body (out/bare.rerun.vrm):
+  waist    0.960000
+  shoulder 1.215111   span 0.255111
+  neck     1.249834
+
+edge          was      now        delta
+  bandeau_top    1.1810  1.180926  -0.074 mm
+  strap_bottom   1.1680  1.167915  -0.085 mm
+  sleeve_bottom  1.1550  1.154904  -0.096 mm
+  strap top      1.2520  1.249834  -2.166 mm
+
+  torso    old   651  new   651  vertices differing: 0
+  strap    old   130  new   130  vertices differing: 0
+  sleeve   old   380  new   380  vertices differing: 0
+
+  vertices in the 2.4mm the strap band gives up at the top: 0
