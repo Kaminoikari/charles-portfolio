@@ -1,5 +1,6 @@
 import type { AvatarMotionName } from '../../src/components/chat/avatarMotions'
 import type { EmotionName, GestureName } from '../../src/components/chat/avatarGuideEngine'
+import type { AvatarFamilyId } from '../../src/components/chat/avatarVariants'
 
 export interface PreviewControl<Name extends string> {
   name: Name
@@ -7,6 +8,19 @@ export interface PreviewControl<Name extends string> {
 }
 
 export const MIKA_MILFY_MODEL_URL = '/avatar/mika-milfy-12.vrm'
+
+/**
+ * Which rig the previewed build came off.
+ *
+ * Stated here rather than looked up, because this tool's whole job is to try
+ * the clips on a build BEFORE it is declared in AVATAR_VARIANTS: point the URL
+ * above at a fresh `mika-milfy-13.vrm` and the registry has never heard of it.
+ * The engine will not guess a family for an undeclared body (guessing is how a
+ * clip measured on one skeleton gets played on another), so the person who
+ * built the file says which rig it came off. `make.py` prints the skeleton
+ * comparison it ran against the base; if that gate passed, this is still right.
+ */
+export const MIKA_MILFY_FAMILY: AvatarFamilyId = 'vroid-sample-b'
 
 export const PREVIEW_MOTIONS: readonly PreviewControl<AvatarMotionName>[] = [
   { name: 'dance', label: '跳舞' },

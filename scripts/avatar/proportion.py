@@ -28,10 +28,9 @@ import numpy as np
 import glb
 
 CHIN_Y = 1.272        # where the jaw meets the neck on this body
-FOOT_Y = 0.034
 
 
-def rescale(pos, factor, chin=CHIN_Y, foot=FOOT_Y):
+def rescale(pos, factor, chin=CHIN_Y):
     """Grow the head about the chin. The body is left exactly alone.
 
     An earlier version also compressed the body to keep total height constant.
@@ -39,7 +38,9 @@ def rescale(pos, factor, chin=CHIN_Y, foot=FOOT_Y):
     move, so compressing only the mesh slides every vertex away from the joint
     that drives it. The skin still passed compare() and still deformed wrongly,
     and every landmark measured off a bone (hip, knee, ankle) silently stopped
-    describing the mesh.
+    describing the mesh. That version needed the floor to compress towards;
+    this one does not, which is why there is no `foot` parameter and no
+    FOOT_Y constant any more.
 
     Only the head moves here, and the head is rigidly weighted to one joint, so
     scaling it about the chin leaves the skinning correct.

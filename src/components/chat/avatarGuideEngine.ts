@@ -75,6 +75,7 @@ import {
   settleWeight,
   type AvatarMotionName,
 } from './avatarMotions'
+import { familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
@@ -383,6 +384,13 @@ export function initAvatarGuide(
   // during a healthy load, so silence here would leave the corner empty
   // forever on a failed one.
   onLoadFailed?: () => void,
+  // Whose measurements to apply to a body the registry has not declared — a
+  // fallback, never an override (the registry wins for a URL it knows). The
+  // site never passes this: every URL it loads comes from AVATAR_VARIANTS, so
+  // familyOfUrl answers. scripts/avatar/live-preview.ts does, because its whole
+  // job is to try the clips on a build that is not shipped yet, and the person
+  // who just built it is the one who knows which rig it came off.
+  declaredFamily?: AvatarFamilyId,
 ): AvatarGuideHandle {
   let disposed = false
   let mode: AvatarMode = 'idle'
@@ -633,9 +641,24 @@ export function initAvatarGuide(
   // result that is no longer the latest is a body nobody asked for any more
   // (the visitor tapped twice); it is disposed rather than installed.
   let shownUrl: string | null = null
+  // Whose measurements the body on screen is covered by. Null only before the
+  // first body lands: loadVariant refuses a body nothing can vouch for, so
+  // anything that reaches the scene has a family. Both readers still handle the
+  // null, which is what makes "no family, no clips" the shape of the code
+  // rather than a promise in a comment.
+  let shownFamily: AvatarFamilyId | null = null
+  // The registry answers first. declaredFamily is a fallback for a body the
+  // registry has never heard of, NOT an override: letting it win would let the
+  // preview tool apply one family's clearances to a declared body of another,
+  // which is the single mistake this layer exists to prevent. It never throws,
+  // and it is called BEFORE the old body is released (see loadVariant), so a
+  // URL nobody can vouch for fails the load with the body on screen untouched
+  // rather than half-swapping into a state with no clips bound and a promise
+  // that never settles.
+  const familyFor = (url: string): AvatarFamilyId | null => familyOfUrl(url) ?? declaredFamily ?? null
   let loadSeq = 0
   let pendingSeq: number | null = null
-  function installVrm(loaded: VRM, url: string): void {
+  function installVrm(loaded: VRM, url: string, family: AvatarFamilyId): void {
     // Same ?mikadebug=1 gate as __mikaState/__mikaHandle: colour tuning has
     // to measure and adjust materials under THIS scene's lights, not a
     // reconstruction of them — the probe that copied the light constants by
@@ -705,6 +728,12 @@ export function initAvatarGuide(
     )
     vrm = loaded
     shownUrl = url
+    // Beside shownUrl on purpose: a swap that changed the body without changing
+    // the family would offer clips measured on the skeleton she just left. It
+    // is passed in rather than looked up here because loadVariant has already
+    // refused the load if nothing could vouch for this body — by the time the
+    // body reaches the scene the family is a fact, not a lookup that can fail.
+    shownFamily = family
     // Clips are built against a body (createVRMAnimationClip binds them to its
     // bone nodes), so whatever the previous body had is rebuilt from source for
     // this one. On the first load there is nothing here yet: the clips are
@@ -741,6 +770,19 @@ export function initAvatarGuide(
   function loadVariant(url: string): Promise<boolean> {
     // Already on screen with nothing newer in flight: nothing to do.
     if (vrm && shownUrl === url && pendingSeq === null) return Promise.resolve(true)
+    // Before the fetch, so a body nobody can vouch for costs nothing and, more
+    // importantly, changes nothing: the body on screen keeps its clips and this
+    // reports the same failure as a 404. Resolving it after uninstallVrm would
+    // leave the new body in the scene with no clips bound and the promise never
+    // settled, which reads on screen as a look strip stuck busy forever.
+    const family = familyFor(url)
+    if (!family) {
+      // Reported on the same condition as a 404 below: with a body already on
+      // screen she simply keeps it, and the promise says so. Announcing it
+      // there would put an error in front of a visitor who can see her.
+      if (!disposed && !vrm) onLoadFailed?.()
+      return Promise.resolve(false)
+    }
     const seq = ++loadSeq
     pendingSeq = seq
     return new Promise((resolve) => {
@@ -756,7 +798,7 @@ export function initAvatarGuide(
             return
           }
           uninstallVrm()
-          installVrm(gltf.userData.vrm as VRM, url)
+          installVrm(gltf.userData.vrm as VRM, url, family)
           resolve(true)
         },
         undefined,
@@ -1172,8 +1214,12 @@ export function initAvatarGuide(
           idleEmoTimer = 16 + Math.random() * 12
         }
         idleActTimer -= dt
-        if (idleActTimer <= 0) {
-          const order = motionsFor(placement)
+        // shownFamily is set the moment a body is installed and matzT only
+        // reaches 2 on an installed body, so the guard is the compiler's, not a
+        // case anyone can reach. It is still the right shape: with no family
+        // there is no clip anyone has measured, so she performs nothing.
+        if (idleActTimer <= 0 && shownFamily) {
+          const order = motionsFor(placement, shownFamily)
           // The opening beat is never a gesture. The procedural acts are
           // punctuation between clips, and letting one win the first roll would
           // make her first move a shrug on two visits out of three.
@@ -1544,8 +1590,11 @@ export function initAvatarGuide(
       gesture = { name, t: 0, v: Math.random() < 0.5 ? -1 : 1 }
     },
     playMotion,
+    // Empty before the first body lands, which is also what it returns while
+    // the clips are still downloading — the caller already treats "nothing yet"
+    // as a reason to wait rather than as an error.
     readyMotions: (asked = placement) =>
-      motionsFor(asked).filter((name) => motionClips.has(name)),
+      shownFamily ? motionsFor(asked, shownFamily).filter((name) => motionClips.has(name)) : [],
     loadVariant,
     setPlacement: (next) => {
       const before = motionFrame(placement)

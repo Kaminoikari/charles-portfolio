@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -1108,5 +1111,33 @@ describe('the look strip', () => {
     await openWithHer()
     expect(avatarStub.vrmUrl).toBe(BASE)
     expect(pressed(chip(/purple hair/i))).toBe(true)
+  })
+})
+
+describe('the motion strip asks the body on screen which clips it has', () => {
+  // Structural, because on today's data it cannot be anything else: one family
+  // is declared, so motionsFor returns the same ten names whichever family the
+  // widget names — a literal, the wanted body's, the shown body's. Every
+  // rendering test would stay green through all three. What separates them is
+  // the day a second family is declared, and by then the wrong one is already
+  // shipped, which is exactly the failure the family layer exists to prevent.
+  const SOURCE = readFileSync(
+    path.join(process.cwd(), 'src', 'components', 'chat', 'ChatWidget.tsx'),
+    'utf8',
+  )
+
+  it('reads the family off variantShown, never a literal and never variantWanted', () => {
+    expect(SOURCE, 'the strip must ask the body on screen').toMatch(
+      /motionsFor\(placement, familyOf\(variantShown\)\)/,
+    )
+    // variantWanted is the body still downloading. Its family would describe a
+    // skeleton that is not on screen yet, and during a cross-family swap that is
+    // a chip offering a clip nobody measured on the body the visitor can see.
+    expect(SOURCE, 'the wanted body is not the body on screen').not.toMatch(
+      /motionsFor\([^)]*variantWanted/,
+    )
+    expect(SOURCE, 'the widget must not hard-code a family id').not.toMatch(
+      /motionsFor\([^)]*'[a-z-]+'/,
+    )
   })
 })

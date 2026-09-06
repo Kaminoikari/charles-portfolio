@@ -8,16 +8,18 @@
 // (URL, remembered choice, default), the strip that offers them is LookStrip,
 // and the engine swaps bodies through AvatarGuideHandle.loadVariant.
 //
-// WHY THE RIG MATTERS. Every variant declared here must carry the same humanoid
-// rest pose, because that is what lets the ten motion clips be shared. The
-// clips' clearance numbers (the clearance file, src/components/chat/clearance/)
-// are absolute world-space distances measured against one body; a variant whose
-// bones moved is a different body wearing the same numbers, and the first thing
-// anyone sees is a hand through a face. The same goes for the blendshape
-// names: expressions and lip sync are looked up by name on the loaded model,
-// so a variant missing one simply stops making that face, silently.
-// avatarVariants.test.ts holds both of those across everything declared here,
-// and the sha the clearance file names is the rig every variant has to be.
+// WHY THE RIG MATTERS. Same family ⇒ the clearance is shared; new family ⇒ it
+// has to be measured again. A family is a set of bodies whose humanoid rest
+// pose hashes the same (rigOf), and the clips' clearance numbers
+// (src/components/chat/clearance/) are absolute world-space distances measured
+// on ONE body of one family. A body whose bones moved is a different body
+// wearing those numbers, and the first thing anyone sees is a hand through a
+// face. So every variant here names its family, and the test holds its rig
+// against THAT family's sha — not against whatever the first sibling happens
+// to be. The blendshape names are the same kind of promise: expressions and
+// lip sync are looked up by name on the loaded model, so a variant missing one
+// simply stops making that face, silently. avatarVariants.test.ts holds both
+// across everything declared here.
 //
 // The rig is the humanoid bones' rest transforms and hierarchy, NOT the mesh:
 // an outfit IS different geometry on the same bones, which is the whole reason
@@ -33,7 +35,35 @@
 // /avatar/* is served cache-immutable, so any content change MUST arrive under
 // a new filename. Renaming is the invalidation.
 
+import type { ClearanceFile } from './clearance'
+import { CLEARANCE as VROID_SAMPLE_B } from './clearance/vroid-sample-b'
+
 export type AvatarVariantId = 'pink' | 'milfy' | 'base'
+
+/**
+ * A group of bodies that share a humanoid rig, and therefore share one set of
+ * measurements.
+ *
+ * The registry has always assumed exactly one of these — every body was an
+ * export of the same VRoid project, so "the clips fit" was a single fact. A
+ * second rig makes it a fact per group: the same clip retargeted onto another
+ * skeleton reaches somewhere else, and the numbers that say whether it stays
+ * in frame have to be re-measured. The family is the unit that owns them.
+ */
+export type AvatarFamilyId = 'vroid-sample-b'
+
+/**
+ * Each family's measurements, as produced and decided in
+ * src/components/chat/clearance/.
+ *
+ * The clearance file already names its own family and the sha of the rig it
+ * was measured on, so this map holds the file itself rather than a record that
+ * restates them. A second copy of the sha here could disagree with the one the
+ * producers wrote, and nothing would say which was right.
+ */
+export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
+  'vroid-sample-b': VROID_SAMPLE_B,
+}
 
 export interface AvatarVariant {
   /**
@@ -46,6 +76,12 @@ export interface AvatarVariant {
   label: string
   /** Served path. Must be under /avatar/ and end in .vrm. */
   url: string
+  /**
+   * Whose measurements apply to this body. avatarVariants.test.ts holds the
+   * body's own rig sha to the family's, so a file exported from a project with
+   * a nudged skeleton cannot inherit numbers that were never measured on it.
+   */
+  family: AvatarFamilyId
 }
 
 // In the order the look strip offers them.
@@ -57,8 +93,15 @@ export interface AvatarVariant {
 //
 // `base` is the untouched VRoid export she shipped with; `pink` is that same
 // export with four textures repainted (scripts/repaint_vrm.py) and nothing else
-// changed. `milfy` is the Blender rebuild from scripts/avatar/: the same 54
-// bones carrying its own hair, crown and outfit, 11.9MB.
+// changed. `milfy` is the Blender rebuild from scripts/avatar/, carrying its
+// own hair, crown and outfit on that same skeleton, 11.9MB.
+//
+// All three are therefore one family. What makes them one is not the bone
+// COUNT — two skeletons can both have 54 bones and rest in different places —
+// but that rigOf() hashes the same for all three, which is the humanoid map
+// plus every bone's rest transform and parent. The pipeline stopped requiring
+// a particular count in Phase 3; the gate is now "the same bones, where this
+// family's measurements say they are".
 //
 // `milfy` was kept off the public site until 2026-09-03 as a reverse-engineered
 // replica (the .gitignore block records both that decision and its reversal).
@@ -72,9 +115,9 @@ export interface AvatarVariant {
 // and forbid only redistributing the model file FOR A FEE. All three are served
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
-  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm' },
-  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm' },
-  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm' },
+  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm', family: 'vroid-sample-b' },
+  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b' },
+  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b' },
 ]
 
 /**
@@ -107,4 +150,37 @@ export function variantUrl(id: string = ACTIVE_VARIANT): string {
     throw new Error(`unknown avatar variant "${id}" (declared: ${known})`)
   }
   return found.url
+}
+
+/**
+ * Whose measurements apply to a declared body.
+ *
+ * Throws on an unknown id for the same reason variantUrl does: guessing a
+ * family would hand a body another skeleton's clearances, which is the one
+ * mistake this whole layer exists to prevent.
+ */
+export function familyOf(id: string = ACTIVE_VARIANT): AvatarFamilyId {
+  const found = AVATAR_VARIANTS.find((v) => v.id === id)
+  if (!found) {
+    const known = AVATAR_VARIANTS.map((v) => v.id).join(', ')
+    throw new Error(`unknown avatar variant "${id}" (declared: ${known})`)
+  }
+  return found.family
+}
+
+/**
+ * The same, for code that holds the served URL rather than the id.
+ *
+ * The engine is that code: it is handed a URL to load and never sees the
+ * visitor's pick, so this is how a loaded body finds its own numbers.
+ *
+ * Null rather than a throw, unlike familyOf. An id comes from this module's own
+ * union and can only be wrong by a typo; a URL is a string from anywhere, and
+ * scripts/avatar/live-preview.ts exists precisely to load a freshly built body
+ * that nothing has declared yet. Guessing a family for it would hand that body
+ * another skeleton's clearances, so the answer is "no measurements apply" and
+ * the caller decides what that means. What it must never mean is a default.
+ */
+export function familyOfUrl(url: string): AvatarFamilyId | null {
+  return AVATAR_VARIANTS.find((v) => v.url === url)?.family ?? null
 }

@@ -39,7 +39,7 @@ import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideE
 import { MotionStrip } from './MotionStrip'
 import { LookStrip } from './LookStrip'
 import { motionsFor, type AvatarMotionName } from './avatarMotions'
-import { AVATAR_VARIANTS, variantUrl, type AvatarVariantId } from './avatarVariants'
+import { AVATAR_VARIANTS, familyOf, variantUrl, type AvatarVariantId } from './avatarVariants'
 import { initialVariantId, rememberVariant } from './avatarVariantChoice'
 
 // What Mika performs alongside each voice cue: an expression preset (name,
@@ -733,7 +733,11 @@ export default function ChatWidget() {
   // Keep the strip's tappable set in step with what has downloaded. Stops as
   // soon as everything this placement offers is in, and re-arms when the
   // placement changes because the two frames offer different clips.
-  const offered = motionsFor(placement)
+  //
+  // variantShown, not variantWanted: the strip describes the body on screen.
+  // During a swap the wanted body is still downloading, and listing its clips
+  // would offer a chip that plays nothing until it arrives.
+  const offered = motionsFor(placement, familyOf(variantShown))
   const offeredCount = offered.length
   useEffect(() => {
     if (offeredCount === 0) {

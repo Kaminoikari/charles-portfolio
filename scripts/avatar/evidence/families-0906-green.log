@@ -1,0 +1,626 @@
+
+ RUN  v3.2.6 /Users/charles/portfolio
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > wraps long drafts and grows the composer to their content height
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > sends a draft when Enter is pressed
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > rests as a launcher pill once the avatar gate settles, never flashing it before
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > offers minimise rather than close, because stowing keeps the conversation
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > keeps the conversation when minimised and re-opened
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > keeps the conversation when Escape stows the panel
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > discards the conversation only through the explicit clear control
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > shows the pipeline rail only in fullscreen
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > shows the pipeline rail only in fullscreen
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > collapses back to the docked panel through the same control
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > collapses back to the docked panel through the same control
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16119:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16105:11)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > keeps the conversation across every size change
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > keeps the conversation across every size change
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16119:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16105:11)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > keeps the conversation across every size change
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > invites a question before anything has run
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > invites a question before anything has run
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > draws each node the server reported, with its latency
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > draws each node the server reported, with its latency
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > keeps the suggestions in the rail after a question has been answered
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > keeps the suggestions in the rail after a question has been answered
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > shows a corrective loop as two separate retrieve steps
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > pipeline trace > shows a corrective loop as two separate retrieve steps
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > focus containment > pulls a forward Tab from outside the panel back inside
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > focus containment > pulls a forward Tab from outside the panel back inside
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > focus containment > pulls a backward Tab from outside the panel back inside
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > focus containment > pulls a backward Tab from outside the panel back inside
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > focus containment > leaves focus free to reach the page from the docked panel
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > renders the docked panel at the height the avatar is sized to
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > sizes the docked avatar canvas from avatarDockedBox, not the panel class
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at speakOpenCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:465:10)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:909:15)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > sizes the docked avatar canvas from avatarDockedBox, not the panel class
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:446:43
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > stands her beside the panel on a short window of a width a tall one refuses
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at speakOpenCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:462:7)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:909:15)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > stands her beside the panel on a short window of a width a tall one refuses
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:446:43
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > lifts her above the nav bar on a landscape phone, where her head is inside it
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at speakOpenCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:462:7)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:909:15)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > lifts her above the nav bar on a landscape phone, where her head is inside it
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:446:43
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > keeps her off a tall window of exactly that width
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at speakOpenCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:462:7)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:909:15)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > keeps her off a tall window of exactly that width
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:446:43
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at speakOpenCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:462:7)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:909:15)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:419:14)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:1064:34)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19)
+    at /Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19767:9
+    at batchedUpdates$1 (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:3255:40) [90mundefined[39m
+Error: Not implemented: HTMLMediaElement.prototype.play
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:118:5)
+    at HTMLAudioElement.play (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:148:60)
+    at playVoiceCue (/Users/charles/portfolio/src/components/chat/avatarVoice.ts:230:6)
+    at speakCue (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:429:16)
+    at onClick (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:1064:34)
+    at executeDispatch (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19116:9)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at processDispatchQueue (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19166:19)
+    at /Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:19767:9 [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width
+Error: Not implemented: HTMLMediaElement.prototype.pause
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLAudioElementImpl.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLMediaElement-impl.js:121:5)
+    at HTMLAudioElement.pause (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLMediaElement.js:162:34)
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:446:43
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13) [90mundefined[39m
+Error: Not implemented: window.scrollTo
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at /Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/Window.js:960:7
+    at /Users/charles/portfolio/src/components/chat/ChatWidget.tsx:566:14
+    at Object.react_stack_bottom_frame (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:26001:13)
+    at runWithFiberInDEV (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+    at commitHookEffectListUnmount (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13316:17)
+    at commitHookPassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:13347:11)
+    at commitPassiveUnmountEffectsInsideOfDeletedTree_begin (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16264:13)
+    at recursivelyTraversePassiveUnmountEffects (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16085:13)
+    at commitPassiveUnmountOnFiber (/Users/charles/portfolio/node_modules/react-dom/cjs/react-dom-client.development.js:16127:11) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > background scroll lock > pins the page while fullscreen is open
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > background scroll lock > restores the exact scroll position without animating it
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > background scroll lock > unpins the page when fullscreen is minimised directly
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at hasWebGL (/Users/charles/portfolio/src/components/chat/avatarMode.ts:938:23)
+    at avatarGuideEnabled (/Users/charles/portfolio/src/components/chat/avatarMode.ts:924:10)
+    at avatarGuideEnabledInBrowser (/Users/charles/portfolio/src/components/chat/avatarMode.ts:929:10)
+    at Timeout._onTimeout (/Users/charles/portfolio/src/components/chat/ChatWidget.tsx:322:19)
+    at listOnTimeout (node:internal/timers:608:17)
+    at processTimers (node:internal/timers:543:7) [90mundefined[39m
+
+ ✓ src/components/chat/ChatWidget.test.tsx (36 tests) 15535ms
+   ✓ ChatWidget size modes > wraps long drafts and grows the composer to their content height  580ms
+   ✓ ChatWidget size modes > sends a draft when Enter is pressed  480ms
+   ✓ ChatWidget size modes > rests as a launcher pill once the avatar gate settles, never flashing it before  407ms
+   ✓ ChatWidget size modes > offers minimise rather than close, because stowing keeps the conversation  419ms
+   ✓ ChatWidget size modes > keeps the conversation when minimised and re-opened  504ms
+   ✓ ChatWidget size modes > keeps the conversation when Escape stows the panel  498ms
+   ✓ ChatWidget size modes > discards the conversation only through the explicit clear control  488ms
+   ✓ ChatWidget fullscreen > shows the pipeline rail only in fullscreen  433ms
+   ✓ ChatWidget fullscreen > collapses back to the docked panel through the same control  440ms
+   ✓ ChatWidget fullscreen > keeps the conversation across every size change  522ms
+   ✓ ChatWidget fullscreen > pipeline trace > invites a question before anything has run  427ms
+   ✓ ChatWidget fullscreen > pipeline trace > draws each node the server reported, with its latency  459ms
+   ✓ ChatWidget fullscreen > pipeline trace > keeps the suggestions in the rail after a question has been answered  456ms
+   ✓ ChatWidget fullscreen > pipeline trace > shows a corrective loop as two separate retrieve steps  463ms
+   ✓ ChatWidget fullscreen > focus containment > pulls a forward Tab from outside the panel back inside  433ms
+   ✓ ChatWidget fullscreen > focus containment > pulls a backward Tab from outside the panel back inside  435ms
+   ✓ ChatWidget fullscreen > focus containment > leaves focus free to reach the page from the docked panel  420ms
+   ✓ ChatWidget fullscreen > renders the docked panel at the height the avatar is sized to  413ms
+   ✓ ChatWidget fullscreen > sizes the docked avatar canvas from avatarDockedBox, not the panel class  423ms
+   ✓ ChatWidget fullscreen > stands her beside the panel on a short window of a width a tall one refuses  421ms
+   ✓ ChatWidget fullscreen > lifts her above the nav bar on a landscape phone, where her head is inside it  419ms
+   ✓ ChatWidget fullscreen > keeps her off a tall window of exactly that width  417ms
+   ✓ ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width  437ms
+   ✓ ChatWidget fullscreen > head pats > answers a happy pat with a giggle from the locale-shared pool  408ms
+   ✓ ChatWidget fullscreen > head pats > answers the annoyed third pat with the complaint, not the giggle  407ms
+   ✓ ChatWidget fullscreen > head pats > yields the giggle to a line she is already speaking  407ms
+   ✓ ChatWidget fullscreen > head pats > lets the complaint talk over a laugh, so a fast triple pat still sounds  408ms
+   ✓ ChatWidget fullscreen > head pats > still holds the complaint back while she is speaking a LINE  412ms
+   ✓ ChatWidget fullscreen > background scroll lock > pins the page while fullscreen is open  429ms
+   ✓ ChatWidget fullscreen > background scroll lock > restores the exact scroll position without animating it  446ms
+   ✓ ChatWidget fullscreen > background scroll lock > unpins the page when fullscreen is minimised directly  446ms
+   ✓ the look strip > offers every declared body with the default pressed, and swaps on a tap  470ms
+   ✓ the look strip > puts the selection back where the body is when a swap fails, and remembers nothing new  455ms
+   ✓ the look strip > opens on the body a ?mika= link names, without remembering it  424ms
+   ✓ the look strip > opens on the remembered body  425ms
+ ✓ scripts/measure-motions.test.ts (6 tests) 7217ms
+ ✓ src/components/chat/rigProbe.test.ts (121 tests) 7089ms
+   ✓ bundled motions > dance decodes to an upright body  362ms
+   ✓ bundled motions > dance keeps her fingertips out of her own head  334ms
+   ✓ bundled motions > peaceSign stays inside every frame it declares  382ms
+   ✓ bundled motions > dance stays inside every frame it declares  706ms
+   ✓ bundled motions > dance declares no pan it does not need  672ms
+   ✓ bundled motions > dance turns a palm to the viewer at some point  317ms
+   ✓ bundled motions > dance keeps her hips inside the crop  315ms
+ ✓ src/components/chat/clearance.test.ts (4 tests) 2840ms
+   ✓ clearance producers > measure-motions --write records the rig it measured  2838ms
+ ✓ src/components/chat/AvatarGuide.test.tsx (16 tests) 882ms
+ ✓ src/components/Nav.test.tsx (9 tests) 140ms
+ ✓ src/components/chat/MotionStrip.test.tsx (7 tests) 131ms
+ ✓ src/components/chat/LookStrip.test.tsx (7 tests) 139ms
+ ✓ src/components/chat/useChatStream.test.ts (12 tests) 88ms
+ ✓ src/components/chat/avatarMode.test.ts (74 tests) 65ms
+ ✓ src/components/chat/vrmHumanoid.test.ts (15 tests) 55ms
+ ✓ src/components/chat/avatarVariants.test.ts (11 tests) 18ms
+ ✓ src/components/chat/useChatMode.test.ts (12 tests) 17ms
+ ✓ src/components/chat/Markdown.test.tsx (3 tests) 15ms
+ ✓ src/components/chat/visemeTrack.test.ts (5 tests) 13ms
+ ✓ src/components/chat/avatarPrefetch.test.ts (3 tests) 5ms
+ ✓ src/components/chat/framingSolver.test.ts (9 tests) 7ms
+ ✓ src/components/chat/avatarVoice.test.ts (11 tests) 5ms
+ ✓ src/i18n/chatVoice.test.ts (8 tests) 3ms
+ ✓ src/components/chat/avatarVariantChoice.test.ts (8 tests) 3ms
+ ✓ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests) 3ms
+ ✓ scripts/avatar/live-preview.test.ts (5 tests) 2ms
+ ✓ src/components/chat/avatarGuideEngine.wiring.test.ts (5 tests) 2ms
+ ✓ src/components/chat/avatarRim.test.ts (5 tests) 1ms
+ ✓ src/components/hero/particleHero.test.ts (4 tests) 1ms
+ ✓ scripts/avatar/springsim.test.ts (6 tests) 43919ms
+   ✓ Milfy through the spring solver > a 1.0 export of the same body simulates the same  18908ms
+
+ Test Files  26 passed (26)
+      Tests  414 passed (414)
+   Start at  00:29:06
+   Duration  44.54s (transform 477ms, setup 586ms, collect 2.33s, tests 78.20s, environment 4.79s, prepare 774ms)
+

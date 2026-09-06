@@ -1,0 +1,7 @@
+
+> portfolio@0.0.0 lint
+> eslint .
+
+
+$ npx tsc -p tsconfig.app.json --noEmit
+exit=0

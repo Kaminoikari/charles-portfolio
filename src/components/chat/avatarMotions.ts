@@ -18,6 +18,7 @@
 // hashes and terms. CREDIT below is that pack's required attribution and
 // names that pack only.
 import type { AvatarPlacement } from './avatarMode'
+import { AVATAR_FAMILIES, type AvatarFamilyId } from './avatarVariants'
 
 export type AvatarMotionName =
   | 'peaceSign'
@@ -368,7 +369,22 @@ export function motionPan(name: AvatarMotionName | null, frame: MotionFrame | nu
 }
 
 /**
- * Motions cleared for a placement. Empty when nothing renders there.
+ * Motions cleared for a placement ON A BODY OF THIS FAMILY. Empty when nothing
+ * renders there.
+ *
+ * Two filters, and they answer different questions. `placements` is a property
+ * of the CLIP: which compositions it was authored to sit in, true wherever it
+ * plays. The family's `excluded` is a property of the BODY: a clip the pack
+ * ships but this skeleton cannot wear, because retargeting it there puts a
+ * hand through a face or a hip out of frame. One family excludes nothing from
+ * this pool today — its three exclusions are clips that never entered it — and
+ * avatarVariants.test.ts holds every family to having a measurement or a
+ * written reason for all ten, so a second rig cannot quietly offer a clip
+ * nobody checked on it.
+ *
+ * The family is required rather than defaulted. A default would let the wiring
+ * that carries the loaded body's family to this call be deleted with every
+ * test still green.
  *
  * There is deliberately no viewport check here. Between 2026-08-19 and the same
  * evening this filtered a column clip out when the canvas was too narrow to show
@@ -377,10 +393,13 @@ export function motionPan(name: AvatarMotionName | null, frame: MotionFrame | nu
  * property of avatarColumnRightInset, and what a clip has to fit is the canvas,
  * which rigProbe.test.ts checks before it can be listed above.
  */
-export function motionsFor(placement: AvatarPlacement): readonly AvatarMotionName[] {
+export function motionsFor(placement: AvatarPlacement, family: AvatarFamilyId): readonly AvatarMotionName[] {
   const frame = motionFrame(placement)
   if (!frame) return []
-  return IDLE_MOTIONS.filter((name) => AVATAR_MOTIONS[name].placements.includes(frame))
+  const excluded = AVATAR_FAMILIES[family].excluded
+  return IDLE_MOTIONS.filter(
+    (name) => AVATAR_MOTIONS[name].placements.includes(frame) && !(name in excluded),
+  )
 }
 
 /**
@@ -412,7 +431,9 @@ export const IDLE_ROTATION_START: IdleRotation = { cursor: 0, opened: false }
  * parallel after the entrance and arrive in whatever order the network returns
  * them. Filtering first would silently renumber the rotation every time another
  * clip landed, and the opening would become "the first clip to arrive" — which
- * is rarely the dance, since it is the largest of the ten.
+ * is rarely the dance: at 730KB it is the third largest of the ten, behind
+ * peaceSign's 1,336KB and squat's 772KB (decimal, as the files measure
+ * 729,512 / 1,335,704 / 771,944 bytes), and it is also the longest to play.
  *
  * `openingExpired` bounds the wait for that opening. A clip that 404s or fails
  * to parse never reaches the cache, and waiting for it forever would trade a

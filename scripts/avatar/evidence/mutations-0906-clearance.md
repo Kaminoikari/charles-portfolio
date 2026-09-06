@@ -749,3 +749,50 @@ Ran 1 test in 0.166s
 FAILED (failures=1)
 ```
 
+
+---
+
+## 2026-09-07 補記：C15 的測試改名，選擇器與收據一併更新
+
+Phase 6b 把 `avatarVariants.test.ts` 那條測試從「gives every variant the rig
+the clearance file was measured on」改名成「gives every variant the rig its own
+family was measured on」（rig 現在held 的是該 variant **自己 family** 的 sha，
+不是單一 clearance 檔的）。上面 C15 區塊裡的輸出是改名前跑的。
+
+`clearance-0906-mutate.py` 的 `-t` 選擇器已跟著改。這件事本身就是一個陷阱：
+`vitest -t <對不上的名字>` 也是非零退出，這份 harness 的 `ran_and_failed`
+會把它判成 ABORT 而不是 RED，但如果沒有那道檢查，改名就會讓 C15 永遠「紅」下去
+而其實一條測試都沒跑。改完之後重跑，仍然是 RED，逐字輸出如下。
+
+### C15
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts -t gives every variant the rig its own family was measured on
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 14ms
+   ↓ avatar variants > resolves the active variant by default
+   ↓ avatar variants > refuses an id it does not know instead of quietly using the default
+   ↓ avatar variants > declares only files that are actually served
+   ↓ avatar variants > gives every variant its own id
+   ↓ avatar variants > gives every variant its own url
+   × avatar variants > gives every variant the rig its own family was measured on 13ms
+     → pink is not the rig family vroid-sample-b was measur
+[…]
+iles  1 failed (1)
+      Tests  1 failed | 10 skipped (11)
+   Start at  00:03:53
+   Duration  504ms (transform 50ms, setup 37ms, collect 65ms, tests 14ms, environment 271ms, prepare 33ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > gives every variant the rig its own family was measured on
+AssertionError: pink is not the rig family vroid-sample-b was measured on: expected 'e2aad79ec6667a5529934359339a6a08a29f7…' to be '0000000000000000000000000000000000000…' // Object.is equality
+Expected: [32m"0000000000000000000000000000000000000000000000000000000000000000"[39m
+Received: [31m"e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45"[39m
+ ❯ src/components/chat/avatarVariants.test.ts:105:80
+    103|       expect(Object.keys(readHumanoid(doc).bones).length).toBeGreaterT…
+    104|       const sha = createHash('sha256').update(rigOf(doc)).digest('hex')
+    105|       expect(sha, `${v.id} is not the rig family ${v.family} was measu…
+       |                                                                                ^
+    106|         AVATAR_FAMILIES[v.family].rigSha,
+    107|       )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+

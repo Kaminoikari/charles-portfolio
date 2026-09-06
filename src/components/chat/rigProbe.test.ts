@@ -7,6 +7,7 @@ import { VRMHumanoid } from '@pixiv/three-vrm'
 import { parseGlb, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
 import { crownBound, crownOn } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
+import type { AvatarFamilyId } from './avatarVariants'
 import {
   applyMotion,
   buildMotion,
@@ -51,6 +52,10 @@ import {
   type IdleRotation,
   type MotionFrame,
 } from './avatarMotions'
+
+// The family every declared body belongs to, and the one whose clearance this
+// file reads. motionsFor takes it because a second rig can exclude a clip.
+const FAMILY = CLEARANCE.family as AvatarFamilyId
 
 const asset = (...parts: string[]): Uint8Array =>
   new Uint8Array(readFileSync(path.join(process.cwd(), 'public', 'avatar', ...parts)))
@@ -747,7 +752,7 @@ describe('bundled motions', () => {
 describe('the idle pool', () => {
   it('offers dance wherever she is rendered', () => {
     for (const placement of ['launcher', 'beside-panel', 'column'] as const) {
-      expect(motionsFor(placement), `dance is missing from ${placement}`).toContain('dance')
+      expect(motionsFor(placement, FAMILY), `dance is missing from ${placement}`).toContain('dance')
     }
   })
 
@@ -756,7 +761,7 @@ describe('the idle pool', () => {
     // dance is the largest of them, so the beat that opens has to WAIT rather
     // than take what is there. Every other clip ready and the dance missing is
     // exactly the state that used to hand the opening to whoever won the race.
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     const everythingElse = (name: AvatarMotionName) => name !== OPENING_MOTION
     const held = nextIdleMotion(order, everythingElse, IDLE_ROTATION_START)
     expect(held.pick, 'opened on something other than the dance').toBeNull()
@@ -771,7 +776,7 @@ describe('the idle pool', () => {
     // Ten beats from a cold start on a body with every clip ready. The dance
     // leads because the opening says so, then IDLE_MOTIONS from the top. Any
     // repeat inside one lap means the cursor is not advancing.
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     const played: AvatarMotionName[] = []
     let state: IdleRotation = IDLE_ROTATION_START
     for (let i = 0; i < order.length; i++) {
@@ -786,7 +791,7 @@ describe('the idle pool', () => {
   })
 
   it('wraps back to the top instead of stopping at the end', () => {
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     let state: IdleRotation = IDLE_ROTATION_START
     const played: AvatarMotionName[] = []
     for (let i = 0; i < order.length * 2; i++) {
@@ -804,7 +809,7 @@ describe('the idle pool', () => {
   it('steps over a clip that has not arrived rather than waiting for it', () => {
     // A slow download costs that clip its turn, never the rotation. Waiting
     // here would freeze every performance behind one file.
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     const missing = order.find((n) => n !== OPENING_MOTION)!
     let state: IdleRotation = { cursor: 0, opened: true }
     const played: AvatarMotionName[] = []
@@ -820,7 +825,7 @@ describe('the idle pool', () => {
   it('gives up on a dance that never arrives instead of never performing', () => {
     // An unbounded wait trades a missing opening for a character who stands
     // still for the life of the page, which is far worse than the wrong clip.
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     const withoutDance = (name: AvatarMotionName) => name !== OPENING_MOTION
     const { pick, next } = nextIdleMotion(order, withoutDance, IDLE_ROTATION_START, true)
     expect(pick, 'expired and still played nothing').not.toBeNull()
@@ -829,7 +834,7 @@ describe('the idle pool', () => {
   })
 
   it('holds its place when nothing at all has loaded', () => {
-    const order = motionsFor('column')
+    const order = motionsFor('column', FAMILY)
     const state: IdleRotation = { cursor: 3, opened: true }
     const { pick, next } = nextIdleMotion(order, () => false, state)
     expect(pick).toBeNull()
@@ -837,20 +842,33 @@ describe('the idle pool', () => {
   })
 
   it('offers every idle clip somewhere, so the rotation can reach them all', () => {
-    // motionsFor filters by frame. A clip listed in IDLE_MOTIONS that no
-    // placement offers is one the rotation steps over forever.
+    // motionsFor filters twice: by frame, and by what this family excludes. A
+    // clip listed in IDLE_MOTIONS that no placement offers is one the rotation
+    // steps over forever — unless this family has written down why it cannot
+    // wear it, which is a decision rather than a gap.
+    const excluded = CLEARANCE.excluded
     const reachable = new Set([
-      ...motionsFor('launcher'),
-      ...motionsFor('beside-panel'),
-      ...motionsFor('column'),
+      ...motionsFor('launcher', FAMILY),
+      ...motionsFor('beside-panel', FAMILY),
+      ...motionsFor('column', FAMILY),
     ])
     for (const name of IDLE_MOTIONS) {
+      if (name in excluded) {
+        // The other direction, and the one that needs saying: a clip this
+        // family excludes must not be reachable on it. No family excludes a
+        // pool clip today, so this branch is unreached until a second rig
+        // declares one; evidence/families-0906-mutate.py runs it against a
+        // clearance that excludes `squat`, where dropping motionsFor's
+        // exclusion filter turns it red.
+        expect(reachable.has(name), `${name} is excluded on ${FAMILY} but still offered`).toBe(false)
+        continue
+      }
       expect(reachable.has(name), `${name} is in the rotation but no placement offers it`).toBe(true)
     }
   })
 
   it('offers nothing where she is not rendered', () => {
-    expect(motionsFor('hidden')).toHaveLength(0)
+    expect(motionsFor('hidden', FAMILY)).toHaveLength(0)
   })
 
   it('draws only from clips the frame guards above have measured', () => {
@@ -858,7 +876,7 @@ describe('the idle pool', () => {
     // is what every guard in this file iterates. A clip reachable at runtime but
     // absent from that table would be unmeasured.
     for (const placement of ['launcher', 'beside-panel', 'column'] as const) {
-      for (const name of motionsFor(placement)) expect(AVATAR_MOTIONS[name]).toBeDefined()
+      for (const name of motionsFor(placement, FAMILY)) expect(AVATAR_MOTIONS[name]).toBeDefined()
     }
   })
 })

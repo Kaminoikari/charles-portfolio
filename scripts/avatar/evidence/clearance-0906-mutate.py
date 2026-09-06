@@ -114,8 +114,12 @@ MUTATIONS = [
       '  "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",\n'),
      ('  "rigSha": "0000000000000000000000000000000000000000000000000000000000000000",\n',
       '  "rigSha": "0000000000000000000000000000000000000000000000000000000000000000",\n'),
-     VT(CHAT / 'avatarVariants.test.ts', 'gives every variant the rig the clearance file was measured on'),
-     'avatarVariants.test: every declared body is the rig the clearance file names (both produced halves moved together, because a sha changed in one is refused by combineClearance first — C10)'),
+     # Phase 6b renamed this test (the rig is now held against the variant's own
+     # FAMILY, not against one global clearance file). The selector follows the
+     # rename: a `-t` that matches nothing exits non-zero and would have been
+     # read as a RED that never ran.
+     VT(CHAT / 'avatarVariants.test.ts', 'gives every variant the rig its own family was measured on'),
+     'avatarVariants.test: every declared body is the rig its family names (both produced halves moved together, because a sha changed in one is refused by combineClearance first — C10)'),
     ('C16', CHAT / 'clearance' / 'vroid-sample-b.ts',
      "    spin: { crownTop: 1.62 },\n",
      "    spin: { crownTop: 1.62 },\n    akimbo: { crownTop: 1.62 },\n",

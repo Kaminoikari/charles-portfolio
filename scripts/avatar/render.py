@@ -7,10 +7,14 @@ pixels, every run. That determinism is the whole point — these images get
 compared against each other across steps, so a renderer that dithers or
 anti-aliases differently between runs would fake a change.
 
-Rest pose only. glTF says a skinned mesh ignores its node transform and lives in
-the skin's space, and at bind pose every joint matrix is identity, so POSITION
-is already the world position. Posed rendering needs the joint matrices and is
-not here yet.
+Rest pose by default, and it costs nothing: glTF says a skinned mesh ignores its
+node transform and lives in the skin's space, and at bind pose every joint
+matrix is identity, so POSITION is already the world position. A pose is passed
+in rather than computed here — `gather(posed=)` and `render(posed=)` take the
+skinned positions `pose.skinned()` produces, and that is the path
+`partmap.draw` hands on when pierce.py and motion.py sweep a clip. Keeping the
+skinning next door leaves this file one job: turning positions into pixels the
+same way every run.
 """
 import sys
 

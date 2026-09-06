@@ -48,7 +48,7 @@ describe('a body swap is the first load, run again', () => {
   it('releases the old body before installing the new one', () => {
     const body = fnBody('loadVariant')
     const release = body.indexOf('uninstallVrm()')
-    const install = body.indexOf('installVrm(gltf.userData.vrm as VRM, url)')
+    const install = body.indexOf('installVrm(gltf.userData.vrm as VRM, url, family)')
     expect(release).toBeGreaterThan(-1)
     expect(install).toBeGreaterThan(release)
   })
@@ -99,5 +99,65 @@ describe('a body swap is the first load, run again', () => {
 
   it('keeps the body on screen when a swap fails, and reports a failure only with none', () => {
     expect(fnBody('loadVariant')).toMatch(/if \(!disposed && !vrm && seq === loadSeq\) onLoadFailed\?\.\(\)/)
+  })
+
+  it('takes the new body onto its own family, so the clip pool follows the swap', () => {
+    // Which clips she offers is a property of the SKELETON she is wearing, not
+    // of the one she loaded first (motionsFor's second argument). A swap that
+    // set shownUrl and left shownFamily behind would keep offering the previous
+    // family's pool, and on a body that excludes a clip that is a clip
+    // retargeted onto a skeleton nobody measured it on.
+    //
+    // Structural, and it has to be: the engine needs a WebGLRenderer, so no
+    // test here can perform an actual swap and read the pool back.
+    const install = fnBody('installVrm')
+    expect(install, 'installVrm must set the family of the body it installs').toMatch(
+      /shownUrl = url\s*(?:\/\/[^\n]*\n\s*)*shownFamily = family/,
+    )
+    // And the two readers ask for it rather than naming a family of their own.
+    expect(SOURCE).toMatch(/motionsFor\(placement, shownFamily\)/)
+    expect(SOURCE).toMatch(/motionsFor\(asked, shownFamily\)/)
+    expect(SOURCE, 'the engine must not hard-code a family id').not.toMatch(/motionsFor\([^)]*'[a-z-]+'\)/)
+  })
+
+  it('settles the family before it releases the body on screen', () => {
+    // Ordering, and it is the whole guard. familyFor returns null for a body
+    // nothing declared, and resolving that AFTER uninstallVrm would put the new
+    // body in the scene with no clips bound and resolve(true) never reached:
+    // the promise never settles, so the look strip stays busy for the life of
+    // the page. Resolved first, an undeclared URL costs nothing and changes
+    // nothing — the same outcome as a 404, which is what the visitor sees.
+    const body = fnBody('loadVariant')
+    const resolveFamily = body.indexOf('const family = familyFor(url)')
+    const release = body.indexOf('uninstallVrm()')
+    expect(resolveFamily, 'loadVariant must resolve the family itself').toBeGreaterThan(-1)
+    expect(release).toBeGreaterThan(resolveFamily)
+    // ...and refuse rather than continue, reporting on the same condition the
+    // 404 path uses (a visitor who can still see her gets no error).
+    expect(body).toMatch(
+      /if \(!family\) \{(?:\s*\/\/[^\n]*)*\s*if \(!disposed && !vrm\) onLoadFailed\?\.\(\)\s*return Promise\.resolve\(false\)/,
+    )
+    // installVrm is handed the settled family, so it has no lookup left to fail.
+    expect(body).toMatch(/installVrm\(gltf\.userData\.vrm as VRM, url, family\)/)
+    // And nothing resolves a family anywhere else. The declaration is an arrow
+    // (`const familyFor = (url: string) =>`), so this counts CALLS, and there
+    // is exactly the one above: a second resolution somewhere later is how the
+    // ordering this test pins gets quietly reintroduced.
+    expect(SOURCE.match(/familyFor\(/g), 'familyFor is called once, in loadVariant').toHaveLength(1)
+  })
+
+  it('lets the registry outrank a caller-declared family', () => {
+    // declaredFamily is a FALLBACK for a body the registry has never heard of,
+    // which is the only thing it is documented to be. Written the other way
+    // round it silently outranks the registry for bodies the registry does
+    // know: point the preview tool at a declared body of a second family while
+    // its own constant still names the first, and every clip is filtered by the
+    // wrong family's exclusions and judged against the wrong clearances — the
+    // one mistake the whole family layer exists to prevent. One `??` apart, and
+    // nothing else in the suite can tell the two orders apart while exactly one
+    // family is declared.
+    expect(SOURCE, 'the registry answers first; declaredFamily only fills a gap').toMatch(
+      /familyOfUrl\(url\) \?\? declaredFamily/,
+    )
   })
 })

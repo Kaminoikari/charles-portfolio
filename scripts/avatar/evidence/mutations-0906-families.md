@@ -1,0 +1,453 @@
+G2 RED  restored=True
+G3 RED  restored=True
+G4 RED  restored=True
+G6-setup GREEN  restored=True
+G6 RED  restored=True
+G7 RED  restored=True
+G8 RED  restored=True
+G9 RED  restored=True
+G10 RED  restored=True
+G11 RED  restored=True
+G12 RED  restored=True
+G13 RED  restored=True
+
+| # | guard | result |
+|---|---|---|
+| G2 | every declared body names a family (dropping one leaves it looking up undefined) | RED |
+| G3 | a family nothing declares is refused (that is how a clearance file outlives the body it was measured on) | RED |
+| G4 | a family key pointing at another family's measurements is refused | RED |
+| G6-setup | SETUP ONLY: the family excludes a pool clip. The guard must still pass — motionsFor drops it, so it is correctly unreachable | GREEN |
+| G6 | motionsFor drops the clips this family excludes (setup as G6-setup, plus the filter removed: the clip is offered on a body that cannot wear it) | RED |
+| G7 | installVrm records the family of the body it installs, so a swap changes the clip pool with the body | RED |
+| G8 | the engine asks the loaded body for its family instead of naming one | RED |
+| G9 | the strip asks the body ON SCREEN, not the one still downloading (both return the same ten clips today, so only a source guard separates them) | RED |
+| G10 | loadVariant refuses a body no family can vouch for, instead of carrying a null past uninstallVrm | RED |
+| G11 | installVrm is HANDED the settled family; looking it up again there is the ordering bug returning (a null would reach shownFamily after the old body is gone) | RED |
+| G12 | the preview tool declares its family, so an undeclared fresh build still previews | RED |
+| G13 | declaredFamily is a fallback, never an override: written the other way it applies one family's clearances to a declared body of another, and with one family declared nothing else can tell the two orders apart | RED |
+
+### G2
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts -t declares a family for every variant
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 3ms
+   ↓ avatar variants > resolves the active variant by default
+   ↓ avatar variants > refuses an id it does not know instead of quietly using the default
+   ↓ avatar variants > declares only files that are actually served
+   ↓ avatar variants > gives every variant its own id
+   ↓ avatar variants > gives every variant its own url
+   ↓ avatar variants > gives every variant the rig its own family was measured on
+   × avatar variants > declares a family for every variant, and n
+[…]
+r variants > has each family naming itself in the clearance it points at
+   ↓ avatar variants > has each family answering for every clip in the pool
+   ↓ avatar variants > gives every variant the same expression names
+   ↓ avatar variants > loads the resolved variant rather than a constant of its own
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 skipped (11)
+   Start at  00:30:12
+   Duration  503ms (transform 46ms, setup 39ms, collect 69ms, tests 3ms, environment 274ms, prepare 32ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > declares a family for every variant, and no family that nothing declares
+AssertionError: base names an undeclared family undefined: expected undefined to be defined
+ ❯ src/components/chat/avatarVariants.test.ts:124:91
+    122|     // catches the widening.
+    123|     for (const v of AVATAR_VARIANTS) {
+    124|       expect(AVATAR_FAMILIES[v.family], `${v.id} names an undeclared f…
+       |                                                                                           ^
+    125|     }
+    126|     const used = new Set(AVATAR_VARIANTS.map((v) => v.family))
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G3
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts -t declares a family for every variant
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 4ms
+   ↓ avatar variants > resolves the active variant by default
+   ↓ avatar variants > refuses an id it does not know instead of quietly using the default
+   ↓ avatar variants > declares only files that are actually served
+   ↓ avatar variants > gives every variant its own id
+   ↓ avatar variants > gives every variant its own url
+   ↓ avatar variants > gives every variant the rig its own family was measured on
+   × avatar variants > declares a family for every variant, and n
+[…]
+family answering for every clip in the pool
+   ↓ avatar variants > gives every variant the same expression names
+   ↓ avatar variants > loads the resolved variant rather than a constant of its own
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 skipped (11)
+   Start at  00:30:13
+   Duration  364ms (transform 41ms, setup 27ms, collect 60ms, tests 4ms, environment 158ms, prepare 27ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > declares a family for every variant, and no family that nothing declares
+AssertionError: family nobody-uses-this is declared but no variant uses it: expected false to be true // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- true[39m
+[31m+ false[39m
+ ❯ src/components/chat/avatarVariants.test.ts:128:97
+    126|     const used = new Set(AVATAR_VARIANTS.map((v) => v.family))
+    127|     for (const id of Object.keys(AVATAR_FAMILIES)) {
+    128|       expect(used.has(id as AvatarFamilyId), `family ${id} is declared…
+       |                                                                                                 ^
+    129|     }
+    130|   })
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G4
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts -t has each family naming itself in the clearance it points at
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 4ms
+   ↓ avatar variants > resolves the active variant by default
+   ↓ avatar variants > refuses an id it does not know instead of quietly using the default
+   ↓ avatar variants > declares only files that are actually served
+   ↓ avatar variants > gives every variant its own id
+   ↓ avatar variants > gives every variant its own url
+   ↓ avatar variants > gives every variant the rig its own family was measured on
+   ↓ avatar variants > declares a family for every variant, and n
+[…]
+ip in the pool
+   ↓ avatar variants > gives every variant the same expression names
+   ↓ avatar variants > loads the resolved variant rather than a constant of its own
+ Test Files  1 failed (1)
+      Tests  1 failed | 10 skipped (11)
+   Start at  00:30:14
+   Duration  384ms (transform 44ms, setup 31ms, collect 64ms, tests 4ms, environment 165ms, prepare 29ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > has each family naming itself in the clearance it points at
+AssertionError: AVATAR_FAMILIES.vroid-sample-b holds someone-else's clearance: expected 'someone-else' to be 'vroid-sample-b' // Object.is equality
+Expected: [32m"vroid-sample-b"[39m
+Received: [31m"someone-else"[39m
+ ❯ src/components/chat/avatarVariants.test.ts:138:95
+    136|     // every other test in this file would still pass, on the wrong nu…
+    137|     for (const [id, clearance] of Object.entries(AVATAR_FAMILIES)) {
+    138|       expect(clearance.family, `AVATAR_FAMILIES.${id} holds ${clearanc…
+       |                                                                                               ^
+    139|     }
+    140|   })
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G6-setup
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t offers every idle clip somewhere
+ RUN  v3.2.6 /Users/charles/portfolio
+ ✓ src/components/chat/rigProbe.test.ts (121 tests | 120 skipped) 1ms
+ Test Files  1 passed (1)
+      Tests  1 passed | 120 skipped (121)
+   Start at  00:30:16
+   Duration  418ms (transform 68ms, setup 27ms, collect 98ms, tests 1ms, environment 158ms, prepare 35ms)
+```
+
+### G6
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t offers every idle clip somewhere
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (121 tests | 1 failed | 120 skipped) 6ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the fr
+[…]
+26-08-19 numbers
+   ↓ three-vrm humanoid rig > leaves the neck rows of the Face mesh out of the face box
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+ Test Files  1 failed (1)
+      Tests  1 failed | 120 skipped (121)
+   Start at  00:30:17
+   Duration  413ms (transform 64ms, setup 27ms, collect 97ms, tests 6ms, environment 155ms, prepare 29ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > the idle pool > offers every idle clip somewhere, so the rotation can reach them all
+AssertionError: squat is excluded on vroid-sample-b but still offered: expected true to be false // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- false[39m
+[31m+ true[39m
+ ❯ src/components/chat/rigProbe.test.ts:863:91
+    861|         // clearance that excludes `squat`, where dropping motionsFor's
+    862|         // exclusion filter turns it red.
+    863|         expect(reachable.has(name), `${name} is excluded on ${FAMILY} …
+       |                                                                                           ^
+    864|         continue
+    865|       }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G7
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t takes the new body onto its own family
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 4ms
+   ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
+   ↓ a body swap is the first load, run again > exposes the swap on the handle
+   ↓ a body swap is the first load, run again > releases the old body before installing the new one
+   ↓ a body swap is the first load, run again > releases the old body's scene, clips and mixer
+   ↓ a body swap is the first load, run again > rebinds every motion clip to 
+[…]
+r the previous body had is rebuilt from source for
+    // this one. On the first load there is nothing here yet: the clips are
+    // fetched after the entrance (requestMotions) and bound as they land.
+    for (const [name, animation] of motionSources)
+      motionClips.set(name, createVRMAnimationClip(animation, loaded))
+    // The camera comes home with the body: nothing is playing on a fresh one,
+    // so the pan target is 0 and the cut lands there instead of easing.
+    framePan = panTargetNow()
+    aimCamera()
+    // Materialize again. A swap can land while the previous body's entrance is
+    // still running, so its particles are released before the flag re-arms.
+    disposeParticles()
+    matzT = -1"
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts:114:79
+    112|     // test here can perform an actual swap and read the pool back.
+    113|     const install = fnBody('installVrm')
+    114|     expect(install, 'installVrm must set the family of the body it ins…
+       |                                                                               ^
+    115|       /shownUrl = url\s*(?:\/\/[^\n]*\n\s*)*shownFamily = family/,
+    116|     )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G8
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t takes the new body onto its own family
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 4ms
+   ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
+   ↓ a body swap is the first load, run again > exposes the swap on the handle
+   ↓ a body swap is the first load, run again > releases the old body before installing the new one
+   ↓ a body swap is the first load, run again > releases the old body's scene, clips and mixer
+   ↓ a body swap is the first load, run again > rebinds every motion clip to 
+[…]
+
+      // life of the page — exactly the teardown a context-loss unmount runs to
+      // avoid. __mikaVrm holds the loaded VRM directly, same invariant.
+      // (__mikaState needs no such cleanup: it holds only numbers.)
+      delete (window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle
+      delete (window as unknown as { __mikaVrm?: VRM }).__mikaVrm
+    },
+  }
+  // Same ?mikadebug=1 gate as __mikaState: an automated check needs to trigger
+  // a specific gesture (a fingertip's distance from the frame edge is only
+  // meaningful at a gesture's peak) rather than waiting out the idle-act timer.
+  if (debugTap) {
+    ;(window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle = handle
+  }
+  return handle
+}
+"
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts:119:20
+    117|     // And the two readers ask for it rather than naming a family of t…
+    118|     expect(SOURCE).toMatch(/motionsFor\(placement, shownFamily\)/)
+    119|     expect(SOURCE).toMatch(/motionsFor\(asked, shownFamily\)/)
+       |                    ^
+    120|     expect(SOURCE, 'the engine must not hard-code a family id').not.to…
+    121|   })
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G9
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/ChatWidget.test.tsx -t reads the family off variantShown
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/ChatWidget.test.tsx (36 tests | 1 failed | 35 skipped) 5ms
+   ↓ ChatWidget size modes > wraps long drafts and grows the composer to their content height
+   ↓ ChatWidget size modes > sends a draft when Enter is pressed
+   ↓ ChatWidget size modes > rests as a launcher pill once the avatar gate settles, never flashing it before
+   ↓ ChatWidget size modes > offers minimise rather than close, because stowing keeps the conversation
+   ↓ ChatWidget size modes > keeps the conversation when minimised and re-opened
+   ↓ ChatWidget size modes >
+[…]
+-border bg-bg-primary px-3.5 py-2.5 text-[16px] text-white outline-none transition-colors placeholder:text-text-tertiary focus:border-accent-cyan disabled:cursor-not-allowed disabled:opacity-50\"
+              />
+              <button
+                type=\"submit\"
+                disabled={status === 'streaming' || input.trim() === '' || regionBlocked}
+                aria-label={t('chat.sendAriaLabel')}
+                className=\"h-[46px] cursor-pointer rounded-[10px] border-none bg-accent-mars px-4 text-[14px] font-semibold text-bg-primary transition-opacity disabled:cursor-default disabled:opacity-40\"
+              >
+                {t('chat.send')}
+              </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+"
+ ❯ src/components/chat/ChatWidget.test.tsx:1130:61
+    1128| 
+    1129|   it('reads the family off variantShown, never a literal and never var…
+    1130|     expect(SOURCE, 'the strip must ask the body on screen').toMatch(
+       |                                                             ^
+    1131|       /motionsFor\(placement, familyOf\(variantShown\)\)/,
+    1132|     )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G10
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t settles the family before it releases
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 4ms
+   ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
+   ↓ a body swap is the first load, run again > exposes the swap on the handle
+   ↓ a body swap is the first load, run again > releases the old body before installing the new one
+   ↓ a body swap is the first load, run again > releases the old body's scene, clips and mixer
+   ↓ a body swap is the first load, run again > rebinds every motion clip to 
+[…]
+textLost || seq !== loadSeq) {
+            VRMUtils.deepDispose(gltf.scene)
+            resolve(false)
+            return
+          }
+          uninstallVrm()
+          installVrm(gltf.userData.vrm as VRM, url, family)
+          resolve(true)
+        },
+        undefined,
+        () => {
+          if (seq === pendingSeq) pendingSeq = null
+          // Loading is best-effort chrome — no visitor-facing error. With a body
+          // already on screen she simply keeps it, and the promise says so. With
+          // none (the first load) the widget is holding the capsule back for a
+          // healthy load, so silence here would leave the corner empty forever.
+          if (!disposed && !vrm && seq === loadSeq) onLoadFailed?.()
+          resolve(false)
+        },
+      )
+    })"
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts:137:18
+    135|     // ...and refuse rather than continue, reporting on the same condi…
+    136|     // 404 path uses (a visitor who can still see her gets no error).
+    137|     expect(body).toMatch(
+       |                  ^
+    138|       /if \(!family\) \{(?:\s*\/\/[^\n]*)*\s*if \(!disposed && !vrm\) …
+    139|     )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G11
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t settles the family before it releases
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 5ms
+   ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
+   ↓ a body swap is the first load, run again > exposes the swap on the handle
+   ↓ a body swap is the first load, run again > releases the old body before installing the new one
+   ↓ a body swap is the first load, run again > releases the old body's scene, clips and mixer
+   ↓ a body swap is the first load, run again > rebinds every motion clip to 
+[…]
+pected [ 'familyFor(', 'familyFor(' ] to have a length of 1 but got 2
+   ↓ a body swap is the first load, run again > lets the registry outrank a caller-declared family
+ Test Files  1 failed (1)
+      Tests  1 failed | 11 skipped (12)
+   Start at  00:30:22
+   Duration  311ms (transform 20ms, setup 26ms, collect 16ms, tests 5ms, environment 152ms, prepare 27ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarGuideEngine.variant.test.ts > a body swap is the first load, run again > settles the family before it releases the body on screen
+AssertionError: familyFor is called once, in loadVariant: expected [ 'familyFor(', 'familyFor(' ] to have a length of 1 but got 2
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- 1[39m
+[31m+ 2[39m
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts:146:86
+    144|     // is exactly the one above: a second resolution somewhere later i…
+    145|     // ordering this test pins gets quietly reintroduced.
+    146|     expect(SOURCE.match(/familyFor\(/g), 'familyFor is called once, in…
+       |                                                                                      ^
+    147|   })
+    148| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G12
+```
+$ npx vitest run /Users/charles/portfolio/scripts/avatar/live-preview.test.ts -t tells the engine which rig the previewed build came off
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/avatar/live-preview.test.ts (5 tests | 1 failed | 4 skipped) 3ms
+   ↓ Mika Milfy live preview config > loads the local-only Mika Milfy model
+   × Mika Milfy live preview config > tells the engine which rig the previewed build came off 3ms
+     → live-preview must hand the family to initAvatarGuide: expected 'import {\n  initAvatarGuide,\n  type …' to match /\n {2}MIKA_MILFY_FAMILY,\n\)/
+   ↓ Mika Milfy live preview config > offers every motion supported by the avatar engine
+   ↓ Mika Milfy live preview config > offers every procedural gesture ex
+[…]
+topReadyPoll()
+    announce(`10 支動作已就緒，Mika Milfy 可以開始表演。`, 'ready')
+    return
+  }
+  if (Date.now() - pollStartedAt > READY_POLL_DEADLINE_MS) {
+    stopReadyPoll()
+    const missing = PREVIEW_MOTIONS.filter((motion) => !ready.has(motion.name))
+      .map((motion) => motion.label)
+      .join('、')
+    announce(`這些動作載入失敗：${missing}。其餘可以直接使用。`, 'error')
+    return
+  }
+  announce(`動作準備中：${ready.size}／${PREVIEW_MOTIONS.length}。`, 'loading')
+}
+readyPollId = window.setInterval(refreshMotionButtons, READY_POLL_MS)
+refreshMotionButtons()
+function teardown(): void {
+  if (isDisposed) return
+  isDisposed = true
+  stopReadyPoll()
+  handle.dispose()
+}
+window.addEventListener('beforeunload', teardown)
+window.addEventListener('pagehide', teardown)
+"
+ ❯ scripts/avatar/live-preview.test.ts:30:76
+     28|     // the last thing anyone would trace back to this line.
+     29|     const source = readFileSync(path.join(process.cwd(), 'scripts', 'a…
+     30|     expect(source, 'live-preview must hand the family to initAvatarGui…
+       |                                                                            ^
+     31|       /\n {2}MIKA_MILFY_FAMILY,\n\)/,
+     32|     )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### G13
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t lets the registry outrank a caller-declared family
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 4ms
+   ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
+   ↓ a body swap is the first load, run again > exposes the swap on the handle
+   ↓ a body swap is the first load, run again > releases the old body before installing the new one
+   ↓ a body swap is the first load, run again > releases the old body's scene, clips and mixer
+   ↓ a body swap is the first load, run again > rebinds every motion clip to 
+[…]
+ life of the page — exactly the teardown a context-loss unmount runs to
+      // avoid. __mikaVrm holds the loaded VRM directly, same invariant.
+      // (__mikaState needs no such cleanup: it holds only numbers.)
+      delete (window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle
+      delete (window as unknown as { __mikaVrm?: VRM }).__mikaVrm
+    },
+  }
+  // Same ?mikadebug=1 gate as __mikaState: an automated check needs to trigger
+  // a specific gesture (a fingertip's distance from the frame edge is only
+  // meaningful at a gesture's peak) rather than waiting out the idle-act timer.
+  if (debugTap) {
+    ;(window as unknown as { __mikaHandle?: AvatarGuideHandle }).__mikaHandle = handle
+  }
+  return handle
+}
+"
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts:159:83
+    157|     // nothing else in the suite can tell the two orders apart while e…
+    158|     // family is declared.
+    159|     expect(SOURCE, 'the registry answers first; declaredFamily only fi…
+       |                                                                                   ^
+    160|       /familyOfUrl\(url\) \?\? declaredFamily/,
+    161|     )
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+

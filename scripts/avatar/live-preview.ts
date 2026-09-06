@@ -10,6 +10,7 @@ import {
 } from '../../src/components/chat/avatarMode'
 import type { AvatarMotionName } from '../../src/components/chat/avatarMotions'
 import {
+  MIKA_MILFY_FAMILY,
   MIKA_MILFY_MODEL_URL,
   PREVIEW_EMOTIONS,
   PREVIEW_GESTURES,
@@ -83,6 +84,7 @@ const handle = initAvatarGuide(
   () => {
     announce('模型載入失敗，請確認本機存在 public/avatar/mika-milfy-12.vrm。', 'error')
   },
+  MIKA_MILFY_FAMILY,
 )
 
 handle.setActive(true)

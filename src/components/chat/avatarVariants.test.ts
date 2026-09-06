@@ -11,8 +11,8 @@ import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { ACTIVE_VARIANT, AVATAR_VARIANTS, variantUrl } from './avatarVariants'
-import { CLEARANCE } from './clearance/vroid-sample-b'
+import { IDLE_MOTIONS } from './avatarMotions'
+import { ACTIVE_VARIANT, AVATAR_FAMILIES, AVATAR_VARIANTS, variantUrl, type AvatarFamilyId } from './avatarVariants'
 import { readExpressions, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
 
 /**
@@ -79,7 +79,7 @@ describe('avatar variants', () => {
     expect(new Set(urls).size, `two variants share a file: ${urls.join(', ')}`).toBe(urls.length)
   })
 
-  it('gives every variant the same rig', () => {
+  it('gives every variant the rig its own family was measured on', () => {
     // The whole point of a variant registry is that the ten motion clips are
     // shared. Those clips' clearance numbers are absolute world-space distances
     // measured against one body, so a variant whose bones moved is a different
@@ -93,26 +93,63 @@ describe('avatar variants', () => {
     // new mesh changes that the rig does not — a fingertip's distance to the
     // face, hair against the frame's top edge — is scripts/measure-motions.ts's
     // job, run per body before it is declared.
-    const bodies = AVATAR_VARIANTS.map((v) => ({ id: v.id, doc: gltfOf(v.url) }))
-    const [first, ...rest] = bodies
-    expect(Object.keys(readHumanoid(first.doc).bones).length).toBeGreaterThan(50)
-    for (const other of rest) {
-      expect(
-        rigOf(other.doc),
-        `${other.id} does not share ${first.id}'s rig; the motion clips' clearances were measured on ${first.id}`,
-      ).toBe(rigOf(first.doc))
+    //
+    // Held against the FAMILY's sha rather than against the first sibling's.
+    // Sibling-to-sibling would keep passing if every declared body moved
+    // together, which is exactly what a re-export of the whole project does,
+    // and it has no answer at all once two families are declared.
+    for (const v of AVATAR_VARIANTS) {
+      const doc = gltfOf(v.url)
+      expect(Object.keys(readHumanoid(doc).bones).length).toBeGreaterThan(50)
+      const sha = createHash('sha256').update(rigOf(doc)).digest('hex')
+      expect(sha, `${v.id} is not the rig family ${v.family} was measured on`).toBe(
+        AVATAR_FAMILIES[v.family].rigSha,
+      )
     }
   })
 
-  it('gives every variant the rig the clearance file was measured on', () => {
-    // The clearance file (src/components/chat/clearance/) is the pool's numbers
-    // for one family of bodies, and it names that family by the sha of the
-    // rig its producers read. A variant declared here with another rig would
-    // pass the same-rig test above against its siblings and still be a body
-    // wearing numbers measured on a different skeleton.
+  it('declares a family for every variant, and no family that nothing declares', () => {
+    // Two directions, because each fails on its own. A variant naming a family
+    // the map has no entry for throws on the lookup above rather than reporting
+    // it; a family with an entry that nothing declares is a clearance file kept
+    // alive by nothing, which is how a stale one survives a body being dropped.
+    //
+    // "A family with no measurements" is not checked here because it cannot be
+    // written: AVATAR_FAMILIES is Record<AvatarFamilyId, ClearanceFile>, so an
+    // entry without a clearance does not compile and a missing .gen.ts half is
+    // an import error before any test runs. The type carries it; mutation G3
+    // (widening the map to Record<string, …>) is what proves this test is what
+    // catches the widening.
     for (const v of AVATAR_VARIANTS) {
-      const sha = createHash('sha256').update(rigOf(gltfOf(v.url))).digest('hex')
-      expect(sha, `${v.id} is not the rig ${CLEARANCE.family} was measured on`).toBe(CLEARANCE.rigSha)
+      expect(AVATAR_FAMILIES[v.family], `${v.id} names an undeclared family ${v.family}`).toBeDefined()
+    }
+    const used = new Set(AVATAR_VARIANTS.map((v) => v.family))
+    for (const id of Object.keys(AVATAR_FAMILIES)) {
+      expect(used.has(id as AvatarFamilyId), `family ${id} is declared but no variant uses it`).toBe(true)
+    }
+  })
+
+  it('has each family naming itself in the clearance it points at', () => {
+    // The map's key and the file's own `family` are written in two places by
+    // two people (one hand-edits the registry, a producer writes the file), so
+    // a copy-paste that points 'a' at b's measurements has to be caught here:
+    // every other test in this file would still pass, on the wrong numbers.
+    for (const [id, clearance] of Object.entries(AVATAR_FAMILIES)) {
+      expect(clearance.family, `AVATAR_FAMILIES.${id} holds ${clearance.family}'s clearance`).toBe(id)
+    }
+  })
+
+  it('has each family answering for every clip in the pool', () => {
+    // A family is allowed to say a clip does not work on it — that is what
+    // `excluded` is for — but it is not allowed to say nothing. Silence is what
+    // a second rig looks like on the day someone declares it and before anyone
+    // measures it, and the visible result is a clip retargeted onto a skeleton
+    // nobody checked, which is a hand through a face.
+    for (const [id, clearance] of Object.entries(AVATAR_FAMILIES)) {
+      for (const name of IDLE_MOTIONS) {
+        const answered = name in clearance.clips || name in clearance.excluded
+        expect(answered, `family ${id} has neither a measurement nor a reason for ${name}`).toBe(true)
+      }
     }
   })
 

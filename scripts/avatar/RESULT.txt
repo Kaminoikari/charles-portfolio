@@ -1073,6 +1073,8 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   檔案，所以編號另外起頭，前綴標明出處，免得跨檔撞號：
     [C*]／[E*]／[F*] = evidence/mutations-0906-clearance.md（22 道，逐道還原後
                  sha 覆核。C=clearance 與 springsim，E=envelope，F=取樣密度）
+    [G*]       = evidence/mutations-0906-families.md（Phase 6b，12 道，同樣逐道
+                 還原後 sha 覆核。G=variant registry 的 rig family 那一層）
     [靜態]     = evidence/clipping-0906-receipts.md（pierce／inside／motion 的
                  control 對 mutation 分離度，不是單元測試而是腳本的 PASS/FAIL）
   pierce.py   靜止穿透比    每件服裝的「透出來的皮膚像素／該件自己的上限」>1 即
@@ -1125,8 +1127,47 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
                             動，其餘九支到小數第四位都不變  [F1]
   rigProbe    取景一致      clearance 是在引擎現在用的取景下模擬的  [C14]
   .test.ts    waiver 要用得到 用不到的 crownTop waiver 一樣 FAIL  [C16]
-  avatarVari  family rig    每個宣告的 variant 都是 clearance 量過的那具 rig  [C15]
-  ants.test
+  avatarVari  family rig    每個宣告的 variant 都是它自己 family 量過的那具 rig
+  ants.test                 [C15]。註：Phase 6b 把這條測試改名（從「the clearance
+                            file was measured on」改成「its own family was
+                            measured on」），選擇器與 C15 收據已於 2026-09-07
+                            更新並重跑，仍為 RED，見該收據檔末的補記
+
+  Phase 6b（同日）在 variant registry 上補一層「這具身體是哪副骨架」。收據在
+  evidence/mutations-0906-families.md，12 道：
+  avatarVari  family 宣告    每個 variant 都要指名 family，漏一個就去查 undefined
+  ants.test                 [G2]；沒有 variant 用到的 family 一樣 FAIL，clearance
+  .ts                       檔才不會比它量的那具身體活得久 [G3]；family 的 key 指
+                            到別家的量測值要拒收 [G4]
+  avatarMoti  excluded 過濾  clip pool 要扣掉這副骨架排不了的 clip。這條在出貨資料上
+  ons.ts                    走不到（現有那家 family 排除的三支本來就不在 pool），
+                            所以收據是一對：先讓 family 排除一支 pool 內的 clip，
+                            單獨這樣必須維持綠（正確地扣掉了）[G6-setup]；同樣的
+                            設定再拿掉過濾才紅 [G6]。只有一道紅說不出是哪一半在做事
+  avatarGuid  shownFamily   installVrm 要記下它裝上的那具身體的 family，換裝才會連
+  eEngine.ts                clip pool 一起換 [G7]；兩個讀取端問身體要 family，不是
+                            自己寫死一個 id [G8]
+              解析順序      family 在 loadVariant 裡、放掉畫面上那具**之前**就解
+                            完：沒有 family 就當載入失敗擋下 [G10]，installVrm 是
+                            被「交給」已定案的 family 而不是自己再查一次 [G11]。
+                            順序反過來的話，新身體會進場但沒有 clip 綁上、promise
+                            永不 settle，畫面上是 LookStrip 永遠轉圈
+  ChatWidget  問誰的 family strip 問的是畫面上那具（variantShown），不是還在下載的
+  .tsx                      那具，也不是寫死的 id [G9]。今天兩者回傳同樣十支，所以
+                            只有原始碼守衛分得出來
+  live-       declaredFamily 預覽工具會載入還沒進 registry 的新 build，所以由它自己
+  preview.ts                指名 family。拿掉那個引數，頁面照樣起得來、控制面板照樣
+                            在，但沒有角色、狀態列一行載入失敗、十顆動作鍵全灰
+                            [G12]——看起來像檔案不見了，不像少傳一個引數。
+                            declaredFamily 是**備援不是覆蓋**：registry 認得的 URL
+                            由 registry 決定，寫反了就會把一家 family 的間隙套到另
+                            一家的身體上 [G13]
+                            註：另有兩條沒有 mutation 收據，理由不同。
+                            AvatarVariant.family 改成選填**根本編不過**（tsc 報
+                            TS2322 與兩處 TS2538，實跑確認），沒有可判的執行；
+                            motionsFor 的 family 給預設值**編得過也紅不了**，所以
+                            守衛就是那個簽名本身。執行期的後果由 [G2] 與 [G7、G8]
+                            接住
 
   另外把 avatarGuideEngine.ts 的 preserveDrawingBuffer 綁到 ?mikadebug=1。它是
   我為了截圖加的，長期開著會讓瀏覽器替每個訪客保留後備緩衝。沒有它 toDataURL

@@ -10,12 +10,15 @@ import { STRINGS } from '../../i18n/strings'
 import type { Locale } from '../../i18n/config'
 import { MotionStrip } from './MotionStrip'
 import { IDLE_MOTIONS, motionsFor, type AvatarMotionName } from './avatarMotions'
+// The one family declared today. Every body in the registry belongs to it,
+// so the strip's contents are the same whichever variant is on screen.
+const FAMILY = 'vroid-sample-b' as const
 
 function draw(
   locale: Locale,
   props: Partial<React.ComponentProps<typeof MotionStrip>> = {},
 ) {
-  const motions = props.motions ?? motionsFor('column')
+  const motions = props.motions ?? motionsFor('column', FAMILY)
   return render(
     <LocaleContext.Provider value={{ locale, setLocale: () => {} }}>
       <MotionStrip
@@ -40,7 +43,7 @@ describe('MotionStrip', () => {
         .filter((l) => l !== locale)
         .flatMap((l) => Object.entries(STRINGS[l].chat.motions))
 
-      for (const name of motionsFor('column')) {
+      for (const name of motionsFor('column', FAMILY)) {
         const label = mine[name as keyof typeof mine]
         expect(screen.getByRole('button', { name: label }), `${locale}/${name}`).toBeTruthy()
       }
@@ -86,7 +89,7 @@ describe('MotionStrip', () => {
     // of the ten lands. Leaving them enabled would hand out a control that does
     // nothing, since playMotion answers false for a clip still in flight.
     const onPlay = vi.fn()
-    const motions = motionsFor('column')
+    const motions = motionsFor('column', FAMILY)
     draw('en', { motions, ready: [motions[0]], onPlay })
     expect(screen.getAllByRole('button')).toHaveLength(motions.length)
     const late = screen.getByRole('button', { name: STRINGS.en.chat.motions[motions[1]] })
@@ -98,7 +101,7 @@ describe('MotionStrip', () => {
   it('renders nothing where no clip is offered', () => {
     // This is also the mobile case. motionsFor('hidden') is empty, so a viewport
     // with no avatar needs no separate rule to keep in step.
-    const { container } = draw('en', { motions: motionsFor('hidden') })
+    const { container } = draw('en', { motions: motionsFor('hidden', FAMILY) })
     expect(container.innerHTML).toBe('')
   })
 
