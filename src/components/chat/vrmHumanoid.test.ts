@@ -4,7 +4,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
+import * as THREE from 'three'
+
 import {
+  buildNodes,
   parseGlb,
   readAccessorRows,
   readAnimationBones,
@@ -151,6 +154,31 @@ describe('parseGlb / readAccessorRows', () => {
     const rows = readAccessorRows(parseGlb(glb(json, bin)), 0)
     expect(rows.ncomp).toBe(2)
     expect(Array.from(rows.data)).toEqual([1, 0, 0, 1])
+  })
+})
+
+describe('buildNodes', () => {
+  it('rebuilds the glTF node tree as THREE objects, parented and placed as the file says', () => {
+    const shipped = parseGlb(new Uint8Array(readFileSync(path.join(process.cwd(), 'public/avatar/AvatarSample_B_webp.vrm'))))
+    const { nodes, scene } = buildNodes(shipped.json)
+    expect(nodes).toHaveLength(shipped.json.nodes.length)
+    shipped.json.nodes.forEach((n, i) => {
+      for (const c of n.children ?? []) expect(nodes[c].parent).toBe(nodes[i])
+    })
+    expect(scene.children.map((o) => nodes.indexOf(o))).toEqual(shipped.json.scenes![shipped.json.scene ?? 0].nodes)
+    const head = nodes[readHumanoid(shipped.json).bones.head]
+    expect(head.getWorldPosition(new THREE.Vector3()).toArray().map((v) => Number(v.toFixed(3)))).toEqual([0, 1.32, 0.005])
+  })
+
+  it('honours a matrix node and a scale', () => {
+    const json = {
+      ...doc('0'),
+      nodes: [{ matrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1], children: [1] }, { translation: [0, 0.5, 0], scale: [2, 2, 2] }],
+    } as GltfJson
+    const { nodes } = buildNodes(json)
+    expect(nodes[0].position.y).toBe(1)
+    expect(nodes[1].getWorldPosition(new THREE.Vector3()).y).toBeCloseTo(1.5, 9)
+    expect(nodes[1].scale.x).toBe(2)
   })
 })
 

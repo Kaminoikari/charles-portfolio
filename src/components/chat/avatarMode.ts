@@ -866,8 +866,9 @@ export function avatarViewSpan(framing: AvatarFraming): { top: number; bottom: n
 //
 // Both numbers are the same measurements the framing comments above cite: her
 // hair top at 1.582, and the bottom of the Face.baked bounding box at 1.287,
-// which is her chin (rigProbe.ts's FACE_BOX carries that measurement and uses
-// it for fingers-inside-her-skull checks).
+// which is her chin (rigProbe.ts reads that box off the Face mesh as
+// `Rig.faceBox` and uses it for fingers-inside-her-skull checks; its test
+// holds this constant to within 1mm of it).
 export const AVATAR_HEAD_TOP_Y = 1.582
 export const AVATAR_HEAD_BOTTOM_Y = 1.287
 

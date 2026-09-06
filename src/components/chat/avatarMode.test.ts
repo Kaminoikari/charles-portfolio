@@ -59,7 +59,9 @@ import {
   TAILWIND_SPACING_PX,
 } from './avatarMode'
 import type { AvatarFraming } from './avatarMode'
-import { FACE_BOX } from './rigProbe'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { buildRig } from './rigProbe'
 
 describe('deriveAvatarMode', () => {
   it('is idle with empty input and no stream', () => {
@@ -635,11 +637,14 @@ describe('avatar camera framing', () => {
   // dolly. These hold the band to the FRAMING instead, in both placements.
   // AVATAR_HEAD_BOTTOM_Y is a hand-copy of a measurement that lives somewhere
   // else. Replacing a literal with a constant in the file that reads it is not
-  // convergence: re-measuring the model updates rigProbe's box and would leave
-  // the band's chin behind, silently, which is the exact class of drift the
-  // band was rewritten to stop. This is the only thing that would notice.
+  // convergence: rigProbe reads its box off the Face mesh of whatever body it
+  // is given, so a new body moves the box and would leave the band's chin
+  // behind, silently, which is the exact class of drift the band was rewritten
+  // to stop. This is the only thing that would notice: the chin has to sit
+  // within 1mm of the shipped body's derived box.
   it('takes her chin from the same box rigProbe measures fingers against', () => {
-    expect(AVATAR_HEAD_BOTTOM_Y).toBe(FACE_BOX.min.y)
+    const shipped = buildRig(new Uint8Array(readFileSync(path.join(process.cwd(), 'public/avatar/AvatarSample_B_webp.vrm'))))
+    expect(Math.abs(AVATAR_HEAD_BOTTOM_Y - shipped.faceBox.min.y)).toBeLessThan(0.001)
   })
 
   describe('avatarHeadBand', () => {

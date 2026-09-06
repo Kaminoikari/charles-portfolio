@@ -58,10 +58,7 @@ import humanoid  # noqa: E402
 
 ROOT_NAME = 'vrm0-root'
 
-V1_TO_V0_THUMB = {
-    'leftThumbMetacarpal': 'leftThumbProximal', 'leftThumbProximal': 'leftThumbIntermediate',
-    'rightThumbMetacarpal': 'rightThumbProximal', 'rightThumbProximal': 'rightThumbIntermediate',
-}
+V1_TO_V0_THUMB = humanoid.V1_TO_V0_THUMB
 V1_TO_V0_PRESET = {
     'aa': 'a', 'ee': 'e', 'ih': 'i', 'oh': 'o', 'ou': 'u', 'blink': 'blink', 'happy': 'joy',
     'angry': 'angry', 'sad': 'sorrow', 'relaxed': 'fun', 'lookUp': 'lookup',

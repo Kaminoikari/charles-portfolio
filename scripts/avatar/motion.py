@@ -27,9 +27,11 @@ import pose as pose_mod  # noqa: E402
 IDENT = np.array([0.0, 0.0, 0.0, 1.0])
 
 # A half turn about Y. A .vrma carries VRMC_vrm_animation, a VRM 1.0 extension,
-# and VRM 1.0 faces +Z; this model is VRM 0.x, which faces -Z. Measured, not
-# assumed: at rest the clip's left arm runs along +X and ours along -X, and its
-# toes point the opposite way down Z.
+# and VRM 1.0 faces +Z; a VRM 0.x body faces -Z. Measured, not assumed: at rest
+# the clip's left arm runs along +X and a 0.x body's along -X, and its toes
+# point the opposite way down Z. Applied only to a 0.x body: a 1.0 body already
+# faces the clip's way, and three-vrm-animation flips for metaVersion "0" alone.
+# retarget_parity_test.py holds this to three-vrm on both versions.
 YAW = np.array([0.0, 1.0, 0.0, 0.0])
 
 
@@ -101,8 +103,11 @@ def sample_locals(doc, views, at):
         if ch['target']['path'] != 'rotation':
             continue
         s = anim['samplers'][ch['sampler']]
-        t = glb.read_accessor(doc, views, s['input']).ravel()
-        v = glb.read_accessor(doc, views, s['output'])
+        # float64 from here on: the accessors are float32, and a chain of
+        # float32 quaternion products drifts ~0.1° by the foot, which is the
+        # noise floor retarget_parity_test.py would otherwise have to allow.
+        t = glb.read_accessor(doc, views, s['input']).ravel().astype(np.float64)
+        v = glb.read_accessor(doc, views, s['output']).astype(np.float64)
         duration = max(duration, float(t.max()))
         i = int(np.clip(np.searchsorted(t, at) - 1, 0, len(t) - 2))
         span = t[i + 1] - t[i]
@@ -144,10 +149,14 @@ def retarget(path, at, model_doc):
     rest = globals_of(doc, par, order)
     posed = globals_of(doc, par, order, local)
 
+    # Keyed by OUR spelling of the bone: a 0.x body names its thumb joints
+    # differently from the clip (humanoid.model_bone_name), and the same word
+    # on the two sides is a different joint.
+    flip = humanoid.version(model_doc) == '0'
     delta = {}
     for bone, n in bone_node.items():
         d = qmul(posed[n], qconj(rest[n]))
-        delta[bone] = qmul(YAW, qmul(d, qconj(YAW)))
+        delta[humanoid.model_bone_name(model_doc, bone)] = qmul(YAW, qmul(d, qconj(YAW))) if flip else d
 
     mpar = node_parents(model_doc)
     morder = tree_order(model_doc, mpar)

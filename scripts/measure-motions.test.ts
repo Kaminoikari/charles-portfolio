@@ -90,12 +90,28 @@ describe('measure-motions', () => {
   })
 
   it('recognises the face waiver dance already ships with', () => {
-    // 0.299 measured against a declared floor of 0.29. Neither number is chosen
-    // here: the measurement comes out of the sweep and the floor off the clip
-    // definition, so this fails if either drifts from the other.
+    // 0.300 measured against a declared floor of 0.29 (0.299 until 2026-09-06,
+    // when the face box began to be read off the mesh instead of the 2026-08-19
+    // hand measurement; the two boxes differ by 0.3mm at the edges). Neither
+    // number is chosen here: the measurement comes out of the sweep and the
+    // floor off the clip definition, so this fails if either drifts from the
+    // other.
     const line = shipped.lines.find((l) => l.includes('放行範圍內'))
     expect(line, '找不到 dance 的放行說明').toBeDefined()
-    expect(line).toMatch(/0\.29\d.*下限 0\.290/)
+    expect(line).toMatch(/0\.(29\d|30[0-4]).*下限 0\.290/)
+  })
+
+  it('reports the face box and the finger skin it read off the body', () => {
+    // Written after the derivation landed, so its red evidence is the
+    // mutation table (evidence/mutations-0906-retarget.md M1, M2, R9), not
+    // the red log. 18.0mm is the shipped body's reading
+    // (evidence/retarget-0906-measure.log); a report that printed the 12mm
+    // constant instead would still match a looser pattern.
+    const text = shipped.lines.join('\n')
+    expect(text).toMatch(/臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/)
+    expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+    // A taller body's box scales with it: derived, not carried.
+    expect(taller.lines.join('\n')).toMatch(/臉部盒　x -0\.12\d…0\.12\d　y 1\.73\d…2\.0[23]\d/)
   })
 
   it('says no when the same clips are asked to run on a taller body', () => {

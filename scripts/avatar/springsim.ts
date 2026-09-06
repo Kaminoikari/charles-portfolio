@@ -12,9 +12,10 @@
 // of the solver, not of the file. Every previous number about the tails in
 // motion ("27° single-frame jumps", "smooth without colliders") was an
 // eyeballed browser impression that nobody could reproduce. This runs the real
-// VRMSpringBoneManager (imported through its VRM0 path, on a node tree built
-// from the file's own glTF nodes) at a fixed 60 Hz, so a claim about the tails
-// in motion is a number that can be re-run.
+// VRMSpringBoneManager (imported through the loader plugin's own afterRoot, on
+// a node tree built from the file's glTF nodes and posed through the same
+// VRMHumanoid rigProbe.ts measures with) at a fixed 60 Hz, so a claim about
+// the tails in motion is a number that can be re-run.
 //
 // What it reports, per clip:
 //   coat   deepest point any twintail vertex reaches INSIDE the cardigan's outer
@@ -33,7 +34,7 @@ import process from 'node:process'
 import * as THREE from 'three'
 import { VRMSpringBoneLoaderPlugin, type VRMSpringBoneManager } from '@pixiv/three-vrm'
 
-import { buildMotion, type Motion } from '../../src/components/chat/rigProbe'
+import { applyMotion, buildMotion, buildRigFrom, resetRig, type Rig } from '../../src/components/chat/rigProbe'
 import {
   parseGlb,
   readAccessorRows,
@@ -50,9 +51,12 @@ import {
 // ---- glTF ------------------------------------------------------------------
 //
 // The container reader and the humanoid map come from vrmHumanoid.ts, the one
-// place that knows both VRM versions. What stays here is the narrowing this
-// simulator relies on: a body it can simulate has meshes, skins and, for now,
-// a VRM 0.x secondaryAnimation block -- the 1.0 branch is Phase 6a's work.
+// place that knows both VRM versions, and the rig comes from rigProbe.ts. What
+// stays here is the narrowing this simulator relies on: a body it can simulate
+// has meshes, skins and a VRM 0.x secondaryAnimation block. The spring IMPORT
+// below goes through the plugin's afterRoot and would take a 1.0 block too;
+// the collider presets, the tail group and the --dump-at reading still read
+// the 0.x block by hand, which is Phase 5's work.
 
 interface GltfPrimitive {
   attributes: Record<string, number>
@@ -74,48 +78,45 @@ interface Gltf extends GltfJson {
   }
 }
 
-// ---- node tree + springs -----------------------------------------------------
-
-function buildNodes(json: Gltf): { objs: THREE.Object3D[]; scene: THREE.Group } {
-  const objs = json.nodes.map((n, i) => {
-    const o = new THREE.Bone()
-    o.name = n.name ?? `node${i}`
-    if (n.matrix) {
-      new THREE.Matrix4().fromArray(n.matrix).decompose(o.position, o.quaternion, o.scale)
-    } else {
-      if (n.translation) o.position.fromArray(n.translation)
-      if (n.rotation) o.quaternion.fromArray(n.rotation)
-      if (n.scale) o.scale.fromArray(n.scale)
-    }
-    return o
-  })
-  json.nodes.forEach((n, i) => (n.children ?? []).forEach((c) => objs[i].add(objs[c])))
-  const scene = new THREE.Group()
-  for (const i of json.scenes[json.scene ?? 0].nodes) scene.add(objs[i])
-  scene.updateMatrixWorld(true)
-  return { objs, scene }
-}
+// ---- springs -------------------------------------------------------------------
 
 /**
- * Import the springs exactly as the browser does: through the plugin's VRM0
- * path, fed a stand-in for the GLTFLoader result. Private method, reached on
- * purpose — re-implementing the import here would be one more place for the
- * VRM0 sign conventions (collider z is negated, gravity is not) to drift.
+ * Import the springs exactly as the browser does: through the loader plugin's
+ * public `afterRoot`, fed a stand-in for the GLTFLoader result (the JSON, the
+ * rig's raw nodes as the node dependencies). The plugin picks the 1.0 or the
+ * 0.x branch from `extensionsUsed` itself. Re-implementing the import here
+ * would be one more place for the VRM0 sign conventions (collider z is
+ * negated, gravity is not) to drift.
  */
-async function importSprings(json: Gltf, objs: THREE.Object3D[], scene: THREE.Group): Promise<VRMSpringBoneManager> {
+async function importSprings(json: Gltf, rig: Rig): Promise<VRMSpringBoneManager> {
   const parser = {
     json,
     getDependencies: async (type: string) => {
       if (type !== 'node') throw new Error(`unexpected dependency ${type}`)
-      return objs
+      return rig.raw
+    },
+    getDependency: async (type: string, index: number) => {
+      if (type !== 'node') throw new Error(`unexpected dependency ${type}`)
+      return rig.raw[index]
     },
   }
   const plugin = new VRMSpringBoneLoaderPlugin(parser as never)
-  const manager = await (plugin as unknown as {
-    _v0Import(gltf: unknown): Promise<VRMSpringBoneManager | null>
-  })._v0Import({ parser, scene })
-  if (!manager) throw new Error('no VRM0 secondaryAnimation in this file')
+  const gltf = { parser, scene: rig.scene, userData: {} as { vrmSpringBoneManager?: VRMSpringBoneManager | null } }
+  await plugin.afterRoot(gltf as never)
+  const manager = gltf.userData.vrmSpringBoneManager
+  if (!manager) throw new Error('no spring bones in this file (neither VRMC_springBone nor VRM.secondaryAnimation)')
   return manager
+}
+
+/**
+ * The hips' heading, degrees from facing the camera. The sign follows the
+ * file's own X axis: on a 0.x body (her left is -X) a turn to her left reads
+ * negative, on a 1.0 body positive. Same number the old poser reported.
+ */
+function yawDeg(rig: Rig): number {
+  const forwardZ = rig.version === '0' ? -1 : 1
+  const f = new THREE.Vector3(0, 0, forwardZ).transformDirection(rig.bones.hips.matrixWorld)
+  return (Math.atan2(f.x, forwardZ * f.z) * 180) / Math.PI
 }
 
 // ---- collider presets ----------------------------------------------------------
@@ -443,77 +444,6 @@ function dropSleeves(json: Gltf, set: SkinSet): void {
   set.keep = Int32Array.from(keep)
 }
 
-// ---- motion ------------------------------------------------------------------------
-
-function sampleQuat(track: { times: Float32Array; values: Float32Array }, t: number, out: THREE.Quaternion): void {
-  const times = track.times
-  if (t <= times[0]) {
-    out.fromArray(track.values, 0)
-    return
-  }
-  const last = times.length - 1
-  if (t >= times[last]) {
-    out.fromArray(track.values, last * 4)
-    return
-  }
-  let lo = 0
-  let hi = last
-  while (hi - lo > 1) {
-    const mid = (lo + hi) >> 1
-    if (times[mid] <= t) lo = mid
-    else hi = mid
-  }
-  const f = (t - times[lo]) / (times[hi] - times[lo])
-  out.fromArray(track.values, lo * 4)
-  _qb.fromArray(track.values, hi * 4)
-  out.slerp(_qb, f)
-}
-const _qb = new THREE.Quaternion()
-
-class Poser {
-  private readonly human = new Map<string, THREE.Object3D>()
-  private readonly hipsRest = new THREE.Vector3()
-  constructor(json: Gltf, private readonly objs: THREE.Object3D[]) {
-    for (const [bone, node] of Object.entries(readHumanoid(json).bones)) this.human.set(bone, objs[node])
-    const hips = this.human.get('hips')
-    if (!hips) throw new Error('no hips')
-    this.hipsRest.copy(hips.position)
-  }
-  /** Bind pose: every humanoid bone at identity, hips at its rest translation. */
-  rest(): void {
-    for (const o of this.human.values()) o.quaternion.identity()
-    ;(this.human.get('hips') as THREE.Object3D).position.copy(this.hipsRest)
-  }
-  /** Same retarget as rigProbe.applyMotion, written onto the raw nodes (which rest at identity here). */
-  pose(motion: Motion, t: number): void {
-    this.rest()
-    const hips = this.human.get('hips') as THREE.Object3D
-    const q = new THREE.Quaternion()
-    for (const [bone, track] of Object.entries(motion.rotation)) {
-      const o = this.human.get(bone)
-      if (!o) continue
-      sampleQuat(track, t, q)
-      o.quaternion.set(-q.x, q.y, -q.z, q.w)
-    }
-    if (motion.hipsTranslation) {
-      const tr = motion.hipsTranslation
-      const times = tr.times
-      let lo = 0
-      while (lo < times.length - 2 && times[lo + 1] <= t) lo++
-      const hi = Math.min(lo + 1, times.length - 1)
-      const f = times[hi] > times[lo] ? Math.min(1, Math.max(0, (t - times[lo]) / (times[hi] - times[lo]))) : 0
-      const at = (k: number): number => tr.values[lo * 3 + k] + (tr.values[hi * 3 + k] - tr.values[lo * 3 + k]) * f
-      const scale = motion.restHipsY > 0 ? this.hipsRest.y / motion.restHipsY : 1
-      hips.position.set(-at(0) * scale, at(1) * scale, -at(2) * scale)
-    }
-  }
-  yawDeg(): number {
-    const hips = this.human.get('hips') as THREE.Object3D
-    const f = new THREE.Vector3(0, 0, -1).transformDirection(hips.matrixWorld)
-    return (Math.atan2(f.x, -f.z) * 180) / Math.PI
-  }
-}
-
 // ---- the run -------------------------------------------------------------------------
 
 export interface Report {
@@ -603,9 +533,9 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     const groups = json.extensions.VRM.secondaryAnimation.colliderGroups
     console.log(`  tail colliders: ${(group.colliderGroups ?? []).map((gi) => `${json.nodes[groups[gi].node].name}×${groups[gi].colliders.length}`).join(' ')}`)
   }
-  const { objs, scene } = buildNodes(json)
-  const manager = await importSprings(json, objs, scene)
-  const poser = new Poser(json, objs)
+  const rig = buildRigFrom({ json, bin })
+  const { raw: objs, scene } = rig
+  const manager = await importSprings(json, rig)
   const motion = buildMotion(new Uint8Array(readFileSync(clipPath)))
 
   const manifest = JSON.parse(readFileSync(args.model.replace(/\.vrm$/, '.parts.json'), 'utf8')) as {
@@ -643,8 +573,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
 
   if (process.env.SPRINGSIM_DEBUG) {
     // Bind-pose identity: skinning at rest must reproduce POSITION exactly.
-    poser.rest()
-    scene.updateMatrixWorld(true)
+    resetRig(rig)
     for (const s of skinners.values()) s.refresh()
     for (const s of sets) {
       skinners.get(s.skin)?.apply(s)
@@ -662,8 +591,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   for (let frame = 0; frame <= total; frame++) {
     const wall = frame * dt
     const t = Math.min(motion.duration, Math.max(0, wall - PREROLL_S))
-    poser.pose(motion, t)
-    scene.updateMatrixWorld(true)
+    applyMotion(rig, motion, t) // normalized → raw → world matrices
     manager.update(dt)
     scene.updateMatrixWorld(true)
 
@@ -696,7 +624,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
         }
       }
       const shell = new RadialShell(coat, spine) // coat was skinned on the last even frame; close enough for a reading
-      console.log(`  dump at t=${t.toFixed(2)}s (yaw ${poser.yawDeg().toFixed(0)}°):`)
+      console.log(`  dump at t=${t.toFixed(2)}s (yaw ${yawDeg(rig).toFixed(0)}°):`)
       for (const b of objs.filter((o) => /^HairTail[LR]_\d$/.test(o.name))) {
         b.getWorldPosition(bonePos)
         let best = { gap: Infinity, name: '' }
@@ -764,7 +692,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
         report.restCoatDepthMm = coatDepth
         if (process.env.SPRINGSIM_DEBUG) {
           const p = new THREE.Vector3()
-          console.log(`  pre-roll end: hips yaw ${poser.yawDeg().toFixed(0)}°`)
+          console.log(`  pre-roll end: hips yaw ${yawDeg(rig).toFixed(0)}°`)
           for (const o of objs) {
             if (!/^(HairTailR_\d|J_Bip_C_Head|J_Bip_C_Hips)$/.test(o.name)) continue
             o.getWorldPosition(p)
@@ -794,7 +722,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
       report.coatDepthMm = coatDepth
       report.coatAtWorst = inside / counted
       report.coatWorstT = t
-      report.coatWorstYaw = poser.yawDeg()
+      report.coatWorstYaw = yawDeg(rig)
       report.coatWorstWhere = where
     }
     if (coatUpper > report.coatUpperDepthMm) report.coatUpperDepthMm = coatUpper

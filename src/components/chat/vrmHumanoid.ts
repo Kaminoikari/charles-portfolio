@@ -14,6 +14,8 @@
 // copy handled chunk padding but not strides or normalized integers, and
 // springsim's copy handled strides but not padding.
 
+import * as THREE from 'three'
+
 // ---- glTF container --------------------------------------------------------
 
 export interface GltfNode {
@@ -347,6 +349,43 @@ export function readSprings(json: GltfJson): SpringSource {
     return { kind: 'vrm1', springBone: ext.VRMC_springBone ?? {} }
   }
   throw new Error('not a VRM: neither extensions.VRM (0.x) nor extensions.VRMC_vrm (1.0) is present')
+}
+
+// ---- node tree ----------------------------------------------------------------
+
+export interface NodeTree {
+  /** One object per glTF node, at the node's index, parented as the file says. */
+  nodes: THREE.Object3D[]
+  /** The scene's root nodes under one group, world matrices already updated. */
+  scene: THREE.Group
+}
+
+/**
+ * The file's node tree as THREE objects, which is what three-vrm's own
+ * VRMHumanoid and VRMSpringBoneManager pose and simulate. Rest transforms are
+ * taken as written: a `matrix` is decomposed, otherwise translation, rotation
+ * and scale each default the way glTF says. No GLTFLoader, no WebGL: the JSON
+ * chunk carries everything a skeleton needs.
+ */
+export function buildNodes(json: GltfJson): NodeTree {
+  const nodes = json.nodes.map((n, i) => {
+    const o = new THREE.Bone()
+    o.name = n.name ?? `node${i}`
+    if (n.matrix) {
+      new THREE.Matrix4().fromArray(n.matrix).decompose(o.position, o.quaternion, o.scale)
+    } else {
+      if (n.translation) o.position.fromArray(n.translation)
+      if (n.rotation) o.quaternion.fromArray(n.rotation)
+      if (n.scale) o.scale.fromArray(n.scale)
+    }
+    return o
+  })
+  json.nodes.forEach((n, i) => (n.children ?? []).forEach((c) => nodes[i].add(nodes[c])))
+  const scene = new THREE.Group()
+  const roots = json.scenes?.[json.scene ?? 0]?.nodes ?? nodes.map((_, i) => i).filter((i) => !nodes[i].parent)
+  for (const i of roots) scene.add(nodes[i])
+  scene.updateMatrixWorld(true)
+  return { nodes, scene }
 }
 
 // ---- rig identity ---------------------------------------------------------------

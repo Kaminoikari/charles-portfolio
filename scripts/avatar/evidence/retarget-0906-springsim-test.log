@@ -1,0 +1,12 @@
+
+ RUN  v3.2.6 /Users/charles/portfolio
+
+ ✓ scripts/avatar/springsim.test.ts (2 tests) 6399ms
+   ✓ Milfy twintails through the spring solver > dance: the tails stay outside the cardigan and out of her body  4595ms
+   ✓ Milfy twintails through the spring solver > spin: the tails stay outside the cardigan and out of her body  1803ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:07:23
+   Duration  6.76s (transform 60ms, setup 24ms, collect 90ms, tests 6.40s, environment 144ms, prepare 25ms)
+

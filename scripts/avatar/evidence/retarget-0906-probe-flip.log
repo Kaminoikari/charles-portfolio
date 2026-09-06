@@ -1,0 +1,8 @@
+flip=yes t=3.89 face ratio 17.592  leftHand z-head -0.225  rightHand z-head -0.145
+flip=yes t=8.23 face ratio 0.266  leftHand z-head 0.072  rightHand z-head 0.098
+flip=yes t=10.00 face ratio 9.327  leftHand z-head -0.162  rightHand z-head -0.070
+flip=yes t=17.23 face ratio 17.686  leftHand z-head -0.219  rightHand z-head -0.044
+flip=no  t=3.89 face ratio 5.566  leftHand z-head -0.233  rightHand z-head -0.130
+flip=no  t=8.23 face ratio 11.864  leftHand z-head 0.075  rightHand z-head 0.121
+flip=no  t=10.00 face ratio 4.707  leftHand z-head -0.185  rightHand z-head -0.058
+flip=no  t=17.23 face ratio 10.397  leftHand z-head -0.229  rightHand z-head -0.078

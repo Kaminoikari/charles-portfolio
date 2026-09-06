@@ -1,0 +1,14 @@
+model public/avatar/mika-milfy-12.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+akimbo             0mm       0mm       0mm        0%   0.00s    -0°      39mm   1.20s    2.5°   9.88s  HairTailR_5
+dance              0mm      37mm      37mm        0%  17.23s  -107°      50mm   0.53s   21.7°   1.03s  HairTailR_5
+idleLoop           0mm       0mm       0mm        0%   0.00s    -3°      17mm   0.00s    0.3°   9.32s  HairTailL_5
+modelPose          0mm       0mm       0mm        0%   0.00s    -3°      17mm   1.90s    5.0°   3.98s  HairTailR_5
+peaceSign          0mm       0mm       0mm        0%   0.00s     4°      17mm   0.00s    4.5°  10.50s  HairTailL_5
+playFingers        0mm       0mm       0mm        0%   0.00s    -0°      17mm   2.40s    1.9°   5.18s  HairTailL_5
+scratchHead        0mm       0mm       0mm        0%   0.00s    -0°      18mm   1.80s    3.5°   0.47s  HairTailR_5
+spin               0mm      42mm      42mm        0%   2.07s   -90°      17mm   1.63s   12.4°   2.02s  HairTailL_2
+squat              0mm       0mm       0mm        0%   0.00s     0°      17mm   2.53s   12.7°   3.27s  HairTailR_5
+stretch            0mm       0mm       0mm        0%   0.00s    -0°      17mm   0.30s    3.5°   3.87s  HairTailL_5
+npx tsx scripts/avatar/springsim.ts public/avatar/mika-milfy-12.vrm --clip=al  22.92s user 0.22s system 102% cpu 22.493 total
+exit=0

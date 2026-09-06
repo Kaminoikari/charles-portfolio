@@ -959,8 +959,9 @@ huff 排在後面就會在訪客拍最快的時候變成靜音，而那正是這
 | column（`lookAtY` 1.016） | 1.7% | y 1.461 → 1.133（下巴到胸口） | 174mm（59%），頭頂完全在外 |
 
 修法是把判定區從 framing **推導**出來：`avatarHeadBand(framing, canvas)` 用
-`avatarViewSpan()` 把她的髮頂（1.582，全檔通用的量測值）與下巴（1.287，rigProbe 的
-`FACE_BOX` 下緣）換算成畫布比例，`avatarMode.test.ts` 對兩個 placement 各釘一次。相機
+`avatarViewSpan()` 把她的髮頂（1.582，全檔通用的量測值）與下巴（1.287，rigProbe 從 Face
+網格推導的 `Rig.faceBox` 下緣；2026-09-06 前是常數 `FACE_BOX`）換算成畫布比例，
+`avatarMode.test.ts` 對兩個 placement 各釘一次，並把下巴常數釘在推導盒 1mm 內。相機
 有 0.1m 的俯角，嚴格投影與這個線性模型的差距最大 3.2px（745px 畫布），可以忽略。
 
 驗證：兩個 placement 各截一張把判定框畫在她身上的圖，框都正好落在髮頂到下巴、停在

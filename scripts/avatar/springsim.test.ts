@@ -35,6 +35,17 @@ const BODY_MAX_MM = 60
 const JUMP_MAX_DEG = 25
 const REST_COAT_MAX_MM = 5
 
+// The instrument's own identity. These are the 2026-09-06 readings of the
+// shipped body (evidence/retarget-0906-springsim-before-stride3.log), held to
+// within 2mm, 0.1s and 3°. They are not a clothing gate: they exist so that a
+// change to how the simulator POSES the body (Phase 6a moved it onto
+// three-vrm's VRMHumanoid) has to reproduce what the old poser measured.
+// When the body itself changes, re-read them from the log of the new build.
+const READINGS = {
+  dance: { coatDepthMm: 37, coatWorstT: 17.23, coatWorstYaw: -107 },
+  spin: { coatDepthMm: 42, coatWorstT: 2.07, coatWorstYaw: -90 },
+} as const
+
 describe('Milfy twintails through the spring solver', () => {
   for (const clip of CLIPS) {
     it(`${clip}: the tails stay outside the cardigan and out of her body`, async () => {
@@ -45,6 +56,12 @@ describe('Milfy twintails through the spring solver', () => {
       expect(r.coatAtWorst, 'share of the tail ≥5mm inside at the worst frame').toBeLessThanOrEqual(COAT_SHARE_MAX)
       expect(r.bodyDepthMm, `deepest into the body @${r.bodyWorstT.toFixed(2)}s`).toBeLessThanOrEqual(BODY_MAX_MM)
       expect(r.jumpDeg, `largest one-frame turn (${r.jumpBone} @${r.jumpT.toFixed(2)}s)`).toBeLessThanOrEqual(JUMP_MAX_DEG)
+      if (!process.env.SPRINGSIM_TEST_MODEL) {
+        const pin = READINGS[clip]
+        expect(Math.abs(r.coatDepthMm - pin.coatDepthMm), 'coat depth vs the recorded reading').toBeLessThanOrEqual(2)
+        expect(Math.abs(r.coatWorstT - pin.coatWorstT), 'worst frame vs the recorded reading').toBeLessThanOrEqual(0.1)
+        expect(Math.abs(r.coatWorstYaw - pin.coatWorstYaw), 'yaw at the worst frame vs the recorded reading').toBeLessThanOrEqual(3)
+      }
     }, 60_000)
   }
 })

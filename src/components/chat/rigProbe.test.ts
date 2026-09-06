@@ -2,11 +2,13 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { readHumanoid, type GltfJson } from './vrmHumanoid'
+import { VRMHumanoid } from '@pixiv/three-vrm'
+import { parseGlb, readHumanoid, type GltfJson } from './vrmHumanoid'
 import {
   applyMotion,
   buildMotion,
   buildRig,
+  deriveFingerSkinRadius,
   handJoints,
   headPenetration,
   headVolume,
@@ -47,27 +49,14 @@ import {
 const asset = (...parts: string[]): Uint8Array =>
   new Uint8Array(readFileSync(path.join(process.cwd(), 'public', 'avatar', ...parts)))
 
-/**
- * The shipped body rewritten as a VRM 1.0 export would be: humanoid map as a
- * record under VRMC_vrm, no VRM block, and every scene root hung under one
- * node turned π about Y so the body faces +Z. Only the JSON chunk changes; the
- * binary chunk is copied through.
- */
-function vrm1Twin(data: Uint8Array): Uint8Array {
+type Doc = GltfJson & { extensions: NonNullable<GltfJson['extensions']> }
+
+/** A .vrm with its JSON chunk edited in place; the binary chunk is copied through. */
+function rewrite(data: Uint8Array, edit: (doc: Doc) => void): Uint8Array {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength)
   const jsonLength = view.getUint32(12, true)
-  const doc = JSON.parse(new TextDecoder().decode(data.subarray(20, 20 + jsonLength))) as GltfJson & {
-    extensions: NonNullable<GltfJson['extensions']>
-  }
-  const { bones } = readHumanoid(doc)
-  const record: Record<string, { node: number }> = {}
-  for (const [bone, node] of Object.entries(bones)) record[bone] = { node }
-  delete doc.extensions.VRM
-  doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record } }
-  doc.extensionsUsed = [...(doc.extensionsUsed ?? []).filter((e) => e !== 'VRM'), 'VRMC_vrm']
-  const scene = doc.scenes![doc.scene ?? 0]
-  doc.nodes.push({ name: 'vrm1-root', rotation: [0, 1, 0, 0], children: scene.nodes })
-  scene.nodes = [doc.nodes.length - 1]
+  const doc = JSON.parse(new TextDecoder().decode(data.subarray(20, 20 + jsonLength))) as Doc
+  edit(doc)
 
   let blob = new TextEncoder().encode(JSON.stringify(doc))
   const pad = (4 - (blob.length % 4)) % 4
@@ -88,6 +77,50 @@ function vrm1Twin(data: Uint8Array): Uint8Array {
   out.set(blob, 20)
   out.set(rest, 20 + blob.length)
   return out
+}
+
+// A 1.0 export spells the thumb joints Metacarpal/Proximal/Distal where 0.x
+// spells them Proximal/Intermediate/Distal (the same three joints).
+const THUMB_VRM0_TO_VRM1: Record<string, string> = {
+  leftThumbProximal: 'leftThumbMetacarpal',
+  leftThumbIntermediate: 'leftThumbProximal',
+  rightThumbProximal: 'rightThumbMetacarpal',
+  rightThumbIntermediate: 'rightThumbProximal',
+}
+
+/**
+ * The shipped body rewritten as a VRM 1.0 export would be: humanoid map as a
+ * record under VRMC_vrm with the 1.0 thumb names, no VRM block, and every
+ * scene root hung under one node turned π about Y so the body faces +Z.
+ */
+function vrm1Twin(data: Uint8Array): Uint8Array {
+  return rewrite(data, (doc) => {
+    const { bones } = readHumanoid(doc)
+    const record: Record<string, { node: number }> = {}
+    for (const [bone, node] of Object.entries(bones)) record[THUMB_VRM0_TO_VRM1[bone] ?? bone] = { node }
+    delete doc.extensions.VRM
+    doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record } }
+    doc.extensionsUsed = [...(doc.extensionsUsed ?? []).filter((e) => e !== 'VRM'), 'VRMC_vrm']
+    const scene = doc.scenes![doc.scene ?? 0]
+    doc.nodes.push({ name: 'vrm1-root', rotation: [0, 1, 0, 0], children: scene.nodes })
+    scene.nodes = [doc.nodes.length - 1]
+  })
+}
+
+/**
+ * The shipped body with two bones resting on a rotation: the left upper arm
+ * rolled 15° about X and the right lower leg 10° about Z. Every shipped body
+ * rests at identity on every node, so without this no test here could tell a
+ * retarget that handles rest rotations from one that ignores them.
+ */
+function tiltedRest(data: Uint8Array): Uint8Array {
+  return rewrite(data, (doc) => {
+    const { bones } = readHumanoid(doc)
+    const q = (axis: THREE.Vector3, deg: number) =>
+      new THREE.Quaternion().setFromAxisAngle(axis, (deg * Math.PI) / 180).toArray() as [number, number, number, number]
+    doc.nodes[bones.leftUpperArm].rotation = q(new THREE.Vector3(1, 0, 0), 15)
+    doc.nodes[bones.rightLowerLeg].rotation = q(new THREE.Vector3(0, 0, 1), 10)
+  })
 }
 
 let cachedRig: Rig | null = null
@@ -845,5 +878,188 @@ describe('returning to rest', () => {
       (name) => settleSeconds(endDistance(name)) > shortest,
     )
     expect(stretched.length).toBeGreaterThan(0)
+  })
+})
+
+// Phase 6a (2026-09-06): the rig IS three-vrm's VRMHumanoid, built on the
+// file's own node tree. The normalized bones the tests above pose are the
+// humanoid's normalized nodes; `humanoid.update()` writes them through to the
+// raw nodes, which is what the browser skins. Until now this file, springsim.ts
+// and motion.py each carried their own retarget, and the VRM0 axis flip in
+// all three was unconditional: a VRM 1.0 body would have played every clip
+// mirrored front-to-back, and the rigProbe twin test above passed anyway
+// because it only reads the rest pose.
+describe('three-vrm humanoid rig', () => {
+  const world = (o: THREE.Object3D): THREE.Vector3 => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld)
+  const SAMPLE = ['hips', 'head', 'leftHand', 'rightHand', 'leftFoot', 'rightIndexTip', 'leftThumbDistal'] as const
+
+  it('is a VRMHumanoid and knows which VRM version it came from', () => {
+    const r = rig()
+    expect(r.humanoid).toBeInstanceOf(VRMHumanoid)
+    expect(r.version).toBe('0')
+    expect(buildRig(vrm1Twin(asset('AvatarSample_B_webp.vrm'))).version).toBe('1')
+  })
+
+  it('names the thumb joints the way three-vrm does, and a thumb track lands on them', () => {
+    const r = rig()
+    // VRM 0.x spells them Proximal/Intermediate/Distal; VRMHumanoid renames
+    // them on import to the 1.0 Metacarpal/Proximal/Distal, which is also how
+    // every .vrma names them, so no renaming is left for a track to miss.
+    expect('leftThumbMetacarpal' in r.bones).toBe(true)
+    expect('leftThumbIntermediate' in r.bones).toBe(false)
+    expect(handJoints(r, 'left')).toHaveLength(21)
+    const m = motion('dance')
+    expect('leftThumbMetacarpal' in m.rotation).toBe(true)
+    applyMotion(r, m, 3.89)
+    expect(r.bones.leftThumbMetacarpal.quaternion.angleTo(new THREE.Quaternion())).toBeGreaterThan(0.01)
+  })
+
+  it('plays a clip on a VRM 1.0 twin without the VRM0 flip, so the two bodies strike the same pose', () => {
+    // The twin is the same body turned π about Y. A clip is authored in VRM 1.0
+    // space; three-vrm flips x/z for a 0.x body and leaves a 1.0 body alone.
+    // Done right, the two posed bodies differ by exactly that half turn: every
+    // joint of the twin sits at (-x, y, -z) of the shipped body's.
+    const v0 = rig()
+    const v1 = buildRig(vrm1Twin(asset('AvatarSample_B_webp.vrm')))
+    const m = motion('dance')
+    for (const t of [3.89, 10.0, 17.23]) {
+      applyMotion(v0, m, t)
+      applyMotion(v1, m, t)
+      for (const bone of SAMPLE) {
+        const a = world(v0.bones[bone])
+        const b = world(v1.bones[bone])
+        expect(b.x, `${bone} x @${t}`).toBeCloseTo(-a.x, 6)
+        expect(b.y, `${bone} y @${t}`).toBeCloseTo(a.y, 6)
+        expect(b.z, `${bone} z @${t}`).toBeCloseTo(-a.z, 6)
+      }
+    }
+  })
+
+  it('flips the clip for the 0.x body it ships on', () => {
+    // The twin test above only says the two bodies agree up to the half turn,
+    // which a flip applied to the WRONG version satisfies just as well. This
+    // pins the flip to the 0.x body with a fact of the dance: at 8.23s her
+    // hand is at her cheek (the face waiver dance ships with), and the
+    // unflipped clip puts it nowhere near (ellipsoid value 11.9, probe
+    // evidence/retarget-0906-probe-flip.log).
+    const r = rig()
+    const volume = headVolume(r)
+    applyMotion(r, motion('dance'), 8.23)
+    let closest = Infinity
+    for (const side of ['left', 'right'] as const) {
+      for (const joint of handJoints(r, side)) closest = Math.min(closest, headPenetration(r, volume, joint))
+    }
+    expect(closest).toBeLessThan(0.5)
+  })
+
+  it('writes the pose through to the raw nodes, rest rotations included', () => {
+    // The raw nodes are what the mesh is skinned to. On a body whose bones rest
+    // on a rotation, a retarget that ignores the rest lands the raw arm
+    // somewhere else than the normalized one; the two have to coincide.
+    for (const body of [asset('AvatarSample_B_webp.vrm'), tiltedRest(asset('AvatarSample_B_webp.vrm'))]) {
+      const r = buildRig(body)
+      const m = motion('dance')
+      for (const t of [0, 3.89, 10.0]) {
+        applyMotion(r, m, t)
+        for (const bone of Object.keys(r.bones)) {
+          if (bone.endsWith('Tip')) continue // synthetic, no raw node
+          const raw = r.humanoid.getRawBoneNode(bone as never)
+          if (!raw) throw new Error(`no raw ${bone}`)
+          expect(world(raw).distanceTo(world(r.bones[bone])), `${bone} @${t}`).toBeLessThan(1e-6)
+        }
+      }
+    }
+  })
+
+  it('derives the face box from the Face mesh instead of carrying 2026-08-19 numbers', () => {
+    const r = rig()
+    // The numbers the box replaced, measured by hand on 2026-08-19 against a
+    // head bone at (0, 1.320, 0.005): x ±0.092, y 1.287–1.503, z -0.113–0.033.
+    const expected = { min: [-0.092, 1.287, -0.113], max: [0.092, 1.503, 0.033] }
+    for (const side of ['min', 'max'] as const) {
+      for (const [k, axis] of (['x', 'y', 'z'] as const).entries()) {
+        expect(Math.abs(r.faceBox[side][axis] - expected[side][k]), `${side}.${axis}`).toBeLessThan(0.002)
+      }
+    }
+    // The hair is skinned to the head too and reaches 0.1m higher; a box that
+    // included it would let a hand hover above her crown and call it a hit.
+    expect(r.faceBox.max.y).toBeLessThan(1.51)
+    // Derived in the file's own space: the twin's box is the shipped box turned round.
+    const twin = buildRig(vrm1Twin(asset('AvatarSample_B_webp.vrm')))
+    expect(twin.faceBox.min.z).toBeCloseTo(-0.033, 3)
+    expect(twin.faceBox.max.z).toBeCloseTo(0.113, 3)
+    expect(headVolume(twin).centre.z).toBeCloseTo(-headVolume(r).centre.z, 6)
+  })
+
+  it('leaves the neck rows of the Face mesh out of the face box', () => {
+    // The shipped Face mesh has no vertex weighted mostly to anything but the
+    // head, so the filter is invisible there; a two-vertex Face mesh with one
+    // vertex on the neck shows what it is for.
+    const bone = (name: string, translation: number[]) => ({ name, translation })
+    const nodes = [
+      { ...bone('Hips', [0, 0.8, 0]), children: [1] },
+      { ...bone('Neck', [0, 0.4, 0]), children: [2] },
+      bone('Head', [0, 0.1, 0]),
+      { name: 'Face', mesh: 0, skin: 0 },
+    ]
+    const positions = new Float32Array([0, 1.4, 0, 0, 0.9, 0]) // one at the head, one far down the neck
+    const joints = new Uint8Array([2, 0, 0, 0, 1, 0, 0, 0])
+    const weights = new Float32Array([1, 0, 0, 0, 0.9, 0.1, 0, 0])
+    // Inverse bind matrices: the inverses of the joints' rest globals (hips
+    // 0.8, neck 1.2, head 1.3), column-major, so skinning at rest is identity.
+    const ibm = new Float32Array(3 * 16)
+    ;[0.8, 1.2, 1.3].forEach((y, k) => new THREE.Matrix4().makeTranslation(0, -y, 0).toArray(ibm, k * 16))
+    const bin = new Uint8Array(positions.byteLength + joints.byteLength + weights.byteLength + ibm.byteLength)
+    bin.set(new Uint8Array(positions.buffer), 0)
+    bin.set(joints, positions.byteLength)
+    bin.set(new Uint8Array(weights.buffer), positions.byteLength + joints.byteLength)
+    bin.set(new Uint8Array(ibm.buffer), positions.byteLength + joints.byteLength + weights.byteLength)
+    const json = {
+      scene: 0,
+      scenes: [{ nodes: [0, 3] }],
+      nodes,
+      meshes: [{ name: 'Face', primitives: [{ attributes: { POSITION: 0, JOINTS_0: 1, WEIGHTS_0: 2 } }] }],
+      skins: [{ joints: [0, 1, 2], inverseBindMatrices: 3 }],
+      bufferViews: [
+        { byteOffset: 0, byteLength: positions.byteLength },
+        { byteOffset: positions.byteLength, byteLength: joints.byteLength },
+        { byteOffset: positions.byteLength + joints.byteLength, byteLength: weights.byteLength },
+        { byteOffset: positions.byteLength + joints.byteLength + weights.byteLength, byteLength: ibm.byteLength },
+      ],
+      accessors: [
+        { bufferView: 0, componentType: 5126, count: 2, type: 'VEC3' },
+        { bufferView: 1, componentType: 5121, count: 2, type: 'VEC4' },
+        { bufferView: 2, componentType: 5126, count: 2, type: 'VEC4' },
+        { bufferView: 3, componentType: 5126, count: 3, type: 'MAT4' },
+      ],
+      extensions: { VRM: { humanoid: { humanBones: [{ bone: 'hips', node: 0 }, { bone: 'neck', node: 1 }, { bone: 'head', node: 2 }] } } },
+    }
+    const text = new TextEncoder().encode(JSON.stringify(json))
+    const pad = (n: number) => (4 - (n % 4)) % 4
+    const out = new Uint8Array(12 + 8 + text.length + pad(text.length) + 8 + bin.length + pad(bin.length))
+    const dv = new DataView(out.buffer)
+    dv.setUint32(0, 0x46546c67, true)
+    dv.setUint32(4, 2, true)
+    dv.setUint32(8, out.length, true)
+    dv.setUint32(12, text.length + pad(text.length), true)
+    dv.setUint32(16, 0x4e4f534a, true)
+    out.set(text, 20)
+    out.fill(0x20, 20 + text.length, 20 + text.length + pad(text.length))
+    const binAt = 20 + text.length + pad(text.length)
+    dv.setUint32(binAt, bin.length + pad(bin.length), true)
+    dv.setUint32(binAt + 4, 0x004e4942, true)
+    out.set(bin, binAt + 8)
+    const r = buildRig(out)
+    expect(r.faceBox.min.y).toBeCloseTo(1.4, 6)
+    expect(r.faceBox.max.y).toBeCloseTo(1.4, 6)
+  })
+
+  it('reads a finger skin radius off the mesh that covers the hand-measured margin', () => {
+    // SKIN_ABOVE_JOINT (12mm) was read off a screenshot. The mesh says how far
+    // the skin of the two outer phalanges sits from their bone: that has to be
+    // at least the margin the frame reserves, and nowhere near a palm.
+    const radius = deriveFingerSkinRadius(parseGlb(asset('AvatarSample_B_webp.vrm')), rig())
+    expect(radius).toBeGreaterThanOrEqual(SKIN_ABOVE_JOINT)
+    expect(radius).toBeLessThan(0.02)
   })
 })

@@ -103,17 +103,19 @@ def rest_gap(model, clip):
     out = {}
     for a, b in LIMBS:
         out[(a, b)] = angle(mine[bones[b]][:3, 3] - mine[bones[a]][:3, 3],
-                            ref[b] - ref[a])
+                            ref[b] - ref[a], humanoid.forward_z(doc))
     return out
 
 
-def angle(u, v):
+def angle(u, v, forward_z):
     """Between our direction and the clip's, brought into our world.
 
-    The clip is VRM 1.0 and faces +Z; this model is VRM 0.x and faces -Z, so the
-    reference turns a half turn about Y before the two can be compared at all.
+    The clip is VRM 1.0 and faces +Z. A VRM 0.x body faces -Z, so for one the
+    reference turns a half turn about Y before the two can be compared at all;
+    a 1.0 body is compared as is. `forward_z` is humanoid.forward_z(doc).
     """
-    v = v * np.array([-1.0, 1.0, -1.0])
+    if forward_z < 0:
+        v = v * np.array([-1.0, 1.0, -1.0])
     nu, nv = np.linalg.norm(u), np.linalg.norm(v)
     if nu < 1e-6 or nv < 1e-6:
         return 0.0
@@ -138,7 +140,7 @@ def compare(model, clips, samples=4):
                 if a not in bones or b not in bones or a not in ref or b not in ref:
                     continue
                 u = mine[bones[b]][:3, 3] - mine[bones[a]][:3, 3]
-                excess = angle(u, ref[b] - ref[a]) - gap[(a, b)]
+                excess = angle(u, ref[b] - ref[a], humanoid.forward_z(doc)) - gap[(a, b)]
                 if excess > worst:
                     worst, where = excess, (b, round(at, 2))
         rows.append((os.path.basename(clip), worst, where))

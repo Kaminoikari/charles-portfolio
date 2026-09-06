@@ -1,0 +1,7 @@
+model public/avatar/mika-milfy-12.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 3
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+dance              0mm      37mm      37mm        0%  17.23s  -107°      50mm   0.53s   21.7°   1.03s  HairTailR_5
+npx tsx scripts/avatar/springsim.ts public/avatar/mika-milfy-12.vrm    4.74s user 0.12s system 104% cpu 4.653 total
+model public/avatar/mika-milfy-12.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 3
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone
+spin               0mm      42mm      42mm        0%   2.07s   -90°      17mm   1.63s   12.4°   2.02s  HairTailL_2

@@ -1,0 +1,14 @@
+$ python3 scripts/avatar/retarget_test.py
+GATE retarget fidelity (10 clips x 4 frames x 10 limbs, flag above 3.0 degrees on top of the rest gap)
+  akimbo.vrma            worst  +0.00 deg
+  dance.vrma             worst  +0.00 deg
+  idleLoop.vrma          worst  +1.94 deg
+  modelPose.vrma         worst  +0.00 deg
+  peaceSign.vrma         worst  +0.00 deg
+  playFingers.vrma       worst  +0.00 deg
+  scratchHead.vrma       worst  +0.00 deg
+  spin.vrma              worst  +0.00 deg
+  squat.vrma             worst  +0.00 deg
+  stretch.vrma           worst  +0.00 deg
+
+  PASS

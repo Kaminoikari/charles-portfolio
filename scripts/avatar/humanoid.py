@@ -55,6 +55,27 @@ def springs(doc):
     return vrmrig.spring_bones(doc)
 
 
+# VRM 1.0 spells the thumb joints Metacarpal/Proximal/Distal; VRM 0.x spells the
+# same three Proximal/Intermediate/Distal. A .vrma uses the 1.0 names, so the
+# word "Proximal" means the middle joint in a clip and the base joint in a 0.x
+# body. three-vrm renames a 0.x body's on import (thumbBoneNameMap); the writer
+# in vrm1to0.py renames the other way when it downgrades a body.
+V1_TO_V0_THUMB = {
+    'leftThumbMetacarpal': 'leftThumbProximal', 'leftThumbProximal': 'leftThumbIntermediate',
+    'rightThumbMetacarpal': 'rightThumbProximal', 'rightThumbProximal': 'rightThumbIntermediate',
+}
+
+
+def model_bone_name(doc, clip_bone):
+    """This body's spelling of a .vrma's (VRM 1.0) humanoid bone name.
+
+    Translated for every 0.x body and for a 1.0 body that still carries the
+    old thumb spelling, which is when three-vrm renames on import too.
+    """
+    legacy = version(doc) == '0' or any(b.endswith('ThumbIntermediate') for b in bones(doc))
+    return V1_TO_V0_THUMB.get(clip_bone, clip_bone) if legacy else clip_bone
+
+
 def animation_bones(doc):
     """Humanoid bone name -> node index of a .vrma (VRMC_vrm_animation) file."""
     ext = doc.get('extensions') or {}

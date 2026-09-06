@@ -1,0 +1,33 @@
+# Phase 6a red log (2026-09-06): the new tests before any implementation
+$ npx vitest run src/components/chat/rigProbe.test.ts src/components/chat/vrmHumanoid.test.ts
+147:⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+149: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > is a VRMHumanoid and knows which VRM version it came from
+150:AssertionError: expected undefined to be an instance of _VRMHumanoid
+161: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > names the thumb joints the way three-vrm does, and a thumb track lands on them
+162:AssertionError: expected false to be true // Object.is equality
+180: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > plays a clip on a VRM 1.0 twin without the VRM0 flip, so the two bodies strike the same pose
+181:AssertionError: hips x @3.89: expected -0.2344539996670861 to be close to 0.2344539996670861, received difference is 0.4689079993341722, but expected 5e-7
+192: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included
+193:TypeError: Cannot read properties of undefined (reading 'humanBones')
+204: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > derives the face box from the Face mesh instead of carrying 2026-08-19 numbers
+205:TypeError: Cannot read properties of undefined (reading 'min')
+216: FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+217:TypeError: (0 , deriveFingerSkinRadius) is not a function
+228: FAIL  src/components/chat/vrmHumanoid.test.ts > buildNodes > rebuilds the glTF node tree as THREE objects, parented and placed as the file says
+229:TypeError: (0 , buildNodes) is not a function
+240: FAIL  src/components/chat/vrmHumanoid.test.ts > buildNodes > honours a matrix node and a scale
+241:TypeError: (0 , buildNodes) is not a function
+252: FAIL  src/components/chat/vrmHumanoid.test.ts > wiring > no file outside vrmHumanoid.ts reads the humanoid map inline
+253:AssertionError: these files read humanBones themselves instead of through vrmHumanoid.ts: src/components/chat/rigProbe.test.ts: expected [ Array(1) ] to deeply equal []
+274: Test Files  2 failed (2)
+275:      Tests  9 failed | 122 passed (131)
+
+$ python3 -W ignore -m unittest scripts.avatar.retarget_parity_test
+ERROR: setUpClass (scripts.avatar.retarget_parity_test.AgainstThreeVrm)
+AssertionError: retarget-dump.ts failed (1):
+FAIL: test_a_thumb_track_lands_on_the_thumb_it_names (scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_thumb_track_lands_on_the_thumb_it_names)
+AssertionError: 'leftThumbIntermediate' not found in {'hips': array([-0.05290849,  0.506118  , -0.0227324 , -0.86053962]), 'spine': array([ 0.00453932,  0.04552872, -0.00399444,  0.99894469]), 'chest': array([0.01406379,
+FAIL: test_a_vrm1_twin_poses_as_the_shipped_body_turned_round (scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_vrm1_twin_poses_as_the_shipped_body_turned_round)
+AssertionError: 13.204961591992186 not less than 1e-06 : hips
+Ran 2 tests in 0.473s
+FAILED (failures=2, errors=1)

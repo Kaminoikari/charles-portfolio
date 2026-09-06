@@ -1925,7 +1925,8 @@ build.py（順序與守衛）、make.py（檔名），新增 springsim.ts／spri
        ／0%，與建置 log 的 -59mm 一致（evidence/twintail-0904.log R5）。
     c. 彈簧 collider：-2 把雙馬尾的 colliderGroups 清空，理由是註解裡「27° 單幀跳
        動」，收尾時自己承認沒有重現管道。springsim.ts 用 three-vrm 自己的
-       VRMSpringBoneManager（走 _v0Import，Node 端 60Hz 固定步進）量出貨檔 -2：
+       VRMSpringBoneManager（當時走 _v0Import，2026-09-06 起改走 public afterRoot 並
+       透過 rigProbe 的 VRMHumanoid 擺姿勢；Node 端 60Hz 固定步進）量出貨檔 -2：
        dance 不帶 collider 也有 16.7° 的單幀轉角，那個數字是舞本身。現在雙馬尾撞
        頭／頸／上胸／脊椎／雙臂雙手（源模型的 VRoid 組）加上「外套珠子」：VRM0 只有
        球，外套截面是橢圓，一顆球包住 15–90° 那段弧會在馬尾方位角上多凸 86mm（鎖

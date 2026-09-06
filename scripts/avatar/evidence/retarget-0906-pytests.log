@@ -1,0 +1,5 @@
+$ python3 -W ignore -m unittest discover -s scripts/avatar -p "*_test.py"
+Ran 219 tests in 8.915s
+OK
+  parity shipped: worst bone modelPose@2.82s rightIndexDistal 0.0746° (limit 0.5°)
+  parity twin: worst bone modelPose@2.82s rightIndexDistal 0.0746° (limit 0.5°)

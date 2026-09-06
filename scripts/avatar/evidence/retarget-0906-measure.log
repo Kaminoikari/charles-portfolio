@@ -1,0 +1,13 @@
+$ npx tsx scripts/measure-motions.ts
+模型　　public/avatar/AvatarSample_B_webp.vrm
+靜止姿勢　hips 0.8782　head 1.3200
+臉部盒　x -0.092…0.092　y 1.287…1.503　z -0.113…0.033（從 Face 網格推導）
+指尖皮厚　18.0mm（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT 12.0mm）
+
+每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。
+餘裕是負的就代表這具身體上那支動作會被切到或會穿模。
+
+[…]
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+
+全部動作在這具身體上都待在預算內，可以直接沿用。

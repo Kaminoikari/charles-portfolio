@@ -191,8 +191,8 @@ waist-up 的上下緣 2026-08-20 從 0.618–1.722 整段抬高 0.15，見下方
 
 ## 做完的內容
 
-1. **驗證層** `rigProbe.ts`：從 GLB 的 JSON chunk 重建 three-vrm 的 normalized rig，
-   在 Node 裡做 FK，不需要 WebGL，整套在一秒多跑完（測試條數會隨後續改動變動，
+1. **驗證層** `rigProbe.ts`：從 GLB 的 JSON chunk 重建 three-vrm 的 normalized rig
+   （2026-09-06 起改成直接在節點樹上建 three-vrm 自己的 `VRMHumanoid`），在 Node 裡做 FK，不需要 WebGL，整套在一秒多跑完（測試條數會隨後續改動變動，
    刻意不寫死在這裡：這份文件的數字在本次任務中已經因為抄寫而過時三次，
    凡是會漂移的計數一律不進散文）。防線：穿臉、出框（左右各自的預算）、掌心朝向、
    髖部下沉、首尾站姿、解剖直立。

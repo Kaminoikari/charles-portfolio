@@ -18,9 +18,9 @@
 // in, so a person deciding whether a new body can keep the clip pack can see
 // how much room is left rather than a pass/fail with no margin.
 //
-// NO BROWSER, NO GPU. rigProbe rebuilds three-vrm's normalized humanoid rig out
-// of the glTF JSON chunk and runs forward kinematics in plain Node. That is not
-// a convenience here: this machine's Playwright runs software WebGL, where
+// NO BROWSER, NO GPU. rigProbe builds three-vrm's own VRMHumanoid on the glTF
+// node tree and runs forward kinematics in plain Node. That is not a
+// convenience here: this machine's Playwright runs software WebGL, where
 // rendered frames are unreliable and bone coordinates are not.
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -46,7 +46,8 @@ import {
 import {
   applyMotion,
   buildMotion,
-  buildRig,
+  buildRigFrom,
+  deriveFingerSkinRadius,
   handJoints,
   headPenetration,
   headVolume,
@@ -57,6 +58,7 @@ import {
   type Motion,
   type Rig,
 } from '../src/components/chat/rigProbe'
+import { parseGlb, type Glb } from '../src/components/chat/vrmHumanoid'
 
 const SHIPPED = path.join('public', 'avatar', 'AvatarSample_B_webp.vrm')
 
@@ -170,17 +172,28 @@ export function measure(target: string): Report {
   const lines: string[] = []
   const say = (s: string): void => void lines.push(s)
   let rig: Rig
+  let glb: Glb
   try {
-    rig = buildRig(bytes(target))
+    glb = parseGlb(bytes(target))
+    rig = buildRigFrom(glb)
   } catch (e) {
     throw new Error(`讀不了 ${target}：${e instanceof Error ? e.message : e}`)
   }
   resetRig(rig)
   const restHipsY = rig.restPosition.hips.y
   const restHeadY = rig.restPosition.head.y
+  // Both read off THIS body's mesh (rigProbe.deriveFaceBox / deriveFingerSkinRadius),
+  // beside the 12mm margin the frame still reserves by constant.
+  const box = rig.faceBox
+  const fingerSkin = deriveFingerSkinRadius(glb, rig)
 
   say(`模型　　${target}`)
   say(`靜止姿勢　hips ${restHipsY.toFixed(4)}　head ${restHeadY.toFixed(4)}`)
+  say(
+    `臉部盒　x ${box.min.x.toFixed(3)}…${box.max.x.toFixed(3)}　y ${box.min.y.toFixed(3)}…${box.max.y.toFixed(3)}` +
+      `　z ${box.min.z.toFixed(3)}…${box.max.z.toFixed(3)}（從 Face 網格推導）`,
+  )
+  say(`指尖皮厚　${mm(fingerSkin)}（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT ${mm(SKIN_ABOVE_JOINT)}）`)
   say(
     '\n每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。' +
       '\n餘裕是負的就代表這具身體上那支動作會被切到或會穿模。\n',

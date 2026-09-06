@@ -6,12 +6,12 @@
 // hand that never left her hip, a peace sign whose palm faces away), so every
 // fix had to be eyeballed on a screenshot and none of them stayed fixed.
 //
-// This module rebuilds three-vrm's NORMALIZED humanoid rig straight out of the
-// shipped .vrm's glTF JSON chunk and runs forward kinematics on it in plain
-// Node. No WebGL, no GLTFLoader, no texture decode: the JSON chunk carries the
-// bone hierarchy and rest transforms, which is all a pose needs. A full probe
-// of every bundled motion runs in well under a second, so the assertions can
-// live in the unit suite rather than in a screenshot review.
+// This module builds three-vrm's own VRMHumanoid on the .vrm's glTF node tree
+// and runs forward kinematics on it in plain Node. No WebGL, no GLTFLoader, no
+// texture decode: the JSON chunk carries the bone hierarchy and rest
+// transforms, which is all a pose needs. A full probe of every bundled motion
+// runs in well under a second, so the assertions can live in the unit suite
+// rather than in a screenshot review.
 //
 // COORDINATE SPACE. Everything here is in the VRM's own (pre-rotateVRM0) space,
 // which is what the engine's bone writes and the VRMA tracks both land in:
@@ -27,37 +27,66 @@
 // z=-0.0246 and its toes at z=-0.0828, both in front of the head bone at
 // z=+0.005.)
 import * as THREE from 'three'
-import { VRMHumanBoneParentMap, type VRMHumanBoneName } from '@pixiv/three-vrm'
+import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
-import { parseGlb, readAccessor, readAnimationBones, readHumanoid, type GltfNode } from './vrmHumanoid'
+import {
+  buildNodes,
+  parseGlb,
+  readAccessor,
+  readAccessorRows,
+  readAnimationBones,
+  readHumanoid,
+  type Glb,
+  type GltfNode,
+} from './vrmHumanoid'
 
 const IDENTITY_QUAT = new THREE.Quaternion()
 
 // ---- the rig ---------------------------------------------------------------
 
-// VRM 0.x names the thumb joints Proximal/Intermediate/Distal; VRM 1.0 (and so
-// every .vrma) names the same three Metacarpal/Proximal/Distal. Mapping the
-// animation's names onto the model's is what three-vrm's humanoid does
-// internally; the probe has to do it too or a thumb track lands on nothing.
-const THUMB_VRM1_TO_VRM0: Record<string, string> = {
-  ThumbMetacarpal: 'ThumbProximal',
-  ThumbProximal: 'ThumbIntermediate',
-  ThumbDistal: 'ThumbDistal',
+// VRM 0.x spells the thumb joints Proximal/Intermediate/Distal; VRM 1.0, every
+// .vrma and three-vrm's own bone list spell the same three
+// Metacarpal/Proximal/Distal. VRMHumanoidLoaderPlugin renames a 0.x file's on
+// import (its thumbBoneNameMap); the rig is built under the 1.0 names the same
+// way, so a track never needs renaming and "Proximal" means one joint here.
+const THUMB_VRM0_TO_VRM1: Record<string, string> = {
+  ThumbProximal: 'ThumbMetacarpal',
+  ThumbIntermediate: 'ThumbProximal',
 }
 
-function toModelBoneName(name: string): string {
-  for (const [vrm1, vrm0] of Object.entries(THUMB_VRM1_TO_VRM0)) {
-    if (name.endsWith(vrm1)) return name.slice(0, name.length - vrm1.length) + vrm0
+function vrm1BoneName(bone: string): string {
+  for (const [vrm0, vrm1] of Object.entries(THUMB_VRM0_TO_VRM1)) {
+    if (bone.endsWith(vrm0)) return bone.slice(0, bone.length - vrm0.length) + vrm1
   }
-  return name
+  return bone
+}
+
+export interface FaceBox {
+  min: THREE.Vector3
+  max: THREE.Vector3
 }
 
 export interface Rig {
-  /** One Object3D per humanoid bone, parented as three-vrm's normalized rig is. */
+  /**
+   * three-vrm's normalized bones, keyed by VRM 1.0 name, plus one synthetic
+   * `…Tip` per finger. A rotation written here means what the same rotation
+   * written on `getNormalizedBoneNode()` means at runtime.
+   */
   bones: Record<string, THREE.Object3D>
+  /** The normalized rig's root. */
   root: THREE.Object3D
-  /** Rest-pose world positions, for reference geometry (head sphere, framing). */
+  /** Rest-pose world positions, for reference geometry (face box, framing). */
   restPosition: Record<string, THREE.Vector3>
+  /** three-vrm's humanoid; `update()` writes the normalized pose onto the raw nodes. */
+  humanoid: VRMHumanoid
+  /** Which VRM the file is. Decides whether a .vrma is flipped onto it. */
+  version: '0' | '1'
+  /** One object per glTF node, at its index: the skeleton the mesh is skinned to. */
+  raw: THREE.Object3D[]
+  /** The raw scene roots and the normalized root, under one group. */
+  scene: THREE.Group
+  /** The Face mesh's rest bounding box, in the file's own space. See deriveFaceBox. */
+  faceBox: FaceBox
 }
 
 function localMatrix(node: GltfNode): THREE.Matrix4 {
@@ -95,55 +124,48 @@ function parentIndices(nodes: GltfNode[]): number[] {
 }
 
 /**
- * Rebuild the normalized humanoid rig of a .vrm.
+ * three-vrm's own humanoid, built on the file's node tree.
  *
- * three-vrm's normalized rig is a parallel skeleton whose bones rest at identity
- * rotation with their axes aligned to the world's, one node per humanoid bone,
- * parented to the nearest humanoid ancestor. That makes each normalized bone's
- * local position the rest-pose world offset from its humanoid parent, which is
- * exactly what this reconstructs — so a rotation written here means what the
- * same rotation written on `getNormalizedBoneNode()` means at runtime.
+ * `VRMHumanoid` builds its normalized rig from the raw bones exactly as the
+ * browser does: one node per humanoid bone, resting at identity rotation with
+ * its axes aligned to the world's, parented to the nearest humanoid ancestor,
+ * local position the rest-pose world offset. Until 2026-09-06 this file
+ * reconstructed that rig by hand and never wrote it back to the raw nodes;
+ * springsim.ts and motion.py each carried a third copy. Now the humanoid is
+ * the one retarget, and `humanoid.update()` is what puts the pose on the
+ * skeleton the mesh is skinned to.
  */
-export function buildRig(vrmData: Uint8Array): Rig {
-  const glb = parseGlb(vrmData)
-  const humanoid = readHumanoid(glb.json)
+export function buildRigFrom(glb: Glb): Rig {
+  const json = glb.json
+  const source = readHumanoid(json)
+  const { nodes: raw, scene } = buildNodes(json)
 
-  const nodes = glb.json.nodes
-  const parentOf = parentIndices(nodes)
-  const worldMatrix = worldMatrices(nodes)
-
-  const nodeOfBone: Record<string, number> = { ...humanoid.bones }
-
-  const restPosition: Record<string, THREE.Vector3> = {}
-  for (const [bone, node] of Object.entries(nodeOfBone)) {
-    restPosition[bone] = new THREE.Vector3().setFromMatrixPosition(worldMatrix(node))
+  // The loader renames the thumbs for every 0.x file and for a 1.0 file that
+  // still carries the old spelling (its `existsPreviousThumbName`).
+  const legacyThumbs = Object.keys(source.bones).some((bone) => bone.endsWith('ThumbIntermediate'))
+  const humanBones: Record<string, { node: THREE.Object3D }> = {}
+  for (const [bone, node] of Object.entries(source.bones)) {
+    const name = source.version === '0' || legacyThumbs ? vrm1BoneName(bone) : bone
+    // The loader keeps the first entry for a name and warns about the rest.
+    if (name in humanBones) continue
+    humanBones[name] = { node: raw[node] }
   }
-
-  const boneOfNode = new Map<number, string>()
-  for (const [bone, node] of Object.entries(nodeOfBone)) boneOfNode.set(node, bone)
-  const humanoidParent: Record<string, string | null> = {}
-  for (const [bone, node] of Object.entries(nodeOfBone)) {
-    let walk = parentOf[node]
-    let found: string | null = null
-    while (walk >= 0) {
-      const hit = boneOfNode.get(walk)
-      if (hit) {
-        found = hit
-        break
-      }
-      walk = parentOf[walk]
-    }
-    humanoidParent[bone] = found
-  }
+  // VRMHumanBones types the fifteen required bones as present. The loader
+  // enforces that before constructing; this probe does not, so that a synthetic
+  // partial rig (a test's three-bone body) can still be measured. A body the
+  // browser would refuse is caught by the pipeline's own gate, not here.
+  const humanoid = new VRMHumanoid(humanBones as unknown as VRMHumanBones)
+  const root = humanoid.normalizedHumanBonesRoot
+  scene.add(root)
 
   const bones: Record<string, THREE.Object3D> = {}
-  for (const bone of Object.keys(nodeOfBone)) bones[bone] = new THREE.Object3D()
-  const root = new THREE.Object3D()
-  for (const bone of Object.keys(nodeOfBone)) {
-    const parent = humanoidParent[bone]
-    const base = parent ? restPosition[parent] : new THREE.Vector3()
-    bones[bone].position.copy(restPosition[bone]).sub(base)
-    ;(parent ? bones[parent] : root).add(bones[bone])
+  const restPosition: Record<string, THREE.Vector3> = {}
+  for (const name of Object.keys(humanBones)) {
+    const normalized = humanoid.getNormalizedBoneNode(name as VRMHumanBoneName)
+    // A name outside three-vrm's bone list gets no normalized node, as at runtime.
+    if (!normalized) continue
+    bones[name] = normalized
+    restPosition[name] = humanBones[name].node.getWorldPosition(new THREE.Vector3())
   }
 
   // Fingertips. A distal finger bone is NOT where the finger ends: the mesh is
@@ -151,34 +173,190 @@ export function buildRig(vrmData: Uint8Array): Rig {
   // and 21.0mm on its middle, almost entirely along the finger's own axis. Every
   // wide pose in the pool peaks at a distal joint, so measuring there reads
   // ~20mm narrower than what is drawn — enough to pass a clip that is visibly
-  // clipped. These carry no humanoid bone name, so they are added here by the
-  // same rule as everything else: local position is the rest-pose world offset
-  // from the parent, rest rotation identity.
-  for (const [bone, node] of Object.entries(nodeOfBone)) {
-    if (!bone.endsWith('Distal')) continue
-    const child = (nodes[node].children ?? [])[0]
-    if (child === undefined) continue
+  // clipped. These carry no humanoid bone name, so they hang off the normalized
+  // distal by the same rule as everything else: local position is the rest-pose
+  // world offset from the parent, rest rotation identity.
+  for (const name of Object.keys(bones)) {
+    if (!name.endsWith('Distal')) continue
+    const child = humanBones[name].node.children[0]
+    if (!child) continue
+    const at = child.getWorldPosition(new THREE.Vector3())
     const tip = new THREE.Object3D()
-    tip.position
-      .setFromMatrixPosition(worldMatrix(child))
-      .sub(restPosition[bone])
-    bones[bone].add(tip)
-    const name = `${bone.slice(0, -'Distal'.length)}Tip`
-    bones[name] = tip
-    restPosition[name] = new THREE.Vector3().setFromMatrixPosition(worldMatrix(child))
+    tip.position.copy(at).sub(restPosition[name])
+    bones[name].add(tip)
+    const tipName = `${name.slice(0, -'Distal'.length)}Tip`
+    bones[tipName] = tip
+    restPosition[tipName] = at
   }
+  root.updateMatrixWorld(true)
 
-  return { bones, root, restPosition }
+  const headNode = source.bones.head
+  if (headNode === undefined) throw new Error('the humanoid map has no head')
+  const faceBox = deriveFaceBox(glb, raw, headNode)
+
+  return { bones, root, restPosition, humanoid, version: source.version, raw, scene, faceBox }
 }
 
-export function resetRig(rig: Rig): void {
+export function buildRig(vrmData: Uint8Array): Rig {
+  return buildRigFrom(parseGlb(vrmData))
+}
+
+/** Every normalized bone back at identity, hips at their rest position. */
+function restNormalized(rig: Rig): void {
   for (const bone of Object.values(rig.bones)) {
     bone.quaternion.identity()
     bone.rotation.set(0, 0, 0)
   }
   const hips = rig.bones.hips
   if (hips) hips.position.copy(rig.restPosition.hips)
+}
+
+/** Normalized pose → raw nodes → world matrices, in the order three-vrm does it. */
+function sync(rig: Rig): void {
   rig.root.updateMatrixWorld(true)
+  rig.humanoid.update()
+  rig.scene.updateMatrixWorld(true)
+}
+
+export function resetRig(rig: Rig): void {
+  restNormalized(rig)
+  sync(rig)
+}
+
+// ---- the mesh around the bones ------------------------------------------------
+
+interface SkinnedVertex {
+  /** Rest position in the file's own space. */
+  p: THREE.Vector3
+  /** The glTF node the vertex is mostly skinned to. */
+  node: number
+}
+
+const _skinned = new THREE.Vector3()
+
+/**
+ * Vertices of the skinned meshes whose name matches, each with its dominant
+ * joint, at their rest-pose position.
+ *
+ * Skinned the way the mesh is drawn: each vertex is the weighted sum of
+ * `jointWorld · inverseBind · v` over its joints, and the mesh node's own
+ * transform is ignored (glTF 2.0 §5.28: a node with a skin MUST ignore it).
+ * On the shipped bodies that comes out as `v` itself, since every mesh node
+ * is a scene root at identity and the inverse binds are the inverses of the
+ * rest globals; on a body whose joints are turned or scaled it comes out
+ * turned or scaled with them. springsim's `Skinner` does the same sum per
+ * frame. Primitives that share one vertex buffer are decoded once.
+ */
+function* skinnedVertices(glb: Glb, raw: THREE.Object3D[], meshName: RegExp): Generator<SkinnedVertex> {
+  const json = glb.json
+  for (const node of json.nodes) {
+    if (node.mesh === undefined || node.skin === undefined) continue
+    const mesh = json.meshes?.[node.mesh]
+    if (!mesh || !meshName.test(mesh.name ?? '')) continue
+    const skin = json.skins?.[node.skin]
+    if (!skin) continue
+    const ibm = skin.inverseBindMatrices === undefined ? null : readAccessorRows(glb, skin.inverseBindMatrices).data
+    const jointMatrix = skin.joints.map((joint, k) => {
+      const m = raw[joint].matrixWorld.clone()
+      // No inverse bind matrices means identity ones (glTF 2.0 §5.28).
+      if (ibm) m.multiply(new THREE.Matrix4().fromArray(ibm, k * 16))
+      return m
+    })
+    const seen = new Set<string>()
+    for (const prim of mesh.primitives) {
+      const { POSITION, JOINTS_0, WEIGHTS_0 } = prim.attributes
+      if (POSITION === undefined || JOINTS_0 === undefined || WEIGHTS_0 === undefined) continue
+      const key = `${POSITION}/${JOINTS_0}/${WEIGHTS_0}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const pos = readAccessorRows(glb, POSITION)
+      const jo = readAccessorRows(glb, JOINTS_0)
+      const we = readAccessorRows(glb, WEIGHTS_0)
+      const count = pos.data.length / pos.ncomp
+      for (let v = 0; v < count; v++) {
+        const rest = new THREE.Vector3(pos.data[v * pos.ncomp], pos.data[v * pos.ncomp + 1], pos.data[v * pos.ncomp + 2])
+        const p = new THREE.Vector3()
+        let best = 0
+        for (let k = 0; k < we.ncomp; k++) {
+          const w = we.data[v * we.ncomp + k]
+          if (w <= 0) continue
+          if (w > we.data[v * we.ncomp + best]) best = k
+          p.addScaledVector(_skinned.copy(rest).applyMatrix4(jointMatrix[jo.data[v * jo.ncomp + k]]), w)
+        }
+        yield { p, node: skin.joints[jo.data[v * jo.ncomp + best]] }
+      }
+    }
+  }
+}
+
+/**
+ * The Face mesh's rest bounding box: the vertices of every mesh named
+ * `Face…` that are mostly skinned to the head, in the file's own space.
+ *
+ * The mesh, not the hair: the hair is skinned to the head too and reaches
+ * 0.1m higher, and a box that took it in would let a hand hover above her
+ * crown and call it a hit. Head-dominant only: the neck rows at the bottom
+ * of the mesh are skinned to the neck and are not her face. Measured
+ * 2026-08-19 by hand on the shipped body as x ±0.092, y 1.287–1.503,
+ * z -0.113–0.033 against a head bone at (0, 1.320, 0.005); rigProbe.test.ts
+ * holds the derivation to those numbers within 2mm.
+ */
+export function deriveFaceBox(glb: Glb, raw: THREE.Object3D[], headNode: number): FaceBox {
+  const box = new THREE.Box3()
+  let count = 0
+  for (const { p, node } of skinnedVertices(glb, raw, /^Face/)) {
+    if (node !== headNode) continue
+    box.expandByPoint(p)
+    count += 1
+  }
+  if (count === 0) throw new Error('no mesh named Face… is skinned to the head: the face box cannot be derived')
+  return { min: box.min, max: box.max }
+}
+
+const OUTER_PHALANX = /(Index|Middle|Ring|Little)(Intermediate|Distal)$|Thumb(Proximal|Distal)$/
+
+/** The joint a finger segment runs to, in three-vrm's spelling; the Tip past a distal. */
+function nextFingerJoint(bone: string): string | null {
+  if (bone.endsWith('Distal')) return `${bone.slice(0, -'Distal'.length)}Tip`
+  if (bone.endsWith('Intermediate')) return `${bone.slice(0, -'Intermediate'.length)}Distal`
+  if (bone.endsWith('ThumbProximal')) return `${bone.slice(0, -'Proximal'.length)}Distal`
+  if (bone.endsWith('ThumbMetacarpal')) return `${bone.slice(0, -'Metacarpal'.length)}Proximal`
+  if (bone.endsWith('Proximal')) return `${bone.slice(0, -'Proximal'.length)}Intermediate`
+  return null
+}
+
+/**
+ * How far the skin of the two outer finger joints sits from their bone, in
+ * metres: the largest distance from any Body vertex mostly skinned to an
+ * outer phalanx to that phalanx's own segment (joint to next joint, or to the
+ * fingertip). This is what `SKIN_ABOVE_JOINT` was read off a screenshot for;
+ * the mesh gives it directly. The base joints and the thumb's metacarpal are
+ * left out on purpose: the vertices they own reach into the palm.
+ */
+export function deriveFingerSkinRadius(glb: Glb, rig: Rig): number {
+  const boneOfNode = new Map<number, string>()
+  for (const name of Object.keys(rig.bones)) {
+    if (name.endsWith('Tip')) continue
+    const node = rig.humanoid.getRawBoneNode(name as VRMHumanBoneName)
+    if (node) boneOfNode.set(rig.raw.indexOf(node), name)
+  }
+  const segment = new THREE.Line3()
+  const closest = new THREE.Vector3()
+  let worst = 0
+  for (const { p, node } of skinnedVertices(glb, rig.raw, /^Body/)) {
+    const bone = boneOfNode.get(node)
+    if (!bone || !OUTER_PHALANX.test(bone)) continue
+    const next = nextFingerJoint(bone)
+    const to = next === null ? undefined : rig.restPosition[next]
+    if (!to) continue
+    segment.set(rig.restPosition[bone], to)
+    // A zero-length segment would make closestPointToPoint divide 0 by 0 and
+    // poison the maximum with NaN.
+    if (segment.distanceSq() === 0) continue
+    segment.closestPointToPoint(p, true, closest)
+    worst = Math.max(worst, closest.distanceTo(p))
+  }
+  return worst
 }
 
 // ---- VRM Animation ---------------------------------------------------------
@@ -189,7 +367,10 @@ interface Track {
 }
 
 export interface Motion {
-  /** Humanoid bone name (in THIS model's naming) to its animated channels. */
+  /**
+   * Humanoid bone name to its animated channels. VRM 1.0 spelling, which is
+   * the clip's own and the one VRMHumanoid keys every rig by.
+   */
   rotation: Record<string, Track>
   hipsTranslation: Track | null
   duration: number
@@ -205,7 +386,7 @@ export interface Motion {
 }
 
 /**
- * Read a .vrma into per-bone tracks, already renamed onto this model's bones.
+ * Read a .vrma into per-bone tracks.
  *
  * The tracks are REBASED into the animation rig's rest frame on the way in,
  * exactly as `VRMAnimationLoaderPlugin._parseAnimation` does:
@@ -270,16 +451,15 @@ export function buildMotion(vrmaData: Uint8Array): Motion {
   for (const [bone, node] of Object.entries(humanBones)) boneOfNode.set(node, bone)
 
   for (const channel of animation.channels) {
-    const sourceBone = boneOfNode.get(channel.target.node)
-    if (!sourceBone) continue
-    const bone = toModelBoneName(sourceBone)
+    const bone = boneOfNode.get(channel.target.node)
+    if (!bone) continue
     const sampler = animation.samplers[channel.sampler]
     const times = readAccessor(glb, sampler.input)
     const values = readAccessor(glb, sampler.output)
     duration = Math.max(duration, times[times.length - 1] ?? 0)
     if (channel.target.path === 'rotation') {
-      const boneInverse = (restWorld.get(sourceBone) ?? IDENTITY_QUAT).clone().invert()
-      const parentRest = restParentOf(sourceBone)
+      const boneInverse = (restWorld.get(bone) ?? IDENTITY_QUAT).clone().invert()
+      const parentRest = restParentOf(bone)
       const rebased = new Float32Array(values.length)
       const q = new THREE.Quaternion()
       for (let i = 0; i < values.length; i += 4) {
@@ -341,16 +521,19 @@ const _qa = new THREE.Quaternion()
 const _qb = new THREE.Quaternion()
 
 /**
- * Pose the rig from a motion at `time`.
+ * Pose the rig from a motion at `time`, normalized bones and raw nodes both.
  *
  * The VRM0 conversion mirrors what `@pixiv/three-vrm-animation` does when it
  * builds a clip for a metaVersion "0" model: negate x and z of every rotation
  * quaternion and of the hips translation. Without it a VRM1-authored motion
  * plays back mirrored front-to-back on a VRM0 model, which is the single most
- * expensive mistake available here — it looks almost right.
+ * expensive mistake available here — it looks almost right. A 1.0 body already
+ * faces the clip's way and is left alone, as the runtime leaves it; until
+ * 2026-09-06 the flip here was unconditional.
  */
 export function applyMotion(rig: Rig, motion: Motion, time: number): void {
-  resetRig(rig)
+  restNormalized(rig)
+  const flip = rig.version === '0' ? -1 : 1
   for (const [bone, track] of Object.entries(motion.rotation)) {
     const target = rig.bones[bone]
     if (!target) continue
@@ -358,7 +541,7 @@ export function applyMotion(rig: Rig, motion: Motion, time: number): void {
     _qa.set(track.values[i * 4], track.values[i * 4 + 1], track.values[i * 4 + 2], track.values[i * 4 + 3])
     _qb.set(track.values[j * 4], track.values[j * 4 + 1], track.values[j * 4 + 2], track.values[j * 4 + 3])
     _qa.slerp(_qb, f)
-    target.quaternion.set(-_qa.x, _qa.y, -_qa.z, _qa.w)
+    target.quaternion.set(flip * _qa.x, _qa.y, flip * _qa.z, _qa.w)
   }
   const hips = rig.bones.hips
   if (motion.hipsTranslation && hips) {
@@ -369,9 +552,9 @@ export function applyMotion(rig: Rig, motion: Motion, time: number): void {
     // Scale by the hips-height ratio so a tall rig's motion does not lift a
     // short model off the floor. Same normalisation three-vrm-animation applies.
     const scale = motion.restHipsY > 0 ? rig.restPosition.hips.y / motion.restHipsY : 1
-    hips.position.set(-lerp(0) * scale, lerp(1) * scale, -lerp(2) * scale)
+    hips.position.set(flip * lerp(0) * scale, lerp(1) * scale, flip * lerp(2) * scale)
   }
-  rig.root.updateMatrixWorld(true)
+  sync(rig)
 }
 
 // ---- measurements ----------------------------------------------------------
@@ -411,8 +594,15 @@ export function screenX(probeX: number): number {
   return -probeX
 }
 
-const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Little'] as const
-const SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
+// Joints per finger, in three-vrm's (VRM 1.0) spelling: the thumb's base is
+// its metacarpal and it has no intermediate joint.
+const FINGER_JOINTS: Record<string, readonly string[]> = {
+  Thumb: ['Metacarpal', 'Proximal', 'Distal'],
+  Index: ['Proximal', 'Intermediate', 'Distal'],
+  Middle: ['Proximal', 'Intermediate', 'Distal'],
+  Ring: ['Proximal', 'Intermediate', 'Distal'],
+  Little: ['Proximal', 'Intermediate', 'Distal'],
+}
 
 /**
  * How far her SKIN reaches past the last bone, in metres.
@@ -430,6 +620,10 @@ const SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
  *
  * Re-measure it if the model is replaced. Skin thickness is a property of THIS
  * mesh over THIS skeleton and does not travel with the animation library.
+ * `deriveFingerSkinRadius` reads the mesh's own number (18mm on this body,
+ * the radius of the outer phalanges' skin) and measure-motions prints the two
+ * side by side; the frame keeps reserving this constant until a per-clip skin
+ * top replaces it.
  */
 export const SKIN_ABOVE_JOINT = 0.012
 
@@ -447,9 +641,9 @@ export const SKIN_ABOVE_JOINT = 0.012
  */
 export function handJoints(rig: Rig, side: 'left' | 'right'): THREE.Vector3[] {
   const out = [worldPosition(rig, `${side}Hand`)]
-  for (const finger of FINGERS) {
-    // `Tip` is the skinned end of the finger, past the distal joint. See buildRig.
-    for (const segment of [...SEGMENTS, 'Tip']) {
+  for (const [finger, joints] of Object.entries(FINGER_JOINTS)) {
+    // `Tip` is the skinned end of the finger, past the distal joint. See buildRigFrom.
+    for (const segment of [...joints, 'Tip']) {
       const bone = `${side}${finger}${segment}`
       if (bone in rig.bones) out.push(worldPosition(rig, bone))
     }
@@ -519,22 +713,18 @@ export interface HeadVolume {
   radii: THREE.Vector3
 }
 
-// Face.baked bounding box, measured 2026-08-19: x ±0.092, y 1.287–1.503,
-// z -0.113–0.033, against a head bone resting at (0, 1.320, 0.005). An
-// ellipsoid inscribed in that box is smaller than the box everywhere off the
-// three axes, so a fingertip inside it is inside her face, never merely near it.
-export const FACE_BOX = {
-  min: new THREE.Vector3(-0.092, 1.287, -0.113),
-  max: new THREE.Vector3(0.092, 1.503, 0.033),
-}
-
+// The box is the rig's own `faceBox`, derived from the Face mesh by
+// deriveFaceBox (on the shipped body: x ±0.092, y 1.287–1.503, z -0.113–0.033
+// against a head bone resting at (0, 1.320, 0.005)). An ellipsoid inscribed in
+// that box is smaller than the box everywhere off the three axes, so a
+// fingertip inside it is inside her face, never merely near it.
 export function headVolume(rig: Rig): HeadVolume {
   const head = rig.restPosition.head
   const centre = new THREE.Vector3()
-    .addVectors(FACE_BOX.min, FACE_BOX.max)
+    .addVectors(rig.faceBox.min, rig.faceBox.max)
     .multiplyScalar(0.5)
     .sub(head)
-  const radii = new THREE.Vector3().subVectors(FACE_BOX.max, FACE_BOX.min).multiplyScalar(0.5)
+  const radii = new THREE.Vector3().subVectors(rig.faceBox.max, rig.faceBox.min).multiplyScalar(0.5)
   return { centre, radii }
 }
 
