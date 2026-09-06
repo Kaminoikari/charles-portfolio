@@ -29,9 +29,10 @@ const DECISIONS: ClearanceDecisions = {
   // sweep of the VRoid body drew a crown ABOVE what the simulator derives from
   // the Milfy body, the sweep is the bound.
   //
-  // Until 2026-09-07 these rows were also the only crown those bodies could
-  // have, because the simulator refused a body with no `.parts.json` beside it
-  // and no build wrote one for them. springsim.deriveManifest lifted that, so
+  // Until 2026-09-07 these rows were the only crown of THEIR OWN those bodies
+  // could have (they always had one transferred from the Milfy simulation by
+  // crownOn), because the simulator refused a body with no `.parts.json`
+  // beside it and no build wrote one for them. springsim.deriveManifest lifted that, so
   // they CAN now be simulated directly, and doing so would replace the transfer
   // with a reading. That has not been done: these numbers are what a browser
   // actually drew, and only ever raised.

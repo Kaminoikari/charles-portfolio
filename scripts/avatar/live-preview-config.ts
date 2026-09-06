@@ -57,6 +57,11 @@ export function resolvePreviewModel(search: string): { url: string; problem?: st
     return refuse
   }
   if (resolved.origin !== here) return refuse
+  // The ANSWER is parsed a second time, by the loader, against the real page.
+  // `/.//evil.example/x.vrm` is same-origin here and normalises to
+  // `//evil.example/x.vrm`, which is an authority the second time round: the
+  // check passed and the string that left still reached another origin.
+  if (resolved.pathname.startsWith('//')) return refuse
   return { url: resolved.pathname + resolved.search }
 }
 

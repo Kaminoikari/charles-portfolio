@@ -112,6 +112,15 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
     // is not moving hair or face into Body_Skin.
     expect(Math.abs(noParts.crownY - built.crownY), 'crown, derived parts vs built').toBeLessThanOrEqual(0.002)
     expect(Math.abs(noParts.restCrownY - built.restCrownY), 'rest crown, derived vs built').toBeLessThanOrEqual(0.002)
+    // And it says which columns it could not measure. A derived manifest names
+    // no cardigan and no skirt, so their five columns carry values nothing
+    // produced: 0 for the depths, and for `yaw` whichever frame came first.
+    // The table prints `—` for them off these two flags, so a column of zeros
+    // cannot be read as a clean result.
+    expect(noParts.hasCoat, 'a derived manifest has no cardigan').toBe(false)
+    expect(noParts.hasSkirt, 'and no skirt').toBe(false)
+    expect(built.hasCoat, 'the built one has both').toBe(true)
+    expect(built.hasSkirt).toBe(true)
   }, 180_000)
 
   it('refuses a body whose skinned meshes it cannot address by name', () => {

@@ -806,6 +806,14 @@ export interface Report {
   /** The same two through each frame's camera (the clip's pan applied to the moving one). */
   restCrownScreen: Record<MotionFrame, number>
   crownScreen: Record<MotionFrame, number>
+  /**
+   * Whether the manifest named a cardigan and a skirt at all. A derived
+   * manifest names neither, and the five coat/skirt columns then carry a value
+   * that was never measured -- 0 for the depths, and for `yaw` the yaw of
+   * whichever frame happened to be first. The table prints those as `—`.
+   */
+  hasCoat: boolean
+  hasSkirt: boolean
 }
 
 export interface Args {
@@ -961,6 +969,8 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     restCrownY: -Infinity, crownY: -Infinity, crownT: 0,
     restCrownScreen: { waistUp: -Infinity, column: -Infinity },
     crownScreen: { waistUp: -Infinity, column: -Infinity },
+    hasCoat: coat !== null,
+    hasSkirt: skirt !== null,
   }
   const forwardZ = rig.version === '0' ? -1 : 1
   const frameNames = Object.keys(FRAMES) as MotionFrame[]
@@ -1235,20 +1245,24 @@ async function main(): Promise<void> {
       `（彈簧驅動 ≥${SPRING_DOMINATED * 100}%），臉取表情驅動的 mesh，其餘全歸 Body_Skin。`)
     console.log(
       '  因此 body 那欄量的是「頭髮進到身體**或衣服**多深」，不再是進到皮膚多深；' +
-      'coat 與 skirt 四欄沒有東西可以量（推導出來的部件裡沒有 Outfit_Cardigan／Outfit_Bottom），' +
-      '一律印 0，那是「沒量」不是「沒問題」；crown 與 jump 照舊（髮頂本來就取所有部件的最高點）。')
+      '推導出來的部件裡沒有 Outfit_Cardigan／Outfit_Bottom，跟它們有關的欄位一律印 —；' +
+      'crown 與 jump 照舊（髮頂本來就取所有部件的最高點）。')
   }
   console.log('clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone')
   const reports: Report[] = []
   for (const clip of clips) {
     const r = await runClip(args, clip)
     reports.push(r)
+    // `—` where the manifest named nothing to measure against, so a column of
+    // zeros cannot be read as a clean result.
+    const coat = (text: string, width: number): string => (r.hasCoat ? text : '—').padStart(width)
+    const skirt = (text: string, width: number): string => (r.hasSkirt ? text : '—').padStart(width)
     console.log(
-      `${r.clip.padEnd(12)}  ${r.restCoatDepthMm.toFixed(0).padStart(6)}mm ` +
-      `${r.coatDepthMm.toFixed(0).padStart(7)}mm ${r.coatUpperDepthMm.toFixed(0).padStart(7)}mm  ${(r.coatAtWorst * 100).toFixed(0).padStart(7)}%  ` +
-      `${r.coatWorstT.toFixed(2).padStart(5)}s ${r.coatWorstYaw.toFixed(0).padStart(5)}°  ` +
+      `${r.clip.padEnd(12)}  ${coat(`${r.restCoatDepthMm.toFixed(0)}mm`, 8)} ` +
+      `${coat(`${r.coatDepthMm.toFixed(0)}mm`, 9)} ${coat(`${r.coatUpperDepthMm.toFixed(0)}mm`, 9)}  ${coat(`${(r.coatAtWorst * 100).toFixed(0)}%`, 8)}  ` +
+      `${coat(`${r.coatWorstT.toFixed(2)}s`, 6)} ${coat(`${r.coatWorstYaw.toFixed(0)}°`, 6)}  ` +
       `${r.bodyDepthMm.toFixed(0).padStart(6)}mm  ${r.bodyWorstT.toFixed(2).padStart(5)}s  ` +
-      `${r.skirtDepthMm.toFixed(0).padStart(5)}mm ${r.skirtWorstT.toFixed(2).padStart(5)}s  ` +
+      `${skirt(`${r.skirtDepthMm.toFixed(0)}mm`, 7)} ${skirt(`${r.skirtWorstT.toFixed(2)}s`, 6)}  ` +
       `${r.crownY.toFixed(4)} ${r.crownT.toFixed(2).padStart(5)}s  ${r.crownScreen.column.toFixed(4)}  ${r.crownScreen.waistUp.toFixed(4)}  ` +
       `${r.jumpDeg.toFixed(1).padStart(5)}°  ${r.jumpT.toFixed(2).padStart(5)}s  ${r.jumpBone}`,
     )

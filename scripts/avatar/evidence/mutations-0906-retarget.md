@@ -766,3 +766,98 @@ exactly 1), and a row whose test name has gone stale would exit non-zero with no
 test having run — which is why the newer harnesses check for a failing test that
 actually ran before scoring a row RED.
 
+## 2026-09-07: M1 and M2 restated after measure-motions stopped saying "Face mesh"
+
+`deriveFaceBox` reads the meshes the expressions move, and `deriveFingerSkinRadius`
+sweeps every skinned mesh, so the two lines measure-motions PRINTS were changed
+to say that. Both rows patch those exact strings, so both patterns went stale
+and would have ABORTed. Restated and re-run on 2026-09-07, still RED:
+
+```
+M1 RED  restored=True
+M2 RED  restored=True
+
+| # | guard | result |
+|---|---|---|
+| M1 | measure-motions: the derived face box is printed | RED |
+| M2 | measure-motions: the printed finger skin is the derived one, not the 12mm constant | RED |
+
+### M1
+```
+$ npx vitest run /Users/charles/portfolio/scripts/measure-motions.test.ts -t reports the face box and the finger skin
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/measure-motions.test.ts (6 tests | 1 failed | 5 skipped) 6369ms
+   ↓ measure-motions > reports the shipped body as fitting, waiver and all
+   ↓ measure-motions > recognises the face waiver dance already ships with
+   × measure-motions > reports the face box and the finger skin it read off the body 3ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/
+   ↓ measure-motions > says no when the same clips are asked to run on a taller body
+   ↓ measure-motions > counts exactly the violations it 
+[…]
+ 1.8722　餘裕  56.3mm（模擬投影 1.8081，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   waistUp  髮頂　1.7133　上緣 1.7922　餘裕  78.9mm（模擬投影 1.7013，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   column   髮頂　1.7276　上緣 1.7320　餘裕  4.4mm（模擬投影 1.7099，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.197（下限 0.190，t=8.22s）
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+全部動作在這具身體上都待在預算內，可以直接沿用。"
+ ❯ scripts/measure-motions.test.ts:118:18
+    116|     // constant instead would still match a looser pattern.
+    117|     const text = shipped.lines.join('\n')
+    118|     expect(text).toMatch(/臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/)
+       |                  ^
+    119|     expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+    120|     // A taller body's box scales with it: derived, not carried.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### M2
+```
+$ npx vitest run /Users/charles/portfolio/scripts/measure-motions.test.ts -t reports the face box and the finger skin
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/measure-motions.test.ts (6 tests | 1 failed | 5 skipped) 6371ms
+   ↓ measure-motions > reports the shipped body as fitting, waiver and all
+   ↓ measure-motions > recognises the face waiver dance already ships with
+   × measure-motions > reports the face box and the finger skin it read off the body 3ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /指尖皮厚　18\.\dmm/
+   ↓ measure-motions > says no when the same clips are asked to run on a taller body
+   ↓ measure-motions > counts exactly the violations it printed
+   ↓ measure-moti
+[…]
+56.3mm（模擬投影 1.8081，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   waistUp  髮頂　1.7133　上緣 1.7922　餘裕  78.9mm（模擬投影 1.7013，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   column   髮頂　1.7276　上緣 1.7320　餘裕  4.4mm（模擬投影 1.7099，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.197（下限 0.190，t=8.22s）
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+全部動作在這具身體上都待在預算內，可以直接沿用。"
+ ❯ scripts/measure-motions.test.ts:119:18
+    117|     const text = shipped.lines.join('\n')
+    118|     expect(text).toMatch(/臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/)
+    119|     expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+       |                  ^
+    120|     // A taller body's box scales with it: derived, not carried.
+    121|     expect(taller.lines.join('\n')).toMatch(/臉部盒　x -0\.12\d…0\.12\d　y …
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+```

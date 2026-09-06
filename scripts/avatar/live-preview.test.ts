@@ -52,11 +52,15 @@ describe('Mika Milfy live preview config', () => {
     // is a same-origin path or it is not honoured. Each of these falls back to
     // the configured model AND says so, because silently loading the default
     // would read as "the conversion looks fine".
-    // The backslash form is the one a shape-by-shape check misses: it begins
-    // with a single slash and carries no `..`, and the URL parser resolves it
-    // to another origin regardless.
+    // Two forms a shape-by-shape check misses. The backslash begins with a
+    // single slash and carries no `..`, and the parser resolves it to another
+    // origin. The `/.//` and `/..//` forms are same-origin HERE and normalise
+    // to an authority, which is what the loader parses them as: checking the
+    // URL object is not enough, the string that leaves has to be checked too.
     for (const bad of ['https://example.com/evil.vrm', '//example.com/evil.vrm',
                        '/\\evil.example/x.vrm', '/\\\\evil.example/x.vrm',
+                       '/.//evil.example/x.vrm', '/..//evil.example/x.vrm',
+                       '/a/..//evil.example/x.vrm',
                        'avatar/relative.vrm']) {
       const got = resolvePreviewModel(`?model=${encodeURIComponent(bad)}`)
       expect(got.url, bad).toBe(MIKA_MILFY_MODEL_URL)

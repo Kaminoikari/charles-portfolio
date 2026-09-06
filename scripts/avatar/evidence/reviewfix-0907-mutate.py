@@ -67,6 +67,12 @@ MUTATIONS = [
     ('X6', CL, "  const view = avatarViewSpan(file.framings.frames[frame], file.framings.fov)\n",
      "  const view = avatarViewSpan(file.framings.frames[frame])\n", FOV,
      "the span is measured through the file's own fov, not the site's current one"),
+    ('X8', LPC, "  if (resolved.pathname.startsWith('//')) return refuse\n", "",
+     PREVIEW,
+     'the ANSWER is checked too: /.//evil.example/x.vrm is same-origin as a URL object and normalises to an authority the loader parses cross-origin'),
+    ('X9', SS, "    hasCoat: coat !== null,\n", "    hasCoat: true,\n",
+     VT(AV / 'springsim.derive.test.ts', 'simulates a body with no manifest beside it'),
+     'the report says whether there was a cardigan to measure, so the table can print — instead of a 0 nothing produced'),
     # The positive half for X1/X2: a recogniser that refuses every body would
     # satisfy both rows and refuse the body this tool actually runs on.
     ('X7', SS, "  if (unnamed || repeated.length) {\n",
