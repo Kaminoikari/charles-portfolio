@@ -103,14 +103,31 @@ const THUMB_VRM0_TO_VRM1: Record<string, string> = {
  * The shipped body rewritten as a VRM 1.0 export would be: humanoid map as a
  * record under VRMC_vrm with the 1.0 thumb names, no VRM block, and every
  * scene root hung under one node turned π about Y so the body faces +Z.
+ *
+ * The expressions come across too, and they have to: 0.x binds a morph target
+ * to a MESH index and 1.0 to a NODE, and since 2026-09-07 the face box is the
+ * box of whatever the expressions move. A twin that dropped them would be a
+ * body with no identifiable face, which no real 1.0 export is.
  */
 function vrm1Twin(data: Uint8Array): Uint8Array {
   return rewrite(data, (doc) => {
     const { bones } = readHumanoid(doc)
     const record: Record<string, { node: number }> = {}
     for (const [bone, node] of Object.entries(bones)) record[THUMB_VRM0_TO_VRM1[bone] ?? bone] = { node }
+    const nodeOfMesh = new Map<number, number>()
+    doc.nodes.forEach((n, i) => {
+      if (n.mesh !== undefined && !nodeOfMesh.has(n.mesh)) nodeOfMesh.set(n.mesh, i)
+    })
+    const preset: Record<string, { morphTargetBinds: { node: number; index: number; weight: number }[] }> = {}
+    for (const group of doc.extensions.VRM?.blendShapeMaster?.blendShapeGroups ?? []) {
+      const binds = (group.binds ?? []).flatMap((b) => {
+        const node = nodeOfMesh.get(b.mesh)
+        return node === undefined ? [] : [{ node, index: b.index ?? 0, weight: (b.weight ?? 100) / 100 }]
+      })
+      if (binds.length) preset[group.name.toLowerCase()] = { morphTargetBinds: binds }
+    }
     delete doc.extensions.VRM
-    doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record } }
+    doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record }, expressions: { preset } }
     doc.extensionsUsed = [...(doc.extensionsUsed ?? []).filter((e) => e !== 'VRM'), 'VRMC_vrm']
     const scene = doc.scenes![doc.scene ?? 0]
     doc.nodes.push({ name: 'vrm1-root', rotation: [0, 1, 0, 0], children: scene.nodes })
@@ -982,6 +999,26 @@ describe('returning to rest', () => {
 // mirrored front-to-back, and the rigProbe twin test above passed anyway
 // because it only reads the rest pose.
 describe('three-vrm humanoid rig', () => {
+  /** A .glb container round the two chunks, for the hand-built bodies below. */
+  const glb = (json: unknown, bin: Uint8Array): Uint8Array => {
+    const text = new TextEncoder().encode(JSON.stringify(json))
+    const pad = (n: number) => (4 - (n % 4)) % 4
+    const out = new Uint8Array(12 + 8 + text.length + pad(text.length) + 8 + bin.length + pad(bin.length))
+    const dv = new DataView(out.buffer)
+    dv.setUint32(0, 0x46546c67, true)
+    dv.setUint32(4, 2, true)
+    dv.setUint32(8, out.length, true)
+    dv.setUint32(12, text.length + pad(text.length), true)
+    dv.setUint32(16, 0x4e4f534a, true)
+    out.set(text, 20)
+    out.fill(0x20, 20 + text.length, 20 + text.length + pad(text.length))
+    const binAt = 20 + text.length + pad(text.length)
+    dv.setUint32(binAt, bin.length + pad(bin.length), true)
+    dv.setUint32(binAt + 4, 0x004e4942, true)
+    out.set(bin, binAt + 8)
+    return out
+  }
+
   const world = (o: THREE.Object3D): THREE.Vector3 => new THREE.Vector3().setFromMatrixPosition(o.matrixWorld)
   const SAMPLE = ['hips', 'head', 'leftHand', 'rightHand', 'leftFoot', 'rightIndexTip', 'leftThumbDistal'] as const
 
@@ -1063,7 +1100,7 @@ describe('three-vrm humanoid rig', () => {
     }
   })
 
-  it('derives the face box from the Face mesh instead of carrying 2026-08-19 numbers', () => {
+  it('derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers', () => {
     const r = rig()
     // The numbers the box replaced, measured by hand on 2026-08-19 against a
     // head bone at (0, 1.320, 0.005): x ±0.092, y 1.287–1.503, z -0.113–0.033.
@@ -1083,7 +1120,7 @@ describe('three-vrm humanoid rig', () => {
     expect(headVolume(twin).centre.z).toBeCloseTo(-headVolume(r).centre.z, 6)
   })
 
-  it('leaves the neck rows of the Face mesh out of the face box', () => {
+  it('leaves the neck rows out of the face box', () => {
     // The shipped Face mesh has no vertex weighted mostly to anything but the
     // head, so the filter is invisible there; a two-vertex Face mesh with one
     // vertex on the neck shows what it is for.
@@ -1124,26 +1161,114 @@ describe('three-vrm humanoid rig', () => {
         { bufferView: 2, componentType: 5126, count: 2, type: 'VEC4' },
         { bufferView: 3, componentType: 5126, count: 3, type: 'MAT4' },
       ],
-      extensions: { VRM: { humanoid: { humanBones: [{ bone: 'hips', node: 0 }, { bone: 'neck', node: 1 }, { bone: 'head', node: 2 }] } } },
+      // A blendShape group binding mesh 0 is what marks that mesh as the face.
+      // Since 2026-09-07 that is the whole identification -- the mesh being
+      // CALLED Face is now decoration, and this fixture keeps the name only so
+      // the test still reads as being about a face.
+      extensions: {
+        VRM: {
+          humanoid: { humanBones: [{ bone: 'hips', node: 0 }, { bone: 'neck', node: 1 }, { bone: 'head', node: 2 }] },
+          blendShapeMaster: { blendShapeGroups: [{ name: 'Blink', binds: [{ mesh: 0, index: 0, weight: 100 }] }] },
+        },
+      },
     }
-    const text = new TextEncoder().encode(JSON.stringify(json))
-    const pad = (n: number) => (4 - (n % 4)) % 4
-    const out = new Uint8Array(12 + 8 + text.length + pad(text.length) + 8 + bin.length + pad(bin.length))
-    const dv = new DataView(out.buffer)
-    dv.setUint32(0, 0x46546c67, true)
-    dv.setUint32(4, 2, true)
-    dv.setUint32(8, out.length, true)
-    dv.setUint32(12, text.length + pad(text.length), true)
-    dv.setUint32(16, 0x4e4f534a, true)
-    out.set(text, 20)
-    out.fill(0x20, 20 + text.length, 20 + text.length + pad(text.length))
-    const binAt = 20 + text.length + pad(text.length)
-    dv.setUint32(binAt, bin.length + pad(bin.length), true)
-    dv.setUint32(binAt + 4, 0x004e4942, true)
-    out.set(bin, binAt + 8)
-    const r = buildRig(out)
+    const r = buildRig(glb(json, bin))
     expect(r.faceBox.min.y).toBeCloseTo(1.4, 6)
     expect(r.faceBox.max.y).toBeCloseTo(1.4, 6)
+  })
+
+  /**
+   * A body with two meshes: mesh 0 (`hair`) hangs off node 3 and mesh 1
+   * (`Face`) off node 4, both skinned wholly to the head. Which one the face
+   * box lands on is decided entirely by `ext`, and the two indices are kept
+   * apart on purpose — a 1.0 bind names a NODE, and reading it as a mesh index
+   * is a bug that hides on any body where the two happen to agree.
+   */
+  const twoMeshBody = (ext: Record<string, unknown>): Uint8Array => {
+    const bone = (name: string, translation: number[]) => ({ name, translation })
+    const nodes = [
+      { ...bone('Hips', [0, 0.8, 0]), children: [1] },
+      { ...bone('Neck', [0, 0.4, 0]), children: [2] },
+      bone('Head', [0, 0.1, 0]),
+      { name: 'the-real-face', mesh: 0, skin: 0 },
+      { name: 'the-decoy', mesh: 1, skin: 0 },
+    ]
+    const positions = new Float32Array([0, 1.4, 0, 0, 1.45, 0, 0, 1.9, 0, 0, 1.95, 0])
+    const joints = new Uint8Array(16)
+    for (let v = 0; v < 4; v++) joints[v * 4] = 2 // every vertex on the head
+    const weights = new Float32Array(16)
+    for (let v = 0; v < 4; v++) weights[v * 4] = 1
+    const ibm = new Float32Array(3 * 16)
+    ;[0.8, 1.2, 1.3].forEach((y, k) => new THREE.Matrix4().makeTranslation(0, -y, 0).toArray(ibm, k * 16))
+    const bin = new Uint8Array(320)
+    bin.set(new Uint8Array(positions.buffer), 0)
+    bin.set(joints, 48)
+    bin.set(new Uint8Array(weights.buffer), 64)
+    bin.set(new Uint8Array(ibm.buffer), 128)
+    const skinned = { JOINTS_0: 2, WEIGHTS_0: 3 }
+    return glb(
+      {
+        scene: 0,
+        scenes: [{ nodes: [0, 3, 4] }],
+        nodes,
+        meshes: [
+          { name: 'hair', primitives: [{ attributes: { POSITION: 0, ...skinned } }] },
+          { name: 'Face', primitives: [{ attributes: { POSITION: 1, ...skinned } }] },
+        ],
+        skins: [{ joints: [0, 1, 2], inverseBindMatrices: 4 }],
+        bufferViews: [
+          { byteOffset: 0, byteLength: 48 },
+          { byteOffset: 48, byteLength: 16 },
+          { byteOffset: 64, byteLength: 64 },
+          { byteOffset: 128, byteLength: 192 },
+        ],
+        accessors: [
+          { bufferView: 0, byteOffset: 0, componentType: 5126, count: 2, type: 'VEC3' },
+          { bufferView: 0, byteOffset: 24, componentType: 5126, count: 2, type: 'VEC3' },
+          { bufferView: 1, componentType: 5121, count: 2, type: 'VEC4' },
+          { bufferView: 2, componentType: 5126, count: 2, type: 'VEC4' },
+          { bufferView: 3, componentType: 5126, count: 3, type: 'MAT4' },
+        ],
+        extensions: ext,
+      },
+      bin,
+    )
+  }
+
+  it('finds the face by what the expressions move, not by what a mesh is called', () => {
+    // The generalisation, stated as the case that used to go wrong: a body
+    // whose face mesh is called `hair` and which also has a mesh called `Face`
+    // that no expression touches. Reading the name picks the decoy and puts the
+    // face box 50cm too high; reading the binds picks the real one. Seed-san is
+    // this body in the wild — its meshes are hair, hair_tail, head, robo_arm,
+    // wear, and the one the expressions deform is `head`.
+    const r = buildRig(
+      twoMeshBody({
+        VRM: {
+          humanoid: { humanBones: [{ bone: 'hips', node: 0 }, { bone: 'neck', node: 1 }, { bone: 'head', node: 2 }] },
+          blendShapeMaster: { blendShapeGroups: [{ name: 'Blink', binds: [{ mesh: 0, index: 0, weight: 100 }] }] },
+        },
+      }),
+    )
+    expect(r.faceBox.min.y, 'the bound mesh is the face').toBeCloseTo(1.4, 6)
+    expect(r.faceBox.max.y, 'and the mesh merely CALLED Face is not').toBeCloseTo(1.45, 6)
+  })
+
+  it("resolves a 1.0 expression bind through the node it names to that node's mesh", () => {
+    // Same body, same face, written the 1.0 way: `morphTargetBinds` names node
+    // 3, whose mesh is 0. Taking the 3 for a mesh index finds nothing (there is
+    // no mesh 3) and the box comes back empty.
+    const r = buildRig(
+      twoMeshBody({
+        VRMC_vrm: {
+          specVersion: '1.0',
+          humanoid: { humanBones: { hips: { node: 0 }, neck: { node: 1 }, head: { node: 2 } } },
+          expressions: { preset: { blink: { morphTargetBinds: [{ node: 3, index: 0, weight: 1 }] } } },
+        },
+      }),
+    )
+    expect(r.faceBox.min.y, 'the mesh hanging off the node the bind names').toBeCloseTo(1.4, 6)
+    expect(r.faceBox.max.y).toBeCloseTo(1.45, 6)
   })
 
   it('reads a finger skin radius off the mesh that covers the hand-measured margin', () => {

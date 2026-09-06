@@ -1,0 +1,25 @@
+ ✓ src/components/chat/clearance.test.ts (4 tests) 2581ms
+   ✓ clearance producers > measure-motions --write records the rig it measured  2579ms
+ ✓ src/components/chat/useChatStream.test.ts (12 tests) 84ms
+ ✓ src/components/chat/avatarMode.test.ts (74 tests) 60ms
+ ✓ src/components/chat/vrmHumanoid.test.ts (15 tests) 48ms
+ ✓ src/components/chat/avatarVariants.test.ts (11 tests) 16ms
+ ✓ src/components/chat/useChatMode.test.ts (12 tests) 14ms
+ ✓ src/components/chat/visemeTrack.test.ts (5 tests) 12ms
+ ✓ src/components/chat/Markdown.test.tsx (3 tests) 13ms
+ ✓ src/components/chat/avatarVoice.test.ts (11 tests) 5ms
+ ✓ src/components/chat/avatarPrefetch.test.ts (3 tests) 6ms
+ ✓ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests) 3ms
+ ✓ src/components/chat/avatarVariantChoice.test.ts (8 tests) 2ms
+ ✓ src/components/chat/framingSolver.test.ts (9 tests) 6ms
+ ✓ src/i18n/chatVoice.test.ts (8 tests) 5ms
+ ✓ scripts/avatar/live-preview.test.ts (5 tests) 1ms
+ ✓ src/components/chat/avatarGuideEngine.wiring.test.ts (5 tests) 2ms
+ ✓ src/components/chat/avatarRim.test.ts (5 tests) 1ms
+ ✓ src/components/hero/particleHero.test.ts (4 tests) 1ms
+
+ Test Files  27 passed (27)
+      Tests  421 passed (421)
+   Start at  02:14:27
+   Duration  54.61s (transform 421ms, setup 557ms, collect 2.13s, tests 99.26s, environment 4.35s, prepare 725ms)
+

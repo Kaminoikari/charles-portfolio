@@ -92,7 +92,9 @@ export interface Vrm0SecondaryAnimation {
 export interface Vrm0Extension {
   humanoid?: { humanBones?: Vrm0HumanBone[] }
   secondaryAnimation?: Vrm0SecondaryAnimation
-  blendShapeMaster?: { blendShapeGroups: { name: string }[] }
+  blendShapeMaster?: {
+    blendShapeGroups: { name: string; binds?: { mesh: number; index?: number; weight?: number }[] }[]
+  }
 }
 
 // ---- VRM 1.0 extension shapes ----------------------------------------------
@@ -101,9 +103,13 @@ export interface Vrm1Extension {
   specVersion?: string
   humanoid?: { humanBones?: Record<string, { node: number }> }
   expressions?: {
-    preset?: Record<string, unknown>
-    custom?: Record<string, unknown>
+    preset?: Record<string, Vrm1Expression>
+    custom?: Record<string, Vrm1Expression>
   }
+}
+
+export interface Vrm1Expression {
+  morphTargetBinds?: { node: number; index?: number; weight?: number }[]
 }
 
 export interface Vrm1Collider {
@@ -285,6 +291,48 @@ export function readExpressions(json: GltfJson): string[] {
   if (ext.VRMC_vrm) {
     const expr = ext.VRMC_vrm.expressions ?? {}
     return [...Object.keys(expr.preset ?? {}), ...Object.keys(expr.custom ?? {})]
+  }
+  throw new Error('not a VRM: neither extensions.VRM (0.x) nor extensions.VRMC_vrm (1.0) is present')
+}
+
+/**
+ * Which meshes the file's expressions actually move, by mesh index.
+ *
+ * This is how the face is found without knowing what anyone named it. Until
+ * 2026-09-07 the face box was the bounding box of every mesh matching `/^Face/`
+ * — true of a VRoid export and of nothing else, and the Seed-san fixture, whose
+ * meshes are `hair`, `hair_tail`, `head`, `robo_arm` and `wear`, could not be
+ * measured at all. What the box is actually after is the face rather than the
+ * hair, and the face is the thing expressions deform: a blink moves eyelids, an
+ * `aa` moves a jaw, and neither is ever bound to a hair strand. So the meshes
+ * the expressions bind to ARE the face, on any file that has expressions.
+ *
+ * The two versions bind at different levels and this is the one place that
+ * difference is resolved: 0.x names a MESH index directly, 1.0 names a NODE and
+ * the mesh is what that node draws.
+ *
+ * Empty is a real answer, not an error — a file may ship no expressions at all,
+ * and the caller decides whether that is fatal. On the two bodies here it is a
+ * single mesh either way: `Face.baked` (0.x, 15 groups) and `head` (1.0, 17
+ * expressions).
+ */
+export function expressionMeshes(json: GltfJson): Set<number> {
+  const ext = json.extensions ?? {}
+  const meshes = new Set<number>()
+  if (ext.VRM) {
+    for (const group of ext.VRM.blendShapeMaster?.blendShapeGroups ?? [])
+      for (const bind of group.binds ?? []) meshes.add(bind.mesh)
+    return meshes
+  }
+  if (ext.VRMC_vrm) {
+    const expr = ext.VRMC_vrm.expressions ?? {}
+    for (const table of [expr.preset ?? {}, expr.custom ?? {}])
+      for (const e of Object.values(table))
+        for (const bind of e.morphTargetBinds ?? []) {
+          const mesh = json.nodes?.[bind.node]?.mesh
+          if (mesh !== undefined) meshes.add(mesh)
+        }
+    return meshes
   }
   throw new Error('not a VRM: neither extensions.VRM (0.x) nor extensions.VRMC_vrm (1.0) is present')
 }

@@ -45,7 +45,7 @@
 // NO BROWSER, NO GPU, for the same reason as rigProbe: this machine's headless
 // browser runs software WebGL at ~1 fps with dt clamped to 50 ms, which is a
 // different simulation from the one visitors see.
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -71,6 +71,8 @@ import {
   parseGlb,
   readAccessorRows,
   readHumanoid,
+  buildNodes,
+  expressionMeshes,
   readSprings,
   type GltfAccessor,
   type GltfBufferView,
@@ -102,15 +104,140 @@ interface Gltf extends GltfJson {
 interface Manifest {
   parts: Record<string, { mesh: string; primitives: number[] }>
   landmarks: { waist: number }
+  /** True when no build wrote one and it was read off the file. See deriveManifest. */
+  derived?: boolean
 }
 
-function readManifest(model: string): Manifest {
+/**
+ * How much of a primitive has to be driven by a spring bone before it counts as
+ * moving hair, when no manifest says which primitive is what.
+ *
+ * Measured on mika-milfy-12, whose manifest IS the truth: of its 65 `Hair_*`
+ * primitives the spring-driven ones run 83.8–88.1% spring-dominated, and of the
+ * 40 primitives that are anything else the highest is 17.3% (a skirt panel).
+ * 0.4 sits between them with roughly a factor of two either way.
+ *
+ * The two groups do NOT separate completely, and that is a property of hair
+ * rather than of the threshold: plenty of `Hair_*` primitives read 0%, because
+ * the bangs and the scalp cap are skinned to the head bone and have no springs
+ * at all. What this finds is the hair that MOVES, which is exactly what the
+ * solver needs a set for. Everything else still gets listed (as Body_Skin), so
+ * the crown — the topmost vertex of anything listed — still sees a scalp.
+ */
+const SPRING_DOMINATED = 0.4
+
+/** Node indices of every spring joint, and everything under them. */
+function springDrivenNodes(json: Gltf): Set<number> {
+  const source = readSprings(json)
+  const out = new Set<number>()
+  const walk = (i: number): void => {
+    if (out.has(i)) return
+    out.add(i)
+    for (const c of json.nodes[i].children ?? []) walk(c)
+  }
+  if (source.kind === 'vrm0') {
+    for (const g of source.secondaryAnimation.boneGroups ?? []) for (const b of g.bones ?? []) walk(b)
+  } else {
+    for (const spring of source.springBone.springs ?? []) for (const j of spring.joints ?? []) walk(j.node)
+  }
+  return out
+}
+
+/**
+ * A manifest read off the file itself, for a body build.py never built.
+ *
+ * The real manifest is written by the build and says which primitive is a
+ * shoe; nothing can recover that from an arbitrary VRM, and this does not try.
+ * What it recovers is the three things this simulator actually needs a set for:
+ * the hair that moves (spring-dominated, see SPRING_DOMINATED), the face (the
+ * meshes the expressions deform, `expressionMeshes`), and everything else,
+ * which goes under Body_Skin.
+ *
+ * That last name is a promise the derivation cannot keep, and the caller is
+ * told so: on a real build Body_Skin is bare skin, here it is skin AND clothes,
+ * so "hair inside the body" becomes "hair inside the body or its clothes".
+ * That is still a defect worth reporting, and it is not the same number, so
+ * main() prints a banner and the coat and skirt columns are read as
+ * hair-against-everything-else.
+ */
+export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
+  const { json } = glb
+  const spring = springDrivenNodes(json)
+  const faces = expressionMeshes(json)
+  // A manifest part belongs to exactly one mesh (gather() looks its mesh up by
+  // name), so the roles are collected per mesh first and the biggest mesh in
+  // each role then takes the canonical name runClip asks for. The rest stay
+  // listed under their own names: they are not in the body grid, but they are
+  // skinned every frame, so the crown still sees them. On a one-mesh-per-role
+  // body — every VRoid export — this renaming is the identity.
+  const byRole = new Map<string, Map<string, number[]>>()
+  const add = (role: string, mesh: string, pi: number): void => {
+    const meshes = byRole.get(role) ?? new Map<string, number[]>()
+    byRole.set(role, meshes)
+    meshes.set(mesh, [...(meshes.get(mesh) ?? []), pi])
+  }
+  for (const node of json.nodes) {
+    if (node.mesh === undefined || node.skin === undefined) continue
+    const mesh = json.meshes[node.mesh]
+    const skin = json.skins[node.skin]
+    const name = mesh.name ?? `mesh${node.mesh}`
+    mesh.primitives.forEach((prim, pi) => {
+      const { JOINTS_0, WEIGHTS_0 } = prim.attributes
+      if (JOINTS_0 === undefined || WEIGHTS_0 === undefined) return
+      const jo = readAccessorRows(glb, JOINTS_0)
+      const we = readAccessorRows(glb, WEIGHTS_0)
+      const n = jo.data.length / jo.ncomp
+      if (n === 0) return
+      let driven = 0
+      for (let v = 0; v < n; v++) {
+        let best = 0
+        for (let k = 1; k < we.ncomp; k++) {
+          if (we.data[v * we.ncomp + k] > we.data[v * we.ncomp + best]) best = k
+        }
+        if (spring.has(skin.joints[jo.data[v * jo.ncomp + best]])) driven += 1
+      }
+      if (driven / n >= SPRING_DOMINATED) add('Hair', name, pi)
+      else if (faces.has(node.mesh)) add('Face', name, pi)
+      else add('Body_Skin', name, pi)
+    })
+  }
+  const parts: Manifest['parts'] = {}
+  for (const [role, meshes] of byRole) {
+    const ordered = [...meshes].sort((a, b) => b[1].length - a[1].length)
+    ordered.forEach(([mesh, primitives], rank) => {
+      // Hair is a set of parts by design (runClip gathers every Hair_* it
+      // finds), so every hair mesh keeps its own name. Face and Body_Skin are
+      // single parts, so the biggest takes the name and the others trail it.
+      const name =
+        role === 'Hair' ? `Hair_${mesh}` : rank === 0 ? role : `${role}_${mesh}`
+      parts[name] = { mesh, primitives }
+    })
+  }
+  const bones = readHumanoid(json).bones
+  // The build measures the waist where the torso is narrowest; that needs the
+  // torso's own silhouette. Here it is the hips joint, which is the landmark
+  // the narrow point sits closest to, and the only consumer is the coat's hem
+  // band (waist − 4cm).
+  const hips = bones.hips
+  if (hips === undefined) throw new Error('no hips bone: the waist landmark cannot be derived')
+  const world = new THREE.Matrix4()
+  const nodes = buildNodes(json).nodes
+  nodes[hips].updateWorldMatrix(true, false)
+  world.copy(nodes[hips].matrixWorld)
+  return { parts, landmarks: { waist: world.elements[13] }, derived: true }
+}
+
+function readManifest(model: string, glb: { json: Gltf; bin: Uint8Array }): Manifest {
   const file = model.replace(/\.vrm$/, '.parts.json')
   let text: string
   try {
     text = readFileSync(file, 'utf8')
   } catch {
-    throw new Error(`no manifest beside the model: ${file} (build.py writes it; the simulator needs it to know which primitives are hair, coat, skin, face and skirt)`)
+    // No build wrote one, so read what the file itself says. Until 2026-09-07
+    // this threw, which meant the simulator could only ever run on a body this
+    // pipeline had built: not the Seed-san fixture, and not mika-pink or the
+    // base body either, whose crowns therefore had to come from a browser scan.
+    return deriveManifest(glb)
   }
   const m = JSON.parse(text) as Partial<Manifest>
   if (!m.parts || typeof m.landmarks?.waist !== 'number') throw new Error(`${file}: no parts or no waist landmark`)
@@ -713,7 +840,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const raw = readFileSync(args.model)
   const { json, bin } = parseGlb<Gltf>(raw)
   if (!bin) throw new Error('GLB without a BIN chunk')
-  const manifest = readManifest(args.model)
+  const manifest = readManifest(args.model, { json, bin })
   const bones = readHumanoid(json).bones
 
   // Every part the manifest lists is skinned every frame (the crown is the
@@ -1064,6 +1191,18 @@ async function main(): Promise<void> {
   console.log(`model ${path.relative(process.cwd(), args.model)}  colliders=${args.colliders}` +
     (args.hit !== null ? ` hit=${args.hit}` : '') + (args.gravity !== null ? ` gravity=${args.gravity}` : '') +
     `  ${FPS} Hz, pre-roll ${PREROLL_S}s, hair stride ${args.stride}`)
+  // Said before the table, not after, because the table's own columns change
+  // meaning when the parts were derived rather than built.
+  if (!existsSync(args.model.replace(/\.vrm$/, '.parts.json'))) {
+    const derived = deriveManifest(parseGlb<Gltf>(readFileSync(args.model)) as { json: Gltf; bin: Uint8Array })
+    console.log(
+      `  沒有 ${path.basename(args.model.replace(/\.vrm$/, '.parts.json'))}，部件改由檔案本身推導：` +
+      `${Object.keys(derived.parts).filter((k) => k.startsWith('Hair_')).length} 個會動的髮部件` +
+      `（彈簧驅動 ≥${SPRING_DOMINATED * 100}%），臉取表情驅動的 mesh，其餘全歸 Body_Skin。`)
+    console.log(
+      '  因此 body 與 skirt 兩欄量的是「頭髮進到身體**或衣服**多深」，不是進到皮膚多深；' +
+      'crown 與 jump 不受影響（髮頂本來就取所有部件的最高點）。')
+  }
   console.log('clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone')
   const reports: Report[] = []
   for (const clip of clips) {

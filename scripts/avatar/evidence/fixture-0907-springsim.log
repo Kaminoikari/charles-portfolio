@@ -1,0 +1,4 @@
+model scripts/avatar/fixtures/seed-san.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+dance              0mm       0mm       0mm        0%   0.00s     8°      50mm   0.17s      0mm  0.00s  1.8004 20.93s  2.1959  2.1154   16.3°   6.82s  hair_tail_6
+rest crown 1.5800 (bind pose, topmost vertex of any part); through the column camera 1.5874, waist-up 1.5811

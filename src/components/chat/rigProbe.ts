@@ -36,6 +36,7 @@ import {
   readAccessorRows,
   readAnimationBones,
   readHumanoid,
+  expressionMeshes,
   type Glb,
   type GltfNode,
 } from './vrmHumanoid'
@@ -242,8 +243,16 @@ interface SkinnedVertex {
 const _skinned = new THREE.Vector3()
 
 /**
- * Vertices of the skinned meshes whose name matches, each with its dominant
+ * Vertices of the skinned meshes the caller accepts, each with its dominant
  * joint, at their rest-pose position.
+ *
+ * By mesh INDEX, never by mesh name. Until 2026-09-07 the three callers here
+ * passed `/^Face/`, `/^Body/` and `/./`, and the first two are facts about a
+ * VRoid export: the Seed-san fixture draws `hair`, `hair_tail`, `head`,
+ * `robo_arm` and `wear`, so both selected nothing and the face box could not be
+ * derived at all. What each caller actually wants is derivable — the face is
+ * what the expressions move, and hand skin is what a finger bone drives — so
+ * the selection is theirs to make and this generator only asks.
  *
  * Skinned the way the mesh is drawn: each vertex is the weighted sum of
  * `jointWorld · inverseBind · v` over its joints, and the mesh node's own
@@ -254,12 +263,17 @@ const _skinned = new THREE.Vector3()
  * turned or scaled with them. springsim's `Skinner` does the same sum per
  * frame. Primitives that share one vertex buffer are decoded once.
  */
-function* skinnedVertices(glb: Glb, raw: THREE.Object3D[], meshName: RegExp): Generator<SkinnedVertex> {
+function* skinnedVertices(
+  glb: Glb,
+  raw: THREE.Object3D[],
+  accept: (meshIndex: number) => boolean,
+): Generator<SkinnedVertex> {
   const json = glb.json
   for (const node of json.nodes) {
     if (node.mesh === undefined || node.skin === undefined) continue
+    if (!accept(node.mesh)) continue
     const mesh = json.meshes?.[node.mesh]
-    if (!mesh || !meshName.test(mesh.name ?? '')) continue
+    if (!mesh) continue
     const skin = json.skins?.[node.skin]
     if (!skin) continue
     const ibm = skin.inverseBindMatrices === undefined ? null : readAccessorRows(glb, skin.inverseBindMatrices).data
@@ -297,26 +311,42 @@ function* skinnedVertices(glb: Glb, raw: THREE.Object3D[], meshName: RegExp): Ge
 }
 
 /**
- * The Face mesh's rest bounding box: the vertices of every mesh named
- * `Face…` that are mostly skinned to the head, in the file's own space.
+ * The face's rest bounding box: the vertices of the meshes the expressions
+ * move that are mostly skinned to the head, in the file's own space.
  *
- * The mesh, not the hair: the hair is skinned to the head too and reaches
- * 0.1m higher, and a box that took it in would let a hand hover above her
- * crown and call it a hit. Head-dominant only: the neck rows at the bottom
- * of the mesh are skinned to the neck and are not her face. Measured
- * 2026-08-19 by hand on the shipped body as x ±0.092, y 1.287–1.503,
+ * The face, not the hair: the hair is skinned to the head too and reaches 0.1m
+ * higher, and a box that took it in would let a hand hover above her crown and
+ * call it a hit. Head-dominant only: the neck rows at the bottom of the mesh
+ * are skinned to the neck and are not her face.
+ *
+ * `expressionMeshes` rather than a mesh named `Face…`, since 2026-09-07. A
+ * blink moves eyelids and an `aa` moves a jaw; neither is ever bound to a hair
+ * strand, so the meshes the expressions bind to ARE the face on any file that
+ * has expressions, whatever its author called them. The name test was true of
+ * a VRoid export and of nothing else — the Seed-san fixture calls its face
+ * `head` and could not be measured at all. On the shipped body the two select
+ * the same single mesh (`Face.baked`), which is why this changed no number.
+ *
+ * Measured 2026-08-19 by hand on the shipped body as x ±0.092, y 1.287–1.503,
  * z -0.113–0.033 against a head bone at (0, 1.320, 0.005); rigProbe.test.ts
  * holds the derivation to those numbers within 2mm.
  */
 export function deriveFaceBox(glb: Glb, raw: THREE.Object3D[], headNode: number): FaceBox {
+  const faces = expressionMeshes(glb.json)
   const box = new THREE.Box3()
   let count = 0
-  for (const { p, node } of skinnedVertices(glb, raw, /^Face/)) {
+  for (const { p, node } of skinnedVertices(glb, raw, (m) => faces.has(m))) {
     if (node !== headNode) continue
     box.expandByPoint(p)
     count += 1
   }
-  if (count === 0) throw new Error('no mesh named Face… is skinned to the head: the face box cannot be derived')
+  if (count === 0) {
+    throw new Error(
+      faces.size === 0
+        ? 'this file declares no expression morph target binds, so the face mesh cannot be identified and the face box cannot be derived'
+        : 'no vertex of the expression-driven meshes is skinned to the head: the face box cannot be derived',
+    )
+  }
   return { min: box.min, max: box.max }
 }
 
@@ -350,7 +380,11 @@ export function deriveFingerSkinRadius(glb: Glb, rig: Rig): number {
   const segment = new THREE.Line3()
   const closest = new THREE.Vector3()
   let worst = 0
-  for (const { p, node } of skinnedVertices(glb, rig.raw, /^Body/)) {
+  // Every mesh: the OUTER_PHALANX test below already says what hand skin is,
+  // and no body skins a hair strand to a finger's distal joint. The old /^Body/
+  // narrowing was a VRoid mesh name, and on this body it selects the same
+  // vertices (verified: the derived radius is unchanged to the micrometre).
+  for (const { p, node } of skinnedVertices(glb, rig.raw, () => true)) {
     const bone = boneOfNode.get(node)
     if (!bone || !OUTER_PHALANX.test(bone)) continue
     const next = nextFingerJoint(bone)
@@ -380,7 +414,7 @@ export function deriveFingerSkinRadius(glb: Glb, rig: Rig): number {
 export function deriveRestCrown(glb: Glb, rig: Rig): number {
   resetRig(rig)
   let top = -Infinity
-  for (const { p } of skinnedVertices(glb, rig.raw, /./)) top = Math.max(top, p.y)
+  for (const { p } of skinnedVertices(glb, rig.raw, () => true)) top = Math.max(top, p.y)
   if (!Number.isFinite(top)) throw new Error('no skinned mesh: the resting crown cannot be derived')
   return top
 }

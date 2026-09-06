@@ -40,15 +40,20 @@ MUTATIONS = [
      "  rig.root.updateMatrixWorld(true)\n  rig.scene.updateMatrixWorld(true)\n",
      VT(RPT, 'writes the pose through to the raw nodes'),
      'sync: the normalized pose is written onto the raw nodes through humanoid.update()'),
+    # 2026-09-07: deriveFaceBox stopped taking a mesh-NAME pattern and started
+    # taking a predicate over mesh indices, so this row's old pattern
+    # (skinnedVertices(glb, raw, /^Face/)) no longer exists in the file. Same
+    # guard, restated against the code that replaced it: the box is the
+    # expression-driven meshes, and widening it to every mesh lets the hair in.
     ('R4', RP,
-     "  for (const { p, node } of skinnedVertices(glb, raw, /^Face/)) {\n",
-     "  for (const { p, node } of skinnedVertices(glb, raw, /^(Face|Hair)/)) {\n",
-     VT(RPT, 'derives the face box from the Face mesh'),
-     'deriveFaceBox: the Face mesh only, never the hair'),
+     "  for (const { p, node } of skinnedVertices(glb, raw, (m) => faces.has(m))) {\n",
+     "  for (const { p, node } of skinnedVertices(glb, raw, () => true)) {\n",
+     VT(RPT, 'derives the face box from the meshes the expressions move'),
+     'deriveFaceBox: the expression-driven meshes only, never the hair'),
     ('R5', RP,
      "    if (node !== headNode) continue\n    box.expandByPoint(p)\n",
      "    box.expandByPoint(p)\n",
-     VT(RPT, 'leaves the neck rows of the Face mesh out of the face box'),
+     VT(RPT, 'leaves the neck rows out of the face box'),
      'deriveFaceBox: head-dominant vertices only (invisible on the shipped Face mesh, which has none; a synthetic two-vertex mesh shows it)'),
     ('R6', RP,
      "    const name = source.version === '0' || legacyThumbs ? vrm1BoneName(bone) : bone\n",

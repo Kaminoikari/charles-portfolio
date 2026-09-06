@@ -739,3 +739,30 @@ Ran 1 test in 0.443s
 FAILED (failures=1)
 ```
 
+## 2026-09-07: R4 and R5 restated after deriveFaceBox changed
+
+`deriveFaceBox` stopped taking a mesh-NAME pattern and started taking a
+predicate over mesh indices, driven by `expressionMeshes` (see
+`mutations-0907-generalise.md`, rows E1–E3). Two rows of this harness pointed at
+text that no longer exists:
+
+- **R4** matched `skinnedVertices(glb, raw, /^Face/)`. Its pattern is now the
+  predicate call, and its mutation widens the box to every mesh, which is the
+  same defect the old row injected (the hair gets in).
+- **R5** selected its test by the name `leaves the neck rows of the Face mesh
+  out of the face box`. The test was renamed to `leaves the neck rows out of
+  the face box`, because the mesh is no longer identified by being called Face.
+
+Both were re-run against the current code on 2026-09-07 and are still RED:
+
+```
+$ python3 scripts/avatar/evidence/retarget-0906-mutate.py R4 R5
+R4 RED  restored=True
+R5 RED  restored=True
+```
+
+A row whose pattern has gone stale ABORTs rather than passing (hit count must be
+exactly 1), and a row whose test name has gone stale would exit non-zero with no
+test having run — which is why the newer harnesses check for a failing test that
+actually ran before scoring a row RED.
+

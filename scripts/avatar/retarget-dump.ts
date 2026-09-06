@@ -29,14 +29,35 @@ const THUMB_VRM0_TO_VRM1: Record<string, string> = {
   rightThumbIntermediate: 'rightThumbProximal',
 }
 
-/** The body as a 1.0 export: map under VRMC_vrm with 1.0 thumb names, no VRM block, scene turned π about Y. */
+/**
+ * The body as a 1.0 export: map under VRMC_vrm with 1.0 thumb names, no VRM
+ * block, scene turned π about Y.
+ *
+ * The expressions come across as well. They carry no rotation and so play no
+ * part in the retarget this file dumps, but since 2026-09-07 the face box is
+ * the box of whatever the expressions move, and a body with none is a body
+ * buildRigFrom refuses. rigProbe.test.ts has the same conversion; the two are
+ * separate because this one runs under tsx outside vitest.
+ */
 function vrm1Twin(glb: Glb): Glb {
   const doc = JSON.parse(JSON.stringify(glb.json)) as Doc
   const { bones } = readHumanoid(doc)
   const record: Record<string, { node: number }> = {}
   for (const [bone, node] of Object.entries(bones)) record[THUMB_VRM0_TO_VRM1[bone] ?? bone] = { node }
+  const nodeOfMesh = new Map<number, number>()
+  doc.nodes.forEach((n, i) => {
+    if (n.mesh !== undefined && !nodeOfMesh.has(n.mesh)) nodeOfMesh.set(n.mesh, i)
+  })
+  const preset: Record<string, { morphTargetBinds: { node: number; index: number; weight: number }[] }> = {}
+  for (const group of doc.extensions.VRM?.blendShapeMaster?.blendShapeGroups ?? []) {
+    const binds = (group.binds ?? []).flatMap((b) => {
+      const node = nodeOfMesh.get(b.mesh)
+      return node === undefined ? [] : [{ node, index: b.index ?? 0, weight: (b.weight ?? 100) / 100 }]
+    })
+    if (binds.length) preset[group.name.toLowerCase()] = { morphTargetBinds: binds }
+  }
   delete doc.extensions.VRM
-  doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record } }
+  doc.extensions.VRMC_vrm = { specVersion: '1.0', humanoid: { humanBones: record }, expressions: { preset } }
   doc.extensionsUsed = [...(doc.extensionsUsed ?? []).filter((e) => e !== 'VRM'), 'VRMC_vrm']
   const scene = doc.scenes![doc.scene ?? 0]
   doc.nodes.push({ name: 'vrm1-root', rotation: [0, 1, 0, 0], children: scene.nodes })
