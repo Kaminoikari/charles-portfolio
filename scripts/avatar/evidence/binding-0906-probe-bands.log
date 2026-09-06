@@ -1,0 +1,39 @@
+crotch 0.758
+part                         n   miny  bands below crotch: y cover ratio (best three by cover*ratio)
+Acc_Ribbon_Waist           530  0.787  
+Acc_Ribbon_Hair            656  1.351  
+Acc_Belt_Waist            3994  0.949  
+Outfit_Top                6251  0.979  
+Acc_Bandage_Thigh         3843  0.609  y0.639 c0.25 q0.69 r78-113  y0.619 c0.17 q0.95 r107-112  y0.609 c0.17 q0.95 r106-112
+Acc_Ribbon_Neck           3375  1.174  
+Outfit_Shoes             11424  0.002  y0.142 c0.33 q0.86 r73-85  y0.132 c0.67 q0.30 r25-86  y0.012 c1.00 q0.16 r24-152
+Outfit_Bottom            11324  0.693  y0.753 c1.00 q0.67 r125-187  y0.733 c1.00 q0.65 r127-195  y0.723 c0.83 q0.68 r135-199
+Outfit_Socks              4902  0.014  y0.024 c1.00 q0.20 r29-144  y0.154 c0.67 q0.25 r23-91  y0.144 c0.67 q0.25 r21-85
+Outfit_Cardigan           7868  0.781  
+Hair_Ear_L                 238  1.494  
+Hair_Bun_L                  89  1.452  
+Hair_Ear_R                 238  1.494  
+Hair_Bun_R                  89  1.452  
+Acc_Crown                  400  1.501  
+Acc_HairClip_Plaster       144  1.433  
+Acc_HairClip_Bear          190  1.444  
+Acc_HairClip_Bars           16  1.421  
+HAND_Outfit_Bottom         336  0.727  y0.727 c1.00 q0.78 r196-250  y0.757 c1.00 q0.72 r158-220
+HAND_Acc_Frill_Hem         192  0.693  y0.693 c1.00 q0.79 r231-291  y0.723 c1.00 q0.78 r196-250  y0.703 c1.00 q0.78 r217-278
+HAND_Outfit_Socks          560  0.109  y0.359 c0.50 q0.76 r86-114  y0.109 c0.67 q0.52 r44-85  y0.159 c0.50 q0.42 r35-84
+HAND_Outfit_Shoes          568  0.022  y0.072 c0.67 q0.56 r62-109  y0.092 c0.83 q0.31 r29-92  y0.022 c1.00 q0.18 r22-119
+--- head pieces: unique nearest row
+Acc_Ribbon_Hair {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Hair_Ear_L {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Hair_Bun_L {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Hair_Ear_R {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Hair_Bun_R {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Acc_Crown {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Acc_HairClip_Plaster {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Acc_HairClip_Bear {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+Acc_HairClip_Bars {(10, 0, 0, 0, 1.0, 0.0, 0.0, 0.0)} head slot 10
+crotch 0.7578
+Acc_Bear_Face        n=288  best band: y0.046 cover 0.17 annulus 0.92           one_joint=None  -> nearest
+Acc_Bandage_Thigh    n=96   best band: y0.680 cover 0.83 annulus 0.14           one_joint=None  -> nearest
+Acc_Bandage_Calf     n=96   best band: y0.308 cover 0.83 annulus 0.08           one_joint=None  -> nearest
+Acc_Bandage_Ankle    n=96   best band: y0.130 cover 0.67 annulus 0.03           one_joint=None  -> nearest

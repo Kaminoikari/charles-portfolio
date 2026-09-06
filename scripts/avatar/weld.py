@@ -9,9 +9,9 @@ nothing for one to lose.
 
 Weights come from the body rather than from Blender on purpose. Blender would
 have to carry the armature to export a skin at all, its joint order would be its
-own, and the indices would then have to be mapped back by bone name. Assigning
-them here uses the rule already proved on the collar and the wraps, and keeps
-one place where skinning is decided.
+own, and the indices would then have to be mapped back by bone name. They are
+decided in binding.py, the one place skinning is decided, from what the piece
+is: build.py's put() and attach() below both go through it.
 """
 import json
 import os
@@ -21,6 +21,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import binding  # noqa: E402
 import garment  # noqa: E402
 import glb  # noqa: E402
 import render  # noqa: E402
@@ -96,15 +97,17 @@ def part(path, only=None, skip=()):
     return merged
 
 
-def attach(doc, views, manifest, piece, material, part_name, mesh='Body.baked',
-           pool=None):
-    pool = pool if pool is not None else garment.body_pool(doc, views, manifest)
+def attach(doc, views, ctx, piece, material, part_name, mesh='Body.baked'):
+    """Skin a Blender piece by binding's rules and write it in as `part_name`.
+
+    `ctx` is binding.context(...) for the body the piece goes on. Returns the
+    decision, which is what the manifest wants to record.
+    """
     piece = dict(piece)
-    piece['joints'] = np.zeros((len(piece['pos']), 4), dtype=np.uint16)
-    piece['weights'] = np.zeros((len(piece['pos']), 4), dtype=np.float32)
-    garment.bind(pool, piece)
+    decision = binding.decide(ctx, [piece], 'blender')
+    binding.apply(ctx, piece, decision, mesh)
     garment.attach(doc, views, mesh, piece, material, part_name)
-    return len(piece['tris'])
+    return decision
 
 
 if __name__ == '__main__':

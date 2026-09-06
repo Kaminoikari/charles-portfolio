@@ -19,6 +19,7 @@ import sys
 
 import numpy as np
 
+import binding
 import glb
 
 VERTEX_ATTRS = ('POSITION', 'NORMAL', 'TANGENT', 'TEXCOORD_0', 'TEXCOORD_1',
@@ -99,6 +100,7 @@ def partition(src, dst, parts_path):
                 'materials': sorted({mats[p['material']] for p in mesh['primitives']}),
                 'deletable': False,
                 'note': 'carries the 56 morph targets; splitting it breaks blendShapeMaster',
+                'binding': dict(binding.EXPORTED),
             }
             continue
 
@@ -126,6 +128,7 @@ def partition(src, dst, parts_path):
                             for i in members),
                 'materials': sorted({mats[rebuilt[i]['material']] for i in members}),
                 'deletable': not label.startswith('Body_'),
+                'binding': dict(binding.EXPORTED),
             }
 
     blob = glb.rebuild(doc, views)

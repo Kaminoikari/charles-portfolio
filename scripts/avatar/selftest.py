@@ -176,6 +176,11 @@ def run(model, manifest_path, seed=None, out=None):
     mat_names = {m.get('name') for m in doc['materials']}
     checks.append(('every palette entry names a material still in the file',
                    all(k in mat_names for k in after.get('palette', {}))))
+    # How each part is skinned travels with it (binding.py): a swap tool that
+    # re-skins a replacement reads the strategy off the part it replaces.
+    checks.append(('every part still says how it is bound',
+                   all('binding' in e and e['binding'].get('strategy')
+                       for e in after['parts'].values())))
     # The OTHER half of sweep_materials. VRM0 pairs materials[i] with
     # materialProperties[i] by position, and pruning one array without the other
     # puts every MToon setting on the wrong surface while every count stays

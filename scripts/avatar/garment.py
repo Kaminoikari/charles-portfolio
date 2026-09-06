@@ -244,7 +244,11 @@ def bind(pool, piece, smooth=0):
 
     Not for everything. A skirt bound this way would have its hem follow whichever
     leg happened to be nearest and tear in two when the legs part; a skirt is
-    supposed to hang off the hips as one piece, so it keeps a single binding.
+    supposed to hang off the hips as one piece, so binding.py drapes it. The
+    build no longer calls this directly: binding.apply is the one place a
+    piece gets its weights, and this is the same nearest (binding.nearest,
+    ties resolved as the dense argmin did) plus the same diffusion, kept for
+    the tests that pin the diffusion on its own.
 
     `smooth` diffuses the copied weights over the garment's own edges that
     many times (half self, half neighbours, seams welded by position), then
@@ -261,8 +265,8 @@ def bind(pool, piece, smooth=0):
     four-slot cap. Off by default, because a piece bound to smooth skin gains
     nothing from it and the skirt's drape overwrites the weights anyway.
     """
-    d = ((piece['pos'][:, None, :] - pool['pos'][None, :, :]) ** 2).sum(axis=2)
-    k = d.argmin(axis=1)
+    import binding    # binding imports this module for smooth_weights
+    k = binding.nearest(binding.tree_of(pool['pos']), pool['pos'], piece['pos'])
     piece['joints'] = pool['joints'][k]
     piece['weights'] = pool['weights'][k]
     if smooth:

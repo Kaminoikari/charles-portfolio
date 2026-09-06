@@ -31,7 +31,7 @@ import pose  # noqa: E402
 # is owned by 1mm edges at the bust that quadruple without anyone seeing it,
 # while the tear the owner saw was 11mm edges pulled to 74mm. Calibrated on
 # 2026-09-06 (evidence/armpit-0906.md): the body's own skin reaches 17mm, the
-# cardigan re-bound by garment.bind(smooth=16) 15mm, at 4 passes 27mm, and the
+# cardigan re-bound nearest with 16 smoothing passes 15mm, at 4 passes 27mm, and the
 # nearest-vertex binding it replaced 77mm at the armpit and 52mm at the elbow
 # -- the black and mint shards under both arms in the dance.
 BIND_GROWTH_MAX_MM = 25.0

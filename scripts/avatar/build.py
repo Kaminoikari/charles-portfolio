@@ -22,6 +22,7 @@ from scipy.spatial import cKDTree
 
 import customise
 import envelope
+import binding
 import bonemap
 import garment
 import glb
@@ -633,19 +634,45 @@ def build(src, dst, manifest_path, out_manifest):
 
     hip, knee, ankle = lm['hip'], lm['knee'], lm['ankle']
     arm_r = lm['hand_x']                           # hand x at rest, both sides
+    # The skirt's fade band, read here because every draped part fades over
+    # it -- the vendor's skirt included, exactly as the hand-built one did.
+    waist_y, hem_y = lm['waist'] - 0.02, hip - (hip - knee) * 0.34
+    ctx = binding.context(doc, pool, manifest, lm, drape=(waist_y, hem_y))
+    bindings = {}
 
     mellow_files = [os.path.join(os.path.dirname(dst), f)
                     for f in (MELLOW, MELLOW_OUTER)]
     mellow_files = [f for f in mellow_files if os.path.exists(f)]
     mellow = bool(mellow_files)
 
-    def put(piece, material, name, mesh='Body.baked', tag=None):
-        if mellow and name in HAND_GARMENTS:
-            return
-        garment.attach(doc, views, mesh, piece,
-                       material if isinstance(material, int) else mats[material],
-                       name)
-        added[tag or name] = (len(piece['tris']), mesh)
+    def put(piece, material, name, mesh='Body.baked', tag=None,
+            bind='auto', origin='param', smooth=0):
+        """Skin a piece and write it into the file as part `name`.
+
+        The one place a piece gets its weights. `bind` is 'auto' -- the
+        chooser reads the piece (binding.decide) -- or a Decision the caller
+        made, for a part whose primitives were decided together (the vendor
+        loop) or an override with its reason. `origin` says where the piece
+        came from: 'shell' keeps the rows it was shelled with, everything
+        else is measured. The decision lands in the manifest under the part.
+        Returns None when a hand-built garment yields to the imported one.
+        """
+        if mellow and name in HAND_GARMENTS and origin != 'vendor':
+            return None
+        sig = binding.signals(ctx, [piece])
+        decision = binding.choose(ctx, sig, origin, smooth) if bind == 'auto' else bind
+        bound = binding.apply(ctx, dict(piece), decision, mesh)
+        at = garment.attach(doc, views, mesh, bound,
+                            material if isinstance(material, int) else mats[material],
+                            name)
+        added[tag or name] = (len(bound['tris']), mesh)
+        prior = bindings.get(name)
+        if prior is None:
+            bindings[name] = decision
+        elif (prior['strategy'], prior.get('smooth')) != (decision['strategy'], decision.get('smooth')):
+            raise SystemExit(f'{name} 的兩個 primitive 綁定策略不同：'
+                             f'{prior["strategy"]} 與 {decision["strategy"]}')
+        return {'index': at, 'piece': bound, 'signals': sig, 'decision': decision}
 
     # --- top: a bandeau, not a vest. Its upper edge stops at the frill's own
     #     height, which is what makes the frill read as the top of a garment
@@ -662,7 +689,8 @@ def build(src, dst, manifest_path, out_manifest):
     # against a 210mm shoulder span.
     strap = ((p[:, 1] > 1.168) & (p[:, 1] < 1.252)
              & (np.abs(p[:, 0]) > 0.052) & (np.abs(p[:, 0]) < 0.088))
-    put(garment.shell(pool, torso | strap, 0.012), 'Milfy_White', 'Outfit_Top')
+    put(garment.shell(pool, torso | strap, 0.012), 'Milfy_White', 'Outfit_Top',
+        origin='shell')
 
     # --- cardigan: off the shoulder. Three things make that read, and all three
     #     are subtractions: it starts below the shoulder line, it leaves the
@@ -678,7 +706,7 @@ def build(src, dst, manifest_path, out_manifest):
                   & (np.abs(p[:, 0]) < 0.155)
                   & ~((p[:, 2] < -0.015) & (np.abs(p[:, 0]) < 0.052)))
     cardigan = garment.shell(pool, sleeve | torso_back, 0.021)
-    put(cardigan, 'Milfy_Cardigan', 'Outfit_Cardigan')
+    put(cardigan, 'Milfy_Cardigan', 'Outfit_Cardigan', origin='shell')
 
     # 前襟上的三顆鈕扣，位置從外套自己的頂點讀出來，不是猜的。第一次用固定
     # 座標 z=-0.108，結果整排被抹胸擋住：抹胸的前表面在 z=-0.123，比外套還
@@ -697,7 +725,7 @@ def build(src, dst, manifest_path, out_manifest):
             pool['joints'][near_chest], pool['weights'][near_chest],
             lat=5, lon=8, squash=(1.0, 1.0, 0.55)))
     if buttons:
-        put(garment.bind(pool, garment.merge(buttons)), 'Milfy_Bear', 'Acc_Buttons')
+        put(garment.merge(buttons), 'Milfy_Bear', 'Acc_Buttons')
 
     # --- neck frill and its ribbon, and the sash bow at the waist. These two
     #     carry most of the character's read at a glance. ---
@@ -705,8 +733,7 @@ def build(src, dst, manifest_path, out_manifest):
     # rides the base of the neck, and the joint is at the top of the trapezius.
     neck_y = lm['neck'] - 0.007
     near_neck = int(np.argmin(np.abs(p[:, 1] - neck_y)))
-    put(garment.bind(pool, garment.collar(pool, neck_y - 0.014, 0.026, 0.62)),
-        'Milfy_White', 'Acc_Collar')
+    put(garment.collar(pool, neck_y - 0.014, 0.026, 0.62), 'Milfy_White', 'Acc_Collar')
     # 頸部黑緞帶改由 Blender 生成，見 blender/neckribbon.py。參數化版本把蝴蝶結
     # 放在 y=1.19 的胸口，參考圖是繫在領口白色蕾絲上，兩者讀起來是不同的東西。
 
@@ -721,12 +748,12 @@ def build(src, dst, manifest_path, out_manifest):
         piece = weld.part(path, skip=tuple(split))
         if piece is None:
             continue
-        put(garment.bind(pool, piece), material, part_name)
+        put(piece, material, part_name, origin='blender')
         if part_name == 'Acc_Ribbon_Waist':
             bow_pos.append(piece['pos'])
         for sub_name, (sub_material, tag) in split.items():
             sub = weld.part(path, only=(sub_name,))
-            put(garment.bind(pool, sub), sub_material, part_name, tag=tag)
+            put(sub, sub_material, part_name, tag=tag, origin='blender')
             if part_name == 'Acc_Ribbon_Waist':
                 bow_pos.append(sub['pos'])
 
@@ -734,68 +761,17 @@ def build(src, dst, manifest_path, out_manifest):
     #     ruffle that hangs off it. The reference's hem is gathered cloth, and a
     #     plain cone reads as a costume prop next to it. ---
     env = envelope.load(os.path.join(os.path.dirname(dst), 'leg-envelope.json'))
-    waist_y, hem_y = lm['waist'] - 0.02, hip - (hip - knee) * 0.34
     hem = garment.skirt(pool, waist_y, hem_y, flare=1.25, clear=(0.018, 0.006),
                         envelope=lambda y: envelope.radii_at(env, y))
-
-    def drape(piece):
-        """Weight a skirt so it follows the body at the top and the legs below.
-
-        Three failures got it here. Bound rigidly to the waist, the thigh walked
-        straight through the front when the hip bent. Weighting it to the two
-        upper legs fixed most of that and left the waistband pierced by the
-        belly, because the waistband was on `hips` while the abdomen above it is
-        driven by the spine: bend at the waist and the stomach swings forward
-        while the band stays behind. Widening the band twice did nothing, since
-        the gap was never the problem.
-
-        So the top of the skirt simply borrows the body's own weights from the
-        skin beneath it, whatever they happen to be, and the leg weights fade in
-        going down. The known cost stays: a wide stride stretches the cloth
-        between the legs, because there is no bone in the middle to hold it up.
-        """
-        js = skin['joints']
-        left_j = js.index(bones['leftUpperLeg'])
-        right_j = js.index(bones['rightUpperLeg'])
-        q = piece['pos']
-        near = ((q[:, None, :] - pool['pos'][None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
-        base_j, base_w = pool['joints'][near], pool['weights'][near]
-
-        drop = np.clip((waist_y - q[:, 1]) / max(waist_y - hem_y, 1e-6), 0.0, 1.0)
-        follow = 0.75 * drop ** 1.5
-        sx = np.clip(q[:, 0] / 0.12, -1.0, 1.0)
-        left = (1.0 - sx) / 2.0
-
-        joints = np.zeros((len(q), 4), dtype=np.uint16)
-        weights = np.zeros((len(q), 4), dtype=np.float32)
-        for i in range(len(q)):
-            acc = {}
-            for c in range(base_j.shape[1]):
-                w = float(base_w[i, c]) * (1.0 - follow[i])
-                if w > 0:
-                    acc[int(base_j[i, c])] = acc.get(int(base_j[i, c]), 0.0) + w
-            for j, w in ((left_j, follow[i] * left[i]),
-                         (right_j, follow[i] * (1.0 - left[i]))):
-                if w > 0:
-                    acc[j] = acc.get(j, 0.0) + w
-            top = sorted(acc.items(), key=lambda kv: -kv[1])[:4]
-            total = sum(w for _, w in top) or 1.0
-            for c, (j, w) in enumerate(top):
-                joints[i, c] = j
-                weights[i, c] = w / total
-        piece['joints'], piece['weights'] = joints, weights
-        return piece
-
-    put(drape(hem), 'Milfy_White', 'Outfit_Bottom')
-    put(drape(garment.frill(hem['hem'], depth=0.034, waves=15)),
-        'Milfy_White', 'Acc_Frill_Hem')
+    # Both drape (binding._drape): a ring round both legs below the crotch,
+    # which the chooser reads off the geometry. The rigid and the two-leg
+    # bindings that this fade replaced are told in that docstring.
+    put(hem, 'Milfy_White', 'Outfit_Bottom')
+    put(garment.frill(hem['hem'], depth=0.034, waves=15), 'Milfy_White', 'Acc_Frill_Hem')
 
     # --- the camisole's own frill, across the bust above the cardigan line ---
-    put(garment.bind(pool,
-                     garment.frill(garment.ring_at(pool, 1.176, max_radius=0.135,
-                                                   clear=0.017),
-                                   depth=0.024, waves=11, amplitude=0.006,
-                                   flare=0.10)),
+    put(garment.frill(garment.ring_at(pool, 1.176, max_radius=0.135, clear=0.017),
+                      depth=0.024, waves=11, amplitude=0.006, flare=0.10),
         'Milfy_White', 'Acc_Frill_Bust')
 
     # --- socks. The goal names an Outfit_Socks slot with the cuff above the
@@ -812,7 +788,7 @@ def build(src, dst, manifest_path, out_manifest):
     #     "over the knee" means on a leg this length.
     cuff_y = knee + 0.040
     socks = ((p[:, 1] < cuff_y) & (p[:, 1] > ankle - 0.010))
-    put(garment.shell(pool, socks, 0.006), 'Milfy_Sock', 'Outfit_Socks')
+    put(garment.shell(pool, socks, 0.006), 'Milfy_Sock', 'Outfit_Socks', origin='shell')
 
     # --- slippers: a rounded shell over each foot, plus two ears ---
     feet = p[:, 1] < ankle + 0.035
@@ -831,7 +807,10 @@ def build(src, dst, manifest_path, out_manifest):
             shoes.append(garment.sphere(
                 [cx + ex, top + 0.009, cz - 0.012], 0.013,
                 pool['joints'][near], pool['weights'][near], lat=6, lon=8))
-    put(garment.merge(shoes), 'Milfy_Bear', 'Outfit_Shoes')
+    # A shell with two spheres riding on it: the spheres carry the rows of the
+    # foot vertex they sit over, so the whole piece keeps what it was built
+    # with, like the shell it mostly is.
+    put(garment.merge(shoes), 'Milfy_Bear', 'Outfit_Shoes', origin='shell')
 
     # 拖鞋的熊臉。兩顆眼睛與一個鼻子，貼在鞋頭外表面上。
     face_bits = []
@@ -847,7 +826,7 @@ def build(src, dst, manifest_path, out_manifest):
             pool['joints'][np.argmin(np.abs(p[:, 1] - ankle))],
             pool['weights'][np.argmin(np.abs(p[:, 1] - ankle))],
             lat=5, lon=8, squash=(1.4, 0.9, 0.8)))
-    put(garment.bind(pool, garment.merge(face_bits)), 'Milfy_Ribbon', 'Acc_Bear_Face')
+    put(garment.merge(face_bits), 'Milfy_Ribbon', 'Acc_Bear_Face')
 
     # --- bandages. Three of them, asymmetric, as the reference wears them: one
     #     high on the left thigh, one up the right shin, one at the left ankle.
@@ -882,12 +861,10 @@ def build(src, dst, manifest_path, out_manifest):
         r1 = float(radius[~lower].max()) if (~lower).any() else float(radius.max())
 
         near = int(np.argmin(np.abs(p[:, 1] - y) + np.abs(p[:, 0] - cx) * 3))
-        put(garment.bind(pool,
-                         garment.tube([cx, y - half_height, cz],
-                                      [cx, y + half_height, cz],
-                                      r0 + thickness, r1 + thickness,
-                                      pool['joints'][near], pool['weights'][near],
-                                      segments=24, rings=3)),
+        put(garment.tube([cx, y - half_height, cz], [cx, y + half_height, cz],
+                         r0 + thickness, r1 + thickness,
+                         pool['joints'][near], pool['weights'][near],
+                         segments=24, rings=3),
             'Milfy_Bandage', name)
 
     wrap('Acc_Bandage_Thigh', 0.652, -1, 0.032)
@@ -978,6 +955,21 @@ def build(src, dst, manifest_path, out_manifest):
                         THIGH_BAND_FINAL_CLEARANCE)
                     pushed[band_name] = max(pushed.get(band_name, 0.0), final_move)
 
+            # Re-bound to this body's own weights, and the skirt draped on top
+            # of that, exactly as the hand-built one was. The vendor's rig is
+            # discarded here on purpose: it is correct for Milfy and wrong for
+            # this body, and the failure it causes is invisible at rest. One
+            # decision per part, measured on all of its primitives together
+            # (the skirt's upper half on its own stops at the hip joint), and
+            # the bodice garments diffused because the nearest-vertex copy
+            # tears at the armpit and the elbow (MELLOW_BIND_SMOOTH).
+            by_part = {}
+            for item, name in accepted:
+                by_part.setdefault(name, []).append(item['piece'])
+            decisions = {name: binding.decide(ctx, pieces, 'vendor',
+                                              MELLOW_BIND_SMOOTH.get(name, 0))
+                         for name, pieces in by_part.items()}
+
             for item, name in accepted:
 
                 # The vendor's shape keys ride ON TOP of the settled garment,
@@ -995,40 +987,29 @@ def build(src, dst, manifest_path, out_manifest):
                     hit = np.flatnonzero(
                         np.abs(delta).max(axis=1) > glb.MORPH_EPSILON)
                     keyed_deltas[key] = (hit, delta[hit])
-                # Re-bound to this body's own weights, and the skirt draped on
-                # top of that, exactly as the hand-built one was. The vendor's
-                # rig is discarded here on purpose: it is correct for Milfy and
-                # wrong for this body, and the failure it causes is invisible
-                # at rest. The bodice garments are then smoothed, because the
-                # nearest-vertex copy tears at the armpit and the elbow
-                # (MELLOW_BIND_SMOOTH).
-                bound = garment.bind(pool, item['piece'])
+                r = put(item['piece'], bundle['materials'][item['material']], name,
+                        tag=f'{name}#{item["prim"]}', bind=decisions[name],
+                        origin='vendor')
+                bound = r['piece']
                 if name == 'Acc_Belt_Waist':
                     belt_pos.append(bound['pos'])
                 if name == 'Outfit_Cardigan':
                     # 只留軀幹片：權重主要落在手臂／肩／手的是袖子。T-pose 的
                     # 袖口在馬尾經過肩膀的方位角上伸到半徑 0.22-0.27，瀏覽器裡
                     # 那截袖子卻是垂在身側的，算進輪廓會把馬尾第一節頂到 40cm 外。
-                    # 讀的是平滑前的最近頂點權重：平滑會把肩袖交界一圈頂點的
-                    # 主導骨換邊，輪廓跟著變，雙馬尾軸線因此移了 15mm，貼頭層
-                    # 有一個頂點落進 20mm 帶內（appearance_test 抓到）。馬尾掛
-                    # 在外套上的位置不該隨綁定的平滑程度變。
-                    lead = bound['joints'][np.arange(len(bound['joints'])),
-                                           bound['weights'].argmax(axis=1)]
+                    # 讀的是平滑前的最近頂點主導骨（binding.signals 的 lead_slot）：
+                    # 平滑會把肩袖交界一圈頂點的主導骨換邊，輪廓跟著變，雙馬尾
+                    # 軸線因此移了 15mm，貼頭層有一個頂點落進 20mm 帶內
+                    # （appearance_test 抓到）。馬尾掛在外套上的位置不該隨綁定
+                    # 的平滑程度變。
+                    lead = r['signals']['lead_slot']
                     lead_name = np.array([doc['nodes'][skin['joints'][j]].get('name', '')
                                           for j in lead])
                     torso = np.array([not any(k in n for k in ('Arm', 'Hand', 'Shoulder'))
                                       for n in lead_name])
                     coat_pos.append(bound['pos'][torso])
-                if MELLOW_BIND_SMOOTH.get(name):
-                    garment.smooth_weights(bound, MELLOW_BIND_SMOOTH[name])
-                if name == 'Outfit_Bottom':
-                    bound = drape(bound)
-                at = garment.attach(doc, views, 'Body.baked', bound,
-                                    bundle['materials'][item['material']], name)
                 if keyed_deltas:
-                    shapes[at] = keyed_deltas
-                added[f'{name}#{item["prim"]}'] = (len(bound['tris']), 'Body.baked')
+                    shapes[r['index']] = keyed_deltas
         print('   貼身外推最大位移：' + '，'.join(
             f'{k} {v * 1000:.0f}mm' for k, v in sorted(pushed.items())))
         # 蝴蝶結是唯一一個「戴在別的衣服上」的部件，它的 z 寫在 blender/bow.py
@@ -1096,10 +1077,13 @@ def build(src, dst, manifest_path, out_manifest):
                 'twintail.waypoints 與現在的外套對不上了')
 
     # --- head: bear ears, buns, crown, ahoge, clips. Bound rigidly to the
-    #     head joint, which is what an accessory sitting on the skull does. ---
-    # The slot is the head joint's index in the skin of the mesh these pieces
-    # are attached to (the hair mesh), not the body's: JOINTS_0 indexes the
-    # joint list of the skin the drawing node names.
+    #     head joint, which is what an accessory sitting on the skull does:
+    #     put() reads that every skin vertex under them is wholly the head's
+    #     and binds them `single`, translating the slot into the skin of the
+    #     mesh they are attached to (the hair mesh). ---
+    # The parametric constructors still take a row (a sphere cannot be built
+    # without one), so this is the head joint's slot in that skin, and the same
+    # row put() will write.
     head_mesh = manifest['parts']['Hair_Back']['mesh']
     head_skin = doc['skins'][humanoid.skin_of_mesh(doc, head_mesh)]
     hj = np.array([head_skin['joints'].index(bones['head']), 0, 0, 0], dtype=np.uint16)
@@ -1109,13 +1093,13 @@ def build(src, dst, manifest_path, out_manifest):
     crown_y = float(np.percentile(hair['pos'][:, 1], 99))
     skull_r = 0.085
 
-    def rigid(piece, uv=None):
+    def with_uv(piece, uv):
+        """A Blender head piece with its generated UV. Its weights come from
+        put(): every one of these sits on skin that is wholly the head's, so
+        the chooser binds it rigidly to the head, as `rigid()` used to by
+        hand."""
         piece = dict(piece)
-        n = len(piece['pos'])
-        piece['joints'] = np.tile(hj, (n, 1))
-        piece['weights'] = np.tile(hw, (n, 1))
-        if uv is not None:
-            piece['uv'] = uv
+        piece['uv'] = uv
         return piece
 
     # UV for the pieces whose shading comes from a texture rather than a flat
@@ -1200,15 +1184,15 @@ def build(src, dst, manifest_path, out_manifest):
     if head_pieces:
         for label in ('L', 'R'):
             ear = head_pieces[f'Ear_{label}']
-            put(rigid(ear, uv_disc(ear['pos'])), hair_mat, f'Hair_Ear_{label}',
-                mesh=head_mesh)
+            put(with_uv(ear, uv_disc(ear['pos'])), hair_mat, f'Hair_Ear_{label}',
+                mesh=head_mesh, origin='blender')
             inner = head_pieces[f'EarInner_{label}']
-            put(rigid(inner, uv_bowl(inner['pos'])), 'Milfy_EarInner',
+            put(with_uv(inner, uv_bowl(inner['pos'])), 'Milfy_EarInner',
                 f'Hair_Ear_{label}',
-                mesh=head_mesh, tag=f'Hair_Ear_{label}#inner')
+                mesh=head_mesh, tag=f'Hair_Ear_{label}#inner', origin='blender')
             bun = head_pieces[f'Bun_{label}']
-            put(rigid(bun, uv_ball(bun['pos'])), hair_mat, f'Hair_Bun_{label}',
-                mesh=head_mesh)
+            put(with_uv(bun, uv_ball(bun['pos'])), hair_mat, f'Hair_Bun_{label}',
+                mesh=head_mesh, origin='blender')
         # The Blender head piece still has an Ahoge loop -- head_pieces['Ahoge']
         # -- dropped on request 2026-09-04 (a single strand rooted at the
         # crown, arcing up and back down; not part of the base VRoid hair, no
@@ -1254,8 +1238,8 @@ def build(src, dst, manifest_path, out_manifest):
         print(f'   皇冠整體下沉 {fell * 1000:.0f}mm 貼上髮面')
         for piece, colour, tag in zip(shells, ('Milfy_Gold', 'Milfy_GoldInner'),
                                       (None, 'Acc_Crown#inner')):
-            put(rigid(piece, uv_facet(piece)), colour, 'Acc_Crown',
-                mesh=head_mesh, tag=tag)
+            put(with_uv(piece, uv_facet(piece)), colour, 'Acc_Crown',
+                mesh=head_mesh, tag=tag, origin='blender')
     else:
         # No Blender on this machine. These are the parametric shapes the
         # measured ones replaced: a sphere with two smaller spheres stuck on
@@ -1577,6 +1561,15 @@ def build(src, dst, manifest_path, out_manifest):
     for name, e in parts.items():
         e['slot'] = name
         e['group'] = group_of.get(name.split('_')[0], 'other')
+    # Every part says how it is skinned: decided by put() for the parts this
+    # build made, carried over for the ones the source file skinned
+    # (partition stamps those) and for the twintails (twintail.apply reweights
+    # them onto its own chain), and refused for anything else.
+    carried = manifest['parts']
+    for label, e in parts.items():
+        e['binding'] = bindings.get(label) or carried.get(label, {}).get('binding')
+        if not e['binding']:
+            raise SystemExit(f'{label} 沒有綁定策略：不是 put() 建的，manifest 也沒帶')
     manifest['parts'] = parts
 
     # Read back off the finished model, not off the constants above. The

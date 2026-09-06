@@ -30,7 +30,11 @@
       "deletable": false,
       "note": "carries the 56 morph targets; splitting it breaks blendShapeMaster",
       "slot": "Face",
-      "group": "face"
+      "group": "face",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Body_Skin": {
       "mesh": "Body.baked",
@@ -46,7 +50,11 @@
       ],
       "deletable": false,
       "slot": "Body_Skin",
-      "group": "body"
+      "group": "body",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Acc_Ribbon_Waist": {
       "mesh": "Body.baked",
@@ -61,7 +69,16 @@
       ],
       "deletable": true,
       "slot": "Acc_Ribbon_Waist",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "spine": 0.44,
+          "hips": 0.31,
+          "chest": 0.19
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Acc_Ribbon_Hair": {
       "mesh": "Body.baked",
@@ -74,7 +91,15 @@
       ],
       "deletable": true,
       "slot": "Acc_Ribbon_Hair",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Acc_Belt_Waist": {
       "mesh": "Body.baked",
@@ -89,7 +114,16 @@
       ],
       "deletable": true,
       "slot": "Acc_Belt_Waist",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "spine": 0.57,
+          "hips": 0.23,
+          "chest": 0.2
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Outfit_Top": {
       "mesh": "Body.baked",
@@ -104,7 +138,17 @@
       ],
       "deletable": true,
       "slot": "Outfit_Top",
-      "group": "outfit"
+      "group": "outfit",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "upperChest": 0.47,
+          "chest": 0.15,
+          "neck": 0.07
+        },
+        "reason": "copies the skin vertex nearest each vertex, diffused 16 passes over its own edges",
+        "smooth": 16
+      }
     },
     "Acc_Bandage_Thigh": {
       "mesh": "Body.baked",
@@ -119,7 +163,16 @@
       ],
       "deletable": true,
       "slot": "Acc_Bandage_Thigh",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "leftUpperLeg": 0.99,
+          "hips": 0.0,
+          "leftLowerLeg": 0.0
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Acc_Ribbon_Neck": {
       "mesh": "Body.baked",
@@ -134,7 +187,16 @@
       ],
       "deletable": true,
       "slot": "Acc_Ribbon_Neck",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "upperChest": 0.97,
+          "leftShoulder": 0.01,
+          "rightShoulder": 0.01
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Outfit_Shoes": {
       "mesh": "Body.baked",
@@ -151,7 +213,16 @@
       ],
       "deletable": true,
       "slot": "Outfit_Shoes",
-      "group": "outfit"
+      "group": "outfit",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "rightFoot": 0.29,
+          "leftFoot": 0.29,
+          "leftToes": 0.16
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Outfit_Bottom": {
       "mesh": "Body.baked",
@@ -166,7 +237,16 @@
       ],
       "deletable": true,
       "slot": "Outfit_Bottom",
-      "group": "outfit"
+      "group": "outfit",
+      "binding": {
+        "strategy": "drape",
+        "lead": {
+          "hips": 0.71,
+          "spine": 0.11,
+          "leftUpperLeg": 0.07
+        },
+        "reason": "a ring round both legs 5mm below the crotch line (all 12 bearings, annulus 0.67): hangs off the hips and follows both legs"
+      }
     },
     "Outfit_Socks": {
       "mesh": "Body.baked",
@@ -181,7 +261,16 @@
       ],
       "deletable": true,
       "slot": "Outfit_Socks",
-      "group": "outfit"
+      "group": "outfit",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "rightLowerLeg": 0.39,
+          "leftLowerLeg": 0.39,
+          "leftFoot": 0.06
+        },
+        "reason": "copies the skin vertex nearest each vertex"
+      }
     },
     "Outfit_Cardigan": {
       "mesh": "Body.baked",
@@ -194,7 +283,17 @@
       ],
       "deletable": true,
       "slot": "Outfit_Cardigan",
-      "group": "outfit"
+      "group": "outfit",
+      "binding": {
+        "strategy": "nearest",
+        "lead": {
+          "hips": 0.19,
+          "rightLowerArm": 0.17,
+          "leftLowerArm": 0.17
+        },
+        "reason": "copies the skin vertex nearest each vertex, diffused 16 passes over its own edges",
+        "smooth": 16
+      }
     },
     "Hair_Bangs": {
       "mesh": "Hair001.baked",
@@ -217,7 +316,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Bangs",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Hair_Back": {
       "mesh": "Hair001.baked",
@@ -245,7 +348,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Back",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Hair_Side_L": {
       "mesh": "Hair001.baked",
@@ -268,7 +375,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Side_L",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Hair_Twintail_L": {
       "mesh": "Hair001.baked",
@@ -287,7 +398,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Twintail_L",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "chain",
+        "reason": "twintail.apply: every strand re-weighted by height onto the tail chain appended to the head"
+      }
     },
     "Hair_Side_R": {
       "mesh": "Hair001.baked",
@@ -309,7 +424,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Side_R",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "inherit",
+        "reason": "skinned by the source file (VRoid export)"
+      }
     },
     "Hair_Twintail_R": {
       "mesh": "Hair001.baked",
@@ -328,7 +447,11 @@
       ],
       "deletable": true,
       "slot": "Hair_Twintail_R",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "chain",
+        "reason": "twintail.apply: every strand re-weighted by height onto the tail chain appended to the head"
+      }
     },
     "Hair_Ear_L": {
       "mesh": "Hair001.baked",
@@ -343,7 +466,15 @@
       ],
       "deletable": true,
       "slot": "Hair_Ear_L",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Hair_Bun_L": {
       "mesh": "Hair001.baked",
@@ -356,7 +487,15 @@
       ],
       "deletable": true,
       "slot": "Hair_Bun_L",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Hair_Ear_R": {
       "mesh": "Hair001.baked",
@@ -371,7 +510,15 @@
       ],
       "deletable": true,
       "slot": "Hair_Ear_R",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Hair_Bun_R": {
       "mesh": "Hair001.baked",
@@ -384,7 +531,15 @@
       ],
       "deletable": true,
       "slot": "Hair_Bun_R",
-      "group": "hair"
+      "group": "hair",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Acc_Crown": {
       "mesh": "Hair001.baked",
@@ -399,7 +554,15 @@
       ],
       "deletable": true,
       "slot": "Acc_Crown",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Acc_HairClip_Plaster": {
       "mesh": "Hair001.baked",
@@ -414,7 +577,15 @@
       ],
       "deletable": true,
       "slot": "Acc_HairClip_Plaster",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Acc_HairClip_Bear": {
       "mesh": "Hair001.baked",
@@ -429,7 +600,15 @@
       ],
       "deletable": true,
       "slot": "Acc_HairClip_Bear",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     },
     "Acc_HairClip_Bars": {
       "mesh": "Hair001.baked",
@@ -442,7 +621,15 @@
       ],
       "deletable": true,
       "slot": "Acc_HairClip_Bars",
-      "group": "accessory"
+      "group": "accessory",
+      "binding": {
+        "strategy": "single",
+        "joint": "head",
+        "lead": {
+          "head": 1.0
+        },
+        "reason": "every nearest skin vertex is wholly on head: rigid to it"
+      }
     }
   },
   "palette": {

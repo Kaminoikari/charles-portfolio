@@ -1,0 +1,5 @@
+vertex sha a=d2f578d76a7b8d22 b=d2f578d76a7b8d22
+indices changed primitives: 2
+    ('Hair001.baked', 64, 'same triangle set ignoring order: True')
+    ('Hair001.baked', 61, 'same triangle set ignoring order: True')
+nodes equal False ; skins equal True

@@ -1,0 +1,34 @@
+hip 0.843 knee 0.501 waist 0.960 neck 1.250
+part                           n today           L    R    C belowhip  dom#    wvar   diam  comp  span  uni  lead
+Acc_Ribbon_Waist             434 nearest      0.03 0.01 0.96     0.13     5  0.2267    287     4     0    n  spine 0.44, hips 0.31, chest 0.19
+Acc_Ribbon_Waist*             96 nearest      0.00 0.00 1.00     0.00     2  0.0026     36     1     0    n  spine 0.55, chest 0.36, hips 0.06
+Acc_Ribbon_Hair              656 nearest      0.00 0.00 1.00     0.00     1  0.0000    251     8     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_Belt_Waist              1628 nearest      0.00 0.00 1.00     0.00     3  0.0485    276    60     0    n  spine 0.50, hips 0.29, chest 0.20
+Acc_Belt_Waist*             2366 nearest      0.00 0.00 1.00     0.00     1  0.0142    129   116     0    n  spine 0.61, chest 0.19, hips 0.18
+Outfit_Top                  1959 nearest+16   0.05 0.05 0.89     0.00    11  0.3936    421     6     0    n  upperChest 0.28, chest 0.18, neck 0.15
+Outfit_Top*                 4292 nearest+16   0.07 0.07 0.85     0.00    10  0.3055    378    22     0    n  upperChest 0.55, chest 0.13, leftShoulder 0.06
+Acc_Bandage_Thigh           3520 nearest      1.00 0.00 0.00     1.00     1  0.0001    170    57     0    n  leftUpperLeg 0.99, hips 0.01, leftLowerLeg 0.00
+Acc_Bandage_Thigh*           323 nearest      1.00 0.00 0.00     1.00     1  0.0000     24     2     0    n  leftUpperLeg 0.99, leftLowerLeg 0.01, Root 0.00
+Acc_Ribbon_Neck             1779 nearest      0.00 0.00 1.00     0.00     1  0.0001     29   132     0    n  upperChest 0.99, rightShoulder 0.01, leftShoulder 0.01
+Acc_Ribbon_Neck*            1596 nearest      0.00 0.00 1.00     0.00     1  0.0115    116    29     0    n  upperChest 0.94, leftShoulder 0.02, rightShoulder 0.02
+Outfit_Shoes                 320 nearest      0.50 0.50 0.00     1.00     2  0.4788     70    67     0    n  rightToes 0.49, leftToes 0.49, rightFoot 0.01
+Outfit_Shoes*              10914 nearest      0.50 0.50 0.00     1.00     6  0.6331    327   114     1    n  rightFoot 0.30, leftFoot 0.30, leftToes 0.16
+Outfit_Shoes*                190 nearest      0.50 0.50 0.00     1.00     4  0.3324    172     2     0    n  rightFoot 0.34, leftFoot 0.34, leftLowerLeg 0.16
+Outfit_Bottom               8486 drape        0.01 0.01 0.98     0.02     4  0.0492    372   111     0    n  hips 0.81, spine 0.07, rightUpperLeg 0.05
+Outfit_Bottom*              2838 drape        0.13 0.13 0.73     0.27     5  0.3489    583    25     0    n  hips 0.41, spine 0.21, leftUpperLeg 0.13
+Outfit_Socks                3396 nearest      0.50 0.50 0.00     1.00     2  0.4684    220     7     1    n  leftLowerLeg 0.48, rightLowerLeg 0.48, rightFoot 0.02
+Outfit_Socks*               1506 nearest      0.50 0.50 0.00     1.00     6  0.7000    346     2     0    n  rightLowerLeg 0.19, leftLowerLeg 0.19, leftFoot 0.17
+Outfit_Cardigan             7868 nearest+16   0.34 0.34 0.32     0.08    18  0.6481   1281    10     2    n  hips 0.19, rightLowerArm 0.17, leftLowerArm 0.17
+Hair_Ear_L                   183 single       0.00 0.00 1.00     0.00     1  0.0000    123     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Hair_Ear_L*                   55 single       0.00 0.00 1.00     0.00     1  0.0000     85     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Hair_Bun_L                    89 single       0.00 0.00 1.00     0.00     1  0.0000     86     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Hair_Ear_R                   183 single       0.00 0.00 1.00     0.00     1  0.0000    123     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Hair_Ear_R*                   55 single       0.00 0.00 1.00     0.00     1  0.0000     85     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Hair_Bun_R                    89 single       0.00 0.00 1.00     0.00     1  0.0000     86     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_Crown                    240 single       0.00 0.00 1.00     0.00     1  0.0000    116     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_Crown*                   160 single       0.00 0.00 1.00     0.00     1  0.0000    106     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_HairClip_Plaster         136 single       0.00 0.00 1.00     0.00     1  0.0000     52     6     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_HairClip_Plaster*          8 single       0.00 0.00 1.00     0.00     1  0.0000     31     1     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_HairClip_Bear            130 single       0.00 0.00 1.00     0.00     1  0.0000     59     3     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_HairClip_Bear*            60 single       0.00 0.00 1.00     0.00     1  0.0000     17     3     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00
+Acc_HairClip_Bars             16 single       0.00 0.00 1.00     0.00     1  0.0000     44     2     0    y  head 1.00, Root 0.00, J_Sec_L_SkirtBack_end 0.00

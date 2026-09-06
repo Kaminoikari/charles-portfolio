@@ -57,6 +57,12 @@ DROP = 0.690          # tie to tip; the curtain's own lowest vertex is y=0.749
 SEGMENTS = 6          # one more than the chain it replaces, same segment length
 BLEND = 0.040         # above the tie the scalp is left alone
 TAIL_HIT_RADIUS = 0.035
+# What apply() writes into the manifest for the parts it rebuilds. Not one of
+# binding.STRATEGIES: those are decided from the geometry, this one is the
+# chain the tail hangs from.
+CHAIN = {'strategy': 'chain',
+         'reason': 'twintail.apply: every strand re-weighted by height onto the tail '
+                   'chain appended to the head'}
 # 外套相關的常數。髮束表面到外套外殼的間隙；擬合球比「外殼＋髮束半徑」再多留的
 # 餘量；球沿身高的間距，最高一顆放在肩胛以下（COAT_SPHERE_TOP）：肩線那圈在
 # T-pose 是連著袖子的平肩（|x| 0.29），2026-09-04 試過 1.16，圓球被撐到 198mm、
@@ -86,7 +92,7 @@ TAIL_BODY_COLLIDERS = ('J_Bip_C_Head', 'J_Bip_C_Neck', 'J_Bip_C_UpperChest',
                        'J_Bip_L_UpperArm', 'J_Bip_L_LowerArm', 'J_Bip_L_Hand',
                        'J_Bip_R_UpperArm', 'J_Bip_R_LowerArm', 'J_Bip_R_Hand')
 # 外套珠子掛在哪根骨頭上：取球心高度以下最近的一根。下襬（COAT_LEG_BAND_TOP 以
-# 下）的珠子再各掛一份到同側大腿骨：garment.bind 讓外套下襬有一半頂點主要跟著
+# 下）的珠子再各掛一份到同側大腿骨：最近頂點綁定（binding nearest）讓外套下襬有一半頂點主要跟著
 # 大腿走（2026-09-04 量：髖 439／左腿 427／右腿 427），dance 抬腿時下襬跟著腿
 # 甩，只掛髖骨的珠子留在原地，馬尾就從那裡進外套（springsim 量到 78mm，都在
 # y≈0.85）。兩份同時存在，靜止時重合、動起來各跟各的，取聯集是保守的一方。
@@ -701,6 +707,11 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
         )
     ]
     prune_stranded_collider_groups(doc)
+    # The manifest's binding field, owned here: partition stamped these parts
+    # as the export's own skinning, and this pass has just re-weighted every
+    # strand by height onto the chain it appended.
+    for part in parts:
+        manifest[part]['binding'] = dict(CHAIN)
     return report
 
 
