@@ -135,9 +135,11 @@ class Wiring(unittest.TestCase):
     # Tests that WRITE perturbed VRM 0.x fixtures (a bone dropped from a copy
     # of the real file) touch the map's spelling by necessity, and one reads a
     # bone COUNT back off the fixture it wrote; none resolves a bone through
-    # it. Exempt from the inline-read check only: the import, kit-path and
+    # it. vrm1to0_test asserts the SHAPE of the map its converter writes (a
+    # list, useDefaultValues) and resolves bones through humanoid.bones().
+    # Exempt from the inline-read check only: the import, kit-path and
     # skins[0] scans still cover them.
-    FIXTURE_WRITERS = {'gate_test.py', 'verify_test.py', 'selftest_test.py'}
+    FIXTURE_WRITERS = {'gate_test.py', 'verify_test.py', 'selftest_test.py', 'vrm1to0_test.py'}
     SCRIPTS = os.path.normpath(os.path.join(HERE, '..'))
 
     def sources(self, skip=()):

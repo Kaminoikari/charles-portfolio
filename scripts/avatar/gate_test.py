@@ -78,6 +78,11 @@ class Wiring(unittest.TestCase):
             src = fh.read()
         body = src[src.index('def main('):src.index("if __name__ == '__main__':")]
         self.assertRegex(body, r"partition\.partition\(base,")
+        # A 1.0 base is rewritten as 0.x BEFORE partition, and `base` is
+        # rebound to the rewrite, or every later step reads the 1.0 file the
+        # writers cannot handle.
+        self.assertRegex(body, r"\n\s+base = vrm1to0\.ensure_vrm0\(base,")
+        self.assertLess(body.index('vrm1to0.ensure_vrm0(base,'), body.index('partition.partition(base,'))
         self.assertRegex(body, r"verify\.report\(p\('mika-milfy\.vrm'\), base\)")
         calls = re.findall(r"gate\('[^']+', p\('[^']+'\)[^)]*\)", body)
         self.assertEqual(len(calls), 5, calls)

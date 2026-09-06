@@ -168,5 +168,43 @@ class SmoothScalarTest(unittest.TestCase):
         self.assertEqual(out[3], 0.4)
 
 
+class MeshFrameTest(unittest.TestCase):
+    """twintail works in the hair mesh's own space: the vertices it reads, the
+    joints it appends and their inverse bind matrices are all measured there.
+    Until 2026-09-06 that space was reached by summing translations up to the
+    scene root and refusing any rotation on the way. A body converted from
+    VRM 1.0 (vrm1to0.py) hangs mesh and skeleton alike under one root turned
+    half a turn, so the frame is unchanged and the sum was refused anyway."""
+
+    def doc(self, root_rotation=None, head_rotation=None):
+        head = {'name': 'head', 'translation': [0, 0.6, 0]}
+        if head_rotation:
+            head['rotation'] = head_rotation
+        root = {'name': 'root', 'children': [1, 3]}
+        if root_rotation:
+            root['rotation'] = root_rotation
+        return {
+            'scene': 0, 'scenes': [{'nodes': [0]}],
+            'nodes': [root,
+                      {'name': 'hips', 'translation': [0.1, 0.8, 0.2], 'children': [2]},
+                      head,
+                      {'name': 'Hair', 'mesh': 0}],
+            'meshes': [{'name': 'Hair.baked'}],
+            'extensions': {'VRM': {'humanoid': {'humanBones': [{'bone': 'head', 'node': 2}]}}},
+        }
+
+    def test_a_root_shared_by_mesh_and_skeleton_may_turn(self):
+        plain = twintail._frame_of(self.doc(), 'Hair.baked')
+        turned = twintail._frame_of(self.doc(root_rotation=[0, 1, 0, 0]), 'Hair.baked')
+        np.testing.assert_allclose(plain(2), [0.1, 1.4, 0.2], atol=1e-12)
+        np.testing.assert_allclose(turned(2), plain(2), atol=1e-12)
+
+    def test_a_rotation_between_the_mesh_and_a_bone_is_refused(self):
+        s = np.sin(np.pi / 4)
+        position = twintail._frame_of(self.doc(head_rotation=[0, 0, s, s]), 'Hair.baked')
+        with self.assertRaises(SystemExit):
+            position(2)
+
+
 if __name__ == '__main__':
     unittest.main()

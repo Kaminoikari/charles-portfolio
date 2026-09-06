@@ -99,7 +99,8 @@ class SpringTest(unittest.TestCase):
         points = [p for name, p in joints.items() if not name.endswith('_0')]
         worst = twintail._assert_rest_clearance(
             self.doc, self.secondary, self.tails['colliderGroups'], points,
-            self.tails['hitRadius'])
+            self.tails['hitRadius'],
+            position=twintail._frame_of(self.doc, self.manifest['Hair_Twintail_L']['mesh']))
         self.assertGreaterEqual(worst[0], 0.0, worst)
 
     def test_tail_hair_is_skinned_to_the_joint_at_its_own_height(self):

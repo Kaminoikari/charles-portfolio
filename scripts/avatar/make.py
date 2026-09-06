@@ -32,6 +32,11 @@ build silently rather than failing it:
                          file. Any other body has to carry every bone the VRM
                          spec requires (gate) and the manifest's part names
                          (partition); nothing here demands VRoid's bone count.
+                         A VRM 1.0 body is written out as 0.x first (step 0b,
+                         vrm1to0.py, out/base-vrm0.vrm) and THAT file is the
+                         base from then on: every writer here writes the 0.x
+                         block, and the gates compare against what the
+                         writers read.
   public/avatar/animations/*.vrma
                          the ten clips retarget, motion and envelope sweep.
   ~/milfy-refs           the 18 reference images measure.py and compare_sheet.py
@@ -53,6 +58,7 @@ import proportion  # noqa: E402
 import skin  # noqa: E402
 import verify  # noqa: E402
 import humanoid  # noqa: E402
+import vrm1to0  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, 'out')
@@ -193,6 +199,9 @@ def main(base=BASELINE):
                                cwd=BASE, check=True, capture_output=True)
             print(f'   {len(BLENDER_STEMS)} 個部件 + '
                   f'{len(MELLOW_SETS)} 組匯入服裝重新輸出')
+
+    with step('0b. base body as VRM 0.x'):
+        base = vrm1to0.ensure_vrm0(base, p('base-vrm0.vrm'))
 
     with step('1. partition'):
         m, _ = partition.partition(base, p('parted.vrm'), p('parts.json'))

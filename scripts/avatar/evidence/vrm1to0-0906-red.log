@@ -1,0 +1,12 @@
+E
+======================================================================
+ERROR: vrm1to0_test (unittest.loader._FailedTest.vrm1to0_test)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: vrm1to0_test
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/charles/portfolio/scripts/avatar/vrm1to0_test.py", line 24, in <module>
+    import vrm1to0  # noqa: E402
+    ^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'vrm1to0'

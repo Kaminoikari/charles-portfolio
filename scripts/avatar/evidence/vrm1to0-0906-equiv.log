@@ -1,0 +1,12 @@
+起跑 11:50:37
+已備份 2 個出貨檔，git HEAD 相符： False
+default: 60s  vertex sha d2f578d76a7b8d22  nodes 144  roots ['Face', 'Body', 'Root', 'Hairs', 'secondary']  extensionsUsed ['KHR_materials_unlit', 'VRM', 'EXT_texture_webp']
+twin: 59s  vertex sha d2f578d76a7b8d22  nodes 146  roots ['vrm0-root']  extensionsUsed ['KHR_materials_unlit', 'EXT_texture_webp', 'KHR_texture_transform', 'VRM']
+vertex sha default d2f578d76a7b8d22  twin d2f578d76a7b8d22  相同
+  front: 差異像素 0  size (700, 1200)
+  back: 差異像素 0  size (700, 1200)
+  three_quarter: 差異像素 0  size (700, 1200)
+  face: 差異像素 0  size (700, 700)
+還原 mika-milfy-12.vrm: sha 相符 True
+還原 mika-milfy-12.parts.json: sha 相符 True
+結束 11:52:36

@@ -413,8 +413,8 @@ def _overwrite(doc, views, index, array):
 def _chain(doc, head, side, name, points=None):
     """Append a joint chain under the head, following axis().
 
-    Returns (node indices, their world positions). The world positions are
-    returned rather than looked up afterwards, and that is the whole point: the
+    Returns (node indices, their positions in the mesh frame, see _frame_of).
+    The positions are returned rather than looked up afterwards, and that is the whole point: the
     first version derived them by walking the parent map, which had been built
     before these nodes existed, so every one of them resolved to its own local
     translation as though it sat at the scene root. The inverse bind matrices
@@ -468,20 +468,8 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     joints = skin['joints']
 
     head_node = humanoid.bones(doc)['head']
-    parent = {c: i for i, n in enumerate(nodes) for c in n.get('children', ())}
-
-    def world_of(i):
-        p = np.zeros(3)
-        while True:
-            n = nodes[i]
-            if n.get('rotation') and list(n['rotation']) != [0, 0, 0, 1]:
-                raise SystemExit(f'節點 {i} 有旋轉，這裡的平移假設不成立')
-            p = p + np.array(n.get('translation', [0, 0, 0]), dtype=np.float64)
-            if i not in parent:
-                return p
-            i = parent[i]
-
-    head_world = world_of(head_node)
+    position = _frame_of(doc, manifest[parts[0]]['mesh'])
+    head_world = position(head_node)
     head_slot = joints.index(head_node)
     scalp = cKDTree(scalp_pos)
 
@@ -677,7 +665,7 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     name_of = {i: n.get('name', '') for i, n in enumerate(nodes)}
     body_groups = [i for i, g in enumerate(secondary.get('colliderGroups', []))
                    if name_of.get(g.get('node')) in TAIL_BODY_COLLIDERS]
-    coat_groups = _coat_collider_groups(doc, secondary, spheres)
+    coat_groups = _coat_collider_groups(doc, secondary, spheres, position)
     tail_points = [w for p in report for w in report[p]['points'][1:]]
     for group in secondary['boneGroups']:
         if old[0] in group.get('bones', []):
@@ -699,7 +687,7 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
             group['colliderGroups'] = body_groups + coat_groups
             group['comment'] = 'Twintails'
     _assert_rest_clearance(doc, secondary, group_indices=body_groups + coat_groups,
-                           points=tail_points, hit_radius=TAIL_HIT_RADIUS)
+                           points=tail_points, hit_radius=TAIL_HIT_RADIUS, position=position)
 
     # The remaining VRoid HairJoint chains only drive small upper-hair tufts.
     # During quick mocap they overshoot by roughly 29 degrees in one 60 Hz
@@ -716,31 +704,58 @@ def apply(doc, views, manifest, scalp_pos, coat_pos=None,
     return report
 
 
-def _bone_world(doc, name):
-    """(node index, rest world position) of the node called `name`."""
-    nodes = doc['nodes']
-    parent = {c: i for i, n in enumerate(nodes) for c in n.get('children', ())}
-    index = next(k for k, n in enumerate(nodes) if n.get('name') == name)
-    i, p = index, np.zeros(3)
-    while True:
-        p = p + np.array(nodes[i].get('translation', [0, 0, 0]), dtype=np.float64)
-        if i not in parent:
-            return index, p
-        i = parent[i]
+def _frame_of(doc, mesh_name):
+    """position(node index) -> rest position in the frame of the node that
+    draws `mesh_name`, rotation-aware.
+
+    Everything in this module is measured in the hair mesh's own space: the
+    vertices the tails are built from, the coat vertices the colliders come
+    from, the translations of the joints appended under the head and their
+    inverse bind matrices (a negated position, which is the inverse bind
+    matrix exactly when mesh node and joints share every rotation above them
+    and the joint itself does not turn). Until 2026-09-06 that space was
+    reached by summing translations up to the scene root and refusing any
+    rotation on the way. The two are the same frame as long as nothing turns,
+    and a body converted from VRM 1.0 (vrm1to0.py) hangs mesh and skeleton
+    alike under one root turned half a turn about Y: the frame had not
+    changed, the sum was refused anyway. A rotation BETWEEN the mesh node and
+    a bone is still refused, because the chain appended under that bone is
+    written as pure translations.
+    """
+    world = humanoid.rest_world(doc)
+    mesh_index = next(i for i, m in enumerate(doc['meshes']) if m.get('name') == mesh_name)
+    mesh_node = next(i for i, n in enumerate(doc['nodes']) if n.get('mesh') == mesh_index)
+    to_mesh = np.linalg.inv(world[mesh_node])
+
+    def position(i):
+        if i not in world:                      # a joint appended since
+            world.update(humanoid.rest_world(doc))
+        m = to_mesh @ world[i]
+        if not np.allclose(m[:3, :3], np.eye(3), atol=1e-9):
+            raise SystemExit(f'節點 {i} 相對 {mesh_name} 有旋轉，馬尾鏈的平移建法不成立')
+        return m[:3, 3].copy()
+    return position
 
 
-def _coat_collider_groups(doc, secondary, spheres):
+def _bone_world(doc, name, position):
+    """(node index, rest position in the mesh frame) of the node called `name`."""
+    index = next(k for k, n in enumerate(doc['nodes']) if n.get('name') == name)
+    return index, position(index)
+
+
+def _coat_collider_groups(doc, secondary, spheres, position):
     """Append the coat spheres as VRM0 collider groups, one per carrying bone.
 
     A VRM0 collider offset is in the bone's local frame with z NEGATED: three-
     vrm's VRM0 importer flips only z ("z is opposite in VRM0.0"), and the base
     model's own colliders confirm it (the head sphere is stored at z=-0.013 and
-    lands behind the head joint). Every bone here rests at identity rotation,
-    so the local frame is a pure translation. Returns the new group indices.
+    lands behind the head joint). Every bone here rests without turning
+    relative to the mesh (position() refuses one that does), so its local
+    frame is the mesh frame shifted. Returns the new group indices.
     """
     if not spheres:
         return []
-    bones = {name: _bone_world(doc, name)
+    bones = {name: _bone_world(doc, name, position)
              for name in COAT_SPHERE_BONES + tuple(COAT_LEG_BONES.values())}
     per_bone = {}
 
@@ -771,7 +786,7 @@ def _coat_collider_groups(doc, secondary, spheres):
     return made
 
 
-def _assert_rest_clearance(doc, secondary, group_indices, points, hit_radius):
+def _assert_rest_clearance(doc, secondary, group_indices, points, hit_radius, position):
     """No tail joint may rest inside a collider it is asked to avoid.
 
     three-vrm tests a joint's CHILD position against hitRadius plus the
@@ -783,7 +798,7 @@ def _assert_rest_clearance(doc, secondary, group_indices, points, hit_radius):
     worst = (np.inf, None)
     for gi in group_indices:
         g = secondary['colliderGroups'][gi]
-        _, bone = _bone_world(doc, nodes[g['node']]['name'])
+        _, bone = _bone_world(doc, nodes[g['node']]['name'], position)
         for c in g['colliders']:
             centre = bone + np.array([c['offset']['x'], c['offset']['y'], -c['offset']['z']])
             for pt in points:
