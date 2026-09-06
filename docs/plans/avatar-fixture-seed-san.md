@@ -145,8 +145,8 @@ treatment. Seven mutations in `evidence/mutations-0907-compare.md`, all RED,
 two of them the positive half (a bone that really moved is still caught, across
 the versions and within one).
 
-The report still returns False, on three checks that are this site's art
-direction rather than anything about a VRM:
+The report still returns False, on three checks. Two are this site's art
+direction; the third is Seed-san's own garment weighting:
 
 | check | what it says | whose |
 |---|---|---|
@@ -155,10 +155,11 @@ direction rather than anything about a VRM:
 | `torn_bindings` | `wear#3` grows an edge 36mm with an upper arm at 60° | Seed-san's own garment weighting |
 
 The third is the one worth being sure about, because it is the check Phase 4
-exists for. It reads **35.666022291444214mm on the original 1.0 file and
-35.666022291444214mm on the conversion** -- identical to the last digit, so the
-conversion did not touch the skinning. It is how VirtualCast weighted that
-garment, not something this pipeline did to it.
+exists for. Run on both files it reads **35.666022291444214mm on the original
+1.0 file and 35.666022291444214mm on the conversion** (and 35.66576203066046mm
+on the other arm, again on both), identical to the last digit, so the conversion
+did not touch the skinning. It is how VirtualCast weighted that garment.
+Receipt: `evidence/fixture-0907-tearing.log`.
 
 Out of scope, noted rather than fixed: `verify.loud_outlines` raises a bare
 `KeyError: 'VRM'` on a 1.0 file. Everything verify checks is a 0.x output of

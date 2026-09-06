@@ -18,6 +18,13 @@ run and deleted afterwards; it is not a variant and is not served.
 
 `live-preview.html?model=/avatar/_check-base-vrm0.vrm`
 
+The page declares `MIKA_MILFY_FAMILY` for whatever it loads, so this run told
+the engine that Seed-san is a `vroid-sample-b` rig, which it is not. That is
+what the declaration is for on a tool that opens undeclared builds, and it is
+why nothing here reads a clearance number as true of this body: the run is
+checking that three-vrm loads the file, poses it and draws it, not that the
+VRoid clip budgets apply to a robot.
+
 - Status line: 「10 支動作已就緒」 — every clip bound to the converted skeleton.
 - Console: 0 errors. One warning, `VRMAnimationLoaderPlugin: specVersion of the
   VRMA is not defined`, which every clip raises on every body and predates this.
@@ -25,9 +32,10 @@ run and deleted afterwards; it is not a variant and is not served.
   conversion writes is what makes that true; an unconverted 1.0 body faces away.
 - `browser-0907-vrm1to0-dance.png` — the dance clip retargeted onto 51 bones
   with the 1.0 thumb names, arms up, hair swinging on the converted springs.
-- `browser-0907-vrm1to0-column.png` — the column framing, full length, materials
-  intact (the eight matcap approximations the conversion reported do not read as
-  blown-out white).
+- `browser-0907-vrm1to0-column.png` — the column framing (head to shins; the
+  composition crops at 0.430 and the feet are below it), materials intact — the
+  eight matcap approximations the conversion reported do not read as blown-out
+  white.
 
 ## Phase 4 — the shipped build with rebound weights
 

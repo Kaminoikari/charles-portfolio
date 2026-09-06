@@ -26,7 +26,7 @@ S7 RED  restored=True
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t finds the face by what the expressions move
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (123 tests | 1 failed | 122 skipped) 5ms
+ ❯ src/components/chat/rigProbe.test.ts (124 tests | 1 failed | 123 skipped) 6ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
@@ -38,19 +38,19 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
-      Tests  1 failed | 122 skipped (123)
-   Start at  02:14:12
-   Duration  541ms (transform 71ms, setup 38ms, collect 112ms, tests 5ms, environment 266ms, prepare 32ms)
+      Tests  1 failed | 123 skipped (124)
+   Start at  03:18:06
+   Duration  486ms (transform 75ms, setup 36ms, collect 112ms, tests 6ms, environment 216ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > finds the face by what the expressions move, not by what a mesh is called
 AssertionError: the bound mesh is the face: expected 1.9000000238418582 to be close to 1.4, received difference is 0.5000000238418583, but expected 5e-7
- ❯ src/components/chat/rigProbe.test.ts:1253:59
-    1251|       }),
-    1252|     )
-    1253|     expect(r.faceBox.min.y, 'the bound mesh is the face').toBeCloseTo(…
+ ❯ src/components/chat/rigProbe.test.ts:1269:59
+    1267|       }),
+    1268|     )
+    1269|     expect(r.faceBox.min.y, 'the bound mesh is the face').toBeCloseTo(…
        |                                                           ^
-    1254|     expect(r.faceBox.max.y, 'and the mesh merely CALLED Face is not').…
-    1255|   })
+    1270|     expect(r.faceBox.max.y, 'and the mesh merely CALLED Face is not').…
+    1271|   })
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -58,7 +58,7 @@ AssertionError: the bound mesh is the face: expected 1.9000000238418582 to be cl
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t derives the face box from the meshes the expressions move
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (123 tests | 1 failed | 122 skipped) 19ms
+ ❯ src/components/chat/rigProbe.test.ts (124 tests | 1 failed | 123 skipped) 15ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
@@ -70,19 +70,19 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
-      Tests  1 failed | 122 skipped (123)
-   Start at  02:14:13
-   Duration  404ms (transform 72ms, setup 25ms, collect 106ms, tests 19ms, environment 144ms, prepare 34ms)
+      Tests  1 failed | 123 skipped (124)
+   Start at  03:18:07
+   Duration  413ms (transform 72ms, setup 26ms, collect 109ms, tests 15ms, environment 154ms, prepare 27ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers
 AssertionError: min.x: expected 0.007323108434668893 to be less than 0.002
- ❯ src/components/chat/rigProbe.test.ts:1110:88
-    1108|     for (const side of ['min', 'max'] as const) {
-    1109|       for (const [k, axis] of (['x', 'y', 'z'] as const).entries()) {
-    1110|         expect(Math.abs(r.faceBox[side][axis] - expected[side][k]), `$…
+ ❯ src/components/chat/rigProbe.test.ts:1126:88
+    1124|     for (const side of ['min', 'max'] as const) {
+    1125|       for (const [k, axis] of (['x', 'y', 'z'] as const).entries()) {
+    1126|         expect(Math.abs(r.faceBox[side][axis] - expected[side][k]), `$…
        |                                                                                        ^
-    1111|       }
-    1112|     }
+    1127|       }
+    1128|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -90,7 +90,7 @@ AssertionError: min.x: expected 0.007323108434668893 to be less than 0.002
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t resolves a 1.0 expression bind through the node it names
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (123 tests | 1 failed | 122 skipped) 5ms
+ ❯ src/components/chat/rigProbe.test.ts (124 tests | 1 failed | 123 skipped) 6ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
@@ -98,13 +98,13 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
    ↓ guard sensitivity > sees a hand that leaves the fr
 […]
-ression bind through the node it names to that node's mesh 4ms
+ession bind through the node it names to that node's mesh 6ms
      → no vertex of the expression-driven meshes is skinned to the head: the face box cannot be derived
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
-      Tests  1 failed | 122 skipped (123)
-   Start at  02:14:14
-   Duration  365ms (transform 61ms, setup 23ms, collect 94ms, tests 5ms, environment 142ms, prepare 25ms)
+      Tests  1 failed | 123 skipped (124)
+   Start at  03:18:08
+   Duration  404ms (transform 70ms, setup 24ms, collect 115ms, tests 6ms, environment 146ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
 Error: no vertex of the expression-driven meshes is skinned to the head: the face box cannot be derived
@@ -117,7 +117,7 @@ Error: no vertex of the expression-driven meshes is skinned to the head: the fac
     346|         ? 'this file declares no expression morph target binds, so the…
  ❯ buildRigFrom src/components/chat/rigProbe.ts:203:19
  ❯ buildRig src/components/chat/rigProbe.ts:209:10
- ❯ src/components/chat/rigProbe.test.ts:1261:15
+ ❯ src/components/chat/rigProbe.test.ts:1277:15
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -125,17 +125,17 @@ Error: no vertex of the expression-driven meshes is skinned to the head: the fac
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t calls moving hair hair, and calls nothing else hair
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 22ms
-   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 5ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 27ms
+   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 27ms
      → derived Hair_* contains Hair001.baked[65], which the build calls something else: expected false to be true // Object.is equality
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
-   ↓ parts read off the file, for a body no build wrote a manife
+   ↓ parts read off the file, for a body no build wrote a manif
 […]
  a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:15
-   Duration  387ms (transform 68ms, setup 23ms, collect 100ms, tests 22ms, environment 142ms, prepare 25ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:09
+   Duration  429ms (transform 74ms, setup 25ms, collect 114ms, tests 27ms, environment 150ms, prepare 28ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
 AssertionError: derived Hair_* contains Hair001.baked[65], which the build calls something else: expected false to be true // Object.is equality
@@ -143,13 +143,13 @@ AssertionError: derived Hair_* contains Hair001.baked[65], which the build calls
 [31m+ Received[39m
 [32m- true[39m
 [31m+ false[39m
- ❯ scripts/avatar/springsim.derive.test.ts:77:127
-     75|     // and the scalp cap are skinned to the head bone and have no spri…
-     76|     // are still listed (under Body_Skin), which is what the crown nee…
-     77|     for (const k of saidHair) expect(reallyHair.has(k), `derived Hair_…
+ ❯ scripts/avatar/springsim.derive.test.ts:74:127
+     72|     // and the scalp cap are skinned to the head bone and have no spri…
+     73|     // are still listed (under Body_Skin), which is what the crown nee…
+     74|     for (const k of saidHair) expect(reallyHair.has(k), `derived Hair_…
        |                                                                                                                               ^
-     78|   })
-     79| 
+     75|   })
+     76| 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -157,28 +157,28 @@ AssertionError: derived Hair_* contains Hair001.baked[65], which the build calls
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t calls moving hair hair, and calls nothing else hair
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 19ms
-   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 3ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 20ms
+   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 20ms
      → the derivation finds moving hair at all: expected 0 to be greater than 0
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
-   ↓ parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the 
+   ↓ parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the
 […]
-anifest for > simulates a body with no manifest beside it, and gets a crown out of it
+ wrote a manifest for > refuses a body whose skinned meshes it cannot address by name
    ↓ parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:16
-   Duration  389ms (transform 67ms, setup 23ms, collect 100ms, tests 19ms, environment 141ms, prepare 26ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:10
+   Duration  412ms (transform 73ms, setup 25ms, collect 111ms, tests 20ms, environment 150ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
 AssertionError: the derivation finds moving hair at all: expected 0 to be greater than 0
- ❯ scripts/avatar/springsim.derive.test.ts:72:70
-     70|       if (name.startsWith('Hair_')) for (const pi of part.primitives) …
-     71|     }
-     72|     expect(saidHair.size, 'the derivation finds moving hair at all').t…
+ ❯ scripts/avatar/springsim.derive.test.ts:69:70
+     67|       if (name.startsWith('Hair_')) for (const pi of part.primitives) …
+     68|     }
+     69|     expect(saidHair.size, 'the derivation finds moving hair at all').t…
        |                                                                      ^
-     73|     // One direction only, and it is the one that matters. Everything …
-     74|     // hair really is hair; the reverse is false by design, because th…
+     70|     // One direction only, and it is the one that matters. Everything …
+     71|     // hair really is hair; the reverse is false by design, because th…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -186,17 +186,17 @@ AssertionError: the derivation finds moving hair at all: expected 0 to be greate
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t puts every skinned primitive somewhere
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 28ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 22ms
    ↓ parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
-   × parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body 4ms
+   × parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body 21ms
      → Body.baked[0] is in the build's manifest but nothing derived lists it: expected false to be true // Object.is equality
-   ↓ parts read off the file, for a body no build wrote a manifest for > n
+   ↓ parts read off the file, for a body no build wrote a manifest for > 
 […]
- read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
+read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:16
-   Duration  398ms (transform 65ms, setup 23ms, collect 96ms, tests 28ms, environment 148ms, prepare 26ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:10
+   Duration  415ms (transform 77ms, setup 25ms, collect 112ms, tests 22ms, environment 151ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
 AssertionError: Body.baked[0] is in the build's manifest but nothing derived lists it: expected false to be true // Object.is equality
@@ -204,13 +204,13 @@ AssertionError: Body.baked[0] is in the build's manifest but nothing derived lis
 [31m+ Received[39m
 [32m- true[39m
 [31m+ false[39m
- ❯ scripts/avatar/springsim.derive.test.ts:85:119
-     83|     const everything = new Set<string>()
-     84|     for (const part of Object.values(truth.parts)) for (const pi of pa…
-     85|     for (const k of everything) expect(listed.has(k), `${k} is in the …
+ ❯ scripts/avatar/springsim.derive.test.ts:82:119
+     80|     const everything = new Set<string>()
+     81|     for (const part of Object.values(truth.parts)) for (const pi of pa…
+     82|     for (const k of everything) expect(listed.has(k), `${k} is in the …
        |                                                                                                                       ^
-     86|   })
-     87| 
+     83|   })
+     84| 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -218,29 +218,29 @@ AssertionError: Body.baked[0] is in the build's manifest but nothing derived lis
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t names one Face and one Body_Skin
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 22ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 21ms
    ↓ parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
-   × parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the mesh layout is 5ms
+   × parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the mesh layout is 21ms
      → Face: expected undefined to be defined
-   ↓ parts read off
+   ↓ parts read of
 […]
-e, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it
+ file, for a body no build wrote a manifest for > refuses a body whose skinned meshes it cannot address by name
    ↓ parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:17
-   Duration  400ms (transform 72ms, setup 25ms, collect 105ms, tests 22ms, environment 144ms, prepare 26ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:11
+   Duration  413ms (transform 71ms, setup 25ms, collect 108ms, tests 21ms, environment 149ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the mesh layout is
 AssertionError: Face: expected undefined to be defined
- ❯ scripts/avatar/springsim.derive.test.ts:92:40
-     90|     // role (the fixture has five meshes) must still answer them, or t…
-     91|     // simulator refuses a body it could have measured.
-     92|     expect(derived.parts.Face, 'Face').toBeDefined()
-       |                                        ^
-     93|     expect(derived.parts.Body_Skin, 'Body_Skin').toBeDefined()
-     94|     expect(derived.derived, 'the manifest says it was derived, so main…
+ ❯ scripts/avatar/springsim.derive.test.ts:89:42
+     87|     // role (the fixture has five meshes) must still answer them, or t…
+     88|     // simulator refuses a body it could have measured.
+     89|     expect(derived().parts.Face, 'Face').toBeDefined()
+       |                                          ^
+     90|     expect(derived().parts.Body_Skin, 'Body_Skin').toBeDefined()
+     91|     expect(derived().derived, 'the manifest says it was derived, so ma…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -248,27 +248,29 @@ AssertionError: Face: expected undefined to be defined
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t puts the waist within a hand of where the build measured it
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 20ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 20ms
    ↓ parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
    ↓ parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the mesh layout is
-   ↓ parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it
-   × parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it 3ms
+   ↓ parts read off the file, for a body no build wrote a manifest fo
+[…]
+s read off the file, for a body no build wrote a manifest for > refuses a body whose skinned meshes it cannot address by name
+   × parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it 19ms
      → expected 0.9600000000000001 to be less than 0.1
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:18
-   Duration  400ms (transform 71ms, setup 23ms, collect 108ms, tests 20ms, environment 144ms, prepare 26ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:12
+   Duration  417ms (transform 74ms, setup 24ms, collect 110ms, tests 20ms, environment 148ms, prepare 28ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
 AssertionError: expected 0.9600000000000001 to be less than 0.1
- ❯ scripts/avatar/springsim.derive.test.ts:127:71
-    125|     // the whole requirement — but "close" has to be stated, or a deri…
-    126|     // that returned zero would pass everything above.
-    127|     expect(Math.abs(derived.landmarks.waist - truth.landmarks.waist)).…
-       |                                                                       ^
-    128|   })
-    129| })
+ ❯ scripts/avatar/springsim.derive.test.ts:143:73
+    141|     // the whole requirement — but "close" has to be stated, or a deri…
+    142|     // that returned zero would pass everything above.
+    143|     expect(Math.abs(derived().landmarks.waist - truth.landmarks.waist)…
+       |                                                                         ^
+    144|   })
+    145| })
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -276,29 +278,31 @@ AssertionError: expected 0.9600000000000001 to be less than 0.1
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t simulates a body with no manifest beside it
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 59ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 34ms
    ↓ parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
    ↓ parts read off the file, for a body no build wrote a manifest for > names one Face and one Body_Skin, whatever the mesh layout is
-   × parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it 42ms
-     → no manifest
+   × parts read off the file, for a body no build wrote a manifest fo
+[…]
+ for a body no build wrote a manifest for > refuses a body whose skinned meshes it cannot address by name
    ↓ parts read off the file, for a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:19
-   Duration  435ms (transform 69ms, setup 23ms, collect 106ms, tests 59ms, environment 144ms, prepare 25ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:13
+   Duration  439ms (transform 81ms, setup 25ms, collect 125ms, tests 34ms, environment 149ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it
 Error: no manifest
- ❯ readManifest scripts/avatar/springsim.ts:240:11
-    238|     // pipeline had built: not the Seed-san fixture, and not mika-pink…
-    239|     // base body either, whose crowns therefore had to come from a bro…
-    240|     throw new Error('no manifest')
+ ❯ buildManifest scripts/avatar/springsim.ts:274:11
+    272|     // pipeline had built: not the Seed-san fixture, and not mika-pink…
+    273|     // base body either, whose crowns therefore had to come from a bro…
+    274|     throw new Error('no manifest')
        |           ^
-    241|   }
-    242|   const m = JSON.parse(text) as Partial<Manifest>
- ❯ runClip scripts/avatar/springsim.ts:843:20
- ❯ scripts/avatar/springsim.derive.test.ts:105:27
+    275|   }
+    276|   const m = JSON.parse(text) as Partial<Manifest>
+ ❯ readManifest scripts/avatar/springsim.ts:259:17
+ ❯ runClip scripts/avatar/springsim.ts:877:20
+ ❯ scripts/avatar/springsim.derive.test.ts:101:27
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -306,17 +310,17 @@ Error: no manifest
 ```
 $ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.derive.test.ts -t calls moving hair hair, and calls nothing else hair
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ scripts/avatar/springsim.derive.test.ts (5 tests | 1 failed | 4 skipped) 20ms
-   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 4ms
+ ❯ scripts/avatar/springsim.derive.test.ts (6 tests | 1 failed | 5 skipped) 24ms
+   × parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair 23ms
      → derived Hair_* contains Hair001.baked[65], which the build calls something else: expected false to be true // Object.is equality
    ↓ parts read off the file, for a body no build wrote a manifest for > puts every skinned primitive somewhere, so the crown still sees the whole body
-   ↓ parts read off the file, for a body no build wrote a manife
+   ↓ parts read off the file, for a body no build wrote a manif
 […]
  a body no build wrote a manifest for > puts the waist within a hand of where the build measured it
  Test Files  1 failed (1)
-      Tests  1 failed | 4 skipped (5)
-   Start at  02:14:20
-   Duration  403ms (transform 73ms, setup 23ms, collect 116ms, tests 20ms, environment 142ms, prepare 25ms)
+      Tests  1 failed | 5 skipped (6)
+   Start at  03:18:14
+   Duration  416ms (transform 68ms, setup 24ms, collect 103ms, tests 24ms, environment 153ms, prepare 27ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/avatar/springsim.derive.test.ts > parts read off the file, for a body no build wrote a manifest for > calls moving hair hair, and calls nothing else hair
 AssertionError: derived Hair_* contains Hair001.baked[65], which the build calls something else: expected false to be true // Object.is equality
@@ -324,13 +328,13 @@ AssertionError: derived Hair_* contains Hair001.baked[65], which the build calls
 [31m+ Received[39m
 [32m- true[39m
 [31m+ false[39m
- ❯ scripts/avatar/springsim.derive.test.ts:77:127
-     75|     // and the scalp cap are skinned to the head bone and have no spri…
-     76|     // are still listed (under Body_Skin), which is what the crown nee…
-     77|     for (const k of saidHair) expect(reallyHair.has(k), `derived Hair_…
+ ❯ scripts/avatar/springsim.derive.test.ts:74:127
+     72|     // and the scalp cap are skinned to the head bone and have no spri…
+     73|     // are still listed (under Body_Skin), which is what the crown nee…
+     74|     for (const k of saidHair) expect(reallyHair.has(k), `derived Hair_…
        |                                                                                                                               ^
-     78|   })
-     79| 
+     75|   })
+     76| 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 

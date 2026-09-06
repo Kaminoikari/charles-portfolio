@@ -359,8 +359,17 @@ def _as_vrm0(doc: dict, positions: dict) -> dict:
     """
     if vrm_version(doc) == '0':
         return positions
-    return {V1_TO_V0_THUMB.get(bone, bone): (-x, y, -z)
-            for bone, (x, y, z) in positions.items()}
+    out = {}
+    for bone, (x, y, z) in positions.items():
+        name = V1_TO_V0_THUMB.get(bone, bone)
+        if name in out:
+            # A 1.0 file that also declares the 0.x thumb spelling: renaming
+            # would drop one of the two, and a bone that vanishes is reported
+            # neither as moved nor as one-sided.
+            raise BadRig(f'{_name(doc)} 同時宣告了 1.0 與 0.x 的拇指拼法，'
+                         f'{bone} 改名後會蓋掉已經有的 {name}。')
+        out[name] = (-x, y, -z)
+    return out
 
 
 def compare(a: dict, b: dict, tolerance: float = TOLERANCE) -> list:

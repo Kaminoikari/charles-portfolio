@@ -1,4 +1,6 @@
 model scripts/avatar/fixtures/seed-san.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+  沒有 seed-san.parts.json，部件改由檔案本身推導：1 個會動的髮部件（彈簧驅動 ≥40%），臉取表情驅動的 mesh，其餘全歸 Body_Skin。
+  因此 body 那欄量的是「頭髮進到身體**或衣服**多深」，不再是進到皮膚多深；coat 與 skirt 四欄沒有東西可以量（推導出來的部件裡沒有 Outfit_Cardigan／Outfit_Bottom），一律印 0，那是「沒量」不是「沒問題」；crown 與 jump 照舊（髮頂本來就取所有部件的最高點）。
 clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
 dance              0mm       0mm       0mm        0%   0.00s     8°      50mm   0.17s      0mm  0.00s  1.8004 20.93s  2.1959  2.1154   16.3°   6.82s  hair_tail_6
 rest crown 1.5800 (bind pose, topmost vertex of any part); through the column camera 1.5874, waist-up 1.5811

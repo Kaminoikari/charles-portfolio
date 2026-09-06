@@ -1,0 +1,11 @@
+torn_bindings, the same check on the original 1.0 file and on the 0.x conversion of it.
+If the conversion had touched the skinning these two would differ.
+
+fixtures/seed-san.vrm
+  wear#3  leftUpperArm at +60deg  grows an edge by 35.666022291444214 mm
+  wear#3  rightUpperArm at -60deg  grows an edge by 35.66576203066046 mm
+
+out/base-vrm0.vrm
+  wear#3  leftUpperArm at +60deg  grows an edge by 35.666022291444214 mm
+  wear#3  rightUpperArm at -60deg  grows an edge by 35.66576203066046 mm
+

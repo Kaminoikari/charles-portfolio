@@ -18,6 +18,8 @@ import {
   combineClearance,
   crownBound,
   crownOn,
+  panFor,
+  panRange,
   type ClearanceDecisions,
   type ClearanceMeasured,
   type ClearanceSimulated,
@@ -168,6 +170,41 @@ describe('combineClearance', () => {
     // record of whether anyone ever checked it against a drawn pixel.
     const bad = { ...decisions, crownFringe: Number.NaN }
     expect(() => combineClearance(measured, simulated, bad)).toThrow(/crownFringe/)
+  })
+
+  it('measures the pan against the fov the file was produced under', () => {
+    // The distance and lookAtY come from the file already; the half-span used
+    // to come from the site's current AVATAR_FOV, so a file produced under a
+    // different lens would have been read through today's. Halving the fov
+    // narrows the span and moves the range, and nothing else here changes.
+    const file = combineClearance(measured, simulated, decisions)
+    const narrow = combineClearance(measured,
+      { ...simulated, framings: { ...simulated.framings, fov: 13.5 } }, decisions)
+    const wide = panRange(file, 'dance', 'column', file.restCrownY, ['column'])
+    const tight = panRange(narrow, 'dance', 'column', narrow.restCrownY, ['column'])
+    expect(tight.least).toBeGreaterThan(wide.least)
+    expect(tight.most).toBeLessThan(wide.most)
+  })
+
+  it('refuses a pan that its own rounding puts outside the range', () => {
+    // The range can be narrower than the centimetre these are dialled in. On
+    // today's data the narrowest is 70mm against a 10mm step, so this is a
+    // synthetic body: hips that leave the bottom edge 1mm after the crown comes
+    // inside the top. Rounding up then lands past `most`, and returning it
+    // quietly would put a composition nobody measured into the frame.
+    // The column spans 0.430..1.602. A crown at 1.606 needs 4mm of lift; hips
+    // at 0.439 allow 9mm before they leave. 4mm rounds up to a whole
+    // centimetre, which is 1mm too far.
+    const pinched = combineClearance(
+      { ...measured, clips: { dance: { ...measured.clips.dance, hipsLow: 0.439 } } },
+      { ...simulated, clips: { dance: { ...simulated.clips.dance, crownScreen: { waistUp: 1.5, column: 1.5 } } } },
+      { ...decisions, crownSeen: { dance: { column: 1.606 } } },
+    )
+    const r = panRange(pinched, 'dance', 'column', pinched.restCrownY, ['column'])
+    expect(r.most - r.least, 'a range narrower than the rounding step').toBeLessThan(0.01)
+    expect(r.least, 'and one that does not contain zero').toBeGreaterThan(0)
+    expect(() => panFor(pinched, 'dance', 'column', pinched.restCrownY, 'least', ['column']))
+      .toThrow(/no pan on the centimetre/)
   })
 
   it('transfers a clip crown onto another body by its own resting crown', () => {

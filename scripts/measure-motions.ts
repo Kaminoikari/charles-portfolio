@@ -229,9 +229,9 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
   say(`靜止姿勢　hips ${restHipsY.toFixed(4)}　head ${restHeadY.toFixed(4)}　最高頂點 ${restCrown.toFixed(4)}`)
   say(
     `臉部盒　x ${box.min.x.toFixed(3)}…${box.max.x.toFixed(3)}　y ${box.min.y.toFixed(3)}…${box.max.y.toFixed(3)}` +
-      `　z ${box.min.z.toFixed(3)}…${box.max.z.toFixed(3)}（從 Face 網格推導）`,
+      `　z ${box.min.z.toFixed(3)}…${box.max.z.toFixed(3)}（從表情會動的 mesh 推導）`,
   )
-  say(`指尖皮厚　${mm(fingerSkin)}（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT ${mm(SKIN_ABOVE_JOINT)}）`)
+  say(`指尖皮厚　${mm(fingerSkin)}（掃過所有帶皮的 mesh；畫面預留的是 SKIN_ABOVE_JOINT ${mm(SKIN_ABOVE_JOINT)}）`)
   say(
     '\n每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。' +
       '\n餘裕是負的就代表這具身體上那支動作會被切到或會穿模。\n',

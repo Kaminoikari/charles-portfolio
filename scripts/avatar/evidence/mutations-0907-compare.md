@@ -169,7 +169,7 @@ test_a_bone_that_really_moved_is_still_caught_across_the_versions (vrmrig_test.V
 FAIL: test_a_bone_that_really_moved_is_still_caught_across_the_versions (vrmrig_test.Versions.test_a_bone_that_really_moved_is_still_caught_across_the_versions)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/charles/portfolio/scripts/avatar/vrmrig_test.py", line 188, in test_a_bone_that_really_moved_is_still_caught_across_the_versions
+  File "/Users/charles/portfolio/scripts/avatar/vrmrig_test.py", line 203, in test_a_bone_that_really_moved_is_still_caught_across_the_versions
     self.assertEqual([d['bone'] for d in diffs], ['leftHand'])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: [] != ['leftHand']
@@ -193,7 +193,7 @@ FAIL: test_a_millimetre_is_already_a_difference (vrmrig_test.Comparison.test_a_m
 VRoid writes the same numbers for an untouched body slider, so any
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "/Users/charles/portfolio/scripts/avatar/vrmrig_test.py", line 292, in test_a_millimetre_is_already_a_difference
+  File "/Users/charles/portfolio/scripts/avatar/vrmrig_test.py", line 307, in test_a_millimetre_is_already_a_difference
     self.assertEqual([d['bone'] for d in diffs], ['spine'])
     ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 AssertionError: Lists differ: [] != ['spine']

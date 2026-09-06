@@ -25,9 +25,16 @@ const DECISIONS: ClearanceDecisions = {
   crownFringe: 0.0015,
   crownFringeMeasured:
     '2026-09-06 live-preview.html?mikadebug=1, column, alpha > 8: rest -0.3mm, dance peak +1.3mm vs the projected crown',
-  // The VRoid bodies' hair is longer than Milfy's and the simulator cannot run
-  // them (no manifest), so where a 2026-08-20 browser sweep of the VRoid body
-  // drew a crown ABOVE what the simulator derives, the sweep is the bound.
+  // The VRoid bodies' hair is longer than Milfy's, so where a 2026-08-20 browser
+  // sweep of the VRoid body drew a crown ABOVE what the simulator derives from
+  // the Milfy body, the sweep is the bound.
+  //
+  // Until 2026-09-07 these rows were also the only crown those bodies could
+  // have, because the simulator refused a body with no `.parts.json` beside it
+  // and no build wrote one for them. springsim.deriveManifest lifted that, so
+  // they CAN now be simulated directly, and doing so would replace the transfer
+  // with a reading. That has not been done: these numbers are what a browser
+  // actually drew, and only ever raised.
   // Every clip that sweep put above its derived crown is here; the ones it
   // drew lower are left out, because rigProbe.test refuses a hand number below
   // the derived one (a sweep that missed the peak is fixed by sweeping again,

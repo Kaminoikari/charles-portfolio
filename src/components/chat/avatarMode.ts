@@ -856,8 +856,12 @@ export function avatarViewHalfWidth(
 
 // World-space heights the top and bottom canvas edges land on. Her hair top is
 // at y≈1.582, mid-thigh ≈0.62, knee ≈0.40.
-export function avatarViewSpan(framing: AvatarFraming): { top: number; bottom: number } {
-  const half = framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180))
+// `fov` defaults to the site's, and a clearance file passes its own: a reading
+// taken through a 27° camera is not a reading through today's, and mixing a
+// recorded distance with a live fov would be one body's numbers under another
+// body's lens.
+export function avatarViewSpan(framing: AvatarFraming, fov: number = AVATAR_FOV): { top: number; bottom: number } {
+  const half = framing.distance * Math.tan((fov / 2) * (Math.PI / 180))
   return { top: framing.lookAtY + half, bottom: framing.lookAtY - half }
 }
 
@@ -866,7 +870,7 @@ export function avatarViewSpan(framing: AvatarFraming): { top: number; bottom: n
 //
 // Both numbers are the same measurements the framing comments above cite: her
 // hair top at 1.582, and the bottom of the Face.baked bounding box at 1.287,
-// which is her chin (rigProbe.ts reads that box off the Face mesh as
+// which is her chin (rigProbe.ts reads that box off the meshes her expressions move, as
 // `Rig.faceBox` and uses it for fingers-inside-her-skull checks; its test
 // holds this constant to within 1mm of it).
 export const AVATAR_HEAD_TOP_Y = 1.582

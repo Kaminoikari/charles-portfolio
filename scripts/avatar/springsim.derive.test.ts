@@ -18,7 +18,7 @@ import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { AVATAR_VARIANTS } from '../../src/components/chat/avatarVariants'
 import { parseGlb } from '../../src/components/chat/vrmHumanoid'
@@ -50,19 +50,16 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
     landmarks: { waist: number }
   }
   const key = (mesh: string, pi: number) => `${mesh}[${pi}]`
-  // Once, not once per test: the derivation re-parses an 11MB GLB and walks
-  // every vertex, and four of those back to back block the worker long enough
-  // for vitest's own task-update RPC to time out.
-  let derived: ReturnType<typeof deriveManifest>
-  // The no-manifest scenario: this body copied away from its .parts.json, the
-  // same situation mika-pink and the base body are in.
-  beforeAll(() => {
-    derived = deriveManifest(glbOf(MODEL))
-  })
+  // Derived once, lazily, rather than in a beforeAll: the derivation re-parses
+  // an 11MB GLB and walks every vertex, so it must not run once per test, and a
+  // hook that throws fails the whole SUITE, which is a much weaker receipt than
+  // a named assertion going red (evidence/reviewfix-0907-mutate.py, X7).
+  let cached: ReturnType<typeof deriveManifest> | null = null
+  const derived = (): ReturnType<typeof deriveManifest> => (cached ??= deriveManifest(glbOf(MODEL)))
 
   it('calls moving hair hair, and calls nothing else hair', () => {
     const saidHair = new Set<string>()
-    for (const [name, part] of Object.entries(derived.parts)) {
+    for (const [name, part] of Object.entries(derived().parts)) {
       if (name.startsWith('Hair_')) for (const pi of part.primitives) saidHair.add(key(part.mesh, pi))
     }
     const reallyHair = new Set<string>()
@@ -79,7 +76,7 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
 
   it('puts every skinned primitive somewhere, so the crown still sees the whole body', () => {
     const listed = new Set<string>()
-    for (const part of Object.values(derived.parts)) for (const pi of part.primitives) listed.add(key(part.mesh, pi))
+    for (const part of Object.values(derived().parts)) for (const pi of part.primitives) listed.add(key(part.mesh, pi))
     const everything = new Set<string>()
     for (const part of Object.values(truth.parts)) for (const pi of part.primitives) everything.add(key(part.mesh, pi))
     for (const k of everything) expect(listed.has(k), `${k} is in the build's manifest but nothing derived lists it`).toBe(true)
@@ -89,16 +86,15 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
     // runClip asks for those two keys exactly. A body with several meshes in a
     // role (the fixture has five meshes) must still answer them, or the
     // simulator refuses a body it could have measured.
-    expect(derived.parts.Face, 'Face').toBeDefined()
-    expect(derived.parts.Body_Skin, 'Body_Skin').toBeDefined()
-    expect(derived.derived, 'the manifest says it was derived, so main can say so too').toBe(true)
+    expect(derived().parts.Face, 'Face').toBeDefined()
+    expect(derived().parts.Body_Skin, 'Body_Skin').toBeDefined()
+    expect(derived().derived, 'the manifest says it was derived, so main can say so too').toBe(true)
   })
 
   it('simulates a body with no manifest beside it, and gets a crown out of it', async () => {
-    // The two simulations live in the test rather than in beforeAll on purpose:
-    // a hook that throws fails the whole suite, and a suite failure is a much
-    // weaker receipt than a named assertion going red. See
-    // evidence/generalise-0907-mutate.py.
+    // The two simulations live in the test rather than in a hook for the same
+    // reason the derivation above does: a hook that throws fails the whole
+    // suite, and a suite failure names no assertion.
     const dir = mkdtempSync(path.join(tmpdir(), 'springsim-noparts-'))
     const bare = path.join(dir, 'no-manifest.vrm')
     copyFileSync(MODEL, bare)
@@ -118,12 +114,32 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
     expect(Math.abs(noParts.restCrownY - built.restCrownY), 'rest crown, derived vs built').toBeLessThanOrEqual(0.002)
   }, 180_000)
 
+  it('refuses a body whose skinned meshes it cannot address by name', () => {
+    // A manifest names a mesh and gather() looks it up by that name, so two
+    // meshes sharing one -- or one with no name at all -- would produce a
+    // manifest that reads one mesh's primitive indices off another, or resolves
+    // to nothing. Both are refused with the names in the message.
+    const twoAlike = glbOf(MODEL)
+    const skinned = twoAlike.json.nodes.filter((n) => n.mesh !== undefined && n.skin !== undefined)
+    expect(skinned.length, 'the body has several skinned meshes to muddle').toBeGreaterThan(1)
+    const first = twoAlike.json.meshes[skinned[0].mesh as number]
+    const second = twoAlike.json.meshes[skinned[1].mesh as number]
+    const shared = first.name as string
+    second.name = shared
+    expect(() => deriveManifest(twoAlike)).toThrowError(new RegExp(shared))
+
+    const nameless = glbOf(MODEL)
+    const anon = nameless.json.nodes.filter((n) => n.mesh !== undefined && n.skin !== undefined)[0]
+    delete nameless.json.meshes[anon.mesh as number].name
+    expect(() => deriveManifest(nameless)).toThrowError(/沒有名字/)
+  })
+
   it('puts the waist within a hand of where the build measured it', () => {
     // The build finds the waist where the torso is narrowest; this uses the
     // hips joint, which is the landmark that narrow point sits nearest. The
     // only consumer is the coat's hem band (waist − 4cm), so being close is
     // the whole requirement — but "close" has to be stated, or a derivation
     // that returned zero would pass everything above.
-    expect(Math.abs(derived.landmarks.waist - truth.landmarks.waist)).toBeLessThan(0.1)
+    expect(Math.abs(derived().landmarks.waist - truth.landmarks.waist)).toBeLessThan(0.1)
   })
 })

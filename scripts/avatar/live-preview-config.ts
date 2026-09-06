@@ -32,20 +32,32 @@ export const MIKA_MILFY_FAMILY: AvatarFamilyId = 'vroid-sample-b'
  * honest check is a browser. Editing this file to look at one and editing it
  * back is how a temporary URL gets committed.
  *
- * Same-origin absolute paths only. An absolute URL, a protocol-relative one or
- * a path that climbs out is reported and ignored rather than fetched, because
- * whatever comes back is handed to the engine as a body.
+ * Same-origin absolute paths only. Anything that resolves to another origin is
+ * reported and ignored rather than fetched, because whatever comes back is
+ * handed to the engine as a body.
+ *
+ * The check is the URL parser's, not a list of shapes to reject. Spelling the
+ * shapes out is how `/\\evil.example/x.vrm` got through the first version: it
+ * starts with one slash, not two, and carries no `..`, and the parser turns the
+ * backslash into a slash and resolves it cross-origin anyway.
  */
 export function resolvePreviewModel(search: string): { url: string; problem?: string } {
   const asked = new URLSearchParams(search).get('model')
   if (!asked) return { url: MIKA_MILFY_MODEL_URL }
-  if (!asked.startsWith('/') || asked.startsWith('//') || asked.includes('..')) {
-    return {
-      url: MIKA_MILFY_MODEL_URL,
-      problem: `?model= 必須是本站的絕對路徑（收到：${asked}），改用預設的 ${MIKA_MILFY_MODEL_URL}。`,
-    }
+  const refuse = {
+    url: MIKA_MILFY_MODEL_URL,
+    problem: `?model= 必須是本站的絕對路徑（收到：${asked}），改用預設的 ${MIKA_MILFY_MODEL_URL}。`,
   }
-  return { url: asked }
+  if (!asked.startsWith('/')) return refuse
+  const here = 'http://preview.invalid'
+  let resolved: URL
+  try {
+    resolved = new URL(asked, here)
+  } catch {
+    return refuse
+  }
+  if (resolved.origin !== here) return refuse
+  return { url: resolved.pathname + resolved.search }
 }
 
 export const PREVIEW_MOTIONS: readonly PreviewControl<AvatarMotionName>[] = [

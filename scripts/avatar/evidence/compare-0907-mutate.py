@@ -33,11 +33,14 @@ MOVED = V + 'test_a_bone_that_really_moved_is_still_caught_across_the_versions'
 SAME = 'vrmrig_test.Comparison.test_a_millimetre_is_already_a_difference'
 
 MUTATIONS = [
-    ('C1', "    return {V1_TO_V0_THUMB.get(bone, bone): (-x, y, -z)\n            for bone, (x, y, z) in positions.items()}\n",
-     "    return {V1_TO_V0_THUMB.get(bone, bone): (x, y, z)\n            for bone, (x, y, z) in positions.items()}\n",
+    # 2026-09-07: the dict comprehension these two used to patch became an
+    # explicit loop when the thumb rename gained a collision check (X4 in
+    # reviewfix-0907-mutate.py). Same two guards, restated against it.
+    ('C1', "        out[name] = (-x, y, -z)\n",
+     "        out[name] = (x, y, z)\n",
      TURNED, 'the half turn between the versions is undone before the distances are taken'),
-    ('C2', "    return {V1_TO_V0_THUMB.get(bone, bone): (-x, y, -z)\n            for bone, (x, y, z) in positions.items()}\n",
-     "    return {bone: (-x, y, -z)\n            for bone, (x, y, z) in positions.items()}\n",
+    ('C2', "        name = V1_TO_V0_THUMB.get(bone, bone)\n",
+     "        name = bone\n",
      THUMBS, "and so is the thumb spelling, or 1.0's Proximal is measured against 0.x's"),
     ('C3', "    if vrm_version(doc) == '0':\n        return positions\n",
      "    if False:\n        return positions\n",

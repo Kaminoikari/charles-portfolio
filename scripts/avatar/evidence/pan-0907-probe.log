@@ -1,0 +1,20 @@
+family vroid-sample-b  simulated on /avatar/mika-milfy-12.vrm  rest crown 1.5757
+clip/frame            declared   derived   policy    range (mm)        crown    hipsLow   waived
+peaceSign/waistUp       0.00      0.00   centre    -297.4..    54.7   1.5748   0.8225   -
+peaceSign/column        0.00      0.00   least      -27.2..   392.5   1.5748   0.8225   -
+modelPose/waistUp       0.00      0.00   centre    -293.7..    91.2   1.5785   0.8590   -
+modelPose/column        0.00      0.00   least      -23.5..   429.0   1.5785   0.8590   -
+spin/waistUp            0.00      0.00   centre      -7.8..    62.2   1.6122   0.8300   1.620
+spin/column             0.00      0.00   least       -7.8..   400.0   1.6122   0.8300   1.620
+squat/column            0.00      0.00   least       -7.1..   230.0   1.5959   0.6600   1.603
+akimbo/waistUp          0.00      0.00   centre    -277.7..   113.9   1.5945   0.8817   -
+akimbo/column           0.00      0.00   least       -7.5..   451.7   1.5945   0.8817   -
+playFingers/waistUp     0.00      0.00   centre      -0.7..   114.1   1.6053   0.8819   1.606
+playFingers/column      0.00      0.00   least       -0.7..   451.9   1.6053   0.8819   1.606
+scratchHead/waistUp     0.00      0.00   centre      -0.2..   109.8   1.6068   0.8776   1.607
+scratchHead/column      0.00      0.00   least       -0.2..   447.6   1.6068   0.8776   1.607
+idleLoop/waistUp        0.00      0.00   centre      -7.0..   108.3   1.5980   0.8761   1.605
+idleLoop/column         0.00      0.00   least       -7.0..   446.1   1.5980   0.8761   1.605
+stretch/waistUp         0.00      0.00   centre     -62.6..   114.6   1.8096   0.8824   -
+dance/waistUp          -0.08     -0.08   centre    -144.6..   -15.3   1.7276   0.7525   -
+dance/column            0.13      0.13   least      125.6..   322.5   1.7276   0.7525   -

@@ -36,7 +36,12 @@
 // WHAT IT READS. Every mesh comes from the body's manifest (`<model>.parts.json`,
 // written by build.py): the hair is every `Hair_*` part, the coat
 // `Outfit_Cardigan`, the skin `Body_Skin`, the face `Face`, the skirt
-// `Outfit_Bottom`; the coat's hem band is the manifest's waist landmark. Every
+// `Outfit_Bottom`; the coat's hem band is the manifest's waist landmark. A body
+// this pipeline did not build has no such file, and since 2026-09-07
+// `deriveManifest` reads what it can off the body itself instead: the hair that
+// moves, the face the expressions deform, everything else as `Body_Skin`. There
+// is then no coat and no skirt to measure against, so those four columns print
+// 0 and main() says so before the table. Every
 // bone comes from the humanoid map (vrmHumanoid.readHumanoid), so a 1.0 file
 // with the same manifest simulates the same as its 0.x twin
 // (springsim.test.ts holds that). Nothing here names a J_Bip_* node or a
@@ -155,13 +160,29 @@ function springDrivenNodes(json: Gltf): Set<number> {
  *
  * That last name is a promise the derivation cannot keep, and the caller is
  * told so: on a real build Body_Skin is bare skin, here it is skin AND clothes,
- * so "hair inside the body" becomes "hair inside the body or its clothes".
- * That is still a defect worth reporting, and it is not the same number, so
- * main() prints a banner and the coat and skirt columns are read as
- * hair-against-everything-else.
+ * so the `body` column stops meaning "hair inside her skin" and starts meaning
+ * "inside her skin or her clothes". main() prints that before the table.
+ *
+ * A manifest addresses a mesh BY NAME (gather() and meshNode() both look it up
+ * that way), so a body whose skinned meshes are unnamed or share a name is
+ * refused rather than described: keying two meshes under one name would read
+ * one mesh's primitive indices off the other, and inventing `mesh3` for an
+ * unnamed one would produce a manifest that resolves to nothing.
  */
 export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
   const { json } = glb
+  const skinned = json.nodes.filter((n) => n.mesh !== undefined && n.skin !== undefined)
+  const names = skinned.map((n) => json.meshes[n.mesh as number].name)
+  const unnamed = names.filter((n) => !n).length
+  const repeated = [...new Set(names.filter((n, i) => n && names.indexOf(n) !== i))]
+  if (unnamed || repeated.length) {
+    throw new Error(
+      '這個檔的帶皮 mesh 名字不能當部件名：' +
+      (unnamed ? `${unnamed} 個沒有名字` : '') +
+      (unnamed && repeated.length ? '，' : '') +
+      (repeated.length ? `${repeated.join('、')} 各出現不只一次` : '') +
+      '。manifest 用 mesh 名找 mesh，重名會把一個 mesh 的 primitive 編號套到另一個上。')
+  }
   const spring = springDrivenNodes(json)
   const faces = expressionMeshes(json)
   // A manifest part belongs to exactly one mesh (gather() looks its mesh up by
@@ -180,7 +201,7 @@ export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
     if (node.mesh === undefined || node.skin === undefined) continue
     const mesh = json.meshes[node.mesh]
     const skin = json.skins[node.skin]
-    const name = mesh.name ?? `mesh${node.mesh}`
+    const name = mesh.name as string   // checked above
     mesh.primitives.forEach((prim, pi) => {
       const { JOINTS_0, WEIGHTS_0 } = prim.attributes
       if (JOINTS_0 === undefined || WEIGHTS_0 === undefined) return
@@ -227,7 +248,20 @@ export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
   return { parts, landmarks: { waist: world.elements[13] }, derived: true }
 }
 
+// Deriving one walks every skinned vertex of the file, and both main() (for the
+// banner) and every runClip ask for the same body's: --clip=all on a
+// manifest-less body derived it eleven times.
+const manifestCache = new Map<string, Manifest>()
+
 function readManifest(model: string, glb: { json: Gltf; bin: Uint8Array }): Manifest {
+  const cached = manifestCache.get(model)
+  if (cached) return cached
+  const built = buildManifest(model, glb)
+  manifestCache.set(model, built)
+  return built
+}
+
+function buildManifest(model: string, glb: { json: Gltf; bin: Uint8Array }): Manifest {
   const file = model.replace(/\.vrm$/, '.parts.json')
   let text: string
   try {
@@ -1194,14 +1228,15 @@ async function main(): Promise<void> {
   // Said before the table, not after, because the table's own columns change
   // meaning when the parts were derived rather than built.
   if (!existsSync(args.model.replace(/\.vrm$/, '.parts.json'))) {
-    const derived = deriveManifest(parseGlb<Gltf>(readFileSync(args.model)) as { json: Gltf; bin: Uint8Array })
+    const derived = readManifest(args.model, parseGlb<Gltf>(readFileSync(args.model)) as { json: Gltf; bin: Uint8Array })
     console.log(
       `  沒有 ${path.basename(args.model.replace(/\.vrm$/, '.parts.json'))}，部件改由檔案本身推導：` +
       `${Object.keys(derived.parts).filter((k) => k.startsWith('Hair_')).length} 個會動的髮部件` +
       `（彈簧驅動 ≥${SPRING_DOMINATED * 100}%），臉取表情驅動的 mesh，其餘全歸 Body_Skin。`)
     console.log(
-      '  因此 body 與 skirt 兩欄量的是「頭髮進到身體**或衣服**多深」，不是進到皮膚多深；' +
-      'crown 與 jump 不受影響（髮頂本來就取所有部件的最高點）。')
+      '  因此 body 那欄量的是「頭髮進到身體**或衣服**多深」，不再是進到皮膚多深；' +
+      'coat 與 skirt 四欄沒有東西可以量（推導出來的部件裡沒有 Outfit_Cardigan／Outfit_Bottom），' +
+      '一律印 0，那是「沒量」不是「沒問題」；crown 與 jump 照舊（髮頂本來就取所有部件的最高點）。')
   }
   console.log('clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone')
   const reports: Report[] = []

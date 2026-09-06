@@ -637,7 +637,7 @@ describe('avatar camera framing', () => {
   // dolly. These hold the band to the FRAMING instead, in both placements.
   // AVATAR_HEAD_BOTTOM_Y is a hand-copy of a measurement that lives somewhere
   // else. Replacing a literal with a constant in the file that reads it is not
-  // convergence: rigProbe reads its box off the Face mesh of whatever body it
+  // convergence: rigProbe reads its box off the expression-driven meshes of whatever body it
   // is given, so a new body moves the box and would leave the band's chin
   // behind, silently, which is the exact class of drift the band was rewritten
   // to stop. This is the only thing that would notice: the chin has to sit

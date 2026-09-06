@@ -302,10 +302,10 @@ export function panRange(
 ): { least: number; most: number } {
   const c = file.clips[clip]
   if (!c) throw new Error(`clearance ${file.family} has no clip ${clip}`)
-  // The frame as the FILE recorded it, not as avatarMode declares it today:
-  // the measurements were taken through that camera, and a composition that has
-  // moved since makes them somebody else's numbers.
-  const view = avatarViewSpan(file.framings.frames[frame])
+  // The frame as the FILE recorded it, fov included, and not as avatarMode
+  // declares it today: the measurements were taken through that camera, and a
+  // composition that has moved since makes them somebody else's numbers.
+  const view = avatarViewSpan(file.framings.frames[frame], file.framings.fov)
   // A crownTop waiver is the owner having looked at this clip going past the
   // top edge and accepted it, so it is the ceiling the clip has to clear -- five
   // of the ten carry one, and deriving a pan against the unwaived edge would
@@ -348,5 +348,17 @@ export function panFor(
   if (least <= 0 && 0 <= most) return 0
   const wanted = policy === 'least' ? least : (least + most) / 2
   const step = policy === 'least' ? Math.ceil : Math.round
-  return step(wanted * 100) / 100
+  const pan = step(wanted * 100) / 100
+  // The range can be narrower than the centimetre these are dialled in, and
+  // then rounding leaves it. Today's narrowest is 70mm against a 10mm step, so
+  // this is a guard rather than a case: a pan outside its own range is one that
+  // takes her hips off the bottom edge, and returning it quietly would put the
+  // number in a composition nobody measured.
+  if (pan < least - 1e-9 || pan > most + 1e-9) {
+    throw new Error(
+      `clearance ${file.family}: ${clip} in ${frame} has no pan on the centimetre ` +
+      `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm rounds to ${(pan * 1000).toFixed(0)}mm)`,
+    )
+  }
+  return pan
 }

@@ -93,7 +93,7 @@ export interface Rig {
   raw: THREE.Object3D[]
   /** The raw scene roots and the normalized root, under one group. */
   scene: THREE.Group
-  /** The Face mesh's rest bounding box, in the file's own space. See deriveFaceBox. */
+  /** The rest bounding box of the meshes the expressions move, in the file's own space. See deriveFaceBox. */
   faceBox: FaceBox
 }
 
@@ -772,7 +772,7 @@ export function probeHand(rig: Rig, side: 'left' | 'right'): HandProbe {
 // ---- her head, as a solid ---------------------------------------------------
 //
 // The check that matters most is a fingertip ending up inside her face, so the
-// volume it tests against has to be the real one. This is the Face mesh's own
+// volume it tests against has to be the real one. This is the face mesh's own
 // bind-pose bounding box, read out of the .vrm rather than estimated: an early
 // draft guessed a 0.115m sphere and rejected the `shoot` clip over 1.4mm.
 //
@@ -786,7 +786,7 @@ export interface HeadVolume {
   radii: THREE.Vector3
 }
 
-// The box is the rig's own `faceBox`, derived from the Face mesh by
+// The box is the rig's own `faceBox`, derived from the expression-driven meshes by
 // deriveFaceBox (on the shipped body: x ±0.092, y 1.287–1.503, z -0.113–0.033
 // against a head bone resting at (0, 1.320, 0.005)). An ellipsoid inscribed in
 // that box is smaller than the box everywhere off the three axes, so a

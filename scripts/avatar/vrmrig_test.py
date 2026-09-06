@@ -174,6 +174,21 @@ class Versions(unittest.TestCase):
                          '同一隻拇指，兩個版本的拼法不同而已')
         self.assertEqual(vrmrig.compare(v1, v0), [], '換邊比也一樣')
 
+    def test_a_file_carrying_both_thumb_spellings_is_refused_not_silently_merged(self):
+        # Spec-invalid, and the one way the renaming could quietly weaken a
+        # comparison: leftThumbProximal renames onto leftThumbIntermediate,
+        # which this file already has, so one of the two would disappear from
+        # the comparison entirely.
+        nodes = [{'translation': [0, 1, 0], 'children': [1]},
+                 {'translation': [0.1, 0, 0], 'children': [2]},
+                 {'translation': [0.03, 0, 0]}]
+        both = gltf(nodes, {'hips': 0, 'leftThumbProximal': 1,
+                            'leftThumbIntermediate': 2}, version='1')
+        both['_name'] = 'muddled.vrm'
+        with self.assertRaises(vrmrig.BadRig) as cm:
+            vrmrig.compare(both, both)
+        self.assertIn('muddled.vrm', str(cm.exception))
+
     def test_a_bone_that_really_moved_is_still_caught_across_the_versions(self):
         # The other half: turning the 1.0 side back must not turn the check off.
         nodes = [{'translation': [0, 1, 0], 'children': [1]},
