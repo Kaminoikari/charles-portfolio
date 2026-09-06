@@ -90,6 +90,29 @@ export interface MotionWaiver {
 export type MotionPan = Partial<Record<MotionFrame, number>>
 
 /**
+ * Where in the range of pans that FIT a clip each frame takes its pan.
+ *
+ * The range itself is arithmetic on the clip's own extremes and the frame's
+ * span, and clearance.panRange derives it per family. Which end of that range
+ * to stand at is a composition decision, and it differs by frame because the
+ * spare room does:
+ *
+ *   waistUp  centre. The span has room above her hair and below her hips, so
+ *            the clip sits in the middle of what fits and both edges keep the
+ *            same margin.
+ *   column   the least lift that clears her hair. The column's spare room is
+ *            all at the BOTTOM, so every millimetre the frame rises is a
+ *            millimetre of her legs, and centring would spend 9cm of them.
+ *
+ * A second family re-derives the numbers; this stays, because it is about the
+ * compositions rather than about a body.
+ */
+export const PAN_POLICY: Record<MotionFrame, 'centre' | 'least'> = {
+  waistUp: 'centre',
+  column: 'least',
+}
+
+/**
  * What is true of a clip wherever it plays. Anything measured on a body (its
  * crown, its waivers, how far it reaches) is per (body, clip) and lives in
  * the family's clearance file (src/components/chat/clearance/): before
@@ -115,9 +138,16 @@ export interface AvatarMotionDef {
   /**
    * Frame movement this clip needs to be seen whole. Absent means none.
    *
-   * Derived from the clip's crown and hips on the bodies it ships on, so it
-   * is per body in principle; see `dance` for the derivation and the
-   * clearance file for the crown it rests on.
+   * Declared here and DERIVED in clearance.panFor, which rigProbe.test.ts holds
+   * this to: the range of pans that fit the clip's own crown and hips in the
+   * frame's span, then PAN_POLICY. Declared as well as derived because the
+   * producer needs a pan before the file it is derived from exists -- springsim
+   * projects each crown through the frame's camera with this clip's pan, and
+   * records which pan it used. So this is the number, and the derivation is
+   * what keeps it honest when a clip is re-exported or a frame recomposed.
+   *
+   * A second family re-derives it by running panFor against its own clearance,
+   * which until 2026-09-07 meant redoing the paragraph on `dance` by hand.
    */
   pan?: MotionPan
 }
@@ -218,7 +248,10 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //
   // So the frame moves for the clip instead, and the two numbers are derived,
   // not dialled. What has to fit is this clip's OWN rendered extremes: hips
-  // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart.
+  // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart. Since
+  // 2026-09-07 that derivation is clearance.panFor rather than this paragraph,
+  // and it reproduces both numbers to the centimetre; what follows is why each
+  // is what it is.
   //
   //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.240, rounded
   //                   to 1.24 like every lookAtY here): 65mm under her hips,

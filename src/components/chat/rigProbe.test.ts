@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { VRMHumanoid } from '@pixiv/three-vrm'
 import { parseGlb, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
-import { crownBound, crownOn } from './clearance'
+import { crownBound, crownOn, panFor } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
 import type { AvatarFamilyId } from './avatarVariants'
 import {
@@ -39,6 +39,7 @@ import {
 } from './avatarMode'
 import {
   AVATAR_MOTIONS,
+  PAN_POLICY,
   IDLE_MOTIONS,
   IDLE_ROTATION_START,
   MAX_HIPS_SINK,
@@ -505,6 +506,21 @@ describe('bundled motions', () => {
     expect(f.frames.column).toEqual(AVATAR_FRAMING_COLUMN)
     for (const name of names) {
       expect(f.pans[name] ?? null, `${name} pan when the clearance was produced`).toEqual(AVATAR_MOTIONS[name].pan ?? null)
+    }
+  })
+
+  it('pans by what the measurements leave room for, not by a number dialled in', () => {
+    // Until 2026-09-07 the dance's two pans were declared here and derived in a
+    // comment, so a second family had to redo that derivation by hand off the
+    // same paragraph. clearance.panFor does it: the range of pans that fit the
+    // clip's own crown and hips in the frame's span, then the frame's policy
+    // (PAN_POLICY -- the waist-up centres, the column takes the least lift so
+    // it keeps the most leg).
+    for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
+      for (const frame of def.placements) {
+        const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_POLICY[frame], def.placements)
+        expect(def.pan?.[frame] ?? 0, `${name} in ${frame}`).toBe(want)
+      }
     }
   })
 

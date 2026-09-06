@@ -27,6 +27,7 @@
 // a decision is a decision and lives in the hand module. The split is what
 // keeps "a waiver has to earn its place" meaningful: nothing a script writes
 // can widen a guard.
+import { avatarViewSpan } from './avatarMode'
 import type { AvatarFraming } from './avatarMode'
 import type { MotionFrame, MotionPan, MotionWaiver } from './avatarMotions'
 
@@ -258,4 +259,94 @@ export function crownOn(file: ClearanceFile, clip: string, frame: MotionFrame, r
  */
 export function crownBound(file: ClearanceFile, clip: string, frame: MotionFrame, restCrownY: number): number {
   return Math.max(crownOn(file, clip, frame, restCrownY), file.crownSeen[clip]?.[frame] ?? -Infinity)
+}
+
+/**
+ * The highest this clip draws on this family, over the frames it plays in.
+ *
+ * Not the frame being panned: a frame has to clear the clip, and the clip's
+ * crown is a property of the clip. The two frames' projections of it differ by
+ * about 14mm on the dance (perspective; they sit at different distances), and
+ * taking the higher is the conservative half of that. It is also where the
+ * dance's own -0.08 came from: the number its comment centres on, 1.7276, is
+ * the column's reading used to compose the waist-up frame.
+ */
+export function crownWorst(
+  file: ClearanceFile,
+  clip: string,
+  restCrownY: number,
+  frames: readonly MotionFrame[],
+): number {
+  return Math.max(...frames.map((f) => crownBound(file, clip, f, restCrownY)))
+}
+
+/**
+ * Every pan that would fit a clip in a frame, as [least, most].
+ *
+ * `least` is the smallest slide that brings the clip's crown inside the top
+ * edge; `most` is the largest that keeps its lowest hips inside the bottom
+ * edge. Both are arithmetic on numbers the producers measured, so a second
+ * family gets its pans by running this rather than by re-deriving them in a
+ * comment — which is what the dance's two numbers were until 2026-09-07.
+ *
+ * `least > most` means no pan fits: the clip is taller than the frame, and the
+ * caller has to drop it or re-cut the composition, which is what happened to
+ * the dance on 2026-08-20.
+ */
+export function panRange(
+  file: ClearanceFile,
+  clip: string,
+  frame: MotionFrame,
+  restCrownY: number,
+  frames: readonly MotionFrame[],
+): { least: number; most: number } {
+  const c = file.clips[clip]
+  if (!c) throw new Error(`clearance ${file.family} has no clip ${clip}`)
+  // The frame as the FILE recorded it, not as avatarMode declares it today:
+  // the measurements were taken through that camera, and a composition that has
+  // moved since makes them somebody else's numbers.
+  const view = avatarViewSpan(file.framings.frames[frame])
+  // A crownTop waiver is the owner having looked at this clip going past the
+  // top edge and accepted it, so it is the ceiling the clip has to clear -- five
+  // of the ten carry one, and deriving a pan against the unwaived edge would
+  // give every one of them a camera move nobody asked for.
+  const ceiling = c.waiver?.crownTop ?? view.top
+  return {
+    least: crownWorst(file, clip, restCrownY, frames) - ceiling,
+    most: c.hipsLow - view.bottom,
+  }
+}
+
+/**
+ * The pan a clip should be given in a frame, to the centimetre the
+ * compositions are dialled in.
+ *
+ * Zero whenever zero fits, which is every clip but one: a frame that does not
+ * have to move should not move, and the eased slide in and out is a thing the
+ * visitor sees. When zero does not fit, the frame's policy picks a point in
+ * the range that does.
+ *
+ * Rounded because a pan is a camera position a person reads off a screenshot,
+ * not a measurement: `least` rounds UP so the crown stays in, `centre` rounds
+ * to nearest, which is where the dance's -0.08 and +0.13 come from.
+ */
+export function panFor(
+  file: ClearanceFile,
+  clip: string,
+  frame: MotionFrame,
+  restCrownY: number,
+  policy: 'centre' | 'least',
+  frames: readonly MotionFrame[],
+): number {
+  const { least, most } = panRange(file, clip, frame, restCrownY, frames)
+  if (least > most) {
+    throw new Error(
+      `clearance ${file.family}: ${clip} does not fit ${frame} at any pan ` +
+      `(needs to rise ${(least * 1000).toFixed(0)}mm for its crown, may rise ${(most * 1000).toFixed(0)}mm before its hips leave)`,
+    )
+  }
+  if (least <= 0 && 0 <= most) return 0
+  const wanted = policy === 'least' ? least : (least + most) / 2
+  const step = policy === 'least' ? Math.ceil : Math.round
+  return step(wanted * 100) / 100
 }
