@@ -42,6 +42,13 @@ import {
 
 const IDENTITY_QUAT = new THREE.Quaternion()
 
+/**
+ * The rate the guards walk a clip at, on top of its own keyframes. 60 is the
+ * rate the engine's render loop drives the mixer at on a normal display; a
+ * clip keyed at 30 draws two frames per key, and the guards have to see both.
+ */
+export const SAMPLE_HZ = 60
+
 // ---- the rig ---------------------------------------------------------------
 
 // VRM 0.x spells the thumb joints Proximal/Intermediate/Distal; VRM 1.0, every
@@ -359,6 +366,25 @@ export function deriveFingerSkinRadius(glb: Glb, rig: Rig): number {
   return worst
 }
 
+/**
+ * The topmost vertex of anything this body draws, in bind pose: hair,
+ * ornaments, face, whichever is highest. The base a clip's crown throw is
+ * measured from (clearance.ts crownOn): the spring solver reads the same
+ * quantity on the simulated body (springsim.ts restCrownY), and what carries
+ * over to a sibling body is the throw above it.
+ *
+ * Every skinned mesh, not the hair by name: a tiara in the hair mesh or an
+ * ahoge in its own is the crown when it is highest, and the browser counts
+ * whatever is drawn.
+ */
+export function deriveRestCrown(glb: Glb, rig: Rig): number {
+  resetRig(rig)
+  let top = -Infinity
+  for (const { p } of skinnedVertices(glb, rig.raw, /./)) top = Math.max(top, p.y)
+  if (!Number.isFinite(top)) throw new Error('no skinned mesh: the resting crown cannot be derived')
+  return top
+}
+
 // ---- VRM Animation ---------------------------------------------------------
 
 interface Track {
@@ -377,10 +403,20 @@ export interface Motion {
   /** The animation rig's own hips height, for scaling the hips translation. */
   restHipsY: number
   /**
-   * Every keyframe time in the clip, deduplicated and sorted. Guards sample
-   * these rather than a fixed count: at 60fps a clip carries 450–700 keys, and
-   * a fixed 120 samples steps over 5 frames at a time — long enough to miss a
-   * fingertip passing through her face.
+   * When the guards sample the clip: every keyframe time, plus a 60 Hz walk,
+   * deduplicated and sorted. Not a fixed count — at 60fps a clip carries
+   * 450–700 keys and a fixed 120 samples steps over 5 frames at a time, long
+   * enough to miss a fingertip passing through her face.
+   *
+   * The 60 Hz walk is there because the keys alone are NOT dense enough
+   * everywhere: half the pack is keyed at 30fps (34ms gaps, idleLoop 42ms),
+   * and the engine draws the frames in between. Measured 2026-09-06
+   * (evidence/clearance-0906-probe-face.ts): on the keys alone the dance's
+   * deepest fingertip reads 0.3004 at t=8.233s, and one drawn frame earlier,
+   * at 8.217s, it is 0.1975. Nine of the ten clips are unchanged to four
+   * decimals; the dance is the one that moves, and it is the one with a
+   * waiver. Sampling the keys only left that waiver declaring a third less
+   * penetration than the clip actually reaches.
    */
   sampleTimes: number[]
 }
@@ -503,6 +539,9 @@ export function buildMotion(vrmaData: Uint8Array): Motion {
   const timeSet = new Set<number>()
   for (const track of Object.values(rotation)) for (const t of track.times) timeSet.add(t)
   if (hipsTranslation) for (const t of hipsTranslation.times) timeSet.add(t)
+  // Rounded, so a 60 Hz step that lands on a key does not become a second
+  // sample a float apart from it.
+  for (let k = 0; k / SAMPLE_HZ <= duration; k++) timeSet.add(Math.round((k / SAMPLE_HZ) * 1e6) / 1e6)
   const sampleTimes = [...timeSet].sort((a, b) => a - b)
 
   return { rotation, hipsTranslation, duration, restHipsY, sampleTimes }

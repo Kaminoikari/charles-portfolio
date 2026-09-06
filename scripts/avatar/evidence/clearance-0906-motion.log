@@ -1,0 +1,21 @@
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  0.48 of limit
+  dance.vrma             worst  0.33 of limit
+  idleLoop.vrma          worst  0.20 of limit
+  modelPose.vrma         worst  0.69 of limit
+  peaceSign.vrma         worst  0.47 of limit
+  playFingers.vrma       worst  0.20 of limit
+  scratchHead.vrma       worst  0.49 of limit
+  spin.vrma              worst  0.37 of limit
+  squat.vrma             worst  0.33 of limit
+  stretch.vrma           worst  0.27 of limit
+
+  worst per part across every clip and frame:
+    Outfit_Bottom              103 px  of   150 allowed (10818 px on screen)   0.69x  modelPose.vrma t=4.7s
+    Acc_Bandage_Thigh           14 px  of    30 allowed (482 px on screen)   0.47x  peaceSign.vrma t=7.3s
+    Outfit_Cardigan             31 px  of   150 allowed (24558 px on screen)   0.21x  stretch.vrma t=0.57s
+    Outfit_Socks                 6 px  of    77 allowed (3840 px on screen)   0.08x  peaceSign.vrma t=4.38s
+    Outfit_Top                   2 px  of   104 allowed (5220 px on screen)   0.02x  playFingers.vrma t=0.6s
+    Outfit_Shoes                 1 px  of    72 allowed (3584 px on screen)   0.01x  squat.vrma t=1.44s
+
+  PASS

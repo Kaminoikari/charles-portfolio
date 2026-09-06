@@ -1068,6 +1068,66 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
   前端       src/components/chat/avatarRim.test.ts，5 條，5 種 mutation 各自
              只紅對應的那一條，沒有互相遮蔽  [收據 13]
 
+  2026-09-06 補列（骨架泛化 Phase 5）。上面那些是**建置期**的偵測器，收據編號指
+  evidence/mutations.md；下面這些是**穿模與取景**的偵測器，各自的收據在另外兩個
+  檔案，所以編號另外起頭，前綴標明出處，免得跨檔撞號：
+    [C*]／[E*]／[F*] = evidence/mutations-0906-clearance.md（22 道，逐道還原後
+                 sha 覆核。C=clearance 與 springsim，E=envelope，F=取樣密度）
+    [靜態]     = evidence/clipping-0906-receipts.md（pierce／inside／motion 的
+                 control 對 mutation 分離度，不是單元測試而是腳本的 PASS/FAIL）
+  pierce.py   靜止穿透比    每件服裝的「透出來的皮膚像素／該件自己的上限」>1 即
+                            FAIL。收據：五件各自沉 25mm（靴子縮 0.9）進身體，
+                            control 0.00–0.03，mutation 34.05／9.76／6.31／6.35／
+                            4.01，五件全部分離  [靜態]
+  inside.py   整片沉進身體  同一組 mutation 下沉進身體的頂點數 0–2 → 9–237，
+                            最深 0.0–14.2mm → 13.2–26.9mm  [靜態]
+  motion.py   十支 clip 的  上衣沉 25mm：control 最差 0.02x（playFingers t=0.6s），
+              穿透比        mutation 36.79x（idleLoop t=3.89s），分離  [靜態]
+                            註：motion.py 註解裡記的 38／20／11／8／2.83 是 2026-08
+                            那版身體的數字，服裝後來重建過數次（拿掉呆毛、腋下權重
+                            擴散），倍率不再相同；這裡釘住的是分離，不是那組數字
+  envelope.py heights       掃描高度從身體自己的 rest pose 讀（膝→髖+5cm），且出貨
+                            的 leg-envelope.json 必須就是在這組高度上掃出來的
+                            [E1]；掃描要真的擺姿勢，不是量 rest [E2]
+  springsim   coat／skirt／ 雙馬尾進外套、裙下的腿、單幀轉角，兩支轉身 clip 各一
+  .test.ts    jump          組門檻  [C5 裙擺全綁髖部、C6 馬尾 collider 清空]
+              body          進身體的深度：signed distance 在 50mm 飽和，所以只有
+                            讀數在上限以下的 clip 能有預算。spin 讀 4.8mm，門檻
+                            20mm 是真的會紅的線 [C4]；dance 的尾巴穿過手臂本來就
+                            讀到上限，「≤50」對它恆真，因此改成把上限釘住，量測
+                            少報或不報就紅 [C18]
+              crown         hop 把髮頂甩高，世界值與投影值各一條  [C1、C2]
+              VRM1 孿生     同一具身體的 1.0 匯出必須模擬出同樣結果：相機站在
+                            她面對的那一側（依版本）[C3]，裙擺深度有記錄（沒記
+                            的話兩邊都是 -Infinity，相減成 NaN 而靜默通過）[C17]
+              髮根排除      rest 時已在皮膚內的髮根不進 body gate，否則每支 clip
+                            都讀到 50mm 上限、門檻永遠不會紅  [C4]
+  clearance   combineClear  兩個生產者的 rig 不同就拒收 [C10]；crownFringe 缺值就
+  .ts         ance          拒收，不預設 [C11]
+              crownOn       髮頂用該身體自己的 rest crown 平移 [C9]，加上瀏覽器
+                            邊緣 [C8]
+              crownBound    瀏覽器掃到更高的值優先 [C7]
+              crownSeen     瀏覽器掃描畫得比模擬推導高的那幾支要記進去。十支
+                            clip 裡有四支是這種情形（dance、scratchHead、
+                            playFingers、peaceSign），其中兩支因此才需要
+                            crownTop waiver；漏記一支，那支的 waiver 就變成
+                            「用不到」而轉紅  [C19]
+  clearance   生產者接線    measure-motions --write 寫的是它讀的那具身體的 sha
+  .test.ts                  （測試身體是縮放過的副本，rig 不同）  [C12]
+  measure-    髮頂列        每個 placement 都印出推導髮頂對上緣  [C13]
+  motions.ts
+  rigProbe.ts sampleTimes   clip 除了自己的 keyframe 之外還要以 60Hz 走一遍。這一
+                            條是 Phase 6a 留下來的問題：動作包有一半是 30fps 打
+                            key（間距 34ms，idleLoop 42ms），引擎會畫中間那些
+                            幀。只看 key 時 dance 最深的指尖讀 0.3004（t=8.233s），
+                            往前一幀 t=8.217s 是 0.1975。dance 的 handInHead
+                            waiver 因此從 0.29 收到 0.19；十支 clip 只有這一支
+                            動，其餘九支到小數第四位都不變  [F1]
+  rigProbe    取景一致      clearance 是在引擎現在用的取景下模擬的  [C14]
+  .test.ts    waiver 要用得到 用不到的 crownTop waiver 一樣 FAIL  [C16]
+  avatarVari  family rig    每個宣告的 variant 都是 clearance 量過的那具 rig  [C15]
+  ants.test
+
   另外把 avatarGuideEngine.ts 的 preserveDrawingBuffer 綁到 ?mikadebug=1。它是
   我為了截圖加的，長期開著會讓瀏覽器替每個訪客保留後備緩衝。沒有它 toDataURL
   抓回來是全黑 PNG，而全黑 PNG 看起來像一張成功的截圖。

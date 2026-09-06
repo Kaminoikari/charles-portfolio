@@ -1,0 +1,6 @@
+$ npx tsx scripts/measure-motions.ts public/avatar/mika-pink.vrm --write src/components/chat/clearance/vroid-sample-b.measured.gen.ts --family=vroid-sample-b
+wrote src/components/chat/clearance/vroid-sample-b.measured.gen.ts
+
+# The file is untracked, so it was diffed against a copy taken immediately
+# before this run: byte-identical, i.e. the committed artifact is what the
+# producer writes from the final source.

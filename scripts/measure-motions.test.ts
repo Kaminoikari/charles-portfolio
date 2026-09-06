@@ -1,3 +1,7 @@
+/* eslint-disable no-irregular-whitespace, no-regex-spaces --
+   The report is written in Chinese and aligns its columns with the ideographic
+   space U+3000 and with runs of ordinary spaces. The patterns below match that
+   output literally, so the "irregular" whitespace is the thing under test. */
 // The report has to be able to say no.
 //
 // A tool that sweeps ten clips and prints "everything fits" is worthless unless
@@ -16,6 +20,7 @@ import path from 'node:path'
 import { tmpdir } from 'node:os'
 import { beforeAll, describe, expect, it } from 'vitest'
 
+import { CLEARANCE } from '../src/components/chat/clearance/vroid-sample-b'
 import { measure, type Report } from './measure-motions'
 
 const SHIPPED = path.join('public', 'avatar', 'AvatarSample_B_webp.vrm')
@@ -80,8 +85,8 @@ describe('measure-motions', () => {
   let taller: Report
 
   beforeAll(() => {
-    shipped = measure(SHIPPED)
-    taller = measure(scaledBody(1.35))
+    shipped = measure(SHIPPED, CLEARANCE)
+    taller = measure(scaledBody(1.35), CLEARANCE)
   }, 180_000)
 
   it('reports the shipped body as fitting, waiver and all', () => {
@@ -90,15 +95,17 @@ describe('measure-motions', () => {
   })
 
   it('recognises the face waiver dance already ships with', () => {
-    // 0.300 measured against a declared floor of 0.29 (0.299 until 2026-09-06,
-    // when the face box began to be read off the mesh instead of the 2026-08-19
-    // hand measurement; the two boxes differ by 0.3mm at the edges). Neither
-    // number is chosen here: the measurement comes out of the sweep and the
-    // floor off the clip definition, so this fails if either drifts from the
-    // other.
+    // 0.197 measured against a declared floor of 0.19. It read 0.299 until
+    // 2026-09-06, when the face box began to be read off the mesh instead of
+    // the 2026-08-19 hand measurement (0.300, the two boxes differ by 0.3mm at
+    // the edges), and 0.197 later the same day, when the sweep stopped
+    // sampling the clip's keyframes only and started walking it at 60 Hz as
+    // well (rigProbe.ts SAMPLE_HZ). Neither number is chosen here: the
+    // measurement comes out of the sweep and the floor out of the clearance
+    // file, so this fails if either drifts from the other.
     const line = shipped.lines.find((l) => l.includes('放行範圍內'))
     expect(line, '找不到 dance 的放行說明').toBeDefined()
-    expect(line).toMatch(/0\.(29\d|30[0-4]).*下限 0\.290/)
+    expect(line).toMatch(/0\.19[5-9].*下限 0\.190/)
   })
 
   it('reports the face box and the finger skin it read off the body', () => {
@@ -138,12 +145,21 @@ describe('measure-motions', () => {
     expect(report.tight, report.lines.join('\n')).toBe(printed)
   })
 
-  it('never claims to have measured her hair', () => {
-    // The reconstructed rig has no spring bones, so the crown number is carried
-    // from a render of the shipped body and means nothing about another one.
-    // Silently dropping it is how a body whose hair leaves the frame would pass.
-    expect(taller.lines.join('\n')).toContain(
-      '這個數字推導不出來，換身體要在瀏覽器裡重量一次',
-    )
+  it('reports the derived crown against the top edge', () => {
+    // The reconstructed rig has no spring bones, so the crown cannot be swept
+    // here. What can be derived is the transfer: the clearance file carries
+    // how far each clip throws the hair above the simulated body's resting
+    // crown (springsim), plus the browser's translucent fringe, and this body
+    // contributes its own bind-pose crown. Until 2026-09-06 this row was a
+    // disclaimer ("這個數字推導不出來"), which is how a body whose hair
+    // leaves the frame would have passed the whole report.
+    const shippedText = shipped.lines.join('\n')
+    // dance in the column: derived crown against the panned top edge
+    // (1.602 + 0.13), with room to spare on the shipped body.
+    expect(shippedText).toMatch(/column\s+髮頂　1\.7\d{3}　上緣 1\.7320.*餘裕  \d/)
+    expect(shippedText).not.toContain('推導不出來')
+    // A 35% taller body carries its crown up with it; the frame does not move.
+    const tallerText = taller.lines.join('\n')
+    expect(tallerText).toMatch(/髮頂　2\.\d{4}　上緣 1\.7320.*餘裕 -\d/)
   })
 })

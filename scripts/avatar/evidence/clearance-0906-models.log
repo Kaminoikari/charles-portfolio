@@ -1,0 +1,10 @@
+# The two bodies that must fail springsim.test.ts, measured straight through the simulator.
+# python3 scripts/avatar/evidence/clearance-0906-models.py <dir>; npx tsx scripts/avatar/springsim.ts <dir>/<body>.vrm --clip=dance --stride=3
+
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+dance             54mm     267mm     244mm       13%  12.43s  -174°      50mm   2.87s     18mm 14.40s  1.6647 11.97s  1.7099  1.7013   29.2°   7.93s  HairTailR_5
+rest crown 1.5757 (bind pose, topmost vertex of any part); through the column camera 1.5881, waist-up 1.5786
+
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+dance              0mm      37mm      37mm        0%  17.23s  -107°      50mm  18.27s     49mm  8.70s  1.6647 11.97s  1.7099  1.7013   21.7°   1.03s  HairTailR_5
+rest crown 1.5757 (bind pose, topmost vertex of any part); through the column camera 1.5881, waist-up 1.5786

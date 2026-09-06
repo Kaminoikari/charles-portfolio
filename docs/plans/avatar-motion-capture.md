@@ -137,9 +137,14 @@ waist-up 的上下緣 2026-08-20 從 0.618–1.722 整段抬高 0.15，見下方
 所以真正的穿透只會比 4.9mm 更多，不會更少。）
 
 「指尖對臉」是橢球方程式值，1 是臉的表面，小於 1 代表插進臉裡。上表是用
-`rigProbe` 的 `sampleTimes`（全部軌道 key time 的聯集：`peaceSign` 702、
+`rigProbe` 的 `sampleTimes`（當時＝全部軌道 key time 的聯集：`peaceSign` 702、
 `modelPose` 452、`spin` 560、`shoot` 577）重測的，與 `rigProbe.test.ts` 各道防線讀的
 是同一組數字。
+
+2026-09-06 起 `sampleTimes` 是「key time 聯集 ∪ 60Hz walk」：動作包有一半以 30fps
+打 key（間距 34ms，`idleLoop` 42ms），而引擎會畫中間那些幀。十支 clip 只有 `dance`
+的讀數會動（0.3004 → 0.1975），其餘九支到小數第四位不變，詳見
+`scripts/avatar/evidence/clearance-0906.md`。
 
 畫框的門檻本來想做成**看得見的**半寬：fullscreen column 的畫布刻意超出視窗右緣，
 所以右側有一段在螢幕外。這條路走過兩個版本，最後在同一天被需求本身推翻，過程記在
@@ -496,7 +501,9 @@ bodyFraction 除以 k，乘積不變，所以她的尺寸、文字 reserve、文
 
 - `dance` 的 `reach: 0.69` **刪除**：新框之下用不到，而用不到就是測試失敗。
 - `dance` 的 `handInHead` 0.48 → **0.29**：指尖納入量測後，入頭深度從 26.8mm 變成
-  **38.9mm**、15 格變 18 格。這個數字是變糟的，不是變好。
+  **38.9mm**、15 格變 18 格。這個數字是變糟的，不是變好。（2026-09-06 再收到
+  **0.19**，因為取樣從 keyframe 改成 keyframe ∪ 60Hz；同樣是量得更準，不是放寬。
+  這條 waiver 現在住在 clearance 檔裡。）
 - `stretch` 的 `handTop` 1.79 → **1.77**：加寬買的是側向空間，不是高度，它照樣過頂。
   （這條 waiver 在下一節被刪掉：畫框抬高之後它不再過頂，而用不到的 waiver 是失敗。）
 
@@ -669,8 +676,10 @@ clip 可以宣告「播我的時候，這個取景要移動多少公尺」。引
 
 那 4.4mm 是 crown 門檻計入的**半透明髮尖邊緣**，不是看得見的頭髮：改用 alpha > 128
 量，最上緣的像素三次掃描都沒有高過 row 25，離上緣還有 36.3mm。所以守則會在畫面真的
-被切之前約 32mm 就先紅——一道守則要錯，就該錯在這一側。而且 `crown` 是手寫的常數，
-只有人去重量才會變，薄餘裕付出的是一次重量，不是無聲的迴歸。
+被切之前約 32mm 就先紅——一道守則要錯，就該錯在這一側。而且 `crown` 當時是手寫的常
+數，只有人去重量才會變，薄餘裕付出的是一次重量，不是無聲的迴歸。（2026-09-06 起它
+有生產者了，見本節稍後的「Phase 5」補述；`dance` 這個 1.7276 仍是上界，因為瀏覽器掃
+到的值比模擬推導的 1.7177 高。）
 
 改成 +0.16 就是同一支 clip 換成 34mm 髮尖餘裕、少 30mm 腿。兩個值都**看不到膝蓋**：
 `avatarMode.ts` 對膝蓋高度有兩個說法（575 行 0.40、283 行 0.43），不管取哪一個都低於
@@ -752,6 +761,16 @@ column 只剩 4.4mm 餘裕，小於觀測到的 10mm 抖動——所以重量時
 畫面被切（畫面那一側還有 36mm）。而 `crown` 是手寫常數，不會自己變動。模型、clip、
 取景任一改變就要重量。
 
+**2026-09-06（Phase 5）：這個手寫常數已經有生產者了。** `AvatarMotionDef.crown` 被
+拿掉，髮頂改由 `scripts/avatar/springsim.ts --clearance` 逐格算出來，寫進該身體家族
+的 clearance 檔（`src/components/chat/clearance/<family>.simulated.gen.ts`）。它記兩
+個值：世界座標的 `crownY`，以及**穿過該 frame 自己的相機投影後**的 `crownScreen`，
+因為 hop 是朝相機來的，透視會把它抬高（milfy 身上世界 1.6647、column 投影 1.7099，
+瀏覽器實際畫到 1.7112）。唯一剩下的瀏覽器輸入是 `crownFringe`＝算繪髮頂減模擬髮頂
+＝1.5mm，每個 family 量一次並記日期。上面那組 1.7175–1.7276 是 VRoid 身體（`pink`）
+的掃描值，仍以 `crownSeen` 留在 clearance 檔裡，`crownBound` 取它與模擬值的較大者，
+所以「記錄看過最糟的」這條規則沒有被自動化沖掉。
+
 ### 已知限制（量過，決定不修）
 
 換 placement 會中斷正在播的 clip，而 pan 在殘影還在的期間就先鬆開。最終樹上逐格量
@@ -776,11 +795,19 @@ beside-panel → column：硬切那一格落在 1.146（正確），接著隨 se
 1.5806、`squat` 1.5835、`akimbo` 1.5632 都在裡面。`stretch` 只在 waist-up 播，它的最
 高點是手不是頭髮，由既有的 handTop 守則涵蓋。
 
+2026-09-06 起這件事不再是「沒有處理」：髮頂成為守則會讀的真實數字之後，`spin`、
+`squat`、`idleLoop`（模擬推導值）與 `scratchHead`、`playFingers`（就是上面這組掃描
+值，它們比模擬推導的高，`crownBound` 取較大者）五支都在 column 轉紅，於是各自在
+clearance 檔申報一條 `waiver.crownTop`，而且套用與其他 waiver 相同的規則——用不到的
+waiver 一樣是失敗。上面那組掃描值本身也進了 clearance 檔的 `crownSeen`（連同
+`peaceSign` 1.5748，它同樣比推導值高，只是還在上緣裡面所以不需要 waiver）。
+
 ### 守則與 mutation
 
 - `dance stays inside every frame it declares` 現在對照**平移後**的取景，並加量
   `def.crown`（算繪量到的髮頂，1.7276）：拿掉 column pan、改成 +0.10、改成 +0.12
-  都紅。
+  都紅。（`def.crown` 這個欄位在 2026-09-06 被拿掉，同一個 1.7276 改由 clearance
+  檔的 `crownSeen.dance.column` 提供，守則讀的是 `crownBound`。）
 - `dance keeps her hips inside the crop` 同樣對照平移後的下緣：拿掉 waistUp pan 或
   改成 -0.01 都紅。
 - `%s declares no pan it does not need`：替 `peaceSign` 加一個不需要的 pan 紅；替

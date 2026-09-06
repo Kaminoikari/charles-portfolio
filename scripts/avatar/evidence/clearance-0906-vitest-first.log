@@ -1,0 +1,667 @@
+
+ RUN  v3.2.6 /Users/charles/portfolio
+
+下午8:35:10 [vite] (client) warning: invalid import "../src/components/chat/clearance/${cli.family}". A file extension must be included in the static part of the import. For example: import(`./foo/${bar}.js`).
+  Plugin: vite:dynamic-import-vars
+  File: /Users/charles/portfolio/scripts/measure-motions.ts
+ ❯ scripts/measure-motions.test.ts (6 tests | 2 failed) 2824ms
+   × measure-motions > reports the shipped body as fitting, waiver and all 8ms
+     → 模型　　public/avatar/AvatarSample_B_webp.vrm
+靜止姿勢　hips 0.8782　head 1.3200　最高頂點 1.5820
+臉部盒　x -0.092…0.092　y 1.287…1.503　z -0.113…0.033（從 Face 網格推導）
+指尖皮厚　18.0mm（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT 12.0mm）
+
+每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。
+餘裕是負的就代表這具身體上那支動作會被切到或會穿模。
+
+── peaceSign　（waistUp、column）
+   waistUp  往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   waistUp  往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   waistUp  手的皮膚頂端　1.4268　預算 1.8722　餘裕  445.4mm
+   waistUp  髖部最低　　0.8225　下緣 0.7678　餘裕  54.7mm
+   waistUp  髮頂　1.5554　上緣 1.8722　餘裕  316.8mm（模擬投影 1.5476，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   column   往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   column   手的皮膚頂端　1.4268　預算 1.6020　餘裕  175.2mm
+   column   髖部最低　　0.8225　下緣 0.4300　餘裕  392.6mm
+   column   髮頂　1.5656　上緣 1.6020　餘裕  36.4mm（模擬投影 1.5578，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.925（要大於 1）
+   頭尾站得住　髖部偏移 36.1mm（上限 80.0mm）
+
+── modelPose　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   waistUp  往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   waistUp  手的皮膚頂端　1.2604　預算 1.8722　餘裕  611.7mm
+   waistUp  髖部最低　　0.8590　下緣 0.7678　餘裕  91.2mm
+   waistUp  髮頂　1.5806　上緣 1.8722　餘裕  291.6mm（模擬投影 1.5728，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   column   往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   column   手的皮膚頂端　1.2604　預算 1.6020　餘裕  341.6mm
+   column   髖部最低　　0.8590　下緣 0.4300　餘裕  429.1mm
+   column   髮頂　1.5848　上緣 1.6020　餘裕  17.2mm（模擬投影 1.5770，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 11.384（要大於 1）
+   頭尾站得住　髖部偏移 8.3mm（上限 80.0mm）
+
+── spin　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   waistUp  往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   waistUp  手的皮膚頂端　1.4933　預算 1.8722　餘裕  378.9mm
+   waistUp  髖部最低　　0.8300　下緣 0.7678　餘裕  62.2mm
+   waistUp  髮頂　1.6036　上緣 1.8722　餘裕  268.6mm（模擬投影 1.5958，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   column   往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   column   手的皮膚頂端　1.4933　預算 1.6020　餘裕  108.8mm
+   column   髖部最低　　0.8300　下緣 0.4300　餘裕  400.1mm
+   column   髮頂　1.6185　上緣 1.6020　餘裕 -16.5mm（模擬投影 1.6107，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 5.771（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── squat　（column）
+   column   往畫面左邊伸　0.6296　預算 0.7415　餘裕  112.0mm
+   column   往畫面右邊伸　0.6155　預算 0.7415　餘裕  126.0mm
+   column   手的皮膚頂端　1.3508　預算 1.6020　餘裕  251.2mm
+   column   髖部最低　　0.6600　下緣 0.4300　餘裕  230.1mm
+   column   髮頂　1.6022　上緣 1.6020　餘裕 -0.2mm（模擬投影 1.5944，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.703（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── akimbo　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   waistUp  往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.8mm
+   waistUp  手的皮膚頂端　0.9640　預算 1.8722　餘裕  908.2mm
+   waistUp  髖部最低　　0.8817　下緣 0.7678　餘裕  113.9mm
+   waistUp  髮頂　1.5915　上緣 1.8722　餘裕  280.7mm（模擬投影 1.5837，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   column   往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.9mm
+   column   手的皮膚頂端　0.9640　預算 1.6020　餘裕  638.0mm
+   column   髖部最低　　0.8817　下緣 0.4300　餘裕  451.7mm
+   column   髮頂　1.6008　上緣 1.6020　餘裕  1.2mm（模擬投影 1.5930，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 18.714（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── playFingers　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.6mm
+   waistUp  往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   waistUp  手的皮膚頂端　1.0079　預算 1.8722　餘裕  864.3mm
+   waistUp  髖部最低　　0.8819　下緣 0.7678　餘裕  114.1mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.7mm
+   column   往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   column   手的皮膚頂端　1.0079　預算 1.6020　餘裕  594.2mm
+   column   髖部最低　　0.8819　下緣 0.4300　餘裕  451.9mm
+   column   髮頂　1.6014　上緣 1.6020　餘裕  0.6mm（模擬投影 1.5936，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 22.354（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── scratchHead　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.5mm
+   waistUp  往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   waistUp  手的皮膚頂端　1.5700　預算 1.8722　餘裕  302.1mm
+   waistUp  髖部最低　　0.8776　下緣 0.7678　餘裕  109.7mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.6mm
+   column   往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   column   手的皮膚頂端　1.5700　預算 1.6020　餘裕  32.0mm
+   column   髖部最低　　0.8776　下緣 0.4300　餘裕  447.6mm
+   column   髮頂　1.6011　上緣 1.6020　餘裕  0.9mm（模擬投影 1.5933，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.217（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── idleLoop　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.3mm
+   waistUp  往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.4mm
+   waistUp  手的皮膚頂端　0.7818　預算 1.8722　餘裕  1090.4mm
+   waistUp  髖部最低　　0.8761　下緣 0.7678　餘裕  108.3mm
+   waistUp  髮頂　1.5898　上緣 1.8722　餘裕  282.4mm（模擬投影 1.5820，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.4mm
+   column   往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.5mm
+   column   手的皮膚頂端　0.7818　預算 1.6020　餘裕  820.2mm
+   column   髖部最低　　0.8761　下緣 0.4300　餘裕  446.1mm
+   column   髮頂　1.6043　上緣 1.6020　餘裕 -2.3mm（模擬投影 1.5965，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 36.664（要大於 1）
+   頭尾站得住　髖部偏移 1.5mm（上限 80.0mm）
+
+── stretch　（waistUp）
+   waistUp  往畫面左邊伸　0.3063　預算 0.7415　餘裕  435.2mm
+   waistUp  往畫面右邊伸　0.5450　預算 0.7415　餘裕  196.5mm
+   waistUp  手的皮膚頂端　1.8091　預算 1.8722　餘裕  63.1mm
+   waistUp  髖部最低　　0.8824　下緣 0.7678　餘裕  114.6mm
+   waistUp  髮頂　1.8159　上緣 1.8722　餘裕  56.3mm（模擬投影 1.8081，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   waistUp  髮頂　1.7133　上緣 1.7922　餘裕  78.9mm（模擬投影 1.7013，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   column   髮頂　1.7276　上緣 1.7320　餘裕  4.4mm（模擬投影 1.7099，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.300（下限 0.290，t=8.23s）
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+
+3 項超出預算。上面每一列都指名是哪支動作、哪個構圖、哪個方向。
+這不代表動作壞了，代表這具身體跟現有的構圖數字不相容：
+要嘛調構圖（avatarMode.ts 的 framing），要嘛那支動作不給這具身體用。: expected 3 to be +0 // Object.is equality
+   ✓ measure-motions > recognises the face waiver dance already ships with 1ms
+   ✓ measure-motions > reports the face box and the finger skin it read off the body 0ms
+   ✓ measure-motions > says no when the same clips are asked to run on a taller body 0ms
+   ✓ measure-motions > counts exactly the violations it printed 0ms
+   × measure-motions > reports the derived crown against the top edge 1ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …/
+ ✓ src/components/chat/avatarVariants.test.ts (9 tests) 19ms
+ ❯ src/components/chat/clearance.test.ts (4 tests | 1 failed) 1481ms
+   × clearance producers > measure-motions --write records the rig it measured 1479ms
+     → Cannot find module '/private/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/clearance-TKAKuI/probe.measured.gen.ts' imported from '/Users/charles/portfolio/src/components/chat/clearance.test.ts'
+   ✓ combineClearance > pairs two producers only on the same rig 1ms
+   ✓ combineClearance > refuses a missing browser fringe rather than defaulting it 0ms
+   ✓ combineClearance > transfers a clip crown onto another body by its own resting crown 0ms
+ ❯ src/components/chat/rigProbe.test.ts (121 tests | 3 failed) 2830ms
+   ✓ rigProbe > rebuilds the shipped model rest pose it is going to measure against 9ms
+   ✓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it 5ms
+   ✓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose) 0ms
+   ✓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist) 0ms
+   ✓ rigProbe > reports a resting arm as straight and a folded one as flexed 0ms
+   ✓ guard sensitivity > sees a hand that leaves the frame 0ms
+   ✓ guard sensitivity > measures a finger to its skinned tip, not to its last joint 0ms
+   ✓ guard sensitivity > sees a stance that sinks 0ms
+   ✓ guard sensitivity > sees hips dropped through the bottom of the crop 0ms
+   ✓ guard sensitivity > sees a body that is not upright 0ms
+   ✓ guard sensitivity > sees a hand raised above the frame 0ms
+   ✓ bundled motions > peaceSign decodes to an upright body 107ms
+   ✓ bundled motions > modelPose decodes to an upright body 52ms
+   ✓ bundled motions > spin decodes to an upright body 70ms
+   ✓ bundled motions > squat decodes to an upright body 96ms
+   ✓ bundled motions > akimbo decodes to an upright body 32ms
+   ✓ bundled motions > playFingers decodes to an upright body 12ms
+   ✓ bundled motions > scratchHead decodes to an upright body 16ms
+   ✓ bundled motions > idleLoop decodes to an upright body 15ms
+   ✓ bundled motions > stretch decodes to an upright body 11ms
+   ✓ bundled motions > dance decodes to an upright body 122ms
+   ✓ bundled motions > ships every motion the table declares 0ms
+   ✓ bundled motions > has a clearance entry for every clip, measured on this rig 10ms
+   ✓ bundled motions > carries no browser crown lower than the simulator derives 8ms
+   ✓ bundled motions > was simulated under the composition the engine uses today 0ms
+   ✓ bundled motions > peaceSign keeps her fingertips out of her own head 84ms
+   ✓ bundled motions > modelPose keeps her fingertips out of her own head 41ms
+   ✓ bundled motions > spin keeps her fingertips out of her own head 60ms
+   ✓ bundled motions > squat keeps her fingertips out of her own head 81ms
+   ✓ bundled motions > akimbo keeps her fingertips out of her own head 25ms
+   ✓ bundled motions > playFingers keeps her fingertips out of her own head 8ms
+   ✓ bundled motions > scratchHead keeps her fingertips out of her own head 13ms
+   ✓ bundled motions > idleLoop keeps her fingertips out of her own head 12ms
+   ✓ bundled motions > stretch keeps her fingertips out of her own head 8ms
+   ✓ bundled motions > dance keeps her fingertips out of her own head 106ms
+   ✓ bundled motions > peaceSign stays inside every frame it declares 182ms
+   ✓ bundled motions > modelPose stays inside every frame it declares 90ms
+   × bundled motions > spin stays inside every frame it declares 130ms
+     → spin highest hair in column: expected 1.6185310100491455 to be less than 1.6020322509145632
+   × bundled motions > squat stays inside every frame it declares 89ms
+     → squat highest hair in column: expected 1.6022310100491455 to be less than 1.6020322509145632
+   ✓ bundled motions > akimbo stays inside every frame it declares 55ms
+   ✓ bundled motions > playFingers stays inside every frame it declares 19ms
+   ✓ bundled motions > scratchHead stays inside every frame it declares 27ms
+   × bundled motions > idleLoop stays inside every frame it declares 28ms
+     → idleLoop highest hair in column: expected 1.6043310100491455 to be less than 1.6020322509145632
+   ✓ bundled motions > stretch stays inside every frame it declares 10ms
+   ✓ bundled motions > dance stays inside every frame it declares 226ms
+   ✓ bundled motions > peaceSign declares no pan it does not need 0ms
+   ✓ bundled motions > modelPose declares no pan it does not need 0ms
+   ✓ bundled motions > spin declares no pan it does not need 0ms
+   ✓ bundled motions > squat declares no pan it does not need 0ms
+   ✓ bundled motions > akimbo declares no pan it does not need 0ms
+   ✓ bundled motions > playFingers declares no pan it does not need 0ms
+   ✓ bundled motions > scratchHead declares no pan it does not need 0ms
+   ✓ bundled motions > idleLoop declares no pan it does not need 0ms
+   ✓ bundled motions > stretch declares no pan it does not need 0ms
+   ✓ bundled motions > dance declares no pan it does not need 214ms
+   ✓ bundled motions > peaceSign turns a palm to the viewer at some point 83ms
+   ✓ bundled motions > spin turns a palm to the viewer at some point 74ms
+   ✓ bundled motions > scratchHead turns a palm to the viewer at some point 12ms
+   ✓ bundled motions > stretch turns a palm to the viewer at some point 7ms
+   ✓ bundled motions > dance turns a palm to the viewer at some point 103ms
+   ✓ bundled motions > peaceSign keeps her hips inside the crop 82ms
+   ✓ bundled motions > modelPose keeps her hips inside the crop 40ms
+   ✓ bundled motions > spin keeps her hips inside the crop 56ms
+   ✓ bundled motions > squat keeps her hips inside the crop 79ms
+   ✓ bundled motions > akimbo keeps her hips inside the crop 23ms
+   ✓ bundled motions > playFingers keeps her hips inside the crop 8ms
+   ✓ bundled motions > scratchHead keeps her hips inside the crop 11ms
+   ✓ bundled motions > idleLoop keeps her hips inside the crop 10ms
+   ✓ bundled motions > stretch keeps her hips inside the crop 7ms
+   ✓ bundled motions > dance keeps her hips inside the crop 100ms
+   ✓ bundled motions > peaceSign opens and closes on a standing pose 1ms
+   ✓ bundled motions > modelPose opens and closes on a standing pose 0ms
+   ✓ bundled motions > spin opens and closes on a standing pose 0ms
+   ✓ bundled motions > squat opens and closes on a standing pose 0ms
+   ✓ bundled motions > akimbo opens and closes on a standing pose 0ms
+   ✓ bundled motions > playFingers opens and closes on a standing pose 0ms
+   ✓ bundled motions > scratchHead opens and closes on a standing pose 0ms
+   ✓ bundled motions > idleLoop opens and closes on a standing pose 0ms
+   ✓ bundled motions > stretch opens and closes on a standing pose 0ms
+   ✓ bundled motions > dance opens and closes on a standing pose 0ms
+   ✓ the idle pool > offers dance wherever she is rendered 0ms
+   ✓ the idle pool > always opens on the dance, whatever else has loaded 0ms
+   ✓ the idle pool > plays the rotation in declared order, not at random 0ms
+   ✓ the idle pool > wraps back to the top instead of stopping at the end 0ms
+   ✓ the idle pool > steps over a clip that has not arrived rather than waiting for it 0ms
+   ✓ the idle pool > gives up on a dance that never arrives instead of never performing 0ms
+   ✓ the idle pool > holds its place when nothing at all has loaded 0ms
+   ✓ the idle pool > offers every idle clip somewhere, so the rotation can reach them all 0ms
+   ✓ the idle pool > offers nothing where she is not rendered 0ms
+   ✓ the idle pool > draws only from clips the frame guards above have measured 0ms
+   ✓ returning to rest > eases in and out instead of ramping 0ms
+   ✓ returning to rest > spends longer on a settle that has further to travel 0ms
+   ✓ returning to rest > peaceSign puts its arms down at a human speed 0ms
+   ✓ returning to rest > modelPose puts its arms down at a human speed 0ms
+   ✓ returning to rest > spin puts its arms down at a human speed 0ms
+   ✓ returning to rest > squat puts its arms down at a human speed 0ms
+   ✓ returning to rest > akimbo puts its arms down at a human speed 0ms
+   ✓ returning to rest > playFingers puts its arms down at a human speed 0ms
+   ✓ returning to rest > scratchHead puts its arms down at a human speed 0ms
+   ✓ returning to rest > idleLoop puts its arms down at a human speed 0ms
+   ✓ returning to rest > stretch puts its arms down at a human speed 0ms
+   ✓ returning to rest > dance puts its arms down at a human speed 0ms
+   ✓ returning to rest > peaceSign settles slower than the fade it replaced 0ms
+   ✓ returning to rest > modelPose settles slower than the fade it replaced 0ms
+   ✓ returning to rest > spin settles slower than the fade it replaced 0ms
+   ✓ returning to rest > squat settles slower than the fade it replaced 0ms
+   ✓ returning to rest > akimbo settles slower than the fade it replaced 0ms
+   ✓ returning to rest > playFingers settles slower than the fade it replaced 0ms
+   ✓ returning to rest > scratchHead settles slower than the fade it replaced 0ms
+   ✓ returning to rest > idleLoop settles slower than the fade it replaced 0ms
+   ✓ returning to rest > stretch settles slower than the fade it replaced 0ms
+   ✓ returning to rest > dance settles slower than the fade it replaced 0ms
+   ✓ returning to rest > has at least one clip that the distance scaling actually lengthens 2ms
+   ✓ three-vrm humanoid rig > is a VRMHumanoid and knows which VRM version it came from 4ms
+   ✓ three-vrm humanoid rig > names the thumb joints the way three-vrm does, and a thumb track lands on them 1ms
+   ✓ three-vrm humanoid rig > plays a clip on a VRM 1.0 twin without the VRM0 flip, so the two bodies strike the same pose 6ms
+   ✓ three-vrm humanoid rig > flips the clip for the 0.x body it ships on 0ms
+   ✓ three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included 22ms
+   ✓ three-vrm humanoid rig > derives the face box from the Face mesh instead of carrying 2026-08-19 numbers 4ms
+   ✓ three-vrm humanoid rig > leaves the neck rows of the Face mesh out of the face box 0ms
+   ✓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin 6ms
+ ✓ scripts/avatar/springsim.test.ts (6 tests) 48321ms
+   ✓ Milfy through the spring solver > a 1.0 export of the same body simulates the same  20001ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/measure-motions.test.ts > measure-motions > reports the shipped body as fitting, waiver and all
+AssertionError: 模型　　public/avatar/AvatarSample_B_webp.vrm
+靜止姿勢　hips 0.8782　head 1.3200　最高頂點 1.5820
+臉部盒　x -0.092…0.092　y 1.287…1.503　z -0.113…0.033（從 Face 網格推導）
+指尖皮厚　18.0mm（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT 12.0mm）
+
+每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。
+餘裕是負的就代表這具身體上那支動作會被切到或會穿模。
+
+── peaceSign　（waistUp、column）
+   waistUp  往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   waistUp  往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   waistUp  手的皮膚頂端　1.4268　預算 1.8722　餘裕  445.4mm
+   waistUp  髖部最低　　0.8225　下緣 0.7678　餘裕  54.7mm
+   waistUp  髮頂　1.5554　上緣 1.8722　餘裕  316.8mm（模擬投影 1.5476，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   column   往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   column   手的皮膚頂端　1.4268　預算 1.6020　餘裕  175.2mm
+   column   髖部最低　　0.8225　下緣 0.4300　餘裕  392.6mm
+   column   髮頂　1.5656　上緣 1.6020　餘裕  36.4mm（模擬投影 1.5578，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.925（要大於 1）
+   頭尾站得住　髖部偏移 36.1mm（上限 80.0mm）
+
+── modelPose　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   waistUp  往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   waistUp  手的皮膚頂端　1.2604　預算 1.8722　餘裕  611.7mm
+   waistUp  髖部最低　　0.8590　下緣 0.7678　餘裕  91.2mm
+   waistUp  髮頂　1.5806　上緣 1.8722　餘裕  291.6mm（模擬投影 1.5728，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   column   往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   column   手的皮膚頂端　1.2604　預算 1.6020　餘裕  341.6mm
+   column   髖部最低　　0.8590　下緣 0.4300　餘裕  429.1mm
+   column   髮頂　1.5848　上緣 1.6020　餘裕  17.2mm（模擬投影 1.5770，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 11.384（要大於 1）
+   頭尾站得住　髖部偏移 8.3mm（上限 80.0mm）
+
+── spin　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   waistUp  往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   waistUp  手的皮膚頂端　1.4933　預算 1.8722　餘裕  378.9mm
+   waistUp  髖部最低　　0.8300　下緣 0.7678　餘裕  62.2mm
+   waistUp  髮頂　1.6036　上緣 1.8722　餘裕  268.6mm（模擬投影 1.5958，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   column   往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   column   手的皮膚頂端　1.4933　預算 1.6020　餘裕  108.8mm
+   column   髖部最低　　0.8300　下緣 0.4300　餘裕  400.1mm
+   column   髮頂　1.6185　上緣 1.6020　餘裕 -16.5mm（模擬投影 1.6107，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 5.771（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── squat　（column）
+   column   往畫面左邊伸　0.6296　預算 0.7415　餘裕  112.0mm
+   column   往畫面右邊伸　0.6155　預算 0.7415　餘裕  126.0mm
+   column   手的皮膚頂端　1.3508　預算 1.6020　餘裕  251.2mm
+   column   髖部最低　　0.6600　下緣 0.4300　餘裕  230.1mm
+   column   髮頂　1.6022　上緣 1.6020　餘裕 -0.2mm（模擬投影 1.5944，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.703（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── akimbo　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   waistUp  往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.8mm
+   waistUp  手的皮膚頂端　0.9640　預算 1.8722　餘裕  908.2mm
+   waistUp  髖部最低　　0.8817　下緣 0.7678　餘裕  113.9mm
+   waistUp  髮頂　1.5915　上緣 1.8722　餘裕  280.7mm（模擬投影 1.5837，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   column   往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.9mm
+   column   手的皮膚頂端　0.9640　預算 1.6020　餘裕  638.0mm
+   column   髖部最低　　0.8817　下緣 0.4300　餘裕  451.7mm
+   column   髮頂　1.6008　上緣 1.6020　餘裕  1.2mm（模擬投影 1.5930，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 18.714（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── playFingers　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.6mm
+   waistUp  往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   waistUp  手的皮膚頂端　1.0079　預算 1.8722　餘裕  864.3mm
+   waistUp  髖部最低　　0.8819　下緣 0.7678　餘裕  114.1mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.7mm
+   column   往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   column   手的皮膚頂端　1.0079　預算 1.6020　餘裕  594.2mm
+   column   髖部最低　　0.8819　下緣 0.4300　餘裕  451.9mm
+   column   髮頂　1.6014　上緣 1.6020　餘裕  0.6mm（模擬投影 1.5936，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 22.354（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── scratchHead　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.5mm
+   waistUp  往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   waistUp  手的皮膚頂端　1.5700　預算 1.8722　餘裕  302.1mm
+   waistUp  髖部最低　　0.8776　下緣 0.7678　餘裕  109.7mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.6mm
+   column   往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   column   手的皮膚頂端　1.5700　預算 1.6020　餘裕  32.0mm
+   column   髖部最低　　0.8776　下緣 0.4300　餘裕  447.6mm
+   column   髮頂　1.6011　上緣 1.6020　餘裕  0.9mm（模擬投影 1.5933，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.217（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── idleLoop　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.3mm
+   waistUp  往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.4mm
+   waistUp  手的皮膚頂端　0.7818　預算 1.8722　餘裕  1090.4mm
+   waistUp  髖部最低　　0.8761　下緣 0.7678　餘裕  108.3mm
+   waistUp  髮頂　1.5898　上緣 1.8722　餘裕  282.4mm（模擬投影 1.5820，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.4mm
+   column   往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.5mm
+   column   手的皮膚頂端　0.7818　預算 1.6020　餘裕  820.2mm
+   column   髖部最低　　0.8761　下緣 0.4300　餘裕  446.1mm
+   column   髮頂　1.6043　上緣 1.6020　餘裕 -2.3mm（模擬投影 1.5965，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 36.664（要大於 1）
+   頭尾站得住　髖部偏移 1.5mm（上限 80.0mm）
+
+── stretch　（waistUp）
+   waistUp  往畫面左邊伸　0.3063　預算 0.7415　餘裕  435.2mm
+   waistUp  往畫面右邊伸　0.5450　預算 0.7415　餘裕  196.5mm
+   waistUp  手的皮膚頂端　1.8091　預算 1.8722　餘裕  63.1mm
+   waistUp  髖部最低　　0.8824　下緣 0.7678　餘裕  114.6mm
+   waistUp  髮頂　1.8159　上緣 1.8722　餘裕  56.3mm（模擬投影 1.8081，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   waistUp  髮頂　1.7133　上緣 1.7922　餘裕  78.9mm（模擬投影 1.7013，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   column   髮頂　1.7276　上緣 1.7320　餘裕  4.4mm（模擬投影 1.7099，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.300（下限 0.290，t=8.23s）
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+
+3 項超出預算。上面每一列都指名是哪支動作、哪個構圖、哪個方向。
+這不代表動作壞了，代表這具身體跟現有的構圖數字不相容：
+要嘛調構圖（avatarMode.ts 的 framing），要嘛那支動作不給這具身體用。: expected 3 to be +0 // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 3[39m
+
+ ❯ scripts/measure-motions.test.ts:89:53
+     87| 
+     88|   it('reports the shipped body as fitting, waiver and all', () => {
+     89|     expect(shipped.tight, shipped.lines.join('\n')).toBe(0)
+       |                                                     ^
+     90|     expect(shipped.lines.join('\n')).toContain('全部動作在這具身體上都待在預算內')
+     91|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  scripts/measure-motions.test.ts > measure-motions > reports the derived crown against the top edge
+AssertionError: expected '模型　　public/avatar/AvatarSample_B_webp…' to match /column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …/
+
+[32m- Expected:[39m 
+/column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  \d/
+
+[31m+ Received:[39m 
+"模型　　public/avatar/AvatarSample_B_webp.vrm
+靜止姿勢　hips 0.8782　head 1.3200　最高頂點 1.5820
+臉部盒　x -0.092…0.092　y 1.287…1.503　z -0.113…0.033（從 Face 網格推導）
+指尖皮厚　18.0mm（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT 12.0mm）
+
+每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。
+餘裕是負的就代表這具身體上那支動作會被切到或會穿模。
+
+── peaceSign　（waistUp、column）
+   waistUp  往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   waistUp  往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   waistUp  手的皮膚頂端　1.4268　預算 1.8722　餘裕  445.4mm
+   waistUp  髖部最低　　0.8225　下緣 0.7678　餘裕  54.7mm
+   waistUp  髮頂　1.5554　上緣 1.8722　餘裕  316.8mm（模擬投影 1.5476，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   column   往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   column   手的皮膚頂端　1.4268　預算 1.6020　餘裕  175.2mm
+   column   髖部最低　　0.8225　下緣 0.4300　餘裕  392.6mm
+   column   髮頂　1.5656　上緣 1.6020　餘裕  36.4mm（模擬投影 1.5578，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.925（要大於 1）
+   頭尾站得住　髖部偏移 36.1mm（上限 80.0mm）
+
+── modelPose　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   waistUp  往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   waistUp  手的皮膚頂端　1.2604　預算 1.8722　餘裕  611.7mm
+   waistUp  髖部最低　　0.8590　下緣 0.7678　餘裕  91.2mm
+   waistUp  髮頂　1.5806　上緣 1.8722　餘裕  291.6mm（模擬投影 1.5728，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   column   往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   column   手的皮膚頂端　1.2604　預算 1.6020　餘裕  341.6mm
+   column   髖部最低　　0.8590　下緣 0.4300　餘裕  429.1mm
+   column   髮頂　1.5848　上緣 1.6020　餘裕  17.2mm（模擬投影 1.5770，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 11.384（要大於 1）
+   頭尾站得住　髖部偏移 8.3mm（上限 80.0mm）
+
+── spin　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   waistUp  往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   waistUp  手的皮膚頂端　1.4933　預算 1.8722　餘裕  378.9mm
+   waistUp  髖部最低　　0.8300　下緣 0.7678　餘裕  62.2mm
+   waistUp  髮頂　1.6036　上緣 1.8722　餘裕  268.6mm（模擬投影 1.5958，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   column   往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   column   手的皮膚頂端　1.4933　預算 1.6020　餘裕  108.8mm
+   column   髖部最低　　0.8300　下緣 0.4300　餘裕  400.1mm
+   column   髮頂　1.6185　上緣 1.6020　餘裕 -16.5mm（模擬投影 1.6107，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 5.771（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── squat　（column）
+   column   往畫面左邊伸　0.6296　預算 0.7415　餘裕  112.0mm
+   column   往畫面右邊伸　0.6155　預算 0.7415　餘裕  126.0mm
+   column   手的皮膚頂端　1.3508　預算 1.6020　餘裕  251.2mm
+   column   髖部最低　　0.6600　下緣 0.4300　餘裕  230.1mm
+   column   髮頂　1.6022　上緣 1.6020　餘裕 -0.2mm（模擬投影 1.5944，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.703（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── akimbo　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   waistUp  往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.8mm
+   waistUp  手的皮膚頂端　0.9640　預算 1.8722　餘裕  908.2mm
+   waistUp  髖部最低　　0.8817　下緣 0.7678　餘裕  113.9mm
+   waistUp  髮頂　1.5915　上緣 1.8722　餘裕  280.7mm（模擬投影 1.5837，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   column   往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.9mm
+   column   手的皮膚頂端　0.9640　預算 1.6020　餘裕  638.0mm
+   column   髖部最低　　0.8817　下緣 0.4300　餘裕  451.7mm
+   column   髮頂　1.6008　上緣 1.6020　餘裕  1.2mm（模擬投影 1.5930，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 18.714（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── playFingers　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.6mm
+   waistUp  往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   waistUp  手的皮膚頂端　1.0079　預算 1.8722　餘裕  864.3mm
+   waistUp  髖部最低　　0.8819　下緣 0.7678　餘裕  114.1mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.7mm
+   column   往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   column   手的皮膚頂端　1.0079　預算 1.6020　餘裕  594.2mm
+   column   髖部最低　　0.8819　下緣 0.4300　餘裕  451.9mm
+   column   髮頂　1.6014　上緣 1.6020　餘裕  0.6mm（模擬投影 1.5936，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 22.354（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── scratchHead　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.5mm
+   waistUp  往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   waistUp  手的皮膚頂端　1.5700　預算 1.8722　餘裕  302.1mm
+   waistUp  髖部最低　　0.8776　下緣 0.7678　餘裕  109.7mm
+   waistUp  髮頂　1.5913　上緣 1.8722　餘裕  280.9mm（模擬投影 1.5835，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.6mm
+   column   往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   column   手的皮膚頂端　1.5700　預算 1.6020　餘裕  32.0mm
+   column   髖部最低　　0.8776　下緣 0.4300　餘裕  447.6mm
+   column   髮頂　1.6011　上緣 1.6020　餘裕  0.9mm（模擬投影 1.5933，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 1.217（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── idleLoop　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.3mm
+   waistUp  往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.4mm
+   waistUp  手的皮膚頂端　0.7818　預算 1.8722　餘裕  1090.4mm
+   waistUp  髖部最低　　0.8761　下緣 0.7678　餘裕  108.3mm
+   waistUp  髮頂　1.5898　上緣 1.8722　餘裕  282.4mm（模擬投影 1.5820，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.4mm
+   column   往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.5mm
+   column   手的皮膚頂端　0.7818　預算 1.6020　餘裕  820.2mm
+   column   髖部最低　　0.8761　下緣 0.4300　餘裕  446.1mm
+   column   髮頂　1.6043　上緣 1.6020　餘裕 -2.3mm（模擬投影 1.5965，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 36.664（要大於 1）
+   頭尾站得住　髖部偏移 1.5mm（上限 80.0mm）
+
+── stretch　（waistUp）
+   waistUp  往畫面左邊伸　0.3063　預算 0.7415　餘裕  435.2mm
+   waistUp  往畫面右邊伸　0.5450　預算 0.7415　餘裕  196.5mm
+   waistUp  手的皮膚頂端　1.8091　預算 1.8722　餘裕  63.1mm
+   waistUp  髖部最低　　0.8824　下緣 0.7678　餘裕  114.6mm
+   waistUp  髮頂　1.8159　上緣 1.8722　餘裕  56.3mm（模擬投影 1.8081，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 0.0mm（上限 80.0mm）
+
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   waistUp  髮頂　1.7133　上緣 1.7922　餘裕  78.9mm（模擬投影 1.7013，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   column   髮頂　1.7276　上緣 1.7320　餘裕  4.4mm（模擬投影 1.7099，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.300（下限 0.290，t=8.23s）
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+
+3 項超出預算。上面每一列都指名是哪支動作、哪個構圖、哪個方向。
+這不代表動作壞了，代表這具身體跟現有的構圖數字不相容：
+要嘛調構圖（avatarMode.ts 的 framing），要嘛那支動作不給這具身體用。"
+
+ ❯ scripts/measure-motions.test.ts:153:25
+    151|     // dance in the column: derived crown against the panned top edge
+    152|     // (1.732 + 0.13), with room to spare on the shipped body.
+    153|     expect(shippedText).toMatch(/column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …
+       |                         ^
+    154|     expect(shippedText).not.toContain('推導不出來')
+    155|     // A 35% taller body carries its crown up with it; the frame does …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  src/components/chat/clearance.test.ts > clearance producers > measure-motions --write records the rig it measured
+Error: Cannot find module '/private/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/clearance-TKAKuI/probe.measured.gen.ts' imported from '/Users/charles/portfolio/src/components/chat/clearance.test.ts'
+ ❯ src/components/chat/clearance.test.ts:40:18
+     38|       stdio: 'pipe',
+     39|     })
+     40|     const mod = (await import(/* @vite-ignore */ out)) as { MEASURED: …
+       |                  ^
+     41|     const doc = parseGlb(new Uint8Array(readFileSync(BODY))).json
+     42|     expect(mod.MEASURED.family).toBe('probe')
+
+Caused by: Error: Failed to load url /private/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/clearance-TKAKuI/probe.measured.gen.ts (resolved id: /private/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/clearance-TKAKuI/probe.measured.gen.ts). Does the file exist?
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:22739:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions > spin stays inside every frame it declares
+AssertionError: spin highest hair in column: expected 1.6185310100491455 to be less than 1.6020322509145632
+ ❯ src/components/chat/rigProbe.test.ts:590:80
+    588|       // edge — so before the crown row existed nothing here looked at…
+    589|       // frame the browser drew 119mm of her hair past on the 2026-08-…
+    590|       expect(crownOf(name, placement), `${name} highest hair in ${plac…
+       |                                                                                ^
+    591|     }
+    592|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions > squat stays inside every frame it declares
+AssertionError: squat highest hair in column: expected 1.6022310100491455 to be less than 1.6020322509145632
+ ❯ src/components/chat/rigProbe.test.ts:590:80
+    588|       // edge — so before the crown row existed nothing here looked at…
+    589|       // frame the browser drew 119mm of her hair past on the 2026-08-…
+    590|       expect(crownOf(name, placement), `${name} highest hair in ${plac…
+       |                                                                                ^
+    591|     }
+    592|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯
+
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions > idleLoop stays inside every frame it declares
+AssertionError: idleLoop highest hair in column: expected 1.6043310100491455 to be less than 1.6020322509145632
+ ❯ src/components/chat/rigProbe.test.ts:590:80
+    588|       // edge — so before the crown row existed nothing here looked at…
+    589|       // frame the browser drew 119mm of her hair past on the 2026-08-…
+    590|       expect(crownOf(name, placement), `${name} highest hair in ${plac…
+       |                                                                                ^
+    591|     }
+    592|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯
+
+
+ Test Files  3 failed | 2 passed (5)
+      Tests  6 failed | 140 passed (146)
+   Start at  20:35:10
+   Duration  48.94s (transform 166ms, setup 164ms, collect 354ms, tests 55.48s, environment 1.08s, prepare 147ms)
+

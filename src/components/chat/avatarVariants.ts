@@ -10,13 +10,14 @@
 //
 // WHY THE RIG MATTERS. Every variant declared here must carry the same humanoid
 // rest pose, because that is what lets the ten motion clips be shared. The
-// clips' clearance numbers (avatarMotions.ts) are absolute world-space
-// distances measured against one body; a variant whose bones moved is a
-// different body wearing the same numbers, and the first thing anyone sees is
-// a hand through a face. The same goes for the blendshape names: expressions
-// and lip sync are looked up by name on the loaded model, so a variant missing
-// one simply stops making that face, silently. avatarVariants.test.ts holds
-// both of those across everything declared here.
+// clips' clearance numbers (the clearance file, src/components/chat/clearance/)
+// are absolute world-space distances measured against one body; a variant whose
+// bones moved is a different body wearing the same numbers, and the first thing
+// anyone sees is a hand through a face. The same goes for the blendshape
+// names: expressions and lip sync are looked up by name on the loaded model,
+// so a variant missing one simply stops making that face, silently.
+// avatarVariants.test.ts holds both of those across everything declared here,
+// and the sha the clearance file names is the rig every variant has to be.
 //
 // The rig is the humanoid bones' rest transforms and hierarchy, NOT the mesh:
 // an outfit IS different geometry on the same bones, which is the whole reason

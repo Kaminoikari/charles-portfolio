@@ -14,6 +14,11 @@ rather than a handful of snapshots.
 The envelope is written to a file rather than computed during the build, because
 posing 1,256 vertices through 240 frames takes a couple of minutes and the shape
 only changes when the clips do. Regenerate it by running this module.
+
+The heights swept run from the knee to just above the hip joint, read off the
+body's own rest pose (heights()). Until 2026-09-06 they were typed in as
+0.60..1.00, this one body's numbers: on the shipped body no height above 0.90
+ever carried a leg, and nothing below the knee is behind a skirt.
 """
 import glob
 import json
@@ -29,9 +34,23 @@ import humanoid  # noqa: E402
 import motion  # noqa: E402
 import pose as pose_mod  # noqa: E402
 
-HEIGHTS = np.round(np.arange(0.60, 1.01, 0.01), 3)
 SEGMENTS = 48
 BAND = 0.020
+STEP = 0.01
+# Above the pelvis the thigh's skin still rises with a lifted knee; 5cm covers
+# it on the shipped body, whose legs' skin tops out at 0.857 at rest and 0.90
+# in motion. The height this is added to is the `hips` bone (0.8782 on that
+# body), not the leg joint it hangs off (`leftUpperLeg`, 0.8434), so the sweep
+# runs to 0.92 rather than 0.89.
+ABOVE_HIP = 0.05
+
+
+def heights(doc):
+    """The heights the sweep samples: the knee up to just above the hip joint."""
+    world, bones = humanoid.rest_world(doc), humanoid.bones(doc)
+    knee = float(world[bones['leftLowerLeg']][1, 3])
+    hip = float(world[bones['hips']][1, 3])
+    return np.round(np.arange(round(knee, 2), hip + ABOVE_HIP, STEP), 3)
 
 
 def leg_vertices(doc, views, parts, part='Body_Skin'):
@@ -52,6 +71,7 @@ def leg_vertices(doc, views, parts, part='Body_Skin'):
 
 
 def sweep(model, manifest, clips, samples=24):
+    """(heights, grid): per height and bearing, the largest leg radius seen."""
     doc, binary = glb.load(model)
     views = glb.views_of(doc, binary)
     parts = json.load(open(manifest))['parts']
@@ -59,7 +79,8 @@ def sweep(model, manifest, clips, samples=24):
     mask = leg_vertices(doc, views, parts)
     mesh, prims = parts['Body_Skin']['mesh'], parts['Body_Skin']['primitives']
 
-    grid = np.zeros((len(HEIGHTS), SEGMENTS))
+    hs = heights(doc)
+    grid = np.zeros((len(hs), SEGMENTS))
     for clip in clips:
         _, dur = motion.retarget(clip, 0.0, doc)
         for k in range(samples):
@@ -70,12 +91,12 @@ def sweep(model, manifest, clips, samples=24):
             r = np.hypot(B[:, 0], B[:, 2])
             bin_of = ((np.arctan2(B[:, 2], B[:, 0]) % (2 * np.pi))
                       / (2 * np.pi) * SEGMENTS).astype(int) % SEGMENTS
-            for hi, h in enumerate(HEIGHTS):
+            for hi, h in enumerate(hs):
                 near = np.abs(B[:, 1] - h) < BAND
                 if not near.any():
                     continue
                 np.maximum.at(grid[hi], bin_of[near], r[near])
-    return grid
+    return hs, grid
 
 
 def load(path):
@@ -101,10 +122,10 @@ if __name__ == '__main__':
     base = os.path.dirname(os.path.abspath(__file__))
     clips = sorted(glob.glob(os.path.join(base, '..', '..', 'public', 'avatar',
                                           'animations', '*.vrma')))
-    grid = sweep(os.path.join(base, 'out', 'mika-milfy.vrm'),
-                 os.path.join(base, 'out', 'mika-milfy.parts.json'), clips)
+    hs, grid = sweep(os.path.join(base, 'out', 'mika-milfy.vrm'),
+                     os.path.join(base, 'out', 'mika-milfy.parts.json'), clips)
     out = os.path.join(base, 'out', 'leg-envelope.json')
-    json.dump({'heights': HEIGHTS.tolist(), 'segments': SEGMENTS,
+    json.dump({'heights': hs.tolist(), 'segments': SEGMENTS,
                'radii': grid.tolist(), 'clips': [os.path.basename(c) for c in clips]},
               open(out, 'w'))
     live = grid.any(axis=1)

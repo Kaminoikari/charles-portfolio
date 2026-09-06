@@ -1,14 +1,18 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { VRMHumanoid } from '@pixiv/three-vrm'
-import { parseGlb, readHumanoid, type GltfJson } from './vrmHumanoid'
+import { parseGlb, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
+import { crownBound, crownOn } from './clearance'
+import { CLEARANCE } from './clearance/vroid-sample-b'
 import {
   applyMotion,
   buildMotion,
   buildRig,
   deriveFingerSkinRadius,
+  deriveRestCrown,
   handJoints,
   headPenetration,
   headVolume,
@@ -23,7 +27,9 @@ import {
 import {
   ARM_REST_FORE_Z,
   ARM_REST_UPPER_Z,
+  AVATAR_CAMERA_TILT,
   AVATAR_CANVAS_LAUNCHER,
+  AVATAR_FOV,
   AVATAR_COLUMN_ASPECT,
   AVATAR_FRAMING_COLUMN,
   AVATAR_FRAMING_DEFAULT,
@@ -138,6 +144,25 @@ function motion(name: AvatarMotionName): Motion {
   motionCache.set(name, built)
   return built
 }
+
+// Per-(body, clip) numbers live in the clearance file, not on the clip: a
+// waiver is a measured violation of THIS family's bodies, and the crown is
+// what the spring solver threw on the simulated body carried onto this one by
+// its own resting crown (clearance.ts crownOn). AvatarMotionDef keeps only what
+// is true of the clip wherever it plays.
+const waiverOf = (name: string) => CLEARANCE.clips[name]?.waiver
+
+let cachedRestCrown: number | null = null
+function restCrown(): number {
+  if (cachedRestCrown === null) {
+    const glb = parseGlb(asset('AvatarSample_B_webp.vrm'))
+    cachedRestCrown = deriveRestCrown(glb, rig())
+  }
+  return cachedRestCrown
+}
+// The crown a frame has to clear: derived through that frame's camera, or the
+// browser's worst where a sweep has drawn it higher (crownBound).
+const crownOf = (name: string, frame: MotionFrame): number => crownBound(CLEARANCE, name, frame, restCrown())
 
 // The launcher and docked canvases share a framing and an aspect, so one box
 // covers both; the fullscreen column is composed lower and tighter.
@@ -422,6 +447,45 @@ describe('bundled motions', () => {
     for (const name of names) expect(motion(name).duration).toBeGreaterThan(1)
   })
 
+  it('has a clearance entry for every clip, measured on this rig', () => {
+    // The clearance file is the pool's numbers for this family of bodies. A
+    // clip without one has no crown and no waivers, so every guard below would
+    // run on defaults; a file measured on some other rig is another body's
+    // numbers wearing this one's name (avatarVariants.test.ts holds every
+    // declared variant to the same sha).
+    expect(Object.keys(CLEARANCE.clips).sort()).toEqual([...names].sort())
+    const doc = parseGlb(asset('AvatarSample_B_webp.vrm')).json
+    expect(CLEARANCE.rigSha).toBe(createHash('sha256').update(rigOf(doc)).digest('hex'))
+  })
+
+  it('carries no browser crown lower than the simulator derives', () => {
+    // crownSeen is the worst the browser has drawn a clip's crown at, recorded
+    // by hand and only ever raised. The derived crown is the simulator's
+    // reading on the same family; a hand number below it is a sweep that
+    // missed the peak, and the fix is another sweep, not a lower floor.
+    for (const [name, byFrame] of Object.entries(CLEARANCE.crownSeen)) {
+      for (const [frame, seen] of Object.entries(byFrame) as [MotionFrame, number][]) {
+        const derived = crownOn(CLEARANCE, name, frame, restCrown())
+        expect(seen, `${name} browser crown in ${frame} vs derived ${derived.toFixed(4)}`).toBeGreaterThanOrEqual(derived)
+      }
+    }
+  })
+
+  it('was simulated under the composition the engine uses today', () => {
+    // crownScreen is a projection through the frame's camera, so it is only
+    // as current as the camera it was projected through. A changed framing,
+    // fov, tilt or pan without a re-run of springsim --clearance would leave
+    // every crown row comparing yesterday's projection with today's edge.
+    const f = CLEARANCE.framings
+    expect(f.fov).toBe(AVATAR_FOV)
+    expect(f.tilt).toBe(AVATAR_CAMERA_TILT)
+    expect(f.frames.waistUp).toEqual(AVATAR_FRAMING_DEFAULT)
+    expect(f.frames.column).toEqual(AVATAR_FRAMING_COLUMN)
+    for (const name of names) {
+      expect(f.pans[name] ?? null, `${name} pan when the clearance was produced`).toEqual(AVATAR_MOTIONS[name].pan ?? null)
+    }
+  })
+
   it.each(Object.entries(AVATAR_MOTIONS))(
     '%s keeps her fingertips out of her own head',
     (name, def) => {
@@ -440,7 +504,7 @@ describe('bundled motions', () => {
           }
         }
       }
-      const faceBudget = def.waiver?.handInHead
+      const faceBudget = waiverOf(name)?.handInHead
       if (faceBudget !== undefined) {
         expect(worst, `${name} declares a handInHead waiver it does not need`).toBeLessThan(1)
       }
@@ -462,6 +526,11 @@ describe('bundled motions', () => {
   it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
+    // The crown against every declared frame, judged after the loop: a
+    // crownTop waiver is needed if the crown leaves ANY declared frame (the
+    // column is the tight one), and binds in every frame.
+    const crownBudget = waiverOf(name)?.crownTop
+    let crownPast = -Infinity
     for (const placement of def.placements) {
       const frame = frameFor(name as AvatarMotionName, placement)
       let screenLeft = -Infinity
@@ -488,7 +557,7 @@ describe('bundled motions', () => {
       // A waiver replaces the budget with the clip's own measured worst case,
       // and is itself checked: declaring one that the clip does not need is a
       // failure, so a stale waiver cannot sit here quietly widening the guard.
-      const reachBudget = def.waiver?.reach
+      const reachBudget = waiverOf(name)?.reach
       if (reachBudget !== undefined) {
         expect(
           Math.max(screenLeft, screenRight),
@@ -505,7 +574,7 @@ describe('bundled motions', () => {
       // alone is what the first attempt at the raised-hand fix did, and it
       // still rendered a cut hand: see SKIN_ABOVE_JOINT.
       const skinTop = maxY + SKIN_ABOVE_JOINT
-      const topBudget = def.waiver?.handTop
+      const topBudget = waiverOf(name)?.handTop
       if (topBudget !== undefined) {
         expect(
           skinTop,
@@ -515,15 +584,20 @@ describe('bundled motions', () => {
       expect(skinTop, `${name} highest hand in ${placement}`).toBeLessThan(
         topBudget ?? frame.span.top,
       )
-      // …and against the top of her HAIR where that has been measured. The rig
-      // has no spring bones, so this number cannot be derived here; it is read
-      // off the render and carried on the clip (AvatarMotionDef.crown). What
-      // this file can measure is hands, and `dance` never raises one near the
-      // top edge — so before `crown` existed nothing here looked at the frame
-      // the browser drew 119mm of her hair past on the 2026-08-20 sweep.
-      if (def.crown !== undefined) {
-        expect(def.crown, `${name} highest hair in ${placement}`).toBeLessThan(frame.span.top)
-      }
+      // …and against the top of her HAIR. The rig has no spring bones, so
+      // this file cannot sweep it; the clearance file carries what three-vrm's
+      // own spring solver threw on the simulated body (springsim.ts) plus the
+      // translucent fringe the browser draws past the topmost vertex, and
+      // crownOn moves that onto this body by its own resting crown. What this
+      // file can measure is hands, and `dance` never raises one near the top
+      // edge — so before the crown row existed nothing here looked at the
+      // frame the browser drew 119mm of her hair past on the 2026-08-20 sweep.
+      const crown = crownOf(name, placement)
+      crownPast = Math.max(crownPast, crown - frame.span.top)
+      expect(crown, `${name} highest hair in ${placement}`).toBeLessThan(crownBudget ?? frame.span.top)
+    }
+    if (crownBudget !== undefined) {
+      expect(crownPast, `${name} declares a crownTop waiver it does not need`).toBeGreaterThan(0)
     }
   })
 
@@ -563,7 +637,7 @@ describe('bundled motions', () => {
       const escapes =
         lowestHips < rest.bottom ||
         highestHand + SKIN_ABOVE_JOINT > rest.top ||
-        (def.crown ?? -Infinity) > rest.top
+        crownOf(name, frame) > rest.top
       expect(escapes, `${name} fits ${frame} unpanned and does not need its pan`).toBe(true)
     }
   })
@@ -618,7 +692,7 @@ describe('bundled motions', () => {
 
   it.each(Object.entries(AVATAR_MOTIONS))(
     '%s opens and closes on a standing pose',
-    (name, def) => {
+    (name) => {
       const r = rig()
       const m = motion(name as AvatarMotionName)
       const restHipsY = r.restPosition.hips.y
@@ -641,7 +715,7 @@ describe('bundled motions', () => {
         expect(restHipsY - hips.y, `${name} hips sink at t=${time}`).toBeLessThan(MAX_HIPS_SINK)
       }
 
-      const driftBudget = def.waiver?.hipsDrift
+      const driftBudget = waiverOf(name)?.hipsDrift
       if (driftBudget !== undefined) {
         expect(drift, `${name} declares a hipsDrift waiver it does not need`).toBeGreaterThan(
           MAX_END_DRIFT,
@@ -649,7 +723,7 @@ describe('bundled motions', () => {
       }
       expect(drift, `${name} hips drift at its ends`).toBeLessThan(driftBudget ?? MAX_END_DRIFT)
 
-      const wristBudget = def.waiver?.endWrist
+      const wristBudget = waiverOf(name)?.endWrist
       if (wristBudget !== undefined) {
         expect(wrist, `${name} declares an endWrist waiver it does not need`).toBeGreaterThan(
           MAX_END_WRIST,

@@ -1,28 +1,46 @@
 // Play a motion clip through three-vrm's OWN spring-bone solver in plain Node,
-// and measure where the twintails actually go.
+// and measure where the hair, the coat and the skirt actually go.
 //
 //     npx tsx scripts/avatar/springsim.ts [model.vrm] [--clip=dance|all]
-//                                         [--colliders=asis|vroid|vroid-noarms]
+//                                         [--colliders=asis|vroid|vroid-noarms --vroid-colliders=base.vrm]
 //                                         [--hit=0.035] [--gravity=0.5] [--stride=2]
+//                                         [--clearance=src/components/chat/clearance/<family>.simulated.gen.ts --family=<family>]
 //
 // WHY THIS EXISTS. The rest-pose gates in this directory (pierce, motion) skin
-// the hair to the posed humanoid bones and leave the tail bones at bind. In the
-// browser the tails are spring bones: they lag, swing, sag under gravity and
-// are pushed by colliders, so where the hair is during `dance` is a property
-// of the solver, not of the file. Every previous number about the tails in
-// motion ("27° single-frame jumps", "smooth without colliders") was an
-// eyeballed browser impression that nobody could reproduce. This runs the real
-// VRMSpringBoneManager (imported through the loader plugin's own afterRoot, on
-// a node tree built from the file's glTF nodes and posed through the same
-// VRMHumanoid rigProbe.ts measures with) at a fixed 60 Hz, so a claim about
-// the tails in motion is a number that can be re-run.
+// the hair to the posed humanoid bones and leave the spring bones at bind. In
+// the browser the tails are spring bones: they lag, swing, sag under gravity
+// and are pushed by colliders, so where the hair is during `dance` is a
+// property of the solver, not of the file. Every previous number about the
+// tails in motion ("27° single-frame jumps", "smooth without colliders") was
+// an eyeballed browser impression that nobody could reproduce; so was the
+// crown, the highest point the dance throws her hair to, which the frame's pan
+// is derived from and which lived as a hand-typed constant until 2026-09-06.
+// This runs the real VRMSpringBoneManager (imported through the loader
+// plugin's own afterRoot, on a node tree built from the file's glTF nodes and
+// posed through the same VRMHumanoid rigProbe.ts measures with) at a fixed
+// 60 Hz, so a claim about the hair in motion is a number that can be re-run.
 //
 // What it reports, per clip:
-//   coat   deepest point any twintail vertex reaches INSIDE the cardigan's outer
-//          shell (signed by the shell's normal), and how much of the tail is in
-//          there at the worst frame
+//   crown  the topmost vertex of anything she draws at any frame, springs
+//          included, against the same vertex in bind pose; and the same
+//          crown as each frame's camera sees it (perspective lifts whatever
+//          comes toward the camera), which is what the frame's top edge is
+//          really measured against
+//   coat   deepest point any hair vertex reaches INSIDE the cardigan's outer
+//          shell (signed by the shell's normal), and how much of the hair is
+//          in there at the worst frame
 //   body   the same against the skin and the face
-//   jump   the largest angle any tail bone turns between two consecutive frames
+//   skirt  deepest any skirt vertex sits inside the LEGS' skin
+//   jump   the largest angle any hair spring bone turns between two frames
+//
+// WHAT IT READS. Every mesh comes from the body's manifest (`<model>.parts.json`,
+// written by build.py): the hair is every `Hair_*` part, the coat
+// `Outfit_Cardigan`, the skin `Body_Skin`, the face `Face`, the skirt
+// `Outfit_Bottom`; the coat's hem band is the manifest's waist landmark. Every
+// bone comes from the humanoid map (vrmHumanoid.readHumanoid), so a 1.0 file
+// with the same manifest simulates the same as its 0.x twin
+// (springsim.test.ts holds that). Nothing here names a J_Bip_* node or a
+// material.
 //
 // NO BROWSER, NO GPU, for the same reason as rigProbe: this machine's headless
 // browser runs software WebGL at ~1 fps with dt clamped to 50 ms, which is a
@@ -32,50 +50,97 @@ import path from 'node:path'
 import process from 'node:process'
 
 import * as THREE from 'three'
-import { VRMSpringBoneLoaderPlugin, type VRMSpringBoneManager } from '@pixiv/three-vrm'
+import {
+  VRMSpringBoneColliderShapeSphere,
+  VRMSpringBoneLoaderPlugin,
+  type VRMSpringBoneJoint,
+  type VRMSpringBoneManager,
+} from '@pixiv/three-vrm'
 
+import {
+  AVATAR_CAMERA_TILT,
+  AVATAR_FOV,
+  AVATAR_FRAMING_COLUMN,
+  AVATAR_FRAMING_DEFAULT,
+  type AvatarFraming,
+} from '../../src/components/chat/avatarMode'
+import { AVATAR_MOTIONS, motionPan, type AvatarMotionName, type MotionFrame } from '../../src/components/chat/avatarMotions'
+import type { ClearanceFramings, ClearanceSimulated, ClipSimulated } from '../../src/components/chat/clearance'
 import { applyMotion, buildMotion, buildRigFrom, resetRig, type Rig } from '../../src/components/chat/rigProbe'
 import {
   parseGlb,
   readAccessorRows,
   readHumanoid,
+  readSprings,
   type GltfAccessor,
   type GltfBufferView,
   type GltfJson,
   type GltfNode,
-  type Vrm0BoneGroup,
-  type Vrm0ColliderGroup,
-  type Vrm0SecondaryAnimation,
 } from '../../src/components/chat/vrmHumanoid'
+import { producedAt, rigSha, servedPath, writeGenerated } from './clearance'
 
 // ---- glTF ------------------------------------------------------------------
 //
-// The container reader and the humanoid map come from vrmHumanoid.ts, the one
-// place that knows both VRM versions, and the rig comes from rigProbe.ts. What
-// stays here is the narrowing this simulator relies on: a body it can simulate
-// has meshes, skins and a VRM 0.x secondaryAnimation block. The spring IMPORT
-// below goes through the plugin's afterRoot and would take a 1.0 block too;
-// the collider presets, the tail group and the --dump-at reading still read
-// the 0.x block by hand, which is Phase 5's work.
+// The container reader, the humanoid map and the spring block come from
+// vrmHumanoid.ts, the one place that knows both VRM versions, and the rig
+// comes from rigProbe.ts. What stays here is the narrowing this simulator
+// relies on: a body it can simulate has meshes, skins and accessors.
 
 interface GltfPrimitive {
   attributes: Record<string, number>
-  material: number
+  material?: number
 }
-type ColliderGroup = Vrm0ColliderGroup
-type BoneGroup = Vrm0BoneGroup
 interface Gltf extends GltfJson {
   scenes: { nodes: number[] }[]
-  meshes: { name: string; primitives: GltfPrimitive[] }[]
-  materials: { name: string }[]
+  meshes: { name?: string; primitives: GltfPrimitive[] }[]
   skins: { joints: number[]; inverseBindMatrices: number }[]
   accessors: GltfAccessor[]
   bufferViews: GltfBufferView[]
-  extensions: {
-    VRM: {
-      secondaryAnimation: Vrm0SecondaryAnimation
-    }
+}
+
+/** The build's sidecar: which primitives are which part, and where the body's landmarks are. */
+interface Manifest {
+  parts: Record<string, { mesh: string; primitives: number[] }>
+  landmarks: { waist: number }
+}
+
+function readManifest(model: string): Manifest {
+  const file = model.replace(/\.vrm$/, '.parts.json')
+  let text: string
+  try {
+    text = readFileSync(file, 'utf8')
+  } catch {
+    throw new Error(`no manifest beside the model: ${file} (build.py writes it; the simulator needs it to know which primitives are hair, coat, skin, face and skirt)`)
   }
+  const m = JSON.parse(text) as Partial<Manifest>
+  if (!m.parts || typeof m.landmarks?.waist !== 'number') throw new Error(`${file}: no parts or no waist landmark`)
+  return m as Manifest
+}
+
+// ---- humanoid ----------------------------------------------------------------
+
+/** Node indices of every bone under (and including) the given nodes. */
+function subtreeNodes(json: Gltf, roots: (number | undefined)[]): Set<number> {
+  const out = new Set<number>()
+  const walk = (i: number): void => {
+    if (out.has(i)) return
+    out.add(i)
+    for (const c of json.nodes[i].children ?? []) walk(c)
+  }
+  for (const r of roots) if (r !== undefined) walk(r)
+  return out
+}
+
+/** Everything hanging off the shoulders (or the upper arms, on a body without shoulder bones). */
+function armNodes(json: Gltf): Set<number> {
+  const b = readHumanoid(json).bones
+  return subtreeNodes(json, [b.leftShoulder ?? b.leftUpperArm, b.rightShoulder ?? b.rightUpperArm])
+}
+
+/** Everything hanging off the upper legs. */
+function legNodes(json: Gltf): Set<number> {
+  const b = readHumanoid(json).bones
+  return subtreeNodes(json, [b.leftUpperLeg, b.rightUpperLeg])
 }
 
 // ---- springs -------------------------------------------------------------------
@@ -109,6 +174,16 @@ async function importSprings(json: Gltf, rig: Rig): Promise<VRMSpringBoneManager
 }
 
 /**
+ * The spring joints that move the hair: every joint whose bone the `Hair_*`
+ * parts are skinned to. Read off the imported manager rather than the file's
+ * spring block, which the two versions lay out differently.
+ */
+function hairJoints(manager: VRMSpringBoneManager, rig: Rig, hairBones: Set<number>): VRMSpringBoneJoint[] {
+  const index = new Map(rig.raw.map((o, i) => [o, i]))
+  return [...manager.joints].filter((j) => hairBones.has(index.get(j.bone) ?? -1))
+}
+
+/**
  * The hips' heading, degrees from facing the camera. The sign follows the
  * file's own X axis: on a 0.x body (her left is -X) a turn to her left reads
  * negative, on a 1.0 body positive. Same number the old poser reported.
@@ -121,35 +196,38 @@ function yawDeg(rig: Rig): number {
 
 // ---- collider presets ----------------------------------------------------------
 
-const BASELINE = path.join(path.dirname(new URL(import.meta.url).pathname), 'baseline.vrm')
-const HAIR_TARGETS = [
-  'J_Bip_C_Head', 'J_Bip_C_Neck', 'J_Bip_C_UpperChest', 'J_Bip_C_Spine',
-  'J_Bip_L_UpperArm', 'J_Bip_L_LowerArm', 'J_Bip_L_Hand',
-  'J_Bip_R_UpperArm', 'J_Bip_R_LowerArm', 'J_Bip_R_Hand',
-]
-const ARM_TARGETS = new Set(HAIR_TARGETS.filter((n) => /Arm|Hand/.test(n)))
+/** The bones the VRoid hair collider set hangs off, by humanoid name. */
+const HAIR_TARGET_BONES = [
+  'head', 'neck', 'upperChest', 'spine',
+  'leftUpperArm', 'leftLowerArm', 'leftHand',
+  'rightUpperArm', 'rightLowerArm', 'rightHand',
+] as const
+const ARM_TARGET_BONES = new Set<string>(HAIR_TARGET_BONES.filter((n) => /Arm|Hand/.test(n)))
 
-function tailGroup(json: Gltf): BoneGroup {
-  const g = json.extensions.VRM.secondaryAnimation.boneGroups.find((group) =>
-    (group.bones ?? []).some((b) => (json.nodes[b].name ?? '').startsWith('HairTail')),
-  )
-  if (!g) throw new Error('no HairTail spring group')
-  return g
-}
-
-/** Give the twintails the base model's hair collider set, looked up by node name. */
-function restoreVroidColliders(json: Gltf, includeArms: boolean): void {
-  const base = parseGlb<Gltf>(readFileSync(BASELINE)).json
-  const nameToNode = new Map(json.nodes.map((n, i) => [n.name ?? '', i]))
-  const sec = json.extensions.VRM.secondaryAnimation
+/**
+ * Give the hair springs another body's hair collider set (what-if): every
+ * collider group the base file hangs on one of HAIR_TARGET_BONES is copied
+ * onto the same humanoid bone here. Both files are read by humanoid name, so
+ * the base can be any VRoid export with the same bones. 0.x files only: the
+ * copy is a JSON edit of the block the importer reads.
+ */
+function restoreVroidColliders(json: Gltf, baseFile: string, includeArms: boolean, hairBones: Set<number>): void {
+  const base = parseGlb<Gltf>(readFileSync(baseFile)).json
+  const ours = readSprings(json)
+  const theirs = readSprings(base)
+  if (ours.kind !== 'vrm0' || theirs.kind !== 'vrm0') throw new Error('--colliders=vroid rewrites the 0.x spring block; both files must be VRM 0.x')
+  const baseBones = readHumanoid(base).bones
+  const ourBones = readHumanoid(json).bones
+  const baseBoneOfNode = new Map(Object.entries(baseBones).map(([b, n]) => [n, b]))
+  const sec = ours.secondaryAnimation
   const indexOfNode = new Map(sec.colliderGroups.map((g, i) => [g.node, i]))
   const refs: number[] = []
-  for (const group of base.extensions.VRM.secondaryAnimation.colliderGroups) {
-    const name = base.nodes[group.node].name ?? ''
-    if (!HAIR_TARGETS.includes(name)) continue
-    if (!includeArms && ARM_TARGETS.has(name)) continue
-    const node = nameToNode.get(name)
-    if (node === undefined) throw new Error(`model has no node ${name}`)
+  for (const group of theirs.secondaryAnimation.colliderGroups) {
+    const bone = baseBoneOfNode.get(group.node)
+    if (!bone || !(HAIR_TARGET_BONES as readonly string[]).includes(bone)) continue
+    if (!includeArms && ARM_TARGET_BONES.has(bone)) continue
+    const node = ourBones[bone]
+    if (node === undefined) throw new Error(`model has no ${bone} bone`)
     let idx = indexOfNode.get(node)
     if (idx === undefined) {
       idx = sec.colliderGroups.length
@@ -158,7 +236,9 @@ function restoreVroidColliders(json: Gltf, includeArms: boolean): void {
     }
     refs.push(idx)
   }
-  tailGroup(json).colliderGroups = refs
+  for (const g of sec.boneGroups) {
+    if ((g.bones ?? []).some((b) => hairBones.has(b))) g.colliderGroups = refs
+  }
 }
 
 // ---- skinning ------------------------------------------------------------------
@@ -171,7 +251,8 @@ interface SkinSet {
   joints: Float64Array
   weights: Float64Array
   skin: number
-  keep: Int32Array // vertex indices that take part (outer shell / stride)
+  /** Vertex indices the penetration queries use (outer shell / stride); every vertex is skinned. */
+  keep: Int32Array
   outPos: Float64Array
   outNrm: Float64Array
 }
@@ -183,33 +264,35 @@ function meshNode(json: Gltf, meshName: string): GltfNode {
   return node
 }
 
-function gather(json: Gltf, bin: Uint8Array, label: string, meshName: string, prims: number[], stride = 1): SkinSet {
-  const mesh = json.meshes.find((m) => m.name === meshName)
-  if (!mesh) throw new Error(`no mesh ${meshName}`)
-  const node = meshNode(json, meshName)
-  const parts = prims.map((pi) => {
-    const p = mesh.primitives[pi]
+function gather(json: Gltf, bin: Uint8Array, manifest: Manifest, part: string, stride = 1): SkinSet {
+  const p = manifest.parts[part]
+  if (!p) throw new Error(`manifest has no part ${part}`)
+  const mesh = json.meshes.find((m) => m.name === p.mesh)
+  if (!mesh) throw new Error(`no mesh ${p.mesh} (manifest part ${part})`)
+  const node = meshNode(json, p.mesh)
+  const parts = p.primitives.map((pi) => {
+    const prim = mesh.primitives[pi]
     return {
-      pos: readAccessorRows({ json, bin }, p.attributes.POSITION).data,
-      nrm: readAccessorRows({ json, bin }, p.attributes.NORMAL).data,
-      joints: readAccessorRows({ json, bin }, p.attributes.JOINTS_0).data,
-      weights: readAccessorRows({ json, bin }, p.attributes.WEIGHTS_0).data,
+      pos: readAccessorRows({ json, bin }, prim.attributes.POSITION).data,
+      nrm: readAccessorRows({ json, bin }, prim.attributes.NORMAL).data,
+      joints: readAccessorRows({ json, bin }, prim.attributes.JOINTS_0).data,
+      weights: readAccessorRows({ json, bin }, prim.attributes.WEIGHTS_0).data,
     }
   })
-  const n = parts.reduce((s, p) => s + p.pos.length / 3, 0)
+  const n = parts.reduce((s, q) => s + q.pos.length / 3, 0)
   const set: SkinSet = {
-    label, n, skin: node.skin as number,
+    label: part, n, skin: node.skin as number,
     pos: new Float64Array(n * 3), nrm: new Float64Array(n * 3),
     joints: new Float64Array(n * 4), weights: new Float64Array(n * 4),
     keep: new Int32Array(0), outPos: new Float64Array(n * 3), outNrm: new Float64Array(n * 3),
   }
   let at = 0
-  for (const p of parts) {
-    const k = p.pos.length / 3
-    set.pos.set(p.pos, at * 3)
-    set.nrm.set(p.nrm, at * 3)
-    set.joints.set(p.joints, at * 4)
-    set.weights.set(p.weights, at * 4)
+  for (const q of parts) {
+    const k = q.pos.length / 3
+    set.pos.set(q.pos, at * 3)
+    set.nrm.set(q.nrm, at * 3)
+    set.joints.set(q.joints, at * 4)
+    set.weights.set(q.weights, at * 4)
     at += k
   }
   const keep: number[] = []
@@ -218,10 +301,36 @@ function gather(json: Gltf, bin: Uint8Array, label: string, meshName: string, pr
   return set
 }
 
-function primsByMaterial(json: Gltf, meshName: string, material: string): number[] {
-  const mesh = json.meshes.find((m) => m.name === meshName)
-  if (!mesh) throw new Error(`no mesh ${meshName}`)
-  return mesh.primitives.map((p, i) => (json.materials[p.material].name === material ? i : -1)).filter((i) => i >= 0)
+/** The skin joint (glTF node index) with the largest weight on a vertex. */
+function dominantNode(json: Gltf, set: SkinSet, i: number): number {
+  let best = -1
+  let bestW = -1
+  for (let k = 0; k < 4; k++) {
+    if (set.weights[i * 4 + k] > bestW) {
+      bestW = set.weights[i * 4 + k]
+      best = set.joints[i * 4 + k]
+    }
+  }
+  return json.skins[set.skin].joints[best]
+}
+
+/** Every skin joint any vertex of the set carries weight on, as glTF node indices. */
+function weightedNodes(json: Gltf, set: SkinSet): Set<number> {
+  const joints = json.skins[set.skin].joints
+  const out = new Set<number>()
+  for (let i = 0; i < set.n; i++) {
+    for (let k = 0; k < 4; k++) if (set.weights[i * 4 + k] > 0) out.add(joints[set.joints[i * 4 + k]])
+  }
+  return out
+}
+
+/** Narrow a set's queries to the vertices whose dominant joint is in `nodes` (or is not, with `invert`). */
+function keepDominatedBy(json: Gltf, set: SkinSet, nodes: Set<number>, invert = false): void {
+  const keep: number[] = []
+  for (const i of set.keep) {
+    if (nodes.has(dominantNode(json, set, i)) !== invert) keep.push(i)
+  }
+  set.keep = Int32Array.from(keep)
 }
 
 /**
@@ -272,9 +381,10 @@ class Skinner {
       this.boneMats.set(m.elements, j * 16)
     })
   }
+  /** Every vertex of the set: the crown wants the topmost one wherever it is. */
   apply(set: SkinSet): void {
     const B = this.boneMats
-    for (const i of set.keep) {
+    for (let i = 0; i < set.n; i++) {
       const px = set.pos[i * 3]
       const py = set.pos[i * 3 + 1]
       const pz = set.pos[i * 3 + 2]
@@ -305,11 +415,83 @@ class Skinner {
   }
 }
 
+/** The highest skinned vertex across the sets. */
+function topOf(sets: SkinSet[]): number {
+  let top = -Infinity
+  for (const s of sets) {
+    for (let i = 0; i < s.n; i++) if (s.outPos[i * 3 + 1] > top) top = s.outPos[i * 3 + 1]
+  }
+  return top
+}
+
+// ---- the frame's camera ------------------------------------------------------------
+//
+// The engine's camera (avatarGuideEngine aimCamera): at (0, lookAtY + tilt,
+// distance) on the side she faces, looking at (0, lookAtY, 0). A vertex
+// nearer the camera than that point projects higher than its world height,
+// so the crown a frame has to clear is the projected one. The number kept is
+// the height on the subject plane that lands on the same row: the frame's
+// top edge is lookAtY + distance·tan(fov/2) in those units
+// (avatarMode.avatarViewSpan), and that is what the browser's row-to-height
+// conversion and every guard compare against.
+
+const FRAMES: Record<MotionFrame, AvatarFraming> = { waistUp: AVATAR_FRAMING_DEFAULT, column: AVATAR_FRAMING_COLUMN }
+
+class FrameCamera {
+  private readonly inv = new THREE.Matrix4()
+  private readonly v = new THREE.Vector3()
+  /** How far below the world crown a vertex can sit and still project highest, at these distances. */
+  private static readonly REACH_BELOW = 0.35
+  constructor(private readonly framing: AvatarFraming, private readonly lookAtY: number, forwardZ: number) {
+    const cam = new THREE.PerspectiveCamera(AVATAR_FOV, 1, 0.1, 30)
+    cam.position.set(0, lookAtY + AVATAR_CAMERA_TILT, forwardZ * framing.distance)
+    cam.lookAt(0, lookAtY, 0)
+    cam.updateMatrixWorld(true)
+    this.inv.copy(cam.matrixWorld).invert()
+  }
+  /** Height on the subject plane that shares a row with the world point. */
+  screen(x: number, y: number, z: number): number {
+    this.v.set(x, y, z).applyMatrix4(this.inv)
+    return this.lookAtY + (this.framing.distance * this.v.y) / -this.v.z
+  }
+  /** The highest projected vertex across the sets. */
+  top(sets: SkinSet[], worldTop: number): number {
+    let best = -Infinity
+    const floor = worldTop - FrameCamera.REACH_BELOW
+    for (const s of sets) {
+      for (let i = 0; i < s.n; i++) {
+        const y = s.outPos[i * 3 + 1]
+        if (y < floor) continue
+        const h = this.screen(s.outPos[i * 3], y, s.outPos[i * 3 + 2])
+        if (h > best) best = h
+      }
+    }
+    return best
+  }
+}
+
+/** The engine's composition as this run saw it, for the clearance file. */
+export function framingsNow(): ClearanceFramings {
+  const pans: ClearanceFramings['pans'] = {}
+  for (const name of Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]) {
+    const pan = AVATAR_MOTIONS[name].pan
+    if (pan) pans[name] = pan
+  }
+  return { fov: AVATAR_FOV, tilt: AVATAR_CAMERA_TILT, frames: FRAMES, pans }
+}
+
 // ---- signed distance, hair against a shell ----------------------------------------
 
 const CELL = 0.05
-// A vertex normal only says inside/outside for points close to it: 5cm out,
-// the "plane" of a collar vertex classifies hair above the coat as inside.
+// How far from the nearest shell vertex a point can be and still be judged by
+// that vertex's normal: 5cm out, the "plane" of a collar vertex classifies
+// hair above the coat as inside, and at 15cm a skirt vertex by the waist was
+// judged by a thigh vertex's normal and read 150mm "inside" the legs on the
+// shipped body. The signed distance therefore SATURATES at 5cm: a point deeper
+// inside reads exactly 50mm, and a reading of 50 means "at least 50". A budget
+// on this measure is only a gate if it sits BELOW 50; where a clip already
+// reads the cap there is no budget to be had, and springsim.test.ts pins the
+// cap instead of pretending otherwise.
 const REACH = 0.05
 
 class Grid {
@@ -370,7 +552,7 @@ class Grid {
 // bone's frame, bin the coat's outer shell by height and azimuth, take the
 // outermost radius per bin, and a hair vertex is inside by however much its own
 // radius falls short of that. Sleeves are dropped from the shell (their
-// dominant weight is on an arm bone) because a sleeve sweeping past a tail
+// dominant joint hangs off a shoulder) because a sleeve sweeping past a tail
 // would otherwise swallow it.
 
 const BAND = 0.02
@@ -423,25 +605,16 @@ class RadialShell {
   }
 }
 
+/**
+ * Drop the sleeves: a coat vertex whose dominant joint hangs off a shoulder.
+ * The 2026-09-04 rule added a T-pose cut at |x| > 0.3 because the vendor's
+ * sleeve weights were coarse; since Phase 4 the cardigan is re-skinned from
+ * the body's own skin (binding.py nearest, 16 diffusion passes) and the joint
+ * rule alone drops every vertex the cut did (52 cuff vertices on the finger
+ * bones, which the old name test missed and the cut caught).
+ */
 function dropSleeves(json: Gltf, set: SkinSet): void {
-  const skin = json.skins[set.skin]
-  const keep: number[] = []
-  for (const i of set.keep) {
-    let best = -1
-    let bestW = -1
-    for (let k = 0; k < 4; k++) {
-      if (set.weights[i * 4 + k] > bestW) {
-        bestW = set.weights[i * 4 + k]
-        best = set.joints[i * 4 + k]
-      }
-    }
-    const name = json.nodes[skin.joints[best]].name ?? ''
-    // The vendor's sleeve weights are coarse (upper-sleeve vertices ride on the
-    // chest bone), so the T-pose geometry decides too: torso panels end at
-    // |x| ≈ 0.30 (see outfit.standoff), sleeves live beyond it.
-    if (!/Arm|Hand|Shoulder/.test(name) && Math.abs(set.pos[i * 3]) <= 0.3) keep.push(i)
-  }
-  set.keep = Int32Array.from(keep)
+  keepDominatedBy(json, set, armNodes(json), true)
 }
 
 // ---- the run -------------------------------------------------------------------------
@@ -449,33 +622,49 @@ function dropSleeves(json: Gltf, set: SkinSet): void {
 export interface Report {
   clip: string
   coatDepthMm: number
-  coatAtWorst: number // share of tail vertices ≥5mm inside at the worst frame
+  coatAtWorst: number // share of hair vertices ≥5mm inside at the worst frame
   coatWorstT: number
   coatWorstYaw: number
   coatWorstWhere: string
-  /** Same, counting only hair above the coat's hem band (world y ≥ 0.92). */
+  /** Same, counting only hair above the coat's hem band (world y ≥ waist − 0.04). */
   coatUpperDepthMm: number
   bodyDepthMm: number
   bodyWorstT: number
+  /** Deepest any skirt vertex sits inside the legs' skin, and when; at rest too. */
+  skirtDepthMm: number
+  skirtWorstT: number
+  restSkirtDepthMm: number
   jumpDeg: number
   jumpT: number
   jumpBone: string
   restCoatDepthMm: number
+  /** Topmost drawn vertex in bind pose, and the highest any frame lifts one. */
+  restCrownY: number
+  crownY: number
+  crownT: number
+  /** The same two through each frame's camera (the clip's pan applied to the moving one). */
+  restCrownScreen: Record<MotionFrame, number>
+  crownScreen: Record<MotionFrame, number>
 }
 
 export interface Args {
   model: string
   clip: string
   colliders: 'asis' | 'vroid' | 'vroid-noarms'
+  /** The VRoid export whose hair colliders --colliders=vroid copies. */
+  vroidColliders: string | null
   hit: number | null
   gravity: number | null
   stride: number
-  /** Drop the arm/hand collider groups from the tails' list (what-if). */
+  /** Drop the arm/hand collider groups from the hair's list (what-if). */
   noArms: boolean
-  /** Drop the coat bead groups from the tails' list (what-if). */
+  /** Drop the coat bead groups from the hair's list (what-if). */
   noCoat: boolean
-  /** Clip time at which to print every tail joint against its colliders. */
+  /** Clip time at which to print every hair joint against its colliders. */
   dumpAt: number | null
+  /** Write the simulated clearance module here (implies --clip=all). */
+  clearance: string | null
+  family: string
 }
 
 export function parseArgs(argv: string[]): Args {
@@ -483,23 +672,34 @@ export function parseArgs(argv: string[]): Args {
     model: path.resolve('public/avatar/mika-milfy-12.vrm'),
     clip: 'dance',
     colliders: 'asis',
+    vroidColliders: null,
     hit: null,
     gravity: null,
     stride: 2,
     noArms: false,
     noCoat: false,
     dumpAt: null,
+    clearance: null,
+    family: 'vroid-sample-b',
   }
   for (const a of argv) {
     if (a.startsWith('--clip=')) args.clip = a.slice(7)
     else if (a.startsWith('--colliders=')) args.colliders = a.slice(12) as Args['colliders']
+    else if (a.startsWith('--vroid-colliders=')) args.vroidColliders = path.resolve(a.slice(18))
     else if (a.startsWith('--hit=')) args.hit = Number(a.slice(6))
     else if (a.startsWith('--gravity=')) args.gravity = Number(a.slice(10))
     else if (a.startsWith('--stride=')) args.stride = Number(a.slice(9))
     else if (a === '--no-arms') args.noArms = true
     else if (a === '--no-coat') args.noCoat = true
     else if (a.startsWith('--dump-at=')) args.dumpAt = Number(a.slice(10))
+    else if (a.startsWith('--clearance=')) {
+      args.clearance = path.resolve(a.slice(12))
+      args.clip = 'all'
+    } else if (a.startsWith('--family=')) args.family = a.slice(9)
     else if (!a.startsWith('--')) args.model = path.resolve(a)
+  }
+  if (args.colliders !== 'asis' && !args.vroidColliders) {
+    throw new Error(`--colliders=${args.colliders} needs --vroid-colliders=<the VRoid export to copy hair colliders from>`)
   }
   return args
 }
@@ -513,51 +713,78 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const raw = readFileSync(args.model)
   const { json, bin } = parseGlb<Gltf>(raw)
   if (!bin) throw new Error('GLB without a BIN chunk')
-  // Fresh tree per clip: the solver keeps state on the nodes.
-  if (args.colliders !== 'asis') restoreVroidColliders(json, args.colliders === 'vroid')
-  const group = tailGroup(json)
-  if (args.hit !== null) group.hitRadius = args.hit
-  if (args.gravity !== null) group.gravityPower = args.gravity
-  if (args.noArms || args.noCoat) {
-    const groups = json.extensions.VRM.secondaryAnimation.colliderGroups
-    group.colliderGroups = (group.colliderGroups ?? []).filter((gi) => {
-      const name = json.nodes[groups[gi].node].name ?? ''
-      if (args.noArms && /Arm|Hand/.test(name)) return false
-      // Beads: many spheres on a torso bone. The VRoid spine group has one.
-      if (args.noCoat && /C_(Chest|Spine|Hips)$/.test(name) && groups[gi].colliders.length > 1) return false
-      return true
-    })
-  }
+  const manifest = readManifest(args.model)
+  const bones = readHumanoid(json).bones
 
-  if (process.env.SPRINGSIM_DEBUG) {
-    const groups = json.extensions.VRM.secondaryAnimation.colliderGroups
-    console.log(`  tail colliders: ${(group.colliderGroups ?? []).map((gi) => `${json.nodes[groups[gi].node].name}×${groups[gi].colliders.length}`).join(' ')}`)
+  // Every part the manifest lists is skinned every frame (the crown is the
+  // topmost vertex of any of them); the ones with a role are also queried.
+  const sets = new Map<string, SkinSet>()
+  for (const part of Object.keys(manifest.parts)) {
+    if (manifest.parts[part].primitives.length === 0) continue
+    sets.set(part, gather(json, bin, manifest, part, part.startsWith('Hair_') || part === 'Outfit_Bottom' ? args.stride : 1))
+  }
+  const hair = [...sets.entries()].filter(([part]) => part.startsWith('Hair_')).map(([, s]) => s)
+  if (hair.length === 0) throw new Error('manifest has no Hair_* part')
+  const body = sets.get('Body_Skin')
+  const face = sets.get('Face')
+  if (!body || !face) throw new Error('manifest has no Body_Skin or no Face part')
+  const coat = sets.get('Outfit_Cardigan') ?? null
+  const skirt = sets.get('Outfit_Bottom') ?? null
+  if (coat) {
+    outerShellOnly(coat)
+    dropSleeves(json, coat)
+  }
+  // The legs' skin, for the skirt: a skirt hugs the hips by design, and a
+  // waistband a few millimetres into the torso is not a leg coming through.
+  const legs = gather(json, bin, manifest, 'Body_Skin')
+  keepDominatedBy(json, legs, legNodes(json))
+  const hairBones = new Set<number>()
+  for (const h of hair) for (const n of weightedNodes(json, h)) hairBones.add(n)
+
+  // Fresh tree per clip: the solver keeps state on the nodes.
+  if (args.colliders !== 'asis') {
+    restoreVroidColliders(json, args.vroidColliders as string, args.colliders === 'vroid', hairBones)
   }
   const rig = buildRigFrom({ json, bin })
   const { raw: objs, scene } = rig
   const manager = await importSprings(json, rig)
+  const joints = hairJoints(manager, rig, hairBones)
+  if (joints.length === 0) throw new Error('no spring joint moves a Hair_* part')
+  if (args.hit !== null) for (const j of joints) j.settings.hitRadius = args.hit
+  if (args.gravity !== null) for (const j of joints) j.settings.gravityPower = args.gravity
+  if (args.noArms || args.noCoat) {
+    const arms = armNodes(json)
+    const torso = new Set([bones.hips, bones.spine, bones.chest, bones.upperChest].filter((n): n is number => n !== undefined))
+    const nodeOf = (o: THREE.Object3D): number => objs.indexOf(o)
+    for (const j of joints) {
+      j.colliderGroups = j.colliderGroups.filter((g) => {
+        const on = nodeOf(g.colliders[0]?.parent as THREE.Object3D)
+        if (args.noArms && arms.has(on)) return false
+        // Beads: many spheres on a torso bone. The VRoid spine group has one.
+        if (args.noCoat && torso.has(on) && g.colliders.length > 1) return false
+        return true
+      })
+    }
+  }
+  if (process.env.SPRINGSIM_DEBUG) {
+    const groups = new Set(joints.flatMap((j) => j.colliderGroups))
+    console.log(`  hair colliders: ${[...groups].map((g) => `${g.colliders[0]?.parent?.name}×${g.colliders.length}`).join(' ')}`)
+  }
   const motion = buildMotion(new Uint8Array(readFileSync(clipPath)))
 
-  const manifest = JSON.parse(readFileSync(args.model.replace(/\.vrm$/, '.parts.json'), 'utf8')) as {
-    parts: Record<string, { mesh: string; primitives: number[] }>
-  }
-  const hair = (['Hair_Twintail_L', 'Hair_Twintail_R'] as const).map((part) => {
-    const p = manifest.parts[part]
-    return gather(json, bin, part, p.mesh, p.primitives, args.stride)
-  })
-  const coat = gather(json, bin, 'coat', 'Body.baked', primsByMaterial(json, 'Body.baked', 'Mellow_Outer'))
-  outerShellOnly(coat)
-  dropSleeves(json, coat)
-  const spineIndex: number | undefined = readHumanoid(json).bones.spine
+  const spineIndex = bones.spine
   if (spineIndex === undefined) throw new Error('no spine')
   const spine = objs[spineIndex]
-  const body = gather(json, bin, 'body', 'Body.baked', primsByMaterial(json, 'Body.baked', 'F00_000_00_Body_00_SKIN'))
-  const face = gather(json, bin, 'face', 'Face.baked', primsByMaterial(json, 'Face.baked', 'F00_000_00_Face_00_SKIN'))
-  const sets = [...hair, coat, body, face]
+  const allSets = [...sets.values()]
   const skinners = new Map<number, Skinner>()
-  for (const s of sets) if (!skinners.has(s.skin)) skinners.set(s.skin, new Skinner(json, bin, objs, s.skin))
+  for (const s of [...allSets, legs]) if (!skinners.has(s.skin)) skinners.set(s.skin, new Skinner(json, bin, objs, s.skin))
+  const skinAll = (): void => {
+    for (const s of skinners.values()) s.refresh()
+    for (const s of allSets) skinners.get(s.skin)?.apply(s)
+    skinners.get(legs.skin)?.apply(legs)
+  }
 
-  const tailBones = objs.filter((o) => /^HairTail[LR]_\d$/.test(o.name) && o.children.length > 0)
+  const tailBones = joints.map((j) => j.bone).filter((b) => b.children.length > 0)
   const prevDir = tailBones.map(() => new THREE.Vector3())
   const dir = new THREE.Vector3()
   const childPos = new THREE.Vector3()
@@ -567,25 +794,58 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     clip: path.basename(clipPath, '.vrma'),
     coatDepthMm: -Infinity, coatAtWorst: 0, coatWorstT: 0, coatWorstYaw: 0, coatWorstWhere: '', coatUpperDepthMm: -Infinity,
     bodyDepthMm: -Infinity, bodyWorstT: 0,
+    skirtDepthMm: -Infinity, skirtWorstT: 0, restSkirtDepthMm: -Infinity,
     jumpDeg: 0, jumpT: 0, jumpBone: '',
     restCoatDepthMm: -Infinity,
+    restCrownY: -Infinity, crownY: -Infinity, crownT: 0,
+    restCrownScreen: { waistUp: -Infinity, column: -Infinity },
+    crownScreen: { waistUp: -Infinity, column: -Infinity },
   }
+  const forwardZ = rig.version === '0' ? -1 : 1
+  const frameNames = Object.keys(FRAMES) as MotionFrame[]
+  const clipName = report.clip as AvatarMotionName
+  const pan = (f: MotionFrame): number => (clipName in AVATAR_MOTIONS ? motionPan(clipName, f) : 0)
+  const restCams = frameNames.map((f) => [f, new FrameCamera(FRAMES[f], FRAMES[f].lookAtY, forwardZ)] as const)
+  const clipCams = frameNames.map((f) => [f, new FrameCamera(FRAMES[f], FRAMES[f].lookAtY + pan(f), forwardZ)] as const)
 
+  // Bind pose: the resting crown, and (debug) skinning at rest must reproduce
+  // POSITION exactly.
+  resetRig(rig)
+  skinAll()
+  report.restCrownY = topOf(allSets)
+  for (const [f, cam] of restCams) report.restCrownScreen[f] = cam.top(allSets, report.restCrownY)
+  // Hair vertices already inside the skin at rest are the roots under the
+  // scalp and the strands modelled into the head, not a clipping; the body
+  // gate is about hair that ENTERS the body during the clip, so those are
+  // left out of it. Until 2026-09-06 they were counted, and every clip read
+  // the saturated 50mm at rest and in motion alike, which no threshold could
+  // tell from a tail through an arm.
+  const rooted = new Map<SkinSet, Set<number>>()
+  {
+    const bodyGrid = new Grid(body)
+    const faceGrid = new Grid(face)
+    for (const h of hair) {
+      const set = new Set<number>()
+      for (const i of h.keep) {
+        const x = h.outPos[i * 3], y = h.outPos[i * 3 + 1], z = h.outPos[i * 3 + 2]
+        if (Math.max(-bodyGrid.signed(x, y, z), -faceGrid.signed(x, y, z)) * 1000 >= INSIDE_MM) set.add(i)
+      }
+      rooted.set(h, set)
+    }
+  }
   if (process.env.SPRINGSIM_DEBUG) {
-    // Bind-pose identity: skinning at rest must reproduce POSITION exactly.
-    resetRig(rig)
-    for (const s of skinners.values()) s.refresh()
-    for (const s of sets) {
-      skinners.get(s.skin)?.apply(s)
+    for (const s of allSets) {
       let worst = 0
-      for (const i of s.keep) {
+      for (let i = 0; i < s.n; i++) {
         const d = Math.hypot(s.outPos[i * 3] - s.pos[i * 3], s.outPos[i * 3 + 1] - s.pos[i * 3 + 1], s.outPos[i * 3 + 2] - s.pos[i * 3 + 2])
         if (d > worst) worst = d
       }
-      console.log(`  bind check ${s.label}: skin ${s.skin}, ${s.keep.length} verts, max |skinned - rest| ${(worst * 1000).toFixed(2)}mm`)
+      console.log(`  bind check ${s.label}: skin ${s.skin}, ${s.n} verts, max |skinned - rest| ${(worst * 1000).toFixed(2)}mm`)
     }
+    console.log(`  rest crown ${report.restCrownY.toFixed(4)}`)
   }
 
+  const hemBand = manifest.landmarks.waist - 0.04
   const dt = 1 / FPS
   const total = Math.round((PREROLL_S + motion.duration + HOLD_S) * FPS)
   for (let frame = 0; frame <= total; frame++) {
@@ -612,56 +872,37 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     })
 
     if (args.dumpAt !== null && wall >= PREROLL_S && Math.abs(t - args.dumpAt) < dt * 0.5) {
-      // Where every tail joint is, and how far it sits from the nearest collider
-      // it is asked to avoid (negative = inside the keep-out).
-      const groups = json.extensions.VRM.secondaryAnimation.colliderGroups
-      const spheres: { name: string; c: THREE.Vector3; r: number }[] = []
-      for (const gi of group.colliderGroups ?? []) {
-        const g = groups[gi]
-        for (const col of g.colliders) {
-          const c = new THREE.Vector3(col.offset.x, col.offset.y, -col.offset.z).applyMatrix4(objs[g.node].matrixWorld)
-          spheres.push({ name: json.nodes[g.node].name ?? '', c, r: col.radius })
-        }
-      }
-      const shell = new RadialShell(coat, spine) // coat was skinned on the last even frame; close enough for a reading
+      // Where every hair joint is, and how far it sits from the nearest collider
+      // it is asked to avoid (negative = inside the keep-out). Read off the
+      // imported manager, so the same reading comes off a 0.x or a 1.0 file.
+      const c = new THREE.Vector3()
       console.log(`  dump at t=${t.toFixed(2)}s (yaw ${yawDeg(rig).toFixed(0)}°):`)
-      for (const b of objs.filter((o) => /^HairTail[LR]_\d$/.test(o.name))) {
-        b.getWorldPosition(bonePos)
+      const shell = coat ? new RadialShell(coat, spine) : null // coat was skinned on the last even frame; close enough for a reading
+      for (const j of joints) {
+        j.bone.getWorldPosition(bonePos)
         let best = { gap: Infinity, name: '' }
-        for (const sp of spheres) {
-          const gap = bonePos.distanceTo(sp.c) - (sp.r + (group.hitRadius ?? 0))
-          if (gap < best.gap) best = { gap, name: sp.name }
+        for (const g of j.colliderGroups) {
+          for (const col of g.colliders) {
+            const shape = col.shape
+            if (!(shape instanceof VRMSpringBoneColliderShapeSphere)) continue
+            c.copy(shape.offset).applyMatrix4(col.matrixWorld)
+            const gap = bonePos.distanceTo(c) - (shape.radius + j.settings.hitRadius)
+            if (gap < best.gap) best = { gap, name: col.parent?.name ?? '' }
+          }
         }
-        console.log(`    ${b.name.padEnd(11)} [${shell.describe(bonePos.x, bonePos.y, bonePos.z)}] nearest keep-out ${(best.gap * 1000).toFixed(0).padStart(5)}mm (${best.name})`)
-      }
-      // The innermost hair vertex near the spine's height, and what it is skinned to.
-      const inv = new THREE.Matrix4().copy(spine.matrixWorld).invert()
-      const skinJoints = json.skins[hair[0].skin].joints
-      for (const h of hair) {
-        let worst = { r: Infinity, i: -1 }
-        const v = new THREE.Vector3()
-        for (const i of h.keep) {
-          v.set(h.outPos[i * 3], h.outPos[i * 3 + 1], h.outPos[i * 3 + 2]).applyMatrix4(inv)
-          if (Math.abs(v.y) > 0.03) continue
-          const r = Math.hypot(v.x, v.z)
-          if (r < worst.r) worst = { r, i }
-        }
-        if (worst.i < 0) continue
-        const i = worst.i
-        const bound = [0, 1, 2, 3]
-          .filter((k) => h.weights[i * 4 + k] > 0)
-          .map((k) => `${json.nodes[skinJoints[h.joints[i * 4 + k]]].name}:${h.weights[i * 4 + k].toFixed(2)}`)
-        console.log(`    ${h.label} innermost vertex within ±3cm of spine height: r ${worst.r.toFixed(3)} rest (${h.pos[i * 3].toFixed(3)}, ${h.pos[i * 3 + 1].toFixed(3)}, ${h.pos[i * 3 + 2].toFixed(3)}) bound to ${bound.join(' ')}`)
+        const where = shell ? ` [${shell.describe(bonePos.x, bonePos.y, bonePos.z)}]` : ''
+        console.log(`    ${j.bone.name.padEnd(11)}${where} nearest keep-out ${(best.gap * 1000).toFixed(0).padStart(5)}mm (${best.name})`)
       }
     }
 
     // penetration, every other frame (skinning is the cost)
     if (frame % 2 !== 0) continue
-    for (const s of skinners.values()) s.refresh()
-    for (const s of sets) skinners.get(s.skin)?.apply(s)
-    const coatShell = new RadialShell(coat, spine)
+    skinAll()
+    const crown = topOf(allSets)
+    const coatShell = coat ? new RadialShell(coat, spine) : null
     const bodyGrid = new Grid(body)
     const faceGrid = new Grid(face)
+    const legGrid = new Grid(legs)
     let coatDepth = -Infinity
     let coatUpper = -Infinity
     let bodyDepth = -Infinity
@@ -673,50 +914,70 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
         const x = h.outPos[i * 3]
         const y = h.outPos[i * 3 + 1]
         const z = h.outPos[i * 3 + 2]
-        const c = coatShell.depth(x, y, z) * 1000
         counted++
-        if (y >= 0.92 && c > coatUpper) coatUpper = c
-        if (c > coatDepth) {
-          coatDepth = c
-          const ci = coatShell.argmax.get(coatShell.keyOf(x, y, z))
-          where = `${h.label.slice(-1)} hair (${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}) [${coatShell.describe(x, y, z)}]` +
-            (ci === undefined ? '' : ` coat (${coat.outPos[ci * 3].toFixed(2)},${coat.outPos[ci * 3 + 1].toFixed(2)},${coat.outPos[ci * 3 + 2].toFixed(2)}) [${coatShell.describe(coat.outPos[ci * 3], coat.outPos[ci * 3 + 1], coat.outPos[ci * 3 + 2])}] rest (${coat.pos[ci * 3].toFixed(2)},${coat.pos[ci * 3 + 1].toFixed(2)},${coat.pos[ci * 3 + 2].toFixed(2)})`)
+        if (coat && coatShell) {
+          const c = coatShell.depth(x, y, z) * 1000
+          if (y >= hemBand && c > coatUpper) coatUpper = c
+          if (c > coatDepth) {
+            coatDepth = c
+            const ci = coatShell.argmax.get(coatShell.keyOf(x, y, z))
+            where = `${h.label} (${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}) [${coatShell.describe(x, y, z)}]` +
+              (ci === undefined ? '' : ` coat (${coat.outPos[ci * 3].toFixed(2)},${coat.outPos[ci * 3 + 1].toFixed(2)},${coat.outPos[ci * 3 + 2].toFixed(2)}) [${coatShell.describe(coat.outPos[ci * 3], coat.outPos[ci * 3 + 1], coat.outPos[ci * 3 + 2])}] rest (${coat.pos[ci * 3].toFixed(2)},${coat.pos[ci * 3 + 1].toFixed(2)},${coat.pos[ci * 3 + 2].toFixed(2)})`)
+          }
+          if (c >= INSIDE_MM) inside++
         }
-        if (c >= INSIDE_MM) inside++
+        if (rooted.get(h)?.has(i)) continue
         const b = Math.max(-bodyGrid.signed(x, y, z), -faceGrid.signed(x, y, z)) * 1000
         if (b > bodyDepth) bodyDepth = b
+      }
+    }
+    if (!coat) coatDepth = coatUpper = 0
+    let skirtDepth = skirt ? -Infinity : 0
+    if (skirt) {
+      for (const i of skirt.keep) {
+        const d = -legGrid.signed(skirt.outPos[i * 3], skirt.outPos[i * 3 + 1], skirt.outPos[i * 3 + 2]) * 1000
+        if (d > skirtDepth) skirtDepth = d
       }
     }
     if (wall < PREROLL_S) {
       if (Math.abs(wall - (PREROLL_S - dt * 2)) < dt) {
         report.restCoatDepthMm = coatDepth
+        report.restSkirtDepthMm = skirtDepth
         if (process.env.SPRINGSIM_DEBUG) {
           const p = new THREE.Vector3()
           console.log(`  pre-roll end: hips yaw ${yawDeg(rig).toFixed(0)}°`)
-          for (const o of objs) {
-            if (!/^(HairTailR_\d|J_Bip_C_Head|J_Bip_C_Hips)$/.test(o.name)) continue
+          for (const o of [objs[bones.head as number], objs[bones.hips], ...tailBones]) {
             o.getWorldPosition(p)
             console.log(`    ${o.name.padEnd(14)} (${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)})`)
           }
-          for (const h of hair) {
-            let worst = -Infinity
-            let wi = -1
-            for (const i of h.keep) {
-              const d = coatShell.depth(h.outPos[i * 3], h.outPos[i * 3 + 1], h.outPos[i * 3 + 2])
-              if (d > worst) {
-                worst = d
-                wi = i
+          if (coat && coatShell) {
+            for (const h of hair) {
+              let worst = -Infinity
+              let wi = -1
+              for (const i of h.keep) {
+                const d = coatShell.depth(h.outPos[i * 3], h.outPos[i * 3 + 1], h.outPos[i * 3 + 2])
+                if (d > worst) {
+                  worst = d
+                  wi = i
+                }
               }
+              const hx = h.outPos[wi * 3], hy = h.outPos[wi * 3 + 1], hz = h.outPos[wi * 3 + 2]
+              const ci = coatShell.argmax.get(coatShell.keyOf(hx, hy, hz))
+              console.log(`  rest ${h.label}: worst hair vertex (${hx.toFixed(3)}, ${hy.toFixed(3)}, ${hz.toFixed(3)}) depth ${(worst * 1000).toFixed(0)}mm` +
+                (ci === undefined ? '' : ` vs coat vertex (${coat.outPos[ci * 3].toFixed(3)}, ${coat.outPos[ci * 3 + 1].toFixed(3)}, ${coat.outPos[ci * 3 + 2].toFixed(3)})`))
             }
-            const hx = h.outPos[wi * 3], hy = h.outPos[wi * 3 + 1], hz = h.outPos[wi * 3 + 2]
-            const key = coatShell.keyOf(hx, hy, hz)
-            const ci = coatShell.argmax.get(key)
-            console.log(`  rest ${h.label}: worst hair vertex (${hx.toFixed(3)}, ${hy.toFixed(3)}, ${hz.toFixed(3)}) depth ${(worst * 1000).toFixed(0)}mm` +
-              (ci === undefined ? '' : ` vs coat vertex (${coat.outPos[ci * 3].toFixed(3)}, ${coat.outPos[ci * 3 + 1].toFixed(3)}, ${coat.outPos[ci * 3 + 2].toFixed(3)})`))
           }
         }
       }
       continue
+    }
+    if (crown > report.crownY) {
+      report.crownY = crown
+      report.crownT = t
+    }
+    for (const [f, cam] of clipCams) {
+      const h = cam.top(allSets, crown)
+      if (h > report.crownScreen[f]) report.crownScreen[f] = h
     }
     if (coatDepth > report.coatDepthMm) {
       report.coatDepthMm = coatDepth
@@ -730,8 +991,67 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
       report.bodyDepthMm = bodyDepth
       report.bodyWorstT = t
     }
+    if (skirtDepth > report.skirtDepthMm) {
+      report.skirtDepthMm = skirtDepth
+      report.skirtWorstT = t
+    }
   }
   return report
+}
+
+/** The clearance module's share of a report. */
+function simulated(r: Report): ClipSimulated {
+  const tenth = (v: number): number => Math.round(v * 10) / 10
+  return {
+    crownY: Math.round(r.crownY * 1e4) / 1e4,
+    crownT: Math.round(r.crownT * 100) / 100,
+    crownScreen: {
+      waistUp: Math.round(r.crownScreen.waistUp * 1e4) / 1e4,
+      column: Math.round(r.crownScreen.column * 1e4) / 1e4,
+    },
+    coatDepthMm: tenth(r.coatDepthMm),
+    bodyDepthMm: tenth(r.bodyDepthMm),
+    jumpDeg: tenth(r.jumpDeg),
+    skirtDepthMm: tenth(r.skirtDepthMm),
+  }
+}
+
+export function writeClearance(args: Args, reports: Report[]): void {
+  if (!args.clearance) return
+  const { json } = parseGlb<Gltf>(readFileSync(args.model))
+  const clips: Record<string, ClipSimulated> = {}
+  for (const r of [...reports].sort((a, b) => a.clip.localeCompare(b.clip))) clips[r.clip] = simulated(r)
+  const value: ClearanceSimulated = {
+    family: args.family,
+    rigSha: rigSha(json),
+    simulatedOn: servedPath(args.model),
+    producedBy: producedAt(),
+    restCrownY: Math.round(reports[0].restCrownY * 1e4) / 1e4,
+    restCrownScreen: {
+      waistUp: Math.round(reports[0].restCrownScreen.waistUp * 1e4) / 1e4,
+      column: Math.round(reports[0].restCrownScreen.column * 1e4) / 1e4,
+    },
+    framings: framingsNow(),
+    clips,
+  }
+  writeGenerated(
+    args.clearance,
+    {
+      exportName: 'SIMULATED',
+      typeName: 'ClearanceSimulated',
+      typeFrom: '../clearance',
+      producer: 'scripts/avatar/springsim.ts --clearance',
+      note: [
+        `Body ${servedPath(args.model)} through three-vrm's spring solver at ${FPS} Hz, every clip in`,
+        'public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the',
+        "same in bind pose, crownScreen/restCrownScreen those two through each frame's camera",
+        '(framings, recorded here as they were); depths are the worst frame. Regenerate:',
+        `  npx tsx scripts/avatar/springsim.ts ${path.relative(process.cwd(), args.model)} --clearance=${path.relative(process.cwd(), args.clearance)}`,
+      ],
+    },
+    value,
+  )
+  console.log(`wrote ${path.relative(process.cwd(), args.clearance)}`)
 }
 
 async function main(): Promise<void> {
@@ -744,18 +1064,25 @@ async function main(): Promise<void> {
   console.log(`model ${path.relative(process.cwd(), args.model)}  colliders=${args.colliders}` +
     (args.hit !== null ? ` hit=${args.hit}` : '') + (args.gravity !== null ? ` gravity=${args.gravity}` : '') +
     `  ${FPS} Hz, pre-roll ${PREROLL_S}s, hair stride ${args.stride}`)
-  console.log('clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     jump    @t    bone')
+  console.log('clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone')
+  const reports: Report[] = []
   for (const clip of clips) {
     const r = await runClip(args, clip)
+    reports.push(r)
     console.log(
       `${r.clip.padEnd(12)}  ${r.restCoatDepthMm.toFixed(0).padStart(6)}mm ` +
       `${r.coatDepthMm.toFixed(0).padStart(7)}mm ${r.coatUpperDepthMm.toFixed(0).padStart(7)}mm  ${(r.coatAtWorst * 100).toFixed(0).padStart(7)}%  ` +
       `${r.coatWorstT.toFixed(2).padStart(5)}s ${r.coatWorstYaw.toFixed(0).padStart(5)}°  ` +
       `${r.bodyDepthMm.toFixed(0).padStart(6)}mm  ${r.bodyWorstT.toFixed(2).padStart(5)}s  ` +
+      `${r.skirtDepthMm.toFixed(0).padStart(5)}mm ${r.skirtWorstT.toFixed(2).padStart(5)}s  ` +
+      `${r.crownY.toFixed(4)} ${r.crownT.toFixed(2).padStart(5)}s  ${r.crownScreen.column.toFixed(4)}  ${r.crownScreen.waistUp.toFixed(4)}  ` +
       `${r.jumpDeg.toFixed(1).padStart(5)}°  ${r.jumpT.toFixed(2).padStart(5)}s  ${r.jumpBone}`,
     )
     if (process.env.SPRINGSIM_DEBUG) console.log(`    worst coat frame: ${r.coatWorstWhere}`)
   }
+  const rest = reports[0]
+  console.log(`rest crown ${rest.restCrownY.toFixed(4)} (bind pose, topmost vertex of any part); through the column camera ${rest.restCrownScreen.column.toFixed(4)}, waist-up ${rest.restCrownScreen.waistUp.toFixed(4)}`)
+  writeClearance(args, reports)
 }
 
 // CLI only when run directly (npx tsx …/springsim.ts); importable from the test.

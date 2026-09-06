@@ -37,7 +37,9 @@ export type AvatarMotionName =
 export type MotionFrame = 'waistUp' | 'column'
 
 /**
- * A measured guard violation this clip is knowingly shipped with.
+ * A measured guard violation a clip is knowingly shipped with, on one family
+ * of bodies: it lives in the family's clearance file (clearance/<family>.ts),
+ * not here, because a violation is a property of the clip ON A BODY.
  *
  * Every field is the clip's OWN measured worst case, so the guard still holds
  * it to a number rather than waving it through. rigProbe.test.ts also fails a
@@ -47,6 +49,18 @@ export type MotionFrame = 'waistUp' | 'column'
 export interface MotionWaiver {
   /** Highest hand, in metres, when it rises above a frame's top edge. */
   handTop?: number
+  /**
+   * Highest crown, in metres on the frame's subject plane, when the hair
+   * rises above a frame's top edge (clearance.ts crownBound). The column is
+   * composed 20mm over her resting hair, so a standing clip that tilts her
+   * head or swings a tail toward the camera puts translucent tips a few
+   * millimetres past the edge; the 2026-08-20 sweep found four clips doing it
+   * (spin, playFingers, scratchHead, idleLoop) and shipped them, and this is
+   * that decision with a number on it. Five clips declare one today: those
+   * four, plus squat, whose rise the simulator sees past the edge and that
+   * sweep measured 18mm inside it.
+   */
+  crownTop?: number
   /** Deepest hand-against-face ellipsoid value, when it drops below 1. */
   handInHead?: number
   /** Widest sideways reach, in metres, when it passes the canvas half-width. */
@@ -74,8 +88,21 @@ export interface MotionWaiver {
  */
 export type MotionPan = Partial<Record<MotionFrame, number>>
 
+/**
+ * What is true of a clip wherever it plays. Anything measured on a body (its
+ * crown, its waivers, how far it reaches) is per (body, clip) and lives in
+ * the family's clearance file (src/components/chat/clearance/): before
+ * 2026-09-06 `crown` and `waiver` sat here, and the comment on `dance` had to
+ * explain that a second body "was not swept" because the numbers could not
+ * say whose they were.
+ */
 export interface AvatarMotionDef {
-  /** Frames this motion has been measured to fit. Enforced in rigProbe.test.ts. */
+  /**
+   * Frames this motion has been measured to fit. Enforced in rigProbe.test.ts.
+   * Nominally per body too (a taller body would need other frames), and the
+   * first thing a second family has to re-derive; kept here with `pan` because
+   * every family shares the compositions today.
+   */
   placements: readonly MotionFrame[]
   /**
    * True when the point of the motion is a hand the viewer must read — a wave,
@@ -84,75 +111,22 @@ export interface AvatarMotionDef {
    * whole life on the site.
    */
   showsPalm: boolean
-  /** Frame movement this clip needs to be seen whole. Absent means none. */
-  pan?: MotionPan
   /**
-   * The highest point this clip DRAWS, in metres — hair and ornaments included.
+   * Frame movement this clip needs to be seen whole. Absent means none.
    *
-   * Read off the render, not off the rig, and that is the whole reason it
-   * exists: her hair hangs from spring bones, which the probe does not simulate
-   * (see rigProbe's note on what is still not modelled). The gap is not small.
-   * At rest the spring settles her topmost drawn pixel 29mm BELOW the bind-pose
-   * hair vertex; mid-hop the same strands are thrown 146mm above it. Rigging
-   * that vertex to the head bone and calling it the crown puts the clip's worst
-   * frame 32mm over the column's unpanned top edge, at t=19.53; the render puts
-   * it 126mm over, and peaks at t=11.85. Close enough to sound like a
-   * measurement, wrong by a factor of four, wrong about which frame, and wrong
-   * in the direction that lets a clip through.
-   *
-   * It is a SAMPLING bound, not a ceiling. The spring is driven by the frame
-   * timings it happens to get, so the peak moves run to run: nine column sweeps
-   * at pan +0.16 topped out at 1.7215, and eighteen at +0.13 ranged over
-   * 1.7175-1.7276, a 10mm spread. The figure carried below is that worst.
-   * Record the worst you have seen, and read a higher reading as a result
-   * rather than as noise to round away — this value only ever moves by hand, so
-   * a thin margin costs a re-measure, never a silent regression.
-   *
-   * It is also the topmost pixel with alpha over 8/255, which counts the
-   * translucent fringe on her hair tips and ornaments and not only the hair you
-   * can see. In the column that fringe got to row 3 at worst, while the topmost
-   * pixel above alpha 128 never rose past row 25 in the three sweeps measured
-   * at both thresholds, 32mm lower. So this trips about 32mm before anything
-   * visible is cut, which is the direction a guard should be wrong in — and a
-   * re-measure at another threshold is not comparable.
-   *
-   * Absent means not measured, and absent is the norm: this costs a browser
-   * sweep of every frame of the clip, and it is carried for the one clip whose
-   * framing depends on it. The other nine were swept once on 2026-08-20 anyway.
-   * The eight that play in the column all sit within 5mm of its top edge (spin,
-   * playFingers and scratchHead 3-5mm PAST it, which is how they already ship
-   * and is untouched by this); `stretch` plays waist-up only, where its highest
-   * point is a hand and the bone guard above already measures it. See
-   * docs/plans/avatar-motion-capture.md for the table.
-   *
-   * Re-measure if the model, the clip, or a frame's composition changes.
+   * Derived from the clip's crown and hips on the bodies it ships on, so it
+   * is per body in principle; see `dance` for the derivation and the
+   * clearance file for the crown it rests on.
    */
-  crown?: number
-  /** Measured guard violations shipped on purpose. Absent means none. */
-  waiver?: MotionWaiver
+  pan?: MotionPan
 }
 
-// Measured 2026-08-19 by retargeting all seven clips of the pack onto
-// AvatarSample_B_webp.vrm. Four are absent on purpose, and the numbers are here
-// so nobody re-adds one on the assumption that an official clip must be safe:
-//
-//   greeting      opens with her hips at y=0.310, 0.568m below her rest height,
-//                 and she rises off the floor over the first 2.4s. A fingertip
-//                 is also 17.0mm inside her head across 67 frames between
-//                 t=2.27s and t=7.23s. Two independent failures.
-//   showFullBody  reaches 0.713 toward the viewer's left against a 0.675 canvas
-//                 budget, for 54 frames between t=1.42s and t=2.30s. That edge
-//                 is the one over the transcript, so the cut happens in the
-//                 middle of the screen rather than off it: about 32px of hand
-//                 disappearing for nearly a second on a 1920x1080 column.
-//   shoot         VRMA_04, and it SHIPPED until the probe was widened from the
-//                 index fingertip to all sixteen hand joints: its right thumb
-//                 crosses into her cheek for 16 frames from t=3.35s to t=3.60s,
-//                 4.9mm past the face ellipsoid. Index-only it measures 1.19 and
-//                 looks clean. Do not re-add it without fixing the clip.
-//
-// A clip is only listed once the probe agrees it fits; adding one without
-// running that check is how the hand-authored gestures got where they were.
+// Three clips of the pack are kept out on purpose, and the measurements that
+// keep them out are in the clearance file's `excluded` (greeting,
+// showFullBody, shoot), so nobody re-adds one on the assumption that an
+// official clip must be safe. A clip is only listed here once the probe agrees
+// it fits; adding one without running that check is how the hand-authored
+// gestures got where they were.
 export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // VRMA_03. The V is held beside her face, palm out, for about two seconds.
   peaceSign: { placements: ['waistUp', 'column'], showsPalm: true },
@@ -186,12 +160,9 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // A standing idle, and by far the quietest clip here: 0.337 to the viewer's
   // left, 0.035 to the right, hands never above y=0.768. It does stand 0.152 to
   // one side of centre, at both ends and so throughout, which the fade slides
-  // her across on the way in and out: about 38px on the launcher canvas.
-  idleLoop: {
-    placements: ['waistUp', 'column'],
-    showsPalm: false,
-    waiver: { hipsDrift: 0.16 },
-  },
+  // her across on the way in and out: about 38px on the launcher canvas. The
+  // waiver for that is in the clearance file.
+  idleLoop: { placements: ['waistUp', 'column'], showsPalm: false },
   // Arms overhead: highest joint 1.7971, highest SKIN 1.8091. Waist-up only, and
   // the reason that frame was raised on 2026-08-20 — at the old 1.722 top edge
   // this was cut on the very canvas the owner wanted to watch it on, and it now
@@ -204,10 +175,13 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // canvas and sits 44mm inside the 0.7415 one. Its reach waiver is gone with
   // that, because a waiver that is not needed is a test failure.
   //
-  // What it still does is put a hand 38.9mm inside her head for 18 frames around
-  // t=8.23s — ellipsoid 0.299, eight times the 4.9mm that kept `shoot` out. That
-  // figure got WORSE when the probe started measuring the skinned fingertip: on
-  // the distal joint alone it read 26.8mm.
+  // What it still does is put a hand 51.0mm inside her head for 34 of the 1608
+  // frames the engine draws, around t=8.22s — ellipsoid 0.1975, ten times the
+  // 4.9mm that kept `shoot` out. That figure has got worse twice, both times
+  // because the measurement improved: on the distal joint alone it read
+  // 26.8mm, on the whole skinned hand 38.9mm, and on the whole hand sampled at
+  // the rate the engine draws (rather than at the clip's 30fps keys) 51.0mm.
+  // The waiver for it, and for the two below, is in the clearance file.
   //
   // Its VRMC_vrm_animation has no specVersion, so three-vrm logs one warning per
   // load and assumes 1.0. The other nine clips declare it.
@@ -218,15 +192,17 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //
   // It also MOVES, which nothing else in the pool does, and it moves at both
   // ends. Her hips drop to 0.7525 and hop to 0.9644 against a rest height of
-  // 0.8782, and the hop throws her hair to 1.7276 — 175mm above where it hangs
-  // when she stands still. Against the two compositions:
+  // 0.8782, and the hop throws her hair to 1.7276 on the VRoid body — 175mm
+  // above where it hangs when she stands still (the clearance file's crownSeen;
+  // the spring solver reads the same hop on the Milfy body's twintails as
+  // 89mm, its clips.dance.crownY). Against the two compositions:
   //
   //   waist-up  hips 15mm below the bottom edge, for 14 of 805 sampled frames
   //             from t=7.77s. This is what took the clip out of the waist-up
   //             pool on 2026-08-20 and off the launcher with it.
   //   column    119mm above the top edge at t=12.05, and above it at all on 98
   //             of 1589 rendered frames. That is the 2026-08-20 sweep, which
-  //             is why its numbers sit 6mm under the `crown` above. What is
+  //             is why its numbers sit 6mm under the crown recorded. What is
   //             out is hair and the ornaments in it — her skull was never
   //             measured and is not claimed — but at 119mm the cut runs
   //             through the whole crown of her head, and the screenshots at
@@ -265,22 +241,16 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //
   // Nothing else in the pool is touched by either number.
   //
-  // MEASURED ON THE VRoid BODIES, and left alone when `milfy` joined the
-  // registry on 2026-09-03. That body was not swept: a sweep is 18 runs of a
-  // 20s clip and this one is the thin margin, so what was checked instead is
-  // the term the sweep is dominated by. Milfy's topmost vertex in bind pose is
-  // 1.5757 against 1.5820 on the other two — its hair reaches 6.3mm LOWER,
-  // with the head bone at the same 1.3200 — so the number below stays the
-  // conservative one for it. What is NOT covered is the swing: its twin tails
-  // are a different spring chain, and the 4.4mm this leaves at the column's
-  // top edge is the translucent fringe, not hair anyone can see (36mm). So a
-  // milfy sweep would risk reddening this guard, not cutting a visible frame.
+  // The crown was MEASURED ON THE VRoid BODIES in the browser. Since 2026-09-06
+  // the family's clearance file also carries what three-vrm's spring solver
+  // reads on the Milfy body (scripts/avatar/springsim.ts), and rigProbe.test.ts
+  // holds every clip's crown, browser or derived, whichever is higher, to
+  // its frames: the swing of Milfy's twin tails, a different spring chain,
+  // is simulated rather than argued about.
   dance: {
     placements: ['waistUp', 'column'],
     showsPalm: true,
     pan: { waistUp: -0.08, column: 0.13 },
-    crown: 1.7276,
-    waiver: { handInHead: 0.29, hipsDrift: 0.15, endWrist: 1.19 },
   },
 }
 

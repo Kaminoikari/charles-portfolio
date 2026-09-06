@@ -1,0 +1,11 @@
+clip          keys   worst@keys         worst@60Hz         key gap   how far in
+peaceSign      702     1.9245 @9.450s     1.9246 @9.450s    16.7ms   clear
+modelPose      452    11.3843 @3.867s    11.3843 @3.867s    16.7ms   clear
+spin           560     5.7712 @2.450s     5.7714 @2.450s    16.7ms   clear
+squat          692     2.7028 @6.117s     2.7030 @6.117s    16.7ms   clear
+akimbo         321    18.7142 @6.400s    18.7142 @9.600s    34.0ms   clear
+playFingers    145    22.3535 @2.667s    22.3542 @2.667s    34.0ms   clear
+scratchHead    194     1.2173 @4.433s     1.2173 @4.433s    34.0ms   clear
+idleLoop       250    36.6637 @1.208s    36.6637 @8.750s    41.7ms   clear
+stretch        137     2.2361 @1.867s     2.2362 @1.867s    34.0ms   clear
+dance          805     0.3004 @8.233s     0.1975 @8.217s    34.0ms   51.0mm in, 34 of 1608 drawn frames

@@ -1,0 +1,273 @@
+
+ RUN  v3.2.6 /Users/charles/portfolio
+
+ ❯ scripts/measure-motions.test.ts (6 tests | 1 failed) 2775ms
+   ✓ measure-motions > reports the shipped body as fitting, waiver and all 1ms
+   ✓ measure-motions > recognises the face waiver dance already ships with 0ms
+   ✓ measure-motions > reports the face box and the finger skin it read off the body 0ms
+   ✓ measure-motions > says no when the same clips are asked to run on a taller body 0ms
+   ✓ measure-motions > counts exactly the violations it printed 0ms
+   × measure-motions > reports the derived crown against the top edge 3ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …/
+ ❯ scripts/avatar/springsim.test.ts (6 tests | 4 failed) 6702ms
+   ✓ Milfy through the spring solver > dance: the tails stay outside the cardigan and out of her body 1ms
+   × Milfy through the spring solver > dance: the legs stay under the skirt 2ms
+     → Cannot read properties of undefined (reading 'toFixed')
+   ✓ Milfy through the spring solver > spin: the tails stay outside the cardigan and out of her body 0ms
+   × Milfy through the spring solver > spin: the legs stay under the skirt 0ms
+     → Cannot read properties of undefined (reading 'toFixed')
+   × Milfy through the spring solver > dance: the hop throws her hair well above its resting crown 1ms
+     → actual value must be number or bigint, received "undefined"
+   × Milfy through the spring solver > a 1.0 export of the same body simulates the same 169ms
+     → Cannot read properties of undefined (reading 'secondaryAnimation')
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/components/chat/avatarVariants.test.ts [ src/components/chat/avatarVariants.test.ts ]
+Error: Failed to resolve import "./clearance/vroid-sample-b" from "src/components/chat/avatarVariants.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts:15:26
+  4  |  import { describe, expect, it } from "vitest";
+  5  |  import { ACTIVE_VARIANT, AVATAR_VARIANTS, variantUrl } from "./avatarVariants";
+  6  |  import { CLEARANCE } from "./clearance/vroid-sample-b";
+     |                             ^
+  7  |  import { readExpressions, readHumanoid, rigOf } from "./vrmHumanoid";
+  8  |  const parsed = /* @__PURE__ */ new Map();
+ ❯ TransformPluginContext._formatLog node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29079:43
+ ❯ TransformPluginContext.error node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29076:14
+ ❯ normalizeUrl node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27199:18
+ ❯ node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27257:32
+ ❯ TransformPluginContext.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27225:4
+ ❯ EnvironmentPluginContainer.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:28877:14
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:22746:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯
+
+ FAIL  src/components/chat/clearance.test.ts [ src/components/chat/clearance.test.ts ]
+Error: Failed to resolve import "./clearance" from "src/components/chat/clearance.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/charles/portfolio/src/components/chat/clearance.test.ts:17:116
+  5  |  import path from "node:path";
+  6  |  import { describe, expect, it } from "vitest";
+  7  |  import { combineClearance, crownOn } from "./clearance";
+     |                                             ^
+  8  |  import { CLEARANCE } from "./clearance/vroid-sample-b";
+  9  |  import { parseGlb, rigOf } from "./vrmHumanoid";
+ ❯ TransformPluginContext._formatLog node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29079:43
+ ❯ TransformPluginContext.error node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29076:14
+ ❯ normalizeUrl node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27199:18
+ ❯ node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27257:32
+ ❯ TransformPluginContext.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27225:4
+ ❯ EnvironmentPluginContainer.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:28877:14
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:22746:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯
+
+ FAIL  src/components/chat/rigProbe.test.ts [ src/components/chat/rigProbe.test.ts ]
+Error: Failed to resolve import "./clearance" from "src/components/chat/rigProbe.test.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/charles/portfolio/src/components/chat/rigProbe.test.ts:8:24
+  6  |  import { VRMHumanoid } from "@pixiv/three-vrm";
+  7  |  import { parseGlb, readHumanoid, rigOf } from "./vrmHumanoid";
+  8  |  import { crownOn } from "./clearance";
+     |                           ^
+  9  |  import { CLEARANCE } from "./clearance/vroid-sample-b";
+  10 |  import {
+ ❯ TransformPluginContext._formatLog node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29079:43
+ ❯ TransformPluginContext.error node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:29076:14
+ ❯ normalizeUrl node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27199:18
+ ❯ node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27257:32
+ ❯ TransformPluginContext.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:27225:4
+ ❯ EnvironmentPluginContainer.transform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:28877:14
+ ❯ loadAndTransform node_modules/vitest/node_modules/vite/dist/node/chunks/config.js:22746:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯
+
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  scripts/measure-motions.test.ts > measure-motions > reports the derived crown against the top edge
+AssertionError: expected '模型　　public/avatar/AvatarSample_B_webp…' to match /column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …/
+
+[32m- Expected:[39m 
+/column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  \d/
+
+[31m+ Received:[39m 
+"模型　　public/avatar/AvatarSample_B_webp.vrm
+靜止姿勢　hips 0.8782　head 1.3200
+臉部盒　x -0.092…0.092　y 1.287…1.503　z -0.113…0.033（從 Face 網格推導）
+指尖皮厚　18.0mm（從 Body 網格推導；畫面預留的是 SKIN_ABOVE_JOINT 12.0mm）
+
+每一列是那支動作最糟的一幀，跟它必須待在裡面的預算並排。
+餘裕是負的就代表這具身體上那支動作會被切到或會穿模。
+
+── peaceSign　（waistUp、column）
+   waistUp  往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   waistUp  往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   waistUp  手的皮膚頂端　1.4268　預算 1.8722　餘裕  445.4mm
+   waistUp  髖部最低　　0.8225　下緣 0.7678　餘裕  54.7mm
+   column   往畫面左邊伸　0.5998　預算 0.7415　餘裕  141.7mm
+   column   往畫面右邊伸　0.4645　預算 0.7415　餘裕  277.0mm
+   column   手的皮膚頂端　1.4268　預算 1.6020　餘裕  175.2mm
+   column   髖部最低　　0.8225　下緣 0.4300　餘裕  392.6mm
+   手沒進到臉裡　最近一次 1.925（要大於 1）
+   頭尾站得住　髖部偏移 36.1mm（上限 80.0mm）
+
+── modelPose　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   waistUp  往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   waistUp  手的皮膚頂端　1.2604　預算 1.8722　餘裕  611.7mm
+   waistUp  髖部最低　　0.8590　下緣 0.7678　餘裕  91.2mm
+   column   往畫面左邊伸　0.3177　預算 0.7415　餘裕  423.8mm
+   column   往畫面右邊伸　0.2857　預算 0.7415　餘裕  455.8mm
+   column   手的皮膚頂端　1.2604　預算 1.6020　餘裕  341.6mm
+   column   髖部最低　　0.8590　下緣 0.4300　餘裕  429.1mm
+   手沒進到臉裡　最近一次 11.384（要大於 1）
+   頭尾站得住　髖部偏移 8.3mm（上限 80.0mm）
+
+── spin　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   waistUp  往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   waistUp  手的皮膚頂端　1.4933　預算 1.8722　餘裕  378.9mm
+   waistUp  髖部最低　　0.8300　下緣 0.7678　餘裕  62.2mm
+   column   往畫面左邊伸　0.6740　預算 0.7415　餘裕  67.5mm
+   column   往畫面右邊伸　0.5239　預算 0.7415　餘裕  217.6mm
+   column   手的皮膚頂端　1.4933　預算 1.6020　餘裕  108.8mm
+   column   髖部最低　　0.8300　下緣 0.4300　餘裕  400.1mm
+   手沒進到臉裡　最近一次 5.771（要大於 1）
+   頭尾站得住　髖部偏移 -4.6mm（上限 80.0mm）
+
+── squat　（column）
+   column   往畫面左邊伸　0.6296　預算 0.7415　餘裕  112.0mm
+   column   往畫面右邊伸　0.6155　預算 0.7415　餘裕  126.0mm
+   column   手的皮膚頂端　1.3508　預算 1.6020　餘裕  251.2mm
+   column   髖部最低　　0.6600　下緣 0.4300　餘裕  230.1mm
+   手沒進到臉裡　最近一次 2.703（要大於 1）
+   頭尾站得住　髖部偏移 -4.9mm（上限 80.0mm）
+
+── akimbo　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   waistUp  往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.8mm
+   waistUp  手的皮膚頂端　0.9640　預算 1.8722　餘裕  908.2mm
+   waistUp  髖部最低　　0.8817　下緣 0.7678　餘裕  113.9mm
+   column   往畫面左邊伸　0.2542　預算 0.7415　餘裕  487.3mm
+   column   往畫面右邊伸　0.2767　預算 0.7415　餘裕  464.9mm
+   column   手的皮膚頂端　0.9640　預算 1.6020　餘裕  638.0mm
+   column   髖部最低　　0.8817　下緣 0.4300　餘裕  451.7mm
+   手沒進到臉裡　最近一次 18.714（要大於 1）
+   頭尾站得住　髖部偏移 -4.1mm（上限 80.0mm）
+
+── playFingers　（waistUp、column）
+   waistUp  往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.6mm
+   waistUp  往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   waistUp  手的皮膚頂端　1.0079　預算 1.8722　餘裕  864.3mm
+   waistUp  髖部最低　　0.8819　下緣 0.7678　餘裕  114.1mm
+   column   往畫面左邊伸　0.2379　預算 0.7415　餘裕  503.7mm
+   column   往畫面右邊伸　0.2391　預算 0.7415　餘裕  502.4mm
+   column   手的皮膚頂端　1.0079　預算 1.6020　餘裕  594.2mm
+   column   髖部最低　　0.8819　下緣 0.4300　餘裕  451.9mm
+   手沒進到臉裡　最近一次 22.354（要大於 1）
+   頭尾站得住　髖部偏移 -4.1mm（上限 80.0mm）
+
+── scratchHead　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.5mm
+   waistUp  往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   waistUp  手的皮膚頂端　1.5700　預算 1.8722　餘裕  302.1mm
+   waistUp  髖部最低　　0.8776　下緣 0.7678　餘裕  109.7mm
+   column   往畫面左邊伸　0.3470　預算 0.7415　餘裕  394.6mm
+   column   往畫面右邊伸　0.5106　預算 0.7415　餘裕  230.9mm
+   column   手的皮膚頂端　1.5700　預算 1.6020　餘裕  32.0mm
+   column   髖部最低　　0.8776　下緣 0.4300　餘裕  447.6mm
+   手沒進到臉裡　最近一次 1.217（要大於 1）
+   頭尾站得住　髖部偏移 -4.1mm（上限 80.0mm）
+
+── idleLoop　（waistUp、column）
+   waistUp  往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.3mm
+   waistUp  往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.4mm
+   waistUp  手的皮膚頂端　0.7818　預算 1.8722　餘裕  1090.4mm
+   waistUp  髖部最低　　0.8761　下緣 0.7678　餘裕  108.3mm
+   column   往畫面左邊伸　0.3412　預算 0.7415　餘裕  400.4mm
+   column   往畫面右邊伸　0.0381　預算 0.7415　餘裕  703.5mm
+   column   手的皮膚頂端　0.7818　預算 1.6020　餘裕  820.2mm
+   column   髖部最低　　0.8761　下緣 0.4300　餘裕  446.1mm
+   手沒進到臉裡　最近一次 36.664（要大於 1）
+   頭尾站得住　髖部偏移 1.5mm（上限 80.0mm）
+
+── stretch　（waistUp）
+   waistUp  往畫面左邊伸　0.3063　預算 0.7415　餘裕  435.2mm
+   waistUp  往畫面右邊伸　0.5450　預算 0.7415　餘裕  196.5mm
+   waistUp  手的皮膚頂端　1.8091　預算 1.8722　餘裕  63.1mm
+   waistUp  髖部最低　　0.8824　下緣 0.7678　餘裕  114.6mm
+   手沒進到臉裡　最近一次 2.236（要大於 1）
+   頭尾站得住　髖部偏移 -4.1mm（上限 80.0mm）
+
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.7mm
+   waistUp  往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.4mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.7922　餘裕  303.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6878　餘裕  64.7mm
+   column   往畫面左邊伸　0.6978　預算 0.7415　餘裕  43.8mm
+   column   往畫面右邊伸　0.4171　預算 0.7415　餘裕  324.5mm
+   column   手的皮膚頂端　1.4886　預算 1.7320　餘裕  243.5mm
+   column   髖部最低　　0.7525　下緣 0.5600　餘裕  192.5mm
+   手在臉裡但在放行範圍內　0.300（下限 0.290，t=8.23s）
+   ⓘ 髮頂 1.7276（對舊身體量的，上緣 1.7320）。這個數字推導不出來，換身體要在瀏覽器裡重量一次。
+   頭尾站得住　髖部偏移 47.1mm（上限 80.0mm）
+
+全部動作在這具身體上都待在預算內，可以直接沿用。"
+
+ ❯ scripts/measure-motions.test.ts:152:25
+    150|     // dance in the column: derived crown against the panned top edge
+    151|     // (1.732 + 0.13), with room to spare on the shipped body.
+    152|     expect(shippedText).toMatch(/column\s+髮頂　1\.\d{4}　上緣 1\.8620.*餘裕  …
+       |                         ^
+    153|     expect(shippedText).not.toContain('推導不出來')
+    154|     // A 35% taller body carries its crown up with it; the frame does …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯
+
+ FAIL  scripts/avatar/springsim.test.ts > Milfy through the spring solver > dance: the legs stay under the skirt
+ FAIL  scripts/avatar/springsim.test.ts > Milfy through the spring solver > spin: the legs stay under the skirt
+TypeError: Cannot read properties of undefined (reading 'toFixed')
+ ❯ scripts/avatar/springsim.test.ts:97:78
+     95|     it(`${clip}: the legs stay under the skirt`, () => {
+     96|       const r = reports[clip]
+     97|       expect(r.skirtDepthMm, `deepest leg through the skirt @${r.skirt…
+       |                                                                              ^
+     98|     })
+     99|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯
+
+ FAIL  scripts/avatar/springsim.test.ts > Milfy through the spring solver > dance: the hop throws her hair well above its resting crown
+TypeError: actual value must be number or bigint, received "undefined"
+ ❯ scripts/avatar/springsim.test.ts:105:40
+    103|     // restCrownY is the bind pose's topmost vertex of anything she dr…
+    104|     // crownY the topmost vertex at any frame of the clip, springs inc…
+    105|     expect(r.restCrownY, 'rest crown').toBeGreaterThan(1.5)
+       |                                        ^
+    106|     expect(r.crownY - r.restCrownY, `crown @${r.crownT.toFixed(2)}s ov…
+    107|   })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯
+
+ FAIL  scripts/avatar/springsim.test.ts > Milfy through the spring solver > a 1.0 export of the same body simulates the same
+TypeError: Cannot read properties of undefined (reading 'secondaryAnimation')
+ ❯ tailGroup scripts/avatar/springsim.ts:133:33
+    131| 
+    132| function tailGroup(json: Gltf): BoneGroup {
+    133|   const g = json.extensions.VRM.secondaryAnimation.boneGroups.find((gr…
+       |                                 ^
+    134|     (group.bones ?? []).some((b) => (json.nodes[b].name ?? '').startsW…
+    135|   )
+ ❯ runClip scripts/avatar/springsim.ts:518:17
+ ❯ scripts/avatar/springsim.test.ts:126:21
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯
+
+
+ Test Files  5 failed (5)
+      Tests  5 failed | 7 passed (12)
+   Start at  16:59:40
+   Duration  7.26s (transform 93ms, setup 149ms, collect 172ms, tests 9.48s, environment 1.03s, prepare 149ms)
+

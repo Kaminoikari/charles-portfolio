@@ -6,11 +6,13 @@
 // body forever. That is the injection-bypasses-wiring shape, so the last test
 // here reads ChatWidget's and AvatarGuide's source and requires the resolved
 // URL to be what reaches the engine.
+import { createHash } from 'node:crypto'
 import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 import { ACTIVE_VARIANT, AVATAR_VARIANTS, variantUrl } from './avatarVariants'
+import { CLEARANCE } from './clearance/vroid-sample-b'
 import { readExpressions, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
 
 /**
@@ -99,6 +101,18 @@ describe('avatar variants', () => {
         rigOf(other.doc),
         `${other.id} does not share ${first.id}'s rig; the motion clips' clearances were measured on ${first.id}`,
       ).toBe(rigOf(first.doc))
+    }
+  })
+
+  it('gives every variant the rig the clearance file was measured on', () => {
+    // The clearance file (src/components/chat/clearance/) is the pool's numbers
+    // for one family of bodies, and it names that family by the sha of the
+    // rig its producers read. A variant declared here with another rig would
+    // pass the same-rig test above against its siblings and still be a body
+    // wearing numbers measured on a different skeleton.
+    for (const v of AVATAR_VARIANTS) {
+      const sha = createHash('sha256').update(rigOf(gltfOf(v.url))).digest('hex')
+      expect(sha, `${v.id} is not the rig ${CLEARANCE.family} was measured on`).toBe(CLEARANCE.rigSha)
     }
   })
 
