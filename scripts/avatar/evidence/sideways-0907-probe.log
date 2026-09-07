@@ -1,0 +1,124 @@
+
+=== pink  粉髮藍眼  (vroid-sample-b)
+  27 bones on her left plus the head, radius:
+    leftLowerLeg            230.5mm
+    head                    228.2mm
+    leftUpperLeg            187.6mm
+    leftUpperArm             94.6mm
+    leftLowerArm             79.0mm
+    leftShoulder             71.5mm
+    leftHand                 65.3mm
+    leftThumbMetacarpal      56.1mm
+  widest leftLowerLeg 230.5mm, thinnest 7.4mm
+  clip            frame     bare    +skin    budget   spare(+skin)  worst bone
+  peaceSign       waistUp   0.5998  0.6088  0.7415      132.7mm  rightMiddleTip
+  peaceSign       column    0.5998  0.6088  0.7415      132.8mm  rightMiddleTip
+  modelPose       waistUp   0.3177  0.3647  0.7415      376.8mm  leftLowerArm
+  modelPose       column    0.3177  0.3647  0.7415      376.8mm  leftLowerArm
+  spin            waistUp   0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  spin            column    0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  squat           column    0.6296  0.6379  0.7415      103.6mm  rightThumbTip
+  akimbo          waistUp   0.2767  0.3507  0.7415      390.8mm  leftLowerLeg
+  akimbo          column    0.2767  0.3507  0.7415      390.9mm  leftLowerLeg
+  playFingers     waistUp   0.2391  0.2842  0.7415      457.3mm  leftLowerArm
+  playFingers     column    0.2391  0.2842  0.7415      457.4mm  leftLowerArm
+  scratchHead     waistUp   0.5106  0.5196  0.7415      221.9mm  leftMiddleTip
+  scratchHead     column    0.5106  0.5196  0.7415      222.0mm  leftMiddleTip
+  idleLoop        waistUp   0.3412  0.4364  0.7415      305.1mm  rightLowerLeg
+  idleLoop        column    0.3412  0.4364  0.7415      305.1mm  rightLowerLeg
+  stretch         waistUp   0.5450  0.5533  0.7415      188.2mm  leftRingDistal
+  dance           waistUp   0.6978  0.7068  0.7415       34.7mm  rightIndexTip
+  dance           column    0.6978  0.7068  0.7415       34.8mm  rightIndexTip
+
+=== milfy  Milfy 復刻  (vroid-sample-b)
+  27 bones on her left plus the head, radius:
+    head                    269.2mm
+    leftUpperLeg            213.2mm
+    leftUpperArm            108.0mm
+    leftShoulder             96.0mm
+    leftLowerArm             95.0mm
+    leftLowerLeg             73.3mm
+    leftHand                 49.2mm
+    leftThumbMetacarpal      29.5mm
+  widest head 269.2mm, thinnest 7.4mm
+  clip            frame     bare    +skin    budget   spare(+skin)  worst bone
+  peaceSign       waistUp   0.5998  0.6088  0.7415      132.7mm  rightMiddleTip
+  peaceSign       column    0.5998  0.6088  0.7415      132.8mm  rightMiddleTip
+  modelPose       waistUp   0.3177  0.3985  0.7415      343.0mm  head
+  modelPose       column    0.3177  0.3985  0.7415      343.1mm  head
+  spin            waistUp   0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  spin            column    0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  squat           column    0.6296  0.6379  0.7415      103.6mm  rightThumbTip
+  akimbo          waistUp   0.2767  0.3488  0.7415      392.7mm  leftLowerArm
+  akimbo          column    0.2767  0.3488  0.7415      392.8mm  leftLowerArm
+  playFingers     waistUp   0.2391  0.3001  0.7415      441.4mm  leftLowerArm
+  playFingers     column    0.2391  0.3001  0.7415      441.4mm  leftLowerArm
+  scratchHead     waistUp   0.5106  0.5196  0.7415      221.9mm  leftMiddleTip
+  scratchHead     column    0.5106  0.5196  0.7415      222.0mm  leftMiddleTip
+  idleLoop        waistUp   0.3412  0.4441  0.7415      297.4mm  rightUpperLeg
+  idleLoop        column    0.3412  0.4441  0.7415      297.4mm  rightUpperLeg
+  stretch         waistUp   0.5450  0.5533  0.7415      188.2mm  leftRingDistal
+  dance           waistUp   0.6978  0.7068  0.7415       34.7mm  rightIndexTip
+  dance           column    0.6978  0.7068  0.7415       34.8mm  rightIndexTip
+
+=== base  原紫髮  (vroid-sample-b)
+  27 bones on her left plus the head, radius:
+    leftLowerLeg            230.5mm
+    head                    228.2mm
+    leftUpperLeg            187.6mm
+    leftUpperArm             94.6mm
+    leftLowerArm             79.0mm
+    leftShoulder             71.5mm
+    leftHand                 65.3mm
+    leftThumbMetacarpal      56.1mm
+  widest leftLowerLeg 230.5mm, thinnest 7.4mm
+  clip            frame     bare    +skin    budget   spare(+skin)  worst bone
+  peaceSign       waistUp   0.5998  0.6088  0.7415      132.7mm  rightMiddleTip
+  peaceSign       column    0.5998  0.6088  0.7415      132.8mm  rightMiddleTip
+  modelPose       waistUp   0.3177  0.3647  0.7415      376.8mm  leftLowerArm
+  modelPose       column    0.3177  0.3647  0.7415      376.8mm  leftLowerArm
+  spin            waistUp   0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  spin            column    0.6740  0.6830  0.7415       58.5mm  rightIndexTip
+  squat           column    0.6296  0.6379  0.7415      103.6mm  rightThumbTip
+  akimbo          waistUp   0.2767  0.3507  0.7415      390.8mm  leftLowerLeg
+  akimbo          column    0.2767  0.3507  0.7415      390.9mm  leftLowerLeg
+  playFingers     waistUp   0.2391  0.2842  0.7415      457.3mm  leftLowerArm
+  playFingers     column    0.2391  0.2842  0.7415      457.4mm  leftLowerArm
+  scratchHead     waistUp   0.5106  0.5196  0.7415      221.9mm  leftMiddleTip
+  scratchHead     column    0.5106  0.5196  0.7415      222.0mm  leftMiddleTip
+  idleLoop        waistUp   0.3412  0.4364  0.7415      305.1mm  rightLowerLeg
+  idleLoop        column    0.3412  0.4364  0.7415      305.1mm  rightLowerLeg
+  stretch         waistUp   0.5450  0.5533  0.7415      188.2mm  leftRingDistal
+  dance           waistUp   0.6978  0.7068  0.7415       34.7mm  rightIndexTip
+  dance           column    0.6978  0.7068  0.7415       34.8mm  rightIndexTip
+
+=== twist  VRM1 樣本（不對外）  (vrm1-twist-sample)
+  27 bones on her left plus the head, radius:
+    head                    230.4mm
+    leftUpperLeg             81.5mm
+    leftLowerLeg             80.4mm
+    leftShoulder             57.1mm
+    leftHand                 37.8mm
+    leftUpperArm             33.9mm
+    leftLowerArm             30.1mm
+    leftThumbProximal        25.7mm
+  widest head 230.4mm, thinnest 8.9mm
+  clip            frame     bare    +skin    budget   spare(+skin)  worst bone
+  peaceSign       waistUp   0.6428  0.6531  0.7415       88.4mm  rightMiddleTip
+  peaceSign       column    0.6428  0.6531  0.7415       88.4mm  rightMiddleTip
+  modelPose       waistUp   0.3695  0.3836  0.7415      357.9mm  rightLittleProximal
+  modelPose       column    0.3695  0.3836  0.7415      358.0mm  rightLittleProximal
+  spin            waistUp   0.6966  0.7067  0.7415       34.8mm  rightIndexTip
+  spin            column    0.6966  0.7067  0.7415       34.9mm  rightIndexTip
+  squat           column    0.6522  0.6618  0.7415       79.7mm  rightThumbTip
+  akimbo          waistUp   0.3190  0.3326  0.7415      408.9mm  leftLittleProximal
+  akimbo          column    0.3190  0.3326  0.7415      409.0mm  leftLittleProximal
+  playFingers     waistUp   0.2805  0.2908  0.7415      450.7mm  leftMiddleTip
+  playFingers     column    0.2805  0.2908  0.7415      450.7mm  leftMiddleTip
+  scratchHead     waistUp   0.5448  0.5551  0.7415      186.4mm  leftMiddleTip
+  scratchHead     column    0.5448  0.5551  0.7415      186.5mm  leftMiddleTip
+  idleLoop        waistUp   0.3928  0.4031  0.7415      338.4mm  rightMiddleTip
+  idleLoop        column    0.3928  0.4031  0.7415      338.4mm  rightMiddleTip
+  stretch         waistUp   0.5756  0.5859  0.7415      155.6mm  leftMiddleDistal
+  dance           waistUp   0.7169  0.7269  0.7415       14.6mm  rightIndexTip
+  dance           column    0.7169  0.7269  0.7415       14.6mm  rightIndexTip

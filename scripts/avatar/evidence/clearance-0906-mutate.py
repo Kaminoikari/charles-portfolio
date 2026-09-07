@@ -68,8 +68,8 @@ MUTATIONS = [
      'springsim.test: twintails with no colliders fail the coat gate (what the 2026-09-03 file did)',
      {'SPRINGSIM_TEST_MODEL': str(MODELS / 'tails-no-colliders.vrm')}),
     ('C7', CL,
-     "  return Math.max(crownOn(file, clip, frame, restCrownY), file.crownSeen[clip]?.[frame] ?? -Infinity)\n",
-     "  return crownOn(file, clip, frame, restCrownY)\n",
+     "  return Math.max(transfer, file.crownSeen[clip]?.[frame] ?? -Infinity, ...own)\n",
+     "  return Math.max(transfer, ...own)\n",
      VT(CLT, 'transfers a clip crown onto another body'),
      'crownBound: a browser sweep that drew the crown higher wins'),
     ('C8', CL,
@@ -108,11 +108,21 @@ MUTATIONS = [
      VT(RPT, 'was simulated under the composition the engine uses today'),
      'rigProbe.test: a composition change without a re-run of springsim --clearance is caught'),
     ('C15',
+     # All THREE of the family's produced halves, not two. Since 9f47b0e the
+     # crown is the worst of the family's bodies, so combineClearance compares
+     # each alsoSimulated body's rigSha against the primary simulation's and
+     # throws at import when they disagree -- which shaded this row: the test
+     # never ran, and a `-t` that selects nothing exits non-zero and would have
+     # read as a RED. Moving all three together leaves that check satisfied and
+     # lets the guard this row is about be the one that fails.
      (CHAT / 'clearance' / 'vroid-sample-b.measured.gen.ts',
-      CHAT / 'clearance' / 'vroid-sample-b.simulated.gen.ts'),
+      CHAT / 'clearance' / 'vroid-sample-b.simulated.gen.ts',
+      CHAT / 'clearance' / 'vroid-sample-b.pink.simulated.gen.ts'),
      ('  "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",\n',
+      '  "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",\n',
       '  "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",\n'),
      ('  "rigSha": "0000000000000000000000000000000000000000000000000000000000000000",\n',
+      '  "rigSha": "0000000000000000000000000000000000000000000000000000000000000000",\n',
       '  "rigSha": "0000000000000000000000000000000000000000000000000000000000000000",\n'),
      # Phase 6b renamed this test (the rig is now held against the variant's own
      # FAMILY, not against one global clearance file). The selector follows the

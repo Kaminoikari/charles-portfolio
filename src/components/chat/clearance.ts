@@ -38,7 +38,12 @@ export interface ClearanceBox {
 
 /** measure-motions.ts: the humanoid rig under one clip, worst frame. */
 export interface ClipMeasured {
-  /** Widest silhouette reach toward each screen side, metres from centre. */
+  /**
+   * Widest silhouette reach toward each screen side, metres from centre, each
+   * joint carrying its own skin (rigProbe.silhouetteReach). Skin included since
+   * 2026-09-07: before that this was the bare bone, and the frame it is checked
+   * against has to clear the drawn limb.
+   */
   reach: { left: number; right: number }
   /** Top of her SKIN over any hand joint. */
   skinTop: number

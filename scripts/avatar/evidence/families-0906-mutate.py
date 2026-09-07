@@ -71,13 +71,13 @@ EXCLUDE_SQUAT = (
 # (id, paths, olds, news, cmd, guard, expect)
 MUTATIONS = [
     ('G2', AV,
-     "  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b' },\n",
-     "  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm' } as AvatarVariant,\n",
+     "  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', offered: true },\n",
+     "  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', offered: true } as AvatarVariant,\n",
      VT(AVT, 'declares a family for every variant'),
      'every declared body names a family (dropping one leaves it looking up undefined)'),
     ('G3', AV,
-     "export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {\n  'vroid-sample-b': VROID_SAMPLE_B,\n}\n",
-     "export const AVATAR_FAMILIES: Record<string, ClearanceFile> = {\n  'vroid-sample-b': VROID_SAMPLE_B,\n  'nobody-uses-this': VROID_SAMPLE_B,\n}\n",
+     "export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {\n  'vroid-sample-b': VROID_SAMPLE_B,\n  'vrm1-twist-sample': VRM1_TWIST_SAMPLE,\n}\n",
+     "export const AVATAR_FAMILIES: Record<string, ClearanceFile> = {\n  'vroid-sample-b': VROID_SAMPLE_B,\n  'vrm1-twist-sample': VRM1_TWIST_SAMPLE,\n  'nobody-uses-this': VROID_SAMPLE_B,\n}\n",
      VT(AVT, 'declares a family for every variant'),
      'a family nothing declares is refused (that is how a clearance file outlives the body it was measured on)'),
     ('G4', AV,

@@ -13,14 +13,15 @@ import {
   buildMotion,
   buildRig,
   deriveFingerSkinRadius,
+  deriveSilhouetteSkin,
+  silhouetteReach,
+  silhouetteBones,
   deriveRestCrown,
   handJoints,
   headPenetration,
   headVolume,
   probeHand,
   resetRig,
-  screenX,
-  silhouetteJoints,
   SKIN_ABOVE_JOINT,
   type Motion,
   type Rig,
@@ -191,6 +192,18 @@ function rigOfBody(body: string): Rig {
 }
 function rig(): Rig {
   return rigOfBody('AvatarSample_B_webp.vrm')
+}
+
+// The sideways allowance, off the same body the family says it measured on.
+// Cached with the rig because deriving it walks every skinned vertex.
+const skinCache = new Map<string, Record<string, number>>()
+function skinOfBody(body: string): Record<string, number> {
+  let s = skinCache.get(body)
+  if (!s) {
+    s = deriveSilhouetteSkin(parseGlb(asset(body)), rigOfBody(body))
+    skinCache.set(body, s)
+  }
+  return s
 }
 
 const motionCache = new Map<AvatarMotionName, Motion>()
@@ -611,6 +624,9 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
+    // Read before the sweep starts: deriving it resets the rig, and inside the
+    // loop that would silently measure the rest pose instead of the frame.
+    const skin = skinOfBody(fam.body)
     // The crown against every declared frame, judged after the loop: a
     // crownTop waiver is needed if the crown leaves ANY declared frame (the
     // column is the tight one), and binds in every frame.
@@ -624,11 +640,13 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       for (const time of m.sampleTimes) {
         applyMotion(r, m, time)
         // The outermost point of a pose is not always a hand: a raised elbow or
-        // a splayed little finger can be, so the whole silhouette is sampled.
-        for (const joint of silhouetteJoints(r)) {
-          screenLeft = Math.max(screenLeft, -screenX(r, joint.x))
-          screenRight = Math.max(screenRight, screenX(r, joint.x))
-        }
+        // a splayed little finger can be, so the whole silhouette is sampled --
+        // and each joint carries its own skin, which is what the frame has to
+        // clear. Same call as the producer makes, so the comparison below is
+        // between two runs of one measure rather than two measures.
+        const reach = silhouetteReach(r, skin)
+        screenLeft = Math.max(screenLeft, reach.left)
+        screenRight = Math.max(screenRight, reach.right)
         // Every joint of the hand, the same set the face and silhouette guards
         // use. Sampling the wrist and the index tip alone read `stretch` at
         // 1.7698 when its highest bone is a THUMB tip at 1.7971 — 27mm, and the
@@ -1357,5 +1375,33 @@ describe('three-vrm humanoid rig', () => {
     const radius = deriveFingerSkinRadius(parseGlb(asset('AvatarSample_B_webp.vrm')), rig())
     expect(radius).toBeGreaterThanOrEqual(SKIN_ABOVE_JOINT)
     expect(radius).toBeLessThan(0.02)
+  })
+
+  it('reads the same finger radius again as one bone of the sideways allowance', () => {
+    // deriveSilhouetteSkin answers per bone what deriveFingerSkinRadius answers
+    // for the outer phalanges as a group, off the same vertices and the same
+    // segments. The two agreeing is what says the sideways allowance is the
+    // mesh's own number rather than a second convention that happens to look
+    // plausible, and it is the only cheap check on a function whose output is
+    // 55 numbers nobody eyeballs.
+    const glb = parseGlb(asset('AvatarSample_B_webp.vrm'))
+    const r = rig()
+    const skin = deriveSilhouetteSkin(glb, r)
+    const outer = Object.keys(skin).filter((b) => /(Index|Middle|Ring|Little)(Intermediate|Distal)$|Thumb(Proximal|Distal)$/.test(b))
+    expect(outer.length, 'ten fingers, two outer phalanges each').toBe(20)
+    expect(Math.max(...outer.map((b) => skin[b]))).toBeCloseTo(deriveFingerSkinRadius(glb, r), 12)
+    // And every silhouette bone has one: silhouetteReach refuses to measure a
+    // bone it has no radius for rather than treating it as bare.
+    for (const bone of silhouetteBones(r)) expect(skin[bone], `${bone} has a skin radius`).toBeGreaterThan(0)
+  })
+
+  it('refuses to measure a reach for a bone it has no skin radius for', () => {
+    // The failure this rules out is silent and looks fine: an allowance table
+    // missing a bone would measure that bone bare, which is exactly the
+    // pre-2026-09-07 behaviour, and every number would still be plausible.
+    const r = rig()
+    const skin = deriveSilhouetteSkin(parseGlb(asset('AvatarSample_B_webp.vrm')), r)
+    delete skin[silhouetteBones(r)[0]]
+    expect(() => silhouetteReach(r, skin)).toThrow(/no skin radius/)
   })
 })

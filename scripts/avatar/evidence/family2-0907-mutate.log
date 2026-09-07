@@ -28,31 +28,31 @@ F8 GREEN  restored=True
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t turns a palm to the viewer
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 184 skipped) 1263ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 186 skipped) 1265ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a res
 […]
- the neck rows out of the face box
-   ↓ three-vrm humanoid rig > finds the face by what the expressions move, not by what a mesh is called
-   ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
+nd through the node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 9 passed | 184 skipped (194)
-   Start at  19:36:45
-   Duration  1.82s (transform 78ms, setup 39ms, collect 108ms, tests 1.26s, environment 268ms, prepare 32ms)
+      Tests  1 failed | 9 passed | 186 skipped (196)
+   Start at  20:16:27
+   Duration  1.65s (transform 71ms, setup 23ms, collect 112ms, tests 1.27s, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > peaceSign turns a palm to the viewer at some point
 AssertionError: peaceSign best palm-to-viewer: expected 0.2595033514716159 to be greater than 0.6
- ❯ src/components/chat/rigProbe.test.ts:764:49
-    762|       }
-    763|     }
-    764|     expect(best, `${name} best palm-to-viewer`).toBeGreaterThan(0.6)
+ ❯ src/components/chat/rigProbe.test.ts:782:49
+    780|       }
+    781|     }
+    782|     expect(best, `${name} best palm-to-viewer`).toBeGreaterThan(0.6)
        |                                                 ^
-    765|   })
-    766| 
+    783|   })
+    784| 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -60,30 +60,30 @@ AssertionError: peaceSign best palm-to-viewer: expected 0.2595033514716159 to be
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t has a clearance entry for every clip
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 19ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 194 skipped) 19ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
-ers the hand-measured margin
+ne it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  19:36:48
-   Duration  392ms (transform 67ms, setup 24ms, collect 100ms, tests 19ms, environment 142ms, prepare 26ms)
+      Tests  1 failed | 1 passed | 194 skipped (196)
+   Start at  20:16:29
+   Duration  419ms (transform 74ms, setup 26ms, collect 110ms, tests 19ms, environment 153ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > has a clearance entry for every clip, measured on this rig
 AssertionError: expected 'fd3a65952d9bce0a30feb2a3817b2faedd216…' to be 'e2aad79ec6667a5529934359339a6a08a29f7…' // Object.is equality
 Expected: [32m"e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45"[39m
 Received: [31m"fd3a65952d9bce0a30feb2a3817b2faedd2168f9145e43f5f48088f218c15e27"[39m
- ❯ src/components/chat/rigProbe.test.ts:527:30
-    525|     expect(Object.keys(CLEARANCE.clips).sort()).toEqual([...names].sor…
-    526|     const doc = parseGlb(asset('AvatarSample_B_webp.vrm')).json
-    527|     expect(CLEARANCE.rigSha).toBe(createHash('sha256').update(rigOf(do…
+ ❯ src/components/chat/rigProbe.test.ts:540:30
+    538|     expect(Object.keys(CLEARANCE.clips).sort()).toEqual([...names].sor…
+    539|     const doc = parseGlb(asset('AvatarSample_B_webp.vrm')).json
+    540|     expect(CLEARANCE.rigSha).toBe(createHash('sha256').update(rigOf(do…
        |                              ^
-    528|   })
-    529| 
+    541|   })
+    542| 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -91,29 +91,30 @@ Received: [31m"fd3a65952d9bce0a30feb2a3817b2faedd2168f9145e43f5f48088f218c15e27
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t keeps her fingertips out of her own head
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 174 skipped) 2294ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 176 skipped) 2091ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a res
 […]
-m humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
-   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+gin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 19 passed | 174 skipped (194)
-   Start at  19:36:49
-   Duration  2.69s (transform 74ms, setup 23ms, collect 113ms, tests 2.29s, environment 144ms, prepare 25ms)
+      Tests  1 failed | 19 passed | 176 skipped (196)
+   Start at  20:16:30
+   Duration  2.55s (transform 82ms, setup 30ms, collect 118ms, tests 2.09s, environment 177ms, prepare 29ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > dance keeps her fingertips out of her own head
 AssertionError: dance deepest fingertip against her face: expected 0.21170651106568056 to be greater than 0.3
- ❯ src/components/chat/rigProbe.test.ts:595:67
-    593|         expect(worst, `${name} declares a handInHead waiver it does no…
-    594|       }
-    595|       expect(worst, `${name} deepest fingertip against her face`).toBe…
+ ❯ src/components/chat/rigProbe.test.ts:608:67
+    606|         expect(worst, `${name} declares a handInHead waiver it does no…
+    607|       }
+    608|       expect(worst, `${name} deepest fingertip against her face`).toBe…
        |                                                                   ^
-    596|       expect(def.placements.length).toBeGreaterThan(0)
-    597|     },
+    609|       expect(def.placements.length).toBeGreaterThan(0)
+    610|     },
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -121,30 +122,30 @@ AssertionError: dance deepest fingertip against her face: expected 0.21170651106
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t opens and closes on a standing pose
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 174 skipped) 77ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 176 skipped) 77ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
-manoid rig > finds the face by what the expressions move, not by what a mesh is called
-   ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
-   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 19 passed | 174 skipped (194)
-   Start at  19:36:52
-   Duration  491ms (transform 73ms, setup 28ms, collect 111ms, tests 77ms, environment 154ms, prepare 26ms)
+      Tests  1 failed | 19 passed | 176 skipped (196)
+   Start at  20:16:33
+   Duration  465ms (transform 71ms, setup 26ms, collect 109ms, tests 77ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > idleLoop opens and closes on a standing pose
 AssertionError: idleLoop hips drift at its ends: expected 0.1573041580675223 to be less than 0.1
- ❯ src/components/chat/rigProbe.test.ts:825:55
-    823|         )
-    824|       }
-    825|       expect(drift, `${name} hips drift at its ends`).toBeLessThan(dri…
+ ❯ src/components/chat/rigProbe.test.ts:843:55
+    841|         )
+    842|       }
+    843|       expect(drift, `${name} hips drift at its ends`).toBeLessThan(dri…
        |                                                       ^
-    826| 
-    827|       const wristBudget = waiverOf(name)?.endWrist
+    844| 
+    845|       const wristBudget = waiverOf(name)?.endWrist
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -152,19 +153,19 @@ AssertionError: idleLoop hips drift at its ends: expected 0.1573041580675223 to 
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 51ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 194 skipped) 50ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
-it names to that node's mesh
-   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+ain as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  19:36:53
-   Duration  444ms (transform 72ms, setup 24ms, collect 111ms, tests 51ms, environment 146ms, prepare 26ms)
+      Tests  1 failed | 1 passed | 194 skipped (196)
+   Start at  20:16:34
+   Duration  428ms (transform 71ms, setup 23ms, collect 107ms, tests 50ms, environment 141ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: spin in column: expected 0.07 to be 0.05 // Object.is equality
@@ -172,13 +173,13 @@ AssertionError: spin in column: expected 0.07 to be 0.05 // Object.is equality
 [31m+ Received[39m
 [32m- 0.05[39m
 [31m+ 0.07[39m
- ❯ src/components/chat/rigProbe.test.ts:568:75
-    566|       for (const frame of def.placements) {
-    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:581:75
+    579|       for (const frame of def.placements) {
+    580|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    581|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    569|       }
-    570|     }
+    582|       }
+    583|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -199,8 +200,8 @@ ing for every clip in the pool
    ↓ avatar variants > loads the resolved variant rather than a constant of its own
  Test Files  1 failed (1)
       Tests  1 failed | 10 skipped (11)
-   Start at  19:36:54
-   Duration  364ms (transform 58ms, setup 24ms, collect 84ms, tests 3ms, environment 147ms, prepare 27ms)
+   Start at  20:16:35
+   Duration  343ms (transform 52ms, setup 23ms, collect 75ms, tests 3ms, environment 142ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > declares a family for every variant, and no family that nothing declares
 AssertionError: twist names an undeclared family vrm1-twist-sample: expected undefined to be defined
@@ -230,8 +231,8 @@ ntId > reads through a storage that throws
    ↓ rememberVariant > survives a storage that throws
  Test Files  1 failed (1)
       Tests  1 failed | 8 skipped (9)
-   Start at  19:36:55
-   Duration  345ms (transform 49ms, setup 24ms, collect 56ms, tests 5ms, environment 156ms, prepare 26ms)
+   Start at  20:16:36
+   Duration  321ms (transform 45ms, setup 23ms, collect 49ms, tests 5ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarVariantChoice.test.ts > initialVariantId > refuses a body the registry declares but does not offer
 AssertionError: expected 'twist' to be 'pink' // Object.is equality
@@ -251,30 +252,30 @@ Received: [31m"twist"[39m
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t stays inside every frame it declares
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 174 skipped) 4002ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 176 skipped) 3859ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a res
 […]
-failed | 19 passed | 174 skipped (194)
-   Start at  19:36:55
-   Duration  4.41s (transform 78ms, setup 30ms, collect 115ms, tests 4.00s, environment 146ms, prepare 28ms)
+failed | 19 passed | 176 skipped (196)
+   Start at  20:16:37
+   Duration  4.26s (transform 77ms, setup 24ms, collect 119ms, tests 3.86s, environment 152ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > peaceSign stays inside every frame it declares
-AssertionError: peaceSign reach.left as vrm1-twist-sample's producer wrote it: expected 0.6428 to be 0.5074 // Object.is equality
+AssertionError: peaceSign reach.left as vrm1-twist-sample's producer wrote it: expected 0.6531 to be 0.5177 // Object.is equality
 [32m- Expected[39m
 [31m+ Received[39m
-[32m- 0.5074[39m
-[31m+ 0.6428[39m
- ❯ src/components/chat/rigProbe.test.ts:668:89
-    666|       const wrote = CLEARANCE.clips[name].reach
-    667|       const round4 = (v: number): number => Math.round(v * 1e4) / 1e4
-    668|       expect(round4(screenLeft), `${name} reach.left as ${FAMILY}'s pr…
+[32m- 0.5177[39m
+[31m+ 0.6531[39m
+ ❯ src/components/chat/rigProbe.test.ts:686:89
+    684|       const wrote = CLEARANCE.clips[name].reach
+    685|       const round4 = (v: number): number => Math.round(v * 1e4) / 1e4
+    686|       expect(round4(screenLeft), `${name} reach.left as ${FAMILY}'s pr…
        |                                                                                         ^
-    669|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
-    670|       // Against the top of her SKIN, not of her skeleton. Clearing th…
+    687|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
+    688|       // Against the top of her SKIN, not of her skeleton. Clearing th…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -282,7 +283,7 @@ AssertionError: peaceSign reach.left as vrm1-twist-sample's producer wrote it: e
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t stays inside every frame it declares
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 20 failed | 174 skipped) 2312ms
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 20 failed | 176 skipped) 2284ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
@@ -290,22 +291,22 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ rigProbe > reports a re
 […]
               ^
-    669|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
-    670|       // Against the top of her SKIN, not of her skeleton. Clearing th…
+    687|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
+    688|       // Against the top of her SKIN, not of her skeleton. Clearing th…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/20]⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > dance stays inside every frame it declares
-AssertionError: dance reach.left as vrm1-twist-sample's producer wrote it: expected 0.4587 to be 0.7169 // Object.is equality
+AssertionError: dance reach.left as vrm1-twist-sample's producer wrote it: expected 0.5392 to be 0.7269 // Object.is equality
 [32m- Expected[39m
 [31m+ Received[39m
-[32m- 0.7169[39m
-[31m+ 0.4587[39m
- ❯ src/components/chat/rigProbe.test.ts:668:89
-    666|       const wrote = CLEARANCE.clips[name].reach
-    667|       const round4 = (v: number): number => Math.round(v * 1e4) / 1e4
-    668|       expect(round4(screenLeft), `${name} reach.left as ${FAMILY}'s pr…
+[32m- 0.7269[39m
+[31m+ 0.5392[39m
+ ❯ src/components/chat/rigProbe.test.ts:686:89
+    684|       const wrote = CLEARANCE.clips[name].reach
+    685|       const round4 = (v: number): number => Math.round(v * 1e4) / 1e4
+    686|       expect(round4(screenLeft), `${name} reach.left as ${FAMILY}'s pr…
        |                                                                                         ^
-    669|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
-    670|       // Against the top of her SKIN, not of her skeleton. Clearing th…
+    687|       expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s …
+    688|       // Against the top of her SKIN, not of her skeleton. Clearing th…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/20]⎯
 ```
 
@@ -313,7 +314,7 @@ AssertionError: dance reach.left as vrm1-twist-sample's producer wrote it: expec
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/clearance.test.ts -t refuses a decision naming a clip no producer measured
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/clearance.test.ts (13 tests | 1 failed | 12 skipped) 5ms
+ ❯ src/components/chat/clearance.test.ts (13 tests | 1 failed | 12 skipped) 4ms
    ↓ clearance producers > measure-motions --write records the rig it measured
    ↓ every body of the family, not only the one that was simulated > is one simulation because the two VRoid bodies are one geometry
    ↓ every body of the family, not only the one that was simulated > carries every simulated body into the crown it hands out
@@ -323,8 +324,8 @@ s a waiver raise a frame edge and never lower one
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:04
-   Duration  370ms (transform 60ms, setup 25ms, collect 87ms, tests 5ms, environment 150ms, prepare 26ms)
+   Start at  20:16:45
+   Duration  350ms (transform 55ms, setup 23ms, collect 76ms, tests 4ms, environment 141ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > combineClearance > refuses a decision naming a clip no producer measured, whichever kind of decision it is
 AssertionError: expected [Function] to throw an error
@@ -346,10 +347,10 @@ undefined
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
  RUN  v3.2.6 /Users/charles/portfolio
- ✓ src/components/chat/rigProbe.test.ts (194 tests | 192 skipped) 35ms
+ ✓ src/components/chat/rigProbe.test.ts (196 tests | 194 skipped) 40ms
  Test Files  1 passed (1)
-      Tests  2 passed | 192 skipped (194)
-   Start at  19:37:05
-   Duration  432ms (transform 74ms, setup 24ms, collect 111ms, tests 35ms, environment 149ms, prepare 26ms)
+      Tests  2 passed | 194 skipped (196)
+   Start at  20:16:46
+   Duration  423ms (transform 72ms, setup 23ms, collect 111ms, tests 40ms, environment 143ms, prepare 25ms)
 ```
 

@@ -64,8 +64,8 @@ earance > refuses a decision naming a clip no producer measured, whichever kind 
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:23
-   Duration  345ms (transform 55ms, setup 23ms, collect 78ms, tests 3ms, environment 140ms, prepare 25ms)
+   Start at  20:16:00
+   Duration  367ms (transform 58ms, setup 23ms, collect 86ms, tests 3ms, environment 150ms, prepare 27ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > combineClearance > lets a waiver raise a frame edge and never lower one
 AssertionError: expected 0.10129999999999995 to be close to -0.16088114588426672, received difference is 0.26218114588426666, but expected 5e-10
@@ -93,8 +93,8 @@ ulated > keeps every declared body inside the frame it is filmed in
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:24
-   Duration  343ms (transform 54ms, setup 23ms, collect 78ms, tests 3ms, environment 140ms, prepare 24ms)
+   Start at  20:16:01
+   Duration  363ms (transform 58ms, setup 23ms, collect 82ms, tests 4ms, environment 148ms, prepare 27ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > carries every simulated body into the crown it hands out
 AssertionError: a second body was simulated at all: expected 0 to be greater than 0
@@ -120,8 +120,8 @@ hichever kind of decision it is
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:25
-   Duration  499ms (transform 54ms, setup 23ms, collect 74ms, tests 156ms, environment 143ms, prepare 24ms)
+   Start at  20:16:02
+   Duration  522ms (transform 59ms, setup 25ms, collect 81ms, tests 164ms, environment 144ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > is one simulation because the two VRoid bodies are one geometry
 AssertionError: /avatar/AvatarSample_B_webp.vrm is no longer the same mesh as /avatar/mika-pink.vrm: expected 'b5f5a9c87fd2fca7' to be 'c849ab91c4ec5384' // Object.is equality
@@ -140,17 +140,17 @@ Received: [31m"b5f5a9c87fd2fca7"[39m
 ### K5
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for, not by a number dialled in
-0.x body it ships on
-   ↓ three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included
-   ↓ three-vrm humanoid rig > derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers
+s move, instead of carrying 2026-08-19 numbers
    ↓ three-vrm humanoid rig > leaves the neck rows out of the face box
    ↓ three-vrm humanoid rig > finds the face by what the expressions move, not by what a mesh is called
    ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  19:37:26
-   Duration  413ms (transform 66ms, setup 23ms, collect 98ms, tests 45ms, environment 142ms, prepare 25ms)
+      Tests  1 failed | 1 passed | 194 skipped (196)
+   Start at  20:16:03
+   Duration  428ms (transform 70ms, setup 24ms, collect 107ms, tests 50ms, environment 140ms, prepare 24ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: dance in waistUp: expected -0.08 to be -0.07 // Object.is equality
@@ -158,30 +158,30 @@ AssertionError: dance in waistUp: expected -0.08 to be -0.07 // Object.is equali
 [31m+ Received[39m
 [32m- -0.07[39m
 [31m+ -0.08[39m
- ❯ src/components/chat/rigProbe.test.ts:568:75
-    566|       for (const frame of def.placements) {
-    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:581:75
+    579|       for (const frame of def.placements) {
+    580|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    581|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    569|       }
-    570|     }
+    582|       }
+    583|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ### K6
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for, not by a number dialled in
-he 0.x body it ships on
-   ↓ three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included
-   ↓ three-vrm humanoid rig > derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers
+sions move, instead of carrying 2026-08-19 numbers
    ↓ three-vrm humanoid rig > leaves the neck rows out of the face box
    ↓ three-vrm humanoid rig > finds the face by what the expressions move, not by what a mesh is called
    ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
-      Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  19:37:27
-   Duration  416ms (transform 65ms, setup 23ms, collect 100ms, tests 44ms, environment 144ms, prepare 24ms)
+      Tests  1 failed | 1 passed | 194 skipped (196)
+   Start at  20:16:03
+   Duration  429ms (transform 73ms, setup 23ms, collect 113ms, tests 46ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: playFingers in column: expected +0 to be 0.02 // Object.is equality
@@ -189,13 +189,13 @@ AssertionError: playFingers in column: expected +0 to be 0.02 // Object.is equal
 [31m+ Received[39m
 [32m- 0.02[39m
 [31m+ 0[39m
- ❯ src/components/chat/rigProbe.test.ts:568:75
-    566|       for (const frame of def.placements) {
-    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:581:75
+    579|       for (const frame of def.placements) {
+    580|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    581|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    569|       }
-    570|     }
+    582|       }
+    583|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -212,8 +212,8 @@ sure-motions > reports the shipped body as fitting, waiver and all
      → expected '   waistUp  髮頂　1.8409　上緣 1.8722（已放行到 …' to match /髮頂　1\.8\d{3}　上緣 1\.8722（已放行到 1\.6200）…/
  Test Files  1 failed (1)
       Tests  1 failed | 6 skipped (7)
-   Start at  19:37:27
-   Duration  9.60s (transform 69ms, setup 23ms, collect 107ms, tests 9.22s, environment 143ms, prepare 25ms)
+   Start at  20:16:04
+   Duration  9.67s (transform 69ms, setup 23ms, collect 107ms, tests 9.29s, environment 143ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/measure-motions.test.ts > measure-motions > lets a waiver raise the top edge it reports against, never lower it
 AssertionError: expected '   waistUp  髮頂　1.8409　上緣 1.8722（已放行到 …' to match /髮頂　1\.8\d{3}　上緣 1\.8722（已放行到 1\.6200）…/
@@ -245,8 +245,8 @@ $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.t
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:38
-   Duration  350ms (transform 56ms, setup 23ms, collect 81ms, tests 4ms, environment 142ms, prepare 25ms)
+   Start at  20:16:15
+   Duration  353ms (transform 57ms, setup 23ms, collect 84ms, tests 4ms, environment 141ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > combineClearance > refuses a second body simulated under another composition
 AssertionError: expected [Function] to throw an error
@@ -274,8 +274,8 @@ inge rather than defaulting it
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
       Tests  1 failed | 12 skipped (13)
-   Start at  19:37:38
-   Duration  343ms (transform 56ms, setup 23ms, collect 76ms, tests 5ms, environment 141ms, prepare 25ms)
+   Start at  20:16:15
+   Duration  350ms (transform 55ms, setup 23ms, collect 79ms, tests 5ms, environment 143ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > has the pan it needs by the time the crown gets there, not only at rest
 AssertionError: a clip reaches its crown before the pan that clears it does: expected [ …(3) ] to deeply equal []

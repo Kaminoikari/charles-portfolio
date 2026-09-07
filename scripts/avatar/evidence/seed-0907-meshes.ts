@@ -56,9 +56,11 @@ const robo = json.nodes.map((n, i) => [i, n.name ?? ''] as const).filter(([, nam
 console.log(`\nhumanoid bones: ${claimed.size}   nodes named robo*: ${robo.length}` +
   `   of those in the humanoid map: ${robo.filter(([i]) => claimed.has(i)).length}`)
 
-// The sideways guard measures humanoid JOINTS (rigProbe.silhouetteJoints). On a
-// body whose widest geometry hangs off bones no humanoid entry claims, that
-// proxy stops describing the silhouette. Both numbers, in the frame's own
+// The sideways guard measures humanoid JOINTS (rigProbe.silhouetteBones), each
+// carrying its own skin radius since 2026-09-07. On a body whose widest geometry
+// hangs off bones no humanoid entry claims, that proxy stops describing the
+// silhouette however much skin it reserves: an unclaimed bone has no entry in
+// it at all. Both numbers, in the frame's own
 // screen units, so they compare with the 0.7415 half-width budget. The budget is
 // a HALF width and this is a magnitude, so rigProbe.screenX -- which only decides
 // which of the two edges a point lands on -- has nothing to say about it.

@@ -81,8 +81,8 @@ MUTATIONS = [
     # stale against measure-motions and no guard noticed: it was written before
     # screenX stopped assuming a 0.x body, so all ten reach pairs were recorded
     # mirrored. Values right, labels wrong. The guard re-measures and compares.
-    ('F10', GEN, '        "left": 0.6428,\n        "right": 0.5074\n',
-     '        "left": 0.5074,\n        "right": 0.6428\n', EDGES,
+    ('F10', GEN, '        "left": 0.6531,\n        "right": 0.5177\n',
+     '        "left": 0.5177,\n        "right": 0.6531\n', EDGES,
      "each family's generated reach is re-measured against its producer, so a .gen.ts that drifts from the code that writes it is caught"),
     # F7 was written as a GREEN control, on the claim that every caller reads
     # both edges against one budget so the mirror cancels. F10's guard made that

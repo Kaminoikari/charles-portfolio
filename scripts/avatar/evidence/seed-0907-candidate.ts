@@ -6,7 +6,9 @@
 // frame in bind pose and no honest clearance file exists for it under the
 // site's compositions. The sideways guard measures humanoid JOINTS, which is
 // why that never showed up until the crown -- a VERTEX measure -- projected far
-// in front of the body during `spin`.
+// in front of the body during `spin`. Those joints carry their own skin radius
+// since 2026-09-07, which does not help here: a bone the humanoid map never
+// claims is not in the guard's list to carry anything.
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
 

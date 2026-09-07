@@ -59,14 +59,14 @@ import {
   buildMotion,
   buildRigFrom,
   deriveFingerSkinRadius,
+  deriveSilhouetteSkin,
   deriveRestCrown,
   handJoints,
   headPenetration,
   headVolume,
   probeHand,
   resetRig,
-  screenX,
-  silhouetteJoints,
+  silhouetteReach,
   SKIN_ABOVE_JOINT,
   type Motion,
   type Rig,
@@ -128,7 +128,7 @@ interface Worst {
   endWrist: number
 }
 
-function sweep(rig: Rig, motion: Motion, restHipsY: number): Worst {
+function sweep(rig: Rig, motion: Motion, restHipsY: number, skin: Record<string, number>): Worst {
   const volume = headVolume(rig)
   const w: Worst = {
     left: -Infinity,
@@ -159,10 +159,9 @@ function sweep(rig: Rig, motion: Motion, restHipsY: number): Worst {
   }
   for (const time of motion.sampleTimes) {
     applyMotion(rig, motion, time)
-    for (const joint of silhouetteJoints(rig)) {
-      w.left = Math.max(w.left, -screenX(rig, joint.x))
-      w.right = Math.max(w.right, screenX(rig, joint.x))
-    }
+    const reach = silhouetteReach(rig, skin)
+    w.left = Math.max(w.left, reach.left)
+    w.right = Math.max(w.right, reach.right)
     for (const side of ['left', 'right'] as const) {
       for (const joint of handJoints(rig, side)) {
         w.skinTop = Math.max(w.skinTop, joint.y + SKIN_ABOVE_JOINT)
@@ -222,6 +221,7 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
   // deriveRestCrown), beside the 12mm margin the frame still reserves by constant.
   const box = rig.faceBox
   const fingerSkin = deriveFingerSkinRadius(glb, rig)
+  const skin = deriveSilhouetteSkin(glb, rig)
   const restCrown = deriveRestCrown(glb, rig)
   const measured: Report['measured'] = {
     faceBox: { min: triple(box.min), max: triple(box.max) },
@@ -258,7 +258,7 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
     say(`── ${name}　（${def.placements.join('、')}）`)
     for (const placement of def.placements) {
       resetRig(rig)
-      const w = sweep(rig, motion, restHipsY)
+      const w = sweep(rig, motion, restHipsY, skin)
       const frame = frameFor(name, placement, clearance)
       // A waiver is a violation the shipped body already accepts, so it is
       // shown as the budget rather than hidden: on a new body the question is
@@ -318,7 +318,7 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
     // The next two are properties of the clip on this body, not of the frame it
     // is played in, so they are measured once rather than per placement.
     resetRig(rig)
-    const w = sweep(rig, motion, restHipsY)
+    const w = sweep(rig, motion, restHipsY, skin)
     measured.clips[name] = {
       reach: { left: round(w.left, 4), right: round(w.right, 4) },
       skinTop: round(w.skinTop, 4),

@@ -244,8 +244,11 @@ a non-zero exit only counts as RED if the output shows a test that ran and
 failed. `vitest -t <name that matches nothing>` also exits non-zero, and the
 first run of C15 was exactly that — the wrong rig in one produced half is
 refused by `combineClearance` at module load, so the test it was aimed at never
-ran. C15 now moves both halves together, which is the failure mode it means: a
-declared variant whose rig is not the family's.
+ran. C15 now moves every produced half of the family together, which is the
+failure mode it means: a declared variant whose rig is not the family's. That
+was two halves when this was written and is three since 2026-09-07, and it
+shaded the row a second time in between: the same import-time throw came back
+from the alsoSimulated comparison until the third half moved with them.
 
 ## Not done
 

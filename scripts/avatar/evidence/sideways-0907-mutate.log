@@ -1,0 +1,13 @@
+S1 RED  restored=True
+S2 RED  restored=True
+S3 RED  restored=True
+S4 RED  restored=True
+S5 GREEN  restored=True
+
+| # | guard | result |
+|---|---|---|
+| S1 | the reach the producer wrote includes each joint's skin, so measuring the bare bone no longer reproduces it | RED |
+| S2 | the radius is perpendicular to the bone segment, not a sphere about the joint: a sphere takes in every vertex along the limb | RED |
+| S3 | a fingertip owns no vertices and inherits the segment that ends there, so the widest point of an outstretched arm is not bare | RED |
+| S4 | a bone with no radius stops the measurement instead of silently restoring the bare-joint reach | RED |
+| S5 | a blank-line edit must NOT redden the frame guard | GREEN |

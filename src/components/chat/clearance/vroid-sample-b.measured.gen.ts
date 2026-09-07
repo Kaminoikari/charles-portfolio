@@ -9,7 +9,7 @@ export const MEASURED: ClearanceMeasured = {
   "family": "vroid-sample-b",
   "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",
   "measuredOn": "/avatar/mika-pink.vrm",
-  "producedBy": "a9628b9",
+  "producedBy": "571e711",
   "faceBox": {
     "min": [
       -0.0917,
@@ -27,8 +27,8 @@ export const MEASURED: ClearanceMeasured = {
   "clips": {
     "peaceSign": {
       "reach": {
-        "left": 0.5998,
-        "right": 0.4645
+        "left": 0.6088,
+        "right": 0.4735
       },
       "skinTop": 1.4268,
       "hipsLow": 0.8225,
@@ -40,8 +40,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "modelPose": {
       "reach": {
-        "left": 0.3177,
-        "right": 0.2857
+        "left": 0.3619,
+        "right": 0.3647
       },
       "skinTop": 1.2604,
       "hipsLow": 0.859,
@@ -53,8 +53,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "spin": {
       "reach": {
-        "left": 0.674,
-        "right": 0.5239
+        "left": 0.683,
+        "right": 0.5329
       },
       "skinTop": 1.4933,
       "hipsLow": 0.83,
@@ -66,8 +66,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "squat": {
       "reach": {
-        "left": 0.6296,
-        "right": 0.6155
+        "left": 0.6379,
+        "right": 0.6245
       },
       "skinTop": 1.3508,
       "hipsLow": 0.66,
@@ -79,8 +79,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "akimbo": {
       "reach": {
-        "left": 0.2542,
-        "right": 0.2767
+        "left": 0.2793,
+        "right": 0.3507
       },
       "skinTop": 0.964,
       "hipsLow": 0.8817,
@@ -92,8 +92,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "playFingers": {
       "reach": {
-        "left": 0.2379,
-        "right": 0.2391
+        "left": 0.2836,
+        "right": 0.2842
       },
       "skinTop": 1.0079,
       "hipsLow": 0.8819,
@@ -105,8 +105,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "scratchHead": {
       "reach": {
-        "left": 0.347,
-        "right": 0.5106
+        "left": 0.426,
+        "right": 0.5196
       },
       "skinTop": 1.57,
       "hipsLow": 0.8776,
@@ -118,8 +118,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "idleLoop": {
       "reach": {
-        "left": 0.3412,
-        "right": 0.0381
+        "left": 0.4364,
+        "right": 0.1449
       },
       "skinTop": 0.7818,
       "hipsLow": 0.8761,
@@ -131,8 +131,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "stretch": {
       "reach": {
-        "left": 0.3063,
-        "right": 0.545
+        "left": 0.3602,
+        "right": 0.5533
       },
       "skinTop": 1.8091,
       "hipsLow": 0.8824,
@@ -144,8 +144,8 @@ export const MEASURED: ClearanceMeasured = {
     },
     "dance": {
       "reach": {
-        "left": 0.6978,
-        "right": 0.4171
+        "left": 0.7068,
+        "right": 0.6476
       },
       "skinTop": 1.4886,
       "hipsLow": 0.7525,

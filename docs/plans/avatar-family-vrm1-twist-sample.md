@@ -210,12 +210,19 @@ All three were written while the fixture still sat in `public/avatar` and could
 not run once it moved; they take a path from the repo root now, and their `.log`
 files beside them are what the figures above are read from.
 
-**Flagged, not fixed** (out of scope for this change): the sideways guard's
-joint proxy has no skin allowance at all, while the vertical one adds
-`SKIN_ABOVE_JOINT`. On every body declared here the widest drawn vertex is
-inside the budget with 47mm or more to spare (`family2-0907-table.log`), so
-nothing is cropped today; a body whose silhouette is not its joints would not be
-caught.
+**Flagged here on 2026-09-07 and fixed the same day**: the sideways guard's
+joint proxy had no skin allowance at all, while the vertical one adds
+`SKIN_ABOVE_JOINT`. Each silhouette joint now carries its own skin radius, read
+off the mesh about that bone's own segment (`rigProbe.deriveSilhouetteSkin`,
+spent by `silhouetteReach`, receipts `sideways-0907-probe.log` and
+`sideways-0907-mutate.log`). It cost less than the radii suggest: the widest
+joint of a wide pose is nearly always a fingertip, so the tightest clip on any
+declared body moved by 10mm and the tightest margin left is 14.6mm (`twist`,
+`dance`). Both families' measured halves were regenerated.
+
+**Still not fixed**, and the reason Seed-san is a fixture rather than a variant:
+geometry on bones the humanoid map never claims is outside the proxy no matter
+how much skin the claimed bones reserve. That is what the robot arm above is.
 
 ## What PASS means here
 

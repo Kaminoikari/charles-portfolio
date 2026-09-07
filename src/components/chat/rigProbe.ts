@@ -414,6 +414,89 @@ export function deriveFingerSkinRadius(glb: Glb, rig: Rig): number {
   return worst
 }
 
+/** The joint each silhouette bone runs to, so its skin can be measured as a tube. */
+const SILHOUETTE_CHILD: Record<string, string> = {
+  Shoulder: 'UpperArm',
+  UpperArm: 'LowerArm',
+  LowerArm: 'Hand',
+  Hand: 'MiddleProximal',
+  UpperLeg: 'LowerLeg',
+  LowerLeg: 'Foot',
+}
+
+/** The bone a silhouette joint's own segment runs from, for the sided bones above. */
+function silhouetteChild(bone: string): string | null {
+  const finger = nextFingerJoint(bone)
+  if (finger !== null) return finger
+  for (const [end, child] of Object.entries(SILHOUETTE_CHILD)) {
+    if (bone.endsWith(end)) return bone.slice(0, -end.length) + child
+  }
+  return null
+}
+
+/**
+ * How far the skin stands out from each silhouette bone, in metres, by bone.
+ *
+ * `deriveFingerSkinRadius` answers this for the two outer finger joints and
+ * `SKIN_ABOVE_JOINT` reserves one screenshot-read number vertically. Sideways
+ * nothing reserved anything: `measure-motions` compared the bare JOINT against
+ * the frame's half width, so a sleeve, a thigh or a palm was allowed to be
+ * drawn outside the frame as long as its bone was inside.
+ *
+ * Measured the way the finger radius is: the largest distance from a vertex
+ * mostly skinned to the bone to that bone's own segment (joint to child joint).
+ * A tube, not a sphere -- a sphere around an upper arm would take in every
+ * vertex down at the elbow and read out as the arm's LENGTH. Bones with no
+ * child in the map (the head, a fingertip) are a sphere about the joint, which
+ * is what they are.
+ *
+ * What this does NOT cover, and no sideways measure here does: geometry on
+ * spring bones. Twintails swing wide of the head on the Milfy body and are
+ * skinned to bones no humanoid entry claims, so they are outside every joint
+ * proxy. Vertically that is what the simulated crown is for; sideways there is
+ * no equivalent, and this is a joint-proxy allowance, not a silhouette.
+ */
+export function deriveSilhouetteSkin(glb: Glb, rig: Rig): Record<string, number> {
+  const wanted = new Set(silhouetteBones(rig))
+  const boneOfNode = new Map<number, string>()
+  for (const name of wanted) {
+    if (name.endsWith('Tip')) continue
+    const node = rig.humanoid.getRawBoneNode(name as VRMHumanBoneName)
+    if (node) boneOfNode.set(rig.raw.indexOf(node), name)
+  }
+  const segment = new THREE.Line3()
+  const closest = new THREE.Vector3()
+  const out: Record<string, number> = {}
+  for (const name of wanted) out[name] = 0
+  for (const { p, node } of skinnedVertices(glb, rig.raw, () => true)) {
+    const bone = boneOfNode.get(node)
+    if (bone === undefined) continue
+    const from = rig.restPosition[bone]
+    const child = silhouetteChild(bone)
+    const to = child === null ? undefined : rig.restPosition[child]
+    if (to === undefined) {
+      out[bone] = Math.max(out[bone], from.distanceTo(p))
+      continue
+    }
+    segment.set(from, to)
+    // A zero-length segment would make closestPointToPoint divide 0 by 0 and
+    // poison the maximum with NaN.
+    if (segment.distanceSq() === 0) continue
+    segment.closestPointToPoint(p, true, closest)
+    out[bone] = Math.max(out[bone], closest.distanceTo(p))
+  }
+  // A fingertip owns no vertices -- `Tip` is synthetic, added by buildRigFrom --
+  // yet it is the point an outstretched arm is widest at, and skin surrounds it.
+  // It takes the radius of the segment that ends there, which is the same number
+  // deriveFingerSkinRadius reads. Any other bone nothing is skinned to inherits
+  // for the same reason: a joint with no skin of its own is still inside the
+  // skin of the limb it belongs to.
+  for (const [bone, child] of Object.entries(out).map(([b]) => [b, silhouetteChild(b)] as const)) {
+    if (child !== null && child in out && out[child] === 0) out[child] = Math.max(out[child], out[bone])
+  }
+  return out
+}
+
 /**
  * The topmost vertex of anything this body draws, in bind pose: hair,
  * ornaments, face, whichever is highest. The base a clip's crown throw is
@@ -675,7 +758,7 @@ const _q = new THREE.Quaternion()
 // and the fingers run along ∓X in each hand's own frame.
 const PALM_REST = new THREE.Vector3(0, -1, 0)
 
-function worldPosition(rig: Rig, bone: string): THREE.Vector3 {
+export function worldPosition(rig: Rig, bone: string): THREE.Vector3 {
   return new THREE.Vector3().setFromMatrixPosition(rig.bones[bone].matrixWorld)
 }
 
@@ -748,16 +831,20 @@ export const SKIN_ABOVE_JOINT = 0.012
  * Each finger contributes four points, not three: the skinned tip past the
  * distal joint is included, because that is where the finger is drawn to.
  */
-export function handJoints(rig: Rig, side: 'left' | 'right'): THREE.Vector3[] {
-  const out = [worldPosition(rig, `${side}Hand`)]
+export function handBones(rig: Rig, side: 'left' | 'right'): string[] {
+  const out = [`${side}Hand`]
   for (const [finger, joints] of Object.entries(FINGER_JOINTS)) {
     // `Tip` is the skinned end of the finger, past the distal joint. See buildRigFrom.
     for (const segment of [...joints, 'Tip']) {
       const bone = `${side}${finger}${segment}`
-      if (bone in rig.bones) out.push(worldPosition(rig, bone))
+      if (bone in rig.bones) out.push(bone)
     }
   }
   return out
+}
+
+export function handJoints(rig: Rig, side: 'left' | 'right'): THREE.Vector3[] {
+  return handBones(rig, side).map((bone) => worldPosition(rig, bone))
 }
 
 /**
@@ -765,8 +852,8 @@ export function handJoints(rig: Rig, side: 'left' | 'right'): THREE.Vector3[] {
  * because a raised elbow or a shoulder can be the outermost point in a pose
  * where the hands are held in, and the legs because a wide stance can be.
  */
-export function silhouetteJoints(rig: Rig): THREE.Vector3[] {
-  const out: THREE.Vector3[] = []
+export function silhouetteBones(rig: Rig): string[] {
+  const out: string[] = []
   for (const side of ['left', 'right'] as const) {
     for (const bone of [
       `${side}Shoulder`,
@@ -775,12 +862,49 @@ export function silhouetteJoints(rig: Rig): THREE.Vector3[] {
       `${side}UpperLeg`,
       `${side}LowerLeg`,
     ]) {
-      if (bone in rig.bones) out.push(worldPosition(rig, bone))
+      if (bone in rig.bones) out.push(bone)
     }
-    out.push(...handJoints(rig, side))
+    out.push(...handBones(rig, side))
   }
-  out.push(worldPosition(rig, 'head'))
+  out.push('head')
   return out
+}
+
+export function silhouetteJoints(rig: Rig): THREE.Vector3[] {
+  return silhouetteBones(rig).map((bone) => worldPosition(rig, bone))
+}
+
+/**
+ * How far the pose reaches toward each side of the SCREEN, skin included, for
+ * the pose the rig is in right now.
+ *
+ * The allowance is this bone's own skin radius (deriveSilhouetteSkin), which is
+ * the sideways answer to what `SKIN_ABOVE_JOINT` reserves at the top: the frame
+ * has to clear the drawn limb, and until 2026-09-07 the sideways comparison was
+ * against the bare joint. It costs less than it looks like it should, because
+ * the outermost joint of a wide pose is nearly always a fingertip: on every
+ * declared body the widest clip moved by 9 to 10mm, while the thigh's 187mm and
+ * the head's 269mm only ever apply to joints sitting well inside the frame
+ * (evidence/sideways-0907-probe.log).
+ *
+ * measure-motions and rigProbe.test.ts both call this, which is not a
+ * convenience: the test re-measures what the producer wrote and compares the
+ * two, so an allowance added on one side only would read as the file being
+ * stale.
+ */
+export function silhouetteReach(rig: Rig, skin: Record<string, number>): { left: number; right: number } {
+  let left = -Infinity
+  let right = -Infinity
+  for (const bone of silhouetteBones(rig)) {
+    // No default. A missing radius would silently restore the bare-joint
+    // measure this exists to replace, and the reach would still look sane.
+    const pad = skin[bone]
+    if (pad === undefined) throw new Error(`silhouetteReach: no skin radius for ${bone}`)
+    const x = screenX(rig, worldPosition(rig, bone).x)
+    left = Math.max(left, -x + pad)
+    right = Math.max(right, x + pad)
+  }
+  return { left, right }
 }
 
 export function probeHand(rig: Rig, side: 'left' | 'right'): HandProbe {

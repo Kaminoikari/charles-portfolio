@@ -1,0 +1,743 @@
+R1 RED  restored=True
+R2 RED  restored=True
+R3 RED  restored=True
+R4 RED  restored=True
+R5 RED  restored=True
+R6 RED  restored=True
+R7 RED  restored=True
+R8 RED  restored=True
+R9 RED  restored=True
+P5 RED  restored=True
+R10 RED  restored=True
+M1 RED  restored=True
+M2 RED  restored=True
+V1 RED  restored=True
+V2 RED  restored=True
+S1 RED  restored=True
+A1 RED  restored=True
+P1 RED  restored=True
+P2 RED  restored=True
+P3 RED  restored=True
+P4 RED  restored=True
+
+| # | guard | result |
+|---|---|---|
+| R1 | applyMotion: the x/z flip is for a 0.x body, not a 1.0 one (the twin test alone lets this through: both bodies flipped the wrong way still agree up to the half turn) | RED |
+| R2 | applyMotion: the flip is conditional at all (the pre-6a code) | RED |
+| R3 | sync: the normalized pose is written onto the raw nodes through humanoid.update() | RED |
+| R4 | deriveFaceBox: the expression-driven meshes only, never the hair | RED |
+| R5 | deriveFaceBox: head-dominant vertices only (invisible on the shipped Face mesh, which has none; a synthetic two-vertex mesh shows it) | RED |
+| R6 | buildRigFrom: a 0.x body's thumb joints are renamed to three-vrm's 1.0 names | RED |
+| R7 | handJoints: the thumb is sampled at Metacarpal/Proximal/Distal | RED |
+| R8 | deriveFingerSkinRadius: the outer phalanges only, never the palm-reaching base joints | RED |
+| R9 | skinnedVertices: vertices are skinned by their joints' rest matrices (a taller body's box scales with it) | RED |
+| P5 | retarget_parity_test: the dump has to carry every humanoid bone, or the per-bone loop goes vacuous | RED |
+| R10 | buildRigFrom: the rig carries the file's own version | RED |
+| M1 | measure-motions: the derived face box is printed | RED |
+| M2 | measure-motions: the printed finger skin is the derived one, not the 12mm constant | RED |
+| V1 | buildNodes: the nodes are parented as the file says | RED |
+| V2 | buildNodes: a node scale is applied | RED |
+| S1 | springsim: each frame is posed through applyMotion (the pinned readings notice a body that never moves) | RED |
+| A1 | avatarMode: the head band's chin is held to the derived face box | RED |
+| P1 | motion.retarget: a 1.0 body is not flipped | RED |
+| P2 | motion.retarget: a 0.x body IS flipped, as three-vrm flips it | RED |
+| P3 | motion.retarget: the clip's thumb names are translated into the body's | RED |
+| P4 | humanoid.model_bone_name: a 1.0 body keeps the 1.0 thumb names | RED |
+
+### R1
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t flips the clip for the 0.x body it ships on
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 26ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+↓ three-vrm humanoid rig > finds the face by what the expressions move, not by what a mesh is called
+   ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:12
+   Duration  404ms (transform 71ms, setup 23ms, collect 108ms, tests 26ms, environment 144ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > flips the clip for the 0.x body it ships on
+AssertionError: expected 11.86390685393983 to be less than 0.5
+ ❯ src/components/chat/rigProbe.test.ts:1178:21
+    1176|       for (const joint of handJoints(r, side)) closest = Math.min(clos…
+    1177|     }
+    1178|     expect(closest).toBeLessThan(0.5)
+       |                     ^
+    1179|   })
+    1180| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R2
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t plays a clip on a VRM 1.0 twin without the VRM0 flip
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 30ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+d-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:13
+   Duration  405ms (transform 69ms, setup 23ms, collect 106ms, tests 30ms, environment 142ms, prepare 24ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > plays a clip on a VRM 1.0 twin without the VRM0 flip, so the two bodies strike the same pose
+AssertionError: hips x @3.89: expected -0.2344539996670861 to be close to 0.2344539996670861, received difference is 0.4689079993341722, but expected 5e-7
+ ❯ src/components/chat/rigProbe.test.ts:1157:40
+    1155|         const a = world(v0.bones[bone])
+    1156|         const b = world(v1.bones[bone])
+    1157|         expect(b.x, `${bone} x @${t}`).toBeCloseTo(-a.x, 6)
+       |                                        ^
+    1158|         expect(b.y, `${bone} y @${t}`).toBeCloseTo(a.y, 6)
+    1159|         expect(b.z, `${bone} z @${t}`).toBeCloseTo(-a.z, 6)
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R3
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t writes the pose through to the raw nodes
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 25ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+names to that node's mesh
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:14
+   Duration  413ms (transform 75ms, setup 23ms, collect 114ms, tests 25ms, environment 142ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included
+AssertionError: hips @0: expected 0.11078580939948635 to be less than 0.000001
+ ❯ src/components/chat/rigProbe.test.ts:1194:80
+    1192|           const raw = r.humanoid.getRawBoneNode(bone as never)
+    1193|           if (!raw) throw new Error(`no raw ${bone}`)
+    1194|           expect(world(raw).distanceTo(world(r.bones[bone])), `${bone}…
+       |                                                                                ^
+    1195|         }
+    1196|       }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R4
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t derives the face box from the meshes the expressions move
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 18ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+e-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:15
+   Duration  390ms (transform 69ms, setup 23ms, collect 104ms, tests 18ms, environment 142ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers
+AssertionError: min.x: expected 0.031160282038069115 to be less than 0.002
+ ❯ src/components/chat/rigProbe.test.ts:1207:88
+    1205|     for (const side of ['min', 'max'] as const) {
+    1206|       for (const [k, axis] of (['x', 'y', 'z'] as const).entries()) {
+    1207|         expect(Math.abs(r.faceBox[side][axis] - expected[side][k]), `$…
+       |                                                                                        ^
+    1208|       }
+    1209|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R5
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t leaves the neck rows out of the face box
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 6ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the fr
+[…]
+ is called
+   ↓ three-vrm humanoid rig > resolves a 1.0 expression bind through the node it names to that node's mesh
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:16
+   Duration  378ms (transform 69ms, setup 23ms, collect 105ms, tests 6ms, environment 141ms, prepare 24ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > leaves the neck rows out of the face box
+AssertionError: expected 0.8999999119341392 to be close to 1.4, received difference is 0.5000000880658607, but expected 5e-7
+ ❯ src/components/chat/rigProbe.test.ts:1273:29
+    1271|     }
+    1272|     const r = buildRig(glb(json, bin))
+    1273|     expect(r.faceBox.min.y).toBeCloseTo(1.4, 6)
+       |                             ^
+    1274|     expect(r.faceBox.max.y).toBeCloseTo(1.4, 6)
+    1275|   })
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R6
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t names the thumb joints the way three-vrm does
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 12ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:16
+   Duration  388ms (transform 68ms, setup 23ms, collect 104ms, tests 12ms, environment 144ms, prepare 26ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > names the thumb joints the way three-vrm does, and a thumb track lands on them
+AssertionError: expected false to be true // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- true[39m
+[31m+ false[39m
+ ❯ src/components/chat/rigProbe.test.ts:1134:46
+    1132|     // them on import to the 1.0 Metacarpal/Proximal/Distal, which is …
+    1133|     // every .vrma names them, so no renaming is left for a track to m…
+    1134|     expect('leftThumbMetacarpal' in r.bones).toBe(true)
+       |                                              ^
+    1135|     expect('leftThumbIntermediate' in r.bones).toBe(false)
+    1136|     expect(handJoints(r, 'left')).toHaveLength(21)
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R7
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t names the thumb joints the way three-vrm does
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 13ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+ that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:17
+   Duration  393ms (transform 70ms, setup 23ms, collect 107ms, tests 13ms, environment 144ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > names the thumb joints the way three-vrm does, and a thumb track lands on them
+AssertionError: expected [ Vector3{ …(3) }, …(19) ] to have a length of 21 but got 20
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- 21[39m
+[31m+ 20[39m
+ ❯ src/components/chat/rigProbe.test.ts:1136:35
+    1134|     expect('leftThumbMetacarpal' in r.bones).toBe(true)
+    1135|     expect('leftThumbIntermediate' in r.bones).toBe(false)
+    1136|     expect(handJoints(r, 'left')).toHaveLength(21)
+       |                                   ^
+    1137|     const m = motion('dance')
+    1138|     expect('leftThumbMetacarpal' in m.rotation).toBe(true)
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R8
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t reads a finger skin radius off the mesh
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 23ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+ion bind through the node it names to that node's mesh
+   × three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin 22ms
+     → expected 0.056083322654686595 to be less than 0.02
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:18
+   Duration  399ms (transform 71ms, setup 23ms, collect 108ms, tests 23ms, environment 143ms, prepare 24ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+AssertionError: expected 0.056083322654686595 to be less than 0.02
+ ❯ src/components/chat/rigProbe.test.ts:1377:20
+    1375|     const radius = deriveFingerSkinRadius(parseGlb(asset('AvatarSample…
+    1376|     expect(radius).toBeGreaterThanOrEqual(SKIN_ABOVE_JOINT)
+    1377|     expect(radius).toBeLessThan(0.02)
+       |                    ^
+    1378|   })
+    1379| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### R9
+```
+$ npx vitest run /Users/charles/portfolio/scripts/measure-motions.test.ts -t reports the face box and the finger skin
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/measure-motions.test.ts (7 tests | 1 failed | 6 skipped) 8953ms
+   ↓ measure-motions > reports the shipped body as fitting, waiver and all
+   ↓ measure-motions > recognises the face waiver dance already ships with
+   × measure-motions > reports the face box and the finger skin it read off the body 3ms
+     → expected '模型　　/var/folders/cl/njr49bx900ddfl_cp…' to match /臉部盒　x -0\.12\d…0\.12\d　y 1\.73\d…2\.0…/
+   ↓ measure-motions > says no when the same clips are asked to run on a taller body
+   ↓ measure-motions > counts exactly the violations it 
+[…]
+限 1.0500。
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　1.4272　預算 0.7415　餘裕 -685.7mm
+   waistUp  往畫面右邊伸　1.0317　預算 0.7415　餘裕 -290.2mm
+   waistUp  手的皮膚頂端　2.0054　預算 1.8022　餘裕 -203.2mm
+   waistUp  髖部最低　　1.0159　下緣 0.6978　餘裕  318.0mm
+   waistUp  髮頂　1.7244　上緣 1.8022　餘裕  77.8mm（模擬投影 1.7000，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　1.4272　預算 0.7415　餘裕 -685.6mm
+   column   往畫面右邊伸　1.0317　預算 0.7415　餘裕 -290.1mm
+   column   手的皮膚頂端　2.0054　預算 1.7420　餘裕 -263.3mm
+   column   髖部最低　　1.0159　下緣 0.5700　餘裕  445.9mm
+   column   髮頂　1.7389　上緣 1.7420　餘裕  3.1mm（模擬投影 1.7087，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.279（下限 0.190，t=17.50s）
+   頭尾站得住　髖部下沉 63.5mm（上限 80.0mm）
+   ⚠ 頭尾站在旁邊：髖部離中線 189.2mm，上限 150.0mm，已放行。淡入淡出要橫跨這段距離。
+   ⚠ 頭尾手還舉著：手腕 1.6033，上限 1.1900，已放行。
+56 項超出預算。上面每一列都指名是哪支動作、哪個構圖、哪個方向。
+這不代表動作壞了，代表這具身體跟現有的構圖數字不相容：
+要嘛調構圖（avatarMode.ts 的 framing），要嘛那支動作不給這具身體用。"
+ ❯ scripts/measure-motions.test.ts:129:37
+    127|     expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+    128|     // A taller body's box scales with it: derived, not carried.
+    129|     expect(taller.lines.join('\n')).toMatch(/臉部盒　x -0\.12\d…0\.12\d　y …
+       |                                     ^
+    130|   })
+    131| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### P5
+```
+$ python3 -W ignore -m unittest -q scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_vrm1_twin
+======================================================================
+FAIL: test_vrm1_twin (scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_vrm1_twin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 164, in test_vrm1_twin
+    self.compare('twin')
+    ~~~~~~~~~~~~^^^^^^^^
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 149, in compare
+    self.assertEqual(set(theirs), expected, f'{name}@{at:.2f} dumped bone set')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'leftThumbMetacarpal'
+'leftThumbProximal'
+'rightThumbProximal'
+'rightThumbMetacarpal'
+'leftThumbDistal'
+'rightThumbDistal' : dance@3.35 dumped bone set
+----------------------------------------------------------------------
+Ran 1 test in 0.399s
+FAILED (failures=1)
+```
+
+### R10
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t is a VRMHumanoid and knows which VRM version it came from
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (196 tests | 1 failed | 195 skipped) 17ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resting arm as straight and a folded one as flexed
+   ↓ guard sensitivity > sees a hand that leaves the f
+[…]
+sion bind through the node it names to that node's mesh
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+   ↓ three-vrm humanoid rig > reads the same finger radius again as one bone of the sideways allowance
+   ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
+ Test Files  1 failed (1)
+      Tests  1 failed | 195 skipped (196)
+   Start at  20:17:30
+   Duration  399ms (transform 69ms, setup 23ms, collect 105ms, tests 17ms, environment 142ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > three-vrm humanoid rig > is a VRMHumanoid and knows which VRM version it came from
+AssertionError: expected '0' to be '1' // Object.is equality
+Expected: [32m"1"[39m
+Received: [31m"0"[39m
+ ❯ src/components/chat/rigProbe.test.ts:1126:74
+    1124|     expect(r.humanoid).toBeInstanceOf(VRMHumanoid)
+    1125|     expect(r.version).toBe('0')
+    1126|     expect(buildRig(vrm1Twin(asset('AvatarSample_B_webp.vrm'))).versio…
+       |                                                                          ^
+    1127|   })
+    1128| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### M1
+```
+$ npx vitest run /Users/charles/portfolio/scripts/measure-motions.test.ts -t reports the face box and the finger skin
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/measure-motions.test.ts (7 tests | 1 failed | 6 skipped) 9311ms
+   ↓ measure-motions > reports the shipped body as fitting, waiver and all
+   ↓ measure-motions > recognises the face waiver dance already ships with
+   × measure-motions > reports the face box and the finger skin it read off the body 3ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/
+   ↓ measure-motions > says no when the same clips are asked to run on a taller body
+   ↓ measure-motions > counts exactly the violations it 
+[…]
+mm（上限 100.0mm）
+   頭尾手垂著　手腕 0.7811（上限 1.0500）
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.7068　預算 0.7415　餘裕  34.7mm
+   waistUp  往畫面右邊伸　0.6476　預算 0.7415　餘裕  93.9mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.8022　餘裕  313.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6978　餘裕  54.7mm
+   waistUp  髮頂　1.7244　上緣 1.8022　餘裕  77.8mm（模擬投影 1.7000，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.7068　預算 0.7415　餘裕  34.8mm
+   column   往畫面右邊伸　0.6476　預算 0.7415　餘裕  94.0mm
+   column   手的皮膚頂端　1.4886　預算 1.7420　餘裕  253.5mm
+   column   髖部最低　　0.7525　下緣 0.5700　餘裕  182.5mm
+   column   髮頂　1.7389　上緣 1.7420　餘裕  3.1mm（模擬投影 1.7087，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.197（下限 0.190，t=8.22s）
+   頭尾站得住　髖部下沉 47.1mm（上限 80.0mm）
+   頭尾站得正　髖部離中線 140.2mm（上限 150.0mm，已放行）
+   頭尾手垂著　手腕 1.1877（上限 1.1900，已放行）
+全部動作在這具身體上都待在預算內，可以直接沿用。"
+ ❯ scripts/measure-motions.test.ts:126:18
+    124|     // constant instead would still match a looser pattern.
+    125|     const text = shipped.lines.join('\n')
+    126|     expect(text).toMatch(/臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/)
+       |                  ^
+    127|     expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+    128|     // A taller body's box scales with it: derived, not carried.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### M2
+```
+$ npx vitest run /Users/charles/portfolio/scripts/measure-motions.test.ts -t reports the face box and the finger skin
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/measure-motions.test.ts (7 tests | 1 failed | 6 skipped) 9431ms
+   ↓ measure-motions > reports the shipped body as fitting, waiver and all
+   ↓ measure-motions > recognises the face waiver dance already ships with
+   × measure-motions > reports the face box and the finger skin it read off the body 4ms
+     → expected '模型　　public/avatar/AvatarSample_B_webp…' to match /指尖皮厚　18\.\dmm/
+   ↓ measure-motions > says no when the same clips are asked to run on a taller body
+   ↓ measure-motions > counts exactly the violations it printed
+   ↓ measure-moti
+[…]
+m）
+   頭尾手垂著　手腕 0.7811（上限 1.0500）
+── dance　（waistUp、column）
+   waistUp  往畫面左邊伸　0.7068　預算 0.7415　餘裕  34.7mm
+   waistUp  往畫面右邊伸　0.6476　預算 0.7415　餘裕  93.9mm
+   waistUp  手的皮膚頂端　1.4886　預算 1.8022　餘裕  313.6mm
+   waistUp  髖部最低　　0.7525　下緣 0.6978　餘裕  54.7mm
+   waistUp  髮頂　1.7244　上緣 1.8022　餘裕  77.8mm（模擬投影 1.7000，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   column   往畫面左邊伸　0.7068　預算 0.7415　餘裕  34.8mm
+   column   往畫面右邊伸　0.6476　預算 0.7415　餘裕  94.0mm
+   column   手的皮膚頂端　1.4886　預算 1.7420　餘裕  253.5mm
+   column   髖部最低　　0.7525　下緣 0.5700　餘裕  182.5mm
+   column   髮頂　1.7389　上緣 1.7420　餘裕  3.1mm（模擬投影 1.7087，換到這具身體 6.3mm，瀏覽器邊緣 1.5mm）
+   手在臉裡但在放行範圍內　0.197（下限 0.190，t=8.22s）
+   頭尾站得住　髖部下沉 47.1mm（上限 80.0mm）
+   頭尾站得正　髖部離中線 140.2mm（上限 150.0mm，已放行）
+   頭尾手垂著　手腕 1.1877（上限 1.1900，已放行）
+全部動作在這具身體上都待在預算內，可以直接沿用。"
+ ❯ scripts/measure-motions.test.ts:127:18
+    125|     const text = shipped.lines.join('\n')
+    126|     expect(text).toMatch(/臉部盒　x -0\.09\d…0\.09\d　y 1\.287…1\.503/)
+    127|     expect(text).toMatch(/指尖皮厚　18\.\dmm/)
+       |                  ^
+    128|     // A taller body's box scales with it: derived, not carried.
+    129|     expect(taller.lines.join('\n')).toMatch(/臉部盒　x -0\.12\d…0\.12\d　y …
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### V1
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/vrmHumanoid.test.ts -t rebuilds the glTF node tree
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/vrmHumanoid.test.ts (15 tests | 1 failed | 14 skipped) 10ms
+   ↓ readHumanoid > reads the same bones from a VRM 1.0 map as from its 0.x twin, and says which it saw
+   ↓ readHumanoid > carries the forward axis with the version
+   ↓ readHumanoid > names both extensions when neither is present
+   ↓ readHumanoid > lists the spec-required bones a body lacks
+   ↓ readHumanoid > reads expression names from either version and refuses a file with neither
+   ↓ readHumanoid > reads a .vrma map through its own extension
+   ↓ readSprings > return
+[…]
+3 {
+    "x": 0,
+    "y": 0,
+    "z": 0,
+  },
+  "quaternion": Quaternion {
+    "_onChangeCallback": [Function onQuaternionChange],
+    "_w": 1,
+    "_x": 0,
+    "_y": 0,
+    "_z": 0,
+    "isQuaternion": true,
+  },
+  "receiveShadow": false,
+  "renderOrder": 0,
+  "rotation": Euler {
+    "_onChangeCallback": [Function onRotationChange],
+    "_order": "XYZ",
+    "_x": -0,
+    "_y": 0,
+    "_z": -0,
+    "isEuler": true,
+  },
+  "scale": Vector3 {
+    "x": 1,
+    "y": 1,
+    "z": 1,
+  },
+  "static": false,
+  "type": "Bone",
+  "up": Vector3 {
+    "x": 0,
+    "y": 1,
+    "z": 0,
+  },
+  "userData": {},
+  "uuid": "3cc48e95-ae7f-40d9-9e91-aba3353bb8e1",
+  "visible": true,
+}
+[31m+ Received:[39m 
+null
+ ❯ src/components/chat/vrmHumanoid.test.ts:166:65
+    164|     expect(nodes).toHaveLength(shipped.json.nodes.length)
+    165|     shipped.json.nodes.forEach((n, i) => {
+    166|       for (const c of n.children ?? []) expect(nodes[c].parent).toBe(n…
+       |                                                                 ^
+    167|     })
+    168|     expect(scene.children.map((o) => nodes.indexOf(o))).toEqual(shippe…
+ ❯ src/components/chat/vrmHumanoid.test.ts:165:24
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### V2
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/vrmHumanoid.test.ts -t honours a matrix node and a scale
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/vrmHumanoid.test.ts (15 tests | 1 failed | 14 skipped) 5ms
+   ↓ readHumanoid > reads the same bones from a VRM 1.0 map as from its 0.x twin, and says which it saw
+   ↓ readHumanoid > carries the forward axis with the version
+   ↓ readHumanoid > names both extensions when neither is present
+   ↓ readHumanoid > lists the spec-required bones a body lacks
+   ↓ readHumanoid > reads expression names from either version and refuses a file with neither
+   ↓ readHumanoid > reads a .vrma map through its own extension
+   ↓ readSprings > returns
+[…]
+ the BIN chunk behind a JSON chunk whose length is not a multiple of four
+   ↓ parseGlb / readAccessorRows > de-strides and de-normalizes an accessor
+   ↓ buildNodes > rebuilds the glTF node tree as THREE objects, parented and placed as the file says
+   × buildNodes > honours a matrix node and a scale 4ms
+     → expected 1 to be 2 // Object.is equality
+   ↓ wiring > no file outside vrmHumanoid.ts reads the humanoid map inline
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 skipped (15)
+   Start at  20:17:52
+   Duration  312ms (transform 26ms, setup 24ms, collect 36ms, tests 5ms, environment 145ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/vrmHumanoid.test.ts > buildNodes > honours a matrix node and a scale
+AssertionError: expected 1 to be 2 // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- 2[39m
+[31m+ 1[39m
+ ❯ src/components/chat/vrmHumanoid.test.ts:181:30
+    179|     expect(nodes[0].position.y).toBe(1)
+    180|     expect(nodes[1].getWorldPosition(new THREE.Vector3()).y).toBeClose…
+    181|     expect(nodes[1].scale.x).toBe(2)
+       |                              ^
+    182|   })
+    183| })
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### S1
+```
+$ npx vitest run /Users/charles/portfolio/scripts/avatar/springsim.test.ts -t dance: the tails stay outside
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ scripts/avatar/springsim.test.ts (6 tests | 1 failed | 5 skipped) 22835ms
+   × Milfy through the spring solver > dance: the tails stay outside the cardigan and out of her body 5ms
+     → body depth should still be pinned at the measure's cap: expected 4.9390188639684105 to be close to 50, received difference is 45.060981136031586, but expected 0.05
+   ↓ Milfy through the spring solver > dance: the legs stay under the skirt
+   ↓ Milfy through the spring solver > spin: the tails stay outside the cardigan and out of her body
+   ↓ Milfy through the spring s
+[…]
+the skirt
+   ↓ Milfy through the spring solver > dance: the hop throws her hair well above its resting crown
+   ↓ Milfy through the spring solver > a 1.0 export of the same body simulates the same
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 skipped (6)
+   Start at  20:17:53
+   Duration  23.23s (transform 76ms, setup 23ms, collect 113ms, tests 22.84s, environment 143ms, prepare 24ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  scripts/avatar/springsim.test.ts > Milfy through the spring solver > dance: the tails stay outside the cardigan and out of her body
+AssertionError: body depth should still be pinned at the measure's cap: expected 4.9390188639684105 to be close to 50, received difference is 45.060981136031586, but expected 0.05
+ ❯ scripts/avatar/springsim.test.ts:108:89
+    106|         expect(r.bodyDepthMm, `deepest into the body @${r.bodyWorstT.t…
+    107|       } else {
+    108|         expect(r.bodyDepthMm, `body depth should still be pinned at th…
+       |                                                                                         ^
+    109|       }
+    110|       expect(r.jumpDeg, `largest one-frame turn (${r.jumpBone} @${r.ju…
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### A1
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/avatarMode.test.ts -t takes her chin from the same box
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/avatarMode.test.ts (74 tests | 1 failed | 73 skipped) 12ms
+   ↓ deriveAvatarMode > is idle with empty input and no stream
+   ↓ deriveAvatarMode > is listening while the visitor has typed anything
+   ↓ deriveAvatarMode > treats whitespace-only input as typing too (IME composition often is)
+   ↓ deriveAvatarMode > is speaking for the whole streaming window, regardless of input
+   ↓ avatarPlacement > stands above the launcher whenever the panel is stowed, any viewport
+   ↓ avatarPlacement > stands beside the docked panel only when the v
+[…]
+hed
+   ↓ stepFramePan > takes about a second to cover a pan, not a frame
+   ↓ stepFramePan > gets there in time for the frames the pan exists for
+   ↓ stepFramePan > arrives exactly, so a parked camera stops being rewritten
+   ↓ stepFramePan > comes back the same way it went
+   ↓ stepFramePan > covers the same ground whatever the frame rate
+ Test Files  1 failed (1)
+      Tests  1 failed | 73 skipped (74)
+   Start at  20:18:17
+   Duration  492ms (transform 54ms, setup 34ms, collect 81ms, tests 12ms, environment 259ms, prepare 30ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/avatarMode.test.ts > avatar camera framing > takes her chin from the same box rigProbe measures fingers against
+AssertionError: expected 0.007256715891528209 to be less than 0.001
+ ❯ src/components/chat/avatarMode.test.ts:647:68
+    645|   it('takes her chin from the same box rigProbe measures fingers again…
+    646|     const shipped = buildRig(new Uint8Array(readFileSync(path.join(pro…
+    647|     expect(Math.abs(AVATAR_HEAD_BOTTOM_Y - shipped.faceBox.min.y)).toB…
+       |                                                                    ^
+    648|   })
+    649| 
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### P1
+```
+$ python3 -W ignore -m unittest -q scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_vrm1_twin_poses_as_the_shipped_body_turned_round
+======================================================================
+FAIL: test_a_vrm1_twin_poses_as_the_shipped_body_turned_round (scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_vrm1_twin_poses_as_the_shipped_body_turned_round)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 103, in test_a_vrm1_twin_poses_as_the_shipped_body_turned_round
+    self.assertLess(angle_deg(expected, v1[bone]), 1e-4, bone)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 13.204872149409326 not less than 0.0001 : hips
+----------------------------------------------------------------------
+Ran 1 test in 0.017s
+FAILED (failures=1)
+```
+
+### P2
+```
+$ python3 -W ignore -m unittest -q scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_shipped_vrm0_body
+  parity shipped: worst bone modelPose@6.58s rightThumbDistal 179.7460° (limit 0.5°)
+======================================================================
+FAIL: test_shipped_vrm0_body (scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_shipped_vrm0_body)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 161, in test_shipped_vrm0_body
+    self.compare('shipped')
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 157, in compare
+    self.assertLess(worst[0], MAX_DEG, f'worst bone {worst[1]}: {worst[0]:.3f}°')
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 179.74595641198243 not less than 0.5 : worst bone modelPose@6.58s rightThumbDistal: 179.746°
+----------------------------------------------------------------------
+Ran 1 test in 0.414s
+FAILED (failures=1)
+```
+
+### P3
+```
+$ python3 -W ignore -m unittest -q scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_thumb_track_lands_on_the_thumb_it_names
+======================================================================
+FAIL: test_a_thumb_track_lands_on_the_thumb_it_names (scripts.avatar.retarget_parity_test.MotionPyAlone.test_a_thumb_track_lands_on_the_thumb_it_names)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 111, in test_a_thumb_track_lands_on_the_thumb_it_names
+    self.assertIn(bone, out)
+    ~~~~~~~~~~~~~^^^^^^^^^^^
+AssertionError: 'leftThumbIntermediate' not found in {'hips': array([-0.0529084
+[…]
+26223]), 'rightRingProximal': array([-0.03352494, -0.02255361,  0.66638259, -0.74451438]), 'rightRingIntermediate': array([ 0.0037074 , -0.00107594,  0.6555121 , -0.7551748 ]), 'rightRingDistal': array([ 0.00370738, -0.00107596,  0.65551223, -0.75517469]), 'rightThumbProximal': array([-0.33491623, -0.8404472 ,  0.04585709,  0.42352893]), 'rightThumbDistal': array([ 0.0285996 ,  0.7817713 , -0.01756874, -0.62266126]), 'leftUpperLeg': array([-2.03293470e-02,  7.49293045e-05, -4.15702097e-02,  9.98928741e-01]), 'leftLowerLeg': array([-0.14402298, -0.06031384,  0.00713184,  0.98770884]), 'leftFoot': array([ 1.08573007e-01, -7.67553437e-02, -1.09133853e-04,  9.91120834e-01]), 'leftToes': array([ 1.47744866e-03, -1.07778627e-08, -1.66503325e-09,  9.99998909e-01]), 'rightUpperLeg': array([-0.02932448, -0.00602629,  0.02827598,  0.99915175]), 'rightLowerLeg': array([-0.15490957, -0.01297144,  0.00410387,  0.98783497]), 'rightFoot': array([ 0.10454644,  0.01276533, -0.02023265,  0.99423223]), 'rightToes': array([ 7.84511395e-03, -3.17038114e-09,  1.03317014e-09,  9.99969227e-01])}
+----------------------------------------------------------------------
+Ran 1 test in 0.012s
+FAILED (failures=1)
+```
+
+### P4
+```
+$ python3 -W ignore -m unittest -q scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_vrm1_twin
+======================================================================
+FAIL: test_vrm1_twin (scripts.avatar.retarget_parity_test.AgainstThreeVrm.test_vrm1_twin)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 164, in test_vrm1_twin
+    self.compare('twin')
+    ~~~~~~~~~~~~^^^^^^^^
+  File "/Users/charles/portfolio/scripts/avatar/retarget_parity_test.py", line 152, in compare
+    self.assertIn(bone, ours, f'{name}@{at:.2f} {vrm1_name}')
+    ~~~~~~~~~~~~~^^^^^^^
+[…]
+roximal': array([0.06136353, 0.39343755, 0.02088809, 0.9170633 ]), 'rightIndexIntermediate': array([ 0.24727605, -0.35118585,  0.56374374, -0.70548994]), 'rightIndexDistal': array([-0.43633265,  0.13910025, -0.87574836,  0.1527408 ]), 'rightMiddleProximal': array([0.07797   , 0.47627081, 0.00603168, 0.87581415]), 'rightMiddleIntermediate': array([ 0.26380645, -0.41704953,  0.56002114, -0.66547139]), 'rightMiddleDistal': array([-0.47764254,  0.15556826, -0.85447597,  0.13238931]), 'rightRingProximal': array([ 0.11851566,  0.55177857, -0.01043918,  0.82546077]), 'rightRingIntermediate': array([ 0.27352015, -0.49622988,  0.5447049 , -0.61825497]), 'rightRingDistal': array([-0.5328572 ,  0.19993437, -0.81470601,  0.1111016 ]), 'rightLittleProximal': array([0.1177895 , 0.61179159, 0.0061007 , 0.78217611]), 'rightLittleIntermediate': array([ 0.29335898, -0.53573084,  0.51920516, -0.5977951 ]), 'rightLittleDistal': array([-0.56229564,  0.1999633 , -0.79281539,  0.12362057]), 'upperChest': array([-0.09534338,  0.932621  , -0.10829238, -0.33075741])} : dance@3.35 leftThumbProximal
+----------------------------------------------------------------------
+Ran 1 test in 0.380s
+FAILED (failures=1)
+```
+
