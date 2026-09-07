@@ -193,9 +193,11 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // it is simply not offered there.
   stretch: { placements: ['waistUp'], showsPalm: true },
   // 26.8s, the longest by far, and the clip that drove the 2026-08-20 widening:
-  // it reaches 0.6978 to the viewer's left, which was 23mm past the old 0.6745
-  // canvas and sits 44mm inside the 0.7415 one. Its reach waiver is gone with
-  // that, because a waiver that is not needed is a test failure.
+  // its bones reached 0.6978 to the viewer's left, 23mm past the old 0.6745
+  // canvas. Measured with each joint's skin since 2026-09-07 it reaches 0.7068
+  // and sits 34.7mm inside the 0.7415 canvas -- the tightest clip on this
+  // family. Its reach waiver is gone with that widening, because a waiver that
+  // is not needed is a test failure.
   //
   // What it still does is put a hand 51.0mm inside her head for 34 of the 1608
   // frames the engine draws, around t=8.22s — ellipsoid 0.1975, ten times the

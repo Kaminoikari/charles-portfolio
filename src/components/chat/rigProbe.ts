@@ -825,8 +825,9 @@ export const SKIN_ABOVE_JOINT = 0.012
  * Sampling the wrist and the index fingertip alone is not enough, and that is
  * measured rather than assumed. `shoot` passes an index-only face check at 1.19
  * and fails a whole-hand one at 0.90: its THUMB is what crosses her cheek. The
- * same widening moves modelPose's rightward reach from 0.269 to 0.286, because
- * its little finger is outside its index.
+ * same widening moved modelPose's rightward reach from 0.269 to 0.286, because
+ * its little finger is outside its index. Both are bone readings: the reach the
+ * clearance carries today adds each joint's skin (silhouetteReach) and is 0.3647.
  *
  * Each finger contributes four points, not three: the skinned tip past the
  * distal joint is included, because that is where the finger is drawn to.

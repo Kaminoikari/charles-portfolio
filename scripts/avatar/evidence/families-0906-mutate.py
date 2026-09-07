@@ -133,7 +133,7 @@ MUTATIONS = [
      "familyOfUrl(url) ?? declaredFamily ?? null\n",
      "declaredFamily ?? familyOfUrl(url)\n",
      VT(ENGT, 'lets the registry outrank a caller-declared family'),
-     'declaredFamily is a fallback, never an override: written the other way it applies one family\'s clearances to a declared body of another, and with one family declared nothing else can tell the two orders apart'),
+     'declaredFamily is a fallback, never an override: written the other way it applies one family\'s clearances to a declared body of another, and with one family declared, which is what the registry held when this ran, nothing else could tell the two orders apart'),
 ]
 
 

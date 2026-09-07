@@ -24,7 +24,7 @@ G13 RED  restored=True
 | G10 | loadVariant refuses a body no family can vouch for, instead of carrying a null past uninstallVrm | RED |
 | G11 | installVrm is HANDED the settled family; looking it up again there is the ordering bug returning (a null would reach shownFamily after the old body is gone) | RED |
 | G12 | the preview tool declares its family, so an undeclared fresh build still previews | RED |
-| G13 | declaredFamily is a fallback, never an override: written the other way it applies one family's clearances to a declared body of another, and with one family declared nothing else can tell the two orders apart | RED |
+| G13 | declaredFamily is a fallback, never an override: written the other way it applies one family's clearances to a declared body of another, and with one family declared, which is what the registry held when this ran, nothing else could tell the two orders apart | RED |
 
 ### G2
 ```
@@ -45,8 +45,8 @@ s > has each family naming itself in the clearance it points at
    ↓ avatar variants > loads the resolved variant rather than a constant of its own
  Test Files  1 failed (1)
       Tests  1 failed | 10 skipped (11)
-   Start at  20:16:16
-   Duration  353ms (transform 55ms, setup 23ms, collect 82ms, tests 3ms, environment 143ms, prepare 26ms)
+   Start at  20:43:28
+   Duration  363ms (transform 56ms, setup 24ms, collect 84ms, tests 3ms, environment 152ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > declares a family for every variant, and no family that nothing declares
 AssertionError: base names an undeclared family undefined: expected undefined to be defined
@@ -78,8 +78,8 @@ swering for every clip in the pool
    ↓ avatar variants > loads the resolved variant rather than a constant of its own
  Test Files  1 failed (1)
       Tests  1 failed | 10 skipped (11)
-   Start at  20:16:17
-   Duration  348ms (transform 51ms, setup 24ms, collect 77ms, tests 4ms, environment 143ms, prepare 25ms)
+   Start at  20:43:29
+   Duration  353ms (transform 54ms, setup 23ms, collect 82ms, tests 4ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > declares a family for every variant, and no family that nothing declares
 AssertionError: family nobody-uses-this is declared but no variant uses it: expected false to be true // Object.is equality
@@ -101,7 +101,7 @@ AssertionError: family nobody-uses-this is declared but no variant uses it: expe
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.test.ts -t has each family naming itself in the clearance it points at
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 5ms
+ ❯ src/components/chat/avatarVariants.test.ts (11 tests | 1 failed | 10 skipped) 4ms
    ↓ avatar variants > resolves the active variant by default
    ↓ avatar variants > refuses an id it does not know instead of quietly using the default
    ↓ avatar variants > declares only files that are actually served
@@ -115,8 +115,8 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/avatarVariants.tes
    ↓ avatar variants > loads the resolved variant rather than a constant of its own
  Test Files  1 failed (1)
       Tests  1 failed | 10 skipped (11)
-   Start at  20:16:18
-   Duration  348ms (transform 52ms, setup 23ms, collect 78ms, tests 5ms, environment 144ms, prepare 25ms)
+   Start at  20:43:30
+   Duration  353ms (transform 54ms, setup 23ms, collect 79ms, tests 4ms, environment 144ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarVariants.test.ts > avatar variants > has each family naming itself in the clearance it points at
 AssertionError: AVATAR_FAMILIES.vroid-sample-b holds someone-else's clearance: expected 'someone-else' to be 'vroid-sample-b' // Object.is equality
@@ -139,8 +139,8 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
  ✓ src/components/chat/rigProbe.test.ts (196 tests | 195 skipped) 1ms
  Test Files  1 passed (1)
       Tests  1 passed | 195 skipped (196)
-   Start at  20:16:20
-   Duration  374ms (transform 70ms, setup 23ms, collect 106ms, tests 1ms, environment 143ms, prepare 25ms)
+   Start at  20:43:32
+   Duration  390ms (transform 76ms, setup 25ms, collect 115ms, tests 1ms, environment 146ms, prepare 25ms)
 ```
 
 ### G6
@@ -160,8 +160,8 @@ asured margin
    ↓ three-vrm humanoid rig > refuses to measure a reach for a bone it has no skin radius for
  Test Files  1 failed (1)
       Tests  1 failed | 195 skipped (196)
-   Start at  20:16:20
-   Duration  379ms (transform 69ms, setup 23ms, collect 104ms, tests 5ms, environment 143ms, prepare 24ms)
+   Start at  20:43:33
+   Duration  386ms (transform 72ms, setup 23ms, collect 112ms, tests 5ms, environment 143ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > the idle pool > offers every idle clip somewhere, so the rotation can reach them all
 AssertionError: squat is excluded on vroid-sample-b but still offered: expected true to be false // Object.is equality
@@ -183,7 +183,7 @@ AssertionError: squat is excluded on vroid-sample-b but still offered: expected 
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t takes the new body onto its own family
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 4ms
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 3ms
    ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
    ↓ a body swap is the first load, run again > exposes the swap on the handle
    ↓ a body swap is the first load, run again > releases the old body before installing the new one
@@ -296,7 +296,7 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/ChatWidget.test.ts
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/avatarGuideEngine.variant.test.ts -t settles the family before it releases
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 3ms
+ ❯ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests | 1 failed | 11 skipped) 5ms
    ↓ a body swap is the first load, run again > loads the first body through loadVariant, so the two paths are one
    ↓ a body swap is the first load, run again > exposes the swap on the handle
    ↓ a body swap is the first load, run again > releases the old body before installing the new one
@@ -349,8 +349,8 @@ pected [ 'familyFor(', 'familyFor(' ] to have a length of 1 but got 2
    ↓ a body swap is the first load, run again > lets the registry outrank a caller-declared family
  Test Files  1 failed (1)
       Tests  1 failed | 11 skipped (12)
-   Start at  20:16:25
-   Duration  286ms (transform 18ms, setup 23ms, collect 13ms, tests 5ms, environment 143ms, prepare 26ms)
+   Start at  20:43:37
+   Duration  293ms (transform 19ms, setup 23ms, collect 11ms, tests 5ms, environment 150ms, prepare 27ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/avatarGuideEngine.variant.test.ts > a body swap is the first load, run again > settles the family before it releases the body on screen
 AssertionError: familyFor is called once, in loadVariant: expected [ 'familyFor(', 'familyFor(' ] to have a length of 1 but got 2

@@ -24,7 +24,7 @@ G13 RED  restored=True
 | G10 | loadVariant refuses a body no family can vouch for, instead of carrying a null past uninstallVrm | RED |
 | G11 | installVrm is HANDED the settled family; looking it up again there is the ordering bug returning (a null would reach shownFamily after the old body is gone) | RED |
 | G12 | the preview tool declares its family, so an undeclared fresh build still previews | RED |
-| G13 | declaredFamily is a fallback, never an override: written the other way it applies one family's clearances to a declared body of another, and with one family declared nothing else can tell the two orders apart | RED |
+| G13 | declaredFamily is a fallback, never an override: written the other way it applies one family's clearances to a declared body of another, and with one family declared, which is what the registry held when this ran, nothing else could tell the two orders apart | RED |
 
 ### G2
 ```
