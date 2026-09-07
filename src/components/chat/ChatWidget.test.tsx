@@ -1117,10 +1117,12 @@ describe('the look strip', () => {
 describe('the motion strip asks the body on screen which clips it has', () => {
   // Structural, because on today's data it cannot be anything else: the second
   // family excludes no clip and no visitor can select its body, so motionsFor
-  // returns the same ten names whichever family the widget names — a literal, the wanted body's, the shown body's. Every
-  // rendering test would stay green through all three. What separates them is
-  // the day a second family is declared, and by then the wrong one is already
-  // shipped, which is exactly the failure the family layer exists to prevent.
+  // returns the same ten names whichever family the widget names — a literal,
+  // the wanted body's, the shown body's. Every rendering test would stay green
+  // through all three. What separates them is the day an OFFERED family
+  // excludes a clip; declaring a second family, which happened on 2026-09-07,
+  // is not enough on its own. By that day the wrong one is already shipped,
+  // which is exactly the failure the family layer exists to prevent.
   const SOURCE = readFileSync(
     path.join(process.cwd(), 'src', 'components', 'chat', 'ChatWidget.tsx'),
     'utf8',

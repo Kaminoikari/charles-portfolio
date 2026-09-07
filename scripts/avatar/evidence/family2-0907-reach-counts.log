@@ -1,0 +1,10 @@
+
+=== screenX reversed (mutation F7)
+    src/components/chat/rigProbe.ts
+    Tests  20 failed | 174 skipped (194)
+    restored=True
+
+=== the whole generated half stale, all ten pairs mirrored
+    src/components/chat/clearance/vrm1-twist-sample.measured.gen.ts
+    Tests  10 failed | 10 passed | 174 skipped (194)
+    restored=True

@@ -695,7 +695,9 @@ function worldPosition(rig: Rig, bone: string): THREE.Vector3 {
  * reddened nothing. It is load-bearing now, because the frame guard compares
  * the two edges it measures against the left and right the producer wrote into
  * the clearance file, and those are not interchangeable. Mutation F7 reverses
- * it and turns ten tests red.
+ * it and turns 20 tests red -- both branches swap, so both families mirror,
+ * and every clip of each disagrees with its own file. Counted rather than
+ * guessed: evidence/family2-0907-reach-counts.log.
  */
 export function screenX(rig: Rig, probeX: number): number {
   return forwardZ(rig) === -1 ? -probeX : probeX

@@ -1,8 +1,11 @@
 // Where does Seed-san's `spin` put things, in world space, and which node is
-// nearest the column camera at head height? The clearance producer reports a
-// column crown projection of 2.2274 against a world crown of 1.6115, which
-// implies a drawn vertex ~1.24m in front of the body. Bones move meshes, so if
-// anything is out there a bone is out there too.
+// nearest the column camera at head height?
+//
+// It was written because a `springsim --clearance` run on this body projected a
+// crown far in front of it. That run's log was not kept, so the figure it
+// printed is not quoted here; what this prints is its own, and it is enough on
+// its own. Bones move meshes, so if drawn geometry is out there a bone is out
+// there too, and that is the thing this looks for.
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
 import { buildRig, buildMotion, applyMotion } from '/Users/charles/portfolio/src/components/chat/rigProbe.ts'

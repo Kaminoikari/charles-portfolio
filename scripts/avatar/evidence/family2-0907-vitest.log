@@ -1,10 +1,10 @@
 
  RUN  v3.2.6 /Users/charles/portfolio
 
- ✓ src/components/chat/avatarVariantChoice.test.ts (9 tests) 3ms
- ✓ src/components/chat/avatarVariants.test.ts (11 tests) 24ms
- ✓ scripts/avatar/springsim.derive.test.ts (6 tests) 24149ms
-   ✓ parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it  24119ms
+ ✓ src/components/chat/avatarVariantChoice.test.ts (9 tests) 7ms
+ ✓ src/components/chat/avatarVariants.test.ts (11 tests) 26ms
+ ✓ scripts/avatar/springsim.derive.test.ts (6 tests) 31219ms
+   ✓ parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it  31156ms
 stderr | src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > wraps long drafts and grows the composer to their content height
 Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
     at module.exports (/Users/charles/portfolio/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
@@ -552,78 +552,86 @@ Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installi
     at listOnTimeout (node:internal/timers:608:17)
     at processTimers (node:internal/timers:543:7) [90mundefined[39m
 
- ✓ src/components/chat/ChatWidget.test.tsx (36 tests) 15409ms
-   ✓ ChatWidget size modes > wraps long drafts and grows the composer to their content height  575ms
-   ✓ ChatWidget size modes > sends a draft when Enter is pressed  472ms
-   ✓ ChatWidget size modes > rests as a launcher pill once the avatar gate settles, never flashing it before  407ms
+ ✓ src/components/chat/ChatWidget.test.tsx (36 tests) 16014ms
+   ✓ ChatWidget size modes > wraps long drafts and grows the composer to their content height  615ms
+   ✓ ChatWidget size modes > sends a draft when Enter is pressed  480ms
+   ✓ ChatWidget size modes > rests as a launcher pill once the avatar gate settles, never flashing it before  406ms
    ✓ ChatWidget size modes > offers minimise rather than close, because stowing keeps the conversation  419ms
-   ✓ ChatWidget size modes > keeps the conversation when minimised and re-opened  496ms
-   ✓ ChatWidget size modes > keeps the conversation when Escape stows the panel  489ms
-   ✓ ChatWidget size modes > discards the conversation only through the explicit clear control  482ms
-   ✓ ChatWidget fullscreen > shows the pipeline rail only in fullscreen  430ms
-   ✓ ChatWidget fullscreen > collapses back to the docked panel through the same control  436ms
-   ✓ ChatWidget fullscreen > keeps the conversation across every size change  507ms
-   ✓ ChatWidget fullscreen > pipeline trace > invites a question before anything has run  425ms
-   ✓ ChatWidget fullscreen > pipeline trace > draws each node the server reported, with its latency  452ms
-   ✓ ChatWidget fullscreen > pipeline trace > keeps the suggestions in the rail after a question has been answered  453ms
-   ✓ ChatWidget fullscreen > pipeline trace > shows a corrective loop as two separate retrieve steps  452ms
-   ✓ ChatWidget fullscreen > focus containment > pulls a forward Tab from outside the panel back inside  430ms
-   ✓ ChatWidget fullscreen > focus containment > pulls a backward Tab from outside the panel back inside  432ms
+   ✓ ChatWidget size modes > keeps the conversation when minimised and re-opened  500ms
+   ✓ ChatWidget size modes > keeps the conversation when Escape stows the panel  560ms
+   ✓ ChatWidget size modes > discards the conversation only through the explicit clear control  517ms
+   ✓ ChatWidget fullscreen > shows the pipeline rail only in fullscreen  442ms
+   ✓ ChatWidget fullscreen > collapses back to the docked panel through the same control  441ms
+   ✓ ChatWidget fullscreen > keeps the conversation across every size change  514ms
+   ✓ ChatWidget fullscreen > pipeline trace > invites a question before anything has run  433ms
+   ✓ ChatWidget fullscreen > pipeline trace > draws each node the server reported, with its latency  476ms
+   ✓ ChatWidget fullscreen > pipeline trace > keeps the suggestions in the rail after a question has been answered  528ms
+   ✓ ChatWidget fullscreen > pipeline trace > shows a corrective loop as two separate retrieve steps  472ms
+   ✓ ChatWidget fullscreen > focus containment > pulls a forward Tab from outside the panel back inside  443ms
+   ✓ ChatWidget fullscreen > focus containment > pulls a backward Tab from outside the panel back inside  442ms
    ✓ ChatWidget fullscreen > focus containment > leaves focus free to reach the page from the docked panel  421ms
-   ✓ ChatWidget fullscreen > renders the docked panel at the height the avatar is sized to  416ms
-   ✓ ChatWidget fullscreen > sizes the docked avatar canvas from avatarDockedBox, not the panel class  422ms
-   ✓ ChatWidget fullscreen > stands her beside the panel on a short window of a width a tall one refuses  419ms
-   ✓ ChatWidget fullscreen > lifts her above the nav bar on a landscape phone, where her head is inside it  418ms
-   ✓ ChatWidget fullscreen > keeps her off a tall window of exactly that width  418ms
-   ✓ ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width  433ms
-   ✓ ChatWidget fullscreen > head pats > answers a happy pat with a giggle from the locale-shared pool  405ms
-   ✓ ChatWidget fullscreen > head pats > answers the annoyed third pat with the complaint, not the giggle  407ms
-   ✓ ChatWidget fullscreen > head pats > yields the giggle to a line she is already speaking  408ms
-   ✓ ChatWidget fullscreen > head pats > lets the complaint talk over a laugh, so a fast triple pat still sounds  407ms
-   ✓ ChatWidget fullscreen > head pats > still holds the complaint back while she is speaking a LINE  413ms
-   ✓ ChatWidget fullscreen > background scroll lock > pins the page while fullscreen is open  429ms
-   ✓ ChatWidget fullscreen > background scroll lock > restores the exact scroll position without animating it  441ms
-   ✓ ChatWidget fullscreen > background scroll lock > unpins the page when fullscreen is minimised directly  438ms
-   ✓ the look strip > offers every OFFERED body with the default pressed, and swaps on a tap  464ms
-   ✓ the look strip > puts the selection back where the body is when a swap fails, and remembers nothing new  445ms
-   ✓ the look strip > opens on the body a ?mika= link names, without remembering it  424ms
-   ✓ the look strip > opens on the remembered body  421ms
- ✓ scripts/avatar/springsim.test.ts (6 tests) 40340ms
-   ✓ Milfy through the spring solver > a 1.0 export of the same body simulates the same  16716ms
- ✓ src/components/chat/clearance.test.ts (12 tests) 2800ms
-   ✓ clearance producers > measure-motions --write records the rig it measured  2535ms
- ✓ src/components/chat/AvatarGuide.test.tsx (16 tests) 867ms
- ✓ src/components/Nav.test.tsx (9 tests) 113ms
- ✓ src/components/chat/MotionStrip.test.tsx (7 tests) 111ms
- ✓ src/components/chat/LookStrip.test.tsx (7 tests) 110ms
- ✓ src/components/chat/useChatStream.test.ts (12 tests) 83ms
- ✓ src/components/chat/avatarMode.test.ts (74 tests) 56ms
- ✓ src/components/chat/vrmHumanoid.test.ts (15 tests) 49ms
- ✓ scripts/measure-motions.test.ts (7 tests) 9506ms
- ✓ src/components/chat/useChatMode.test.ts (12 tests) 16ms
- ✓ src/components/chat/Markdown.test.tsx (3 tests) 13ms
- ✓ src/components/chat/visemeTrack.test.ts (5 tests) 11ms
- ✓ src/components/chat/framingSolver.test.ts (9 tests) 6ms
+   ✓ ChatWidget fullscreen > renders the docked panel at the height the avatar is sized to  417ms
+   ✓ ChatWidget fullscreen > sizes the docked avatar canvas from avatarDockedBox, not the panel class  434ms
+   ✓ ChatWidget fullscreen > stands her beside the panel on a short window of a width a tall one refuses  423ms
+   ✓ ChatWidget fullscreen > lifts her above the nav bar on a landscape phone, where her head is inside it  448ms
+   ✓ ChatWidget fullscreen > keeps her off a tall window of exactly that width  436ms
+   ✓ ChatWidget fullscreen > hangs the fullscreen avatar canvas out by the inset for its own width  519ms
+   ✓ ChatWidget fullscreen > head pats > answers a happy pat with a giggle from the locale-shared pool  422ms
+   ✓ ChatWidget fullscreen > head pats > answers the annoyed third pat with the complaint, not the giggle  418ms
+   ✓ ChatWidget fullscreen > head pats > yields the giggle to a line she is already speaking  419ms
+   ✓ ChatWidget fullscreen > head pats > lets the complaint talk over a laugh, so a fast triple pat still sounds  424ms
+   ✓ ChatWidget fullscreen > head pats > still holds the complaint back while she is speaking a LINE  425ms
+   ✓ ChatWidget fullscreen > background scroll lock > pins the page while fullscreen is open  436ms
+   ✓ ChatWidget fullscreen > background scroll lock > restores the exact scroll position without animating it  445ms
+   ✓ ChatWidget fullscreen > background scroll lock > unpins the page when fullscreen is minimised directly  444ms
+   ✓ the look strip > offers every OFFERED body with the default pressed, and swaps on a tap  475ms
+   ✓ the look strip > puts the selection back where the body is when a swap fails, and remembers nothing new  454ms
+   ✓ the look strip > opens on the body a ?mika= link names, without remembering it  425ms
+   ✓ the look strip > opens on the remembered body  438ms
+ ✓ scripts/avatar/springsim.test.ts (6 tests) 52273ms
+   ✓ Milfy through the spring solver > a 1.0 export of the same body simulates the same  22041ms
+ ✓ src/components/chat/clearance.test.ts (12 tests) 3474ms
+   ✓ clearance producers > measure-motions --write records the rig it measured  3156ms
+   ✓ every body of the family, not only the one that was simulated > is one simulation because the two VRoid bodies are one geometry  314ms
+ ✓ src/components/chat/AvatarGuide.test.tsx (16 tests) 887ms
+ ✓ src/components/Nav.test.tsx (9 tests) 199ms
+ ✓ src/components/chat/MotionStrip.test.tsx (7 tests) 155ms
+ ✓ src/components/chat/LookStrip.test.tsx (7 tests) 139ms
+ ✓ src/components/chat/useChatStream.test.ts (12 tests) 88ms
+ ✓ src/components/chat/avatarMode.test.ts (74 tests) 73ms
+ ✓ scripts/measure-motions.test.ts (7 tests) 11930ms
+ ✓ src/components/chat/vrmHumanoid.test.ts (15 tests) 66ms
+ ✓ src/components/chat/useChatMode.test.ts (12 tests) 20ms
+ ✓ src/components/chat/Markdown.test.tsx (3 tests) 18ms
+ ✓ src/components/chat/visemeTrack.test.ts (5 tests) 13ms
+ ✓ src/components/chat/framingSolver.test.ts (9 tests) 7ms
  ✓ src/components/chat/avatarPrefetch.test.ts (3 tests) 6ms
- ✓ src/components/chat/avatarVoice.test.ts (11 tests) 4ms
- ✓ scripts/avatar/live-preview.test.ts (7 tests) 3ms
- ✓ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests) 3ms
- ✓ src/i18n/chatVoice.test.ts (8 tests) 3ms
+ ✓ src/components/chat/avatarVoice.test.ts (11 tests) 5ms
+ ✓ scripts/avatar/live-preview.test.ts (7 tests) 8ms
+ ✓ src/components/chat/avatarGuideEngine.variant.test.ts (12 tests) 5ms
+ ✓ src/i18n/chatVoice.test.ts (8 tests) 5ms
  ✓ src/components/chat/avatarGuideEngine.wiring.test.ts (5 tests) 2ms
- ✓ src/components/chat/avatarRim.test.ts (5 tests) 1ms
- ✓ src/components/hero/particleHero.test.ts (4 tests) 1ms
- ✓ src/components/chat/rigProbe.test.ts (194 tests) 12889ms
-   ✓ bundled motions on 'vroid-sample-b' > dance decodes to an upright body  327ms
-   ✓ bundled motions on 'vroid-sample-b' > dance keeps her fingertips out of her own head  301ms
-   ✓ bundled motions on 'vroid-sample-b' > peaceSign stays inside every frame it declares  350ms
-   ✓ bundled motions on 'vroid-sample-b' > dance stays inside every frame it declares  642ms
-   ✓ bundled motions on 'vroid-sample-b' > dance declares no pan it does not need  612ms
-   ✓ bundled motions on 'vrm1-twist-sample' > dance decodes to an upright body  320ms
-   ✓ bundled motions on 'vrm1-twist-sample' > peaceSign stays inside every frame it declares  346ms
-   ✓ bundled motions on 'vrm1-twist-sample' > dance stays inside every frame it declares  623ms
+ ✓ src/components/chat/avatarRim.test.ts (5 tests) 2ms
+ ✓ src/components/hero/particleHero.test.ts (4 tests) 3ms
+ ✓ src/components/chat/rigProbe.test.ts (194 tests) 15950ms
+   ✓ bundled motions on 'vroid-sample-b' > dance decodes to an upright body  395ms
+   ✓ bundled motions on 'vroid-sample-b' > dance keeps her fingertips out of her own head  376ms
+   ✓ bundled motions on 'vroid-sample-b' > peaceSign stays inside every frame it declares  435ms
+   ✓ bundled motions on 'vroid-sample-b' > spin stays inside every frame it declares  307ms
+   ✓ bundled motions on 'vroid-sample-b' > dance stays inside every frame it declares  1145ms
+   ✓ bundled motions on 'vroid-sample-b' > dance declares no pan it does not need  882ms
+   ✓ bundled motions on 'vroid-sample-b' > dance turns a palm to the viewer at some point  344ms
+   ✓ bundled motions on 'vroid-sample-b' > dance keeps her hips inside the crop  336ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance decodes to an upright body  411ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance keeps her fingertips out of her own head  335ms
+   ✓ bundled motions on 'vrm1-twist-sample' > peaceSign stays inside every frame it declares  398ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance stays inside every frame it declares  732ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance declares no pan it does not need  320ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance turns a palm to the viewer at some point  315ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance keeps her hips inside the crop  318ms
 
  Test Files  27 passed (27)
       Tests  505 passed (505)
-   Start at  17:56:20
-   Duration  60.88s (transform 373ms, setup 529ms, collect 2.06s, tests 106.58s, environment 4.17s, prepare 676ms)
+   Start at  18:31:10
+   Duration  77.30s (transform 591ms, setup 693ms, collect 2.88s, tests 132.59s, environment 5.63s, prepare 932ms)
 

@@ -28,79 +28,79 @@ ResourceWarning: Enable tracemalloc to get the object allocation traceback
 /Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/public/avatar/animations/dance.vrma'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpc8b2a6fi/body.vrm'>
+....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp752ak6xv/body.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpr34ojvpr/body.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpeh08vpq_/body.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqh7fq63t/stranger.vrm'>
+....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpadd_4jrm/stranger.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqh7fq63t/stranger.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpadd_4jrm/stranger.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ............/Users/charles/portfolio/scripts/avatar/humanoid_test.py:115: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-12.parts.json' mode='r' encoding='UTF-8'>
   manifest = json.load(open(REAL_MANIFEST))
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmphs6oecjl/garment.glb'>
+....../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpozx7grgq/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmphs6oecjl/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpozx7grgq/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp8xepg1av/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpv4ww30m_/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp8xepg1av/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpv4ww30m_/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_bipdug2/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjlq_kilh/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_bipdug2/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjlq_kilh/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmph9g1n30b/garment.glb'>
+../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpndrbfre7/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmph9g1n30b/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpndrbfre7/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpkngzxh81/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpa9bsajax/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpkngzxh81/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpa9bsajax/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpz3kv4yvy/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcif_h0fw/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpz3kv4yvy/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcif_h0fw/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpc5_h__as/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj45ixswu/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpc5_h__as/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj45ixswu/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpzfbdli1l/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_xi7f9eg/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpzfbdli1l/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_xi7f9eg/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpznyi56u7/garment.glb'>
+../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp62gxmf8h/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpznyi56u7/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp62gxmf8h/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplo4vsgj6/garment.glb'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp0xmhziv2/garment.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplo4vsgj6/garment.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp0xmhziv2/garment.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ..................../Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/public/avatar/AvatarSample_B_webp.vrm'>
@@ -127,115 +127,115 @@ ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ..../Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/public/avatar/mika-pink.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpi1zohh5p/s0.8.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcx8eq9ft/s0.8.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpi1zohh5p/s0.8.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcx8eq9ft/s0.8.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpi1zohh5p/s1.25.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcx8eq9ft/s1.25.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpi1zohh5p/s1.25.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpcx8eq9ft/s1.25.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmposz07n1h/v1.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpabv1xeu9/v1.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmposz07n1h/v1.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpabv1xeu9/v1.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpuzaewo9u/src.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmppvfthodl/src.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpuzaewo9u/src.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmppvfthodl/src.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpuzaewo9u/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmppvfthodl/dst.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpuzaewo9u/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmppvfthodl/dst.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/src.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/src.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/src.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/src.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/dst.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/dst.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/back.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/back.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpjwdbvzaa/back.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfmclpuc5/back.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmt912jg4/src.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplu56sovm/src.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmt912jg4/src.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplu56sovm/src.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmt912jg4/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplu56sovm/dst.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmt912jg4/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmplu56sovm/dst.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqbrglw4l/src.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprzd686rk/src.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqbrglw4l/src.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprzd686rk/src.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqbrglw4l/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprzd686rk/dst.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpqbrglw4l/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprzd686rk/dst.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp08sctpnx/src.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj3_xloo2/src.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp08sctpnx/src.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj3_xloo2/src.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp08sctpnx/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj3_xloo2/dst.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp08sctpnx/dst.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpj3_xloo2/dst.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ./Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/out/mika-milfy.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/perturbed.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/perturbed.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/selftest.py:38: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/perturbed.parts.json' mode='r' encoding='UTF-8'>
+/Users/charles/portfolio/scripts/avatar/selftest.py:38: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/perturbed.parts.json' mode='r' encoding='UTF-8'>
   manifest = json.load(open(manifest_path))
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/perturbed.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/perturbed.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/customise.py:871: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/perturbed.parts.json' mode='r' encoding='UTF-8'>
+/Users/charles/portfolio/scripts/avatar/customise.py:871: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/perturbed.parts.json' mode='r' encoding='UTF-8'>
   manifest = json.load(open(manifest_path))
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/selftest.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/selftest.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/customise.py:895: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/selftest.parts.json' mode='w' encoding='UTF-8'>
+/Users/charles/portfolio/scripts/avatar/customise.py:895: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/selftest.parts.json' mode='w' encoding='UTF-8'>
   json.dump(manifest, open(manifest_out, 'w'), indent=1)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/selftest.py:83: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/selftest.parts.json' mode='r' encoding='UTF-8'>
+/Users/charles/portfolio/scripts/avatar/selftest.py:83: ResourceWarning: unclosed file <_io.TextIOWrapper name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/selftest.parts.json' mode='r' encoding='UTF-8'>
   after = json.load(open(out_manifest))
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp207_sbgx/selftest.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpfct2smy4/selftest.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ..../Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-12.vrm'>
@@ -244,54 +244,54 @@ ResourceWarning: Enable tracemalloc to get the object allocation traceback
 /Users/charles/portfolio/scripts/avatar/spring_test.py:44: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-12.parts.json' mode='r' encoding='UTF-8'>
   cls.manifest = json.load(open(MODEL.replace('.vrm', '.parts.json')))['parts']
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-................../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpb65c8vln/skins.glb'>
+................../Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpwfc5b0hx/skins.glb'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpb65c8vln/skins.glb'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpwfc5b0hx/skins.glb'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmhju6yb2/model.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_7eoe2y7/model.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpmhju6yb2/model.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp_7eoe2y7/model.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp0uvu3b6d/model.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp5efv4nt0/model.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp0uvu3b6d/model.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp5efv4nt0/model.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ./Users/charles/portfolio/scripts/avatar/verify_test.py:69: ResourceWarning: unclosed file <_io.TextIOWrapper name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-milfy-12.parts.json' mode='r' encoding='UTF-8'>
   manifest = json.load(open(SHIPPED.replace('.vrm', '.parts.json')))
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp26zp5yjs/snapped.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpk28jacku/snapped.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp26zp5yjs/snapped.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpk28jacku/snapped.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprbiuafxe/snapped.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp2pvmo3zc/snapped.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmprbiuafxe/snapped.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmp2pvmo3zc/snapped.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 .........................../Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/Users/charles/portfolio/scripts/avatar/../../public/avatar/mika-pink.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmph4i7gqlm/twin.vrm'>
+./Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpyhmf70_9/twin.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmph4i7gqlm/twin.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:44: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpyhmf70_9/twin.vrm'>
   raw = open(path, 'rb').read()
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
-/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmph4i7gqlm/base-vrm0.vrm'>
+/Users/charles/portfolio/scripts/avatar/glb.py:230: ResourceWarning: unclosed file <_io.BufferedWriter name='/var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/tmpyhmf70_9/base-vrm0.vrm'>
   open(path, 'wb').write(glb)
 ResourceWarning: Enable tracemalloc to get the object allocation traceback
 ......................................
 ----------------------------------------------------------------------
-Ran 247 tests in 8.665s
+Ran 247 tests in 10.992s
 
 OK
   gate 53: compare=[] bones=53 required_missing=[]

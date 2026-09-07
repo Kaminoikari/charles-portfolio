@@ -1,11 +1,12 @@
 // Run: npx tsx scripts/avatar/evidence/seed-0907-meshes.ts
 //
 // What geometry is actually in Seed-san, and where does it sit in bind pose?
-// The clearance producer read a column crown projection of 2.2274 on a body
-// 1.5800 tall, and the furthest-forward node above head height during `spin` is
-// `robo_f_pinky.03.L` at z=1.547 -- a bone that is not part of the humanoid
-// rig. If drawn geometry hangs off bones like that, every measurement taken on
-// this file is measuring more than the avatar.
+// A `springsim --clearance` run on this 1.5800m body projected a crown far in
+// front of it (that run's log was not kept, so its figure is not quoted), and
+// seed-0907-probe.log then found the furthest-forward node above head height
+// during `spin`: `robo_f_pinky.03.L` at z=1.547, a bone that is not part of the
+// humanoid rig. If drawn geometry hangs off bones like that, every measurement
+// taken on this file is measuring more than the avatar.
 import { readFileSync } from 'node:fs'
 import { parseGlb, readAccessorRows, type GltfJson } from '/Users/charles/portfolio/src/components/chat/vrmHumanoid.ts'
 

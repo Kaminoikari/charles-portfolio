@@ -1,6 +1,7 @@
-// The clearance of the VRoid AvatarSample_B family: the three bodies in
-// avatarVariants.ts (pink, milfy, base), which share one rig
-// (avatarVariants.test.ts holds every declared body to this file's rigSha).
+// The clearance of the VRoid AvatarSample_B family: the three OFFERED bodies in
+// avatarVariants.ts (pink, milfy, base), which share one rig. Since 2026-09-07
+// the registry also declares a body of another family, so avatarVariants.test.ts
+// holds each body to ITS OWN family's rigSha rather than to this file's.
 //
 // The two generated halves are measurements (see clearance.ts for who writes
 // them). Everything typed here is a decision, and each one is held to a

@@ -130,8 +130,9 @@ the same two clips. Side by side (`evidence/family2-0907-ends-*.log`):
 Both drift numbers are 1.034× the first family's, which is the ratio of the two
 bodies' resting hips (0.9081 against 0.8782): `applyMotion` scales a clip's hips
 track by rest height, so the same clip walks 3.4% further to the side on the
-taller body. The deepest face frame is the same frame on both, t=8.23s against
-t=8.22s. This family declares its own four, measured on it.
+taller body. The deepest face frame lands one 60Hz sample apart, t=8.23s here
+against t=8.22s there — at `rigProbe.SAMPLE_HZ` those are neighbours, not one
+frame. This family declares its own four, measured on it.
 
 Nothing is excluded: every clip in the pool clears this body's frames once its
 pan is applied.
@@ -170,11 +171,14 @@ One more thing nothing was watching: `clips[*].reach` has no reader — only
 `waiver.reach` is read — so this family's generated half sat mirrored, written
 before `screenX` stopped assuming a 0.x body. Ten pairs, values right and labels
 backwards. The frame guard now re-measures and compares against what the
-producer wrote, which reddens ten tests on the stale file (mutation F10).
+producer wrote. Mutation F10 reverts one pair and reddens one test; the file as
+it shipped, all ten pairs mirrored, reddens ten. Both counted:
+`evidence/family2-0907-reach-counts.log`.
 
 Receipts: `evidence/family2-0907-mutate.py` (F1–F10, nine RED and one GREEN
 control), `family2-0907-space.log`, `family2-0907-ends-*.log`,
-`family2-0907-pans.log`, `family2-0907-table.log`, `family2-0907-bundle.log`.
+`family2-0907-pans.log`, `family2-0907-table.log`, `family2-0907-bundle.log`,
+`family2-0907-reach-counts.log`.
 
 ## The body this replaced, and why
 

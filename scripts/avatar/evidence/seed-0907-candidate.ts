@@ -5,7 +5,8 @@
 // 1.21m robot arm off 32 bones no humanoid entry claims, so it is outside the
 // frame in bind pose and no honest clearance file exists for it under the
 // site's compositions. The sideways guard measures humanoid JOINTS, which is
-// why that never showed up until the crown (a vertex measure) read 2.2274.
+// why that never showed up until the crown -- a VERTEX measure -- projected far
+// in front of the body during `spin`.
 import { readFileSync } from 'node:fs'
 import * as THREE from 'three'
 
