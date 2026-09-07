@@ -34,6 +34,7 @@ TWIST = CHAT / 'clearance' / 'vrm1-twist-sample.ts'
 AV = CHAT / 'avatarVariants.ts'
 AVT = CHAT / 'avatarVariants.test.ts'
 AVCT = CHAT / 'avatarVariantChoice.test.ts'
+GEN = CHAT / 'clearance' / 'vrm1-twist-sample.measured.gen.ts'
 
 
 def t(path, title):
@@ -72,18 +73,29 @@ MUTATIONS = [
     ('F9', AV, "  return OFFERED_VARIANTS.some((v) => v.id === id)\n",
      "  return AVATAR_VARIANTS.some((v) => v.id === id)\n", CHOICE,
      "the ?mika= and localStorage gate reads the OFFERED half, so a declared-but-unoffered body cannot be asked for by hand"),
-    # ---- the negative controls ----------------------------------------------
-    # F7 makes the confession in screenX's docblock checkable. Every caller
-    # today reads both edges against the same budget, so reversing the mirror
-    # cannot redden anything -- said in the comment, and proved here.
+    # ---- a generated half cannot drift from its own producer ----------------
+    # Nothing reads clips[*].reach (only waiver.reach is read), so this file went
+    # stale against measure-motions and no guard noticed: it was written before
+    # screenX stopped assuming a 0.x body, so all ten reach pairs were recorded
+    # mirrored. Values right, labels wrong. The guard re-measures and compares.
+    ('F10', GEN, '        "left": 0.6428,\n        "right": 0.5074\n',
+     '        "left": 0.5074,\n        "right": 0.6428\n', EDGES,
+     "each family's generated reach is re-measured against its producer, so a .gen.ts that drifts from the code that writes it is caught"),
+    # F7 was written as a GREEN control, on the claim that every caller reads
+    # both edges against one budget so the mirror cancels. F10's guard made that
+    # false in the same afternoon: comparing the measured edges against the
+    # producer's recorded left/right is a caller that tells them apart. Kept as a
+    # RED row rather than deleted, because "which edge is which" is now a fact
+    # with a guard, and that is worth a receipt.
     ('F7', RP, "  return forwardZ(rig) === -1 ? -probeX : probeX\n",
      "  return forwardZ(rig) === -1 ? probeX : -probeX\n", EDGES,
-     "screenX's mirror is unobservable to every caller it has: both edges are read against the same budget (expected GREEN, and the docblock says so)"),
+     "screenX's mirror decides which edge is which, and the frame guard compares both against the sides the producer recorded"),
+    # ---- the negative control ------------------------------------------------
     ('F8', TWIST, "    spin: { column: 0.05 },\n", "    spin: { column: 0.05, },\n", PANS,
      'a formatting-only edit must NOT redden the pan guard'),
 ]
 
-GREEN_EXPECTED = {'F7', 'F8'}
+GREEN_EXPECTED = {'F8'}
 
 
 def sha(p):

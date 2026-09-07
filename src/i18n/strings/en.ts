@@ -69,8 +69,10 @@ interface Strings {
       dance: string; peaceSign: string; modelPose: string; spin: string; squat: string
       akimbo: string; playFingers: string; scratchHead: string; idleLoop: string; stretch: string
     }
-    // The look strip above the motions. Keyed by AvatarVariantId so a body
-    // declared in avatarVariants without a label here fails to compile.
+    // The look strip above the motions. Keyed by OfferedVariantId -- an
+    // OFFERED body without a label here fails to compile. A body the registry
+    // declares without offering (avatarVariants `offered: false`) is deliberately
+    // absent: the strip never shows it, so it has nothing to be called.
     looksLabel: string
     looksAriaLabel: string
     looks: { pink: string; milfy: string; base: string }

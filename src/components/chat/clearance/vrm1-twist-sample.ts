@@ -50,8 +50,8 @@ const DECISIONS: ClearanceDecisions = {
   //
   // THREE passes. A pan changes the projection it was derived from, so the
   // derivation is re-run until a pass changes nothing; the second pass here
-  // moved two of them a centimetre (spin's column 0.07 -> 0.05, stretch's
-  // waist-up 0.08 -> 0.07) and the third agreed everywhere. The first family
+  // moved spin's column two centimetres (0.07 -> 0.05) and stretch's waist-up
+  // one (0.08 -> 0.07), and the third agreed everywhere. The first family
   // settled on its first pass.
   //
   // Receipt: evidence/family2-0907-pans.log is the SETTLED table, which is what
@@ -95,8 +95,9 @@ const DECISIONS: ClearanceDecisions = {
   // the two bodies' resting hips: 0.9081 here against 0.8782 there.
   // `applyMotion` scales a clip's hips track by rest height, so the same clip
   // walks 3.4% further to the side on the taller body. The deepest face frame
-  // is the same frame on both (t=8.23s here, t=8.22s there). None of this is
-  // the body failing to wear the clip; it is the clip, seen twice.
+  // lands one 60Hz sample apart (t=8.23s here, t=8.22s there, which at
+  // rigProbe.SAMPLE_HZ are neighbours). None of this is the body failing to
+  // wear the clip; it is the clip, seen twice.
   //
   // Budgets are the measurement with a hair of room, the way the first family's
   // are, and rigProbe.test.ts reddens on any of them the clip stops needing.

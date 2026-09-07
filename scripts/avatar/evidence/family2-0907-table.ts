@@ -21,7 +21,7 @@ import path from 'node:path'
 
 import * as THREE from 'three'
 
-import { buildRig, deriveRestCrown, type Rig } from '/Users/charles/portfolio/src/components/chat/rigProbe.ts'
+import { buildRig, deriveFingerSkinRadius, deriveRestCrown, type Rig } from '/Users/charles/portfolio/src/components/chat/rigProbe.ts'
 import { parseGlb, readAccessorRows, readHumanoid, rigOf, type GltfJson } from '/Users/charles/portfolio/src/components/chat/vrmHumanoid.ts'
 import { AVATAR_VARIANTS } from '/Users/charles/portfolio/src/components/chat/avatarVariants.ts'
 
@@ -117,7 +117,10 @@ for (const row of ROWS) {
     `  expressions     ${v0 ? `${v0.length} VRM0 blendShapeGroups` : ''}${v1 ? `${Object.keys(v1).length} VRM1 presets` : ''}`,
   )
 
-  console.log(`  resting crown   ${deriveRestCrown(glb, rig).toFixed(4)}`)
+  console.log(
+    `  resting crown   ${deriveRestCrown(glb, rig).toFixed(4)}   ` +
+      `finger skin past the tip joint ${(deriveFingerSkinRadius(glb, rig) * 1000).toFixed(1)}mm`,
+  )
 
   // The widest DRAWN vertex, in bind pose, against the frame's half width. The
   // sideways guard measures humanoid JOINTS, so geometry hanging off bones no

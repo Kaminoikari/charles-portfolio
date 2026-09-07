@@ -10,8 +10,9 @@ import { STRINGS } from '../../i18n/strings'
 import type { Locale } from '../../i18n/config'
 import { MotionStrip } from './MotionStrip'
 import { IDLE_MOTIONS, motionsFor, type AvatarMotionName } from './avatarMotions'
-// The one family declared today. Every body in the registry belongs to it,
-// so the strip's contents are the same whichever variant is on screen.
+// The family every OFFERED body belongs to. The registry declares a second one
+// (`vrm1-twist-sample`) that no visitor can select, and it excludes no clip
+// either, so the strip's contents are the same whichever variant is on screen.
 const FAMILY = 'vroid-sample-b' as const
 
 function draw(

@@ -1,0 +1,16 @@
+# The eager index chunk, one commit apart. Produced by:
+#   npx vite build                                  (HEAD)
+#   git checkout HEAD~1 -- src/ && npx vite build    (the commit before)
+#   git checkout HEAD -- src/
+# vite only, not npm run build: HEAD~1's src does not type-check against the
+# new clearance files, which stay on disk because a path checkout does not
+# delete them. They are unimported there, so they are not bundled either.
+
+$ git log --oneline -1
+1e4b0fa feat(avatar): put a second rig family in the registry, and find out the probe was reading it through the first one's axes
+
+== HEAD~1 (before this change) ==
+dist/assets/index-B95WGMGx.js              939.46 kB │ gzip: 345.79 kB
+
+== HEAD (this change) ==
+dist/assets/index-BgV_B5ho.js              943.83 kB │ gzip: 346.90 kB

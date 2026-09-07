@@ -173,10 +173,16 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // is unnecessary, so serving it carries no obligation.
   //
   // NOT offered. It is a different character, and this site has one. What it is
-  // for is that the per-family paths -- motionsFor, motionPan, crownBound,
-  // panFor, every guard in rigProbe.test.ts -- now run against a rig that is
+  // for is that motionPan, crownBound, panFor and the 70 guards of
+  // rigProbe.test.ts's `bundled motions` block now run against a rig that is
   // not the one they were written against, which is the only way to tell a
   // generalised layer from one that happens to work on the body it grew up on.
+  //
+  // Two things it does NOT exercise, said here rather than assumed: `motionsFor`
+  // is never called with this family (nothing offers the body, so no runtime
+  // path reaches it, and the picker tests run on the first family's id), and
+  // the other 54 tests in that file sit outside the per-family block and still
+  // read AvatarSample_B only.
   { id: 'twist', label: 'VRM1 樣本（不對外）', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', offered: false },
 ]
 

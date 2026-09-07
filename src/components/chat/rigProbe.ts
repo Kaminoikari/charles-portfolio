@@ -690,10 +690,12 @@ function worldPosition(rig: Rig, bone: string): THREE.Vector3 {
  * are cropped differently: the column canvas overhangs the viewport on the
  * viewer's right, which on a 0.x body is negative x here.
  *
- * Every caller today reads both edges against the same budget, so the mirror
- * cancels and nothing would redden if this had the sign backwards. It is the
- * sign the space above promises all the same, and the first caller to crop the
- * two edges differently will be the one that needs it.
+ * Until 2026-09-07 this had no guard at all: every caller read both edges
+ * against the same budget, so the mirror cancelled and reversing the sign
+ * reddened nothing. It is load-bearing now, because the frame guard compares
+ * the two edges it measures against the left and right the producer wrote into
+ * the clearance file, and those are not interchangeable. Mutation F7 reverses
+ * it and turns ten tests red.
  */
 export function screenX(rig: Rig, probeX: number): number {
   return forwardZ(rig) === -1 ? -probeX : probeX

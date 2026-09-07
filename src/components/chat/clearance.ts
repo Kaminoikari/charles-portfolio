@@ -405,9 +405,10 @@ export function panRange(
   // composition that has moved since makes them somebody else's numbers.
   const view = avatarViewSpan(file.framings.frames[frame], file.framings.fov)
   // A crownTop waiver is the owner having looked at this clip going past the
-  // top edge and accepted it, so it RAISES the ceiling -- three of the ten
-  // carry one, and deriving a pan against the unwaived edge would give every
-  // one of them a camera move nobody asked for.
+  // top edge and accepted it, so it RAISES the ceiling -- three of the VRoid
+  // family's ten carry one (the second family carries none), and deriving a pan
+  // against the unwaived edge would give every one of them a camera move nobody
+  // asked for.
   //
   // It raises and never lowers. Until 2026-09-07 it replaced the edge outright,
   // and every one of these waivers was decided on the COLUMN framing, against
@@ -427,7 +428,8 @@ export function panRange(
  * The pan a clip should be given in a frame, to the centimetre the
  * compositions are dialled in.
  *
- * Zero whenever zero fits, which is seven of the ten: a frame that does not
+ * Zero whenever zero fits, which is seven of the VRoid family's ten and one of
+ * the VRM1 sample's: a frame that does not
  * have to move should not move, and the eased slide in and out is a thing the
  * visitor sees. When zero does not fit, the frame's policy picks a point in
  * the range that does.

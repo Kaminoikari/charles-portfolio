@@ -56,8 +56,10 @@ import {
   type MotionFrame,
 } from './avatarMotions'
 
-// The family every declared body belongs to, and the one whose clearance this
-// file reads. motionsFor takes it because a second rig can exclude a clip.
+// The FIRST family, and the one the tests outside the `bundled motions` block
+// read. That block runs per family (describe.each below); everything else here,
+// this constant included, is the VRoid rig only. motionsFor takes a family
+// because a second rig can exclude a clip.
 const FAMILY = CLEARANCE.family as AvatarFamilyId
 
 const asset = (...parts: string[]): Uint8Array =>
@@ -653,6 +655,18 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       expect(screenRight, `${name} reach to the viewer's right in ${placement}`).toBeLessThan(
         reachBudget ?? frame.halfWidth,
       )
+      // And the same two numbers as the producer wrote them down. Nothing else
+      // reads `clips[*].reach` -- only the waiver above is read -- so a
+      // generated half can go stale against its own producer and no guard
+      // notices. One did: the second family's file was written before screenX
+      // stopped assuming a 0.x body faces the camera mirrored, so all ten of
+      // its reach pairs were recorded the wrong way round. The values were
+      // right and the labels were not, which is exactly the kind of thing that
+      // survives review. Rounded because the producer writes four places.
+      const wrote = CLEARANCE.clips[name].reach
+      const round4 = (v: number): number => Math.round(v * 1e4) / 1e4
+      expect(round4(screenLeft), `${name} reach.left as ${FAMILY}'s producer wrote it`).toBe(wrote.left)
+      expect(round4(screenRight), `${name} reach.right as ${FAMILY}'s producer wrote it`).toBe(wrote.right)
       // Against the top of her SKIN, not of her skeleton. Clearing the joint
       // alone is what the first attempt at the raised-hand fix did, and it
       // still rendered a cut hand: see SKIN_ABOVE_JOINT.

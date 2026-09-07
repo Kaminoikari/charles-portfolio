@@ -42,21 +42,31 @@ provenance is worth keeping, not because the licence demands it.
 
 ## Why this body
 
-Read out of the two files by `scripts/avatar/evidence/family2-0907-table.ts`
-(receipt `family2-0907-table.log`), which counts each row the same way on both
-versions so the columns compare one question:
+Read out of the files themselves by
+`scripts/avatar/evidence/family2-0907-table.ts` (receipt
+`family2-0907-table.log`), which counts each row the same way on both versions
+so a column compares one question. Per BODY, not per family: half of these are
+not what a family holds constant, and the two VRoid bodies below prove it.
 
-| property | this body | the VRoid family |
-|---|---|---|
-| rigSha (`rigOf`) | `fd3a65952d9bce0a…` | `e2aad79ec6667a55…` |
-| VRM version | **1.0**, `VRMC_vrm` + `VRMC_springBone`, +Z forward | 0.x, −Z |
-| non-identity humanoid rest rotations | **28 of 54**, up to 120° | 0 of 54 |
-| spring chains | 22 | 11 |
-| collider shapes / groups | 13 / 12 | 28 / 12 |
-| expressions | 18 VRM1 presets | 15 VRM0 blendShapeGroups |
-| resting crown | 1.6154 | 1.5820 |
-| widest drawn vertex | 0.6945 (47mm spare) | 0.6670 (74mm spare) |
-| finger skin past the tip joint | 25.7mm | 18.0mm |
+| property | `twist` | `base` / `pink` | `milfy` |
+|---|---|---|---|
+| rigSha (`rigOf`) | `fd3a65952d9bce0a…` | `e2aad79ec6667a55…` | `e2aad79ec6667a55…` |
+| VRM version | **1.0**, `VRMC_vrm` + `VRMC_springBone`, +Z forward | 0.x, −Z | 0.x, −Z |
+| non-identity humanoid rest rotations | **28 of 54**, up to 120° | 0 of 54 | 0 of 54 |
+| spring chains | 22 | 11 | 4 |
+| collider shapes / groups | 13 / 12 | 28 / 12 | 202 / 17 |
+| expressions | 18 VRM1 presets | 15 VRM0 blendShapeGroups | 15 VRM0 blendShapeGroups |
+| resting crown | 1.6154 | 1.5820 | 1.5757 |
+| widest drawn vertex | 0.6945 (47mm spare) | 0.6670 (74mm spare) | 0.6670 (74mm spare) |
+| finger skin past the tip joint | 25.7mm | 18.0mm | 18.0mm |
+
+The last two columns are ONE family and disagree on three rows: spring chains,
+colliders, and the resting crown. That is the point of the split the registry
+makes — `rigOf` hashes the skeleton, so springs, colliders and hair length are
+free to differ inside a family, and the numbers that depend on them (the crown
+above all) are measured per body. Milfy's 4 chains against 11 is a rebuild with
+its own twin tails, not a lighter body. The six rows they agree on are the ones
+`rigOf` covers or that follow from the same mesh.
 
 "Non-identity" is measured as an ANGLE. Comparing the rotation array against
 `[0,0,0,1]` counts 26 more bones on this body than are actually turned: files
@@ -92,9 +102,12 @@ argued (`evidence/family2-0907-space.ts`):
 | twist 1.0 | +21.4mm | +103.0mm | +Z |
 
 `screenX` carried the same 0.x assumption and is fixed with it, but it is not
-one of the five: nothing would have reddened, because every caller reads both
-screen edges against the same budget and the mirror cancels. Mutation F7 is that
-statement, checked. The header's sideways axis had the same bug in prose — it
+one of the five: at the time nothing would have reddened, because every caller
+read both screen edges against the same budget and the mirror cancelled. That
+stopped being true later the same day — the guard added for the stale generated
+half compares each measured edge against the side the producer recorded, which
+tells them apart — so F7 is a RED row now rather than the GREEN control it was
+written as. The header's sideways axis had the same bug in prose — it
 declared `+X = her right` flatly, when her left eye sits at x −0.018 on the
 VRoid body and +0.017 on this one.
 
@@ -102,9 +115,10 @@ VRoid body and +0.017 on this one.
 `AvatarSample_B_webp.vrm` by hand, so the second family was being asked whether
 its clearance matched the FIRST family's rig. It reads `fam.body` now.
 
-**Two were the clip, seen on a second body.** `dance` and `idleLoop` broke the
-end-pose budgets, and the first family waives the same four numbers on the same
-two clips. Side by side (`evidence/family2-0907-ends-*.log`):
+**Three were the clip, seen on a second body** — two clips, but `dance` reddens
+two separate guards, the face one and the end-pose one. `dance` and `idleLoop`
+broke the end-pose budgets, and the first family waives the same four numbers on
+the same two clips. Side by side (`evidence/family2-0907-ends-*.log`):
 
 | clip | measure | this body | VRoid (waived to) |
 |---|---|---|---|
@@ -126,7 +140,7 @@ pan is applied.
 the report whose stated job is telling you whether a new body can keep the clip
 pack was withholding two of the four numbers that decide it. It prints all three
 end-pose measurements now, against the budget actually in force, and it found a
-fifth failure the unit test could not reach: `dance`'s end wrist at 1.2358, which
+SIXTH failure the unit test could not reach: `dance`'s end wrist at 1.2358, which
 sits behind an assertion that never ran because the drift assertion above it
 failed first. `MAX_END_DRIFT` and `MAX_END_WRIST` moved to `avatarMotions.ts`
 beside `MAX_HIPS_SINK` so the guard and the report read one copy.
@@ -135,22 +149,32 @@ beside `MAX_HIPS_SINK` so the guard and the report read one copy.
 
 A body no visitor can select still ships to every visitor, because
 `AVATAR_FAMILIES` is imported eagerly and each family's clearance is three
-modules of numbers. Measured as two `vite build` runs one commit apart:
+modules of numbers. Two `vite build` runs one commit apart, receipt
+`evidence/family2-0907-bundle.log`:
 
-| | raw | gzip |
+| eager index chunk | raw | gzip |
 |---|---|---|
-| before | 939.46 kB | 345.79 kB |
-| after | 943.83 kB | 346.90 kB |
-| this family | **+4.37 kB** | **+1.11 kB** |
+| `HEAD~1` | 939.46 kB | 345.79 kB |
+| `1e4b0fa` | 943.83 kB | 346.90 kB |
+| difference | **+4.37 kB** | **+1.11 kB** |
 
-That is the price of the second rig being a real declaration rather than a
-fixture, and it is worth naming because it grows with every family added. The
+That is the whole commit, not the clearance file alone: the same chunk also
+carries this change's edits to `rigProbe`, `avatarMotions`, `clearance`,
+`avatarVariants`, `LookStrip` and `ChatWidget`. Most of it is the second
+family's three clearance modules, and it is worth naming because it grows with
+every family added. The
 `.vrm` itself (10.8 MB) costs nothing until something asks for it: bodies are
 fetched by URL at runtime, and nothing offers this one.
 
-Receipts: `evidence/family2-0907-mutate.py` (F1–F9, seven RED and two GREEN
-controls), `family2-0907-space.log`, `family2-0907-ends-*.log`,
-`family2-0907-pans.log`, `family2-0907-table.log`.
+One more thing nothing was watching: `clips[*].reach` has no reader — only
+`waiver.reach` is read — so this family's generated half sat mirrored, written
+before `screenX` stopped assuming a 0.x body. Ten pairs, values right and labels
+backwards. The frame guard now re-measures and compares against what the
+producer wrote, which reddens ten tests on the stale file (mutation F10).
+
+Receipts: `evidence/family2-0907-mutate.py` (F1–F10, nine RED and one GREEN
+control), `family2-0907-space.log`, `family2-0907-ends-*.log`,
+`family2-0907-pans.log`, `family2-0907-table.log`, `family2-0907-bundle.log`.
 
 ## The body this replaced, and why
 
@@ -164,14 +188,17 @@ Seed-san draws a **1.21m robot arm** (`robo_arm`, 3,795 vertices) rigged to 32
 bones that no humanoid entry claims. Nothing retargets those bones; the arm
 rides its humanoid parent rigidly. In bind pose, before any clip plays, its
 outermost vertex is **1.2135 screen units against a 0.7415 half-width budget**,
-so 472mm of it is outside the frame. Every body already here sits at 0.6670.
+so 472mm of it is outside the frame. The widest thing on any body the registry
+declares is 0.6945, and on the three VRoid bodies it is 0.6670.
 
 `measure-motions` never said so, because the sideways guard measures humanoid
 JOINTS (`rigProbe.silhouetteJoints`) and the robot arm has none. What did notice
-was the crown, which is a VERTEX measure: `springsim` read this body's `spin`
-crown at 2.2274 through the column camera against a world crown of 1.6115,
-which is a drawn vertex 1.24m in front of the body. That number is correct; the
-arm really is out there. Receipts: `scripts/avatar/evidence/seed-0907-probe.ts`
+was the crown, which is a VERTEX measure: a `springsim --clearance` run on this
+body projected a crown far in front of it, which is what sent me looking. That
+run's log was not kept, so the figure it printed is deliberately not quoted
+here; what is quoted below is measured by probes whose logs are beside them, and
+they are enough on their own — a bone at z=1.547 above head height, and a drawn
+vertex 472mm outside the frame. Receipts: `scripts/avatar/evidence/seed-0907-probe.ts`
 (the furthest-forward node above head height, `robo_f_pinky.03.L` at z=1.547),
 `seed-0907-meshes.ts` (the mesh bounds, and 32 `robo*` nodes of which 0 are in
 the humanoid map), `seed-0907-candidate.ts` (the silhouette against the budget).

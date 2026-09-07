@@ -8,7 +8,7 @@
   humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
   spring chains   11   collider shapes 28   collider groups 12
   expressions     15 VRM0 blendShapeGroups
-  resting crown   1.5820
+  resting crown   1.5820   finger skin past the tip joint 18.0mm
   widest vertex   0.6670 on Body (807,578 drawn) vs 0.7415 half width: 74mm spare
   skins           3   joints outside the humanoid map: 71
 
@@ -21,7 +21,7 @@
   humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
   spring chains   4   collider shapes 202   collider groups 17
   expressions     15 VRM0 blendShapeGroups
-  resting crown   1.5757
+  resting crown   1.5757   finger skin past the tip joint 18.0mm
   widest vertex   0.6670 on Body (89,645 drawn) vs 0.7415 half width: 74mm spare
   skins           3   joints outside the humanoid map: 85
 
@@ -34,7 +34,7 @@
   humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
   spring chains   11   collider shapes 28   collider groups 12
   expressions     15 VRM0 blendShapeGroups
-  resting crown   1.5820
+  resting crown   1.5820   finger skin past the tip joint 18.0mm
   widest vertex   0.6670 on Body (807,578 drawn) vs 0.7415 half width: 74mm spare
   skins           3   joints outside the humanoid map: 71
 
@@ -47,7 +47,7 @@
   humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 28/28/28/16   max 120.00deg
   spring chains   22   collider shapes 13   collider groups 12
   expressions     18 VRM1 presets
-  resting crown   1.6154
+  resting crown   1.6154   finger skin past the tip joint 25.7mm
   widest vertex   0.6945 on Body (24,951 drawn) vs 0.7415 half width: 47mm spare
   skins           3   joints outside the humanoid map: 100
 
@@ -60,6 +60,6 @@
   humanoid bones  51   rest rotation over 0deg/0.1deg/1deg/5deg: 51/51/49/40   max 179.99deg
   spring chains   9   collider shapes 8   collider groups 2
   expressions     18 VRM1 presets
-  resting crown   1.5800
+  resting crown   1.5800   finger skin past the tip joint 13.4mm
   widest vertex   1.2135 on robo_arm (34,059 drawn) vs 0.7415 half width: 472mm OUTSIDE
   skins           5   joints outside the humanoid map: 77
