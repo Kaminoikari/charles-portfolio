@@ -216,3 +216,27 @@ joint proxy has no skin allowance at all, while the vertical one adds
 inside the budget with 47mm or more to spare (`family2-0907-table.log`), so
 nothing is cropped today; a body whose silhouette is not its joints would not be
 caught.
+
+## What PASS means here
+
+Three rounds of review produced six FAIL verdicts and one code defect (the
+mirrored `reach` pairs, `2f27c0c`). The other findings were prose, and roughly
+half of each round's were made by the previous round's fixes. "Neither reviewer
+can find anything" is not a condition that terminates, so from round four the
+bar is written down instead:
+
+- **Gate A — mechanical.** `npx vitest run`, `npm run build`, `pytest`, and
+  `family2-0907-mutate.py` all green, with the harness's ten rows reading nine
+  RED and F8 GREEN and every restore sha256-verified. Receipts are the `.log`
+  files in `scripts/avatar/evidence/`.
+- **Gate B — scope and grade.** Reviewers read `9f47b0e..HEAD` and nothing
+  else, and grade each finding BLOCKING (a reader would act wrongly on it, or
+  shipped behaviour is wrong) or ADVISORY (taste, wording, a suggestion).
+  **PASS is zero BLOCKING.** ADVISORY findings are recorded here and not fixed.
+- **Gate C — no new prose.** A round's fixes may correct an existing sentence
+  or delete one. Adding a paragraph, a number without a `.log` beside it, or a
+  count nobody ran is what kept rounds two and three alive.
+
+A number in this document or in a comment is BLOCKING only if a receipt in
+`scripts/avatar/evidence/` contradicts it. If nothing measured it, the fix is to
+delete the number, and the finding is ADVISORY.
