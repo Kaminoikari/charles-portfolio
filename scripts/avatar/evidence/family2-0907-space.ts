@@ -2,15 +2,19 @@
 //
 // Does rigProbe's coordinate space hold on the second family?
 //
-// rigProbe's header fixes the probe space at "-Z = FORWARD, toward the viewer"
-// and cites one body's eyes and toes as the measurement behind it. Two of its
-// probes depend on that, and a third depends on the hand's rest frame:
+// When this was written rigProbe's header fixed the probe space at "-Z =
+// FORWARD, toward the viewer" and cited one body's eyes and toes as the
+// measurement behind it. Two of its probes depended on that, and a third on the
+// hand's rest frame:
 //
-//   CAMERA_DIR (0,0,-1)   palmToViewer dots against it
-//   screenX(x) = -x       the sideways edges are read through it
+//   CAMERA_DIR (0,0,-1)   palmToViewer dotted against it
+//   screenX(x) = -x       the sideways edges were read through it
 //   PALM_REST (0,-1,0)    the palm normal in the HAND BONE's own frame,
 //                         which is only the palm normal if that bone rests
 //                         unrotated
+//
+// The first two are what this run disproved: they are now `cameraDir(rig)` and
+// `screenX(rig, x)`, both deriving the sign from the body's VRM version.
 //
 // This prints, per declared body, the same measurements the header cites, plus
 // the hand rest rotation and a palm normal derived from the hand's own geometry

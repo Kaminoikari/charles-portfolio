@@ -126,8 +126,10 @@ const DECISIONS: ClearanceDecisions = {
   // needed one while the crown came from the Milfy body. The number the guard
   // reads for playFingers in the column goes 1.6053 (the 2026-08-20 browser
   // sweep) to 1.6143, and waist-up 1.5913 (the transfer) to 1.6220, so panFor's
-  // "smallest lift that clears" answers 2cm; scratchHead is the same story one
-  // millimetre lower. The alternative was to widen their crownTop waivers, from
+  // "smallest lift that clears" answers 2cm; scratchHead is the same story at
+  // 1.6068 to 1.6142 in the column and 1.5913 to 1.6185 waist-up, and answers
+  // 2cm too (crown-0907-headroom.log). The alternative was to widen their
+  // crownTop waivers, from
   // 1.606 to 1.6138 and from 1.607 to 1.6139, and keep the camera still -- an
   // owner's call rather than a derivation, so the derived pan is what ships
   // until that call is made.

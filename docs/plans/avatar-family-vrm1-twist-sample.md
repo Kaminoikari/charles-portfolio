@@ -240,3 +240,22 @@ bar is written down instead:
 A number in this document or in a comment is BLOCKING only if a receipt in
 `scripts/avatar/evidence/` contradicts it. If nothing measured it, the fix is to
 delete the number, and the finding is ADVISORY.
+
+Round four returned **PASS from both reviewers, zero BLOCKING**. Two of the five
+ADVISORY findings were sentences a receipt contradicted, so they were corrected:
+`vroid-sample-b.ts`'s "scratchHead is the same story one millimetre lower" (the
+three pairs in `crown-0907-headroom.log` differ by 1.5mm, 0.1mm and 3.5mm, and
+in two directions) and `family2-0907-space.ts`'s header, which described
+`CAMERA_DIR` and `screenX(x) = -x` in the present tense after this very run had
+replaced them. A third was the Gate A sentence above pointing at a build receipt
+that did not exist; `family2-0907-build.log` is that receipt.
+
+**Recorded and not fixed**, per Gate B:
+
+- `clearance.ts:274` rejects a waiver or a `crownSeen` entry naming a clip no
+  producer measured, but `pans`, added on 2026-09-07, is not in that list. A pan
+  declared for a clip outside the pool is a silent dead key. Declaring the wrong
+  VALUE, or none at all, is still caught by the derivation guard.
+- `rigProbe.test.ts:530` runs once per family over `crownSeen`, which is empty
+  for this one, so that guard asserts nothing on the second family. Nothing has
+  rendered this body; the emptiness is the honest state, not a gap in coverage.
