@@ -581,6 +581,27 @@ def sink(pieces, surface, embed=0.006, radius=0.020, limit=0.032):
             fall)
 
 
+# Where the waist is looked for, and how finely, as fractions of the body's own
+# hips→shoulder span. They were absolute heights (search 0.88 to 1.16 in 1cm
+# steps, averaging over a 12mm slab) until 2026-09-07, read once off this VRoid
+# body. On a body 20% shorter the real waist sits at 0.768, below the bottom of
+# that band, and the search returned 1.020 — a height on the chest — without
+# failing: the narrowest slice that happened to fall inside a band the body had
+# outgrown. Both a 0.8x and a 1.25x body returned the same 1.020
+# (evidence/scale-0907.log), which is the signature of an answer that came from
+# the constant rather than from the body.
+#
+# The fractions are the old band expressed against this body's span, so its
+# sample grid is unchanged to 0.2µm and every other body gets the same grid
+# relative to its own hips and shoulder.
+WAIST_SEARCH = {
+    'from': 0.005219,   # just above the hips joint
+    'to': 0.836402,     # short of the shoulder, above every waist
+    'step': 0.029685,   # one sample per 1cm on this body
+    'slab': 0.035622,   # the half-thickness each sample averages over
+}
+
+
 def landmarks(pool, doc):
     """Body heights this outfit is measured against: the waist and the foot are
     found from the mesh, the joint heights from the skeleton's rest pose.
@@ -592,11 +613,18 @@ def landmarks(pool, doc):
     side is its mirror on every body this pipeline accepts.
     """
     p = pool['pos']
-    torso = [(y, np.percentile(np.hypot(p[m][:, 0], p[m][:, 2]), 85))
-             for y in np.arange(0.88, 1.16, 0.01)
-             if (m := np.abs(p[:, 1] - y) < 0.012).sum() > 12]
-    waist_y = min(torso, key=lambda t: t[1])[0]
     world, bones = humanoid.rest_world(doc), humanoid.bones(doc)
+    hips_y = float(world[bones['hips']][1, 3])
+    span = float(world[bones['leftUpperArm']][1, 3]) - hips_y
+    w = WAIST_SEARCH
+    torso = [(y, np.percentile(np.hypot(p[m][:, 0], p[m][:, 2]), 85))
+             for y in np.arange(hips_y + span * w['from'], hips_y + span * w['to'],
+                                span * w['step'])
+             if (m := np.abs(p[:, 1] - y) < span * w['slab']).sum() > 12]
+    if not torso:
+        raise SystemExit(
+            '在 hips 與 shoulder 之間找不到任何有足夠頂點的水平切片，量不出腰線')
+    waist_y = min(torso, key=lambda t: t[1])[0]
 
     def at(bone):
         return world[bones[bone]][:3, 3]

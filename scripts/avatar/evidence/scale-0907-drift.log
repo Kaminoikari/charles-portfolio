@@ -1,0 +1,10 @@
+waist   was 0.960000000   now 0.959999986   delta -0.014 µm
+samples was 28 slices in the band, now 28 (the grid is the same grid)
+
+  bandeau_top    1.180925728 -> 1.180925726  -0.002 µm
+  strap_bottom   1.167915090 -> 1.167915088  -0.003 µm
+  sleeve_bottom  1.154904453 -> 1.154904449  -0.003 µm
+
+  torso   was   651  now   651  vertices differing: 0
+  strap   was  2333  now  2333  vertices differing: 0
+  sleeve  was  2640  now  2640  vertices differing: 0

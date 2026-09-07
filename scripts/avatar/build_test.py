@@ -16,9 +16,19 @@ sys.path.insert(0, HERE)
 import build  # noqa: E402
 
 
+WAIST_AT = 0.9
+
+
 def body():
     """A hips-rooted rig with the six bones landmarks() reads, VRM 0.x
-    spelling, plus a torso pool whose narrowest ring sits at y = 1.0."""
+    spelling, plus a torso pool whose narrowest ring sits at WAIST_AT.
+
+    That ring is a quarter of the way up the hips-to-shoulder span, where a real
+    waist is (0.960 on a body with hips at 0.878 and a shoulder at 1.215). It
+    used to sit at the midpoint, which is the one height a band truncated from
+    either end still contains -- so a search that started halfway up the torso
+    passed (evidence/scale-0907-mutate.py, W5).
+    """
     nodes = [
         {'name': 'Hips', 'translation': [0.0, 0.8, 0.0], 'children': [1, 2, 4, 6]},
         {'name': 'UpperLeg', 'translation': [0.08, 0.0, 0.0], 'children': [3]},
@@ -37,7 +47,7 @@ def body():
                'humanBones': [{'bone': b, 'node': n} for b, n in bones.items()]}}}}
     rings = []
     for y in np.arange(0.86, 1.18, 0.01):
-        r = 0.12 + 0.5 * abs(y - 1.0)
+        r = 0.12 + 0.5 * abs(y - WAIST_AT)
         for a in np.linspace(0.0, 2 * np.pi, 16, endpoint=False):
             rings.append([r * np.cos(a), y, r * np.sin(a)])
     return doc, {'pos': np.array(rings)}
@@ -52,7 +62,7 @@ class Landmarks(unittest.TestCase):
         lm = build.landmarks(pool, doc)
         for key, value in self.EXPECTED.items():
             self.assertAlmostEqual(lm[key], value, places=9, msg=key)
-        self.assertAlmostEqual(lm['waist'], 1.0, delta=0.011)
+        self.assertAlmostEqual(lm['waist'], WAIST_AT, delta=0.011)
 
     def test_a_taller_body_moves_every_joint_landmark_and_not_the_waist(self):
         doc, pool = body()
@@ -62,7 +72,35 @@ class Landmarks(unittest.TestCase):
         for key in ('hip', 'knee', 'ankle', 'shoulder', 'neck'):
             self.assertAlmostEqual(b[key] - a[key], 0.1, places=9, msg=key)
         self.assertEqual(b['hand_x'], a['hand_x'])
-        self.assertEqual(b['waist'], a['waist'])
+        # The waist comes from the MESH, which did not move, so it stays on the
+        # narrowest ring while every joint rises 10cm. It is not bit-identical
+        # any more: since 2026-09-07 the slices are sampled on a grid derived
+        # from this body's own hips and shoulder, so raising the hips 10cm
+        # re-samples the same unmoved torso and can pick the neighbouring slice.
+        # One grid step is the honest tolerance; 10cm is what it must not move.
+        step = (a['shoulder'] - a['hip']) * build.WAIST_SEARCH['step']
+        for waist in (a['waist'], b['waist']):
+            self.assertAlmostEqual(waist, WAIST_AT, delta=step)
+
+    def test_the_waist_is_found_on_a_body_of_any_size(self):
+        # The band was a fixed 0.88..1.16 in metres until 2026-09-07, so on a
+        # body a fifth shorter the real waist fell underneath it and the search
+        # returned a height on the chest without failing (evidence/scale-0907.log
+        # measured 1.020 on both a 0.8x and a 1.25x body). A similarity
+        # transform of the whole body must move every landmark by exactly the
+        # same factor -- that is what makes it the same body at another size.
+        doc, pool = body()
+        base = build.landmarks(pool, doc)
+        for k in (0.5, 0.8, 1.25, 2.0):
+            scaled = copy.deepcopy(doc)
+            for node in scaled['nodes']:
+                node['translation'] = [v * k for v in node['translation']]
+            grown = {'pos': pool['pos'] * k}
+            got = build.landmarks(grown, scaled)
+            for key in ('waist', 'waist_r', 'hip', 'knee', 'ankle', 'shoulder',
+                        'neck', 'hand_x', 'foot'):
+                self.assertAlmostEqual(got[key] / k, base[key], places=9,
+                                       msg=f'{key} at x{k}')
 
 
 class TorsoEdges(unittest.TestCase):
@@ -121,6 +159,18 @@ class Wiring(unittest.TestCase):
         self.assertRegex(src, r"neck_y = lm\['neck'\] - 0\.007")
         for typed in (r"hip, knee, ankle = 0\.", r"shoulder_top = 1\.", r"\n    neck_y = 1\."):
             self.assertNotRegex(src, typed, 'build() types a landmark height in again')
+
+    def test_the_waist_is_searched_for_on_the_bodys_own_span(self):
+        with open(os.path.join(HERE, 'build.py'), encoding='utf-8') as fh:
+            src = fh.read()
+        self.assertRegex(src, r"span = float\(world\[bones\['leftUpperArm'\]\]\[1, 3\]\) - hips_y")
+        self.assertRegex(src, r"np\.arange\(hips_y \+ span \* w\['from'\], hips_y \+ span \* w\['to'\]")
+        self.assertRegex(src, r"np\.abs\(p\[:, 1\] - y\) < span \* w\['slab'\]")
+        # The band this replaced. A revert that leaves WAIST_SEARCH declared but
+        # searches the old fixed range again would pass every behaviour test on
+        # this one body.
+        for typed in (r"np\.arange\(0\.88", r"- y\) < 0\.012"):
+            self.assertNotRegex(src, typed, 'the waist is searched for in metres again')
 
     def test_build_cuts_the_torso_edges_at_the_derived_fractions(self):
         with open(os.path.join(HERE, 'build.py'), encoding='utf-8') as fh:

@@ -1,0 +1,28 @@
+base mika-pink.vrm  height 1.5815
+x0.8: height 1.2652 (x0.800000), 260 things moved
+x1.25: height 1.9769 (x1.250000), 260 things moved
+
+landmark                         base        x0.8     ratio       x1.25     ratio
+landmarks.waist              0.960000    0.768000  1.000000    1.200000  1.000000  
+landmarks.waist_r            0.100004    0.080003  1.000000    0.125005  1.000000  
+landmarks.foot               0.034315    0.027452  1.000000    0.042893  1.000000  
+landmarks.hip                0.843383    0.674707  1.000000    1.054229  1.000000  
+landmarks.knee               0.500952    0.400762  1.000000    0.626191  1.000000  
+landmarks.ankle              0.118327    0.094661  1.000000    0.147908  1.000000  
+landmarks.shoulder           1.215111    0.972088  1.000000    1.518888  1.000000  
+landmarks.neck               1.249834    0.999867  1.000000    1.562292  1.000000  
+landmarks.hand_x             0.540342    0.432274  1.000000    0.675428  1.000000  
+torso_edges.bandeau_top      1.180926    0.944741  1.000000    1.476157  1.000000  
+torso_edges.strap_bottom     1.167915    0.934332  1.000000    1.459894  1.000000  
+torso_edges.sleeve_bottom    1.154904    0.923924  1.000000    1.443631  1.000000  
+proportion.chin_height       1.271988    1.017591  1.000000    1.589985  1.000000  
+envelope.heights[0]          0.500000    0.400000  1.000000    0.630000  1.008000     <<< does NOT follow the body
+envelope.heights[-1]         0.920000    0.750000  1.019022    1.140000  0.991304     <<< does NOT follow the body
+envelope.heights.span        0.420000    0.350000  1.041667    0.510000  0.971429     <<< does NOT follow the body
+envelope.heights.count      43.000000   36.000000  1.046512   52.000000  0.967442     <<< does NOT follow the body
+
+13 of 17 follow the body exactly.
+  carries a length: envelope.heights[0]
+  carries a length: envelope.heights[-1]
+  carries a length: envelope.heights.span
+  carries a length: envelope.heights.count
