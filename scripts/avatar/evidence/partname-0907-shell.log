@@ -1,0 +1,52 @@
+
+=== mika-pink.vrm
+  primitive                  tris   open edges   hole rim   area   rim/sqrt(area)
+  Face.baked#0                 496      11.6%    5.318m   0.008m2    58.83
+  Face.baked#1                  96      28.6%    2.685m   0.004m2    41.49
+  Face.baked#2                 384      20.0%    7.011m   0.005m2    94.83
+  Face.baked#3                 224      19.4%    3.248m   0.003m2    58.60
+  Face.baked#4                 160      20.9%    2.861m   0.004m2    44.50
+  Face.baked#5                 192      15.4%    2.507m   0.002m2    61.58
+  Face.baked#6                 192      15.4%    2.740m   0.002m2    67.35
+  Face.baked#7                1064       7.0%    6.239m   0.056m2    26.43
+  Face.baked#8                 286       5.0%    0.573m   0.007m2     7.05
+  Face.baked#9                  64      28.6%    1.678m   0.002m2    42.19
+  Body.baked#0                4360       1.1%   28.194m   0.756m2    32.43
+  Body.baked#1                 844       2.2%   12.828m   0.079m2    45.64
+  Body.baked#2                2302       0.8%    1.057m   0.044m2     5.05
+  Body.baked#3                 226      10.1%   21.222m   0.065m2    83.47
+  Body.baked#4                4072       0.5%   12.154m   1.500m2     9.92
+  Body.baked#5                 700       5.6%   27.954m   0.266m2    54.22
+  Body.baked#6                 732      10.4%   58.710m   0.158m2   147.83
+
+=== alicia-solid.vrm
+  primitive                  tris   open edges   hole rim   area   rim/sqrt(area)
+  body_top.baked#0             858      14.2%   26.341m   0.069m2   100.15
+  body_top.baked#1             390      27.1%   23.842m   0.032m2   132.33
+  body_top.baked#2            6374       1.7%   20.788m   0.251m2    41.46
+  body_under.baked#0          1950       5.3%   36.489m   0.225m2    76.87
+  body_under.baked#1          1824       5.0%   27.925m   0.366m2    46.17
+  eye.baked#0                  416      18.6%    2.376m   0.002m2    53.20
+  face.baked#0                2684       4.9%   10.729m   0.070m2    40.67
+  face.baked#1                 206      11.6%    1.803m   0.006m2    23.14
+  face.baked#2                 206      26.4%    3.346m   0.001m2    88.56
+  neck.baked#0                2410       0.0%    0.000m   0.045m2     0.00
+  other.baked#0                838      11.8%    4.196m   0.018m2    31.13
+  other02.baked#0               34      27.1%    0.343m   0.002m2     7.15
+
+=== seed-san.vrm
+  primitive                  tris   open edges   hole rim   area   rim/sqrt(area)
+  hair#0                      7820       3.7%   58.089m   0.658m2    71.64
+  hair#1                        60       0.0%    0.000m   0.002m2     0.00
+  head#0                      8010       0.4%    1.854m   0.188m2     4.28
+  head#1                      1330      27.6%   13.177m   0.015m2   108.96
+  head#2                      1210       6.9%    0.003m   0.000m2    13.93
+  wear#0                      8042       1.5%   11.349m   0.933m2    11.75
+  wear#1                      2208       3.9%   11.532m   0.213m2    25.01
+  wear#2                       308       3.4%    0.299m   0.007m2     3.53
+  wear#3                      5806       3.1%   58.678m   1.634m2    45.91
+  wear#5                        56      30.3%    1.916m   0.012m2    17.70
+  wear#6                        56      30.3%    2.562m   0.019m2    18.35
+  wear#9                      3922       3.3%   15.214m   0.546m2    20.60
+  wear#10                     1346       5.4%    4.380m   0.307m2     7.90
+  wear#11                       36      52.1%    1.088m   0.004m2    18.28

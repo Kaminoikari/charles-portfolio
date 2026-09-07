@@ -1,0 +1,73 @@
+
+=== mika-pink.vrm   17 body-skinned primitives
+  share of ROW's points sitting under COLUMN's surface (<=50mm, inward side)
+                             0     1     2     3     4     5     6     7     8     9     0     1     2     3     4     5     6
+  Face.baked#0               -   82%   94%    0%    0%   48%   45%   92%     -   20%   33%     -     -    0%    0%     -     -
+  Face.baked#1             27%     -   95%   43%  100%   54%   59%   53%     -    0%    0%     -     -    0%    0%     -     -
+  Face.baked#2             12%   87%     -   59%   86%    7%    7%    6%    0%    0%    0%     -     -    0%    0%     -     -
+  Face.baked#3              9%   95%   16%     -   60%    9%    9%    7%     -    0%    0%     -     -    0%    0%     -     -
+  Face.baked#4              0%  100%   27%  100%     -   20%   18%    0%     -    0%    0%     -     -    0%     -     -     -
+  Face.baked#5             38%   34%   39%   21%  100%     -   95%   43%     -    0%    0%     -     -    0%    0%     -     -
+  Face.baked#6             38%   34%   37%   21%  100%    5%     -   36%     -    0%    0%     -     -    0%    0%     -     -
+  Face.baked#7             20%   60%   75%   35%   46%   14%   14%     -    1%    3%    4%     -     -    5%    0%     -     -
+  Face.baked#8               -     -    0%     -     -     -     -    7%     -    0%   23%     -     -    2%    0%     -     -
+  Face.baked#9              0%  100%  100%   92%  100%  100%  100%  100%    0%     -    0%     -     -    0%    0%     -     -
+  Body.baked#0              0%    0%    0%    0%    0%    0%    0%    0%    0%    0%     -    1%    0%    1%   57%   14%    0%
+  Body.baked#1               -     -     -     -     -     -     -     -     -     -    3%     -     -     -     -     -   91%
+  Body.baked#2               -     -     -     -     -     -     -     -     -     -    3%     -     -     -   41%     -     -
+  Body.baked#3              0%    0%    0%    0%    0%    0%    0%   24%    4%    0%   15%     -     -     -    0%     -     -
+  Body.baked#4              0%    0%    0%    0%     -    0%    0%    0%    0%    0%    1%     -    3%    0%     -    0%    0%
+  Body.baked#5               -     -     -     -     -     -     -     -     -     -    0%     -     -     -   83%     -     -
+  Body.baked#6               -     -     -     -     -     -     -     -     -     -    1%    1%     -     -    0%     -     -
+  deepest cover:
+    Face.baked#9           under Face.baked#7            100%
+    Face.baked#9           under Face.baked#6            100%
+    Face.baked#9           under Face.baked#5            100%
+    Face.baked#9           under Face.baked#4            100%
+    Face.baked#9           under Face.baked#2            100%
+
+=== alicia-solid.vrm   12 body-skinned primitives
+  share of ROW's points sitting under COLUMN's surface (<=50mm, inward side)
+                             0     1     2     0     1     0     0     1     2     0     0     0
+  body_top.baked#0           -   34%   13%    0%     -     -    0%     -     -    8%     -     -
+  body_top.baked#1         28%     -   14%    0%     -     -    0%     -     -    1%     -     -
+  body_top.baked#2          3%    2%     -    0%     -     -    0%     -     -    0%    0%    0%
+  body_under.baked#0        1%    2%    3%     -   24%     -     -     -     -     -     -     -
+  body_under.baked#1         -     -     -    4%     -     -     -     -     -     -     -     -
+  eye.baked#0                -     -     -     -     -     -   36%   15%   16%     -    0%    0%
+  face.baked#0              0%    1%    0%     -     -    0%     -   52%    6%    2%    6%    2%
+  face.baked#1               -     -     -     -     -   52%   75%     -   58%     -    0%    0%
+  face.baked#2               -     -     -     -     -    6%   13%   81%     -     -    0%    0%
+  neck.baked#0              6%   16%    0%     -     -     -    1%     -     -     -    2%    0%
+  other.baked#0              -     -    0%     -     -   42%  100%   96%   22%    0%     -    0%
+  other02.baked#0            -     -    0%     -     -   19%  100%  100%    0%    0%  100%     -
+  deepest cover:
+    other02.baked#0        under other.baked#0           100%
+    other02.baked#0        under face.baked#1            100%
+    other02.baked#0        under face.baked#0            100%
+    other.baked#0          under face.baked#0            100%
+    other.baked#0          under face.baked#1             96%
+
+=== seed-san.vrm   14 body-skinned primitives
+  share of ROW's points sitting under COLUMN's surface (<=50mm, inward side)
+                             0     1     0     1     2     0     1     2     3     5     6     9    10    11
+  hair#0                     -    0%   12%    2%    0%    0%     -     -     -     -     -    0%     -     -
+  hair#1                   12%     -    0%     -     -    0%     -     -     -     -     -    0%     -     -
+  head#0                   14%    0%     -   34%    0%    0%     -     -    0%     -     -    0%     -     -
+  head#1                    1%     -    7%     -    8%    1%     -     -     -     -     -    0%     -     -
+  head#2                    0%     -    0%   61%     -     -     -     -     -     -     -     -     -     -
+  wear#0                    0%    0%    0%    0%     -     -    1%    0%   17%    0%    0%    0%    0%    0%
+  wear#1                     -     -     -     -     -    4%     -    0%    8%    2%    2%    0%    0%    0%
+  wear#2                     -     -     -     -     -    0%    0%     -   15%    0%    0%    0%    0%     -
+  wear#3                     -     -    0%     -     -    2%    2%    0%     -    4%    5%    0%    0%    1%
+  wear#5                     -     -     -     -     -    0%    0%    0%   22%     -  100%    0%    7%     -
+  wear#6                     -     -     -     -     -    0%    0%    0%   22%    0%     -    0%   42%     -
+  wear#9                    0%    0%    0%    0%     -    0%    0%    0%    3%    0%    0%     -   11%    2%
+  wear#10                    -     -     -     -     -    0%    0%    0%    0%    0%    2%   26%     -    0%
+  wear#11                    -     -     -     -     -    0%    0%     -   37%     -     -    7%    0%     -
+  deepest cover:
+    wear#5                 under wear#6                  100%
+    head#2                 under head#1                   61%
+    wear#6                 under wear#10                  42%
+    wear#11                under wear#3                   37%
+    head#0                 under head#1                   34%
