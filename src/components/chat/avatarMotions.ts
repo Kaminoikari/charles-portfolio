@@ -77,15 +77,16 @@ export interface MotionWaiver {
 /**
  * Metres the frame slides while a clip plays, per frame it declares.
  *
- * A frame is composed for its pool, and each pool is nine clips, eight of which
- * stand still. The ninth does not: `dance` drops her hips 0.126m below rest,
- * hops 0.086m above it, and throws her hair higher still. One composition can hold that AND
- * `stretch`'s hands overhead, but only by spending the clearance the other eight
- * clips rely on. Rather than drop the clip (what happened on 2026-08-20) or
- * re-centre the frame for all nine, the camera moves for the clips that need it
- * and moves back after: negative slides the frame DOWN, positive UP. Since
- * 2026-09-07 `playFingers` and `scratchHead` need a much smaller one too, for
- * hair rather than for hips.
+ * The SHAPE lives here; the numbers live in each family's clearance file, under
+ * `pans`, because how far a frame has to move for a clip depends on where that
+ * body's hair and hips are. A frame is composed for its pool, and most of the
+ * pool stands still; `dance` does not, dropping its hips 0.126m below rest and
+ * hopping 0.086m above it on the VRoid bodies, and throwing its hair higher
+ * still. One composition can hold that AND `stretch`'s hands overhead, but only
+ * by spending the clearance the rest of the pool relies on. Rather than drop
+ * the clip (what happened on 2026-08-20) or re-centre the frame for all nine,
+ * the camera moves for the clips that need it and moves back after: negative
+ * slides the frame DOWN, positive UP.
  *
  * The engine eases it in and out (stepFramePan) and rigProbe.test.ts measures a
  * panning clip against its OWN panned frame — and fails a pan the clip does not
@@ -128,8 +129,9 @@ export interface AvatarMotionDef {
   /**
    * Frames this motion has been measured to fit. Enforced in rigProbe.test.ts.
    * Nominally per body too (a taller body would need other frames), and the
-   * first thing a second family has to re-derive; kept here with `pan` because
-   * every family shares the compositions today.
+   * first thing a second family has to re-derive; kept here because every
+   * family shares the two compositions, which is what a placement names. What
+   * moved out on 2026-09-07 is the `pan`, because that is measured per body.
    */
   placements: readonly MotionFrame[]
   /**
@@ -139,21 +141,6 @@ export interface AvatarMotionDef {
    * whole life on the site.
    */
   showsPalm: boolean
-  /**
-   * Frame movement this clip needs to be seen whole. Absent means none.
-   *
-   * Declared here and DERIVED in clearance.panFor, which rigProbe.test.ts holds
-   * this to: the range of pans that fit the clip's own crown and hips in the
-   * frame's span, then PAN_POLICY. Declared as well as derived because the
-   * producer needs a pan before the file it is derived from exists -- springsim
-   * projects each crown through the frame's camera with this clip's pan, and
-   * records which pan it used. So this is the number, and the derivation is
-   * what keeps it honest when a clip is re-exported or a frame recomposed.
-   *
-   * A second family re-derives it by running panFor against its own clearance,
-   * which until 2026-09-07 meant redoing the paragraph on `dance` by hand.
-   */
-  pan?: MotionPan
 }
 
 // Three clips of the pack are kept out on purpose, and the measurements that
@@ -188,20 +175,10 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   akimbo: { placements: ['waistUp', 'column'], showsPalm: false },
   // She turns her fingers over in front of her. The smallest of the ten:
   // 0.233 / 0.234 sideways, hands never above y=0.954. Palm -0.10.
-  // 2026-09-07: gains a +0.02 column pan. It never needed one while the crown
-  // came from the Milfy body. The number the guard reads for this clip in the
-  // column goes 1.6053 (the 2026-08-20 browser sweep) to 1.6143, and waist-up
-  // 1.5913 (the transfer) to 1.6220, so panFor's "smallest lift that clears"
-  // answers 2cm. The alternative was to
-  // widen its crownTop waiver from 1.606 to 1.6138 and keep the camera still,
-  // which is the owner's call to make and not a derivation, so the derived pan
-  // is what ships until that call is made.
-  playFingers: { placements: ['waistUp', 'column'], pan: { column: 0.02 }, showsPalm: false },
+  playFingers: { placements: ['waistUp', 'column'], showsPalm: false },
   // A hand up to the back of her head. Closest approach to her face is 1.34,
   // clear of the ellipsoid, and the palm does turn to the viewer at 0.89.
-  // Same as playFingers, and for the same reason: +0.02 in the column, or a
-  // crownTop waiver widened from 1.607 to 1.6139 if the camera should stay put.
-  scratchHead: { placements: ['waistUp', 'column'], pan: { column: 0.02 }, showsPalm: true },
+  scratchHead: { placements: ['waistUp', 'column'], showsPalm: true },
   // A standing idle, and by far the quietest clip here: 0.337 to the viewer's
   // left, 0.035 to the right, hands never above y=0.768. It does stand 0.152 to
   // one side of centre, at both ends and so throughout, which the fade slides
@@ -253,65 +230,7 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //             through the whole crown of her head, and the screenshots at
   //             t=12.05 and t=19.46 show it flat. This shipped.
   //
-  // A static re-centre of the waist-up frame was available and was not taken.
-  // With this clip in the pool the window for lookAtY is 1.2569 (`stretch`'s
-  // hand at the top) to 1.3047 (these hips at the bottom): 48mm wide, so its
-  // centre leaves 24mm at both edges where the pool has 63mm and 55mm today.
-  // That spends eight clips' margin on this one — and 24mm is inside the range
-  // the unmodelled hair swings through.
-  //
-  // So the frame moves for the clip instead, and the two numbers are derived,
-  // not dialled. What has to fit is this clip's OWN rendered extremes: hips
-  // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart. Since
-  // 2026-09-07 that derivation is clearance.panFor rather than this paragraph;
-  // what follows is why each was what it was when it was written by hand, and
-  // the note at the end of this comment is why panFor now answers a centimetre
-  // higher in both.
-  //
-  //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.240, rounded
-  //                   to 1.24 like every lookAtY here): 65mm under her hips,
-  //                   65mm over her hair. The span had the room; it was sitting
-  //                   in the wrong place.
-  //   column   +0.13  the smallest pan that does not clip her hair, and so the
-  //                   most leg this clip can keep: the column's spare room is
-  //                   all at the BOTTOM, so every mm the frame rises is a mm of
-  //                   her legs. Eighteen full-clip sweeps at this value never
-  //                   reached row 0; the worst was row 3, putting crown 1.7276
-  //                   4.4mm inside the 1.732 top edge. +0.12 was not swept —
-  //                   that same measured crown is 5.6mm outside ITS edge, which
-  //                   is why the guard reddens there. The 4.4mm is the
-  //                   translucent fringe the crown threshold counts; the topmost
-  //                   pixel a visitor can see stayed 36mm inside. So a
-  //                   re-measure risks a red guard, not a visible cut. +0.16 is
-  //                   this clip with a 34mm fringe margin and 30mm less leg;
-  //                   neither setting reaches her knee, which avatarMode puts
-  //                   at 0.40 in one comment and 0.43 in another — below this
-  //                   frame's 0.560 bottom edge either way.
-  //
-  // Nothing else in the pool is touched by either number.
-  //
-  // The crown was MEASURED ON THE VRoid BODIES in the browser. Since 2026-09-06
-  // the family's clearance file also carries what three-vrm's spring solver
-  // reads on the Milfy body (scripts/avatar/springsim.ts), and rigProbe.test.ts
-  // holds every clip's crown, browser or derived, whichever is higher, to
-  // its frames: the swing of Milfy's twin tails, a different spring chain,
-  // is simulated rather than argued about.
-  //
-  // 2026-09-07: both numbers moved a centimetre, and the reason is that the
-  // crown they are solved against went up. The VRoid bodies (pink and the base
-  // sample, one geometry between them) were simulated in their own right for
-  // the first time -- springsim could not run on them until deriveManifest --
-  // and they throw this clip's hair higher than anything the guard had for it
-  // before: the column crown goes 1.7276 -> 1.7389 (+11.3mm) and the waist-up
-  // 1.7133 -> 1.7244 (+11.1mm), both of those previous numbers being the
-  // browser sweep rather than the Milfy transfer, which read lower still.
-  // clearance.panFor re-derives -0.07 and +0.14 from that, and rigProbe.test.ts
-  // holds these declarations to what it derives.
-  dance: {
-    placements: ['waistUp', 'column'],
-    showsPalm: true,
-    pan: { waistUp: -0.07, column: 0.14 },
-  },
+  dance: { placements: ['waistUp', 'column'], showsPalm: true },
 }
 
 // How far a clip's FIRST AND LAST frames may sit below her rest height. Motion
@@ -327,6 +246,24 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
 // height; what happens in between is the motion, and the guard for THAT is the
 // frame's bottom edge.
 export const MAX_HIPS_SINK = 0.08
+
+// The other two things both ends of a clip have to be. The engine fades in and
+// out over MOTION_FADE at every entry and exit, and a fade only covers a SHORT
+// distance gracefully: `greeting`, now dropped, ended with a hand still up at
+// y=1.15, which is most of an arm's travel to cross in a quarter of a second.
+// These two are what keep the fade's job small.
+//
+// They live here beside MAX_HIPS_SINK rather than in the guard that reads them
+// because they are read twice: rigProbe.test.ts asserts against them, and
+// measure-motions.ts prints a new body's numbers beside them for whoever is
+// deciding whether that body can keep the clip pack. A clearance file's
+// `hipsDrift` and `endWrist` waivers are per-clip budgets ABOVE these.
+
+/** How far a clip's first and last frames may stand to one side of centre. */
+export const MAX_END_DRIFT = 0.1
+
+/** Wrist below the shoulder (y=1.215 on the VRoid body) means the arm is hanging. */
+export const MAX_END_WRIST = 1.05
 
 // ---- returning to rest -----------------------------------------------------
 //
@@ -415,16 +352,31 @@ export function motionFrame(placement: AvatarPlacement): MotionFrame | null {
 }
 
 /**
- * How far the frame slides while `name` plays in `frame`. 0 for every clip that
- * fits the composition it is played in, which is all of them but one.
+ * How far the frame slides while `name` plays in `frame` ON A BODY OF THIS
+ * FAMILY. 0 for every clip that fits the composition it is played in.
  *
- * Null on either argument means nothing is playing or nothing is rendered, and
- * both answer 0 — the resting composition. That is what returns the camera when
- * a clip ends or the visitor interrupts it.
+ * The pan moved off AvatarMotionDef and into the family's clearance on
+ * 2026-09-07, when a second family arrived: it is derived from the crown and
+ * the hips, and those are measured per body. The VRoid family pans three clips;
+ * the VRM1 sample family pans nine, because its resting hair sits 33.4mm higher
+ * (1.6154 against 1.5820) and the column is composed 20mm over the first
+ * family's.
+ *
+ * The family is required rather than defaulted, for the same reason motionsFor
+ * requires it: a default would let the wiring that carries the loaded body's
+ * family to this call be deleted with every test still green.
+ *
+ * Null on either of the first two arguments means nothing is playing or nothing
+ * is rendered, and both answer 0 — the resting composition. That is what
+ * returns the camera when a clip ends or the visitor interrupts it.
  */
-export function motionPan(name: AvatarMotionName | null, frame: MotionFrame | null): number {
+export function motionPan(
+  name: AvatarMotionName | null,
+  frame: MotionFrame | null,
+  family: AvatarFamilyId,
+): number {
   if (!name || !frame) return 0
-  return AVATAR_MOTIONS[name].pan?.[frame] ?? 0
+  return AVATAR_FAMILIES[family].pans[name]?.[frame] ?? 0
 }
 
 /**

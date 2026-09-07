@@ -1,0 +1,65 @@
+
+=== pink (vroid-sample-b)
+  file            /Users/charles/portfolio/public/avatar/mika-pink.vrm
+  size            5,535,076 bytes
+  sha256          a757197ad394aa7f9edf5cd395b77f07db020514133e25a1babe2ce1bba1dfb1
+  rigSha          e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45
+  VRM version     0   forwardZ -1
+  humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
+  spring chains   11   collider shapes 28   collider groups 12
+  expressions     15 VRM0 blendShapeGroups
+  resting crown   1.5820
+  widest vertex   0.6670 on Body (807,578 drawn) vs 0.7415 half width: 74mm spare
+  skins           3   joints outside the humanoid map: 71
+
+=== milfy (vroid-sample-b)
+  file            /Users/charles/portfolio/public/avatar/mika-milfy-12.vrm
+  size            12,034,572 bytes
+  sha256          f9f868903d373e06750e8ea4318f0539f282dd1a210bd39467f891d5790593d6
+  rigSha          e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45
+  VRM version     0   forwardZ -1
+  humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
+  spring chains   4   collider shapes 202   collider groups 17
+  expressions     15 VRM0 blendShapeGroups
+  resting crown   1.5757
+  widest vertex   0.6670 on Body (89,645 drawn) vs 0.7415 half width: 74mm spare
+  skins           3   joints outside the humanoid map: 85
+
+=== base (vroid-sample-b)
+  file            /Users/charles/portfolio/public/avatar/AvatarSample_B_webp.vrm
+  size            5,480,700 bytes
+  sha256          e3e87145f713a535cce274b610ce61c740d3b8a40341b518e2676ace22edba3b
+  rigSha          e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45
+  VRM version     0   forwardZ -1
+  humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 0/0/0/0   max 0.00deg
+  spring chains   11   collider shapes 28   collider groups 12
+  expressions     15 VRM0 blendShapeGroups
+  resting crown   1.5820
+  widest vertex   0.6670 on Body (807,578 drawn) vs 0.7415 half width: 74mm spare
+  skins           3   joints outside the humanoid map: 71
+
+=== twist (vrm1-twist-sample)
+  file            /Users/charles/portfolio/public/avatar/vrm1-twist-sample.vrm
+  size            10,776,032 bytes
+  sha256          12c2b97e95e700783a6a550dc0eee2d7880aeedccef9ae67bc4c5a2f0f2631a2
+  rigSha          fd3a65952d9bce0a30feb2a3817b2faedd2168f9145e43f5f48088f218c15e27
+  VRM version     1   forwardZ 1
+  humanoid bones  54   rest rotation over 0deg/0.1deg/1deg/5deg: 28/28/28/16   max 120.00deg
+  spring chains   22   collider shapes 13   collider groups 12
+  expressions     18 VRM1 presets
+  resting crown   1.6154
+  widest vertex   0.6945 on Body (24,951 drawn) vs 0.7415 half width: 47mm spare
+  skins           3   joints outside the humanoid map: 100
+
+=== seed-san (fixture, not a variant)
+  file            /Users/charles/portfolio/scripts/avatar/fixtures/seed-san.vrm
+  size            10,917,800 bytes
+  sha256          624d0d554bc205bbdc33e22a68a2c3c20edebb3e573011ead8878a65e5329b23
+  rigSha          cae33e999f0b0027003ae313e723a5db3938e91393fbe40183e207eb8b83b58f
+  VRM version     1   forwardZ 1
+  humanoid bones  51   rest rotation over 0deg/0.1deg/1deg/5deg: 51/51/49/40   max 179.99deg
+  spring chains   9   collider shapes 8   collider groups 2
+  expressions     18 VRM1 presets
+  resting crown   1.5800
+  widest vertex   1.2135 on robo_arm (34,059 drawn) vs 0.7415 half width: 472mm OUTSIDE
+  skins           5   joints outside the humanoid map: 77

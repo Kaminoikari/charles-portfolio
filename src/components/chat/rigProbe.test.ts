@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { VRMHumanoid } from '@pixiv/three-vrm'
 import { parseGlb, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
-import { crownBound, crownOn, panFor } from './clearance'
+import { crownBound, crownOn, panFor, type ClearanceFile } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
-import type { AvatarFamilyId } from './avatarVariants'
+import { AVATAR_FAMILIES, type AvatarFamilyId } from './avatarVariants'
 import {
   applyMotion,
   buildMotion,
@@ -42,6 +42,8 @@ import {
   PAN_POLICY,
   IDLE_MOTIONS,
   IDLE_ROTATION_START,
+  MAX_END_DRIFT,
+  MAX_END_WRIST,
   MAX_HIPS_SINK,
   motionPan,
   motionsFor,
@@ -152,11 +154,41 @@ function tiltedRest(data: Uint8Array): Uint8Array {
   })
 }
 
-let cachedRig: Rig | null = null
+// Every family the registry declares, each with the body its own clearance says
+// it was measured on. Until 2026-09-07 this file measured one body against one
+// clearance, which is all "the clips fit" could mean while there was one rig;
+// the guards below now run once per family, so a second rig cannot arrive with
+// a clearance file nothing reads.
+//
+// The body is `measuredOn` rather than a name chosen here: the file records
+// which body its numbers came off, and asking a different one whether those
+// numbers hold is a question nobody meant to ask. (For the VRoid family that is
+// mika-pink, which is byte-identical geometry to the AvatarSample_B this file
+// used to build — clearance.test.ts holds them to that — so the numbers below
+// did not move when the rule changed.)
+interface Family {
+  id: AvatarFamilyId
+  clearance: ClearanceFile
+  body: string
+}
+const FAMILIES: readonly Family[] = Object.entries(AVATAR_FAMILIES).map(([id, clearance]) => ({
+  id: id as AvatarFamilyId,
+  clearance,
+  body: clearance.measuredOn.replace(/^\/avatar\//, ''),
+}))
+
+const rigCache = new Map<string, Rig>()
+function rigOfBody(body: string): Rig {
+  let r = rigCache.get(body)
+  if (!r) {
+    r = buildRig(asset(body))
+    rigCache.set(body, r)
+  }
+  resetRig(r)
+  return r
+}
 function rig(): Rig {
-  if (!cachedRig) cachedRig = buildRig(asset('AvatarSample_B_webp.vrm'))
-  resetRig(cachedRig)
-  return cachedRig
+  return rigOfBody('AvatarSample_B_webp.vrm')
 }
 
 const motionCache = new Map<AvatarMotionName, Motion>()
@@ -173,20 +205,15 @@ function motion(name: AvatarMotionName): Motion {
 // what the spring solver threw on the simulated body carried onto this one by
 // its own resting crown (clearance.ts crownOn). AvatarMotionDef keeps only what
 // is true of the clip wherever it plays.
-const waiverOf = (name: string) => CLEARANCE.clips[name]?.waiver
-
-let cachedRestCrown: number | null = null
-function restCrown(): number {
-  if (cachedRestCrown === null) {
-    const glb = parseGlb(asset('AvatarSample_B_webp.vrm'))
-    cachedRestCrown = deriveRestCrown(glb, rig())
+const restCrownCache = new Map<string, number>()
+function restCrownOf(body: string): number {
+  let v = restCrownCache.get(body)
+  if (v === undefined) {
+    v = deriveRestCrown(parseGlb(asset(body)), rigOfBody(body))
+    restCrownCache.set(body, v)
   }
-  return cachedRestCrown
+  return v
 }
-// The crown a frame has to clear: derived through that frame's camera, or the
-// browser's worst where a sweep has drawn it higher (crownBound).
-const crownOf = (name: string, frame: MotionFrame): number => crownBound(CLEARANCE, name, frame, restCrown())
-
 // The launcher and docked canvases share a framing and an aspect, so one box
 // covers both; the fullscreen column is composed lower and tighter.
 //
@@ -197,8 +224,9 @@ const crownOf = (name: string, frame: MotionFrame): number => crownBound(CLEARAN
 // (avatarColumnRightInset) and her gesture room deliberately hangs off screen,
 // which the owner asked for and accepted the clipping of.
 //
-// Screen sides, not hers: facing the viewer mirrors her, so her right hand
-// renders on the viewer's left. See rigProbe's screenX.
+// Screen sides, not hers: a 0.x body is mirrored to face the
+// viewer, so her right hand renders on the viewer's left; a 1.0 body is not.
+// Either way the sides here are the viewer's. See rigProbe's screenX.
 const COLUMN_HALF_WIDTH = avatarViewHalfWidth(AVATAR_FRAMING_COLUMN, {
   w: AVATAR_COLUMN_ASPECT,
   h: 1,
@@ -220,9 +248,11 @@ const FRAMES = {
 // against the resting composition would answer a question the visitor is never
 // asked. The sideways budget is unaffected: the pan is vertical, and half-width
 // comes from the distance, which it does not touch.
-function frameFor(name: AvatarMotionName, placement: MotionFrame) {
+function frameFor(name: AvatarMotionName, placement: MotionFrame, family: AvatarFamilyId) {
   const frame = FRAMES[placement]
-  const pan = motionPan(name, placement)
+  // The FAMILY's pan: since 2026-09-07 the camera move that makes a clip fit is
+  // measured per body, so the frame a clip is played in differs by family.
+  const pan = motionPan(name, placement, family)
   return {
     halfWidth: frame.halfWidth,
     span: { top: frame.span.top + pan, bottom: frame.span.bottom + pan },
@@ -441,8 +471,22 @@ describe('guard sensitivity', () => {
   })
 })
 
-describe('bundled motions', () => {
+// Once per family. Everything in here is a claim about a clip ON A BODY -- how
+// far it reaches, where its hair goes, whether it stays in frame -- so it is
+// exactly the block that stops being one global fact when a second rig arrives.
+describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   const names = Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]
+  const CLEARANCE = fam.clearance
+  const FAMILY = fam.id
+  const rig = (): Rig => rigOfBody(fam.body)
+  const restCrown = (): number => restCrownOf(fam.body)
+  const waiverOf = (name: string) => CLEARANCE.clips[name]?.waiver
+  // The crown a frame has to clear: derived through that frame's camera, or the
+  // browser's worst where a sweep has drawn it higher (crownBound).
+  const crownOf = (name: string, frame: MotionFrame): number =>
+    crownBound(CLEARANCE, name, frame, restCrown())
+  const frameOf = (name: AvatarMotionName, placement: MotionFrame) =>
+    frameFor(name, placement, FAMILY)
 
   // The load-bearing check for buildMotion's rest-frame rebase. A .vrma whose
   // humanoid nodes rest on non-identity rotations decodes into a body folded in
@@ -477,7 +521,7 @@ describe('bundled motions', () => {
     // numbers wearing this one's name (avatarVariants.test.ts holds every
     // declared variant to the same sha).
     expect(Object.keys(CLEARANCE.clips).sort()).toEqual([...names].sort())
-    const doc = parseGlb(asset('AvatarSample_B_webp.vrm')).json
+    const doc = parseGlb(asset(fam.body)).json
     expect(CLEARANCE.rigSha).toBe(createHash('sha256').update(rigOf(doc)).digest('hex'))
   })
 
@@ -505,7 +549,7 @@ describe('bundled motions', () => {
     expect(f.frames.waistUp).toEqual(AVATAR_FRAMING_DEFAULT)
     expect(f.frames.column).toEqual(AVATAR_FRAMING_COLUMN)
     for (const name of names) {
-      expect(f.pans[name] ?? null, `${name} pan when the clearance was produced`).toEqual(AVATAR_MOTIONS[name].pan ?? null)
+      expect(f.pans[name] ?? null, `${name} pan when the clearance was produced`).toEqual(CLEARANCE.pans[name] ?? null)
     }
   })
 
@@ -519,7 +563,7 @@ describe('bundled motions', () => {
     for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
       for (const frame of def.placements) {
         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_POLICY[frame], def.placements)
-        expect(def.pan?.[frame] ?? 0, `${name} in ${frame}`).toBe(want)
+        expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame}`).toBe(want)
       }
     }
   })
@@ -559,8 +603,9 @@ describe('bundled motions', () => {
   // accepted.
   //
   // The two sides are still asserted separately so a failure names the edge.
-  // Screen sides, not hers: facing the viewer mirrors her, so her right hand
-  // renders on the viewer's left. See rigProbe's screenX.
+  // Screen sides, not hers: a 0.x body is mirrored to face the
+  // viewer, so her right hand renders on the viewer's left; a 1.0 body is not.
+  // Either way the sides here are the viewer's. See rigProbe's screenX.
   it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
@@ -570,7 +615,7 @@ describe('bundled motions', () => {
     const crownBudget = waiverOf(name)?.crownTop
     let crownPast = -Infinity
     for (const placement of def.placements) {
-      const frame = frameFor(name as AvatarMotionName, placement)
+      const frame = frameOf(name as AvatarMotionName, placement)
       let screenLeft = -Infinity
       let screenRight = -Infinity
       let maxY = -Infinity
@@ -579,8 +624,8 @@ describe('bundled motions', () => {
         // The outermost point of a pose is not always a hand: a raised elbow or
         // a splayed little finger can be, so the whole silhouette is sampled.
         for (const joint of silhouetteJoints(r)) {
-          screenLeft = Math.max(screenLeft, -screenX(joint.x))
-          screenRight = Math.max(screenRight, screenX(joint.x))
+          screenLeft = Math.max(screenLeft, -screenX(r, joint.x))
+          screenRight = Math.max(screenRight, screenX(r, joint.x))
         }
         // Every joint of the hand, the same set the face and silhouette guards
         // use. Sampling the wrist and the index tip alone read `stretch` at
@@ -659,7 +704,7 @@ describe('bundled motions', () => {
   // three edges the guards above measure, so those are the three this can
   // honestly claim to have checked.
   it.each(Object.entries(AVATAR_MOTIONS))('%s declares no pan it does not need', (name, def) => {
-    for (const [frame, pan] of Object.entries(def.pan ?? {}) as [MotionFrame, number][]) {
+    for (const [frame, pan] of Object.entries(CLEARANCE.pans[name] ?? {}) as [MotionFrame, number][]) {
       // A pan for a frame the clip is never played in is dead configuration:
       // nothing applies it and nothing measures against it.
       expect(def.placements, `${name} pans a frame it does not declare`).toContain(frame)
@@ -722,20 +767,16 @@ describe('bundled motions', () => {
     }
     for (const placement of def.placements) {
       expect(lowest, `${name} lowest hips in ${placement}`).toBeGreaterThan(
-        frameFor(name as AvatarMotionName, placement).span.bottom,
+        frameOf(name as AvatarMotionName, placement).span.bottom,
       )
     }
   })
 
-  // Both ends of a clip have to be a plain standing rest pose. The engine fades
-  // in and out over MOTION_FADE at every entry and exit, and a fade only covers
-  // a SHORT distance gracefully: `greeting`, now dropped, ended with a hand
-  // still up at y=1.15, which is most of an arm's travel to cross in a quarter
-  // of a second. This guard is what keeps the fade's job small.
-  const MAX_END_DRIFT = 0.1
-  // Wrist below the shoulder (y=1.215) means the arm is hanging.
-  const MAX_END_WRIST = 1.05
-
+  // Both ends of a clip have to be a plain standing rest pose. The two budgets
+  // and why they are what they are live in avatarMotions.ts, beside
+  // MAX_HIPS_SINK: measure-motions.ts prints a candidate body's numbers against
+  // the same three, and one copy of a threshold is the only kind that cannot go
+  // stale on one side.
   it.each(Object.entries(AVATAR_MOTIONS))(
     '%s opens and closes on a standing pose',
     (name) => {

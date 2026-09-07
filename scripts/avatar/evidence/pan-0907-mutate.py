@@ -8,6 +8,10 @@ beside them, so a second family had to redo that derivation by hand off the same
 paragraph. clearance.panFor derives them from the clearance file, and
 rigProbe.test.ts holds every declared pan to it.
 
+Since 2026-09-07 the declarations live in the family file too (a pan is a
+property of the body, and the second family needs nine where this one needs
+three), which is where N7 and N8 reach for them.
+
 Same discipline as the other harnesses here: byte-copy backup, the pattern must
 hit exactly once, sha256-verified restore, and a non-zero exit only counts as
 RED when a named test ran and failed -- `vitest -t` with no match also exits
@@ -25,15 +29,16 @@ REPO = Path('/Users/charles/portfolio')
 CHAT = REPO / 'src' / 'components' / 'chat'
 CL = CHAT / 'clearance.ts'
 AM = CHAT / 'avatarMotions.ts'
+VROID = CHAT / 'clearance' / 'vroid-sample-b.ts'
 RPT = CHAT / 'rigProbe.test.ts'
 
 TEST = ['npx', 'vitest', 'run', str(RPT), '-t', 'pans by what the measurements leave room for']
 FITS = ['npx', 'vitest', 'run', str(RPT), '-t', 'stays inside every frame it declares']
 
 MUTATIONS = [
-    ('N1', CL, "  const ceiling = c.waiver?.crownTop ?? view.top\n",
+    ('N1', CL, "  const ceiling = Math.max(view.top, c.waiver?.crownTop ?? -Infinity)\n",
      "  const ceiling = view.top\n", TEST,
-     'a crownTop waiver is the ceiling the clip has to clear, so the five clips that carry one are not given a camera move nobody asked for'),
+     'a crownTop waiver RAISES the ceiling the clip has to clear, so the three clips that carry one (idleLoop, spin, squat) are not given a camera move nobody asked for'),
     ('N2', CL, "  if (least <= 0 && 0 <= most) return 0\n", "",
      TEST, 'a clip that fits where it stands is given no pan at all'),
     ('N3', CL, "    least: crownWorst(file, clip, restCrownY, frames) - ceiling,\n",
@@ -49,12 +54,12 @@ MUTATIONS = [
      "the column takes the least lift that clears her hair; centring it would spend 9cm of her legs"),
     # The positive half: the guard has to bind the DECLARED number, not just
     # agree with itself. Without this, deleting the assertion passes every row.
-    ('N7', AM, "    pan: { waistUp: -0.08, column: 0.13 },\n",
-     "    pan: { waistUp: -0.09, column: 0.13 },\n", TEST,
+    ('N7', VROID, "    dance: { waistUp: -0.07, column: 0.14 },\n",
+     "    dance: { waistUp: -0.09, column: 0.14 },\n", TEST,
      'a declared pan that disagrees with the derivation is caught'),
     # And the pan still has to earn its place, which is a different test.
-    ('N8', AM, "    pan: { waistUp: -0.08, column: 0.13 },\n",
-     "    pan: { waistUp: -0.08, column: 0.13, },\n", FITS,
+    ('N8', VROID, "    dance: { waistUp: -0.07, column: 0.14 },\n",
+     "    dance: { waistUp: -0.07, column: 0.14, },\n", FITS,
      'the frame-fit guard still runs against the panned frames (a formatting-only edit must NOT redden it)'),
 ]
 

@@ -26,7 +26,7 @@ import {
 } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
 import { SIMULATED as PINK_SIMULATED } from './clearance/vroid-sample-b.pink.simulated.gen'
-import { AVATAR_MOTIONS, type AvatarMotionName } from './avatarMotions'
+import { AVATAR_MOTIONS } from './avatarMotions'
 import { avatarViewSpan, stepFramePan } from './avatarMode'
 import type { MotionFrame } from './avatarMotions'
 import { parseGlb, readAccessorRows, rigOf, type GltfJson } from './vrmHumanoid'
@@ -171,7 +171,7 @@ describe('every body of the family, not only the one that was simulated', () => 
 
   const ceilingOf = (clip: string, frame: MotionFrame): number => {
     const span = avatarViewSpan(CLEARANCE.framings.frames[frame], CLEARANCE.framings.fov)
-    const pan = AVATAR_MOTIONS[clip as AvatarMotionName].pan?.[frame] ?? 0
+    const pan = CLEARANCE.pans[clip]?.[frame] ?? 0
     // The waiver raises the edge and never lowers it: every one of them was
     // decided on the column framing, and replacing the edge outright put
     // spin's 1.6200 concession 252mm below the waist-up frame (clearance.ts
@@ -223,7 +223,7 @@ describe('every body of the family, not only the one that was simulated', () => 
     const late: string[] = []
     for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
       for (const frame of def.placements) {
-        const pan = def.pan?.[frame] ?? 0
+        const pan = CLEARANCE.pans[clip]?.[frame] ?? 0
         if (pan <= 0) continue // a downward pan buys headroom at the top from the first frame
         const settled = ceilingOf(clip, frame)
         // Every body that contributes a crown, each at ITS OWN peak time: the
@@ -306,6 +306,7 @@ describe('combineClearance', () => {
     crownFringe: 0.01,
     crownFringeMeasured: '2026-09-06 column, alpha > 8',
     crownSeen: {},
+    pans: {},
     waivers: {},
     excluded: {},
   }

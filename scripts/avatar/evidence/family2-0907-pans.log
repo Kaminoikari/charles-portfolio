@@ -1,0 +1,51 @@
+vrm1-twist-sample  on /avatar/vrm1-twist-sample.vrm  resting crown 1.6154  fringe 0.0015
+clip/frame              declared   derived    range [least, most]   verdict
+peaceSign/waistUp        0.00      0.00    [-0.283, 0.083]       agrees
+peaceSign/column         0.00      0.00    [-0.013, 0.421]       agrees
+modelPose/waistUp        0.00      0.00    [-0.261, 0.120]       agrees
+modelPose/column         0.01      0.01    [0.009, 0.458]        agrees
+spin/waistUp             0.00      0.00    [-0.223, 0.090]       agrees
+spin/column              0.05      0.05    [0.047, 0.428]        agrees
+squat/column             0.03      0.03    [0.020, 0.253]        agrees
+akimbo/waistUp           0.00      0.00    [-0.250, 0.144]       agrees
+akimbo/column            0.03      0.03    [0.020, 0.482]        agrees
+playFingers/waistUp      0.00      0.00    [-0.244, 0.144]       agrees
+playFingers/column       0.03      0.03    [0.026, 0.482]        agrees
+scratchHead/waistUp      0.00      0.00    [-0.217, 0.140]       agrees
+scratchHead/column       0.06      0.06    [0.053, 0.477]        agrees
+idleLoop/waistUp         0.00      0.00    [-0.248, 0.138]       agrees
+idleLoop/column          0.03      0.03    [0.022, 0.476]        agrees
+stretch/waistUp          0.07      0.07    [0.003, 0.145]        agrees
+dance/waistUp            0.00      0.00    [-0.133, 0.010]       agrees
+dance/column             0.14      0.14    [0.137, 0.348]        agrees
+
+pans to declare:
+{
+  modelPose: {
+    column: 0.01
+  },
+  spin: {
+    column: 0.05
+  },
+  squat: {
+    column: 0.03
+  },
+  akimbo: {
+    column: 0.03
+  },
+  playFingers: {
+    column: 0.03
+  },
+  scratchHead: {
+    column: 0.06
+  },
+  idleLoop: {
+    column: 0.03
+  },
+  stretch: {
+    waistUp: 0.07
+  },
+  dance: {
+    column: 0.14
+  }
+}

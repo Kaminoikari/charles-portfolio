@@ -117,6 +117,79 @@ const DECISIONS: ClearanceDecisions = {
     // top edge at all, and rigProbe.test.ts refuses a waiver a clip does not
     // need -- which is how these two came out.
   },
+  // How far the camera slides while each clip plays on THIS family. Three of
+  // the ten need it; the other family needs nine, which is why these moved off
+  // AvatarMotionDef on 2026-09-07. Held to clearance.panFor by rigProbe.test.ts.
+  //
+  // playFingers and scratchHead gained a +0.02 column pan on 2026-09-07. Neither
+  // needed one while the crown came from the Milfy body. The number the guard
+  // reads for playFingers in the column goes 1.6053 (the 2026-08-20 browser
+  // sweep) to 1.6143, and waist-up 1.5913 (the transfer) to 1.6220, so panFor's
+  // "smallest lift that clears" answers 2cm; scratchHead is the same story one
+  // millimetre lower. The alternative was to widen their crownTop waivers, from
+  // 1.606 to 1.6138 and from 1.607 to 1.6139, and keep the camera still -- an
+  // owner's call rather than a derivation, so the derived pan is what ships
+  // until that call is made.
+  //
+  // A static re-centre of the waist-up frame was available and was not taken.
+  // With this clip in the pool the window for lookAtY is 1.2569 (`stretch`'s
+  // hand at the top) to 1.3047 (these hips at the bottom): 48mm wide, so its
+  // centre leaves 24mm at both edges where the pool has 63mm and 55mm today.
+  // That spends eight clips' margin on this one — and 24mm is inside the range
+  // the unmodelled hair swings through.
+  //
+  // So the frame moves for the clip instead, and the two numbers are derived,
+  // not dialled. What has to fit is this clip's OWN rendered extremes: hips
+  // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart. Since
+  // 2026-09-07 that derivation is clearance.panFor rather than this paragraph;
+  // what follows is why each was what it was when it was written by hand, and
+  // the note at the end of this comment is why panFor now answers a centimetre
+  // higher in both.
+  //
+  //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.240, rounded
+  //                   to 1.24 like every lookAtY here): 65mm under her hips,
+  //                   65mm over her hair. The span had the room; it was sitting
+  //                   in the wrong place.
+  //   column   +0.13  the smallest pan that does not clip her hair, and so the
+  //                   most leg this clip can keep: the column's spare room is
+  //                   all at the BOTTOM, so every mm the frame rises is a mm of
+  //                   her legs. Eighteen full-clip sweeps at this value never
+  //                   reached row 0; the worst was row 3, putting crown 1.7276
+  //                   4.4mm inside the 1.732 top edge. +0.12 was not swept —
+  //                   that same measured crown is 5.6mm outside ITS edge, which
+  //                   is why the guard reddens there. The 4.4mm is the
+  //                   translucent fringe the crown threshold counts; the topmost
+  //                   pixel a visitor can see stayed 36mm inside. So a
+  //                   re-measure risks a red guard, not a visible cut. +0.16 is
+  //                   this clip with a 34mm fringe margin and 30mm less leg;
+  //                   neither setting reaches her knee, which avatarMode puts
+  //                   at 0.40 in one comment and 0.43 in another — below this
+  //                   frame's 0.560 bottom edge either way.
+  //
+  // Nothing else in the pool is touched by either number.
+  //
+  // The crown was MEASURED ON THE VRoid BODIES in the browser. Since 2026-09-06
+  // the family's clearance file also carries what three-vrm's spring solver
+  // reads on the Milfy body (scripts/avatar/springsim.ts), and rigProbe.test.ts
+  // holds every clip's crown, browser or derived, whichever is higher, to
+  // its frames: the swing of Milfy's twin tails, a different spring chain,
+  // is simulated rather than argued about.
+  //
+  // 2026-09-07: both numbers moved a centimetre, and the reason is that the
+  // crown they are solved against went up. The VRoid bodies (pink and the base
+  // sample, one geometry between them) were simulated in their own right for
+  // the first time -- springsim could not run on them until deriveManifest --
+  // and they throw this clip's hair higher than anything the guard had for it
+  // before: the column crown goes 1.7276 -> 1.7389 (+11.3mm) and the waist-up
+  // 1.7133 -> 1.7244 (+11.1mm), both of those previous numbers being the
+  // browser sweep rather than the Milfy transfer, which read lower still.
+  // clearance.panFor re-derives -0.07 and +0.14 from that, and rigProbe.test.ts
+  // holds these declarations to what it derives.
+  pans: {
+    playFingers: { column: 0.02 },
+    scratchHead: { column: 0.02 },
+    dance: { waistUp: -0.07, column: 0.14 },
+  },
   // Measured 2026-08-19 by retargeting all the clips of the pack onto
   // AvatarSample_B_webp.vrm; kept here so nobody re-adds one on the assumption
   // that an official clip must be safe.

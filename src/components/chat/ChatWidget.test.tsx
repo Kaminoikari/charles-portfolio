@@ -1049,7 +1049,7 @@ describe('the look strip', () => {
     avatarStub.handle.loadVariant.mockImplementation(() => Promise.resolve(true))
   })
 
-  it('offers every declared body with the default pressed, and swaps on a tap', async () => {
+  it('offers every OFFERED body with the default pressed, and swaps on a tap', async () => {
     const { user } = await openWithHer()
     expect(avatarStub.vrmUrl).toBe(PINK)
     expect(pressed(chip(/pink hair/i))).toBe(true)

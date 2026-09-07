@@ -1,0 +1,11 @@
+meshes=5  nodes=147  skins=5
+mesh                              prims   verts    x range         y range         z range
+hair                                 2    5185   -0.11…0.11      1.32…1.58       -0.14…0.12     
+hair_tail                            1     156   -0.19…0.01      1.04…1.34       -0.27…-0.06    
+head                                 3    6142   -0.11…0.11      1.30…1.56       -0.10…0.12     
+robo_arm                             3    3795   -0.06…1.21      0.58…1.52       -0.42…-0.16    
+wear                                12   18781   -0.61…0.61      -0.00…1.34      -0.48…0.19     
+
+humanoid bones: 51   nodes named robo*: 32   of those in the humanoid map: 0
+
+widest drawn vertex in bind pose: robo_arm at |x| 1.214m  -> 1.2135 in screen units, against a 0.7415 half-width budget

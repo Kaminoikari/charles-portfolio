@@ -37,8 +37,26 @@
 
 import type { ClearanceFile } from './clearance'
 import { CLEARANCE as VROID_SAMPLE_B } from './clearance/vroid-sample-b'
+import { CLEARANCE as VRM1_TWIST_SAMPLE } from './clearance/vrm1-twist-sample'
 
-export type AvatarVariantId = 'pink' | 'milfy' | 'base'
+/**
+ * A body the look strip offers and a visitor may choose.
+ *
+ * Kept apart from the ids below so that chat.looks needs a label for exactly
+ * these and no others: a body can be declared here, measured, and held to its
+ * family's rig without being put in front of anyone.
+ */
+export type OfferedVariantId = 'pink' | 'milfy' | 'base'
+
+/**
+ * Every body this module declares, offered or not.
+ *
+ * The second kind arrived on 2026-09-07 with the second rig family. Mika is the
+ * character this site has; what a second family buys is that "the clips fit"
+ * stops being one global fact and becomes a fact per rig, with the guards to
+ * prove it. The body that proves it does not have to be a look.
+ */
+export type AvatarVariantId = OfferedVariantId | 'twist'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -50,7 +68,7 @@ export type AvatarVariantId = 'pink' | 'milfy' | 'base'
  * skeleton reaches somewhere else, and the numbers that say whether it stays
  * in frame have to be re-measured. The family is the unit that owns them.
  */
-export type AvatarFamilyId = 'vroid-sample-b'
+export type AvatarFamilyId = 'vroid-sample-b' | 'vrm1-twist-sample'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -63,15 +81,24 @@ export type AvatarFamilyId = 'vroid-sample-b'
  */
 export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sample-b': VROID_SAMPLE_B,
+  'vrm1-twist-sample': VRM1_TWIST_SAMPLE,
 }
 
-export interface AvatarVariant {
-  /**
-   * Stable id. Doubles as the i18n key under chat.looks (the label a visitor
-   * sees) and as the `?mika=` value; the strings type fails to compile for a
-   * body declared without a label.
-   */
-  id: AvatarVariantId
+/**
+ * A family's measurements by id, or null for an id nothing declares.
+ *
+ * For tooling that is handed a family NAME rather than one of the ids above:
+ * scripts/avatar/springsim.ts --family=<new> runs before that family has a
+ * clearance file at all, and its first pass has to mean "no pans yet" rather
+ * than fail to compile. Null rather than a throw, and never a default, for the
+ * same reason familyOfUrl is: guessing a family hands a body another
+ * skeleton's numbers.
+ */
+export function familyClearance(id: string): ClearanceFile | null {
+  return (AVATAR_FAMILIES as Record<string, ClearanceFile>)[id] ?? null
+}
+
+interface DeclaredBody {
   /** What the owner calls this look. Tooling and evidence only. */
   label: string
   /** Served path. Must be under /avatar/ and end in .vrm. */
@@ -83,6 +110,25 @@ export interface AvatarVariant {
    */
   family: AvatarFamilyId
 }
+
+/**
+ * A declared body, and whether a visitor is offered it.
+ *
+ * A union rather than a boolean field so the two halves cannot drift: an
+ * offered body's id is an OfferedVariantId, which is the key chat.looks is
+ * typed by, so declaring one without a label in all three locales fails to
+ * compile. An unoffered body has no label to miss.
+ */
+export type AvatarVariant =
+  | (DeclaredBody & {
+      /**
+       * Stable id. Doubles as the i18n key under chat.looks (the label a
+       * visitor sees) and as the `?mika=` value.
+       */
+      id: OfferedVariantId
+      offered: true
+    })
+  | (DeclaredBody & { id: Exclude<AvatarVariantId, OfferedVariantId>; offered: false })
 
 // In the order the look strip offers them.
 //
@@ -115,10 +161,34 @@ export interface AvatarVariant {
 // and forbid only redistributing the model file FOR A FEE. All three are served
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
-  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm', family: 'vroid-sample-b' },
-  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b' },
-  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b' },
+  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm', family: 'vroid-sample-b', offered: true },
+  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b', offered: true },
+  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', offered: true },
+  // The second family, and the first body here that is not an export of the
+  // VRoid project the other three descend from: pixiv's VRM 1.0 constraint
+  // sample, 54 humanoid bones of which 28 rest somewhere the VRoid family's do
+  // not, so rigOf hashes differently and every clearance number had to be
+  // measured again. Provenance and licence in
+  // docs/plans/avatar-family-vrm1-twist-sample.md; its own metadata says credit
+  // is unnecessary, so serving it carries no obligation.
+  //
+  // NOT offered. It is a different character, and this site has one. What it is
+  // for is that the per-family paths -- motionsFor, motionPan, crownBound,
+  // panFor, every guard in rigProbe.test.ts -- now run against a rig that is
+  // not the one they were written against, which is the only way to tell a
+  // generalised layer from one that happens to work on the body it grew up on.
+  { id: 'twist', label: 'VRM1 樣本（不對外）', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', offered: false },
 ]
+
+/**
+ * The bodies the look strip shows, in the order it shows them.
+ *
+ * Everything visitor-facing reads this; AVATAR_VARIANTS is for the tests, the
+ * registry's own consistency, and anything that has to answer "whose numbers
+ * apply to this URL" for a body nobody is offered.
+ */
+export const OFFERED_VARIANTS: readonly (AvatarVariant & { offered: true })[] =
+  AVATAR_VARIANTS.filter((v): v is AvatarVariant & { offered: true } => v.offered)
 
 /**
  * The body a visitor gets when they have not picked one.
@@ -127,11 +197,19 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
  * change the default by accident. The visitor's own pick, and a `?mika=` link,
  * override it — see avatarVariantChoice.
  */
-export const ACTIVE_VARIANT: AvatarVariantId = 'pink'
+// Typed as an OFFERED id: the body a first-time visitor gets has to be one the
+// look strip would let them choose again.
+export const ACTIVE_VARIANT: OfferedVariantId = 'pink'
 
-/** Whether a string from a URL or storage names a declared body. */
-export function isVariantId(id: string | null | undefined): id is AvatarVariantId {
-  return AVATAR_VARIANTS.some((v) => v.id === id)
+/**
+ * Whether a string from a URL or storage names a body a visitor may choose.
+ *
+ * OFFERED, not merely declared: `?mika=twist` names a real file with real
+ * measurements, and it still has to be refused, because the answer to "which
+ * bodies does this site offer" is the look strip and nothing else.
+ */
+export function isVariantId(id: string | null | undefined): id is OfferedVariantId {
+  return OFFERED_VARIANTS.some((v) => v.id === id)
 }
 
 /**

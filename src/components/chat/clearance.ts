@@ -143,6 +143,25 @@ export interface ClearanceDecisions {
   crownSeen: Record<string, Partial<Record<MotionFrame, number>>>
   /** Guard violations shipped on purpose, by clip; each one has to be needed. */
   waivers: Record<string, MotionWaiver>
+  /**
+   * How far the frame slides while each clip plays, by clip and frame.
+   *
+   * A pan is a property of the BODY, not of the clip: it is the arithmetic in
+   * panFor on this family's own crown and hips against the frame's span, so two
+   * families wearing the same clip need not move the camera the same way. It
+   * lived on AvatarMotionDef until 2026-09-07, which was true only while there
+   * was one family; the second one lifts the column on eight clips, by 0.01 to
+   * 0.14, and five of those eight are clips the first family holds still for.
+   *
+   * Declared as well as derived, and rigProbe.test.ts holds one to the other.
+   * The declaration has to exist first because springsim projects each crown
+   * through the frame's camera WITH this clip's pan applied, so the number the
+   * derivation is made of was itself made under a pan. A new family starts with
+   * none, so panFor is run over the result and re-run until a pass changes
+   * nothing: the VRoid family settled on its first pass, the VRM1 sample on its
+   * third.
+   */
+  pans: Record<string, MotionPan>
   /** Clips of the pack kept out of the pool, and the measurement that keeps them out. */
   excluded: Record<string, string>
 }
@@ -164,6 +183,13 @@ export interface ClearanceFile {
   crownFringe: number
   crownFringeMeasured: string
   crownSeen: Record<string, Partial<Record<MotionFrame, number>>>
+  /**
+   * This family's declared pans. Not framings.pans, which is what the producer
+   * USED: that one is a record of the composition a reading was taken under, so
+   * a stale file can be told from a current one, and rigProbe.test.ts compares
+   * the two.
+   */
+  pans: Record<string, MotionPan>
   clips: Record<string, ClipClearance>
   excluded: Record<string, string>
   /**
@@ -262,10 +288,24 @@ export function combineClearance(
     crownFringe: decisions.crownFringe,
     crownFringeMeasured: decisions.crownFringeMeasured,
     crownSeen: decisions.crownSeen,
+    pans: decisions.pans,
     clips,
     excluded: decisions.excluded,
     alsoSimulated,
   }
+}
+
+/**
+ * How far this family slides the frame while a clip plays.
+ *
+ * The same answer avatarMotions.motionPan gives, for callers holding a file
+ * rather than a family id: the producers, which run against a family that may
+ * not be declared in the registry yet, and a first run for a new family, which
+ * has no file at all and therefore no pans. Zero is the resting composition,
+ * which is the right place to start a family whose crown nobody has measured.
+ */
+export function panOf(file: ClearanceFile | null, clip: string, frame: MotionFrame): number {
+  return file?.pans[clip]?.[frame] ?? 0
 }
 
 /**

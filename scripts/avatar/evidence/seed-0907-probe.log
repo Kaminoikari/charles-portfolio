@@ -1,0 +1,8 @@
+
+scripts/avatar/fixtures/seed-san.vrm  version=1  raw nodes=147
+  spin   furthest +z node above y=1.25: robo_f_pinky.03.L at z=1.547 y=1.493 t=1.68s   hips max z 0.117 at 3.53s
+  dance  furthest +z node above y=1.25: robo_f_pinky.03.L at z=1.747 y=1.321 t=13.90s   hips max z 0.214 at 16.27s
+
+public/avatar/AvatarSample_B_webp.vrm  version=0  raw nodes=130
+  spin   furthest +z node above y=1.25: HairJoint-7d2eac18-4f07-472f-9a70-b8e5b024c6cb at z=0.294 y=1.251 t=1.18s   hips max z 0.047 at 1.18s
+  dance  furthest +z node above y=1.25: J_Bip_R_Middle3_end at z=0.406 y=1.256 t=9.50s   hips max z 0.088 at 5.30s

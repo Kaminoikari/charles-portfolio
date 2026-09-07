@@ -10,19 +10,21 @@ import { LocaleContext } from '../../i18n/locale-context'
 import { STRINGS } from '../../i18n/strings'
 import type { Locale } from '../../i18n/config'
 import { LookStrip } from './LookStrip'
-import { ACTIVE_VARIANT, AVATAR_VARIANTS } from './avatarVariants'
+import { ACTIVE_VARIANT, OFFERED_VARIANTS } from './avatarVariants'
 
 const prefetch = vi.hoisted(() => vi.fn())
 vi.mock('./avatarPrefetch', () => ({ prefetchBody: prefetch }))
 
-const OTHER = AVATAR_VARIANTS.find((v) => v.id !== ACTIVE_VARIANT)!
-const CURRENT = AVATAR_VARIANTS.find((v) => v.id === ACTIVE_VARIANT)!
+// OFFERED, not declared, everywhere in this file: since 2026-09-07 the registry
+// also holds a body the strip must never show, and it has no label to look up.
+const OTHER = OFFERED_VARIANTS.find((v) => v.id !== ACTIVE_VARIANT)!
+const CURRENT = OFFERED_VARIANTS.find((v) => v.id === ACTIVE_VARIANT)!
 
 function draw(locale: Locale, props: Partial<React.ComponentProps<typeof LookStrip>> = {}) {
   return render(
     <LocaleContext.Provider value={{ locale, setLocale: () => {} }}>
       <LookStrip
-        variants={props.variants ?? AVATAR_VARIANTS}
+        variants={props.variants ?? OFFERED_VARIANTS}
         shown={props.shown ?? ACTIVE_VARIANT}
         busy={props.busy ?? false}
         onPick={props.onPick ?? (() => {})}
@@ -41,7 +43,7 @@ describe('LookStrip', () => {
       const others = (['en', 'zh-TW', 'ja'] as const)
         .filter((l) => l !== locale)
         .flatMap((l) => Object.entries(STRINGS[l].chat.looks))
-      for (const v of AVATAR_VARIANTS) {
+      for (const v of OFFERED_VARIANTS) {
         expect(screen.getByRole('button', { name: mine[v.id] }), `${locale}/${v.id}`).toBeTruthy()
       }
       const shown = screen.getAllByRole('button').map((b) => b.textContent)

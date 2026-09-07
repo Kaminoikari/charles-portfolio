@@ -69,8 +69,9 @@ import {
   AVATAR_FRAMING_DEFAULT,
   type AvatarFraming,
 } from '../../src/components/chat/avatarMode'
-import { AVATAR_MOTIONS, motionPan, type AvatarMotionName, type MotionFrame } from '../../src/components/chat/avatarMotions'
-import type { ClearanceFramings, ClearanceSimulated, ClipSimulated } from '../../src/components/chat/clearance'
+import { AVATAR_MOTIONS, type AvatarMotionName, type MotionFrame } from '../../src/components/chat/avatarMotions'
+import { panOf, type ClearanceFramings, type ClearanceSimulated, type ClipSimulated } from '../../src/components/chat/clearance'
+import { familyClearance } from '../../src/components/chat/avatarVariants'
 import { applyMotion, buildMotion, buildRigFrom, resetRig, type Rig } from '../../src/components/chat/rigProbe'
 import {
   parseGlb,
@@ -632,11 +633,20 @@ class FrameCamera {
   }
 }
 
-/** The engine's composition as this run saw it, for the clearance file. */
-export function framingsNow(): ClearanceFramings {
+/**
+ * The composition this run saw, for the clearance file.
+ *
+ * The pans are the FAMILY's, not a global: they are what these projections were
+ * taken under, and a family being measured for the first time has none, so its
+ * first pass is at rest. panFor over that result gives the pans, and the round
+ * repeats until a pass changes nothing — one round for the VRoid family, three
+ * for the VRM1 sample.
+ */
+export function framingsNow(family: string): ClearanceFramings {
+  const declared = familyClearance(family)
   const pans: ClearanceFramings['pans'] = {}
   for (const name of Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]) {
-    const pan = AVATAR_MOTIONS[name].pan
+    const pan = declared?.pans[name]
     if (pan) pans[name] = pan
   }
   return { fov: AVATAR_FOV, tilt: AVATAR_CAMERA_TILT, frames: FRAMES, pans }
@@ -976,7 +986,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const forwardZ = rig.version === '0' ? -1 : 1
   const frameNames = Object.keys(FRAMES) as MotionFrame[]
   const clipName = report.clip as AvatarMotionName
-  const pan = (f: MotionFrame): number => (clipName in AVATAR_MOTIONS ? motionPan(clipName, f) : 0)
+  const pan = (f: MotionFrame): number => panOf(familyClearance(args.family), clipName, f)
   const restCams = frameNames.map((f) => [f, new FrameCamera(FRAMES[f], FRAMES[f].lookAtY, forwardZ)] as const)
   const clipCams = frameNames.map((f) => [f, new FrameCamera(FRAMES[f], FRAMES[f].lookAtY + pan(f), forwardZ)] as const)
 
@@ -1203,7 +1213,7 @@ export function writeClearance(args: Args, reports: Report[]): void {
       waistUp: Math.round(reports[0].restCrownScreen.waistUp * 1e4) / 1e4,
       column: Math.round(reports[0].restCrownScreen.column * 1e4) / 1e4,
     },
-    framings: framingsNow(),
+    framings: framingsNow(args.family),
     clips,
   }
   writeGenerated(

@@ -57,10 +57,12 @@ describe('the pan reaches the camera', () => {
     // other way in the column, so dropping either argument picks the wrong
     // number rather than no number.
     expect(SOURCE).toMatch(/function panTargetNow\(\)/)
-    expect(SOURCE).toMatch(/return motionPan\(motionName, motionFrame\(placement\)\)/)
+    expect(SOURCE).toMatch(/return motionPan\(motionName, motionFrame\(placement\), shownFamily\)/)
     // …and hands back the resting composition once she starts putting her arms
     // down, which is what returns the camera at every exit.
-    expect(SOURCE).toMatch(/if \(!motionAction \|\| settleDur > 0\) return 0/)
+    // `|| !shownFamily` since 2026-09-07: the pan is per family, and no family
+    // means no body on screen.
+    expect(SOURCE).toMatch(/if \(!motionAction \|\| settleDur > 0 \|\| !shownFamily\) return 0/)
   })
 
   it('eases toward that target every frame', () => {

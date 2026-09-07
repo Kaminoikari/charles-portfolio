@@ -39,7 +39,7 @@ import type { AvatarGuideHandle, EmotionName, GestureName } from './avatarGuideE
 import { MotionStrip } from './MotionStrip'
 import { LookStrip } from './LookStrip'
 import { motionsFor, type AvatarMotionName } from './avatarMotions'
-import { AVATAR_VARIANTS, familyOf, variantUrl, type AvatarVariantId } from './avatarVariants'
+import { AVATAR_VARIANTS, OFFERED_VARIANTS, familyOf, variantUrl, type AvatarVariantId } from './avatarVariants'
 import { initialVariantId, rememberVariant } from './avatarVariantChoice'
 
 // What Mika performs alongside each voice cue: an expression preset (name,
@@ -1247,7 +1247,7 @@ export default function ChatWidget() {
             >
               {avatarOn && !avatarDead && placement !== 'hidden' && (
                 <LookStrip
-                  variants={AVATAR_VARIANTS}
+                  variants={OFFERED_VARIANTS}
                   shown={variantShown}
                   // Disabled until she has landed, and again while a swap is on
                   // its way: the same "disabled rather than hidden" rule as the

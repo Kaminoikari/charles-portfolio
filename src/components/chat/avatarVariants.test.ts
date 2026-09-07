@@ -153,26 +153,40 @@ describe('avatar variants', () => {
     }
   })
 
-  it('gives every variant the same expression names', () => {
+  it('gives every body of a family the same expression names', () => {
     // Expressions and lip sync are looked up BY NAME on the loaded model
     // (avatarGuideEngine gates each recipe on availableEmotions.has(channel)),
     // and a missing name is a silent no-op: she simply stops making that face,
     // with no error anywhere. So the names are part of what a variant has to
     // keep, exactly as much as the bones are.
+    //
+    // PER FAMILY, since 2026-09-07. Expression naming is a property of the VRM
+    // version: the VRoid family are 0.x files carrying blendShapeMaster names
+    // (Neutral, A, I, Blink, Joy), and the VRM1 sample family carries 1.0
+    // presets (aa, ih, blink, happy). Holding the second to the first's names
+    // would be asserting that a 1.0 file is a 0.x file. What has to hold is
+    // that the bodies a visitor can swap BETWEEN keep the same names, and those
+    // are the bodies of one family.
+    //
     // readExpressions throws on a file with neither VRM extension, and the
     // reference list is checked for the names the engine actually plays, so
     // "every body has no expressions" cannot pass as "every body has the same".
     const names = (url: string) => readExpressions(gltfOf(url)).join(',')
-    const [first, ...rest] = AVATAR_VARIANTS
-    const reference = readExpressions(gltfOf(first.url))
-    expect(reference).toContain('Blink')
-    expect(reference).toContain('A')
-    for (const other of rest) {
-      expect(
-        names(other.url),
-        `${other.id} is missing expressions ${first.id} has; emotions and visemes would silently stop firing`,
-      ).toBe(names(first.url))
+    for (const family of Object.keys(AVATAR_FAMILIES) as AvatarFamilyId[]) {
+      const bodies = AVATAR_VARIANTS.filter((v) => v.family === family)
+      expect(bodies.length, `family ${family} declares no body`).toBeGreaterThan(0)
+      const [first, ...rest] = bodies
+      for (const other of rest) {
+        expect(
+          names(other.url),
+          `${other.id} is missing expressions ${first.id} has; emotions and visemes would silently stop firing`,
+        ).toBe(names(first.url))
+      }
     }
+    // The names the engine actually plays, on the family a visitor gets.
+    const offered = readExpressions(gltfOf(AVATAR_VARIANTS.find((v) => v.offered)!.url))
+    expect(offered).toContain('Blink')
+    expect(offered).toContain('A')
   })
 
   it('loads the resolved variant rather than a constant of its own', () => {
@@ -200,7 +214,7 @@ describe('avatar variants', () => {
       /vrmUrl=\{variantUrl\(variantWanted\)\}/,
     )
     expect(widget, 'the strip must offer the registry, not a list of its own').toMatch(
-      /variants=\{AVATAR_VARIANTS\}/,
+      /variants=\{OFFERED_VARIANTS\}/,
     )
     // ...which is what the engine is initialised with, and what a later change
     // of it is swapped to. Both, because dropping either leaves a body that

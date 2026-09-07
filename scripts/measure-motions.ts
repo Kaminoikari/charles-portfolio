@@ -41,13 +41,15 @@ import {
 } from '../src/components/chat/avatarMode'
 import {
   AVATAR_MOTIONS,
+  MAX_END_DRIFT,
+  MAX_END_WRIST,
   MAX_HIPS_SINK,
-  motionPan,
   type AvatarMotionName,
   type MotionFrame,
 } from '../src/components/chat/avatarMotions'
 import {
   crownBound,
+  panOf,
   type ClearanceFile,
   type ClearanceMeasured,
   type ClipMeasured,
@@ -90,9 +92,12 @@ const FRAMES = {
   },
 }
 
-function frameFor(name: AvatarMotionName, placement: MotionFrame) {
+function frameFor(name: AvatarMotionName, placement: MotionFrame, clearance: ClearanceFile | null) {
   const frame = FRAMES[placement]
-  const pan = motionPan(name, placement)
+  // This family's pan, not the shipped one: the whole point of the report is
+  // asking whether ANOTHER body can wear these clips, and the camera move that
+  // makes a clip fit is measured per body (clearance.ts pans).
+  const pan = panOf(clearance, name, placement)
   return {
     halfWidth: frame.halfWidth,
     span: { top: frame.span.top + pan, bottom: frame.span.bottom + pan },
@@ -155,8 +160,8 @@ function sweep(rig: Rig, motion: Motion, restHipsY: number): Worst {
   for (const time of motion.sampleTimes) {
     applyMotion(rig, motion, time)
     for (const joint of silhouetteJoints(rig)) {
-      w.left = Math.max(w.left, -screenX(joint.x))
-      w.right = Math.max(w.right, screenX(joint.x))
+      w.left = Math.max(w.left, -screenX(rig, joint.x))
+      w.right = Math.max(w.right, screenX(rig, joint.x))
     }
     for (const side of ['left', 'right'] as const) {
       for (const joint of handJoints(rig, side)) {
@@ -254,7 +259,7 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
     for (const placement of def.placements) {
       resetRig(rig)
       const w = sweep(rig, motion, restHipsY)
-      const frame = frameFor(name, placement)
+      const frame = frameFor(name, placement, clearance)
       // A waiver is a violation the shipped body already accepts, so it is
       // shown as the budget rather than hidden: on a new body the question is
       // not "does it fit the frame" but "is it worse than what already ships".
@@ -349,7 +354,35 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
           `上限 ${mm(MAX_HIPS_SINK)}。這是重定向偏移，不是動作本身。`,
       )
     } else {
-      say(`   頭尾站得住　髖部偏移 ${mm(w.endSink)}（上限 ${mm(MAX_HIPS_SINK)}）`)
+      say(`   頭尾站得住　髖部下沉 ${mm(w.endSink)}（上限 ${mm(MAX_HIPS_SINK)}）`)
+    }
+    // The other two things both ends of a clip have to be, and the two a new
+    // body is most likely to need its own waiver for: the fade in and out only
+    // covers a short distance gracefully. Both were measured here and thrown
+    // away until 2026-09-07, which left whoever was judging a candidate body
+    // reading them off a red unit test instead. The budget printed is the one
+    // actually in force, so a waived clip shows what it was waived to.
+    const driftBudget = waiver?.hipsDrift ?? MAX_END_DRIFT
+    const driftWaived = waiver?.hipsDrift !== undefined ? '，已放行' : ''
+    if (w.hipsDrift > driftBudget) {
+      tight += 1
+      say(
+        `   ⚠ 頭尾站在旁邊：髖部離中線 ${mm(w.hipsDrift)}，` +
+          `上限 ${mm(driftBudget)}${driftWaived}。淡入淡出要橫跨這段距離。`,
+      )
+    } else {
+      say(`   頭尾站得正　髖部離中線 ${mm(w.hipsDrift)}（上限 ${mm(driftBudget)}${driftWaived}）`)
+    }
+    const wristBudget = waiver?.endWrist ?? MAX_END_WRIST
+    const wristWaived = waiver?.endWrist !== undefined ? '，已放行' : ''
+    if (w.endWrist > wristBudget) {
+      tight += 1
+      say(
+        `   ⚠ 頭尾手還舉著：手腕 ${w.endWrist.toFixed(4)}，` +
+          `上限 ${wristBudget.toFixed(4)}${wristWaived}。`,
+      )
+    } else {
+      say(`   頭尾手垂著　手腕 ${w.endWrist.toFixed(4)}（上限 ${wristBudget.toFixed(4)}${wristWaived}）`)
     }
     say('')
   }

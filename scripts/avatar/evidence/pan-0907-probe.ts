@@ -23,7 +23,7 @@ for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
     const policy = PAN_POLICY[frame]
     const { least, most } = panRange(f, clip, frame, f.restCrownY, def.placements)
     const got = panFor(f, clip, frame, f.restCrownY, policy, def.placements)
-    const declared = def.pan?.[frame] ?? 0
+    const declared = CLEARANCE.pans[clip]?.[frame] ?? 0
     const waiver = f.clips[clip].waiver?.crownTop
     console.log(
       `${(clip + '/' + frame).padEnd(22)}` +

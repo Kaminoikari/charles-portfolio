@@ -16,16 +16,30 @@
 // COORDINATE SPACE. Everything here is in the VRM's own (pre-rotateVRM0) space,
 // which is what the engine's bone writes and the VRMA tracks both land in:
 //
-//   +X = her right          -X = her left
 //   +Y = up
-//   -Z = FORWARD, toward the viewer
+//   ±Z = FORWARD, toward the viewer — and the sign belongs to the VERSION
+//   ∓X = her right           ±X = her left — which follows the Z, being its cross
 //
-// The engine calls `VRMUtils.rotateVRM0()`, which only sets `vrm.scene.rotation.y
-// = π`. That turns the whole rig to face the camera at render time and leaves
-// every bone-local number below untouched, so "palm toward the viewer" is a palm
-// normal pointing at -Z here. (Measured, not assumed: this model's eyes sit at
-// z=-0.0246 and its toes at z=-0.0828, both in front of the head bone at
-// z=+0.005.)
+// A 0.x file faces -Z, and the engine turns it round with `VRMUtils.rotateVRM0()`,
+// which only sets `vrm.scene.rotation.y = π`. A 1.0 file faces +Z already, and
+// that same call is a no-op on it: three-vrm gates it on `meta.metaVersion`.
+// Either way she ends up facing the camera and every bone-local number below is
+// left untouched, so "toward the viewer" here is read off `rig.version` (the
+// local `forwardZ`) rather than written as a literal -1. `Humanoid.forwardZ` in
+// vrmHumanoid.ts is the same fact for code holding a parsed glTF; `rig.humanoid`
+// is three-vrm's VRMHumanoid and has no such field.
+//
+// Measured on both families rather than assumed, eyes and toes against the head
+// bone, and her LEFT eye against the centreline
+// (scripts/avatar/evidence/family2-0907-space.ts):
+//
+//   VRoid 0.x   eyes -29.7mm, toes -87.9mm   -> faces -Z, left eye at x -0.018
+//   twist 1.0   eyes +21.4mm, toes +103.0mm  -> faces +Z, left eye at x +0.017
+//
+// So the sideways axis turns with the forward one and "her right" is not a fixed
+// sign either. Nothing here reads it as one: `screenX` derives the mirror from
+// the same `forwardZ`, and every joint helper names a side through the humanoid
+// map rather than through x.
 import * as THREE from 'three'
 import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
@@ -632,8 +646,20 @@ export function applyMotion(rig: Rig, motion: Motion, time: number): void {
 
 // ---- measurements ----------------------------------------------------------
 
+/**
+ * The sign of her forward axis, which belongs to the version and not to this
+ * module: see COORDINATE SPACE at the top of the file. `rig.humanoid` is
+ * three-vrm's VRMHumanoid and carries no such field — reading one off it gives
+ * `undefined`, which THREE.Vector3's default parameter turns into a silent zero.
+ */
+function forwardZ(rig: Rig): -1 | 1 {
+  return rig.version === '0' ? -1 : 1
+}
+
 /** Toward the viewer, in the space described at the top of this file. */
-export const CAMERA_DIR = new THREE.Vector3(0, 0, -1)
+function cameraDir(rig: Rig): THREE.Vector3 {
+  return new THREE.Vector3(0, 0, forwardZ(rig))
+}
 
 export interface HandProbe {
   wrist: THREE.Vector3
@@ -656,15 +682,21 @@ function worldPosition(rig: Rig, bone: string): THREE.Vector3 {
 /**
  * Where a probe-space x lands on screen.
  *
- * `rotateVRM0` turns her to face the camera, which mirrors her sideways axis:
- * facing you, her right hand is on your left. So a point at probe x = +0.5 (half
- * a metre to HER right) renders half a metre to the viewer's LEFT. Anything that
- * reasons about a screen EDGE has to go through this, because the two edges are
- * cropped differently: the column canvas overhangs the viewport on the viewer's
- * right, which is her left, which is negative x here.
+ * `rotateVRM0` turns a 0.x body to face the camera, which mirrors her sideways
+ * axis: facing you, her right hand is on your left. So a point at probe x = +0.5
+ * (half a metre to HER right) renders half a metre to the viewer's LEFT. A 1.0
+ * body faces the camera unrotated, so its x is already the viewer's x. Anything
+ * that reasons about a screen EDGE has to go through this, because the two edges
+ * are cropped differently: the column canvas overhangs the viewport on the
+ * viewer's right, which on a 0.x body is negative x here.
+ *
+ * Every caller today reads both edges against the same budget, so the mirror
+ * cancels and nothing would redden if this had the sign backwards. It is the
+ * sign the space above promises all the same, and the first caller to crop the
+ * two edges differently will be the one that needs it.
  */
-export function screenX(probeX: number): number {
-  return -probeX
+export function screenX(rig: Rig, probeX: number): number {
+  return forwardZ(rig) === -1 ? -probeX : probeX
 }
 
 // Joints per finger, in three-vrm's (VRM 1.0) spelling: the thumb's base is
@@ -766,7 +798,7 @@ export function probeHand(rig: Rig, side: 'left' | 'right'): HandProbe {
   _q.setFromRotationMatrix(rig.bones[`${side}Hand`].matrixWorld)
   const palm = PALM_REST.clone().applyQuaternion(_q)
 
-  return { wrist, fingertip, palmToViewer: palm.dot(CAMERA_DIR), elbowFlex }
+  return { wrist, fingertip, palmToViewer: palm.dot(cameraDir(rig)), elbowFlex }
 }
 
 // ---- her head, as a solid ---------------------------------------------------

@@ -9,10 +9,12 @@ import {
   VARIANT_QUERY_PARAM,
   VARIANT_STORAGE_KEY,
 } from './avatarVariantChoice'
-import { ACTIVE_VARIANT, AVATAR_VARIANTS } from './avatarVariants'
+import { ACTIVE_VARIANT, AVATAR_VARIANTS, OFFERED_VARIANTS } from './avatarVariants'
 
-// A declared body that is not the default, whatever the default is.
-const OTHER = AVATAR_VARIANTS.find((v) => v.id !== ACTIVE_VARIANT)!.id
+// An OFFERED body that is not the default, whatever the default is.
+const OTHER = OFFERED_VARIANTS.find((v) => v.id !== ACTIVE_VARIANT)!.id
+// And one the registry declares without offering it, if there is one.
+const HELD_BACK = AVATAR_VARIANTS.find((v) => !v.offered)?.id
 
 function memory(initial: Record<string, string> = {}) {
   const map = new Map(Object.entries(initial))
@@ -45,6 +47,23 @@ describe('initialVariantId', () => {
     // are both the visitor's state: the default body loads through them.
     const storage = memory({ [VARIANT_STORAGE_KEY]: 'outfit-that-was-removed' })
     expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=never-declared`, storage)).toBe(ACTIVE_VARIANT)
+  })
+
+  it('refuses a body the registry declares but does not offer', () => {
+    // Not a typo and not a stale link: a real, loadable, measured body that a
+    // visitor is not allowed to ask for. The test above cannot stand in for
+    // this one, because `never-declared` is refused whether the gate reads the
+    // whole registry or only the offered half of it — which is the difference
+    // this is here to pin. Both entry points are checked: since 2026-09-07 an
+    // unoffered id could otherwise arrive from a hand-written link OR from
+    // storage written before the id stopped being offered.
+    expect(
+      HELD_BACK,
+      'the registry now offers every body it declares, so this guard measures nothing',
+    ).toBeDefined()
+    const storage = memory({ [VARIANT_STORAGE_KEY]: HELD_BACK! })
+    expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=${HELD_BACK}`, storage)).toBe(ACTIVE_VARIANT)
+    expect(initialVariantId('', storage)).toBe(ACTIVE_VARIANT)
   })
 
   it('never writes storage on the way in', () => {

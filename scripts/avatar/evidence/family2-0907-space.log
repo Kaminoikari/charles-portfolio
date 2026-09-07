@@ -1,0 +1,28 @@
+
+=== pink  family vroid-sample-b  VRM 0  /avatar/mika-pink.vrm
+  head (0.000, 1.320, 0.005)   eye (-0.018, 1.377, -0.025)   toes (-0.041, 0.060, -0.083)
+  eye is -Z of the head bone (-29.7mm) -> faces -Z
+  toes are -Z of the head bone (-87.9mm)
+  leftHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (0.073, 0.996, 0.051)
+  rightHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (-0.072, 0.996, 0.051)
+
+=== milfy  family vroid-sample-b  VRM 0  /avatar/mika-milfy-12.vrm
+  head (0.000, 1.320, 0.005)   eye (-0.018, 1.377, -0.025)   toes (-0.041, 0.060, -0.083)
+  eye is -Z of the head bone (-29.7mm) -> faces -Z
+  toes are -Z of the head bone (-87.9mm)
+  leftHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (0.073, 0.996, 0.051)
+  rightHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (-0.072, 0.996, 0.051)
+
+=== base  family vroid-sample-b  VRM 0  /avatar/AvatarSample_B_webp.vrm
+  head (0.000, 1.320, 0.005)   eye (-0.018, 1.377, -0.025)   toes (-0.041, 0.060, -0.083)
+  eye is -Z of the head bone (-29.7mm) -> faces -Z
+  toes are -Z of the head bone (-87.9mm)
+  leftHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (0.073, 0.996, 0.051)
+  rightHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (-0.072, 0.996, 0.051)
+
+=== twist  family vrm1-twist-sample  VRM 1  /avatar/vrm1-twist-sample.vrm
+  head (-0.000, 1.386, -0.025)   eye (0.017, 1.449, -0.003)   toes (0.077, 0.038, 0.078)
+  eye is +Z of the head bone (21.4mm) -> faces +Z
+  toes are +Z of the head bone (103.0mm)
+  leftHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (-0.115, 0.993, 0.035)
+  rightHand rest rotation 0.0deg   PALM_REST says (0.000, -1.000, 0.000)   geometry says (0.115, 0.993, 0.035)

@@ -31,7 +31,7 @@ console.log(`family ${f.family}  file restCrownY ${f.restCrownY}  this body ${re
 console.log('clip/frame              pan   transfer  +browser  +VRoid sim  top edge  waived to  headroom')
 for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
   for (const frame of def.placements) {
-    const pan = def.pan?.[frame] ?? 0
+    const pan = f.pans[clip]?.[frame] ?? 0
     const view = avatarViewSpan(f.framings.frames[frame], f.framings.fov)
     // A clip may declare a crownTop waiver: the height it is ALLOWED to reach
     // past the frame's top edge. panRange honours it, so headroom must too.

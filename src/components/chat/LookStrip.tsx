@@ -2,7 +2,9 @@
 //
 // Same shape as MotionStrip and for the same reason: always visible, so what
 // she can turn into is on the table rather than behind a settings gear. One
-// chip per declared body (avatarVariants); the one on screen is pressed, and
+// chip per OFFERED body (avatarVariants), which since 2026-09-07 is fewer than
+// it declares: a body in the registry that is not offered must never appear
+// here. The one on screen is pressed, and
 // every chip is disabled while a body is on its way — a second tap
 // mid-download would only queue a download the first one made pointless.
 //
@@ -17,8 +19,12 @@ import { prefetchBody } from './avatarPrefetch'
 import { useT } from '../../i18n/useT'
 
 export interface LookStripProps {
-  /** The bodies on offer, in strip order. */
-  variants: readonly AvatarVariant[]
+  /**
+   * The bodies on offer, in strip order — offered ONLY. Typed so that `v.id` here is an OfferedVariantId,
+   * which is what chat.looks is keyed by: a body declared without a label
+   * cannot reach this component, and one reaching it cannot be missing one.
+   */
+  variants: readonly (AvatarVariant & { offered: true })[]
   /** The body on screen. */
   shown: AvatarVariantId
   /** A body is loading, or the first one has not landed yet: nothing is tappable. */

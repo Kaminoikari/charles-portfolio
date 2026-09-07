@@ -455,8 +455,11 @@ export function initAvatarGuide(
   // the render loop eases toward it, and setPlacement and setFraming land on it
   // when the composition cuts.
   function panTargetNow(): number {
-    if (!motionAction || settleDur > 0) return 0
-    return motionPan(motionName, motionFrame(placement))
+    // No family means no body on screen, and nothing to pan for. Since
+    // 2026-09-07 the pan is per family: the same clip moves the camera
+    // differently on a body whose hair sits higher.
+    if (!motionAction || settleDur > 0 || !shownFamily) return 0
+    return motionPan(motionName, motionFrame(placement), shownFamily)
   }
   function aimCamera(): void {
     const y = framingLookAtY + framePan
@@ -669,7 +672,11 @@ export function initAvatarGuide(
     // loaded.scene IS the glTF scene (three-vrm hands the same object back).
     VRMUtils.removeUnnecessaryVertices(loaded.scene)
     VRMUtils.combineSkeletons(loaded.scene) // removeUnnecessaryJoints is deprecated in three-vrm 3.x
-    VRMUtils.rotateVRM0(loaded) // VRM0 faces +Z; turn it toward the camera
+    // A 0.x body faces -Z (away from our camera), so this turns it round; on a
+    // 1.0 body, which already faces +Z, three-vrm makes the call a no-op. That
+    // asymmetry is why rigProbe reads its forward sign off the version rather
+    // than from a constant. Measured: evidence/family2-0907-space.log.
+    VRMUtils.rotateVRM0(loaded)
     scene.add(loaded.scene)
     if (loaded.lookAt) loaded.lookAt.target = eyeTarget
     pinArms(loaded)
