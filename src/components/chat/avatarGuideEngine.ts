@@ -1163,9 +1163,11 @@ export function initAvatarGuide(
       const motionActive = motionAction !== null
 
       // The clip-driven camera slide. A clip that does not fit the composition
-      // it is played in (only `dance`, which leaves the waist-up frame at the
-      // bottom and the column at the top) declares how far the frame has to move
-      // to hold it; the camera eases there while the clip runs and eases back the
+      // it is played in declares how far the frame has to move to hold it:
+      // `dance`, which leaves the waist-up frame at the bottom and the column
+      // at the top, and since 2026-09-07 `playFingers` and `scratchHead`, whose
+      // hair leaves the column by a couple of millimetres on the VRoid bodies.
+      // The camera eases there while the clip runs and eases back the
       // moment it starts putting its arms down, so the shot resolves as she does.
       // Every other clip asks for 0 and the filter's epsilon parks the camera
       // exactly where the placement put it — no per-frame matrix writes when

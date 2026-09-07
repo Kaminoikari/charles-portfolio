@@ -57,9 +57,11 @@ export interface MotionWaiver {
    * head or swings a tail toward the camera puts translucent tips a few
    * millimetres past the edge; the 2026-08-20 sweep found four clips doing it
    * (spin, playFingers, scratchHead, idleLoop) and shipped them, and this is
-   * that decision with a number on it. Five clips declare one today: those
-   * four, plus squat, whose rise the simulator sees past the edge and that
-   * sweep measured 18mm inside it.
+   * that decision with a number on it. Five clips declared one until
+   * 2026-09-07: those four, plus squat, whose rise the simulator sees past the
+   * edge and that sweep measured 18mm inside it. Three do today — playFingers
+   * and scratchHead took a derived +0.02 column pan instead, because the VRoid
+   * body's own simulation put them higher than anyone had accepted.
    */
   crownTop?: number
   /** Deepest hand-against-face ellipsoid value, when it drops below 1. */
@@ -80,8 +82,10 @@ export interface MotionWaiver {
  * hops 0.086m above it, and throws her hair higher still. One composition can hold that AND
  * `stretch`'s hands overhead, but only by spending the clearance the other eight
  * clips rely on. Rather than drop the clip (what happened on 2026-08-20) or
- * re-centre the frame for all nine, the camera moves for the clip that needs it
- * and moves back after: negative slides the frame DOWN, positive UP.
+ * re-centre the frame for all nine, the camera moves for the clips that need it
+ * and moves back after: negative slides the frame DOWN, positive UP. Since
+ * 2026-09-07 `playFingers` and `scratchHead` need a much smaller one too, for
+ * hair rather than for hips.
  *
  * The engine eases it in and out (stepFramePan) and rigProbe.test.ts measures a
  * panning clip against its OWN panned frame — and fails a pan the clip does not
@@ -184,10 +188,20 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   akimbo: { placements: ['waistUp', 'column'], showsPalm: false },
   // She turns her fingers over in front of her. The smallest of the ten:
   // 0.233 / 0.234 sideways, hands never above y=0.954. Palm -0.10.
-  playFingers: { placements: ['waistUp', 'column'], showsPalm: false },
+  // 2026-09-07: gains a +0.02 column pan. It never needed one while the crown
+  // came from the Milfy body. The number the guard reads for this clip in the
+  // column goes 1.6053 (the 2026-08-20 browser sweep) to 1.6143, and waist-up
+  // 1.5913 (the transfer) to 1.6220, so panFor's "smallest lift that clears"
+  // answers 2cm. The alternative was to
+  // widen its crownTop waiver from 1.606 to 1.6138 and keep the camera still,
+  // which is the owner's call to make and not a derivation, so the derived pan
+  // is what ships until that call is made.
+  playFingers: { placements: ['waistUp', 'column'], pan: { column: 0.02 }, showsPalm: false },
   // A hand up to the back of her head. Closest approach to her face is 1.34,
   // clear of the ellipsoid, and the palm does turn to the viewer at 0.89.
-  scratchHead: { placements: ['waistUp', 'column'], showsPalm: true },
+  // Same as playFingers, and for the same reason: +0.02 in the column, or a
+  // crownTop waiver widened from 1.607 to 1.6139 if the camera should stay put.
+  scratchHead: { placements: ['waistUp', 'column'], pan: { column: 0.02 }, showsPalm: true },
   // A standing idle, and by far the quietest clip here: 0.337 to the viewer's
   // left, 0.035 to the right, hands never above y=0.768. It does stand 0.152 to
   // one side of centre, at both ends and so throughout, which the fade slides
@@ -249,9 +263,10 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // So the frame moves for the clip instead, and the two numbers are derived,
   // not dialled. What has to fit is this clip's OWN rendered extremes: hips
   // 0.7525 at the bottom, crown 1.7276 at the top, 0.975m apart. Since
-  // 2026-09-07 that derivation is clearance.panFor rather than this paragraph,
-  // and it reproduces both numbers to the centimetre; what follows is why each
-  // is what it is.
+  // 2026-09-07 that derivation is clearance.panFor rather than this paragraph;
+  // what follows is why each was what it was when it was written by hand, and
+  // the note at the end of this comment is why panFor now answers a centimetre
+  // higher in both.
   //
   //   waistUp  -0.08  centres those in the 1.104m span (midpoint 1.240, rounded
   //                   to 1.24 like every lookAtY here): 65mm under her hips,
@@ -281,10 +296,21 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // holds every clip's crown, browser or derived, whichever is higher, to
   // its frames: the swing of Milfy's twin tails, a different spring chain,
   // is simulated rather than argued about.
+  //
+  // 2026-09-07: both numbers moved a centimetre, and the reason is that the
+  // crown they are solved against went up. The VRoid bodies (pink and the base
+  // sample, one geometry between them) were simulated in their own right for
+  // the first time -- springsim could not run on them until deriveManifest --
+  // and they throw this clip's hair higher than anything the guard had for it
+  // before: the column crown goes 1.7276 -> 1.7389 (+11.3mm) and the waist-up
+  // 1.7133 -> 1.7244 (+11.1mm), both of those previous numbers being the
+  // browser sweep rather than the Milfy transfer, which read lower still.
+  // clearance.panFor re-derives -0.07 and +0.14 from that, and rigProbe.test.ts
+  // holds these declarations to what it derives.
   dance: {
     placements: ['waistUp', 'column'],
     showsPalm: true,
-    pan: { waistUp: -0.08, column: 0.13 },
+    pan: { waistUp: -0.07, column: 0.14 },
   },
 }
 

@@ -285,10 +285,17 @@ export function measure(target: string, clearance: ClearanceFile | null): Report
       // spring solver threw it above the SIMULATED body's resting crown, plus
       // the fringe the browser draws past the topmost vertex, and this body
       // contributes its own resting crown (clearance.ts crownOn). Where a
-      // browser sweep has drawn it higher still, that number wins (crownBound).
+      // browser sweep, or another body of the family simulated in its own
+      // right, reaches higher still, that number wins (crownBound).
       if (clearance) {
         const crown = crownBound(clearance, name, placement, restCrown)
-        const crownLimit = waiver?.crownTop ?? frame.span.top
+        // A waiver raises this frame's edge and never lowers it. The waivers on
+        // the shipped family were all decided watching the column camera, whose
+        // edge is 1.6020; read as a replacement they would put the waist-up
+        // ceiling 252mm BELOW its own 1.8722 edge (spin's 1.6200, the tightest
+        // of the three that remain) and report negative slack for a clip with a
+        // quarter of a metre to spare (clearance.ts panRange).
+        const crownLimit = Math.max(frame.span.top, waiver?.crownTop ?? -Infinity)
         const crownSlack = crownLimit - crown
         if (crownSlack < 0) tight += 1
         say(

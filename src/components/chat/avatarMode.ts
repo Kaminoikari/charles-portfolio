@@ -104,11 +104,15 @@ export function stepHeadAim(prev: number, target: number, dt: number): number {
 // declares a pan (avatarMotions' MotionPan) slides the frame while it plays and
 // slides it back afterwards, and this is the trip between the two.
 //
-// Slow on purpose, and it can afford to be. The clip that needs it is 26.8s long
-// and does not reach the edge it is being moved for until t=7.77s, so nothing
-// here is racing a deadline; what it is avoiding is a camera that appears to
-// snap. At 1.6 and 60fps the move is 80% done in a second, is 0.6mm short of a
-// -0.08 pan at three seconds, and snaps onto it (the epsilon below) at 3.7s.
+// Slow on purpose, and it can afford to be. The clip this was tuned for is
+// 26.8s long and does not reach the edge it is being moved for until t=7.77s,
+// so nothing here is racing a deadline; what it is avoiding is a camera that
+// appears to snap. At 1.6 and 60fps the move is 80.8% done in a second, is
+// 0.53mm short of a -0.07 pan at three seconds, and snaps onto it (the epsilon
+// below) at 3.62s. Two more clips have taken a 2cm pan since, which arrives
+// sooner still for being a quarter of the distance -- but also sooner than
+// their hair gets there, which clearance.test.ts checks (see the crownT walk
+// in "has the pan it needs by the time the crown gets there").
 export const FRAME_PAN_SMOOTHING = 1.6
 // Below this the filter's asymptote is called arrived. A one-pole never reaches
 // its target, and a camera that is 0.2mm out forever keeps rewriting its own
@@ -303,8 +307,11 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 // metres of height. That is where AVATAR_COLUMN_ASPECT comes from.
 //
 // Composed for a figure that stands still, which is what nine of the ten clips
-// do. `dance` does not: its hop throws her hair to 1.7276, 126mm past this top
+// do. `dance` does not: its hop throws her hair to 1.7389, 137mm past this top
 // edge, so it pans this frame up while it plays (avatarMotions' MotionPan).
+// Standing still is not quite enough either: `playFingers` and `scratchHead`
+// stand, and on the VRoid bodies their hair still ends up a few millimetres
+// over this edge, so since 2026-09-07 they pan it by 0.02 as well.
 //
 // The 0.02m of headroom above is measured to the hair's BIND POSE. On the render
 // the spring bones settle it 29mm lower when she stands still (49mm of clearance,

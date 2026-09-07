@@ -10,7 +10,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-sample-b",
   "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",
   "simulatedOn": "/avatar/mika-milfy-12.vrm",
-  "producedBy": "a9628b9",
+  "producedBy": "b49f6b6",
   "restCrownY": 1.5757,
   "restCrownScreen": {
     "waistUp": 1.5786,
@@ -30,9 +30,15 @@ export const SIMULATED: ClearanceSimulated = {
       }
     },
     "pans": {
+      "playFingers": {
+        "column": 0.02
+      },
+      "scratchHead": {
+        "column": 0.02
+      },
       "dance": {
-        "waistUp": -0.08,
-        "column": 0.13
+        "waistUp": -0.07,
+        "column": 0.14
       }
     }
   },
@@ -53,8 +59,8 @@ export const SIMULATED: ClearanceSimulated = {
       "crownY": 1.6647,
       "crownT": 11.97,
       "crownScreen": {
-        "waistUp": 1.7013,
-        "column": 1.7099
+        "waistUp": 1.7,
+        "column": 1.7087
       },
       "coatDepthMm": 37.5,
       "bodyDepthMm": 50,
@@ -102,7 +108,7 @@ export const SIMULATED: ClearanceSimulated = {
       "crownT": 4.6,
       "crownScreen": {
         "waistUp": 1.5835,
-        "column": 1.5936
+        "column": 1.5928
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 4.8,
@@ -114,7 +120,7 @@ export const SIMULATED: ClearanceSimulated = {
       "crownT": 5.83,
       "crownScreen": {
         "waistUp": 1.5835,
-        "column": 1.5933
+        "column": 1.5924
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,

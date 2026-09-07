@@ -9,6 +9,7 @@
 import { combineClearance, type ClearanceDecisions } from '../clearance'
 import { MEASURED } from './vroid-sample-b.measured.gen'
 import { SIMULATED } from './vroid-sample-b.simulated.gen'
+import { SIMULATED as PINK } from './vroid-sample-b.pink.simulated.gen'
 
 const DECISIONS: ClearanceDecisions = {
   // Read 2026-09-06 on the Milfy body in the live-preview page (the real
@@ -32,20 +33,33 @@ const DECISIONS: ClearanceDecisions = {
   // Until 2026-09-07 these rows were the only crown of THEIR OWN those bodies
   // could have (they always had one transferred from the Milfy simulation by
   // crownOn), because the simulator refused a body with no `.parts.json`
-  // beside it and no build wrote one for them. springsim.deriveManifest lifted that, so
-  // they CAN now be simulated directly, and doing so would replace the transfer
-  // with a reading. That has not been done: these numbers are what a browser
-  // actually drew, and only ever raised.
+  // beside it and no build wrote one for them. springsim.deriveManifest lifted
+  // that, and on 2026-09-07 it WAS done: vroid-sample-b.pink.simulated.gen.ts
+  // is the VRoid body's own ten clips, and it goes in as alsoSimulated so the
+  // family's crown is the worst of its bodies rather than one body's plus four
+  // hand corrections.
+  //
+  // These browser rows stay. They are what a browser actually drew, they are
+  // only ever raised, and they are the only reading here that is not the
+  // simulator's -- which is exactly what makes them worth keeping as a second
+  // opinion on it. Three of the four now sit BELOW the VRoid body's own
+  // simulated crown, which is the transfer having under-read them.
   // Every clip that sweep put above its derived crown is here; the ones it
   // drew lower are left out, because rigProbe.test refuses a hand number below
   // the derived one (a sweep that missed the peak is fixed by sweeping again,
   // not by recording a lower floor). Only ever raised by hand from a sweep.
   //
-  //   dance        column +0.13 pan, worst of eighteen full sweeps 1.7276,
-  //                against a derived 1.7177; the waist-up frame at -0.08 pan
-  //                1.7133 against 1.7091, 78.9mm under its 1.7922 top edge.
-  //   scratchHead  1.6068 against a derived 1.6011 (+5.7mm).
-  //   playFingers  1.6053 against a derived 1.6014 (+3.9mm).
+  //   dance        column +0.14 pan, worst of eighteen full sweeps 1.7276,
+  //                against a derived 1.7165; the waist-up frame at -0.07 pan
+  //                1.7133 against 1.7078, 88.9mm under its 1.8022 top edge.
+  //                (Both browser numbers are now under the VRoid body's own
+  //                simulation, 1.7389 and 1.7244, which is what the frames
+  //                actually have to clear.)
+  //   scratchHead  1.6068 against a derived 1.6002 (+6.6mm).
+  //   playFingers  1.6053 against a derived 1.6006 (+4.7mm).
+  //                (Both derived values are 0.9mm and 0.8mm lower than they
+  //                read before 2026-09-07: those two clips took a +0.02 column
+  //                pan, and a pan is applied before the projection.)
   //   peaceSign    1.5748 against a derived 1.5656 (+9.2mm). Still 27mm under
   //                the column's edge, so it needs no waiver; it is here
   //                because the rule is what the browser drew, not what fails.
@@ -80,21 +94,28 @@ const DECISIONS: ClearanceDecisions = {
     // Its breathing lifts the crown 2.3mm past the column's top edge on the
     // base body (derived; the column is composed 20mm over resting hair).
     idleLoop: { hipsDrift: 0.16, crownTop: 1.605 },
-    // The column's top edge against four standing clips, against a 1.6020
-    // edge. This is the decision the 2026-08-20 sweep took by eye ("超出
-    // 0.4mm 到 5mm ... 這是既有狀態 ... 沒有處理") with numbers on it, and it
-    // covers both routes into crownBound: spin 1.6185 and squat 1.6022 are the
-    // simulator's, where a turn brings a tail toward the camera and a rise
-    // lifts it; scratchHead 1.6068 and playFingers 1.6053 are that sweep's own
-    // browser readings, which sit above what the simulator derives for those
-    // two (1.6011 and 1.6014) because the VRoid body's hair is longer.
+    // The column's top edge against the two standing clips left here, against
+    // a 1.6020 edge. This is the decision the 2026-08-20 sweep took by eye
+    // ("超出 0.4mm 到 5mm ... 這是既有狀態 ... 沒有處理") with numbers on it:
+    // spin 1.6185 and squat 1.6022 are the simulator's, where a turn brings a
+    // tail toward the camera and a rise lifts it. It used to cover the other
+    // route into crownBound as well -- scratchHead 1.6068 and playFingers
+    // 1.6053, that sweep's own browser readings, which sit above what the
+    // simulator derives for those two (1.6002 and 1.6006) because the VRoid
+    // body's hair is longer -- until those two took a pan instead (below).
     //
     // What passes the edge is translucent tips (alpha > 8): the same sweep put
     // the topmost pixel above alpha 128 32mm lower in the column.
     spin: { crownTop: 1.62 },
     squat: { crownTop: 1.603 },
-    scratchHead: { crownTop: 1.607 },
-    playFingers: { crownTop: 1.606 },
+    // scratchHead (1.607) and playFingers (1.606) were here until 2026-09-07.
+    // Both were the 2026-08-20 sweep's browser readings on the VRoid body,
+    // accepted because they were a few millimetres of translucent tip. The
+    // VRoid body's own simulation puts those two clips 7-9mm higher again, and
+    // rather than widen a concession, they now take the +0.02 column pan
+    // clearance.panFor derives. With the camera up, neither clip passes the
+    // top edge at all, and rigProbe.test.ts refuses a waiver a clip does not
+    // need -- which is how these two came out.
   },
   // Measured 2026-08-19 by retargeting all the clips of the pack onto
   // AvatarSample_B_webp.vrm; kept here so nobody re-adds one on the assumption
@@ -109,4 +130,8 @@ const DECISIONS: ClearanceDecisions = {
   },
 }
 
-export const CLEARANCE = combineClearance(MEASURED, SIMULATED, DECISIONS)
+// The VRoid body (mika-pink and AvatarSample_B are the same geometry: hashing
+// every attribute of every primitive gives b5f5a9c87fd2fca7 for both, one being
+// a recolour of the other, so one simulation covers both -- clearance.test.ts
+// holds them to that).
+export const CLEARANCE = combineClearance(MEASURED, SIMULATED, DECISIONS, [PINK])

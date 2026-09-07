@@ -1,0 +1,16 @@
+model public/avatar/mika-pink.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+  沒有 mika-pink.parts.json，部件改由檔案本身推導：1 個會動的髮部件（彈簧驅動 ≥40%），臉取表情驅動的 mesh，其餘全歸 Body_Skin。
+  因此 body 那欄量的是「頭髮進到身體**或衣服**多深」，不再是進到皮膚多深；推導出來的部件裡沒有 Outfit_Cardigan／Outfit_Bottom，跟它們有關的欄位一律印 —；crown 與 jump 照舊（髮頂本來就取所有部件的最高點）。
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+akimbo               —         —         —         —       —      —      30mm   6.37s        —      —  1.5956  0.10s  1.5657  1.5833    2.5°   9.62s  HairJoint-6860b79f-73ad-4520-99f0-4b3fcbd9ced8
+dance                —         —         —         —       —      —      50mm   8.37s        —      —  1.6614 11.97s  1.7394  1.7251   26.8°   7.82s  HairJoint-6860b79f-73ad-4520-99f0-4b3fcbd9ced8
+idleLoop             —         —         —         —       —      —      21mm   7.03s        —      —  1.5839  9.13s  1.5634  1.5753    0.4°   5.03s  HairJoint-80fa29ba-65cc-497a-abf4-8c8bc2de12f5
+modelPose            —         —         —         —       —      —      50mm   4.10s        —      —  1.6002  0.43s  1.5846  1.5905    2.6°   0.60s  HairJoint-4826bde9-7073-44db-adfd-3e30f1c6f4a3
+peaceSign            —         —         —         —       —      —      50mm   3.70s        —      —  1.5752  0.57s  1.5730  1.5693    4.3°   8.50s  HairJoint-a34583f2-17bb-4eea-9d70-e930e1ed183d
+playFingers          —         —         —         —       —      —      22mm   4.80s        —      —  1.6283  4.37s  1.6123  1.6205    2.4°   4.82s  HairJoint-6860b79f-73ad-4520-99f0-4b3fcbd9ced8
+scratchHead          —         —         —         —       —      —      50mm   2.60s        —      —  1.6221  1.10s  1.6124  1.6170    4.9°   3.47s  HairJoint-0fd9053c-ea8c-418e-ad52-8d96cab7ee79
+spin                 —         —         —         —       —      —      50mm   2.07s        —      —  1.6180  2.20s  1.6182  1.6121   16.0°   1.90s  HairJoint-0fd9053c-ea8c-418e-ad52-8d96cab7ee79
+squat                —         —         —         —       —      —      50mm   8.40s        —      —  1.5986  9.30s  1.5777  1.5896    6.6°   2.93s  HairJoint-0fd9053c-ea8c-418e-ad52-8d96cab7ee79
+stretch              —         —         —         —       —      —      48mm   1.67s        —      —  1.8148  1.87s  1.8429  1.8273    3.7°   0.02s  HairJoint-a8676c3f-a6f7-492f-90a6-3a5babeed491
+rest crown 1.5820 (bind pose, topmost vertex of any part); through the column camera 1.5546, waist-up 1.5707
+wrote ../../../private/tmp/claude-501/-Users-charles-portfolio/4450d599-1b89-45e6-ae3e-7573f99646e3/scratchpad/pink.simulated.gen.ts

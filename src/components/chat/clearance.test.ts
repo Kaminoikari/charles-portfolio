@@ -25,7 +25,12 @@ import {
   type ClearanceSimulated,
 } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
-import { parseGlb, rigOf } from './vrmHumanoid'
+import { SIMULATED as PINK_SIMULATED } from './clearance/vroid-sample-b.pink.simulated.gen'
+import { AVATAR_MOTIONS, type AvatarMotionName } from './avatarMotions'
+import { avatarViewSpan, stepFramePan } from './avatarMode'
+import type { MotionFrame } from './avatarMotions'
+import { parseGlb, readAccessorRows, rigOf, type GltfJson } from './vrmHumanoid'
+import { AVATAR_VARIANTS } from './avatarVariants'
 
 const BODY = path.join('public', 'avatar', 'AvatarSample_B_webp.vrm')
 
@@ -105,6 +110,156 @@ describe('clearance producers', () => {
   }, 120_000)
 })
 
+describe('every body of the family, not only the one that was simulated', () => {
+  // The crown a clip has to clear is a property of the BODY, not of the rig:
+  // three bodies share this family and their hair differs. Until 2026-09-07
+  // only one of them could be simulated (springsim refused a body with no
+  // .parts.json), so the other two got a crown transferred onto them by
+  // crownOn -- the simulated body's crown motion re-anchored on their own
+  // resting crown -- with crownSeen carrying four hand-swept corrections where
+  // that under-read.
+  //
+  // deriveManifest lifted the restriction, so pink now has a crown of its own,
+  // and the transfer turns out to be wrong in both directions: it over-reads
+  // idleLoop's column by 39.4mm and under-reads playFingers' waist-up by
+  // 30.7mm. What matters is the under-reads, because the pan every body shares
+  // was solved against the bound (avatarGuideEngine passes no body to
+  // motionPan).
+  const FRINGE = CLEARANCE.crownFringe
+  // The body the guards are evaluated on, and the worst of the family: the
+  // transfer only means anything when it is anchored on a real body's resting
+  // crown, and reading the file's own 1.5757 back into crownOn cancels it and
+  // measures the simulated body against itself. rigProbe.test.ts uses
+  // deriveRestCrown(AvatarSample_B); PINK_SIMULATED.restCrownY is that number,
+  // taken from the file rather than re-derived here.
+  const REST_CROWN = PINK_SIMULATED.restCrownY
+
+  it('is one simulation because the two VRoid bodies are one geometry', () => {
+    // pink's ten clips stand in for the base sample's as well, and that is only
+    // sound while the two files are the same mesh: one is a recolour of the
+    // other, so their textures differ and not a vertex does. Simulating both
+    // took 95 minutes to produce two files differing in nothing but the body's
+    // name, which is the check that should have been run FIRST.
+    //
+    // If they ever diverge -- a re-export, a hair edit on one of them -- this
+    // reddens, because from that moment the base body has a crown nobody has
+    // measured and the family's worst is missing a candidate.
+    const geometry = (url: string): string => {
+      const raw = readFileSync(path.join(process.cwd(), 'public', url.replace(/^\//, '')))
+      const glb = parseGlb<GltfJson>(new Uint8Array(raw))
+      const digest = createHash('sha256')
+      for (const mesh of glb.json.meshes ?? []) {
+        for (const prim of mesh.primitives) {
+          // Sorted so two files that list the same attributes in another order
+          // still hash alike; the textures live elsewhere and are meant to differ.
+          for (const key of Object.keys(prim.attributes).sort()) {
+            const rows = readAccessorRows(glb as Parameters<typeof readAccessorRows>[0], prim.attributes[key])
+            digest.update(key)
+            digest.update(new Uint8Array(rows.data.buffer, rows.data.byteOffset, rows.data.byteLength))
+          }
+        }
+      }
+      return digest.digest('hex').slice(0, 16)
+    }
+    const pink = AVATAR_VARIANTS.find((v) => v.id === 'pink')
+    const base = AVATAR_VARIANTS.find((v) => v.id === 'base')
+    expect(pink && base, 'both VRoid variants are declared').toBeTruthy()
+    expect(geometry(base!.url), `${base!.url} is no longer the same mesh as ${pink!.url}`)
+      .toBe(geometry(pink!.url))
+    expect(PINK_SIMULATED.simulatedOn, 'and pink is the one that was simulated').toBe(pink!.url)
+  })
+
+  const ceilingOf = (clip: string, frame: MotionFrame): number => {
+    const span = avatarViewSpan(CLEARANCE.framings.frames[frame], CLEARANCE.framings.fov)
+    const pan = AVATAR_MOTIONS[clip as AvatarMotionName].pan?.[frame] ?? 0
+    // The waiver raises the edge and never lowers it: every one of them was
+    // decided on the column framing, and replacing the edge outright put
+    // spin's 1.6200 concession 252mm below the waist-up frame (clearance.ts
+    // panRange).
+    return Math.max(span.top, CLEARANCE.clips[clip].waiver?.crownTop ?? -Infinity) + pan
+  }
+
+  it('carries every simulated body into the crown it hands out', () => {
+    // The wiring, not the arithmetic. Reading the pink file directly and
+    // comparing it to a ceiling was the first version of this test, and it
+    // passed with that body left out of combineClearance entirely -- it never
+    // asked the clearance file anything (evidence/mutations-0907-crown.md K3,
+    // the shape feedback_injection_bypasses_wiring is about). What has to hold
+    // is that the bound the FILE hands out is at least what each body it names
+    // actually draws.
+    const missed: string[] = []
+    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+      for (const frame of def.placements) {
+        const bound = crownBound(CLEARANCE, clip, frame, REST_CROWN)
+        for (const body of CLEARANCE.alsoSimulated) {
+          const drawn = body.clips[clip].crownScreen[frame] + FRINGE
+          if (bound + 1e-9 < drawn) {
+            missed.push(`${clip}/${frame}: ${body.simulatedOn} draws ${drawn.toFixed(4)}, the file bounds ${bound.toFixed(4)}`)
+          }
+        }
+      }
+    }
+    expect(CLEARANCE.alsoSimulated.length, 'a second body was simulated at all').toBeGreaterThan(0)
+    expect(missed, 'the family hands out a crown lower than one of its own bodies draws').toEqual([])
+  })
+
+  it('has the pan it needs by the time the crown gets there, not only at rest', () => {
+    // A pan is not applied the moment a clip starts: stepFramePan eases the
+    // camera onto it, and rigProbe.test's crown guard compares against the
+    // SETTLED edge. That was harmless while the only panning clip was `dance`,
+    // whose crown peaks at 11.97s with the camera long since parked. The two
+    // clips that took a +0.02 column pan on 2026-09-07 are not like that:
+    // pink's scratchHead throws its crown at t=1.10s, with 83% of 2cm applied.
+    //
+    // Still clears, by 4.4mm rather than the 7.8mm the settled guard derives.
+    // What this pins is that a future pan on an early-peaking clip cannot be
+    // derived against a camera that has not arrived yet.
+    const DT = 1 / 60
+    const applied = (target: number, t: number): number => {
+      let v = 0
+      for (let elapsed = 0; elapsed < t; elapsed += DT) v = stepFramePan(v, target, DT)
+      return v
+    }
+    const late: string[] = []
+    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+      for (const frame of def.placements) {
+        const pan = def.pan?.[frame] ?? 0
+        if (pan <= 0) continue // a downward pan buys headroom at the top from the first frame
+        const settled = ceilingOf(clip, frame)
+        // Every body that contributes a crown, each at ITS OWN peak time: the
+        // file's clip carries the simulated body's crownT, and each
+        // alsoSimulated body carries its own.
+        const peaks: [number, number, string][] = [
+          [CLEARANCE.clips[clip].crownT, crownOn(CLEARANCE, clip, frame, REST_CROWN), CLEARANCE.simulatedOn],
+          ...CLEARANCE.alsoSimulated.map((b): [number, number, string] =>
+            [b.clips[clip].crownT, b.clips[clip].crownScreen[frame] + FRINGE, b.simulatedOn]),
+        ]
+        for (const [t, crown, body] of peaks) {
+          const edge = settled - pan + applied(pan, t)
+          if (crown > edge) {
+            late.push(`${clip}/${frame}: ${body} draws ${crown.toFixed(4)} at t=${t}s, edge only ${edge.toFixed(4)} by then`)
+          }
+        }
+      }
+    }
+    expect(late, 'a clip reaches its crown before the pan that clears it does').toEqual([])
+  })
+
+  it('keeps every declared body inside the frame it is filmed in', () => {
+    const over: string[] = []
+    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+      for (const frame of def.placements) {
+        const bound = crownBound(CLEARANCE, clip, frame, REST_CROWN)
+        const ceiling = ceilingOf(clip, frame)
+        if (bound > ceiling) {
+          over.push(`${clip}/${frame} by ${((bound - ceiling) * 1000).toFixed(1)}mm`)
+        }
+      }
+    }
+    expect(over, 'a body of this family draws its crown above the top of frame').toEqual([])
+  })
+})
+
 describe('combineClearance', () => {
   const measured: ClearanceMeasured = {
     family: 'f',
@@ -164,6 +319,34 @@ describe('combineClearance', () => {
     expect(() => combineClearance(measured, { ...simulated, clips: {} }, decisions)).toThrow(/dance/)
   })
 
+  it('refuses a second body simulated under another composition', () => {
+    // crownScreen is a projection through the frame's camera WITH the clip's
+    // pan applied, so a body simulated under an older framing, lens or pan is
+    // carrying numbers for a shot the site no longer takes. The guard that
+    // catches this for the primary simulation (rigProbe.test.ts, "was
+    // simulated under the composition the engine uses today") reads
+    // ClearanceFile.framings, and combineClearance fills that from the primary
+    // alone -- so a stale second body would have reached crownBound with
+    // nothing looking at it.
+    const twin = { ...simulated, simulatedOn: '/avatar/c.vrm' }
+    expect(combineClearance(measured, simulated, decisions, [twin]).alsoSimulated).toHaveLength(1)
+    const otherLens = { ...twin, framings: { ...twin.framings, fov: 13.5 } }
+    expect(() => combineClearance(measured, simulated, decisions, [otherLens]))
+      .toThrow(/composition/)
+    const otherPan = { ...twin, framings: { ...twin.framings, pans: { dance: { column: 0.13 } } } }
+    expect(() => combineClearance(measured, simulated, decisions, [otherPan]))
+      .toThrow(/composition/)
+    const otherFrame = {
+      ...twin,
+      framings: {
+        ...twin.framings,
+        frames: { ...twin.framings.frames, column: { distance: 2.441, lookAtY: 1.1 } },
+      },
+    }
+    expect(() => combineClearance(measured, simulated, decisions, [otherFrame]))
+      .toThrow(/composition/)
+  })
+
   it('refuses a missing browser fringe rather than defaulting it', () => {
     // The fringe is the one number no script produces. Absent, the crown row
     // would silently compare the projected vertex against the frame with no
@@ -205,6 +388,31 @@ describe('combineClearance', () => {
     expect(r.least, 'and one that does not contain zero').toBeGreaterThan(0)
     expect(() => panFor(pinched, 'dance', 'column', pinched.restCrownY, 'least', ['column']))
       .toThrow(/no pan on the centimetre/)
+  })
+
+  it('lets a waiver raise a frame edge and never lower one', () => {
+    // Every crownTop waiver on the shipped family was decided on the column
+    // framing, whose top edge is 1.6020; the waist-up frame's is 1.8722. Until
+    // 2026-09-07 the waiver REPLACED the edge, so a 1.606 concession became a
+    // ceiling 266mm below the frame the clip is actually filmed in, and a clip
+    // clearing that frame by a quarter of a metre read as 16mm over the top.
+    //
+    // The shipped file cannot show this any more: the two clips it bit are the
+    // two whose waivers a pan replaced. So it is shown here, on a file built to
+    // have exactly that shape -- a waiver far under the waist-up edge.
+    const file = combineClearance(measured, simulated, {
+      ...decisions,
+      waivers: { dance: { crownTop: 1.61 } },
+    })
+    const wide = avatarViewSpan(file.framings.frames.waistUp, file.framings.fov)
+    expect(wide.top, 'the waist-up edge sits well above the waiver').toBeGreaterThan(1.61)
+    const range = panRange(file, 'dance', 'waistUp', file.restCrownY, ['waistUp'])
+    const crown = crownBound(file, 'dance', 'waistUp', file.restCrownY)
+    // The clip is inside the frame, so it needs no upward pan at all. Measured
+    // against the waiver instead, it would ask for one it does not need.
+    expect(crown).toBeLessThan(wide.top)
+    expect(range.least).toBeCloseTo(crown - wide.top, 9)
+    expect(range.least).toBeLessThan(0)
   })
 
   it('transfers a clip crown onto another body by its own resting crown', () => {

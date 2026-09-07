@@ -994,14 +994,16 @@ describe('head aim across mode changes', () => {
   })
 })
 
-// The camera's own filter. `dance` is the only clip that asks the frame to move
-// (avatarMotions' MotionPan); these are the properties that make the move read
-// as a camera and not as a cut.
+// The camera's own filter. Three clips ask the frame to move (avatarMotions'
+// MotionPan: dance in both frames, playFingers and scratchHead in the column);
+// these are the properties that make the move read as a camera and not as a
+// cut. The targets below are those clips' declared pans, so a re-derived pan
+// shows up here as well as in the clearance guards.
 describe('stepFramePan', () => {
   const dt = 1 / 60
 
   it('takes about a second to cover a pan, not a frame', () => {
-    const target = -0.08
+    const target = -0.07
     let v = 0
     let frames = 0
     while (Math.abs(target - v) > Math.abs(target) * 0.2 && frames < 600) {
@@ -1019,7 +1021,7 @@ describe('stepFramePan', () => {
     // 7.79/7.80/7.80, with 103-108 frames of the clip over that edge). The
     // camera has to be all the way there by then, not most of the way, in both
     // frames it pans in.
-    for (const target of [-0.08, 0.13]) {
+    for (const target of [-0.07, 0.14]) {
       let v = 0
       for (let t = 0; t < 7.77; t += dt) v = stepFramePan(v, target, dt)
       expect(v).toBe(target)
@@ -1030,13 +1032,13 @@ describe('stepFramePan', () => {
     // A one-pole is asymptotic: without the epsilon this never equals its
     // target and the engine's `framePan !== panTarget` check is true forever.
     let v = 0
-    for (let i = 0; i < 600; i++) v = stepFramePan(v, -0.08, dt)
-    expect(v).toBe(-0.08)
-    expect(stepFramePan(-0.08, -0.08, dt)).toBe(-0.08)
+    for (let i = 0; i < 600; i++) v = stepFramePan(v, -0.07, dt)
+    expect(v).toBe(-0.07)
+    expect(stepFramePan(-0.07, -0.07, dt)).toBe(-0.07)
   })
 
   it('comes back the same way it went', () => {
-    let v = -0.08
+    let v = -0.07
     let frames = 0
     while (v !== 0 && frames < 600) {
       v = stepFramePan(v, 0, dt)
@@ -1050,9 +1052,9 @@ describe('stepFramePan', () => {
     // dt-scaled, so a 30Hz tab and a 120Hz one see the same move over the same
     // wall-clock second rather than one of them panning at half speed.
     let slow = 0
-    for (let t = 0; t < 1; t += 1 / 30) slow = stepFramePan(slow, -0.08, 1 / 30)
+    for (let t = 0; t < 1; t += 1 / 30) slow = stepFramePan(slow, -0.07, 1 / 30)
     let fast = 0
-    for (let t = 0; t < 1; t += 1 / 120) fast = stepFramePan(fast, -0.08, 1 / 120)
+    for (let t = 0; t < 1; t += 1 / 120) fast = stepFramePan(fast, -0.07, 1 / 120)
     expect(Math.abs(slow - fast)).toBeLessThan(0.006)
   })
 })

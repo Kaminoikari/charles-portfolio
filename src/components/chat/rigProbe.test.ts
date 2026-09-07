@@ -632,7 +632,15 @@ describe('bundled motions', () => {
       // frame the browser drew 119mm of her hair past on the 2026-08-20 sweep.
       const crown = crownOf(name, placement)
       crownPast = Math.max(crownPast, crown - frame.span.top)
-      expect(crown, `${name} highest hair in ${placement}`).toBeLessThan(crownBudget ?? frame.span.top)
+      // The waiver raises this frame's edge and never lowers it. Every crownTop
+      // was decided on the column framing, so replacing the edge outright held
+      // the waist-up frame to a column concession 252mm below its own edge
+      // (spin, the tightest of the three; idleLoop and squat are 267 and 269).
+      // clearance.ts panRange has the same rule, and measure-motions.ts the
+      // same rule again for its report row.
+      expect(crown, `${name} highest hair in ${placement}`).toBeLessThan(
+        Math.max(frame.span.top, crownBudget ?? -Infinity),
+      )
     }
     if (crownBudget !== undefined) {
       expect(crownPast, `${name} declares a crownTop waiver it does not need`).toBeGreaterThan(0)

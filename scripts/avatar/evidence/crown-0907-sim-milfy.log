@@ -1,0 +1,15 @@
+model public/avatar/mika-milfy-12.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+akimbo             0mm       0mm       0mm        0%   0.00s    -0°      39mm   1.20s    -19mm  3.20s  1.5833  0.50s  1.5930  1.5837    2.5°   9.88s  HairTailR_5
+dance              0mm      37mm      37mm        0%  17.23s  -107°      50mm   7.93s     18mm 14.17s  1.6647 11.97s  1.7087  1.7000   21.7°   1.03s  HairTailR_5
+idleLoop           0mm       0mm       0mm        0%   0.00s    -3°       5mm   1.27s    -19mm  6.67s  1.5774  1.20s  1.5965  1.5820    0.3°   9.32s  HairTailL_5
+modelPose          0mm       0mm       0mm        0%   0.00s    -3°      16mm   1.37s    -19mm  5.00s  1.5754  0.50s  1.5770  1.5728    5.0°   3.98s  HairTailR_5
+peaceSign          0mm       0mm       0mm        0%   0.00s     4°      50mm   5.53s    -19mm  5.53s  1.5463  0.77s  1.5578  1.5476    4.5°  10.50s  HairTailL_5
+playFingers        0mm       0mm       0mm        0%   0.00s    -0°       5mm   0.37s    -19mm  4.27s  1.5822  4.60s  1.5928  1.5835    1.9°   5.18s  HairTailL_5
+scratchHead        0mm       0mm       0mm        0%   0.00s    -0°      50mm   4.73s    -19mm  6.43s  1.5830  5.83s  1.5924  1.5835    3.5°   0.47s  HairTailR_5
+spin               0mm      42mm      42mm        0%   2.07s   -90°       5mm   1.87s    -19mm  5.87s  1.5886  6.83s  1.6107  1.5958   12.4°   2.02s  HairTailL_2
+squat              0mm       0mm       0mm        0%   0.00s     0°       5mm   1.13s    -19mm  0.63s  1.5928  8.20s  1.5944  1.5918   12.7°   3.27s  HairTailR_5
+stretch            0mm       0mm       0mm        0%   0.00s    -0°       5mm   0.40s    -19mm  2.67s  1.7992  1.80s  1.8213  1.8081    3.5°   3.87s  HairTailL_5
+rest crown 1.5757 (bind pose, topmost vertex of any part); through the column camera 1.5881, waist-up 1.5786
+wrote src/components/chat/clearance/vroid-sample-b.simulated.gen.ts
+milfy exit=0

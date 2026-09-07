@@ -83,11 +83,19 @@ describe('measure-motions', () => {
   // is to still catch a hang.
   let shipped: Report
   let taller: Report
+  let waiverBand: Report
 
   beforeAll(() => {
     shipped = measure(SHIPPED, CLEARANCE)
     taller = measure(scaledBody(1.35), CLEARANCE)
-  }, 180_000)
+    // 1.15 is chosen, not arbitrary: it is the one band where a waived clip's
+    // waist-up crown sits ABOVE its waiver and still BELOW the frame's own top
+    // edge. spin's waiver is 1.6200 and the waist-up edge 1.8722, and this body
+    // puts its crown at 1.84. Neither the shipped body (crown below both) nor
+    // the 1.35 body (crown above both) can tell a waiver read as a ceiling
+    // apart from a waiver read as a raise. See the crown row below.
+    waiverBand = measure(scaledBody(1.15), CLEARANCE)
+  }, 240_000)
 
   it('reports the shipped body as fitting, waiver and all', () => {
     expect(shipped.tight, shipped.lines.join('\n')).toBe(0)
@@ -155,11 +163,29 @@ describe('measure-motions', () => {
     // leaves the frame would have passed the whole report.
     const shippedText = shipped.lines.join('\n')
     // dance in the column: derived crown against the panned top edge
-    // (1.602 + 0.13), with room to spare on the shipped body.
-    expect(shippedText).toMatch(/column\s+髮頂　1\.7\d{3}　上緣 1\.7320.*餘裕  \d/)
+    // (1.602 + 0.14), with room to spare on the shipped body. The pan was 0.13
+    // and the edge 1.7320 until 2026-09-07, when the VRoid bodies were
+    // simulated in their own right for the first time and turned out to throw
+    // this clip 13mm higher than the Milfy body it had been transferred from.
+    expect(shippedText).toMatch(/column\s+髮頂　1\.7\d{3}　上緣 1\.7420.*餘裕  \d/)
     expect(shippedText).not.toContain('推導不出來')
     // A 35% taller body carries its crown up with it; the frame does not move.
     const tallerText = taller.lines.join('\n')
-    expect(tallerText).toMatch(/髮頂　2\.\d{4}　上緣 1\.7320.*餘裕 -\d/)
+    expect(tallerText).toMatch(/髮頂　2\.\d{4}　上緣 1\.7420.*餘裕 -\d/)
+  })
+
+  it('lets a waiver raise the top edge it reports against, never lower it', () => {
+    // A crownTop waiver is the owner having watched a clip leave the frame and
+    // accepted it. Every waiver in the shipped family was decided on the column
+    // camera, whose edge is 1.6020, and the waist-up edge is 1.8722 — so read
+    // as a REPLACEMENT rather than a raise, spin's 1.6200 waiver becomes a
+    // ceiling 252mm below its own frame and this row reports a violation for a
+    // clip with 31mm to spare. Three copies of that read existed on 2026-09-07
+    // (clearance.panRange, rigProbe.test, and this report); this pins the third.
+    const line = waiverBand.lines.find(
+      (l) => l.includes('waistUp') && l.includes('已放行到 1.6200'),
+    )
+    expect(line, waiverBand.lines.join('\n')).toBeDefined()
+    expect(line).toMatch(/髮頂　1\.8\d{3}　上緣 1\.8722（已放行到 1\.6200）　餘裕  \d/)
   })
 })

@@ -166,6 +166,24 @@ export interface ClearanceFile {
   crownSeen: Record<string, Partial<Record<MotionFrame, number>>>
   clips: Record<string, ClipClearance>
   excluded: Record<string, string>
+  /**
+   * Other bodies of this family simulated in their own right.
+   *
+   * A crown is a property of the BODY, not of the rig: bodies sharing a rig
+   * have their own hair. Until 2026-09-07 only one body of a family could be
+   * simulated at all (springsim refused a body with no `.parts.json`), so the
+   * others got a crown transferred onto them by crownOn and crownSeen carried
+   * hand-swept corrections where that under-read. springsim.deriveManifest
+   * lifted the restriction, and the transfer turns out to be wrong in both
+   * directions -- on this family it over-reads idleLoop's column by 39.4mm and
+   * under-reads playFingers' waist-up by 30.7mm (measured on the body the
+   * guards use, whose resting crown is 1.5820, not on the file's own 1.5757).
+   *
+   * The under-reads are what matter, because the pan is shared: nothing passes
+   * a body to motionPan. So the family's crown is the WORST any of its bodies
+   * draws, which is what crownSeen was doing by hand for four clips.
+   */
+  alsoSimulated: readonly ClearanceSimulated[]
 }
 
 /**
@@ -177,6 +195,7 @@ export function combineClearance(
   measured: ClearanceMeasured,
   simulated: ClearanceSimulated,
   decisions: ClearanceDecisions,
+  alsoSimulated: readonly ClearanceSimulated[] = [],
 ): ClearanceFile {
   if (measured.family !== simulated.family) {
     throw new Error(`clearance family mismatch: measured ${measured.family}, simulated ${simulated.family}`)
@@ -188,6 +207,33 @@ export function combineClearance(
   }
   if (!Number.isFinite(decisions.crownFringe)) {
     throw new Error(`clearance ${measured.family}: crownFringe is not a number; read it in the browser (see ClearanceDecisions)`)
+  }
+  for (const other of alsoSimulated) {
+    if (other.rigSha !== simulated.rigSha) {
+      throw new Error(
+        `clearance ${measured.family}: ${other.simulatedOn} (${other.rigSha.slice(0, 12)}) is not the rig ${simulated.simulatedOn} (${simulated.rigSha.slice(0, 12)}) was simulated on`,
+      )
+    }
+    // crownScreen is a projection through the frame's camera WITH the clip's
+    // pan applied -- changing a pan by a centimetre moved every affected
+    // crownScreen here by up to 2.2mm. rigProbe.test.ts holds the primary
+    // simulation to today's composition, but it reads ClearanceFile.framings,
+    // which is the primary's. A second body simulated under an older framing
+    // would feed stale projections straight into crownBound with nothing
+    // looking at it, so the composition has to match here.
+    // The pans belong in this comparison, not only the frames and the lens:
+    // a pan is the last thing applied before the projection, and it is the
+    // thing that actually moved on 2026-09-07.
+    if (JSON.stringify(other.framings) !== JSON.stringify(simulated.framings)) {
+      throw new Error(
+        `clearance ${measured.family}: ${other.simulatedOn} was simulated under a different composition than ${simulated.simulatedOn}; re-run springsim --clearance on it`,
+      )
+    }
+    for (const name of Object.keys(simulated.clips)) {
+      if (!other.clips[name]) {
+        throw new Error(`clearance ${measured.family}: ${other.simulatedOn} was not simulated on ${name}, so it cannot raise its crown`)
+      }
+    }
   }
   const clips: Record<string, ClipClearance> = {}
   for (const [name, m] of Object.entries(measured.clips)) {
@@ -218,6 +264,7 @@ export function combineClearance(
     crownSeen: decisions.crownSeen,
     clips,
     excluded: decisions.excluded,
+    alsoSimulated,
   }
 }
 
@@ -252,13 +299,24 @@ export function crownOn(file: ClearanceFile, clip: string, frame: MotionFrame, r
 }
 
 /**
- * The crown a frame has to clear: the derived one, or the highest a browser
- * sweep has drawn it at, whichever is higher. The simulator runs on one body
- * of the family; a sibling with longer hair can throw it higher, and the
- * sweep of that sibling is what crownSeen records.
+ * The crown a frame has to clear: the worst of three readings.
+ *
+ * The transfer (crownOn) carries the primary simulation onto this body; each
+ * `alsoSimulated` body reports its own hair directly; and `crownSeen` is the
+ * highest a browser has been watched drawing it. A sibling with longer hair
+ * can throw a clip higher than the simulated body does, which is what the last
+ * two are for -- crownSeen by hand until 2026-09-07, and by simulation since.
  */
 export function crownBound(file: ClearanceFile, clip: string, frame: MotionFrame, restCrownY: number): number {
-  return Math.max(crownOn(file, clip, frame, restCrownY), file.crownSeen[clip]?.[frame] ?? -Infinity)
+  // crownOn first, so an unknown clip is named rather than dereferenced: every
+  // alsoSimulated body is checked to cover every clip at combine time, so a
+  // clip missing from one of them is a clip missing from the file.
+  const transfer = crownOn(file, clip, frame, restCrownY)
+  // A body simulated in its own right needs no transfer: its crownScreen is
+  // already this frame's projection of its own hair. The transfer stays for a
+  // body nobody has simulated, which is what `restCrownY` describes.
+  const own = file.alsoSimulated.map((s) => s.clips[clip].crownScreen[frame] + file.crownFringe)
+  return Math.max(transfer, file.crownSeen[clip]?.[frame] ?? -Infinity, ...own)
 }
 
 /**
@@ -268,8 +326,8 @@ export function crownBound(file: ClearanceFile, clip: string, frame: MotionFrame
  * crown is a property of the clip. The two frames' projections of it differ by
  * about 14mm on the dance (perspective; they sit at different distances), and
  * taking the higher is the conservative half of that. It is also where the
- * dance's own -0.08 came from: the number its comment centres on, 1.7276, is
- * the column's reading used to compose the waist-up frame.
+ * dance's own -0.07 came from: the column's reading, 1.7389 since the VRoid
+ * body was simulated in its own right, is what composes the waist-up frame.
  */
 export function crownWorst(
   file: ClearanceFile,
@@ -307,10 +365,18 @@ export function panRange(
   // composition that has moved since makes them somebody else's numbers.
   const view = avatarViewSpan(file.framings.frames[frame], file.framings.fov)
   // A crownTop waiver is the owner having looked at this clip going past the
-  // top edge and accepted it, so it is the ceiling the clip has to clear -- five
-  // of the ten carry one, and deriving a pan against the unwaived edge would
-  // give every one of them a camera move nobody asked for.
-  const ceiling = c.waiver?.crownTop ?? view.top
+  // top edge and accepted it, so it RAISES the ceiling -- three of the ten
+  // carry one, and deriving a pan against the unwaived edge would give every
+  // one of them a camera move nobody asked for.
+  //
+  // It raises and never lowers. Until 2026-09-07 it replaced the edge outright,
+  // and every one of these waivers was decided on the COLUMN framing, against
+  // its 1.6020 edge. Applied to the waist-up frame, whose edge is 1.8722, that
+  // turned spin's 1.6200 concession into a ceiling 252mm BELOW the frame the
+  // clip is filmed in. No shipped clip's waist-up crown sat in that band, so
+  // nothing was ever mis-panned by it; a body 15% taller does sit in it, which
+  // is how measure-motions.test.ts pins the same read in the report.
+  const ceiling = Math.max(view.top, c.waiver?.crownTop ?? -Infinity)
   return {
     least: crownWorst(file, clip, restCrownY, frames) - ceiling,
     most: c.hipsLow - view.bottom,
@@ -321,14 +387,14 @@ export function panRange(
  * The pan a clip should be given in a frame, to the centimetre the
  * compositions are dialled in.
  *
- * Zero whenever zero fits, which is every clip but one: a frame that does not
+ * Zero whenever zero fits, which is seven of the ten: a frame that does not
  * have to move should not move, and the eased slide in and out is a thing the
  * visitor sees. When zero does not fit, the frame's policy picks a point in
  * the range that does.
  *
  * Rounded because a pan is a camera position a person reads off a screenshot,
  * not a measurement: `least` rounds UP so the crown stays in, `centre` rounds
- * to nearest, which is where the dance's -0.08 and +0.13 come from.
+ * to nearest, which is where the dance's -0.07 and +0.14 come from.
  */
 export function panFor(
   file: ClearanceFile,
