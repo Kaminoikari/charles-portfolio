@@ -271,7 +271,11 @@ export function combineClearance(
   for (const name of Object.keys(simulated.clips)) {
     if (!(name in measured.clips)) throw new Error(`clearance ${measured.family}: ${name} was simulated but not measured`)
   }
-  for (const name of [...Object.keys(decisions.waivers), ...Object.keys(decisions.crownSeen)]) {
+  // Every field that names clips belongs in this list. `pans` joined them on
+  // 2026-09-07 and was left out until a review noticed: a pan is read by clip
+  // name, so one naming a clip outside the pool is never read and nothing else
+  // would say so.
+  for (const name of [...Object.keys(decisions.waivers), ...Object.keys(decisions.crownSeen), ...Object.keys(decisions.pans)]) {
     if (!(name in clips)) throw new Error(`clearance ${measured.family}: a decision names ${name}, which no producer measured`)
   }
   return {

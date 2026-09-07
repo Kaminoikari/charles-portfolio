@@ -320,6 +320,18 @@ describe('combineClearance', () => {
     expect(() => combineClearance(measured, { ...simulated, clips: {} }, decisions)).toThrow(/dance/)
   })
 
+  it('refuses a decision naming a clip no producer measured, whichever kind of decision it is', () => {
+    // Three fields name clips, and a name outside the pool is a setting nothing
+    // will ever read: the clip was renamed or dropped and the decision stayed.
+    // `pans` is the one this check forgot when pans moved off AvatarMotionDef on
+    // 2026-09-07, and it is the kind that hides best -- a wrong pan VALUE is
+    // recomputed by rigProbe.test.ts against panFor, but a pan for a clip that
+    // is not in the pool is looked up by name and so never looked up at all.
+    expect(() => combineClearance(measured, simulated, { ...decisions, waivers: { squat: { hipsDrift: 0.2 } } })).toThrow(/squat/)
+    expect(() => combineClearance(measured, simulated, { ...decisions, crownSeen: { squat: { column: 1.6 } } })).toThrow(/squat/)
+    expect(() => combineClearance(measured, simulated, { ...decisions, pans: { squat: { column: 0.02 } } })).toThrow(/squat/)
+  })
+
   it('refuses a second body simulated under another composition', () => {
     // crownScreen is a projection through the frame's camera WITH the clip's
     // pan applied, so a body simulated under an older framing, lens or pan is

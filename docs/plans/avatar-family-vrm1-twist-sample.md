@@ -175,7 +175,7 @@ producer wrote. Mutation F10 reverts one pair and reddens one test; the file as
 it shipped, all ten pairs mirrored, reddens ten. Both counted:
 `evidence/family2-0907-reach-counts.log`.
 
-Receipts: `evidence/family2-0907-mutate.py` (F1–F10, nine RED and one GREEN
+Receipts: `evidence/family2-0907-mutate.py` (F1–F11, ten RED and one GREEN
 control), `family2-0907-space.log`, `family2-0907-ends-*.log`,
 `family2-0907-pans.log`, `family2-0907-table.log`, `family2-0907-bundle.log`,
 `family2-0907-reach-counts.log`.
@@ -226,7 +226,7 @@ can find anything" is not a condition that terminates, so from round four the
 bar is written down instead:
 
 - **Gate A — mechanical.** `npx vitest run`, `npm run build`, `pytest`, and
-  `family2-0907-mutate.py` all green, with the harness's ten rows reading nine
+  `family2-0907-mutate.py` all green, with the harness's eleven rows reading ten
   RED and F8 GREEN and every restore sha256-verified. Receipts are the `.log`
   files in `scripts/avatar/evidence/`.
 - **Gate B — scope and grade.** Reviewers read `9f47b0e..HEAD` and nothing
@@ -250,12 +250,16 @@ in two directions) and `family2-0907-space.ts`'s header, which described
 replaced them. A third was the Gate A sentence above pointing at a build receipt
 that did not exist; `family2-0907-build.log` is that receipt.
 
-**Recorded and not fixed**, per Gate B:
+Of the two the gate recorded rather than fixed, the owner asked for the first:
 
-- `clearance.ts:274` rejects a waiver or a `crownSeen` entry naming a clip no
-  producer measured, but `pans`, added on 2026-09-07, is not in that list. A pan
-  declared for a clip outside the pool is a silent dead key. Declaring the wrong
-  VALUE, or none at all, is still caught by the derivation guard.
+- `combineClearance`'s dead-key check rejected a waiver or a `crownSeen` entry
+  naming a clip no producer measured, and `pans` was missing from that list. A
+  pan for a clip outside the pool is read by name and so never read at all,
+  where a wrong pan VALUE is recomputed against `panFor`. The check now covers
+  all three, the test that reddens on each of them is
+  `clearance.test.ts`'s "refuses a decision naming a clip no producer measured",
+  and F11 is its receipt. That guard had no test of any kind before this.
 - `rigProbe.test.ts:530` runs once per family over `crownSeen`, which is empty
   for this one, so that guard asserts nothing on the second family. Nothing has
   rendered this body; the emptiness is the honest state, not a gap in coverage.
+  Left as it is.

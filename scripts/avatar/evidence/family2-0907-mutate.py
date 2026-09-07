@@ -35,6 +35,8 @@ AV = CHAT / 'avatarVariants.ts'
 AVT = CHAT / 'avatarVariants.test.ts'
 AVCT = CHAT / 'avatarVariantChoice.test.ts'
 GEN = CHAT / 'clearance' / 'vrm1-twist-sample.measured.gen.ts'
+CL = CHAT / 'clearance.ts'
+CLT = CHAT / 'clearance.test.ts'
 
 
 def t(path, title):
@@ -49,6 +51,7 @@ PANS = t(RPT, 'pans by what the measurements leave room for')
 EDGES = t(RPT, 'stays inside every frame it declares')
 FAMILY = t(AVT, 'declares a family for every variant')
 CHOICE = t(AVCT, 'refuses a body the registry declares but does not offer')
+DEADKEY = t(CLT, 'refuses a decision naming a clip no producer measured')
 
 MUTATIONS = [
     # ---- the probe space is the version's, not this module's ----------------
@@ -90,6 +93,15 @@ MUTATIONS = [
     ('F7', RP, "  return forwardZ(rig) === -1 ? -probeX : probeX\n",
      "  return forwardZ(rig) === -1 ? probeX : -probeX\n", EDGES,
      "screenX's mirror decides which edge is which, and the frame guard compares both against the sides the producer recorded"),
+    # ---- every kind of decision is held to the clip pool ---------------------
+    # combineClearance rejects a waiver or a crownSeen entry naming a clip no
+    # producer measured, and `pans` was left out of that list when it moved off
+    # AvatarMotionDef on 2026-09-07. It is the kind that hides best: a wrong pan
+    # VALUE is recomputed against panFor by rigProbe.test.ts, but a pan whose
+    # clip is not in the pool is read by name and so never read at all.
+    ('F11', CL, ', ...Object.keys(decisions.crownSeen), ...Object.keys(decisions.pans)]',
+     ', ...Object.keys(decisions.crownSeen)]', DEADKEY,
+     'a pan naming a clip outside the pool is refused, the way a waiver and a crownSeen entry already were'),
     # ---- the negative control ------------------------------------------------
     ('F8', TWIST, "    spin: { column: 0.05 },\n", "    spin: { column: 0.05, },\n", PANS,
      'a formatting-only edit must NOT redden the pan guard'),

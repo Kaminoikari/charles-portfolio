@@ -54,8 +54,7 @@ ly equal []
 ### K2
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.test.ts -t lets a waiver raise a frame edge and never lower one
-inside the frame it is filmed in
-   ↓ combineClearance > pairs two producers only on the same rig
+earance > refuses a decision naming a clip no producer measured, whichever kind of decision it is
    ↓ combineClearance > refuses a second body simulated under another composition
    ↓ combineClearance > refuses a missing browser fringe rather than defaulting it
    ↓ combineClearance > measures the pan against the fov the file was produced under
@@ -64,28 +63,28 @@ inside the frame it is filmed in
      → expected 0.10129999999999995 to be close to -0.16088114588426672, received difference is 0.26218114588426666, but expected 5e-10
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
-      Tests  1 failed | 11 skipped (12)
-   Start at  16:43:15
-   Duration  356ms (transform 58ms, setup 23ms, collect 85ms, tests 4ms, environment 143ms, prepare 25ms)
+      Tests  1 failed | 12 skipped (13)
+   Start at  19:37:23
+   Duration  345ms (transform 55ms, setup 23ms, collect 78ms, tests 3ms, environment 140ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > combineClearance > lets a waiver raise a frame edge and never lower one
 AssertionError: expected 0.10129999999999995 to be close to -0.16088114588426672, received difference is 0.26218114588426666, but expected 5e-10
- ❯ src/components/chat/clearance.test.ts:414:25
-    412|     // against the waiver instead, it would ask for one it does not ne…
-    413|     expect(crown).toBeLessThan(wide.top)
-    414|     expect(range.least).toBeCloseTo(crown - wide.top, 9)
+ ❯ src/components/chat/clearance.test.ts:427:25
+    425|     // against the waiver instead, it would ask for one it does not ne…
+    426|     expect(crown).toBeLessThan(wide.top)
+    427|     expect(range.least).toBeCloseTo(crown - wide.top, 9)
        |                         ^
-    415|     expect(range.least).toBeLessThan(0)
-    416|   })
+    428|     expect(range.least).toBeLessThan(0)
+    429|   })
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ### K3
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.test.ts -t carries every simulated body into the crown it hands out
- by the time the crown gets there, not only at rest
-   ↓ every body of the family, not only the one that was simulated > keeps every declared body inside the frame it is filmed in
+ulated > keeps every declared body inside the frame it is filmed in
    ↓ combineClearance > pairs two producers only on the same rig
+   ↓ combineClearance > refuses a decision naming a clip no producer measured, whichever kind of decision it is
    ↓ combineClearance > refuses a second body simulated under another composition
    ↓ combineClearance > refuses a missing browser fringe rather than defaulting it
    ↓ combineClearance > measures the pan against the fov the file was produced under
@@ -93,9 +92,9 @@ $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.t
    ↓ combineClearance > lets a waiver raise a frame edge and never lower one
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
-      Tests  1 failed | 11 skipped (12)
-   Start at  16:43:16
-   Duration  352ms (transform 57ms, setup 23ms, collect 80ms, tests 3ms, environment 143ms, prepare 26ms)
+      Tests  1 failed | 12 skipped (13)
+   Start at  19:37:24
+   Duration  343ms (transform 54ms, setup 23ms, collect 78ms, tests 3ms, environment 140ms, prepare 24ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > carries every simulated body into the crown it hands out
 AssertionError: a second body was simulated at all: expected 0 to be greater than 0
@@ -112,7 +111,7 @@ AssertionError: a second body was simulated at all: expected 0 to be greater tha
 ### K4
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.test.ts -t is one simulation because the two VRoid bodies are one geometry
- producers only on the same rig
+hichever kind of decision it is
    ↓ combineClearance > refuses a second body simulated under another composition
    ↓ combineClearance > refuses a missing browser fringe rather than defaulting it
    ↓ combineClearance > measures the pan against the fov the file was produced under
@@ -120,9 +119,9 @@ $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.t
    ↓ combineClearance > lets a waiver raise a frame edge and never lower one
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
-      Tests  1 failed | 11 skipped (12)
-   Start at  16:43:17
-   Duration  524ms (transform 56ms, setup 26ms, collect 81ms, tests 170ms, environment 142ms, prepare 25ms)
+      Tests  1 failed | 12 skipped (13)
+   Start at  19:37:25
+   Duration  499ms (transform 54ms, setup 23ms, collect 74ms, tests 156ms, environment 143ms, prepare 24ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > is one simulation because the two VRoid bodies are one geometry
 AssertionError: /avatar/AvatarSample_B_webp.vrm is no longer the same mesh as /avatar/mika-pink.vrm: expected 'b5f5a9c87fd2fca7' to be 'c849ab91c4ec5384' // Object.is equality
@@ -141,7 +140,7 @@ Received: [31m"b5f5a9c87fd2fca7"[39m
 ### K5
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for, not by a number dialled in
-.x body it ships on
+0.x body it ships on
    ↓ three-vrm humanoid rig > writes the pose through to the raw nodes, rest rotations included
    ↓ three-vrm humanoid rig > derives the face box from the meshes the expressions move, instead of carrying 2026-08-19 numbers
    ↓ three-vrm humanoid rig > leaves the neck rows out of the face box
@@ -150,8 +149,8 @@ $ npx vitest run --root /Users/charles/portfolio src/components/chat/rigProbe.te
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  16:43:18
-   Duration  439ms (transform 71ms, setup 24ms, collect 111ms, tests 48ms, environment 142ms, prepare 25ms)
+   Start at  19:37:26
+   Duration  413ms (transform 66ms, setup 23ms, collect 98ms, tests 45ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: dance in waistUp: expected -0.08 to be -0.07 // Object.is equality
@@ -159,13 +158,13 @@ AssertionError: dance in waistUp: expected -0.08 to be -0.07 // Object.is equali
 [31m+ Received[39m
 [32m- -0.07[39m
 [31m+ -0.08[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -181,8 +180,8 @@ he 0.x body it ships on
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  16:43:19
-   Duration  483ms (transform 69ms, setup 24ms, collect 107ms, tests 55ms, environment 171ms, prepare 26ms)
+   Start at  19:37:27
+   Duration  416ms (transform 65ms, setup 23ms, collect 100ms, tests 44ms, environment 144ms, prepare 24ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: playFingers in column: expected +0 to be 0.02 // Object.is equality
@@ -190,13 +189,13 @@ AssertionError: playFingers in column: expected +0 to be 0.02 // Object.is equal
 [31m+ Received[39m
 [32m- 0.02[39m
 [31m+ 0[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -209,12 +208,12 @@ sure-motions > reports the shipped body as fitting, waiver and all
    ↓ measure-motions > says no when the same clips are asked to run on a taller body
    ↓ measure-motions > counts exactly the violations it printed
    ↓ measure-motions > reports the derived crown against the top edge
-   × measure-motions > lets a waiver raise the top edge it reports against, never lower it 5ms
+   × measure-motions > lets a waiver raise the top edge it reports against, never lower it 3ms
      → expected '   waistUp  髮頂　1.8409　上緣 1.8722（已放行到 …' to match /髮頂　1\.8\d{3}　上緣 1\.8722（已放行到 1\.6200）…/
  Test Files  1 failed (1)
       Tests  1 failed | 6 skipped (7)
-   Start at  16:43:20
-   Duration  9.93s (transform 71ms, setup 23ms, collect 111ms, tests 9.55s, environment 143ms, prepare 25ms)
+   Start at  19:37:27
+   Duration  9.60s (transform 69ms, setup 23ms, collect 107ms, tests 9.22s, environment 143ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  scripts/measure-motions.test.ts > measure-motions > lets a waiver raise the top edge it reports against, never lower it
 AssertionError: expected '   waistUp  髮頂　1.8409　上緣 1.8722（已放行到 …' to match /髮頂　1\.8\d{3}　上緣 1\.8722（已放行到 1\.6200）…/
@@ -235,9 +234,9 @@ AssertionError: expected '   waistUp  髮頂　1.8409　上緣 1.8722（已放�
 ### K8
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.test.ts -t refuses a second body simulated under another composition
-ed > keeps every declared body inside the frame it is filmed in
-   ↓ combineClearance > pairs two producers only on the same rig
-   × combineClearance > refuses a second body simulated under another composition 5ms
+ on the same rig
+   ↓ combineClearance > refuses a decision naming a clip no producer measured, whichever kind of decision it is
+   × combineClearance > refuses a second body simulated under another composition 4ms
      → expected [Function] to throw an error
    ↓ combineClearance > refuses a missing browser fringe rather than defaulting it
    ↓ combineClearance > measures the pan against the fov the file was produced under
@@ -245,9 +244,9 @@ ed > keeps every declared body inside the frame it is filmed in
    ↓ combineClearance > lets a waiver raise a frame edge and never lower one
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
-      Tests  1 failed | 11 skipped (12)
-   Start at  16:43:31
-   Duration  491ms (transform 59ms, setup 33ms, collect 89ms, tests 5ms, environment 255ms, prepare 31ms)
+      Tests  1 failed | 12 skipped (13)
+   Start at  19:37:38
+   Duration  350ms (transform 56ms, setup 23ms, collect 81ms, tests 4ms, environment 142ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > combineClearance > refuses a second body simulated under another composition
 AssertionError: expected [Function] to throw an error
@@ -255,28 +254,28 @@ AssertionError: expected [Function] to throw an error
 null
 [31m+ Received:[39m 
 undefined
- ❯ src/components/chat/clearance.test.ts:335:8
-    333|     const otherLens = { ...twin, framings: { ...twin.framings, fov: 13…
-    334|     expect(() => combineClearance(measured, simulated, decisions, [oth…
-    335|       .toThrow(/composition/)
+ ❯ src/components/chat/clearance.test.ts:348:8
+    346|     const otherLens = { ...twin, framings: { ...twin.framings, fov: 13…
+    347|     expect(() => combineClearance(measured, simulated, decisions, [oth…
+    348|       .toThrow(/composition/)
        |        ^
-    336|     const otherPan = { ...twin, framings: { ...twin.framings, pans: { …
-    337|     expect(() => combineClearance(measured, simulated, decisions, [oth…
+    349|     const otherPan = { ...twin, framings: { ...twin.framings, pans: { …
+    350|     expect(() => combineClearance(measured, simulated, decisions, [oth…
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ### K9
 ```
 $ npx vitest run --root /Users/charles/portfolio src/components/chat/clearance.test.ts -t has the pan it needs by the time the crown gets there
-nge rather than defaulting it
+inge rather than defaulting it
    ↓ combineClearance > measures the pan against the fov the file was produced under
    ↓ combineClearance > refuses a pan that its own rounding puts outside the range
    ↓ combineClearance > lets a waiver raise a frame edge and never lower one
    ↓ combineClearance > transfers a clip crown onto another body by its own resting crown
  Test Files  1 failed (1)
-      Tests  1 failed | 11 skipped (12)
-   Start at  16:43:32
-   Duration  390ms (transform 73ms, setup 24ms, collect 110ms, tests 5ms, environment 149ms, prepare 25ms)
+      Tests  1 failed | 12 skipped (13)
+   Start at  19:37:38
+   Duration  343ms (transform 56ms, setup 23ms, collect 76ms, tests 5ms, environment 141ms, prepare 25ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/clearance.test.ts > every body of the family, not only the one that was simulated > has the pan it needs by the time the crown gets there, not only at rest
 AssertionError: a clip reaches its crown before the pan that clears it does: expected [ …(3) ] to deeply equal []

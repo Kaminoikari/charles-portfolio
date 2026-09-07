@@ -1,4 +1,4 @@
-# npm run build, 2026-09-07T11:08:48Z, after the round-4 advisory corrections
+# npm run build, 2026-09-07T11:38:39Z, after the pans dead-key fix
 
 > portfolio@0.0.0 build
 > tsc -b && vite build
@@ -9,15 +9,15 @@ rendering chunks...
 computing gzip size...
 dist/index.html                             21.06 kB │ gzip:   6.58 kB
 dist/assets/index-Be8BGSP_.css              72.30 kB │ gzip:  13.12 kB
-dist/assets/ChangelogPage-DPrTThyI.js        8.63 kB │ gzip:   2.66 kB
-dist/assets/ProjectDetailPage-Cutkvwdh.js   11.92 kB │ gzip:   3.28 kB
+dist/assets/ChangelogPage-ss1JFZyW.js        8.63 kB │ gzip:   2.66 kB
+dist/assets/ProjectDetailPage-BvoSqpUc.js   11.92 kB │ gzip:   3.28 kB
 dist/assets/particleHero-WVIYXBPR.js        21.75 kB │ gzip:   5.82 kB
-dist/assets/AboutPage-oNG8dprW.js          135.71 kB │ gzip:  50.51 kB
-dist/assets/avatarGuideEngine-zqS1v3hM.js  227.40 kB │ gzip:  59.26 kB
+dist/assets/AboutPage-CKUfgCNb.js          135.71 kB │ gzip:  50.51 kB
+dist/assets/avatarGuideEngine-CjbaNCYn.js  227.40 kB │ gzip:  59.26 kB
 dist/assets/three.module-DcjWpYFJ.js       556.16 kB │ gzip: 139.82 kB
-dist/assets/index-CvAx1sgh.js              943.83 kB │ gzip: 346.90 kB
+dist/assets/index-GDHSY_v5.js              943.85 kB │ gzip: 346.91 kB
 
-✓ built in 1.36s
+✓ built in 1.35s
 [plugin builtin:vite-reporter] 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application

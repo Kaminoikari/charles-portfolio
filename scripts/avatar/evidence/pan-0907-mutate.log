@@ -22,7 +22,7 @@ N8 GREEN  restored=True
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 41ms
+ ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 49ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
@@ -33,8 +33,8 @@ he node it names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  16:48:32
-   Duration  444ms (transform 72ms, setup 25ms, collect 110ms, tests 41ms, environment 147ms, prepare 25ms)
+   Start at  19:37:06
+   Duration  456ms (transform 78ms, setup 24ms, collect 120ms, tests 49ms, environment 147ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: spin in column: expected +0 to be 0.02 // Object.is equality
@@ -42,121 +42,17 @@ AssertionError: spin in column: expected +0 to be 0.02 // Object.is equality
 [31m+ Received[39m
 [32m- 0.02[39m
 [31m+ 0[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
 ### N2
-```
-$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
- RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 2 failed | 192 skipped) 50ms
-   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
-   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
-   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
-   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
-   ↓ rigProbe > reports a resti
-[…]
-t.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
-       |                                                                           ^
-    570|       }
-    571|     }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
- FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
-AssertionError: peaceSign in waistUp: expected +0 to be -0.1 // Object.is equality
-[32m- Expected[39m
-[31m+ Received[39m
-[32m- -0.1[39m
-[31m+ 0[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
-       |                                                                           ^
-    570|       }
-    571|     }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-```
-
-### N3
-```
-$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
- RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 46ms
-   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
-   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
-   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
-   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
-   ↓ rigProbe > reports a resti
-[…]
-names to that node's mesh
-   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
- Test Files  1 failed (1)
-      Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  16:48:34
-   Duration  423ms (transform 69ms, setup 23ms, collect 103ms, tests 46ms, environment 143ms, prepare 26ms)
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
- FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
-AssertionError: dance in waistUp: expected -0.07 to be -0.08 // Object.is equality
-[32m- Expected[39m
-[31m+ Received[39m
-[32m- -0.08[39m
-[31m+ -0.07[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
-       |                                                                           ^
-    570|       }
-    571|     }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-```
-
-### N4
-```
-$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
- RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 2 failed | 192 skipped) 50ms
-   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
-   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
-   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
-   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
-   ↓ rigProbe > reports a resti
-[…]
-
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
-       |                                                                           ^
-    570|       }
-    571|     }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
- FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
-AssertionError: stretch in waistUp: expected 0.07 to be Infinity // Object.is equality
-[32m- Expected[39m
-[31m+ Received[39m
-[32m- Infinity[39m
-[31m+ 0.07[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
-       |                                                                           ^
-    570|       }
-    571|     }
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-```
-
-### N5
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
  RUN  v3.2.6 /Users/charles/portfolio
@@ -167,24 +63,128 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
+t.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+       |                                                                           ^
+    569|       }
+    570|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
+AssertionError: peaceSign in waistUp: expected +0 to be -0.1 // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- -0.1[39m
+[31m+ 0[39m
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+       |                                                                           ^
+    569|       }
+    570|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+```
+
+### N3
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 45ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resti
+[…]
+names to that node's mesh
+   ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed | 192 skipped (194)
+   Start at  19:37:08
+   Duration  419ms (transform 69ms, setup 23ms, collect 105ms, tests 45ms, environment 142ms, prepare 25ms)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
+AssertionError: dance in waistUp: expected -0.07 to be -0.08 // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- -0.08[39m
+[31m+ -0.07[39m
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+       |                                                                           ^
+    569|       }
+    570|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+```
+
+### N4
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (194 tests | 2 failed | 192 skipped) 44ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resti
+[…]
+
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+       |                                                                           ^
+    569|       }
+    570|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+ FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
+AssertionError: stretch in waistUp: expected 0.07 to be Infinity // Object.is equality
+[32m- Expected[39m
+[31m+ Received[39m
+[32m- Infinity[39m
+[31m+ 0.07[39m
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+       |                                                                           ^
+    569|       }
+    570|     }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+```
+
+### N5
+```
+$ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
+ RUN  v3.2.6 /Users/charles/portfolio
+ ❯ src/components/chat/rigProbe.test.ts (194 tests | 2 failed | 192 skipped) 52ms
+   ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
+   ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
+   ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
+   ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
+   ↓ rigProbe > reports a resti
+[…]
 tion nobody measured.
-    461|   if (pan < least - 1e-9 || pan > most + 1e-9) {
-    462|     throw new Error(
+    469|   if (pan < least - 1e-9 || pan > most + 1e-9) {
+    470|     throw new Error(
        |           ^
-    463|       `clearance ${file.family}: ${clip} in ${frame} has no pan on the…
-    464|       `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm …
- ❯ src/components/chat/rigProbe.test.ts:568:22
+    471|       `clearance ${file.family}: ${clip} in ${frame} has no pan on the…
+    472|       `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm …
+ ❯ src/components/chat/rigProbe.test.ts:567:22
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
 Error: clearance vrm1-twist-sample: modelPose in column has no pan on the centimetre (8.7mm..458.2mm rounds to 0mm)
- ❯ panFor src/components/chat/clearance.ts:462:11
-    460|   // number in a composition nobody measured.
-    461|   if (pan < least - 1e-9 || pan > most + 1e-9) {
-    462|     throw new Error(
+ ❯ panFor src/components/chat/clearance.ts:470:11
+    468|   // number in a composition nobody measured.
+    469|   if (pan < least - 1e-9 || pan > most + 1e-9) {
+    470|     throw new Error(
        |           ^
-    463|       `clearance ${file.family}: ${clip} in ${frame} has no pan on the…
-    464|       `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm …
- ❯ src/components/chat/rigProbe.test.ts:568:22
+    471|       `clearance ${file.family}: ${clip} in ${frame} has no pan on the…
+    472|       `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm …
+ ❯ src/components/chat/rigProbe.test.ts:567:22
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
@@ -199,13 +199,13 @@ $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
-:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vrm1-twist-sample' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: modelPose in column: expected 0.01 to be 0.23 // Object.is equality
@@ -213,13 +213,13 @@ AssertionError: modelPose in column: expected 0.01 to be 0.23 // Object.is equal
 [31m+ Received[39m
 [32m- 0.23[39m
 [31m+ 0.01[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 ```
 
@@ -227,19 +227,19 @@ AssertionError: modelPose in column: expected 0.01 to be 0.23 // Object.is equal
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t pans by what the measurements leave room for
  RUN  v3.2.6 /Users/charles/portfolio
- ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 52ms
+ ❯ src/components/chat/rigProbe.test.ts (194 tests | 1 failed | 192 skipped) 45ms
    ↓ rigProbe > rebuilds the shipped model rest pose it is going to measure against
    ↓ rigProbe > accepts a VRM 1.0 twin of the shipped body and reads the same rest pose off it
    ↓ rigProbe > sees a fingertip inside her skull (the retired cheekPoke pose)
    ↓ rigProbe > sees a peace sign whose palm faces away (the retired mirrored wrist twist)
    ↓ rigProbe > reports a resti
 […]
-names to that node's mesh
+ names to that node's mesh
    ↓ three-vrm humanoid rig > reads a finger skin radius off the mesh that covers the hand-measured margin
  Test Files  1 failed (1)
       Tests  1 failed | 1 passed | 192 skipped (194)
-   Start at  16:48:37
-   Duration  444ms (transform 72ms, setup 23ms, collect 107ms, tests 52ms, environment 146ms, prepare 27ms)
+   Start at  19:37:12
+   Duration  413ms (transform 66ms, setup 23ms, collect 99ms, tests 45ms, environment 140ms, prepare 26ms)
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
  FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-sample-b' > pans by what the measurements leave room for, not by a number dialled in
 AssertionError: dance in waistUp: expected -0.09 to be -0.07 // Object.is equality
@@ -247,13 +247,13 @@ AssertionError: dance in waistUp: expected -0.09 to be -0.07 // Object.is equali
 [31m+ Received[39m
 [32m- -0.07[39m
 [31m+ -0.09[39m
- ❯ src/components/chat/rigProbe.test.ts:569:75
-    567|       for (const frame of def.placements) {
-    568|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
-    569|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
+ ❯ src/components/chat/rigProbe.test.ts:568:75
+    566|       for (const frame of def.placements) {
+    567|         const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_P…
+    568|         expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame…
        |                                                                           ^
-    570|       }
-    571|     }
+    569|       }
+    570|     }
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 ```
 
@@ -261,14 +261,14 @@ AssertionError: dance in waistUp: expected -0.09 to be -0.07 // Object.is equali
 ```
 $ npx vitest run /Users/charles/portfolio/src/components/chat/rigProbe.test.ts -t stays inside every frame it declares
  RUN  v3.2.6 /Users/charles/portfolio
- ✓ src/components/chat/rigProbe.test.ts (194 tests | 174 skipped) 4373ms
-   ✓ bundled motions on 'vroid-sample-b' > peaceSign stays inside every frame it declares  458ms
-   ✓ bundled motions on 'vroid-sample-b' > dance stays inside every frame it declares  699ms
-   ✓ bundled motions on 'vrm1-twist-sample' > peaceSign stays inside every frame it declares  391ms
-   ✓ bundled motions on 'vrm1-twist-sample' > dance stays inside every frame it declares  685ms
+ ✓ src/components/chat/rigProbe.test.ts (194 tests | 174 skipped) 3940ms
+   ✓ bundled motions on 'vroid-sample-b' > peaceSign stays inside every frame it declares  360ms
+   ✓ bundled motions on 'vroid-sample-b' > dance stays inside every frame it declares  608ms
+   ✓ bundled motions on 'vrm1-twist-sample' > peaceSign stays inside every frame it declares  362ms
+   ✓ bundled motions on 'vrm1-twist-sample' > dance stays inside every frame it declares  624ms
  Test Files  1 passed (1)
       Tests  20 passed | 174 skipped (194)
-   Start at  16:48:43
-   Duration  5.06s (transform 214ms, setup 24ms, collect 269ms, tests 4.37s, environment 153ms, prepare 122ms)
+   Start at  19:37:18
+   Duration  4.31s (transform 68ms, setup 23ms, collect 100ms, tests 3.94s, environment 141ms, prepare 26ms)
 ```
 
