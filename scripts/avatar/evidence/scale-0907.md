@@ -60,10 +60,40 @@ waist   was 0.960000000   now 0.959999986   delta -0.014 µm
   sleeve  was  2640  now  2640  vertices differing: 0
 ```
 
-Every vertex falls on the same side of every cut. **No rebuild was run**, so
-this is a measurement of the cuts, not a vertex sha of a rebuilt body; the
-deltas are at or below float32's resolution at these magnitudes, but that is a
-prediction and not a receipt.
+Every vertex falls on the same side of every cut.
+
+**The rebuild has since been run, and it says something stronger and something
+worse.** Stronger: rebuilding with the span-relative band and with the old
+absolute band gives **byte-identical vertex positions — 0.000 µm across all
+89,645 vertices**. The two builds' vertex shas still differ, because that sha
+hashes every attribute rather than only POSITION; what actually moved is
+`WEIGHTS_0` on 8,865 rows by at most 5.96e-08, which is one float32 ULP at 0.5,
+the last bit of a drape weight. Reporting the sha alone would have implied the
+geometry moved when it did not.
+
+Worse: **neither rebuild matches the shipped `mika-milfy-12.vrm`.** Both differ
+from it by the same 0.898 µm across the same 25,698 vertices, so the divergence
+is not this change — it predates it. The chin derivation earlier in this batch
+(`a5f1e61`) moved the pivot `proportion.rescale` grows the head about by 12 µm,
+which shifts every head vertex by 0.06 × 12 µm = 0.72 µm; float32's ULP at
+y ≈ 1.28 is 0.119 µm, so six ULPs, and the bytes have to change.
+
+```
+shipped  d2f578d76a7b8d22   mika-milfy-12.vrm
+HEAD     e26c19b544979e52
+old band 9ebe9f97168fbeb3
+  shipped -> HEAD rebuild        : worst 0.898 µm; 25698 of 89645 vertices
+  shipped -> old-band rebuild    : worst 0.898 µm; 25698 of 89645 vertices
+  old-band -> HEAD (waist change): worst 0.000 µm; 0 of 89645 vertices
+```
+
+`/avatar/*` is served cache-immutable for a year, so a body whose bytes changed
+has to arrive under a new name. **That call is the owner's and has not been
+made**: 0.898 µm is invisible, and spending a version number, a changelog
+decision and a full re-verification on it buys nothing that the next real change
+would not carry for free. Both rebuilds pass `verify.report`. Receipts:
+`scale-0907-sha.log` (the three shas) and `scale-0907-shipdiff.log` (the
+distances and which attribute moved).
 
 After the fix all thirteen landmark values follow the body exactly (ratio
 1.000000 at both 0.8x and 1.25x) — `evidence/scale-0907.log`.
