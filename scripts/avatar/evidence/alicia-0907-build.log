@@ -1,0 +1,30 @@
+# Does the generalised pipeline accept a body that is not a VRoid export?
+#
+#     python3 scripts/avatar/make.py --base scripts/avatar/fixtures/alicia-solid.vrm
+#
+# The body is Alicia Solid (ニコニ立体ちゃん, (c) DWANGO Co., Ltd.), the VRM the
+# Consortium's own implementation carries as a test model:
+#   https://github.com/vrm-c/UniVRM/blob/master/Tests/Models/Alicia_vrm-0.51/AliciaSolid_vrm-0.51.vrm
+#   sha256 237bb02efadf8c13a114af91dd8e860173081457dee87017e51011c448d05dc2, 7,878,712 bytes
+#
+# The file itself is NOT committed. Its licence (https://3d.nicovideo.jp/alicia/rule.html)
+# permits modification and permits distributing a derivative you made yourself;
+# it does not say anything about redistributing the original data, so this repo
+# does not. Fetch it to scripts/avatar/fixtures/alicia-solid.vrm to reproduce.
+#
+# Measured before the run (seed-0907-candidate.ts): 55 humanoid bones including
+# upperChest and toes, every rest rotation identity, hips 0.9715 against the
+# VRoid family's 0.8782, crown 1.6502, 17 blendShapeGroups so the face box
+# derives, widest drawn vertex 0.6147 inside the 0.7415 budget.
+
+0. Blender geometry
+   5 個部件 + 2 組匯入服裝重新輸出
+   (7.5s)
+0b. base body as VRM 0.x
+   alicia-solid.vrm 已是 VRM 0.x
+   (0.0s)
+1. partition
+/Users/charles/portfolio/scripts/avatar/fixtures/alicia-solid.vrm 不是這一步認得的 VRoid 匯出，拒絕命名：
+  - 沒有名為 Face.baked 的 mesh（有的是：body_top.baked, body_under.baked, cloth.baked, cloth1.baked, cloth2.baked, cloth_ribbon.baked, eye.baked, face.baked, flonthair.baked, neck.baked, other.baked, other02.baked）
+  - 沒有名為 Body.baked 的 mesh，因此 BODY_NAMES 的 primitive 編號對不到任何東西
+  這一步的部件名稱來自 VRoid 的 mesh 名、primitive 編號與髮絲位置，換一具身體推不出來。硬跑會產生一份讀起來合理但是虛構的 parts.json，後面每一步都會相信它。
