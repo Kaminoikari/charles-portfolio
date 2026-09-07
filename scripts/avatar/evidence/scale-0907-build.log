@@ -1,0 +1,77 @@
+Traceback (most recent call last):
+  File "/Users/charles/portfolio/scripts/avatar/evidence/scale-0907-build.py", line 68, in main
+    make.main(base=scaled)
+    ~~~~~~~~~^^^^^^^^^^^^^
+  File "/Users/charles/portfolio/scripts/avatar/make.py", line 240, in main
+    added, size, lm = build_mod.build(p('proportioned.vrm'), p('mika-milfy.vrm'),
+                      ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                      p('parts.json'), p('mika-milfy.parts.json'))
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/charles/portfolio/scripts/avatar/build.py", line 1087, in build
+    raise SystemExit(
+    ...<2 lines>...
+        'blender/bow.py 的 OUTLINE 與現在的衣服對不上了')
+SystemExit: 蝴蝶結沒有任何頂點落在腰封的高度帶 1.187–1.250，它自己在 0.787–1.030：blender/bow.py 的 OUTLINE 與現在的衣服對不上了
+base   mika-pink.vrm  height 1.5815
+scaled x1.25  height 1.9769  (260 things moved)
+
+reusing 7 Blender exports; the garments are fixed-size assets
+
+0. Blender geometry
+   找不到 blender，沿用 out/blender 既有的 .glb
+   (0.0s)
+0b. base body as VRM 0.x
+   base-x1.25.vrm 已是 VRM 0.x
+   (0.0s)
+1. partition
+   11 parts
+  gate partition: compare=[] bones=54 required_missing=[]
+   (0.1s)
+2. strip the VRoid outfit
+   removed 21 primitives, 220 accessors swept
+   swept 5 stranded materials: F00_000_Hair_00_HAIR_03, F00_000_Hair_00_HAIR_06, F00_001_01_Bottoms_01_CLOTH, F00_006_01_Shoes_01_CLOTH, F00_008_01_Tops_01_CLOTH
+  gate strip: compare=[] bones=54 required_missing=[]
+   (0.0s)
+3. strip the outfit VRoid PAINTED on the body
+   repainted 36.1% of the body texture as skin
+  gate skin: compare=[] bones=54 required_missing=[]
+   (2.2s)
+4. proportion
+   5.91 -> 5.65 heads tall, height 1.8808, 120 position/morph accessors rescaled
+  gate proportion: compare=[] bones=54 required_missing=[]
+   (0.1s)
+5. build the outfit
+   服裝擬合 mellow.glb：縮放 x1.466，yaw -180.00°，對位骨最大殘差 0.00mm，錨點 16 根，轉向 8 根（Foot.L、Foot.R、Lower_leg.L、Lower_leg.R、Toe.L、Toe.R、Upper_leg.L、Upper_leg.R）
+   Neck                         → neck                 (alias)
+   Upper_arm.L                  → leftUpperArm         (alias)
+   Shoulder.L                   → leftShoulder         (alias)
+   Upper_arm.R                  → rightUpperArm        (alias)
+   Shoulder.R                   → rightShoulder        (alias)
+   Chest                        → chest                (alias)
+   Spine                        → spine                (alias)
+   Toe.L                        → leftToes             (alias)
+   Foot.L                       → leftFoot             (alias)
+   Lower_leg.L                  → leftLowerLeg         (alias)
+   Upper_leg.L                  → leftUpperLeg         (alias)
+   Toe.R                        → rightToes            (alias)
+   Foot.R                       → rightFoot            (alias)
+   Lower_leg.R                  → rightLowerLeg        (alias)
+   Upper_leg.R                  → rightUpperLeg        (alias)
+   Hips                         → hips                 (alias)
+   未對應的來源骨 181 根（服裝鏈骨，跟著錨點走）：breast×6, butt×4, mainr×6, mainrroot, mainrunder×4, pouch×4, pouchroot, shoesacc001×2, shoesacc002×2, shoesribbon1×2, shoesribbon1001×2, shoesribbon2×2, shoesribbon2001×2, shoesribbonroot×2, skirt1×14, skirt10×14, skirt2×14, skirt3×14, skirt4×14, skirt5×14, skirt6×14, skirt7×14, skirt8×14, skirt9×14, skirtroot
+   大腿腿帶截面縮放 x=0.753 z=0.810，大腿直徑 117x139mm
+   服裝擬合 mellow_outer.glb：縮放 x1.441，yaw 180.00°，對位骨最大殘差 0.00mm，錨點 10 根，轉向 0 根
+   Neck                         → neck                 (alias)
+   Upper_arm_L                  → leftUpperArm         (alias)
+   Shoulder_L                   → leftShoulder         (alias)
+   Upper_arm_R                  → rightUpperArm        (alias)
+   Shoulder_R                   → rightShoulder        (alias)
+   Chest                        → chest                (alias)
+   Spine                        → spine                (alias)
+   Upper_leg_L                  → leftUpperLeg         (alias)
+   Upper_leg_R                  → rightUpperLeg        (alias)
+   Hips                         → hips                 (alias)
+   未對應的來源骨 118 根（服裝鏈骨，跟著錨點走）：breast×6, hand×2, lowerarm×2, outerbone1×10, outerbone2×10, outerbone3×10, outerbone4×10, outerbone5×10, outerbone6×10, outerbone7×10, outerribbon1×10, outerribbon2×12, outerribbonroot×2, outerroot, outertag×2, outertagroot, supportbone×8, thumbproximal×2
+   貼身外推最大位移：Acc_Bandage_Thigh 10mm，Acc_Belt_Waist 25mm，Acc_Ribbon_Neck 11mm，Outfit_Bottom 20mm，Outfit_Cardigan 13mm，Outfit_Shoes 14mm，Outfit_Socks 20mm，Outfit_Top 21mm
+
+STOPPED: 蝴蝶結沒有任何頂點落在腰封的高度帶 1.187–1.250，它自己在 0.787–1.030：blender/bow.py 的 OUTLINE 與現在的衣服對不上了

@@ -1,0 +1,11 @@
+--- with the guard (exit 1)
+    SystemExit: 蝴蝶結沒有任何頂點落在腰封的高度帶 1.187–1.250，它自己在 0.787–1.030：blender/bow.py 的 OUTLINE 與現在的衣服對不上了
+--- with the guard removed (exit 1)
+    ValueError: zero-size array to reduction operation minimum which has no identity
+
+  mutation landed: True   restored: True
+  guarded run names both height bands: True
+  unguarded run dies in numpy .min():  True
+
+  RED (the guard is what turns the crash into a diagnosis)
+exit=0

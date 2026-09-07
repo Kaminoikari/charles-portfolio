@@ -1078,6 +1078,16 @@ def build(src, dst, manifest_path, out_manifest):
             # 那一段。
             lo, hi = belt[:, 1].min(), belt[:, 1].max()
             tied = bow[(bow[:, 1] >= lo) & (bow[:, 1] <= hi)]
+            # 沒有任何一點落在腰封高度帶時，下面的 min() 會對空陣列丟
+            # numpy 的 ValueError，正好在這道守衛最該說話的時候把它變成一個
+            # 看不出原因的崩潰。距離量不出來本身就是它要報的事：緞帶離腰封
+            # 遠到兩者高度不重疊。（2026-09-07 在 1.25 倍身體上撞到，
+            # evidence/scale-0907-build.log。）
+            if not len(tied):
+                raise SystemExit(
+                    f'蝴蝶結沒有任何頂點落在腰封的高度帶 {lo:.3f}–{hi:.3f}，'
+                    f'它自己在 {bow[:, 1].min():.3f}–{bow[:, 1].max():.3f}：'
+                    'blender/bow.py 的 OUTLINE 與現在的衣服對不上了')
             near = cKDTree(belt).query(tied, k=1)[0].min() * 1000.0
             print(f'   蝴蝶結對腰封最近距離 {near:.0f}mm')
             if near > BOW_GAP_MAX:

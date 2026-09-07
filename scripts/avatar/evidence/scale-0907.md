@@ -85,6 +85,55 @@ same trap this batch has hit throughout:
 Suites: 240 python tests, 427 vitest across 27 files, both green
 (`scale-0907-pytests.log`, `scale-0907-vitest.log`).
 
+## The whole build on a body of another size
+
+The landmark derivations being scale-invariant is not the same as the pipeline
+working. Nothing had ever asked the content steps — strip, repaint, proportion,
+fit the purchased outfit, skin it, health-check it — to run on a body of another
+size, and Seed-san could not ask: `partition` refuses it, correctly, because it
+is not a VRoid export. A scaled copy of our own base body can.
+
+`evidence/scale-0907-build.py` runs `make.main()` itself, with `make.OUT` and
+`make.SHIPPED` redirected so `scripts/avatar/out` and the shipped
+`mika-milfy-12.vrm` are never written, and the scratch publish deleted
+afterwards.
+
+**The control first.** At factor 1.0 the whole pipeline ran to the end —
+`compare(baseline, this) = []`, `verify.report` PASS, publish, render
+(`scale-0907-build-control.log`). So the harness itself perturbs nothing, and
+anything the 1.25x run hits is the size and not the scaffolding.
+
+**At 1.25x it got through every machine step**: the 0.x conversion, partition,
+both strips, proportion, the skeleton gate after each, and the whole garment
+fit. The fit is the part worth naming: `outfit._fit` solved the size difference
+by itself, scaling the imported cardigan **x1.441** with 0.00mm residual at the
+anchor bones. The skin-tight push-out reported its usual millimetres
+(`Outfit_Top 21mm`, `Outfit_Cardigan 13mm`).
+
+**It stopped at the bow**, and that is the right answer. The bow's position
+comes from `blender/bow.py`'s `OUTLINE`, a measured constant for a fixed-size
+asset, and the plan already puts that class of thing outside generalisation
+(「`twintail.TIE_X/Y/Z`…從身體推它是錯的」). On a 25% larger body the belt rides
+to 1.187–1.250 while the bow stays at 0.787–1.030: 157mm apart, no overlap at
+all.
+
+### The guard crashed instead of saying that
+
+`build.py` measures the bow-to-belt distance precisely so a stale `OUTLINE`
+cannot ship. With no overlap the selection is empty and `.min()` raised
+`ValueError: zero-size array to reduction operation minimum` from inside numpy —
+an unreadable crash at the one moment the guard had most to say. It now names
+both height bands:
+
+```
+STOPPED: 蝴蝶結沒有任何頂點落在腰封的高度帶 1.187–1.250，
+         它自己在 0.787–1.030：blender/bow.py 的 OUTLINE 與現在的衣服對不上了
+```
+
+Receipt: `scale-0907-bowguard.py` / `.log`, a before/after pair rather than a
+unit test and labelled as one — the check sits in the middle of a full build, so
+the only way to drive it is to run that build.
+
 ## Still carrying a length — reported, not fixed
 
 The probe leaves four rows flagged, all one thing: `envelope.heights` is the leg
