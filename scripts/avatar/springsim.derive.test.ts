@@ -113,7 +113,7 @@ describe('parts read off the file, for a body no build wrote a manifest for', ()
     expect(Math.abs(noParts.crownY - built.crownY), 'crown, derived parts vs built').toBeLessThanOrEqual(0.002)
     expect(Math.abs(noParts.restCrownY - built.restCrownY), 'rest crown, derived vs built').toBeLessThanOrEqual(0.002)
     // And it says which columns it could not measure. A derived manifest names
-    // no cardigan and no skirt, so their five columns carry values nothing
+    // no cardigan and no skirt, so their eight columns carry values nothing
     // produced: 0 for the depths, and for `yaw` whichever frame came first.
     // The table prints `—` for them off these two flags, so a column of zeros
     // cannot be read as a clean result.

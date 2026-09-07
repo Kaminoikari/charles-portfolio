@@ -1,0 +1,116 @@
+model mika-milfy-12.vrm
+105 skinned primitives: 65 the build calls Hair_*, 40 it calls something else
+
+primitive                                    verts    spring-driven   build says            derived says
+Hair001.baked[49]                              386          88.1%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[56]                              386          88.1%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[58]                              422          85.5%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[50]                              446          85.4%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[51]                              428          85.3%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[57]                              434          85.3%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[54]                              464          84.9%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[22]                              464          84.5%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[21]                              458          84.3%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[53]                              458          84.3%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[55]                              482          84.2%   Hair_Twintail_R       Hair_Hair001.baked
+Hair001.baked[23]                              482          84.0%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[20]                              458          83.8%   Hair_Twintail_L       Hair_Hair001.baked
+Hair001.baked[52]                              446          83.4%   Hair_Twintail_R       Hair_Hair001.baked
+Body.baked[9]                                 1959          17.3%   Outfit_Top            Body_Skin_Body.baked
+Body.baked[0]                                 2418           9.1%   Body_Skin             Body_Skin_Body.baked
+Body.baked[22]                                7868           1.3%   Outfit_Cardigan       Body_Skin_Body.baked
+Face.baked[0]                                 2054           0.0%   Face                  Face
+Face.baked[1]                                 2054           0.0%   Face                  Face
+Face.baked[2]                                 2054           0.0%   Face                  Face
+Face.baked[3]                                 2054           0.0%   Face                  Face
+Face.baked[4]                                 2054           0.0%   Face                  Face
+Face.baked[5]                                 2054           0.0%   Face                  Face
+Face.baked[6]                                 2054           0.0%   Face                  Face
+Face.baked[7]                                 2054           0.0%   Face                  Face
+Face.baked[8]                                 2054           0.0%   Face                  Face
+Face.baked[9]                                 2054           0.0%   Face                  Face
+Body.baked[1]                                  508           0.0%   Body_Skin             Body_Skin_Body.baked
+Body.baked[2]                                 1580           0.0%   Body_Skin             Body_Skin_Body.baked
+Body.baked[3]                                  142           0.0%   Body_Skin             Body_Skin_Body.baked
+Body.baked[4]                                  434           0.0%   Acc_Ribbon_Waist      Body_Skin_Body.baked
+Body.baked[5]                                   96           0.0%   Acc_Ribbon_Waist      Body_Skin_Body.baked
+Body.baked[6]                                  656           0.0%   Acc_Ribbon_Hair       Body_Skin_Body.baked
+Body.baked[7]                                 1628           0.0%   Acc_Belt_Waist        Body_Skin_Body.baked
+Body.baked[8]                                 2366           0.0%   Acc_Belt_Waist        Body_Skin_Body.baked
+Body.baked[10]                                4292           0.0%   Outfit_Top            Body_Skin_Body.baked
+Body.baked[11]                                3520           0.0%   Acc_Bandage_Thigh     Body_Skin_Body.baked
+Body.baked[12]                                 323           0.0%   Acc_Bandage_Thigh     Body_Skin_Body.baked
+Body.baked[13]                                1779           0.0%   Acc_Ribbon_Neck       Body_Skin_Body.baked
+Body.baked[14]                                1596           0.0%   Acc_Ribbon_Neck       Body_Skin_Body.baked
+Body.baked[15]                                 320           0.0%   Outfit_Shoes          Body_Skin_Body.baked
+Body.baked[16]                               10914           0.0%   Outfit_Shoes          Body_Skin_Body.baked
+Body.baked[17]                                 190           0.0%   Outfit_Shoes          Body_Skin_Body.baked
+Body.baked[18]                                8486           0.0%   Outfit_Bottom         Body_Skin_Body.baked
+Body.baked[19]                                2838           0.0%   Outfit_Bottom         Body_Skin_Body.baked
+Body.baked[20]                                3396           0.0%   Outfit_Socks          Body_Skin_Body.baked
+Body.baked[21]                                1506           0.0%   Outfit_Socks          Body_Skin_Body.baked
+Hair001.baked[0]                                96           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[1]                                99           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[2]                                76           0.0%   Hair_Back             Body_Skin
+Hair001.baked[3]                                71           0.0%   Hair_Back             Body_Skin
+Hair001.baked[4]                                93           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[5]                                93           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[6]                                14           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[7]                                39           0.0%   Hair_Back             Body_Skin
+Hair001.baked[8]                                30           0.0%   Hair_Back             Body_Skin
+Hair001.baked[9]                                24           0.0%   Hair_Back             Body_Skin
+Hair001.baked[10]                               28           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[11]                               57           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[12]                               54           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[13]                               63           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[14]                              101           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[15]                              106           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[16]                              106           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[17]                               54           0.0%   Hair_Bangs            Body_Skin
+Hair001.baked[18]                               99           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[19]                               93           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[24]                               14           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[25]                               26           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[26]                               26           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[27]                               84           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[28]                               93           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[29]                              102           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[30]                               99           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[31]                               84           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[32]                               87           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[33]                               16           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[34]                               20           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[35]                               71           0.0%   Hair_Back             Body_Skin
+Hair001.baked[36]                               30           0.0%   Hair_Back             Body_Skin
+Hair001.baked[37]                               48           0.0%   Hair_Back             Body_Skin
+Hair001.baked[38]                               33           0.0%   Hair_Side_L           Body_Skin
+Hair001.baked[39]                               30           0.0%   Hair_Back             Body_Skin
+Hair001.baked[40]                               30           0.0%   Hair_Back             Body_Skin
+Hair001.baked[41]                               42           0.0%   Hair_Back             Body_Skin
+Hair001.baked[42]                               71           0.0%   Hair_Back             Body_Skin
+Hair001.baked[43]                               66           0.0%   Hair_Back             Body_Skin
+Hair001.baked[44]                               71           0.0%   Hair_Back             Body_Skin
+Hair001.baked[45]                               48           0.0%   Hair_Back             Body_Skin
+Hair001.baked[46]                               24           0.0%   Hair_Back             Body_Skin
+Hair001.baked[47]                               28           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[48]                               33           0.0%   Hair_Side_R           Body_Skin
+Hair001.baked[59]                              183           0.0%   Hair_Ear_L            Body_Skin
+Hair001.baked[60]                               55           0.0%   Hair_Ear_L            Body_Skin
+Hair001.baked[61]                               89           0.0%   Hair_Bun_L            Body_Skin
+Hair001.baked[62]                              183           0.0%   Hair_Ear_R            Body_Skin
+Hair001.baked[63]                               55           0.0%   Hair_Ear_R            Body_Skin
+Hair001.baked[64]                               89           0.0%   Hair_Bun_R            Body_Skin
+Hair001.baked[65]                              240           0.0%   Acc_Crown             Body_Skin
+Hair001.baked[66]                              160           0.0%   Acc_Crown             Body_Skin
+Hair001.baked[67]                              136           0.0%   Acc_HairClip_Plaster  Body_Skin
+Hair001.baked[68]                                8           0.0%   Acc_HairClip_Plaster  Body_Skin
+Hair001.baked[69]                              130           0.0%   Acc_HairClip_Bear     Body_Skin
+Hair001.baked[70]                               60           0.0%   Acc_HairClip_Bear     Body_Skin
+Hair001.baked[71]                               16           0.0%   Acc_HairClip_Bars     Body_Skin
+
+Hair_* with any spring share at all (14 of 65): 83.4%–88.1%
+Hair_* reading exactly 0% (bangs and scalp cap, skinned to the head bone): 51
+highest share among everything the build does NOT call hair: 17.3%  (Body.baked[9])
+
+threshold 0.4: 14 primitives at or above it
+every primitive this probe puts above/below the threshold is the one deriveManifest calls hair/not-hair

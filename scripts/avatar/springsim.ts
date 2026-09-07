@@ -40,8 +40,8 @@
 // this pipeline did not build has no such file, and since 2026-09-07
 // `deriveManifest` reads what it can off the body itself instead: the hair that
 // moves, the face the expressions deform, everything else as `Body_Skin`. There
-// is then no coat and no skirt to measure against, so those four columns print
-// 0 and main() says so before the table. Every
+// is then no coat and no skirt to measure against, so the table prints `—` in
+// their eight columns rather than a number nothing produced. Every
 // bone comes from the humanoid map (vrmHumanoid.readHumanoid), so a 1.0 file
 // with the same manifest simulates the same as its 0.x twin
 // (springsim.test.ts holds that). Nothing here names a J_Bip_* node or a
@@ -117,15 +117,16 @@ interface Manifest {
  * How much of a primitive has to be driven by a spring bone before it counts as
  * moving hair, when no manifest says which primitive is what.
  *
- * Measured on mika-milfy-12, whose manifest IS the truth: of its 65 `Hair_*`
- * primitives the spring-driven ones run 83.8–88.1% spring-dominated, and of the
- * 40 primitives that are anything else the highest is 17.3% (a skirt panel).
- * 0.4 sits between them with roughly a factor of two either way.
+ * Measured on mika-milfy-12, whose manifest IS the truth (receipt:
+ * evidence/springshare-0907.log): of its 65 `Hair_*` primitives the 14 with any
+ * spring share at all run 83.4–88.1%, and of the 40 primitives that are anything
+ * else the highest is 17.3% (`Outfit_Top`). 0.4 sits between them with roughly a
+ * factor of two either way.
  *
  * The two groups do NOT separate completely, and that is a property of hair
- * rather than of the threshold: plenty of `Hair_*` primitives read 0%, because
- * the bangs and the scalp cap are skinned to the head bone and have no springs
- * at all. What this finds is the hair that MOVES, which is exactly what the
+ * rather than of the threshold: the other 51 `Hair_*` primitives read exactly
+ * 0%, because the bangs and the scalp cap are skinned to the head bone and have
+ * no springs at all. What this finds is the hair that MOVES, which is what the
  * solver needs a set for. Everything else still gets listed (as Body_Skin), so
  * the crown — the topmost vertex of anything listed — still sees a scalp.
  */
@@ -808,7 +809,7 @@ export interface Report {
   crownScreen: Record<MotionFrame, number>
   /**
    * Whether the manifest named a cardigan and a skirt at all. A derived
-   * manifest names neither, and the five coat/skirt columns then carry a value
+   * manifest names neither, and the eight coat/skirt columns then carry a value
    * that was never measured -- 0 for the depths, and for `yaw` the yaw of
    * whichever frame happened to be first. The table prints those as `—`.
    */
