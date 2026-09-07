@@ -61,8 +61,3 @@ scripts/avatar/baseline.vrm
 
 # delivery-record evidence for scripts/avatar (RESULT.txt cites these)
 !scripts/avatar/evidence/*.log
-
-# Alicia Solid: its licence permits modification and distributing a derivative
-# you made, and says nothing about redistributing the original data, so the file
-# stays local. Provenance and sha256: evidence/alicia-0907-build.log.
-scripts/avatar/fixtures/alicia-solid.vrm
