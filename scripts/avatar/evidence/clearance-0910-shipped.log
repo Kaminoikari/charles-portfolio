@@ -1,0 +1,28 @@
+# springsim.ts --clearance on the body that ships, re-run 2026-09-10 after the
+# final cull rule produced it. sha256 of the body measured:
+#   1c0286383f83e945b4322d5ba4ce81b1e645afa41ae3c7110a772a1fcc3e8e51
+# An earlier run of this check (03:34) measured a body produced by a cull rule
+# that was later replaced, so it certified something that never shipped. This
+# one names the hash of the file it read.
+#
+#   npx tsx scripts/avatar/springsim.ts public/avatar/vroid-studio-dressup.vrm \
+#     --clearance=<out>.ts --family=vroid-studio-dressup
+#
+# Against the committed src/components/chat/clearance/vroid-studio-dressup.simulated.gen.ts,
+# filtering only producedBy and the Regenerate command line:
+#   diff -> empty. Every crown, depth and framing is identical.
+
+model public/avatar/vroid-studio-dressup.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+akimbo             0mm       0mm       0mm        0%   0.00s     0°      10mm   0.13s        —      —  1.6029 10.20s  1.6049  1.6019       —       —  
+dance              0mm       0mm       0mm        0%   0.00s     8°      10mm  10.00s        —      —  1.6717 11.97s  1.7211  1.7008       —       —  
+idleLoop           0mm       0mm       0mm        0%   0.00s     3°      10mm   0.50s        —      —  1.5990  5.37s  1.6063  1.6004       —       —  
+modelPose          0mm       0mm       0mm        0%   0.00s     3°      10mm   5.73s        —      —  1.5948  0.43s  1.5880  1.5903       —       —  
+peaceSign          0mm       0mm       0mm        0%   0.00s    -4°      10mm  11.10s        —      —  1.5635  0.67s  1.5709  1.5648       —       —  
+playFingers        0mm       0mm       0mm        0%   0.00s     0°      10mm   1.17s        —      —  1.6048  4.57s  1.6090  1.6048       —       —  
+scratchHead        0mm       0mm       0mm        0%   0.00s     0°      10mm   1.23s        —      —  1.6497  0.70s  1.6531  1.6502       —       —  
+spin               0mm       0mm       0mm        0%   0.00s     2°      10mm   2.70s        —      —  1.6068  6.83s  1.6316  1.6125       —       —  
+squat              0mm       0mm       0mm        0%   0.00s    -0°      10mm   9.23s        —      —  1.6102  8.17s  1.6030  1.6043       —       —  
+stretch            0mm       0mm       0mm        0%   0.00s     0°       4mm   0.73s        —      —  1.8661  1.60s  1.8889  1.8736       —       —  
+rest crown 1.5982 (bind pose, topmost vertex of any part); through the column camera 1.5994, waist-up 1.5971
+wrote ../../../private/tmp/claude-501/-Users-charles-portfolio/08c491b1-5c65-4438-8323-ef44df1be5d5/scratchpad/clearance-v4.gen.ts

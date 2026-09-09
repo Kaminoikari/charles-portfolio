@@ -1,0 +1,157 @@
+# Nineteen defences in cover.py and one in this suite's own fixture, twenty
+# mutations, each red on its own test.
+# Run with scripts in the session scratchpad: one exact string swap at a time,
+# the pattern asserted to hit exactly once, the file restored afterwards and the
+# restoration asserted.
+#   python3 -m unittest <the tests named below>   (cwd scripts/avatar)
+#
+# RE-RUN 2026-09-10, twice. First after the served body was replaced by its
+# trimmed self and this suite's fixture moved to the pre-cull blob in git
+# (cover_test.py names it): pointed at the trimmed body these tests trim a body
+# with nothing left to cut, and every one of these mutations goes green, so the
+# fixture is the whole thing. Then again after `covered` learned which skin
+# layers are inner wear, which is M17 to M20 below.
+#
+# M26 to M30 were added on the round-3 code review and run with a second copy of
+# the runner (mutate4.py) that clears __pycache__ around each swap. The first
+# batch reported M26, M27 and M28 all red on M26's test: three of these swaps
+# land in the same second at the same source length, and CPython keys its cached
+# bytecode on (mtime, size), so two of the three ran the previous mutation's
+# code. The result looked like a pass, three reds for three mutations, and was a
+# stale-bytecode artifact. Any batch that mutates one file more than once needs
+# the cache cleared between swaps.
+
+M1 the coverage ray has no length limit: exit 1, tests ran=True, 1 red
+    FAIL: test_cloth_beyond_the_ray_is_out_of_reach (cover_test.Rays.test_cloth_beyond_the_ray_is_out_of_reach)
+M2 one covered corner is enough to delete a triangle: exit 1, tests ran=True, 2 red
+    FAIL: test_a_triangle_straddling_the_edge_lives (cover_test.Triangles.test_a_triangle_straddling_the_edge_lives)
+    FAIL: test_one_covered_corner_is_not_enough (cover_test.Triangles.test_one_covered_corner_is_not_enough)
+M3 accessories count as cover: exit 1, tests ran=True, 1 red
+    FAIL: test_an_accessory_does_not (cover_test.ClothSet.test_an_accessory_does_not)
+M4 the coverage ray uses a fixed direction, not the vertex normal: exit 1, tests ran=True, 1 red
+    FAIL: test_the_camisole_under_the_hoodie_is_covered (cover_test.OnTheDressUpExport.test_the_camisole_under_the_hoodie_is_covered)
+M5 the hole guard reads the flat part map instead of texture alpha: exit 1, tests ran=True, 1 red
+    FAIL: test_a_transparent_layer_does_not_count_as_painted (cover_test.TheLoop.test_a_transparent_layer_does_not_count_as_painted)
+M6 restoring accepts the bounding box without the containment test: exit 1, tests ran=True, 1 red
+    FAIL: test_the_hoodie_stops_showing_the_body (cover_test.TheLoop.test_the_hoodie_stops_showing_the_body)
+M7 trim always claims it converged: exit 1, tests ran=True, 1 red
+    FAIL: test_running_out_of_rounds_is_reported_not_swallowed (cover_test.TheLoop.test_running_out_of_rounds_is_reported_not_swallowed)
+M8 the hole guard reports only the views that lost something: exit 1, tests ran=True, 1 red
+    FAIL: test_the_hole_guard_reports_every_view (cover_test.TheLoop.test_the_hole_guard_reports_every_view)
+M17 covered() ignores the body again: exit 1, tests ran=True, 1 red each
+    FAIL: test_the_mouth_does_not_read_the_hood_behind_the_head_as_cover (cover_test.OnTheDressUpExport)
+    FAIL: test_the_cull_leaves_the_face_alone_under_a_head_camera (cover_test.OnTheDressUpExport)
+         AssertionError: 2495 not less than 800
+M18 nothing counts as inner wear: exit 1, tests ran=True, 1 red each
+    FAIL: test_the_inner_layers_are_wear_and_the_outer_body_is_not (cover_test.OnTheDressUpExport)
+    FAIL: test_the_body_in_front_of_the_camisole_does_not_protect_it (cover_test.OnTheDressUpExport)
+         AssertionError: 0 not greater than 200
+M19 everything counts as inner wear: exit 1, tests ran=True, 1 red each
+    FAIL: test_the_inner_layers_are_wear_and_the_outer_body_is_not (cover_test.OnTheDressUpExport)
+    FAIL: test_the_cull_leaves_the_face_alone_under_a_head_camera (cover_test.OnTheDressUpExport)
+         AssertionError: 2495 not less than 800
+M20 the looser rule is never applied: exit 1, tests ran=True, 1 red
+    FAIL: test_the_body_in_front_of_the_camisole_does_not_protect_it (cover_test.OnTheDressUpExport)
+         AssertionError: 0 not greater than 200
+M21 a face decal counts as inner wear: exit 1, tests ran=True, 1 red
+    FAIL: test_the_inner_layers_are_wear_and_the_outer_body_is_not (cover_test.OnTheDressUpExport)
+M24 the cut appends a new index accessor and leaves the old one: exit 1, tests ran=True, 1 red
+    FAIL: test_the_cut_leaves_nothing_behind_in_the_file (cover_test.OnTheDressUpExport)
+
+# M17 and M19 both land on the head camera because they are the two ways of
+# losing the same thing. M17 stops asking what the ray hits first, so a mouth
+# vertex reads the hood behind the head; M19 declares the outer body to be inner
+# wear, which exempts it from the same rule. Either way the collar takes the
+# neck, and neither shows on the full-body framings the rest of this work uses.
+#
+# M18 and M20 are the other direction, and they are separate defences: M18 is
+# the threshold that decides which layers are inner wear, M20 is whether the
+# looser rule is applied to the layers it names. Removing either leaves the
+# camisole under a rule that will not cut it, and the cardigan reads 171 pixels
+# of 150 on the ten-clip gate.
+#
+# M21 is the third condition on the same decision and it fails silently on this
+# body, which is why it needs its own mutation rather than a sentence. Dropping
+# the requirement that an inner-wear layer be body-sized lets the eyebrows, the
+# eyeliner and the eye highlight in -- they paint over 19.2%, 46.7% and 7.7% of
+# themselves, under the transparency threshold on their own. On THIS body the
+# cut does not change by one triangle, because nothing on the face has a garment
+# within 150mm; on a dress-up export with the hood up it deletes the eyebrows,
+# and both shipping guards are blind to that (cover.holes sees face skin still
+# painting behind them; pierce.py only counts skin coming through cloth). The
+# test reads the classification directly for exactly that reason.
+#
+# ON THE ONE THAT NEEDED ITS TEST CHANGED FIRST. M6 was pointed at
+# `test_it_converges`, which the run below shows passing either way: with the
+# bounding box the loop still converges in two rounds with no holes. What the
+# box changes is the cut, and `test_the_hoodie_stops_showing_the_body` is what
+# reads it. Measured on the export over the same two poses, 2026-09-10:
+#
+#   containment   330 triangles restored, 234 left in each inner layer,
+#                 cardigan 48 at the failing pose, 0 holes, converged in 2
+#   bounding box  729 triangles restored, 366 left in each inner layer,
+#                 cardigan 174 at the failing pose, 0 holes, converged in 2
+#
+# A test that watched convergence would have gone on passing through both.
+#
+# M24 is a cost, not a correctness bug, which is why it took a reviewer to find
+# it and why it gets a test rather than a note. glb.rebuild lays down every
+# bufferView whether or not an accessor points at it, so appending a fresh index
+# accessor and leaving the old one keeps the deleted triangles in the file: the
+# culled body came out 101,004 bytes LARGER than the export it was cut from,
+# with 243,732 bytes of indices nothing draws. Rewriting each accessor in place
+# makes it 143,284 bytes smaller instead, and the index arrays are byte-identical
+# to the version that appended, so nothing on screen moved.
+
+M26 the in-place write no longer checks whether anything else reads the accessor: exit 1, tests ran=True, 1 red
+    FAIL: test_an_accessor_a_second_primitive_also_reads_is_not_overwritten
+M27 an accessor with no bufferView is written through anyway: exit 1, tests ran=True, 1 red
+    FAIL: test_an_accessor_with_no_view_of_its_own_is_not_written_through
+M28 an accessor that starts partway into its view is overwritten from byte zero: exit 1, tests ran=True, 1 red
+    FAIL: test_an_accessor_that_starts_partway_into_its_view_is_not_overwritten
+M29 a bufferView a second accessor shares is overwritten: exit 1, tests ran=True, 1 red
+    FAIL: test_a_view_a_second_accessor_shares_is_not_overwritten
+M30 the face test's height filter selects nothing: exit 1, tests ran=True, 1 red
+    FAIL: test_the_face_is_not_swallowed
+
+# M26 to M29 are four conditions on the decision M24 introduced, and only the
+# first of them existed before the round-3 code review. `_rewrite_indices`
+# replaces the accessor's WHOLE bufferView starting at byte zero, and the check
+# in front of it counted readers of the ACCESSOR. glTF allows three layouts that
+# pass that count and lose data anyway: an index accessor with no bufferView at
+# all, one that starts partway into its view (the new indices go in at zero and
+# it still reads from its own offset), and a view a second accessor shares,
+# whose bytes are dropped. Neither the 2026-09-09 export nor the body that ships
+# has any of the three, every index accessor owning its view at offset zero, so
+# these change nothing about what shipped. That is asserted rather than assumed
+# by test_the_bodies_that_go_through_this_module_take_the_cheap_path, so the
+# extra conditions cannot quietly send the whole export down the appending path
+# and grow the file again. They exist because dressup.py is the entry for a body
+# exported by a tool this repo does not control.
+#
+# M30 is a blind spot in this suite rather than a defence in cover.py. The face
+# test selects the vertices above the collar with a hardcoded world height,
+# `pos[:, 1] > 1.45`, and asserts none of them is covered. On a shorter body, or
+# after the face primitive is renumbered, that selection is EMPTY and the
+# assertion passes on nothing. 653 of this primitive's 2,266 vertices are above
+# 1.45m here, so the test now asserts the selection is non-empty first. The
+# mutation raises the height to 10.45m, which is the shape of that failure.
+
+M32 the view count walks only the accessor list, missing sparse blocks and images: exit 1, tests ran=True, 1 red
+    FAIL: test_a_view_a_sparse_block_reads_is_not_overwritten
+
+# M32 is the round-4 code review's finding on M29, and it is the same class of
+# mistake M29 itself was: a check that answers a narrower question than the
+# sentence above it claims. `_in_place_safe` said "no second accessor shares
+# the view" and counted only `accessor['bufferView']`. A bufferView can be read
+# without any accessor naming it at top level -- a sparse accessor's index and
+# value blocks each point at one, and an embedded image is one -- so a morph
+# target whose sparse values sat in the same view was overwritten with the new
+# indices, silently, and the deltas came back as denormal floats. The reviewer
+# built that input and ran it. Neither shipped body has the layout; `_view_users`
+# is the fix and M32 is what holds it.
+#
+# M26 to M29 were re-run after this change, because the condition they mutate
+# moved into `_view_users`. Each is still red on its own test; M29 now takes the
+# sparse test with it, which is correct -- returning True there disables the
+# view check for both shapes.

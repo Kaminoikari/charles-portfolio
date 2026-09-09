@@ -67,7 +67,17 @@ gap inside the window, with that sock's outer face towards the camera, so the
 first two conditions both pass on a frame that renders clean. Anything centred
 or mixed counts as matching either side, which keeps a hip through a skirt.
 
-All three conditions were checked the same way, by breaking the model on
+The fourth condition is the third one again, this time between a limb and the
+garment it is in front of rather than between two limbs. `_arm_triangles` drops
+BARE arm skin and keeps arm skin that has a sleeve within 40mm of it, which is
+right about the sleeve and wrong about everything else within 40mm of the arm.
+On the body that ships at `dance` t=23.45s the hand comes to rest beside its own
+cuff, so the arm skin is kept, and 251 of the 340 pixels the cardigan then
+scores are the pale hand against the hoodie's TORSO panel, which no arm drives.
+So arm skin counts only against cloth an arm drives: a forearm through its own
+sleeve still counts, and a hand in front of a chest does not.
+
+All the other conditions were checked the same way, by breaking the model on
 purpose: sinking a garment 25mm into itself scores 8 to 38 times its limit for
 the bodice, skirt, cardigan and socks, and shrinking the boot a tenth scores
 2.8, while the model as shipped is under 0.1 everywhere.
@@ -120,12 +130,46 @@ def skin_parts(parts):
                  or n.startswith(tuple(f'{r}_' for r in SKIN_ROLES)))
 
 
-def limit(area):
-    """The pixel count at which a part of this on-screen size counts as clipping."""
-    return min(ABSOLUTE, max(FLOOR, SHARE * area))
-ARM = ('Shoulder', 'UpperArm', 'LowerArm', 'Hand', 'Thumb', 'Index',
-       'Middle', 'Ring', 'Little')
+def limit(area, waiver=0):
+    """The pixel count at which a part of this on-screen size counts as clipping.
+
+    `waiver` raises the bar for one named part, and it exists because this gate
+    has a shape it cannot read: an accessory that passes BEHIND a piece of body.
+    A waiver is a per-body declaration with the measurement that justifies it,
+    not a threshold anybody may raise; see `waivers`.
+    """
+    return max(min(ABSOLUTE, max(FLOOR, SHARE * area)), waiver)
+
+
+def waivers(manifest):
+    """part -> pixels this body is allowed, from the manifest's own declaration.
+
+    `manifest` is the whole parsed parts.json, not its `parts` block. A waiver
+    reads:
+
+        "pierce_waivers": {"Acc_Glasses": {"pixels": 60, "why": "..."}}
+
+    and every field is required. The reason is required because the only honest
+    use of this is a measured false positive: the 2026-09-09 dress-up export's
+    glasses put 51 pixels of EAR in front of the temple arm that passes behind
+    it, with the ear 8.6 to 11.0mm nearer the camera, and all four of the
+    conditions above pass on it. A waiver with no reason is a raised threshold
+    wearing a costume, so it stops the run instead.
+    """
+    out = {}
+    for name, row in (manifest.get('pierce_waivers') or {}).items():
+        if name not in manifest['parts']:
+            raise SystemExit(f'pierce_waivers names {name}, which is not a part '
+                             f'of this body: {sorted(manifest["parts"])}')
+        if not isinstance(row, dict) or not row.get('why'):
+            raise SystemExit(f'the pierce_waiver for {name} has no `why`: a '
+                             'waiver without the measurement that justifies it '
+                             'is a raised threshold')
+        out[name] = int(row['pixels'])
+    return out
 SLEEVE = 0.040   # metres; arm skin this close to arm-driven cloth is dressed
+
+
 def _arm_triangles(doc, views, parts, posed=None):
     """A triangle mask, in draw order, marking BARE arm skin.
 
@@ -141,7 +185,7 @@ def _arm_triangles(doc, views, parts, posed=None):
         # JOINTS_0 indexes the joint list of the skin THIS mesh's node names.
         joints = doc['skins'][si]['joints']
         names = [doc['nodes'][j].get('name', '') for j in joints]
-        return np.array([any(a.lower() in bone.get(j, names[k]).lower() for a in ARM)
+        return np.array([humanoid.is_arm(bone.get(j, names[k]))
                          for k, j in enumerate(joints)])
     arm = {si: arm_slots(si) for si in set(skin_of.values())}
     flesh = {(parts[n]['mesh'], i) for n in skin_parts(parts)
@@ -211,13 +255,17 @@ def count(doc, views, parts, posed=None, size=(420, 720), detail=False):
         render.VIEWS = keep
 
     worst, area = {}, {}
-    for view, (who, names, cloth_z, outward, cloth_limb) in cloth.items():
+    for view, (who, names, cloth_z, outward, cloth_limb, cloth_arm) in cloth.items():
         index = {n: i for i, n in enumerate(names)}
-        skin_z, skin_limb = flesh[view][2], flesh[view][4]
+        skin_z, skin_limb, skin_arm = flesh[view][2], flesh[view][4], flesh[view][5]
         gap = skin_z - cloth_z
         same = (cloth_limb == skin_limb) | (cloth_limb == 0) | (skin_limb == 0)
+        # Arm skin is only evidence against cloth an arm drives. A hand brought
+        # in front of the chest is skin in front of the hoodie's torso panel by
+        # every other measure here, and it is not clipping.
+        dressed = ~skin_arm | cloth_arm
         pierced = ((who >= 0) & (flesh[view][0] >= 0) & (gap > 0) & (gap < LIMIT)
-                   & outward & same)
+                   & outward & same & dressed)
         for name in names:
             if not name.startswith(('Outfit_', 'Acc_')):
                 continue
@@ -231,14 +279,16 @@ if __name__ == '__main__':
     base = os.path.dirname(os.path.abspath(__file__))
     doc, binary = glb.load(os.path.join(base, 'out', 'mika-milfy.vrm'))
     views = glb.views_of(doc, binary)
-    parts = json.load(open(os.path.join(base, 'out', 'mika-milfy.parts.json')))['parts']
+    manifest = json.load(open(os.path.join(base, 'out', 'mika-milfy.parts.json')))
+    parts = manifest['parts']
     r, a = count(doc, views, parts, detail=True)
+    allowed = waivers(manifest)
     print('at rest, skin pixels showing through each garment:')
     ok = True
     for name, n in sorted(r.items(), key=lambda kv: -kv[1]):
         if not n:
             continue
-        lim = limit(a.get(name, 0))
+        lim = limit(a.get(name, 0), allowed.get(name, 0))
         ok &= n <= lim
         print(f'  {name:<24} {n:>5} px  of {lim:>5.0f} allowed '
               f'({a.get(name, 0)} px on screen)')

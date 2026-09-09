@@ -1,0 +1,44 @@
+# Four defences in the wiring between the steps, four mutations, each red on
+# its own test. Numbering continues cover-0910-mutations.log and
+# pierce-0910-mutations.log.
+#   python3 -m unittest dressup_test.TheOrderOfThePipeline \
+#                       dressup_test.TheWaiverReachesTheGate   (cwd scripts/avatar)
+#
+# These exist because refit, cover and pierce are each tested on what they
+# rewrite, and none of those tests notices if the steps are wired to each other
+# wrongly. Before this, swapping the order or dropping the waiver argument left
+# all 424 tests green.
+
+M22 the cull reads the export instead of the repaired file: exit 1, tests ran=True, 1 red
+    FAIL: test_the_weights_are_repaired_before_the_geometry_is_cut (dressup_test.TheOrderOfThePipeline)
+M23 check scores every part against the undeclared limit: exit 1, tests ran=True, 1 red
+    FAIL: test_a_declared_waiver_raises_the_limit_check_scores_against (dressup_test.TheWaiverReachesTheGate)
+M25 prepare reports a run that never settled as converged: exit 1, tests ran=True, 1 red
+    FAIL: test_a_cut_that_never_settled_stops_the_run (dressup_test.TheOrderOfThePipeline)
+
+# M22 is the order the module's own docstring argues for: refit measures how far
+# each garment has shed from the body, and the pool it measures against is the
+# manifest's skin, so cutting that skin first hands it a pool with new holes in
+# it. The mutation does not reverse the calls, it feeds cover the ORIGINAL
+# export instead of the file refit repaired, which is the same defect with the
+# repair silently thrown away.
+#
+# M23 is the waiver reaching the thing that scores. pierce.waivers is tested on
+# the manifest it reads and pierce.limit on the number it returns; nothing tied
+# the two together, so dropping the argument sent every part in every manifest
+# back to the undeclared limit with no test to say so.
+#
+# The two steps are stubbed in M22 and M25 because the real pair takes eight
+# minutes on the export. The entry point being driven is the real prepare, and
+# what is asserted is what it passes to whom.
+
+M31 the run that never settled does not say how much it still loses: exit 1, tests ran=True, 1 red
+    FAIL: test_a_cut_that_never_settled_stops_the_run (dressup_test.TheOrderOfThePipeline)
+
+# M31 is the other half of M25. M25 pins that a run which never settled stops
+# the pipeline; this one pins that it says how much residue is left, which is
+# the whole reason the file is left on disk rather than deleted. The assertion
+# behind it looked for '7' in the message, and the message starts with a mkdtemp
+# path, so about one run in five would have passed with the number gone
+# altogether. It now looks for the residue and its unit together, and the stub
+# reports a four-digit figure.

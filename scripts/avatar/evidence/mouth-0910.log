@@ -1,0 +1,8 @@
+FaceMouth primitive: ('Face (merged)(Clone).baked.baked', 0) 1053 vertices, 1696 triangles
+  normals pointing into the skull (z<0)      : 508
+  of those, the naive rule calls covered     : 120
+  every vertex the naive rule calls covered  : 120
+  triangles it deletes (all three corners)   : 58
+  cloth distance for those vertices, mm      : median 117.7, min 75.3
+  the shipped rule calls covered             : 0
+  triangles it deletes                       : 0

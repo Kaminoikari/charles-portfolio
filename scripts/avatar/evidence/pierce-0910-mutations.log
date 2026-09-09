@@ -1,0 +1,70 @@
+# Seven defences behind the arm condition and the waiver, seven mutations, each
+# red on its own test. Numbering continues cover-0910-mutations.log, which holds
+# M1-M8, M17-M21, M24, M26-M30 and M32 (nineteen in cover.py plus one in its
+# own fixture), and pipeline-0910-mutations.log, which holds M22, M23, M25 and
+# M31 (the four in the wiring between the steps).
+# Run with scripts in the session scratchpad: one exact string swap at a time,
+# the pattern asserted to hit exactly once, the file restored afterwards.
+#   python3 -m unittest pierce_test   (cwd scripts/avatar)
+#
+# All seven re-run 2026-09-10 against the trimmed body now under public/avatar
+# and red again, and re-run a second time after the cull learned which skin
+# layers are inner wear and the served body changed underneath them. M10 needed its test re-pinned first: it asserted a pixel count of
+# 400, chosen between the untrimmed body's 556 without the condition and 323
+# with it, and cutting the covered skin moved those readings to 340 and 89, so
+# the mutation would have passed at 340. The assertion is now the part's own
+# pierce.limit, which separates them whatever the body underneath does.
+#
+# M15 belongs to the same day and a different file: writeClearance stopped
+# naming --family in the regenerate line it writes.
+#     M15 the regenerate line does not name the family: exit 1, tests ran=True
+#         FAIL scripts/avatar/springsim.rigid.test.ts > a body whose hair no
+#              spring moves > names the family in the regenerate line it writes
+
+M9 partmap marks no cloth as arm-driven: exit 1, tests ran=True, 1 red
+    FAIL: test_the_buffer_says_which_cloth_an_arm_drives (pierce_test.ArmDrivenCloth.test_the_buffer_says_which_cloth_an_arm_drives)
+
+M10 pierce counts arm skin against any cloth: exit 1, tests ran=True, 1 red
+    FAIL: test_a_hand_in_front_of_a_chest_is_not_clipping (pierce_test.ArmDrivenCloth.test_a_hand_in_front_of_a_chest_is_not_clipping)
+
+M11 partmap marks every cloth as arm-driven: exit 1, tests ran=True, 2 red
+    FAIL: test_the_buffer_says_which_cloth_an_arm_drives (pierce_test.ArmDrivenCloth.test_the_buffer_says_which_cloth_an_arm_drives)
+    FAIL: test_a_skirt_is_never_arm_driven (pierce_test.ArmDrivenCloth.test_a_skirt_is_never_arm_driven)
+
+M12 a waiver needs no reason: exit 1, tests ran=True, 1 red
+    FAIL: test_a_waiver_without_a_reason_stops_the_run (pierce_test.Waivers.test_a_waiver_without_a_reason_stops_the_run)
+
+M13 a waiver may name a part this body does not have: exit 1, tests ran=True, 1 red
+    FAIL: test_a_waiver_for_a_part_this_body_lacks_stops_the_run (pierce_test.Waivers.test_a_waiver_for_a_part_this_body_lacks_stops_the_run)
+
+M14 the waiver lowers the limit instead of raising it: exit 1, tests ran=True, 1 red
+    FAIL: test_a_declared_waiver_raises_that_part_only (pierce_test.Waivers.test_a_declared_waiver_raises_that_part_only)
+
+# Why M9 and M11 are both here, and are not the same test twice: the buffer has
+# to say YES for a sleeve and NO for a skirt, and one mutation can only prove
+# one of those. Marking nothing arm-driven passes the skirt test; marking
+# everything arm-driven passes nothing, and it is the pair that pins the answer
+# rather than either half.
+#
+# M10 is the gate's own condition and M9/M11 are the buffer it reads, which is
+# why they are three mutations and not one: with the buffer stuck at all-false
+# the gate condition is vacuously true and its own test still goes green.
+
+M16 partmap says an arm drives the skirt too: exit 1, tests ran=True, 1 red
+    FAIL: test_it_drops_a_hand_resting_against_a_skirt_on_the_shipped_body (pierce_test.ArmDrivenCloth)
+
+# M16 is the one that pins the loosening on the body every visitor sees. The
+# arm condition takes `Outfit_Bottom` off Milfy's worst-part list entirely --
+# 97 pixels to 0 at modelPose t=4.7s, and the body's worst clip ratio from 0.69
+# to 0.47 -- and a change that large needs a test saying WHY those pixels may
+# go. M16 declares the skirt arm-driven, which removes the justification, and
+# the test reads it.
+#
+# THE FIRST VERSION OF THAT TEST COULD NOT FAIL. It defined the dropped pixels
+# as `without & ~(~skin_arm | cloth_arm)` and then asserted that they are arm
+# skin and that no arm drives their cloth -- which is that expression restated,
+# true for any input. Only the `dropped_total > 50` line carried anything, so
+# M16 was red on a bound, not on a reason. What the test asserts now is what the
+# rule does not determine: that the garment losing the pixels is the skirt and
+# only the skirt, and that the skirt goes from over 50 pixels to none. M16 is
+# red on that.

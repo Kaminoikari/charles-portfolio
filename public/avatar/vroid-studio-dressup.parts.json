@@ -1,12 +1,17 @@
 {
   "source": {
     "path": "public/avatar/vroid-studio-dressup.vrm",
-    "sha256": "241a5803504144849c0ecbbfcac8e816fc9fe798907af935bd8d372fdf8a805a",
-    "written": "by hand, 2026-09-09",
+    "sha256": "1c0286383f83e945b4322d5ba4ce81b1e645afa41ae3c7110a772a1fcc3e8e51",
+    "written": "by hand, 2026-09-09; the body it describes re-cut 2026-09-10",
     "derived_from": {
-      "path": "build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm",
-      "sha256": "6135e4295d169e5130e52cf3d3c1180c4228d7c6f819ecb68114620e5c64971c",
-      "how": "only the VRM meta's allowRedistribution, modification and avatarPermission were rewritten so the site may serve it; the document and the binary chunk are otherwise byte-identical, checked by putting the three values back and comparing both against the source."
+      "path": "git 6ae5189:public/avatar/vroid-studio-dressup.vrm",
+      "sha256": "241a5803504144849c0ecbbfcac8e816fc9fe798907af935bd8d372fdf8a805a",
+      "how": "dressup.prepare on that file: refit found nothing torn and copied it, then cover.trim deleted the body triangles the clothes cover, 11,940 of 31,009, guarded against holes over the 41 frames the clipping gate scores. The cut is 560 triangles of Body (merged), 48 of the face skin and 5,666 of each inner layer, and it converged in two rounds. Only the `indices` accessors differ: every POSITION, NORMAL, TEXCOORD_0, JOINTS_0, WEIGHTS_0 and morph target of all 17 primitives is byte-identical and so is every node transform, so the rig identity and the clearance measured on it still hold, the latter checked by re-running springsim.ts on this exact file (evidence/clearance-0910-shipped.log). Each index accessor was rewritten in place rather than appended, so the file is 143,284 bytes SMALLER than the one it was cut from. Receipt: scripts/avatar/evidence/cover-0910.md.",
+      "itself_derived_from": {
+        "path": "build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm",
+        "sha256": "6135e4295d169e5130e52cf3d3c1180c4228d7c6f819ecb68114620e5c64971c",
+        "how": "only the VRM meta's allowRedistribution, modification and avatarPermission were rewritten so the site may serve it; the document and the binary chunk are otherwise byte-identical, checked by putting the three values back and comparing both against the source."
+      }
     },
     "why": "build.py never built this body, so no build wrote its sidecar. springsim.ts deriveManifest reads one off the file instead, and on this file it finds 0 Hair_* parts: every primitive falls under SPRING_DOMINATED because none of this export's spring joints has weight on any drawn vertex. This file names the parts the derivation cannot, and receipt evidence/parts-0909.md records what was measured to name each one."
   },
@@ -90,6 +95,12 @@
         0,
         1
       ]
+    }
+  },
+  "pierce_waivers": {
+    "Acc_Glasses": {
+      "pixels": 60,
+      "why": "The temple arm passes from the lens behind the ear, and the ear sits 8.6 to 11.0mm nearer the camera than it, so all four of pierce.py's conditions pass on a frame that renders correctly: the gap is inside the 30mm window, the temple's outer face is toward the camera, head skin and head-driven cloth are both centred, and no arm is involved. Measured 2026-09-09 (evidence/parts-0909.md, pierce-0909-glasses.png) and again 2026-09-10 across all ten clips: the worst is 51 pixels at dance t=16.75s against a limit of 30, which FLOOR sets because the glasses cover only 1,043 pixels. 60 is that worst reading rounded up to the next ten; a real defect on a part this small would be several hundred."
     }
   }
 }

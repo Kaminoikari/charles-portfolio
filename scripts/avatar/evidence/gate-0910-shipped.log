@@ -1,0 +1,78 @@
+# The ten-clip clipping gate, re-run 2026-09-10 on all three bodies this commit
+# quotes a reading for: the two committed in the tree, then the export they were
+# cut from.
+#
+#   python3 scratchpad/gate_receipt.py    (motion.check, the real gate entry)
+#   python3 scratchpad/gate_export.py     (the same, on the git blob)
+#
+# This exists because both the 0.98x and the 5.03x came from runs that did not
+# record WHICH file they read, which is the same gap the 394 head-camera figure
+# had. Every body here is hashed, so the numbers are bound to a file rather than
+# to a session.
+#
+# Read it as: every clip's worst part over its own limit, then the worst
+# reading each part reached anywhere in the ten. Under 1.00 is inside the limit.
+# Acc_Glasses is scored against the 60 its declared waiver raises it to
+# (pierce-0910.md section 2), not the 30 an undeclared part gets.
+
+# 10 clips: akimbo.vrma, dance.vrma, idleLoop.vrma, modelPose.vrma, peaceSign.vrma, playFingers.vrma, scratchHead.vrma, spin.vrma, squat.vrma, stretch.vrma
+
+== the dress-up body that ships (121s) ==
+   vroid-studio-dressup.vrm  sha256 1c0286383f83e945b4322d5ba4ce81b1e645afa41ae3c7110a772a1fcc3e8e51
+  akimbo.vrma             0.89  (6.67, 'Outfit_Cardigan', 134)
+  dance.vrma              0.85  (16.75, 'Acc_Glasses', 51)
+  idleLoop.vrma           0.77  (1.3, 'Acc_Glasses', 46)
+  modelPose.vrma          0.79  (4.7, 'Outfit_Cardigan', 119)
+  peaceSign.vrma          0.72  (1.46, 'Acc_Glasses', 43)
+  playFingers.vrma        0.98  (1.8, 'Outfit_Cardigan', 147)
+  scratchHead.vrma        0.93  (2.41, 'Outfit_Cardigan', 139)
+  spin.vrma               0.63  (8.15, 'Outfit_Cardigan', 94)
+  squat.vrma              0.78  (1.44, 'Outfit_Cardigan', 117)
+  stretch.vrma            0.58  (3.97, 'Acc_Glasses', 35)
+  worst Outfit_Cardigan         0.98x  147px of 150 (playFingers.vrma t=1.8)
+  worst Acc_Glasses             0.85x  51px of 60 (dance.vrma t=16.75)
+  worst Outfit_Shoes            0.08x  4px of 52 (squat.vrma t=7.2)
+  worst clip ratio 0.98
+
+== the shipped Milfy body, regression check (763s) ==
+   mika-milfy-12.vrm  sha256 f9f868903d373e06750e8ea4318f0539f282dd1a210bd39467f891d5790593d6
+  akimbo.vrma             0.27  (1.33, 'Acc_Bandage_Thigh', 8)
+  dance.vrma              0.33  (23.45, 'Acc_Bandage_Thigh', 10)
+  idleLoop.vrma           0.20  (1.3, 'Acc_Bandage_Thigh', 6)
+  modelPose.vrma          0.33  (2.82, 'Acc_Bandage_Thigh', 10)
+  peaceSign.vrma          0.47  (7.3, 'Acc_Bandage_Thigh', 14)
+  playFingers.vrma        0.20  (0.6, 'Acc_Bandage_Thigh', 6)
+  scratchHead.vrma        0.37  (2.41, 'Acc_Bandage_Thigh', 11)
+  spin.vrma               0.37  (1.16, 'Acc_Bandage_Thigh', 11)
+  squat.vrma              0.33  (4.32, 'Acc_Bandage_Thigh', 10)
+  stretch.vrma            0.27  (0.57, 'Acc_Bandage_Thigh', 8)
+  worst Acc_Bandage_Thigh       0.47x  14px of 30 (peaceSign.vrma t=7.3)
+  worst Outfit_Cardigan         0.21x  31px of 150 (stretch.vrma t=0.57)
+  worst Outfit_Socks            0.08x  6px of 77 (peaceSign.vrma t=4.38)
+  worst Outfit_Top              0.02x  2px of 104 (playFingers.vrma t=0.6)
+  worst Outfit_Shoes            0.01x  1px of 72 (squat.vrma t=1.44)
+  worst clip ratio 0.47
+
+# The same gate on the export the two bodies above were cut from, so the 5.03x
+# the commit message quotes has a receipt of its own. The export is not a file
+# in the tree; it is the git blob the manifest's derived_from names, and the
+# sha256 below is of what that blob wrote.
+#   python3 scratchpad/gate_export.py
+
+== the dress-up export as it arrived (326s) ==
+   git 6ae5189:public/avatar/vroid-studio-dressup.vrm
+   sha256 241a5803504144849c0ecbbfcac8e816fc9fe798907af935bd8d372fdf8a805a  14728144 bytes
+  akimbo.vrma             2.53  (1.33, 'Outfit_Cardigan', 379)
+  dance.vrma              2.15  (23.45, 'Outfit_Cardigan', 323)
+  idleLoop.vrma           0.77  (1.3, 'Acc_Glasses', 46)
+  modelPose.vrma          5.03  (2.82, 'Outfit_Cardigan', 755)
+  peaceSign.vrma          0.74  (10.22, 'Outfit_Cardigan', 111)
+  playFingers.vrma        3.73  (4.2, 'Outfit_Cardigan', 559)
+  scratchHead.vrma        2.88  (4.02, 'Outfit_Cardigan', 432)
+  spin.vrma               4.09  (1.16, 'Outfit_Cardigan', 613)
+  squat.vrma              4.00  (10.08, 'Outfit_Cardigan', 600)
+  stretch.vrma            1.09  (3.97, 'Outfit_Cardigan', 164)
+  worst Outfit_Cardigan         5.03x  755px of 150 (modelPose.vrma t=2.82)
+  worst Acc_Glasses             0.85x  51px of 60 (dance.vrma t=16.75)
+  worst Outfit_Shoes            0.37x  19px of 52 (squat.vrma t=7.2)
+  worst clip ratio 5.03

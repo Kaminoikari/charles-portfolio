@@ -10,8 +10,19 @@
 // permissions rewritten by the author of the export -- allowRedistribution,
 // modification and avatarPermission, which arrived false/prohibited/onlyAuthor
 // and would have made this the first file the site serves against its own
-// licence. What changed and the source hash it changed from are recorded in
-// public/avatar/vroid-studio-dressup.parts.json under `derived_from`.
+// licence. Since 2026-09-10 it has also been through scripts/avatar/dressup.py
+// `prepare`, which deleted the 11,940 body triangles of 31,009 that the clothes
+// cover; that is why the hoodie no longer shows the camisole through it
+// (scripts/avatar/evidence/cover-0910.md). Both steps and the hashes they
+// changed from are recorded in public/avatar/vroid-studio-dressup.parts.json
+// under `derived_from`.
+//
+// The cull rewrote index accessors and nothing else: every vertex attribute,
+// morph target and node transform is byte-identical to the file measured below,
+// so `rigSha` is unchanged. Verified twice: all 17 primitives compared
+// attribute by attribute before the file was swapped, and the spring simulator
+// re-run on both bodies, which wrote byte-identical clearance apart from the
+// path it was told to write to.
 //
 // Every field below is measured on this body. The 71 checks of
 // rigProbe.test.ts's per-family block all pass on this rig (the file's own

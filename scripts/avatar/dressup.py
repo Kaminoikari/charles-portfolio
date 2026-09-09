@@ -37,21 +37,34 @@ fresh export goes through, and it has to work out for itself what to repair:
                     caller that checks for the file rather than the exit code
                     would pick up.
 
+AND AFTER ALL THAT, cover.trim cuts the body the clothes cover. It runs second
+because refit reads the skin as its body pool, and a pool with fresh holes in it
+reports cloth as further from the body than it is. What that step is for, and
+why its two guards pull against each other, is in cover.py.
+
 Not wired into make.py on purpose. That pipeline builds Milfy from a base body
 and every garment in it is authored here, bound by binding.py, and gated at step
 6; it has never produced this defect and has no import step to attach to. This
 is the entry for a body that arrives already dressed.
 """
+import glob
 import json
 import os
 import shutil
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import cover  # noqa: E402
+import glb  # noqa: E402
+import motion  # noqa: E402
 import pierce  # noqa: E402
 import refit  # noqa: E402
 import verify  # noqa: E402
+
+CLIPS = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '..', '..', 'public', 'avatar', 'animations', '*.vrma')
 
 
 def torn_cloth(path, limit=verify.BIND_GROWTH_MAX_MM, bends=verify.BIND_BENDS):
@@ -122,7 +135,38 @@ def repair(src, dst, manifest, limit=verify.BIND_GROWTH_MAX_MM,
     return {**report, 'torn': torn}
 
 
+def prepare(src, dst, manifest, clips=None, samples=4, rounds=12, **kw):
+    """Everything a fresh export goes through, in the order it has to happen.
+
+    Weights first, geometry second, and not the other way round. refit measures
+    how far each piece of cloth has shed from the body, and the body it measures
+    against is the manifest's skin; cutting the skin the clothes cover before
+    that would hand it a pool with new holes in it and a shed field read off
+    them. cover.trim then runs on the repaired file, against the same frames the
+    clipping gate will score it on, so the cut is judged on what the gate
+    checks rather than on a pose nobody plays.
+    """
+    clips = sorted(glob.glob(CLIPS)) if clips is None else list(clips)
+    with tempfile.TemporaryDirectory() as tmp:
+        fixed = os.path.join(tmp, 'refit.vrm')
+        repaired = repair(src, fixed, manifest, **kw)
+        doc, binary = glb.load(fixed)
+        poses = [None] + [rot for _, _, rot in
+                          motion.sample_poses(doc, clips, samples)]
+        trimmed = cover.trim(fixed, dst, manifest, poses=tuple(poses),
+                             rounds=rounds)
+    if not trimmed['converged']:
+        # Left in place rather than deleted: unlike a still-torn model, a model
+        # that ran out of rounds is a usable file with a known residue, and the
+        # rounds it got through are in the report. Refusing to say so is what
+        # would be wrong.
+        raise SystemExit(
+            f'{dst} still loses pixels after {rounds} rounds of trimming: '
+            f'{trimmed["rounds"][-1]["lost"]} left; the cut is in the report')
+    return {**trimmed, 'refit': repaired}
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 4:
         raise SystemExit('dressup.py <export.vrm> <repaired.vrm> <parts.json>')
-    print(repair(sys.argv[1], sys.argv[2], sys.argv[3]))
+    print(prepare(sys.argv[1], sys.argv[2], sys.argv[3]))

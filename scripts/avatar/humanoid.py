@@ -22,6 +22,21 @@ read = vrmrig.read
 compare = vrmrig.compare
 REQUIRED = vrmrig.REQUIRED
 
+# The humanoid bones an arm hangs off, by the fragment that names them. Read as
+# a substring of the bone name so a vendor's `J_Bip_L_UpperArm` and a VRM 1.0
+# `leftUpperArm` both match, and the fingers are in because a hand is an arm as
+# far as "is this cloth a sleeve" is concerned. Lives here rather than in the
+# gate that first needed it: pierce.py asks which SKIN is arm skin and
+# partmap.py asks which CLOTH an arm drives, and one list has to answer both or
+# a sleeve stops being a sleeve halfway through the comparison.
+ARM_BONES = ('Shoulder', 'UpperArm', 'LowerArm', 'Hand', 'Thumb', 'Index',
+             'Middle', 'Ring', 'Little')
+
+
+def is_arm(name):
+    """Does this bone name belong to an arm?"""
+    return any(part.lower() in (name or '').lower() for part in ARM_BONES)
+
 
 def version(doc):
     """'0' or '1'. See vrmrig.vrm_version."""

@@ -172,6 +172,18 @@ describe('a body whose hair no spring moves', () => {
       'and a body whose hair springs carries no such key').not.toMatch(/rigidHair/)
   }, 240_000)
 
+  it('names the family in the regenerate line it writes', async () => {
+    // The pans and framings a run measures against are read from the family, so
+    // a regenerate line that omits --family sends the next person to the
+    // default one. Following the line this file used to write moved
+    // vroid-studio-dressup's dance crown by 2.6mm on a body whose vertices had
+    // not changed at all, which is exactly what a real regression looks like.
+    const out = path.join(dir, 'family.simulated.gen.ts')
+    writeClearance(parseArgs([MODEL, `--clearance=${out}`, '--family=test-family']),
+      [await shipped()])
+    expect(readFileSync(out, 'utf8')).toMatch(/--family=test-family/)
+  }, 240_000)
+
   it('refuses a tuning flag it would have to swallow', async () => {
     // --hit, --gravity, --no-arms and --no-coat all act on the hair's spring
     // joints. With none to act on, the run would print the flag in its header

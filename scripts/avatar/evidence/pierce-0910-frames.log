@@ -1,0 +1,39 @@
+# The frames behind the numbers pierce-0910.md quotes, all re-run 2026-09-10
+# after the cull's final rule and the body it produced were in place.
+#   python3 scratchpad/measures.py    (360x620, max over the gate's three views)
+
+dance.vrma t=23.45, Outfit_Cardigan
+  dress-up, shipped now   without arm cond 340px, with  89px, limit 150
+  dress-up, pre-cull      without arm cond 556px, with 323px, limit 150
+
+modelPose.vrma t=4.7, on the shipped Milfy body
+  Outfit_Bottom           without arm cond  97px, with   0px, limit 150 (side, its worst view)
+
+  every garment the condition touches at this frame, summed over the three views
+  (scratchpad/skirtdrop.py):
+    Outfit_Bottom      without 136  kept   0  dropped 136
+    Outfit_Cardigan    without  20  kept   9  dropped  11
+    every other part   kept in full: Acc_Bandage_Thigh 10, Hair_Back 42,
+      Hair_Side_R 46, Hair_Side_L 10, Hair_Bangs 7, Outfit_Top 1,
+      Outfit_Shoes 1, Hair_Twintail_L 1, Hair_Twintail_R 1
+
+  per view, with what the dropped pixels are (scratchpad/milfybottom.py):
+   front: without   39px  with    0px  dropped   39px  (area 10817)
+          dropped pixels belong to skin parts: {'Body_Skin': 39}
+          all of them are arm skin: True
+    back: without    0px  with    0px  dropped    0px  (area 4492)
+    side: without   97px  with    0px  dropped   97px  (area 2591)
+          dropped pixels belong to skin parts: {'Body_Skin': 97}
+          all of them are arm skin: True
+
+# The two dress-up readings are why the test that pins the arm condition asserts
+# the part's own pierce.limit rather than a number chosen between one body's two
+# readings: cutting the covered skin moved 556/323 to 340/89, and a literal
+# threshold picked between the first pair passes on the second.
+#
+# The Milfy reading is the one that needed its own test. Outfit_Bottom was that
+# body's worst part before the condition (103px of 150 across the whole gate,
+# clearance-0906-motion.log); after it, it is off the worst-part list and the
+# body's worst clip ratio is 0.47 instead of 0.69 (gate-milfy in the session
+# scratchpad). pierce-0910-milfy-hand.png is that frame: her hand against her
+# own thigh with the skirt's hem in front of the wrist.

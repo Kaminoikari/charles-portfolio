@@ -185,7 +185,8 @@ column 0.05→0.03、stretch 的 waist-up 0.08→0.07、dance 的 column 0.14→
    `allowedUserName: Everyone`，VRM1 樣本是 `allowRedistribution: true`）。匯出檔作者
    在 2026-09-09 放寬那三個欄位，服務的是那份；改了哪三個欄位、來源檔 hash、以及
    「其餘位元組與來源相同」的比對，都記在 `public/avatar/vroid-studio-dressup.parts.json`
-   的 `derived_from`。
+   的 `derived_from.itself_derived_from`——2026-09-10 出貨的檔又多一層（切掉衣服底下
+   的身體），所以放寬權限那一步從 `derived_from` 移到它底下那一層。
 2. **`dance` 在 column 上原本沒有不動點。** `panFor` 取 `least`（畫面必須上抬的毫米
    數）向上進位到公分。這具身體的 pan 回饋很弱，每公分只讓 crown 動 1.3 mm，而
    `least` 正好落在 120 mm 邊界一毫米內：檔案在 0.12 下模擬時 `least` 是 120.6 mm、
@@ -199,7 +200,8 @@ column 0.05→0.03、stretch 的 waist-up 0.08→0.07、dance 的 column 0.14→
 `approvedAllowlist` 寫死成空陣列、`crownStatus` 寫死成 `UNKNOWN`，它從來沒讀過
 clearance 檔；它列的兩個 unknown 理由裡，第一個（缺 crown clearance）已經不成立，第
 二個（算圖後的動態與服裝品質未驗收）還成立，連帽衫的動態穿模是上限的 5.19 倍。這是
-範圍外的發現，這一輪沒有改那支腳本。
+範圍外的發現，這一輪沒有改那支腳本。（穿模本身 2026-09-10 修掉了，降到 0.98 倍，見
+`cover-0910.md`；那支腳本仍然沒讀 clearance 檔。）
 
 ## 沒有宣稱的事
 
@@ -230,8 +232,11 @@ Gate 第一次跑完，靜止與動態都是 FAIL，而兩個 FAIL 是不同的�
 外套那一項用貼圖算圖確認過（`pierce-0909-cardigan.png` 左半是算圖、右半是被計數
 的像素）：modelPose 第 2.82 秒的側視圖，紅色帽 T 的胸口有一塊深色的洞，是身體層
 穿出來的。779 個像素裡 750 個的來源是 `InnerTop`／`InnerBottom`——這兩層的
-POSITION 位元組相同，是同一片身體畫了兩次，深度緩衝逐像素任選其一，所以不是兩倍
-計數；剩下 29 個來自被挖過的 `Body_Skin`。
+POSITION 位元組相同，是同一片身體的幾何畫了兩次，深度緩衝逐像素任選其一，所以不是
+兩倍計數；剩下 29 個來自被挖過的 `Body_Skin`。**幾何相同不代表畫出來的東西相同**：
+兩層的 base colour 貼圖是 96,269 與 106,510 位元組，一層畫內搭褲、一層畫黑色小可愛，
+刪掉任何一層都會連它畫的東西一起刪掉。這句話原本會被讀成「其中一層是多餘的」，
+2026-09-10 量到不是，見 `cover-0910.md` 第 1 節。
 
 眼鏡那一項是 gate 的既有盲點又多一種形狀（`pierce-0909-glasses.png`）：鏡腳從耳前
 繞到耳後，耳朵的皮膚就在鏡腳前方 8.6–11.0 mm，而三個條件全部通過——距離在 30 mm
@@ -240,11 +245,16 @@ docstring 已記過同一類的兩個案例（搭在髖上的手、對側腿的�
 後面是第三個，出貨身體的九件 `Acc_*` 沒有一件會這樣走，所以以前碰不到。48 px 這
 個數字本身低於 `ABSOLUTE = 150`，擋下它的是 `FLOOR`：`limit()` 是
 `min(ABSOLUTE, max(FLOOR, SHARE * area))`，眼鏡只佔 1,378 px，`SHARE` 給的 27.6 被
-`FLOOR = 30` 抬上來，再被 150 蓋住之後上限就是 30。沒有為此放寬任何門檻。
+`FLOOR = 30` 抬上來，再被 150 蓋住之後上限就是 30。當時沒有為此放寬任何門檻；
+2026-09-10 改成在 manifest 裡具名宣告一筆帶理由的 waiver（60 px，只給這具身體的
+`Acc_Glasses`），見 `pierce-0910.md` 第 2 節。
 
 跑之前把手寫 manifest 裡的 `Shoes`／`Shoes_Sole` 改名成 `Outfit_Shoes`／
 `Outfit_Shoes_Sole`。`pierce.py` 用 `name.startswith(('Outfit_', 'Acc_'))` 挑布，原本
 那兩個名字既不是皮膚也不是布，gate 會安靜地不量它們；出貨 manifest 的鞋一直叫
 `Outfit_Shoes`，這裡只是回到同一個慣例。
 
-外套的穿模是這具身體本身的缺陷，不是 gate 的問題，也不在這次改動的範圍內。
+外套的穿模是這具身體本身的缺陷，不是 gate 的問題，當時也不在那次改動的範圍內。
+2026-09-10 修掉了，分兩件事：gate 多了第四個條件（手臂皮膚只對手臂驅動的布計分），同一幀
+的讀數從 5.19x 變成 5.03x；再把衣服底下看不到的身體切掉，才降到 0.98x（147 px／上限 150）。
+見 `cover-0910.md` 與 `pierce-0910.md`。

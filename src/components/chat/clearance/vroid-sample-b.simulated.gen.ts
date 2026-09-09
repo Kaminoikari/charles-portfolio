@@ -3,14 +3,14 @@
 // public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the
 // same in bind pose, crownScreen/restCrownScreen those two through each frame's camera
 // (framings, recorded here as they were); depths are the worst frame. Regenerate:
-//   npx tsx scripts/avatar/springsim.ts public/avatar/mika-milfy-12.vrm --clearance=src/components/chat/clearance/vroid-sample-b.simulated.gen.ts
+//   npx tsx scripts/avatar/springsim.ts public/avatar/mika-milfy-12.vrm --clearance=src/components/chat/clearance/vroid-sample-b.simulated.gen.ts --family=vroid-sample-b
 import type { ClearanceSimulated } from '../clearance'
 
 export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-sample-b",
   "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",
   "simulatedOn": "/avatar/mika-milfy-12.vrm",
-  "producedBy": "b49f6b6",
+  "producedBy": "654ca1f",
   "restCrownY": 1.5757,
   "restCrownScreen": {
     "waistUp": 1.5786,

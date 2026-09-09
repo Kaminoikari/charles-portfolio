@@ -192,3 +192,95 @@ class Repair(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class TheOrderOfThePipeline(unittest.TestCase):
+    """What `prepare` decides, which neither step decides for itself.
+
+    refit and cover are each tested on the geometry they rewrite. What is only
+    true of the two together is the ORDER: refit measures how far each garment
+    has shed from the body, and the pool it measures against is the manifest's
+    skin, so cutting that skin first hands it a pool with new holes in it. The
+    two steps are stubbed here because the real pair takes eight minutes on the
+    export; the entry point being driven is the real `prepare`, and what is
+    asserted is what it passes to whom.
+    """
+
+    def run_prepare(self, converged=True):
+        import shutil
+        calls = []
+
+        def repair(src, dst, manifest, **kw):
+            calls.append(('refit', src, dst))
+            shutil.copyfile(src, dst)
+            return {'stub': True}
+
+        def trim(src, dst, manifest, **kw):
+            calls.append(('cover', src, dst))
+            shutil.copyfile(src, dst)
+            # 9317 rather than a single digit: the message this has to turn
+            # up in starts with a mkdtemp path, so one random character in
+            # eight matching would pass the assertion with the number gone.
+            return {'path': dst, 'bytes': 0, 'cut': [], 'rounds': [{'lost': 9317}],
+                    'converged': converged, 'first_cut': {}}
+
+        out = os.path.join(tempfile.mkdtemp(), 'prepared.vrm')
+        old_repair, old_trim = dressup.repair, dressup.cover.trim
+        dressup.repair, dressup.cover.trim = repair, trim
+        try:
+            report = dressup.prepare(SHIPPED, out, MANIFEST, clips=[], samples=1)
+        finally:
+            dressup.repair, dressup.cover.trim = old_repair, old_trim
+        return calls, report, out
+
+    def test_the_weights_are_repaired_before_the_geometry_is_cut(self):
+        calls, _, _ = self.run_prepare()
+        self.assertEqual([c[0] for c in calls], ['refit', 'cover'],
+                         'the cull ran before the repair, so refit measured '
+                         'shed against a body with the cut already in it')
+        self.assertEqual(calls[1][1], calls[0][2],
+                         'the cull read the original export rather than the '
+                         'file refit repaired, so the repair is thrown away')
+
+    def test_a_cut_that_never_settled_stops_the_run(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.run_prepare(converged=False)
+        self.assertIn('9317 left', str(caught.exception),
+                      'the run stopped without saying how much it still loses')
+
+
+class TheWaiverReachesTheGate(unittest.TestCase):
+    """A declared waiver has to change what motion.check allows.
+
+    pierce.waivers is tested on the manifest it reads and pierce.limit on the
+    number it returns. What is only true of the two together is that check()
+    hands one to the other: drop that and every waiver in every manifest goes
+    quietly back to the undeclared limit.
+    """
+
+    def test_a_declared_waiver_raises_the_limit_check_scores_against(self):
+        import motion
+        import pierce
+        body = os.path.join(HERE, '..', '..', 'public', 'avatar',
+                            'vroid-studio-dressup.vrm')
+        manifest = body.replace('.vrm', '.parts.json')
+        clip = os.path.join(HERE, '..', '..', 'public', 'avatar', 'animations',
+                            'dance.vrma')
+        with open(manifest, encoding='utf-8') as handle:
+            declared = json.load(handle)
+        self.assertTrue(declared.get('pierce_waivers'),
+                        'this manifest declares no waiver, so nothing below '
+                        'is being exercised')
+        seen = []
+        old = pierce.limit
+        pierce.limit = lambda area, waiver=0: (seen.append((area, waiver))
+                                               or old(area, waiver))
+        try:
+            motion.check(body, manifest, [clip], samples=1)
+        finally:
+            pierce.limit = old
+        waived = {part: w['pixels'] for part, w in declared['pierce_waivers'].items()}
+        self.assertTrue(seen, 'check never asked for a limit')
+        self.assertTrue(any(w in waived.values() for _, w in seen),
+                        f'check scored every part against a waiver of 0; the '
+                        f'manifest declares {waived}')

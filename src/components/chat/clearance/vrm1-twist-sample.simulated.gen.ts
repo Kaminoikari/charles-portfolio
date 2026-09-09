@@ -3,14 +3,14 @@
 // public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the
 // same in bind pose, crownScreen/restCrownScreen those two through each frame's camera
 // (framings, recorded here as they were); depths are the worst frame. Regenerate:
-//   npx tsx scripts/avatar/springsim.ts public/avatar/vrm1-twist-sample.vrm --clearance=src/components/chat/clearance/vrm1-twist-sample.simulated.gen.ts
+//   npx tsx scripts/avatar/springsim.ts public/avatar/vrm1-twist-sample.vrm --clearance=src/components/chat/clearance/vrm1-twist-sample.simulated.gen.ts --family=vrm1-twist-sample
 import type { ClearanceSimulated } from '../clearance'
 
 export const SIMULATED: ClearanceSimulated = {
   "family": "vrm1-twist-sample",
   "rigSha": "fd3a65952d9bce0a30feb2a3817b2faedd2168f9145e43f5f48088f218c15e27",
   "simulatedOn": "/avatar/vrm1-twist-sample.vrm",
-  "producedBy": "9f47b0e",
+  "producedBy": "654ca1f",
   "restCrownY": 1.6154,
   "restCrownScreen": {
     "waistUp": 1.6136,

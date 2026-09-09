@@ -51,6 +51,14 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
     leg's sock -- inside the 30mm window, with that sock's outer face towards
     the camera, so both other conditions passed and a clean frame measured 58
     pixels of clipping at the cuff.
+
+    `arm` is whether an arm drives that triangle, by the same dominant joint and
+    the same all-three-corners rule. A sleeve is arm-driven cloth and the torso
+    panel of the same hoodie is not, which is what lets a caller tell an arm
+    coming through its own sleeve from a hand that has simply been brought in
+    front of the chest. It rides in the green channel of the same extra pass,
+    so it costs no rasterisation: the red channel still carries limb and facing
+    exactly as it did.
     """
     owner = {}
     for name, info in parts.items():
@@ -114,22 +122,34 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
             jname = [bone.get(j, doc['nodes'][j].get('name', '')).lower() for j in joints]
             return np.array([1 if n.startswith('left') else 2 if n.startswith('right') else 0
                              for n in jname])
+        def arm_of_slots(si):
+            joints = doc['skins'][si]['joints']
+            return np.array([humanoid.is_arm(bone.get(j, doc['nodes'][j].get('name', '')))
+                             for j in joints])
         jside = {si: side_of_slots(si) for si in set(skin_of.values())}
-        vside = []
+        jarm = {si: arm_of_slots(si) for si in set(skin_of.values())}
+        vside, varm = [], []
         for mi, mesh in enumerate(doc['meshes']):
             for pr in mesh['primitives']:
                 n = len(glb.read_accessor(doc, views, pr['attributes']['POSITION']))
                 if 'JOINTS_0' not in pr['attributes'] or mi not in skin_of:
                     vside.append(np.zeros(n, np.int64))
+                    varm.append(np.zeros(n, bool))
                     continue
                 j = glb.read_accessor(doc, views, pr['attributes']['JOINTS_0'])
                 w = glb.read_accessor(doc, views, pr['attributes']['WEIGHTS_0']).astype(np.float64)
-                vside.append(jside[skin_of[mi]][j[np.arange(len(j)), np.argmax(w, axis=1)]])
+                dominant = j[np.arange(len(j)), np.argmax(w, axis=1)]
+                vside.append(jside[skin_of[mi]][dominant])
+                varm.append(jarm[skin_of[mi]][dominant])
         vside = np.concatenate(vside)
-        # Six ids: limb * 2 + outward. Spread across the greyscale so that
-        # rounding the rasterised value back to an id cannot land on a neighbour.
-        extra = {k: (np.array([[[20.0 + 40 * k] * 3 + [255.0]]]), False, (False, False))
-                 for k in range(6)}
+        varm = np.concatenate(varm)
+        # Twelve ids: arm * 6 + limb * 2 + outward. Limb and facing keep the red
+        # channel and the spacing they always had, so rounding a rasterised
+        # value back to an id still cannot land on a neighbour; arm is one bit
+        # in green, far from the threshold that reads it.
+        extra = {k: (np.array([[[20.0 + 40 * (k % 6), 20.0 if k < 6 else 220.0,
+                                 20.0 + 40 * (k % 6), 255.0]]]), False, (False, False))
+                 for k in range(12)}
 
     world = render.world_matrices(doc)
     head = humanoid.bones(doc)
@@ -145,7 +165,7 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
         # removes the outer face of some parts and the inner face of others; it
         # tripled the count on a model that renders cleanly.
         colour, alpha, depth = render.rasterise(screen, uv, tris, ids, texmap, dims)
-        out = limb = None
+        out = limb = arm = None
         if facing:
             a, e = np.radians(az), np.radians(el)
             ry = np.array([[np.cos(a), 0, np.sin(a)], [0, 1, 0], [-np.sin(a), 0, np.cos(a)]])
@@ -154,12 +174,15 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
             s3 = vside[tris]
             agree = (s3[:, 0] == s3[:, 1]) & (s3[:, 1] == s3[:, 2])
             t_side = np.where(agree, s3[:, 0], 0)
+            t_arm = varm[tris].all(axis=1)
             fc, fa, _ = render.rasterise(
-                screen, uv, tris, (t_side * 2 + (n3[:, 2] > 0)).astype(np.int64),
+                screen, uv, tris,
+                (t_arm * 6 + t_side * 2 + (n3[:, 2] > 0)).astype(np.int64),
                 extra, dims)
             code = np.clip(np.round((fc[..., 0] - 20.0) / 40.0), 0, 5).astype(np.int8)
             out = (fa > 0) & (code % 2 == 1)
             limb = np.where(fa > 0, code // 2, 0).astype(np.int8)
+            arm = (fa > 0) & (fc[..., 1] > 120.0)
         who = np.full(colour.shape[:2], -1, dtype=np.int16)
         key = np.round(colour).astype(int)
         for i, n in enumerate(names):
@@ -167,7 +190,7 @@ def draw(doc, views, parts, out_prefix=None, size=(900, 1550), only=('front',),
             hit = (alpha > 0) & (np.abs(key - c).max(axis=2) <= 1)
             who[hit] = i
         labels[name] = ((who, names, depth) if not facing
-                        else (who, names, depth, out, limb))
+                        else (who, names, depth, out, limb, arm))
         if out_prefix:
             rgb = colour * alpha[..., None] + 255.0 * (1 - alpha[..., None])
             Image.fromarray(rgb.astype(np.uint8)).save(f'{out_prefix}-{name}.png')

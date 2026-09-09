@@ -1,0 +1,18 @@
+# The head camera, before the cull against after, 2026-09-10.
+#   python3 scratchpad/headshot.py <tag>   -- cover.apply on the pre-cull export,
+#   then render.VIEWS forced to a single head framing at 700x700, and the two
+#   images compared channel-wise with a threshold of 6.
+#
+# 394 is the ONE-PASS cut, which is what cover_test bounds at 800: cover.apply
+# has no hole guard behind it, so it cuts more than the pipeline ships. The
+# body that ships moves 244 (evidshots, same camera), because the loop has put
+# 605 triangles back by then.
+#
+# For contrast, the same camera under the rules that were rejected:
+#   ignore the body entirely (M17)          2,495
+#   call the outer body inner wear (M19)    2,495
+#   skip skin within 2mm and keep looking   2,481
+#   skip skin within 10mm and keep looking  2,481
+
+ship: moved 394
+  bbox x 159-540  y 523-699

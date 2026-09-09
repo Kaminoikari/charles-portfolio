@@ -1,0 +1,18 @@
+part                       prim  verts   on an opaque texel                          material
+Face                          0   1053               100.0%  N00_000_00_FaceMouth_00_FACE (In  <-- skin
+Face                          1    212                75.5%  N00_000_00_EyeIris_00_EYE (Insta  <-- skin
+Face                          2     26                 7.7%  N00_000_00_EyeHighlight_00_EYE (  <-- skin
+Face                          3   2266               100.0%  N00_000_00_Face_00_SKIN (Instanc  <-- skin
+Face                          4    290               100.0%  N00_000_00_EyeWhite_00_EYE (Inst  <-- skin
+Face                          5     52                19.2%  N00_000_00_FaceBrow_00_FACE (Ins  <-- skin
+Face                          6     90                46.7%  N00_000_00_FaceEyeline_00_FACE (  <-- skin
+Hair_Back                     2    746                87.9%  N00_000_00_HairBack_00_HAIR (Ins
+Body_Skin                     0   2795               100.0%  N00_000_00_Body_00_SKIN (Instanc  <-- skin
+Body_Skin_Inner_Top           0   3295                23.8%  N00_000_00_Body_00_SKIN(Clone) (  <-- skin
+Body_Skin_Inner_Bottom        0   3295                 6.3%  N00_000_00_Body_00_SKIN(Clone) (  <-- skin
+Outfit_Cardigan               0   1754                97.4%          N00_005_01_Tops_01_CLOTH
+Outfit_Jeans                  0   1076               100.0%       N00_001_01_Bottoms_01_CLOTH
+Outfit_Shoes                  0    516                46.1%         N00_002_01_Shoes_01_CLOTH
+Outfit_Shoes_Sole             1     28               100.0%  N00_004_01_Shoes_01_CLOTH (Insta
+Acc_Glasses                   0    888               100.0%  Accessory_GlassesHiFrame_01_MATC
+Acc_Glasses                   1    250                 0.0%  Accessory_GlassesHiLens_01_MATCA

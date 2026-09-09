@@ -179,6 +179,24 @@ def retarget(path, at, model_doc):
     return out, duration
 
 
+def sample_poses(doc, clips, samples=4):
+    """(clip name, time, node -> quaternion) for each frame the gate scores.
+
+    The single definition of WHICH frames are looked at. cover.trim has to cut
+    against the same ones check() will score it on, and a second copy of
+    "half-open intervals across the duration" written next to it would drift
+    the first time the sampling changed.
+    """
+    bones = pose_mod.bones(doc)
+    for clip in clips:
+        _, duration = retarget(clip, 0.0, doc)
+        for k in range(samples):
+            at = duration * (k + 0.5) / samples
+            rot, _ = retarget(clip, at, doc)
+            yield (os.path.basename(clip), at,
+                   {bones[b]: q for b, q in rot.items() if b in bones})
+
+
 def check(model, manifest, clips, samples=4, size=(360, 620)):
     """Per clip: how far its worst part went over its own limit, and where.
 
@@ -192,18 +210,17 @@ def check(model, manifest, clips, samples=4, size=(360, 620)):
     """
     doc, binary = glb.load(model)
     views = glb.views_of(doc, binary)
-    parts = json.load(open(manifest))['parts']
-    bones = pose_mod.bones(doc)
+    declared = json.load(open(manifest))
+    parts = declared['parts']
+    allowed = pierce.waivers(declared)
 
     rows, worst_overall = [], {}
-    for clip in clips:
-        name = os.path.basename(clip)
-        _, dur = retarget(clip, 0.0, doc)
+    per_clip = {}
+    for name, at, applied in sample_poses(doc, clips, samples):
+        per_clip.setdefault(name, []).append((at, applied))
+    for name, frames in per_clip.items():
         worst, where = 0, None
-        for k in range(samples):
-            at = dur * (k + 0.5) / samples
-            rot, _ = retarget(clip, at, doc)
-            applied = {bones[b]: q for b, q in rot.items() if b in bones}
+        for at, applied in frames:
             r, a = pierce.count(doc, views, parts, posed=pose_mod.skinned(
                 doc, views, applied, True), size=size, detail=True)
             for part, n in r.items():
@@ -213,9 +230,10 @@ def check(model, manifest, clips, samples=4, size=(360, 620)):
                 # the camera frames each pose to its own bounding box, so a
                 # crouch draws every part half again as large, and the summary
                 # would quote a limit that never applied to that count.
-                over = n / max(pierce.limit(a.get(part, 0)), 1)
+                lim = pierce.limit(a.get(part, 0), allowed.get(part, 0))
+                over = n / max(lim, 1)
                 if over > worst_overall.get(part, (0,))[0]:
-                    worst_overall[part] = (over, n, pierce.limit(a.get(part, 0)),
+                    worst_overall[part] = (over, n, lim,
                                            a.get(part, 0), name, round(at, 2))
                 if over > worst:
                     worst, where = over, (round(at, 2), part, n)

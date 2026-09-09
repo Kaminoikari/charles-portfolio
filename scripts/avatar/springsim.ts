@@ -1278,7 +1278,13 @@ export function writeClearance(args: Args, reports: Report[]): void {
         'public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the',
         "same in bind pose, crownScreen/restCrownScreen those two through each frame's camera",
         '(framings, recorded here as they were); depths are the worst frame. Regenerate:',
-        `  npx tsx scripts/avatar/springsim.ts ${path.relative(process.cwd(), args.model)} --clearance=${path.relative(process.cwd(), args.clearance)}`,
+        // --family is always named, never left to the default. The pans and
+        // framings this run measures against come from familyClearance(family),
+        // so a regenerate line that omits it silently rewrites the file with
+        // vroid-sample-b's pans: the 2026-09-10 re-run of this body under the
+        // default moved dance's crown from 1.7211 to 1.7185 and its waist-up
+        // from 1.7008 to 1.7095, numbers that look like a body that changed.
+        `  npx tsx scripts/avatar/springsim.ts ${path.relative(process.cwd(), args.model)} --clearance=${path.relative(process.cwd(), args.clearance)} --family=${args.family}`,
       ],
     },
     value,
