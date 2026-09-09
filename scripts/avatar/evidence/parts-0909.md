@@ -229,8 +229,9 @@ POSITION 位元組相同，是同一片身體畫了兩次，深度緩衝逐像�
 窗內、鏡腳朝相機的是外面、頭部屬於「置中」所以左右側判定恆真。`pierce.py` 的
 docstring 已記過同一類的兩個案例（搭在髖上的手、對側腿的襪子）；配件貼著身體繞到
 後面是第三個，出貨身體的九件 `Acc_*` 沒有一件會這樣走，所以以前碰不到。48 px 這
-個數字本身低於 `ABSOLUTE = 150`，是 `SHARE`（1,378 px 的 2% ＝ 27.6）與
-`FLOOR = 30` 取小把它擋下來的。沒有為此放寬任何門檻。
+個數字本身低於 `ABSOLUTE = 150`，擋下它的是 `FLOOR`：`limit()` 是
+`min(ABSOLUTE, max(FLOOR, SHARE * area))`，眼鏡只佔 1,378 px，`SHARE` 給的 27.6 被
+`FLOOR = 30` 抬上來，再被 150 蓋住之後上限就是 30。沒有為此放寬任何門檻。
 
 跑之前把手寫 manifest 裡的 `Shoes`／`Shoes_Sole` 改名成 `Outfit_Shoes`／
 `Outfit_Shoes_Sole`。`pierce.py` 用 `name.startswith(('Outfit_', 'Acc_'))` 挑布，原本

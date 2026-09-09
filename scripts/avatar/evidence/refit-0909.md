@@ -98,7 +98,7 @@ ramp 取 45–75 mm 是量出來的：袖子離它包覆的手臂 33 mm，撕裂
 畫面：`refit-0909-after-60.png`（同機位）與 `refit-0909-after-60-quarter.png`。
 下擺回到水平，外套本體垂直下垂，抬起那側的袖子照常跟手。
 
-## 沒有跑的關卡
+## 這一輪沒有跑的關卡，以及它後來跑出來的結果
 
 **這一輪沒有跑穿模 gate**。`motion.check` 要一份 `parts.json`，寫這份收據時這個檔
 還沒有；同日補了一份手寫的（[parts-0909](parts-0909.md)），gate 當時仍然跑不了，因為
@@ -132,8 +132,9 @@ FAIL：兩者並不矛盾，這裡量的是修正前後的差，gate 量的是�
     verification-snapshot      PASS：21 份 JSON、17 個 model reference、84 個 screenshot
                                reference、9 個產物、138 張 evidence PNG
 
-`approvedAllowlist` 仍是空集合：缺的是模型專屬 crown clearance，這次修的是權重，
-兩者無關，數字與修正前相同。人工檢視 `final-browser` 的 face-neutral 與
+`approvedAllowlist` 在寫這一段時仍是空集合：缺的是模型專屬 crown clearance，這次修
+的是權重，兩者無關，數字與修正前相同。（三個模組後來都補上了，family 仍未登記，
+見 [parts-0909](parts-0909.md)。）人工檢視 `final-browser` 的 face-neutral 與
 quarter-neutral，確認 R3 原本修好的兩件事仍在（頸部連續、領口沒有白色尖角）。
 
 覆寫原檔會讓那個 run 目錄自相矛盾，因為 `clean-structure`、`clean-motion` 與

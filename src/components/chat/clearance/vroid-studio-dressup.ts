@@ -18,7 +18,9 @@
 //      it declares; nobody else can.
 //   2. `dance` in the column has no pan the derivation agrees with. See `pans`.
 //
-// Everything else is done and measured. With the body placed at
+// Everything else is decided, and one field is carried rather than measured:
+// see `crownFringe` below, which holds the VRoid family's reading because
+// nothing renders this body. With the body placed at
 // public/avatar/vroid-studio-dressup.vrm and the family added to
 // AVATAR_FAMILIES, rigProbe.test.ts's per-family block runs 265 of its 266
 // checks green on this rig; the one failure is the pan above. Receipt:
@@ -95,8 +97,9 @@ const DECISIONS: ClearanceDecisions = {
   // crownTop waiver: that is the framing kind, it needs a person to have watched
   // the body, and nobody has. Where a pan can clear a clip the pan clears it.
   //
-  // The four measurements are IDENTICAL to the VRM1 sample's, to four decimals,
-  // which is not a coincidence and is worth stating because it looks like one.
+  // THREE of the four measurements are IDENTICAL to the VRM1 sample's, to four
+  // decimals, which is not a coincidence and is worth stating because it looks
+  // like one.
   // applyMotion scales a clip's hips track by rest height, and these two bodies
   // rest their hips at the same 0.9081, so the same clip walks the same distance
   // on both. Against the VRoid family (hips 0.8782, ratio 1.0340):
@@ -106,10 +109,12 @@ const DECISIONS: ClearanceDecisions = {
   //   dance   endWrist         1.2358        1.2358        1.1877
   //   idleLoop hipsDrift      157.3mm       157.3mm       152.1mm
   //
-  // handInHead is the exception and is measured live by the guard rather than
-  // written into the generated half: 0.406 here against the VRM1 sample's 0.212
-  // and the VRoid body's 0.197. The hand reaches the same place; the face it
-  // reaches into is a different shape, and this one's is a Studio re-export.
+  // handInHead is the fourth and the exception: 0.406 here against the VRM1
+  // sample's 0.212 and the VRoid body's 0.197. The hand reaches the same place;
+  // the face it reaches into is a different shape, and this one's is a Studio
+  // re-export. It is measured twice over, which is why both halves matter --
+  // `faceRatio` in the generated half, where measure-motions compares it against
+  // this waiver as a floor, and again live in rigProbe.test.ts off the rig.
   //
   // Budgets are the measurement with a hair of room, and rigProbe.test.ts
   // reddens on any of them the clip stops needing.

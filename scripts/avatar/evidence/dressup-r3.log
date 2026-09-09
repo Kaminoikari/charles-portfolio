@@ -7,3 +7,9 @@ $ python3 dressup.py <torn export> <repaired> <parts.json>
   rehomed   [{'cloth': 'Tops.baked[0]', 'chain': 'leftShoulder', 'joints': 4, 'host': 'J_Bip_C_Chest'}, {'cloth': 'Tops.baked[0]', 'chain': 'rightShoulder', 'joints': 4, 'host': 'J_Bip_C_Chest'}]
   after     []  (0s)
   matches the file the hand-run refit produced: False
+
+$ 同一個修補，兩條路徑產出的檔比對
+  hand-run    Tops.baked[0] 最壞邊 22.99mm  (leftUpperArm 60°)
+  via dressup Tops.baked[0] 最壞邊 22.99mm  (leftUpperArm 60°)
+  joint 表相同: False   權重最大差 0.0077   差 >0.01 的頂點 0 / 1754
+  位元組不同的原因是 argsort 的平手順序，不是修補本身。

@@ -111,7 +111,7 @@ capture helper 使用既有 `mika-r3` browser session 與 `127.0.0.1:5189` 本�
 | `capture-candidate` | 4 views、21 PNG、18 expressions | 相同，證據在 `evidence/final-browser/` |
 | `verification-snapshot` | PASS（8 產物、117 PNG） | PASS（9 產物、138 PNG、21 JSON、17 model reference） |
 
-`approvedAllowlist` 仍為空集合，缺的還是模型專屬 crown clearance，與本次權重修正無關。人工檢視 `final-browser` 的 face-neutral 與 quarter-neutral，確認本輪原本修好的頸部連續與領口無白色尖角在 refit 後仍成立。
+`approvedAllowlist` 在寫這一段時仍為空集合，缺的是模型專屬 crown clearance，與本次權重修正無關（三個 clearance 模組後來都補上了，family 未登記的兩個原因見末節）。人工檢視 `final-browser` 的 face-neutral 與 quarter-neutral，確認本輪原本修好的頸部連續與領口無白色尖角在 refit 後仍成立。
 
 覆寫原檔會讓 run 目錄自相矛盾：`clean-structure`、`clean-motion`、`evidence/clean-browser` 都記著舊 hash。先跑快照確認它抓得到（`Hash mismatch`、exit 1），再把這四份結果檔的 `source.path` 指向 `-torn.vrm`，`sha256` 與 `bytes` 未動；之後快照才 PASS。保留樣本重跑仍是 FAIL 2 筆、46.48 mm。
 
