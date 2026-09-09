@@ -28,8 +28,6 @@ import {
   type Rig,
 } from './rigProbe'
 import {
-  ARM_REST_FORE_Z,
-  ARM_REST_UPPER_Z,
   AVATAR_CAMERA_TILT,
   AVATAR_CANVAS_LAUNCHER,
   AVATAR_FOV,
@@ -334,14 +332,15 @@ describe('rigProbe', () => {
   })
 
   it('reports a resting arm as straight and a folded one as flexed', () => {
+    // Through applyArmRest rather than the two magnitudes, so this file holds no
+    // copy of the rest pose at all: the sign belongs to the version, and a
+    // literal here would be right only for the 0.x body it happens to run on.
     const r = rig()
-    r.bones.leftUpperArm.rotation.z = ARM_REST_UPPER_Z
-    r.bones.leftLowerArm.rotation.z = ARM_REST_FORE_Z
-    r.root.updateMatrixWorld(true)
+    applyArmRest(r)
     const rest = probeHand(r, 'left').elbowFlex
     expect(rest).toBeLessThan(20)
 
-    r.bones.leftLowerArm.rotation.z = ARM_REST_FORE_Z + 1.4
+    r.bones.leftLowerArm.rotation.z += 1.4
     r.root.updateMatrixWorld(true)
     expect(probeHand(r, 'left').elbowFlex).toBeGreaterThan(rest + 60)
   })

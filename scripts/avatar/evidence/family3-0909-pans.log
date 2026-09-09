@@ -5,8 +5,17 @@
 #     --family=vroid-studio-dressup
 #   npx tsx scripts/avatar/evidence/pan-0909-probe.ts
 # Both need the body at public/avatar/vroid-studio-dressup.vrm with its
-# parts.json beside it, and the family in AVATAR_FAMILIES. Neither is
-# committed -- see the header of clearance/vroid-studio-dressup.ts.
+# parts.json beside it, and the family in AVATAR_FAMILIES. All three were
+# committed on 2026-09-09 (6ae5189); see the header of
+# clearance/vroid-studio-dressup.ts for what the served copy changed.
+#
+# THIS FILE IS A CHRONOLOGY. Passes 1 to 4 were taken while crownFringe still
+# carried another body's 1.5mm, and pass 4's own section below records that the
+# derivation had no fixed point under that value. The settled state is the
+# PASS 5 block at the end, taken after the fringe was measured on this body
+# (0.5mm, evidence/armrest-0909.md); that is what rigProbe.test.ts holds the
+# declarations to. Every number above pass 5 is what was true when it was
+# written, not what is true now.
 
 == pass 1: nothing declared, crowns projected at rest ==
   spin/column 0.05  squat/column 0.01  akimbo/column 0.01  playFingers/column 0.01
@@ -41,7 +50,7 @@ stretch/waistUp         0.07      0.07   centre       2.9..   144.6   1.8751   0
 dance/waistUp           0.00      0.00   centre    -150.9..    10.3   1.7213   0.7781   -
 dance/column            0.13      0.12   least      119.3..   348.1   1.7213   0.7781   -   <<< DISAGREES
 
-== dance/column has no fixed point on the centimetre ==
+== dance/column has no fixed point on the centimetre, under the CARRIED 1.5mm fringe ==
   declared 0.12 -> crown 1.7226, least 120.6mm, ceil -> 0.13
   declared 0.13 -> crown 1.7213, least 119.3mm, ceil -> 0.12
   declared 0.14 -> crown 1.7200, least 118.0mm, ceil -> 0.12
@@ -66,8 +75,8 @@ dance/column            0.13      0.12   least      119.3..   348.1   1.7213   0
   vroid-sample-b   靜止頭頂投影 1.5881  剩 13.9mm
   vroid-studio-dressup 靜止頭頂投影 1.5994  剩 2.6mm
   所以任何抬高頭頂的 clip 都會出界：spin 1.6331、scratchHead 1.6546、dance 1.7213。
-  （三個都是上表 crown 欄的值，也等於 simulated.gen.ts 的 crownScreen.column 加 crownFringe
-   0.0015：1.6316／1.6531／1.7198。）
+  （三個都是上表 crown 欄的值，也等於當時 simulated.gen.ts 的 crownScreen.column 加當時的
+   crownFringe 0.0015：1.6316／1.6531／1.7198。量到 fringe 之後兩者都變了，見 pass 5。）
   髖高（0.9081 對 0.8782）決定的是 waiver 那三個位移量，不是 pan。
 
 == 已 push 的 commit message 裡，被這份收據取代的數字 ==

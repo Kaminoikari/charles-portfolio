@@ -32,8 +32,8 @@ assumption is only half a fact:
 
 `rigProbe.ts` has carried this fact since the second family arrived (its
 COORDINATE SPACE note, and `forwardZ`), and every measurement in it goes through
-that sign. The arm pins were the one place still writing the 0.x sign as a
-literal. It had never mattered: `vrm1-twist-sample` is a 1.0 rig, but it is
+that sign. The arm pins were the one place in product code still writing the 0.x
+sign as a literal. It had never mattered: `vrm1-twist-sample` is a 1.0 rig, but it is
 declared and never rendered, so no 1.0 body had ever been posed at rest by the
 engine.
 
@@ -69,7 +69,9 @@ her a couple of millimetres that no bind pose has, and the column leaves this
 body only 2.6mm of headroom to see it in.
 
 `dance`, column framing, pan 0.12 not yet declared at the time of the run so the
-camera sat at the then-declared 1.146 (0.13):
+camera sat at the then-declared 1.146 (0.13). That is also why the simulator
+column below reads 1.7198 and the file now holds 1.7211: declaring 0.12 lowered
+the camera a centimetre and the same crown projects 1.3mm higher.
 
 | canvas rows | mm per row | topmost drawn row | that row spans | simulator |
 |---|---|---|---|---|
@@ -79,9 +81,12 @@ camera sat at the then-declared 1.146 (0.13):
 The projection lands inside the drawn row both times, and on its top edge at the
 finer one: the drawn crown is at most **0.02mm** above the topmost vertex at
 0.49mm/row and **0.51mm** at 1.17mm/row. The residual did not grow with the row,
-which is what says the fringe here is the row and not an outline: Milfy's 1.5mm
-is a spring-driven twintail with a VRoid outline on it, this is a short rigid
-bob. `crownFringe` is the larger of the two row-top readings, 0.0005.
+which is what says the fringe here is the row and not an outline: Milfy's crown
+is a spring-driven twintail with a VRoid outline on it (its own residual read
+1.3mm and it declares 1.5mm), this is a short rigid bob. `crownFringe` is
+declared 0.0005, the larger of the two bounds to the tenth of a millimetre; it
+is 25x the 0.02mm the finer run actually bounds the residual at, and `least`
+comes out 119.6mm against a 120mm grid whether the tenth is kept or not.
 
 The peak time matches the simulator's `crownT` to the frame (11.97s against
 11.97s), which is the same agreement the 2026-09-06 Milfy run got (11.96 against
@@ -107,6 +112,39 @@ arms already fixed: one of 700 frames put the topmost row at 0 in 118 of them
 and never below row 4, the other of 500 frames never left rows 1 to 3. No guard
 reads any of this, and it is the reason the column rest reading is useless for
 measuring a fringe.
+
+## The same class, one layer over, measured and NOT fixed
+
+The arm pins were not the only place the engine writes a rotation straight onto a
+normalized bone with no version term. The whole procedural layer does:
+`GestureOffsets` (bow, nod, tilt, toeLook and the rest), `headAim`, and the
+breathing and weight shift all write `head`/`neck`/`spine`/`chest`/`hips`
+rotations directly. So they mirror between versions too, on all three axes.
+
+`pitch-0909-probe.ts` applies `bow`'s own offsets (spine +0.32, head +0.18) to
+each registered body and reports where her head ends up relative to the way her
+eyes point (`pitch-0909.log`):
+
+| body | VRM | bow carries her head |
+|---|---|---|
+| vroid-sample-b (the shipped one) | 0 | **121.8mm BACKWARD**, 26.4mm down |
+| vrm1-twist-sample | 1 | 136.1mm forward, 8.8mm down |
+| vroid-studio-dressup | 1 | 136.1mm forward, 8.8mm down |
+
+Measured live in the browser on the shipped body as well, through the engine's
+own `playGesture('bow')`: her head moved -118.8mm in world Z with her eyes
+pointing +Z, and her left eye -148.0mm. The 3mm difference from the offline
+figure is the idle sway the live body also carries.
+
+So the shipped body leans AWAY from the viewer when she bows, and the two 1.0
+bodies would bow toward it. It reads as a bow on screen because her head drops
+26mm at the same time, and `toeLook` reads as looking down because it also
+drives the eye target down by 2.
+
+NOT FIXED HERE. It is outside what this change was for, the two 1.0 bodies are
+`offered: false` so no visitor sees the mirror, and correcting the sign changes a
+visible motion on the body every visitor DOES see, which is the owner's call and
+needs a browser watch of all nine gestures rather than a probe.
 
 ## What the run did not check
 

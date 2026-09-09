@@ -1,0 +1,87 @@
+Readings transcribed from the 2026-09-09 Playwright run against
+scripts/avatar/live-preview.html. These are the values the page's own
+evaluate() calls returned; the page is a dev-server session, so this file is
+the only record of them. Every gate that reads a number derived from these is
+named beside it.
+
+Dev server: npm run dev (Vite, :5173). Browser: Playwright Chromium, dpr 1.
+Page: live-preview.html?model=/avatar/vroid-studio-dressup.vrm&mikadebug=1
+with live-preview-config.ts's MIKA_MILFY_FAMILY temporarily set to
+'vroid-studio-dressup' (put back afterwards).
+
+== the body the page loaded ==
+  __mikaState.body        /avatar/vroid-studio-dressup.vrm
+  __mikaVrm.meta.metaVersion  "1"
+  status line             10 支動作已就緒，Mika Milfy 可以開始表演。
+  console                 0 errors; 1 warning, the VRMA specVersion one every
+                          clip raises on every body
+
+== 1. the rest pose, BEFORE the fix (arms up) ==
+  motion null, motionW 0, gesture null, matz 2, cam 1.016, placement column
+  leftUpperArm  rotation (0, 0,  1.15)
+  rightUpperArm rotation (0, 0, -1.15)
+  leftLowerArm  rotation (0, 0,  0.25)
+  rightLowerArm rotation (0, 0, -0.25)
+  topmost drawn row 0, first hit x=403 of 1760, rgba (205,57,67,255): the
+  sleeves, 384 hits spanning x 403..1371 (screenshot armrest-0909-before.png)
+
+  after writing the opposite sign onto the four bones through
+  __mikaVrm.humanoid.getNormalizedBoneNode, with nothing else changed:
+  topmost drawn row 4 at x=876 of 1760, which is her hair
+
+== 2. the rest pose, AFTER the fix (page reloaded) ==
+  leftUpperArm  rotation (0, 0, -1.15)   rightUpperArm (0, 0,  1.15)
+  leftLowerArm  rotation (0, 0, -0.25)   rightLowerArm (0, 0,  0.25)
+  screenshot armrest-0909-after.png
+
+  column framing (distance 2.441, camLookY 1.016, top edge 1.6020322),
+  buffer 880x1000, 1.1721mm per row, mode 'speaking' so the idle rotation
+  is off, samples gated on motion null and gesture null:
+    run A, 700 accepted frames: rows 0..4, counts {0:118, 1:153, 2:136,
+      3:205, 4:88}
+    run B, 500 accepted frames: rows 1..3, topmost row 1 = 1.59969..1.60086
+  waist-up framing (distance 2.3, camLookY 1.32, top edge 1.8721800),
+  buffer 880x1000, 1.1044mm per row, 700 accepted frames:
+    rows 248..249, topmost row 248 = 1.59719..1.59830
+
+  Nothing reads either figure. simulated.gen.ts's restCrownScreen is a bind
+  pose and the browser's rest is not (breathing and weight shift), which is
+  why the fringe below is taken under a clip instead.
+
+== 3. dance, the reading crownFringe comes from ==
+  mode 'idle' (a clip started under 'speaking' stopped 0.5s in at weight
+  0.07; under 'idle' it runs to the end), playMotion('dance') explicit,
+  column placement, pan 0.13 as declared at the time, so camLookY settles to
+  1.146 about 4s in and the frame's top edge is 1.7320322. Samples gated on
+  motion === 'dance' and |camLookY - 1.146| < 0.0005.
+
+  buffer 880x2400, 0.4884mm per row, 1357 accepted frames:
+    topmost row 25 at t=11.97s = 1.71933..1.71982; row 0 never hit
+  buffer 880x1000, 1.1721mm per row, 1355 accepted frames:
+    topmost row 10 at t=11.96s = 1.71914..1.72031; row 0 never hit
+    crown trajectory, every 8th recorded sample:
+      t=3.61 row 194   t=5.21 row 168   t=6.81 row 160   t=8.41 row 196
+      t=10.01 row 107  t=11.61 row 126  t=13.21 row 149  t=14.81 row 133
+      t=16.41 row 104  t=18.01 row 142  t=19.61 row 56   t=21.21 row 134
+      t=22.81 row 185  t=24.41 row 150
+
+  simulated.gen.ts held crownScreen.column 1.7198 at crownT 11.97 for that
+  pan. crownFringe 0.0005 is derived from these two rows; see
+  clearance/vroid-studio-dressup.ts and armrest-0909.md.
+
+== 4. the procedural layer, on the SHIPPED body (finding, not fixed) ==
+  Page: live-preview.html?mikadebug=1 with no ?model=, so the default
+  /avatar/mika-milfy-12.vrm, metaVersion "0".
+
+  at rest, head.rotation.x driven from 0 to 0.3 by hand:
+    the head bone's own +Y axis in world moved -0.2957 in Z
+    (scene.rotation.y is pi, rotateVRM0 having run)
+  her face direction: leftEye is +0.0274 in world Z from the head bone, so
+  she faces the camera at +Z
+
+  playGesture('bow') at its peak (spineX 0.318, headX 0.185, chestX 0.005):
+    head   y 1.3196 -> 1.2931, z -0.0087 -> -0.1275  (-118.8mm in Z)
+    leftEye                                          (-148.0mm in Z)
+  so the shipped body's bow carries her head AWAY from the viewer. The
+  offline probe (pitch-0909-probe.ts) gets -121.8mm for the same offsets;
+  the 3mm is the idle sway the live body also carries.

@@ -39,17 +39,28 @@ const DECISIONS: ClearanceDecisions = {
   //   dance peak   simulator 1.7198 @11.97s   browser row 25 of 2400 @11.97s
   //                                           = 1.71933..1.71982
   //
+  // The 1.7198 is the projection the file carried AT THE TIME OF THE RUN, when
+  // dance's column pan was still the 0.13 pass 4 had left declared. Declaring
+  // 0.12 moved the camera down a centimetre and the same crown now projects to
+  // 1.7211 in the generated half; the browser reading and the file are the same
+  // measurement under two pans, 1.3mm apart, which is the feedback `pans`
+  // describes below.
+  //
   // The projection lands on that row's top edge, so the drawn crown is at most
   // 0.02mm above the topmost vertex at 0.49mm per row. Repeated at 1.17mm per
   // row (a 1000-row canvas) the same peak read row 10 = 1.71914..1.72031, whose
   // top edge is 0.51mm above. The residual did not grow with the row, which is
   // what says this body's crown carries no outline to speak of: what is left is
-  // the row itself. 0.0005 is the larger of the two row-top readings.
+  // the row itself. 0.0005 is that larger bound, 0.51mm, to the tenth of a
+  // millimetre. Rounding a tenth off an allowance would matter if the allowance
+  // were tight; it is 25x the 0.02mm the finer run actually bounds it at, and
+  // `least` is 119.6mm against a 120mm grid either way.
   //
-  // The VRoid family reads 1.5mm on the same recipe and this one reads a third
-  // of that, which is a fact about the two bodies rather than a disagreement:
-  // Milfy's crown is a spring-driven twintail with a VRoid outline on it, this
-  // one's is a short rigid bob.
+  // The VRoid family DECLARES 1.5mm (its own larger residual, 1.3mm, rounded up
+  // past a column row's worth) and this body's bound is a third of that, which
+  // is a fact about the two crowns rather than a disagreement: Milfy's is a
+  // spring-driven twintail with a VRoid outline on it, this one's is a short
+  // rigid bob.
   //
   // Re-measure if the body, the column framing or the renderer's outline
   // changes; the number feeds `least` linearly (see `pans`).

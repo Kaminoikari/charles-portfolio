@@ -351,11 +351,17 @@ export type ArmPinBone =
  *
  * A 0.x body faces -Z, so her LEFT arm rests along -X and a POSITIVE Z rotation
  * brings it down. A 1.0 body faces +Z, her left arm rests along +X, and the very
- * same rotation raises it instead. rigProbe's COORDINATE SPACE note is this same
- * fact for everything that reasons about her sides, and the pins below were the
- * one place that still wrote the 0.x sign as a literal: on 2026-09-09 the first
- * 1.0 body ever SERVED (`vroid-studio-dressup`) stood at rest with both arms
- * straight up, which nothing caught because until then no 1.0 body was rendered.
+ * same rotation raises it instead. This is exactly -`Humanoid.forwardZ`
+ * (vrmHumanoid.ts), which is the same fact for code holding a parsed glTF, and
+ * rigProbe's COORDINATE SPACE note is the same fact again for everything that
+ * reasons about her sides. It is written out a third time here rather than
+ * imported because `readHumanoid` needs a parsed document and this module ships
+ * to the browser; the three must be kept in step by hand.
+ *
+ * The pins below were the one place in PRODUCT code that still wrote the 0.x
+ * sign as a literal: on 2026-09-09 the first 1.0 body ever SERVED
+ * (`vroid-studio-dressup`) stood at rest with both arms straight up, which
+ * nothing caught because until then no 1.0 body had been rendered.
  */
 export function armRestSign(version: '0' | '1'): -1 | 1 {
   return version === '0' ? 1 : -1

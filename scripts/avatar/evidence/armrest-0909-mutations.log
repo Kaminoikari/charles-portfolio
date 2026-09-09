@@ -1,20 +1,21 @@
+=== re-run after the review fixes (elbowFlex now goes through applyArmRest) ===
 === M1: armRestSign loses the version (back to the 0.x literal) ===
 MUTATED src/components/chat/avatarMode.ts: 1 hit
-   × bundled motions on 'vrm1-twist-sample' > rests with her arms down, on this body's own version 6ms
+   × bundled motions on 'vrm1-twist-sample' > rests with her arms down, on this body's own version 4ms
      → left wrist sits -412mm below the shoulder: expected -0.41223612825146305 to be greater than 0.2
    × bundled motions on 'vroid-studio-dressup' > rests with her arms down, on this body's own version 1ms
      → left wrist sits -412mm below the shoulder: expected -0.41223527320674314 to be greater than 0.2
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
 AssertionError: left wrist sits -412mm below the shoulder: expected -0.41223612825146305 to be greater than 0.2
-    550|         `${side} wrist sits ${(drop * 1000).toFixed(0)}mm below the sh…
+    549|         `${side} wrist sits ${(drop * 1000).toFixed(0)}mm below the sh…
 AssertionError: left wrist sits -412mm below the shoulder: expected -0.41223527320674314 to be greater than 0.2
-    550|         `${side} wrist sits ${(drop * 1000).toFixed(0)}mm below the sh…
+    549|         `${side} wrist sits ${(drop * 1000).toFixed(0)}mm below the sh…
       Tests  2 failed | 267 passed (269)
 MUTATED src/components/chat/avatarMode.ts: 1 hit
 
 === M2: the engine pins every body with the 0.x sign ===
 MUTATED src/components/chat/avatarGuideEngine.ts: 1 hit
-   × the rest pose takes the body it is being written on > asks armRestPins for THIS body version 9ms
+   × the rest pose takes the body it is being written on > asks armRestPins for THIS body version 4ms
      → pinArms does not read the version off the body: expected '// Framework-free engine for the 3D a…' to match /for \(const \[name, z\] of armRestPin…/
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 AssertionError: pinArms does not read the version off the body: expected '// Framework-free engine for the 3D a…' to match /for \(const \[name, z\] of armRestPin…/
@@ -26,7 +27,7 @@ MUTATED src/components/chat/avatarGuideEngine.ts: 1 hit
 
 === M3: the engine grows its own pin table back ===
 MUTATED src/components/chat/avatarGuideEngine.ts: 1 hit
-   × the rest pose takes the body it is being written on > keeps the pins in one place instead of a table of its own 8ms
+   × the rest pose takes the body it is being written on > keeps the pins in one place instead of a table of its own 4ms
      → the engine has grown its own arm-pin table again: expected '// Framework-free engine for the 3D a…' not to match /const ARM_PINS/
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 AssertionError: the engine has grown its own arm-pin table again: expected '// Framework-free engine for the 3D a…' not to match /const ARM_PINS/
@@ -36,6 +37,6 @@ AssertionError: the engine has grown its own arm-pin table again: expected '// F
       Tests  1 failed | 6 passed (7)
 MUTATED src/components/chat/avatarGuideEngine.ts: 1 hit
 
-=== restored: all green ===
+=== restored ===
  Test Files  2 passed (2)
       Tests  276 passed (276)
