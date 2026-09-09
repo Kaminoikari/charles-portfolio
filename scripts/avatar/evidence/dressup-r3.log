@@ -1,0 +1,9 @@
+$ python3 dressup.py <torn export> <repaired> <parts.json>
+  torn      R3-B-clean-base-dressup-torn.vrm
+  manifest  R3-B-clean-base-dressup.parts.json
+  before    [('Tops.baked', 0, 'leftUpperArm', 60, 46.48), ('Tops.baked', 0, 'rightUpperArm', -60, 46.48)]
+  selected  (('Tops.baked', 0),)
+  body pool 10 primitives from 4 meshes
+  rehomed   [{'cloth': 'Tops.baked[0]', 'chain': 'leftShoulder', 'joints': 4, 'host': 'J_Bip_C_Chest'}, {'cloth': 'Tops.baked[0]', 'chain': 'rightShoulder', 'joints': 4, 'host': 'J_Bip_C_Chest'}]
+  after     []  (0s)
+  matches the file the hand-run refit produced: False

@@ -14,7 +14,7 @@
 | `R3-B-clean-base-dressup-torn.vrm`（本文正文量測的那一份） | 14,686,304 | `c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07` |
 | `R3-B-clean-base-dressup.xroid` | 11,712,569 | `ff33c2e0667a564dedf6e0813a41837d840835d3f76de9760793714bb9b8d127` |
 
-`.xroid` 是 Studio 工程檔，refit 只改匯出的 VRM，所以從這份 source 重新匯出會再次得到修正前的權重；要修好的檔就用 `scripts/avatar/refit.py` 再跑一次。
+`.xroid` 是 Studio 工程檔，refit 只改匯出的 VRM，所以從這份 source 重新匯出會再次得到修正前的權重。重新匯出後跑 `python3 scripts/avatar/dressup.py <匯出檔> <修好的檔> <parts.json>`：它用 `verify.torn_bindings` 當場量出要修哪些 primitive、用 manifest 的皮膚當身體 pool，寫完再量一次，還撕就 raise。在本輪這個撕裂檔上它自己選中 `Tops.baked[0]`，出來的權重與手動那一次差最多 0.0077（收據 [dressup-r3.log](../../scripts/avatar/evidence/dressup-r3.log)）。
 
 `evidence/clean-browser/results.json`：4 views、21 PNG、18 expressions，全部載入／driving／繪製成功；各 screenshot 有 hash。`clean-motion/`：10 clips 掃描完成、13 組數值候選 placement，`approvedAllowlist=[]`。`clean-structure/structure.json`：VRM1、53 bones、57 face targets、31,009 triangles、16 spring groups、22 collider groups、17 materials、134 nodes；6 checks PASS、torn_bindings FAIL、5 checks NOT_SUPPORTED。Hoodie `Tops.baked` 的 bent-arm edge growth 仍為 46.47845 mm，高於 25 mm，沒有放寬門檻。
 
@@ -125,4 +125,4 @@ capture helper 使用既有 `mika-r3` browser session 與 `127.0.0.1:5189` 本�
 
 clearance 三個模組裡跑出了兩個。`measure-motions.ts --write` 的 `measured` 也產出了（`vroid-studio-dressup.measured.gen.ts`、`measure-0909.log`），兩份的 `rigSha` 同為 `ec3b9ab3…`、`restCrownY` 同為 1.5982，而這兩個數字來自兩條獨立路徑（蒙皮後的最高頂點對 `rigProbe.deriveRestCrown`）。缺的是手寫的決策模組：`crownFringe` 要在瀏覽器上量、`pans` 要宣告後推導到收斂、waiver 與 `excluded` 要逐條決定，`approvedAllowlist` 在三份齊備前仍是空集合。這具身體的 rig sha 與出貨的 `e2aad79e…` 不同（沒有 `upperChest`、拇指用 1.0 命名、hips 高 29.8 mm），現成的 clearance 檔套不上去。
 
-`motion.check` 的像素穿模 gate 仍未跑：`pierce.py` 的 `SKIN` 是寫死的 `('Body_Skin', 'Face')` 兩個名字，而這具身體的皮膚分在三個 mesh 上（`Body (merged)` 的身體層加上 `InnerTop`／`InnerBottom` 兩層），後兩者會被當成布，量出來的會是另一件事。完整動態衣物、spring 與目標 consumer 驗收維持 `PENDING`。
+`motion.check` 的像素穿模 gate 跑了，這是它第一次跑在這具身體上。原本擋住的是 `pierce.py` 寫死的 `SKIN = ('Body_Skin', 'Face')`：這具身體的皮膚分在三個 mesh 上（`Body (merged)` 的身體層加上 `InnerTop`／`InnerBottom` 兩層），後兩者會被當成布。改成由 manifest 決定皮膚名字之後，靜止與動態都是 FAIL，而兩個 FAIL 是不同的東西。`Outfit_Cardigan` 靜止 108 px（上限 150）、動態最差 779 px 為上限的 5.19 倍（modelPose t=2.82s），貼圖算圖看得見：紅色帽 T 胸口有一塊身體層穿出來的深色洞，779 個像素裡 750 個來自 POSITION 位元組相同的 `InnerTop`／`InnerBottom`。`Acc_Glasses` 靜止 48 px（上限 30）是誤報，鏡腳繞到耳後、耳朵皮膚在它前方 8.6–11.0 mm，gate 的三個條件全部通過。`Outfit_Jeans`、`Outfit_Shoes`、`Outfit_Shoes_Sole` 乾淨（最差 0.37 倍）。收據 [pierce-0909.log](../../scripts/avatar/evidence/pierce-0909.log)、[cardigan](../../scripts/avatar/evidence/pierce-0909-cardigan.png)、[glasses](../../scripts/avatar/evidence/pierce-0909-glasses.png)。外套的穿模是這具身體本身的缺陷，尚未修。完整動態衣物、spring 與目標 consumer 驗收維持 `PENDING`。

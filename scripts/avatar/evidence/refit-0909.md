@@ -101,10 +101,15 @@ ramp 取 45–75 mm 是量出來的：袖子離它包覆的手臂 33 mm，撕裂
 ## 沒有跑的關卡
 
 **這一輪沒有跑穿模 gate**。`motion.check` 要一份 `parts.json`，寫這份收據時這個檔
-還沒有；同日補了一份手寫的（[parts-0909](parts-0909.md)），而 gate 仍然跑不了：
+還沒有；同日補了一份手寫的（[parts-0909](parts-0909.md)），gate 當時仍然跑不了，因為
 `pierce.py` 的 `SKIN` 寫死是 `('Body_Skin', 'Face')` 兩個名字，這具身體的皮膚分在
 三個 mesh 上，`InnerTop` 與 `InnerBottom` 兩層會被當成布。`inside.py` 的體積法不是
 替代品，`motion.py:182` 的註解已記明它答的是另一個問題。
+
+同日稍晚把皮膚名字改成由 manifest 決定之後 gate 跑完了，結果是 FAIL：帽 T 動態最差
+779 px 為上限的 5.19 倍，貼圖算圖看得見。收據在 [parts-0909](parts-0909.md) 與
+`pierce-0909.log`。下面那組距離量測因此不再是唯一能講的話，但它量的仍是這次權重
+修正本身的風險，兩者不互相取代。
 
 0906 的教訓是改權重可能只被 motion gate 抓到（襪子在 scratchHead t=4.02s 從
 5px 變 233px）。這一輪能做的是直接量修改本身的風險，即外套與身體的最近距離有沒有
@@ -113,8 +118,8 @@ ramp 取 45–75 mm 是量出來的：袖子離它包覆的手臂 33 mm，撕裂
     抬手 36°   修正前 min 2.71 mm / p1 6.52 / 中位 31.88    修正後 min 3.01 / p1 6.54 / 中位 31.73
     抬手 60°   修正前 min 2.71 mm / p1 6.52 / 中位 31.56    修正後 min 3.01 / p1 6.52 / 中位 31.54
 
-淨空距離沒有變差。這是距離量測，不等於通過像素穿模 gate；要宣稱後者，得先有這個
-檔案的 parts 對照表。
+淨空距離沒有變差。這是距離量測，不等於通過像素穿模 gate，而 gate 後來跑出來是
+FAIL：兩者並不矛盾，這裡量的是修正前後的差，gate 量的是修正後的絕對水準。
 
 ## 套回原檔後的完整驗收
 
@@ -168,9 +173,29 @@ pattern 命中數斷言為 1、跑完還原並比對原檔），收據在 mutati
 的 pool 是三個網格共 9385 點，其中 `InnerTop.baked` 與 `InnerBottom.baked` 的
 POSITION 逐位元相同，相異點為 6090；`Body (merged).baked(copy).baked` 自己 2795 點）。
 
-`refit.py` 尚未接進任何建置流程，`build.py` 與 `make.py` 都沒有 import 它；它是
-一支要人工指名 cloth 與 body 的 `mesh:prim` 才能跑的工具，而 body 網格必須指名，
-因為 auto-mask 會在服裝蓋住的地方把身體挖掉。樣本是一件衣服。
+## 接進流程（同日補上）
+
+`refit.py` 原本要人工指名 cloth 與 body 的 `mesh:prim` 才能跑，而 `.xroid` 裡沒有
+任何一段記錄這次修補：重新匯出一次，撕裂就一模一樣地回來，而所有看 T-pose 的關卡
+照樣通過。所以修補不能是「有人記得要跑的指令」，補了 `dressup.py`（測試
+`dressup_test.py`，6 條，五道防禦各自 mutation 轉紅），讓匯出檔自己決定要修什麼：
+
+- 修哪些 primitive 由 `verify.torn_bindings` 當場量出來，不是寫死的 mesh 名單。
+  同一個 primitive 被兩個彎曲各報一次，`dict.fromkeys` 收成一次，否則第二趟會讀到
+  第一趟寫下去的權重。
+- 身體 pool 走 `pierce.skin_parts`，與像素穿模 gate 認定皮膚的規則同一份定義。
+- 寫完再量一次，還撕就 raise。`refit` 是一段 ramp 上的淡出，不是證明。
+
+跑在本輪那個撕裂檔上：`Tops.baked[0]` 由 46.48 mm 進、`torn_bindings` 出來是空的，
+自己選中 `Tops.baked[0]`，pool 是 manifest 的 4 個皮膚部件共 10 個 primitive。與手
+動那一次產出的檔位元組不同（`argsort` 的平手順序不同），修補本身相同：兩個檔的
+`Tops.baked[0]` 最壞邊都是 22.99 mm，權重最大差 0.0077，1,754 個頂點裡沒有一個差
+超過 0.01。差別只在 pool 多了臉那 7 個 primitive，而臉離帽 T 夠遠。收據
+`dressup-r3.log`。
+
+沒有接進 `make.py`：那條線是從 base body 建 Milfy，衣服都是這裡做的、由
+`binding.py` 綁的、在第 6 步過關的，從來沒有出現過這個缺陷，也沒有匯入步驟可以掛。
+`dressup.py` 是「身體到的時候已經穿好衣服」那條線的入口。樣本仍是一件衣服。
 
 這一輪沒有改 `verify.py` 的門檻、沒有改 production reader，也沒有改幾何、UV 或
 morph，只換 `JOINTS_0`／`WEIGHTS_0`。
