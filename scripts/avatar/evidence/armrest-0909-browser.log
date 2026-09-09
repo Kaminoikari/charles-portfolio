@@ -83,5 +83,9 @@ with live-preview-config.ts's MIKA_MILFY_FAMILY temporarily set to
     head   y 1.3196 -> 1.2931, z -0.0087 -> -0.1275  (-118.8mm in Z)
     leftEye                                          (-148.0mm in Z)
   so the shipped body's bow carries her head AWAY from the viewer. The
-  offline probe (pitch-0909-probe.ts) gets -121.8mm for the same offsets;
-  the 3mm is the idle sway the live body also carries.
+  offline probe (pitch-0909-probe.ts) gets -121.8mm. Two things separate the
+  two figures. The probe reads the family's base file
+  (AvatarSample_B_webp.vrm) and this page ran mika-milfy-12.vrm, which
+  avatarVariants.ts holds to be the same family because rigOf hashes the same
+  for both; and the live peak sampled here is spineX 0.318, headX 0.185
+  against the probe's exact 0.32 and 0.18, with the idle sway on top.

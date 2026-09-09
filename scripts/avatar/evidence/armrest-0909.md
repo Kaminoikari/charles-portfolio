@@ -134,7 +134,10 @@ eyes point (`pitch-0909.log`):
 Measured live in the browser on the shipped body as well, through the engine's
 own `playGesture('bow')`: her head moved -118.8mm in world Z with her eyes
 pointing +Z, and her left eye -148.0mm. The 3mm difference from the offline
-figure is the idle sway the live body also carries.
+figure has two parts: the probe reads this family's base file and the page ran
+`mika-milfy-12.vrm` (one family, `rigOf` hashes the same for both), and the live
+peak sampled was spineX 0.318, headX 0.185 against the probe's exact 0.32 and
+0.18, with the idle sway on top.
 
 So the shipped body leans AWAY from the viewer when she bows, and the two 1.0
 bodies would bow toward it. It reads as a bow on screen because her head drops
