@@ -1,0 +1,32 @@
+model build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm
+  sha256 c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07
+
+== 修法比較（Tops.baked 全彎曲最壞邊）
+  原始                                        46.48 mm
+  garment.smooth_weights 2 pass             39.68 mm
+  garment.smooth_weights 4 pass             36.39 mm
+  garment.smooth_weights 8 pass             33.16 mm
+  garment.smooth_weights 16 pass            31.52 mm
+  garment.smooth_weights 24 pass            30.81 mm
+  garment.smooth_weights 32 pass            30.53 mm
+  最近軀幹頂點 + 8 pass                           34.66 mm
+  最近軀幹頂點 + 16 pass                          31.60 mm
+  調和場 anchor 45mm 200 迭代                    38.88 mm
+  調和場 anchor 45mm 600 迭代                    38.88 mm
+  調和場 anchor 45mm 2000 迭代                   38.88 mm
+  refit shed 0 pass / weight 0 pass        101.27 mm
+  refit shed 0 pass / weight 12 pass        31.93 mm
+  refit shed 24 pass / weight 0 pass        30.86 mm
+
+== refit 的 ramp 與 pass 數（門檻 25 mm）
+   near   far  shed  weight       最壞邊      袖子下臂
+     45    75    20      12     23.39     0.983
+     45    75    24      10     24.17     0.983
+     45    75    24      12     22.99     0.983
+     45    75    24      14     23.00     0.983
+     45    75    28      12     23.14     0.983
+     45    75    32      12     23.50     0.983
+     40    70    24      12     21.97     0.952
+     50    80    24      12     24.41     0.986
+     45    75    24      16     23.26     0.984
+     45    75    40      12     24.15     0.983

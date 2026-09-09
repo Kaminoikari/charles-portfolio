@@ -99,7 +99,9 @@ R2 直接使用現有本機資產及成熟工具可建立的新 authoring fixtur
 
 R2 後決策：Studio native authoring 已證明可產生可編輯臉型／髮型／衣物變體，先用這條路徑保存經驗收資產；全自動 worker 與單位經濟尚未成立。XWear 的下一個試驗聚焦乾淨換裝 base 與內建 mesh restore，重驗頸部缺口，保留原始失敗檔。現有 Mika 構圖不能直接套用新 base，須建立專用 framing／motion allowlist；先沿用既有量測與成熟 authoring／retarget 工具。背面、完整 spring 與目標 consumer 仍須驗收。
 
-2026-09-09 R3 限定試驗完成，見 [R3 執行報告](../reports/mika-r3-studio-2026-09-09.md)。採用官方 restore brush／Confirm 加上原生乾淨 base，已保存、重開 `.xroid`，並在匯出 VRM1 的獨立 MToon 畫面確認頸部缺口與舊 T-shirt 白色尖角消失，局部修復 `PASS`。最終 4 views／21 PNG／18 expressions、10 clips 數值掃描完成，13 組 motion／placement 數值候選；缺少專屬 crown clearance，正式 allowlist 保持空集合。Hoodie bent-arm edge growth 46.48 mm 仍超過既有 25 mm 門檻，5 項 VRM0-only gate 不支援 VRM1，完整動態及交付保持 `PENDING`。R2 失敗樣本與 R3 partial 成品保留；自動遮蔽仍須人工 restore，未承諾任意設計全自動交付。
+2026-09-09 R3 限定試驗完成，見 [R3 執行報告](../reports/mika-r3-studio-2026-09-09.md)。採用官方 restore brush／Confirm 加上原生乾淨 base，已保存、重開 `.xroid`，並在匯出 VRM1 的獨立 MToon 畫面確認頸部缺口與舊 T-shirt 白色尖角消失，局部修復 `PASS`。最終 4 views／21 PNG／18 expressions、10 clips 數值掃描完成，13 組 motion／placement 數值候選；缺少專屬 crown clearance，正式 allowlist 保持空集合。Hoodie bent-arm edge growth 46.48 mm 超過既有 25 mm 門檻（該檔本身未被改動，仍是這個值），5 項 VRM0-only gate 不支援 VRM1，完整動態及交付保持 `PENDING`。R2 失敗樣本與 R3 partial 成品保留；自動遮蔽仍須人工 restore，未承諾任意設計全自動交付。
+
+Hoodie 的 bent-arm 46.48 mm 已於同日修復，機制與量測見 [refit-0909](../../scripts/avatar/evidence/refit-0909.md)。這替 auto-fit 的判斷加上一項具體邊界：它在貼身處是對的，在寬版服裝飛離身體的地方沒有身體可以複製，於是把軀幹布料綁到手臂上。`scripts/avatar/refit.py` 能修這一類（`torn_bindings` FAIL→PASS，最壞邊 46.48→22.99 mm），代價是每份檔案仍要人工指名 cloth 與 body 的 `mesh:prim`，而且它還沒接進任何建置流程，樣本是一件衣服。auto-mask 造成的頸部缺口是另一件事，仍須人工 restore。採用判斷維持不變：XWear 的 auto-fit 可用但需要下游修補，不能當成任意拓樸的安全保證。
 
 商業採用邊界：先驗收固定 `base × module` 組合，保留可逆 source／mesh mask、來源 hash 及版本，僅將已驗收組合列入供應範圍。一次性模組整備人工與每單客製工時分開記錄，作為後續點數／單次／訂閱成本依據。單例修復結果尚未支持任意設計全自動交付，不先編定價格或毛利。
 
