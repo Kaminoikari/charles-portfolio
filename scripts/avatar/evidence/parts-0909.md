@@ -175,3 +175,43 @@ waiver 與 `excluded` 要逐條決定。`approvedAllowlist` 在三份齊備之�
 `e2aad79e…`）：它沒有 `upperChest`，肩與頸直接掛在 `chest` 上，拇指用 1.0 的
 `ThumbMetacarpal` 命名，hips 在 0.9081，出貨的兩具都在 0.8782，高 29.8 mm。所以現成的
 clearance 檔套不上去，它是第三個 family。
+
+## 像素穿模 gate：第一次跑在這具身體上
+
+`pierce.py` 原本把皮膚寫死成 `SKIN = ('Body_Skin', 'Face')` 兩個名字。這具身體的
+皮膚分在三個 mesh 上（`Body (merged)` 的身體層，加上外套與長褲各自坐落的
+`InnerTop`／`InnerBottom` 兩層未被 auto-mask 挖過的身體複本），後兩層會落進「不是
+皮膚就是布」的另一邊，量出來的是別的東西。改成 `SKIN_ROLES` 加一支 `skin_parts()`
+之後，皮膚的名字由 manifest 決定：兩個正典名字，加上 `Body_Skin_<mesh>` 與
+`Face_<mesh>` 這種分層寫法，build 寫的、derive 出來的、手寫的三種 manifest 共用同
+一條規則。收據 `pierce-0909.log`，測試 `pierce_test.py`（5 條，三道防禦各自
+mutation 轉紅）。
+
+Gate 第一次跑完，靜止與動態都是 FAIL，而兩個 FAIL 是不同的東西：
+
+| 部件 | 靜止 | 十支 clip 最差 | 判定 |
+| --- | --- | --- | --- |
+| `Outfit_Cardigan` | 108 px／上限 150 | 779 px／上限 150，5.19x（modelPose t=2.82s） | 真的穿模，看得見 |
+| `Acc_Glasses` | 48 px／上限 30 | 51 px／上限 30，1.70x（dance t=16.75s） | 誤報，眼鏡腳穿過耳後 |
+| `Outfit_Jeans`／`Outfit_Shoes`／`Outfit_Shoes_Sole` | 0 px | 最差 19 px／上限 52，0.37x | 乾淨 |
+
+外套那一項用貼圖算圖確認過（`pierce-0909-cardigan.png` 左半是算圖、右半是被計數
+的像素）：modelPose 第 2.82 秒的側視圖，紅色帽 T 的胸口有一塊深色的洞，是身體層
+穿出來的。779 個像素裡 750 個的來源是 `InnerTop`／`InnerBottom`——這兩層的
+POSITION 位元組相同，是同一片身體畫了兩次，深度緩衝逐像素任選其一，所以不是兩倍
+計數；剩下 29 個來自被挖過的 `Body_Skin`。
+
+眼鏡那一項是 gate 的既有盲點又多一種形狀（`pierce-0909-glasses.png`）：鏡腳從耳前
+繞到耳後，耳朵的皮膚就在鏡腳前方 8.6–11.0 mm，而三個條件全部通過——距離在 30 mm
+窗內、鏡腳朝相機的是外面、頭部屬於「置中」所以左右側判定恆真。`pierce.py` 的
+docstring 已記過同一類的兩個案例（搭在髖上的手、對側腿的襪子）；配件貼著身體繞到
+後面是第三個，出貨身體的九件 `Acc_*` 沒有一件會這樣走，所以以前碰不到。48 px 這
+個數字本身低於 `ABSOLUTE = 150`，是 `SHARE`（1,378 px 的 2% ＝ 27.6）與
+`FLOOR = 30` 取小把它擋下來的。沒有為此放寬任何門檻。
+
+跑之前把手寫 manifest 裡的 `Shoes`／`Shoes_Sole` 改名成 `Outfit_Shoes`／
+`Outfit_Shoes_Sole`。`pierce.py` 用 `name.startswith(('Outfit_', 'Acc_'))` 挑布，原本
+那兩個名字既不是皮膚也不是布，gate 會安靜地不量它們；出貨 manifest 的鞋一直叫
+`Outfit_Shoes`，這裡只是回到同一個慣例。
+
+外套的穿模是這具身體本身的缺陷，不是 gate 的問題，也不在這次改動的範圍內。

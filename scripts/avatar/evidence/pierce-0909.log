@@ -1,0 +1,48 @@
+$ python3 - <<'PY'   # pierce.count + motion.check on the VRoid Studio dress-up export
+  model build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm
+  manifest build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.parts.json
+
+model R3-B-clean-base-dressup.vrm
+skin ('Face', 'Body_Skin', 'Body_Skin_Inner_Top', 'Body_Skin_Inner_Bottom')
+garments ('Outfit_Cardigan', 'Outfit_Jeans', 'Outfit_Shoes', 'Outfit_Shoes_Sole', 'Acc_Glasses')
+
+GATE pierce (at rest, skin pixels showing through each garment)
+  Outfit_Cardigan            108 px  of   150 allowed (52720 px on screen)
+  Acc_Glasses                 48 px  of    30 allowed (1378 px on screen)
+  Outfit_Jeans                 0 px  of   150 allowed (29494 px on screen)
+  Outfit_Shoes                 0 px  of    54 allowed (2682 px on screen)
+  Outfit_Shoes_Sole            0 px  of    30 allowed (30 px on screen)
+  total 156   FAIL   (11s)
+
+GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body showing through cloth, or 2% of that garment's own area, whichever is smaller)
+  akimbo.vrma            worst  3.41 of limit   <-- Outfit_Cardigan 512px at t=1.33s
+  dance.vrma             worst  3.71 of limit   <-- Outfit_Cardigan 556px at t=23.45s
+  idleLoop.vrma          worst  1.53 of limit   <-- Acc_Glasses 46px at t=1.3s
+  modelPose.vrma         worst  5.19 of limit   <-- Outfit_Cardigan 779px at t=2.82s
+  peaceSign.vrma         worst  1.43 of limit   <-- Acc_Glasses 43px at t=1.46s
+  playFingers.vrma       worst  4.57 of limit   <-- Outfit_Cardigan 685px at t=4.2s
+  scratchHead.vrma       worst  2.88 of limit   <-- Outfit_Cardigan 432px at t=4.02s
+  spin.vrma              worst  4.36 of limit   <-- Outfit_Cardigan 654px at t=1.16s
+  squat.vrma             worst  4.01 of limit   <-- Outfit_Cardigan 601px at t=10.08s
+  stretch.vrma           worst  1.27 of limit   <-- Outfit_Cardigan 191px at t=3.97s
+
+  worst per part across every clip and frame:
+    Outfit_Cardigan            779 px  of   150 allowed (31915 px on screen)   5.19x  modelPose.vrma t=2.82s
+    Acc_Glasses                 51 px  of    30 allowed (1043 px on screen)   1.70x  dance.vrma t=16.75s
+    Outfit_Shoes                19 px  of    52 allowed (2598 px on screen)   0.37x  squat.vrma t=7.2s
+
+  FAIL   (245s)
+
+
+flagged pixels and the skin layer each one is drawn from (full manifest):
+  rest       front Acc_Glasses        10px  rows 81..85 of 720  median gap   1.7mm  skin {'Face': 10}
+  rest       back  Acc_Glasses        36px  rows 80..100 of 720  median gap   8.6mm  skin {'Face': 36}
+  rest       back  Outfit_Cardigan    36px  rows 132..140 of 720  median gap  19.5mm  skin {'Body_Skin': 32, 'Body_Skin_Inner_Bottom': 2, 'Body_Skin_Inner_Top': 2}
+  rest       side  Acc_Glasses        48px  rows 80..98 of 720  median gap  11.0mm  skin {'Face': 48}
+  rest       side  Outfit_Cardigan   108px  rows 152..166 of 720  median gap  18.9mm  skin {'Body_Skin': 106, 'Body_Skin_Inner_Bottom': 2}
+  modelPose  front Acc_Glasses         3px  rows 71..73 of 620  median gap   3.2mm  skin {'Face': 3}
+  modelPose  front Outfit_Cardigan   206px  rows 183..274 of 620  median gap  11.1mm  skin {'Body_Skin_Inner_Bottom': 80, 'Body_Skin_Inner_Top': 71, 'Body_Skin': 55}
+  modelPose  back  Acc_Glasses        18px  rows 69..90 of 620  median gap   0.9mm  skin {'Face': 18}
+  modelPose  back  Outfit_Cardigan   365px  rows 113..263 of 620  median gap   4.4mm  skin {'Body_Skin_Inner_Top': 190, 'Body_Skin_Inner_Bottom': 145, 'Body_Skin': 30}
+  modelPose  side  Acc_Glasses        44px  rows 70..88 of 620  median gap  11.0mm  skin {'Face': 44}
+  modelPose  side  Outfit_Cardigan   779px  rows 119..274 of 620  median gap   9.9mm  skin {'Body_Skin_Inner_Bottom': 408, 'Body_Skin_Inner_Top': 342, 'Body_Skin': 29}

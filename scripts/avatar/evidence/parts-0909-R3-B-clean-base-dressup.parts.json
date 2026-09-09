@@ -46,11 +46,11 @@
       "primitives": [0],
       "note": "NOT named Outfit_Bottom: that role is the skirt, whose depth is measured against leg skin on the understanding that a skirt hangs clear of the legs. Trousers hug them by design, so the same number would mean something else."
     },
-    "Shoes": {
+    "Outfit_Shoes": {
       "mesh": "Shoes.baked",
       "primitives": [0]
     },
-    "Shoes_Sole": {
+    "Outfit_Shoes_Sole": {
       "mesh": "Body (merged).baked(copy).baked",
       "primitives": [1],
       "note": "28 vertices of N00_004_01_Shoes_01_CLOTH left in the body mesh, y 0.000..0.003. Kept out of Body_Skin so the leg set stays skin."

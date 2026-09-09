@@ -88,7 +88,17 @@ import render  # noqa: E402
 VIEWS = {'front': (180.0, 0.0, 'full'),
          'back': (0.0, 0.0, 'full'),
          'side': (270.0, 0.0, 'full')}
-SKIN = ('Body_Skin', 'Face')
+# The canonical names for the two skin roles. A body draws its skin as one
+# `Body_Skin` and one `Face` only when one mesh holds each: a manifest whose
+# skin is split over several meshes carries the rest as `Body_Skin_<mesh>` and
+# `Face_<mesh>`, which is what springsim's deriveManifest writes and what a
+# hand-written manifest for a third-party export follows. Read the names off
+# the manifest rather than fixing this pair, or the extra layers count as
+# garments and the skin behind them reads as showing through: the VRoid Studio
+# dress-up export of 2026-09-09 draws its skin as three meshes, the body layer
+# plus the InnerTop and InnerBottom the outfit sits on
+# (evidence/parts-0909.md).
+SKIN_ROLES = ('Body_Skin', 'Face')
 LIMIT = 0.030    # metres; past this the body is simply in the way, not pierced
 
 # A part counts as clipping when its pierced pixels pass EITHER an absolute
@@ -102,6 +112,12 @@ LIMIT = 0.030    # metres; past this the body is simply in the way, not pierced
 ABSOLUTE = 150
 SHARE = 0.02
 FLOOR = 30       # under this a part is too few pixels for a share to mean anything
+
+
+def skin_parts(parts):
+    """The manifest's skin parts, by name, in the manifest's own order."""
+    return tuple(n for n in parts if n in SKIN_ROLES
+                 or n.startswith(tuple(f'{r}_' for r in SKIN_ROLES)))
 
 
 def limit(area):
@@ -128,7 +144,7 @@ def _arm_triangles(doc, views, parts, posed=None):
         return np.array([any(a.lower() in bone.get(j, names[k]).lower() for a in ARM)
                          for k, j in enumerate(joints)])
     arm = {si: arm_slots(si) for si in set(skin_of.values())}
-    flesh = {(parts[n]['mesh'], i) for n in SKIN if n in parts
+    flesh = {(parts[n]['mesh'], i) for n in skin_parts(parts)
              for i in parts[n]['primitives']}
     cloth = {(parts[n]['mesh'], i) for n in parts
              if n.startswith(('Outfit_', 'Acc_'))
@@ -180,14 +196,15 @@ def count(doc, views, parts, posed=None, size=(420, 720), detail=False):
     enough for the cardigan sails past.
     """
     everything = set(parts)
+    skin = skin_parts(parts)
     keep = render.VIEWS
     render.VIEWS = VIEWS
     try:
         _, _, cloth = partmap.draw(doc, views, parts, None, size,
-                                   tuple(VIEWS), posed, exclude=SKIN, facing=True)
+                                   tuple(VIEWS), posed, exclude=skin, facing=True)
         _, _, flesh = partmap.draw(doc, views, parts, None, size,
                                    tuple(VIEWS), posed,
-                                   exclude=tuple(everything - set(SKIN)),
+                                   exclude=tuple(everything - set(skin)),
                                    drop=_arm_triangles(doc, views, parts, posed),
                                    facing=True)
     finally:
