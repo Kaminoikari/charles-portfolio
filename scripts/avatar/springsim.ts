@@ -41,9 +41,20 @@
 // `deriveManifest` reads what it can off the body itself instead: the hair that
 // moves, the face the expressions deform, everything else as `Body_Skin`. There
 // is then no coat and no skirt to measure against, so the table prints `—` in
-// their eight columns rather than a number nothing produced. Every
-// bone comes from the humanoid map (vrmHumanoid.readHumanoid), so a 1.0 file
-// with the same manifest simulates the same as its 0.x twin
+// their eight columns rather than a number nothing produced.
+//
+// A body whose hair no spring moves is measured too, and says so (`rigidHair`,
+// which prints `—` in the two jump columns). A VRoid Studio dress-up export can
+// declare sixteen spring groups of which only the bust appears in any skin at
+// all, leaving a crown the humanoid poses (evidence/parts-0909.md). The crown
+// does not depend on which primitive is called the hair: it is the topmost
+// vertex of everything the manifest lists and every spring in the file is
+// solved regardless. The jump columns and the four tuning flags DO depend on
+// it, so passing one of those flags to a body with no such joint is refused
+// rather than silently ignored.
+//
+// Every bone comes from the humanoid map (vrmHumanoid.readHumanoid), so a 1.0
+// file with the same manifest simulates the same as its 0.x twin
 // (springsim.test.ts holds that). Nothing here names a J_Bip_* node or a
 // material.
 //
@@ -825,6 +836,8 @@ export interface Report {
    */
   hasCoat: boolean
   hasSkirt: boolean
+  /** No spring joint moves the hair, so the two spring columns are true zeros. */
+  rigidHair: boolean
 }
 
 export interface Args {
@@ -929,7 +942,33 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   const { raw: objs, scene } = rig
   const manager = await importSprings(json, rig)
   const joints = hairJoints(manager, rig, hairBones)
-  if (joints.length === 0) throw new Error('no spring joint moves a Hair_* part')
+  // Hair that no spring moves, which until 2026-09-09 was refused outright. A
+  // VRoid Studio dress-up export can declare sixteen spring groups of which not
+  // one appears in any skin's joint list, leaving a crown the humanoid poses
+  // (evidence/parts-0909.md), and that body's clearance could then not be
+  // produced at all.
+  //
+  // Nothing the clearance file is read for depends on this list. The crown is
+  // the topmost vertex of everything the manifest lists and the solver runs
+  // every spring in the file whatever the parts are called, so the crown
+  // carries whatever throw there is: measured on the shipped body, naming the
+  // face as the hair leaves `dance` at the same 1.6647 and the same column
+  // 1.7087 as naming the twintails does. What the list DOES decide is the two
+  // jump columns and the four tuning flags, so an empty one is reported
+  // (`rigidHair`) rather than thrown, and refused only when a flag was passed
+  // that it would silently swallow.
+  const rigid = joints.length === 0
+  if (rigid) {
+    const asked = [
+      args.hit !== null ? '--hit' : '', args.gravity !== null ? '--gravity' : '',
+      args.noArms ? '--no-arms' : '', args.noCoat ? '--no-coat' : '',
+    ].filter(Boolean)
+    if (asked.length > 0) {
+      throw new Error(
+        `${asked.join(' ')} tunes the spring joints that move a Hair_* part, and this manifest ` +
+        'names none that any spring touches: the run would report the flag and ignore it')
+    }
+  }
   if (args.hit !== null) for (const j of joints) j.settings.hitRadius = args.hit
   if (args.gravity !== null) for (const j of joints) j.settings.gravityPower = args.gravity
   if (args.noArms || args.noCoat) {
@@ -982,6 +1021,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     crownScreen: { waistUp: -Infinity, column: -Infinity },
     hasCoat: coat !== null,
     hasSkirt: skirt !== null,
+    rigidHair: rigid,
   }
   const forwardZ = rig.version === '0' ? -1 : 1
   const frameNames = Object.keys(FRAMES) as MotionFrame[]
@@ -1268,6 +1308,10 @@ async function main(): Promise<void> {
     // zeros cannot be read as a clean result.
     const coat = (text: string, width: number): string => (r.hasCoat ? text : '—').padStart(width)
     const skirt = (text: string, width: number): string => (r.hasSkirt ? text : '—').padStart(width)
+    // The jump is a tail bone's swing, and a rigid crown has no tail bone: the
+    // 0.0° it would otherwise print is the same 0.0° a run that lost its
+    // springs prints.
+    const jump = (text: string, width: number): string => (r.rigidHair ? '—' : text).padStart(width)
     console.log(
       `${r.clip.padEnd(12)}  ${coat(`${r.restCoatDepthMm.toFixed(0)}mm`, 8)} ` +
       `${coat(`${r.coatDepthMm.toFixed(0)}mm`, 9)} ${coat(`${r.coatUpperDepthMm.toFixed(0)}mm`, 9)}  ${coat(`${(r.coatAtWorst * 100).toFixed(0)}%`, 8)}  ` +
@@ -1275,7 +1319,7 @@ async function main(): Promise<void> {
       `${r.bodyDepthMm.toFixed(0).padStart(6)}mm  ${r.bodyWorstT.toFixed(2).padStart(5)}s  ` +
       `${skirt(`${r.skirtDepthMm.toFixed(0)}mm`, 7)} ${skirt(`${r.skirtWorstT.toFixed(2)}s`, 6)}  ` +
       `${r.crownY.toFixed(4)} ${r.crownT.toFixed(2).padStart(5)}s  ${r.crownScreen.column.toFixed(4)}  ${r.crownScreen.waistUp.toFixed(4)}  ` +
-      `${r.jumpDeg.toFixed(1).padStart(5)}°  ${r.jumpT.toFixed(2).padStart(5)}s  ${r.jumpBone}`,
+      `${jump(`${r.jumpDeg.toFixed(1)}°`, 6)}  ${jump(`${r.jumpT.toFixed(2)}s`, 6)}  ${r.jumpBone}`,
     )
     if (process.env.SPRINGSIM_DEBUG) console.log(`    worst coat frame: ${r.coatWorstWhere}`)
   }

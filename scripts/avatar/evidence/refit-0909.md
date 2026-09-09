@@ -100,9 +100,11 @@ ramp 取 45–75 mm 是量出來的：袖子離它包覆的手臂 33 mm，撕裂
 
 ## 沒有跑的關卡
 
-`motion.check` 的像素穿模 gate 需要 `parts.json`，第三方匯出檔沒有這份對照表，
-所以**這一輪沒有跑穿模 gate**。`inside.py` 的體積法不是替代品，`motion.py:182`
-的註解已記明它答的是另一個問題。
+**這一輪沒有跑穿模 gate**。`motion.check` 要一份 `parts.json`，寫這份收據時這個檔
+還沒有；同日補了一份手寫的（[parts-0909](parts-0909.md)），而 gate 仍然跑不了：
+`pierce.py` 的 `SKIN` 寫死是 `('Body_Skin', 'Face')` 兩個名字，這具身體的皮膚分在
+三個 mesh 上，`InnerTop` 與 `InnerBottom` 兩層會被當成布。`inside.py` 的體積法不是
+替代品，`motion.py:182` 的註解已記明它答的是另一個問題。
 
 0906 的教訓是改權重可能只被 motion gate 抓到（襪子在 scratchHead t=4.02s 從
 5px 變 233px）。這一輪能做的是直接量修改本身的風險，即外套與身體的最近距離有沒有
