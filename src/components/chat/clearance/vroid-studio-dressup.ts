@@ -61,7 +61,7 @@ const DECISIONS: ClearanceDecisions = {
   // the hips. The column is composed for the VRoid family, whose resting crown
   // projects to 1.5881 against that frame's 1.6020 top edge: 13.9mm of room
   // before a clip has moved. This body's projects to 1.5994, which leaves 2.6mm,
-  // so a clip that lifts the crown at all runs out of it. spin reaches 1.6361,
+  // so a clip that lifts the crown at all runs out of it. spin reaches 1.6331,
   // scratchHead 1.6546, dance 1.7213.
   //
   // The hips are a separate fact and belong to the waivers below, where they

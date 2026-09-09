@@ -10,7 +10,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-studio-dressup",
   "rigSha": "ec3b9ab3648bcaea26792c0324d32f7fabda1245a58813a0139af5c00032491e",
   "simulatedOn": "/avatar/vroid-studio-dressup.vrm",
-  "producedBy": "89f666c",
+  "producedBy": "1259d72",
   "rigidHair": true,
   "restCrownY": 1.5982,
   "restCrownScreen": {

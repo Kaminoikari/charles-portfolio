@@ -13,3 +13,9 @@ $ 同一個修補，兩條路徑產出的檔比對
   via dressup Tops.baked[0] 最壞邊 22.99mm  (leftUpperArm 60°)
   joint 表相同: False   權重最大差 0.0077   差 >0.01 的頂點 0 / 1754
   位元組不同的原因是 argsort 的平手順序，不是修補本身。
+
+$ 身體 pool 換一份 manifest，repair 寫出來的權重會差多少
+  （dressup_test.test_it_measures_distance_against_the_manifest_it_was_given 的量，
+    測試斷言 > 0.1；這裡把實際值記下來）
+  完整 manifest 的 pool 14 primitives，只留 Face 的 pool 10 primitives
+  Outfit_Cardigan 的權重最大差 0.6341
