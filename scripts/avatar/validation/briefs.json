@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "briefs": [
+    {"id":"B01","recipeVersion":1,"baseId":"mika-milfy-12","title":"移除皇冠","requirements":["保留原始臉型、髮型與服裝","只移除皇冠"],"operations":[{"kind":"drop","part":"Acc_Crown"}]},
+    {"id":"B02","recipeVersion":1,"baseId":"mika-milfy-12","title":"移除腰間緞帶","requirements":["保留原始臉型、髮型與服裝","只移除腰間緞帶"],"operations":[{"kind":"drop","part":"Acc_Ribbon_Waist"}]},
+    {"id":"B03","recipeVersion":1,"baseId":"mika-milfy-12","title":"移除外套","requirements":["保留原始臉型、髮型、內搭與裙子","只移除 cardigan"],"operations":[{"kind":"drop","part":"Outfit_Cardigan"}]},
+    {"id":"B04","recipeVersion":1,"baseId":"mika-milfy-12","title":"減少頭部配件","requirements":["保留原始臉型、髮型與服裝","移除皇冠、熊形髮夾與貼布髮夾"],"operations":[{"kind":"drop","part":"Acc_Crown"},{"kind":"drop","part":"Acc_HairClip_Bear"},{"kind":"drop","part":"Acc_HairClip_Plaster"}]},
+    {"id":"B05","recipeVersion":1,"baseId":"mika-milfy-12","title":"緞帶改為低彩度梅紫","requirements":["保留原始臉型、髮型、服裝與幾何","只調整 Milfy_Mint 與 Milfy_MintDark 緞帶材質"],"operations":[{"kind":"tint","material":"Milfy_Mint","rgb":[0.55,0.36,0.48]},{"kind":"tint","material":"Milfy_MintDark","rgb":[0.38,0.24,0.33]}]},
+    {"id":"B06","recipeVersion":1,"baseId":"mika-milfy-12","title":"外套改為低彩度藍","requirements":["保留原始臉型、髮型、服裝與幾何","只調整 Mellow_Outer 外套材質"],"operations":[{"kind":"tint","material":"Mellow_Outer","rgb":[0.34,0.43,0.56]}]},
+    {"id":"B07","recipeVersion":1,"baseId":"mika-milfy-12","title":"新 bob 短髮","requirements":["保留原始臉型與服裝","製作完整 bob 短髮輪廓與瀏海"],"operations":[{"kind":"new_hair","description":"Catalog 缺少 bob 短髮模組"}]},
+    {"id":"B08","recipeVersion":1,"baseId":"mika-milfy-12","title":"圓臉與下垂眼","requirements":["保留原始髮型與服裝","製作圓臉與下垂眼的角色辨識特徵"],"operations":[{"kind":"new_face","description":"Catalog 缺少臉型與眼型幾何參數"}]},
+    {"id":"B09","recipeVersion":1,"baseId":"mika-milfy-12","title":"裙子替換為長褲","requirements":["保留原始臉型、髮型與上衣","替換為完整長褲，通過動作穿模驗收"],"operations":[{"kind":"new_outfit","description":"Catalog 缺少長褲模組"}]},
+    {"id":"B10","recipeVersion":1,"baseId":"mika-milfy-12","title":"可編輯房間與新指心手勢","requirements":["保留原始角色","交付可編輯 3D 房間與新 finger-heart 骨架手勢"],"operations":[{"kind":"new_scene","description":"Catalog 缺少可編輯 3D 房間模組"},{"kind":"new_gesture","description":"既有十支動作不含經驗證的 finger-heart 手勢"}]}
+  ]
+}
