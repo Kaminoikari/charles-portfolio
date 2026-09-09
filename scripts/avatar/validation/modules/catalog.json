@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "base": {
+    "baseId": "mika-milfy-12",
+    "modelSha256": "f9f868903d373e06750e8ea4318f0539f282dd1a210bd39467f891d5790593d6",
+    "manifestSha256": "24246ee7f22a13965baf8f7da56cadaceb06ef01b1345f1f01a31a33a660acba",
+    "rigFamily": "vroid-sample-b",
+    "vrmVersion": "0.x",
+    "licenceStatus": "PENDING_FOR_CUSTOMER_DISTRIBUTION"
+  },
+  "modules": [
+    {
+      "moduleId": "face-jaw-v1",
+      "moduleVersion": 1,
+      "kind": "face_deformation",
+      "status": "research_only",
+      "rigFamily": "vroid-sample-b",
+      "morphPolicy": "neutral_tangent_affine_v1",
+      "attachment": {"mesh": "Face.baked"},
+      "preserves": ["humanoid_rig", "skin_joint_mapping", "inverse_bind_matrices", "triangle_indices", "uv", "texture_payloads", "expression_bindings", "non_face_geometry"],
+      "region": {
+        "lowerY": "minimum Face.baked POSITION.y",
+        "upperY": "minimum leftEye and rightEye rest-world y",
+        "centerX": "mean leftEye and rightEye rest-world x",
+        "mask": "sin_squared_between_bounds_zero_outside",
+        "normalPolicy": "frozen_neutral_jacobian_inverse_transpose_endpoints"
+      },
+      "staticHead": true,
+      "licenceStatus": "PENDING_FOR_CUSTOMER_DISTRIBUTION",
+      "parameters": {"jaw_width": {"min": 0.88, "max": 1.12, "default": 1.0}}
+    },
+    {
+      "moduleId": "hair-bob-v1",
+      "moduleVersion": 1,
+      "kind": "hair_mesh",
+      "status": "research_only",
+      "rigFamily": "vroid-sample-b",
+      "morphPolicy": "preserve_existing_face_expressions",
+      "attachment": {"sourceMesh": "Hair001.baked", "targetMesh": "Hair_Bob_Prototype", "bone": "head", "binding": "single"},
+      "replacePartPrefixes": ["Hair_"],
+      "replaceAccessories": ["Acc_Crown", "Acc_HairOrnament", "Acc_HairClip_Base", "Acc_Ribbon_Hair", "Acc_HairClip_Plaster", "Acc_HairClip_Bear", "Acc_HairClip_Bars"],
+      "addedParts": ["Hair_Bob_Cap", "Hair_Bob_Shell", "Hair_Bob_Bangs"],
+      "preserves": ["face_geometry_and_expressions", "body_geometry", "clothing_geometry", "humanoid_rig", "skin_joint_mapping", "inverse_bind_matrices", "existing_spring_data"],
+      "springMode": "static_head",
+      "provenance": {"geometry": "procedurally authored cap, shell and fringe", "texture": "inherited source Hair_Back first-primitive material and referenced texture payloads"},
+      "staticHead": true,
+      "licenceStatus": "PENDING_FOR_CUSTOMER_DISTRIBUTION",
+      "parameters": {"length_scale": {"min": 0.9, "max": 1.1, "default": 1.0}}
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {"id":"CONTROL","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[]}},
+    {"id":"F_NARROW","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"face-jaw-v1","moduleVersion":1,"parameters":{"jaw_width":0.88}}]}},
+    {"id":"F_WIDE","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"face-jaw-v1","moduleVersion":1,"parameters":{"jaw_width":1.12}}]}},
+    {"id":"H_SHORT","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"hair-bob-v1","moduleVersion":1,"parameters":{"length_scale":0.9}}]}},
+    {"id":"H_DEFAULT","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"hair-bob-v1","moduleVersion":1,"parameters":{"length_scale":1.0}}]}},
+    {"id":"H_LONG","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"hair-bob-v1","moduleVersion":1,"parameters":{"length_scale":1.1}}]}},
+    {"id":"COMBINED","recipe":{"schemaVersion":1,"baseId":"mika-milfy-12","modules":[{"moduleId":"face-jaw-v1","moduleVersion":1,"parameters":{"jaw_width":1.12}},{"moduleId":"hair-bob-v1","moduleVersion":1,"parameters":{"length_scale":1.0}}]}}
+  ]
+}
