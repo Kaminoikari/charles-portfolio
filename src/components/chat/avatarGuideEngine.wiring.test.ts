@@ -100,3 +100,24 @@ describe('the pan reaches the camera', () => {
     )
   })
 })
+
+describe('the rest pose takes the body it is being written on', () => {
+  it('asks armRestPins for THIS body version', () => {
+    // rigProbe.test.ts proves the pins are right for each version by posing the
+    // real skeleton with them. It cannot see what the engine hands them, and a
+    // literal '0' here would restore exactly the bug that test now covers: every
+    // 1.0 body pinned with the 0.x sign, standing at rest with its arms up.
+    expect(SOURCE, 'pinArms does not read the version off the body').toMatch(
+      /for \(const \[name, z\] of armRestPins\(v\.meta\.metaVersion\)\)/,
+    )
+  })
+
+  it('keeps the pins in one place instead of a table of its own', () => {
+    // The old `const ARM_PINS` table lived here and wrote the six signs out by
+    // hand. Two copies of a rest pose is how one of them gets a version and the
+    // other does not, so the table itself must not come back.
+    expect(SOURCE, 'the engine has grown its own arm-pin table again').not.toMatch(
+      /const ARM_PINS/,
+    )
+  })
+})

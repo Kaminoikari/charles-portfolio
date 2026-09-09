@@ -51,7 +51,8 @@
 //   - three-vrm normalises VRM0 blendshape names to VRM1: a/i/u/e/o become
 //     aa/ih/ou/ee/oh. `blink` keeps its name, which makes half-working
 //     expressions look like a mouth bug instead of a naming bug.
-//   - VRM0 rest pose is a T-pose; upper-arm Z rotation brings the arms down.
+//   - a VRM's rest pose is a T-pose; upper-arm Z rotation brings the arms down,
+//     in a direction that depends on the version (avatarMode.armRestPins).
 //   - spring bones (hair, skirt) only advance inside vrm.update(dt).
 
 import * as THREE from 'three'
@@ -77,8 +78,7 @@ import {
 } from './avatarMotions'
 import { familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
-  ARM_REST_FORE_Z,
-  ARM_REST_UPPER_Z,
+  armRestPins,
   EMOTION_RECIPES,
   emotionChannelValues,
   FACE_PALE_TINT,
@@ -167,18 +167,6 @@ const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
 
 
 type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']>[0]
-// VRM0 rest pose is a T-pose; these Z rotations bring the arms down. Nothing
-// procedural touches the arms any more, but every motion-capture clip animates
-// them, so stopMotion has to put back these EXACT values — they are the single
-// source of truth for the rest pose.
-const ARM_PINS: ReadonlyArray<readonly [BoneName, number]> = [
-  ['leftUpperArm', ARM_REST_UPPER_Z],
-  ['rightUpperArm', -ARM_REST_UPPER_Z],
-  ['leftLowerArm', ARM_REST_FORE_Z],
-  ['rightLowerArm', -ARM_REST_FORE_Z],
-  ['leftHand', 0],
-  ['rightHand', 0],
-]
 
 // Finger bones, all 30 of them (this model carries the full VRM0 set). They
 // rest at identity, and the motion-capture clips animate every one of them (a
@@ -193,8 +181,16 @@ function fingerBones(side: 'left' | 'right', finger: FingerName): BoneName[] {
   return FINGER_SEGMENTS.map((seg) => `${side}${finger}${seg}` as BoneName)
 }
 
+// A VRM's rest pose is a T-pose; these Z rotations bring the arms down. Nothing
+// procedural touches the arms any more, but every motion-capture clip animates
+// them, so this has to put back the EXACT rest values, and the fingers with them.
+//
+// The rotations come from avatarMode.armRestPins, which takes the body's VRM
+// version, because WHICH sign brings an arm down belongs to the version: this
+// file used to write the 0.x sign as a literal and the first 1.0 body ever
+// served stood at rest with both arms straight up (2026-09-09).
 function pinArms(v: VRM) {
-  for (const [name, z] of ARM_PINS) {
+  for (const [name, z] of armRestPins(v.meta.metaVersion)) {
     const b = v.humanoid?.getNormalizedBoneNode(name)
     if (b) b.rotation.set(0, 0, z)
   }
@@ -1141,7 +1137,8 @@ export function initAvatarGuide(
       // below that would otherwise be applied on top of the capture.
       if (motionAction && mixer) {
         // Finishing was the one exit that was a hard cut. A clip's last frame
-        // leaves her wrists 0.060m (`squat`) to 0.540m (`dance`) from ARM_PINS,
+        // leaves her wrists 0.060m (`squat`) to 0.540m (`dance`) from the pinned
+        // rest pose (rigProbe.test.ts measures both ends on the VRoid body),
         // and stopMotion used to snap them back in a single frame.
         //
         // The settle runs AFTER the clip rather than over its last frames:

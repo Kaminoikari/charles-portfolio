@@ -43,6 +43,7 @@
 import * as THREE from 'three'
 import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
+import { armRestPins } from './avatarMode'
 import {
   buildNodes,
   parseGlb,
@@ -242,6 +243,25 @@ function sync(rig: Rig): void {
 
 export function resetRig(rig: Rig): void {
   restNormalized(rig)
+  sync(rig)
+}
+
+/**
+ * The pose she stands in when no clip is driving her: the engine's own arm pins,
+ * on the real skeleton.
+ *
+ * The engine writes these at load and after every clip (avatarGuideEngine
+ * pinArms), and this is the only way to LOOK at where they put her: the engine
+ * needs a WebGL context, this needs a .vrm. The rotations come from
+ * avatarMode.armRestPins so the two cannot drift, and the sign in there is the
+ * version's — see the COORDINATE SPACE note at the top of this file.
+ */
+export function applyArmRest(rig: Rig): void {
+  restNormalized(rig)
+  for (const [bone, z] of armRestPins(rig.version)) {
+    const node = rig.bones[bone]
+    if (node) node.rotation.set(0, 0, z)
+  }
   sync(rig)
 }
 

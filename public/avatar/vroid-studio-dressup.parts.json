@@ -1,0 +1,95 @@
+{
+  "source": {
+    "path": "public/avatar/vroid-studio-dressup.vrm",
+    "sha256": "241a5803504144849c0ecbbfcac8e816fc9fe798907af935bd8d372fdf8a805a",
+    "written": "by hand, 2026-09-09",
+    "derived_from": {
+      "path": "build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm",
+      "sha256": "6135e4295d169e5130e52cf3d3c1180c4228d7c6f819ecb68114620e5c64971c",
+      "how": "only the VRM meta's allowRedistribution, modification and avatarPermission were rewritten so the site may serve it; the document and the binary chunk are otherwise byte-identical, checked by putting the three values back and comparing both against the source."
+    },
+    "why": "build.py never built this body, so no build wrote its sidecar. springsim.ts deriveManifest reads one off the file instead, and on this file it finds 0 Hair_* parts: every primitive falls under SPRING_DOMINATED because none of this export's spring joints has weight on any drawn vertex. This file names the parts the derivation cannot, and receipt evidence/parts-0909.md records what was measured to name each one."
+  },
+  "landmarks": {
+    "waist": 1.0187,
+    "waist_r": 0.1097,
+    "waist_from": "scripts/avatar/build.py landmarks() over InnerTop.baked[0], the unmasked body layer. NOT over Body (merged).baked(copy).baked[0]: the export's auto-mask hollows the torso wherever the hoodie covers it, leaving one slab of 14 vertices at y=0.9426 and none at all above y=1.06, so that mesh's minimum is where the hole ends rather than where the body is narrowest."
+  },
+  "parts": {
+    "Face": {
+      "mesh": "Face (merged)(Clone).baked.baked",
+      "primitives": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "note": "the mesh the VRM expressions deform; 3989 vertices over mouth, iris, highlight, skin, white, brow, eyeline"
+    },
+    "Hair_Back": {
+      "mesh": "Body (merged).baked(copy).baked",
+      "primitives": [
+        2
+      ],
+      "note": "N00_000_00_HairBack_00_HAIR, 746 vertices, y 1.354..1.598, and the topmost vertex of the whole model. Rigid: its weight is J_Bip_C_Head 715.5, J_Bip_C_Neck 28.8, J_Bip_C_Chest 1.5, the two shoulders 0.3 between them, and none of those is a spring joint."
+    },
+    "Body_Skin": {
+      "mesh": "Body (merged).baked(copy).baked",
+      "primitives": [
+        0
+      ],
+      "note": "the skin layer, y 0.015..1.593, head included. Auto-masked where the clothes cover it, which is why the waist landmark is read off InnerTop instead."
+    },
+    "Body_Skin_Inner_Top": {
+      "mesh": "InnerTop.baked",
+      "primitives": [
+        0
+      ],
+      "note": "unmasked body layer the hoodie sits on, y 0.145..1.406"
+    },
+    "Body_Skin_Inner_Bottom": {
+      "mesh": "InnerBottom.baked",
+      "primitives": [
+        0
+      ],
+      "note": "unmasked body layer the jeans sit on; POSITION is byte-identical to InnerTop's, the skins differ"
+    },
+    "Outfit_Cardigan": {
+      "mesh": "Tops.baked",
+      "primitives": [
+        0
+      ],
+      "note": "the hoodie. Named as the cardigan role so springsim measures its depth into the body; outerShellOnly and dropSleeves are geometric and apply to a closed pullover as much as to an open coat."
+    },
+    "Outfit_Jeans": {
+      "mesh": "Bottoms.baked",
+      "primitives": [
+        0
+      ],
+      "note": "NOT named Outfit_Bottom: that role is the skirt, whose depth is measured against leg skin on the understanding that a skirt hangs clear of the legs. Trousers hug them by design, so the same number would mean something else."
+    },
+    "Outfit_Shoes": {
+      "mesh": "Shoes.baked",
+      "primitives": [
+        0
+      ]
+    },
+    "Outfit_Shoes_Sole": {
+      "mesh": "Body (merged).baked(copy).baked",
+      "primitives": [
+        1
+      ],
+      "note": "28 vertices of N00_004_01_Shoes_01_CLOTH left in the body mesh, y 0.000..0.003. Kept out of Body_Skin so the leg set stays skin."
+    },
+    "Acc_Glasses": {
+      "mesh": "Glasses_0.baked",
+      "primitives": [
+        0,
+        1
+      ]
+    }
+  }
+}

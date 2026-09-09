@@ -38,6 +38,7 @@
 import type { ClearanceFile } from './clearance'
 import { CLEARANCE as VROID_SAMPLE_B } from './clearance/vroid-sample-b'
 import { CLEARANCE as VRM1_TWIST_SAMPLE } from './clearance/vrm1-twist-sample'
+import { CLEARANCE as VROID_STUDIO_DRESSUP } from './clearance/vroid-studio-dressup'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -56,7 +57,7 @@ export type OfferedVariantId = 'pink' | 'milfy' | 'base'
  * stops being one global fact and becomes a fact per rig, with the guards to
  * prove it. The body that proves it does not have to be a look.
  */
-export type AvatarVariantId = OfferedVariantId | 'twist'
+export type AvatarVariantId = OfferedVariantId | 'twist' | 'studio'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -68,7 +69,7 @@ export type AvatarVariantId = OfferedVariantId | 'twist'
  * skeleton reaches somewhere else, and the numbers that say whether it stays
  * in frame have to be re-measured. The family is the unit that owns them.
  */
-export type AvatarFamilyId = 'vroid-sample-b' | 'vrm1-twist-sample'
+export type AvatarFamilyId = 'vroid-sample-b' | 'vrm1-twist-sample' | 'vroid-studio-dressup'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -82,6 +83,7 @@ export type AvatarFamilyId = 'vroid-sample-b' | 'vrm1-twist-sample'
 export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sample-b': VROID_SAMPLE_B,
   'vrm1-twist-sample': VRM1_TWIST_SAMPLE,
+  'vroid-studio-dressup': VROID_STUDIO_DRESSUP,
 }
 
 /**
@@ -181,9 +183,37 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // Two things it does NOT exercise, said here rather than assumed: `motionsFor`
   // is never called with this family (nothing offers the body, so no runtime
   // path reaches it, and the picker tests run on the first family's id), and
-  // the other 54 tests in that file sit outside the per-family block and still
+  // the other 56 tests in that file sit outside the per-family block and still
   // read AvatarSample_B only.
   { id: 'twist', label: 'VRM1 樣本（不對外）', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', offered: false },
+  // The third family, and the first body here that came back OUT of VRoid
+  // Studio rather than out of this repo's own build: Mika's project taken
+  // through Studio's dress-up path and re-exported as VRM 1.0 on 2026-09-09.
+  // It has no upperChest, names its thumbs the 1.0 way and rests its hips 29.8mm
+  // higher than the VRoid family, so rigOf hashes differently and every
+  // clearance number was measured again. Provenance, the tear it arrived with
+  // and the repair: docs/reports/mika-r3-studio-2026-09-09.md.
+  //
+  // The served file is the export with three permissions rewritten. Studio
+  // stamps its most restrictive defaults on an export, and this one came out
+  // saying allowRedistribution false, modification prohibited and
+  // avatarPermission onlyAuthor, which a served file cannot say; the author
+  // relaxed those three on 2026-09-09 and nothing else in the document or the
+  // binary chunk differs from the run's own file (the parts.json beside it
+  // records both hashes and the check).
+  //
+  // NOT offered, for the same reason as `twist`: it is a third rig for the
+  // per-family guards to run against, and what it buys that `twist` does not is
+  // a body whose springs move nothing above the bust, so its crown is rigid
+  // geometry the humanoid poses.
+  //
+  // It also bought the one thing a declared-but-unrendered body cannot: SERVING
+  // it put a VRM 1.0 rig in front of the engine for the first time, and the
+  // engine's rest pose was 0.x-only. Her arms went straight up. The pins are
+  // version-aware since (avatarMode.armRestPins, rigProbe.test.ts's
+  // "rests with her arms down"); the receipt with both screenshots is
+  // scripts/avatar/evidence/armrest-0909.md.
+  { id: 'studio', label: 'Studio 換裝樣本（不對外）', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: false },
 ]
 
 /**

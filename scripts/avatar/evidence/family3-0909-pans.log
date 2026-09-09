@@ -78,3 +78,50 @@ dance/column            0.13      0.12   least      119.3..   348.1   1.7213   0
   1259d72「four places said…」：說這句話的地方有五處，第五處就是上面那則 message。
   1259d72「they disagree by 0.63 of a weight」：實測 0.6341，測試斷言 > 0.1，
     量測記在 dressup-r3.log 末段。
+
+## Pass 5 (2026-09-09), after crownFringe was measured in the browser
+
+crownFringe 0.0015 (carried) -> 0.0005 (measured, evidence/armrest-0909.md).
+Declared dance/column 0.12, re-ran springsim --clearance, re-derived:
+
+family vroid-studio-dressup  simulated on /avatar/vroid-studio-dressup.vrm  rest crown 1.5982
+clip/frame            declared   derived   policy    range (mm)        crown    hipsLow   waived
+peaceSign/waistUp       0.00      0.00   centre    -300.8..    82.7   1.5714   0.8505   -
+peaceSign/column        0.00      0.00   least      -30.6..   420.5   1.5714   0.8505   -
+modelPose/waistUp       0.00      0.00   centre    -281.4..   120.4   1.5908   0.8882   -
+modelPose/column        0.00      0.00   least      -11.2..   458.2   1.5908   0.8882   -
+spin/waistUp            0.00      0.00   centre    -240.1..    90.4   1.6321   0.8582   -
+spin/column             0.04      0.04   least       30.1..   428.2   1.6321   0.8582   -
+squat/column            0.01      0.01   least        1.5..   252.5   1.6035   0.6825   -
+akimbo/waistUp          0.00      0.00   centre    -266.8..   143.8   1.6054   0.9116   -
+akimbo/column           0.01      0.01   least        3.4..   481.6   1.6054   0.9116   -
+playFingers/waistUp     0.00      0.00   centre    -262.7..   144.1   1.6095   0.9119   -
+playFingers/column      0.01      0.01   least        7.5..   481.9   1.6095   0.9119   -
+scratchHead/waistUp     0.00      0.00   centre    -218.6..   139.6   1.6536   0.9074   -
+scratchHead/column      0.06      0.06   least       51.6..   477.4   1.6536   0.9074   -
+idleLoop/waistUp        0.00      0.00   centre    -265.4..   138.0   1.6068   0.9058   -
+idleLoop/column         0.01      0.01   least        4.8..   475.8   1.6068   0.9058   -
+stretch/waistUp         0.07      0.07   centre       1.9..   144.6   1.8741   0.9124   -
+dance/waistUp           0.00      0.00   centre    -150.6..    10.3   1.7216   0.7781   -
+dance/column            0.12      0.12   least      119.6..   348.1   1.7216   0.7781   -
+
+No row disagrees. dance/column derives 0.12 from a file simulated under
+0.12, with least = 119.6mm against the 120mm the centimetre grid gives it:
+the alternation of passes 3 and 4 was the 1.0mm of carried fringe.
+
+springsim pass 5 (the file the table above was derived from):
+
+model public/avatar/vroid-studio-dressup.vrm  colliders=asis  60 Hz, pre-roll 2s, hair stride 2
+clip          rest→coat  coat max  above-hem  share≥5mm   @t     yaw    body max  @t     skirt   @t    crown   @t    (column) (waistUp)   jump    @t    bone
+akimbo             0mm       0mm       0mm        0%   0.00s     0°      10mm   0.13s        —      —  1.6029 10.20s  1.6049  1.6019       —       —  
+dance              0mm       0mm       0mm        0%   0.00s     8°      10mm  10.00s        —      —  1.6717 11.97s  1.7211  1.7008       —       —  
+idleLoop           0mm       0mm       0mm        0%   0.00s     3°      10mm   0.50s        —      —  1.5990  5.37s  1.6063  1.6004       —       —  
+modelPose          0mm       0mm       0mm        0%   0.00s     3°      10mm   5.73s        —      —  1.5948  0.43s  1.5880  1.5903       —       —  
+peaceSign          0mm       0mm       0mm        0%   0.00s    -4°      10mm  11.10s        —      —  1.5635  0.67s  1.5709  1.5648       —       —  
+playFingers        0mm       0mm       0mm        0%   0.00s     0°      10mm   1.17s        —      —  1.6048  4.57s  1.6090  1.6048       —       —  
+scratchHead        0mm       0mm       0mm        0%   0.00s     0°      10mm   1.23s        —      —  1.6497  0.70s  1.6531  1.6502       —       —  
+spin               0mm       0mm       0mm        0%   0.00s     2°      10mm   2.70s        —      —  1.6068  6.83s  1.6316  1.6125       —       —  
+squat              0mm       0mm       0mm        0%   0.00s    -0°      10mm   9.23s        —      —  1.6102  8.17s  1.6030  1.6043       —       —  
+stretch            0mm       0mm       0mm        0%   0.00s     0°       4mm   0.73s        —      —  1.8661  1.60s  1.8889  1.8736       —       —  
+rest crown 1.5982 (bind pose, topmost vertex of any part); through the column camera 1.5994, waist-up 1.5971
+wrote src/components/chat/clearance/vroid-studio-dressup.simulated.gen.ts

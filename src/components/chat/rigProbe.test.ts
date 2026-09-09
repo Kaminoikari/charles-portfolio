@@ -17,6 +17,7 @@ import {
   silhouetteReach,
   silhouetteBones,
   deriveRestCrown,
+  applyArmRest,
   handJoints,
   headPenetration,
   headVolume,
@@ -529,6 +530,28 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     for (const name of names) expect(motion(name).duration).toBeGreaterThan(1)
   })
 
+  it('rests with her arms down, on this body\'s own version', () => {
+    // The pose the visitor sees whenever no clip is playing, and the pose every
+    // settle is measured against. WHICH sign of a Z rotation lowers an arm is a
+    // fact about the VRM version (avatarMode.armRestPins): a 0.x body faces -Z
+    // so her left arm rests along -X, a 1.0 body faces +Z so it rests along +X,
+    // and one rotation cannot serve both. Until 2026-09-09 the engine wrote the
+    // 0.x sign for every body, and nothing saw it: the only 1.0 rig in the
+    // registry was declared but never rendered. Serving one put her on screen at
+    // rest with both arms straight up (evidence/armrest-0909.md).
+    const r = rig()
+    applyArmRest(r)
+    const y = (bone: string): number =>
+      new THREE.Vector3().setFromMatrixPosition(r.bones[bone].matrixWorld).y
+    for (const side of ['left', 'right'] as const) {
+      const drop = y(`${side}UpperArm`) - y(`${side}Hand`)
+      expect(
+        drop,
+        `${side} wrist sits ${(drop * 1000).toFixed(0)}mm below the shoulder`,
+      ).toBeGreaterThan(0.2)
+    }
+  })
+
   it('has a clearance entry for every clip, measured on this rig', () => {
     // The clearance file is the pool's numbers for this family of bodies. A
     // clip without one has no crown and no waivers, so every guard below would
@@ -999,16 +1022,11 @@ describe('the idle pool', () => {
 // last frame, it is the trip from there back to the pinned rest pose, and that
 // trip was reported as "too fast, unnatural" on 2026-08-20.
 describe('returning to rest', () => {
-  // The pinned rest pose, rebuilt from the same two constants ARM_PINS uses in
-  // avatarGuideEngine.ts. Reading it from source is the point: change the rest
-  // pose and the settle distances below move with it.
+  // The pinned rest pose, through the same applyArmRest the per-family block
+  // uses and the same armRestPins the engine writes. Reading it from there is
+  // the point: change the rest pose and the settle distances below move with it.
   function pinnedRest(r: Rig): { left: THREE.Vector3; right: THREE.Vector3 } {
-    resetRig(r)
-    r.bones.leftUpperArm.rotation.set(0, 0, ARM_REST_UPPER_Z)
-    r.bones.rightUpperArm.rotation.set(0, 0, -ARM_REST_UPPER_Z)
-    r.bones.leftLowerArm.rotation.set(0, 0, ARM_REST_FORE_Z)
-    r.bones.rightLowerArm.rotation.set(0, 0, -ARM_REST_FORE_Z)
-    r.root.updateMatrixWorld(true)
+    applyArmRest(r)
     return {
       left: new THREE.Vector3().setFromMatrixPosition(r.bones.leftHand.matrixWorld),
       right: new THREE.Vector3().setFromMatrixPosition(r.bones.rightHand.matrixWorld),

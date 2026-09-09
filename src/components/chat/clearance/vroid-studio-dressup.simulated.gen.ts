@@ -10,7 +10,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-studio-dressup",
   "rigSha": "ec3b9ab3648bcaea26792c0324d32f7fabda1245a58813a0139af5c00032491e",
   "simulatedOn": "/avatar/vroid-studio-dressup.vrm",
-  "producedBy": "1259d72",
+  "producedBy": "dcc4a8b",
   "rigidHair": true,
   "restCrownY": 1.5982,
   "restCrownScreen": {
@@ -53,7 +53,7 @@ export const SIMULATED: ClearanceSimulated = {
         "waistUp": 0.07
       },
       "dance": {
-        "column": 0.13
+        "column": 0.12
       }
     }
   },
@@ -75,7 +75,7 @@ export const SIMULATED: ClearanceSimulated = {
       "crownT": 11.97,
       "crownScreen": {
         "waistUp": 1.7008,
-        "column": 1.7198
+        "column": 1.7211
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 9.8,

@@ -320,8 +320,10 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 1.016 }
 
 // ---- arm rest pose ---------------------------------------------------------
-// The engine pins her arms here whenever nothing else is driving them: VRM0's
+// The engine pins her arms here whenever nothing else is driving them: a VRM's
 // rest pose is a T-pose, and these Z rotations bring the arms down to her sides.
+// WHICH SIGN does that depends on the version — see armRestPins below, which is
+// what both the engine and rigProbe read; these two numbers are only magnitudes.
 //
 // This is all that is left of a much larger block. Until 2026-08-19 this file
 // also carried a forward-kinematic model of her arm — reach, elbow span, a peak
@@ -334,6 +336,49 @@ export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 
 // inside her head, a palm turned away, a stance that sinks).
 export const ARM_REST_UPPER_Z = 1.15
 export const ARM_REST_FORE_Z = 0.25
+
+// The six bones the rest pose owns, in three-vrm's (VRM 1.0) spelling.
+export type ArmPinBone =
+  | 'leftUpperArm'
+  | 'rightUpperArm'
+  | 'leftLowerArm'
+  | 'rightLowerArm'
+  | 'leftHand'
+  | 'rightHand'
+
+/**
+ * Which way a Z rotation swings an arm, by the body's VRM version.
+ *
+ * A 0.x body faces -Z, so her LEFT arm rests along -X and a POSITIVE Z rotation
+ * brings it down. A 1.0 body faces +Z, her left arm rests along +X, and the very
+ * same rotation raises it instead. rigProbe's COORDINATE SPACE note is this same
+ * fact for everything that reasons about her sides, and the pins below were the
+ * one place that still wrote the 0.x sign as a literal: on 2026-09-09 the first
+ * 1.0 body ever SERVED (`vroid-studio-dressup`) stood at rest with both arms
+ * straight up, which nothing caught because until then no 1.0 body was rendered.
+ */
+export function armRestSign(version: '0' | '1'): -1 | 1 {
+  return version === '0' ? 1 : -1
+}
+
+/**
+ * The rest pose, as rotations to write on the normalized arm bones.
+ *
+ * The ONE definition: the engine pins these at load and after every clip, and
+ * rigProbe.applyArmRest poses the real skeleton with them so a test can look at
+ * where the wrists actually end up on each family's own body.
+ */
+export function armRestPins(version: '0' | '1'): ReadonlyArray<readonly [ArmPinBone, number]> {
+  const s = armRestSign(version)
+  return [
+    ['leftUpperArm', s * ARM_REST_UPPER_Z],
+    ['rightUpperArm', -s * ARM_REST_UPPER_Z],
+    ['leftLowerArm', s * ARM_REST_FORE_Z],
+    ['rightLowerArm', -s * ARM_REST_FORE_Z],
+    ['leftHand', 0],
+    ['rightHand', 0],
+  ]
+}
 
 // How far into a gesture the body is, from 0 at rest to 1 at the full pose.
 // `dur` is the movement time, split evenly between the rise and the fall, and

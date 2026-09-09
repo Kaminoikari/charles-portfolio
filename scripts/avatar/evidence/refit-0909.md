@@ -133,8 +133,8 @@ FAIL：兩者並不矛盾，這裡量的是修正前後的差，gate 量的是�
                                reference、9 個產物、138 張 evidence PNG
 
 `approvedAllowlist` 在寫這一段時仍是空集合：缺的是模型專屬 crown clearance，這次修
-的是權重，兩者無關，數字與修正前相同。（三個模組後來都補上了，family 仍未登記，
-見 [parts-0909](parts-0909.md)。）人工檢視 `final-browser` 的 face-neutral 與
+的是權重，兩者無關，數字與修正前相同。（三個模組後來都補上了，family 也登記並服務了；
+`approvedAllowlist` 空著的理由換了一個，見 [parts-0909](parts-0909.md)。）人工檢視 `final-browser` 的 face-neutral 與
 quarter-neutral，確認 R3 原本修好的兩件事仍在（頸部連續、領口沒有白色尖角）。
 
 覆寫原檔會讓那個 run 目錄自相矛盾，因為 `clean-structure`、`clean-motion` 與
