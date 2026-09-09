@@ -2,14 +2,19 @@
 
 日期：2026-09-09。狀態：R3 限定的原生換裝修復與重驗試驗完成；頸部缺口及舊 T-shirt 白色尖角的局部修復 `PASS`。完整交付品質、spring 與 consumer 驗收仍為 `PENDING`。R2 失敗樣本與 R3 partial 中間檔完整保留。
 
+**2026-09-09 後續更新**：本輪唯一的 `FAIL`（hoodie bent-arm 46.478 mm）已找到根因並修復，機制、四種失敗修法的數字與收據見 [refit-0909](../../scripts/avatar/evidence/refit-0909.md)。修正已套回原檔名並重跑完整驗收，結果在本文末節。以下正文保留 R3 當輪的量測，其中每一個 46.478 mm 與舊 SHA-256 描述的是修正前的位元組，現在保存在 `R3-B-clean-base-dressup-torn.vrm`。
+
 ## 本輪最終結果
 
 採用 Studio 原生空白服裝 preset 建立乾淨 base，再重新套用既有 XWear、執行內建 mesh restore，已保存並重新開啟 `R3-B-clean-base-dressup.xroid`，另匯出 VRM1。Root 獨立檢視匯出檔的 face-neutral／blink／aa／quarter／back，確認頸部連續、白色尖角消失。這是上述兩項局部缺陷的修復驗收；完整動態衣物與 spring 未驗收。
 
 | 最終產物 | bytes | SHA-256 |
 |---|---:|---|
-| `R3-B-clean-base-dressup.vrm` | 14,686,304 | `c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07` |
+| `R3-B-clean-base-dressup.vrm`（現行，已套入 refit） | 14,728,128 | `6135e4295d169e5130e52cf3d3c1180c4228d7c6f819ecb68114620e5c64971c` |
+| `R3-B-clean-base-dressup-torn.vrm`（本文正文量測的那一份） | 14,686,304 | `c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07` |
 | `R3-B-clean-base-dressup.xroid` | 11,712,569 | `ff33c2e0667a564dedf6e0813a41837d840835d3f76de9760793714bb9b8d127` |
+
+`.xroid` 是 Studio 工程檔，refit 只改匯出的 VRM，所以從這份 source 重新匯出會再次得到修正前的權重；要修好的檔就用 `scripts/avatar/refit.py` 再跑一次。
 
 `evidence/clean-browser/results.json`：4 views、21 PNG、18 expressions，全部載入／driving／繪製成功；各 screenshot 有 hash。`clean-motion/`：10 clips 掃描完成、13 組數值候選 placement，`approvedAllowlist=[]`。`clean-structure/structure.json`：VRM1、53 bones、57 face targets、31,009 triangles、16 spring groups、22 collider groups、17 materials、134 nodes；6 checks PASS、torn_bindings FAIL、5 checks NOT_SUPPORTED。Hoodie `Tops.baked` 的 bent-arm edge growth 仍為 46.47845 mm，高於 25 mm，沒有放寬門檻。
 
@@ -92,3 +97,22 @@ capture helper 使用既有 `mika-r3` browser session 與 `127.0.0.1:5189` 本�
 ## 模組化平台採用決策
 
 目前證據支持先驗收固定 `base × module` 組合，保存可逆 source／mesh mask、來源 hash 及版本，平台先提供已驗收組合。一次性的模組整備人工與每單客製工時分開記錄，才能估算模組收費、點數或訂閱的可持續成本。本輪單例 restore／partial 結果尚未支持任意設計全自動交付，不據此編定價格或毛利；平台 code、付款與定價不在本輪實作範圍。
+
+
+## 套回原檔後的完整驗收（2026-09-09 後續）
+
+`refit.apply` 套回 `R3-B-clean-base-dressup.vrm`，修正前的位元組保存為 `R3-B-clean-base-dressup-torn.vrm`（hash 不變）。R3 當初那一整套重跑，輸出在同一個 run 目錄的 `final-*`：
+
+| 關卡 | 修正前 | 現行 |
+|---|---|---|
+| `structure-check` | 6 PASS、torn_bindings FAIL、5 NOT_SUPPORTED，exit 1 | 7 PASS、0 FAIL、5 NOT_SUPPORTED，exit 0 |
+| `verify.torn_bindings` | FAIL 2 筆，最壞邊 46.48 mm | `[]` PASS，最壞邊 22.99 mm |
+| `measure-candidate` | 10 clips、13 組 numeric candidate、allowlist 空 | 相同 |
+| `capture-candidate` | 4 views、21 PNG、18 expressions | 相同，證據在 `evidence/final-browser/` |
+| `verification-snapshot` | PASS（8 產物、117 PNG） | PASS（9 產物、138 PNG、21 JSON、17 model reference） |
+
+`approvedAllowlist` 仍為空集合，缺的還是模型專屬 crown clearance，與本次權重修正無關。人工檢視 `final-browser` 的 face-neutral 與 quarter-neutral，確認本輪原本修好的頸部連續與領口無白色尖角在 refit 後仍成立。
+
+覆寫原檔會讓 run 目錄自相矛盾：`clean-structure`、`clean-motion`、`evidence/clean-browser` 都記著舊 hash。先跑快照確認它抓得到（`Hash mismatch`、exit 1），再把這四份結果檔的 `source.path` 指向 `-torn.vrm`，`sha256` 與 `bytes` 未動；之後快照才 PASS。保留樣本重跑仍是 FAIL 2 筆、46.48 mm。
+
+`motion.check` 的像素穿模 gate 需要 `parts.json`，這份第三方匯出檔沒有，仍未跑。完整動態衣物、spring 與目標 consumer 驗收維持 `PENDING`。

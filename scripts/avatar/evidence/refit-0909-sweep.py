@@ -5,10 +5,12 @@ the gate; they live here so the table can be re-run, not just trusted.
 
     python3 scripts/avatar/evidence/refit-0909-sweep.py <dressed.vrm>
 
-The model is a VRoid Studio dress-up export under the ignored build/ tree
-(build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup.vrm on 2026-09-09,
-sha256 c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07). It is
-not in the repository, so this takes the path as an argument.
+The model is the un-repaired VRoid Studio dress-up export under the ignored
+build/ tree (build/mika-reuse/r3-studio-20260909/R3-B-clean-base-dressup-torn.vrm,
+sha256 c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07). The
+name it was exported under now holds the repaired bytes, so the sample kept the
+hash and moved to a name that says what it is. It is not in the repository, so
+this takes the path as an argument.
 """
 import os
 import sys

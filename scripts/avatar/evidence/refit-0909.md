@@ -1,9 +1,16 @@
 # 匯入服裝的側身跟著上臂走，2026-09-09：懸空的布沒有身體可以複製
 
-R3 的 VRoid Studio 換裝成品 `R3-B-clean-base-dressup.vrm` 在
-`verify.torn_bindings` 上 FAIL：`Tops.baked`（連帽外套）在 `leftUpperArm +60°`
-與 `rightUpperArm −60°` 各長 46.478 mm，門檻 25 mm。同一個檔案的其他每一個網格
-都通過，它自己蓋住的那具身體最壞只有 16.42 mm。
+R3 的 VRoid Studio 換裝成品在 `verify.torn_bindings` 上 FAIL：`Tops.baked`
+（連帽外套）在 `leftUpperArm +60°` 與 `rightUpperArm −60°` 各長 46.478 mm，
+門檻 25 mm。同一個檔案的其他每一個網格都通過，它自己蓋住的那具身體最壞只有
+16.42 mm。
+
+修正已套回原檔，所以 `R3-B-clean-base-dressup.vrm`
+（`6135e4295d169e5130e52cf3d3c1180c4228d7c6f819ecb68114620e5c64971c`，
+14,728,128 bytes）現在是修好的那一份；本文所有「修正前」的量測來自保留下來的
+`R3-B-clean-base-dressup-torn.vrm`
+（`c062e296a0875cb977f66c1b48406795c630027ec45d6d9241fa1731a1d56b07`，
+14,686,304 bytes），位元組與 R3 當初匯出的完全相同。
 
 ## 這在出貨動作範圍內會發生
 
@@ -15,8 +22,8 @@ squat +10.6°、dance +2.7°，其餘為負（idle −75.4° 是把手臂放下�
 改量真正到得了的角度，缺陷仍然超標：
 
     左上臂抬起          25°      36°      45°      60°
-    R3               21.71    30.31    36.81    46.48 mm
-    R4（修正後）       11.39    15.66    18.74    22.99 mm
+    修正前             21.71    30.31    36.81    46.48 mm
+    修正後             11.39    15.66    18.74    22.99 mm
 
 stretch 實際到達的 +36° 上，R3 就已經 30.31 mm 高於 25 mm 門檻。
 
@@ -101,11 +108,33 @@ ramp 取 45–75 mm 是量出來的：袖子離它包覆的手臂 33 mm，撕裂
 5px 變 233px）。這一輪能做的是直接量修改本身的風險，即外套與身體的最近距離有沒有
 變差：
 
-    抬手 36°   R3 min 2.71 mm / p1 6.52 / 中位 31.88    R4 min 3.01 / p1 6.54 / 中位 31.73
-    抬手 60°   R3 min 2.71 mm / p1 6.52 / 中位 31.56    R4 min 3.01 / p1 6.52 / 中位 31.54
+    抬手 36°   修正前 min 2.71 mm / p1 6.52 / 中位 31.88    修正後 min 3.01 / p1 6.54 / 中位 31.73
+    抬手 60°   修正前 min 2.71 mm / p1 6.52 / 中位 31.56    修正後 min 3.01 / p1 6.52 / 中位 31.54
 
 淨空距離沒有變差。這是距離量測，不等於通過像素穿模 gate；要宣稱後者，得先有這個
 檔案的 parts 對照表。
+
+## 套回原檔後的完整驗收
+
+修正套回 `R3-B-clean-base-dressup.vrm` 之後，R3 當初跑過的那一整套重跑一次，
+輸出在同一個 run 目錄的 `final-*`：
+
+    structure-check            7 PASS / 5 NOT_SUPPORTED / 0 FAIL，exit 0（含 torn_bindings PASS）
+    measure-candidate          10 clips、13 組 numeric candidate placement、approvedAllowlist=[]
+    capture-candidate          4 views、21 PNG、18 expressions，全部載入／driving／繪製成功
+    verification-snapshot      PASS：21 份 JSON、17 個 model reference、84 個 screenshot
+                               reference、9 個產物、138 張 evidence PNG
+
+`approvedAllowlist` 仍是空集合：缺的是模型專屬 crown clearance，這次修的是權重，
+兩者無關，數字與修正前相同。人工檢視 `final-browser` 的 face-neutral 與
+quarter-neutral，確認 R3 原本修好的兩件事仍在（頸部連續、領口沒有白色尖角）。
+
+覆寫原檔會讓那個 run 目錄自相矛盾，因為 `clean-structure`、`clean-motion` 與
+`evidence/clean-browser` 都記著舊 hash。先跑一次快照確認它抓得到（`Hash mismatch`，
+exit 1），再把這四份結果檔的 `source.path` 指向 `-torn.vrm`；`sha256` 與 `bytes`
+一個字都沒改，是路徑跟著它描述的位元組走。改完快照才 PASS。
+
+保留樣本自己重跑仍是 `FAIL 2 筆`、最壞邊 46.48 mm，和修好的那份 22.99 mm 分得開。
 
 ## 守衛與 mutation
 
