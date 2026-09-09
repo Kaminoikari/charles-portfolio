@@ -49,7 +49,7 @@
 // all, leaving a crown the humanoid poses (evidence/parts-0909.md). The crown
 // does not depend on which primitive is called the hair: it is the topmost
 // vertex of everything the manifest lists and every spring in the file is
-// solved regardless. The jump columns and the four tuning flags DO depend on
+// solved regardless. The jump columns and the five tuning flags DO depend on
 // it, so passing one of those flags to a body with no such joint is refused
 // rather than silently ignored.
 //
@@ -954,7 +954,7 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
   // carries whatever throw there is: measured on the shipped body, naming the
   // face as the hair leaves `dance` at the same 1.6647 and the same column
   // 1.7087 as naming the twintails does. What the list DOES decide is the two
-  // jump columns and the four tuning flags, so an empty one is reported
+  // jump columns and the five tuning flags, so an empty one is reported
   // (`rigidHair`) rather than thrown, and refused only when a flag was passed
   // that it would silently swallow.
   const rigid = joints.length === 0
@@ -962,12 +962,18 @@ export async function runClip(args: Args, clipPath: string): Promise<Report> {
     const asked = [
       args.hit !== null ? '--hit' : '', args.gravity !== null ? '--gravity' : '',
       args.noArms ? '--no-arms' : '', args.noCoat ? '--no-coat' : '',
+      // restoreVroidColliders only rewrites a bone group that holds a hair
+      // bone, so with none it builds the collider groups and hands them to
+      // nobody, while the header still prints `colliders=vroid`.
+      args.colliders !== 'asis' ? '--colliders' : '',
     ].filter(Boolean)
     if (asked.length > 0) {
       throw new Error(
         `${asked.join(' ')} tunes the spring joints that move a Hair_* part, and this manifest ` +
         'names none that any spring touches: the run would report the flag and ignore it')
     }
+    // --dump-at is left alone on purpose: it prints its heading and then no
+    // rows, which reads as "nothing to dump" rather than as a tuned result.
   }
   if (args.hit !== null) for (const j of joints) j.settings.hitRadius = args.hit
   if (args.gravity !== null) for (const j of joints) j.settings.gravityPower = args.gravity
@@ -1248,8 +1254,9 @@ export function writeClearance(args: Args, reports: Report[]): void {
     rigSha: rigSha(json),
     simulatedOn: servedPath(args.model),
     producedBy: producedAt(),
-    // Only when true, so the two files already shipped stay byte-identical
-    // when they are next regenerated.
+    // Only when true, so regenerating one of the three shipped modules does
+    // not add a key to it. Their bytes do change on any regeneration anyway,
+    // because producedBy is the commit the producer ran at.
     ...(reports[0].rigidHair ? { rigidHair: true as const } : {}),
     restCrownY: Math.round(reports[0].restCrownY * 1e4) / 1e4,
     restCrownScreen: {

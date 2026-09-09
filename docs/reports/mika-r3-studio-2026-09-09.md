@@ -119,7 +119,7 @@ capture helper 使用既有 `mika-r3` browser session 與 `127.0.0.1:5189` 本�
 
 這份第三方匯出檔沒有 `parts.json`，`springsim.ts` 的推導在它身上找到 0 個會動的髮部件並停在 `manifest has no Hair_* part`。量下去的結果是這個檔宣告了 16 組彈簧而沒有一組動得了頭頂：展開後 29 個彈簧節點裡只有 6 個出現在任何 skin 的 joints 清單，全是胸部（攤成 4 個相異骨名），帶彈簧權重的 primitive 只有 `InnerTop.baked[0]` 與 `InnerBottom.baked[0]`，9 條 `transferable_HairJoint-*` 與帽兜、兩條帽繩的鏈都搬不動任何頂點。頭髮 `N00_000_00_HairBack_00_HAIR` 的權重是 `J_Bip_C_Head` 715.5、`J_Bip_C_Neck` 28.8，是由 humanoid 擺出來的剛體。
 
-因此 `springsim.ts` 的 `hairJoints` 空集合關卡放寬了。頭頂是所有列出部件的最高頂點，而 solver 不論 manifest 怎麼命名都會把每條彈簧跑完，所以剛體頭頂本來就量得出來：拿出貨的 milfy 把 `Hair_*` 指向臉，`spin` 與 `dance` 的頭頂與兩個機位投影一位不差（1.5886／1.6107／1.5958 與 1.6647／1.7087／1.7000），只有 `jump` 從 12.4° 與 21.7° 掉成 0。空清單真正決定的是 `jump` 兩欄與 `--hit`／`--gravity`／`--no-arms`／`--no-coat` 四個旗標，所以現在改成照跑並標 `rigidHair`，只有帶了那四個旗標之一才拒絕。機制、鏈長表與四次 mutation 收據見 [parts-0909](../../scripts/avatar/evidence/parts-0909.md)。
+因此 `springsim.ts` 的 `hairJoints` 空集合關卡放寬了。頭頂是所有列出部件的最高頂點，而 solver 不論 manifest 怎麼命名都會把每條彈簧跑完，所以剛體頭頂本來就量得出來：拿出貨的 milfy 把 `Hair_*` 指向臉，`spin` 與 `dance` 的頭頂與兩個機位投影一位不差（1.5886／1.6107／1.5958 與 1.6647／1.7087／1.7000），只有 `jump` 從 12.4° 與 21.7° 掉成 0。空清單真正決定的是 `jump` 兩欄與 `--hit`／`--gravity`／`--no-arms`／`--no-coat`／`--colliders` 五個旗標，所以現在改成照跑並標 `rigidHair`，只有帶了那五個旗標之一才拒絕。機制、鏈長表與五次 mutation 收據見 [parts-0909](../../scripts/avatar/evidence/parts-0909.md)。
 
 手寫的 `R3-B-clean-base-dressup.parts.json` 列滿 17 個帶皮 primitive，腰線 1.0187 讀自未被 auto-mask 挖過的 `InnerTop.baked[0]`。十支 clip 全部跑出頭頂，靜止 1.5982，最高的是 `stretch` 的 1.8661（舉起來的手），產物是 `vroid-studio-dressup.simulated.gen.ts` 與 `springsim-0909.log`。
 

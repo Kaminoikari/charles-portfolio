@@ -1,0 +1,114 @@
+# parts-0909 的收據，2026-09-09。每一段都跑在最後一次程式改動之後。
+
+=== 命名對照：把出貨 milfy 的 Hair_* 指向臉，兩支 clip 逐項比對 ===
+exit 0
+spin   正確  rigidHair=false crown 1.5886  column 1.6107  waistUp 1.5958  jump 12.4° HairTailL_2
+spin   錯名  rigidHair=true  crown 1.5886  column 1.6107  waistUp 1.5958  jump 0.0° 
+dance  正確  rigidHair=false crown 1.6647  column 1.7087  waistUp 1.7000  jump 21.7° HairTailR_5
+dance  錯名  rigidHair=true  crown 1.6647  column 1.7087  waistUp 1.7000  jump 0.0° 
+
+[exited with code 0]
+
+=== 五次 mutation（springsim.ts，跑完還原並 diff 為空）===
+--- 旗標守衛永不擋: exit 1
+    ✓ a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint  12122ms
+    ✓ a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair  29861ms
+    ✓ a body whose hair no spring moves > writes the rigid marking into the clearance module, not just the table 61ms
+    × a body whose hair no spring moves > refuses a tuning flag it would have to swallow 5784ms
+    Tests  1 failed | 3 passed (4)
+--- 旗標清單拿掉 --colliders: exit 1
+    ✓ a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint  13420ms
+    ✓ a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair  34146ms
+    ✓ a body whose hair no spring moves > writes the rigid marking into the clearance module, not just the table 60ms
+    × a body whose hair no spring moves > refuses a tuning flag it would have to swallow 8390ms
+    Tests  1 failed | 3 passed (4)
+--- rigid 恆為 false: exit 1
+    × a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint 8181ms
+    × a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair 44200ms
+    × a body whose hair no spring moves > writes the rigid marking into the clearance module, not just the table 36ms
+    × a body whose hair no spring moves > refuses a tuning flag it would have to swallow 6655ms
+    Tests  4 failed (4)
+--- rigidHair 恆為 false: exit 1
+    × a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint 7961ms
+    × a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair 42925ms
+    × a body whose hair no spring moves > writes the rigid marking into the clearance module, not just the table 50ms
+    ✓ a body whose hair no spring moves > refuses a tuning flag it would have to swallow 133ms
+    Tests  3 failed | 1 passed (4)
+--- 恢復無條件 throw: exit 1
+    × a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint 79ms
+    × a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair 121ms
+    × a body whose hair no spring moves > writes the rigid marking into the clearance module, not just the table 0ms
+    × a body whose hair no spring moves > refuses a tuning flag it would have to swallow 64ms
+    Tests  4 failed (4)
+已還原，diff: (空)
+
+=== 最終驗證：eslint／tsc -b／三個 suite／R3 重產 ===
+=== eslint ===
+0 problems
+
+=== npm run build (tsc -b) ===
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+build exit 
+
+=== springsim.rigid.test.ts ===
+ ✓ scripts/avatar/springsim.rigid.test.ts (4 tests) 46899ms
+   ✓ a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint  11762ms
+   ✓ a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair  34908ms
+      Tests  4 passed (4)
+   Duration  47.50s (transform 90ms, setup 35ms, collect 130ms, tests 46.90s, environment 275ms, prepare 45ms)
+
+=== springsim.derive.test.ts ===
+      Tests  6 passed (6)
+   Duration  30.91s (transform 113ms, setup 46ms, collect 170ms, tests 30.21s, environment 310ms, prepare 43ms)
+
+=== clearance 消費端 ===
+      Tests  220 passed (220)
+
+=== R3 重產兩份 .gen.ts ===
+springsim exit 0
+wrote build/mika-reuse/r3-studio-20260909/vroid-studio-dressup.measured.gen.ts
+build/mika-reuse/r3-studio-20260909/vroid-studio-dressup.measured.gen.ts:26:  "restCrownY": 1.5982,
+build/mika-reuse/r3-studio-20260909/vroid-studio-dressup.simulated.gen.ts:14:  "rigidHair": true,
+build/mika-reuse/r3-studio-20260909/vroid-studio-dressup.simulated.gen.ts:15:  "restCrownY": 1.5982,
+
+=== 出貨三份不應有 rigidHair ===
+三份都沒有
+
+=== onTaskUpdate 逾時與機器負載綁在一起，不是這批測試帶進來的 ===
+--- 同一份剛體檔案連跑兩次：
+--- 第 1 次
+      Tests  4 passed (4)
+   Duration  50.64s (transform 113ms, setup 45ms, collect 150ms, tests 49.94s, environment 328ms, prepare 50ms)
+--- 第 2 次
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+      Tests  4 passed (4)
+     Errors  1 error
+   Duration  83.97s (transform 543ms, setup 489ms, collect 658ms, tests 80.89s, environment 1.56s, prepare 117ms)
+
+[exited with code 0]
+--- 完全沒被改動的 springsim.test.ts，用 git checkout 出來的 HEAD 版 springsim.ts 重跑：
+已切到 HEAD 版本
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+     Errors  1 error
+   Start at  18:59:55
+   Duration  126.76s (transform 4.10s, setup 436ms, collect 1.16s, tests 117.90s, environment 2.92s, prepare 3.88s)
+
+還原後 diff 對照：
+(空)
+
+[exited with code 0]
+
+=== 拆檔前：9 條合在一起 183.9 秒並且報了那個錯 ===
+ok
+exit 1
+4: ✓ scripts/avatar/springsim.derive.test.ts (9 tests) 183891ms
+5:   ✓ parts read off the file, for a body no build wrote a manifest for > simulates a body with no manifest beside it, and gets a crown out of it  36387ms
+6:   ✓ a body whose hair no spring moves > measures the crown of a body whose hair holds no spring joint  37406ms
+7:   ✓ a body whose hair no spring moves > gets the same crown whichever primitive the manifest calls the hair  109884ms
+8:⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+24:      Tests  9 passed (9)
+25:     Errors  1 error
+
+[exited with code 0]

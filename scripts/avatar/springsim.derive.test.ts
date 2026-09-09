@@ -14,7 +14,7 @@
 // Its own file rather than a describe inside springsim.test.ts: both are
 // CPU-bound simulations, and one worker blocked for 60s straight makes vitest
 // report an unhandled "Timeout calling onTaskUpdate" over a run that passed.
-import { copyFileSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 

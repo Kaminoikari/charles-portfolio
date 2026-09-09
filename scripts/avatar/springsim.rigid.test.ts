@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest'
 
 import { AVATAR_VARIANTS } from '../../src/components/chat/avatarVariants'
 import { parseGlb } from '../../src/components/chat/vrmHumanoid'
-import { parseArgs, runClip } from './springsim'
+import { parseArgs, runClip, writeClearance } from './springsim'
 
 const milfy = AVATAR_VARIANTS.find((v) => v.id === 'milfy')
 if (!milfy) throw new Error('no milfy variant declared')
@@ -38,7 +38,7 @@ describe('a body whose hair no spring moves', () => {
   // Letting it through is safe because the crown does not depend on which
   // primitive is called the hair, which the second test here measures rather
   // than assumes. What the hair list does decide is the jump columns and the
-  // four tuning flags, and the third test holds the flags.
+  // five tuning flags, and the last test holds the flags.
   const dir = mkdtempSync(path.join(tmpdir(), 'springsim-rigid-'))
   const truthParts = JSON.parse(readFileSync(MODEL.replace(/\.vrm$/, '.parts.json'), 'utf8')) as {
     parts: Record<string, { mesh: string; primitives: number[] }>
@@ -107,8 +107,14 @@ describe('a body whose hair no spring moves', () => {
     return withParts(model, truthParts.parts)
   }
 
+  // Same shape as `shipped`, and for the same reason: three tests want this run.
+  const RIGID = path.join(dir, 'rigid.vrm')
+  let rigidRun: Promise<Awaited<ReturnType<typeof runClip>>> | null = null
+  const rigid = (): Promise<Awaited<ReturnType<typeof runClip>>> =>
+    (rigidRun ??= runClip(parseArgs([bustOnly('rigid.vrm'), '--clip=spin', '--stride=6']), clipFile('spin')))
+
   it('measures the crown of a body whose hair holds no spring joint', async () => {
-    const r = await runClip(parseArgs([bustOnly('rigid.vrm'), '--clip=spin', '--stride=6']), clipFile('spin'))
+    const r = await rigid()
     expect(r.restCrownY, 'a resting crown').toBeGreaterThan(1.5)
     expect(r.crownY, 'and a crown over the clip').toBeGreaterThanOrEqual(r.restCrownY)
     // Said out loud, because the jump columns it produces are 0.0° with no bone
@@ -124,7 +130,8 @@ describe('a body whose hair no spring moves', () => {
     // The reason the empty list is reported rather than thrown. Every spring in
     // the file is solved whatever the parts are called, and the crown is the
     // topmost vertex of everything listed, so a manifest that points Hair_* at
-    // the face still carries the twintails' throw. Were that untrue, letting a
+    // the face still carries the twintails' throw. Ten parts are renamed here;
+    // the 65 primitives under them are what the stride rule counts. Were that untrue, letting a
     // rigid-hair body through would understate the crown, and the frame gate
     // reads the crown to decide what it may approve.
     const model = path.join(dir, 'misnamed-hair.vrm')
@@ -150,6 +157,21 @@ describe('a body whose hair no spring moves', () => {
     expect(misnamed.jumpDeg, 'and the misnamed run cannot see it').toBe(0)
   }, 240_000)
 
+  it('writes the rigid marking into the clearance module, not just the table', async () => {
+    // The table prints an em dash in the two jump columns, but the module is
+    // what a consumer reads and its jumpDeg is 0 either way. writeClearance is
+    // reachable only from main(), so nothing else in this repo drives it.
+    const write = (model: string, report: Awaited<ReturnType<typeof runClip>>, name: string): string => {
+      const out = path.join(dir, name)
+      writeClearance(parseArgs([model, `--clearance=${out}`, '--family=test-family']), [report])
+      return readFileSync(out, 'utf8')
+    }
+    expect(write(RIGID, await rigid(), 'rigid.simulated.gen.ts'),
+      'the rigid body says so').toMatch(/"rigidHair": true/)
+    expect(write(MODEL, await shipped(), 'springy.simulated.gen.ts'),
+      'and a body whose hair springs carries no such key').not.toMatch(/rigidHair/)
+  }, 240_000)
+
   it('refuses a tuning flag it would have to swallow', async () => {
     // --hit, --gravity, --no-arms and --no-coat all act on the hair's spring
     // joints. With none to act on, the run would print the flag in its header
@@ -159,5 +181,11 @@ describe('a body whose hair no spring moves', () => {
       .rejects.toThrow(/--gravity .* names none that any spring touches/)
     await expect(runClip(parseArgs([model, '--clip=spin', '--stride=6', '--no-arms']), clipFile('spin')))
       .rejects.toThrow(/--no-arms/)
+    // --colliders belongs in the same list and is the one the header prints:
+    // restoreVroidColliders rewrites only a bone group that holds a hair bone.
+    // It carries its own companion flag, which parseArgs already insists on.
+    const vroid = `--vroid-colliders=${path.resolve('public/avatar/AvatarSample_B_webp.vrm')}`
+    await expect(runClip(parseArgs([model, '--clip=spin', '--stride=6', '--colliders=vroid', vroid]), clipFile('spin')))
+      .rejects.toThrow(/--colliders/)
   }, 240_000)
 })

@@ -45,8 +45,8 @@
 
 擋它的理由不成立。頭頂是「manifest 列出的所有部件裡最高的那個頂點」，而不論 manifest
 把哪個 primitive 叫做頭髮，solver 都會把檔案裡每一條彈簧跑完，所以頭頂本來就帶著該有
-的甩幅。量給自己看：拿出貨的 milfy，把 65 個 `Hair_*` 部件全部改名成 `Fluff_*`、讓
-唯一的 `Hair_*` 指向臉，兩支 clip 的頭頂與兩個機位的投影完全一樣：
+的甩幅。量給自己看：拿出貨的 milfy，把 10 個 `Hair_*` 部件（底下 65 個 primitive）全部改名成
+`Fluff_*`、讓唯一的 `Hair_*` 指向臉，兩支 clip 的頭頂與兩個機位的投影完全一樣：
 
     clip    manifest   rigidHair   頭頂     column    waistUp    jump
     spin    正確        false      1.5886   1.6107    1.5958     12.4° HairTailL_2
@@ -55,13 +55,19 @@
     dance   錯名        true       1.6647   1.7087    1.7000      0.0°（無骨）
 
 `hairJoints` 真正決定的是兩件別的事：`jump` 兩欄（tail bone 的單幀轉角），以及
-`--hit`／`--gravity`／`--no-arms`／`--no-coat` 這四個只作用在髮彈簧關節上的旗標。所以
-關卡改成：空清單照跑並在報告上標 `rigidHair`（表格的 `jump` 兩欄印 `—`），只有在有人
-帶了那四個旗標之一時才拒絕，因為那時候執行會把旗標印在檔頭卻什麼都不做。
+`--hit`／`--gravity`／`--no-arms`／`--no-coat`／`--colliders` 這五個只作用在髮彈簧關節
+上的旗標。所以關卡改成：空清單照跑並在報告上標 `rigidHair`（表格的 `jump` 兩欄印
+`—`），只有在有人帶了那五個旗標之一時才拒絕，因為那時候執行會把旗標印在檔頭卻什麼都
+不做。`--colliders` 是 code reviewer 第二輪補上的：`restoreVroidColliders` 只改寫「含
+髮骨的 bone group」，剛體身體上它會把 collider 建好交給沒有人，而檔頭照印
+`colliders=vroid`。`--dump-at` 刻意留著，它印完標頭沒有任何列，讀起來就是「沒東西可
+dump」。
 
 產出的 clearance 檔也要帶這個標記，否則人看的表格標了而機器讀的產物沒標：
-`ClearanceSimulated.rigidHair` 是可選欄位，只在為真時寫出，所以出貨的兩份
-`.gen.ts` 下次重新產生時位元組不變（實測兩份都沒有這個鍵）。它說的是「每支 clip 的
+`ClearanceSimulated.rigidHair` 是可選欄位，只在為真時寫出，所以重新產生出貨的三份
+`.simulated.gen.ts` 不會替它們多長一個鍵（`vroid-sample-b`、`vroid-sample-b.pink`、
+`vrm1-twist-sample`，實測三份都沒有這個鍵）。它們的位元組本來就會變，`producedBy`
+記的是產生器跑在哪個 commit 上。它說的是「每支 clip 的
 `jumpDeg` 為 0 是因為沒有 tail bone 可轉」，頭頂不受影響。
 
 中間走過一條錯路，值得記下來：第一版用「帶彈簧權重的最高頂點 ＋ 2 × 最長彈簧鏈」當
@@ -93,12 +99,16 @@
 
 ## 守衛與 mutation
 
-`springsim.rigid.test.ts` 三條，四次 mutation 各自轉紅（跑完還原並 diff 為空）：
+`springsim.rigid.test.ts` 四條，五次 mutation 各自轉紅（跑完還原並 diff 為空）。
+本節每一個數字的原始輸出在 [parts-0909-verify.log](parts-0909-verify.log)，
+它整份跑在最後一次程式改動之後：
 
-    旗標守衛永不擋            refuses a tuning flag it would have to swallow            RED（只有這條）
-    rigid 恆為 false          三條全 RED
-    rigidHair 恆為 false      measures the crown… ＋ gets the same crown…               RED，旗標那條仍綠
-    恢復無條件 throw           三條全 RED
+    旗標守衛永不擋              refuses a tuning flag…                        RED（只有這條）
+    旗標清單拿掉 --colliders    refuses a tuning flag…                        RED（只有這條）
+    rigid 恆為 false            四條全 RED
+    rigidHair 恆為 false        measures the crown… ＋ gets the same crown…
+                                ＋ writes the rigid marking…                  RED，旗標那條仍綠
+    恢復無條件 throw             四條全 RED
 
 夾具都由出貨的 milfy 身體改出來。剛體那具把 GLB 的 JSON chunk 重打包，只留 `Bust`
 那組彈簧：彈簧仍搬得動 4,178 個畫出來的頂點，而它們在頭頂下方半公尺，形狀與換裝檔
@@ -112,12 +122,20 @@ joints 清單裡，卻沒有任何頂點對它們有一絲權重，夾具因此�
 空的，那條測試會綠著通過而什麼也沒釘住。它是特性測試不是守衛，釘的是「換個名字頭頂
 不變」這個讓空清單可以放行的前提，所以它沒有對應的 mutation。
 
-三條放在自己的檔案 `springsim.rigid.test.ts`，理由與 `springsim.derive.test.ts` 檔頭
-寫的同一條：一個 worker 連續佔住 60 秒，vitest 會在一次通過的執行上報
-`Timeout calling "onTaskUpdate"`。合在一起是 9 條 183 秒並且真的報了那個錯，拆開之後
-剛體 3 條 41 秒、推導 6 條 28 秒，兩邊都乾淨。錯名那次用 `spin`（9.32 秒）而不是
-`dance`（26.80 秒）：改名把 65 個部件擠出 `gather` 的 stride 規則（只有 `Hair_*` 與
-`Outfit_Bottom` 會抽樣），錯名的那次因此不管 `--stride` 給多少都要查六倍的頭髮。
+四條放在自己的檔案 `springsim.rigid.test.ts`，理由與 `springsim.derive.test.ts` 檔頭
+寫的同一條：一個 worker 連續佔住太久，vitest 會在一次通過的執行上報
+`Timeout calling "onTaskUpdate"`。合在一起是 9 條 183.9 秒並且真的報了那個錯，拆開之後
+剛體 42.5 秒、推導 26.9 秒。
+
+這個錯誤跟機器負載綁在一起，不是這批測試帶進來的：同一份剛體檔案連跑兩次是 50.6 秒
+乾淨、84.0 秒報錯，測試都是 4 條全過；而完全沒被這次改動碰到的 `springsim.test.ts`，
+拿 `git checkout` 出來的 HEAD 版 `springsim.ts` 重跑同樣是 6 條全過加一個同樣的錯
+（126.8 秒）。
+
+錯名那次挑 `spin`（9.32 秒），不挑 `dance`（26.80 秒）：改名把那 65 個 primitive 擠出
+`gather` 的 stride 規則（只有 `Hair_*` 與 `Outfit_Bottom` 會抽樣），錯名的那次因此不管
+`--stride` 給多少都要查六倍的頭髮。十支 clip 的長度量在
+[clip-durations-0909.log](clip-durations-0909.log)。
 
 ## 十支 clip 的頭頂
 
