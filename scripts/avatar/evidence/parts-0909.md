@@ -174,8 +174,9 @@ clip 上，`excluded` 是空的，`crownFringe` 沿用 VRoid family 的 1.5 mm �
 具身體上量過（沒有東西會算它）。收據 `family3-0909-pans.log`。
 
 把 body 放到 `public/avatar/` 並把 family 加進 `AVATAR_FAMILIES` 之後，
-`rigProbe.test.ts` 的 per-family 區塊 266 條過 265 條。兩件事擋著登記，只有第一件是
-決定：
+`rigProbe.test.ts` 的 per-family 區塊在這具 rig 上 70 條過 69 條，紅的那條就是下面第
+二點。（整個檔案在三個 family 都登記時是 266 條過 265 條：區塊外 56 條，區塊內每個
+family 各 70 條。）兩件事擋著登記，只有第一件是決定：
 
 1. **這具身體不能照現狀出版。** `rigProbe.test.ts` 從 `measuredOn` 到 `public/avatar`
    找 body，那個目錄會被服務，而這個 repo 是公開的；匯出檔自己的 VRM meta 寫著

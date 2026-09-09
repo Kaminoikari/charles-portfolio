@@ -22,8 +22,10 @@
 // see `crownFringe` below, which holds the VRoid family's reading because
 // nothing renders this body. With the body placed at
 // public/avatar/vroid-studio-dressup.vrm and the family added to
-// AVATAR_FAMILIES, rigProbe.test.ts's per-family block runs 265 of its 266
-// checks green on this rig; the one failure is the pan above. Receipt:
+// AVATAR_FAMILIES, the 70 checks of rigProbe.test.ts's per-family block run 69
+// green on this rig and one red, and that one is the pan above. (The file's own
+// total is 266 with three families registered -- 56 outside the block and 70
+// each inside it -- of which 265 pass.) Receipt:
 // scripts/avatar/evidence/family3-0909-pans.log.
 import { combineClearance, type ClearanceDecisions } from '../clearance'
 import { MEASURED } from './vroid-studio-dressup.measured.gen'
@@ -55,11 +57,15 @@ const DECISIONS: ClearanceDecisions = {
   // humanoid poses and no spring can throw it anywhere the simulator missed.
   crownSeen: {},
   // Derived by clearance.panFor and held to that derivation by rigProbe.test.ts.
-  // EIGHT of the ten need one, and the reason is the body: its hips rest at
-  // 0.9081 against the VRoid family's 0.8782, 29.8mm taller, and the column is
-  // composed over that first family's resting hair. (0.9081 is also where the
-  // VRM1 sample's hips rest, to four decimals, which is why these eight look so
-  // much like that family's nine.)
+  // EIGHT of the ten need one, and what decides that is the crown rather than
+  // the hips. The column is composed for the VRoid family, whose resting crown
+  // projects to 1.5881 against that frame's 1.6020 top edge: 13.9mm of room
+  // before a clip has moved. This body's projects to 1.5994, which leaves 2.6mm,
+  // so a clip that lifts the crown at all runs out of it. spin reaches 1.6361,
+  // scratchHead 1.6546, dance 1.7213.
+  //
+  // The hips are a separate fact and belong to the waivers below, where they
+  // explain why the drift measurements match the VRM1 sample's exactly.
   //
   // FOUR passes, because a pan changes the projection it was derived from:
   // declare, re-run springsim, derive again, repeat. Pass 2 moved spin's column

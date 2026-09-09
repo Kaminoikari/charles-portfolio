@@ -179,13 +179,18 @@ POSITION 逐位元相同，相異點為 6090；`Body (merged).baked(copy).baked`
 `refit.py` 原本要人工指名 cloth 與 body 的 `mesh:prim` 才能跑，而 `.xroid` 裡沒有
 任何一段記錄這次修補：重新匯出一次，撕裂就一模一樣地回來，而所有看 T-pose 的關卡
 照樣通過。所以修補不能是「有人記得要跑的指令」，補了 `dressup.py`（測試
-`dressup_test.py`，6 條，五道防禦各自 mutation 轉紅），讓匯出檔自己決定要修什麼：
+`dressup_test.py`，8 條，八道防禦各自 mutation 轉紅），讓匯出檔自己決定要修什麼：
 
 - 修哪些 primitive 由 `verify.torn_bindings` 當場量出來，不是寫死的 mesh 名單。
   同一個 primitive 被兩個彎曲各報一次，`dict.fromkeys` 收成一次，否則第二趟會讀到
   第一趟寫下去的權重。
 - 身體 pool 走 `pierce.skin_parts`，與像素穿模 gate 認定皮膚的規則同一份定義。
-- 寫完再量一次，還撕就 raise。`refit` 是一段 ramp 上的淡出，不是證明。
+- 只修 manifest 叫做服裝的（`Outfit_`／`Acc_`）。重新歸位是把肢體對懸空布料的那一份
+  還給肢體掛著的骨頭，皮膚不懸空：撕開的 `Body_Skin` 是身體本身的缺陷，而 refit 會
+  去改寫它正在量距離的那個 pool。撕在非服裝上就停下來並指名。
+- 寫完再量一次，還撕就 raise，並且把 refit 已經寫下去的檔刪掉。`refit` 是一段 ramp
+  上的淡出，不是證明；還撕的檔留在輸出路徑上，正好是「看檔案在不在」的下游會撿走的
+  那一個。
 
 跑在本輪那個撕裂檔上：`Tops.baked[0]` 由 46.48 mm 進、`torn_bindings` 出來是空的，
 自己選中 `Tops.baked[0]`，pool 是 manifest 的 4 個皮膚部件共 10 個 primitive。與手

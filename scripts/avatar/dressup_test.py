@@ -21,8 +21,11 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+import numpy as np  # noqa: E402
+
 import dressup  # noqa: E402
 import glb  # noqa: E402
+import refit  # noqa: E402
 import verify  # noqa: E402
 import verify_test  # noqa: E402
 
@@ -36,6 +39,15 @@ PINK = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
 def out(name):
     return os.path.join(tempfile.mkdtemp(), name)
+
+
+def _hoodie_weight_gap(one, other):
+    """The largest per-slot weight difference on the cardigan between two files."""
+    def weights(path):
+        doc, binary = glb.load(path)
+        _, piece = refit.piece_of(doc, glb.views_of(doc, binary), 'Body.baked', 22)
+        return np.asarray(piece['weights'])
+    return float(np.abs(weights(one) - weights(other)).max())
 
 
 class Selection(unittest.TestCase):
@@ -133,13 +145,49 @@ class Repair(unittest.TestCase):
     def test_it_refuses_a_file_the_re_homing_did_not_repair(self):
         # Half the repair turned off, which on this garment leaves 88.69mm of
         # growth. refit still returns a report and still writes the file; what
-        # is held here is that the step looks at what it wrote.
+        # is held here is that the step looks at what it wrote, and that the file
+        # refit left behind does not survive the refusal.
         snapped = verify_test.snapped_weights('Outfit_Cardigan')
         path = out('unrepaired.vrm')
         with self.assertRaises(SystemExit) as caught:
             dressup.repair(snapped, path, MANIFEST, weight_passes=0)
         self.assertIn('still tears after re-homing', str(caught.exception))
         self.assertIn('Body.baked[22]', str(caught.exception))
+        self.assertFalse(os.path.exists(path), 'a still-torn file was left at the output path')
+
+    def test_it_refuses_a_tear_the_manifest_does_not_call_a_garment(self):
+        # Snapping the body's own weights tears Body.baked[0], which is skin.
+        # Re-homing hands a limb's share of free-hanging cloth to the joint the
+        # limb hangs from; skin does not hang off the body, and refit would be
+        # rewriting the very pool it measures distance against.
+        snapped = verify_test.snapped_weights('Body_Skin')
+        self.assertEqual(dressup.torn_cloth(snapped), (('Body.baked', 0),))
+        path = out('skin.vrm')
+        with self.assertRaises(SystemExit) as caught:
+            dressup.repair(snapped, path, MANIFEST)
+        self.assertIn('does not call a garment', str(caught.exception))
+        self.assertIn('Body.baked[0]', str(caught.exception))
+        self.assertFalse(os.path.exists(path))
+
+    def test_it_measures_distance_against_the_manifest_it_was_given(self):
+        # repair has its own copy of "which body", and the pixel counts of a
+        # finished file do not carry it: the pool is the shed field's only input,
+        # so a repair run against a smaller pool writes different weights. Two
+        # runs of the same file, one pool a subset of the other.
+        snapped = verify_test.snapped_weights('Outfit_Cardigan')
+        parts = json.load(open(MANIFEST, encoding='utf-8'))['parts']
+        thin = {name: info for name, info in parts.items()
+                if name == 'Face' or name.startswith(('Outfit_', 'Acc_', 'Hair_'))}
+        thin_path = out('thin.parts.json')
+        with open(thin_path, 'w', encoding='utf-8') as handle:
+            json.dump({'parts': thin}, handle)
+        self.assertLess(len(dressup.body_primitives(thin_path)),
+                        len(dressup.body_primitives(MANIFEST)))
+
+        full, small = out('full.vrm'), out('small.vrm')
+        dressup.repair(snapped, full, MANIFEST)
+        dressup.repair(snapped, small, thin_path)
+        self.assertGreater(_hoodie_weight_gap(full, small), 0.1)
 
 
 if __name__ == '__main__':

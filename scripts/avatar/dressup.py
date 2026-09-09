@@ -23,11 +23,19 @@ fresh export goes through, and it has to work out for itself what to repair:
                     covers it, and a pool with holes reads the cloth as further
                     from the body than it is -- which is the one input refit
                     cannot recover from, because the shed field is that distance.
+  AND ONLY THOSE    that the manifest calls a garment. Re-homing means giving a
+                    limb's hold on free-hanging cloth back to the joint the limb
+                    hangs from, and skin does not hang off the body: a torn
+                    `Body_Skin` is a defect of the body itself and refit would
+                    quietly rewrite the pool it is measuring against. Anything
+                    torn that is not a garment stops the run and is named.
   AND THEN          the same check runs again on what was written. refit is a
                     fade over a ramp, not a proof; a garment whose weights hand
-                    over WHILE it is still on the body has nothing to shed, and
-                    the honest answer there is to refuse rather than to write a
-                    file that has been through a step called repair.
+                    over WHILE it is still on the body has nothing to shed. The
+                    file refit wrote is deleted before the raise, because a
+                    still-torn model left at the output path is exactly what a
+                    caller that checks for the file rather than the exit code
+                    would pick up.
 
 Not wired into make.py on purpose. That pipeline builds Milfy from a base body
 and every garment in it is authored here, bound by binding.py, and gated at step
@@ -66,6 +74,18 @@ def body_primitives(manifest):
                  for index in parts[name]['primitives'])
 
 
+def garment_primitives(manifest):
+    """The (mesh, primitive) pairs the manifest calls cloth, in its own order.
+
+    The same prefixes pierce.count scores, so the set refit is allowed to rewrite
+    is the set the clipping gate holds to a limit.
+    """
+    parts = json.load(open(manifest))['parts']
+    return tuple((info['mesh'], index) for name, info in parts.items()
+                 if name.startswith(('Outfit_', 'Acc_'))
+                 for index in info['primitives'])
+
+
 def repair(src, dst, manifest, limit=verify.BIND_GROWTH_MAX_MM,
            bends=verify.BIND_BENDS, **kw):
     """Re-home whatever tears in `src` and write the result to `dst`.
@@ -79,14 +99,26 @@ def repair(src, dst, manifest, limit=verify.BIND_GROWTH_MAX_MM,
         shutil.copyfile(src, dst)
         return {'path': dst, 'torn': (), 'rehomed': [], 'bytes': os.path.getsize(dst)}
 
+    cloth = set(garment_primitives(manifest))
+    stray = tuple(pair for pair in torn if pair not in cloth)
+    if stray:
+        raise SystemExit(
+            f'{src} tears at {[f"{m}[{p}]" for m, p in stray]}, which the manifest '
+            'does not call a garment: re-homing gives a limb\'s hold on free-hanging '
+            'cloth back to the joint the limb hangs from, and nothing here hangs')
+
     report = refit.apply(src, dst, torn, body_primitives(manifest), **kw)
     left = verify.torn_bindings(dst, limit, bends)
     if left:
         worst = max(left, key=lambda row: row[4])
+        # Deleted, not left behind: refit writes the file before this runs, and a
+        # still-torn model at the output path is what a caller that looks for the
+        # file rather than the exit code would go on to measure.
+        os.remove(dst)
         raise SystemExit(
             f'{dst} still tears after re-homing {[f"{m}[{p}]" for m, p in torn]}: '
             f'{worst[0]}[{worst[1]}] grows an edge {worst[4]:.2f}mm when '
-            f'{worst[2]} turns {worst[3]}° (limit {limit}mm)')
+            f'{worst[2]} turns {worst[3]}° (limit {limit}mm); nothing was written')
     return {**report, 'torn': torn}
 
 
