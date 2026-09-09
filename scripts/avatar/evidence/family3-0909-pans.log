@@ -1,0 +1,53 @@
+# The dress-up family's pans, derived to the point where they stop moving,
+# and the guard run they were checked with. Regenerate a pass with:
+#   npx tsx scripts/avatar/springsim.ts public/avatar/vroid-studio-dressup.vrm \
+#     --clearance=src/components/chat/clearance/vroid-studio-dressup.simulated.gen.ts \
+#     --family=vroid-studio-dressup
+#   npx tsx scripts/avatar/evidence/pan-0909-probe.ts
+# Both need the body at public/avatar/vroid-studio-dressup.vrm with its
+# parts.json beside it, and the family in AVATAR_FAMILIES. Neither is
+# committed -- see the header of clearance/vroid-studio-dressup.ts.
+
+== pass 1: nothing declared, crowns projected at rest ==
+  spin/column 0.05  squat/column 0.01  akimbo/column 0.01  playFingers/column 0.01
+  scratchHead/column 0.06  idleLoop/column 0.01  stretch/waistUp 0.08  dance/column 0.14
+
+== pass 2: simulated under those ==
+  spin/column 0.05 -> 0.03   stretch/waistUp 0.08 -> 0.07   dance/column 0.14 -> 0.12
+  (the other five agree)
+
+== pass 3: simulated under those ==
+  spin/column 0.03 -> 0.04   dance/column 0.12 -> 0.13   (the other six agree)
+
+== pass 4: simulated under those, and the settled table ==
+family vroid-studio-dressup  simulated on /avatar/vroid-studio-dressup.vrm  rest crown 1.5982
+clip/frame            declared   derived   policy    range (mm)        crown    hipsLow   waived
+peaceSign/waistUp       0.00      0.00   centre    -299.8..    82.7   1.5724   0.8505   -
+peaceSign/column        0.00      0.00   least      -29.6..   420.5   1.5724   0.8505   -
+modelPose/waistUp       0.00      0.00   centre    -280.4..   120.4   1.5918   0.8882   -
+modelPose/column        0.00      0.00   least      -10.2..   458.2   1.5918   0.8882   -
+spin/waistUp            0.00      0.00   centre    -239.1..    90.4   1.6331   0.8582   -
+spin/column             0.04      0.04   least       31.1..   428.2   1.6331   0.8582   -
+squat/column            0.01      0.01   least        2.5..   252.5   1.6045   0.6825   -
+akimbo/waistUp          0.00      0.00   centre    -265.8..   143.8   1.6064   0.9116   -
+akimbo/column           0.01      0.01   least        4.4..   481.6   1.6064   0.9116   -
+playFingers/waistUp     0.00      0.00   centre    -261.7..   144.1   1.6105   0.9119   -
+playFingers/column      0.01      0.01   least        8.5..   481.9   1.6105   0.9119   -
+scratchHead/waistUp     0.00      0.00   centre    -217.6..   139.6   1.6546   0.9074   -
+scratchHead/column      0.06      0.06   least       52.6..   477.4   1.6546   0.9074   -
+idleLoop/waistUp        0.00      0.00   centre    -264.4..   138.0   1.6078   0.9058   -
+idleLoop/column         0.01      0.01   least        5.8..   475.8   1.6078   0.9058   -
+stretch/waistUp         0.07      0.07   centre       2.9..   144.6   1.8751   0.9124   -
+dance/waistUp           0.00      0.00   centre    -150.9..    10.3   1.7213   0.7781   -
+dance/column            0.13      0.12   least      119.3..   348.1   1.7213   0.7781   -   <<< DISAGREES
+
+== dance/column has no fixed point on the centimetre ==
+  declared 0.12 -> crown 1.7226, least 120.6mm, ceil -> 0.13
+  declared 0.13 -> crown 1.7213, least 119.3mm, ceil -> 0.12
+  declared 0.14 -> crown 1.7200, least 118.0mm, ceil -> 0.12
+  ceiling 1.6020 throughout; 1.3mm of crown per centimetre of pan.
+
+== npx vitest run src/components/chat/rigProbe.test.ts (family registered locally) ==
+290: FAIL  src/components/chat/rigProbe.test.ts > bundled motions on 'vroid-studio-dressup' > pans by what the measurements leave room for, not by a number dialled in
+291:AssertionError: dance in column: expected 0.13 to be 0.12 // Object.is equality
+311:      Tests  1 failed | 265 passed (266)

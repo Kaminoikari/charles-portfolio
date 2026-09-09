@@ -159,15 +159,38 @@ tail bone，本來會印的 `0.0°` 與掉了彈簧的一次執行印出來的�
 真的 0mm，量的是頭髮陷進外套殼的深度，剛體頭髮從來沒有進去過。`body max 10mm` 是髮根
 在頭皮底下，出貨的身體也是同一回事。
 
-## 三個模組裡跑出了兩個
+## 三個模組都有了，family 沒有登記
 
 `simulated`（`springsim.ts --clearance`）與 `measured`（`measure-motions.ts --write`）
 都已產出，兩者的 `rigSha` 同為 `ec3b9ab3…`、`restCrownY` 同為 1.5982，而這兩個數字是
 兩條獨立路徑算出來的：前者是蒙皮後所有列出部件的最高頂點，後者是
 `rigProbe.deriveRestCrown`。log 在 `springsim-0909.log` 與 `measure-0909.log`。
 
-手寫的決策模組還沒有：`crownFringe` 要在瀏覽器上量、`pans` 要宣告後反覆推導到收斂、
-waiver 與 `excluded` 要逐條決定。`approvedAllowlist` 在三份齊備之前仍然是空的。
+手寫的決策模組同日補上（`src/components/chat/clearance/vroid-studio-dressup.ts`）。
+`pans` 宣告後推導了四趟才不再動：十支 clip 裡八支要 pan，pass 2 動了三個（spin 的
+column 0.05→0.03、stretch 的 waist-up 0.08→0.07、dance 的 column 0.14→0.12），pass 3
+把 spin 推回 0.04、dance 推回 0.13，pass 4 除了 dance 全部同意。waiver 四項落在兩支
+clip 上，`excluded` 是空的，`crownFringe` 沿用 VRoid family 的 1.5 mm 並標明沒有在這
+具身體上量過（沒有東西會算它）。收據 `family3-0909-pans.log`。
+
+把 body 放到 `public/avatar/` 並把 family 加進 `AVATAR_FAMILIES` 之後，
+`rigProbe.test.ts` 的 per-family 區塊 266 條過 265 條。兩件事擋著登記，只有第一件是
+決定：
+
+1. **這具身體不能照現狀出版。** `rigProbe.test.ts` 從 `measuredOn` 到 `public/avatar`
+   找 body，那個目錄會被服務，而這個 repo 是公開的；匯出檔自己的 VRM meta 寫著
+   `allowRedistribution: false`、`modification: prohibited`、
+   `avatarPermission: onlyAuthor`。repo 裡其他每一具都相反（三具 VRoid 的是
+   `allowedUserName: Everyone`，VRM1 樣本是 `allowRedistribution: true`），這會是第一
+   個違反自己授權宣告被服務的檔。改這份宣告是匯出檔作者的事。
+2. **`dance` 在 column 上沒有推導同意的 pan**，也就是那唯一一條紅的。`panFor` 取
+   `least`（畫面必須上抬的毫米數）向上進位到公分。這具身體的 pan 回饋很弱，每公分只
+   讓 crown 動 1.3 mm，而 `least` 正好落在 120 mm 邊界一毫米內：檔案在 0.12 下模擬時
+   `least` 是 120.6 mm、進位成 0.13，在 0.13 下是 119.3 mm、進位成 0.12，來回互指而不
+   停在任何一個。宣告的是安全那側 0.13（`least` 在任何一次投影下都沒超過 120.6 mm）。
+   出貨的兩個 family 離邊界都很遠，這不是推導錯了，是這具身體踩在刀刃上。
+
+`approvedAllowlist` 仍是空的，缺的東西換了：不再是缺模組，而是這兩件。
 
 ## 沒有宣稱的事
 
