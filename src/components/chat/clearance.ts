@@ -112,6 +112,15 @@ export interface ClearanceSimulated {
   /** Served path of the body simulated. Need not be the body measured: same rig, own hair. */
   simulatedOn: string
   producedBy: string
+  /**
+   * No spring joint moves a `Hair_*` part of the body simulated, so every
+   * clip's `jumpDeg` is 0 because there was no tail bone to turn, rather than
+   * because none turned. Absent means the body's hair does spring. The crown
+   * is unaffected either way: it is the topmost vertex of everything the
+   * manifest lists and the solver runs every spring in the file regardless
+   * (scripts/avatar/evidence/parts-0909.md).
+   */
+  rigidHair?: true
   /** Topmost vertex of anything the simulated body draws, in bind pose. */
   restCrownY: number
   /** The same, projected through each frame's camera with no pan. */

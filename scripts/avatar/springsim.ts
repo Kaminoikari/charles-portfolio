@@ -1248,6 +1248,9 @@ export function writeClearance(args: Args, reports: Report[]): void {
     rigSha: rigSha(json),
     simulatedOn: servedPath(args.model),
     producedBy: producedAt(),
+    // Only when true, so the two files already shipped stay byte-identical
+    // when they are next regenerated.
+    ...(reports[0].rigidHair ? { rigidHair: true as const } : {}),
     restCrownY: Math.round(reports[0].restCrownY * 1e4) / 1e4,
     restCrownScreen: {
       waistUp: Math.round(reports[0].restCrownScreen.waistUp * 1e4) / 1e4,
