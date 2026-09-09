@@ -1,9 +1,13 @@
 """Focused tests for texture colour transforms."""
 import colorsys
 import io
+import json
 import os
 import sys
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import mock_open, patch
 
 import numpy as np
 from PIL import Image
@@ -11,6 +15,111 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import customise  # noqa: E402
+
+
+class ApplyPaletteTest(unittest.TestCase):
+    """The serialized sidecar must describe the serialized model's colours."""
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.directory = Path(self.temporary.name)
+        self.doc = {
+            'asset': {'version': '2.0'}, 'accessors': [], 'bufferViews': [],
+            'materials': [{'name': 'Cloth', 'pbrMetallicRoughness': {
+                'baseColorFactor': [0.8, 0.4, 0.2, 1.0]}}],
+            'extensions': {'VRM': {'materialProperties': [{'name': 'Cloth',
+                'vectorProperties': {'_Color': [0.8, 0.4, 0.2, 1.0],
+                                     '_ShadeColor': [0.4, 0.2, 0.1, 1.0]}}]}},
+        }
+        views = []
+        positions = customise.glb.add_accessor(self.doc, views, np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]], dtype=np.float32))
+        indices = customise.glb.add_accessor(self.doc, views, np.array([0, 1, 2], dtype=np.uint16))
+        self.doc['meshes'] = [{'name': 'Body', 'primitives': [{'attributes': {'POSITION': positions},
+            'indices': indices, 'material': 0, 'extras': {'part': 'ClothPart'}}]}]
+        self.source = self.directory / 'source.vrm'
+        customise.glb.save(str(self.source), self.doc, customise.glb.rebuild(self.doc, views))
+        self.manifest = self.directory / 'source.parts.json'
+        data = {'parts': {'ClothPart': {'mesh': 'Body', 'primitives': [0]}},
+                'palette': {'Cloth': {'base': [0.8, 0.4, 0.2],
+                                     'shade': [0.4, 0.2, 0.1], 'parts': ['ClothPart']}}}
+        with self.manifest.open('w') as handle:
+            json.dump(data, handle)
+
+    def apply_tint(self):
+        model = self.directory / 'result.vrm'
+        sidecar = self.directory / 'result.parts.json'
+        customise.apply(str(self.source), str(model), str(self.manifest),
+                        tints=[('Cloth', [0.2, 0.8, 0.4])], manifest_out=str(sidecar))
+        with sidecar.open() as handle:
+            manifest = json.load(handle)
+        return customise.glb.load(str(model))[0], manifest
+
+    def test_written_palette_base_matches_written_gltf(self):
+        model, manifest = self.apply_tint()
+        self.assertEqual(manifest['palette']['Cloth']['base'],
+                         model['materials'][0]['pbrMetallicRoughness']['baseColorFactor'][:3])
+
+    def test_written_palette_shade_matches_written_vrm(self):
+        model, manifest = self.apply_tint()
+        self.assertEqual(manifest['palette']['Cloth']['shade'],
+                         model['extensions']['VRM']['materialProperties'][0]['vectorProperties']['_ShadeColor'][:3])
+
+
+class TintTest(unittest.TestCase):
+    def setUp(self):
+        self.vectors = {'_Color': [0.8, 0.4, 0.2, 0.7],
+                        '_ShadeColor': [0.4, 0.1, 0.15, 0.6]}
+        self.doc = {
+            'materials': [{'name': 'Cloth', 'pbrMetallicRoughness': {
+                'baseColorFactor': [0.8, 0.4, 0.2, 0.7]}}],
+            'extensions': {'VRM': {'materialProperties': [
+                {'name': 'Cloth', 'vectorProperties': self.vectors}]}},
+            'meshes': [], 'accessors': [], 'bufferViews': [],
+        }
+        self.rgb = (0.2, 0.8, 0.4)
+
+    def test_tint_synchronises_vrm0_lit_colour_and_preserves_alpha(self):
+        customise.tint(self.doc, 'Cloth', self.rgb)
+
+        self.assertEqual(self.vectors['_Color'], [0.2, 0.8, 0.4, 0.7])
+
+    def test_tint_preserves_each_shade_to_lit_ratio_and_shade_alpha(self):
+        customise.tint(self.doc, 'Cloth', self.rgb)
+
+        np.testing.assert_allclose(self.vectors['_ShadeColor'], [0.1, 0.2, 0.3, 0.6])
+
+    def test_tint_uses_neutral_shading_for_an_originally_black_channel(self):
+        self.vectors['_Color'][0] = 0.0
+        self.vectors['_ShadeColor'][0] = 0.0
+
+        customise.tint(self.doc, 'Cloth', self.rgb)
+
+        self.assertEqual(self.vectors['_ShadeColor'][0], self.rgb[0])
+
+    def test_tint_keeps_plain_gltf_supported(self):
+        del self.doc['extensions']
+
+        customise.tint(self.doc, 'Cloth', self.rgb)
+
+        self.assertEqual(self.doc['materials'][0]['pbrMetallicRoughness']
+                         ['baseColorFactor'], [0.2, 0.8, 0.4, 0.7])
+
+    def test_tint_refuses_a_misaligned_vrm0_material_table(self):
+        self.doc['extensions']['VRM']['materialProperties'] = []
+
+        with self.assertRaisesRegex(SystemExit, 'materialProperties'):
+            customise.tint(self.doc, 'Cloth', self.rgb)
+
+    def test_apply_saves_the_vrm0_tint_from_the_requested_recipe(self):
+        with patch.object(customise.glb, 'load', return_value=(self.doc, b'')), \
+                patch('builtins.open', mock_open(read_data='{"parts": {}}')), \
+                patch.object(customise.glb, 'save', return_value=0) as save:
+            customise.apply('source.vrm', 'result.vrm', 'parts.json',
+                            tints=[('Cloth', self.rgb)])
+
+        written = save.call_args.args[1]
+        self.assertEqual(written['extensions']['VRM']['materialProperties'][0]
+                         ['vectorProperties']['_Color'], [0.2, 0.8, 0.4, 0.7])
 
 
 class RetoneTest(unittest.TestCase):

@@ -420,15 +420,30 @@ def _greyscale(doc, views, texture_index, tolerance=12):
 
 def tint(doc, material_name, rgb, views=None):
     """Set a flat material's base colour. Only works where colour is a factor."""
+    materials = doc.get('materials', ())
+    vrm = doc.get('extensions', {}).get('VRM')
+    properties = None if vrm is None else vrm.get('materialProperties', [])
+    if properties is not None and len(properties) != len(materials):
+        raise SystemExit('materialProperties 與 materials 不同序，不能同步乘色')
     hit = 0
-    for mat in doc.get('materials', ()):
+    for index, mat in enumerate(materials):
         if mat.get('name') != material_name:
             continue
         pbr = mat.setdefault('pbrMetallicRoughness', {})
         tex = pbr.get('baseColorTexture', {}).get('index')
         if tex is not None and not (views is not None and _greyscale(doc, views, tex)):
             raise SystemExit(f'{material_name} 的顏色在貼圖裡，要用 hue 而不是 tint')
-        alpha = pbr.get('baseColorFactor', [1, 1, 1, 1])[3]
+        previous = pbr.get('baseColorFactor', [1, 1, 1, 1])
+        alpha = previous[3]
+        if properties is not None:
+            vectors = properties[index].setdefault('vectorProperties', {})
+            lit = vectors.get('_Color', previous)
+            shade = vectors.get('_ShadeColor', lit)
+            # A black source channel has no recoverable shade ratio.
+            ratio = [dark / light if light > 0 else 1.0
+                     for dark, light in zip(shade[:3], lit[:3])]
+            vectors['_Color'] = [*rgb, alpha]
+            vectors['_ShadeColor'] = [*[c * r for c, r in zip(rgb, ratio)], shade[3]]
         pbr['baseColorFactor'] = [rgb[0], rgb[1], rgb[2], alpha]
         for ext in mat.get('extensions', {}).values():
             if isinstance(ext, dict) and 'color' in ext:
@@ -865,10 +880,28 @@ def remap(doc, manifest, dropped=()):
     return manifest
 
 
+def sync_palette(doc, manifest):
+    """Sidecar colours describe material factors after all requested changes.
+
+    Texture hue changes leave these factors alone. Sampling the texture here
+    would change the palette's meaning and apply its colour twice downstream.
+    """
+    materials = {material['name']: material for material in doc['materials']}
+    properties = doc.get('extensions', {}).get('VRM', {}).get('materialProperties', [])
+    shades = {prop['name']: prop.get('vectorProperties', {}).get('_ShadeColor')
+              for prop in properties}
+    for name, entry in manifest.get('palette', {}).items():
+        material = materials[name]
+        base = material.get('pbrMetallicRoughness', {}).get('baseColorFactor', [1.0] * 4)[:3]
+        entry['base'] = list(base)
+        entry['shade'] = list((shades.get(name) or base)[:3])
+
+
 def apply(src, dst, manifest_path, drop=(), tints=(), hues=(), manifest_out=None):
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
-    manifest = json.load(open(manifest_path))
+    with open(manifest_path) as handle:
+        manifest = json.load(handle)
 
     n = drop_parts(doc, views, manifest, drop) if drop else 0
     # Before the sweep: a key the deletion emptied has to lose its accessors in
@@ -892,7 +925,9 @@ def apply(src, dst, manifest_path, drop=(), tints=(), hues=(), manifest_out=None
     size = glb.save(dst, doc, blob)
     if manifest_out:
         remap(doc, manifest, drop)
-        json.dump(manifest, open(manifest_out, 'w'), indent=1)
+        sync_palette(doc, manifest)
+        with open(manifest_out, 'w') as handle:
+            json.dump(manifest, handle, indent=1)
     return {'primitives_removed': n, 'accessors_dropped': dropped[0],
             'views_dropped': dropped[1], 'bytes': size,
             'shape_keys_dropped': orphan_keys,
