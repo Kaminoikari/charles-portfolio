@@ -1,0 +1,111 @@
+# Seven defences, seven mutations, each red on its own named test. 2026-09-10.
+#
+# The restore baseline is the COMMITTED fix, the commit that carries this file,
+# so the runner restores with `git checkout -- <path>`, which would have thrown
+# the fix away had this been run before the commit. No hash is quoted: this file
+# was written between the commit and its amend, and a hash written here would
+# name the orphan.
+#
+# Runner: scripts kept in the session scratchpad. It counts the pattern before
+# touching anything and stops unless it is hit exactly once, then writes the
+# mutation and asserts the replacement is present before running vitest, so a
+# mutation that fails to land reports an error instead of a green suite. The
+# second assert is inside the try whose finally restores the file; the first is
+# above it, which is where it belongs, since nothing has been written yet.
+#
+# It also refuses to touch a file that `git status --porcelain` reports as
+# dirty. That guard exists because this runner's restore step is
+# `git checkout -- <path>`, a whole-file overwrite from HEAD, and running it on
+# a file carrying uncommitted work destroys that work silently and exits 0. It
+# happened to avatarPitch.test.ts on this change, between the second review
+# round and its commit.
+#
+# One scope for all seven:
+#   npx vitest run src/components/chat/avatarPitch.test.ts       (31 tests)
+#
+#   P1  nod        o.hp += fwd * Math.sin(p * Math.PI * 2) * 0.14 * env
+#                        -> o.hp += Math.sin(p * Math.PI * 2) * 0.14 * env
+#   P2  bounce     o.sx += fwd * w * 0.05   ->  o.sx += w * 0.05
+#   P3  bounce     o.hp += fwd * w * 0.05   ->  o.hp += w * 0.05
+#   P4  toeLook    o.hp += fwd * env * 0.3  ->  o.hp += env * 0.3
+#   P5  tilt       apply: (_p, env, v, o) => {  o.hr += v * 0.16 * env
+#                        ->  apply: (_p, env, v, o, fwd) => {
+#                                   o.hr += fwd * v * 0.16 * env
+#   P6  the test   BLIND_SAMPLES = [0, 0.125, 0.25, 0.5, 0.75, 1]
+#                        ->  [0, 0.25, 0.5, 0.75, 1]
+#   P7  the test   drop 'hipTwist' from VERSION_BLIND, so one gesture belongs
+#                  to neither list
+#
+# P2 and P3 are separate because `bounce` writes the same weight twice, on the
+# spine and on the head. Dropping either factor alone leaves the other's test
+# green, which is why one assertion for the gesture would have pinned only half
+# of it.
+#
+# P5 CHANGES THE SIGNATURE AS WELL AS THE TERM, on purpose. A first version
+# replaced only `v * 0.16 * env`, and `tilt`'s apply does not declare `fwd`, so
+# the mutant threw `ReferenceError: fwd is not defined` and reddened two tests
+# by crashing. A crash proves nothing about an assertion. The mutation above is
+# the whole, compilable over-application someone signing "every axis" would
+# write, and it reddens the one test that is about the facing.
+#
+# P6 and P7 mutate the TEST rather than the engine, because what they defend is
+# the test's own coverage. P6: `wiggle` is sin(4*pi*p), so on the quarter points
+# alone every sample lands on one of its own zeros and the version-blind
+# comparison would have been between two pieces of floating-point residue. It
+# was written that way, and a reviewer found it. P7: the two lists have to
+# account for every name in the table, or an eleventh gesture arrives covered by
+# nothing while every test here stays green. A reviewer found that one too.
+#
+# P7's tally reads 29 rather than 31 because dropping a gesture from
+# VERSION_BLIND also removes the two tests that gesture generates. The point is
+# the single FAIL, not the total.
+#
+# RESULT. One red per mutation, seven distinct tests, no extras.
+#
+   == P1 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > nod starts by dipping her chin toward the viewer
+
+   == P2 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > bounce dips her torso toward the viewer
+
+   == P3 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > bounce dips her head toward the viewer too, not just her torso
+
+   == P4 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > toeLook drops her eye, agreeing with the eye target it sends down
+
+   == P5 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > tilt reads the same on either facing > gives identical offsets at both signs of fwd
+
+   == P6 ==
+      Tests  1 failed | 30 passed (31)
+      FAIL  src/components/chat/avatarPitch.test.ts > wiggle reads the same on either facing > is sampled somewhere it actually moves
+
+   == P7 ==
+      Tests  1 failed | 28 passed (29)
+      FAIL  src/components/chat/avatarPitch.test.ts > sorts every gesture the table has into one of the two groups
+#
+# WHY ONLY `vroid-sample-b` REDDENS ON P1 TO P4. `facingSign('1')` is +1, so
+# removing a `fwd *` factor is the identity on the two 1.0 bodies and changes
+# nothing there. The 0.x family is the one that carries the sign, and it is also
+# the one every offered look belongs to. A mutation that reddened all three
+# families would mean the factor was doing something on a body where it should
+# not.
+#
+# P5, P6 and P7 redden once rather than three times because their tests are not
+# per-family: they read gestureOffsets and the table's own name list, and never
+# touch a rig.
+#
+# WHAT IS NOT MUTATION-BACKED, and deliberately. The two `axis semantics` tests
+# measure the rig rather than a defence in this diff: no line of the gesture
+# table can be changed to make "a positive yaw turns her toward her own left"
+# false. They are there because they carry the argument for the scope of the
+# fix, and they would redden if a future family body broke the assumption the
+# scope rests on.
+#
+# The unmutated file is green: 31 passed.

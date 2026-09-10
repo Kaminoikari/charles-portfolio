@@ -216,8 +216,8 @@ function pinArms(v: VRM) {
 // No gesture writes a bone directly any more, which is why none of them needs
 // an interruption path: the offsets simply stop being accumulated.
 type GestureOffsets = {
-  hp: number // head pitch (+ looks down)
-  hy: number // head yaw (+ turns to her left)
+  hp: number // head pitch (+ toward the MODEL's +Z; see `fwd` below)
+  hy: number // head yaw (+ turns to her left, on either version)
   hr: number // head roll
   sx: number // spine pitch
   sy: number // spine yaw
@@ -235,16 +235,18 @@ type GestureDef = {
   // existed for named arm poses, which motion capture owns now.
   hold?: number
   // `fwd` is avatarMode.facingSign for the body being posed: +1 when a positive
-  // pitch carries her head toward the viewer, -1 when it carries her away. Only
-  // `bow` reads it today, which is why adding the parameter changed nothing
-  // else: the others simply ignore an argument they do not name.
+  // pitch carries her head toward the viewer, -1 when it carries her away.
   //
-  // Ignoring it is not the same as not needing it. `toeLook` (`hp += 0.3`) and
-  // `bounce` (`sx`/`hp` off an absolute sine) pitch in ONE direction, so both
-  // mean something about the viewer on a body that faces the other way. That is
-  // a live defect on the three offered looks and it is older than this
-  // parameter: `toeLook` says it peers at the floor and on a 0.x body it lifts
-  // her chin 17 degrees while the eye target drops. Recorded, not fixed here.
+  // The table writes pitch on eight lines, on `hp` and `sx`. Six of them
+  // multiply by this, and the two in `leanBack` are the deliberate exception,
+  // because leaning toward the model's own +Z is what that pose is. The
+  // remaining gestures write yaw, roll or the eye target, none of which mean
+  // something different on the two versions: yaw turns her toward her own left
+  // on both, roll mirrors but a head tilted left reads the same as one tilted
+  // right, and the eye target is world space. The first two are measured, not
+  // assumed, in avatarPitch.test.ts. The third is read off the scene graph:
+  // `eyeTarget` is added to the root scene, a sibling of the `loaded.scene`
+  // that VRMUtils.rotateVRM0 turns, so nothing rotates it.
   apply: (p: number, env: number, v: number, o: GestureOffsets, fwd: -1 | 1) => void
 }
 
@@ -299,11 +301,15 @@ const GESTURES: Record<GestureName, GestureDef> = {
       o.hp += env * 0.18
     },
   },
+  // Two down-beats inside one smooth envelope, on whichever body is loaded.
+  // The curve is symmetric, so the facing term moves its PHASE and not its
+  // depth: without it a 0.x body answers "yes" chin-up first. At the beat's own
+  // peak, 274ms in, her eye leads 6.61mm toward the viewer on a 1.0 body and
+  // 5.97mm on a 0.x one (evidence/pitch-0910.log).
   nod: {
     dur: 0.9,
-    // two down-beats inside one smooth envelope
-    apply: (p, env, _v, o) => {
-      o.hp += Math.sin(p * Math.PI * 2) * 0.14 * env
+    apply: (p, env, _v, o, fwd) => {
+      o.hp += fwd * Math.sin(p * Math.PI * 2) * 0.14 * env
     },
   },
   // -- head-pat response -----------------------------------------------------
@@ -345,13 +351,18 @@ const GESTURES: Record<GestureName, GestureDef> = {
       o.hr += -v * w * 0.03
     },
   },
+  // Three quick little body dips, a hop feel without any translation. Both
+  // terms are pitch and both resolve against the facing, or the dip becomes a
+  // backward rock on a 0.x body. At the deepest dip, 600ms in, the torso
+  // carries her head 21.35mm toward the viewer on a 1.0 body and 19.54mm on a
+  // 0.x one, and the two terms together carry her eye 27.49 and 25.09mm
+  // (evidence/pitch-0910.log).
   bounce: {
     dur: 1.2,
-    // three quick little body dips — a hop feel without any translation
-    apply: (p, env, _v, o) => {
+    apply: (p, env, _v, o, fwd) => {
       const w = Math.abs(Math.sin(p * Math.PI * 3)) * env
-      o.sx += w * 0.05
-      o.hp += w * 0.05
+      o.sx += fwd * w * 0.05
+      o.hp += fwd * w * 0.05
     },
   },
   hipTwist: {
@@ -363,11 +374,16 @@ const GESTURES: Record<GestureName, GestureDef> = {
       o.hy += -v * w * 0.06
     },
   },
+  // Peers down at the floor by her feet. The eye target is world space and
+  // always went down; the head pitch is the part that needed the facing, and
+  // without it a 0.x body lifted her chin 17 degrees while sending her gaze to
+  // the floor. At the envelope's peak, 1000ms in, her eye now drops 9.13mm on a
+  // 1.0 body and 11.31mm on a 0.x one (evidence/pitch-0910.log). `hy` keeps no
+  // facing term: yaw does not mirror.
   toeLook: {
     dur: 2.0,
-    // peers down at the floor by her feet
-    apply: (_p, env, v, o) => {
-      o.hp += env * 0.3
+    apply: (_p, env, v, o, fwd) => {
+      o.hp += fwd * env * 0.3
       o.hy += v * 0.1 * env
       o.ey += -env * 2
     },

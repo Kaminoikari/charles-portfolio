@@ -113,12 +113,14 @@ describe('the rest pose takes the body it is being written on', () => {
   })
 
   it('hands the gesture table THIS body version too', () => {
-    // The same fact one layer along, and it was left open for a day: `bow`
-    // resolves its pitch against which way the body faces, avatarBow.test.ts
-    // proves the resolution is right for each version by posing the real
-    // skeleton, and neither can see what the loop passes. A literal here bows
-    // every 0.x body backwards again, which is the defect of 2026-09-10
-    // (evidence/bow-0910.md), and the whole suite stays green while it does.
+    // The same fact one layer along, and it was left open for a day: four
+    // gestures resolve their pitch against which way the body faces, and
+    // avatarBow.test.ts (`bow`) and avatarPitch.test.ts (`nod`, `bounce`,
+    // `toeLook`) prove the resolution is right for each version by posing the
+    // real skeleton. None of them can see what the loop passes. A literal here
+    // bows every 0.x body backwards again, which is the defect of 2026-09-10
+    // (evidence/bow-0910.md, evidence/pitch-0910.md), and the whole suite stays
+    // green while it does.
     expect(SOURCE, 'the gesture loop does not read the version off the body').toMatch(
       /def\.apply\(p, env, gesture\.v, OFF, facingSign\(vrm\?\.meta\.metaVersion \?\? '1'\)\)/,
     )

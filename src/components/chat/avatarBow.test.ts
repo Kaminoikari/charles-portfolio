@@ -1,9 +1,13 @@
 // Which way the procedural bow actually carries her, on each family's own body.
 //
-// Its own file rather than a block in rigProbe.test.ts, because it is the only
-// test that needs `avatarGuideEngine`, and that module pulls GLTFLoader and
-// three-vrm-animation in at import time: a 269-test file about rigs should not
-// carry the engine's loader graph to ask one question.
+// Its own file rather than a block in rigProbe.test.ts, because it needs
+// `avatarGuideEngine`, and that module pulls GLTFLoader and three-vrm-animation
+// in at import time: a 269-test file about rigs should not carry the engine's
+// loader graph to ask one question. avatarPitch.test.ts, added the same day,
+// covers the rest of the same class the same way. `bow` stays here because it
+// has a browser pass of its own, from the commit that fixed it
+// (evidence/bow-0910-browser.log); the other three share a later one
+// (evidence/pitch-0910-browser.log).
 //
 // It was first written as a block in that file and moved here on a suspicion
 // that the import was costing the suite real time. That suspicion did not

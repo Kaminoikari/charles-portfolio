@@ -1,0 +1,128 @@
+# nod, bounce and toeLook, measured in the browser through the real engine,
+# before and after the facing term. 2026-09-10.
+#
+# The page is a dev-server session, so this file is the only record of these
+# numbers, the same reason bow-0910-browser.log and armrest-0909-browser.log
+# exist.
+#
+#   npm run dev
+#   http://localhost:5173/scripts/avatar/live-preview.html?mikadebug=1
+#   ?mikadebug=1 exposes window.__mikaVrm and window.__mikaHandle.
+#   Playwright drove both passes. 143 to 157 frames in each 2.6s window.
+#
+# Body: public/avatar/mika-milfy-12.vrm, the milfy look the site serves, which
+#   reports VRM metaVersion 0 and carries scene.rotation.y = pi from
+#   VRMUtils.rotateVRM0. facingSign('0') is -1, so a correct pitch term here is
+#   NEGATIVE.
+#
+# WHAT IS READ, AND WHY IT IS NOT THE EYE. bow-0910-browser.log reads the eye's
+# world position and needs a 40-sample baseline to clear the idle floor, because
+# breathing and weight shift move her eyes by tens of millimetres. Two of the
+# three gestures here are too small for that: nod's whole pitch is 0.14 rad,
+# worth about 8mm of eye swing against a floor measured below at 16mm.
+#
+# So this pass reads the gesture term itself, which the engine hands back
+# exactly. With no clip running it writes, on the same frame,
+#
+#     head.rotation.x = pitch * 0.7 + OFF.hp
+#     neck.rotation.x = pitch * 0.3
+#
+# and `pitch` is the mode-driven gaze, the only other writer. Two bones, two
+# unknowns:
+#
+#     OFF.hp = head.rotation.x - (7 / 3) * neck.rotation.x
+#
+# `OFF.sx` needs no algebra at all: spine.rotation.x = OFF.sx outright.
+#
+# THE CONTROL RUN PROVES THE SEPARATION. `__none__` is the same 2.6s window with
+# no gesture clicked. Over 157 frames the recovered hp and sx are 0.000 and
+# 0.000, not "small": the gaze cancels exactly. The eye position in the same
+# control window swings 16mm in Z and 5mm in Y, which is the floor the eye
+# reading would have had to clear.
+#
+# The mode is `listening`, not `idle`, for the length of both passes. In idle
+# the engine fires an unprompted act or a motion clip every 2.5 to 4 seconds and
+# would have landed one on top of a gesture under measurement; with mode not
+# idle it skips that block entirely and holds the timer at 4s or more.
+#
+# BEFORE is the shipped code with the three `fwd *` factors taken back out, on
+# the same dev server, confirmed by curl on the served module before the pass.
+# AFTER is the code as committed, confirmed the same way.
+#
+#   gesture   quantity        BEFORE            AFTER
+#   nod       peak hp        +0.108 @  256ms   -0.108 @  258ms
+#             first beat     +0.030 @   88ms   -0.030 @   91ms
+#   bounce    peak hp        +0.050 @  587ms   -0.050 @  600ms
+#             peak sx        +0.050 @  587ms   -0.050 @  600ms
+#             first beat     +0.034 @  487ms   -0.034 @  500ms
+#   toeLook   peak hp        +0.300 @ 1000ms   -0.300 @  994ms
+#             first beat     +0.031 @   66ms   -0.032 @   64ms
+#   __none__  peak hp         0.000             0.000
+#             peak sx         0.000             0.000
+#
+# Opposite signs on all nine gesture rows, and the two `__none__` rows read
+# 0.000 in both passes, which is what a control is for. Eight of the nine agree
+# in magnitude to three decimals; the ninth is toeLook's first beat, +0.031
+# against -0.032, because
+# "first frame past 0.03 rad" lands on a different frame in the two passes and
+# the envelope is still climbing there. On a 0.x body a negative head pitch is
+# chin DOWN: the offline probe (pitch-0910.log) has hp = -0.14 carrying this
+# family's eye 7.67mm toward her face and 4.70mm down.
+#
+# nod is the one whose SIZE does not change, only its phase, so its evidence is
+# the "first beat" row: the first frame whose recovered hp clears 0.03 rad. It
+# was positive, and a positive pitch on a 0.x body is chin UP. She answered
+# "yes" by lifting her chin first.
+#
+# WHAT THE EYE SAW ANYWAY, for the two that clear the floor. At the toeLook peak
+# her eye moved 8mm UP before and 16mm DOWN after, against a control floor of
+# 5mm in Y. Before the fix the gesture sent her gaze target down and her head
+# up at the same time.
+#
+== the screenshots, each bound to the frame it was read on ==
+#   file                             shot at   recovered hp   argmax    ink
+#   pitch-0910-toelook-before.png     997.3ms      +0.300     997.3ms   0.203
+#   pitch-0910-toelook-after.png      996.8ms      -0.300     996.8ms   0.200
+#
+# Both are the argmax of their own trace, not a nominal 990ms: the capture
+# records elapsed time and the recovered hp every frame, reads the canvas on the
+# first frame at or past 990ms, and afterwards confirms that frame carried the
+# largest |hp| of the whole trace. It did, in both.
+#
+# `ink` is the fraction of a 160px-wide copy of the FULL canvas that is not
+# black, taken in the same frame. It guards the one silent failure: a canvas
+# read on the wrong side of a paint comes back blank, and a blank PNG still
+# looks like a successful screenshot. 0.203 and 0.200 are the character; a
+# cleared buffer reads 0. The buffer is there to be read because
+# avatarGuideEngine sets preserveDrawingBuffer from `?mikadebug=1` and nothing
+# else (avatarGuideEngine.ts, the `capturable` const); an earlier draft of this
+# paragraph said `?n=1`, which nothing in src/ or scripts/ reads.
+#
+# THE PAIR ARE TWO POSES, checked the way bow-0910.md had to be after both
+# reviewers caught a pair that were not.
+#
+# THE SAMPLE IS THE TWO COMMITTED FILES, pitch-0910-toelook-before.png and
+# -after.png, 944x856 each, both cropped from the 2140x1456 canvas with ONE
+# shared box (608,344)-(1552,1200). A first draft of this block quoted the same
+# four measures taken on the uncropped 2140x1456 frames, which are not committed,
+# so its centroid of 1018.4 was not even a row that exists in the artifact beside
+# it. Foreground is a pixel whose RGB differs from the corner background by more
+# than 12 on the channel mean:
+#
+#   foreground pixels      409,484 before against 413,592 after
+#   topmost foreground row      34 against 50, so 16px apart
+#   foreground centroid, Y  538.39 against 523.75, so 14.65px apart
+#   mask XOR                                            56,052px
+#   mask XOR over mean foreground                          13.6%
+#
+# No count is carried across from the pair that failed review on 09-10: those
+# were a different crop of a different body pose and their counts are not
+# comparable to these. What that pair was is the point: two near-idle frames,
+# 0.6px of centroid apart on their own crop (bow-0910-browser.log). These two
+# are not that.
+#
+# NOT MEASURED HERE: the other seven gestures. Which ones read the facing is
+# settled by the diff and pinned by avatarPitch.test.ts, whose VERSION_BLIND
+# block asserts that `wiggle`, `tilt`, `glance`, `swayStep`, `hipTwist` and
+# `leanBack` return identical offsets at both signs of `fwd`. A browser sweep
+# would be a weaker version of that.
