@@ -84,6 +84,11 @@ neck.rotation.x = pitch * 0.3
 spine.rotation.x = OFF.sx
 ```
 
+Those two lines carry a facing term as of aim-0910.md, later the same day:
+`fwd * pitch * 0.7` and `fwd * pitch * 0.3`. The recovery survives it unchanged,
+because both halves carry the same `fwd` and it cancels in the subtraction. The
+numbers below were read before that change and do not need re-taking.
+
 A control run with no gesture clicked reads 0.000 and 0.000 over 157 frames,
 which is what makes that separation a measurement rather than a hope.
 
@@ -115,10 +120,14 @@ two near-idle frames, 0.6px of centroid apart on their own crop
 
 ## 5. What holds it
 
-`avatarPitch.test.ts`, 31 tests: six per registered family body, two per
-version-blind gesture, and one that checks the two lists between them account
-for every gesture the table has. Seven mutations, each red on exactly one named
-test, listed with its output in `pitch-0910-mutations.log`. `bounce` gets two of
+`avatarPitch.test.ts`, as this commit left it: tests per registered family body
+for each of the three gestures, two per version-blind gesture, and one that
+checks the two lists between them account for every gesture the table has. The
+file grew again the same day, when the layer under the gestures turned out to
+carry the same defect (aim-0910.md), which added a block per family and a
+pitch-channel guard. No count of it is quoted here for that reason. Seven
+mutations, each red on exactly one named test, listed with its output in
+`pitch-0910-mutations.log`. `bounce` gets two of
 them because it writes the same weight on the spine and on the head, and
 dropping either factor alone leaves the other's test green.
 

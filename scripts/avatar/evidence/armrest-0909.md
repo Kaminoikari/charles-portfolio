@@ -146,8 +146,9 @@ bodies would bow toward it. It reads as a bow on screen because her head drops
 26mm at the same time, and `toeLook` reads as looking down because it also
 drives the eye target down by 2.
 
-FIXED LATER, on 2026-09-10, in two commits: `bow` first (bow-0910.md) and then
-`nod`, `bounce` and `toeLook` (pitch-0910.md). The paragraph below is what was
+FIXED LATER, on 2026-09-10, in three commits: `bow` first (bow-0910.md), then
+`nod`, `bounce` and `toeLook` (pitch-0910.md), then the mode-driven gaze
+underneath all of them (aim-0910.md). The paragraph below is what was
 decided on 09-09 and is kept as written.
 
 NOT FIXED HERE. It is outside what this change was for, the two 1.0 bodies are

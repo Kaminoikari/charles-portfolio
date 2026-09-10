@@ -1,0 +1,155 @@
+# Each defence in the gaze fix, removed on its own, with the test that noticed.
+# 2026-09-10. Runner: a scratchpad script that swaps one or two strings, runs the
+# four avatar test files, and then writes back the exact bytes it read at the
+# top. It never runs `git checkout -- <path>`, because these files carried
+# uncommitted work while this ran and a checkout would have taken it with them.
+# It does not undo a mutation by reverse string swap either: W4's first part
+# replaces a line with the empty string, and reversing that is `replace('', old)`,
+# which python splices between every character. It did exactly that to the engine
+# file on the first attempt, 1777 lines into 170k, which is why the restore is
+# now "write `s` back" and the assertion after it compares the whole file.
+#
+# Scope for every row: avatarPitch.test.ts, avatarBow.test.ts,
+# avatarGuideEngine.wiring.test.ts and avatarMode.test.ts, 150 tests together.
+#
+#   A1  aimPitchPose drops the facing from the HEAD half only
+#   A2  aimPitchPose drops it from the NECK half only
+#   A3  aimYawPose's three terms take a sign. On a 0.x body fwd is -1, so on
+#       that family this is `fwd * yaw * ...` written out; on the two 1.0
+#       bodies version-signing would be a no-op, so a plain flip is strictly
+#       stronger.
+#   W1  the engine computes the whole gaze inline again instead of calling
+#       aimPitchPose and aimYawPose. Identical motion, so only the tests that
+#       read the engine's source can see it, and it breaks two properties at
+#       once, which is why it reddens two of them.
+#   W2  the engine reads facingSign('1') instead of the body's own version
+#   W3  the gaze call is kept but handed a literal 1 instead of the facing
+#   W4  the facing is hoisted out of frame() to the top of initAvatarGuide, a
+#       plausible "compute it once" follow-up. Every string the wiring test
+#       matched before this mutation was written survives it, and `vrm` is null
+#       up there, so `?? '1'` pins fwd to +1 for the life of the engine and
+#       every 0.x body regresses. This is why those assertions are scoped to
+#       frameBody() rather than to the whole file.
+#   W5  the eye target becomes `Math.sin(pitch) * 4`. That expression is what
+#       DEFINES which way `pitch` means, and avatarPitch.test.ts holds only a
+#       copy of it, so before this assertion existed the flip left the bones and
+#       the target disagreeing again with every other test green.
+#   W6  the GESTURE call is handed a literal 1. Same shape as W3 one layer up,
+#       and it exists because the two assertions in that test are two defences:
+#       a reviewer pointed out that W2 and W4 both land on the first one.
+#   M1  `tilt`, a version-blind gesture, starts writing the chest pitch
+#       (`o.cx`) that no gesture in the table writes today
+#
+# WHICH TEST EACH ONE REDDENS. The map is not one-to-one and does not need to
+# be: what matters is that no defence is unguarded and no mutation passes. W1
+# reddens two because it removes two properties in one edit. W3 shares a test
+# with W1, and W2, W4 and W6 share one with each other, each attacking it from a
+# different side.
+#
+#   A1  head term agrees with the eye target when looking down
+#       head term agrees with the eye target when looking up
+#   A2  neck term agrees with the eye target when looking down
+#       neck term agrees with the eye target when looking up
+#   A3  all three yaw terms turn her toward her own left, on either version
+#   W1  poses the gaze through avatarMode rather than a second copy of the ratios
+#       resolves the gaze pitch against the body being posed, not a literal
+#   W2  reads the facing off the body every frame, and gives it to the gestures
+#   W3  resolves the gaze pitch against the body being posed, not a literal
+#   W4  reads the facing off the body every frame, and gives it to the gestures
+#   W5  sends the eye target DOWN for a positive pitch, which is what defines the sign
+#   W6  reads the facing off the body every frame, and gives it to the gestures
+#   M1  tilt
+#
+# VERBATIM RUNNER OUTPUT
+#
+# == A1 ==
+#    Tests  2 failed | 148 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-sample-b' > head term agrees with the eye target when looking down
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-sample-b' > head term agrees with the eye target when looking up
+#
+# == A2 ==
+#    Tests  2 failed | 148 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-sample-b' > neck term agrees with the eye target when looking down
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-sample-b' > neck term agrees with the eye target when looking up
+#
+# == A3 ==
+#    Tests  3 failed | 147 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vrm1-twist-sample' > all three yaw terms turn her toward her own left, on either version
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-sample-b' > all three yaw terms turn her toward her own left, on either version
+#    FAIL  src/components/chat/avatarPitch.test.ts > the mode-driven gaze on 'vroid-studio-dressup' > all three yaw terms turn her toward her own left, on either version
+#
+# == W1 ==
+#    Tests  2 failed | 148 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > poses the gaze through avatarMode rather than a second copy of the ratios
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > resolves the gaze pitch against the body being posed, not a literal
+#
+# == W2 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > reads the facing off the body every frame, and gives it to the gestures
+#
+# == W3 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > resolves the gaze pitch against the body being posed, not a literal
+#
+# == W4 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > reads the facing off the body every frame, and gives it to the gestures
+#
+# == W5 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > sends the eye target DOWN for a positive pitch, which is what defines the sign
+#
+# == W6 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the body version reaches everything that is posed with it > reads the facing off the body every frame, and gives it to the gestures
+#
+# == M1 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > every pitch in the table is either resolved or a named exception > tilt
+#
+# A1 and A2 redden two cases each because the assertion is an `it.each` over
+# looking down and looking up: the same assertion on the same family, and no
+# other family moves, which is what a version fix should look like. A3 reddens
+# all three families because a plain sign flip is wrong on every body, not only
+# on the mirrored one.
+#
+# M1 lands by ADDING a line, so the runner's landing check is "the file changed
+# and the new text is in it" rather than "the old text is gone": here the old
+# text is a prefix of the new one. A first attempt asserted the latter and
+# refused to run, which is the check doing its job.
+#
+# THE SEVEN FROM THE GESTURE PHASE, RE-RUN. This commit edits
+# avatarPitch.test.ts, which carries their assertions, so the output captured in
+# pitch-0910-mutations.log could have gone stale. It has not: each still reddens
+# exactly the one test it did there.
+#
+# == P1 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > nod starts by dipping her chin toward the viewer
+#
+# == P2 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > bounce dips her torso toward the viewer
+#
+# == P3 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > bounce dips her head toward the viewer too, not just her torso
+#
+# == P4 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > procedural pitch on 'vroid-sample-b' > toeLook drops her eye, agreeing with the eye target it sends down
+#
+# == P5 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > tilt reads the same on either facing > gives identical offsets at both signs of fwd
+#
+# == P6 ==
+#    Tests  1 failed | 149 passed (150)
+#    FAIL  src/components/chat/avatarPitch.test.ts > wiggle reads the same on either facing > is sampled somewhere it actually moves
+#
+# == P7 ==
+#    Tests  1 failed | 147 passed (148)
+#    FAIL  src/components/chat/avatarPitch.test.ts > sorts every gesture the table has into one of the two groups
+#
+# P7 runs 148 tests rather than 150 because dropping `hipTwist` from
+# VERSION_BLIND also drops the two `it`s that block generates for it.

@@ -79,6 +79,8 @@ import {
 import { familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   armRestPins,
+  aimPitchPose,
+  aimYawPose,
   facingSign,
   EMOTION_RECIPES,
   emotionChannelValues,
@@ -1338,6 +1340,13 @@ export function initAvatarGuide(
       // listening still tracks the visitor). Nothing here touches an arm any
       // more: arms are either pinned or driven by a clip. All the curves live
       // in the GESTURES table.
+
+      // The body's own version, read once and spent on BOTH layers that write a
+      // pitch: the gesture table just below, and the mode-driven gaze further
+      // down. Writing the 0.x sign in as a literal is the mistake pinArms made
+      // and armrest-0909.md records.
+      const fwd = facingSign(vrm?.meta.metaVersion ?? '1')
+
       OFF.hp = OFF.hy = OFF.hr = OFF.sx = OFF.sy = OFF.sz = OFF.cx = OFF.ex = OFF.ey = 0
       if (gesture) {
         gesture.t += dt
@@ -1345,9 +1354,7 @@ export function initAvatarGuide(
         const total = def.dur + (def.hold ?? 0)
         const p = Math.min(gesture.t / total, 1)
         const env = gestureEnvelope(gesture.t, def.dur, def.hold ?? 0)
-        // The body's own version, not a literal: writing the 0.x sign into a
-        // gesture is the mistake pinArms made and armrest-0909.md records.
-        def.apply(p, env, gesture.v, OFF, facingSign(vrm?.meta.metaVersion ?? '1'))
+        def.apply(p, env, gesture.v, OFF, fwd)
         if (p >= 1) gesture = null
       }
 
@@ -1378,17 +1385,27 @@ export function initAvatarGuide(
           )
         }
         if (hips) hips.rotation.z = blend(hips.rotation.z, sway * 0.02)
+        // Where she is looking, as rotations. The ratios live in avatarMode so
+        // one definition serves the engine and the tests that pose a real
+        // skeleton with them. Pitch is resolved against the body's facing for
+        // the same reason the gesture table's pitch is: the eye target written
+        // at the foot of this block is world space and does not mirror, so the
+        // bones have to be resolved to agree with it. Yaw carries no facing
+        // term because yaw does not mirror either. Both facts are measured on
+        // every registered body in avatarPitch.test.ts.
+        const aimP = aimPitchPose(pitch, fwd)
+        const aimY = aimYawPose(yaw)
         if (head) {
-          head.rotation.y = blend(head.rotation.y, yaw * 0.65 + OFF.hy)
-          head.rotation.x = blend(head.rotation.x, pitch * 0.7 + OFF.hp)
+          head.rotation.y = blend(head.rotation.y, aimY.head + OFF.hy)
+          head.rotation.x = blend(head.rotation.x, aimP.head + OFF.hp)
           head.rotation.z = blend(head.rotation.z, OFF.hr)
         }
         if (neck) {
-          neck.rotation.y = blend(neck.rotation.y, yaw * 0.35)
-          neck.rotation.x = blend(neck.rotation.x, pitch * 0.3)
+          neck.rotation.y = blend(neck.rotation.y, aimY.neck)
+          neck.rotation.x = blend(neck.rotation.x, aimP.neck)
         }
         if (spine) {
-          spine.rotation.y = blend(spine.rotation.y, yaw * 0.1 + OFF.sy)
+          spine.rotation.y = blend(spine.rotation.y, aimY.spine + OFF.sy)
           spine.rotation.x = blend(spine.rotation.x, OFF.sx)
           spine.rotation.z = blend(spine.rotation.z, sway * -0.012 + OFF.sz)
         }

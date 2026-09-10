@@ -84,6 +84,55 @@ export function headAim(mode: AvatarMode, t: number): { yaw: number; pitch: numb
   }
 }
 
+/**
+ * The mode-driven gaze pitch, as rotations to write on the head and the neck.
+ *
+ * WHAT DEFINES THE SIGN. The engine spends one `pitch` twice: on these two
+ * bones, and on the eye target at `1.35 + Math.sin(pitch) * -4`. The target is
+ * world space, so a positive pitch sends her gaze DOWN on every body, and that
+ * is what `pitch` means. A normalized bone's local axes follow the MODEL's, so
+ * the bones have to be resolved against the facing to mean the same thing,
+ * exactly as the gesture table's pitch is. Without it a 0.x body lifted its
+ * chin while its gaze went to the floor: in `listening` that is 3.85 degrees of
+ * chin at the deepest look-down, held for as long as the visitor keeps typing.
+ * That angle is what the bone REACHES, not what `headAim` asks for: the ease
+ * below attenuates the 1.6s term to 0.85, so a raw peak of 0.12 arrives as
+ * 0.096 and the head takes 0.7 of it. Measured, in evidence/aim-0910.md.
+ *
+ * WHY THE SPLIT LIVES HERE. 0.7 on the head against 0.3 on the neck is what
+ * makes a look read as a neck rather than a hinge, and two copies of it is how
+ * one of them gets a version and the other does not. It is also the ratio the
+ * browser probe inverts to recover a gesture's own pitch from the two bones on
+ * one frame, `OFF.hp = head.x - (7 / 3) * neck.x`. That identity survives the
+ * facing term because both halves carry it and it cancels.
+ *
+ * `fwd` is `facingSign` for the body being posed.
+ */
+export function aimPitchPose(pitch: number, fwd: -1 | 1): { head: number; neck: number } {
+  return { head: fwd * pitch * 0.7, neck: fwd * pitch * 0.3 }
+}
+
+/**
+ * The same thing for yaw, which needs no facing term and has none.
+ *
+ * Measured rather than assumed. These three rotations together carry her eye
+ * 2.16mm toward her own left on a 1.0 body and 3.26mm toward her own left on a
+ * 0.x one: the same side, so there is nothing to resolve. The eye target's x
+ * follows `Math.sin(yaw) * 6` into that same side either way, being world
+ * space. avatarPitch.test.ts poses every registered body with this function and
+ * checks the direction, and a second test does the same for the Y axis on its
+ * own, so a body that disagreed with the axis would show up separately from one
+ * that disagreed with these ratios.
+ *
+ * Signing this the way the pitch is signed would be a NEW defect, not a fix: on
+ * a 0.x body `fwd` is -1, and the same call would read -3.47mm and turn her the
+ * other way. This function exists so the ratios have one home, like the pitch
+ * split above.
+ */
+export function aimYawPose(yaw: number): { head: number; neck: number; spine: number } {
+  return { head: yaw * 0.65, neck: yaw * 0.35, spine: yaw * 0.1 }
+}
+
 // One-pole rate for the filter above, per second. 6 settles a mode change in
 // ~0.4s, so the end of an answer reads as a turn of the head. The cost is paid
 // by the sinusoids themselves, and it scales with their speed: the 19s idle
@@ -94,8 +143,12 @@ export const HEAD_AIM_SMOOTHING = 6
 
 // One filter step, per axis. It lives here rather than inline in the engine so
 // the tests drive the same code the engine does: a test that re-implements the
-// filter would keep passing with the engine's call removed. Scalar (not a
-// {yaw,pitch} pair) to keep the animation loop allocation-free.
+// filter would keep passing with the engine's call removed. Scalar rather than
+// a {yaw,pitch} pair because the two axes carry independent state in the loop,
+// so a pair would have to be unpacked either way. The loop is not
+// allocation-free: `headAim` returns a pair every frame, and `aimPitchPose` and
+// `aimYawPose` return one each on every frame the procedural layer owns the
+// bones.
 export function stepHeadAim(prev: number, target: number, dt: number): number {
   return prev + (target - prev) * Math.min(1, dt * HEAD_AIM_SMOOTHING)
 }

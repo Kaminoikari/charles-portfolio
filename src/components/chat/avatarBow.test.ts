@@ -4,7 +4,8 @@
 // `avatarGuideEngine`, and that module pulls GLTFLoader and three-vrm-animation
 // in at import time: a 269-test file about rigs should not carry the engine's
 // loader graph to ask one question. avatarPitch.test.ts, added the same day,
-// covers the rest of the same class the same way. `bow` stays here because it
+// covers the rest of the same class the same way: the other three gestures, and
+// then the mode-driven gaze they all ride on. `bow` stays here because it
 // has a browser pass of its own, from the commit that fixed it
 // (evidence/bow-0910-browser.log); the other three share a later one
 // (evidence/pitch-0910-browser.log).

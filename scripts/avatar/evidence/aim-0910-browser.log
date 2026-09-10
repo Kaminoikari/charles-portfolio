@@ -1,0 +1,121 @@
+# The mode-driven gaze, measured in the browser through the real engine, before
+# and after the facing term. 2026-09-10.
+#
+# The page is a dev-server session, so this file is the only record of these
+# numbers, the same reason pitch-0910-browser.log and bow-0910-browser.log
+# exist.
+#
+#   npm run dev
+#   http://localhost:5173/scripts/avatar/live-preview.html?mikadebug=1
+#   ?mikadebug=1 exposes window.__mikaVrm, __mikaHandle and __mikaState.
+#   Playwright drove every pass. 721 frames in each 12.0s window.
+#
+# WHAT IS READ. Nothing was added to the engine for this: __mikaVrm is the
+# loaded VRM, so the eye target is vrm.lookAt.target and the bones are
+# vrm.humanoid's own. Three quantities per frame:
+#
+#   target y      vrm.lookAt.target world Y. The engine writes it as
+#                 1.35 + Math.sin(pitch) * -4 + saccadeY, in WORLD space, so it
+#                 goes down when she looks down on any body. It is the thing
+#                 that defines what `pitch` means.
+#   eye above head  leftEye raw bone world Y minus head raw bone world Y. This
+#                 is the head's own pitch and almost nothing else: breathing and
+#                 the weight shift lift the eye and the head together, so they
+#                 largely cancel in the difference.
+#   neck.rotation.x  the normalized neck bone, which the engine writes as
+#                 fwd * pitch * 0.3 and nothing else touches when no gesture and
+#                 no clip is running.
+#
+# r is Pearson's correlation over all 721 frames of the window. A gaze that
+# agrees with itself puts the eye DOWN when the target goes down, so a correct
+# body reads r(target y, eye above head) POSITIVE. The saccade jitter is in the
+# target and not in the bones, so it can only pull r toward zero.
+#
+# THE 1.0 BODY IS THE CONTROL. facingSign('1') is +1, so `fwd *` is a no-op
+# there and the fix must not move it. Both passes measure both bodies, in the
+# same session, one after the other.
+#
+#   A  public/avatar/mika-milfy-12.vrm       metaVersion 0, scene.rotation.y = pi
+#                                            from VRMUtils.rotateVRM0. This is
+#                                            the look the site serves.
+#   B  public/avatar/vrm1-twist-sample.vrm   metaVersion 1. Registered as a rig
+#                                            family, not offered to visitors.
+#
+# BEFORE is the shipped code with the two `fwd *` factors taken out of
+# aimPitchPose and nothing else, on the same dev server, confirmed by curl on
+# the served module immediately before the pass. AFTER is the code as committed,
+# confirmed the same way. The served module is minified, so the confirmation
+# reads `head: pitch * .7` against `head: fwd * pitch * .7`.
+#
+# EVERY WINDOW RAN WITH THE PROCEDURAL LAYER IN SOLE CHARGE. The preview page
+# opens in `idle`, and idle fires a motion clip within a few seconds; a clip owns
+# these bones and the procedural pose does not run under it. So each pass sets
+# `listening`, then waits for __mikaState.motionW to read 0 for 2 seconds
+# together before opening its window, and records the largest motionW seen
+# during the window. All four windows below report 0, and no gesture fired in
+# any of them. A first attempt at this measurement did not watch motionW and
+# caught `dance` mid-window; its numbers are not in this file.
+#
+#   quantity                         BEFORE A   AFTER A   BEFORE B   AFTER B
+#   metaVersion                          0          0         1          1
+#   frames                             721        721       721        721
+#   max motionW in window                0          0         0          0
+#   gesture in window                 none       none      none       none
+#   neck.rotation.x min             -0.0528    -0.0288   -0.0528    -0.0528
+#   neck.rotation.x max             +0.0288    +0.0528   +0.0288    +0.0288
+#   r(target y, eye above head)      -0.957     +0.944    +0.958     +0.944
+#   r(target y, eye world y)         -0.949     +0.950    +0.954     +0.932
+#   r(target y, neck.rotation.x)     -0.950     +0.946    -0.971     -0.959
+#   eye above head, lowest target   59.87mm    53.66mm   59.91mm    60.14mm
+#   eye above head, highest target  50.44mm    61.71mm   65.31mm    65.27mm
+#
+# READ THE FIRST TWO COLUMNS. Before the fix, on the body every visitor gets,
+# her eye sat 59.87mm above her head pivot at the moment her gaze target was
+# lowest and 50.44mm above it when the target was highest: she raised her chin
+# to look at the floor, all through `listening`. After, the same two frames read
+# 53.66mm and 61.71mm, and r goes from -0.957 to +0.944.
+#
+# READ THE LAST TWO. The 1.0 body does not move: +0.958 to +0.944, 59.91 and
+# 65.31mm against 60.14 and 65.27mm, and its neck range is the same pair of
+# numbers in both passes. That is what says the flip in column A is the facing
+# term and not something that differed between the two sessions.
+#
+# READ THE NECK ROWS TOGETHER. Before, both bodies carry the SAME neck rotation,
+# -0.0528 to +0.0288, and it means opposite things on the two. After, the 0.x
+# body carries the mirror of it. One bone number cannot serve both, which is the
+# whole defect in one row.
+#
+# THE NECK RANGE ALSO CHECKS THE RECOVERY. `listening` has pitch
+# sin(2*pi*t/1.6) * 0.16 - 0.04, and the engine does not spend it raw: it eases
+# toward it with `prev + (target - prev) * min(1, dt * HEAD_AIM_SMOOTHING)`,
+# HEAD_AIM_SMOOTHING = 6. At 60fps that is a first-order lag with alpha = 0.1,
+# whose gain at one cycle per 96 samples is 0.1 / sqrt(1 + 0.81 - 1.8*cos(2*pi/96))
+# = 0.8496. So the pitch reaching the bones should be -0.04 +/- 0.16*0.8496, and
+# the neck should read 0.3 times that: -0.05278 to +0.02878. Every column above
+# reads that pair of magnitudes, 0.0528 and 0.0288, to four decimals. Three of
+# them carry it with the signs above; AFTER A carries the mirror, -0.0288 to
+# +0.0528, which is the fix and is what the neck rows are read for. The
+# magnitudes are what the derivation predicts: the DC offset survives and the
+# amplitude is attenuated by the ease, which is what a correct reading of a
+# smoothed sine looks like.
+#
+# THAT ATTENUATION IS ALSO WHY NO ANGLE HERE IS `headAim`'s OWN. `listening`
+# asks for a pitch of +0.12 at its deepest look-down; the bone gets +0.096, so
+# the head turns 0.7 * 0.096 = 0.0672 rad, 3.85 degrees, and 7.06 degrees at the
+# deepest look-up. Quoting 0.12 * 0.7 = 4.81 degrees, as a draft of this file
+# and of aim-0910.md did, describes a pose the ease never lets her reach.
+#
+# NO SCREENSHOT PAIR, DELIBERATELY. Read the before-and-after difference off the
+# table above: 6.21mm of eye travel at the deepest look-down (59.87 against
+# 53.66) and 11.27mm at the deepest look-up (50.44 against 61.71). On the same
+# body, breathing carries her eye 4.06mm toward her face at the top of its sine
+# and the weight shift 4.61mm toward her left at the top of its own
+# (aim-0910.md section 4), so about 8mm and 9mm across a full cycle of each,
+# taking the other half by symmetry. Those two are fore-aft and lateral where
+# the gaze figures above are vertical, so this is a comparison of how much
+# movement is in the frame at all, not of one axis. The thing to see is the same
+# size as the two things always moving underneath it, and neither of those is in
+# phase with it. Two stills would differ mostly by which
+# moment of the breathing cycle they caught, and a still cannot say which moment
+# of the gaze cycle it is. The claim here is a property of the whole 12-second
+# trace, so it is measured over the whole trace.

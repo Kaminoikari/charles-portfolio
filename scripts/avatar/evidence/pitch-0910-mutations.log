@@ -21,7 +21,12 @@
 # round and its commit.
 #
 # One scope for all seven:
-#   npx vitest run src/components/chat/avatarPitch.test.ts       (31 tests)
+#   npx vitest run src/components/chat/avatarPitch.test.ts
+#
+# The file held 31 tests when this was captured. It grew the same day, when the
+# mode-driven gaze went into it (aim-0910.md), and all seven were re-run there
+# against the larger file with the same result; that output is in
+# aim-0910-mutations.log.
 #
 #   P1  nod        o.hp += fwd * Math.sin(p * Math.PI * 2) * 0.14 * env
 #                        -> o.hp += Math.sin(p * Math.PI * 2) * 0.14 * env
