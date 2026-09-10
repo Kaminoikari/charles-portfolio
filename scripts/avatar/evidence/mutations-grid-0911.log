@@ -1,0 +1,103 @@
+Mutations against scripts/avatar/springsim.grid.test.ts, 2026-09-11.
+
+Baseline: the fix in place, 8 tests, exit 0.
+Each mutation is applied to scripts/avatar/springsim.ts on its own, the suite is
+run, and the file is restored by writing back the bytes read before the first
+mutation (never `git checkout --`; the byte comparison is asserted after every
+restore and again at the end). node_modules/.vite is removed before every run.
+
+Eleven mutations, eleven red. The named tests under each are the ones that
+failed; a mutation that broke only wasted work rather than the answer would show
+as STILL GREEN and is called out where it happened.
+M1 shell bound stops one shell too soon
+  RED: 4 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - agrees on scattered geometry that leaves most of its box empty
+M2 fast reject drawn at the box edge, not REACH beyond it
+  RED: 6 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - answers on a set with nothing kept, and on a set with one vertex
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M3 cellOf uses the wrong row stride
+  RED: 3 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+M4 shell walk drops the two z caps
+  RED: 6 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - answers on a set with nothing kept, and on a set with one vertex
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M5 shell walk never opens past the first ring
+  RED: 5 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M6 saturation dropped, so it reaches past REACH
+  RED: 5 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M7 box one cell short on each axis
+  RED: 7 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - answers on a set with nothing kept, and on a set with one vertex
+    - picks the nearer of two vertices when a coarser cell would hold both
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M8 CSR prefix sum off by one, so cells read a neighbour's run
+  STILL GREEN: 0 failed
+M9 the x face of a shell is treated as interior
+  RED: 5 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+M10 sign taken from the point instead of the normal
+  RED: 7 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - answers on a set with nothing kept, and on a set with one vertex
+    - picks the nearer of two vertices when a coarser cell would hold both
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+
+
+M8's first draft was an EQUIVALENT mutation, not a hole in the tests. It moved
+the prefix sum's start from `c = 0` to `c = 1`, and `start[0]` is always 0
+because the counting pass only ever increments `start[cell + 1]`, so the
+skipped iteration was `start[1] += 0`. It stayed green because nothing had
+changed. It was replaced by two mutations that do change the answer:
+
+M8a scatter cursor never advances, so a cell keeps only its last vertex
+  RED: 3 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+M8b prefix sum shifted, so every cell reads the next cell's run
+  RED: 7 failed
+    - agrees on every query, on the densest mesh the simulator meets
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - answers on a set with nothing kept, and on a set with one vertex
+    - picks the nearer of two vertices when a coarser cell would hold both
+    - agrees on points placed exactly on cell boundaries
+    - agrees on scattered geometry that leaves most of its box empty
+
+restored: springsim.ts is byte-identical to the version read at start
