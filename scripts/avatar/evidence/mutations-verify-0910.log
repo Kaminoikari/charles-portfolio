@@ -1,0 +1,406 @@
+verify.py / humanoid.py mutations, 2026-09-10.
+
+Each entry names the file and the exact text swapped, then the full unittest
+output of `python3 -W ignore scripts/avatar/verify_test.py -v` under it. Restore
+writes back the bytes read at the top of the run and asserts the file matches;
+__pycache__ is cleared before and after every run, because CPython keys bytecode
+by (mtime, size) and an equal-length mutation landing in the same second runs the
+previous one.
+
+Baseline: 14 tests, OK.
+
+========================================================================
+V1  humanoid.py
+========================================================================
+--- was ---
+    version = vrmrig.vrm_version(doc)
+    materials = doc.get('materials') or []
+    if version == '0':
+--- now ---
+    version = vrmrig.vrm_version(doc)
+    materials = doc.get('materials') or []
+    if version in ('0', '1'):
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... FAIL
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... FAIL
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... FAIL
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5 for _, _, chroma in loud),
+AssertionError: False is not true : ('seed-san 1.0', [])
+FAIL: test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body)
+    self.assertEqual(14, len(verify.undeclared_rims(self.V1)))
+AssertionError: 14 != 17
+FAIL: test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5
+AssertionError: False is not true : seed-san 1.0
+Ran 14 tests in 2.313s
+FAILED (failures=3)
+
+========================================================================
+V2  humanoid.py
+========================================================================
+--- was ---
+            'outlineColor': _rgb(block.get('outlineColorFactor')),
+--- now ---
+            'outlineColor': None,
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... FAIL
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... FAIL
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5 for _, _, chroma in loud),
+AssertionError: False is not true : ('seed-san 1.0', [])
+FAIL: test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5
+AssertionError: False is not true : seed-san 1.0
+Ran 14 tests in 2.955s
+FAILED (failures=2)
+
+========================================================================
+V3  humanoid.py
+========================================================================
+--- was ---
+            'rimColor': _rgb(block.get('parametricRimColorFactor')),
+--- now ---
+            'rimColor': [1.0, 1.0, 1.0],
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... FAIL
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body)
+    self.assertEqual(14, len(verify.undeclared_rims(self.V1)))
+AssertionError: 14 != 7
+Ran 14 tests in 4.365s
+FAILED (failures=1)
+
+========================================================================
+V4  humanoid.py
+========================================================================
+--- was ---
+    expressions = (ext.get('VRMC_vrm') or {}).get('expressions') or {}
+--- now ---
+    expressions = {}
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... FAIL
+FAIL: test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds)
+    self.assertEqual([], verify.torn_shapes(self.V1))
+AssertionError: Lists differ: [] != [('head', 0, 'eye_close', 2.30483068352216[2113 chars], 1)]
+Ran 14 tests in 4.465s
+FAILED (failures=1)
+
+========================================================================
+V5  verify.py
+========================================================================
+--- was ---
+    springs = humanoid.springs(doc)
+    used = {index
+            for group in springs['groups']
+            for index in group['colliderGroups']}
+--- now ---
+    springs = {'groups': [], 'colliderGroups': []}
+    used = {index
+            for group in springs['groups']
+            for index in group['colliderGroups']}
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... FAIL
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body)
+    self.assertEqual(1, len(stranded), stranded)
+AssertionError: 1 != 0 : []
+Ran 14 tests in 8.476s
+FAILED (failures=1)
+
+========================================================================
+V6  verify.py
+========================================================================
+--- was ---
+    if humanoid.version(doc) == '1':
+        return NOT_APPLICABLE
+--- now ---
+    if humanoid.version(doc) == '1':
+        return []
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... FAIL
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... FAIL
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1)
+    self.assertIs(verify.NOT_APPLICABLE,
+AssertionError: NOT_APPLICABLE is not []
+FAIL: test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body)
+    self.assertIn('materialProperties: N/A on VRM 1.0', text)
+AssertionError: 'materialProperties: N/A on VRM 1.0' not found in '== /Users/charles/portfolio/scripts/avatar/fixtures/seed-san.vrm\n   tris 45058  materials 17  images 15  nodes 147  bones 51\n   springs 9  colliders 2  expressions 18\n   hair               2 prim    7880 tris  targets 0\n   hair_tail          1 prim     238 tris  targets 0\n   head               3 prim   10550 tris  targets 43\n   robo_arm           3 prim    3016 tris  targets 0\n   wear              12 prim   23374 tris  targets 0\n   vertex sha a13d295227ac5e3a\n   backwards-wound primitives: 0\n   coloured outlines: 2\n   FAIL huku_bake outline (0.151, 0.193, 0.223) chroma 0.072 exceeds 0.04\n   FAIL body_bake outline (0.241, 0.182, 0.156) chroma 0.085 exceeds 0.04\n   materials no primitive uses: 0\n   materials out of step with materialProperties: 0\n   sparse accessors with wrong min/max: 0\n   meshes with uneven morph target counts: 0\n   grafted shape keys that tear their mesh: 0\n   skinned primitives that tear when an arm bends: 2\n   FAIL wear#3 grows an edge by 36mm with leftUpperArm at +60 degrees (limit 25mm)\n   FAIL wear#3 grows an edge by 36mm with rightUpperArm at -60 degrees (limit 25mm)\n   materials with no rim colour: 14\n   FAIL hair states no rim colour, so it takes the site accent\n   FAIL huku_bake states no rim colour, so it takes the site accent\n   FAIL body_bake states no rim colour, so it takes the site accent\n   FAIL eye states no rim colour, so it takes the site accent\n   FAIL eye_trans states no rim colour, so it takes the site accent\n   dangling joint references: 0\n   collider groups no spring uses: 0\n   FAIL\n'
+Ran 14 tests in 5.162s
+FAILED (failures=2)
+
+========================================================================
+V7  verify.py
+========================================================================
+--- was ---
+        rgb = mat['outlineColor']
+        if rgb is None:
+            continue
+--- now ---
+        rgb = mat['outlineColor']
+        if rgb is None or mat['outlineWidthMode'] in (None, 'none'):
+            continue
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... FAIL
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5
+AssertionError: False is not true : seed-san 1.0
+Ran 14 tests in 5.825s
+FAILED (failures=1)
+
+========================================================================
+V8  verify.py
+========================================================================
+--- was ---
+    for mat in humanoid.mtoon(doc):
+        rgb = mat['outlineColor']
+        if rgb is None:
+            continue
+        chroma = max(rgb) - min(rgb)
+        if chroma > limit:
+            loud.append((mat['name'], tuple(round(c, 3) for c in rgb), chroma))
+--- now ---
+    for mat in doc['extensions']['VRM']['materialProperties']:
+        rgb = mat.get('vectorProperties', {}).get('_OutlineColor')
+        if rgb is None:
+            continue
+        chroma = max(rgb[:3]) - min(rgb[:3])
+        if chroma > limit:
+            loud.append((mat['name'], tuple(round(c, 3) for c in rgb[:3]), chroma))
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ERROR
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ERROR
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ERROR
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+ERROR: test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version)
+ERROR: test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body)
+ERROR: test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version)
+Ran 14 tests in 5.193s
+FAILED (errors=3)
+
+========================================================================
+V9  verify.py
+========================================================================
+--- was ---
+    for index, group in enumerate(springs['colliderGroups']):
+        if index in used:
+            continue
+--- now ---
+    for index, group in enumerate(springs['colliderGroups']):
+        if False:
+            continue
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... FAIL
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... FAIL
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... FAIL
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes)
+    self.assertTrue(ok, text)
+AssertionError: False is not true : == /var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/verify_test-czak3jg8/tmp8_pag0bm/model.vrm
+FAIL: test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing)
+    self.assertEqual([], verify.stranded_collider_groups(self.V1))
+AssertionError: Lists differ: [] != [(0, ''), (1, '')]
+FAIL: test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body)
+    self.assertEqual(1, len(stranded), stranded)
+AssertionError: 1 != 3 : [(0, ''), (1, ''), (2, '')]
+Ran 14 tests in 4.861s
+FAILED (failures=3)
+
+========================================================================
+V10  verify.py
+========================================================================
+--- was ---
+        print('   materials out of step with materialProperties: N/A on VRM 1.0')
+--- now ---
+        print(f'   materials out of step with materialProperties: {len(skew)}')
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... FAIL
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body)
+    self.assertIn('materialProperties: N/A on VRM 1.0', text)
+AssertionError: 'materialProperties: N/A on VRM 1.0' not found in '== /Users/charles/portfolio/scripts/avatar/fixtures/seed-san.vrm\n   tris 45058  materials 17  images 15  nodes 147  bones 51\n   springs 9  colliders 2  expressions 18\n   hair               2 prim    7880 tris  targets 0\n   hair_tail          1 prim     238 tris  targets 0\n   head               3 prim   10550 tris  targets 43\n   robo_arm           3 prim    3016 tris  targets 0\n   wear              12 prim   23374 tris  targets 0\n   vertex sha a13d295227ac5e3a\n   backwards-wound primitives: 0\n   coloured outlines: 2\n   FAIL huku_bake outline (0.151, 0.193, 0.223) chroma 0.072 exceeds 0.04\n   FAIL body_bake outline (0.241, 0.182, 0.156) chroma 0.085 exceeds 0.04\n   materials no primitive uses: 0\n   materials out of step with materialProperties: 0\n   sparse accessors with wrong min/max: 0\n   meshes with uneven morph target counts: 0\n   grafted shape keys that tear their mesh: 0\n   skinned primitives that tear when an arm bends: 2\n   FAIL wear#3 grows an edge by 36mm with leftUpperArm at +60 degrees (limit 25mm)\n   FAIL wear#3 grows an edge by 36mm with rightUpperArm at -60 degrees (limit 25mm)\n   materials with no rim colour: 14\n   FAIL hair states no rim colour, so it takes the site accent\n   FAIL huku_bake states no rim colour, so it takes the site accent\n   FAIL body_bake states no rim colour, so it takes the site accent\n   FAIL eye states no rim colour, so it takes the site accent\n   FAIL eye_trans states no rim colour, so it takes the site accent\n   dangling joint references: 0\n   collider groups no spring uses: 0\n   FAIL\n'
+Ran 14 tests in 4.826s
+FAILED (failures=1)
+
+========================================================================
+V11  humanoid.py
+========================================================================
+--- was ---
+                'outlineColor': _rgb(vectors.get('_OutlineColor')),
+--- now ---
+                'outlineColor': None,
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... ok
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... FAIL
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... ok
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... FAIL
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5 for _, _, chroma in loud),
+AssertionError: False is not true : ('alicia-solid 0.x', [])
+FAIL: test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version)
+    self.assertTrue(any(round(chroma, 3) == 0.5
+AssertionError: False is not true : alicia-solid 0.x
+Ran 14 tests in 4.987s
+FAILED (failures=2)
+
+========================================================================
+V12  verify.py
+========================================================================
+--- was ---
+    return [(i, m.get('name'), p.get('name'))
+            for i, (m, p) in enumerate(zip(mats, props))
+            if m.get('name') != p.get('name')]
+--- now ---
+    return [(i, m.get('name'), p.get('name'))
+            for i, (m, p) in enumerate(zip(mats, props))
+            if m.get('name') == p.get('name')]
+
+test_a_primitive_is_checked_against_its_own_nodes_skin (__main__.DanglingJoints.test_a_primitive_is_checked_against_its_own_nodes_skin) ... ok
+test_a_model_missing_a_required_bone_is_named (__main__.Report.test_a_model_missing_a_required_bone_is_named) ... ok
+test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes) ... FAIL
+test_hard_handovers_on_the_cardigan_are_named (__main__.TornBindings.test_hard_handovers_on_the_cardigan_are_named) ... ok
+test_report_fails_a_torn_binding (__main__.TornBindings.test_report_fails_a_torn_binding) ... ok
+test_the_shipped_garments_survive_an_arm_bend (__main__.TornBindings.test_the_shipped_garments_survive_an_arm_bend) ... ok
+test_a_clean_vrm1_body_strands_nothing (__main__.VersionBoundChecks.test_a_clean_vrm1_body_strands_nothing) ... ok
+test_a_loud_outline_is_found_on_either_version (__main__.VersionBoundChecks.test_a_loud_outline_is_found_on_either_version) ... ok
+test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stated_rim_is_not_called_undeclared_on_a_vrm1_body) ... ok
+test_a_stranded_collider_group_is_found_on_a_vrm1_body (__main__.VersionBoundChecks.test_a_stranded_collider_group_is_found_on_a_vrm1_body) ... ok
+test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1) ... FAIL
+test_report_runs_on_a_vrm1_body (__main__.VersionBoundChecks.test_report_runs_on_a_vrm1_body) ... ok
+test_the_width_mode_is_not_consulted_on_either_version (__main__.VersionBoundChecks.test_the_width_mode_is_not_consulted_on_either_version) ... ok
+test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds (__main__.VersionBoundChecks.test_torn_shapes_skips_the_mesh_a_vrm1_expression_binds) ... ok
+FAIL: test_a_model_without_an_optional_bone_passes (__main__.Report.test_a_model_without_an_optional_bone_passes)
+    self.assertTrue(ok, text)
+AssertionError: False is not true : == /var/folders/cl/njr49bx900ddfl_cpmv9_xcw0000gn/T/verify_test-mb_r6reb/tmp1e0xiff9/model.vrm
+FAIL: test_material_property_alignment_says_it_cannot_run_on_vrm1 (__main__.VersionBoundChecks.test_material_property_alignment_says_it_cannot_run_on_vrm1)
+    self.assertEqual([], verify.misaligned_material_properties(self.V0))
+AssertionError: Lists differ: [] != [(0, 'Alicia_body', 'Alicia_body'), (1, 'A[473 chars]te')]
+Ran 14 tests in 4.267s
+FAILED (failures=2)

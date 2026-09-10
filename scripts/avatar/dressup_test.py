@@ -190,10 +190,6 @@ class Repair(unittest.TestCase):
         self.assertGreater(_hoodie_weight_gap(full, small), 0.1)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class TheOrderOfThePipeline(unittest.TestCase):
     """What `prepare` decides, which neither step decides for itself.
 
@@ -284,3 +280,13 @@ class TheWaiverReachesTheGate(unittest.TestCase):
         self.assertTrue(any(w in waived.values() for _, w in seen),
                         f'check scored every part against a waiver of 0; the '
                         f'manifest declares {waived}')
+
+
+# At the end, where it has to be. This sat at line 194 until 2026-09-11, above
+# the two classes below it, so running this file collected 8 tests and the 3 in
+# `TheOrderOfThePipeline` and `TheWaiverReachesTheGate` never ran at all -- and
+# nothing said so, because 8 of 8 passing prints exactly like a full run. All
+# three pass. Found because a suite receipt quoted this file at 8 tests while
+# the loader collected 11.
+if __name__ == '__main__':
+    unittest.main()

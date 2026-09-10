@@ -41,6 +41,8 @@
 | 原生乾淨 base | 已另存，完整站台 gate `FAIL` | `R3-clean-base.vroid`／VRM0：原生上衣與下身空白 preset 移除 T-shirt／短褲，保留預設 bandeau；7 項核心結構檢查含 bent-arm binding 通過，outline／rim 仍不符站台規則。後續 XWear 重組見上節 |
 | 完整動態衣物／spring／目標 consumer | `NOT_RUN` | 靜態渲染與數值 pre-screen 無法代替完整時序品質 |
 
+> **2026-09-10 更新**：上表「完整既有 `verify.py` 對 VRM1」那列已過期。`verify.py` 的五道 VRM0-only 檢查（`loud_outlines`、`undeclared_rims`、`torn_shapes`、`stranded_collider_groups`、`misaligned_material_properties`）當日改為透過 `humanoid.mtoon`／`humanoid.expression_meshes`／`humanoid.springs` 讀取兩個版本，`KeyError` 不再發生，`misaligned_material_properties` 在 1.0 回傳 `NOT_APPLICABLE` 而非空清單。證據見 `scripts/avatar/evidence/verify-vrm1-0910.md`。
+
 Restored VRM 為 14,952,188 bytes，SHA-256 `104bd14e4721b7127721ae2054e6153de23b4a9b134a4659b114c6c96d10ad3c`。Browser 為 VRM1、53 bones、18 expressions；既有 stats 讀得 30,915 triangles、26 spring groups、34 collider groups、57 face targets。此身分僅適用 restored 候選，clean 若匯出必須重新 hash／驗證。
 
 Root 獨立核對 R2 dress-up 與 R3 restored 的 Face mesh：遍歷各 primitive、排序後的 attributes 及 57 組 morph target accessors，合併 array bytes 的 SHA-256 均為 `d06189665a0fd5dbab88ee4bf738f0cfa2c2ba30583a6a5423967250dfe9162d`。這證明此次 restore 沒有改變所量測的 face geometry／morph bytes；不把此結果套用到 clean-base 新 lineage。初次 `independent-before-face.png` 的 viewport 曾被文字結果佔滿，正式視覺對照使用後續直接 canvas capture 的 `evidence/before-browser/face-neutral.png`。
@@ -93,6 +95,8 @@ python3 build/mika-reuse/r3-studio-20260909/structure-check.py <candidate.vrm> <
 ```
 
 capture helper 使用既有 `mika-r3` browser session 與 `127.0.0.1:5189` 本機 server，靜態 spring reset 後等待 120 frames，擷取 face 全表情及 front／quarter／back。`verify.py` 保留原 Mika 站台規則；VRM1 目前有上述不支援例外，改用 partial wrapper 明列支援範圍，不能自行放寬或宣稱完整通過。
+
+> **2026-09-10 更新**：`verify.py` 已能直接讀 VRM 1.0，上面指令區塊的 `structure-check.py` partial wrapper（它的 `VRM0_ONLY` 就是那五道）不再需要，兩個版本都跑 `python3 scripts/avatar/verify.py <candidate.vrm>`。門檻本身沒有放寬：五具身體只有 `mika-milfy-12` 通過，其餘四具照樣 FAIL。
 
 ## 模組化平台採用決策
 

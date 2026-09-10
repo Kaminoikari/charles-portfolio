@@ -69,6 +69,101 @@ def expression_names(doc):
 def springs(doc):
     return vrmrig.spring_bones(doc)
 
+
+def mtoon(doc):
+    """Per-material MToon settings, in `doc['materials']` order, either version.
+
+    Each entry is {'name', 'outlineColor', 'rimColor', 'outlineWidthMode'} with
+    colours as [r, g, b] and None where the file states nothing. VRM 0.x keeps
+    them in a parallel `materialProperties` array as `_OutlineColor`,
+    `_RimColor` and a numeric `_OutlineWidthMode`; VRM 1.0 puts them on the
+    material itself under `VRMC_materials_mtoon` as `outlineColorFactor`,
+    `parametricRimColorFactor` and a string `outlineWidthMode`. A material with
+    no MToon at all (an unlit or PBR one) still gets an entry, with all three
+    None, so callers can zip this against `doc['materials']` by index.
+
+    The width mode is normalised to the 1.0 spelling on both versions, and 0.x
+    is read positionally, which is exactly the pairing
+    `verify.misaligned_material_properties` exists to hold.
+
+    `name` comes from `doc['materials'][i]`, on both versions. The 0.x callers
+    that this replaced took it from `materialProperties[i]` instead. The two
+    agree on all four 0.x bodies in this repo and can only diverge on a file
+    whose two arrays are already misaligned, which is the one thing
+    `misaligned_material_properties` fails outright.
+    """
+    version = vrmrig.vrm_version(doc)
+    materials = doc.get('materials') or []
+    if version == '0':
+        props = ((doc.get('extensions') or {}).get('VRM') or {}).get(
+            'materialProperties') or []
+        modes = {0: 'none', 1: 'worldCoordinates', 2: 'screenCoordinates'}
+        out = []
+        for index, material in enumerate(materials):
+            prop = props[index] if index < len(props) else {}
+            vectors = prop.get('vectorProperties') or {}
+            floats = prop.get('floatProperties') or {}
+            mode = floats.get('_OutlineWidthMode')
+            out.append({
+                'name': material.get('name'),
+                'outlineColor': _rgb(vectors.get('_OutlineColor')),
+                'rimColor': _rgb(vectors.get('_RimColor')),
+                'outlineWidthMode': modes.get(mode) if mode is not None else None,
+            })
+        return out
+    out = []
+    for material in materials:
+        block = (material.get('extensions') or {}).get('VRMC_materials_mtoon')
+        if block is None:
+            out.append({'name': material.get('name'), 'outlineColor': None,
+                        'rimColor': None, 'outlineWidthMode': None})
+            continue
+        out.append({
+            'name': material.get('name'),
+            'outlineColor': _rgb(block.get('outlineColorFactor')),
+            'rimColor': _rgb(block.get('parametricRimColorFactor')),
+            'outlineWidthMode': block.get('outlineWidthMode'),
+        })
+    return out
+
+
+def _rgb(value):
+    """The first three channels of a colour the file may have written as 3 or 4."""
+    return None if value is None else [float(c) for c in value[:3]]
+
+
+def expression_meshes(doc):
+    """Mesh indices any expression drives a morph target on, either version.
+
+    A face's own expressions fold and collapse by design, so every check that
+    measures grafted geometry has to know which meshes they are and leave them
+    alone. VRM 0.x names the mesh directly in `blendShapeMaster`'s binds; VRM
+    1.0 names a NODE in `expressions.{preset,custom}[].morphTargetBinds`, and
+    the mesh is what that node draws. Reading only the 0.x path returns an empty
+    set on a 1.0 body, which is not "no expressions" but "cannot see them", and
+    it made verify.torn_shapes report 45 tears on a correct face.
+    """
+    ext = doc.get('extensions') or {}
+    if vrmrig.vrm_version(doc) == '0':
+        master = (ext.get('VRM') or {}).get('blendShapeMaster') or {}
+        return {bind['mesh']
+                for group in master.get('blendShapeGroups') or ()
+                for bind in group.get('binds') or ()
+                if 'mesh' in bind}
+    expressions = (ext.get('VRMC_vrm') or {}).get('expressions') or {}
+    nodes = doc.get('nodes') or []
+    meshes = set()
+    for section in ('preset', 'custom'):
+        for group in (expressions.get(section) or {}).values():
+            for bind in group.get('morphTargetBinds') or ():
+                index = bind.get('node')
+                if index is None or not 0 <= index < len(nodes):
+                    continue
+                mesh = nodes[index].get('mesh')
+                if mesh is not None:
+                    meshes.add(mesh)
+    return meshes
+
 # The VRM0/VRM1 thumb naming, defined once in vrmrig beside the rest of the
 # version differences and re-exported here for the callers that read it off
 # this module.

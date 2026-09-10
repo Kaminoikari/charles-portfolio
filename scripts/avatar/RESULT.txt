@@ -1036,10 +1036,15 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
     不寫「每一條都驗過」：上一輪那句全稱宣告是錯的，當時 loud_outlines、
     undeclared_rims、ragged_targets、SHAPE_KEY_MIN_MEAN 與前端那五條都沒有收
     據，而全稱句把缺口藏起來了，逐道標號則會讓缺口自己露出來。
-  verify.py  loud_outlines      任何 _OutlineColor 的 chroma > 0.04 就 FAIL
-                                [收據 11]
-             undeclared_rims    任何材質沒宣告 _RimColor 就 FAIL（宣告成黑色
-                                等同沒宣告，兩條路都攔）  [收據 11]
+  verify.py  loud_outlines      任何 outline 顏色的 chroma > 0.04 就 FAIL；兩個
+                                VRM 版本都讀（0.x 的 _OutlineColor 與 1.0 的
+                                outlineColorFactor，經 humanoid.mtoon）
+                                [收據 11、verify-vrm1-0910.md]
+             undeclared_rims    任何材質沒宣告 rim 顏色就 FAIL（宣告成黑色
+                                等同沒宣告，兩條路都攔）；同樣兩個版本都讀
+                                （0.x 的 _RimColor 與 1.0 的
+                                parametricRimColorFactor）
+                                [收據 11、verify-vrm1-0910.md]
              unused_materials   任何材質沒有 primitive 用就 FAIL  [收據 16]
              misaligned_material_properties
                                 materials 與 VRM materialProperties 的名字沒有
@@ -1053,8 +1058,11 @@ GATE motion clips (10 clips x 4 frames x 3 views, flag above 150 pixels of body 
              ragged_targets     同一 mesh 的 primitive 宣告不同數量的 target
                                 [收據 11]
              torn_shapes        新增的 key 驅到 1.0 時邊長膨脹 >3x 或面法線翻面
-                                （表情網格跳過，用 blendShapeMaster 的 binds
-                                認，不靠 baseline：閉眼本來就會翻面）  [收據 5]
+                                （表情網格跳過，不靠 baseline：閉眼本來就會
+                                翻面）。表情網格經 humanoid.expression_meshes
+                                認，兩個版本都讀：0.x 是 blendShapeMaster 的
+                                binds，1.0 是 morphTargetBinds 指到的 node 畫的
+                                那個 mesh  [收據 5、verify-vrm1-0910.md]
   build.py   SHAPE_KEY_MIN_MEAN 動不了東西的 key 不出貨  [收據 12]
   customise  prune_shapes       刪件之後不再位移任何東西的 key，從檔案與
                                 manifest 兩邊一起拿掉  [收據 1、2、7]

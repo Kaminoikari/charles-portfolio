@@ -15,6 +15,15 @@ makes at the very end (every material declares a rim colour, no material is
 left unused), so the half-built files in out/ fail it by design and always
 will: out/parted.vrm has not been near build.py. make.py's own per-step `gate()`
 is the one that runs on intermediates, and it asserts the skeleton only.
+
+Both VRM versions. Every version-specific reading goes through humanoid.py, the
+same as everywhere else in this pipeline. Five checks here used to index
+`extensions.VRM` themselves. Pointed at a 1.0 file, two of them raised, one
+measured the face's own eyelids and reported 45 tears on a correct model, and
+two returned an empty list, which reads as a pass
+(evidence/verify-vrm1-0910.md). The one check that genuinely has no 1.0 meaning,
+`misaligned_material_properties`, says so with NOT_APPLICABLE rather than with
+an empty list.
 """
 import hashlib
 import sys
@@ -158,6 +167,34 @@ def backwards_winding(path, floor=0.5):
     return bad
 
 
+class _NotApplicable:
+    """What a check returns when the file has nothing for it to look at.
+
+    Distinct from an empty list, and that distinction is the whole point: two of
+    the checks here read an `extensions.VRM.<something>` that a VRM 1.0 file
+    simply does not have, got `{}`, and returned `[]` -- which reads as "ran,
+    found nothing wrong". A gate that cannot see a file has to say so, so
+    report() prints N/A and neither passes nor fails on it.
+    """
+
+    __slots__ = ()
+
+    def __len__(self):
+        return 0
+
+    def __bool__(self):
+        return False
+
+    def __iter__(self):
+        return iter(())
+
+    def __repr__(self):
+        return 'NOT_APPLICABLE'
+
+
+NOT_APPLICABLE = _NotApplicable()
+
+
 OUTLINE_CHROMA_MAX = 0.04
 
 
@@ -172,16 +209,29 @@ def loud_outlines(path, limit=OUTLINE_CHROMA_MAX):
 
     Chroma here is max channel minus min channel, which is what separates "a
     dark neutral line" from "a coloured line" regardless of how dark either is.
+
+    Both versions, through humanoid.mtoon: 0.x writes `_OutlineColor` into a
+    parallel array, 1.0 writes `outlineColorFactor` onto the material. This read
+    `extensions.VRM` directly until 2026-09-10 and raised KeyError on every 1.0
+    file, three checks into report().
+
+    The width mode is deliberately not consulted, on either version. A material
+    whose outline is switched off draws no second pass and so cannot recolour
+    anything, but skipping those would take the shipped 0.x reading from 13 loud
+    materials to 5 on mika-pink and AvatarSample_B alike. That is a question
+    about this threshold, identical on both versions, and it is not this
+    function's to answer while it is being taught a second file format
+    (verify_test.py pins the decision).
     """
     doc, _ = glb.load(path)
     loud = []
-    for mat in doc['extensions']['VRM']['materialProperties']:
-        rgb = mat.get('vectorProperties', {}).get('_OutlineColor')
+    for mat in humanoid.mtoon(doc):
+        rgb = mat['outlineColor']
         if rgb is None:
             continue
-        chroma = max(rgb[:3]) - min(rgb[:3])
+        chroma = max(rgb) - min(rgb)
         if chroma > limit:
-            loud.append((mat['name'], tuple(round(c, 3) for c in rgb[:3]), chroma))
+            loud.append((mat['name'], tuple(round(c, 3) for c in rgb), chroma))
     return loud
 
 
@@ -196,12 +246,18 @@ def undeclared_rims(path):
     site's own accent, which is mars orange chosen for a pink-haired body. One
     material added without a rim is one part of this outfit edged in rust while
     the rest is edged in mint, and no unlit gate can see either.
+
+    Both versions, through humanoid.mtoon. 1.0's spelling is
+    `parametricRimColorFactor`, and it differs from 0.x in one way that matters
+    here: VRoid's 1.0 exports state it explicitly as (0,0,0), where the 0.x ones
+    leave `_RimColor` out. Both mean the same thing to a renderer and both count
+    as undeclared, which is why the test is on the value and not on the key.
     """
     doc, _ = glb.load(path)
     quiet = []
-    for mat in doc['extensions']['VRM']['materialProperties']:
-        rgb = mat.get('vectorProperties', {}).get('_RimColor')
-        if rgb is None or max(rgb[:3]) <= 0.0:
+    for mat in humanoid.mtoon(doc):
+        rgb = mat['rimColor']
+        if rgb is None or max(rgb) <= 0.0:
             quiet.append(mat['name'])
     return quiet
 
@@ -261,8 +317,16 @@ def misaligned_material_properties(path):
     This exists because the two writes in `customise.sweep_materials` are a pair
     that no single check was holding: deleting the materialProperties line alone
     left the model with 30 materials against 34 properties and every gate green.
+
+    VRM 1.0 has no second array: MToon lives on the material, so there is
+    nothing to fall out of step and this check cannot mean anything there. It
+    returns NOT_APPLICABLE rather than an empty list, because an empty list from
+    a check that never ran is indistinguishable from a clean result, and that is
+    how it read on every 1.0 body before 2026-09-10.
     """
     doc, _ = glb.load(path)
+    if humanoid.version(doc) == '1':
+        return NOT_APPLICABLE
     props = doc.get('extensions', {}).get('VRM', {}).get('materialProperties')
     if props is None:
         return []
@@ -315,19 +379,21 @@ def torn_shapes(path, baseline=None, limit=SHAPE_STRETCH_MAX):
     Only the grafted keys. The base model's 56 face expressions fail both
     measures by design -- a closing eyelid IS a fold and its edges DO collapse
     -- and they have played correctly since long before this pipeline existed.
-    They are recognised by the file itself: a mesh any `blendShapeMaster` group
-    binds to is an expression mesh, and is skipped whole. Reading that out of
-    the candidate rather than out of `baseline` matters, because `baseline` is
-    optional here (see the module docstring) and a version of this that only
-    knew the face when handed one reported 30 tears on a correct file.
+    They are recognised by the file itself: a mesh any expression binds a morph
+    target on is an expression mesh, and is skipped whole. That reading is
+    `humanoid.expression_meshes`, which takes 0.x's `blendShapeMaster` binds and
+    1.0's `morphTargetBinds` through the node they name; reading only the 0.x
+    half saw no expressions at all on a 1.0 body and reported 45 tears on a
+    correct face. Taking the list off the candidate rather than off `baseline`
+    matters too, because `baseline` is optional here (see the module docstring)
+    and a version of this that only knew the face when handed one reported 30
+    tears on a correct file.
     `baseline` still contributes when given, for a mesh that carried targets
     before this pipeline touched it without being bound to an expression.
     """
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
-    groups = (doc.get('extensions', {}).get('VRM', {})
-              .get('blendShapeMaster', {}).get('blendShapeGroups', ()))
-    bound = {b['mesh'] for g in groups for b in g.get('binds', ())}
+    bound = humanoid.expression_meshes(doc)
     inherited = {m.get('name') for i, m in enumerate(doc['meshes']) if i in bound}
     if baseline:
         base, _ = glb.load(baseline)
@@ -423,16 +489,30 @@ def stranded_collider_groups(path):
     silently repoints every surviving spring. The builder prunes these in
     twintail.prune_stranded_collider_groups; this detector holds the shipped
     file to that, the same pairing as every other write-plus-guard here.
+
+    Both versions, through humanoid.springs, which normalises 0.x's
+    `secondaryAnimation` and 1.0's `VRMC_springBone` into one shape. Reading
+    only the 0.x path returned [] on a 1.0 file, and [] is what a clean file
+    looks like.
+
+    The name in each finding is the node the group's colliders hang off. A 1.0
+    group need not hang off one node, and the normalised shape carries no name
+    of its own for it, so those report an empty name and are identified by the
+    index beside it, which is what addresses them in the file anyway.
     """
     doc, _ = glb.load(path)
-    secondary = doc.get('extensions', {}).get('VRM', {}).get(
-        'secondaryAnimation', {})
+    springs = humanoid.springs(doc)
     used = {index
-            for group in secondary.get('boneGroups', [])
-            for index in group.get('colliderGroups', [])}
-    return [(index, doc['nodes'][group.get('node')].get('name', ''))
-            for index, group in enumerate(secondary.get('colliderGroups', []))
-            if index not in used]
+            for group in springs['groups']
+            for index in group['colliderGroups']}
+    stranded = []
+    for index, group in enumerate(springs['colliderGroups']):
+        if index in used:
+            continue
+        node = group.get('node')
+        name = doc['nodes'][node].get('name', '') if node is not None else ''
+        stranded.append((index, name))
+    return stranded
 
 
 def report(path, baseline=None):
@@ -440,8 +520,11 @@ def report(path, baseline=None):
     print(f'== {path}')
     print(f'   tris {s["tris"]}  materials {s["materials"]}  images {s["images"]}  '
           f'nodes {s["nodes"]}  bones {s["bones"]}')
+    # Not `blendShapeGroups`: that is the 0.x name for them and this line prints
+    # for 1.0 files too, where they are `VRMC_vrm.expressions`. Same slip as the
+    # `_RimColor` in the rim FAIL below, found by a reviewer on the same pass.
     print(f'   springs {s["springs"]}  colliders {s["colliders"]}  '
-          f'blendShapeGroups {len(s["groups"])}')
+          f'expressions {len(s["groups"])}')
     for m in s['meshes']:
         tris = sum(p['tris'] for p in m['primitives'])
         targets = max((p['targets'] for p in m['primitives']), default=0)
@@ -488,11 +571,17 @@ def report(path, baseline=None):
         ok = False
 
     skew = misaligned_material_properties(path)
-    print(f'   materials out of step with materialProperties: {len(skew)}')
-    for i, a, b in skew[:5]:
-        print(f'   FAIL index {i}: material {a!r} vs materialProperty {b!r}')
-    if skew:
-        ok = False
+    if skew is NOT_APPLICABLE:
+        # Said rather than counted. VRM 1.0 keeps MToon on the material, so
+        # there is no parallel array to fall out of step, and printing 0 here
+        # would claim a check that did not happen.
+        print('   materials out of step with materialProperties: N/A on VRM 1.0')
+    else:
+        print(f'   materials out of step with materialProperties: {len(skew)}')
+        for i, a, b in skew[:5]:
+            print(f'   FAIL index {i}: material {a!r} vs materialProperty {b!r}')
+        if skew:
+            ok = False
 
     loose = loose_sparse_bounds(path)
     print(f'   sparse accessors with wrong min/max: {len(loose)}')
@@ -528,7 +617,9 @@ def report(path, baseline=None):
     quiet = undeclared_rims(path)
     print(f'   materials with no rim colour: {len(quiet)}')
     for name in quiet[:5]:
-        print(f'   FAIL {name} states no _RimColor, so it takes the site accent')
+        # Not `_RimColor`: that is the 0.x spelling, and this line prints for
+        # 1.0 files too, where it is `parametricRimColorFactor`.
+        print(f'   FAIL {name} states no rim colour, so it takes the site accent')
     if quiet:
         ok = False
 
