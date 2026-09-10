@@ -1,0 +1,118 @@
+# The bow, measured in the browser through the real engine. 2026-09-10.
+#
+# The page is a dev-server session, so this file is the only record of these
+# numbers, the same reason armrest-0909-browser.log exists.
+#
+#   npm run dev
+#   http://localhost:5173/scripts/avatar/live-preview.html?mikadebug=1
+#   ?mikadebug=1 exposes window.__mikaVrm; the readings below are the world
+#   position of the leftEye bone, against a baseline averaged over 40 samples
+#   at 50ms -- two full seconds, which is longer than a breath. Passes A and B
+#   sample at a fixed 720ms after the click (the 1.5s sine envelope peaks at
+#   750ms); pass C takes the argmax of the whole trace instead, and says so.
+#
+# Body: public/avatar/mika-milfy-12.vrm, the milfy look the site serves.
+#   VRM metaVersion 0, the same family as pink and base.
+#
+# AVERAGING THE BASELINE IS LOAD-BEARING. Two passes before these read the peak
+# against a single instant of the idle pose and returned OPPOSITE signs on
+# consecutive runs: breathing and weight shift move her eyes by the same tens of
+# millimetres in Y that the gesture does. Only the Z swing clears that floor.
+# Nothing that follows rests on a Y reading.
+
+== pass A, 10:23, before the rename (gesture ids bowForward / bow) ==
+  gesture              spine.x   head.x    eye Z      eye Y
+  nod                   -0.008   -0.038    -28.8mm    +51.9mm
+  bow (the old curve)   +0.332   +0.213   -147.3mm    -17.1mm
+  bowForward (new)      -0.319   -0.187   +145.5mm    -32.1mm
+
+== pass B, 10:56, after the rename (gesture ids bow / leanBack) ==
+  gesture (label)        eye Z      eye Y
+  鞠躬      bow        +137.5mm     +6.6mm
+  後仰      leanBack   -152.9mm    -18.8mm
+  點頭      nod         -10.9mm    +24.7mm
+  開心搖頭  wiggle       +2.3mm     +2.3mm
+  歪頭      tilt        +10.0mm     -5.0mm
+  左右張望  glance      +92.9mm     +9.7mm
+  重心擺動  swayStep     +8.4mm     -0.9mm
+  輕快彈跳  bounce       -9.6mm     +1.8mm
+  扭腰      hipTwist     +5.9mm     +0.1mm
+  低頭看腳  toeLook     -10.3mm     +5.9mm
+
+# REPEATABILITY. A and B are the same measurement of the same two curves and
+# they differ: forward 137.5 against 145.5, back -152.9 against -147.3, about
+# 8mm apart. Pass C below widens that to about 14mm and is the figure to quote.
+# Either way the prose says "about 145mm" (the three-pass mean is 144.7mm
+# forward, 146.0mm back) rather than carrying a tenth of a millimetre that
+# does not survive another run. The SIGN is what carries the
+# argument and it is identical in every pass and in the offline probe
+# (pitch-0909.log: -121.8mm on this family, +136.1mm on the two 1.0 bodies).
+#
+# WHICH WAY IS FORWARD, read off the camera rather than inferred from another
+# gesture. avatarGuideEngine sets camera.position.set(0, y + AVATAR_CAMERA_TILT,
+# framingDistance) and AVATAR_FRAMING_DEFAULT.distance is 2.3, so the camera is
+# at positive Z and +Z is toward the viewer. VRMUtils.rotateVRM0 sets
+# scene.rotation.y = Math.PI on a 0.x body, turning a model that faces -Z round
+# to face it.
+#
+# The nod row above is NOT that anchor, though an earlier draft used it as one.
+# nod's pitch peaks at 0.14 rad and is 0.078 at the 720ms sample, worth about
+# 4.5mm of eye swing against the 10.9mm recorded: it sits inside the same band as
+# the eight gestures this file calls unchanged. It stays in the table as one more
+# reading, not as evidence.
+#
+# THE OTHER EIGHT. Pass B clicked every gesture the preview offers. None moved
+# beyond the idle floor except `glance`, at +92.9mm, which is a head turn and is
+# supposed to. Nothing else changed when `bow` did.
+#
+== pass C, 11:56, the screenshots, each bound to the frame it was read on ==
+  gesture     peak    at      ink    baseline eye Z
+  bow      +151.1mm   720ms   0.185   +0.0252m
+  leanBack -137.8mm   728ms   0.182   +0.0107m
+#
+# THE FIRST PAIR OF SCREENSHOTS DID NOT SHOW THESE POSES, and both reviewers
+# caught it independently. The two PNGs committed at 10:56 were two near-idle
+# frames: 172,428 against 172,427 foreground pixels, silhouette centroid 0.6px
+# apart, mask XOR 6,201px, the whole difference a 4px sideways shift that is the
+# idle weight shift. A capture taken by an outside screenshot tool cannot be
+# aimed at a 1.5s envelope, because its latency is not bounded by anything.
+#
+# Pass C aims it from inside the page instead, and the reading and the pixels
+# come from ONE frame:
+#
+#   * every frame after the click, record elapsed time and the eye's Z;
+#   * on the first frame at or past 715ms, read Z, then read the canvas;
+#   * afterwards, confirm that frame was the largest |Z| of the whole trace.
+#     It was, for both: 720ms and 728ms are the argmax, not a nominal 720.
+#
+# `ink` is the fraction of a downsampled copy of the canvas that is not black,
+# taken in the same frame. It guards the one way this capture fails silently:
+# the renderer runs with preserveDrawingBuffer false, so reading the canvas on
+# the wrong side of a paint returns a blank image. 0.185 and 0.182 are the
+# character; a cleared buffer reads 0.
+#
+# Playwright drove this pass, not the extension that drove A and B, because the
+# extension was not connected. Its rAF is not starved here: 61 callbacks in a
+# measured second on this page. The engine, body and camera are the same.
+#
+# The pair now differ as two poses. Foreground is a pixel whose RGB differs
+# from the corner background by more than 12 on the channel mean:
+#
+#   foreground pixels      571,922 against 561,288
+#   topmost foreground row      40 against 49, so 9px apart
+#   foreground centroid, Y  605.91 against 672.47, so 66.6px apart
+#   mask XOR                                       173,102px
+#
+# An earlier draft said the top edge was 16px apart. That figure came from
+# "the first row holding more than 20 foreground pixels", a caliper picked
+# after the fact and never written down. The topmost row is 9px.
+# Both are cropped from the 2140x1456 canvas with ONE shared box (518,393)-
+# (1651,1456), so they stay comparable to each other.
+#
+# Screenshots: bow-0910-bow.png, bow-0910-leanback.png.
+#
+# Three passes now, so the spread is 137.5/145.5/151.1 forward and
+# 152.9/147.3/137.8 back: about 14mm, wider than the 8mm two passes suggested.
+# The idle baseline itself moved 14.5mm between the two pass C runs, which is
+# that same floor. The SIGN is what carries the argument and it is the same in
+# all three passes, in the offline probe, and in the two screenshots.

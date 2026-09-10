@@ -80,6 +80,8 @@ with live-preview-config.ts's MIKA_MILFY_FAMILY temporarily set to
   she faces the camera at +Z
 
   playGesture('bow') at its peak (spineX 0.318, headX 0.185, chestX 0.005):
+  -- that id was renamed `leanBack` on 2026-09-10; the gesture called `bow`
+  -- today is the version-aware one and moves her the other way. See bow-0910.md.
     head   y 1.3196 -> 1.2931, z -0.0087 -> -0.1275  (-118.8mm in Z)
     leftEye                                          (-148.0mm in Z)
   so the shipped body's bow carries her head AWAY from the viewer. The

@@ -80,6 +80,7 @@ export const PREVIEW_MOTIONS: readonly PreviewControl<AvatarMotionName>[] = [
 
 export const PREVIEW_GESTURES: readonly PreviewControl<GestureName>[] = [
   { name: 'bow', label: '鞠躬' },
+  { name: 'leanBack', label: '後仰' },
   { name: 'nod', label: '點頭' },
   { name: 'wiggle', label: '開心搖頭' },
   { name: 'tilt', label: '歪頭' },

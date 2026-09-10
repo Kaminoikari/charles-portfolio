@@ -1,0 +1,99 @@
+# Why the bow's assertions live in avatarBow.test.ts and not in rigProbe.test.ts,
+# and why no speed number is quoted for that choice. 2026-09-10.
+#
+# The first draft of the commit message claimed the separate file "costs 12
+# seconds". A reviewer asked for the measurement. It did not survive it. A
+# second draft quoted three averages with no durable copy behind them. A third
+# listed six runs while claiming to list all of them, then eleven.
+# So this table is GENERATED rather than typed, and the count comes out of the
+# generator:
+#
+#   for every *.log in the session scratchpad, take the last "Test Files
+#   N passed (T)", "Tests N passed (T)" and "Duration Ns"; keep the rows whose
+#   FILE count is the whole suite, 28 or 29; sort by log name.
+#
+# Every full-suite run recorded while this change was made, as of the commit
+# that carries this file. A run whose log opens with the `portfolio@0.0.0 test`
+# banner is `npm run test`, which is `vitest run --passWithNoTests`; the rest
+# are `npx vitest run`. The flag selects no tests either way and does not enter
+# these timings. "Files" says which arrangement was on disk: 28 means the
+# bow block was still inside rigProbe.test.ts, 29 means it had moved out.
+#
+#   log                   Files  Tests   Duration
+#   base-a.log             28    588     123.01s
+#   base-b.log             28    588     139.45s
+#   mine-a.log             29    595     174.58s
+#   mine-b.log             29    595     173.22s
+#   vitest-baseline.log    28    588     123.12s
+#   vitest-bow.log         28    594     113.34s
+#   vitest-bow2.log        28    595     204.70s
+#   vitest-bow3.log        28    595     221.67s
+#   vitest-bow4.log        28    595     143.51s
+#   vitest-bow5.log        29    595     128.45s
+#   vitest-bowfinal.log    29    596     161.17s
+#   vitest-bowfinal2.log   29    599     147.37s
+#   vitest-final.log       29    595     246.50s
+#   vitest-r3.log          29    599     228.32s
+#   vitest-r3b.log         29    599     183.69s
+#   vitest-r3c.log         29    599     215.37s
+#   vitest-r4.log          28    588     122.44s
+#   vitest-r4b.log         29    599     215.17s
+#   vitest-r7.log          29    599     265.99s
+#
+# Those logs live in a session scratchpad, which is not part of the repository.
+# This table is the durable copy.
+#
+# GROUPED BY WHAT THEY MEASURE, because a different test count is a different
+# amount of work and cannot be compared across:
+#
+#   28 files, 588 tests: n=4 mean 127.00s min 122.44 max 139.45 ratio 1.1389
+#   28 files, 594 tests: n=1 mean 113.34s min 113.34 max 113.34 ratio 1.0000
+#   28 files, 595 tests: n=3 mean 189.96s min 143.51 max 221.67 ratio 1.5446
+#   29 files, 595 tests: n=4 mean 180.69s min 128.45 max 246.50 ratio 1.9190
+#   29 files, 596 tests: n=1 mean 161.17s min 161.17 max 161.17 ratio 1.0000
+#   29 files, 599 tests: n=6 mean 209.32s min 147.37 max 265.99 ratio 1.8049
+#
+# NO SUITE-LEVEL COMPARISON CAN SAY ANYTHING ABOUT THIS FILE. That is the real
+# answer, and it is measured directly rather than inferred from the means above.
+#
+#   avatarBow.test.ts itself           34ms to 241ms over the six runs of the
+#                                      shipped 9-test file. The five earlier
+#                                      runs of its 6-test version read 37ms to
+#                                      96ms, inside that.
+#   the goodbye test in ChatWidget     437ms to 609ms over the six runs in which
+#                                      it prints under `the goodbye`, and 434ms
+#                                      to 726ms over the eight earlier ones in
+#                                      which it printed under `head pats`.
+#                                      Fourteen runs, one test, always under a
+#                                      second.
+#   avatarGuideEngine.wiring.test.ts   2ms to 9ms over all nineteen runs, and
+#                                      that whole range is noise: the twelve
+#                                      runs at 7 tests average 3.92ms and the
+#                                      seven at 8 average 4.86ms, so the new
+#                                      assertion is worth about 0.94ms
+#
+# So the eleven new tests cost under a second between them. Meanwhile
+# springsim.test.ts alone spans 50.2s to 142.7s across the nineteen runs above,
+# and springsim.rigid.test.ts 48.6s to 155.6s. Added up WITHIN each run, those
+# two files together span 98.78s (vitest-bow.log) to 284.05s (vitest-r4b.log).
+# This change never touches either of them, and that 185.27s spread is larger
+# than any gap between group means in this table, the largest of which is
+# 95.98s.
+#
+# A draft of this file read the 588-to-599 difference as the price of the new
+# tests. Subtracting base-a.log from vitest-r4b.log file by file shows what it
+# actually is: of 179.51s, 167.74s is those two springsim files, 93.4% of the
+# total. The three new test points together are about 0.7s.
+#
+# The group means stay in the table because they are what was recorded. Nothing
+# is argued from them. The two 595-test groups differ by 9.27s in favour of the
+# separate file, which is noise of the same kind.
+#
+# Why the new tests are so cheap even on a 13.9MiB body: rigProbe.buildRig
+# parses only the GLB's JSON chunk to build bone nodes. No GLTFLoader, no
+# geometry, no texture decode. File size barely reaches this number, which is
+# why no size is quoted as a cause.
+#
+# The split stands on where the import belongs, not on speed.
+# rigProbe.test.ts asks questions about rigs and loads what a rig needs;
+# avatarGuideEngine's GLTFLoader and three-vrm-animation imports are not that.

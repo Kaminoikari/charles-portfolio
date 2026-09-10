@@ -837,56 +837,56 @@ describe('ChatWidget fullscreen', () => {
     expect(wrapper.style.right).toBe(`${expected}px`)
   })
 
+  // Every clip the widget starts goes through `new Audio(src)`; jsdom has no
+  // media stack, so this stand-in is both the recorder and the stub.
+  class FakeAudio {
+    static created: FakeAudio[] = []
+    src: string
+    paused = false
+    ended = false
+    play = vi.fn(() => Promise.resolve())
+    pause = vi.fn()
+    addEventListener = vi.fn()
+    constructor(src: string) {
+      this.src = src
+      FakeAudio.created.push(this)
+    }
+  }
+
+  // Renders the widget with the capability gate open and waits for the guide
+  // to hand its pat callback out. Nothing has been clicked at this point, so
+  // no voice line is in flight.
+  async function mountPattable() {
+    FakeAudio.created = []
+    avatarStub.onPat = null
+    avatarStub.handle.setEmotion.mockClear()
+    avatarStub.handle.playGesture.mockClear()
+    vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
+      ((kind: string) =>
+        kind === 'webgl2'
+          ? { getExtension: () => null }
+          : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
+    )
+    render(<ChatWidget />)
+    // Two waits, and the second one is load-bearing. The gate runs behind a
+    // 400ms latch before she is mounted at all; the FIRST render after that
+    // still has avatarLoaded false (the stub reports its first frame from an
+    // effect), and the pat callback captured in that render closes over a
+    // speakCue that refuses to play — she is not on duty yet. This test was
+    // flaky (2 failures in 5 runs) until it waited for the render that comes
+    // AFTER the load: the character launcher button, which is the only DOM
+    // node gated on avatarIsLauncher, and so on avatarLoaded.
+    await waitFor(() => expect(avatarStub.onPat).toBeTruthy(), { timeout: 2000 })
+    await waitFor(() => expect(document.querySelector('[data-own-focus-ring]')).toBeTruthy(), {
+      timeout: 2000,
+    })
+    // Read at call time rather than captured here: the stub replaces the
+    // callback on every render, and only the latest one is the live wiring.
+    return (kind: 'happy' | 'annoyed') => takePatCallback()(kind)
+  }
+
   describe('head pats', () => {
-    // Every clip the widget starts goes through `new Audio(src)`; jsdom has no
-    // media stack, so this stand-in is both the recorder and the stub.
-    class FakeAudio {
-      static created: FakeAudio[] = []
-      src: string
-      paused = false
-      ended = false
-      play = vi.fn(() => Promise.resolve())
-      pause = vi.fn()
-      addEventListener = vi.fn()
-      constructor(src: string) {
-        this.src = src
-        FakeAudio.created.push(this)
-      }
-    }
-
-    // Renders the widget with the capability gate open and waits for the guide
-    // to hand its pat callback out. Nothing has been clicked at this point, so
-    // no voice line is in flight.
-    async function mountPattable() {
-      FakeAudio.created = []
-      avatarStub.onPat = null
-      avatarStub.handle.setEmotion.mockClear()
-      avatarStub.handle.playGesture.mockClear()
-      vi.stubGlobal('Audio', FakeAudio as unknown as typeof Audio)
-      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        ((kind: string) =>
-          kind === 'webgl2'
-            ? { getExtension: () => null }
-            : null) as unknown as typeof HTMLCanvasElement.prototype.getContext,
-      )
-      render(<ChatWidget />)
-      // Two waits, and the second one is load-bearing. The gate runs behind a
-      // 400ms latch before she is mounted at all; the FIRST render after that
-      // still has avatarLoaded false (the stub reports its first frame from an
-      // effect), and the pat callback captured in that render closes over a
-      // speakCue that refuses to play — she is not on duty yet. This test was
-      // flaky (2 failures in 5 runs) until it waited for the render that comes
-      // AFTER the load: the character launcher button, which is the only DOM
-      // node gated on avatarIsLauncher, and so on avatarLoaded.
-      await waitFor(() => expect(avatarStub.onPat).toBeTruthy(), { timeout: 2000 })
-      await waitFor(() => expect(document.querySelector('[data-own-focus-ring]')).toBeTruthy(), {
-        timeout: 2000,
-      })
-      // Read at call time rather than captured here: the stub replaces the
-      // callback on every render, and only the latest one is the live wiring.
-      return (kind: 'happy' | 'annoyed') => takePatCallback()(kind)
-    }
-
     it('answers a happy pat with a giggle from the locale-shared pool', async () => {
       const pat = await mountPattable()
 
@@ -962,6 +962,28 @@ describe('ChatWidget fullscreen', () => {
 
       expect(FakeAudio.created).toHaveLength(1)
       expect(FakeAudio.created[0].pause).not.toHaveBeenCalled()
+    })
+  })
+
+  // Its own block: the goodbye borrows the mount harness above because that is
+  // what puts her on duty, and it has nothing to do with head pats.
+  describe('the goodbye', () => {
+    // The goodbye is the only cue that bows, and which curve it plays decides
+    // whether she bends toward the visitor or away from them. `leanBack` writes
+    // the pitch in the model's own space, which tips a VRoid 0.x body backwards,
+    // and every look this site offers is one (her eyes swing about 145mm away,
+    // scripts/avatar/evidence/bow-0910.md). avatarBow.test.ts holds `bow` to
+    // bowing toward the viewer on all three families; this holds the goodbye to
+    // asking for that one rather than for `leanBack`.
+    it('bows toward the visitor when the chat is stowed', async () => {
+      const user = userEvent.setup()
+      await mountPattable()
+
+      await user.click(await screen.findByRole('button', { name: /open the ai assistant/i }))
+      avatarStub.handle.playGesture.mockClear()
+      await user.click(screen.getByRole('button', { name: /minimise the ai assistant/i }))
+
+      expect(avatarStub.handle.playGesture).toHaveBeenCalledWith('bow')
     })
   })
 

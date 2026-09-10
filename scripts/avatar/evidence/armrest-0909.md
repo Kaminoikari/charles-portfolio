@@ -132,7 +132,9 @@ eyes point (`pitch-0909.log`):
 | vroid-studio-dressup | 1 | 136.1mm forward, 8.8mm down |
 
 Measured live in the browser on the shipped body as well, through the engine's
-own `playGesture('bow')`: her head moved -118.8mm in world Z with her eyes
+own `playGesture('bow')` -- the id that on 2026-09-10 was renamed `leanBack`,
+so running that line today plays the other motion -- her head moved -118.8mm in
+world Z with her eyes
 pointing +Z, and her left eye -148.0mm. The 3mm difference from the offline
 figure has two parts: the probe reads this family's base file and the page ran
 `mika-milfy-12.vrm` (one family, `rigOf` hashes the same for both), and the live
@@ -147,7 +149,13 @@ drives the eye target down by 2.
 NOT FIXED HERE. It is outside what this change was for, the two 1.0 bodies are
 `offered: false` so no visitor sees the mirror, and correcting the sign changes a
 visible motion on the body every visitor DOES see, which is the owner's call and
-needs a browser watch of all nine gestures rather than a probe.
+needs a browser watch of all nine gestures rather than a probe. (Nine on
+09-09. The split below makes it ten, `leanBack` being the tenth.)
+
+**Fixed 2026-09-10**, on the owner's call and with that browser watch: the
+version-aware curve is now `bow` and it is what `bye` plays, the original curve
+kept its behaviour under the name `leanBack`, and all ten gestures were measured
+through the real engine on the served body. `bow-0910.md` is that receipt.
 
 ## What the run did not check
 

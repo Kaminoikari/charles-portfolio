@@ -368,6 +368,23 @@ export function armRestSign(version: '0' | '1'): -1 | 1 {
 }
 
 /**
+ * Which way along Z she faces, by the body's VRM version: +1 for 1.0, -1 for
+ * 0.x. Derived from `armRestSign` rather than written out again, because the
+ * two are the same fact with opposite signs and a fourth independent copy is
+ * how they drift apart.
+ *
+ * What needs it: a normalized bone's local axes follow the MODEL's, so a
+ * positive pitch on spine or head carries her head toward the model's +Z
+ * whichever way the model faces. `VRMUtils.rotateVRM0` turns a 0.x body round
+ * so she FACES the camera, and does not touch that, so the same pitch bows a
+ * 1.0 body toward the viewer and leans a 0.x body away from it. Multiply a
+ * pitch by this and it means the same thing on every body.
+ */
+export function facingSign(version: '0' | '1'): -1 | 1 {
+  return armRestSign(version) === 1 ? -1 : 1
+}
+
+/**
  * The rest pose, as rotations to write on the normalized arm bones.
  *
  * The ONE definition: the engine pins these at load and after every clip, and

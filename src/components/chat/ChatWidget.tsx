@@ -55,6 +55,10 @@ const CUE_PERFORMANCE: Record<
   ack: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   suggest: { emotion: ['relaxed', 0.7, 1.8], gesture: 'nod' },
   fullscreen: { emotion: ['happy', 0.6, 2.0] },
+  // `bow` is version-aware. Until 2026-09-10 this played the curve now called
+  // `leanBack`, which on the VRoid 0.x body every offered look uses swung her
+  // eyes about 145mm AWAY from the visitor: she leaned back to say goodbye
+  // (scripts/avatar/evidence/bow-0910.md).
   bye: { emotion: ['happy', 1, 2.4], gesture: 'bow' },
   // A head pat. The face is the pat's own (shared constant), and there is no
   // gesture here on purpose: AvatarGuide already played the wiggle when it

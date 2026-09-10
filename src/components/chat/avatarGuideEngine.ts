@@ -79,6 +79,7 @@ import {
 import { familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   armRestPins,
+  facingSign,
   EMOTION_RECIPES,
   emotionChannelValues,
   FACE_PALE_TINT,
@@ -100,8 +101,11 @@ import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 // unit-tested); this re-export keeps the engine the import point for callers.
 export type { EmotionName } from './avatarMode'
 // bow/nod are cue-driven (ChatWidget's CUE_PERFORMANCE); wiggle is the
-// head-pat response; the rest is the idle-act pool that fires on its own during
-// undisturbed idle (see IDLE_ACTS).
+// head-pat response; tilt, glance, swayStep, bounce, hipTwist and toeLook are
+// the idle-act pool that fires on its own during undisturbed idle (see
+// IDLE_ACTS). leanBack is in none of those: it is the curve `bow` used to be,
+// kept callable after 2026-09-10 gave `bow` the version-aware pitch
+// (evidence/bow-0910.md), and nothing plays it unless something asks for it.
 //
 // Nothing here touches an arm any more. Arms are motion capture (avatarMotions)
 // because a hand has to ARRIVE somewhere — beside her temple, on her hip — and
@@ -110,6 +114,7 @@ export type { EmotionName } from './avatarMode'
 // a shape a formula can hold honestly.
 export type GestureName =
   | 'bow'
+  | 'leanBack'
   | 'nod'
   | 'wiggle'
   | 'tilt'
@@ -229,14 +234,65 @@ type GestureDef = {
   // leaves this at 0 and keeps the pure sine it was tuned with; the plateau
   // existed for named arm poses, which motion capture owns now.
   hold?: number
-  apply: (p: number, env: number, v: number, o: GestureOffsets) => void
+  // `fwd` is avatarMode.facingSign for the body being posed: +1 when a positive
+  // pitch carries her head toward the viewer, -1 when it carries her away. Only
+  // `bow` reads it today, which is why adding the parameter changed nothing
+  // else: the others simply ignore an argument they do not name.
+  //
+  // Ignoring it is not the same as not needing it. `toeLook` (`hp += 0.3`) and
+  // `bounce` (`sx`/`hp` off an absolute sine) pitch in ONE direction, so both
+  // mean something about the viewer on a body that faces the other way. That is
+  // a live defect on the three offered looks and it is older than this
+  // parameter: `toeLook` says it peers at the floor and on a 0.x body it lifts
+  // her chin 17 degrees while the eye target drops. Recorded, not fixed here.
+  apply: (p: number, env: number, v: number, o: GestureOffsets, fwd: -1 | 1) => void
+}
+
+/**
+ * One gesture's offsets at a point in its envelope, off the real table.
+ *
+ * The table is private because nothing outside should be able to edit a curve;
+ * this is how a test reaches the curves that ship. `fwd` is what the loop
+ * passes: `avatarMode.facingSign(body version)`.
+ */
+export function gestureOffsets(
+  name: GestureName,
+  p: number,
+  env: number,
+  v: number,
+  fwd: -1 | 1,
+): GestureOffsets {
+  const o: GestureOffsets = { hp: 0, hy: 0, hr: 0, sx: 0, sy: 0, sz: 0, cx: 0, ex: 0, ey: 0 }
+  GESTURES[name].apply(p, env, v, o, fwd)
+  return o
 }
 
 const bone = (v: VRM, n: BoneName) => v.humanoid?.getNormalizedBoneNode(n)
 
 const GESTURES: Record<GestureName, GestureDef> = {
   // -- cue-driven ------------------------------------------------------------
+  // A bow, on whichever body is loaded. The pitch is resolved against which way
+  // she faces, because a normalized bone's local axes follow the MODEL's and the
+  // two VRM versions face opposite ways along Z. Measured at the envelope peak
+  // on the milfy body the site serves: her eyes swing TOWARD the viewer, 137.5,
+  // 145.5 and 151.1mm on three passes (evidence/bow-0910-browser.log). Offline
+  // the same curve carries the HEAD bone 136.1mm toward it on the two 1.0
+  // bodies (evidence/pitch-0909.log measures the head, not the eyes).
   bow: {
+    dur: 1.5,
+    apply: (_p, env, _v, o, fwd) => {
+      o.sx += fwd * env * 0.32
+      o.hp += fwd * env * 0.18
+    },
+  },
+  // What `bow` used to be, under the name of what it actually does. It writes
+  // the same curve in the MODEL's own space with no version term, which on the
+  // VRoid rig every offered look uses carries her eyes AWAY from the viewer,
+  // 152.9, 147.3 and 137.8mm on the same three passes: she leans back. Kept
+  // because it is a pose in its own right and the motion that already shipped
+  // should not vanish; `bye` is the one caller that moved, and it moved to
+  // `bow`.
+  leanBack: {
     dur: 1.5,
     apply: (_p, env, _v, o) => {
       o.sx += env * 0.32
@@ -1273,7 +1329,9 @@ export function initAvatarGuide(
         const total = def.dur + (def.hold ?? 0)
         const p = Math.min(gesture.t / total, 1)
         const env = gestureEnvelope(gesture.t, def.dur, def.hold ?? 0)
-        def.apply(p, env, gesture.v, OFF)
+        // The body's own version, not a literal: writing the 0.x sign into a
+        // gesture is the mistake pinArms made and armrest-0909.md records.
+        def.apply(p, env, gesture.v, OFF, facingSign(vrm?.meta.metaVersion ?? '1'))
         if (p >= 1) gesture = null
       }
 

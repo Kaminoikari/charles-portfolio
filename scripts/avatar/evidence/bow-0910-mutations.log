@@ -1,0 +1,75 @@
+# Seven defences behind the goodbye bow, seven mutations, every one of them red.
+# Run with scratchpad/mutate_ts.py: one exact string swap at a time, the pattern
+# asserted to hit exactly once, the file restored after.
+#   G1, G2, G3   npx vitest run src/components/chat/avatarBow.test.ts
+#   G4           npx vitest run src/components/chat/ChatWidget.test.tsx
+#   G5, G6, G7   npx vitest run src/components/chat/
+#
+# The last three run against the whole directory, so their "one red" is an
+# exclusivity across every test in src/components/chat/. The first four are
+# scoped to one file, so theirs is an exclusivity within that file.
+#
+# They land on FIVE distinct tests, not seven, and the mapping is the point:
+#
+#   G1, G2   both redden BOTH bow assertions. `facingSign` returning one sign
+#            and `bow` dropping the term it multiplies by are two points on one
+#            chain, so neither can be wrong on its own.
+#   G6, G7   each redden ONE of that pair and only that one. They exist to show
+#            the head half and the spine half are separately covered, which is
+#            exactly what G1 and G2 cannot show.
+#   G3       leanBack, all three families. Nothing else touches it. The swap
+#            negates leanBack's curve outright rather than applying facingSign
+#            to it, which is why all three families redden; a facingSign-shaped
+#            edit would have reddened only vroid-sample-b, because `fwd` is +1
+#            on the two 1.0 bodies. The stronger swap is the one that ran.
+#   G4       the goodbye. Nothing else touches it.
+#   G5       the loop's version read. Nothing else touches it.
+#
+# Three of the seven owe their redness to a reviewer reading the first draft:
+# G6 and G7 did not exist at all, and G5 existed but was GREEN.
+#
+# G5 was GREEN in the first pass, under a paragraph explaining why the seam
+# could not be closed without a test that boots the engine against a real body.
+# That was wrong: avatarGuideEngine.wiring.test.ts already closes the same seam
+# for pinArms by reading the engine's SOURCE -- no VRM, no WebGL, and the whole
+# file inside bow-0910-timing.log's 2ms-to-9ms band over nineteen runs -- and the
+# gesture loop now carries the same three-line assertion. The first draft would
+# have shipped an untested line under a paragraph arguing it had to stay
+# untested.
+#
+# G6 and G7 exist because the first version of avatarBow.test.ts could not see
+# HALF the fix. It read the HEAD bone's own world position, and rotating a bone
+# does not move its own origin, so every millimetre it reported came from `sx`
+# on the spine: dropping the version term from `hp` alone left the whole suite
+# green. The head term now has its own assertion, which reads the EYE (about
+# 57mm above the head pivot, so it does swing), and G6/G7 mutate the two halves
+# separately to show neither is riding on the other.
+
+G1 facingSign returns the same sign for both versions: exit 1, tests ran=True, 2 red
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow carries her head toward the viewer
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow tips her face toward the viewer too, not just her torso
+G2 bow ignores which way the body faces: exit 1, tests ran=True, 2 red
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow carries her head toward the viewer
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow tips her face toward the viewer too, not just her torso
+G3 leanBack's curve is edited at all, so the motion that already shipped changes: exit 1, tests ran=True, 3 red
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > leaves leanBack pitching toward the model own +Z, as bow always
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vrm1-twist-sample' > leaves leanBack pitching toward the model own +Z, as bow alw
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-studio-dressup' > leaves leanBack pitching toward the model own +Z, as bow 
+G4 the goodbye goes back to the motion that leans away: exit 1, tests ran=True, 2 red
+    FAIL  src/components/chat/ChatWidget.test.tsx > ChatWidget size modes > wraps long drafts and grows the composer to their content height
+    FAIL  src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > the goodbye > bows toward the visitor when the chat is stowed
+G5 the loop writes a fixed sign instead of reading the body version: exit 1, tests ran=True, 1 red
+    FAIL  src/components/chat/avatarGuideEngine.wiring.test.ts > the rest pose takes the body it is being written on > hands the gesture table THIS body v
+G6 the head half of the bow ignores which way the body faces: exit 1, tests ran=True, 1 red
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow tips her face toward the viewer too, not just her torso
+G7 the spine half of the bow ignores which way the body faces: exit 1, tests ran=True, 1 red
+    FAIL  src/components/chat/avatarBow.test.ts > the procedural bow on 'vroid-sample-b' > bow carries her head toward the viewer
+
+# G4 shows TWO red above. The second, `wraps long drafts and grows the composer
+# to their content height`, is an unrelated test in the same file and a flake:
+# it is green in the unmutated full suite (vitest-r7.log, 989ms, and it is one
+# of the slowest tests there), and re-running G4 on its own gives exactly one
+# red, the goodbye:
+#
+#   G4 the goodbye goes back to the motion that leans away: exit 1, tests ran=True, 1 red
+#       FAIL  src/components/chat/ChatWidget.test.tsx > ChatWidget fullscreen > the goodbye > bows toward the visitor when the chat is stowed
