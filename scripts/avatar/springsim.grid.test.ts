@@ -91,10 +91,15 @@ function rng(seed: number): () => number {
 }
 
 describe('the nearest-vertex query, against a brute-force scan', () => {
-  // The shipped body, read once. Its face is the mesh that made the old grid
-  // slow: 20,560 vertices inside a head, which is the densest clustering the
-  // simulator ever meets, and dense clustering is where an early exit that
-  // stops one shell too soon starts returning the wrong vertex.
+  // The shipped body, read once. Face and Body_Skin are the two sets every
+  // penetration query is asked against, so they are the geometry the grid
+  // actually meets: a few thousand vertices packed onto a surface, which is
+  // where an early exit that stops one shell too soon starts returning the
+  // wrong vertex.
+  //
+  // These counts were larger when this file was written, because `gather` was
+  // reading a shared vertex buffer once per primitive and stacking the same
+  // 2,054 face vertices ten times over. The floors below are the real counts.
   let cached: { face: SkinSet; body: SkinSet } | null = null
   const real = (): { face: SkinSet; body: SkinSet } => {
     if (cached) return cached
@@ -116,9 +121,9 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
     return cached
   }
 
-  it('agrees on every query, on the densest mesh the simulator meets', () => {
+  it('agrees on every query, on the face the penetration test is asked about', () => {
     const face = real().face
-    expect(face.keep.length).toBeGreaterThan(10000)
+    expect(face.keep.length).toBeGreaterThan(2000)
     const grid = new Grid(face)
     const P = face.outPos
     const r = rng(20260911)
@@ -141,6 +146,7 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
 
   it('agrees on the body shell too, whose vertices are spread over a whole figure', () => {
     const body = real().body
+    expect(body.keep.length).toBeGreaterThan(4000)
     const grid = new Grid(body)
     const P = body.outPos
     const r = rng(770077)
@@ -185,7 +191,7 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
     expect(answered).toBeGreaterThan(100)
   })
 
-  it('saturates rather than reaching, once nothing is within REACH', () => {
+  it('saturates rather than reaching, for a point outside the geometry entirely', () => {
     const face = real().face
     const grid = new Grid(face)
     const P = face.outPos
@@ -194,6 +200,44 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
       const v = grid.signed(P[i * 3] + 1000, P[i * 3 + 1], P[i * 3 + 2] + away)
       expect(v).toBe(REACH)
     }
+  })
+
+  it('saturates for a point INSIDE the box that is still too far from anything', () => {
+    // The test above is answered by the cheap out-of-box reject and never
+    // reaches the `best > REACH * REACH` clamp, which a review measured: the
+    // mutation that removes that clamp does not turn it red. This one has to
+    // go through the clamp, because the query sits inside the bounding box
+    // with nothing near it. Two vertices far apart, and the middle is empty.
+    const set = setOf([-0.5, 0, 0, 0.5, 0, 0], [1, 0, 0, -1, 0, 0])
+    const g = new Grid(set)
+    expect(g.signed(0, 0, 0)).toBe(REACH)
+    expect(g.signed(0, 0, 0)).toBe(brute(set, 0, 0, 0))
+    // and one just inside REACH of an end, to show the set is reachable at all.
+    // Positive: that vertex's normal points +x and the query is 40mm along it.
+    expect(g.signed(-0.46, 0, 0)).toBeCloseTo(0.04, 12)
+  })
+
+  it('settles two vertices at exactly equal distance the same way a scan would', () => {
+    // Ties are the one input where the answer could depend on the order cells
+    // are walked in, and the two normals can disagree, so the sign flips rather
+    // than a digit. The pair below is equidistant from the origin, in different
+    // cells, with opposing normals: 40mm apart in the answer. Both orderings
+    // are tried, because the fix is "lowest vertex index wins" and putting them
+    // in the other order has to give the other answer, not the same one.
+    const A = { pos: [0.02, 0, 0], nrm: [1, 0, 0] }
+    const B = { pos: [0, 0.02, 0], nrm: [0, -1, 0] }
+    for (const [first, second] of [[A, B], [B, A]]) {
+      const set = setOf([...first.pos, ...second.pos], [...first.nrm, ...second.nrm])
+      const g = new Grid(set)
+      const got = g.signed(0, 0, 0)
+      expect(got).toBe(brute(set, 0, 0, 0))
+      // whichever went in first is the one that answers
+      expect(Math.abs(got)).toBeCloseTo(0.02, 12)
+    }
+    // and the two orderings really do disagree, or this proves nothing
+    const ab = new Grid(setOf([...A.pos, ...B.pos], [...A.nrm, ...B.nrm])).signed(0, 0, 0)
+    const ba = new Grid(setOf([...B.pos, ...A.pos], [...B.nrm, ...A.nrm])).signed(0, 0, 0)
+    expect(Math.sign(ab)).not.toBe(Math.sign(ba))
   })
 
   it('answers on a set with nothing kept, and on a set with one vertex', () => {
@@ -206,12 +250,12 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
     expect(g.signed(0.4, 1.2, 0.3)).toBe(REACH)
   })
 
-  it('picks the nearer of two vertices when a coarser cell would hold both', () => {
-    // The old grid's cell was REACH across, so these two sat in one cell and
-    // the scan simply compared them. At a quarter of REACH they land in
-    // different cells and only the shell walk relates them, which is the thing
-    // that has to be exact: the far one is in the query's OWN cell and the
-    // near one is a shell out.
+  it('prefers a near vertex in its own cell over a far one two shells out', () => {
+    // What this actually exercises is the early exit. The box starts at the far
+    // vertex, so with FINE = 0.0125 the far one is in cell 0 and both the near
+    // one and the query are in cell 2: the answer is found at k = 0, and the
+    // break at k = 2 has to fire without ever looking at cell 0. An earlier
+    // draft of this comment had the two the other way round.
     const near = [0.0, 0.0, 0.006]
     const far = [0.0, 0.0, -0.03]
     const set = setOf([...far, ...near], [0, 0, -1, 0, 0, 1])
@@ -236,10 +280,17 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
     const set = setOf(pos, nrm)
     const g = new Grid(set)
     const r = rng(99)
+    let answered = 0
     for (let t = 0; t < 400; t++) {
       const p = [0, 1, 2].map(() => Math.round(r() * 10 - 2) * FINE)
-      expect(g.signed(p[0], p[1], p[2])).toBe(brute(set, p[0], p[1], p[2]))
+      const want = brute(set, p[0], p[1], p[2])
+      expect(g.signed(p[0], p[1], p[2])).toBe(want)
+      if (want !== REACH) answered++
     }
+    // The other data-driven tests carry this floor and this one did not, so a
+    // change to the query range could have left it comparing 400 saturated
+    // answers and still passing.
+    expect(answered).toBeGreaterThan(200)
   })
 
   it('agrees on scattered geometry that leaves most of its box empty', () => {

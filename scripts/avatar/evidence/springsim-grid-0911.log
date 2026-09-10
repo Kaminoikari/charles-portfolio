@@ -1,0 +1,128 @@
+Raw output behind springsim-grid-0911.md and springshare-0911.md, 2026-09-11.
+Every figure quoted in either document appears below. All of it was taken on
+AvatarSample_C_webp.vrm unless a line says otherwise.
+
+=== 1. Stage profile of the frame loop =========================================
+An instrumented copy of springsim.ts with performance.now() around skinAll(),
+topOf(), grid construction and the Grid.signed() calls. Clip `akimbo`.
+
+  PROFILE over 411 measured frames, 1738.0s accounted:
+  skin   36.7s  2.1%
+  top    0.7s  0.0%
+  grid   2.7s  0.2%
+  query  1697.9s  97.7%
+
+1738.0 is the sum of the four stages, not a process wall clock. The four
+percentages are each stage over that sum. 1697.9 / 36.7 = 46.3, which is the
+"46 to 1" in the docblock.
+
+=== 2. Set sizes and grid occupancy ============================================
+Same clip, first measured frame. These are the PRE-FIX numbers, before gather
+stopped stacking a shared vertex buffer once per primitive.
+
+  SETS  hair keep 417897  body keep 64456  face keep 20560  legs keep 26936
+  GRID body 1182 cells, 64456 verts, mean 54.5, max 2660, p90 105
+  GRID face 48 cells, 20560 verts, mean 428.3, max 1820, p90 1530
+  CELL 0.05  REACH 0.05  cells scanned per query 27
+
+=== 3. Query counters ==========================================================
+Same clip, averaged over the first two MEASURED frames (penetration runs on
+every second frame, so a measured frame is two simulated ones).
+
+  QUERY per measured frame: calls 1183481  mapGets 31953987  nonEmpty 9415692
+        (29.5%)  vertsScanned 1504276479  vertsPerCall 1271.1  returnedREACH 27.0%
+
+  31953987 / 1183481 = 27.00 exactly, which is the (2r+1)^3 = 27 cells a query
+  scanned. 9415692 / 31953987 = 29.47%, so 70.5% of the map reads hit nothing.
+  1504276479 / 1183481 = 1271.06.
+
+  calls 1183481 is NOT 417897 x 2. The hair is queried against the body grid and
+  the face grid, and the skirt is queried against a third, the leg grid. The
+  three together make up the count.
+
+=== 4. Old and new implementations, side by side ===============================
+Both classes built on the same sets, both run on every query the simulation
+issued, results compared with !==.
+
+  AB over 2366962 queries: mismatches 0  worst |delta| 0
+  TIME old 10.2s   new 2.0s   speedup 5.2x
+
+  2366962 / 1183481 = 2.0 exactly: this covers the first TWO measured frames of
+  411, about 0.5% of the clip. It is an exhaustive comparison over those frames,
+  not a sample of the whole clip.
+
+  5.2 is the ratio of the unrounded totals. The two printed figures are rounded
+  to one decimal and 10.2 / 2.0 gives 5.1; the smaller number is the one the
+  rounding moves. Both sides carry the same two performance.now() calls per
+  query, so the overhead is in both.
+
+=== 5. A whole clip, after both fixes ==========================================
+  /usr/bin/time -l npx tsx scripts/avatar/springsim.ts \
+      public/avatar/AvatarSample_C_webp.vrm --clip=akimbo --family=vroid-sample-c
+
+  akimbo   body max 50mm @10.67s   crown 1.7616 @10.17s   jump 2.8 deg @9.62s
+  rest crown 1.7561 (bind pose); through the column camera 1.7763, waist-up 1.7633
+          2.81 real         2.63 user         0.15 sys
+     158138368  maximum resident set size
+
+The same clip on the same body took 44 minutes before either fix: the sequential
+queue started vroid-sample-a at 02:50 and had finished 1 of its 10 clips 90
+minutes later. 2.81s is the whole clip including parsing an 11MB GLB.
+
+=== 6. Suite timings ===========================================================
+Each run on the runner's own default settings, one file at a time.
+
+  BEFORE (quoted from evidence/pitch-0910.md, 2026-09-10)
+    springsim.test.ts          6 tests   124.40s
+    springsim.rigid.test.ts    5 tests   116.59s
+    springsim.derive.test.ts   6 tests    68.19s
+
+  AFTER the grid rewrite alone (2026-09-11)
+    springsim.test.ts          6 tests    34.10s
+    springsim.rigid.test.ts    5 tests    17.62s
+    springsim.derive.test.ts   6 tests    27.20s
+
+  AFTER both fixes, all five springsim suites
+    springsim.test.ts          6 passed
+    springsim.rigid.test.ts    5 passed
+    springsim.derive.test.ts   6 passed
+    springsim.grid.test.ts    10 passed
+    springsim.parts.test.ts    6 passed
+
+  FULL SUITE, one run, no splitting
+    Test Files  32 passed (32)
+    Tests  674 passed (674)
+    Duration  105.69s
+    EXIT=0
+
+  pitch-0910.md had to take the suite in four separate runs, and every one of
+  them exited 1 on an unhandled [vitest-worker]: Timeout calling "onTaskUpdate".
+  This run produced none and exited 0. That is an observation, not a diagnosis:
+  pitch-0910.md records the same error on base-b.log, a 28-file run that did not
+  include any springsim file, so a blocked springsim worker cannot be the whole
+  cause of it.
+
+=== 7. Committed clearance, re-measured ========================================
+Every committed *.simulated.gen.ts regenerated with its own header command and
+diffed against the version in the tree, ignoring the producedBy/producedAt
+header lines.
+
+  vroid-sample-b.simulated.gen.ts       (mika-milfy-12.vrm)      IDENTICAL
+  vrm1-twist-sample.simulated.gen.ts    (vrm1-twist-sample.vrm)  IDENTICAL
+  vroid-sample-b.pink.simulated.gen.ts  (mika-pink.vrm)          2 of 10 clips
+      bodyDepthMm  29.6 -> 28.1   and   48.1 -> 26.1
+  vroid-studio-dressup.simulated.gen.ts (vroid-studio-dressup.vrm)  10 of 10
+      bodyDepthMm  9.6 -> 16.2, 9.8 -> 24, 9.6 -> 15.9, 10 -> 16.8, 9.9 -> 16.2,
+                   10 -> 16.4, 10.2 -> 16.2, 10.1 -> ...
+
+  Nothing but bodyDepthMm moved in either file: no crown, no skirt, no coat, no
+  jump. Both changed files are regenerated in this commit.
+
+  The studio body's Body_Skin buffers 2,795 vertices and draws 2,420 of them.
+  The 375 that are never drawn are real positions scattered through the body,
+  x[-0.533,0.529] y[0.015,1.409] z[-0.098,0.100], reaching to y = 1.409 against
+  the drawn part's 1.593: base-body geometry left under the clothing by the
+  dress-up export. They were in the collision shell and standing in as its
+  surface. Removing candidates from a nearest-vertex query can only increase the
+  distance it returns, so a shell with phantom vertices in it reads SHALLOWER,
+  which is the direction every one of those ten numbers moved.

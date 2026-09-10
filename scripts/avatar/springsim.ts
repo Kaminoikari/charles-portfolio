@@ -105,9 +105,11 @@ import { producedAt, rigSha, servedPath, writeGenerated } from './clearance'
 // comes from rigProbe.ts. What stays here is the narrowing this simulator
 // relies on: a body it can simulate has meshes, skins and accessors.
 
-interface GltfPrimitive {
+export interface GltfPrimitive {
   attributes: Record<string, number>
   material?: number
+  /** Absent on a non-indexed primitive, which draws its buffer in order. */
+  indices?: number
 }
 interface Gltf extends GltfJson {
   scenes: { nodes: number[] }[]
@@ -220,10 +222,17 @@ export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
       if (JOINTS_0 === undefined || WEIGHTS_0 === undefined) return
       const jo = readAccessorRows(glb, JOINTS_0)
       const we = readAccessorRows(glb, WEIGHTS_0)
-      const n = jo.data.length / jo.ncomp
+      // Over the vertices this primitive DRAWS, not over its whole buffer. On a
+      // VRoid export all of a mesh's primitives share one buffer, so the second
+      // reading gives every primitive of the hair mesh the same share, which is
+      // the whole mesh's: strands and static scalp averaged together. That
+      // average is 35.0-35.3% on Vita and Vivi, under SPRING_DOMINATED, so
+      // those bodies derived NO hair at all and refused to simulate.
+      const drawn = drawnVertices(glb, prim)
+      const n = drawn.size
       if (n === 0) return
       let driven = 0
-      for (let v = 0; v < n; v++) {
+      for (const v of drawn) {
         let best = 0
         for (let k = 1; k < we.ncomp; k++) {
           if (we.data[v * we.ncomp + k] > we.data[v * we.ncomp + best]) best = k
@@ -235,13 +244,26 @@ export function deriveManifest(glb: { json: Gltf; bin: Uint8Array }): Manifest {
       else add('Body_Skin', name, pi)
     })
   }
+  // A mesh that supplies moving hair cannot also BE the body, however many of
+  // its primitives are left over. A VRoid hair mesh holds the strands and the
+  // static scalp in one buffer, so once the share is read per primitive the
+  // scalp lands in the Body_Skin role, and on mika-pink it brought 40
+  // primitives against the body mesh's 7. Ranked on primitive count it took the
+  // canonical name, and `bodyDepthMm` — how deep hair sits inside the body —
+  // was then measured against static hair, which moving strands lie flat
+  // against: every clip read 50mm, the saturation cap. The leftovers keep their
+  // own name, so they are still skinned and the crown still sees them.
+  const hairMeshes = new Set((byRole.get('Hair') ?? new Map<string, number[]>()).keys())
   const parts: Manifest['parts'] = {}
   for (const [role, meshes] of byRole) {
-    const ordered = [...meshes].sort((a, b) => b[1].length - a[1].length)
+    const trailing = (mesh: string): number => (role === 'Body_Skin' && hairMeshes.has(mesh) ? 1 : 0)
+    const ordered = [...meshes].sort(
+      (a, b) => trailing(a[0]) - trailing(b[0]) || b[1].length - a[1].length,
+    )
     ordered.forEach(([mesh, primitives], rank) => {
       // Hair is a set of parts by design (runClip gathers every Hair_* it
       // finds), so every hair mesh keeps its own name. Face and Body_Skin are
-      // single parts, so the biggest takes the name and the others trail it.
+      // single parts, so the first takes the name and the others trail it.
       const name =
         role === 'Hair' ? `Hair_${mesh}` : rank === 0 ? role : `${role}_${mesh}`
       parts[name] = { mesh, primitives }
@@ -438,14 +460,63 @@ function meshNode(json: Gltf, meshName: string): GltfNode {
   return node
 }
 
+/**
+ * The vertices a primitive actually draws, as indices into its own POSITION
+ * accessor.
+ *
+ * glTF lets several primitives of one mesh share a single vertex buffer and
+ * differ only in which triangles they draw and which material they draw them
+ * with, and every VRoid export in this repo does exactly that: AvatarSample_B's
+ * hair is 77 primitives over ONE accessor of 9,476 vertices. A body build.py
+ * produced is the other layout, one accessor per primitive, which is why this
+ * distinction went unnoticed for so long: on mika-milfy-12 only the Face shares
+ * a buffer, and 25 of its 26 parts read the same either way.
+ *
+ * Reading the attribute accessor per primitive, as the two callers below used
+ * to, therefore means something different on the two layouts. On a built body
+ * it is the primitive's own vertices. On a VRoid export it is the WHOLE MESH,
+ * once per primitive, which broke both callers in different directions and is
+ * written up in evidence/springshare-0911.md.
+ *
+ * A primitive with no `indices` is non-indexed and draws its buffer in order,
+ * so every vertex counts.
+ */
+export function drawnVertices(glb: { json: Gltf; bin: Uint8Array }, prim: GltfPrimitive): Set<number> {
+  const out = new Set<number>()
+  if (prim.indices === undefined) {
+    const count = glb.json.accessors[prim.attributes.POSITION].count
+    for (let i = 0; i < count; i++) out.add(i)
+    return out
+  }
+  const idx = readAccessorRows(glb, prim.indices)
+  for (let k = 0; k < idx.data.length; k++) out.add(idx.data[k])
+  return out
+}
+
 export function gather(json: Gltf, bin: Uint8Array, manifest: Manifest, part: string, stride = 1): SkinSet {
   const p = manifest.parts[part]
   if (!p) throw new Error(`manifest has no part ${part}`)
   const mesh = json.meshes.find((m) => m.name === p.mesh)
   if (!mesh) throw new Error(`no mesh ${p.mesh} (manifest part ${part})`)
   const node = meshNode(json, p.mesh)
-  const parts = p.primitives.map((pi) => {
+  // The part's vertices are the ones its primitives DRAW, collected once each.
+  // Grouped by attribute accessor because that is what a vertex index means: two
+  // primitives sharing a buffer share a numbering, two primitives with their own
+  // buffers do not, and index 7 in one is unrelated to index 7 in the other.
+  const wanted = new Map<number, Set<number>>()
+  for (const pi of p.primitives) {
     const prim = mesh.primitives[pi]
+    const a = prim.attributes.POSITION
+    const seen = wanted.get(a) ?? new Set<number>()
+    wanted.set(a, seen)
+    for (const v of drawnVertices({ json, bin }, prim)) seen.add(v)
+  }
+  // Sorted, so the same body always produces the same set in the same order and
+  // a re-measured clearance file can be diffed against the one it replaces.
+  const groups = [...wanted.entries()].map(([, seen]) => [...seen].sort((a, b) => a - b))
+  const sources = p.primitives.map((pi) => mesh.primitives[pi])
+  const attrs = [...wanted.keys()].map((a) => {
+    const prim = sources.find((q) => q.attributes.POSITION === a) as GltfPrimitive
     return {
       pos: readAccessorRows({ json, bin }, prim.attributes.POSITION).data,
       nrm: readAccessorRows({ json, bin }, prim.attributes.NORMAL).data,
@@ -453,7 +524,7 @@ export function gather(json: Gltf, bin: Uint8Array, manifest: Manifest, part: st
       weights: readAccessorRows({ json, bin }, prim.attributes.WEIGHTS_0).data,
     }
   })
-  const n = parts.reduce((s, q) => s + q.pos.length / 3, 0)
+  const n = groups.reduce((s, g) => s + g.length, 0)
   const set: SkinSet = {
     label: part, n, skin: node.skin as number,
     pos: new Float64Array(n * 3), nrm: new Float64Array(n * 3),
@@ -461,14 +532,20 @@ export function gather(json: Gltf, bin: Uint8Array, manifest: Manifest, part: st
     keep: new Int32Array(0), outPos: new Float64Array(n * 3), outNrm: new Float64Array(n * 3),
   }
   let at = 0
-  for (const q of parts) {
-    const k = q.pos.length / 3
-    set.pos.set(q.pos, at * 3)
-    set.nrm.set(q.nrm, at * 3)
-    set.joints.set(q.joints, at * 4)
-    set.weights.set(q.weights, at * 4)
-    at += k
-  }
+  groups.forEach((g, gi) => {
+    const q = attrs[gi]
+    for (const v of g) {
+      for (let c = 0; c < 3; c++) {
+        set.pos[at * 3 + c] = q.pos[v * 3 + c]
+        set.nrm[at * 3 + c] = q.nrm[v * 3 + c]
+      }
+      for (let c = 0; c < 4; c++) {
+        set.joints[at * 4 + c] = q.joints[v * 4 + c]
+        set.weights[at * 4 + c] = q.weights[v * 4 + c]
+      }
+      at++
+    }
+  })
   const keep: number[] = []
   for (let i = 0; i < n; i += stride) keep.push(i)
   set.keep = Int32Array.from(keep)
@@ -665,9 +742,6 @@ export function framingsNow(family: string): ClearanceFramings {
 
 // ---- signed distance, hair against a shell ----------------------------------------
 
-// A quarter of REACH. It is a resolution and nothing else: the answer does not
-// depend on it, only the number of candidates a query has to reject. See Grid.
-const FINE = 0.0125
 // How far from the nearest shell vertex a point can be and still be judged by
 // that vertex's normal: 5cm out, the "plane" of a collar vertex classifies
 // hair above the coat as inside, and at 15cm a skirt vertex by the waist was
@@ -679,31 +753,38 @@ const FINE = 0.0125
 // cap instead of pretending otherwise.
 const REACH = 0.05
 
+// The grid's resolution, and nothing else: the answer depends on REACH alone,
+// while FINE only decides how many candidates a query has to reject on the way
+// to it. Derived rather than written out, so the two cannot drift apart; a
+// review pointed out that a literal 0.0125 beside the words "a quarter of
+// REACH" goes quietly false the day REACH moves.
+const FINE = REACH / 4
+
 /**
  * The nearest kept shell vertex to a point, as a signed distance.
  *
- * This is the whole cost of a run. A measured clip on AvatarSample_C issues
- * 1,183,481 queries per simulated frame (417,897 kept hair vertices against a
- * body grid and a face grid), and a profile of the frame loop put 97.7% of the
- * wall clock inside this one method: 1,738s of a 1,779s run, against 2.1% for
- * skinning every vertex of every set. An earlier comment on the frame loop
- * named skinning as the cost. It was wrong by a factor of forty.
+ * This is the whole cost of a run. A profile of the frame loop on
+ * AvatarSample_C, clip `akimbo`, accounted for 1,738.0s over 411 measured
+ * frames and put 1,697.9s of it — 97.7% — inside this one method, against
+ * 36.7s (2.1%) for skinning every vertex of every set, 2.7s for building the
+ * three grids and 0.7s for the crown. An earlier comment on the frame loop
+ * named skinning as the cost. The query outweighs it 46 to 1.
  *
- * Two things made it slow, both measured on that clip:
+ * Two things made it slow, both counted on that same clip, per MEASURED frame
+ * (penetration runs on every second frame):
  *
  *   - A `Map<number, number[]>` keyed by a packed cell index, so every query
  *     paid 27 hash lookups whether the cells held anything or not: 31,953,987
- *     map reads per frame, 70.5% of them on empty cells.
- *   - One cell per REACH, which is 5cm. The face mesh put 20,560 vertices into
- *     48 such cells, 428 to a cell, so a query near her face compared itself
- *     against thousands of candidates to find one nearest. Averaged over the
- *     frame it scanned 1,271 candidates per query, 1.5 BILLION per frame.
+ *     map reads to reach 9,415,692 non-empty ones, 70.5% of them wasted.
+ *   - One cell per REACH, which is 5cm, against meshes far finer than that. A
+ *     query scanned 1,271 candidates on average to find one nearest, and there
+ *     were 1,183,481 queries: 1.5 BILLION distance computations per frame.
  *
  * So the cells are a quarter of REACH across, and they live in one flat
  * Int32Array pair (CSR: `start` indexes into `items`) over the set's own
  * bounding box, which removes the hashing and the empty-cell reads together.
- * Finer cells alone would have made both worse, 729 lookups instead of 27;
- * they only pay off once a lookup is an array index.
+ * Finer cells ALONE would have made that half worse, 729 lookups instead of 27;
+ * they only pay off once a lookup is an array index rather than a hash.
  *
  * The scan then walks Chebyshev shells outward from the query's own cell and
  * stops as soon as the shell it is about to open cannot hold anything closer.
@@ -711,6 +792,23 @@ const REACH = 0.05
  * cell, so a cell m shells out is at least (m-1) cells away from it, and after
  * finishing shell k nothing unscanned can be nearer than k cells. Saturating at
  * REACH caps the walk regardless.
+ *
+ * The counts above were taken before `gather` was fixed to stop stacking a
+ * shared vertex buffer once per primitive (see `drawnVertices`), which is why
+ * they are so large: 417,897 of those hair vertices were 2,310 distinct ones
+ * repeated. They are left as measured, because they are what this rewrite was
+ * answering. The rewrite is worth having either way, and the two together take
+ * a clip from 44 minutes to 2.81s.
+ *
+ * Two vertices at EXACTLY equal distance are settled by taking the lower vertex
+ * index, which is what a scan in index order would have kept. Without it the
+ * winner would depend on the order the cells happen to be walked in, and a
+ * review built the case: two vertices equidistant from the query with opposing
+ * normals return +d or -d depending only on which was seen first, a 40mm swing
+ * in sign on a 20mm reading. It has never been observed on real geometry
+ * (2,366,962 queries of a real clip, plus 117,400 adversarial ones in review,
+ * all agreeing) because it needs bit-equal doubles. It is pinned anyway, since
+ * thirteen unmeasured bodies are about to go through here.
  *
  * Exactness matters more than speed here, because the millimetre budgets in
  * every committed clearance file were measured through the old version. It
@@ -804,7 +902,7 @@ export class Grid {
               const i = this.items[t]
               const dx = P[i * 3] - x, dy = P[i * 3 + 1] - y, dz = P[i * 3 + 2] - z
               const d = dx * dx + dy * dy + dz * dz
-              if (d < best) { best = d; bestI = i }
+              if (d < best || (d === best && i < bestI)) { best = d; bestI = i }
             }
           } else {
             for (let f = 0; f < 2; f++) {
@@ -815,7 +913,7 @@ export class Grid {
                 const i = this.items[t]
                 const dx = P[i * 3] - x, dy = P[i * 3 + 1] - y, dz = P[i * 3 + 2] - z
                 const d = dx * dx + dy * dy + dz * dz
-                if (d < best) { best = d; bestI = i }
+                if (d < best || (d === best && i < bestI)) { best = d; bestI = i }
               }
             }
           }

@@ -3,14 +3,14 @@
 // public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the
 // same in bind pose, crownScreen/restCrownScreen those two through each frame's camera
 // (framings, recorded here as they were); depths are the worst frame. Regenerate:
-//   npx tsx scripts/avatar/springsim.ts public/avatar/mika-pink.vrm --clearance=src/components/chat/clearance/vroid-sample-b.pink.simulated.gen.ts
+//   npx tsx scripts/avatar/springsim.ts public/avatar/mika-pink.vrm --clearance=src/components/chat/clearance/vroid-sample-b.pink.simulated.gen.ts --family=vroid-sample-b
 import type { ClearanceSimulated } from '../clearance'
 
 export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-sample-b",
   "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",
   "simulatedOn": "/avatar/mika-pink.vrm",
-  "producedBy": "b49f6b6",
+  "producedBy": "0c4607f",
   "restCrownY": 1.582,
   "restCrownScreen": {
     "waistUp": 1.5707,
@@ -51,7 +51,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5657
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 29.6,
+      "bodyDepthMm": 28.1,
       "jumpDeg": 2.5,
       "skirtDepthMm": 0
     },
@@ -159,7 +159,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.8429
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 48.1,
+      "bodyDepthMm": 26.1,
       "jumpDeg": 3.7,
       "skirtDepthMm": 0
     }

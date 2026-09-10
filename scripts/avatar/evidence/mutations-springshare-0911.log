@@ -1,0 +1,62 @@
+Mutations against scripts/avatar/springsim.parts.test.ts, 2026-09-11.
+
+Each mutation is applied to scripts/avatar/springsim.ts alone, four suites are
+run (parts, derive, springsim, grid), and the file is restored by writing back
+the bytes read before the first mutation. Never `git checkout --`: the byte
+comparison is asserted after every restore and again at the end.
+node_modules/.vite is removed before every run. A mutation whose pattern does not
+hit exactly once aborts rather than reporting green.
+
+The names under each are the tests that failed. Six mutations, six red.
+
+P1 gather reads each primitive's whole accessor again, the pre-fix behaviour
+  RED: 1 failing suites
+    - reads a shared vertex buffer once, not once per primitive
+    - leaves out buffer vertices no triangle references
+P2 the spring share is taken over the whole buffer again
+  RED: 1 failing suites
+    - splits one shared buffer between moving hair and everything else
+P3 drawnVertices ignores the index list and claims the whole buffer
+  RED: 1 failing suites
+    - splits one shared buffer between moving hair and everything else
+    - leaves out buffer vertices no triangle references
+P4 a non-indexed primitive is treated as drawing nothing
+  RED: 1 failing suites
+    - counts every vertex of a primitive that carries no index list
+P5 groups keyed by primitive rather than by buffer, so a shared buffer stacks again
+  RED: 4 failing suites
+    - reads a shared vertex buffer once, not once per primitive
+    - leaves out buffer vertices no triangle references
+    - is unchanged on a body whose primitives each own their buffer
+    - produces the same set twice, so a re-measured file can be diffed
+    - simulates a body with no manifest beside it, and gets a crown out of it
+    - agrees on every query, on the face the penetration test is asked about
+    - agrees on the body shell too, whose vertices are spread over a whole figure
+    - finds a vertex that sits outside its own bounding box by less than REACH
+    - saturates rather than reaching, for a point outside the geometry entirely
+P6 a hair mesh may take the canonical Body_Skin name again
+P6 a hair mesh may take the canonical Body_Skin name again (retry, after adding its test)
+  RED: 1 failing suites
+    - never lets a hair mesh be the body the penetration test measures against
+
+Two of the six needed the tests tightened before they turned red, and both are
+recorded here rather than quietly fixed, because a mutation that stays green is
+the only signal that a defence has no test.
+
+P2 stayed green on its first run. The test asserting the per-primitive share
+used AvatarSample_B, whose mesh-wide average is ABOVE SPRING_DOMINATED, so
+reverting to a mesh-wide reading still classified the whole mesh as hair and the
+assertion (that some part is named Body_Skin) was satisfied by the body mesh
+regardless. The discriminating fact on that body is that the hair mesh must
+SPLIT between two roles; the test now pins that its Hair part and its trailing
+Body_Skin part account for all 77 primitives between them.
+
+P6 stayed green on its first run because the canonical-Body_Skin rule had no
+test at all, which is what let the defect it fixes reach mika-pink's committed
+clearance in the first place. The test added for it asserts that no mesh
+supplying a Hair part is the one named Body_Skin, and separately that the
+fixture actually poses the problem, so a rule that ignored the question could
+not pass it.
+
+BASELINE: 0 failing suites of 4
+restored: springsim.ts byte-identical to the version read at start

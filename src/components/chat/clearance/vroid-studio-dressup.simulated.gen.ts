@@ -10,7 +10,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-studio-dressup",
   "rigSha": "ec3b9ab3648bcaea26792c0324d32f7fabda1245a58813a0139af5c00032491e",
   "simulatedOn": "/avatar/vroid-studio-dressup.vrm",
-  "producedBy": "654ca1f",
+  "producedBy": "0c4607f",
   "rigidHair": true,
   "restCrownY": 1.5982,
   "restCrownScreen": {
@@ -66,7 +66,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.6049
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 9.6,
+      "bodyDepthMm": 16.2,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -78,7 +78,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.7211
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 9.8,
+      "bodyDepthMm": 24,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -90,7 +90,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.6063
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 9.6,
+      "bodyDepthMm": 15.9,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -102,7 +102,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.588
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 10,
+      "bodyDepthMm": 16.8,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -114,7 +114,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5709
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 9.9,
+      "bodyDepthMm": 16.2,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -126,7 +126,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.609
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 10,
+      "bodyDepthMm": 16.4,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -138,7 +138,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.6531
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 10.2,
+      "bodyDepthMm": 16.2,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -150,7 +150,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.6316
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 10.1,
+      "bodyDepthMm": 18.3,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -162,7 +162,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.603
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 9.7,
+      "bodyDepthMm": 23.9,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -174,7 +174,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.8889
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 3.8,
+      "bodyDepthMm": 18.6,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     }
