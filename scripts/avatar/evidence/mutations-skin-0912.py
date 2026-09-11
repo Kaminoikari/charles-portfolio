@@ -48,7 +48,7 @@ FIXTURE = ("    BODY = os.path.join(AVATARS, 'AvatarSample_A_webp.vrm')",
            "    BODY = os.path.join(AVATARS, 'mika-pink.vrm')")
 
 MUTATIONS = [
-    ('S1', ['a_hole_that_swallows', 'looks_like_the_skin', 'non_square'],
+    ('S1', ['a_hole_that_swallows', 'no_dark_blotch', 'non_square'],
      'the pyramid stops after nine halvings again',
      [(SRC, *NINE)]),
 
@@ -59,6 +59,44 @@ MUTATIONS = [
     ('S3', ['a_hole_that_swallows', 'non_square'],
      'nine halvings, judged on the body nine was tuned for',
      [(SRC, *NINE), (TEST, *FIXTURE)]),
+
+    # apply() resolves the material itself, so body_image's default is reached
+    # only by a caller that omits it, which is what the face-atlas row does.
+    ('S4', ['face_atlas'],
+     "the body's skin material is one body's name written down again",
+     [(SRC, "def body_image(doc, material=None):", "def body_image(doc, material='F00_000_00_Body_00_SKIN'):")]),
+
+    # Dropping the part name lets the FIRST SKIN material win, and on these
+    # files that is the face's. So skin_material returns the wrong name, and
+    # every row that asks which image the body uses follows it there.
+    ('S5', ['face_atlas', 'model_number', 'the_written_down_name_did'],
+     'any SKIN material will do, whichever part it belongs to',
+     [(SRC,
+       "        if partition.vroid_category(material.get('name', '')) == (BODY_PART, 'SKIN'):",
+       "        if partition.vroid_category(material.get('name', ''))[1] == 'SKIN':")]),
+
+    ('S6', ['the_body_and_not_what_it_is_wearing', 'clothing_sized_survives'],
+     "skin is whatever is bright enough, at one body's brightness",
+     [(SRC,
+       "    return ((r > g) & (g >= b) & ((r - b) > 22) & ((r - b) < 170)\n"
+       "            & (distance <= SKIN_RADIUS))",
+       "    return ((r > g) & (g >= b) & ((r - b) > 22) & ((r - b) < 170)\n"
+       "            & (r > 105))")]),
+
+    # Vita's arm bones drive a teal sleeve, so the median there is not skin and
+    # every real texel falls outside the radius.
+    ('S7', ['does_not_come_from_a_sleeve'],
+     "the body's colour is read off the whole arm, sleeve and all",
+     [(SRC, "             if humanoid.is_hand(bone)}",
+             "             if humanoid.is_arm(bone)}")]),
+
+    # No floor means every vertex counts, so the reference becomes the median
+    # of the whole atlas: [108 102 108] on AvatarSample_A, 31 from the garment
+    # it is supposed to reject.
+    ('S8', ['the_body_and_not_what_it_is_wearing'],
+     'any vertex will do, however little of it the hand drives',
+     [(SRC, "            picked = drawn[(w * on_hand[j]).sum(axis=1)[drawn] >= 0.9]",
+             "            picked = drawn[(w * on_hand[j]).sum(axis=1)[drawn] >= 0.0]")]),
 ]
 
 
@@ -104,16 +142,21 @@ def main():
             for path, raw in base.items():
                 path.write_bytes(raw)
                 assert path.read_bytes() == raw, f'{tag}: restore of {path.name} failed'
-        got = sorted({frag for frag in expect
-                      if any(frag in line for line in failed)}
-                     | {line.split('(')[0].split(':')[1].strip()
-                        for line in failed
-                        if not any(frag in line for frag in expect)})
-        verdict = ('as expected' if got == sorted(expect)
-                   else f'*** WANTED {sorted(expect)} ***')
+        # `expect` is what MUST go red: the defences this mutation removes.
+        # A mutation often reddens more than that (a stubbed lookup takes a
+        # setUpClass down with it), and those are reported without being held
+        # against it. The result this table exists to catch is an expected name
+        # that stayed green, which means nothing was guarding it.
+        missing = [frag for frag in expect
+                   if not any(frag in line for line in failed)]
+        extra = [line.split('(')[0].split(':')[1].strip() for line in failed
+                 if not any(frag in line for frag in expect)]
+        verdict = 'as expected' if not missing else f'*** STILL GREEN: {missing} ***'
         files = ', '.join(sorted({p.name for p, _, _ in edits}))
         print(f'{tag}  {what}  [{files}]\n    {ran}  '
-              f'{"RED" if code else "GREEN"}  failing: {got}  {verdict}')
+              f'{"RED" if code else "GREEN"}  {verdict}')
+        if extra:
+            print(f'    also red: {sorted(extra)}')
         print()
 
 
