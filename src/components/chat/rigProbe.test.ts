@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { VRMHumanoid } from '@pixiv/three-vrm'
 import { parseGlb, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
-import { crownBound, crownOn, panFor, type ClearanceFile } from './clearance'
+import { crownBound, crownOn, crownWorst, panHolds, type ClearanceFile } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
 import { AVATAR_FAMILIES, type AvatarFamilyId } from './avatarVariants'
 import {
@@ -593,14 +593,38 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   it('pans by what the measurements leave room for, not by a number dialled in', () => {
     // Until 2026-09-07 the dance's two pans were declared here and derived in a
     // comment, so a second family had to redo that derivation by hand off the
-    // same paragraph. clearance.panFor does it: the range of pans that fit the
-    // clip's own crown and hips in the frame's span, then the frame's policy
-    // (PAN_POLICY -- the waist-up centres, the column takes the least lift so
-    // it keeps the most leg).
+    // same paragraph. clearance.panHolds does it: the range of pans that fit
+    // the clip's own crown and hips in the frame's span, then the frame's
+    // policy (PAN_POLICY -- the waist-up centres, the column takes the least
+    // lift so it keeps the most leg).
+    //
+    // It asks whether the declared pan is justified rather than whether it
+    // equals a re-derivation, because springsim measures the crown THROUGH the
+    // pan: the equality has no solution on the centimetre grid for three of
+    // these families. clearance.panHolds carries the derivation and the
+    // measurements that forced it.
     for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
+      // A clip this family has written down that it cannot wear is not asked
+      // whether it fits. `excluded` is the answer to that question already, and
+      // `vroid-sakurada-fumiriya` is the body that makes the difference real:
+      // she stands 1.92m at the crown, and `dance` needs 269mm of lift to bring
+      // its hair into the waist-up frame with 215mm before her hips leave the
+      // bottom. No pan exists. Requiring one anyway is what pushed the earlier
+      // pass into rubber-stamping a 503mm crownTop waiver on a body nobody has
+      // ever rendered, which is a decision nobody made.
+      //
+      // It is not an escape hatch: motionsFor drops an excluded clip on this
+      // family, and `offers every idle clip somewhere` asserts both halves of
+      // that -- a clip excluded here must be unreachable, a clip not excluded
+      // must be reachable. Excluding one to dodge this guard would take it out
+      // of the rotation, where it would be seen.
+      if (name in CLEARANCE.excluded) continue
       for (const frame of def.placements) {
-        const want = panFor(CLEARANCE, name, frame, restCrown(), PAN_POLICY[frame], def.placements)
-        expect(CLEARANCE.pans[name]?.[frame] ?? 0, `${name} in ${frame}`).toBe(want)
+        const declared = CLEARANCE.pans[name]?.[frame] ?? 0
+        expect(
+          panHolds(CLEARANCE, name, frame, restCrown(), PAN_POLICY[frame], def.placements, declared),
+          `${name} in ${frame}`,
+        ).toBeNull()
       }
     }
   })
@@ -644,16 +668,34 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // viewer, so her right hand renders on the viewer's left; a 1.0 body is not.
   // Either way the sides here are the viewer's. See rigProbe's screenX.
   it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
+    // Same reason the pan guard skips these: a clip the family has written down
+    // that it cannot wear is never played on it, and asking whether it stays in
+    // a frame it never appears in is what a waiver would have to lie about.
+    if (name in CLEARANCE.excluded) return
     const r = rig()
     const m = motion(name as AvatarMotionName)
     // Read before the sweep starts: deriving it resets the rig, and inside the
     // loop that would silently measure the rest pose instead of the frame.
     const skin = skinOfBody(fam.body)
-    // The crown against every declared frame, judged after the loop: a
-    // crownTop waiver is needed if the crown leaves ANY declared frame (the
-    // column is the tight one), and binds in every frame.
+    // Each waiver against every declared frame, judged after the loop: a
+    // waiver is needed if the clip leaves ANY declared frame it is declared
+    // for, and binds in every frame. `crownTop` was written this way on
+    // 2026-09-07; `reach` and `handTop` were not, and asked instead that every
+    // placement need the waiver on its own.
+    //
+    // That asks something a per-clip waiver cannot answer. A waiver is declared
+    // on the clip, so a clip whose hands leave the column and stay inside the
+    // waist-up frame has no way to say so: declaring it fails the waist-up
+    // placement, and not declaring it fails the column. Two of the fourteen
+    // families have such a clip and could not be registered at all until this
+    // moved out of the loop. It is not a loosening -- the enforcement below is
+    // still per placement, and the waiver still has to be needed somewhere.
     const crownBudget = waiverOf(name)?.crownTop
+    const reachBudget = waiverOf(name)?.reach
+    const topBudget = waiverOf(name)?.handTop
     let crownPast = -Infinity
+    let reachPast = -Infinity
+    let handTopPast = -Infinity
     for (const placement of def.placements) {
       const frame = frameOf(name as AvatarMotionName, placement)
       let screenLeft = -Infinity
@@ -682,13 +724,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       // A waiver replaces the budget with the clip's own measured worst case,
       // and is itself checked: declaring one that the clip does not need is a
       // failure, so a stale waiver cannot sit here quietly widening the guard.
-      const reachBudget = waiverOf(name)?.reach
-      if (reachBudget !== undefined) {
-        expect(
-          Math.max(screenLeft, screenRight),
-          `${name} declares a reach waiver it does not need in ${placement}`,
-        ).toBeGreaterThan(frame.halfWidth)
-      }
+      reachPast = Math.max(reachPast, Math.max(screenLeft, screenRight) - frame.halfWidth)
       expect(screenLeft, `${name} reach to the viewer's left in ${placement}`).toBeLessThan(
         reachBudget ?? frame.halfWidth,
       )
@@ -711,13 +747,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       // alone is what the first attempt at the raised-hand fix did, and it
       // still rendered a cut hand: see SKIN_ABOVE_JOINT.
       const skinTop = maxY + SKIN_ABOVE_JOINT
-      const topBudget = waiverOf(name)?.handTop
-      if (topBudget !== undefined) {
-        expect(
-          skinTop,
-          `${name} declares a handTop waiver it does not need in ${placement}`,
-        ).toBeGreaterThan(frame.span.top)
-      }
+      handTopPast = Math.max(handTopPast, skinTop - frame.span.top)
       expect(skinTop, `${name} highest hand in ${placement}`).toBeLessThan(
         topBudget ?? frame.span.top,
       )
@@ -743,6 +773,12 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     }
     if (crownBudget !== undefined) {
       expect(crownPast, `${name} declares a crownTop waiver it does not need`).toBeGreaterThan(0)
+    }
+    if (reachBudget !== undefined) {
+      expect(reachPast, `${name} declares a reach waiver it does not need`).toBeGreaterThan(0)
+    }
+    if (topBudget !== undefined) {
+      expect(handTopPast, `${name} declares a handTop waiver it does not need`).toBeGreaterThan(0)
     }
   })
 
@@ -779,10 +815,21 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
         }
       }
       const rest = FRAMES[frame].span
+      // The crown clearance.panRange derives the pan FROM, which is the worst
+      // across the clip's placements rather than this frame's own projection.
+      // Two guards on one quantity have to read one definition of it, and until
+      // 2026-09-11 these read two: `vroid-vita`'s dance is 0.9mm past the
+      // waist-up edge by the column's reading and 4.2mm inside it by the
+      // waist-up frame's own, so panRange asked for a pan and this refused it,
+      // leaving the family no pan it could declare. Reading the same crown can
+      // only make `escapes` true more often, so nothing that passed before can
+      // fail on it -- the direction matters, because the alternative (teaching
+      // panRange to use the frame's own crown) moves six pans across four
+      // families including the one the site serves.
       const escapes =
         lowestHips < rest.bottom ||
         highestHand + SKIN_ABOVE_JOINT > rest.top ||
-        crownOf(name, frame) > rest.top
+        crownWorst(CLEARANCE, name, restCrown(), def.placements) > rest.top
       expect(escapes, `${name} fits ${frame} unpanned and does not need its pan`).toBe(true)
     }
   })

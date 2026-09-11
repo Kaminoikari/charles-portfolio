@@ -19,7 +19,9 @@ import {
   crownBound,
   crownOn,
   panFor,
+  panHolds,
   panRange,
+  type ClearanceFile,
   type ClearanceDecisions,
   type ClearanceMeasured,
   type ClearanceSimulated,
@@ -401,6 +403,107 @@ describe('combineClearance', () => {
     expect(r.least, 'and one that does not contain zero').toBeGreaterThan(0)
     expect(() => panFor(pinched, 'dance', 'column', pinched.restCrownY, 'least', ['column']))
       .toThrow(/no pan on the centimetre/)
+  })
+
+
+  // Four conditions, one test each, because each is a separate defence and a
+  // mutation of any one has to redden on its own.
+  //
+  // Every crown below is written as an offset from the frame's own top edge
+  // rather than as a height, so the fixture says what it means and cannot drift
+  // if the composition moves. `crownSeen` is the lever: crownBound takes the
+  // max of the transfer and it, and the transfer here is 1.51.
+  const COLUMN_TOP = avatarViewSpan(simulated.framings.frames.column, simulated.framings.fov).top
+  const COLUMN_BOTTOM = avatarViewSpan(simulated.framings.frames.column, simulated.framings.fov).bottom
+  // 470mm of room below her hips, which is more than any pan these tests ask for.
+  const ROOMY = COLUMN_BOTTOM + 0.47
+  const needing = (lift: number, hips: number): ClearanceFile =>
+    combineClearance(
+      { ...measured, clips: { dance: { ...measured.clips.dance, hipsLow: hips } } },
+      { ...simulated, clips: { dance: { ...simulated.clips.dance, crownScreen: { waistUp: 1.5, column: 1.5 } } } },
+      { ...decisions, crownSeen: { dance: { column: COLUMN_TOP + lift, waistUp: 1.4 } } },
+    )
+  const holds = (file: ClearanceFile, declared: number): string | null =>
+    panHolds(file, 'dance', 'column', file.restCrownY, 'least', ['column'], declared)
+
+  it('holds a pan that clears the crown at the point the policy asks for', () => {
+    // 108mm of crown to clear and 470mm before her hips leave, so the column's
+    // least-lift policy points at 0.11.
+    const file = needing(0.108, ROOMY)
+    const r = panRange(file, 'dance', 'column', file.restCrownY, ['column'])
+    expect(r.least).toBeCloseTo(0.108, 9)
+    expect(r.most).toBeGreaterThan(0.4)
+    expect(holds(file, 0.11)).toBeNull()
+  })
+
+  it('refuses a pan that leaves the crown outside the top edge', () => {
+    // One centimetre short of what the crown needs. This is the condition that
+    // IS the composition; the rest of these are about tidiness.
+    expect(holds(needing(0.108, ROOMY), 0.1)).toMatch(/crown needs/)
+  })
+
+  it('refuses a pan that takes her hips off the bottom edge', () => {
+    // Hips high enough that the bottom edge runs out before the crown is in, so
+    // no pan satisfies both. The message has to name the hips, not the crown.
+    const file = needing(0.108, COLUMN_BOTTOM + 0.06)
+    const r = panRange(file, 'dance', 'column', file.restCrownY, ['column'])
+    expect(r.most, 'less room below than the crown needs above').toBeLessThan(r.least)
+    expect(holds(file, 0.11)).toMatch(/hips leave/)
+  })
+
+  it('refuses a pan more than the grid step above what the policy asks for', () => {
+    // 0.11 is the policy point and 0.12 is the one centimetre of slack the
+    // families with no fixed point need. 0.13 is neither, and it spends 20mm of
+    // her legs for nothing.
+    const file = needing(0.108, ROOMY)
+    expect(holds(file, 0.12), 'one step of slack').toBeNull()
+    expect(holds(file, 0.13)).toMatch(/more than the centimetre/)
+  })
+
+  it('holds a pan that is not equal to its own re-derivation', () => {
+    // The shape three of the fourteen families are in, kept here so it has a
+    // guard that does not depend on which bodies happen to be registered.
+    //
+    // `crownScreen` is read through the camera WITH the pan applied, so `least`
+    // is a function of the pan rather than a constant solved for it. These are
+    // the two readings AvatarSample_C's spin actually produced -- 262.30mm of
+    // crown to clear when the camera sat at 0.26, and 258.90mm when it sat at
+    // 0.27 -- as two files. Neither centimetre equals the ceiling of its own
+    // `least`, so the equality that guarded this until 2026-09-11 had no
+    // solution and the family could not be registered at all.
+    const at26 = needing(0.2623, ROOMY)
+    const at27 = needing(0.2589, ROOMY)
+    const up = (f: ClearanceFile): number =>
+      Math.ceil(panRange(f, 'dance', 'column', f.restCrownY, ['column']).least * 100) / 100
+    expect(up(at26), 'the camera at 0.26 asks for 0.27').toBe(0.27)
+    expect(up(at27), 'and at 0.27 it asks for 0.26').toBe(0.26)
+    // What the requirement actually is: 0.27 gives the crown 270mm and it needs
+    // 258.90mm, so it fits. 0.26 gives it 260mm against 262.30mm, so it does not.
+    expect(holds(at27, 0.27), '0.27 fits under its own reading').toBeNull()
+    expect(holds(at26, 0.26), '0.26 does not').toMatch(/crown needs/)
+  })
+
+  it('reads a range boundary to the precision its producers wrote it at', () => {
+    // measure-motions.ts rounds to four places, so a boundary derived from
+    // `hipsLow` carries half of that last digit. The waist-up frame's bottom
+    // edge is 0.767816 and four places is 0.7678, which is 16 micrometres BELOW
+    // it: a clip whose hips rest on that edge records a `most` of -0.000016 and,
+    // read exactly, says zero does not fit. `vroid-sample-a`'s dance is that
+    // clip, and centring the range on it asked for a 100mm downward camera move
+    // on a clip rigProbe.test.ts measures as already inside the frame.
+    const edge = avatarViewSpan(simulated.framings.frames.waistUp, simulated.framings.fov).bottom
+    const hips = Math.round(edge * 1e4) / 1e4
+    expect(hips, 'the recorded value rounds to just under the edge').toBeLessThan(edge)
+    expect(edge - hips, 'by less than half the last digit written').toBeLessThan(5e-5)
+    const file = needing(-0.2, hips)
+    const r = panRange(file, 'dance', 'waistUp', file.restCrownY, ['waistUp'])
+    expect(r.least, 'the crown is well inside, so no lift is needed').toBeLessThan(0)
+    expect(r.most, 'and the hips are on the wrong side of the bottom edge').toBeLessThan(0)
+    expect(r.most, 'by a rounding and nothing more').toBeGreaterThan(-5e-5)
+    expect(
+      panHolds(file, 'dance', 'waistUp', file.restCrownY, 'centre', ['waistUp'], 0),
+      'which is still no pan at all',
+    ).toBeNull()
   })
 
   it('lets a waiver raise a frame edge and never lower one', () => {

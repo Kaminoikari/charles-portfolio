@@ -44,6 +44,12 @@ import { CLEARANCE as VROID_HAIR_MALE } from './clearance/vroid-hair-male'
 import { CLEARANCE as VROID_SENDAGAYA_SHIBU } from './clearance/vroid-sendagaya-shibu'
 import { CLEARANCE as VROID_VICTORIA_RUBIN } from './clearance/vroid-victoria-rubin'
 import { CLEARANCE as VROID_VIVI } from './clearance/vroid-vivi'
+import { CLEARANCE as VROID_SAMPLE_A } from './clearance/vroid-sample-a'
+import { CLEARANCE as VROID_SAMPLE_C } from './clearance/vroid-sample-c'
+import { CLEARANCE as VROID_DARKNESS_SHIBU } from './clearance/vroid-darkness-shibu'
+import { CLEARANCE as VROID_SAKURADA_FUMIRIYA } from './clearance/vroid-sakurada-fumiriya'
+import { CLEARANCE as VROID_SENDAGAYA_SHINO } from './clearance/vroid-sendagaya-shino'
+import { CLEARANCE as VROID_VITA } from './clearance/vroid-vita'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -71,6 +77,12 @@ export type AvatarVariantId =
   | 'sendagaya-shibu'
   | 'victoria-rubin'
   | 'vivi'
+  | 'sample-a'
+  | 'sample-c'
+  | 'darkness-shibu'
+  | 'sakurada-fumiriya'
+  | 'sendagaya-shino'
+  | 'vita'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -91,6 +103,12 @@ export type AvatarFamilyId =
   | 'vroid-sendagaya-shibu'
   | 'vroid-victoria-rubin'
   | 'vroid-vivi'
+  | 'vroid-sample-a'
+  | 'vroid-sample-c'
+  | 'vroid-darkness-shibu'
+  | 'vroid-sakurada-fumiriya'
+  | 'vroid-sendagaya-shino'
+  | 'vroid-vita'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -110,6 +128,12 @@ export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sendagaya-shibu': VROID_SENDAGAYA_SHIBU,
   'vroid-victoria-rubin': VROID_VICTORIA_RUBIN,
   'vroid-vivi': VROID_VIVI,
+  'vroid-sample-a': VROID_SAMPLE_A,
+  'vroid-sample-c': VROID_SAMPLE_C,
+  'vroid-darkness-shibu': VROID_DARKNESS_SHIBU,
+  'vroid-sakurada-fumiriya': VROID_SAKURADA_FUMIRIYA,
+  'vroid-sendagaya-shino': VROID_SENDAGAYA_SHINO,
+  'vroid-vita': VROID_VITA,
 }
 
 /**
@@ -201,7 +225,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // is unnecessary, so serving it carries no obligation.
   //
   // NOT offered. It is a different character, and this site has one. What it is
-  // for is that motionPan, crownBound, panFor and the 71 guards of
+  // for is that motionPan, crownBound, panHolds and the 71 guards of
   // rigProbe.test.ts's `bundled motions` block now run against a rig that is
   // not the one they were written against, which is the only way to tell a
   // generalised layer from one that happens to work on the body it grew up on.
@@ -258,20 +282,23 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
   { id: 'studio', label: 'Studio 換裝樣本（不對外）', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: false },
-  // Five more rigs, registered together on 2026-09-11 and none of them offered.
-  // They are VRoid's own official sample avatars, and what they are for is the
-  // same thing `twist` and `studio` are for: the per-family paths in this repo
-  // — motionPan, crownBound, panFor, the per-family block of rigProbe.test.ts,
-  // and the describe.each(FAMILIES) blocks of avatarBow.test.ts and
-  // avatarPitch.test.ts (one block and two) — now run against eight skeletons
-  // instead of three. Each of those blocks expands AVATAR_FAMILIES directly, so
-  // adding a key here is what widens them.
+  // Eleven more rigs, measured on 2026-09-11 and none of them offered. They are
+  // VRoid's own official sample avatars, and what they are for is the same
+  // thing `twist` and `studio` are for: the per-family paths in this repo
+  // — motionPan, crownBound, panHolds, the per-family block of
+  // rigProbe.test.ts, and the describe.each(FAMILIES) blocks of
+  // avatarBow.test.ts and avatarPitch.test.ts (one block and two) — now run
+  // against fourteen skeletons instead of three. Each of those blocks expands
+  // AVATAR_FAMILIES directly, so adding a key here is what widens them.
   //
-  // Eleven were measured. Six are held back rather than registered, because
-  // they land on two rules that do not survive a body of their proportions, and
-  // both are written up with their measurements in
-  // docs/plans/avatar-families-vroid-samples.md. Neither is a property of these
-  // five, which pass every guard as they stand.
+  // Five went in first and six followed the same day. The six landed on two
+  // rules that no body of the original three's proportions could reach: a pan
+  // held to equal its own re-derivation, which has no solution when the crown
+  // is measured through the pan, and a reach or handTop waiver required by
+  // every placement of its clip, which a clip leaving one frame and not the
+  // other cannot satisfy. Both are fixed at the rule rather than waived, and
+  // the eight registered before pass both unchanged; the measurements that
+  // forced each are in docs/plans/avatar-families-vroid-samples.md.
   //
   // NOT offered, for the reason `twist` is not: this site has one character.
   // Each is a different person, and the look strip is a wardrobe rather than a
@@ -282,6 +309,19 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'sendagaya-shibu', label: 'Sendagaya Shibu（不對外）', url: '/avatar/Sendagaya_Shibu_webp.vrm', family: 'vroid-sendagaya-shibu', offered: false },
   { id: 'victoria-rubin', label: 'Victoria Rubin（不對外）', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', offered: false },
   { id: 'vivi', label: 'Vivi（不對外）', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', offered: false },
+  // And the six that were held back on the morning of 2026-09-11, registered
+  // the same afternoon once the two rules above were fixed rather than worked
+  // around: clearance.panHolds asks whether a declared pan is justified instead
+  // of whether it equals its own re-derivation, and rigProbe.test.ts judges the
+  // reach and handTop waivers across a clip's placements the way it already
+  // judged crownTop. Neither weakens a guard, and all eight families above pass
+  // both unchanged. Same terms as the five: measured, not offered.
+  { id: 'sample-a', label: 'VRoid 官方樣本 A（不對外）', url: '/avatar/AvatarSample_A_webp.vrm', family: 'vroid-sample-a', offered: false },
+  { id: 'sample-c', label: 'VRoid 官方樣本 C（不對外）', url: '/avatar/AvatarSample_C_webp.vrm', family: 'vroid-sample-c', offered: false },
+  { id: 'darkness-shibu', label: 'Darkness Shibu（不對外）', url: '/avatar/Darkness_Shibu_webp.vrm', family: 'vroid-darkness-shibu', offered: false },
+  { id: 'sakurada-fumiriya', label: 'Sakurada Fumiriya（不對外）', url: '/avatar/Sakurada_Fumiriya_webp.vrm', family: 'vroid-sakurada-fumiriya', offered: false },
+  { id: 'sendagaya-shino', label: 'Sendagaya Shino（不對外）', url: '/avatar/Sendagaya_Shino_webp.vrm', family: 'vroid-sendagaya-shino', offered: false },
+  { id: 'vita', label: 'Vita（不對外）', url: '/avatar/Vita_webp.vrm', family: 'vroid-vita', offered: false },
 ]
 
 /**

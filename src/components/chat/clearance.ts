@@ -161,19 +161,24 @@ export interface ClearanceDecisions {
    * How far the frame slides while each clip plays, by clip and frame.
    *
    * A pan is a property of the BODY, not of the clip: it is the arithmetic in
-   * panFor on this family's own crown and hips against the frame's span, so two
+   * panRange on this family's own crown and hips against the frame's span, so two
    * families wearing the same clip need not move the camera the same way. It
    * lived on AvatarMotionDef until 2026-09-07, which was true only while there
    * was one family; the second one lifts the column on eight clips, by 0.01 to
    * 0.14, and five of those eight are clips the first family holds still for.
    *
-   * Declared as well as derived, and rigProbe.test.ts holds one to the other.
-   * The declaration has to exist first because springsim projects each crown
-   * through the frame's camera WITH this clip's pan applied, so the number the
-   * derivation is made of was itself made under a pan. A new family starts with
-   * none, so panFor is run over the result and re-run until a pass changes
-   * nothing: the VRoid family settled on its first pass, the VRM1 sample on its
-   * third.
+   * Declared as well as derived, and rigProbe.test.ts holds one to the other
+   * through panHolds. The declaration has to exist first because springsim
+   * projects each crown through the frame's camera WITH this clip's pan
+   * applied, so the number the derivation is made of was itself made under a
+   * pan. A new family starts with none, so scripts/derive-pans.ts is run over
+   * the result and the body re-simulated until a pass changes nothing: the
+   * VRoid family settled on its first pass, the VRM1 sample on its third, and
+   * the slowest of the eleven VRoid samples on its fourth.
+   *
+   * What holds one to the other is NOT equality, and panHolds carries the
+   * measurements that say why: `least` is a function of the pan, so the pan
+   * that equals its own re-derivation need not exist on the centimetre grid.
    */
   pans: Record<string, MotionPan>
   /** Clips of the pack kept out of the pool, and the measurement that keeps them out. */
@@ -443,6 +448,39 @@ export function panRange(
 }
 
 /**
+ * How close to a range boundary counts as on it.
+ *
+ * Every number `panRange` reads is written by a producer that rounds to four
+ * decimal places (measure-motions.ts, `round(w.hipsLow, 4)`), so a boundary
+ * derived from one carries half of that last digit whatever the arithmetic
+ * does afterwards. `vroid-sample-a` has a dance whose lowest hips sit on the
+ * waist-up frame's bottom edge: recorded 0.7678 against an edge of 0.7678,
+ * which put `most` at -0.00002. Twenty micrometres of recording noise, read as
+ * "zero does not fit", centred the range and asked for a 100mm camera move on
+ * a clip that rigProbe.test.ts measures as already inside the frame.
+ *
+ * Half the last recorded digit, so it admits exactly the rounding and nothing
+ * else. It is four orders of magnitude below the centimetre these pans are
+ * dialled in, so no pan a person would notice turns on it.
+ */
+const RECORDED = 5e-5
+
+/**
+ * The point of the range the frame's policy stands at, on the centimetre.
+ *
+ * Split out of `panFor` so that `panHolds` can ask for the same point without
+ * inheriting the throws: `panFor` answers "what should this be", `panHolds`
+ * answers "is what is written here justified", and the two have to agree on
+ * where the policy points or a family could satisfy one and fail the other.
+ */
+function panTarget(least: number, most: number, policy: 'centre' | 'least'): number {
+  if (least <= RECORDED && -RECORDED <= most) return 0
+  const wanted = policy === 'least' ? least : (least + most) / 2
+  const step = policy === 'least' ? Math.ceil : Math.round
+  return step(wanted * 100) / 100
+}
+
+/**
  * The pan a clip should be given in a frame, to the centimetre the
  * compositions are dialled in.
  *
@@ -471,20 +509,83 @@ export function panFor(
       `(needs to rise ${(least * 1000).toFixed(0)}mm for its crown, may rise ${(most * 1000).toFixed(0)}mm before its hips leave)`,
     )
   }
-  if (least <= 0 && 0 <= most) return 0
-  const wanted = policy === 'least' ? least : (least + most) / 2
-  const step = policy === 'least' ? Math.ceil : Math.round
-  const pan = step(wanted * 100) / 100
+  const pan = panTarget(least, most, policy)
   // The range can be narrower than the centimetre these are dialled in, and
   // then rounding leaves it. Today's narrowest is 70mm against a 10mm step, so
   // this is a guard rather than a case: a pan outside its own range is one that
   // takes her hips off the bottom edge, and returning it quietly would put the
   // number in a composition nobody measured.
-  if (pan < least - 1e-9 || pan > most + 1e-9) {
+  if (pan < least - RECORDED || pan > most + RECORDED) {
     throw new Error(
       `clearance ${file.family}: ${clip} in ${frame} has no pan on the centimetre ` +
       `(${(least * 1000).toFixed(1)}mm..${(most * 1000).toFixed(1)}mm rounds to ${(pan * 1000).toFixed(0)}mm)`,
     )
   }
   return pan
+}
+
+/**
+ * Why the declared pan is not justified by the measurements, or null.
+ *
+ * `panFor` cannot be the guard on its own, and the reason is that a pan is not
+ * an input to the measurement it is checked against. springsim builds each
+ * clip's camera at `lookAtY + pan` and projects the crown through it, so
+ * `crownScreen` -- and therefore `least` -- is a reading taken UNDER the very
+ * pan being justified. `least` is a function of the pan, not a constant the pan
+ * is solved for.
+ *
+ * That function is decreasing and shallow: raising the camera by a centimetre
+ * lowers the projected crown by less than a centimetre, because the crown sits
+ * near the subject plane where the projection barely moves. So `pan === ceil(least)`
+ * is an equation whose two sides chase each other, and on the centimetre grid
+ * three of the fourteen families have no pan that satisfies it. AvatarSample_C's
+ * spin in the column is the clearest:
+ *
+ *     pan 0.26  ->  least 0.26230  ->  ceil -> 0.27
+ *     pan 0.27  ->  least 0.25890  ->  ceil -> 0.26
+ *
+ * Neither centimetre equals its own derivation, and the pair points at each
+ * other for ever. But look at what the composition actually needs: at pan 0.27
+ * the crown needs 0.25890 of lift and has 0.27, so 0.27 FITS. The equation was
+ * never the requirement; `least <= pan` is. This asks for that instead:
+ *
+ *   1. the pan fits, under the measurement taken at it -- `least <= pan <= most`;
+ *   2. and it is the policy's point, give or take the grid step.
+ *
+ * The second condition is what keeps this a guard. Without it every pan large
+ * enough to clear the hair would pass, including ones that throw away a
+ * quarter of her legs. One centimetre of slack is the least that admits a
+ * family with no fixed point, and it is enough precisely because the
+ * projection moves less than 1:1 with the pan.
+ *
+ * A family that DOES have a fixed point is unaffected: `pan === ceil(least)`
+ * implies `least <= pan`, and its distance from the policy point is zero. All
+ * five families registered before 2026-09-11 pass this unchanged, which is why
+ * the shipped compositions did not have to be re-derived to bring the rest in.
+ */
+export function panHolds(
+  file: ClearanceFile,
+  clip: string,
+  frame: MotionFrame,
+  restCrownY: number,
+  policy: 'centre' | 'least',
+  frames: readonly MotionFrame[],
+  declared: number,
+): string | null {
+  const { least, most } = panRange(file, clip, frame, restCrownY, frames)
+  const mm = (v: number): string => `${(v * 1000).toFixed(1)}mm`
+  if (declared < least - RECORDED) {
+    return `${clip} in ${frame} pans ${mm(declared)}, and its crown needs ${mm(least)} to clear the top edge`
+  }
+  if (declared > most + RECORDED) {
+    return `${clip} in ${frame} pans ${mm(declared)}, and its hips leave the bottom edge past ${mm(most)}`
+  }
+  const target = panTarget(least, most, policy)
+  if (Math.abs(declared - target) > 0.01 + RECORDED) {
+    return (
+      `${clip} in ${frame} pans ${mm(declared)}, and the ${policy} of ${mm(least)}..${mm(most)} ` +
+      `is ${mm(target)}: more than the centimetre these are dialled in`
+    )
+  }
+  return null
 }

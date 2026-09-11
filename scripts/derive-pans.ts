@@ -1,5 +1,5 @@
-// Derive a family's `pans` the way rigProbe.test.ts holds them: panFor over the
-// family's own crown and hips, under the frame's PAN_POLICY.
+// Derive a family's `pans` the way rigProbe.test.ts holds them: clearance.panHolds
+// over the family's own crown and hips, under the frame's PAN_POLICY.
 //
 //   npx tsx scripts/derive-pans.ts <family-id> <path-to-body.vrm>
 //
@@ -9,8 +9,13 @@
 // file, re-run springsim, and run this again; the family has settled when a
 // pass changes nothing. vroid-sample-b settled on its first pass, the VRM1
 // sample on its third (clearance.ts, ClearanceDecisions.pans).
+//
+// A declared pan that already HOLDS is kept rather than replaced by panFor's
+// answer. Three families have no pan equal to its own re-derivation, and
+// proposing the re-derivation at each pass is what made them alternate between
+// two centimetres for ever; clearance.panHolds carries the measurements.
 import { readFileSync } from 'node:fs'
-import { panFor, type ClearanceFile } from '../src/components/chat/clearance'
+import { panFor, panHolds, type ClearanceFile } from '../src/components/chat/clearance'
 import { AVATAR_MOTIONS, PAN_POLICY } from '../src/components/chat/avatarMotions'
 import { familyClearance } from '../src/components/chat/avatarVariants'
 import { buildRigFrom, deriveRestCrown } from '../src/components/chat/rigProbe'
@@ -48,9 +53,16 @@ for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
     // is not a pan that needs finding, it is a clip this body cannot wear. Only
     // `excluded` can answer that, and a throw here would hide every later clip,
     // so it is collected and the pass continues. Anything else still throws.
+    const have = file.pans[name]?.[frame] ?? 0
     let want: number
     try {
-      want = panFor(file, name, frame, restCrown, PAN_POLICY[frame], def.placements)
+      // Keep a pan that is already justified. panFor answers "where does the
+      // policy point", which moves as the pan moves; panHolds answers "is this
+      // one defensible", which is the question the guard asks and the only one
+      // that has an answer on a body with no fixed point.
+      want = panHolds(file, name, frame, restCrown, PAN_POLICY[frame], def.placements, have) === null
+        ? have
+        : panFor(file, name, frame, restCrown, PAN_POLICY[frame], def.placements)
     } catch (e) {
       // Anything that is not the "no pan fits" case is a real failure and has
       // to keep its own stack. `message` is read defensively because a throw is
@@ -61,7 +73,6 @@ for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
       unfittable.push(`${name}/${frame}: ${msg.slice(msg.indexOf('(') + 1, -1)}`)
       continue
     }
-    const have = file.pans[name]?.[frame] ?? 0
     if (want !== have) changed += 1
     if (want !== 0) (out[name] ??= {})[frame] = want
   }
