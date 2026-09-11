@@ -138,6 +138,26 @@ class Swapping(unittest.TestCase):
         self.assertEqual(vec['_OutlineColor'], [0.7, 0.6, 0.5, 1])
         self.assertEqual(vec['_RimColor'], [0.4, 0.3, 0.2, 1])
 
+    def test_the_bowl_is_baked_to_the_brightness_it_is_asked_for(self):
+        """The signature taking `mean` proves nothing if the body ignores it.
+
+        bowl_texture binary-searches a scale so the clipped disc averages the
+        mean it was handed, and returns what the shader will actually read. Two
+        different means have to come back as two different textures, or the
+        parameter is decoration over a written-down 0.90.
+        """
+        def bake(mean):
+            doc = {'images': [], 'textures': [], 'bufferViews': []}
+            got = build.bowl_texture(doc, [], 'bowl', size=32, mean=mean)
+            return got[1]
+
+        low, high = bake(0.55), bake(0.90)
+        self.assertLess(low, high)
+        # Within a quantisation step of what was asked for, which is the whole
+        # reason the function returns the quantised mean rather than its target.
+        self.assertAlmostEqual(low, 0.55, delta=1 / 255)
+        self.assertAlmostEqual(high, 0.90, delta=1 / 255)
+
     def test_a_material_cannot_be_made_without_saying_whose_it_is(self):
         """No default, because outfit.load is handed this as a callback."""
         doc = {'materials': [], 'extensions': {'VRM': {'materialProperties': []}}}
