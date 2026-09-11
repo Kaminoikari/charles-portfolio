@@ -81,3 +81,70 @@ Phase 2 就是把這一步從高度推廣到整組常數：值本身不變，改
   時註解必須原樣跟著走，否則下一個人會把量過的值當成猜的。
 - 三條軸不是完全正交：`MELLOW_PARTS` 的間隙是「那包衣服在這具身體上」的值，換
   任一邊都要重量。步驟 1 的表要標出這種雙軸格，不要硬塞進單一擁有者。
+
+---
+
+## 步驟 1 的產出：分類表（2026-09-11）
+
+判準跑在 `scripts/avatar/evidence/build-axes-0911.py`。它不印表就算了事，而是
+**斷言這是一個分割**：AST 找到的每個常數恰好被指派一次，且沒有指派到 AST 找不到
+的名字。常數增刪或搬走時，表跟檔案對不上會直接 assert 失敗。
+
+| 軸 | 個數 | 常數 |
+|---|---|---|
+| 底模 | 6 | `HEAD_HAIR`、`OUTLINE_KEEP`、`SCALP_HUE`、`SCALP_WINDOW`、`SCALP_FRINGE_TO`、`SCALP_FRINGE_SAT` |
+| 服裝包 | 7 | `MELLOW`、`MELLOW_OUTER`、`MELLOW_BONEMAP`、`MELLOW_PARTS`、`MELLOW_TINT`、`MELLOW_GAIN`、`THIGH_BAND_SOURCE_MATERIAL` |
+| 服裝包 × 身體 | 5 | `MELLOW_SHIFT`、`MELLOW_LOOSEN`、`MELLOW_STANDOFF`、`MELLOW_BIND_SMOOTH`、`THIGH_BAND_FINAL_CLEARANCE` |
+| 角色美術 | 24 | `HEAD`、`EAR_INNER`、`EAR_INNER_SHADE`、`BOWL_MEAN`、`GOLD_RAMP`、`CROWN_SHIFT`、`CROWN_LIGHT`、`HAND_GARMENTS`、`BLENDER_PARTS`、`HAIR_SHIFT`、`HAIR_SAT`、`HAIR_LIFT`、`HAIR_UNIFY`、`HAIR_MATERIAL_TONE`、`HAIR_SHADE_TONE`、`BROW_SHIFT`、`BROW_SAT`、`SKIN_TARGET`、`SKIN_MATERIAL_TONE`、`OUTLINE_VALUE`、`EYE_TARGET`、`PALETTE`、`RIM_COLOR`、`OUTLINE_COLOR` |
+| 管線 | 9 | `TAIL_COAT_INTRUSION_MAX`、`TAIL_COAT_INSIDE_SHARE_MAX`、`SHAPE_KEY_MIN_MEAN`、`BOW_GAP_MAX`、`HAIR_FLATTEN_BLOCKS`、`OUTLINE_CHROMA_MAX`、`NECK_MARGIN`、`WAIST_SEARCH`、`TORSO_EDGES` |
+
+### 分類時量到、值得記下來的四件事
+
+**「底模」這一軸比預期大。** `SCALP_*` 四個常數看起來像角色美術，實際上量的是
+VRoid 匯出檔自己的性質：VRoid 會把一片髮色的頭皮蓋畫進臉部 atlas，匯出檔上色相
+261、粉紅重繪後 257，而這四個常數是抓住那片蓋子的窗與邊緣。換一具底模，那片蓋子
+的色相就不是 261。單看名字會把它們歸到角色。
+
+**`MELLOW_*` 不是同一類。** 以 dict 的 key 從哪裡來當判準就分得開：
+`MELLOW_PARTS`／`MELLOW_TINT`／`MELLOW_GAIN` 的 key 是廠商自己的網格與材質名
+（`Inner`、`Skirt_Cloth`、`Belt_Acc`、`Leg_Acc`、`Main_Ribbon`、`Leg_belt`，在
+`blender/mellow.py` 裡對得上），換一包衣服整批作廢；`MELLOW_SHIFT`／`_LOOSEN`／
+`_STANDOFF`／`_BIND_SMOOTH` 的 key 是**我們自己的**部件名（`Outfit_Cardigan`
+等），換衣服時 key 還在、值卻要重量，換身體時也一樣。這五個是 plan 風險段講的
+雙軸格，不能塞給單一擁有者。
+
+**`PALETTE` 的 13 個 `Milfy_*` 是我們產出的材質名，不是讀進來的。**
+`build.py:674` 用 `add_material` 逐一建出來。所以它同時是角色的配色與出貨 VRM 的
+材質命名權，抽走它等於決定第二個角色的材質要叫什麼。
+
+**兩個常數已經做完了這件事。** `WAIST_SEARCH` 與 `TORSO_EDGES` 在 2026-09-07 都
+從絕對高度改成了地標跨距的比例，前者的註解還記著當時的症狀：0.8x 與 1.25x 兩具身
+體回報同一個 1.020，「答案來自常數而不是來自身體」的簽名。它們是這個 phase 的完
+成樣本。
+
+### `build()` 內的絕對高度：6 個字面量，4 行
+
+判準是「literal 流進一個代表 y 的參數或與 `pos[:, 1]` 相比」，不是「數值落在
+0.5–2.0」（那樣會收到 46 個，絕大多數是比例與 UV 座標）。
+
+| 位置 | 值 | 是什麼 |
+|---|---|---|
+| L769 | 1.02 | 找最接近胸口的頂點，與 `p[:, 1]` 相比 |
+| L770 | 0.945、1.005、1.065 | 三道環的高度 |
+| L826 | 1.176 | `garment.ring_at(pool, 1.176, …)` 的荷葉邊環 |
+| L923 | 0.652 | `wrap('Acc_Bandage_Thigh', 0.652, …)` |
+
+L923 特別值得看：它的兩個手足 L924、L925 已經由 `ankle`／`knee` 地標推導
+（`ankle + (knee - ankle) * 0.38`、`ankle + 0.030`），只有大腿繃帶還留著絕對高度。
+
+### `build.py` 以外的消費端
+
+`src/` 對 `Milfy_` 零命中，runtime 不認得這些材質名，合約邊界整個在
+`scripts/avatar/` 內。活程式碼的耦合只有三處，其餘命中都是註解或 evidence log：
+
+- `measure.py:96`：`('皇冠', 'Milfy_Gold', SHEET, …)`，量測目標以材質名指定
+- `appearance_test.py:520`：斷言 `Milfy_Gold_ramp` 這個材質存在
+- `validation/briefs.json` 的 B05：改緞帶顏色的 brief，直接指名 `Milfy_Mint`
+
+`blender/mellow.py` 另外持有一整份廠商網格與材質名，步驟 3 的服裝包合約要把它與
+`build.py` 的那七個常數視為同一份合約的兩半。
