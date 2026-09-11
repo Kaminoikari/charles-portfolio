@@ -51,6 +51,16 @@ MUTATIONS = [
      "            bundle = outfit.load(path, doc, views, wear, outfit_pack.TINT,",
      "            bundle = outfit.load(path, doc, views, add_material, outfit_pack.TINT,"),
 
+    ('C6', 'bowl_texture checks against a written-down mean again', SRC,
+     "        if np.clip(a * k, 0.0, 1.0)[seen].mean() < mean:",
+     "        if np.clip(a * k, 0.0, 1.0)[seen].mean() < 0.90:"),
+
+    ('C7', 'build() reads Mika directly and ignores the character it was handed', SRC,
+     "    mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)\n"
+     "            for n, (b, s) in character.PALETTE.items()}",
+     "    mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)\n"
+     "            for n, (b, s) in mika.PALETTE.items()}"),
+
     ('C8', 'build.py spells one of her material names again', SRC,
      "    put(cardigan, paint['cardigan'], 'Outfit_Cardigan', origin='shell')",
      "    put(cardigan, 'Milfy_Cardigan', 'Outfit_Cardigan', origin='shell')"),
@@ -63,16 +73,6 @@ MUTATIONS = [
     ('C10', 'a role points at a material the character does not have', CHAR,
      "    'cloth':      'Milfy_White',",
      "    'cloth':      'Milfy_Blouse',"),
-
-    ('C6', 'bowl_texture checks against a written-down mean again', SRC,
-     "        if np.clip(a * k, 0.0, 1.0)[seen].mean() < mean:",
-     "        if np.clip(a * k, 0.0, 1.0)[seen].mean() < 0.90:"),
-
-    ('C7', 'build() reads Mika directly and ignores the character it was handed', SRC,
-     "    mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)\n"
-     "            for n, (b, s) in character.PALETTE.items()}",
-     "    mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)\n"
-     "            for n, (b, s) in mika.PALETTE.items()}"),
 ]
 
 
