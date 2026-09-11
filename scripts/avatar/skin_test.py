@@ -13,6 +13,7 @@ import unittest
 
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -25,13 +26,13 @@ AVATARS = os.path.join(HERE, '..', '..', 'public', 'avatar')
 
 
 def body_atlas(path):
-    """(the body's skin atlas as a PIL image, its material name)."""
+    """(the body's skin atlas as a PIL image, this body's own skin colour)."""
     doc, binary = glb.load(path)
     views = glb.views_of(doc, binary)
-    name = next(m['name'] for m in doc['materials']
-                if partition.vroid_category(m.get('name', ''))[:2] == ('Body', 'SKIN'))
+    name = skin.skin_material(doc)
     index = skin.body_image(doc, material=name)
-    return Image.open(io.BytesIO(bytes(views[doc['images'][index]['bufferView']]))), name
+    image = Image.open(io.BytesIO(bytes(views[doc['images'][index]['bufferView']])))
+    return image, skin.skin_reference(doc, views, name)
 
 
 class TheFillIsMadeOfWhatSurvived(unittest.TestCase):
@@ -116,9 +117,9 @@ class StripsABodyItWasNotWrittenFor(unittest.TestCase):
     def setUpClass(cls):
         if not os.path.exists(cls.BODY):
             raise unittest.SkipTest('public/avatar/AvatarSample_A_webp.vrm 不在')
-        raw, _ = body_atlas(cls.BODY)
+        raw, cls.reference = body_atlas(cls.BODY)
         cls.before = np.asarray(raw.convert('RGB')).astype(np.int32)
-        out, cls.share = skin.strip(raw)
+        out, cls.share = skin.strip(raw, cls.reference)
         cls.after = np.asarray(out.convert('RGB')).astype(np.int32)
 
     def test_apply_repaints_a_body_this_step_was_not_written_for(self):
@@ -139,6 +140,78 @@ class StripsABodyItWasNotWrittenFor(unittest.TestCase):
         painted = np.median(self.after[changed], axis=0)
         self.assertLess(np.abs(painted - kept).max(), 30,
                         f'repainted {painted} against surviving {kept}')
+
+
+class ReadsThisBodysOwnSkinColour(unittest.TestCase):
+    """is_skin's `r > 105` was one body's palette written down.
+
+    AvatarSample_A's dark brown top sits at [120 92 80] and passes it, so
+    49,193 texels of garment stayed on the model; Vivi's at [129 100 85] left
+    155,800. Neither shows up in the residue figure, because that figure asks
+    is_skin whether a texel is skin and these are exactly what it gets wrong.
+    So the test below asks a question that does not go through the predicate:
+    how big is the largest patch that came through strip() untouched and is
+    nowhere near this body's own colour.
+    """
+
+    # Far enough from a body's own skin to belong to somebody's clothing.
+    FAR = 120
+
+    DRESSED = ('AvatarSample_A_webp.vrm', 'Vivi_webp.vrm')
+    GARMENTS = {'AvatarSample_A_webp.vrm': (122, 94, 81),
+                'Vivi_webp.vrm': (129, 100, 85)}
+
+    def read(self, name):
+        path = os.path.join(AVATARS, name)
+        if not os.path.exists(path):
+            raise unittest.SkipTest(f'public/avatar/{name} 不在')
+        doc, binary = glb.load(path)
+        views = glb.views_of(doc, binary)
+        material = skin.skin_material(doc)
+        index = skin.body_image(doc, material=material)
+        image = Image.open(io.BytesIO(bytes(views[doc['images'][index]['bufferView']])))
+        return image, skin.skin_reference(doc, views, material)
+
+    def test_the_reference_is_the_body_and_not_what_it_is_wearing(self):
+        for name, garment in self.GARMENTS.items():
+            _, reference = self.read(name)
+            patch = np.full((4, 4, 3), garment, dtype=np.uint8)
+            self.assertFalse(skin.is_skin(patch, reference).any(),
+                             f'{name}: {garment} passed as skin')
+            own = np.full((4, 4, 3), reference.round().astype(np.uint8))
+            self.assertTrue(skin.is_skin(own, reference).all(),
+                            f'{name}: the body\'s own colour did not pass')
+
+    def test_the_reference_does_not_come_from_a_sleeve(self):
+        # Vita is the local counterexample to reading the colour off the whole
+        # arm rather than the hand: its arm bones drive a teal sleeve, and the
+        # median there is [87 168 159] against the hand's [232 177 158], 145
+        # apart. A reference that is not skin puts every real texel outside the
+        # radius, so strip() repaints the entire atlas and leaves nothing to
+        # borrow from.
+        image, reference = self.read('Vita_webp.vrm')
+        _, share = skin.strip(image, reference)
+        self.assertLess(share, 0.9,
+                        'strip repainted nearly everything, which means the '
+                        "reference is not this body's skin")
+
+    def test_nothing_clothing_sized_survives_on_a_body_it_left_dressed(self):
+        for name in self.DRESSED:
+            image, reference = self.read(name)
+            before = np.asarray(image.convert('RGB')).astype(np.int32)
+            after = np.asarray(skin.strip(image, reference)[0]
+                               .convert('RGB')).astype(np.int32)
+            # The whole atlas, not only the part the mesh samples: that is the
+            # stricter reading of the two and it needs no UV rasterising here.
+            survived = (before == after).all(axis=2)
+            far = survived & (np.sqrt(((after - reference) ** 2).sum(axis=2))
+                              > self.FAR)
+            labels, found = ndimage.label(far)
+            sizes = np.bincount(labels.ravel())
+            sizes[0] = 0
+            biggest = int(sizes.max()) if found else 0
+            self.assertLess(biggest, skin.MIN_REGION,
+                            f'{name}: {biggest} px of something not skin survived')
 
 
 if __name__ == '__main__':

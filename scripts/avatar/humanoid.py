@@ -33,9 +33,20 @@ ARM_BONES = ('Shoulder', 'UpperArm', 'LowerArm', 'Hand', 'Thumb', 'Index',
              'Middle', 'Ring', 'Little')
 
 
+# The hand alone, read the same way. skin.py samples the body's own skin colour
+# where these bones drive it: a hand is bare on every body this pipeline has
+# seen, while a forearm can be inside a sleeve and a torso usually is.
+HAND_BONES = ('Hand', 'Thumb', 'Index', 'Middle', 'Ring', 'Little')
+
+
 def is_arm(name):
     """Does this bone name belong to an arm?"""
     return any(part.lower() in (name or '').lower() for part in ARM_BONES)
+
+
+def is_hand(name):
+    """Does this bone name belong to a hand or a finger?"""
+    return any(part.lower() in (name or '').lower() for part in HAND_BONES)
 
 
 def version(doc):

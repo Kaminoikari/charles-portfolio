@@ -1,19 +1,20 @@
-body                            sampled   before    after  repainted
-AvatarSample_A_webp.vrm           79.6%   65.40%    0.04%     58.89%
-AvatarSample_B_webp.vrm           79.6%   37.69%    0.15%     36.49%
-AvatarSample_C_webp.vrm           80.2%   78.00%    0.00%     71.81%
-Darkness_Shibu_webp.vrm           79.6%   73.93%    0.44%     77.56%
-HairSample_Female_webp.vrm        80.2%    3.12%    0.01%      2.97%
-HairSample_Male_webp.vrm          79.5%   20.32%    0.00%     19.60%
-Sakurada_Fumiriya_webp.vrm        79.5%   37.89%    0.00%     34.80%
-Sendagaya_Shibu_webp.vrm          79.6%   40.84%    0.01%     36.51%
-Sendagaya_Shino_webp.vrm          79.6%   40.84%    0.01%     36.51%
-Victoria_Rubin_webp.vrm           79.6%   37.82%    0.02%     34.17%
-Vita_webp.vrm                     79.6%   65.89%    0.00%     57.13%
-Vivi_webp.vrm                     79.6%    3.45%    0.31%      2.98%
-mika-milfy-12.vrm                 79.6%    2.12%    0.18%      2.00%
-mika-pink.vrm                     79.6%   37.54%    0.19%     36.10%
-vrm1-twist-sample.vrm             71.6%    5.41%    0.03%      4.74%
-vroid-studio-dressup.vrm          14.2%    0.72%    0.00%      8.80%
+body                            sampled   before    after  repainted   leftover
+AvatarSample_A_webp.vrm           79.6%   69.33%    0.06%     61.98%      282px
+AvatarSample_B_webp.vrm           79.6%   37.72%    0.15%     36.53%      940px
+AvatarSample_C_webp.vrm           80.2%   78.03%    0.00%     71.96%       11px
+Darkness_Shibu_webp.vrm           79.6%   74.45%    0.43%     77.74%        0px
+HairSample_Female_webp.vrm        80.2%    3.12%    0.01%      2.97%      159px
+HairSample_Male_webp.vrm          79.5%   20.34%    0.00%     19.61%        0px
+Sakurada_Fumiriya_webp.vrm        79.5%   37.97%    0.00%     35.08%        0px
+Sendagaya_Shibu_webp.vrm          79.6%   40.91%    0.01%     36.74%        7px
+Sendagaya_Shino_webp.vrm          79.6%   40.91%    0.01%     36.74%        7px
+Victoria_Rubin_webp.vrm           79.6%   37.87%    0.02%     34.19%        0px
+Vita_webp.vrm                     79.6%   65.89%    0.00%     57.13%        0px
+Vivi_webp.vrm                     79.6%   13.86%    0.04%     13.13%      298px
+mika-milfy-12.vrm                 79.6%    2.14%    0.17%      2.14%      200px
+mika-pink.vrm                     79.6%   37.75%    0.16%     36.52%      403px
+vrm1-twist-sample.vrm             71.6%    5.41%    0.03%      4.74%      376px
+vroid-studio-dressup.vrm          14.2%    0.72%    0.00%      8.80%        0px
 
-worst residue after: 0.44%
+worst residue after: 0.43%
+worst leftover: 940 px, against MIN_REGION 1500

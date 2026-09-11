@@ -26,20 +26,8 @@ from PIL import Image
 from scipy import ndimage
 
 import glb
-import skin as skin_mod
 
 REFERENCED_BY_VIEW = ('images',)
-
-
-def skin_pixels(rgb):
-    """Which texels of an RGB array are skin, by the pipeline's one definition.
-
-    Delegates to skin.is_skin rather than restating the predicate: that module
-    already had to separate skin from painted clothing to strip the body's
-    printed bodice, and a second copy here would be a rule that can drift while
-    every test stays green.
-    """
-    return skin_mod.is_skin(rgb)
 
 
 def _hue_deg(rgb):

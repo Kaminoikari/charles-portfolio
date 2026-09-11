@@ -30,14 +30,44 @@ from scipy import ndimage
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import glb        # noqa: E402
+import humanoid   # noqa: E402
 import partition  # noqa: E402
 
 MIN_REGION = 1500     # px at 2048 square; a nail is far smaller than a bodice
 
+# How far a texel may sit from this body's own skin colour, as a distance in
+# RGB, and still be skin. It replaced an absolute `r > 105`, which is a fact
+# about one body's palette: AvatarSample_A's dark brown top sits at
+# [120 92 80] and passes it, so 49,193 texels of garment stayed on the model,
+# and Vivi's at [129 100 85] left 155,800.
+#
+# 130 was chosen from the end-to-end sweep rather than from a colour theory:
+# at 110, 130 and 150 alike every one of the sixteen local bodies comes out of
+# strip() with no surviving patch of non-skin big enough to be clothing (the
+# largest is 940 px against MIN_REGION's 1500), so the choice sits in the
+# middle of a flat range and not on a cliff. The two garments are at 227 and
+# 165, which is what sets the upper end.
+#
+# The local sample has no genuinely dark-skinned body: the darkest reference
+# here is AvatarSample_B's [206 157 135]. A body much darker than that packs
+# its whole palette into a smaller volume, and this radius would be a larger
+# share of it; re-measure before trusting it there.
+SKIN_RADIUS = 130
 
-def is_skin(rgb):
+
+def is_skin(rgb, reference):
+    """Which texels are this body's skin, given its own skin colour.
+
+    The first three tests are the shading-invariant ones and are unchanged:
+    on skin the channels run red > green > blue by a clear margin, while the
+    painted garments are grey, white, purple or black, where the channels are
+    equal or inverted. The fourth is what a body's own colour answers and an
+    absolute threshold cannot, which is how far off that hue a texel may be.
+    """
     r, g, b = (rgb[..., i].astype(np.int16) for i in range(3))
-    return (r > g) & (g >= b) & ((r - b) > 22) & ((r - b) < 170) & (r > 105)
+    distance = np.sqrt(((rgb.astype(np.float32) - reference) ** 2).sum(axis=-1))
+    return ((r > g) & (g >= b) & ((r - b) > 22) & ((r - b) < 170)
+            & (distance <= SKIN_RADIUS))
 
 
 def half(a):
@@ -98,11 +128,15 @@ def pull_push(rgb, valid):
     return out
 
 
-def strip(img):
-    """Return (repainted RGBA, fraction of the texture repainted)."""
+def strip(img, reference):
+    """Return (repainted RGBA, fraction of the texture repainted).
+
+    `reference` is this body's own skin colour; skin_reference() reads it off
+    the file.
+    """
     arr = np.asarray(img.convert('RGBA')).copy()
     rgb = arr[..., :3]
-    skin = is_skin(rgb)
+    skin = is_skin(rgb, reference)
 
     # Only sizeable blocks of non-skin are clothing.
     lab, n = ndimage.label(~skin)
@@ -184,12 +218,66 @@ def body_image(doc, material=None):
     raise ValueError(f'找不到 {material} 的 baseColorTexture')
 
 
+def skin_reference(doc, views, material=None):
+    """This body's own skin colour, taken where the humanoid map says hands.
+
+    A hand is bare on every body this pipeline has seen, which a torso is not
+    and a forearm need not be, so it is the one place a body's skin colour can
+    be read without first knowing what it is wearing. Vertices are taken when
+    at least nine tenths of their skin weight is on hand or finger bones, and
+    the atlas is sampled at their UVs; the answer is the MEDIAN, because a
+    vertex sits on the edge of its UV island and a good number of them land on
+    the outline drawn around it.
+
+    All sixteen local bodies yield 1428 such vertices, VRoid's hands being one
+    mesh over and over, and each median reads as that body's own tone:
+    [254 231 205] for AvatarSample_A, [206 157 135] for AvatarSample_B.
+    """
+    material = material or skin_material(doc)
+    index = next(i for i, m in enumerate(doc['materials'])
+                 if m.get('name') == material)
+    image = np.asarray(Image.open(io.BytesIO(bytes(
+        views[doc['images'][body_image(doc, material=material)]['bufferView']]
+    ))).convert('RGB'))
+    height, width = image.shape[:2]
+    hands = {node for bone, node in humanoid.bones(doc).items()
+             if humanoid.is_hand(bone)}
+    skins = humanoid.mesh_skin(doc)
+    samples = []
+    for mesh_index, mesh in enumerate(doc['meshes']):
+        skin_index = skins.get(mesh_index)
+        if skin_index is None:
+            continue
+        joints = doc['skins'][skin_index]['joints']
+        on_hand = np.array([j < len(joints) and joints[j] in hands
+                            for j in range(len(joints))])
+        for prim in mesh['primitives']:
+            if prim.get('material') != index:
+                continue
+            j = glb.read_accessor(doc, views, prim['attributes']['JOINTS_0'])
+            w = glb.read_accessor(doc, views, prim['attributes']['WEIGHTS_0'])
+            w = w.astype(np.float32)
+            if w.max() > 1.5:                 # normalised byte weights
+                w = w / 255.0
+            uv = glb.read_accessor(doc, views, prim['attributes']['TEXCOORD_0'])
+            drawn = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
+            picked = drawn[(w * on_hand[j]).sum(axis=1)[drawn] >= 0.9]
+            if picked.size:
+                samples.append(image[
+                    np.clip((uv[picked, 1] * height).astype(int), 0, height - 1),
+                    np.clip((uv[picked, 0] * width).astype(int), 0, width - 1)])
+    if not samples:
+        raise ValueError('這具身體的手部骨頭沒有帶到任何皮膚頂點，量不出膚色參考')
+    return np.median(np.concatenate(samples).astype(np.float32), axis=0)
+
+
 def apply(src, dst):
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
-    image_index = body_image(doc)
+    material = skin_material(doc)
+    image_index = body_image(doc, material=material)
     raw = Image.open(io.BytesIO(bytes(views[doc['images'][image_index]['bufferView']])))
-    out, share = strip(raw)
+    out, share = strip(raw, skin_reference(doc, views, material))
     replace(doc, views, image_index, out)
     blob = glb.rebuild(doc, views)
     size = glb.save(dst, doc, blob)
@@ -200,8 +288,10 @@ if __name__ == '__main__':
     base = os.path.dirname(os.path.abspath(__file__))
     doc, binary = glb.load(os.path.join(base, 'out', 'mika-milfy.vrm'))
     views = glb.views_of(doc, binary)
-    raw = Image.open(io.BytesIO(bytes(views[doc['images'][body_image(doc)]['bufferView']])))
-    out, share = strip(raw)
+    material = skin_material(doc)
+    raw = Image.open(io.BytesIO(bytes(
+        views[doc['images'][body_image(doc, material=material)]['bufferView']])))
+    out, share = strip(raw, skin_reference(doc, views, material))
     out.convert('RGB').resize((1024, 1024), Image.LANCZOS).save(
         os.path.join(base, 'out', 'body-tex-stripped.png'))
     print(f'repainted {share * 100:.1f}% of the body texture')

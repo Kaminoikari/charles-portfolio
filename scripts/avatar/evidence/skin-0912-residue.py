@@ -1,15 +1,20 @@
-"""How much of each body's skin atlas is not skin after strip(), and was before.
+"""What each body's skin atlas still holds after strip(), by two measures.
 
-Residue is the share of the atlas THE MESH ACTUALLY SAMPLES that is_skin calls
+RESIDUE is the share of the atlas THE MESH ACTUALLY SAMPLES that is_skin calls
 not-skin. The UV footprint matters: the unused parts of a VRoid atlas are dark
 and would swamp the figure. It is rasterised from the UV triangles of every
 primitive drawing the Body SKIN material.
 
-The figure is deliberately measured with is_skin itself, which bounds what it
-can see: a garment is_skin WRONGLY admits is reported as skin and is invisible
-here. That is a live limitation, not a hypothetical: AvatarSample_A's dark
-brown top (56,742 px, median [120 92 80]) passes is_skin's r > 105 and survives
-strip() as two brown bars, and the residue below reads 0.04%.
+Residue is measured with is_skin itself, and that bounds what it can see: a
+garment is_skin WRONGLY admits is reported as skin. So there is a second
+figure that does not use the predicate at all.
+
+LEFTOVER is the largest run of texels that came through strip() unchanged and
+sit further than 120 in RGB from this body's own skin colour, which is read off
+the hands through the humanoid map. It is judged against MIN_REGION, strip()'s
+own answer to "big enough to be clothing". With is_skin's old absolute
+threshold this read 49,193 px on AvatarSample_A and 155,800 on Vivi, both
+whole garments, while residue read 0.04% and 0.31%.
 
     python3 scripts/avatar/evidence/skin-0912-residue.py
 """
@@ -20,6 +25,7 @@ import sys
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
@@ -55,8 +61,14 @@ def uv_footprint(doc, views, material_index, size):
     return np.asarray(image, dtype=bool)
 
 
-print(f"{'body':<30} {'sampled':>8} {'before':>8} {'after':>8} {'repainted':>10}")
+# Far enough from this body's own skin to be somebody's clothing. Read only as
+# a yardstick for the leftover column; the predicate strip() uses is is_skin.
+FAR = 120
+
+print(f"{'body':<30} {'sampled':>8} {'before':>8} {'after':>8} {'repainted':>10}"
+      f" {'leftover':>10}")
 worst = 0.0
+worst_left = 0
 for path in sorted(glob.glob(os.path.join(HERE, '..', '..', '..',
                                           'public', 'avatar', '*.vrm'))):
     name = os.path.basename(path)
@@ -69,12 +81,23 @@ for path in sorted(glob.glob(os.path.join(HERE, '..', '..', '..',
     raw = Image.open(io.BytesIO(bytes(
         views[doc['images'][skin.body_image(doc, material=material)]['bufferView']])))
     before = np.asarray(raw.convert('RGB'))
-    out, share = skin.strip(raw)
+    reference = skin.skin_reference(doc, views, material)
+    out, share = skin.strip(raw, reference)
     after = np.asarray(out.convert('RGB'))
     seen = uv_footprint(doc, views, index, raw.size)
-    was = float((~skin.is_skin(before) & seen).sum()) / seen.sum()
-    now = float((~skin.is_skin(after) & seen).sum()) / seen.sum()
+    was = float((~skin.is_skin(before, reference) & seen).sum()) / seen.sum()
+    now = float((~skin.is_skin(after, reference) & seen).sum()) / seen.sum()
     worst = max(worst, now)
+
+    survived = (before.astype(np.int32) == after.astype(np.int32)).all(axis=2) & seen
+    far = survived & (np.sqrt(((after.astype(np.float32) - reference) ** 2)
+                              .sum(axis=2)) > FAR)
+    labels, found = ndimage.label(far)
+    sizes = np.bincount(labels.ravel())
+    sizes[0] = 0
+    leftover = int(sizes.max()) if found else 0
+    worst_left = max(worst_left, leftover)
     print(f'{name:<30} {seen.mean()*100:7.1f}% {was*100:7.2f}% {now*100:7.2f}% '
-          f'{share*100:9.2f}%')
+          f'{share*100:9.2f}% {leftover:8}px')
 print(f'\nworst residue after: {worst*100:.2f}%')
+print(f'worst leftover: {worst_left} px, against MIN_REGION {skin.MIN_REGION}')
