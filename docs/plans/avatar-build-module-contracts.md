@@ -6,6 +6,10 @@ Phase 0–6b 已經把 humanoid map、蒙皮、retarget、clearance 都收斂成
 
 ## 現況（量到的，不是估的）
 
+以下全部量在 `c850132`，也就是這個計畫開始前的最後一個 commit。**這一節描述的是
+起點，不是今天**：今天 `build.py` 是 1602 行、模組層常數 10 個，簽章也多了兩個參
+數；差異在文末各步驟的產出裡。
+
 `scripts/avatar/build.py` 有 1731 行，其中 `build()` 一個函式佔 1059 行
 （L665–1723）。模組層的大寫常數有 **51 個**（用 AST 逐一列舉，不是 grep；第一
 次數成 42 是因為走訪只認 `ast.Name` 目標，`HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = …`
@@ -103,8 +107,9 @@ Phase 2 就是把這一步從高度推廣到整組常數：值本身不變，改
 
 **「底模」這一軸比預期大。** `SCALP_*` 四個常數看起來像角色美術，實際上量的是
 VRoid 匯出檔自己的性質：VRoid 會把一片髮色的頭皮蓋畫進臉部 atlas，匯出檔上色相
-261、粉紅重繪後 257，而這四個常數是抓住那片蓋子的窗與邊緣。換一具底模，那片蓋子
-的色相就不是 261。單看名字會把它們歸到角色。
+265、粉紅重繪後 257，而這四個常數是抓住那片蓋子的窗與邊緣。261 是窗的**中心**，
+不是量到的色相，兩者在這份文件裡曾經混用。換一具底模，那片蓋子的色相就不是 265。
+單看名字會把它們歸到角色。
 
 **`MELLOW_*` 不是同一類。** 以 dict 的 key 從哪裡來當判準就分得開：
 `MELLOW_PARTS`／`MELLOW_TINT`／`MELLOW_GAIN` 的 key 是廠商自己的網格與材質名
@@ -144,7 +149,8 @@ L923 特別值得看：它的兩個手足 L924、L925 已經由 `ankle`／`knee`
 `scripts/avatar/` 內。活程式碼的耦合只有三處，其餘命中都是註解或 evidence log：
 
 - `measure.py:96`：`('皇冠', 'Milfy_Gold', SHEET, …)`，量測目標以材質名指定
-- `appearance_test.py:520`：斷言 `Milfy_Gold_ramp` 這個材質存在
+- `appearance_test.py`：斷言 `Milfy_Gold_ramp` 這個材質存在（行號刻意不寫：同一
+  份 diff 已經把它推移過一次）
 - `validation/briefs.json` 的 B05：改緞帶顏色的 brief，直接指名 `Milfy_Mint`
 
 `blender/mellow.py` 另外持有一整份廠商網格與材質名，步驟 3 的服裝包合約要把它與
@@ -154,12 +160,15 @@ L923 特別值得看：它的兩個手足 L924、L925 已經由 `ankle`／`knee`
 
 ## 步驟 2 的產出：角色合約（2026-09-11）
 
-`scripts/avatar/characters/mika.py` 持有 **23 個**值，每一個連同它的註解逐字搬過
-去。搬完先證明搬對：逐名比對 `build.py` 與新模組，23/23 完全相同（含型別），這一
-步在改 `build.py` 之前做，因為改完之後就沒有對照組了。
+`scripts/avatar/characters/mika.py` 起初持有 **23 個**值（review 後補了兩個，見文
+末），每一個連同它的註解逐字搬過去。搬完先證明搬對：逐名比對 `build.py` 與新模
+組，23/23 完全相同（含型別），這一步在改 `build.py` 之前做，因為改完之後就沒有對
+照組了。
 
-`build()` 的簽章變成 `build(src, dst, manifest_path, out_manifest, character=mika)`，
-34 個參照點全部改成 `character.X`。`build.py` 現在一個角色常數都不宣告。
+這一步結束時 `build()` 的簽章是
+`build(src, dst, manifest_path, out_manifest, character=mika)`，34 個參照點全部改
+成 `character.X`，`build.py` 一個角色常數都不宣告。步驟 3 與 4 之後還會各加一個參
+數，今天的完整簽章在文末。
 
 ### 三個不能照抄的地方
 
@@ -246,10 +255,13 @@ known)` 從「partition 標成 `Hair_*` 的 primitive」推出來，依三角形
 `known` 參數擋住一件事：頭飾與內耳也是 `Hair_*` 部件，而內耳帶著我們自己造的材質。
 沒有它，這個 build 自己寫進去的材質會被當成身體原本就有的。
 
-### 十九處 inline 的 VRoid 名字，是步驟 1 沒看到的
+### 二十四處 inline 的 VRoid 名字，是步驟 1 沒看到的
 
-`build.py` 裡有 19 處直接寫著 `F00_000_*` 的貼圖與材質名（六張髮貼圖、眉、臉
-atlas、身體 atlas、虹膜、兩個膚材質）。**步驟 1 的常數盤點一個都沒找到**，因為它們
+`build.py` 裡直接寫著 `F00_000_*` 的貼圖與材質名，在步驟 4 之前的 `8de2d67` 上
+`rg -o 'F00_000' | wc -l` 數到 **24 處、分佈在 20 行**，拼出 **12 個相異的名字**
+（六張髮貼圖、眉、臉 atlas、身體 atlas、虹膜、兩個膚材質；六張髮貼圖由同一個
+f-string 產生，所以字面上只看得到一個前綴）。這三個數字各有一條可重跑的指令，先
+前寫的「19 處」對不上其中任何一種口徑。**步驟 1 的常數盤點一個都沒找到**，因為它們
 是寫在函式內的字面量，不是模組層常數。這是比計畫預期更大的耦合面，也是「列常數」這
 個方法本身的盲區。下次做同樣的盤點，判準要從「有哪些常數」改成「有哪些值只對這條軸
 的這份資產成立」，而後者只能靠字面量掃描補完。
@@ -270,8 +282,15 @@ atlas 就是 Face 部件的膚材質上那張貼圖），但眉和虹膜只能�
 
 `build()` 內還剩五個（胸口探測 1.02、三顆鈕扣 0.945／1.005／1.065、胸前荷葉邊
 1.176）加上大腿繃帶的 0.652。全部改成地標跨距的比例，前五個對腰→肩，最後一個對膝→
-髖，它下面兩行的手足本來就是那個寫法。在原本這具身體上重現到 **0.033mm 以內**，最
-差的是胸前荷葉邊的 0.0068mm，標準沿用 `TORSO_EDGES` 2026-09-07 訂的 0.1mm。
+髖，它下面兩行的手足本來就是那個寫法。標準沿用 `TORSO_EDGES` 2026-09-07 訂的
+0.1mm。
+
+重現誤差以 `build()` 自己在 `out/proportioned.vrm` 上算出的地標為準（waist
+0.960000、shoulder 1.215111、hip 0.843383、knee 0.500952）：**最差 0.0035mm，
+在三顆鈕扣最上面那顆**，其餘依序是 bust_frill 0.0021、chest_probe 0.0020、
+button_mid 0.0015、thigh_band 0.0013、button_low 0.0005。先前寫的「0.033mm 以內、
+最差是胸前荷葉邊的 0.0068mm」界限沒錯但歸屬錯了：那組數字是把 waist→shoulder 的
+跨距取成四位小數的 0.2551 再回推的，比地標本身粗一個量級。
 
 順手抓到一個會咬人的東西：`build()` 內原本就有一個區域變數叫 `hair_materials`，會
 遮蔽我新加的模組層函式。函式改名為 `body_hair_materials`。
@@ -314,3 +333,63 @@ numpy 陣列而爆掉。所有單元測試照樣全綠，因為沒有一條會�
 同一種遮蔽當天發生兩次（另一次是區域變數 `hair_materials` 遮蔽新的模組層函式）。
 `build_test` 因此多了 `DerivedOnce`：對 `build()` 推導一次、幾百行後才讀的十個名字，
 斷言每個恰好被綁定一次，而且斷言它們還在，因為一個消失的名字會免費通過前半條。
+
+---
+
+## Review 的產出：值只是合約的一半（2026-09-11）
+
+雙 reviewer 對 `c850132..98b9534` 的判決是 code PASS、spec FAIL，後者的 BLOCKING
+是步驟 1 的收據在 HEAD 上 assert 失敗。兩份合計 17 條，全部修完。真正改變了成果的
+是這三條，它們都是同一個形狀：**分類表看的是常數，而這三處是寫在函式裡的名字。**
+
+### build.py 仍然拼著角色自己的材質名
+
+31 處字面量（`rg -o "'Milfy_[A-Za-z_]*'" | wc -l` 量在 `98b9534`），15 種相異寫
+法：13 格調色盤裡的 11 格、內耳的材質、兩個貼圖名（金色斜坡與內耳碗），以及
+manifest 過濾器裡那個光禿禿的前綴本身。`put()` 拿每一個去查 `mats`，
+而 `mats` 是由角色的 `PALETTE` 建的，所以第二個角色只要不沿用她的拼法就是
+KeyError。修法與底模軸完全對稱：`characters/mika.py` 多了 `MATERIALS`（角色無關的
+role 對到她的材質名）與 `MATERIAL_PREFIX`，`build()` 開頭綁一次 `paint`，
+`characters_test` 多一條 `assertNotIn(mika.MATERIAL_PREFIX, source())`。
+
+### manifest 用兩個寫死的前綴決定要宣告什麼
+
+`name.startswith(('Milfy_', 'Mellow_'))`。palette 是換色工具唯一的輸入，所以第二個
+角色的材質會整批從她自己的 manifest 裡消失，而且不會有任何錯誤。兩個前綴現在各自
+從合約讀。
+
+### 廠商的大腿腿帶網格名寫在 build.py 裡四次
+
+`'Leg_belt'`。失敗模式完全靜默：`build()` 問的是「accepted 裡有沒有這個名字」，換
+一包沒有這個網格的衣服不會爆，整段大腿環貼合只是不執行。移到
+`outfits/mellowheart.py` 的 `THIGH_BAND_PART`。
+
+### 端到端驗收重跑
+
+這三條加起來動了 `build.py` 31 處。從 `baseline.vrm` 重跑 make.py 步驟 0b–4 再跑兩
+棵樹的 `build()`：manifest 逐欄相同（26 個部件、20 格 palette）、sha256 同為
+`aa49410c4a4a2612…`、VRM 同為 12034560 位元組、新增部件同為 32 個、地標相同。與搬
+家前的那次驗收數字一模一樣，這是一次改名唯一有資格宣稱的事。
+
+### 收據層
+
+- 三條軸的 mutation 各 10 道，共 30 道全紅，逐條收據在
+  `evidence/mutations-{characters,outfits,bodies}-0911.md`，原始輸出在同名 `.log`。
+  底模那 10 道先前沒有收據，這是補上的。
+- C5 的 pattern 在步驟 3 之後就不再命中（它還寫著 `MELLOW_TINT`），而 runner 的
+  `assert hits == 1` 會讓整輪在那裡中止，所以 C6 與 C7 已經有一段時間跑不到了。
+- 步驟 1 的收據改成分類它**當時**分類的那個 blob，另外保留一道對今天 `build.py` 的
+  living check：宣告了不屬於任何軸的常數就紅。兩道各自 mutation 過，而且是分開的兩
+  個 mutation，因為「新增一個沒有軸的常數」會同時觸發兩道，遮蔽掉第二道。
+- `other_character()` 宣稱換掉她每一個值，實際上有 4 個還是她的（blanket rule 只認
+  float、tuple、dict，str、set、list 與整數 tuple 全部漏掉）。現在逐名 assert。
+- 有一條測試把 `outline_colour` 的公式在測試裡重寫一遍再比對，換成三條對答案性質的
+  斷言（最亮的通道等於角色的線值；飽和度上限咬住時色差恰好等於上限；不咬時通道比例
+  等於她皮膚的比例）。
+
+### 範圍外，標記未修
+
+`outfit.py` 有三處字面量 `Mellow_`（材質、貼圖、骨節點各一）。那是匯入器不是
+`build.py`，不在這四項需求內，所以沒有動它；`outfits_test` 有一條把它與
+`outfit_pack.MATERIAL_PREFIX` 釘在一起，改任一邊都會紅（mutation O10）。
+

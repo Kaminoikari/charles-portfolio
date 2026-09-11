@@ -14,15 +14,26 @@ inputs and prints what it produced. Point it at a `git archive` of the
 pre-refactor tree and at the working tree, and the two answers are directly
 comparable.
 
-    $ python3 build-e2e-0911-prep.py /tmp/e2e/out
-    $ git archive 135d33b scripts/avatar | tar -x -C /tmp/e2e/before
-    $ python3 build-e2e-0911-run.py /tmp/e2e/before/scripts/avatar /tmp/e2e/out before
-    $ python3 build-e2e-0911-run.py <repo>/scripts/avatar /tmp/e2e/out after
+    $ python3 scripts/avatar/evidence/build-e2e-0911-prep.py <scratch>/out
+    $ git archive 135d33b scripts/avatar | tar -x -C <scratch>/before
+    $ python3 scripts/avatar/evidence/build-e2e-0911-run.py \
+          <scratch>/before/scripts/avatar <scratch>/out before
+    $ python3 scripts/avatar/evidence/build-e2e-0911-run.py \
+          <repo>/scripts/avatar <scratch>/out after
+
+`build-e2e-0911-run.py` writes its JSON after build()'s own progress output, so
+read it from the first line that is `{`. The converted garments it copies in come
+from this repo's `scripts/avatar/out/blender`, located from the script's own
+path: an earlier version reached for `os.path.join(out, '..', 'out', 'blender')`,
+which collapses onto `out/blender` itself whenever the scratch directory happens
+to be called `out`, which is exactly what the command above used to say.
 
 ## Result
 
-Comparing `135d33b` (the last commit before the character contract moved) with
-`30488d3` plus the shadowing fix:
+Run twice. First comparing `135d33b` (the last commit before the character
+contract moved) with `30488d3` plus the shadowing fix, then again after the
+review round moved 31 more literals out of `build.py` (`8b188d2`). Both runs
+produced the same table:
 
 | what | before | after |
 |---|---|---|
@@ -42,7 +53,9 @@ end to end: the contract tests exercise the seams, and the seams were right.
 
 That is the second shadowing of the same shape in one day -- the first was a
 local named `hair_materials` over the new module-level function. `build_test`
-now has `DerivedOnce`, which asserts that the ten values `build()` derives once
-and reads hundreds of lines later are each bound exactly once, and that they are
-each still bound at all, because a name that stops existing would pass the first
-half for free.
+now has `DerivedOnce`, which asserts that the values `build()` derives once and
+reads far away are each bound exactly once, and that they are each still bound
+at all, because a name that stops existing would pass the first half for free.
+It watched ten names when it was written and twelve after the review round added
+`paint` and `band_part`; the count is not repeated anywhere, so that it cannot
+go stale the way the figures this round spent an afternoon correcting did.

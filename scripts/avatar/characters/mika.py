@@ -206,7 +206,7 @@ MATERIAL_PREFIX = 'Milfy_'
 #
 # 之所以不讓 build() 直接寫 'Milfy_White'：那些名字是這個角色的詞彙，而
 # build() 裡的 `mats[...]` 查的就是它，第二個角色只要不沿用同一組名字就是
-# KeyError。這與底模軸十九處 inline 的 VRoid 名字是同一類耦合，那一類已經由
+# KeyError。這與底模軸二十四處 inline 的 VRoid 名字是同一類耦合，那一類已經由
 # bodies_test 的 `assertNotIn('F00_000', source())` 擋住，這裡對應的那條在
 # characters_test。
 MATERIALS = {

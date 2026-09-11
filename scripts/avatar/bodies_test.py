@@ -93,8 +93,10 @@ class Derived(unittest.TestCase):
                                               {'cloth'}), [])
 
     def test_the_texture_names_all_come_from_the_contract(self):
-        """Nineteen inline literals until 2026-09-11, and none of them was a
-        constant, so listing build.py's constants did not find a single one."""
+        """Twenty-four occurrences of the text F00_000 on twenty lines until
+        2026-09-11, spelling twelve distinct names, and not one of them was a
+        constant, so listing build.py's constants did not find a single one.
+        Counted with `rg -o F00_000 | wc -l` on the blob at 8de2d67."""
         self.assertNotIn('F00_000', source(),
                          'build.py spells a VRoid name again')
 

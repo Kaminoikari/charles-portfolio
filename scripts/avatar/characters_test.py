@@ -254,8 +254,10 @@ class Wiring(unittest.TestCase):
                             'the callback is handed over unbound again')
 
     def test_build_spells_none_of_her_material_names(self):
-        """Twenty-eight literals until this round, across eleven of the thirteen
-        palette entries plus the inner ear. `put()` looks each one up in `mats`,
+        """Thirty-one literals until this round (`rg -o "'Milfy_[A-Za-z_]*'" | wc -l`
+        on the blob at 98b9534), fifteen distinct spellings: eleven of her
+        thirteen palette entries, the inner ear's own material, two texture
+        names, and the bare prefix in the manifest filter. `put()` looks each one up in `mats`,
         which is built from her PALETTE, so a second character who does not
         reuse her exact names was a KeyError. Same shape of coupling, and same
         shape of guard, as the base body's F00_000 names."""

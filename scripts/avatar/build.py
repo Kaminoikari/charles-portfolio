@@ -62,6 +62,14 @@ SHAPE_KEY_MIN_MEAN = 0.001
 BOW_GAP_MAX = 8.0
 
 
+# How many column blocks `customise.hue` splits a hair atlas into before it
+# removes each one's vertical trend. A gate rather than anyone's value, and the
+# reason it survives a swap is measured rather than argued: the answer barely
+# depends on the count, so there is nothing here to re-measure per body. On this
+# atlas the resulting lightness p10-p90 is 0.100 at 8 blocks, 0.102 at 16 and
+# 0.102 at 32 (the derivation, and why a whole-row correction cannot be right
+# for two atlases at once, is in `customise._flatten_v`). Sixteen only has to be
+# fine enough that no block straddles two strips.
 HAIR_FLATTEN_BLOCKS = 16
 
 
@@ -398,7 +406,7 @@ def landmarks(pool, doc):
 # function is not a constant; the thigh bandage's height sat two lines above two
 # siblings that already derived from the ankle and the knee.
 # Same bar as the first three: on this body they reproduce the old heights to
-# within 0.033mm, the worst of them the bust frill's 0.0068mm.
+# within 0.0035mm, the worst of them the topmost button's.
 TORSO_EDGES = {
     'bandeau_top': 0.866,   # the bandeau's upper edge, at the frill's own height
     'strap_bottom': 0.815,  # where the shoulder straps come off the trapezius

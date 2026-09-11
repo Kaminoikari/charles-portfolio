@@ -21,7 +21,7 @@ measured number that says which export it was measured on is the honest form.
 # the original purple, 265 on the export and 257 on the repaint. A window either
 # side catches both without reaching the skin at 9 or the lips at 0.
 SCALP_HUE, SCALP_WINDOW = 261.0, 45.0
-# The cap's anti-aliased edge. Along it the hue walks from the cap (261)
+# The cap's anti-aliased edge. Along it the hue walks from the cap (265)
 # through magenta to the skin (9): it leaves the window at 306 and only reaches
 # skin at about 345. Recolouring the window alone left that edge to the SKIN
 # solve, which turned it mauve -- the purple lines behind the neck and along the
@@ -33,8 +33,9 @@ SCALP_FRINGE_TO, SCALP_FRINGE_SAT = 345.0, 0.12
 
 # ---------------------------------------------------------------------------
 # The export's own vocabulary: what VRoid named the textures and the two skin
-# materials. These were nineteen inline literals in build.py until 2026-09-11,
-# which is why the constant inventory in
+# materials. These were twenty-four inline occurrences in build.py until
+# 2026-09-11, on twenty lines and spelling twelve distinct names, which is why
+# the constant inventory in
 # docs/plans/avatar-build-module-contracts.md missed them: a name spelled inside
 # a function is not a constant and does not show up when you list them.
 #
