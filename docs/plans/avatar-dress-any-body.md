@@ -288,8 +288,11 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   bytes、`parts.json` sha256 `79aa95bd5956f2ff…`）；類別 token 缺席時**拒絕**而不是猜。
   mutation 見 [mutations-partition-0912.md](../../scripts/avatar/evidence/mutations-partition-0912.md)。
 - **階段 1a（已達成）**：16 具身體跑 `strip()`，殘留全部 < 1%（最大值 Darkness_Shibu
-  0.44%）；原本 12.46% 與 14.05% 的兩具進到 0.04% 與 0.00%。不變式測試：pull-push 是
-  存活像素的加權平均，輸出不得離開輸入的值域。mutation：把金字塔改回停在第九層。
+  0.44%）；原本 12.46% 與 14.05% 的兩具進到 0.04% 與 0.00%。收據
+  [skin-0912-residue.log](../../scripts/avatar/evidence/skin-0912-residue.log)。
+  不變式測試：pull-push 是存活像素的加權平均，輸出不得離開輸入的值域。三個 mutation
+  見 [mutations-skin-0912.md](../../scripts/avatar/evidence/mutations-skin-0912.md)，
+  其中 S3 證明夾具必須是陌生身體：同一個 mutation 換成 mika-pink 就不會紅。
 - **階段 1b（未達成）**：`is_skin` 仍用絕對門檻，AvatarSample_A 的深棕上衣仍在。判準
   要另立，因為殘留指標本身依賴 `is_skin`。
 - **階段 2**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation

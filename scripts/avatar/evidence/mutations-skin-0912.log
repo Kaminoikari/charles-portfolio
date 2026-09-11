@@ -1,0 +1,13 @@
+skin.py          blob 1f297ef4a221df49ac653ca6eafeab44c4504d4a
+skin_test.py     blob b53a27c33153836cad11580e6318eff290d0237f
+baseline  Ran 3 tests in 2.709s  green
+
+S1  the pyramid stops after nine halvings again  [skin.py]
+    Ran 3 tests in 2.037s  RED  failing: ['a_hole_that_swallows', 'looks_like_the_skin', 'non_square']  as expected
+
+S2  half() halves a dimension that is already one  [skin.py]
+    Ran 3 tests in 2.287s  RED  failing: ['non_square']  as expected
+
+S3  nine halvings, judged on the body nine was tuned for  [skin.py, skin_test.py]
+    Ran 3 tests in 2.846s  RED  failing: ['a_hole_that_swallows', 'non_square']  as expected
+
