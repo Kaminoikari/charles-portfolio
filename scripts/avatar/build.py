@@ -523,6 +523,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     rim = character.RIM_COLOR
     mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)
             for n, (b, s) in character.PALETTE.items()}
+    paint = character.MATERIALS
     pool = garment.body_pool(doc, views, manifest, 'Body_Skin')
     lm = landmarks(pool, doc)
     p, added = pool['pos'], {}
@@ -592,7 +593,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # no vertex at all.
     strap = ((p[:, 1] > edge['strap_bottom']) & (p[:, 1] < lm['neck'])
              & (np.abs(p[:, 0]) > 0.052) & (np.abs(p[:, 0]) < 0.088))
-    put(garment.shell(pool, torso | strap, 0.012), 'Milfy_White', 'Outfit_Top',
+    put(garment.shell(pool, torso | strap, 0.012), paint['cloth'], 'Outfit_Top',
         origin='shell')
 
     # --- cardigan: off the shoulder. Three things make that read, and all three
@@ -609,7 +610,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                   & (np.abs(p[:, 0]) < 0.155)
                   & ~((p[:, 2] < -0.015) & (np.abs(p[:, 0]) < 0.052)))
     cardigan = garment.shell(pool, sleeve | torso_back, 0.021)
-    put(cardigan, 'Milfy_Cardigan', 'Outfit_Cardigan', origin='shell')
+    put(cardigan, paint['cardigan'], 'Outfit_Cardigan', origin='shell')
 
     # 前襟上的三顆鈕扣，位置從外套自己的頂點讀出來，不是猜的。第一次用固定
     # 座標 z=-0.108，結果整排被抹胸擋住：抹胸的前表面在 z=-0.123，比外套還
@@ -632,7 +633,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
             pool['joints'][near_chest], pool['weights'][near_chest],
             lat=5, lon=8, squash=(1.0, 1.0, 0.55)))
     if buttons:
-        put(garment.merge(buttons), 'Milfy_Bear', 'Acc_Buttons')
+        put(garment.merge(buttons), paint['bear'], 'Acc_Buttons')
 
     # --- neck frill and its ribbon, and the sash bow at the waist. These two
     #     carry most of the character's read at a glance. ---
@@ -640,7 +641,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # rides the base of the neck, and the joint is at the top of the trapezius.
     neck_y = lm['neck'] - 0.007
     near_neck = int(np.argmin(np.abs(p[:, 1] - neck_y)))
-    put(garment.collar(pool, neck_y - 0.014, 0.026, 0.62), 'Milfy_White', 'Acc_Collar')
+    put(garment.collar(pool, neck_y - 0.014, 0.026, 0.62), paint['cloth'], 'Acc_Collar')
     # 頸部黑緞帶改由 Blender 生成，見 blender/neckribbon.py。參數化版本把蝴蝶結
     # 放在 y=1.19 的胸口，參考圖是繫在領口白色蕾絲上，兩者讀起來是不同的東西。
 
@@ -673,14 +674,14 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # Both drape (binding._drape): a ring round both legs below the crotch,
     # which the chooser reads off the geometry. The rigid and the two-leg
     # bindings that this fade replaced are told in that docstring.
-    put(hem, 'Milfy_White', 'Outfit_Bottom')
-    put(garment.frill(hem['hem'], depth=0.034, waves=15), 'Milfy_White', 'Acc_Frill_Hem')
+    put(hem, paint['cloth'], 'Outfit_Bottom')
+    put(garment.frill(hem['hem'], depth=0.034, waves=15), paint['cloth'], 'Acc_Frill_Hem')
 
     # --- the camisole's own frill, across the bust above the cardigan line ---
     put(garment.frill(garment.ring_at(pool, edge['bust_frill'],
                                       max_radius=0.135, clear=0.017),
                       depth=0.024, waves=11, amplitude=0.006, flare=0.10),
-        'Milfy_White', 'Acc_Frill_Bust')
+        paint['cloth'], 'Acc_Frill_Bust')
 
     # --- socks. The goal names an Outfit_Socks slot with the cuff above the
     #     knee, and the reference sheet disagrees with it: a vertical scan down
@@ -696,7 +697,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     "over the knee" means on a leg this length.
     cuff_y = knee + 0.040
     socks = ((p[:, 1] < cuff_y) & (p[:, 1] > ankle - 0.010))
-    put(garment.shell(pool, socks, 0.006), 'Milfy_Sock', 'Outfit_Socks', origin='shell')
+    put(garment.shell(pool, socks, 0.006), paint['sock'], 'Outfit_Socks', origin='shell')
 
     # --- slippers: a rounded shell over each foot, plus two ears ---
     feet = p[:, 1] < ankle + 0.035
@@ -718,7 +719,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # A shell with two spheres riding on it: the spheres carry the rows of the
     # foot vertex they sit over, so the whole piece keeps what it was built
     # with, like the shell it mostly is.
-    put(garment.merge(shoes), 'Milfy_Bear', 'Outfit_Shoes', origin='shell')
+    put(garment.merge(shoes), paint['bear'], 'Outfit_Shoes', origin='shell')
 
     # 拖鞋的熊臉。兩顆眼睛與一個鼻子，貼在鞋頭外表面上。
     face_bits = []
@@ -734,7 +735,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
             pool['joints'][np.argmin(np.abs(p[:, 1] - ankle))],
             pool['weights'][np.argmin(np.abs(p[:, 1] - ankle))],
             lat=5, lon=8, squash=(1.4, 0.9, 0.8)))
-    put(garment.merge(face_bits), 'Milfy_Ribbon', 'Acc_Bear_Face')
+    put(garment.merge(face_bits), paint['ribbon'], 'Acc_Bear_Face')
 
     # --- bandages. Three of them, asymmetric, as the reference wears them: one
     #     high on the left thigh, one up the right shin, one at the left ankle.
@@ -773,7 +774,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                          r0 + thickness, r1 + thickness,
                          pool['joints'][near], pool['weights'][near],
                          segments=24, rings=3),
-            'Milfy_Bandage', name)
+            paint['bandage'], name)
 
     wrap('Acc_Bandage_Thigh', leg['thigh_band'], -1, 0.032)
     wrap('Acc_Bandage_Calf', ankle + (knee - ankle) * 0.38, 1, 0.046)
@@ -845,13 +846,14 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                 accepted.append((item, name))
 
             accepted_items = [item for item, _ in accepted]
-            if any(item['name'] == 'Leg_belt' for item in accepted_items):
-                band_name, band_clear = outfit_pack.PARTS['Leg_belt']
+            band_part = outfit_pack.THIGH_BAND_PART
+            if any(item['name'] == band_part for item in accepted_items):
+                band_name, band_clear = outfit_pack.PARTS[band_part]
                 band_scale, _, _, thigh_diameter = outfit.fit_ring_to_limb(
                     accepted_items,
                     pool['pos'],
                     bundle['src']['materials'],
-                    'Leg_belt',
+                    band_part,
                     outfit_pack.THIGH_BAND_SOURCE_MATERIAL,
                     0.0,
                     band_clear,
@@ -861,7 +863,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                       f'大腿直徑 {thigh_diameter[0] * 1000:.0f}x'
                       f'{thigh_diameter[1] * 1000:.0f}mm')
                 for band_item in accepted_items:
-                    if band_item['name'] != 'Leg_belt':
+                    if band_item['name'] != band_part:
                         continue
                     final_move = outfit.hug(
                         band_item['piece'], pool['pos'], pool['nrm'],
@@ -875,7 +877,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
             # decision per part, measured on all of its primitives together
             # (the skirt's upper half on its own stops at the hip joint), and
             # the bodice garments diffused because the nearest-vertex copy
-            # tears at the armpit and the elbow (MELLOW_BIND_SMOOTH).
+            # tears at the armpit and the elbow (outfit_pack.BIND_SMOOTH).
             by_part = {}
             for item, name in accepted:
                 by_part.setdefault(name, []).append(item['piece'])
@@ -1094,13 +1096,13 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     head_pieces = weld.pieces(head_path) if os.path.exists(head_path) else {}
     hair_mat = next(i for i, m in enumerate(doc['materials'])
                     if m['name'] == hair_mats[0])
-    bowl, bowl_mean = bowl_texture(doc, views, 'Milfy_EarInner_shade',
+    bowl, bowl_mean = bowl_texture(doc, views, paint['ear_inner'] + '_shade',
                                    mean=character.BOWL_MEAN)
-    mats['Milfy_EarInner'] = add_material(
-        doc, 'Milfy_EarInner', tuple(c / bowl_mean for c in character.EAR_INNER),
+    mats[paint['ear_inner']] = add_material(
+        doc, paint['ear_inner'], tuple(c / bowl_mean for c in character.EAR_INNER),
         tuple(c / bowl_mean for c in character.EAR_INNER_SHADE), texture=bowl,
         outline=outline, rim=rim)
-    if max(doc['materials'][mats['Milfy_EarInner']]
+    if max(doc['materials'][mats[paint['ear_inner']]]
            ['pbrMetallicRoughness']['baseColorFactor'][:3]) > 1.0:
         raise SystemExit('內耳除以貼圖均值後超過 1.0，係數會被 glTF 截掉')
 
@@ -1113,7 +1115,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
             put(with_uv(ear, uv_disc(ear['pos'])), hair_mat, f'Hair_Ear_{label}',
                 mesh=head_mesh, origin='blender')
             inner = head_pieces[f'EarInner_{label}']
-            put(with_uv(inner, uv_bowl(inner['pos'])), 'Milfy_EarInner',
+            put(with_uv(inner, uv_bowl(inner['pos'])), paint['ear_inner'],
                 f'Hair_Ear_{label}',
                 mesh=head_mesh, tag=f'Hair_Ear_{label}#inner', origin='blender')
             bun = head_pieces[f'Bun_{label}']
@@ -1126,13 +1128,13 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
         # rather than built-then-DROP'd: the pipeline's DROP mechanism runs at
         # customise.apply(), step 2, before this part exists at all.
         # 補在既有材質上，不是用同名再建一份。建第二份會讓出貨檔裡出現兩個
-        # Milfy_Gold，manifest 的 palette 以名字為鍵、後者蓋前者，宣告出去的
+        # 同名的金色材質，manifest 的 palette 以名字為鍵、後者蓋前者，宣告出去的
         # 底色就變成沒有人挑過也沒被算圖用到的那一組；customise.tint 又會走訪
         # 所有同名材質，一次改色寫進兩份，其中一份是死的。
-        gold, gold_mean = ramp_texture(doc, views, 'Milfy_Gold_ramp',
+        gold, gold_mean = ramp_texture(doc, views, paint['gold'] + '_ramp',
                                       character.GOLD_RAMP[0], character.GOLD_RAMP[1],
                                       gamma=character.GOLD_RAMP[2])
-        for name in ('Milfy_Gold', 'Milfy_GoldInner'):
+        for name in (paint['gold'], paint['gold_inner']):
             mat = doc['materials'][mats[name]]
             pbr = mat['pbrMetallicRoughness']
             pbr['baseColorTexture'] = {'index': gold}
@@ -1141,7 +1143,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
             props = doc['extensions']['VRM']['materialProperties'][mats[name]]
             props['textureProperties'] = {'_MainTex': gold, '_ShadeTexture': gold}
             props['vectorProperties']['_Color'] = list(pbr['baseColorFactor'])
-        for name in ('Milfy_Gold', 'Milfy_GoldInner'):
+        for name in (paint['gold'], paint['gold_inner']):
             # 兩個都要查。上面那個迴圈改的是兩個材質，守衛先前只看外層，把
             # GoldInner 調亮到 0.87 以上照樣建置成功，glTF 靜默夾成 1.0。
             if max(doc['materials'][mats[name]]
@@ -1162,7 +1164,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
         shells, fell = sink([head_pieces['Crown'], head_pieces['CrownInner']],
                             skull)
         print(f'   皇冠整體下沉 {fell * 1000:.0f}mm 貼上髮面')
-        for piece, colour, tag in zip(shells, ('Milfy_Gold', 'Milfy_GoldInner'),
+        for piece, colour, tag in zip(shells, (paint['gold'], paint['gold_inner']),
                                       (None, 'Acc_Crown#inner')):
             put(with_uv(piece, uv_facet(piece)), colour, 'Acc_Crown',
                 mesh=head_mesh, tag=tag, origin='blender')
@@ -1182,10 +1184,10 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                 bun.append(garment.sphere(
                     [c[0] + ear_x, c[1] + 0.036, c[2] + ear_z], 0.019, hj, hw,
                     lat=6, lon=10, squash=(1.0, 1.0, 0.62)))
-            put(garment.merge(bun), 'Milfy_Hair', f'Hair_Bun_{label}',
+            put(garment.merge(bun), paint['hair'], f'Hair_Bun_{label}',
                 mesh=head_mesh)
         put(garment.crown([0.028, crown_y + 0.026, 0.004], 0.030, 0.036, 5, hj, hw),
-            'Milfy_Gold', 'Acc_Crown', mesh=head_mesh)
+            paint['gold'], 'Acc_Crown', mesh=head_mesh)
 
     # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
     # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有
@@ -1224,10 +1226,10 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
         return out
 
     put(garment.merge(bandage(TILT) + bandage(TILT - math.pi / 2)),
-        'Milfy_Plaster', 'Acc_HairClip_Plaster', mesh=head_mesh)
+        paint['plaster'], 'Acc_HairClip_Plaster', mesh=head_mesh)
     put(garment.box([px, py, clip_z - deep], (0.0090, 0.0066, 0.0016), hj, hw,
                     rot_z=TILT),
-        'Milfy_White', 'Acc_HairClip_Plaster', mesh=head_mesh,
+        paint['cloth'], 'Acc_HairClip_Plaster', mesh=head_mesh,
         tag='Acc_HairClip_Plaster#pad')
 
     bear = [garment.sphere([-0.064, crown_y - 0.078, clip_z + 0.010], 0.015,
@@ -1235,14 +1237,14 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     for ex in (-0.013, 0.013):
         bear.append(garment.sphere([-0.064 + ex, crown_y - 0.067, clip_z + 0.010],
                                    0.007, hj, hw, lat=4, lon=6))
-    put(garment.merge(bear), 'Milfy_Bear', 'Acc_HairClip_Bear', mesh=head_mesh)
+    put(garment.merge(bear), paint['bear'], 'Acc_HairClip_Bear', mesh=head_mesh)
     # 兩眼一鼻。少了這三點，小熊在近拍裡是一顆長了兩隻耳朵的白球，而參考圖上
     # 它是有臉的——這是整個頭部特寫裡最便宜的一項辨識度。
     face = [garment.sphere([-0.064 + ex, crown_y - 0.079 + ey, clip_z - 0.004],
                            r, hj, hw, lat=3, lon=5)
             for ex, ey, r in ((-0.005, 0.003, 0.0022), (0.005, 0.003, 0.0022),
                               (0.000, -0.002, 0.0026))]
-    put(garment.merge(face), 'Milfy_Ink', 'Acc_HairClip_Bear',
+    put(garment.merge(face), paint['ink'], 'Acc_HairClip_Bear',
         mesh=head_mesh, tag='Acc_HairClip_Bear#face')
 
     # 兩條不是三條，改細改深。官方圖上這一組是兩條炭黑細槓；先前是三塊 7mm
@@ -1250,7 +1252,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     bars = [garment.box([0.047, crown_y - 0.112 + i * 0.012, clip_z + 0.018],
                         (0.019, 0.0022, 0.004), hj, hw, rot_z=0.12)
             for i in range(2)]
-    put(garment.merge(bars), 'Milfy_Ink', 'Acc_HairClip_Bars', mesh=head_mesh)
+    put(garment.merge(bars), paint['ink'], 'Acc_HairClip_Bars', mesh=head_mesh)
 
     # --- hair colour. It lives in six textures, not in a material factor, so
     #     the only way to move it is to rotate the textures themselves. The base
@@ -1509,16 +1511,17 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # Read back off the finished model, not off the constants above. The
     # manifest's whole claim is that a swap tool can drive the model from it,
     # and listing the constants let it drift: after the imported outfit took
-    # over, the palette still advertised Milfy_Cardigan, Milfy_Ribbon,
-    # Milfy_Bandage and Milfy_Sock, which no part used any more, and said
-    # nothing about the eight Mellow_* materials that actually carried the
-    # colour. The self-test retinted names that painted nothing and passed.
+    # over, the palette still advertised the cardigan, the ribbon, the bandage
+    # and the sock, four names no part used any more, and said nothing about
+    # the eight the package brought in and which actually carried the colour.
+    # The self-test retinted names that painted nothing and passed.
     by_name = {m['name']: m for m in doc['materials']}
     shade_of = {m['name']: m.get('vectorProperties', {}).get('_ShadeColor')
                 for m in doc['extensions']['VRM']['materialProperties']}
     manifest['palette'] = {}
     for name in sorted({m for e in parts.values() for m in e['materials']}):
-        if not name.startswith(('Milfy_', 'Mellow_')):
+        if not name.startswith((character.MATERIAL_PREFIX,
+                                outfit_pack.MATERIAL_PREFIX)):
             continue     # the VRoid body, face and hair are coloured in texture
         base = by_name[name]['pbrMetallicRoughness']['baseColorFactor'][:3]
         shade = (shade_of.get(name) or list(base) + [1.0])[:3]

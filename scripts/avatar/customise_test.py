@@ -146,7 +146,7 @@ class HairPaintPixelsTest(unittest.TestCase):
     """釘住 hair_paint_pixels 的邊緣（fringe）判定：色相對了還不夠，要跟核心
 
     連通。這是紫線修復的機制本身：Face 圖裡真正的頭皮蓋邊緣跟核心接壤，唇
-    (hue 0) 跟腮紅不接壤，兩者只靠色相窗分不開（見 build.SCALP_FRINGE_TO 的
+    (hue 0) 跟腮紅不接壤，兩者只靠色相窗分不開（見 bodies.mika_base.SCALP_FRINGE_TO 的
     說明），是連通性把後者留在原地。
     """
 

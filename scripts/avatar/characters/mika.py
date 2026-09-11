@@ -193,3 +193,36 @@ PALETTE = {
 # along every fold. Reading it off PALETTE keeps the sash, the hair bow and the
 # rim on one value: retint the mint and the edge light follows.
 RIM_COLOR = PALETTE['Milfy_Mint'][0]
+
+# 前綴。出貨檔裡的材質分三種來源：底模自己畫的（VRoid 的 F00_000_*）、服裝包帶
+# 進來的，以及這裡這一組。manifest 的 palette 只收後兩種，因為只有它們是用
+# baseColorFactor 上色、可以被換色工具改；底模那些顏色畫在貼圖裡，改 factor 沒
+# 用。前綴是這個分類的判準，所以它跟 PALETTE 是同一件事的兩半。
+MATERIAL_PREFIX = 'Milfy_'
+
+# 哪個部件塗哪一格。build() 知道自己正在做哪個部件，但「那個部件在這個角色身上
+# 是什麼顏色」和 PALETTE 的值是同一種決定，所以兩者放在一起。鍵是角色無關的角
+# 色名（role），值必須是 PALETTE 的鍵。
+#
+# 之所以不讓 build() 直接寫 'Milfy_White'：那些名字是這個角色的詞彙，而
+# build() 裡的 `mats[...]` 查的就是它，第二個角色只要不沿用同一組名字就是
+# KeyError。這與底模軸十九處 inline 的 VRoid 名字是同一類耦合，那一類已經由
+# bodies_test 的 `assertNotIn('F00_000', source())` 擋住，這裡對應的那條在
+# characters_test。
+MATERIALS = {
+    'cloth':      'Milfy_White',      # 上衣、領子、裙襬、兩圈荷葉邊、OK 繃襯底
+    'cardigan':   'Milfy_Cardigan',
+    'sock':       'Milfy_Sock',
+    'bandage':    'Milfy_Bandage',    # 大腿、小腿、腳踝三圈
+    'bear':       'Milfy_Bear',       # 鈕扣、鞋、熊髮夾的身體
+    'ribbon':     'Milfy_Ribbon',     # 熊臉
+    'ink':        'Milfy_Ink',        # 熊的五官與橫槓髮夾
+    'plaster':    'Milfy_Plaster',
+    'gold':       'Milfy_Gold',       # 皇冠外側；斜坡貼圖也以它命名
+    'gold_inner': 'Milfy_GoldInner',  # 皇冠齒縫露出來的內側面
+    'hair':       'Milfy_Hair',       # 兩顆髮髻
+    # 這一格不在 PALETTE 裡：內耳的底色由 EAR_INNER 除以碗狀貼圖的均值算出來，
+    # build() 當場建材質而不是查 PALETTE。名字仍然是這個角色的詞彙，所以放這裡。
+    # 碗狀貼圖也以它命名，跟金色斜坡同一條規則。
+    'ear_inner':  'Milfy_EarInner',
+}

@@ -52,6 +52,20 @@ MUTATIONS = [
      "# FIT: this outfit on this body.",
      "# Assorted clearances."),
 
+    ('O8', 'the vendor mesh name is typed back into build()', BUILD,
+     "            band_part = outfit_pack.THIGH_BAND_PART\n"
+     "            if any(item['name'] == band_part for item in accepted_items):",
+     "            band_part = 'Leg_belt'\n"
+     "            if any(item['name'] == 'Leg_belt' for item in accepted_items):"),
+
+    ('O9', 'the contract claims a thigh band the package has no part for', PACK,
+     "THIGH_BAND_PART = 'Leg_belt'",
+     "THIGH_BAND_PART = 'Thigh_Belt'"),
+
+    ('O10', 'the importer stamps a prefix the contract does not declare', PACK,
+     "MATERIAL_PREFIX = 'Mellow_'",
+     "MATERIAL_PREFIX = 'MellowHeart_'"),
+
     ('O7', 'the bonemap path forgets it moved a directory deeper', PACK,
      "BONEMAP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),",
      "BONEMAP = os.path.join(os.path.dirname(os.path.abspath(__file__)),"),

@@ -81,6 +81,27 @@ class Contract(unittest.TestCase):
             self.assertGreater(text.index(f'\n{name} = '), banner,
                                f'{name} has drifted above the FIT banner')
 
+    def test_the_thigh_band_names_a_part_the_package_declares(self):
+        """build() asks by name whether the thigh band came in, and the name was
+        typed into build.py four times. The failure mode is silent: a package
+        without that mesh does not raise, the whole limb fit just never runs."""
+        self.assertIn(mellowheart.THIGH_BAND_PART, mellowheart.PARTS)
+        self.assertNotIn(f"'{mellowheart.THIGH_BAND_PART}'", source(),
+                         'build.py spells the vendor mesh name again')
+
+    def test_the_prefix_the_importer_stamps_is_the_one_the_contract_declares(self):
+        """outfit.py renames every material, image and bone node it brings in,
+        and build() decides which materials the manifest advertises by that same
+        prefix. The two were independent literals in two files. Moving
+        outfit.py's is outside this contract's scope, so this pins them together
+        instead: change either one and this goes red.
+        """
+        with open(os.path.join(HERE, 'outfit.py'), encoding='utf-8') as fh:
+            importer = fh.read()
+        stamped = mellowheart.MATERIAL_PREFIX
+        self.assertEqual(importer.count(f"f'{stamped}{{name}}'"), 2)
+        self.assertEqual(importer.count(f"f'{stamped}{{snames[i]}}'"), 1)
+
     def test_the_bonemap_resolves_from_the_contracts_own_location(self):
         """It is built from __file__, which moved a directory deeper."""
         self.assertTrue(os.path.exists(mellowheart.BONEMAP), mellowheart.BONEMAP)

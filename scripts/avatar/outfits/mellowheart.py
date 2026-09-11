@@ -47,7 +47,7 @@ BONEMAP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 # same 4mm let the toes through its toe box; both are hugging garments, but not
 # through the skin. 8mm left the ankles still grazing by 1.1mm, which is under
 # the eye but not under the gate once it counts small parts by their own area. The skirt stays at 14mm: what it needed was not a bigger
-# rest clearance but room to swing, which is MELLOW_LOOSEN below.
+# rest clearance but room to swing, which is LOOSEN below.
 # Belt 進 Acc_Belt_Waist 而不是 Acc_Ribbon_Waist：量過廠商的 Belt 網格，它是
 # 一條 27mm 高的腰封加一片 104x25x13mm 的正面裝飾板，沒有任何前突的結或環，
 # 當不了 goal 第 8 項的「腰帶蝴蝶結」。蝴蝶結由 blender/bow.py 生成，兩者合起
@@ -110,6 +110,13 @@ GAIN = {
 # 0.668-0.729 有六成埋在裙子裡，正面只露出 25mm 的一條。往下 45mm 讓它整條落
 # 在裸露的大腿上，也就是參考圖上它該在的位置。
 SHIFT = {'Acc_Bandage_Thigh': -0.045}
+# 廠商給大腿腿帶的網格名，也是 PARTS 的鍵。build() 需要指名它，因為只有這一件
+# 是套在裸露肢體上的環，要單獨量截面再縮放；其餘部件走一般的 shell 流程。
+#
+# 失敗模式是靜默的：build() 問「accepted 裡有沒有這個名字」，換一包沒有這個網格
+# 的衣服不會爆，整段大腿環貼合只是不執行。所以名字寫在這裡而不是 build() 裡，
+# 而 outfits_test 有一條釘住它必須是 PARTS 的鍵。
+THIGH_BAND_PART = 'Leg_belt'
 THIGH_BAND_SOURCE_MATERIAL = 'Leg_Acc'
 
 # Extra room a garment needs for the poses rather than for the rest pose, ramped
@@ -142,3 +149,8 @@ BIND_SMOOTH = {'Outfit_Cardigan': 16, 'Outfit_Top': 16}
 
 THIGH_BAND_FINAL_CLEARANCE = 0.004
 
+# 前綴。outfit.py 把這包衣服的每個材質、貼圖與骨節點都改名成 `Mellow_<原名>`，
+# build() 的 manifest palette 照前綴決定哪些材質宣告出去。那三處字面量還在
+# outfit.py 裡（不在本次合約範圍），outfits_test 有一條把兩邊釘在一起，改了一邊
+# 另一邊會紅。
+MATERIAL_PREFIX = 'Mellow_'

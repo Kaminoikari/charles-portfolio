@@ -33,34 +33,84 @@ def names_of(module):
     return {n for n in dir(module) if n.isupper()}
 
 
+OTHER_PREFIX = 'Other_'
+
+
+def _is_material(value):
+    return isinstance(value, str) and value.startswith(mika.MATERIAL_PREFIX)
+
+
+def _differ(value):
+    """The same value, guaranteed not equal, with its shape and role intact.
+
+    Recursive rather than a blanket rule over the top-level type. The blanket
+    version this replaces only knew about float, tuple and dict, so `HEAD`
+    (a str), `HAND_GARMENTS` (a set), `BLENDER_PARTS` (a list) and `EYE_TARGET`
+    (a tuple of ints, which `round(1.0 - v)` skipped because it tested for
+    float) all came out as Mika's own values while the docstring said they did
+    not.
+
+    A material name keeps being a material name: the second character renames
+    the prefix rather than appending to the name, so PALETTE's keys and
+    MATERIALS' values still agree with each other and `mats[paint[role]]`
+    would still resolve.
+    """
+    if isinstance(value, str):
+        if value.startswith(mika.MATERIAL_PREFIX):
+            return OTHER_PREFIX + value[len(mika.MATERIAL_PREFIX):]
+        return value + '_other'
+    if isinstance(value, bool):
+        return not value
+    if isinstance(value, float):
+        return round(value / 2, 4) if value else 0.5
+    if isinstance(value, int):
+        return value + 1
+    if isinstance(value, tuple):
+        return tuple(_differ(v) for v in value)
+    if isinstance(value, list):
+        return [_differ(v) for v in value]
+    if isinstance(value, set):
+        return {_differ(v) for v in value}
+    if isinstance(value, dict):
+        # Keys are renamed only when they are material names. MATERIALS is keyed
+        # by role, and a role is the one thing both characters share: rename
+        # `cloth` and build() can no longer ask either of them for it.
+        return {_differ(k) if _is_material(k) else k: _differ(v)
+                for k, v in value.items()}
+    raise AssertionError(f'_differ does not handle {type(value).__name__}; '
+                         'a contract value of a new shape needs a rule here')
+
+
 def other_character():
     """A second contract: every name mika declares, none of her values.
 
     Built from her rather than written out, so a name added to the contract
-    cannot be forgotten here and quietly leave that value unexercised.
+    cannot be forgotten here and quietly leave that value unexercised. The
+    assertion at the end is what makes that claim true rather than merely
+    stated.
     """
     other = types.ModuleType('characters.other')
     for name in names_of(mika):
-        value = getattr(mika, name)
-        if isinstance(value, tuple):
-            value = tuple(round(1.0 - v, 4) if isinstance(v, float) else v for v in value)
-        elif isinstance(value, dict):
-            value = {k: ((0.1, 0.2, 0.3), (0.4, 0.5, 0.6)) for k in value}
-        elif isinstance(value, float):
-            value = round(value / 2, 4)
-        setattr(other, name, value)
-    # SKIN_TARGET is 0-255 rather than 0-1, so the blanket rule above would put
-    # it somewhere outline_colour cannot divide by. Its own value, still not
-    # hers.
+        setattr(other, name, _differ(getattr(mika, name)))
+    # SKIN_TARGET is 0-255 rather than 0-1, and these three carry the outline
+    # derivation, so they get values chosen to exercise it rather than values
+    # chosen only to be unequal. Her skin's channels are far enough apart that
+    # the chroma cap binds, which Mika's own never do.
     other.SKIN_TARGET = (200, 100, 100)
     other.OUTLINE_VALUE = 0.5
     other.RIM_COLOR = (0.9, 0.1, 0.2)
+    for name in names_of(mika):
+        assert getattr(other, name) != getattr(mika, name), \
+            f'other_character left {name} as Mika\'s own value'
     return other
 
 
 class Contract(unittest.TestCase):
     def test_build_declares_none_of_the_characters_values(self):
-        """The 23 names are gone from build.py, not shadowed beside it."""
+        """Every name she declares is gone from build.py, not shadowed beside
+        it. The count is deliberately not written here: it changed the same
+        day this was written, and a number in a docstring nobody recounts is
+        the failure mode this whole round is cleaning up."""
         declared = set()
         for node in ast.parse(source()).body:
             if isinstance(node, (ast.Assign, ast.AnnAssign)):
@@ -98,13 +148,33 @@ class Swapping(unittest.TestCase):
         self.assertNotEqual(build.outline_colour(mika),
                             build.outline_colour(other_character()))
 
-    def test_the_outline_is_her_skins_hue_at_her_own_line_value(self):
+    def test_the_line_is_as_bright_as_the_character_asked_for(self):
+        """Stated as a property of the answer, not by recomputing the formula.
+
+        The version this replaces rebuilt `raw`, `floor` and the rounding in
+        the test and compared the two, which is the same arithmetic written
+        twice: it agrees with a wrong implementation as readily as a right one.
+        The brightest channel of the line IS the character's line value, on
+        both characters, whether or not the chroma cap bites.
+        """
+        for who in (mika, other_character()):
+            self.assertAlmostEqual(max(build.outline_colour(who)),
+                                   who.OUTLINE_VALUE, places=4)
+
+    def test_a_skin_the_cap_reaches_is_pulled_back_to_exactly_the_cap(self):
+        """The other character's skin is (200, 100, 100): far enough apart that
+        the cap binds, which Mika's never does. Its spread has to end up at the
+        cap, and its hue has to stop following the skin at that point."""
         other = other_character()
         got = build.outline_colour(other)
-        raw = tuple(c / max(other.SKIN_TARGET) * other.OUTLINE_VALUE
-                    for c in other.SKIN_TARGET)
-        floor = max(raw) - build.OUTLINE_CHROMA_MAX
-        self.assertEqual(got, tuple(round(max(c, floor), 4) for c in raw))
+        self.assertAlmostEqual(max(got) - min(got), build.OUTLINE_CHROMA_MAX,
+                               places=4)
+
+    def test_a_skin_the_cap_does_not_reach_keeps_her_skins_ratios(self):
+        got = build.outline_colour(mika)
+        for channel, skin in zip(got, mika.SKIN_TARGET):
+            self.assertAlmostEqual(channel / max(got),
+                                   skin / max(mika.SKIN_TARGET), places=3)
 
     def test_the_chroma_cap_stays_with_the_pipeline(self):
         """The cap belongs to build.py, and it is the cap that moves the colour.
@@ -182,6 +252,33 @@ class Wiring(unittest.TestCase):
         self.assertRegex(src, r"outfit\.load\(path, doc, views, wear,")
         self.assertNotRegex(src, r"outfit\.load\(path, doc, views, add_material,",
                             'the callback is handed over unbound again')
+
+    def test_build_spells_none_of_her_material_names(self):
+        """Twenty-eight literals until this round, across eleven of the thirteen
+        palette entries plus the inner ear. `put()` looks each one up in `mats`,
+        which is built from her PALETTE, so a second character who does not
+        reuse her exact names was a KeyError. Same shape of coupling, and same
+        shape of guard, as the base body's F00_000 names."""
+        self.assertNotIn(mika.MATERIAL_PREFIX, source(),
+                         'build.py spells one of her material names again')
+
+    def test_every_role_names_a_material_of_hers(self):
+        """Roles are shared between characters; the names behind them are not."""
+        for role, name in mika.MATERIALS.items():
+            self.assertTrue(name.startswith(mika.MATERIAL_PREFIX), f'{role}: {name}')
+        # One deliberate exception: the inner ear's base colour is divided by
+        # the bowl texture's mean at build time, so build() makes that material
+        # rather than reading it out of PALETTE.
+        self.assertEqual(set(mika.MATERIALS.values()) - set(mika.PALETTE),
+                         {mika.MATERIALS['ear_inner']})
+
+    def test_the_manifest_palette_is_filtered_by_both_contracts(self):
+        """The prefix decides which materials the manifest advertises as
+        recolourable. It was a hard-coded pair of strings, so a second
+        character's materials would have been dropped from her own manifest."""
+        self.assertRegex(source(),
+                         r'startswith\(\(character\.MATERIAL_PREFIX,\s*\n'
+                         r'\s*outfit_pack\.MATERIAL_PREFIX\)\)')
 
     def test_the_helpers_take_what_they_need_rather_than_reading_it(self):
         src = source()

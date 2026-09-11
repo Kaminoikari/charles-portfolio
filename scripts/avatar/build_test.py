@@ -223,9 +223,12 @@ class DerivedOnce(unittest.TestCase):
     """The values build() derives once and reads for the rest of its length.
 
     build() is a thousand lines and rebinds fifty-odd names, nearly all of them
-    loop variables, so a blanket rule would be noise. These eleven are different:
-    each is computed near the top and read hundreds of lines later, so rebinding
-    one does not fail where it was rebound, it fails wherever it is next read.
+    loop variables, so a blanket rule would be noise. The ones below are
+    different: each is computed once, well away from most of its readers, so
+    rebinding one does not fail where it was rebound, it fails wherever it is
+    next read. Two of them (`body_materials`, `skin_names`) are read on the very
+    next line as well as far below, and they are watched for the same reason:
+    the far reader is the one that would break.
 
     Both of this file's contract axes were bitten by exactly that on 2026-09-11.
     A local named `hair_materials` shadowed the new module-level function of the
@@ -236,7 +239,8 @@ class DerivedOnce(unittest.TestCase):
     """
 
     WATCHED = ('lm', 'edge', 'leg', 'outline', 'rim', 'hair_mats',
-               'body_materials', 'pool', 'mats', 'skin_names')
+               'body_materials', 'pool', 'mats', 'skin_names', 'paint',
+               'band_part')
 
     def bindings(self):
         """Plain-name bindings directly in build(), nested functions excluded.
