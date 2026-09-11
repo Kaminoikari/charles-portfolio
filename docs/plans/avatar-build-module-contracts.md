@@ -148,3 +148,43 @@ L923 特別值得看：它的兩個手足 L924、L925 已經由 `ankle`／`knee`
 
 `blender/mellow.py` 另外持有一整份廠商網格與材質名，步驟 3 的服裝包合約要把它與
 `build.py` 的那七個常數視為同一份合約的兩半。
+
+---
+
+## 步驟 2 的產出：角色合約（2026-09-11）
+
+`scripts/avatar/characters/mika.py` 持有 **23 個**值，每一個連同它的註解逐字搬過
+去。搬完先證明搬對：逐名比對 `build.py` 與新模組，23/23 完全相同（含型別），這一
+步在改 `build.py` 之前做，因為改完之後就沒有對照組了。
+
+`build()` 的簽章變成 `build(src, dst, manifest_path, out_manifest, character=mika)`，
+34 個參照點全部改成 `character.X`。`build.py` 現在一個角色常數都不宣告。
+
+### 三個不能照抄的地方
+
+**`RIM_COLOR` 進角色模組，`OUTLINE_COLOR` 不進。** 兩個在步驟 1 都歸在角色軸，實
+際上不同類：`RIM_COLOR` 只讀自己 `PALETTE` 的薄荷色，怎麼算都是她的；
+`OUTLINE_COLOR` 還要讀 `OUTLINE_CHROMA_MAX`，那是「任何描邊能有多少彩度」的管線規
+則。所以前者搬進去，後者留在 `build.py` 變成 `outline_colour(character)`。把推導放
+進資料檔會讓第二個角色跟自己的配色悄悄不一致。
+
+**三個模組層 helper 讀得到這些值，所以光把 character 傳進 `build()` 不夠。**
+`add_material` 讀 `OUTLINE_COLOR`／`RIM_COLOR`、`bowl_texture` 讀 `BOWL_MEAN`、
+`uv_facet` 讀 `CROWN_LIGHT`。後者巢狀在 `build()` 內，closure 就解決了；前兩個改成
+收參數。`add_material` 的 `outline`／`rim` 是 keyword-only **且沒有預設值**，理由是
+它會被當 callback 交給 `outfit.load`：給了預設值，第二個角色的每一件匯入服裝都會
+悄悄戴上 Mika 的邊光。交出去的地方改用 `functools.partial` 綁定。
+
+**兩段註解在原檔被別軸的常數夾開了。** `BLENDER_PARTS` 的開頭兩行註解上面卡著
+`BOW_GAP_MAX` 和它自己的單行註解，`HAIR_MATERIAL_TONE` 的註解上面卡著
+`HAIR_FLATTEN_BLOCKS`。搬家時要把被夾開的那半一起帶走，否則留下的是一段沒有主人
+的說明。
+
+### 分類時沒看到、寫測試才量出來的一件事
+
+`OUTLINE_CHROMA_MAX` **目前對 Mika 是鬆的**，完全不咬。她的膚色 (252, 222, 214) 在
+`OUTLINE_VALUE` 0.20 下三個通道的散佈是 0.0302，低於允許的 0.038，所以她的描邊就是
+膚色色相本身。第一版測試把 cap 調高想看顏色變化，結果不變：floor 是
+`max(raw) - cap`，調高只會讓 floor 更不咬。要往下調才驗得到。這道上限是為彩度更高
+的膚色準備的，正是「第二個角色出現前不會被執行到」的那種守衛，所以測試除了驗它會
+動，也順手斷言它今天確實不咬，哪天咬了就會有人來讀這段。

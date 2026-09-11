@@ -6,10 +6,14 @@ is narrowest, the hem sits between hip and knee. Hard-coding heights would make
 the script correct for exactly one body, and the point of a template is that the
 next body gets the same garment without a rewrite.
 
-Colour lives in PALETTE and nowhere else. Each entry becomes one flat MToon
-material, which is what makes "change one material, change the whole colourway"
-true rather than aspirational.
+Colour lives in the character contract and nowhere else. Each entry of its
+PALETTE becomes one flat MToon material, which is what makes "change one
+material, change the whole colourway" true rather than aspirational. Since
+2026-09-11 that contract is a module in characters/ and arrives as build()'s
+`character` argument, so the values that are one character's no longer sit in
+this file next to the values that are the pipeline's.
 """
+import functools
 import io
 import json
 import math
@@ -31,37 +35,12 @@ import outfit
 import render
 import twintail
 import weld
+from characters import mika
 
-# 頭上的獸耳、髮髻、皇冠、呆毛都在這一個檔裡，見 blender/head.py。
-HEAD = 'blender/head.glb'
 # 耳圈、髮髻與呆毛吃 VRoid 自己的髮絲貼圖，不用平色材質：髮色的色相旋轉作用
 # 在貼圖上，走同一個材質才會被一起帶到，而且新部件才有髮絲明暗。內耳不在這條
-# 路上，理由見下面 EAR_INNER。
+# 路上，理由見 characters/mika.py 的 EAR_INNER。
 HEAD_HAIR = 'F00_000_Hair_00_HAIR_02'
-# 內耳。純色版在算圖裡量到的通道標準差是 (1.0, 0.7, 6.1)，參考圖同一塊是
-# (21.9, 16.3, 15.7)——一塊完全沒有明暗的粉色圓片，正是「和原圖差距很大」的
-# 那個手感。所以它改成髮絲花紋乘上這個顏色。花紋是自己烘的一張內耳明暗
-# 圖（見 bowl_texture），不是共用髮絲貼圖：共用會讓 manifest 說謊，因為
-# palette 對每個 Milfy_* 材質都宣告一個底色、換裝工具應該設得動，而一個係數
-# 乘在有色貼圖上得不到它被設定的那個顏色——customise.tint 正是為這件事擋下
-# 它的，selftest 也確實抓到了。
-EAR_INNER = (0.886, 0.820, 0.808)
-EAR_INNER_SHADE = (0.779, 0.721, 0.711)
-# 內耳貼圖歸一化後的均值。要 >= EAR_INNER 最大的通道，否則係數被夾掉。
-BOWL_MEAN = 0.90
-# 皇冠的環帶是圓的，平色會讓它讀成一片剪紙——正面算圖裡整頂冠的通道標準差
-# 是 0.00，真實 MToon 打光下也只有 3.8。參考的金自己就有 74 階的明暗分界。
-# 這道由暗到亮的斜坡由每個面自己的法線鋪上去（uv_facet），背對光的那些面才
-# 會暗下來。
-GOLD_RAMP = (0.74, 1.0, 1.0)
-# 皇冠往中線與瀏海方向的剛體平移，套在 sink 之前；為什麼移、量怎麼來的，見
-# sink 呼叫處的註解。y 的 -10mm 是因為前移後皇冠落在外凸的瀏海面上，sink
-# 只會往下落（這次落了 0mm），不往上也不往內：不給 y 它就整頂浮在髮頂，
-# 參考圖上冠緣是半埋進髮際的。
-CROWN_SHIFT = (-0.025, -0.010, -0.020)
-# 上面那道斜坡的光向，前上方偏模型左。整條管線的算圖是無光照的（見
-# render.rasterise），明暗一律烘進貼圖或 UV，所以這裡也一樣。
-CROWN_LIGHT = (-0.30, 0.62, -0.73)
 
 # The imported outfit, if it has been converted. Every garment this file builds
 # by hand is a stand-in for it, so when the file is there they step aside:
@@ -183,65 +162,12 @@ MELLOW_GAIN = {
     'Leg_Acc': (0.55, 0.62),
     'Jewel': (0.55, 0.45),
 }
-# What the hand-built outfit contributes. Suppressed wholesale when the imported
-# one is present; the head and hair lists below are not in here on purpose.
-HAND_GARMENTS = {
-    'Outfit_Top', 'Outfit_Bottom', 'Outfit_Cardigan', 'Outfit_Shoes',
-    'Outfit_Socks', 'Acc_Frill_Bust', 'Acc_Frill_Hem', 'Acc_Collar',
-    'Acc_Buttons', 'Acc_Bow_Skirt', 'Acc_Ribbon_Neck',
-    'Acc_Bear_Face', 'Acc_Bandage_Thigh', 'Acc_Bandage_Calf',
-    'Acc_Bandage_Ankle',
-}
 
-# Parts lofted in Blender, by file stem. Missing files are skipped, so the build
-# still runs where Blender is not installed.
 # 蝴蝶結在腰封高度那一段，離腰封的最近距離上限。
 BOW_GAP_MAX = 8.0
 
-# 第四欄是同一個匯出檔裡要換材質的網格：{網格名: (材質, 標籤)}。腰間蝴蝶結的
-# 結是唯一一個。它和兩片環同檔，因為它的位置是從環推出來的；它不能同色，因為
-# 這個算圖器沒有光，同色的結在兩片同色的環中間就不存在。
-BLENDER_PARTS = [
-    ('bow', 'Milfy_Mint', 'Acc_Ribbon_Waist',
-     {'knot': ('Milfy_MintDark', 'Acc_Ribbon_Waist#knot')}),
-    ('hairbow', 'Milfy_Mint', 'Acc_Ribbon_Hair', {}),
-    ('neckribbon', 'Milfy_Ribbon', 'Acc_Ribbon_Neck', {}),
-    ('details', 'Milfy_Ribbon', 'Acc_Bow_Skirt', {}),
-]
 
-# 髮色貼圖的旋鈕：色相旋轉、飽和縮放、往白拉，以及把 VRoid 的髮根→髮梢色帶逐欄
-# 去趨勢時要切成幾個欄區塊（見 customise.hue 的 `flatten` 與 `_flatten_v`）。
-#
-# 2026-09-03 依參考圖重解。前五版留著 LIFT 0.0 與 SAT 0.75，理由寫的是「瀏覽器
-# 的環境光與 ACES 會再提亮一次，所以資產這邊保留暖米底與髮絲對比」——量過之後那
-# 個理由不成立：那一組常數在生產打光下的實機髮色是 (200,185,169)，去掉亮度軸的
-# ΔE 4.52，而參考圖的髮是 (245,231,223)。提亮沒有發生。現況 1.51。
-#
-# 這三個旋鈕壓的都是同一條色帶，會互相遮蔽；改動任何一個之前，先看
-# evidence/mutations-0903c.md 哪一個 mutation 釘住哪一個。特別是 LIFT 與 SAT 同
-# 時也會壓掉髮絲對比（每一段亮度差乘 (1-LIFT)：HAIR_01 的貼圖亮度 p10–p90 由
-# 0.1490 掉到 0.0843），逐欄去趨勢再拿掉沿 v 的那一部分（0.0843 → 0.0373）。兩
-# 段各自量得出來，數字在 evidence/colorprobe-0903.md。
-#
-# 2026-09-04 改金髮（使用者：「只修髮不修膚的話，我希望髮色改成金髮」）。前一版
-# 把髮解到參考圖的灰米色均值 (245,231,223)，代價是 LIFT 0.42 把髮絲對比壓到
-# 0.037、_ShadeColor 又與 _Color 同值，實機上髮是一片 ±15 的平米色 (208,197,187)
-# 貼在膚色 (222,210,204) 旁邊，兩者讀成同一種材質。金髮的色相從粉紅 350 轉到
-# 45，飽和留九成，提亮降到 0.25 讓髮絲回來；亮暗兩個乘色在真引擎頁上解（見
-# HAIR_SHADE_TONE）。
-HAIR_SHIFT, HAIR_SAT, HAIR_LIFT = 55.0, 0.9, 0.25
 HAIR_FLATTEN_BLOCKS = 16
-# 亮部與陰影兩個乘色，在 live-preview.html?mikadebug=1 上以 material.color／
-# shadeColorFactor 直寫收斂，頁上線性值經 linear→sRGB 後才寫進這裡（同
-# PALETTE 的 Milfy_Gold 那條規則，少一次轉換就是二次 gamma）。陰影對亮部的比值
-# 取參考圖馬尾陰影 (170,149,144) 對亮部 (254,249,245) 的線性比 (0.59,0.46,0.33)：
-# 髮要靠明暗範圍與膚分開，均值不夠。
-HAIR_MATERIAL_TONE = (1.0, 0.8295, 0.4962)
-HAIR_SHADE_TONE = (0.7918, 0.585, 0.2923)
-# Accent streaks further than this from the hair's own hue are folded onto it
-# before the rotation; see customise.hue.
-HAIR_UNIFY = 60.0
-BROW_SHIFT, BROW_SAT = 140.0, 0.35
 
 # The hue the scalp cap sits at BEFORE anything here touches it. VRoid paints a
 # hair-coloured cap into the face atlas so a parting shows hair and not skin,
@@ -265,108 +191,47 @@ SCALP_FRINGE_TO, SCALP_FRINGE_SAT = 345.0, 0.12
 # where it is a fraction of each atlas's own width.
 NECK_MARGIN = 0.03
 
-# Both skin textures are solved onto one warm base so the neck seam stays
-# closed. 臉和身體共用這一個目標，頸縫才不會開。
-#
-# 2026-09-03 由 (244,190,172) 重解，因為使用者問「膚色跟髮色都跟參考圖一樣嗎」，
-# 量出來不一樣：那一組常數在生產打光下的實機膚色是 (222,193,179)，暖度（R−B）
-# 43，去掉亮度軸的 ΔE 8.62；參考圖的裸膚是 (253,239,236)，暖度 17。現況 1.24。
-#
-# 亮度追不上，而且追不上的原因量得出來：colourprobe.html 的 ?ceiling=1 把膚色那
-# 組材質換成純白 albedo（貼圖拿掉、色乘 1,1,1、陰影色也白）在同一組光下再算一
-# 次，量到 (226,229,229)、L* 90.7，而參考是 L* 95.4。這個引擎對任何材質的上限就
-# 低於參考圖的膚色亮度，不是這一組常數能補的。那個量測從出貨檔本身算得出來，不
-# 依賴另外保留一份白模建置。收據在 evidence/colorprobe-0903.md，敘述在
-# RESULT.txt「第六版之二」。
-SKIN_TARGET = (252, 222, 214)
-SKIN_MATERIAL_TONE = (0.96, 0.90, 0.87)
 
-# The outline colour, derived from the skin rather than written down. The base
-# model's is VRoid's wine (0.275, 0.090, 0.125), drawn to sit on Mika's salmon
-# pink; on Milfy's near-white skin the same line renders rust, and it traces the
-# whole figure. An unlit renderer draws no outline pass at all, so every gate
-# and all four contract cameras are blind to it -- the same class of defect as
-# the floating bow, and it needs the same kind of guard, which is in verify.py.
-# Taking the hue from SKIN_TARGET and dropping it to OUTLINE_VALUE keeps one
-# definition: move the skin and the line moves with it.
-OUTLINE_VALUE = 0.20
+# How colourful an outline may be, whoever wears it. The colour itself is the
+# character's: OUTLINE_VALUE and SKIN_TARGET live in characters/ and the comment
+# there records why the line is taken off the skin at all. A cap on chroma is a
+# rule about outlines rather than about one character's skin, so it stays here,
+# and `outline_colour` below is where the two meet.
 OUTLINE_CHROMA_MAX = 0.038
-_outline_raw = tuple(c / max(SKIN_TARGET) * OUTLINE_VALUE for c in SKIN_TARGET)
-_outline_floor = max(_outline_raw) - OUTLINE_CHROMA_MAX
-OUTLINE_COLOR = tuple(round(max(c, _outline_floor), 4) for c in _outline_raw)
+
+
+def outline_colour(character):
+    """One character's outline: her skin's hue, dropped to her own line value.
+
+    Derived rather than written down, so moving the skin moves the line with it.
+    The floor is this file's cap. A line more colourful than OUTLINE_CHROMA_MAX
+    renders rust on a near-white skin and traces the whole figure, and an unlit
+    renderer draws no outline pass at all, so every gate and all four contract
+    cameras are blind to it; the guard that is not blind to it is in verify.py.
+    """
+    raw = tuple(c / max(character.SKIN_TARGET) * character.OUTLINE_VALUE
+                for c in character.SKIN_TARGET)
+    floor = max(raw) - OUTLINE_CHROMA_MAX
+    return tuple(round(max(c, floor), 4) for c in raw)
 # The hair's line is black and stays black: black is not a paler version of a
 # hue, and rotating it toward the skin would just make it brown.
 OUTLINE_KEEP = tuple(f'F00_000_Hair_00_HAIR_0{i}' for i in range(1, 7))
 
-# The base model's eyes are blue; the reference's are a warm neutral grey, hue
-# 350 at a tenth the saturation. Read off the official expression sheet's irises
-# with the pupil and the catchlight excluded, then put back through the render's
-# light the same way the skin was.
-EYE_TARGET = (145, 121, 121)
-
-# Read off the reference sheets. Shade is the MToon shadow colour: a toon model
-# with shade == base looks flat, and with shade too dark looks bruised, so each
-# one is the base pulled toward its own hue rather than toward black.
-PALETTE = {
-    'Milfy_White':    ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Milfy_Cardigan': ((0.129, 0.129, 0.145), (0.086, 0.086, 0.102)),
-    'Milfy_Mint':     ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
-    # 腰間蝴蝶結的結。0.72 倍薄荷，也就是把緞帶自己的暗面當成結的固有色——在
-    # 有光的參考圖裡結和環本來就是同一塊布，分得出來靠的是它被夾住的那圈陰影。
-    # 這個算圖器不打光，所以那圈陰影只能烘進顏色裡。
-    'Milfy_MintDark': ((0.373, 0.564, 0.559), (0.278, 0.459, 0.466)),
-    'Milfy_Ribbon':   ((0.110, 0.110, 0.125), (0.071, 0.071, 0.086)),
-    'Milfy_Bandage':  ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
-    # Its own entry rather than sharing Milfy_Bandage, even though the two start
-    # the same white. The template's promise is that one material is one
-    # garment's colour; sharing would mean recolouring the socks also recoloured
-    # the three bandages, which is a surprise the manifest does not warn about.
-    'Milfy_Sock':     ((0.949, 0.933, 0.902), (0.851, 0.831, 0.800)),
-    # 2026-09-02 整組換成真引擎頁解出的值：numpy 量測看不見打光層，先前照
-    # 參考表 (228,202,175) 解的 (0.867,0.753,0.660) 在 ACES＋正式打光下渲染成
-    # 近白，使用者反映皇冠太淡。在 live-preview.html?mikadebug=1 上以
-    # setRGB 直寫 material.color 收斂，烘完在同一頁複測三次讀值都是
-    # (225,208,187)（方法、遮罩與參考截圖的分佈見 RESULT.txt「第五版」第 1
-    # 點）。座標系是這裡最容易錯的一步：setRGB 寫的是「線性」值，而 glTF
-    # loader 把 baseColorFactor 當 sRGB 轉線性讀，所以解出的線性值必須先過
-    # linear→sRGB 再進 PALETTE。第一次烘焙把線性值直接當 factor 存，二次
-    # gamma 讓皇冠變成過飽和的琥珀橙（畫面 (230,174,114)，reviewer 抓到）。
-    # lit 另乘回 ramp 均值 0.87；r 取 0.869
-    # 而不是 0.870，給「除以均值後不得超過 1.0」的守衛留浮點餘裕。
-    'Milfy_Gold':     ((0.869, 0.694, 0.552), (0.975, 0.741, 0.568)),
-    'Milfy_Hair':     ((0.929, 0.882, 0.855), (0.818, 0.760, 0.727)),
-    'Milfy_Bear':     ((0.965, 0.953, 0.937), (0.867, 0.847, 0.827)),
-    # 內耳。參考圖上內耳 (227,209,206) 對髮色 (240,227,225) 的比值，套到本
-    # 模型上色後髮絲貼圖最亮處 (233,228,223) 算出來的，不是目測挑的粉色。
-    # 皇冠齒縫裡露出來的內側面。原本按參考圖暗亮面比值從 Milfy_Gold 推導；
-    # 2026-09-02 改隨 Milfy_Gold 一起在真引擎頁上解，兩者各自乘同一組提暖係數
-    # （Gold 的 r 被 1.0 夾住、這裡沒有，比值在 r 上因此偏離舊構造）。空間換
-    # 算與 Milfy_Gold 同一條規則：頁上線性值先 linear→sRGB，lit 再乘 0.87。
-    'Milfy_GoldInner': ((0.790, 0.595, 0.464), (0.845, 0.630, 0.487)),
-    # OK 繃與橫槓髮夾。取樣要取本模型這個配色的那張參考圖：
-    # official/front-back-with-cardigan.jpg 上 OK 繃是 (204,225,226) 的淡薄荷、
-    # 橫槓是接近炭黑的 (95,93,98)。ingame/01 是冰白配色的另一個版本，那張上面
-    # OK 繃是淡藍、橫槓是藍灰——照那張取樣會把整個頭飾的色調帶到另一個配色去，
-    # 這正是上一輪犯的錯。先前 OK 繃借用 Milfy_Mint (132,200,198) 則是太濃。
-    'Milfy_Plaster':  ((0.800, 0.882, 0.886), (0.686, 0.780, 0.788)),
-    'Milfy_Ink':      ((0.373, 0.365, 0.384), (0.286, 0.278, 0.298)),
-}
-
-# The parametric rim colour, which is her own mint rather than a new number.
-# The site draws every body with one hard-coded accent (mars orange, in
-# avatarGuideEngine.ts) because no VRM it has loaded ever declared `_RimColor`;
-# on a near-white blouse and a near-black cardigan that accent is the rust glow
-# along every fold. Reading it off PALETTE keeps the sash, the hair bow and the
-# rim on one value: retint the mint and the edge light follows.
-RIM_COLOR = PALETTE['Milfy_Mint'][0]
 
 
-def add_material(doc, name, base, shade, texture=None):
+
+
+def add_material(doc, name, base, shade, texture=None, *, outline, rim):
     """One MToon material, in both the glTF and the VRM tables.
 
     `texture` is a glTF texture index, used by the imported outfit: its maps are
     greyscale pattern and the colour arrives as the factor multiplying them, so
     the same named-material colour policy covers textured pieces too.
+
+    `outline` and `rim` are keyword-only and have no default on purpose. Both
+    are one character's, and this function is handed to outfit.load as a
+    callback, so a default here would be a second character silently wearing
+    Mika's edge light on every imported garment.
     """
     doc['materials'].append({
         'name': name,
@@ -398,8 +263,8 @@ def add_material(doc, name, base, shade, texture=None):
         'vectorProperties': {
             '_Color': [*base, 1.0], '_ShadeColor': [*shade, 1.0],
             '_MainTex': [0, 0, 1, 1], '_ShadeTexture': [0, 0, 1, 1],
-            '_OutlineColor': [*OUTLINE_COLOR, 1],
-            '_RimColor': [*RIM_COLOR, 1],
+            '_OutlineColor': [*outline, 1],
+            '_RimColor': [*rim, 1],
         },
         'keywordMap': {'MTOON_OUTLINE_COLOR_MIXED': True},
         'tagMap': {'RenderType': 'Opaque'},
@@ -456,7 +321,7 @@ def graft_shapes(doc, views, mesh_name, shapes):
     return names
 
 
-def bowl_texture(doc, views, name, size=128):
+def bowl_texture(doc, views, name, size=128, *, mean):
     """The inner ear's own shading, baked: a rim shadow and a soft edge.
 
     The first version cropped the hair map for its strands. It gave the bowl
@@ -495,7 +360,7 @@ def bowl_texture(doc, views, name, size=128):
     lo_k, hi_k = 0.0, 10.0
     for _ in range(40):
         k = (lo_k + hi_k) / 2.0
-        if np.clip(a * k, 0.0, 1.0)[seen].mean() < BOWL_MEAN:
+        if np.clip(a * k, 0.0, 1.0)[seen].mean() < mean:
             lo_k = k
         else:
             hi_k = k
@@ -662,7 +527,15 @@ def torso_edges(lm):
     return {name: lm['waist'] + span * f for name, f in TORSO_EDGES.items()}
 
 
-def build(src, dst, manifest_path, out_manifest):
+def build(src, dst, manifest_path, out_manifest, character=mika):
+    """Dress one body in one character's look.
+
+    `character` is a module in characters/ holding every value that is hers
+    rather than this file's: the palette, the colours solved off her reference
+    sheets, the head accessories and the hand-built garment list. Defaulting it
+    to mika keeps every existing caller working; passing another one is the
+    whole point, and it is what the module-contract tests exercise.
+    """
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
     manifest = json.load(open(manifest_path))
@@ -671,7 +544,13 @@ def build(src, dst, manifest_path, out_manifest):
     # 馬尾掛在外套外面，軸線與彈簧的 collider 都是從外套貼合後的外殼推導的。
     # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本；目前只有頭飾那段
     # （crown_y 讀 Hair_Back），它在更後面。
-    mats = {n: add_material(doc, n, b, s) for n, (b, s) in PALETTE.items()}
+    # Derived once, here, from the character this build is dressing: `outline`
+    # needs this file's chroma cap as well as her skin, so neither it nor the
+    # rim can sit in characters/ as a written-down number.
+    outline = outline_colour(character)
+    rim = character.RIM_COLOR
+    mats = {n: add_material(doc, n, b, s, outline=outline, rim=rim)
+            for n, (b, s) in character.PALETTE.items()}
     pool = garment.body_pool(doc, views, manifest, 'Body_Skin')
     lm = landmarks(pool, doc)
     p, added = pool['pos'], {}
@@ -706,7 +585,7 @@ def build(src, dst, manifest_path, out_manifest):
         else is measured. The decision lands in the manifest under the part.
         Returns None when a hand-built garment yields to the imported one.
         """
-        if mellow and name in HAND_GARMENTS and origin != 'vendor':
+        if mellow and name in character.HAND_GARMENTS and origin != 'vendor':
             return None
         sig = binding.signals(ctx, [piece])
         decision = binding.choose(ctx, sig, origin, smooth) if bind == 'auto' else bind
@@ -796,7 +675,7 @@ def build(src, dst, manifest_path, out_manifest):
     # 洞，洞閉起來又變回兩顆球。錐形是有腰身的，掐緊的那一端在輪廓上就看得見。
     bl_dir = os.path.join(os.path.dirname(dst), 'blender')
     bow_pos = []
-    for stem, material, part_name, split in BLENDER_PARTS:
+    for stem, material, part_name, split in character.BLENDER_PARTS:
         path = os.path.join(bl_dir, f'{stem}.glb')
         piece = weld.part(path, skip=tuple(split))
         if piece is None:
@@ -958,7 +837,12 @@ def build(src, dst, manifest_path, out_manifest):
             return work['pos'], moved
 
         for path in mellow_files:
-            bundle = outfit.load(path, doc, views, add_material, MELLOW_TINT,
+            # outfit.load calls this back for every imported material, and
+            # add_material's outline and rim are keyword-only with no default
+            # precisely so that binding them is a decision somebody made rather
+            # than a global it happened to read.
+            wear = functools.partial(add_material, outline=outline, rim=rim)
+            bundle = outfit.load(path, doc, views, wear, MELLOW_TINT,
                                  MELLOW_GAIN, override=MELLOW_BONEMAP)
             turned = sorted(bundle['snames'][i] for i, (rot, _, _) in bundle['correction'].items()
                             if i in bundle['mapped'] and rot is not None)
@@ -1198,7 +1082,8 @@ def build(src, dst, manifest_path, out_manifest):
         同樣的算法在那裡會被插值抹平，所以它們留在各自的鋪法。
         """
         n = piece['nrm']
-        lit = n @ (np.array(CROWN_LIGHT) / np.linalg.norm(CROWN_LIGHT))
+        lit = n @ (np.array(character.CROWN_LIGHT)
+                   / np.linalg.norm(character.CROWN_LIGHT))
         # 攤到這一層自己的最暗與最亮之間，不是直接用 0.5+0.5*lit。斜坡的均值
         # 決定了係數（見 ramp_texture），所以斜坡只能有那麼寬；把只用到中間
         # 六成的 v 攤開，等於在同樣的均值下把可用的對比翻倍。內外兩層各自攤
@@ -1229,14 +1114,16 @@ def build(src, dst, manifest_path, out_manifest):
         t = (t - t.min()) / max(float(t.max() - t.min()), 1e-6)
         return np.stack([np.full(len(pos), 0.30), 0.12 + 0.73 * t], axis=1)
 
-    head_path = os.path.join(os.path.dirname(dst), HEAD)
+    head_path = os.path.join(os.path.dirname(dst), character.HEAD)
     head_pieces = weld.pieces(head_path) if os.path.exists(head_path) else {}
     hair_mat = next(i for i, m in enumerate(doc['materials'])
                     if m['name'] == HEAD_HAIR)
-    bowl, bowl_mean = bowl_texture(doc, views, 'Milfy_EarInner_shade')
+    bowl, bowl_mean = bowl_texture(doc, views, 'Milfy_EarInner_shade',
+                                   mean=character.BOWL_MEAN)
     mats['Milfy_EarInner'] = add_material(
-        doc, 'Milfy_EarInner', tuple(c / bowl_mean for c in EAR_INNER),
-        tuple(c / bowl_mean for c in EAR_INNER_SHADE), texture=bowl)
+        doc, 'Milfy_EarInner', tuple(c / bowl_mean for c in character.EAR_INNER),
+        tuple(c / bowl_mean for c in character.EAR_INNER_SHADE), texture=bowl,
+        outline=outline, rim=rim)
     if max(doc['materials'][mats['Milfy_EarInner']]
            ['pbrMetallicRoughness']['baseColorFactor'][:3]) > 1.0:
         raise SystemExit('內耳除以貼圖均值後超過 1.0，係數會被 glTF 截掉')
@@ -1267,8 +1154,8 @@ def build(src, dst, manifest_path, out_manifest):
         # 底色就變成沒有人挑過也沒被算圖用到的那一組；customise.tint 又會走訪
         # 所有同名材質，一次改色寫進兩份，其中一份是死的。
         gold, gold_mean = ramp_texture(doc, views, 'Milfy_Gold_ramp',
-                                      GOLD_RAMP[0], GOLD_RAMP[1],
-                                      gamma=GOLD_RAMP[2])
+                                      character.GOLD_RAMP[0], character.GOLD_RAMP[1],
+                                      gamma=character.GOLD_RAMP[2])
         for name in ('Milfy_Gold', 'Milfy_GoldInner'):
             mat = doc['materials'][mats[name]]
             pbr = mat['pbrMetallicRoughness']
@@ -1295,7 +1182,7 @@ def build(src, dst, manifest_path, out_manifest):
         # sink 會讓它順著瀏海坡面落定。位置常數會靜默過期（appearance_test 的
         # test_crown_rides_the_bangs_not_the_ear 釘住移完的相對關係）。
         for shell_piece in (head_pieces['Crown'], head_pieces['CrownInner']):
-            shell_piece['pos'] = shell_piece['pos'] + np.array(CROWN_SHIFT)
+            shell_piece['pos'] = shell_piece['pos'] + np.array(character.CROWN_SHIFT)
         shells, fell = sink([head_pieces['Crown'], head_pieces['CrownInner']],
                             skull)
         print(f'   皇冠整體下沉 {fell * 1000:.0f}mm 貼上髮面')
@@ -1395,13 +1282,15 @@ def build(src, dst, manifest_path, out_manifest):
     #     a pale sand around hue 33 / sat 0.24 / lightness 0.79. ---
     for i in range(1, 7):
         customise.hue(doc, views, f'F00_000_Hair_00_0{i}',
-                      HAIR_SHIFT, HAIR_SAT, lift=HAIR_LIFT, unify=HAIR_UNIFY,
+                      character.HAIR_SHIFT, character.HAIR_SAT,
+                   lift=character.HAIR_LIFT, unify=character.HAIR_UNIFY,
                       flatten=HAIR_FLATTEN_BLOCKS)
 
     # --- brows. The base model's are periwinkle, hue 250, to go with pink hair;
     #     the reference's are a warm grey-brown. They are their own texture, so
     #     this is one rotation and not a repaint. ---
-    customise.hue(doc, views, 'F00_000_00_FaceBrow_00', BROW_SHIFT, BROW_SAT)
+    customise.hue(doc, views, 'F00_000_00_FaceBrow_00',
+                  character.BROW_SHIFT, character.BROW_SAT)
 
     # --- the scalp cap. It is HAIR, and it lives in the face's skin texture.
     #     VRoid paints it there so a parting shows hair rather than scalp, which
@@ -1466,7 +1355,7 @@ def build(src, dst, manifest_path, out_manifest):
     stats = {n: customise.image_rgba(doc, views, n)[..., 3] > 200 for n in skin_names}
     stats['F00_000_00_Face_00'] &= ~scalp
     deg, sat, light, lift, shift = customise.retone_together(
-        doc, views, skin_names, SKIN_TARGET, stats=stats,
+        doc, views, skin_names, character.SKIN_TARGET, stats=stats,
         wheres={'F00_000_00_Face_00': ~scalp})
     print(f'   膚色 {sum(int(m.sum()) for m in stats.values())} px（臉與身共用一組解）'
           f' 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
@@ -1542,33 +1431,35 @@ def build(src, dst, manifest_path, out_manifest):
     print(f'   頭皮蓋邊緣 {blended} px 依來源的髮／膚比例混色')
 
     deg, sat, light, lift, shift = customise.retone(
-        doc, views, 'F00_000_00_EyeIris_00', EYE_TARGET, mid=(60, 215))
+        doc, views, 'F00_000_00_EyeIris_00', character.EYE_TARGET, mid=(60, 215))
     print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
           f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
 
     skin_materials = customise.tone_textured_materials(
         doc,
         {'F00_000_00_Face_00', 'F00_000_00_Body_00'},
-        SKIN_MATERIAL_TONE,
+        character.SKIN_MATERIAL_TONE,
     )
     hair_materials = customise.tone_textured_materials(
         doc,
         {f'F00_000_Hair_00_0{i}' for i in range(1, 7)},
-        HAIR_MATERIAL_TONE,
-        shade=HAIR_SHADE_TONE,
+        character.HAIR_MATERIAL_TONE,
+        shade=character.HAIR_SHADE_TONE,
     )
-    print(f'   膚色 MToon 乘色 {SKIN_MATERIAL_TONE}，改了 {len(skin_materials)} 個材質')
-    print(f'   髮色 MToon 乘色 {HAIR_MATERIAL_TONE} 陰影 {HAIR_SHADE_TONE}，'
+    print(f'   膚色 MToon 乘色 {character.SKIN_MATERIAL_TONE}，'
+          f'改了 {len(skin_materials)} 個材質')
+    print(f'   髮色 MToon 乘色 {character.HAIR_MATERIAL_TONE} '
+          f'陰影 {character.HAIR_SHADE_TONE}，'
           f'改了 {len(hair_materials)} 個材質')
 
     # --- outlines. Everything above moved colour that a texture or a factor
     #     carries; this moves the one that the second draw pass carries. ---
-    moved = customise.outline(doc, OUTLINE_COLOR, skip=OUTLINE_KEEP)
+    moved = customise.outline(doc, outline, skip=OUTLINE_KEEP)
     was = sorted({tuple(w) for _, w in moved if w is not None})
-    print(f'   描邊統一為 {OUTLINE_COLOR}，改了 {len(moved)} 個材質，'
+    print(f'   描邊統一為 {outline}，改了 {len(moved)} 個材質，'
           f'原本有 {len(was)} 種：{was}')
-    rimmed = customise.rim(doc, RIM_COLOR)
-    print(f'   邊光宣告為 {RIM_COLOR}，寫進 {len(rimmed)} 個材質')
+    rimmed = customise.rim(doc, rim)
+    print(f'   邊光宣告為 {rim}，寫進 {len(rimmed)} 個材質')
 
     # Last, after every branch has had its chance to use one.
     gone = customise.sweep_materials(doc)
