@@ -36,83 +36,13 @@ import render
 import twintail
 import weld
 from characters import mika
+from outfits import mellowheart
 
 # 耳圈、髮髻與呆毛吃 VRoid 自己的髮絲貼圖，不用平色材質：髮色的色相旋轉作用
 # 在貼圖上，走同一個材質才會被一起帶到，而且新部件才有髮絲明暗。內耳不在這條
 # 路上，理由見 characters/mika.py 的 EAR_INNER。
 HEAD_HAIR = 'F00_000_Hair_00_HAIR_02'
 
-# The imported outfit, if it has been converted. Every garment this file builds
-# by hand is a stand-in for it, so when the file is there they step aside:
-# wearing both would put two skirts and two bodices on the same body, each
-# hugging the same skin and z-fighting the other. Hair, head accessories, body
-# and face are unaffected -- the package does not ship those.
-# Two files, because the package ships the bodice set and the cardigan as
-# separate FBXs with separate armatures; see blender/mellow.py.
-MELLOW = 'blender/mellow.glb'
-MELLOW_OUTER = 'blender/mellow_outer.glb'
-# The vendor's bonemap file: the one name the generic table cannot read (the
-# thumb) and, more importantly, the ignore list that keeps the cardigan's
-# forearm, hand and thumb OFF the fit anchors. Emptying that ignore list
-# re-fits the cardigan on sixteen bones and a grafted shape key flips faces at
-# the left armpit, with the translation-only fit and with the rotation-aware
-# one alike (evidence/bonemap-0905-16anchors.log, evidence/restpose-0905.md);
-# dropping the whole file would fit on fourteen (no thumb alias), a build
-# nobody has run.
-MELLOW_BONEMAP = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              'bonemap', 'mellowheart.json')
-# mesh -> (our part name, how far it must clear the body). The clearances are
-# what each garment is: a boot hugs the calf, a bodice sits on a layer of air,
-# a skirt hangs off the hips and mostly does not touch at all.
-# Socks were 4mm and grazed the inner ankle by 2mm at rest, and the boot at the
-# same 4mm let the toes through its toe box; both are hugging garments, but not
-# through the skin. 8mm left the ankles still grazing by 1.1mm, which is under
-# the eye but not under the gate once it counts small parts by their own area. The skirt stays at 14mm: what it needed was not a bigger
-# rest clearance but room to swing, which is MELLOW_LOOSEN below.
-# Belt 進 Acc_Belt_Waist 而不是 Acc_Ribbon_Waist：量過廠商的 Belt 網格，它是
-# 一條 27mm 高的腰封加一片 104x25x13mm 的正面裝飾板，沒有任何前突的結或環，
-# 當不了 goal 第 8 項的「腰帶蝴蝶結」。蝴蝶結由 blender/bow.py 生成，兩者合起
-# 來是一條腰封加一個繫在上面的蝴蝶結，正好是參考圖的構造。
-# Belt 的 20mm 是要它坐在裙腰帶上而不是坐在身體上：裙子自己留 14mm，比裙子再
-# 外推 6mm 才是一條繫在裙外的腰帶。Leg_belt 綁在裸露的大腿上，和襪子同量級。
-MELLOW_PARTS = {'Inner': ('Outfit_Top', 0.010), 'Skirt': ('Outfit_Bottom', 0.014),
-                'Socks': ('Outfit_Socks', 0.010), 'Shoes': ('Outfit_Shoes', 0.009),
-                'Main_Ribbon': ('Acc_Ribbon_Neck', 0.012),
-                'Belt': ('Acc_Belt_Waist', 0.020),
-                'Leg_belt': ('Acc_Bandage_Thigh', 0.003),
-                'Outer': ('Outfit_Cardigan', 0.020)}
-# 沿 y 平移，套在擬合之後、貼身之前。大腿繃帶是唯一需要的一件：廠商把它放在
-# Milfy 自己的大腿中段，本模型過了 proportion 之後裙襬落在 y=0.693，繃帶原位
-# 0.668-0.729 有六成埋在裙子裡，正面只露出 25mm 的一條。往下 45mm 讓它整條落
-# 在裸露的大腿上，也就是參考圖上它該在的位置。
-MELLOW_SHIFT = {'Acc_Bandage_Thigh': -0.045}
-THIGH_BAND_SOURCE_MATERIAL = 'Leg_Acc'
-THIGH_BAND_FINAL_CLEARANCE = 0.004
-# Extra room a garment needs for the poses rather than for the rest pose, ramped
-# from nothing at its top to this at its hem. See outfit.loosen.
-MELLOW_LOOSEN = {'Outfit_Bottom': 0.005}
-# 外套的動作間隙。跟 loosen 是同一類需求（rest 量不到、動作才拖出來的穿模），
-# 但機制不能共用：外套有 13% 頂點是法線朝內的 teal 內裡 shell，沿自身法線外推
-# 會把內裡推「進」襯衫，modelPose 兩側胸口的鋸齒 teal 三角就是內裡刺穿襯衫。
-# 所以走 outfit.standoff：法線帶符號（內裡翻向，與外層平行同向移動，厚度不變）、
-# 只取水平分量（肩頂法線朝上，自然當錨點，領口不浮）、|x| 羽化排除袖管（袖子
-# 沒有病灶；軀幹片延伸到 |x|≈0.30，羽化帶 0.26-0.32 刻意跨在軀幹與袖管的交界
-# 上，讓被推的軀幹片在接縫前就漸縮到零，不在肩袖交界留下階梯）。10mm 是
-# akimbo 腰際手掌穿出與 modelPose 胸口內裡兩處都蓋掉的量，疊在 hug 的 20mm
-# rest 間隙之上。
-MELLOW_STANDOFF = {'Outfit_Cardigan': 0.010}
-# 匯入服裝綁定後的權重擴散次數（garment.smooth_weights 的 passes），按部件。最
-# 近頂點抄權重在身體的皺褶處會跳：腋下一個袖子頂點最近的皮膚是肋骨、隔壁那個
-# 是上臂，權重在一條邊上從全胸跳到全臂，手臂一放下一條 11mm 的邊被拉到 74mm
-# ——使用者 2026-09-06 回報的兩側腋下黑色與薄荷色碎片，跳舞時放下手臂就出現，
-# T-pose 的四個機位與六道 gate 全看不到。16 次是真蒙皮量出來的：外套最壞的邊
-# 0 次 77mm、4 次 27mm、16 次 15mm（身體自己的皮膚腋下 15mm、手肘 17mm），再
-# 多就開始被四槽上限吃掉權重（evidence/armpit-0906.md）。
-# 只給跨過腋下的兩件上身衣。貼著肢體的管狀件（襪、鞋、腿帶、腰封）本來就沒有
-# 皺褶要跨，抄最近頂點就是對的；把襪子也擴散過，膝蓋一彎小腿就從襪子穿出來
-# （motion gate scratchHead t=4.02s 從 5px 變 233px）。守衛：撕裂在
-# verify.torn_bindings，穿模在 motion.py。
-MELLOW_BIND_SMOOTH = {'Outfit_Cardigan': 16, 'Outfit_Top': 16}
 # 雙馬尾對外套的守衛（量法見 twintail.coat_intrusion）。乾淨的建置量到
 # -59mm／0%（最靠裡的髮頂點也在輪廓外 59mm），舊出貨檔 -2 是 50.7mm／25.8%。
 # 5mm 與 springsim.test.ts 的 REST_COAT_MAX_MM 是同一個數字，量法不同（這裡量
@@ -130,38 +60,6 @@ TAIL_COAT_INSIDE_SHARE_MAX = 0.01
 # it would advertise a slider that does nothing, which is the silent no-op this
 # pipeline keeps guarding against.
 SHAPE_KEY_MIN_MEAN = 0.001
-# Its base maps are greyscale -- the vendor colours them in a Unity shader from
-# a mask -- so the colour is ours to choose and it stays on named materials.
-MELLOW_TINT = {
-    'Inner':      ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Inner_Sub':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Lace':       ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Skirt_Cloth': ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Shoes':      ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
-    'Sub_Acc':    ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
-    'Belt_Acc':   ((0.518, 0.784, 0.776), (0.386, 0.638, 0.647)),
-    'Leg_Acc':    ((0.949, 0.937, 0.918), (0.848, 0.828, 0.812)),
-    # 同一個金抄成兩份只動一份就會分岔，所以跟著 Milfy_Gold 一起動。數值與
-    # PALETTE 的 Milfy_Gold 不同字面：那邊過 ramp 貼圖（factor 要除 0.87 均
-    # 值），這裡無 ramp 直寫 factor；兩邊同源於真引擎頁解出的同一組線性值，
-    # 一樣要先 linear→sRGB（換算見 PALETTE 的 Milfy_Gold 註解）。
-    'Jewel':      ((1.0, 0.798, 0.634), (0.975, 0.741, 0.568)),
-    'Underwear':  ((0.957, 0.945, 0.925), (0.855, 0.835, 0.820)),
-    'Outer':      ((0.341, 0.333, 0.361), (0.231, 0.224, 0.247)),
-}
-# 底圖的曝光，見 outfit._materials。不是指數，是「乘一個對比再加一個偏移」。
-# 廠商把黑外套、黑百褶裙、黑樂福鞋的明暗直接畫進底圖（外套那張逐三角取樣，在
-# 自己的 UV 上均值只有 69／255），而顏色在本專案是 baseColorFactor，係數是乘
-# 法又被 glTF 夾在 1 以下：底圖多暗，成品就多暗，白色的裙子和鞋子在原樣的底圖
-# 上做不出來。每組兩個數字都是照著算圖量出來的，不是猜的。
-MELLOW_GAIN = {
-    'Skirt_Cloth': (0.55, 0.83),
-    'Shoes': (0.55, 0.83),
-    'Outer': (0.55, 0.64),
-    'Belt_Acc': (0.55, 0.68),
-    'Leg_Acc': (0.55, 0.62),
-    'Jewel': (0.55, 0.45),
-}
 
 # 蝴蝶結在腰封高度那一段，離腰封的最近距離上限。
 BOW_GAP_MAX = 8.0
@@ -527,14 +425,35 @@ def torso_edges(lm):
     return {name: lm['waist'] + span * f for name, f in TORSO_EDGES.items()}
 
 
-def build(src, dst, manifest_path, out_manifest, character=mika):
-    """Dress one body in one character's look.
+def outfit_files(dst, outfit_pack):
+    """Which of the package's converted files are actually beside `dst`.
+
+    A package declares what it ships; the build converts what Blender produced.
+    Missing ones are skipped rather than raised on, because the hand-built
+    garments stand in for the import and a machine without Blender still has to
+    produce a body. Its own function so that swapping the package can be checked
+    without running a build.
+    """
+    paths = [os.path.join(os.path.dirname(dst), f) for f in outfit_pack.FILES]
+    return [f for f in paths if os.path.exists(f)]
+
+
+def build(src, dst, manifest_path, out_manifest, character=mika,
+          outfit_pack=mellowheart):
+    """Dress one body in one character's look, wearing one outfit package.
 
     `character` is a module in characters/ holding every value that is hers
     rather than this file's: the palette, the colours solved off her reference
-    sheets, the head accessories and the hand-built garment list. Defaulting it
-    to mika keeps every existing caller working; passing another one is the
-    whole point, and it is what the module-contract tests exercise.
+    sheets, the head accessories and the hand-built garment list.
+
+    `outfit_pack` is a module in outfits/ holding the imported package: its
+    files, its bonemap, the vendor's mesh and material names, and under FIT the
+    clearances that are that package on this body. It is not called `outfit`
+    because this file already imports a module of that name, and shadowing it
+    inside build() would be a rename nobody asked for.
+
+    Both default so every existing caller keeps working; passing another one is
+    the whole point, and it is what the module-contract tests exercise.
     """
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
@@ -568,9 +487,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
     ctx = binding.context(doc, pool, manifest, lm, drape=(waist_y, hem_y))
     bindings = {}
 
-    mellow_files = [os.path.join(os.path.dirname(dst), f)
-                    for f in (MELLOW, MELLOW_OUTER)]
-    mellow_files = [f for f in mellow_files if os.path.exists(f)]
+    mellow_files = outfit_files(dst, outfit_pack)
     mellow = bool(mellow_files)
 
     def put(piece, material, name, mesh='Body.baked', tag=None,
@@ -842,8 +759,8 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
             # precisely so that binding them is a decision somebody made rather
             # than a global it happened to read.
             wear = functools.partial(add_material, outline=outline, rim=rim)
-            bundle = outfit.load(path, doc, views, wear, MELLOW_TINT,
-                                 MELLOW_GAIN, override=MELLOW_BONEMAP)
+            bundle = outfit.load(path, doc, views, wear, outfit_pack.TINT,
+                                 outfit_pack.GAIN, override=outfit_pack.BONEMAP)
             turned = sorted(bundle['snames'][i] for i, (rot, _, _) in bundle['correction'].items()
                             if i in bundle['mapped'] and rot is not None)
             print(f'   服裝擬合 {os.path.basename(path)}：縮放 x{bundle["scale"]:.3f}，'
@@ -855,13 +772,13 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
             items = outfit.pieces(bundle, doc, views)
             accepted = []
             for item in items:
-                spec = MELLOW_PARTS.get(item['name'])
+                spec = outfit_pack.PARTS.get(item['name'])
                 if spec is None:
                     continue
                 name, clear = spec
-                shift = MELLOW_SHIFT.get(name, 0.0)
-                loosen_amount = MELLOW_LOOSEN.get(name)
-                standoff_amount = MELLOW_STANDOFF.get(name)
+                shift = outfit_pack.SHIFT.get(name, 0.0)
+                loosen_amount = outfit_pack.LOOSEN.get(name)
+                standoff_amount = outfit_pack.STANDOFF.get(name)
                 settled, moved = settle(item['piece'], clear, shift,
                                         loosen_amount, standoff_amount)
                 item['piece']['pos'] = settled
@@ -870,13 +787,13 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
 
             accepted_items = [item for item, _ in accepted]
             if any(item['name'] == 'Leg_belt' for item in accepted_items):
-                band_name, band_clear = MELLOW_PARTS['Leg_belt']
+                band_name, band_clear = outfit_pack.PARTS['Leg_belt']
                 band_scale, _, _, thigh_diameter = outfit.fit_ring_to_limb(
                     accepted_items,
                     pool['pos'],
                     bundle['src']['materials'],
                     'Leg_belt',
-                    THIGH_BAND_SOURCE_MATERIAL,
+                    outfit_pack.THIGH_BAND_SOURCE_MATERIAL,
                     0.0,
                     band_clear,
                 )
@@ -889,7 +806,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
                         continue
                     final_move = outfit.hug(
                         band_item['piece'], pool['pos'], pool['nrm'],
-                        THIGH_BAND_FINAL_CLEARANCE)
+                        outfit_pack.THIGH_BAND_FINAL_CLEARANCE)
                     pushed[band_name] = max(pushed.get(band_name, 0.0), final_move)
 
             # Re-bound to this body's own weights, and the skirt draped on top
@@ -904,7 +821,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika):
             for item, name in accepted:
                 by_part.setdefault(name, []).append(item['piece'])
             decisions = {name: binding.decide(ctx, pieces, 'vendor',
-                                              MELLOW_BIND_SMOOTH.get(name, 0))
+                                              outfit_pack.BIND_SMOOTH.get(name, 0))
                          for name, pieces in by_part.items()}
 
             for item, name in accepted:

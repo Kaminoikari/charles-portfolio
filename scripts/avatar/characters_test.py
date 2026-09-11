@@ -82,7 +82,7 @@ class Contract(unittest.TestCase):
 
     def test_the_default_is_a_character_and_not_a_body_of_constants(self):
         self.assertRegex(source(), r'def build\(src, dst, manifest_path, out_manifest, '
-                                   r'character=mika\)')
+                                   r'character=mika,')
 
     def test_every_value_in_the_contract_is_read_somewhere(self):
         """A name nothing reads is a value the next character would set blind."""
