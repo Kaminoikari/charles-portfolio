@@ -29,7 +29,8 @@ from scipy import ndimage
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import glb  # noqa: E402
+import glb        # noqa: E402
+import partition  # noqa: E402
 
 MIN_REGION = 1500     # px at 2048 square; a nail is far smaller than a bodice
 
@@ -139,13 +140,38 @@ def replace(doc, views, image_index, img):
     doc['images'][image_index]['mimeType'] = 'image/png'
 
 
-def body_image(doc, material='F00_000_00_Body_00_SKIN'):
+# VRoid's part name for the body's own skin, as spelled in the material name.
+# The face carries a SKIN material too, on its own atlas.
+BODY_PART = 'Body'
+
+
+def skin_material(doc):
+    """The name of the material carrying this body's skin atlas.
+
+    It used to be the caller's default argument, spelling one body's material:
+    `F00_000_00_Body_00_SKIN` is Mika's base and AvatarSample_A's and B's, and
+    on the other thirteen local bodies apply() raised before it repainted
+    anything. VRoid writes the category into every material name, so the answer
+    is readable off the file (see partition.vroid_category).
+
+    The first match wins, which matters on a dress-up export: those carry the
+    body's skin material again, decorated, on each inner layer.
+    """
+    for material in doc.get('materials') or []:
+        if partition.vroid_category(material.get('name', '')) == (BODY_PART, 'SKIN'):
+            return material['name']
+    raise ValueError(f'這個檔案沒有 VRoid 的 {BODY_PART}/SKIN 材質，'
+                     f'找不到身體的皮膚貼圖')
+
+
+def body_image(doc, material=None):
     """Which image the body's skin material samples.
 
     Looked up by material name rather than written down as an index. Indices
     move whenever a primitive is added or an orphan swept, and a stale one would
     quietly repaint some other texture with skin.
     """
+    material = material or skin_material(doc)
     for m in doc.get('materials', []):
         if m.get('name') != material:
             continue

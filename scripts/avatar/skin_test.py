@@ -8,6 +8,7 @@ is enough only when no hole swallows a coarse cell whole.
 import io
 import os
 import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -63,6 +64,43 @@ class TheFillIsMadeOfWhatSurvived(unittest.TestCase):
         self.assertLessEqual(out.max(), 200 + 1e-3)
 
 
+class FindsTheBodyAtlas(unittest.TestCase):
+    """Which texture to repaint, on a body whose materials are named otherwise.
+
+    The material name used to be a default argument spelling one body's:
+    F00_000_00_Body_00_SKIN is Mika's base, AvatarSample_A's and B's, and
+    nobody else's here. apply() raised on the other thirteen before it
+    repainted anything.
+    """
+
+    def doc(self, name):
+        path = os.path.join(AVATARS, name)
+        if not os.path.exists(path):
+            raise unittest.SkipTest(f'public/avatar/{name} 不在')
+        return glb.load(path)[0]
+
+    def test_a_body_whose_material_carries_a_different_model_number(self):
+        doc = self.doc('AvatarSample_C_webp.vrm')
+        self.assertEqual(skin.skin_material(doc), 'M00_000_00_Body_00_SKIN')
+
+    def test_the_face_atlas_is_not_mistaken_for_the_body(self):
+        # The face carries a SKIN material of its own, on its own image.
+        doc = self.doc('Darkness_Shibu_webp.vrm')
+        face = next(m['name'] for m in doc['materials']
+                    if partition.vroid_category(m.get('name', '')) == ('Face', 'SKIN'))
+        self.assertNotEqual(skin.skin_material(doc), face)
+        self.assertNotEqual(skin.body_image(doc), skin.body_image(doc, material=face))
+
+    def test_the_base_resolves_to_the_image_the_written_down_name_did(self):
+        doc = self.doc('mika-pink.vrm')
+        self.assertEqual(skin.body_image(doc),
+                         skin.body_image(doc, material='F00_000_00_Body_00_SKIN'))
+
+    def test_a_file_with_no_vroid_skin_material_says_so(self):
+        with self.assertRaises(ValueError):
+            skin.skin_material({'materials': [{'name': 'Milfy_White'}]})
+
+
 class StripsABodyItWasNotWrittenFor(unittest.TestCase):
     """AvatarSample_A repaints 58.9% of its atlas, against mika-pink's 36.1%.
 
@@ -82,6 +120,14 @@ class StripsABodyItWasNotWrittenFor(unittest.TestCase):
         cls.before = np.asarray(raw.convert('RGB')).astype(np.int32)
         out, cls.share = skin.strip(raw)
         cls.after = np.asarray(out.convert('RGB')).astype(np.int32)
+
+    def test_apply_repaints_a_body_this_step_was_not_written_for(self):
+        # The whole entry point, on a body whose skin material apply() could
+        # not name until it read the category off it.
+        out = os.path.join(tempfile.mkdtemp(), 'bare.vrm')
+        share, size = skin.apply(os.path.join(AVATARS, 'AvatarSample_C_webp.vrm'), out)
+        self.assertGreater(share, 0.3)
+        self.assertTrue(os.path.exists(out))
 
     def test_the_repaint_looks_like_the_skin_it_was_taken_from(self):
         changed = (self.before != self.after).any(axis=2)
