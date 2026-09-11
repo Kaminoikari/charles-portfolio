@@ -389,9 +389,11 @@ role 對到她的材質名）與 `MATERIAL_PREFIX`，`build()` 開頭綁一次 `
 
 - 三條軸的 mutation 各 10 道，共 30 道全紅，逐條收據在
   `evidence/mutations-{characters,outfits,bodies}-0911.md`，原始輸出在同名 `.log`。
-  底模那 10 道先前沒有收據，這是補上的。散文修正動到 `build.py` 與
-  `bodies/mika_base.py` 的註解之後三支 runner 全部重跑，因為收據引用的是 blob，而
-  改註解就是換一個 blob。
+  底模那 10 道先前沒有收據，這是補上的。
+- 收據改成記**檔案的 blob sha**，不記 commit。這一點是被同一個錯誤教會兩次的：散文
+  修正動到 `build.py`／`mika.py`／`mika_base.py` 的註解之後，表格還是對的，上面那句
+  「run against the blobs committed at X」卻指向一個不再存在的 blob，兩輪各發生一
+  次。blob sha 不會移動，讀的人用 `git rev-parse HEAD:<path>` 就能對。
 - C5 的 pattern 在步驟 3 之後就不再命中（它還寫著 `MELLOW_TINT`），而 runner 的
   `assert hits == 1` 會讓整輪在那裡中止，所以 C6 與 C7 已經有一段時間跑不到了。
 - 步驟 1 的收據改成分類它**當時**分類的那個 blob，另外保留一道對今天 `build.py` 的

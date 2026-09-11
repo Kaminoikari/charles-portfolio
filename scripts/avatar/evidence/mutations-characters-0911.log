@@ -1,47 +1,49 @@
-baseline  Ran 18 tests in 0.173s  green
+build.py               blob 774691cd843a3b8d28e0ec2ff0d973bd3b068108
+mika.py                blob 82ca02d29d1a480e3826d7ba61d624a0bfcecb11
+baseline  Ran 18 tests in 0.308s  green
 
 C1  build.py declares a palette of its own beside the contract  [build.py]
-    Ran 18 tests in 0.069s  RED
+    Ran 18 tests in 0.268s  RED
     FAIL: test_build_declares_none_of_the_characters_values (characters_test.Contract.test_build_declares_none_of_the_characters_values)
 
 C2  build.py imports one character's value by name  [build.py]
-    Ran 18 tests in 0.061s  RED
+    Ran 18 tests in 0.307s  RED
     FAIL: test_build_does_not_import_one_characters_values_by_name (characters_test.Contract.test_build_does_not_import_one_characters_values_by_name)
 
 C3  add_material defaults the colours it is supposed to be handed  [build.py]
-    Ran 18 tests in 0.101s  RED
+    Ran 18 tests in 0.217s  RED
     FAIL: test_a_material_cannot_be_made_without_saying_whose_it_is (characters_test.Swapping.test_a_material_cannot_be_made_without_saying_whose_it_is)
     FAIL: test_the_helpers_take_what_they_need_rather_than_reading_it (characters_test.Wiring.test_the_helpers_take_what_they_need_rather_than_reading_it)
 
 C4  outline_colour reads Mika's line value instead of the character's  [build.py]
-    Ran 18 tests in 0.193s  RED
+    Ran 18 tests in 0.221s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (characters_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_the_line_is_as_bright_as_the_character_asked_for (characters_test.Swapping.test_the_line_is_as_bright_as_the_character_asked_for)
 
 C5  the imported outfit is dressed by an unbound callback again  [build.py]
-    Ran 18 tests in 0.172s  RED
+    Ran 18 tests in 0.123s  RED
     FAIL: test_the_imported_outfit_is_dressed_by_the_same_character (characters_test.Wiring.test_the_imported_outfit_is_dressed_by_the_same_character)
 
 C6  bowl_texture checks against a written-down mean again  [build.py]
-    Ran 18 tests in 0.240s  RED
+    Ran 18 tests in 0.274s  RED
     FAIL: test_the_bowl_is_baked_to_the_brightness_it_is_asked_for (characters_test.Swapping.test_the_bowl_is_baked_to_the_brightness_it_is_asked_for)
 
 C7  build() reads Mika directly and ignores the character it was handed  [build.py]
-    Ran 18 tests in 0.392s  RED
+    Ran 18 tests in 0.384s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (characters_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_the_palette_is_read_off_the_character (characters_test.Wiring.test_the_palette_is_read_off_the_character)
 
 C8  build.py spells one of her material names again  [build.py]
-    Ran 18 tests in 0.159s  RED
+    Ran 18 tests in 0.885s  RED
     FAIL: test_build_spells_none_of_her_material_names (characters_test.Wiring.test_build_spells_none_of_her_material_names)
 
 C9  the manifest advertises only the two prefixes this build knew about  [build.py]
-    Ran 18 tests in 0.091s  RED
+    Ran 18 tests in 0.308s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (characters_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_build_spells_none_of_her_material_names (characters_test.Wiring.test_build_spells_none_of_her_material_names)
     FAIL: test_the_manifest_palette_is_filtered_by_both_contracts (characters_test.Wiring.test_the_manifest_palette_is_filtered_by_both_contracts)
 
 C10  a role points at a material the character does not have  [mika.py]
-    Ran 18 tests in 0.071s  RED
+    Ran 18 tests in 0.383s  RED
     FAIL: test_every_role_names_a_material_of_hers (characters_test.Wiring.test_every_role_names_a_material_of_hers)
 

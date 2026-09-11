@@ -1,48 +1,50 @@
-baseline  Ran 14 tests in 0.040s  green
+build.py               blob 774691cd843a3b8d28e0ec2ff0d973bd3b068108
+mellowheart.py         blob 74650e1679eb163c772c561c70705ef7fa618bed
+baseline  Ran 14 tests in 0.279s  green
 
 O1  build.py declares the package's colours of its own again  [build.py]
-    Ran 14 tests in 0.033s  RED
+    Ran 14 tests in 0.105s  RED
     FAIL: test_build_declares_none_of_the_packages_values (outfits_test.Contract.test_build_declares_none_of_the_packages_values)
 
 O2  build.py imports one package's value by name  [build.py]
-    Ran 14 tests in 0.023s  RED
+    Ran 14 tests in 0.061s  RED
     FAIL: test_build_does_not_import_one_packages_values_by_name (outfits_test.Contract.test_build_does_not_import_one_packages_values_by_name)
 
 O3  outfit_files names the two garment files itself  [build.py]
-    Ran 14 tests in 0.038s  RED
+    Ran 14 tests in 0.039s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (outfits_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_a_file_the_package_declares_but_blender_did_not_make_is_skipped (outfits_test.Swapping.test_a_file_the_package_declares_but_blender_did_not_make_is_skipped)
     FAIL: test_the_build_looks_for_the_files_the_package_declares (outfits_test.Swapping.test_the_build_looks_for_the_files_the_package_declares)
     FAIL: test_the_files_come_from_the_package_and_not_from_two_names (outfits_test.Wiring.test_the_files_come_from_the_package_and_not_from_two_names)
 
 O4  the imported outfit is coloured from mellowheart directly  [build.py]
-    Ran 14 tests in 0.066s  RED
+    Ran 14 tests in 0.031s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (outfits_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_the_imported_outfit_is_coloured_by_the_package (outfits_test.Wiring.test_the_imported_outfit_is_coloured_by_the_package)
 
 O5  a clearance is written back into build()  [build.py]
-    Ran 14 tests in 0.054s  RED
+    Ran 14 tests in 0.048s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (outfits_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_the_clearances_are_read_off_the_package (outfits_test.Wiring.test_the_clearances_are_read_off_the_package)
 
 O6  the FIT banner is dropped from the contract  [mellowheart.py]
-    Ran 14 tests in 0.033s  RED
+    Ran 14 tests in 0.041s  RED
     FAIL: test_the_fit_section_is_still_labelled_as_one_body (outfits_test.Contract.test_the_fit_section_is_still_labelled_as_one_body)
 
 O8  the vendor mesh name is typed back into build()  [build.py]
-    Ran 14 tests in 0.027s  RED
+    Ran 14 tests in 0.075s  RED
     FAIL: test_every_value_in_the_contract_is_read_somewhere (outfits_test.Contract.test_every_value_in_the_contract_is_read_somewhere)
     FAIL: test_the_thigh_band_names_a_part_the_package_declares (outfits_test.Contract.test_the_thigh_band_names_a_part_the_package_declares)
 
 O9  the contract claims a thigh band the package has no part for  [mellowheart.py]
-    Ran 14 tests in 0.075s  RED
+    Ran 14 tests in 0.043s  RED
     FAIL: test_the_thigh_band_names_a_part_the_package_declares (outfits_test.Contract.test_the_thigh_band_names_a_part_the_package_declares)
 
 O10  the importer stamps a prefix the contract does not declare  [mellowheart.py]
-    Ran 14 tests in 0.076s  RED
+    Ran 14 tests in 0.080s  RED
     FAIL: test_the_prefix_the_importer_stamps_is_the_one_the_contract_declares (outfits_test.Contract.test_the_prefix_the_importer_stamps_is_the_one_the_contract_declares)
 
 O7  the bonemap path forgets it moved a directory deeper  [mellowheart.py]
-    Ran 14 tests in 0.103s  RED
+    Ran 14 tests in 0.038s  RED
     FAIL: test_the_bonemap_resolves_from_the_contracts_own_location (outfits_test.Contract.test_the_bonemap_resolves_from_the_contracts_own_location)
 

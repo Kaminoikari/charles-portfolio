@@ -1,10 +1,16 @@
 # Mutating the outfit contract, one defence at a time
 
-Runner: `scripts/avatar/evidence/mutations-outfits-0911.py`, run against the
-blobs committed at `f4d958a`. It refuses to start unless the working copies of
-build.py plus outfits/mellowheart.py already equal those blobs, asserts each pattern hits exactly once,
-and asserts the restore byte-for-byte. Full output beside this file in
-`mutations-outfits-0911.log`.
+Runner: `scripts/avatar/evidence/mutations-outfits-0911.py`, handed the
+committed blobs of `build.py` and `outfits/mellowheart.py`. It refuses to start unless the working copies
+already equal them, asserts each pattern hits exactly once, and asserts the
+restore byte-for-byte. Raw output in `mutations-outfits-0911.log`.
+
+Run against these blobs (check one with `git rev-parse HEAD:<path>`; a commit
+id would not survive the next comment edit, which is how two earlier versions
+of this file came to name a blob that no longer existed):
+
+    build.py               774691cd843a3b8d28e0ec2ff0d973bd3b068108
+    mellowheart.py         74650e1679eb163c772c561c70705ef7fa618bed
 
 Baseline: 14 tests, green.
 
