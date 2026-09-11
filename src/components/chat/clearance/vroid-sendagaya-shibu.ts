@@ -1,10 +1,10 @@
 // The clearance of the Sendagaya Shibu family: one body, declared in avatarVariants.ts
 // as `sendagaya-shibu` and not offered to visitors.
 //
-// One of five VRoid official sample avatars registered together on 2026-09-11,
-// out of eleven that were measured. What they are, why they are registered and
-// not offered, and why the other six are held back:
-// docs/plans/avatar-families-vroid-samples.md.
+// One of eleven VRoid official sample avatars registered as rig families on
+// 2026-09-11. Five went in first and six followed the same day, once the four
+// rules they landed on were fixed rather than waived around; those, and what
+// each body cost to bring in, are in docs/plans/avatar-families-vroid-samples.md
 //
 // Same three modules as every family (see clearance.ts): two generated halves
 // that are measurements, and this one, which is decisions. Only the fringe
@@ -27,9 +27,11 @@ const DECISIONS: ClearanceDecisions = {
   // No browser has drawn this body, so there is nothing a sweep could have seen
   // that the simulator did not.
   crownSeen: {},
-  // Derived by clearance.panFor from this family's own crown and hips, re-run
+  // Derived by scripts/derive-pans.ts from this family's own crown and hips, re-run
   // against a re-simulated body until a pass changed nothing. Receipt and the
-  // pass count for every body measured: evidence/vroid-samples-0911.log.
+  // pass count for every body measured: evidence/vroid-samples-0911-pans.log
+  // (the fixed point, all fourteen families) and evidence/vroid-samples-0911.log
+  // (the run that first measured the eleven, written while six were still held).
   // This body's resting hair sits at 1.6158.
   pans: {
     modelPose: { column: 0.02 },

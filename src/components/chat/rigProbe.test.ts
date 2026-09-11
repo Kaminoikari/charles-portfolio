@@ -607,17 +607,18 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       // A clip this family has written down that it cannot wear is not asked
       // whether it fits. `excluded` is the answer to that question already, and
       // `vroid-sakurada-fumiriya` is the body that makes the difference real:
-      // she stands 1.92m at the crown, and `dance` needs 269mm of lift to bring
+      // she stands 1.92m at the crown, and `dance` needs 231mm of lift to bring
       // its hair into the waist-up frame with 215mm before her hips leave the
       // bottom. No pan exists. Requiring one anyway is what pushed the earlier
       // pass into rubber-stamping a 503mm crownTop waiver on a body nobody has
       // ever rendered, which is a decision nobody made.
       //
       // It is not an escape hatch: motionsFor drops an excluded clip on this
-      // family, and `offers every idle clip somewhere` asserts both halves of
-      // that -- a clip excluded here must be unreachable, a clip not excluded
-      // must be reachable. Excluding one to dodge this guard would take it out
-      // of the rotation, where it would be seen.
+      // family, and `never offers a clip it has written down that it cannot
+      // wear` asserts both halves of that FOR THIS FAMILY -- a clip excluded
+      // here must be unreachable, a pool clip not excluded must be reachable.
+      // Excluding one to dodge this guard would take it out of the rotation,
+      // where it would be seen.
       if (name in CLEARANCE.excluded) continue
       for (const frame of def.placements) {
         const declared = CLEARANCE.pans[name]?.[frame] ?? 0
@@ -686,10 +687,12 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     // That asks something a per-clip waiver cannot answer. A waiver is declared
     // on the clip, so a clip whose hands leave the column and stay inside the
     // waist-up frame has no way to say so: declaring it fails the waist-up
-    // placement, and not declaring it fails the column. Two of the fourteen
-    // families have such a clip and could not be registered at all until this
-    // moved out of the loop. It is not a loosening -- the enforcement below is
-    // still per placement, and the waiver still has to be needed somewhere.
+    // placement, and not declaring it fails the column. Three of the fourteen
+    // families have such a clip -- vroid-sample-c, vroid-sakurada-fumiriya and
+    // vroid-sendagaya-shino, which is what restoring the old rule reddens in
+    // evidence/mutations-panholds-0911.md. It is not a loosening: the
+    // enforcement below is still per placement, and the waiver still has to be
+    // needed somewhere.
     const crownBudget = waiverOf(name)?.crownTop
     const reachBudget = waiverOf(name)?.reach
     const topBudget = waiverOf(name)?.handTop
@@ -779,6 +782,34 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     }
     if (topBudget !== undefined) {
       expect(handTopPast, `${name} declares a handTop waiver it does not need`).toBeGreaterThan(0)
+    }
+  })
+
+  // What the two fit guards above lean on when they skip an excluded clip.
+  //
+  // `the idle pool` has asked this since 2026-09-06, but it sits outside
+  // describe.each and reads the module-level CLEARANCE, so it only ever asked
+  // it of vroid-sample-b -- whose three exclusions name clips that are not in
+  // AVATAR_MOTIONS at all. The one family that excludes a clip the pool can
+  // reach, vroid-sakurada-fumiriya, was the one family it did not cover, which
+  // is exactly backwards. Asked per family, it covers the body doing the
+  // excluding.
+  it('never offers a clip it has written down that it cannot wear', () => {
+    const reachable = new Set([
+      ...motionsFor('launcher', FAMILY),
+      ...motionsFor('beside-panel', FAMILY),
+      ...motionsFor('column', FAMILY),
+    ])
+    for (const name of Object.keys(CLEARANCE.excluded)) {
+      // `excluded` may also name a clip dropped from the pack entirely -- three of
+      // vroid-sample-b's do -- and motionsFor cannot offer what AVATAR_MOTIONS
+      // has no key for. The ones worth asserting are the ones it could offer.
+      if (!(name in AVATAR_MOTIONS)) continue
+      expect(reachable.has(name as AvatarMotionName), `${name} is excluded on ${FAMILY} but still offered`).toBe(false)
+    }
+    for (const name of IDLE_MOTIONS) {
+      if (name in CLEARANCE.excluded) continue
+      expect(reachable.has(name), `${name} is in the rotation but ${FAMILY} offers it nowhere`).toBe(true)
     }
   })
 
@@ -1038,11 +1069,18 @@ describe('the idle pool', () => {
     for (const name of IDLE_MOTIONS) {
       if (name in excluded) {
         // The other direction, and the one that needs saying: a clip this
-        // family excludes must not be reachable on it. No family excludes a
-        // pool clip today, so this branch is unreached until a second rig
-        // declares one; evidence/families-0906-mutate.py runs it against a
-        // clearance that excludes `squat`, where dropping motionsFor's
-        // exclusion filter turns it red.
+        // family excludes must not be reachable on it.
+        //
+        // Still unreached here, and since 2026-09-11 for a different reason
+        // than it used to be. `vroid-sakurada-fumiriya` does exclude a pool
+        // clip -- `dance` -- but this test sits outside describe.each and reads
+        // the module-level CLEARANCE, so it only ever asks vroid-sample-b,
+        // whose three exclusions name clips that are not in AVATAR_MOTIONS at
+        // all. The family that excludes a reachable clip is covered by `never
+        // offers a clip it has written down that it cannot wear`, inside the
+        // per-family block; evidence/families-0906-mutate.py still runs this
+        // branch against a clearance that excludes `squat`, where dropping
+        // motionsFor's exclusion filter turns it red.
         expect(reachable.has(name), `${name} is excluded on ${FAMILY} but still offered`).toBe(false)
         continue
       }

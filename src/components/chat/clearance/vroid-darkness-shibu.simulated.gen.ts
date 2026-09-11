@@ -10,7 +10,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-darkness-shibu",
   "rigSha": "a35104318d65138b55226dcb806392a0ee1a16f8e8870736504de8c8fe03ed76",
   "simulatedOn": "/avatar/Darkness_Shibu_webp.vrm",
-  "producedBy": "cff0bea",
+  "producedBy": "e0e541d",
   "restCrownY": 1.6501,
   "restCrownScreen": {
     "waistUp": 1.651,
@@ -37,7 +37,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 0.05
       },
       "spin": {
-        "column": 0.01
+        "column": 0.1
       },
       "squat": {
         "column": 0.07
@@ -152,7 +152,7 @@ export const SIMULATED: ClearanceSimulated = {
       "crownT": 6.83,
       "crownScreen": {
         "waistUp": 1.6711,
-        "column": 1.7175
+        "column": 1.6903
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,

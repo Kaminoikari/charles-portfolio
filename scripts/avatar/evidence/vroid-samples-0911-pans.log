@@ -1,0 +1,227 @@
+# scripts/derive-pans.ts over all fourteen families, 2026-09-11
+
+Run after the review round that removed `vroid-darkness-shibu`'s rubber-stamped
+`crownTop` waiver, which is the state every module in
+src/components/chat/clearance/ is committed at.
+
+"0 pan(s) differ" is the fixed point: derive-pans keeps a declared pan that
+clearance.panHolds already accepts and proposes panFor's answer only when it
+does not, so zero differences means every declared pan is justified by the
+measurements taken under it.
+
+## The one line that is not "settled"
+
+`vroid-sakurada-fumiriya` prints `CANNOT FIT dance/waistUp` and then `NOT
+SETTLED`. That is the tool refusing to call a family settled while a clip fits
+at no pan, and it is right to refuse: she stands 1.9216m at the crown, her
+`dance` needs 231mm of lift to bring its hair inside the waist-up frame, and she
+has 215mm before her hips leave the bottom. The decision that answers it is
+`excluded`, which that family's module carries with those same two numbers.
+
+Note the body: `vroid-sample-b` is measured on `mika-pink.vrm`, not on
+`AvatarSample_B_webp.vrm`. Handing it the wrong one is refused by
+derive-pans.ts's own `measuredOn` check rather than answered with numbers
+off another body's resting crown, which is what it did on the first attempt
+at this receipt.
+
+$ npx tsx scripts/derive-pans.ts vroid-sample-b public/avatar/mika-pink.vrm
+// vroid-sample-b: restCrown 1.5820, 0 pan(s) differ from what is declared
+  pans: {
+    playFingers: { column: 0.02 },
+    scratchHead: { column: 0.02 },
+    dance: { waistUp: -0.07, column: 0.14 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vrm1-twist-sample public/avatar/vrm1-twist-sample.vrm
+// vrm1-twist-sample: restCrown 1.6154, 0 pan(s) differ from what is declared
+  pans: {
+    modelPose: { column: 0.01 },
+    spin: { column: 0.05 },
+    squat: { column: 0.03 },
+    akimbo: { column: 0.03 },
+    playFingers: { column: 0.03 },
+    scratchHead: { column: 0.06 },
+    idleLoop: { column: 0.03 },
+    stretch: { waistUp: 0.07 },
+    dance: { column: 0.14 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-studio-dressup public/avatar/vroid-studio-dressup.vrm
+// vroid-studio-dressup: restCrown 1.5982, 0 pan(s) differ from what is declared
+  pans: {
+    spin: { column: 0.04 },
+    squat: { column: 0.01 },
+    akimbo: { column: 0.01 },
+    playFingers: { column: 0.01 },
+    scratchHead: { column: 0.06 },
+    idleLoop: { column: 0.01 },
+    stretch: { waistUp: 0.07 },
+    dance: { column: 0.12 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-hair-female public/avatar/HairSample_Female_webp.vrm
+// vroid-hair-female: restCrown 1.6682, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.06 },
+    modelPose: { column: 0.08 },
+    spin: { column: 0.12 },
+    squat: { column: 0.09 },
+    akimbo: { column: 0.09 },
+    playFingers: { column: 0.09 },
+    scratchHead: { column: 0.09 },
+    idleLoop: { column: 0.09 },
+    stretch: { waistUp: 0.11 },
+    dance: { column: 0.23 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-hair-male public/avatar/HairSample_Male_webp.vrm
+// vroid-hair-male: restCrown 1.8067, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.19 },
+    modelPose: { column: 0.21 },
+    spin: { column: 0.25 },
+    squat: { column: 0.22 },
+    akimbo: { column: 0.23 },
+    playFingers: { column: 0.23 },
+    scratchHead: { column: 0.24 },
+    idleLoop: { column: 0.23 },
+    stretch: { waistUp: 0.23 },
+    dance: { waistUp: 0.08, column: 0.34 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-sendagaya-shibu public/avatar/Sendagaya_Shibu_webp.vrm
+// vroid-sendagaya-shibu: restCrown 1.6158, 0 pan(s) differ from what is declared
+  pans: {
+    modelPose: { column: 0.02 },
+    spin: { column: 0.06 },
+    squat: { column: 0.03 },
+    akimbo: { column: 0.03 },
+    playFingers: { column: 0.03 },
+    scratchHead: { column: 0.05 },
+    idleLoop: { column: 0.03 },
+    stretch: { waistUp: 0.07 },
+    dance: { column: 0.14 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-victoria-rubin public/avatar/Victoria_Rubin_webp.vrm
+// vroid-victoria-rubin: restCrown 1.7373, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.12 },
+    modelPose: { column: 0.14 },
+    spin: { column: 0.18 },
+    squat: { column: 0.15 },
+    akimbo: { column: 0.15 },
+    playFingers: { column: 0.16 },
+    scratchHead: { column: 0.16 },
+    idleLoop: { column: 0.15 },
+    stretch: { waistUp: 0.18 },
+    dance: { column: 0.27 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-vivi public/avatar/Vivi_webp.vrm
+// vroid-vivi: restCrown 1.4122, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { waistUp: -0.26 },
+    modelPose: { waistUp: -0.23 },
+    spin: { waistUp: -0.24 },
+    dance: { waistUp: -0.23 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-sample-a public/avatar/AvatarSample_A_webp.vrm
+// vroid-sample-a: restCrown 1.5582, 0 pan(s) differ from what is declared
+  pans: {
+    spin: { column: 0.03 },
+    scratchHead: { column: 0.01 },
+    dance: { column: 0.08 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-sample-c public/avatar/AvatarSample_C_webp.vrm
+// vroid-sample-c: restCrown 1.7561, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.14 },
+    modelPose: { column: 0.16 },
+    spin: { column: 0.27 },
+    squat: { column: 0.18 },
+    akimbo: { column: 0.18 },
+    playFingers: { column: 0.18 },
+    scratchHead: { column: 0.27 },
+    idleLoop: { column: 0.18 },
+    stretch: { waistUp: 0.24 },
+    dance: { waistUp: 0.06, column: 0.3 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-darkness-shibu public/avatar/Darkness_Shibu_webp.vrm
+// vroid-darkness-shibu: restCrown 1.6501, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.03 },
+    modelPose: { column: 0.05 },
+    spin: { column: 0.1 },
+    squat: { column: 0.07 },
+    akimbo: { column: 0.07 },
+    playFingers: { column: 0.07 },
+    scratchHead: { column: 0.08 },
+    idleLoop: { column: 0.07 },
+    stretch: { waistUp: 0.11 },
+    dance: { column: 0.18 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-sakurada-fumiriya public/avatar/Sakurada_Fumiriya_webp.vrm
+// vroid-sakurada-fumiriya: restCrown 1.9216, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { waistUp: 0.16, column: 0.3 },
+    modelPose: { waistUp: 0.2, column: 0.32 },
+    spin: { waistUp: 0.21, column: 0.38 },
+    squat: { column: 0.34 },
+    akimbo: { waistUp: 0.22, column: 0.34 },
+    playFingers: { waistUp: 0.23, column: 0.34 },
+    scratchHead: { waistUp: 0.24, column: 0.38 },
+    idleLoop: { waistUp: 0.22, column: 0.34 },
+    stretch: { waistUp: 0.37 },
+    dance: { column: 0.51 },
+  },
+// CANNOT FIT dance/waistUp: needs to rise 231mm for its crown, may rise 215mm before its hips leave
+// NOT SETTLED: 1 clip/frame(s) above fit at no pan. Every other pan agrees with what is declared, but each pairing listed above is skipped, so a pan already declared for THAT frame is missing from the block above even when the clip appears there under its other frames. Decide those first, then re-run.
+
+$ npx tsx scripts/derive-pans.ts vroid-sendagaya-shino public/avatar/Sendagaya_Shino_webp.vrm
+// vroid-sendagaya-shino: restCrown 1.6451, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.02 },
+    modelPose: { column: 0.05 },
+    spin: { column: 0.09 },
+    squat: { column: 0.06 },
+    akimbo: { column: 0.06 },
+    playFingers: { column: 0.06 },
+    scratchHead: { column: 0.07 },
+    idleLoop: { column: 0.06 },
+    stretch: { waistUp: 0.1 },
+    dance: { column: 0.18 },
+  },
+// SETTLED: this pass changed nothing.
+
+$ npx tsx scripts/derive-pans.ts vroid-vita public/avatar/Vita_webp.vrm
+// vroid-vita: restCrown 1.7130, 0 pan(s) differ from what is declared
+  pans: {
+    peaceSign: { column: 0.1 },
+    modelPose: { column: 0.12 },
+    spin: { column: 0.15 },
+    squat: { column: 0.13 },
+    akimbo: { column: 0.13 },
+    playFingers: { column: 0.13 },
+    scratchHead: { column: 0.13 },
+    idleLoop: { column: 0.13 },
+    stretch: { waistUp: 0.15 },
+    dance: { waistUp: 0.04, column: 0.28 },
+  },
+// SETTLED: this pass changed nothing.
+

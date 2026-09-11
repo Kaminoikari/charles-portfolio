@@ -225,7 +225,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // is unnecessary, so serving it carries no obligation.
   //
   // NOT offered. It is a different character, and this site has one. What it is
-  // for is that motionPan, crownBound, panHolds and the 71 guards of
+  // for is that motionPan, crownBound, panHolds and the 72 guards of
   // rigProbe.test.ts's `bundled motions` block now run against a rig that is
   // not the one they were written against, which is the only way to tell a
   // generalised layer from one that happens to work on the body it grew up on.
@@ -291,14 +291,17 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // against fourteen skeletons instead of three. Each of those blocks expands
   // AVATAR_FAMILIES directly, so adding a key here is what widens them.
   //
-  // Five went in first and six followed the same day. The six landed on two
+  // Five went in first and six followed the same day. The six landed on four
   // rules that no body of the original three's proportions could reach: a pan
   // held to equal its own re-derivation, which has no solution when the crown
-  // is measured through the pan, and a reach or handTop waiver required by
-  // every placement of its clip, which a clip leaving one frame and not the
-  // other cannot satisfy. Both are fixed at the rule rather than waived, and
-  // the eight registered before pass both unchanged; the measurements that
-  // forced each are in docs/plans/avatar-families-vroid-samples.md.
+  // is measured through the pan; a reach or handTop waiver required by every
+  // placement of its clip, which a clip leaving one frame and not the other
+  // cannot satisfy; a range boundary compared exactly against a number its
+  // producer rounds to four places; and a clip in `excluded` still having to
+  // fit the frames it is never played in. All four are fixed at the rule
+  // rather than waived, and the eight registered before pass all four
+  // unchanged; the measurements are in
+  // docs/plans/avatar-families-vroid-samples.md.
   //
   // NOT offered, for the reason `twist` is not: this site has one character.
   // Each is a different person, and the look strip is a wardrobe rather than a
@@ -310,12 +313,14 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'victoria-rubin', label: 'Victoria Rubin（不對外）', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', offered: false },
   { id: 'vivi', label: 'Vivi（不對外）', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', offered: false },
   // And the six that were held back on the morning of 2026-09-11, registered
-  // the same afternoon once the two rules above were fixed rather than worked
+  // the same afternoon once the four rules above were fixed rather than worked
   // around: clearance.panHolds asks whether a declared pan is justified instead
-  // of whether it equals its own re-derivation, and rigProbe.test.ts judges the
+  // of whether it equals its own re-derivation; rigProbe.test.ts judges the
   // reach and handTop waivers across a clip's placements the way it already
-  // judged crownTop. Neither weakens a guard, and all eight families above pass
-  // both unchanged. Same terms as the five: measured, not offered.
+  // judged crownTop; clearance.RECORDED reads a range boundary to the four
+  // places its producer writes; and the two fit guards honour `excluded`. None
+  // weakens a guard, and all eight families above pass all four unchanged.
+  // Same terms as the five: measured, not offered.
   { id: 'sample-a', label: 'VRoid 官方樣本 A（不對外）', url: '/avatar/AvatarSample_A_webp.vrm', family: 'vroid-sample-a', offered: false },
   { id: 'sample-c', label: 'VRoid 官方樣本 C（不對外）', url: '/avatar/AvatarSample_C_webp.vrm', family: 'vroid-sample-c', offered: false },
   { id: 'darkness-shibu', label: 'Darkness Shibu（不對外）', url: '/avatar/Darkness_Shibu_webp.vrm', family: 'vroid-darkness-shibu', offered: false },

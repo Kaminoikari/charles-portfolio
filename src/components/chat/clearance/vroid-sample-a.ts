@@ -27,9 +27,11 @@ const DECISIONS: ClearanceDecisions = {
   // No browser has drawn this body, so there is nothing a sweep could have seen
   // that the simulator did not.
   crownSeen: {},
-  // Derived by clearance.panFor from this family's own crown and hips, re-run
+  // Derived by scripts/derive-pans.ts from this family's own crown and hips, re-run
   // against a re-simulated body until a pass changed nothing. Receipt and the
-  // pass count for all eleven: evidence/vroid-samples-0911-pans.log.
+  // pass count for every body measured: evidence/vroid-samples-0911-pans.log
+  // (the fixed point, all fourteen families) and evidence/vroid-samples-0911.log
+  // (the run that first measured the eleven, written while six were still held).
   // This body's resting hair sits at 1.5582.
   pans: {
       spin: { column: 0.03 },

@@ -428,8 +428,8 @@ export function panRange(
   // composition that has moved since makes them somebody else's numbers.
   const view = avatarViewSpan(file.framings.frames[frame], file.framings.fov)
   // A crownTop waiver is the owner having looked at this clip going past the
-  // top edge and accepted it, so it RAISES the ceiling -- three of the VRoid
-  // family's ten carry one (the second family carries none), and deriving a pan
+  // top edge and accepted it, so it RAISES the ceiling -- three of vroid-sample-b's
+  // ten carry one and no other of the fourteen families does, and deriving a pan
   // against the unwaived edge would give every one of them a camera move nobody
   // asked for.
   //
@@ -454,8 +454,8 @@ export function panRange(
  * decimal places (measure-motions.ts, `round(w.hipsLow, 4)`), so a boundary
  * derived from one carries half of that last digit whatever the arithmetic
  * does afterwards. `vroid-sample-a` has a dance whose lowest hips sit on the
- * waist-up frame's bottom edge: recorded 0.7678 against an edge of 0.7678,
- * which put `most` at -0.00002. Twenty micrometres of recording noise, read as
+ * waist-up frame's bottom edge: recorded 0.7678 against an edge of 0.7678189,
+ * which put `most` at -0.0000189. Nineteen micrometres of recording noise, read as
  * "zero does not fit", centred the range and asked for a 100mm camera move on
  * a clip that rigProbe.test.ts measures as already inside the frame.
  *
@@ -535,7 +535,7 @@ export function panFor(
  * is solved for.
  *
  * That function is decreasing and shallow: raising the camera by a centimetre
- * lowers the projected crown by less than a centimetre, because the crown sits
+ * lowers the projected crown by a few millimetres, because the crown sits
  * near the subject plane where the projection barely moves. So `pan === ceil(least)`
  * is an equation whose two sides chase each other, and on the centimetre grid
  * three of the fourteen families have no pan that satisfies it. AvatarSample_C's
@@ -560,7 +560,7 @@ export function panFor(
  *
  * A family that DOES have a fixed point is unaffected: `pan === ceil(least)`
  * implies `least <= pan`, and its distance from the policy point is zero. All
- * five families registered before 2026-09-11 pass this unchanged, which is why
+ * eight families registered before this rule changed pass it unchanged, which is why
  * the shipped compositions did not have to be re-derived to bring the rest in.
  */
 export function panHolds(
@@ -579,6 +579,14 @@ export function panHolds(
   }
   if (declared > most + RECORDED) {
     return `${clip} in ${frame} pans ${mm(declared)}, and its hips leave the bottom edge past ${mm(most)}`
+  }
+  // On the grid, which the old equality pinned for free by comparing against a
+  // rounded number and this does not. A pan is a camera position someone reads
+  // off a screenshot; 0.1147 would satisfy everything below it and mean nothing
+  // to the person who has to reproduce the shot. All 127 declared pans are on
+  // the centimetre today, so this closes a gap rather than reporting one.
+  if (Math.abs(declared * 100 - Math.round(declared * 100)) > 1e-6) {
+    return `${clip} in ${frame} pans ${mm(declared)}, which is not on the centimetre these are dialled in`
   }
   const target = panTarget(least, most, policy)
   if (Math.abs(declared - target) > 0.01 + RECORDED) {

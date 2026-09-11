@@ -5,7 +5,7 @@ registered**, each its own rig family, declared in `AVATAR_VARIANTS` and served
 from `/avatar/`. **None of them is offered to visitors**: the look strip shows
 only the bodies marked `offered`.
 
-| | |
+| in first | same day |
 |---|---|
 | `vroid-hair-female` | `vroid-sample-a` |
 | `vroid-hair-male` | `vroid-sample-c` |
@@ -119,7 +119,10 @@ Pans and waivers were not decided, they were derived. `scripts/derive-pans.ts`
 re-runs the derivation against a re-simulated body until a pass changes nothing, and
 every waiver below is the number `rigProbe.test.ts` itself reported, rounded one
 step in the direction that keeps the guard meaningful. Receipts:
-`scripts/avatar/evidence/vroid-samples-0911.log`.
+`scripts/avatar/evidence/vroid-samples-0911-pans.log`, which is
+`scripts/derive-pans.ts` over all fourteen families at the fixed point, and
+`scripts/avatar/evidence/vroid-samples-0911.log`, the run that first measured
+the eleven and which therefore still describes six of them as held back.
 
 ## What the eleven found
 
@@ -157,8 +160,8 @@ arithmetically. Both halves of that are wrong, and both were measured
 The defect is narrower. The requirement is `least(pan) <= pan`;
 `rigProbe.test.ts` asserted `pan === ceil(least(pan))`, a fixed point of that
 composition. The function is decreasing -- measured at -0.015 to -0.079 per unit
-for a single crown point, and -0.34 once `crownWorst` takes its max across a
-clip's placements -- so `p - least(p)` is strictly increasing and the smallest
+for a single crown point at a 100mm pan (-0.011 to -0.076 at 300mm), and -0.34
+once `crownWorst` takes its max across a clip's placements -- so `p - least(p)` is strictly increasing and the smallest
 grid point that fits is unique and well defined. The fixed point is not: on the
 centimetre grid three of the fourteen families have none. `vroid-sample-c`,
 clip `spin`, frame `column`:
@@ -170,8 +173,7 @@ pan 0.27  ->  least 0.25890  ->  ceil  ->  0.26
 
 At pan 0.27 the crown needs 258.9mm of lift and is given 270mm. It fits. The
 equality was never the requirement. `vroid-darkness-shibu` did the same at
-0.10/0.09 (later 0.01/0.00 once its waivers moved the ceiling) and
-`vroid-sendagaya-shino` at 0.18/0.17.
+0.10/0.09 and `vroid-sendagaya-shino` at 0.18/0.17.
 
 **The fix** is `clearance.panHolds`, which asks whether a declared pan is
 justified rather than whether it equals a re-derivation: `least <= pan <= most`,
@@ -195,8 +197,10 @@ validated INSIDE the placement loop, so each had to be needed in every frame the
 clip declares or the guard failed for declaring one that was not needed.
 
 No clip on the first three families exceeds an edge in one frame and not the
-other, so this never bit. `vroid-sakurada-fumiriya` and `vroid-sendagaya-shino`
-do:
+other, so this never bit. Three of the eleven have such a clip: restoring the
+old rule reddens `vroid-sample-c` (dance, spin, squat),
+`vroid-sakurada-fumiriya` (spin, squat) and `vroid-sendagaya-shino` (dance,
+scratchHead). The two whose `handTop` blocked registration outright:
 
 ```
 dance        declares a handTop waiver it does not need in waistUp:
@@ -219,8 +223,8 @@ is that a clip which leaves one frame and not the other can now say so.
 `measure-motions.ts` rounds what it records to four decimal places
 (`round(w.hipsLow, 4)`), so any range boundary derived from one carries half of
 that last digit. `vroid-sample-a` has a `dance` whose lowest hips sit on the
-waist-up frame's bottom edge: the edge is 0.767816 and four places is 0.7678,
-sixteen micrometres below it, so `most` came out at -0.00002.
+waist-up frame's bottom edge: the edge is 0.7678189 and four places is 0.7678,
+nineteen micrometres below it, so `most` came out at -0.0000189.
 
 Read exactly, that says zero does not fit. The range then centred, and the
 waist-up frame asked for a **100mm downward camera move** on a clip that
@@ -247,16 +251,19 @@ waiver 503mm above the column's top edge -- on a body nobody has ever rendered,
 which is to say an owner's acceptance that no owner gave.
 
 **The fix** is that the two fit guards skip a clip the family excludes. It is
-not an escape hatch: `offers every idle clip somewhere` asserts both directions,
-so a clip excluded to dodge a guard would leave the rotation, where it would be
-seen. Of the fourteen families only this one excludes a clip that is in
+not an escape hatch: `never offers a clip it has written down that it cannot
+wear` asserts both directions once per family, so a clip excluded to dodge a
+guard would leave that family's rotation, where it would be seen. The
+file-wide `offers every idle clip somewhere` cannot do that job: it sits
+outside `describe.each` and reads the module-level clearance, so it only ever
+asked vroid-sample-b. Of the fourteen families only this one excludes a clip that is in
 `AVATAR_MOTIONS` at all -- `vroid-sample-b`'s three exclusions name clips that
 were dropped from the pack entirely.
 
 The general lesson, which is the one worth carrying: **a `crownTop` waiver on a
 body nobody has looked at is not a decision.** Where a pan brings the clip in,
 pan it -- `vroid-sendagaya-shino`'s dance took a 180mm column pan and needs no
-waiver at all. Where no pan does, `excluded` is the honest answer.
+crownTop waiver at all. Where no pan does, `excluded` is the honest answer.
 
 ## Two bodies that were never candidates
 

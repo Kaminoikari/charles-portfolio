@@ -87,14 +87,16 @@ console.log('  },')
 for (const u of unfittable) console.log(`// CANNOT FIT ${u}`)
 if (changed === 0 && unfittable.length === 0) console.log('// SETTLED: this pass changed nothing.')
 if (changed === 0 && unfittable.length > 0) {
-  // Not "settled". A clip that cannot fit is skipped, so it counts toward
-  // neither `changed` nor the block printed above: if it currently HAS a
-  // declared pan, that pan has just silently vanished from the output. Say so,
-  // rather than printing a word that reads like a green light.
+  // Not "settled". A clip/frame that cannot fit is skipped, so it counts toward
+  // neither `changed` nor the block printed above: if that frame currently HAS
+  // a declared pan, that pan has just silently vanished from the output. The
+  // clip's OTHER frames still print, which is what makes the loss easy to miss.
+  // Say so, rather than printing a word that reads like a green light.
   console.log(
     `// NOT SETTLED: ${unfittable.length} clip/frame(s) above fit at no pan. Every other` +
-    ' pan agrees with what is declared, but a clip listed above is skipped entirely,' +
-    ' so any pan it already declares is missing from the block above. Decide those' +
-    ' first, then re-run.',
+    ' pan agrees with what is declared, but each pairing listed above is skipped,' +
+    ' so a pan already declared for THAT frame is missing from the block above even' +
+    ' when the clip appears there under its other frames. Decide those first, then' +
+    ' re-run.',
   )
 }

@@ -24,11 +24,13 @@
 // re-run on both bodies, which wrote byte-identical clearance apart from the
 // path it was told to write to.
 //
-// Every field below is measured on this body. The 71 checks of
+// Every field below is measured on this body. The 72 checks of
 // rigProbe.test.ts's per-family block all pass on this rig. That file's own
-// total is 56 outside the block plus 71 per registered family, so it grows
-// whenever a family is added: 269 when this body arrived and three were
-// registered, 624 since five VRoid samples joined them on 2026-09-11. Receipts: scripts/avatar/evidence/family3-0909-pans.log for
+// total is 56 outside the block plus 72 per registered family, so it grows
+// whenever a family is added and whenever the block gains a check: 269 when
+// this body arrived, at three families and 71 checks each, and 1064 since
+// VRoid's eleven sample avatars joined them on 2026-09-11 and the block gained
+// its reachability guard. Receipts: scripts/avatar/evidence/family3-0909-pans.log for
 // the pans, scripts/avatar/evidence/armrest-0909.md for the browser run that
 // measured the crown fringe and found the rest pose bug it had to fix first.
 import { combineClearance, type ClearanceDecisions } from '../clearance'

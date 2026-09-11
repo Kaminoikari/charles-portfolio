@@ -483,11 +483,22 @@ describe('combineClearance', () => {
     expect(holds(at26, 0.26), '0.26 does not').toMatch(/crown needs/)
   })
 
+  it('refuses a pan that is not on the centimetre', () => {
+    // The rule this replaced compared against a rounded number, so it pinned the
+    // grid for free. panHolds compares against a range, and a range does not
+    // care: 0.1147 clears the crown, keeps the hips in, and sits inside a
+    // centimetre of the policy point. A pan is a camera position someone reads
+    // off a screenshot and has to be able to reproduce, so it is still refused.
+    const file = needing(0.108, ROOMY)
+    expect(holds(file, 0.1147)).toMatch(/not on the centimetre/)
+    expect(holds(file, 0.11), 'and the grid point it is nearest to still holds').toBeNull()
+  })
+
   it('reads a range boundary to the precision its producers wrote it at', () => {
     // measure-motions.ts rounds to four places, so a boundary derived from
     // `hipsLow` carries half of that last digit. The waist-up frame's bottom
-    // edge is 0.767816 and four places is 0.7678, which is 16 micrometres BELOW
-    // it: a clip whose hips rest on that edge records a `most` of -0.000016 and,
+    // edge is 0.7678189 and four places is 0.7678, which is 19 micrometres BELOW
+    // it: a clip whose hips rest on that edge records a `most` of -0.0000189 and,
     // read exactly, says zero does not fit. `vroid-sample-a`'s dance is that
     // clip, and centring the range on it asked for a 100mm downward camera move
     // on a clip rigProbe.test.ts measures as already inside the frame.
