@@ -1,0 +1,143 @@
+Deriving five VRoid sample families, 2026-09-11.
+
+Nothing below was chosen. Pans come from scripts/derive-pans.ts re-run against a
+re-simulated body until a pass changed nothing; waivers are the numbers
+rigProbe.test.ts itself reported, each rounded one step in the direction that
+keeps the guard able to fail. The loop that did it is recorded at the end.
+
+=== 1. Bodies, rigs, and the two halves agreeing =============================
+restCrownY as measure-motions.ts and springsim.ts each recorded it, independently.
+
+  family                     measured  simulated  delta  rigSha agrees
+  vroid-hair-female            1.6682     1.6682   0.00mm  yes
+  vroid-hair-male              1.8067     1.8067   0.00mm  yes
+  vroid-sendagaya-shibu        1.6158     1.6158   0.00mm  yes
+  vroid-victoria-rubin         1.7373     1.7373   0.00mm  yes
+  vroid-vivi                   1.4122     1.4122   0.00mm  yes
+
+Six more were measured to the same standard and are held back (see the plan
+doc): vroid-sample-a 1.5582, vroid-sample-c 1.7561, vroid-darkness-shibu 1.6501,
+vroid-sakurada-fumiriya 1.9216, vroid-sendagaya-shino 1.6451, vroid-vita 1.7130.
+All six agree across their two halves and all six hash to their own rig.
+
+=== 2. Pans, at their fixed point ============================================
+Each re-derived after the last change and reported "SETTLED: this pass changed
+nothing" with 0 pans differing.
+
+--- vroid-hair-female
+      peaceSign: { column: 0.06 },
+      modelPose: { column: 0.08 },
+      spin: { column: 0.12 },
+      squat: { column: 0.09 },
+      akimbo: { column: 0.09 },
+      playFingers: { column: 0.09 },
+      scratchHead: { column: 0.09 },
+      idleLoop: { column: 0.09 },
+      stretch: { waistUp: 0.11 },
+      dance: { column: 0.23 },
+--- vroid-hair-male
+      peaceSign: { column: 0.19 },
+      modelPose: { column: 0.21 },
+      spin: { column: 0.25 },
+      squat: { column: 0.22 },
+      akimbo: { column: 0.23 },
+      playFingers: { column: 0.23 },
+      scratchHead: { column: 0.24 },
+      idleLoop: { column: 0.23 },
+      stretch: { waistUp: 0.23 },
+      dance: { waistUp: 0.08, column: 0.34 },
+--- vroid-sendagaya-shibu
+      modelPose: { column: 0.02 },
+      spin: { column: 0.06 },
+      squat: { column: 0.03 },
+      akimbo: { column: 0.03 },
+      playFingers: { column: 0.03 },
+      scratchHead: { column: 0.05 },
+      idleLoop: { column: 0.03 },
+      stretch: { waistUp: 0.07 },
+      dance: { column: 0.14 },
+--- vroid-victoria-rubin
+      peaceSign: { column: 0.12 },
+      modelPose: { column: 0.14 },
+      spin: { column: 0.18 },
+      squat: { column: 0.15 },
+      akimbo: { column: 0.15 },
+      playFingers: { column: 0.16 },
+      scratchHead: { column: 0.16 },
+      idleLoop: { column: 0.15 },
+      stretch: { waistUp: 0.18 },
+      dance: { column: 0.27 },
+--- vroid-vivi
+      peaceSign: { waistUp: -0.26 },
+      modelPose: { waistUp: -0.23 },
+      spin: { waistUp: -0.24 },
+      dance: { waistUp: -0.23 },
+
+=== 3. Waivers, as the guards reported them ==================================
+--- vroid-hair-female
+      idleLoop: { hipsDrift: 0.17 },
+      dance: { hipsDrift: 0.16, handInHead: 0.18, reach: 0.746, endWrist: 1.28 },
+      scratchHead: { handInHead: 0.76 },
+--- vroid-hair-male
+      scratchHead: { handInHead: 0.95 },
+      dance: { handInHead: 0.18, reach: 0.838, hipsDrift: 0.17, endWrist: 1.39 },
+      spin: { reach: 0.799 },
+      idleLoop: { hipsDrift: 0.18 },
+--- vroid-sendagaya-shibu
+      scratchHead: { handInHead: 0.76 },
+      dance: { handInHead: 0.18, hipsDrift: 0.15, endWrist: 1.24 },
+      idleLoop: { hipsDrift: 0.16 },
+--- vroid-victoria-rubin
+      scratchHead: { handInHead: 0.61 },
+      dance: { handInHead: 0.22, reach: 0.76, hipsDrift: 0.17, endWrist: 1.34 },
+      idleLoop: { hipsDrift: 0.18 },
+--- vroid-vivi
+      scratchHead: { handInHead: 0.55 },
+      dance: { handInHead: 0.26, hipsDrift: 0.13, endWrist: 1.07 },
+      idleLoop: { hipsDrift: 0.14 },
+
+Nothing is excluded on any of the five. vroid-hair-male's `dance` WAS excluded
+for a while, on a real measurement (waistUp needed to rise 110mm where its hips
+allowed 96mm); raising the ceiling by the crownTop the clip actually needs
+brought it back inside, and re-deriving afterwards reports 0 pans differing and
+no clip unfittable. The exclusion was removed rather than left to rot: nothing
+guards a stale one.
+
+=== 4. How the derivation converged ==========================================
+Pans first, per family, to a fixed point (scratchpad panloop.py):
+
+  vroid-hair-female        settled with no pass needing a change, 10 clips panned
+  vroid-hair-male          settled after 3 passes of change, 10 clips panned
+  vroid-sendagaya-shibu    settled after 2 passes of change,  9 clips panned
+  vroid-victoria-rubin     settled after 3 passes of change, 10 clips panned
+  vroid-vivi               settled after 1 pass of change,    4 clips panned
+
+Then waivers, taken from rigProbe.test.ts's own failures and fed back in, with
+the pans re-settled after each round because a crownTop waiver raises the
+ceiling panRange derives against:
+
+  round 1   69 failing
+  round 2   23 failing
+  round 3    9 failing
+  round 4    7 failing
+  round 5    7 failing, the same seven, touching the same families
+
+Round 5 repeating round 4 is where the automatic derivation was stopped. All
+seven belonged to the two structural findings in the plan doc, on six families,
+and none of them to these five.
+
+=== 5. The guards, with the five registered ==================================
+  npx vitest run src/components/chat/rigProbe.test.ts
+    Tests  624 passed (624)
+
+  npx vitest run
+    Test Files  32 passed (32)
+    Tests  1100 passed (1100)
+    Errors  5 errors
+
+All five errors are `[vitest-worker]: Timeout calling "onTaskUpdate"`, the
+reporter timeout evidence/pitch-0910.md records on this machine, and it is
+carrying foreign load throughout (load average 12 to 21, swap 8.5 of 9.2GB, from
+an iOS simulator runtime and a browser, none of it this work). No test failed.
+
+  npm run build   exit 0

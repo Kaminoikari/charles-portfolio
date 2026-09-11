@@ -39,6 +39,11 @@ import type { ClearanceFile } from './clearance'
 import { CLEARANCE as VROID_SAMPLE_B } from './clearance/vroid-sample-b'
 import { CLEARANCE as VRM1_TWIST_SAMPLE } from './clearance/vrm1-twist-sample'
 import { CLEARANCE as VROID_STUDIO_DRESSUP } from './clearance/vroid-studio-dressup'
+import { CLEARANCE as VROID_HAIR_FEMALE } from './clearance/vroid-hair-female'
+import { CLEARANCE as VROID_HAIR_MALE } from './clearance/vroid-hair-male'
+import { CLEARANCE as VROID_SENDAGAYA_SHIBU } from './clearance/vroid-sendagaya-shibu'
+import { CLEARANCE as VROID_VICTORIA_RUBIN } from './clearance/vroid-victoria-rubin'
+import { CLEARANCE as VROID_VIVI } from './clearance/vroid-vivi'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -57,7 +62,15 @@ export type OfferedVariantId = 'pink' | 'milfy' | 'base'
  * stops being one global fact and becomes a fact per rig, with the guards to
  * prove it. The body that proves it does not have to be a look.
  */
-export type AvatarVariantId = OfferedVariantId | 'twist' | 'studio'
+export type AvatarVariantId =
+  | OfferedVariantId
+  | 'twist'
+  | 'studio'
+  | 'hair-female'
+  | 'hair-male'
+  | 'sendagaya-shibu'
+  | 'victoria-rubin'
+  | 'vivi'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -69,7 +82,15 @@ export type AvatarVariantId = OfferedVariantId | 'twist' | 'studio'
  * skeleton reaches somewhere else, and the numbers that say whether it stays
  * in frame have to be re-measured. The family is the unit that owns them.
  */
-export type AvatarFamilyId = 'vroid-sample-b' | 'vrm1-twist-sample' | 'vroid-studio-dressup'
+export type AvatarFamilyId =
+  | 'vroid-sample-b'
+  | 'vrm1-twist-sample'
+  | 'vroid-studio-dressup'
+  | 'vroid-hair-female'
+  | 'vroid-hair-male'
+  | 'vroid-sendagaya-shibu'
+  | 'vroid-victoria-rubin'
+  | 'vroid-vivi'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -84,6 +105,11 @@ export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sample-b': VROID_SAMPLE_B,
   'vrm1-twist-sample': VRM1_TWIST_SAMPLE,
   'vroid-studio-dressup': VROID_STUDIO_DRESSUP,
+  'vroid-hair-female': VROID_HAIR_FEMALE,
+  'vroid-hair-male': VROID_HAIR_MALE,
+  'vroid-sendagaya-shibu': VROID_SENDAGAYA_SHIBU,
+  'vroid-victoria-rubin': VROID_VICTORIA_RUBIN,
+  'vroid-vivi': VROID_VIVI,
 }
 
 /**
@@ -202,10 +228,28 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // binary chunk differs from the run's own file (the parts.json beside it
   // records both hashes and the check).
   //
-  // NOT offered, for the same reason as `twist`: it is a third rig for the
-  // per-family guards to run against, and what it buys that `twist` does not is
-  // a body whose springs move nothing above the bust, so its crown is rigid
-  // geometry the humanoid poses.
+  // NOT offered, and the reason is its own rather than `twist`'s. `twist` is a
+  // different character; this one descends from Mika's project, so that reason
+  // does not transfer. What rules it out is that it does not LOOK like her:
+  // Studio's dress-up path starts from a clean base, and what came back is a
+  // short brown cap of hair with a hard sawtooth hairline, plus glasses, where
+  // the three offered looks are long-haired and bare-faced. Rendered side by
+  // side against `milfy` at the same camera on 2026-09-11 and they read as two
+  // people. The hairline is the export's own: the served file and the
+  // `R3-B-clean-base-dressup.vrm` it came from carry the same single 746-vertex
+  // `HairBack` primitive, so nothing in dressup.prepare or cover.trim cut it.
+  //
+  // Nothing technical stands in the way, which is worth writing down so the
+  // question is not reopened as a bug. Its rest pose is right, it strands and
+  // tears nothing, its clearance file excludes no clip, and it fails
+  // verify.report only on the site's outline and rim style rules, which
+  // `mika-pink` and `base` fail harder while being offered. Flipping it would
+  // cost an id in OfferedVariantId, a key in chat.looks and three labels.
+  //
+  // What it is here for is the same as `twist`: a third rig for the per-family
+  // guards to run against. What it buys that `twist` does not is a body whose
+  // springs move nothing above the bust, so its crown is rigid geometry the
+  // humanoid poses.
   //
   // It also bought the one thing a declared-but-unrendered body cannot: SERVING
   // it put a VRM 1.0 rig in front of the engine for the first time, and the
@@ -214,6 +258,27 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
   { id: 'studio', label: 'Studio 換裝樣本（不對外）', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: false },
+  // Five more rigs, registered together on 2026-09-11 and none of them offered.
+  // They are VRoid's own official sample avatars, and what they are for is the
+  // same thing `twist` and `studio` are for: every per-family path in this repo
+  // — motionPan, crownBound, panFor, and the per-family block of
+  // rigProbe.test.ts — now runs against eight skeletons instead of three.
+  //
+  // Eleven were measured. Six are held back rather than registered, because
+  // they land on two rules that do not survive a body of their proportions, and
+  // both are written up with their measurements in
+  // docs/plans/avatar-families-vroid-samples.md. Neither is a property of these
+  // five, which pass every guard as they stand.
+  //
+  // NOT offered, for the reason `twist` is not: this site has one character.
+  // Each is a different person, and the look strip is a wardrobe rather than a
+  // cast list. Nothing here is a step toward offering them; the labels exist so
+  // evidence and tooling can name them.
+  { id: 'hair-female', label: 'VRoid 髮型樣本（女）（不對外）', url: '/avatar/HairSample_Female_webp.vrm', family: 'vroid-hair-female', offered: false },
+  { id: 'hair-male', label: 'VRoid 髮型樣本（男）（不對外）', url: '/avatar/HairSample_Male_webp.vrm', family: 'vroid-hair-male', offered: false },
+  { id: 'sendagaya-shibu', label: 'Sendagaya Shibu（不對外）', url: '/avatar/Sendagaya_Shibu_webp.vrm', family: 'vroid-sendagaya-shibu', offered: false },
+  { id: 'victoria-rubin', label: 'Victoria Rubin（不對外）', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', offered: false },
+  { id: 'vivi', label: 'Vivi（不對外）', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', offered: false },
 ]
 
 /**
