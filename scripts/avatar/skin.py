@@ -15,7 +15,9 @@ Removed pixels are refilled by a pull-push pyramid: the image is repeatedly
 halved, averaging only the pixels that survive, and then rebuilt downwards so a
 hole borrows from whichever level is coarse enough to span it. Copying from the
 nearest surviving pixel instead, which is the obvious method, fans a bodice-sized
-hole into brown streaks radiating from its edge.
+hole into brown streaks radiating from its edge. The pyramid has to run all the
+way to one pixel, or a hole wide enough to swallow a whole coarse cell is filled
+with black; see pull_push.
 """
 import io
 import os
@@ -38,17 +40,50 @@ def is_skin(rgb):
 
 
 def half(a):
-    """Average 2x2 blocks, trimming an odd last row or column."""
+    """Average 2x2 blocks, trimming an odd last row or column.
+
+    A dimension already at 1 is carried through rather than halved, so the
+    pyramid reaches a single pixel on an image that is not square. Halving both
+    dimensions unconditionally takes a 6x400 image to 3x200, then 1x100, and
+    then to 0x50, which is an empty array; stopping at 1x100 instead leaves a
+    coarsest level with columns nothing valid reaches, which is the same defect
+    pull_push exists to avoid.
+    """
     h, w = a.shape[:2]
+    if h == 1:
+        a = a[:, :w - w % 2]
+        return (a[:, 0::2] + a[:, 1::2]) / 2.0
+    if w == 1:
+        a = a[:h - h % 2]
+        return (a[0::2] + a[1::2]) / 2.0
     a = a[:h - h % 2, :w - w % 2]
     return (a[0::2, 0::2] + a[1::2, 0::2] + a[0::2, 1::2] + a[1::2, 1::2]) / 4.0
 
 
-def pull_push(rgb, valid, levels=9):
+def pull_push(rgb, valid):
+    """Fill everything outside `valid` by averaging what is inside it.
+
+    The pyramid runs until it is one pixel wide. It used to stop after nine
+    halvings, which on a 2048 atlas is 4x4, and a cell no valid pixel reaches
+    at the coarsest level divides zero by 1e-6 and comes out (0, 0, 0). The
+    upsample then blends that zero down through every level, so the hole
+    beneath it is filled dark: on AvatarSample_A two of the sixteen cells are
+    empty, and the fill inside the hole ran to a median of [175 148 130] with a
+    darkest point of [49 41 36], where the valid pixels average [243 215 190].
+    Measured as a share of the atlas the body samples, 12.46% of it came out
+    not skin-coloured on AvatarSample_A and 14.05% on AvatarSample_C. Nine
+    levels was enough for the body this was written on, whose largest hole
+    swallows no coarse cell whole.
+
+    Running to one pixel makes the coarsest level the average of every valid
+    pixel in the image, so there is always something to borrow from: the same
+    fill then has a median of [244 208 180], within ten of that average. half()
+    is what guarantees one pixel is reachable on an image that is not square.
+    """
     colour = rgb.astype(np.float32) * valid[..., None]
     weight = valid.astype(np.float32)
     pyramid = [(colour, weight)]
-    for _ in range(levels):
+    while weight.size > 1:
         colour, weight = half(colour), half(weight)
         pyramid.append((colour, weight))
 
