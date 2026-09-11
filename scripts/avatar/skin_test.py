@@ -141,6 +141,19 @@ class StripsABodyItWasNotWrittenFor(unittest.TestCase):
         self.assertLess(np.abs(painted - kept).max(), 30,
                         f'repainted {painted} against surviving {kept}')
 
+    def test_the_repaint_has_no_dark_blotch_in_it(self):
+        # The median above is a weak reading of a pyramid that stops short: it
+        # moves by 24 on this body, against a threshold of 30. The dark TAIL is
+        # what the defect actually is, and it moves by 163. Averaging can only
+        # pull values inward, so the fill's darkest percentile should sit at or
+        # above the surviving skin's; 20 of slack is for a body where the hole
+        # happens to take in an unusually dark corner.
+        changed = (self.before != self.after).any(axis=2)
+        fill = np.percentile(self.after[changed].mean(axis=1), 1)
+        kept = np.percentile(self.before[~changed].mean(axis=1), 1)
+        self.assertGreater(fill, kept - 20,
+                           f'fill p01 {fill:.0f} against surviving skin {kept:.0f}')
+
 
 class ReadsThisBodysOwnSkinColour(unittest.TestCase):
     """is_skin's `r > 105` was one body's palette written down.
