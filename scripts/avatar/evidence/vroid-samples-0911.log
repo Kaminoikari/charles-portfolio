@@ -97,11 +97,20 @@ nothing" with 0 pans differing.
       idleLoop: { hipsDrift: 0.14 },
 
 Nothing is excluded on any of the five. vroid-hair-male's `dance` WAS excluded
-for a while, on a real measurement (waistUp needed to rise 110mm where its hips
-allowed 96mm); raising the ceiling by the crownTop the clip actually needs
-brought it back inside, and re-deriving afterwards reports 0 pans differing and
-no clip unfittable. The exclusion was removed rather than left to rot: nothing
-guards a stale one.
+for a while, on a real measurement: waistUp needed to rise 110mm where its hips
+allowed 96mm.
+
+What removed that was not a waiver, and an earlier draft of this log said it
+was. Only crownTop reaches panRange, this body declares none, and `most` is
+hipsLow - span.bottom = 0.8639 - 0.7678 = 96mm, which no waiver and no pan can
+move. `least` is what fell, 110mm to 66.7mm, when the clip's COLUMN pan settled
+at 0.34: crownWorst takes the worst crown across all of a clip's placements, and
+springsim projects each crown through a camera already raised by that pan. So
+the waist-up figure dropped because the column pan rose. That is finding 1 in
+the plan doc, and this exclusion disappearing is an instance of it, not a
+repair. Re-deriving afterwards reports 0 pans differing and no clip unfittable,
+which is true and is the reason the exclusion was removed rather than left to
+rot; nothing guards a stale one.
 
 === 4. How the derivation converged ==========================================
 Pans first, per family, to a fixed point (scratchpad panloop.py):

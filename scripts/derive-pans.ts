@@ -22,6 +22,20 @@ if (!family || !body) throw new Error('usage: derive-pans.ts <family-id> <body.v
 const file: ClearanceFile | null = familyClearance(family)
 if (!file) throw new Error(`family ${family} is not registered in AVATAR_FAMILIES yet`)
 
+// The family and the body are two separate arguments, and they are the only
+// place in this pipeline where a person types the body in. Handing family A's
+// clearance to family B's body derives pans off the wrong restCrown and says
+// nothing about it, which is the same trap the clearance producers carry a
+// --family flag to avoid. The file already records which body it was measured
+// on, so the two can simply be checked against each other.
+const servedBody = `/avatar/${body.replace(/^.*\//, '')}`
+if (file.measuredOn !== servedBody) {
+  throw new Error(
+    `family ${family} was measured on ${file.measuredOn}, not on ${servedBody}: ` +
+    'deriving its pans off another body would use the wrong resting crown',
+  )
+}
+
 const glb = parseGlb(readFileSync(body))
 const restCrown = deriveRestCrown(glb, buildRigFrom(glb))
 
@@ -38,7 +52,11 @@ for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
     try {
       want = panFor(file, name, frame, restCrown, PAN_POLICY[frame], def.placements)
     } catch (e) {
-      const msg = (e as Error).message
+      // Anything that is not the "no pan fits" case is a real failure and has
+      // to keep its own stack. `message` is read defensively because a throw is
+      // not guaranteed to be an Error, and reading `.includes` off undefined
+      // would replace the real failure with a TypeError.
+      const msg = e instanceof Error ? e.message : ''
       if (!msg.includes('does not fit')) throw e
       unfittable.push(`${name}/${frame}: ${msg.slice(msg.indexOf('(') + 1, -1)}`)
       continue
@@ -58,5 +76,14 @@ console.log('  },')
 for (const u of unfittable) console.log(`// CANNOT FIT ${u}`)
 if (changed === 0 && unfittable.length === 0) console.log('// SETTLED: this pass changed nothing.')
 if (changed === 0 && unfittable.length > 0) {
-  console.log(`// SETTLED on pans, but ${unfittable.length} clip/frame(s) above need excluding.`)
+  // Not "settled". A clip that cannot fit is skipped, so it counts toward
+  // neither `changed` nor the block printed above: if it currently HAS a
+  // declared pan, that pan has just silently vanished from the output. Say so,
+  // rather than printing a word that reads like a green light.
+  console.log(
+    `// NOT SETTLED: ${unfittable.length} clip/frame(s) above fit at no pan. Every other` +
+    ' pan agrees with what is declared, but a clip listed above is skipped entirely,' +
+    ' so any pan it already declares is missing from the block above. Decide those' +
+    ' first, then re-run.',
+  )
 }

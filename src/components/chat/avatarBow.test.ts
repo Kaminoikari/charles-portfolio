@@ -2,7 +2,8 @@
 //
 // Its own file rather than a block in rigProbe.test.ts, because it needs
 // `avatarGuideEngine`, and that module pulls GLTFLoader and three-vrm-animation
-// in at import time: a 269-test file about rigs should not carry the engine's
+// in at import time: a file about rigs that is already in the hundreds of tests
+// and grows by 71 with every family registered should not carry the engine's
 // loader graph to ask one question. avatarPitch.test.ts, added the same day,
 // covers the rest of the same class the same way: the other three gestures, and
 // then the mode-driven gaze they all ride on. `bow` stays here because it

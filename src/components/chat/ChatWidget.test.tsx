@@ -973,7 +973,7 @@ describe('ChatWidget fullscreen', () => {
     // the pitch in the model's own space, which tips a VRoid 0.x body backwards,
     // and every look this site offers is one (her eyes swing about 145mm away,
     // scripts/avatar/evidence/bow-0910.md). avatarBow.test.ts holds `bow` to
-    // bowing toward the viewer on all three families; this holds the goodbye to
+    // bowing toward the viewer on every registered family; this holds the goodbye to
     // asking for that one rather than for `leanBack`.
     it('bows toward the visitor when the chat is stowed', async () => {
       const user = userEvent.setup()

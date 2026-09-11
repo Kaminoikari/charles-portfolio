@@ -201,7 +201,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // is unnecessary, so serving it carries no obligation.
   //
   // NOT offered. It is a different character, and this site has one. What it is
-  // for is that motionPan, crownBound, panFor and the 70 guards of
+  // for is that motionPan, crownBound, panFor and the 71 guards of
   // rigProbe.test.ts's `bundled motions` block now run against a rig that is
   // not the one they were written against, which is the only way to tell a
   // generalised layer from one that happens to work on the body it grew up on.
@@ -260,9 +260,12 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'studio', label: 'Studio 換裝樣本（不對外）', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: false },
   // Five more rigs, registered together on 2026-09-11 and none of them offered.
   // They are VRoid's own official sample avatars, and what they are for is the
-  // same thing `twist` and `studio` are for: every per-family path in this repo
-  // — motionPan, crownBound, panFor, and the per-family block of
-  // rigProbe.test.ts — now runs against eight skeletons instead of three.
+  // same thing `twist` and `studio` are for: the per-family paths in this repo
+  // — motionPan, crownBound, panFor, the per-family block of rigProbe.test.ts,
+  // and the describe.each(FAMILIES) blocks of avatarBow.test.ts and
+  // avatarPitch.test.ts (one block and two) — now run against eight skeletons
+  // instead of three. Each of those blocks expands AVATAR_FAMILIES directly, so
+  // adding a key here is what widens them.
   //
   // Eleven were measured. Six are held back rather than registered, because
   // they land on two rules that do not survive a body of their proportions, and

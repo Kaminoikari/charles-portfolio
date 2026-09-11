@@ -53,14 +53,27 @@ const DECISIONS: ClearanceDecisions = {
     spin: { reach: 0.799 },
     idleLoop: { hipsDrift: 0.18 },
   },
-  // Nothing excluded: every clip clears this body's frames once its pan and its
-  // waivers are applied. `dance` did NOT, before the waivers: it needed to rise
-  // 110mm in waistUp where the hips allowed 96mm, and it was excluded for a
-  // while on that measurement. Raising the frame's ceiling by the crownTop the
-  // clip actually needs brought it back inside, and re-deriving confirms it
-  // (0 pans differ, no clip reported unfittable). A clip that still could not
-  // fit would belong here with the measurement that put it there, and
-  // `motionsFor` would stop offering it.
+  // Nothing excluded: every clip clears this body's frames as they now stand.
+  // `dance` did not, at one point, and it was excluded for a while on a real
+  // measurement: it needed to rise 110mm in waistUp where its hips allowed 96mm.
+  //
+  // What brought it back inside was NOT a waiver. Only `crownTop` reaches
+  // panRange at all (clearance.ts, `ceiling`), this body declares none, and the
+  // four `dance` carries above are read by other guards entirely. The hips
+  // figure did not move either: `most` is `hipsLow - span.bottom`, 0.8639 -
+  // 0.7678 = 96mm, and nothing here can change it.
+  //
+  // `least` is what moved, from 110mm to 66.7mm, when this clip's COLUMN pan
+  // settled at 0.34. `crownWorst` takes the worst crown across every placement
+  // a clip declares, and springsim projects each crown through a camera already
+  // raised by that clip's pan, so raising the column pan lowered the number the
+  // waist-up frame is judged against. That is the double-count written up as
+  // finding 1 in docs/plans/avatar-families-vroid-samples.md, and this
+  // exclusion disappearing is an instance of it rather than a repair. If that
+  // finding is ever fixed, re-derive this family before trusting this line.
+  //
+  // A clip that still could not fit would belong here with the measurement that
+  // put it there, and `motionsFor` would stop offering it.
   excluded: {},
 }
 

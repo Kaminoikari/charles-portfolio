@@ -14,10 +14,13 @@ bodies marked `offered`.
 | `vroid-vivi` | `vroid-sendagaya-shino` |
 | | `vroid-vita` |
 
-Why any of them are here is what `twist` and `studio` are here for. Every
-per-family path in this repo — `motionPan`, `crownBound`, `panFor`, and the
-per-family block of `rigProbe.test.ts` — was written against one rig and
-generalised against three. It now runs against eight. A layer that only works on
+Why any of them are here is what `twist` and `studio` are here for. The
+per-family paths in this repo — `motionPan`, `crownBound`, `panFor`, the
+per-family block of `rigProbe.test.ts`, and the `describe.each(FAMILIES)` blocks
+of `avatarBow.test.ts` (one) and `avatarPitch.test.ts` (two) — were written
+against one rig and generalised against three. They now run against eight. Each
+of those `describe.each` blocks expands `AVATAR_FAMILIES` directly, so adding a
+key to it is what widens them. A layer that only works on
 the body it grew up on cannot survive that, and the point of the exercise is to
 find out which parts those are.
 
@@ -40,8 +43,16 @@ repack's rig. Only the five registered bodies are committed and served; the
 other six are recorded here because they were measured, and the table is what a
 future attempt at them starts from.
 
-Everything in the two tables below is read out of each file's own `VRM.meta`,
-not off a listing page.
+The second table below is read out of each file's own `VRM.meta`, not off a
+listing page. The first is read off the files themselves.
+
+One column in it is an inference rather than a field, and is marked as such:
+VRM 0.x `meta` has no redistribution key at all. Its keys are `version`,
+`author`, `contactInformation`, `reference`, `title`, `texture`,
+`allowedUserName`, `violentUssageName`, `sexualUssageName`,
+`commercialUssageName`, `otherPermissionUrl`, `licenseName` and
+`otherLicenseUrl`. Redistribution permission therefore comes from the licence
+the file names, not from a field in it.
 
 | file | bytes | sha256 (first 16) | registered |
 |---|---|---|---|
@@ -57,7 +68,7 @@ not off a listing page.
 | `Vita_webp.vrm` | 4,750,248 | `0b81817448e2ebf2` | held |
 | `Vivi_webp.vrm` | 4,746,492 | `de7f379838c6a241` | yes |
 
-| body | licence | allowed user | redistribution | exporter |
+| body | licence | allowed user | commercial use | exporter |
 |---|---|---|---|---|
 | AvatarSample_A | Other | Everyone | Allow | VRoidStudio-0.14.0 |
 | AvatarSample_C | Other | Everyone | Allow | VRoidStudio-0.14.0 |
@@ -71,12 +82,20 @@ not off a listing page.
 | Vita | **CC0** | Everyone | Allow | VRoidStudio-0.8.1 |
 | Vivi | **CC0** | Everyone | Allow | VRoidStudio-0.8.1 |
 
-Nine are CC0, which permits everything this repo does with them. The other two
-carry `licenseName: Other` with `allowedUserName: Everyone` and redistribution
-allowed, and they are the same terms as `AvatarSample_B_webp.vrm`, which this
-site has served to visitors since before any of this: they are exports of the
-same pixiv VRoid sample project, by the same author, from the same exporter
-generation.
+Nine are CC0, which permits redistribution and modification outright, so it
+covers everything this repo does with them. The five committed bodies are all in
+that nine, and their metadata was re-read from the committed files: `licenseName`
+CC0 and `allowedUserName` Everyone on every one.
+
+The other two, `AvatarSample_A` and `AvatarSample_C`, carry `licenseName: Other`
+with `allowedUserName: Everyone` and `commercialUssageName: Allow`, the same
+three values `AvatarSample_B_webp.vrm` carries. That body this site has served to
+visitors since before any of this, and all three are exports of the same pixiv
+VRoid sample project by the same author from the same exporter generation
+(VRoidStudio-0.14.0). Neither A nor C is committed, so their rows above were read
+from the fetched files during the session that measured them and cannot be
+re-checked from this repository; they are recorded for whoever brings them
+back.
 
 ## What each one cost to bring in
 
@@ -137,8 +156,8 @@ pan 0.27  ->  least 0.25890  ->  ceil  ->  0.26
 `vroid-darkness-shibu` does the same at 0.10/0.09 (later 0.01/0.00 once its
 waivers moved the ceiling) and `vroid-sendagaya-shino` at 0.18/0.17.
 `rigProbe.test.ts:603` asserts the declared pan equals what `panFor` derives, so
-neither value passes, and excluding the clip does not help: the loop at `:598`
-does not consult `excluded`.
+neither value passes, and excluding the clip does not help: the loop at
+`:600-601` does not consult `excluded`.
 
 The same double-count makes `panFor` ask for pans that a different guard says
 are unnecessary. `rigProbe.test.ts:786` decides a pan is needed by checking the

@@ -25,9 +25,10 @@
 // path it was told to write to.
 //
 // Every field below is measured on this body. The 71 checks of
-// rigProbe.test.ts's per-family block all pass on this rig (the file's own
-// total is 269 with three families registered -- 56 outside the block and 71
-// each inside it). Receipts: scripts/avatar/evidence/family3-0909-pans.log for
+// rigProbe.test.ts's per-family block all pass on this rig. That file's own
+// total is 56 outside the block plus 71 per registered family, so it grows
+// whenever a family is added: 269 when this body arrived and three were
+// registered, 624 since five VRoid samples joined them on 2026-09-11. Receipts: scripts/avatar/evidence/family3-0909-pans.log for
 // the pans, scripts/avatar/evidence/armrest-0909.md for the browser run that
 // measured the crown fringe and found the rest pose bug it had to fix first.
 import { combineClearance, type ClearanceDecisions } from '../clearance'
