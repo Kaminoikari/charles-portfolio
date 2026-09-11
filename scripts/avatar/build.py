@@ -36,12 +36,9 @@ import render
 import twintail
 import weld
 from characters import mika
+from bodies import mika_base
 from outfits import mellowheart
 
-# 耳圈、髮髻與呆毛吃 VRoid 自己的髮絲貼圖，不用平色材質：髮色的色相旋轉作用
-# 在貼圖上，走同一個材質才會被一起帶到，而且新部件才有髮絲明暗。內耳不在這條
-# 路上，理由見 characters/mika.py 的 EAR_INNER。
-HEAD_HAIR = 'F00_000_Hair_00_HAIR_02'
 
 # 雙馬尾對外套的守衛（量法見 twintail.coat_intrusion）。乾淨的建置量到
 # -59mm／0%（最靠裡的髮頂點也在輪廓外 59mm），舊出貨檔 -2 是 50.7mm／25.8%。
@@ -67,20 +64,6 @@ BOW_GAP_MAX = 8.0
 
 HAIR_FLATTEN_BLOCKS = 16
 
-# The hue the scalp cap sits at BEFORE anything here touches it. VRoid paints a
-# hair-coloured cap into the face atlas so a parting shows hair and not skin,
-# and neither the untouched export nor the pink repaint moved it: it is still
-# the original purple, 265 on the export and 257 on the repaint. A window either
-# side catches both without reaching the skin at 9 or the lips at 0.
-SCALP_HUE, SCALP_WINDOW = 261.0, 45.0
-# The cap's anti-aliased edge. Along it the hue walks from the cap (261)
-# through magenta to the skin (9): it leaves the window at 306 and only reaches
-# skin at about 345. Recolouring the window alone left that edge to the SKIN
-# solve, which turned it mauve -- the purple lines behind the neck and along the
-# hairline the owner reported on 2026-09-04, still there after the 09-03 fix.
-# Texels on the arc with chroma above SCALP_FRINGE_SAT that touch the cap are
-# the fringe; the lips (0) and the blush (9) sit past the end and never touch it.
-SCALP_FRINGE_TO, SCALP_FRINGE_SAT = 345.0, 0.12
 
 # The neck band, in metres of overshoot past the neck and head bones. The
 # overshoot exists so the feather ramps down on skin that is still neck rather
@@ -111,9 +94,6 @@ def outline_colour(character):
                 for c in character.SKIN_TARGET)
     floor = max(raw) - OUTLINE_CHROMA_MAX
     return tuple(round(max(c, floor), 4) for c in raw)
-# The hair's line is black and stays black: black is not a paler version of a
-# hue, and rotating it toward the skin would just make it brown.
-OUTLINE_KEEP = tuple(f'F00_000_Hair_00_HAIR_0{i}' for i in range(1, 7))
 
 
 
@@ -412,10 +392,29 @@ def landmarks(pool, doc):
 # fractions are where those edges sit on the body the outfit was drawn against,
 # and on that body they reproduce the old heights to within 0.1mm — the three
 # vertex masks come out identical.
+# The five below joined them on 2026-09-11 and are the last absolute heights
+# build() had. They were invisible to the constant inventory in
+# docs/plans/avatar-build-module-contracts.md because a number typed inside a
+# function is not a constant; the thigh bandage's height sat two lines above two
+# siblings that already derived from the ankle and the knee.
+# Same bar as the first three: on this body they reproduce the old heights to
+# within 0.033mm, the worst of them the bust frill's 0.0068mm.
 TORSO_EDGES = {
     'bandeau_top': 0.866,   # the bandeau's upper edge, at the frill's own height
     'strap_bottom': 0.815,  # where the shoulder straps come off the trapezius
     'sleeve_bottom': 0.764, # the cardigan sleeve's lower edge on the upper arm
+    'bust_frill': 0.8467,   # the camisole's own frill, above the cardigan line
+    'chest_probe': 0.2352,  # the height the buttons' depth is read at
+    'button_low': -0.0588,  # the three front buttons, 60mm apart on this body
+    'button_mid': 0.1764,
+    'button_high': 0.4116,
+}
+
+# The one height on the legs rather than the torso. Its two siblings already read
+# `ankle + (knee - ankle) * 0.38` and `ankle + 0.030`, so this is the shape the
+# rest of that block was already written in.
+LEG_EDGES = {
+    'thigh_band': 0.4411,   # the bandage, on bare thigh below the skirt's hem
 }
 
 
@@ -423,6 +422,46 @@ def torso_edges(lm):
     """The heights in TORSO_EDGES for one body, from its own waist and shoulder."""
     span = lm['shoulder'] - lm['waist']
     return {name: lm['waist'] + span * f for name, f in TORSO_EDGES.items()}
+
+
+def leg_edges(lm):
+    """The heights in LEG_EDGES for one body, from its own knee and hip."""
+    span = lm['hip'] - lm['knee']
+    return {name: lm['knee'] + span * f for name, f in LEG_EDGES.items()}
+
+
+def body_hair_materials(doc, known):
+    """The body's own hair materials, the one covering most triangles first.
+
+    VRoid spells them one way on this export and another on the next one, so
+    the names cannot be written down; what is stable is
+    where they are used, which is the primitives the partition labelled `Hair_*`.
+    Ordering by triangles rather than by name is what makes the first entry mean
+    something: on this body the back hair's material covers 10020 triangles and
+    the next covers 1122, so "the hair material" is not a close call.
+
+    `known` is the set of material names the body already had. The head
+    accessories this build adds are hair parts too and the inner ear brings its
+    own material, so without it a material this build authored would come back
+    as one of the body's.
+
+    Two uses, and both would be a typed-in name otherwise. The head accessories
+    reuse the first so the hair's hue rotation reaches them and they get strand
+    shading. All of them are skipped when the outline is recoloured, because the
+    hair's line is black and stays black: black is not a paler version of a hue,
+    and rotating it toward the skin would just make it brown.
+    """
+    tris = {}
+    for mesh in doc['meshes']:
+        for pr in mesh['primitives']:
+            label = (pr.get('extras') or {}).get('part') or ''
+            if not label.startswith('Hair_'):
+                continue
+            name = doc['materials'][pr['material']]['name']
+            if name not in known:
+                continue
+            tris[name] = tris.get(name, 0) + doc['accessors'][pr['indices']]['count'] // 3
+    return sorted(tris, key=lambda n: (-tris[n], n))
 
 
 def outfit_files(dst, outfit_pack):
@@ -439,7 +478,7 @@ def outfit_files(dst, outfit_pack):
 
 
 def build(src, dst, manifest_path, out_manifest, character=mika,
-          outfit_pack=mellowheart):
+          outfit_pack=mellowheart, base_body=mika_base):
     """Dress one body in one character's look, wearing one outfit package.
 
     `character` is a module in characters/ holding every value that is hers
@@ -452,6 +491,11 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     because this file already imports a module of that name, and shadowing it
     inside build() would be a rename nobody asked for.
 
+    `base_body` is a module in bodies/ holding what the export's own art already
+    contains, which the build has to read rather than choose: where the scalp
+    cap VRoid painted into the face atlas sits on the hue circle, and how far
+    its anti-aliased edge walks before it is skin.
+
     Both default so every existing caller keeps working; passing another one is
     the whole point, and it is what the module-contract tests exercise.
     """
@@ -463,6 +507,15 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # 馬尾掛在外套外面，軸線與彈簧的 collider 都是從外套貼合後的外殼推導的。
     # 之後任何從頭髮頂點讀座標的程式碼都要看到分好的版本；目前只有頭飾那段
     # （crown_y 讀 Hair_Back），它在更後面。
+    # Which materials the BODY brought, before this build adds any. hair_materials
+    # needs it to tell the body's hair from a material this build put on a hair
+    # part, and there is no later moment where the two are still separable.
+    body_materials = {m['name'] for m in doc['materials']}
+    hair_mats = body_hair_materials(doc, body_materials)
+    if not hair_mats:
+        raise SystemExit('找不到任何 Hair_* 部件的材質：這具身體沒有經過 partition，'
+                         '或它的頭髮不叫 Hair_*')
+
     # Derived once, here, from the character this build is dressing: `outline`
     # needs this file's chroma cap as well as her skin, so neither it nor the
     # rim can sit in characters/ as a written-down number.
@@ -525,6 +578,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     to the collarbone instead left the frill trapped between two white
     #     surfaces with nothing to be the edge of. ---
     edge = torso_edges(lm)
+    leg = leg_edges(lm)
     torso = (p[:, 1] < edge['bandeau_top']) & (p[:, 1] > lm['waist'] - 0.055) & (np.abs(p[:, 0]) < 0.105)
     # Two straps over the shoulders, part of the top rather than a separate
     # accessory: the reference shows them crossing the bare shoulder ABOVE the
@@ -562,8 +616,8 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # 前面，鈕扣就埋在兩層布中間了。
     cp = cardigan['pos']
     buttons = []
-    near_chest = int(np.argmin(np.abs(p[:, 1] - 1.02)))
-    for y in (0.945, 1.005, 1.065):
+    near_chest = int(np.argmin(np.abs(p[:, 1] - edge['chest_probe'])))
+    for y in (edge['button_low'], edge['button_mid'], edge['button_high']):
         band = cp[(np.abs(cp[:, 1] - y) < 0.022) & (cp[:, 0] < -0.020)
                   & (cp[:, 0] > -0.080) & (cp[:, 2] < 0)]
         if not len(band):
@@ -619,7 +673,8 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     put(garment.frill(hem['hem'], depth=0.034, waves=15), 'Milfy_White', 'Acc_Frill_Hem')
 
     # --- the camisole's own frill, across the bust above the cardigan line ---
-    put(garment.frill(garment.ring_at(pool, 1.176, max_radius=0.135, clear=0.017),
+    put(garment.frill(garment.ring_at(pool, edge['bust_frill'],
+                                      max_radius=0.135, clear=0.017),
                       depth=0.024, waves=11, amplitude=0.006, flare=0.10),
         'Milfy_White', 'Acc_Frill_Bust')
 
@@ -716,7 +771,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                          segments=24, rings=3),
             'Milfy_Bandage', name)
 
-    wrap('Acc_Bandage_Thigh', 0.652, -1, 0.032)
+    wrap('Acc_Bandage_Thigh', leg['thigh_band'], -1, 0.032)
     wrap('Acc_Bandage_Calf', ankle + (knee - ankle) * 0.38, 1, 0.046)
     wrap('Acc_Bandage_Ankle', ankle + 0.030, -1, 0.018)
 
@@ -1034,7 +1089,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     head_path = os.path.join(os.path.dirname(dst), character.HEAD)
     head_pieces = weld.pieces(head_path) if os.path.exists(head_path) else {}
     hair_mat = next(i for i, m in enumerate(doc['materials'])
-                    if m['name'] == HEAD_HAIR)
+                    if m['name'] == hair_mats[0])
     bowl, bowl_mean = bowl_texture(doc, views, 'Milfy_EarInner_shade',
                                    mean=character.BOWL_MEAN)
     mats['Milfy_EarInner'] = add_material(
@@ -1197,16 +1252,16 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     the only way to move it is to rotate the textures themselves. The base
     #     model is pink at hue 350 / sat 0.49 / lightness 0.71; the reference is
     #     a pale sand around hue 33 / sat 0.24 / lightness 0.79. ---
-    for i in range(1, 7):
-        customise.hue(doc, views, f'F00_000_Hair_00_0{i}',
+    for image in base_body.HAIR_TEXTURES:
+        customise.hue(doc, views, image,
                       character.HAIR_SHIFT, character.HAIR_SAT,
-                   lift=character.HAIR_LIFT, unify=character.HAIR_UNIFY,
+                      lift=character.HAIR_LIFT, unify=character.HAIR_UNIFY,
                       flatten=HAIR_FLATTEN_BLOCKS)
 
     # --- brows. The base model's are periwinkle, hue 250, to go with pink hair;
     #     the reference's are a warm grey-brown. They are their own texture, so
     #     this is one rotation and not a repaint. ---
-    customise.hue(doc, views, 'F00_000_00_FaceBrow_00',
+    customise.hue(doc, views, base_body.BROW_TEXTURE,
                   character.BROW_SHIFT, character.BROW_SAT)
 
     # --- the scalp cap. It is HAIR, and it lives in the face's skin texture.
@@ -1225,17 +1280,19 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     the same mix of solved hair and solved skin they were in the source
     #     (customise.blend_fringe); their mix is read now, before anything
     #     moves. ---
-    face_rgba = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
+    face_rgba = customise.image_rgba(doc, views, base_body.FACE_ATLAS)
     cap, cap_fringe = customise.hair_paint_pixels(
-        face_rgba[..., :3], face_rgba[..., 3], SCALP_HUE, SCALP_WINDOW,
-        fringe_to=SCALP_FRINGE_TO, fringe_min_sat=SCALP_FRINGE_SAT)
+        face_rgba[..., :3], face_rgba[..., 3],
+        base_body.SCALP_HUE, base_body.SCALP_WINDOW,
+        fringe_to=base_body.SCALP_FRINGE_TO,
+        fringe_min_sat=base_body.SCALP_FRINGE_SAT)
     cap_weight = customise.paint_weights(face_rgba[..., :3], face_rgba[..., 3],
                                          cap, cap_fringe)
     scalp = cap | cap_fringe
     hair_med = customise.median_hue(
-        doc, views, [f'F00_000_Hair_00_0{i}' for i in range(1, 7)])
+        doc, views, list(base_body.HAIR_TEXTURES))
     deg, sat, light, lift, shift = customise.retone(
-        doc, views, 'F00_000_00_Face_00', tuple(hair_med),
+        doc, views, base_body.FACE_ATLAS, tuple(hair_med),
         stat=cap, where=cap)
     print(f'   頭皮色塊 {int(cap.sum())} px → 髮色 '
           f'{tuple(int(v) for v in hair_med)} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
@@ -1250,12 +1307,14 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     are not a parting -- this hairstyle covers the nape with its own hair
     #     -- so they are filled from the skin around them here, before the skin
     #     solve, and go through it as skin. ---
-    body_rgba = customise.image_rgba(doc, views, 'F00_000_00_Body_00')
+    body_rgba = customise.image_rgba(doc, views, base_body.BODY_ATLAS)
     nape_core, nape_fringe = customise.hair_paint_pixels(
-        body_rgba[..., :3], body_rgba[..., 3], SCALP_HUE, SCALP_WINDOW,
-        fringe_to=SCALP_FRINGE_TO, fringe_min_sat=SCALP_FRINGE_SAT)
+        body_rgba[..., :3], body_rgba[..., 3],
+        base_body.SCALP_HUE, base_body.SCALP_WINDOW,
+        fringe_to=base_body.SCALP_FRINGE_TO,
+        fringe_min_sat=base_body.SCALP_FRINGE_SAT)
     filled = customise.fill_from_surroundings(
-        doc, views, 'F00_000_00_Body_00', nape_core | nape_fringe)
+        doc, views, base_body.BODY_ATLAS, nape_core | nape_fringe)
     print(f'   後頸髮根條 {filled} px（核心 {int(nape_core.sum())}）填回周圍膚色')
 
     # --- skin. Two textures, one skin, so ONE solve across both. Solving each
@@ -1268,12 +1327,12 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     #     (231, 209, 202), built from a source whose face reads (231, 210, 204).
     #     The scalp cap is out of both the sample and the transform: it has just
     #     been solved onto the hair and must not be moved again. ---
-    skin_names = ('F00_000_00_Face_00', 'F00_000_00_Body_00')
+    skin_names = base_body.SKIN_ATLASES
     stats = {n: customise.image_rgba(doc, views, n)[..., 3] > 200 for n in skin_names}
-    stats['F00_000_00_Face_00'] &= ~scalp
+    stats[base_body.FACE_ATLAS] &= ~scalp
     deg, sat, light, lift, shift = customise.retone_together(
         doc, views, skin_names, character.SKIN_TARGET, stats=stats,
-        wheres={'F00_000_00_Face_00': ~scalp})
+        wheres={base_body.FACE_ATLAS: ~scalp})
     print(f'   膚色 {sum(int(m.sum()) for m in stats.values())} px（臉與身共用一組解）'
           f' 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
           f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
@@ -1303,8 +1362,8 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     lo, hi = neck_y - NECK_MARGIN, head_y + NECK_MARGIN
     weights, band_px = {}, {}
     for mesh_name, mat_name, image in (
-            ('Face.baked', 'F00_000_00_Face_00_SKIN', 'F00_000_00_Face_00'),
-            ('Body.baked', 'F00_000_00_Body_00_SKIN', 'F00_000_00_Body_00')):
+            ('Face.baked', base_body.FACE_SKIN_MATERIAL, base_body.FACE_ATLAS),
+            ('Body.baked', base_body.BODY_SKIN_MATERIAL, base_body.BODY_ATLAS)):
         mesh = next(m for m in doc['meshes'] if m.get('name') == mesh_name)
         shape = customise.image_rgba(doc, views, image).shape[:2]
         uvs, tris, base = [], [], 0
@@ -1332,7 +1391,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     for image in weights:
         a = customise.image_rgba(doc, views, image)
         pick = (a[..., 3] > 200) & (weights[image] < 0.01)
-        if image == 'F00_000_00_Face_00':
+        if image == base_body.FACE_ATLAS:
             pick &= ~scalp
         outside.append(a[..., :3][pick])
     neck_target = np.median(np.concatenate(outside), axis=0)
@@ -1343,23 +1402,23 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     print(f'   頸部目標 ({neck_target[0]:.0f}, {neck_target[1]:.0f}, {neck_target[2]:.0f})'
           f' 取自帶外的皮膚')
     # The cap's edge, last: both sides of it are now their final colours.
-    blended = customise.blend_fringe(doc, views, 'F00_000_00_Face_00',
+    blended = customise.blend_fringe(doc, views, base_body.FACE_ATLAS,
                                      cap, cap_fringe, cap_weight)
     print(f'   頭皮蓋邊緣 {blended} px 依來源的髮／膚比例混色')
 
     deg, sat, light, lift, shift = customise.retone(
-        doc, views, 'F00_000_00_EyeIris_00', character.EYE_TARGET, mid=(60, 215))
-    print(f'   F00_000_00_EyeIris_00 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
+        doc, views, base_body.IRIS_TEXTURE, character.EYE_TARGET, mid=(60, 215))
+    print(f'   {base_body.IRIS_TEXTURE} 轉色相 {deg:+.1f}° 飽和 x{sat:.2f} '
           f'明度 x{light:.2f} 提亮 {lift:.2f} 位移 {shift:+.3f}')
 
     skin_materials = customise.tone_textured_materials(
         doc,
-        {'F00_000_00_Face_00', 'F00_000_00_Body_00'},
+        set(base_body.SKIN_ATLASES),
         character.SKIN_MATERIAL_TONE,
     )
     hair_materials = customise.tone_textured_materials(
         doc,
-        {f'F00_000_Hair_00_0{i}' for i in range(1, 7)},
+        set(base_body.HAIR_TEXTURES),
         character.HAIR_MATERIAL_TONE,
         shade=character.HAIR_SHADE_TONE,
     )
@@ -1371,7 +1430,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
 
     # --- outlines. Everything above moved colour that a texture or a factor
     #     carries; this moves the one that the second draw pass carries. ---
-    moved = customise.outline(doc, outline, skip=OUTLINE_KEEP)
+    moved = customise.outline(doc, outline, skip=hair_mats)
     was = sorted({tuple(w) for _, w in moved if w is not None})
     print(f'   描邊統一為 {outline}，改了 {len(moved)} 個材質，'
           f'原本有 {len(was)} 種：{was}')

@@ -13,6 +13,7 @@ from scipy.spatial import cKDTree
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import build  # noqa: E402
+from bodies import mika_base  # noqa: E402
 import customise  # noqa: E402
 import glb  # noqa: E402
 import humanoid  # noqa: E402
@@ -274,7 +275,7 @@ class AppearanceTest(unittest.TestCase):
         source_face = customise.image_rgba(source_doc, source_views,
                                            'F00_000_00_Face_00')
         scalp = customise.scalp_pixels(source_face[..., :3], source_face[..., 3],
-                                       build.SCALP_HUE, build.SCALP_WINDOW)
+                                       mika_base.SCALP_HUE, mika_base.SCALP_WINDOW)
         self.assertGreater(int(scalp.sum()), 10000, '輸入模型裡找不到頭皮色塊')
         shipped = self.texture_rgba('F00_000_00_Face_00')
         self.assertEqual(shipped.shape[:2], source_face.shape[:2],
@@ -538,8 +539,8 @@ class AppearanceTest(unittest.TestCase):
         views = glb.views_of(doc, binary)
         face = customise.image_rgba(doc, views, 'F00_000_00_Face_00')
         core, fringe = customise.hair_paint_pixels(
-            face[..., :3], face[..., 3], build.SCALP_HUE, build.SCALP_WINDOW,
-            fringe_to=build.SCALP_FRINGE_TO, fringe_min_sat=build.SCALP_FRINGE_SAT)
+            face[..., :3], face[..., 3], mika_base.SCALP_HUE, mika_base.SCALP_WINDOW,
+            fringe_to=mika_base.SCALP_FRINGE_TO, fringe_min_sat=mika_base.SCALP_FRINGE_SAT)
         return core | fringe
 
     def test_face_texture_keeps_the_contrast_its_features_live_in(self):

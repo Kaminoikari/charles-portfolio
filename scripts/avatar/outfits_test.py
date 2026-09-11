@@ -63,7 +63,7 @@ class Contract(unittest.TestCase):
                                  'build.py imports a package value by name')
 
     def test_build_takes_the_package_as_an_argument(self):
-        self.assertRegex(source(), r'\n          outfit_pack=mellowheart\):')
+        self.assertRegex(source(), r'\n          outfit_pack=mellowheart, ')
 
     def test_every_value_in_the_contract_is_read_somewhere(self):
         src = source()

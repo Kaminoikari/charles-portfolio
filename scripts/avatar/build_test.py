@@ -186,5 +186,37 @@ class Wiring(unittest.TestCase):
             self.assertNotRegex(src, typed, 'build() types a torso edge in again')
 
 
+    def test_the_last_absolute_heights_are_derived_too(self):
+        """The five that survived 2026-09-07 because they were inside build().
+
+        A number typed inside a function is not a constant, so listing build.py's
+        constants found none of these. `wrap('Acc_Bandage_Thigh', 0.652, ...)`
+        sat two lines above two siblings that already read the ankle and knee.
+        """
+        with open(os.path.join(HERE, 'build.py'), encoding='utf-8') as fh:
+            src = fh.read()
+        self.assertRegex(src, r"leg = leg_edges\(lm\)")
+        self.assertRegex(src, r"edge\['chest_probe'\]")
+        self.assertRegex(src, r"edge\['button_low'\], edge\['button_mid'\], edge\['button_high'\]")
+        self.assertRegex(src, r"edge\['bust_frill'\]")
+        self.assertRegex(src, r"wrap\('Acc_Bandage_Thigh', leg\['thigh_band'\]")
+        for typed in (r"p\[:, 1\] - 1\.02", r"for y in \(0\.945", r"ring_at\(pool, 1\.176",
+                      r"'Acc_Bandage_Thigh', 0\.652"):
+            self.assertNotRegex(src, typed, 'build() types an absolute height in again')
+
+    def test_a_taller_body_moves_the_new_heights_with_it(self):
+        """Fractions, not offsets: stretch the body and they stretch with it."""
+        doc, pool = body()
+        lm = build.landmarks(pool, doc)
+        tall = dict(lm, waist=lm['waist'] * 1.25, shoulder=lm['shoulder'] * 1.25,
+                    knee=lm['knee'] * 1.25, hip=lm['hip'] * 1.25)
+        for name, got in build.torso_edges(tall).items():
+            self.assertAlmostEqual(got, build.torso_edges(lm)[name] * 1.25, places=9,
+                                   msg=f'{name} did not scale with the torso')
+        for name, got in build.leg_edges(tall).items():
+            self.assertAlmostEqual(got, build.leg_edges(lm)[name] * 1.25, places=9,
+                                   msg=f'{name} did not scale with the leg')
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
