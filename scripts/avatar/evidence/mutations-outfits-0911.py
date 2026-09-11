@@ -94,6 +94,10 @@ def main():
     code, ran, failed = run()
     if code != 0:
         raise SystemExit(f'baseline is not green ({ran}); nothing below would mean anything')
+    for path in want:
+        sha = subprocess.run(['git', 'hash-object', str(path)],
+                             capture_output=True, text=True, check=True).stdout.strip()
+        print(f'{path.name:22} blob {sha}')
     print(f'baseline  {ran}  green\n')
 
     for tag, what, path, old, new in MUTATIONS:
