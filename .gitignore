@@ -48,6 +48,9 @@ scripts/avatar/out/*
 scripts/avatar/__pycache__/
 scripts/avatar/blender/__pycache__/
 scripts/avatar/evidence/__pycache__/
+scripts/avatar/bodies/__pycache__/
+scripts/avatar/characters/__pycache__/
+scripts/avatar/outfits/__pycache__/
 scripts/avatar/baseline.vrm
 # public/avatar/mika-milfy-*.vrm 從 2026-09-03 起進版控並上線（現行 -12）：它是網站的第三個
 # 造型（avatarVariants.ts）。2026-08-31 曾決定只留本機，理由是「逆向復刻的模型
