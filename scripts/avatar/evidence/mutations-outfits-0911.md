@@ -1,7 +1,7 @@
 # Mutating the outfit contract, one defence at a time
 
 Runner: `scripts/avatar/evidence/mutations-outfits-0911.py`, run against the
-blobs committed at `2762021`. It refuses to start unless the working copies of
+blobs committed at `f4d958a`. It refuses to start unless the working copies of
 build.py plus outfits/mellowheart.py already equal those blobs, asserts each pattern hits exactly once,
 and asserts the restore byte-for-byte. Full output beside this file in
 `mutations-outfits-0911.log`.
@@ -13,9 +13,6 @@ refactor deliberately left alone: outfit.py still spells the `Mellow_` prefix
 in three places, which is outside this contract's scope, so a test pins the
 two together and this mutation is what proves the pin holds.
 
-The outfit and base-body runs happened at `8b188d2`; `2762021` only reordered
-the character runner's list, and all four mutated files are the same blob at
-both commits (`git rev-parse 8b188d2:<path>` equals `git rev-parse HEAD:<path>`).
 
 | # | what the mutation puts back | file | result |
 |---|---|---|---|

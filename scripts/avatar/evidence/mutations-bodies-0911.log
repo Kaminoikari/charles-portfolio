@@ -1,46 +1,46 @@
-baseline  Ran 29 tests in 0.326s  green
+baseline  Ran 29 tests in 0.120s  green
 
 B1  the head accessories name their hair material again  [build.py]
-    Ran 29 tests in 0.277s  RED
+    Ran 29 tests in 0.112s  RED
     FAIL: test_the_head_accessories_reuse_the_derived_material (bodies_test.Derived.test_the_head_accessories_reuse_the_derived_material)
     FAIL: test_the_texture_names_all_come_from_the_contract (bodies_test.Derived.test_the_texture_names_all_come_from_the_contract)
 
 B2  a hair texture is spelled inline again  [build.py]
-    Ran 29 tests in 0.487s  RED
+    Ran 29 tests in 0.105s  RED
     FAIL: test_the_texture_names_all_come_from_the_contract (bodies_test.Derived.test_the_texture_names_all_come_from_the_contract)
 
 B3  the hair material is picked by name rather than by coverage  [build.py]
-    Ran 29 tests in 0.213s  RED
+    Ran 29 tests in 0.116s  RED
     FAIL: test_a_body_that_names_its_hair_anything_still_works (bodies_test.Derived.test_a_body_that_names_its_hair_anything_still_works)
     FAIL: test_the_hair_material_is_the_one_covering_most_of_the_hair (bodies_test.Derived.test_the_hair_material_is_the_one_covering_most_of_the_hair)
 
 B4  a material this build added counts as the body's own  [build.py]
-    Ran 29 tests in 0.169s  RED
+    Ran 29 tests in 0.115s  RED
     FAIL: test_a_material_this_build_added_is_not_the_bodys_own (bodies_test.Derived.test_a_material_this_build_added_is_not_the_bodys_own)
 
 B5  a body whose hair cannot be found is allowed through  [build.py]
-    Ran 29 tests in 0.168s  RED
+    Ran 29 tests in 0.120s  RED
     FAIL: test_the_build_refuses_a_body_whose_hair_it_cannot_find (bodies_test.Derived.test_the_build_refuses_a_body_whose_hair_it_cannot_find)
 
 B6  only the main hair material keeps its black outline  [build.py]
-    Ran 29 tests in 0.372s  RED
+    Ran 29 tests in 0.116s  RED
     FAIL: test_the_head_accessories_reuse_the_derived_material (bodies_test.Derived.test_the_head_accessories_reuse_the_derived_material)
 
 B7  the scalp window is read off build.py again  [build.py]
-    Ran 29 tests in 2.663s  RED
+    Ran 29 tests in 0.101s  RED
     FAIL: test_the_scalp_solve_reads_the_body_for_both_atlases (bodies_test.Wiring.test_the_scalp_solve_reads_the_body_for_both_atlases)
 
 B8  the scalp window is widened until it reaches the skin  [mika_base.py]
-    Ran 29 tests in 0.340s  RED
+    Ran 29 tests in 0.105s  RED
     FAIL: test_the_fringe_arc_ends_before_the_blush_and_the_lips (bodies_test.Measured.test_the_fringe_arc_ends_before_the_blush_and_the_lips)
     FAIL: test_the_scalp_window_reaches_both_exports_and_neither_the_skin (bodies_test.Measured.test_the_scalp_window_reaches_both_exports_and_neither_the_skin)
 
 B9  a button height is typed back in  [build.py]
-    Ran 29 tests in 0.227s  RED
+    Ran 29 tests in 0.102s  RED
     FAIL: test_the_last_absolute_heights_are_derived_too (build_test.Wiring.test_the_last_absolute_heights_are_derived_too)
 
 B10  the torso edges become offsets rather than fractions  [build.py]
-    Ran 29 tests in 0.153s  RED
+    Ran 29 tests in 0.168s  RED
     FAIL: test_a_longer_torso_moves_every_edge (build_test.TorsoEdges.test_a_longer_torso_moves_every_edge)
     FAIL: test_the_edges_land_where_the_outfit_was_drawn (build_test.TorsoEdges.test_the_edges_land_where_the_outfit_was_drawn)
     FAIL: test_a_taller_body_moves_the_new_heights_with_it (build_test.Wiring.test_a_taller_body_moves_the_new_heights_with_it)
