@@ -1,0 +1,52 @@
+recognise(), body by body
+  ok       AvatarSample_A_webp.vrm        7 prim
+  ok       AvatarSample_B_webp.vrm        7 prim
+  ok       AvatarSample_C_webp.vrm        7 prim
+  ok       Darkness_Shibu_webp.vrm        7 prim   2 個舊標籤是錯的
+  ok       HairSample_Female_webp.vrm     6 prim   舊 recognise 拒絕它
+  ok       HairSample_Male_webp.vrm       7 prim
+  ok       Sakurada_Fumiriya_webp.vrm     9 prim   舊 recognise 拒絕它
+  ok       Sendagaya_Shibu_webp.vrm       9 prim   舊 recognise 拒絕它
+  ok       Sendagaya_Shino_webp.vrm       9 prim   舊 recognise 拒絕它
+  ok       Victoria_Rubin_webp.vrm        7 prim   2 個舊標籤是錯的
+  ok       Vita_webp.vrm                  7 prim   2 個舊標籤是錯的
+  ok       Vivi_webp.vrm                  7 prim   2 個舊標籤是錯的
+  refused  mika-milfy-12.vrm              Body.baked 有 13 個材質不帶 VRoid 的類別後綴（SKIN、CLOTH、HAIR、FACE、EYE、M
+  ok       mika-pink.vrm                  7 prim
+  refused  vrm1-twist-sample.vrm          沒有名為 Face.baked 的 mesh（有的是：Body, Face, Hair）
+  refused  vroid-studio-dressup.vrm       沒有名為 Face.baked 的 mesh（有的是：Body (merged).baked(copy).baked, 
+
+13 of 16 recognised
+
+bodies the old check PASSED and the index table then mislabelled
+  Darkness_Shibu_webp.vrm        #5  Outfit_Bottom  -> Outfit_Shoes
+  Darkness_Shibu_webp.vrm        #6  Outfit_Shoes   -> Hair_BodyBack
+  Victoria_Rubin_webp.vrm        #5  Outfit_Bottom  -> Outfit_Shoes
+  Victoria_Rubin_webp.vrm        #6  Outfit_Shoes   -> Hair_BodyBack
+  Vita_webp.vrm                  #5  Outfit_Bottom  -> Outfit_Shoes
+  Vita_webp.vrm                  #6  Outfit_Shoes   -> Hair_BodyBack
+  Vivi_webp.vrm                  #5  Outfit_Bottom  -> Outfit_Shoes
+  Vivi_webp.vrm                  #6  Outfit_Shoes   -> Hair_BodyBack
+  4 bodies, 8 primitives
+
+bodies the old check REFUSED on primitive count, now named
+  HairSample_Female_webp.vrm     6 prim
+  Sakurada_Fumiriya_webp.vrm     9 prim
+  Sendagaya_Shibu_webp.vrm       9 prim
+  Sendagaya_Shino_webp.vrm       9 prim
+  4 bodies
+
+partition() end to end
+  AvatarSample_A_webp.vrm        10 parts   Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  AvatarSample_B_webp.vrm        13 parts   Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  AvatarSample_C_webp.vrm         7 parts   Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  Darkness_Shibu_webp.vrm         7 parts   Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+  HairSample_Female_webp.vrm      6 parts   Body_Skin, Outfit_Shoes, Outfit_Top
+  HairSample_Male_webp.vrm        7 parts   Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  Sakurada_Fumiriya_webp.vrm      9 parts   Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  Sendagaya_Shibu_webp.vrm        9 parts   Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  Sendagaya_Shino_webp.vrm       11 parts   Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  Victoria_Rubin_webp.vrm         8 parts   Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+  Vita_webp.vrm                   7 parts   Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+  Vivi_webp.vrm                   8 parts   Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+  mika-pink.vrm                  13 parts   Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top

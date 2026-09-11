@@ -1,0 +1,310 @@
+# 讓任何身體穿上這套衣服
+
+骨架泛化計畫（`~/.claude/plans/nested-conjuring-wirth.md`，Phase 0–6b）已經讓引擎
+能驅動任何骨架：14 家 rig family 進 registry，動作重定位、手勢、鏡頭、彈簧全部跨
+身體成立。模組合約計畫（`avatar-build-module-contracts.md`）讓 `build.py` 不再宣告
+任何一個角色、服裝或底模的值。
+
+剩下的是**穿衣層**：`make.py --base <陌生身體>` 會停在第 1 步。
+
+## 現況（量到的，不是估的）
+
+量在 `9b09611`。
+
+### 它停在哪裡，以及為什麼是停而不是壞
+
+`evidence/alicia-0907-build.log` 是完整的一次實跑，對象是 Alicia Solid
+（ニコニ立体ちゃん，VRM Consortium 自己的測試模型）：
+
+```
+1. partition
+  alicia-solid.vrm 不是這一步認得的 VRoid 匯出，拒絕命名：
+    - 沒有名為 Face.baked 的 mesh
+    - 沒有名為 Body.baked 的 mesh，因此 BODY_NAMES 的 primitive 編號對不到任何東西
+```
+
+拒絕是刻意的。`partition.recognise()` 的註解寫明理由：硬跑會產生一份讀起來合理但
+虛構的 `parts.json`，而後面每一步都會相信它。2026-09-07 的 Seed-san 夾具就是這樣把
+一隻機器人的手臂與衣服標成 `Hair_Twintail_R`、`Hair_Bangs`、`Hair_Side_L`。
+
+### 三步被擋住，不是一步
+
+| 步驟 | 做什麼 | 綁在 VRoid 的什麼 |
+|---|---|---|
+| 1 partition | 標記每個 primitive | mesh 名 `Face.baked`／`Body.baked`、primitive 索引、髮絲的絕對世界座標 |
+| 2 strip | 刪掉它自己的衣服 | 上一步的標籤 |
+| 3 skin | 把畫在身體貼圖上的衣服重繪成皮膚 | `is_skin` 的絕對色彩門檻 |
+
+### 純幾何與骨架的訊號能分開什麼
+
+`evidence/partname-0907-probe.log` 在兩具身體上逐 primitive 量過四個訊號
+（morph 綁定、主控人形骨群、非人形骨佔比、彈簧驅動）：
+
+- **臉**：有 blendShape／expression 綁定。可靠。
+- **頭髮**：掛非人形骨、在頭底下、被彈簧驅動。Alicia 的 `flonthair` 讀 52–100% 非
+  人形骨。可靠。
+- **會飄的衣服**：掛非人形骨。Alicia 的 `cloth`／`cloth1`／`cloth2`／`cloth_ribbon`
+  讀 98–100%。可靠。
+- **貼身、綁在身體自己骨頭上的衣服**：**分不出來**。Alicia 的 `body_top`（水手服）
+  讀 63–100% 人形骨、0% 非人形骨，與裸皮膚一模一樣。
+
+### 「脫掉它的衣服」對多數身體不成立
+
+`a031907` 的量測：到最近面的帶號距離能還原穿衣層次，在 VRoid 身體上有效（皮膚
+57% 的取樣點在外套底下、腳 91% 在鞋底下、裙 83% 在外套底下）。但
+
+- **Alicia 沒有這種配對**：最深的 body-to-body 覆蓋只有 34%，而且是同一曲面的兩片
+  相鄰面板。她的軀幹**就是**制服。
+- **Seed-san 有 `wear` mesh，完全沒有 body mesh**。
+
+衣服底下沒有身體，就沒有東西可以露出來。
+
+### 貼圖 alpha 在陌生身體上是平的
+
+`cover._painting`（我們既有的實作）在 Alicia 上逐 primitive 量：
+
+```
+Alicia_body       (皮膚)     100.0%      other.baked   (裝飾貼花)   5.4%
+Alicia_body_wear  (水手服)   100.0%      other02.baked               0.0%
+Alicia_wear       (水手服)   100.0%
+cloth*.baked      (裙、緞帶) 100.0%
+```
+
+對照它在 VRoid Studio 換裝匯出上的表現（`Body_Skin` 100%／`InnerTop` 23.8%／
+`InnerBottom` 6.3%，見 memory `project_dressup_three_skin_layers`），可以看出這個
+訊號真正回答的是「這層是不是畫在身體複本上的內搭」，不是「這是皮膚還是衣服」。
+
+## 研究結論（2026-09-11／12，七路）
+
+完整收據在各 subagent 報告；以下只留改變決策的部分，並標明一手來源。
+
+### 檔案格式幫不上忙
+
+VRM 唯一的 per-mesh 標註是 `firstPerson`，規格對 `thirdPersonOnly` 舉的例子是
+「face, eyes, head, hair, hat, helmet」，**頭髮與帽子同一桶**；預設值 `auto` 的規範
+定義是「看頂點有沒有綁 Head bone 或其子骨」，那是幾何推導指令不是語意標籤。實測本機
+16 具：14 個 VRM0 的 `meshAnnotations` 全是空陣列，2 個 VRM1 全是 `auto`。
+
+Khronos 那邊 `KHR_mesh_annotation` 在 PR #2512 被延後，換裝列在 Phase 2 future work。
+生態唯一可機器檢查的部件契約是 Ready Player Me 的 `meshNames.schema.json`，單一廠商
+封閉生態。
+
+`alphaMode` 與 `doubleSided` 實測也不能用：標準 VRoid 匯出裡髮、上衣、下身、鞋、
+連身體皮膚全是 `MASK`，而 `mika-milfy-12.vrm` 是 24 個材質全 `OPAQUE`；髮與衣服同樣
+都是 `ds=1`。
+
+### 學界分不出來，而且連指標都沒有
+
+SAMPart3D 的 benchmark PartObjaverse-Tiny：200 個物件、477 個相異部件標籤，
+`skin`／`bare`／`flesh`／`garment`／`shirt` 出現 **0 次**；29 個人形物件裡，穿著衣服
+的軀幹一律標成 `body`。沒有資料教它分，也沒有指標量過它分不分得出來。
+
+實跑佐證：社群最常用的服裝 parser `segformer_b2_clothes`（ATR 18 類）跑我們自己的
+toon render，**全裸雙腿被判成 `Pants` 3.33%，腿的兩個類別合計 0 px**；同一模型跑真實
+照片完全正確。裁切成只有腿再跑，`Pants` 27.15%、`Right-leg` 0.09%。動漫域沒有任何
+部件 parser 存在。
+
+### neural garment 家族在商業上全滅
+
+MGN、TailorNet、IF-Net、IP-Net、ICON/ECON、SHAPY、SMPLicit、DrapeNet 全部卡在 SMPL
+model licence 的「any use for commercial purposes is prohibited」，repo 自身是 MIT 也
+救不了。SewFormer、DressCode、BCNet、ManifoldPlus 整個 tree 連授權檔都沒有。而且
+輸出是解剖正確的成人比例，對頭身比 1:4 的角色結構性錯配。
+
+### 遮蔽是產業共識，不是將就
+
+MakeHuman/MPFB2 的 `ClothesService` 把 fitting 與「delete groups + MASK modifier」寫
+在同一個 service。整個 VRChat 生態（`AvatarOptimizer` 的 Remove Mesh By Mask／By UV
+Tile、`MeshDeleterWithTexture`）沒有一個是分類器，全部靠遮罩。
+
+市面最強的 VRChat 換裝工具もちフィッター（¥2,500）內建只有四具身體的**人工
+profile**，而且變形其實是裝一份 Blender 去跑。沒有人解決了「任意身體全自動」。
+
+### 補洞路線結構性無效
+
+所有補洞工具的前提是存在 boundary loop。Seed-san 那種「根本沒有軀幹幾何」的情況沒有
+東西可三角化，PyMeshFix 會把半個軀幹封成一顆實體。
+
+### 我們已經在做的兩件事有名字
+
+- **pull-push 補洞** = Gortler 等，*The Lumigraph*, SIGGRAPH 1996 §3.4，連
+  `min(w,1)` 的權重飽和都一樣。
+- **`is_skin` 的 R>G>B 規則** = Kovac et al., EUROCON 2003（doi
+  `10.1109/eurcon.2003.1248169`）的 explicit skin-cluster rule。它的前提是日光下的
+  真實人類皮膚，動漫貼圖的顏色是美術選擇，前提不成立。
+
+### 值得引進的三樣，全部授權乾淨
+
+| 東西 | 授權 | 解什麼 |
+|---|---|---|
+| `libigl` generalized winding number（Jacobson 等，SIGGRAPH 2013，doi `10.1145/2461912.2461916`） | 核心 MPL-2.0 | 取代自推的帶號距離；對破面、自交、非水密穩健，正是害射線奇偶性失敗的那個性質 |
+| `Huangzizhou/cloth-fit`（IFGR，SIGGRAPH 2025，doi `10.1145/3721238.3730590`） | MIT | 服裝對位，IPC 保證無穿插 |
+| `rin-23/RobustSkinWeightsTransferCode`（Epic Games，SIGGRAPH Asia 2023，doi `10.1145/3610543.3626180`） | MIT | 權重轉移 |
+
+`cloth-fit` 的 CI 在 `macos-14`（Apple Silicon）的 Release 與 Debug 四個 job 於
+2025-08-19 全綠；論文自己的 54 組實測在 MacBook Pro M3 Max 限 16 threads 上跑，平均
+97 秒、最長 432 秒。純 CLI。
+
+**它的輸入是我們已經有的東西。** 量過：
+
+- 全部 17 具身體（16 公開 ＋ Alicia）的**共同 humanoid 骨是 51 根**，扣掉手指與眼睛
+  約 20 根，正是論文用的粒度。
+- 限制到 `humanoid.REQUIRED` 的 15 根，七個家族（含 VRM0／VRM1／非 VRoid 的 Alicia）
+  產出**唯一一個連通性簽章**：15 verts、14 edges、邊集與排序完全相同。這正是
+  cloth-fit README 要求的「same mesh connectivity, joints ordered the same way」。
+
+### 一個會靜默咬人的規格事實
+
+VRM 1.0 的 T-pose 規格對**外觀**有八條約束，但對 node transform 的數值定義只有一條：
+「Definition 2.1. All node transforms are on a positive uniform scale」。**規格對
+humanoid bone 的 local 旋轉軸沒有任何約束。** bone frame 必須從全域骨方向加階層
+Gram-Schmidt 推導，絕不能拿節點自己的 local rotation；拿錯的話衣服會繞肢體軸轉一個
+角度，而且只在沒開發過的家族出現。
+
+## 步驟
+
+### 0. VRoid 家族：類別後綴 token 取代寫死的索引表 — 已完成
+
+`partition.py` 的 `BODY_NAMES` 用 primitive 索引寫死七個部件。在 Mika 自己的底模上，
+它與 VRoid 材質名的類別後綴 token 完全對應：
+
+```
+BODY_NAMES 索引        材質名                         後綴
+  0-3 Body_Skin     →  F00_000_00_Body_00_SKIN        SKIN
+  4   Outfit_Top    →  F00_008_01_Tops_01_CLOTH       CLOTH
+  5   Outfit_Bottom →  F00_001_01_Bottoms_01_CLOTH    CLOTH
+  6   Outfit_Shoes  →  F00_006_01_Shoes_01_CLOTH      CLOTH
+```
+
+**換一具身體就對不上，而且是無聲的。** 收據
+[partition-0912-grammar.log](../../scripts/avatar/evidence/partition-0912-grammar.log)：
+Darkness_Shibu、Victoria_Rubin、Vita、Vivi 四具的 `Body.baked` 剛好也是 7 個
+primitive，所以舊的 `recognise()` 讓它們過關，然後索引表把 #5 的鞋叫成
+`Outfit_Bottom`、把 #6 的後髮叫成 `Outfit_Shoes`。四具、八個 primitive，每一份
+`parts.json` 都讀起來合理。
+
+修法是讀 VRoid 自己的匯出文法，不是啟發式：
+
+```
+<prefix>_<PartName>_<nn>_<CATEGORY>[_<nn>]
+CATEGORY ∈ {SKIN, CLOTH, HAIR, FACE, EYE, MATCAP}
+```
+
+三個實測到的變體都要吃：頭髮材質 `F00_000_Hair_00_HAIR_03` 在 token 後面還有一個變體
+編號（本機唯一一種 token 不在最後一段的 VRoid 名字，而 `CLIP_DECALS` 讀的正是這個
+後綴）；`vrm1-twist-sample.vrm` 的 `Bottoms_01_CLOTH` 沒有 `F00_nnn_nn` 前綴；
+換裝匯出會加裝飾字尾 `N00_004_01_Shoes_01_CLOTH (Instance) (Instance)`。
+
+`recognise()` 的判準同時從「primitive 剛好 7 個」換成「每個 primitive 的材質都帶得出
+部件名稱」。舊判準問錯了問題：HairSample_Female 匯出 6 個、三具 Sendagaya／Sakurada
+匯出 9 個，它們都是普通的 VRoid 身體。
+
+本機 16 具通過 `recognise()` 的從 9 具變成 13 具，13 具全部跑完 `partition()` 並產出
+`parts.json`。三具仍被拒絕：`mika-milfy-12.vrm` 是我們自己的產出（材質叫 `Milfy_*`／
+`Mellow_*`，不帶 token），`vrm1-twist-sample.vrm` 與 `vroid-studio-dressup.vrm` 的
+mesh 不叫 `Face.baked`。
+
+**這一步沒有解決的**：mesh 仍然靠名字找，頭髮仍然靠這具身體的絕對世界座標分。所以
+partition 從「需要**這一具**匯出」變成「需要**一具** mesh 名字沒被改過的 VRoid 匯出」，
+身體部件精確、頭髮部件仍是這具身體的。mesh 的找法留到階段 2，因為那時要問的是
+containment 不是名字。
+
+順手補了一道防禦：manifest 以部件名稱為鍵，第二個 mesh 主張同一個名稱時原本會無聲蓋掉
+第一個。現在會拒絕。這正是把 HAIR 允許進 `Body.baked` 所帶出來的風險，所以那個部件叫
+`Hair_BodyBack` 而不是 `Hair_Back`。
+
+### 1. `is_skin` 的絕對門檻改成 per-body 膚色參考
+
+現行 `strip()` 跑過 16 具身體，**2 具整件衣服留在原地**：AvatarSample_A 殘留 12.46%、
+AvatarSample_C 14.05%，第三具（Darkness_Shibu）數字過關但視覺留下棕色暈染。機制定位
+到單一行：`is_skin` 的絕對門檻（`r > 105`、`r − b > 22`）把深棕布料收進皮膚色域，
+AvatarSample_A 的深棕上衣中位色 `[115 88 76]` 三個條件全過。
+
+修法與剛完成的模組合約同一形狀：**把絕對常數換成從這具身體自己量出來的參考**。手部
+island 與臉部 atlas 都能估出這具身體的膚色，再用色度距離判定；那件上衣對手部
+`[254 232 206]` 用相對距離一刀就分開。
+
+pull-push 本身不動：凡是遮罩判對的案例，重繪後每個 texel 都落在膚色範圍內。
+
+順帶：VRoid 的 body atlas UV layout 對 10/16 具身體逐 texel 相同（IoU 1.0000），另外
+4 具 ≥ 0.989。所以「哪個 texel 是身體的哪個部位」可以查表，不必猜。
+
+### 2. 遮蔽取代脫衣
+
+partition 的契約從「標記每個部件」縮成三個**可量**的問題：
+
+1. 哪些 primitive 絕不能動（臉＝morph 綁定；頭髮＝非人形骨＋在頭底下＋彈簧）
+2. 哪些身體幾何在新衣服裡面（containment，`cover.py` 已經在做）
+3. 哪個材質帶皮膚貼圖（步驟 1 的 per-body 參考）
+
+containment 從自推的帶號距離升級成 generalized winding number。
+
+這一步讓「Alicia 的 `body_top` 是皮膚還是制服」這個解不掉的問題不必問：要問的是「這塊
+身體是不是在新衣服底下」。
+
+### 3. 服裝對位與權重
+
+`cloth-fit` ＋ weight inpainting。我們要寫的新程式碼只有：
+
+- `humanoid` map → 骨架邊網格 `.obj`（已驗證可導出，見上）
+- avatar 與 garment 的 `.obj` 匯出與結果匯回
+
+**不自己寫骨架相對編碼。** 那是 LoBoFit 的 `P_b(g) = (1/ℓ_b)·(⟨g−b_o, b_x⟩, …)`，而
+自己寫的版本只到論文的初始化那一步，論文原話是解碼完「does not yet conform to the
+target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗原因。
+
+## 驗收
+
+每一階段各自可驗，不等到最後。
+
+- **階段 0（已達成）**：13 具 VRoid 身體走完第 1 步並產出 `parts.json`；Mika 自己的
+  `baseline.vrm` 產出與改動前逐位元組相同（VRM sha256 `1d4e3a37d33d91d0…`、6739132
+  bytes、`parts.json` sha256 `79aa95bd5956f2ff…`）；類別 token 缺席時**拒絕**而不是猜。
+  mutation 見 [mutations-partition-0912.md](../../scripts/avatar/evidence/mutations-partition-0912.md)。
+- **階段 1**：16 具身體跑 `strip()`，殘留（修補後仍非膚色、且落在 mesh 實際會取樣的
+  atlas 區域）全部 < 1%；目前 12.46% 與 14.05% 那兩具必須進到 < 1%。mutation：把
+  per-body 參考換回絕對門檻，那兩具必須紅。
+- **階段 2**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
+  會紅。
+- **階段 3**：Mika 自己跑一遍位元組相同（回歸關）；換一具身體後每個部件對身體的最近
+  距離不得為負；**主導骨指派在 source 上算一次就固定，斷言同一件服裝解碼到各家族時
+  每個頂點的指派逐位元相同**；邊長拉伸比 `len_target / len_source` 的全域最大值有
+  上界，門檻由兩副骨架的骨長比推出而不是拍腦袋。
+
+夾具要挑比例差最大的兩個家族，並且一定要含一件跨雙腿的裙子。
+
+## 不做
+
+- **不做通用部件分類器。** 研究結論是它在 2026-09 的公開技術水準下不存在，連 benchmark
+  都沒有。VRoid 家族走後綴 token（精確），其餘走遮蔽。
+- **不補洞、不換身體。** 補洞在「沒有軀幹幾何」的情況結構性無效；換身體會把角色的
+  identity 丟掉，而那正是替它換衣服的理由。
+- **不引進 Blender 當核心。** `make.py` 步驟 0 已經用它做手工部件，那條路留著。
+  Shrinkwrap 與 Surface Deform 對靜態網格工作，而結果必須帶著 skin weights 與 morph
+  targets，那正是往返 Blender 會丟掉的東西。
+- **不追求「任何身體都好看」。** 新衣服蓋不到的地方，舊衣服會留著（Alicia 的水手領、
+  袖口、裙襬外的腿）。這是遮蔽方案的天花板，用可接受的身體清單管理，不用程式解。
+
+## 風險
+
+- **主導骨指派的不連續性**（階段 3 的主要失敗模式）。四個獨立佐證：LoBoFit §6.2 的
+  手臂／腹部、§5.2 的雙腿胯下、補充材料的短肢 avatar、Elastic Clothing Fit 為同樣的
+  凹陷區做了 Hull Fit。它在平均誤差上看不出來，破壞無上界，而且修它要改資料模型不是
+  調參數。驗收已經為它寫了專屬的兩條斷言與一個 mutation。
+- **bone frame 的 roll 未定義**（見上方規格事實）。守衛：拿一個家族把某根骨的節點
+  local rotation 繞自身軸轉 90°（不動 mesh 外觀、不動全域骨方向），解碼結果必須完全
+  不變。
+- **`cloth-fit` 的前提**：服裝 mesh 必須 manifold 且無自交，來源與目標最好同 pose。
+  我們的服裝是手工建的，manifold 性尚未驗證。
+- **VRM humanoid 骨表沒有 rib 也沒有 crotch**，而胯下與肋側正是失敗率最高的兩區。
+  LoBoFit 的做法是額外加四根輔助骨補完階層；我們要嘛從既有骨推導虛擬 frame，要嘛接受
+  那兩區沒有合理的 local frame。
+- **本機樣本有偏**：17 具裡 16 具是 VRoid 血統，非 VRoid 只有 Alicia 與 Seed-san，
+  n=2。「市面上多少比例可以用遮蔽解決」這個問題本機量不出來。
+
+## 尚未驗證
+
+- CLO3D SDK 是否真能 headless、Wretch AutoFit 與 RLX Auto Fit 的授權與價格。
+- LoBoFit 沒有公開程式碼（arXiv 與 ACM 都沒有 repo 連結，論文授權 CC BY-NC-ND 4.0），
+  只能當設計文件讀。
+- `cloth-fit` 我們尚未實跑過，上述效能與平台數字來自它的 CI 與論文。
