@@ -14,12 +14,19 @@ Names come from geometry, not from guesswork: the long strands that fall below
 the waist are the twintails, the ones sitting in front of the face at negative Z
 are the bangs, and HAIR_06 is the ornament pair the reference does not have.
 
-That geometry is a VRoid export's, and this is the one step in the pipeline
-that admits to needing a particular body. `recognise()` says so out loud and
-`partition()` refuses rather than naming a stranger's meshes by these rules --
-see the comment above it for what that produced before the check existed.
+The body's own parts do not come from geometry at all: VRoid spells the
+category into every material name, so `body_name()` reads it off rather than
+guessing. That is exact on any VRoid export, and it replaced a table from
+primitive index to part name that was right here and silently wrong elsewhere.
+
+The hair rules above are still this body's, so this remains the one step in the
+pipeline that admits to needing a particular export. `recognise()` says so out
+loud and `partition()` refuses rather than naming a stranger's meshes by these
+rules -- see the comment above it for what that produced before the check
+existed.
 """
 import json
+import re
 import sys
 
 import numpy as np
@@ -30,8 +37,68 @@ import glb
 VERTEX_ATTRS = ('POSITION', 'NORMAL', 'TANGENT', 'TEXCOORD_0', 'TEXCOORD_1',
                 'COLOR_0', 'JOINTS_0', 'WEIGHTS_0')
 
-BODY_NAMES = {0: 'Body_Skin', 1: 'Body_Skin', 2: 'Body_Skin', 3: 'Body_Skin',
-              4: 'Outfit_Top', 5: 'Outfit_Bottom', 6: 'Outfit_Shoes'}
+# VRoid writes every material name as
+#
+#     <prefix>_<PartName>_<nn>_<CATEGORY>[_<nn>]
+#
+# and CATEGORY is one of exactly these six tokens. That is the exporter's own
+# grammar rather than a guess about one body, which is what makes it an answer
+# on any VRoid export instead of a heuristic.
+CATEGORIES = ('SKIN', 'CLOTH', 'HAIR', 'FACE', 'EYE', 'MATCAP')
+
+# Dress-up exports decorate a re-used material's name; the grammar is intact
+# underneath. Seen on vroid-studio-dressup.vrm as
+# `N00_004_01_Shoes_01_CLOTH (Instance) (Instance)`.
+DECORATION = re.compile(r'\s*\((?:Instance|Clone)\)')
+
+# VRoid pluralises two part names this pipeline does not; every other CLOTH
+# part keeps the exporter's own word, so a garment nobody here has seen still
+# gets a name that says what it is.
+OUTFIT_NAMES = {'Tops': 'Outfit_Top', 'Bottoms': 'Outfit_Bottom'}
+
+
+def vroid_category(material):
+    """(part name, category token) from a VRoid material name.
+
+    (None, None) for a name outside the grammar, which is how a body this step
+    cannot name announces itself to recognise().
+    """
+    segments = DECORATION.sub('', material).strip().split('_')
+    # The hair materials are the one VRoid name whose category is not the last
+    # segment: F00_000_Hair_00_HAIR_01 through _06 carry a variant number after
+    # it, which is the same suffix CLIP_DECALS reads.
+    for i in (-1, -2):
+        # len + i >= 2 is exactly "segments[i - 2] exists"; a plain len >= 3
+        # reads the same on the first pass and walks off the front on the
+        # second, so a three-segment name like Hair_HAIR_01 raised IndexError
+        # instead of saying it has no category.
+        if len(segments) + i >= 2 and segments[i] in CATEGORIES:
+            return segments[i - 2], segments[i]
+    return None, None
+
+
+def body_name(material):
+    """Which part a Body mesh primitive belongs to, read off its material.
+
+    This replaced a table from primitive INDEX to name, which was right about
+    the body it was written on and wrong in silence elsewhere: four of the
+    sixteen local bodies (Vivi, Vita, Victoria_Rubin, Darkness_Shibu) export
+    SKIN x4, Tops, Shoes, HairBack, so index 5 named the shoes Outfit_Bottom
+    and index 6 named the back hair Outfit_Shoes. All four have exactly seven
+    primitives, so the count check recognise() used to run passed them through.
+    """
+    part, category = vroid_category(material)
+    if category == 'SKIN':
+        return 'Body_Skin'
+    if category == 'CLOTH':
+        return OUTFIT_NAMES.get(part, f'Outfit_{part}')
+    if category == 'HAIR':
+        # Some exports bake the back-hair object into the Body mesh group.
+        # Deliberately not 'Hair_Back': hair_name() gives that label to strands
+        # in the hair mesh, parts are keyed by label, and one would replace the
+        # other.
+        return 'Hair_BodyBack'
+    return None
 
 
 # The base model's fringe carries its hair clips as painted decals on separate
@@ -42,13 +109,14 @@ BODY_NAMES = {0: 'Body_Skin', 1: 'Body_Skin', 2: 'Body_Skin', 3: 'Body_Skin',
 # the forehead that read as a swim cap.
 CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 
-# What every name below is read off. Face is found by name, Body's parts by
-# PRIMITIVE INDEX, and the hair by where a strand sits in this body's space --
-# all three are facts about a VRoid Studio export, and none of them is derivable
-# from an arbitrary VRM.
+# What every name below is read off. Face and Body are found by MESH NAME, and
+# the hair by where a strand sits in this body's space. Both are facts about a
+# VRoid Studio export, and neither is derivable from an arbitrary VRM. (The
+# body's parts used to be a third such fact, read off primitive index; they now
+# come from the material grammar, which holds on any VRoid export.)
 #
 # So this step is the one place in the pipeline that is allowed to require a
-# particular body, and recognise() is where it says so. Everything upstream of
+# particular export, and recognise() is where it says so. Everything upstream of
 # here (the humanoid map, the VRM1 entry conversion, the skeleton gates, the
 # per-mesh skins) was generalised precisely so that a strange body reaches this
 # step; what it must not do is get labelled anyway. Before this check, a body
@@ -76,12 +144,20 @@ def recognise(doc):
                        f'{", ".join(sorted(str(n) for n in meshes))}）')
     body = meshes.get(BODY_MESH)
     if body is None:
-        reasons.append(f'沒有名為 {BODY_MESH} 的 mesh，因此 BODY_NAMES 的 '
-                       f'primitive 編號對不到任何東西')
-    elif len(body['primitives']) != len(BODY_NAMES):
-        reasons.append(f'{BODY_MESH} 有 {len(body["primitives"])} 個 primitive，'
-                       f'BODY_NAMES 只認得 {len(BODY_NAMES)} 個'
-                       f'（{", ".join(sorted(set(BODY_NAMES.values())))}）')
+        reasons.append(f'沒有名為 {BODY_MESH} 的 mesh，身體的部件無從命名')
+    else:
+        mats = [m.get('name', f'#{i}') for i, m in enumerate(doc['materials'])]
+        # The primitive COUNT used to be the check here, and it asked the wrong
+        # question: HairSample_Female exports six, Sendagaya_Shibu nine, and
+        # both are ordinary VRoid bodies. What this step actually needs is that
+        # every body primitive carries a category token it has a name for.
+        unnamed = sorted({mats[p['material']] for p in body['primitives']
+                          if body_name(mats[p['material']]) is None})
+        if unnamed:
+            reasons.append(
+                f'{BODY_MESH} 有 {len(unnamed)} 個材質不帶 VRoid 的類別後綴'
+                f'（{"、".join(CATEGORIES)}），推不出部件名稱：'
+                f'{"、".join(unnamed)}')
     return reasons
 
 
@@ -163,7 +239,7 @@ def partition(src, dst, parts_path):
         rebuilt, labels = [], []
         for i, prim in enumerate(mesh['primitives']):
             if name == BODY_MESH:
-                label = BODY_NAMES[i]
+                label = body_name(mats[prim['material']])
             else:
                 pos = glb.read_accessor(doc, views, prim['attributes']['POSITION'])
                 used = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
@@ -176,6 +252,15 @@ def partition(src, dst, parts_path):
         mesh['primitives'] = rebuilt
 
         for label in dict.fromkeys(labels):
+            if label in manifest['parts']:
+                # parts are keyed by label, so the second mesh to claim one
+                # used to replace the first without a word: the manifest still
+                # loads, the part still has a mesh, and half the geometry it
+                # names is gone from every step that reads it.
+                raise SystemExit(
+                    f'{src}：{name} 與 {manifest["parts"][label]["mesh"]} '
+                    f'都主張部件名稱 {label}，manifest 以名稱為鍵，'
+                    f'後者會無聲蓋掉前者。')
             members = [i for i, l in enumerate(labels) if l == label]
             manifest['parts'][label] = {
                 'mesh': name,
