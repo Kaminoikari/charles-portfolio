@@ -3,6 +3,7 @@ the outfit at those heights. Until 2026-09-05 the heights were typed in
 (`hip, knee, ankle = 0.843, 0.501, 0.118`, `arm_r = 0.54`), read once off the
 one VRoid body: a second body would have had its socks cut at this one's
 ankle. The doc here is synthetic, so a body of any size can be posed."""
+import ast
 import copy
 import os
 import re
@@ -216,6 +217,73 @@ class Wiring(unittest.TestCase):
         for name, got in build.leg_edges(tall).items():
             self.assertAlmostEqual(got, build.leg_edges(lm)[name] * 1.25, places=9,
                                    msg=f'{name} did not scale with the leg')
+
+
+class DerivedOnce(unittest.TestCase):
+    """The values build() derives once and reads for the rest of its length.
+
+    build() is a thousand lines and rebinds fifty-odd names, nearly all of them
+    loop variables, so a blanket rule would be noise. These eleven are different:
+    each is computed near the top and read hundreds of lines later, so rebinding
+    one does not fail where it was rebound, it fails wherever it is next read.
+
+    Both of this file's contract axes were bitten by exactly that on 2026-09-11.
+    A local named `hair_materials` shadowed the new module-level function of the
+    same name, and `edge` -- torso_edges(lm) for the whole function -- was
+    rebound to a vertex inside the button loop, which the bust frill three
+    hundred lines further down then indexed with a string. Neither showed up in
+    any unit test; the end-to-end build is what raised them.
+    """
+
+    WATCHED = ('lm', 'edge', 'leg', 'outline', 'rim', 'hair_mats',
+               'body_materials', 'pool', 'mats', 'skin_names')
+
+    def bindings(self):
+        """Plain-name bindings directly in build(), nested functions excluded.
+
+        `mats['X'] = ...` is not a rebinding of `mats`, and counting it as one
+        would make this test cry wolf on the first subscript assignment.
+        """
+        with open(os.path.join(HERE, 'build.py'), encoding='utf-8') as fh:
+            tree = ast.parse(fh.read())
+        fn = next(n for n in tree.body
+                  if isinstance(n, ast.FunctionDef) and n.name == 'build')
+        nested = {id(n) for f in ast.walk(fn)
+                  if isinstance(f, (ast.FunctionDef, ast.Lambda)) and f is not fn
+                  for n in ast.walk(f)}
+
+        def plain(t):
+            if isinstance(t, ast.Name):
+                return [t.id]
+            if isinstance(t, (ast.Tuple, ast.List)):
+                return [n for e in t.elts for n in plain(e)]
+            return []
+
+        counts = {}
+        for node in ast.walk(fn):
+            if id(node) in nested:
+                continue
+            if isinstance(node, ast.Assign):
+                targets = node.targets
+            elif isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.For)):
+                targets = [node.target]
+            else:
+                continue
+            for t in targets:
+                for n in plain(t):
+                    counts[n] = counts.get(n, 0) + 1
+        return counts
+
+    def test_each_is_bound_exactly_once(self):
+        counts = self.bindings()
+        rebound = sorted(n for n in self.WATCHED if counts.get(n, 0) > 1)
+        self.assertEqual(rebound, [], f'rebound inside build(): {rebound}')
+
+    def test_each_is_bound_at_all(self):
+        """A name that stops existing would pass the test above for free."""
+        counts = self.bindings()
+        missing = sorted(n for n in self.WATCHED if not counts.get(n))
+        self.assertEqual(missing, [], f'no longer derived in build(): {missing}')
 
 
 if __name__ == '__main__':

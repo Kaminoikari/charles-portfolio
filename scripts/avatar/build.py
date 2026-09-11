@@ -622,9 +622,13 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
                   & (cp[:, 0] > -0.080) & (cp[:, 2] < 0)]
         if not len(band):
             continue
-        edge = band[int(np.argmin(band[:, 2]))]
+        # Not `edge`: that name already holds torso_edges(lm) for the whole of
+        # build(), and rebinding it here to a vertex made every later reader of
+        # a torso edge a time bomb. The bust frill three hundred lines down was
+        # the one that went off.
+        front = band[int(np.argmin(band[:, 2]))]
         buttons.append(garment.sphere(
-            [float(edge[0]), y, float(edge[2]) - 0.005], 0.0070,
+            [float(front[0]), y, float(front[2]) - 0.005], 0.0070,
             pool['joints'][near_chest], pool['weights'][near_chest],
             lat=5, lon=8, squash=(1.0, 1.0, 0.55)))
     if buttons:
