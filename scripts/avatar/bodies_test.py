@@ -93,10 +93,13 @@ class Derived(unittest.TestCase):
                                               {'cloth'}), [])
 
     def test_the_texture_names_all_come_from_the_contract(self):
-        """Twenty-four occurrences of the text F00_000 on twenty lines until
-        2026-09-11, spelling twelve distinct names, and not one of them was a
-        constant, so listing build.py's constants did not find a single one.
-        Counted with `rg -o F00_000 | wc -l` on the blob at 8de2d67."""
+        """Twenty-two inline occurrences of the text F00_000 on eighteen lines
+        until 2026-09-11, spelling the twelve names this contract declares, and
+        not one of the twenty-two was a constant, so listing build.py's
+        constants did not find any of them. The file held twenty-four in all:
+        the other two were HEAD_HAIR and OUTLINE_KEEP, which the inventory did
+        find. Counted on the blob at 8de2d67 with `rg -o F00_000 | wc -l` (24),
+        `rg -c F00_000` (20), less the two constant lines."""
         self.assertNotIn('F00_000', source(),
                          'build.py spells a VRoid name again')
 

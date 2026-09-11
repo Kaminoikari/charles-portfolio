@@ -1,0 +1,10 @@
+baseline  exit 0, green
+
+A1  a constant is added to build.py and given no axis
+    RED
+    AssertionError: build.py declares a constant no axis owns; add it to SINCE with the axis that owns it: ['SLEEVE_EDGES']
+
+A2  a constant SINCE lists is deleted, with nothing put in its place
+    RED
+    AssertionError: SINCE lists a constant build.py no longer declares: ['LEG_EDGES']
+

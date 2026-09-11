@@ -32,7 +32,9 @@ to be called `out`, which is exactly what the command above used to say.
 
 Run twice. First comparing `135d33b` (the last commit before the character
 contract moved) with `30488d3` plus the shadowing fix, then again after the
-review round moved 31 more literals out of `build.py` (`8b188d2`). Both runs
+review round moved 36 more literals out of `build.py` (`8b188d2`): 31 of the
+character's material names, the bare `Mellow_` prefix, and four copies of the
+vendor mesh name. Both runs
 produced the same table:
 
 | what | before | after |

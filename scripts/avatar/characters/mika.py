@@ -202,11 +202,12 @@ MATERIAL_PREFIX = 'Milfy_'
 
 # 哪個部件塗哪一格。build() 知道自己正在做哪個部件，但「那個部件在這個角色身上
 # 是什麼顏色」和 PALETTE 的值是同一種決定，所以兩者放在一起。鍵是角色無關的角
-# 色名（role），值必須是 PALETTE 的鍵。
+# 色名（role），值是這個角色的材質名。除了最後一筆 `ear_inner` 之外都是 PALETTE 的
+# 鍵，那一筆的理由寫在它自己的註解裡；characters_test 把這個例外釘成唯一一個。
 #
 # 之所以不讓 build() 直接寫 'Milfy_White'：那些名字是這個角色的詞彙，而
 # build() 裡的 `mats[...]` 查的就是它，第二個角色只要不沿用同一組名字就是
-# KeyError。這與底模軸二十四處 inline 的 VRoid 名字是同一類耦合，那一類已經由
+# KeyError。這與底模軸二十二處 inline 的 VRoid 名字是同一類耦合，那一類已經由
 # bodies_test 的 `assertNotIn('F00_000', source())` 擋住，這裡對應的那條在
 # characters_test。
 MATERIALS = {

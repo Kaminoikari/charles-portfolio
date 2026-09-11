@@ -33,11 +33,13 @@ SCALP_FRINGE_TO, SCALP_FRINGE_SAT = 345.0, 0.12
 
 # ---------------------------------------------------------------------------
 # The export's own vocabulary: what VRoid named the textures and the two skin
-# materials. These were twenty-four inline occurrences in build.py until
-# 2026-09-11, on twenty lines and spelling twelve distinct names, which is why
-# the constant inventory in
+# materials. These were twenty-two inline occurrences in build.py until
+# 2026-09-11, on eighteen lines, spelling the twelve distinct names below, which
+# is why the constant inventory in
 # docs/plans/avatar-build-module-contracts.md missed them: a name spelled inside
-# a function is not a constant and does not show up when you list them.
+# a function is not a constant and does not show up when you list them. (The
+# file held twenty-four occurrences in all; the other two were the module-level
+# constants HEAD_HAIR and OUTLINE_KEEP, which that inventory did find.)
 #
 # Declared rather than derived, and not for the same reason as the hues above.
 # Some of these could be found from the meshes -- the face atlas is the texture

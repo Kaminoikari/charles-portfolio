@@ -79,7 +79,7 @@ def hair_paint_pixels(rgb, alpha, hue_centre, window=45.0, min_sat=0.18,
 
     The 2026-09-03 build recoloured the core only. A painted region has an
     edge that blends toward the skin around it, and along that edge the hue
-    walks from the cap (261) through magenta to the skin (9), leaving the hue
+    walks from the cap (265) through magenta to the skin (9), leaving the hue
     window at 306 and only reaching skin at about 345. Those texels were left
     to the SKIN solve, which turned them mauve, and the owner saw them on
     2026-09-04 as purple lines behind the neck and along the hairline.
