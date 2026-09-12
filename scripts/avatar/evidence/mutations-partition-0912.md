@@ -13,9 +13,9 @@ id would not survive the next comment edit, which is how two earlier receipts
 in this directory came to name a blob that no longer existed):
 
     partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
-    gate_test.py           17e7699eefa1399608ecf0f1e0efe0281858f659
+    gate_test.py           789ffe9d8deb8a28c87013020706d33a43a55515
 
-Baseline: 59 tests, green. The loader collects 59 as well, so nothing after
+Baseline: 60 tests, green. The loader collects 60 as well, so nothing after
 `unittest.main()` is going unrun (memory:
 project_test_entry_guard_silently_skips).
 

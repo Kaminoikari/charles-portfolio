@@ -11,7 +11,7 @@ a commit id would not survive the next comment edit):
 
     partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
 
-Baseline: 59 tests green in `gate_test`, and the loader collects 59.
+Baseline: 60 tests green in `gate_test`, and the loader collects 60.
 
 Seven positions. Four decide a name (that a clash exists at all, which claim
 keeps the plain name, what the ranking measures, which claim is numbered

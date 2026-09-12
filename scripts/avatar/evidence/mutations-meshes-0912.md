@@ -11,7 +11,7 @@ a commit id would not survive the next comment edit):
 
     partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
 
-Baseline: 59 tests green in `gate_test`, and the loader collects 59, so nothing
+Baseline: 60 tests green in `gate_test`, and the loader collects 60, so nothing
 after a misplaced `unittest.main()` is being skipped.
 
 Re-run at `205feec`. The table was first run at `86dc878`, before the hair

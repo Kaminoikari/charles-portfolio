@@ -12,8 +12,8 @@ would not survive the next comment edit):
     partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
     pose.py                079a766c18bbc382e7f5e3d8646c4da5a55d47c8
 
-Baseline: 63 tests green across `gate_test` and `pose_test`, and the loader
-collects 59 and 4.
+Baseline: 64 tests green across `gate_test` and `pose_test`, and the loader
+collects 60 and 4.
 
 Four positions, one per silent wrong answer the review found.
 
