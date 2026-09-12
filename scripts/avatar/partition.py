@@ -402,7 +402,8 @@ def resolve_clashes(claims):
     names at stage 2b-i, and one of the names it would have to write is
     `Outfit_Shoes_Body (merged).baked(copy).baked`. Consumers read these by
     the prefix rather than the suffix: pierce.skin_parts takes every
-    `Body_Skin_*` and `Face_*` as skin, cover.cloth_parts takes the rest.
+    `Body_Skin_*` and `Face_*` as skin, cover.cloth_parts takes every
+    `Outfit_*`.
     """
     rows = {}
     for i, claim in enumerate(claims):
@@ -461,9 +462,12 @@ def partition(src, dst, parts_path):
             # The vertices this primitive draws, read through its indices.
             # A VRoid mesh shares one accessor across all of its primitives
             # (mika-pink's body mesh: seven primitives, one POSITION), so a raw
-            # read gives the 20 triangles of shoe baked into the body mesh the
-            # reach of the entire body, and they take `Outfit_Shoes` from the
-            # shoes.
+            # read gives the shoes inside that mesh the reach of the whole
+            # body, 1.51m against their own 0.16m, and shoes in any other mesh
+            # lose the plain name to them. The dress-up export gives each
+            # primitive its own accessor, so the one body that clashes today
+            # answers the same either way, and the mutation for this line
+            # (C6) stubs the clash onto mika-pink.
             p = rest[(name, index)][used]
             drawn.append(p)
             material = mats[prim['material']]

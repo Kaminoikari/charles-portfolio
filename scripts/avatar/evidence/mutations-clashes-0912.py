@@ -89,6 +89,24 @@ MUTATIONS = [
      "a claim reaches as far as its mesh's whole POSITION buffer",
      '            drawn.append(p)', '            drawn.append(rest[(name, index)])'),
 
+    ('C8', ['the_label_written_into_the_geometry_is_the_manifests'],
+     'the geometry is stamped with the name the grammar gave, while the '
+     'manifest lists the name the resolver gave',
+     "                rebuilt[i].setdefault('extras', {})['part'] = resolved[c]",
+     "                rebuilt[i].setdefault('extras', {})['part'] = "
+     "claims[c]['label']"),
+
+    ('C9', ['the_number_skips_a_name_the_grammar_already_wrote'],
+     'the names already taken start out empty, so only the ones this run '
+     'invents are avoided',
+     "    names, taken = [None] * len(claims), {c['label'] for c in claims}",
+     '    names, taken = [None] * len(claims), set()'),
+
+    ('C10', ['a_name_two_meshes_claim_goes_to_the_one_reaching_furthest'],
+     'the numbering starts at one, so the first trailing claim is `_1`',
+     '        names[keeper] = label\n        n = 2',
+     '        names[keeper] = label\n        n = 1'),
+
     ('C7', ['a_resolver_that_repeats_a_name_is_refused_rather_than_believed'],
      'a name arriving twice is written twice, and the second wins in silence',
      "            if label in manifest['parts']:\n"

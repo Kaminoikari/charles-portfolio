@@ -694,8 +694,11 @@ class BodyDrawingItsSkinInThreeLayers(unittest.TestCase):
             raise AssertionError(f'{cls.EXPORT_BLOB} is {digest}')
         return out
 
-    def test_three_of_its_meshes_read_skin_out_of_the_grammar(self):
+    def test_four_meshes_carry_skin_and_three_of_them_claim_the_name(self):
         # If this ever fails the fixture stopped being the case under test.
+        # Four meshes carry a SKIN material and three claim `Body_Skin`: the
+        # face mesh's skin primitive goes into the locked `Face` part before
+        # any claim is made, so it never competes for the name.
         mats = [m.get('name', f'#{i}')
                 for i, m in enumerate(self.doc['materials'])]
         skin = [mesh.get('name') for mesh in self.doc['meshes']
@@ -704,6 +707,33 @@ class BodyDrawingItsSkinInThreeLayers(unittest.TestCase):
         self.assertEqual(sorted(skin), ['Body (merged).baked(copy).baked',
                                         'Face (merged)(Clone).baked.baked',
                                         'InnerBottom.baked', 'InnerTop.baked'])
+        self.assertEqual(
+            sorted(p['mesh'] for n, p in self.manifest['parts'].items()
+                   if n.startswith('Body_Skin')),
+            ['Body (merged).baked(copy).baked', 'InnerBottom.baked',
+             'InnerTop.baked'])
+
+    def test_the_label_written_into_the_geometry_is_the_manifests(self):
+        # Steps after this one read the part off `extras.part` rather than off
+        # the manifest: build.py twice, customise.drop_parts and
+        # platform_validation. A trailing claim whose primitives are stamped
+        # with the plain name merges three parts into one down there while the
+        # manifest still lists three, and the manifest is what gets read when
+        # anyone checks.
+        out = scratch()
+        parted = os.path.join(out, 'parted.vrm')
+        manifest = partition.partition(
+            self.OTHER, parted, os.path.join(out, 'parts.json'))[0]
+        doc = glb.load(parted)[0]
+        written = {(mesh.get('name'), i): prim.get('extras', {}).get('part')
+                   for mesh in doc['meshes']
+                   for i, prim in enumerate(mesh['primitives'])}
+        for name, part in manifest['parts'].items():
+            if name == 'Face':
+                continue        # not split, so its primitives carry no label
+            self.assertEqual(
+                {written[(part['mesh'], i)] for i in part['primitives']},
+                {name}, name)
 
     def test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name(self):
         parts = self.manifest['parts']

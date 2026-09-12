@@ -212,7 +212,8 @@ containment 而是同一套材質文法（2b-i）；髮絲曾經靠這具身體�
 VRoid 匯出」，現在連那個限制也沒有了，最新狀態見下面的 2b。
 
 順手補了一道防禦：manifest 以部件名稱為鍵，第二個 mesh 主張同一個名稱時原本會無聲蓋掉
-第一個。現在會拒絕。這正是把 HAIR 允許進 `Body.baked` 所帶出來的風險，所以那個部件叫
+第一個。階段 0 的做法是拒絕；2c-i 把它改成改名，同一行現在守的是「兩個部件不得同名」這個
+不變式。這正是把 HAIR 允許進 `Body.baked` 所帶出來的風險，所以那個部件叫
 `Hair_BodyBack` 而不是 `Hair_Back`。
 
 ### 1. `skin.py` 的三個「對這具身體剛好夠用」的常數 — 已完成
@@ -298,9 +299,9 @@ drop = customise.replaced(m, mellowheart.REPLACES)
 
 前綴是服裝的事實（這套服裝取代身體的哪些部件），解析成名字是身體的事實。收據
 [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，現在是
-七具身體第 1 到第 3 步全部走完（2a 交付時是六具，`vrm1-twist-sample` 由 2b-i 加入；
-parts 數也比 2a 當時高，因為 2b 開始在這些身體上命名 `Hair_Side_L`／`Hair_Side_R`，
-脫掉的清單一件沒變）：
+八具身體第 1 到第 3 步全部走完（2a 交付時是六具，`vrm1-twist-sample` 由 2b-i 加入，
+`vroid-studio-dressup` 由 2c-i 加入；parts 數也比 2a 當時高，因為 2b 開始在這些身體上
+命名 `Hair_Side_L`／`Hair_Side_R`，而原本那六具脫掉的清單一件沒變）：
 
 ```
 AvatarSample_C     9 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin 72.0%
@@ -310,6 +311,7 @@ Darkness_Shibu     9 parts   removes Outfit_Shoes, Outfit_Top                   
 HairSample_Female  8 parts   removes Outfit_Shoes, Outfit_Top                         skin  3.0%
 mika-pink         13 parts   removes 的正是原本那五個                                  skin 36.5%
 vrm1-twist-sample  7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin  4.7%
+dressup           11 parts   removes Acc_GlassesHiFrame, Acc_GlassesHiLens, ...        skin  8.8%
 ```
 
 `Outfit_AccessoryNeck` 是這條管線沒見過的部件，前綴照樣認得它。
@@ -420,16 +422,19 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 身體。挖空讓身體變空心，高度照舊，所以跨度在兩個檔上都選中身體，而那個舊檔正是釘住
 這個判準的夾具（`gate_test` 從 git blob 讀它，sha256 綁死）。
 
-**跨度量在這個 primitive 畫到的頂點上。** VRoid 的一個 mesh 所有 primitive 共用一個
-POSITION accessor（mika-pink 的身體 mesh 七個 primitive 一個），照整個 buffer 量的話，
-baked 進身體 mesh 的那 20 個三角形鞋底會量到整具身體的 1.51 公尺。
+**跨度量在這個 primitive 畫到的頂點上。** dressup 這個匯出每個 primitive 各有自己的
+POSITION accessor，所以在它身上兩種讀法同答案。VRoid 的一般匯出不是這樣：一個 mesh 的
+所有 primitive 共用一份（mika-pink 的身體 mesh 七個 primitive 一個 accessor），照整個
+buffer 量的話，那個 mesh 裡的鞋子會量到整具身體的 1.51 公尺，它自己只有 0.16 公尺，於是
+別的 mesh 裡真正的鞋子拿不到平名。目前沒有一具身體同時有衝突又共用 buffer，所以這一條的
+mutation（C6）是在 mika-pink 上用 stub 造出情境的。
 
 **編號只是編號。** 兩層內襯持有同樣的 298 個頂點、同樣的座標，材質名也一樣，只有 mesh 名
 不同，所以沒有任何可量的東西分得開它們。手寫 manifest 叫它們 `Body_Skin_Inner_Top` 與
 `Body_Skin_Inner_Bottom`，springsim 的 `deriveManifest` 用 `<role>_<mesh>`，而這一步在 2b-i
 之後不拿 mesh 名決定任何部件叫什麼，真要寫的話其中一個會是
 `Outfit_Shoes_Body (merged).baked(copy).baked`。下游本來就照前綴收：`pierce.skin_parts`
-收所有 `Body_Skin_*` 與 `Face_*`，`cover.cloth_parts` 收其餘。
+收所有 `Body_Skin_*` 與 `Face_*`，`cover.cloth_parts` 收所有 `Outfit_*`。
 
 收據 [partition-0912-clashes.log](../../scripts/avatar/evidence/partition-0912-clashes.log)：
 本機 16 具**只有這一具**有衝突，能命名的從 14 具變成 15 具，剩下那一具是
