@@ -415,8 +415,17 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
 - **階段 2a（已達成）**：六具身體走完 make.py 的第 1 到第 3 步；Mika 解析出來的清單
   與原本寫死的五個名字逐項相同。收據
   [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)。
+- **階段 2b（已達成）**：本機 16 具能命名的從 13 具變成 14 具；partition 不再讀任何
+  mesh 名字；髮絲的四個判準全部從這具身體量出來，而 Mika 的 77 條髮絲一條都沒換手，
+  `baseline.vrm` 的 `parted.vrm` 逐位元組不變。收據
+  [partition-0912-bymesh.log](../../scripts/avatar/evidence/partition-0912-bymesh.log)
+  與 [hair-0912-relative.log](../../scripts/avatar/evidence/hair-0912-relative.log)。
+  mutation 十六道，見
+  [mutations-meshes-0912.md](../../scripts/avatar/evidence/mutations-meshes-0912.md)
+  與 [mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)。
 - **階段 2c**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
-  會紅。
+  會紅。第一個已知的擋路點不是遮蔽而是 manifest 的形狀：`vroid-studio-dressup` 有三個
+  mesh 都帶皮膚，而一個部件目前只能屬於一個 mesh。
 - **階段 3**：Mika 自己跑一遍與階段 1 之後的產出相同（回歸關；階段 1 已經動過她的
   皮膚貼圖，所以基準是那一版而不是 `9b09611`）；換一具身體後每個部件對身體的最近
   距離不得為負；**主導骨指派在 source 上算一次就固定，斷言同一件服裝解碼到各家族時
