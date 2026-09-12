@@ -1,16 +1,16 @@
-partition.py     blob c52c7b68e89e07cb2eadc022f03ffba1a1afab2e
+partition.py     blob 205feecf3a22ef7ec06c0075aa9bced89e8bfce7
 pose.py          blob 079a766c18bbc382e7f5e3d8646c4da5a55d47c8
-baseline  Ran 54 tests in 3.588s  green
+baseline  Ran 54 tests in 10.230s  green
 
 V1  a body with no eye bone is let through to the frame  [partition.py]
-    Ran 54 tests in 2.703s  RED  as expected
+    Ran 54 tests in 6.821s  RED  as expected
 
 V2  mesh names may repeat or be missing  [partition.py]
-    Ran 54 tests in 2.604s  RED  as expected
+    Ran 54 tests in 3.345s  RED  as expected
 
 V3  an unskinned primitive is left at its vertex buffer's own coordinates  [pose.py]
-    Ran 54 tests in 3.029s  RED  as expected
+    Ran 54 tests in 2.474s  RED  as expected
 
 V4  both kinds of unnamable material are reported as carrying no token  [partition.py]
-    Ran 54 tests in 3.201s  RED  as expected
+    Ran 54 tests in 2.643s  RED  as expected
 

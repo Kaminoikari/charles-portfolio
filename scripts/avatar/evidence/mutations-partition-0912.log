@@ -1,50 +1,64 @@
-partition.py     blob 31b1448bb43e8b1394b05e2dc61f9d357844191f
-gate_test.py     blob a05613145dd8d2b1f42115d1d118eecf61743564
-baseline  Ran 24 tests in 0.250s  green
+partition.py     blob 205feecf3a22ef7ec06c0075aa9bced89e8bfce7
+gate_test.py     blob 225a44423793cc0b6751edd5b9f1ffdff2b3d3cd
+baseline  Ran 50 tests in 2.730s  green
 
 P1  the body's parts come from primitive index again  [partition.py]
-    Ran 24 tests in 0.133s  RED
+    Ran 50 tests in 3.076s  RED
     ERROR: test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyPartsFromTheExportGrammar.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)
     FAIL: test_a_body_with_no_lower_garment_is_given_no_lower_part (gate_test.BodyPartsFromTheExportGrammar.test_a_body_with_no_lower_garment_is_given_no_lower_part)
     FAIL: test_every_outfit_part_holds_only_cloth (gate_test.BodyPartsFromTheExportGrammar.test_every_outfit_part_holds_only_cloth)
     FAIL: test_the_shoes_part_holds_the_shoes (gate_test.BodyPartsFromTheExportGrammar.test_the_shoes_part_holds_the_shoes)
 
 P2  the category has to be the final segment  [partition.py]
-    Ran 24 tests in 0.149s  RED
+    Ran 45 tests in 1.128s  RED
+    ERROR: setUpClass (gate_test.BodyPartsFromTheExportGrammar)
+    FAIL: test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)
     FAIL: test_a_hair_material_carries_a_variant_number_after_the_category (gate_test.MaterialGrammar.test_a_hair_material_carries_a_variant_number_after_the_category)
+    FAIL: test_the_two_kinds_of_hair_are_told_apart_by_their_part_name (gate_test.MaterialGrammar.test_the_two_kinds_of_hair_are_told_apart_by_their_part_name)
+    FAIL: test_a_body_mesh_with_a_different_primitive_count_is_recognised (gate_test.PartitionRecognises.test_a_body_mesh_with_a_different_primitive_count_is_recognised)
+    FAIL: test_a_hair_strand_is_not_a_material_it_cannot_name (gate_test.PartitionRecognises.test_a_hair_strand_is_not_a_material_it_cannot_name)
+    FAIL: test_the_body_this_step_was_written_for_is_recognised (gate_test.PartitionRecognises.test_the_body_this_step_was_written_for_is_recognised)
+    FAIL: test_the_face_mesh_is_found_by_its_materials_not_its_name (gate_test.PartitionRecognises.test_the_face_mesh_is_found_by_its_materials_not_its_name)
+    FAIL: test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)
 
 P3  a dress-up export's decorated name is read as written  [partition.py]
-    Ran 24 tests in 0.180s  RED
+    Ran 50 tests in 3.142s  RED
     FAIL: test_a_dress_up_export_decorates_the_name (gate_test.MaterialGrammar.test_a_dress_up_export_decorates_the_name)
 
 P4  a garment nobody here has seen is filed under the nearest known one  [partition.py]
-    Ran 24 tests in 0.223s  RED
+    Ran 50 tests in 3.260s  RED
     ERROR: test_the_shoes_part_holds_the_shoes (gate_test.BodyPartsFromTheExportGrammar.test_the_shoes_part_holds_the_shoes)
+    FAIL: test_its_garments_and_skin_are_named_from_the_same_grammar (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_its_garments_and_skin_are_named_from_the_same_grammar)
     FAIL: test_a_garment_this_pipeline_has_never_seen_keeps_vroids_word (gate_test.MaterialGrammar.test_a_garment_this_pipeline_has_never_seen_keeps_vroids_word)
     FAIL: test_the_shipped_body_keeps_the_labels_the_index_table_gave (gate_test.PartitionRecognises.test_the_shipped_body_keeps_the_labels_the_index_table_gave)
 
 P5  back hair baked into the body mesh takes the hair mesh's name  [partition.py]
-    Ran 24 tests in 0.248s  RED
-    ERROR: test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyPartsFromTheExportGrammar.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)
+    Ran 45 tests in 3.878s  RED
+    ERROR: setUpClass (gate_test.BodyPartsFromTheExportGrammar)
+    ERROR: test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)
+    FAIL: test_the_two_kinds_of_hair_are_told_apart_by_their_part_name (gate_test.MaterialGrammar.test_the_two_kinds_of_hair_are_told_apart_by_their_part_name)
 
 P6  recognise stops looking at what the body materials are called  [partition.py]
-    Ran 24 tests in 0.263s  RED
+    Ran 50 tests in 4.429s  RED
     FAIL: test_a_body_material_outside_the_grammar_is_refused_by_name (gate_test.PartitionRecognises.test_a_body_material_outside_the_grammar_is_refused_by_name)
+    FAIL: test_a_hand_authored_material_in_any_mesh_is_refused (gate_test.PartitionRecognises.test_a_hand_authored_material_in_any_mesh_is_refused)
+    FAIL: test_a_material_with_a_token_and_no_part_says_so (gate_test.PartitionRecognises.test_a_material_with_a_token_and_no_part_says_so)
 
 P7  a second mesh may claim a part name the first already has  [partition.py]
-    Ran 24 tests in 0.261s  RED
+    Ran 50 tests in 2.910s  RED
     FAIL: test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)
 
 P8  the shipped body is renamed along with everybody else  [partition.py]
-    Ran 24 tests in 0.199s  RED
+    Ran 50 tests in 2.508s  RED
+    FAIL: test_its_garments_and_skin_are_named_from_the_same_grammar (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_its_garments_and_skin_are_named_from_the_same_grammar)
     FAIL: test_the_shipped_body_keeps_the_labels_the_index_table_gave (gate_test.PartitionRecognises.test_the_shipped_body_keeps_the_labels_the_index_table_gave)
 
 P9  the foreign body under test is the one this step was written for  [gate_test.py]
-    Ran 24 tests in 0.237s  RED
+    Ran 50 tests in 3.219s  RED
     ERROR: test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyPartsFromTheExportGrammar.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)
     FAIL: test_a_body_with_no_lower_garment_is_given_no_lower_part (gate_test.BodyPartsFromTheExportGrammar.test_a_body_with_no_lower_garment_is_given_no_lower_part)
 
 P10  the bounds check for the second pass is the first pass's  [partition.py]
-    Ran 24 tests in 0.182s  RED
+    Ran 50 tests in 2.883s  RED
     ERROR: test_a_short_name_whose_token_sits_second_to_last_has_no_part (gate_test.MaterialGrammar.test_a_short_name_whose_token_sits_second_to_last_has_no_part)
 

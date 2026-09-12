@@ -9,15 +9,17 @@ byte-for-byte, and clears `__pycache__` before every run. Raw output in
 Run against this blob (check it with `git rev-parse HEAD:scripts/avatar/partition.py`;
 a commit id would not survive the next comment edit):
 
-    partition.py           c52c7b68e89e07cb2eadc022f03ffba1a1afab2e
+    partition.py           205feecf3a22ef7ec06c0075aa9bced89e8bfce7
 
 Baseline: 50 tests green in `gate_test`, and the loader collects 50, so nothing
 after a misplaced `unittest.main()` is being skipped.
 
-Re-run at `c52c7b6` after the review fix, which changed `hair_name`'s signature
-and rewrote `recognise`. The table was first run at `86dc878`, before that fix,
-and one row's pattern had to be re-aimed: M3's `elif` became an `if` guarded on
-there being exactly one face mesh.
+Re-run at `205feec`. The table was first run at `86dc878`, before the hair
+frame changed `hair_name`'s signature, and one row's pattern had to be re-aimed
+then: M3's `elif` became an `if` guarded on there being exactly one face mesh.
+Two later comment-only commits moved the blob again, and each time every row was
+re-run rather than re-pinned, because a comment edit is exactly what a blob sha
+is here to catch.
 
 Eight positions decide that a mesh's role comes from what it is made of. Each
 is broken alone.

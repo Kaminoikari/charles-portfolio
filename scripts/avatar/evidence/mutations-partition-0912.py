@@ -26,16 +26,20 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent.parent      # scripts/avatar
 SRC = HERE / 'partition.py'
 TEST = HERE / 'gate_test.py'
+REPO = HERE.parents[1]
 TESTS = 'gate_test'
 
 MUTATIONS = [
+    # Re-aimed after stage 2b removed BODY_MESH: the defence is the same one,
+    # named by the material rather than by where the primitive sits in the file.
     ('P1', "the body's parts come from primitive index again", SRC,
-     "            if name == BODY_MESH:\n"
-     "                label = body_name(mats[prim['material']])",
-     "            if name == BODY_MESH:\n"
-     "                label = {0: 'Body_Skin', 1: 'Body_Skin', 2: 'Body_Skin',\n"
-     "                         3: 'Body_Skin', 4: 'Outfit_Top',\n"
-     "                         5: 'Outfit_Bottom', 6: 'Outfit_Shoes'}[i]"),
+     "            material = mats[prim['material']]\n"
+     "            label = body_name(material)",
+     "            material = mats[prim['material']]\n"
+     "            label = ({0: 'Body_Skin', 1: 'Body_Skin', 2: 'Body_Skin',\n"
+     "                      3: 'Body_Skin', 4: 'Outfit_Top', 5: 'Outfit_Bottom',\n"
+     "                      6: 'Outfit_Shoes'}.get(index)\n"
+     "                     if name == 'Body.baked' else body_name(material))"),
 
     ('P2', 'the category has to be the final segment', SRC,
      "    for i in (-1, -2):",
@@ -54,11 +58,12 @@ MUTATIONS = [
      "        return 'Hair_BodyBack'",
      "        return 'Hair_Back'"),
 
+    # Re-aimed after the review fix split one refusal into two: silencing both
+    # is what "stops looking" means now.
     ('P6', 'recognise stops looking at what the body materials are called', SRC,
-     "        if unnamed:\n"
-     "            reasons.append(",
-     "        if False and unnamed:\n"
-     "            reasons.append("),
+     "    tokenless = [m for m in unnamed if vroid_category(m)[1] is None]\n"
+     "    placeless = [m for m in unnamed if vroid_category(m)[1] is not None]",
+     "    tokenless = []\n    placeless = []"),
 
     ('P7', 'a second mesh may claim a part name the first already has', SRC,
      "            if label in manifest['parts']:",
@@ -77,6 +82,29 @@ MUTATIONS = [
      "        if len(segments) + i >= 2 and segments[i] in CATEGORIES:",
      "        if len(segments) >= 3 and segments[i] in CATEGORIES:"),
 ]
+
+
+def restore(originals, tag):
+    """Put the mutated files back, and say how to recover if that fails.
+
+    The restore is the one step that must not fail quietly. On 2026-09-12 it
+    failed loudly and still left a mutation behind: the disk filled up between
+    the mutation and the restore, `write_bytes` raised ENOSPC, and the file was
+    left holding a defence this table had just removed. A traceback in a log
+    nobody re-reads is not a recovery instruction, so this prints one.
+    """
+    for path, raw in originals.items():
+        try:
+            path.write_bytes(raw)
+        except OSError as e:
+            raise SystemExit(
+                f'{tag}: COULD NOT RESTORE {path} ({e}).\n'
+                f'  The working copy still holds this row\'s mutation. Recover with\n'
+                f'    git cat-file blob HEAD:{path.relative_to(REPO)} > {path}\n'
+                f'  and check `git diff --stat HEAD -- {path.relative_to(REPO)}` is empty.'
+            ) from None
+        if path.read_bytes() != raw:
+            raise SystemExit(f'{tag}: restore of {path.name} wrote different bytes')
 
 
 def run():
@@ -117,8 +145,7 @@ def main():
         try:
             code, ran, failed = run()
         finally:
-            path.write_bytes(base)
-            assert path.read_bytes() == base, f'{tag}: restore failed'
+            restore({path: base}, tag)
         verdict = 'RED' if code != 0 else 'STILL GREEN -- this defence is not tested'
         print(f'{tag}  {what}  [{path.name}]\n    {ran}  {verdict}')
         for f in failed:

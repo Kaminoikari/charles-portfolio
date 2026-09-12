@@ -28,6 +28,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent.parent      # scripts/avatar
 SRC = HERE / 'skin.py'
 TEST = HERE / 'skin_test.py'
+REPO = HERE.parents[1]
 TESTS = 'skin_test'
 
 NINE = ("    while weight.size > 1:",
@@ -100,6 +101,29 @@ MUTATIONS = [
 ]
 
 
+def restore(originals, tag):
+    """Put the mutated files back, and say how to recover if that fails.
+
+    The restore is the one step that must not fail quietly. On 2026-09-12 it
+    failed loudly and still left a mutation behind: the disk filled up between
+    the mutation and the restore, `write_bytes` raised ENOSPC, and the file was
+    left holding a defence this table had just removed. A traceback in a log
+    nobody re-reads is not a recovery instruction, so this prints one.
+    """
+    for path, raw in originals.items():
+        try:
+            path.write_bytes(raw)
+        except OSError as e:
+            raise SystemExit(
+                f'{tag}: COULD NOT RESTORE {path} ({e}).\n'
+                f'  The working copy still holds this row\'s mutation. Recover with\n'
+                f'    git cat-file blob HEAD:{path.relative_to(REPO)} > {path}\n'
+                f'  and check `git diff --stat HEAD -- {path.relative_to(REPO)}` is empty.'
+            ) from None
+        if path.read_bytes() != raw:
+            raise SystemExit(f'{tag}: restore of {path.name} wrote different bytes')
+
+
 def run():
     shutil.rmtree(HERE / '__pycache__', ignore_errors=True)
     p = subprocess.run([sys.executable, '-m', 'unittest', TESTS],
@@ -139,9 +163,7 @@ def main():
         try:
             code, ran, failed = run()
         finally:
-            for path, raw in base.items():
-                path.write_bytes(raw)
-                assert path.read_bytes() == raw, f'{tag}: restore of {path.name} failed'
+            restore(base, tag)
         # `expect` is what MUST go red: the defences this mutation removes.
         # A mutation often reddens more than that (a stubbed lookup takes a
         # setUpClass down with it), and those are reported without being held

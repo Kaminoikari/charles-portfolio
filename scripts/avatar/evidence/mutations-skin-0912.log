@@ -1,30 +1,30 @@
 skin.py          blob 40153685d51128cd346d09dde90faeac426cd901
 skin_test.py     blob e78a2746ca33e1d6dfaa8516d33926893e288710
-baseline  Ran 12 tests in 30.193s  green
+baseline  Ran 12 tests in 16.752s  green
 
 S1  the pyramid stops after nine halvings again  [skin.py]
-    Ran 12 tests in 36.756s  RED  as expected
+    Ran 12 tests in 17.472s  RED  as expected
 
 S2  half() halves a dimension that is already one  [skin.py]
-    Ran 12 tests in 14.518s  RED  as expected
+    Ran 12 tests in 15.748s  RED  as expected
 
 S3  nine halvings, judged on the body nine was tuned for  [skin.py, skin_test.py]
-    Ran 12 tests in 72.649s  RED  as expected
+    Ran 12 tests in 12.038s  RED  as expected
 
 S4  the body's skin material is one body's name written down again  [skin.py]
-    Ran 12 tests in 79.904s  RED  as expected
+    Ran 12 tests in 13.484s  RED  as expected
 
 S5  any SKIN material will do, whichever part it belongs to  [skin.py]
-    Ran 9 tests in 0.915s  RED  as expected
+    Ran 9 tests in 0.725s  RED  as expected
     also red: ['setUpClass', 'test_nothing_clothing_sized_survives_on_a_body_it_left_dressed', 'test_the_reference_does_not_come_from_a_sleeve', 'test_the_reference_is_the_body_and_not_what_it_is_wearing']
 
 S6  skin is whatever is bright enough, at one body's brightness  [skin.py]
-    Ran 12 tests in 21.259s  RED  as expected
+    Ran 12 tests in 21.322s  RED  as expected
 
 S7  the body's colour is read off the whole arm, sleeve and all  [skin.py]
-    Ran 12 tests in 36.088s  RED  as expected
+    Ran 12 tests in 31.924s  RED  as expected
 
 S8  any vertex will do, however little of it the hand drives  [skin.py]
-    Ran 12 tests in 70.657s  RED  as expected
+    Ran 12 tests in 12.546s  RED  as expected
     also red: ['test_the_reference_does_not_come_from_a_sleeve']
 
