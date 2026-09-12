@@ -9,7 +9,7 @@ Raw output in `mutations-clashes-0912.log`.
 Run against this blob (check it with `git rev-parse HEAD:scripts/avatar/partition.py`;
 a commit id would not survive the next comment edit):
 
-    partition.py           0ba2745b2f0c0db127955f3ed2d1cd4e926ebefe
+    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
 
 Baseline: 59 tests green in `gate_test`, and the loader collects 59.
 

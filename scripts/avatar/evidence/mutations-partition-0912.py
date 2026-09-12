@@ -65,7 +65,7 @@ MUTATIONS = [
      "    placeless = [m for m in unnamed if vroid_category(m)[1] is not None]",
      "    tokenless = []\n    placeless = []"),
 
-    ('P7', 'a second mesh may claim a part name the first already has', SRC,
+    ('P7', 'two claims may end up with the same part name, and the second wins in silence', SRC,
      "            if label in manifest['parts']:",
      "            if False and label in manifest['parts']:",),
 

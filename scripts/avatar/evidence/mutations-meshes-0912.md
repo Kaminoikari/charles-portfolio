@@ -9,9 +9,9 @@ byte-for-byte, and clears `__pycache__` before every run. Raw output in
 Run against this blob (check it with `git rev-parse HEAD:scripts/avatar/partition.py`;
 a commit id would not survive the next comment edit):
 
-    partition.py           205feecf3a22ef7ec06c0075aa9bced89e8bfce7
+    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
 
-Baseline: 50 tests green in `gate_test`, and the loader collects 50, so nothing
+Baseline: 59 tests green in `gate_test`, and the loader collects 59, so nothing
 after a misplaced `unittest.main()` is being skipped.
 
 Re-run at `205feec`. The table was first run at `86dc878`, before the hair

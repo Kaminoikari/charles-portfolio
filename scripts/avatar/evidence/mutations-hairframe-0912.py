@@ -59,9 +59,9 @@ MUTATIONS = [
     ('H7', ['turning_the_export_around_does_not_move_its_hair',
             'lifting_the_whole_body_does_not_move_its_hair'],
      'a strand is measured where its vertex buffer says, not in the rest world',
-     "                p = rest[(name, index)][used]",
-     "                p = glb.read_accessor(\n"
-     "                    doc, views, prim['attributes']['POSITION'])[used]"),
+     "            p = rest[(name, index)][used]",
+     "            p = glb.read_accessor(\n"
+     "                doc, views, prim['attributes']['POSITION'])[used]"),
 
     ('H8', ['lifting_the_whole_body_does_not_move_its_hair'],
      'the frame measures the face where its vertex buffer says',

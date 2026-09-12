@@ -12,10 +12,10 @@ Run against these blobs (check one with `git rev-parse HEAD:<path>`; a commit
 id would not survive the next comment edit, which is how two earlier receipts
 in this directory came to name a blob that no longer existed):
 
-    partition.py           205feecf3a22ef7ec06c0075aa9bced89e8bfce7
-    gate_test.py           225a44423793cc0b6751edd5b9f1ffdff2b3d3cd
+    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
+    gate_test.py           17e7699eefa1399608ecf0f1e0efe0281858f659
 
-Baseline: 50 tests, green. The loader collects 50 as well, so nothing after
+Baseline: 59 tests, green. The loader collects 59 as well, so nothing after
 `unittest.main()` is going unrun (memory:
 project_test_entry_guard_silently_skips).
 
@@ -41,7 +41,7 @@ the shipped body has no garment out of order and no hair in its body mesh.
 | P4 | a garment nobody here has seen is filed under the nearest known one | `partition.py` | **RED** |
 | P5 | back hair baked into the body mesh takes the hair mesh's name | `partition.py` | **RED** |
 | P6 | recognise stops looking at what the body materials are called | `partition.py` | **RED** |
-| P7 | a second mesh may claim a part name the first already has | `partition.py` | **RED** |
+| P7 | two claims may end up with the same part name, and the second wins in silence | `partition.py` | **RED** |
 | P8 | the shipped body is renamed along with everybody else | `partition.py` | **RED** |
 | P9 | the foreign body under test is the one this step was written for | `gate_test.py` | **RED** |
 | P10 | the bounds check for the second pass is the first pass's | `partition.py` | **RED** |
@@ -60,3 +60,12 @@ the exporter's word. Each has a test the other leaves green: P8 leaves
 `test_a_garment_this_pipeline_has_never_seen_keeps_vroids_word` green (the
 fallback still answers `Outfit_AccessoryNeck`), and P4 leaves nothing about
 Tops or Bottoms wrong on any body that has both.
+
+## P7 after the rename
+
+P7 mutates the line that refuses a part name arriving twice. When it was
+written that meant two meshes reading one name out of the grammar, which was a
+refusal; `resolve_clashes` now renames instead, so the same line catches a
+resolver that answered wrongly. Same position, different reason to be there,
+and C7 in `mutations-clashes-0912.md` aims at it from that side with a test
+that stubs the resolver. P7 keeps its place because stage 0 put it there.

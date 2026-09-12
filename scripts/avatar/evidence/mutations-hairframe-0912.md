@@ -9,9 +9,9 @@ byte-for-byte, and clears `__pycache__` before every run. Raw output in
 Run against this blob (check it with `git rev-parse HEAD:scripts/avatar/partition.py`;
 a commit id would not survive the next comment edit):
 
-    partition.py           205feecf3a22ef7ec06c0075aa9bced89e8bfce7
+    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
 
-Baseline: 50 tests green in `gate_test`, and the loader collects 50, so nothing
+Baseline: 59 tests green in `gate_test`, and the loader collects 59, so nothing
 after a misplaced `unittest.main()` is being skipped. Re-run at `205feec` after
 the review fix and again after the prose corrections; every pattern still hit
 exactly once.
@@ -55,3 +55,13 @@ and fixes the direction to -Z. Under H2 the eye bone stops being consulted at
 all, so the turned-around test also fails, and under H3 it is only the 1.0
 export that goes wrong. The pair is what makes "in front of the eyes" mean
 in front of *these* eyes, facing *this* way.
+
+## H7 after the two passes
+
+H7's pattern moved. partition() used to read a strand's drawn vertices inside
+the loop that rebuilt the primitives; it now reads every primitive's in a first
+pass, because a claim's reach has to be known before any name is written down.
+The line is the same line four spaces to the left, and the row was re-aimed at
+it on 2026-09-12 after it reported `PATTERN HIT 0 TIMES`. That report is the
+runner working: it refuses to mutate a pattern it cannot find rather than
+passing the row.

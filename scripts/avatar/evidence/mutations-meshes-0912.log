@@ -1,31 +1,33 @@
-partition.py  blob 205feecf3a22ef7ec06c0075aa9bced89e8bfce7
-baseline  Ran 50 tests in 1.737s  green
+partition.py  blob 4cd4bba35fec9a7c900f93737aafea332f063754
+baseline  Ran 59 tests in 5.408s  green
 
 M1  the face is the mesh literally called Face.baked again
-    Ran 43 tests in 1.374s  RED  as expected
-    also red: ['test_a_body_with_no_face_material_anywhere_is_refused (gate_test.PartitionRecognises.test_a_body_with_no_face_material_anywhere_is_refused)', 'test_two_meshes_carrying_face_materials_are_refused (gate_test.PartitionRecognises.test_two_meshes_carrying_face_materials_are_refused)']
+    Ran 46 tests in 4.391s  RED  as expected
+    also red: ['setUpClass (gate_test.BodyDrawingItsSkinInThreeLayers)', 'test_a_body_with_no_face_material_anywhere_is_refused (gate_test.PartitionRecognises.test_a_body_with_no_face_material_anywhere_is_refused)', 'test_two_meshes_carrying_face_materials_are_refused (gate_test.PartitionRecognises.test_two_meshes_carrying_face_materials_are_refused)']
 
 M2  any number of face meshes will do, as long as there is one
-    Ran 50 tests in 1.780s  RED  as expected
+    Ran 59 tests in 3.943s  RED  as expected
 
 M3  the face mesh is not asked for the morph targets it is locked for
-    Ran 50 tests in 2.292s  RED  as expected
+    Ran 59 tests in 3.407s  RED  as expected
 
 M4  only the mesh called Body.baked is checked for names it cannot read
-    Ran 50 tests in 2.623s  RED  as expected
+    Ran 59 tests in 7.883s  RED  as expected
     also red: ['test_a_material_with_a_token_and_no_part_says_so (gate_test.PartitionRecognises.test_a_material_with_a_token_and_no_part_says_so)']
 
 M5  a hair strand counts as a material the grammar cannot place
-    Ran 38 tests in 0.303s  RED  as expected
-    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_a_body_mesh_with_a_different_primitive_count_is_recognised (gate_test.PartitionRecognises.test_a_body_mesh_with_a_different_primitive_count_is_recognised)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_the_face_mesh_is_found_by_its_materials_not_its_name (gate_test.PartitionRecognises.test_the_face_mesh_is_found_by_its_materials_not_its_name)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
+    Ran 47 tests in 0.987s  RED  as expected
+    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_a_body_mesh_with_a_different_primitive_count_is_recognised (gate_test.PartitionRecognises.test_a_body_mesh_with_a_different_primitive_count_is_recognised)', 'test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest (gate_test.PartitionRecognises.test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest)', 'test_a_resolver_that_repeats_a_name_is_refused_rather_than_believed (gate_test.PartitionRecognises.test_a_resolver_that_repeats_a_name_is_refused_rather_than_believed)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_the_face_mesh_is_found_by_its_materials_not_its_name (gate_test.PartitionRecognises.test_the_face_mesh_is_found_by_its_materials_not_its_name)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)']
 
 M6  every HAIR material is the one baked-in back-hair object again
-    Ran 38 tests in 2.015s  RED  as expected
-    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
+    Ran 59 tests in 5.140s  RED  as expected
+    also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest (gate_test.PartitionRecognises.test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest)', 'test_a_resolver_that_repeats_a_name_is_refused_rather_than_believed (gate_test.PartitionRecognises.test_a_resolver_that_repeats_a_name_is_refused_rather_than_believed)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)', 'test_the_strand_mesh_is_placed_by_geometry (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_strand_mesh_is_placed_by_geometry)']
 
 M7  a MATCAP accessory has no name, so its body is refused
-    Ran 50 tests in 3.047s  RED  as expected
+    Ran 53 tests in 6.364s  RED  as expected
+    also red: ['setUpClass (gate_test.BodyDrawingItsSkinInThreeLayers)']
 
 M8  the grammar is consulted only inside a mesh called Body.baked
-    Ran 50 tests in 2.497s  RED  as expected
+    Ran 59 tests in 6.048s  RED  as expected
+    also red: ['test_all_three_layers_stay_skin_for_the_steps_that_read_them (gate_test.BodyDrawingItsSkinInThreeLayers.test_all_three_layers_stay_skin_for_the_steps_that_read_them)', 'test_reach_rather_than_size_says_which_layer_is_the_body (gate_test.BodyDrawingItsSkinInThreeLayers.test_reach_rather_than_size_says_which_layer_is_the_body)', 'test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name)', 'test_the_numbers_follow_document_order (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_numbers_follow_document_order)', 'test_the_sole_left_in_the_body_mesh_trails_the_shoes (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_sole_left_in_the_body_mesh_trails_the_shoes)']
 
