@@ -71,10 +71,10 @@ class Gate(unittest.TestCase):
 class PartitionRecognises(unittest.TestCase):
     """The one step that needs a particular body has to say so, not guess.
 
-    partition names Body's parts by primitive INDEX and the hair by where a
-    strand sits in this body's space. Neither survives a change of body, and
-    before recognise() nothing said so: a mesh matching neither name fell
-    through to hair_name for every primitive, so the 2026-09-07 Seed-san
+    partition places the hair strands by where they sit in this body's absolute
+    space, which does not survive a change of body, and before recognise()
+    nothing said so: a mesh matching neither of the two hardcoded mesh names
+    fell through to hair_name for every primitive, so the 2026-09-07 Seed-san
     fixture run wrote a parts.json calling a robot's arm and clothes
     Hair_Twintail_R, Hair_Bangs and Hair_Side_L. It loaded. It read plausibly.
     Every later step would have believed it.
@@ -86,19 +86,55 @@ class PartitionRecognises(unittest.TestCase):
             raise unittest.SkipTest('public/avatar/mika-pink.vrm 不在')
         cls.doc = glb.load(BODY)[0]
 
+    def body_mesh(self, doc):
+        """The mesh carrying this body's SKIN, found the way partition does."""
+        mats = [m['name'] for m in doc['materials']]
+        return next(m for m in doc['meshes']
+                    if any(partition.vroid_category(mats[p['material']])[1] == 'SKIN'
+                           for p in m['primitives'])
+                    and m not in partition.face_meshes(doc))
+
     def test_the_body_this_step_was_written_for_is_recognised(self):
         self.assertEqual(partition.recognise(self.doc), [])
 
-    def test_a_body_without_the_face_mesh_is_refused_by_name(self):
+    def test_the_face_mesh_is_found_by_its_materials_not_its_name(self):
+        # vrm1-twist-sample calls it `Face` and the dress-up export
+        # `Face (merged)(Clone).baked.baked`; both used to stop here.
         doc = copy.deepcopy(self.doc)
-        for m in doc['meshes']:
-            if m.get('name') == partition.FACE_MESH:
-                m['name'] = 'head'
+        for m in partition.face_meshes(doc):
+            m['name'] = 'not-a-vroid-mesh-name'
+        self.assertEqual(partition.recognise(doc), [])
+        self.assertEqual([m.get('name') for m in partition.face_meshes(doc)],
+                         ['not-a-vroid-mesh-name'])
+
+    def test_a_body_with_no_face_material_anywhere_is_refused(self):
+        doc = copy.deepcopy(self.doc)
+        for material in doc['materials']:
+            if partition.vroid_category(material['name'])[1] == 'FACE':
+                material['name'] = 'plain'
         reasons = partition.recognise(doc)
-        self.assertTrue(any(partition.FACE_MESH in r for r in reasons), reasons)
+        self.assertTrue(any('FACE' in r for r in reasons), reasons)
         # And it names what IS there, because that is the useful half to
         # somebody holding a body this step has never seen.
-        self.assertTrue(any('head' in r for r in reasons), reasons)
+        self.assertTrue(any('Face.baked' in r for r in reasons), reasons)
+
+    def test_two_meshes_carrying_face_materials_are_refused(self):
+        # Which one holds the 56 morph targets would then be a coin toss, and
+        # the loser gets split like a garment.
+        doc = copy.deepcopy(self.doc)
+        face = partition.face_meshes(doc)[0]['primitives'][0]['material']
+        self.body_mesh(doc)['primitives'][0]['material'] = face
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('2' in r and 'FACE' in r for r in reasons), reasons)
+
+    def test_a_face_mesh_carrying_no_morph_targets_is_refused(self):
+        # Locking Face is about blendShapeMaster binding expressions into it by
+        # morph index. A face mesh with no morphs is not that mesh.
+        doc = copy.deepcopy(self.doc)
+        for prim in partition.face_meshes(doc)[0]['primitives']:
+            prim.pop('targets', None)
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('morph' in r for r in reasons), reasons)
 
     def test_a_body_mesh_with_a_different_primitive_count_is_recognised(self):
         # The count was the old check, and it asked the wrong question:
@@ -106,9 +142,7 @@ class PartitionRecognises(unittest.TestCase):
         # nine, and both are ordinary VRoid bodies whose parts the material
         # grammar names exactly.
         doc = copy.deepcopy(self.doc)
-        for m in doc['meshes']:
-            if m.get('name') == partition.BODY_MESH:
-                m['primitives'] = m['primitives'][:-1]
+        self.body_mesh(doc)['primitives'] = self.body_mesh(doc)['primitives'][:-1]
         self.assertEqual(partition.recognise(doc), [])
 
     def test_a_body_material_outside_the_grammar_is_refused_by_name(self):
@@ -116,11 +150,29 @@ class PartitionRecognises(unittest.TestCase):
         # are somebody's hand-authored names carries no category token, so
         # there is nothing to read a part name off.
         doc = copy.deepcopy(self.doc)
-        mesh = next(m for m in doc['meshes']
-                    if m.get('name') == partition.BODY_MESH)
+        mesh = self.body_mesh(doc)
         doc['materials'][mesh['primitives'][5]['material']]['name'] = 'Mellow_Skirt'
         reasons = partition.recognise(doc)
         self.assertTrue(any('Mellow_Skirt' in r for r in reasons), reasons)
+
+    def test_a_hand_authored_material_in_any_mesh_is_refused(self):
+        # recognise() used to look at one mesh, so the same name in the hair
+        # mesh went unmentioned and hair_name then placed it by geometry.
+        doc = copy.deepcopy(self.doc)
+        hair = next(m for m in doc['meshes']
+                    if m is not self.body_mesh(doc)
+                    and m not in partition.face_meshes(doc))
+        doc['materials'][hair['primitives'][0]['material']]['name'] = 'Milfy_Ink'
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('Milfy_Ink' in r for r in reasons), reasons)
+
+    def test_a_hair_strand_is_not_a_material_it_cannot_name(self):
+        # body_name answers None for a strand and None for a stranger, and
+        # only the second is a reason to refuse; without is_strand every VRoid
+        # body on the disk would be turned away by its own hair.
+        self.assertEqual(partition.recognise(self.doc), [])
+        self.assertTrue(partition.is_strand('F00_000_Hair_00_HAIR_01'))
+        self.assertFalse(partition.is_strand('Milfy_Ink'))
 
     def test_two_meshes_cannot_claim_the_same_part_name(self):
         # parts are keyed by label, so the second mesh to claim one used to
@@ -144,17 +196,19 @@ class PartitionRecognises(unittest.TestCase):
         # in primitive order; the grammar has to reproduce it exactly or every
         # step downstream of partition is reading different parts.
         mats = [m['name'] for m in self.doc['materials']]
-        mesh = next(m for m in self.doc['meshes']
-                    if m.get('name') == partition.BODY_MESH)
+        mesh = self.body_mesh(self.doc)
         self.assertEqual(
             [partition.body_name(mats[p['material']]) for p in mesh['primitives']],
             ['Body_Skin', 'Body_Skin', 'Body_Skin', 'Body_Skin',
              'Outfit_Top', 'Outfit_Bottom', 'Outfit_Shoes'])
 
     def test_partition_refuses_rather_than_naming_a_stranger(self):
+        # A stranger is no longer a body whose MESHES are named differently,
+        # which is an ordinary VRoid export; it is one whose materials carry
+        # no category token, so there is nothing to read a part name off.
         doc = copy.deepcopy(self.doc)
-        for m in doc['meshes']:
-            m['name'] = 'not-a-vroid-mesh'
+        for i, material in enumerate(doc['materials']):
+            material['name'] = f'hand_authored_{i}'
         path = os.path.join(tempfile.mkdtemp(), 'stranger.vrm')
         glb.save(path, doc, glb.load(BODY)[1])
         out = os.path.join(tempfile.mkdtemp(), 'parted.vrm')
@@ -207,6 +261,25 @@ class MaterialGrammar(unittest.TestCase):
             partition.body_name('M00_001_01_AccessoryNeck_01_CLOTH'),
             'Outfit_AccessoryNeck')
 
+    def test_the_two_kinds_of_hair_are_told_apart_by_their_part_name(self):
+        # Which mesh a primitive sits in used to decide this, and it is a fact
+        # about the export rather than about the hair: eight of the sixteen
+        # local bodies bake HairBack into the body mesh group, vrm1-twist-sample
+        # into a mesh called Body, and the strands live somewhere else again.
+        self.assertEqual(partition.body_name('F00_000_HairBack_00_HAIR'),
+                         'Hair_BodyBack')
+        self.assertEqual(partition.body_name('HairBack_00_HAIR'), 'Hair_BodyBack')
+        self.assertIsNone(partition.body_name('F00_000_Hair_00_HAIR_01'))
+        self.assertTrue(partition.is_strand('F00_000_Hair_00_HAIR_01'))
+        self.assertFalse(partition.is_strand('F00_000_HairBack_00_HAIR'))
+
+    def test_a_matcap_part_is_named_as_an_accessory(self):
+        # The dress-up export's glasses. Without a name they are a material
+        # outside the grammar and the whole body is refused.
+        self.assertEqual(
+            partition.body_name('Accessory_GlassesHiFrame_01_MATCAP'),
+            'Acc_GlassesHiFrame')
+
 
 class BodyPartsFromTheExportGrammar(unittest.TestCase):
     """A body whose primitive order is not this body's, named correctly.
@@ -230,7 +303,7 @@ class BodyPartsFromTheExportGrammar(unittest.TestCase):
                                            os.path.join(out, 'o.vrm'),
                                            os.path.join(out, 'p.json'))[0]
         cls.body = {n: p for n, p in cls.manifest['parts'].items()
-                    if p['mesh'] == partition.BODY_MESH}
+                    if p['mesh'] == 'Body.baked'}
 
     def test_the_shoes_part_holds_the_shoes(self):
         # The reproduction: this part held F00_000_HairBack_00_HAIR before.
@@ -261,6 +334,61 @@ class BodyPartsFromTheExportGrammar(unittest.TestCase):
                           for m in self.body['Body_Skin']['materials']],
                          ['SKIN'])
         self.assertFalse(self.body['Body_Skin']['deletable'])
+
+
+class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
+    """A VRoid export calling its meshes Body, Face and Hair, named correctly.
+
+    Face.baked and Body.baked are VRoid Studio's own names and this step used
+    to require them literally, so vrm1-twist-sample stopped at partition with
+    "no mesh named Face.baked". Nothing about it is strange: it is a VRM 1.0
+    sample whose material names follow the same grammar, and its back hair is
+    baked into the mesh it calls Body, exactly as eight of the .baked bodies
+    bake theirs into Body.baked.
+    """
+
+    OTHER = os.path.join(HERE, '..', '..', 'public', 'avatar',
+                         'vrm1-twist-sample.vrm')
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(cls.OTHER):
+            raise unittest.SkipTest('public/avatar/vrm1-twist-sample.vrm 不在')
+        out = tempfile.mkdtemp()
+        cls.doc = glb.load(cls.OTHER)[0]
+        cls.manifest = partition.partition(cls.OTHER,
+                                           os.path.join(out, 'o.vrm'),
+                                           os.path.join(out, 'p.json'))[0]
+
+    def test_none_of_its_meshes_carry_the_name_this_step_required(self):
+        # If this ever fails the fixture stopped being the case under test.
+        self.assertEqual(sorted(m.get('name') for m in self.doc['meshes']),
+                         ['Body', 'Face', 'Hair'])
+
+    def test_the_face_is_the_mesh_holding_the_morph_targets(self):
+        face = self.manifest['parts']['Face']
+        self.assertEqual(face['mesh'], 'Face')
+        self.assertFalse(face['deletable'])
+        mesh = next(m for m in self.doc['meshes'] if m.get('name') == 'Face')
+        self.assertTrue(any(p.get('targets') for p in mesh['primitives']))
+
+    def test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair(self):
+        # The grammar answers this, so the mesh it sits in is not consulted.
+        part = self.manifest['parts']['Hair_BodyBack']
+        self.assertEqual(part['mesh'], 'Body')
+        self.assertEqual([partition.vroid_category(m)[0]
+                          for m in part['materials']], ['HairBack'])
+
+    def test_its_garments_and_skin_are_named_from_the_same_grammar(self):
+        self.assertEqual(
+            sorted(n for n in self.manifest['parts'] if not n.startswith('Hair_')),
+            ['Body_Skin', 'Face', 'Outfit_Bottom', 'Outfit_Shoes', 'Outfit_Top'])
+        self.assertFalse(self.manifest['parts']['Body_Skin']['deletable'])
+
+    def test_the_strand_mesh_is_placed_by_geometry(self):
+        strands = {n: p for n, p in self.manifest['parts'].items()
+                   if p['mesh'] == 'Hair'}
+        self.assertEqual(list(strands), ['Hair_Bangs'])
 
 
 class Wiring(unittest.TestCase):

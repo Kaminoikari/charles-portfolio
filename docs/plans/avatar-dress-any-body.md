@@ -33,7 +33,7 @@
 
 | 步驟 | 做什麼 | 當時綁在 VRoid 的什麼 | 現況 |
 |---|---|---|---|
-| 1 partition | 標記每個 primitive | mesh 名 `Face.baked`／`Body.baked`、primitive 索引、髮絲的絕對世界座標 | 索引已解（階段 0）；mesh 名與髮絲座標仍在 |
+| 1 partition | 標記每個 primitive | mesh 名 `Face.baked`／`Body.baked`、primitive 索引、髮絲的絕對世界座標 | 索引已解（階段 0）；mesh 名已解（階段 2b）；髮絲座標仍在 |
 | 2 strip | 刪掉它自己的衣服 | 上一步的標籤 | 隨第 1 步 |
 | 3 skin | 把畫在身體貼圖上的衣服重繪成皮膚 | `is_skin` 的絕對色彩門檻、寫死的材質名 | 已解（階段 1） |
 
@@ -208,8 +208,8 @@ mesh 不叫 `Face.baked`。
 
 **這一步沒有解決的**：mesh 仍然靠名字找，頭髮仍然靠這具身體的絕對世界座標分。所以
 partition 從「需要**這一具**匯出」變成「需要**一具** mesh 名字沒被改過的 VRoid 匯出」，
-身體部件精確、頭髮部件仍是這具身體的。mesh 的找法留到階段 2，因為那時要問的是
-containment 不是名字。
+身體部件精確、頭髮部件仍是這具身體的。mesh 的找法在階段 2b 解掉了，答案不是
+containment 而是同一套材質文法。
 
 順手補了一道防禦：manifest 以部件名稱為鍵，第二個 mesh 主張同一個名稱時原本會無聲蓋掉
 第一個。現在會拒絕。這正是把 HAIR 允許進 `Body.baked` 所帶出來的風險，所以那個部件叫
@@ -313,10 +313,34 @@ mika-pink         13 parts   removes 的正是原本那五個                   
 
 撐住這件事的位置數出來是五個，不是改動看起來的那一個：make.py 的呼叫點、`replaced()` 裡的 `deletable` 檢查、比對述詞與排序，以及服裝契約裡的前綴值。五道 mutation 逐一拆，各自的 must-fail 集合全部照預期轉紅，收據在 [mutations-replaces-0912.md](../../scripts/avatar/evidence/mutations-replaces-0912.md)。
 
-**2b. mesh 找法與頭髮命名（未做）。** partition 仍然靠 mesh 名字找 `Face.baked` 與
-`Body.baked`，頭髮仍然靠這具身體的絕對世界座標分。`vrm1-twist-sample`（mesh 叫
-`Body`）與 `vroid-studio-dressup`（`Body (merged).baked(copy).baked`）就卡在這裡。
-頭髮命名對已經通過的 13 具其實也是虛構的，只是後面的步驟目前不讀它。
+**2b-i. mesh 找法 — 已完成。** partition 原本靠 mesh 名字找 `Face.baked` 與
+`Body.baked`。量過十六具的每一個 mesh
+（[partition-0912-meshes.log](../../scripts/avatar/evidence/partition-0912-meshes.log)）
+之後，兩個假設都不必要，而且第二個從一開始就問錯了問題。
+
+- **臉**：帶 `FACE` 材質的 mesh，十六具各剛好一個。morph target 在其中十五具也唯一，
+  第十六具是我們自己的產出 `mika-milfy-12`（匯入的服裝自己帶 6 個），所以 morph 只當
+  佐證，`recognise()` 另外要求臉這個 mesh 真的帶 morph，因為那才是它被鎖住的理由。
+- **身體不是一個 mesh**。`vroid-studio-dressup` 把它拆成七個（`Tops.baked`、
+  `InnerTop.baked`、`Shoes.baked`……）。所以不再問「哪個 mesh 是身體」，改成逐
+  primitive 問文法。
+- **兩種頭髮由部件名分**，不由 mesh 分：`HairBack` 是整塊 baked 進去的物件（八具在身體
+  mesh 群裡，`vrm1-twist-sample` 在一個就叫 `Body` 的 mesh 裡），`Hair` 是髮絲。
+- **MATCAP 有名字了**：`Acc_<Part>`，也就是 dressup 的眼鏡。
+
+收據 [partition-0912-bymesh.log](../../scripts/avatar/evidence/partition-0912-bymesh.log)：
+本機 16 具能命名的從 13 具變成 14 具，`vrm1-twist-sample` 加入，而且它現在一路走完第 1
+到第 3 步（[pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，
+7 parts、脫掉 3 件、重繪 4.7%）。Mika 底模的 `parted.vrm` 逐位元組不變，`parts.json` 相同。
+
+仍被拒絕的兩具，理由都換成了真正的結構問題：`mika-milfy-12` 的 20 個材質不帶類別
+token（它是我們自己的產出，partition 本來就不對它跑），`vroid-studio-dressup` 是三個
+mesh 都主張 `Body_Skin`。後者正是 2c 要解的那件事，manifest 目前一個部件只能屬於一個
+mesh。
+
+**2b-ii. 頭髮命名（未做）。** 髮絲仍然靠這具身體的絕對世界座標分（腰線 0.90、臉前
+-0.03、後腦 1.44、離中線 0.12）。這對已經通過的 14 具是虛構的，只是後面的步驟目前不
+讀它。
 
 **2c. 遮蔽（未做）。** 給的是 Alicia 與 Seed-san 那一類：衣服與皮膚在同一片曲面上，
 刪不掉。partition 的契約縮成三個**可量**的問題：

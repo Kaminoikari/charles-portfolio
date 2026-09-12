@@ -1,0 +1,67 @@
+
+AvatarSample_A_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+AvatarSample_B_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+AvatarSample_C_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+Darkness_Shibu_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+
+HairSample_Female_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Shoes, Outfit_Top
+
+HairSample_Male_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+Sakurada_Fumiriya_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+Sendagaya_Shibu_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+Sendagaya_Shino_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+Victoria_Rubin_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+
+Vita_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+
+Vivi_webp.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+
+mika-milfy-12.vrm  [REFUSE]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked', 'Body.baked']
+   labels: <strand>, Body_Skin
+   UNNAMED 28: Mellow_Belt_Acc, Mellow_Inner, Mellow_Inner_Sub, Mellow_Jewel, Mellow_Lace, Mellow_Leg_Acc, Mellow_Outer, Mellow_Shoes, Mellow_Skirt_Cloth, Mellow_Sub_Acc, Mellow_Underwear, Milfy_Bear, Milfy_EarInner, Milfy_Gold, Milfy_GoldInner, Milfy_Ink, Milfy_Mint, Milfy_MintDark, Milfy_Plaster, Milfy_White
+
+mika-pink.vrm  [names]
+   face mesh: ['Face.baked']   morph-bearing: ['Face.baked']
+   labels: <strand>, Body_Skin, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+vrm1-twist-sample.vrm  [names]
+   face mesh: ['Face']   morph-bearing: ['Face']
+   labels: <strand>, Body_Skin, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+vroid-studio-dressup.vrm  [REFUSE]
+   face mesh: ['Face (merged)(Clone).baked.baked']   morph-bearing: ['Face (merged)(Clone).baked.baked']
+   labels: Acc_GlassesHiFrame, Acc_GlassesHiLens, Body_Skin, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+   CLASH Body_Skin: ['Body (merged).baked(copy).baked', 'InnerBottom.baked', 'InnerTop.baked']
+   CLASH Outfit_Shoes: ['Body (merged).baked(copy).baked', 'Shoes.baked']

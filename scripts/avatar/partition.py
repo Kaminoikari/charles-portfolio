@@ -1,4 +1,4 @@
-"""Turn the three baked meshes into named, independently deletable parts.
+"""Turn the exported meshes into named, independently deletable parts.
 
 VRoid exports a mesh whose primitives all share one vertex buffer: dropping a
 primitive drops only its indices, and its vertices stay in the file as orphans
@@ -8,22 +8,27 @@ deleting a part is deleting a primitive, and nothing is left behind.
 
 Face is deliberately NOT split. Its ten primitives carry 56 morph targets each,
 and VRM's blendShapeMaster binds those by (mesh index, morph index); re-indexing
-them is a way to silently break every expression while the file still loads.
+them is a way to silently break every expression while the file still loads. It
+is found by the FACE materials it carries, and the morph targets that make it
+worth locking are then required rather than assumed.
 
-Names come from geometry, not from guesswork: the long strands that fall below
-the waist are the twintails, the ones sitting in front of the face at negative Z
-are the bangs, and HAIR_06 is the ornament pair the reference does not have.
+The hair strands are named from geometry: the long ones that fall below the
+waist are the twintails, the ones sitting in front of the face at negative Z are
+the bangs, and HAIR_06 is the ornament pair the reference does not have.
 
 The body's own parts do not come from geometry at all: VRoid spells the
 category into every material name, so `body_name()` reads it off rather than
 guessing. That is exact on any VRoid export, and it replaced a table from
 primitive index to part name that was right here and silently wrong elsewhere.
+Which mesh a primitive sits in is not asked either: the face is the mesh
+carrying FACE materials, and the two kinds of hair are told apart by the part
+name VRoid writes, HairBack against Hair.
 
-The hair rules above are still this body's, so this remains the one step in the
-pipeline that admits to needing a particular export. `recognise()` says so out
-loud and `partition()` refuses rather than naming a stranger's meshes by these
-rules -- see the comment above it for what that produced before the check
-existed.
+The strand rules above are still this body's absolute coordinates, so this
+remains the one step in the pipeline that admits to needing a particular export.
+`recognise()` says so out loud and `partition()` refuses rather than naming a
+stranger's primitives by these rules -- see the comment above face_meshes() for
+what that produced before the check existed.
 """
 import json
 import re
@@ -55,6 +60,14 @@ DECORATION = re.compile(r'\s*\((?:Instance|Clone)\)')
 # part keeps the exporter's own word, so a garment nobody here has seen still
 # gets a name that says what it is.
 OUTFIT_NAMES = {'Tops': 'Outfit_Top', 'Bottoms': 'Outfit_Bottom'}
+
+# The two part names VRoid gives hair. HairBack is the single baked object that
+# some exports put in the body mesh group; Hair is the strands. Measured on all
+# sixteen local bodies in evidence/partition-0912-meshes.log.
+HAIR_OBJECT = 'HairBack'
+
+# The category that marks the mesh VRM binds expressions into.
+FACE_CATEGORY = 'FACE'
 
 
 def vroid_category(material):
@@ -93,12 +106,31 @@ def body_name(material):
     if category == 'CLOTH':
         return OUTFIT_NAMES.get(part, f'Outfit_{part}')
     if category == 'HAIR':
-        # Some exports bake the back-hair object into the Body mesh group.
-        # Deliberately not 'Hair_Back': hair_name() gives that label to strands
-        # in the hair mesh, parts are keyed by label, and one would replace the
-        # other.
-        return 'Hair_BodyBack'
+        # The grammar separates the two kinds of hair by part name, so which
+        # mesh a primitive sits in never had to be the question. HairBack is
+        # one whole baked object, on eight of the sixteen local bodies inside
+        # the body mesh group and on vrm1-twist-sample inside a mesh called
+        # Body; Hair is the individual strands, which need geometry. The label
+        # is deliberately not 'Hair_Back': hair_name() gives that one to
+        # strands, parts are keyed by label, and one would replace the other.
+        return 'Hair_BodyBack' if part == HAIR_OBJECT else None
+    if category == 'MATCAP':
+        # Glasses on the dress-up export, as Accessory_GlassesHiFrame_01_MATCAP
+        # and _GlassesHiLens_. An accessory is what mellowheart.REPLACES takes
+        # off, which is the right default for something the wearer chose.
+        return f'Acc_{part}'
     return None
+
+
+def is_strand(material):
+    """Is this a hair strand, which the grammar names but does not place?
+
+    body_name() answers None for a strand and None for a material outside the
+    grammar, and recognise() has to tell those apart: the first is ordinary and
+    the second is a body this step cannot name.
+    """
+    part, category = vroid_category(material)
+    return category == 'HAIR' and part != HAIR_OBJECT
 
 
 # The base model's fringe carries its hair clips as painted decals on separate
@@ -109,13 +141,15 @@ def body_name(material):
 # the forehead that read as a swim cap.
 CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 
-# What every name below is read off. Face and Body are found by MESH NAME, and
-# the hair by where a strand sits in this body's space. Both are facts about a
-# VRoid Studio export, and neither is derivable from an arbitrary VRM. (The
-# body's parts used to be a third such fact, read off primitive index; they now
-# come from the material grammar, which holds on any VRoid export.)
+# What is left that this step reads off THIS body: where a hair strand sits in
+# absolute world coordinates. Face and Body used to be a second such fact, found
+# by the mesh names `Face.baked` and `Body.baked`, and two of the sixteen local
+# bodies do not use them: vrm1-twist-sample exports `Face`, `Body` and `Hair`,
+# and the dress-up export splits the body over seven meshes with names like
+# `Body (merged).baked(copy).baked`. Both are now found by content, so a mesh
+# name is no longer an assumption anywhere in this file.
 #
-# So this step is the one place in the pipeline that is allowed to require a
+# This step is still the one place in the pipeline allowed to require a
 # particular export, and recognise() is where it says so. Everything upstream of
 # here (the humanoid map, the VRM1 entry conversion, the skeleton gates, the
 # per-mesh skins) was generalised precisely so that a strange body reaches this
@@ -126,8 +160,21 @@ CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 # that loads, reads plausibly, and is entirely fiction. A refusal that names
 # what it wanted is the cheap outcome; a plausible wrong manifest is the
 # expensive one, because every later step believes it.
-FACE_MESH = 'Face.baked'
-BODY_MESH = 'Body.baked'
+
+
+def face_meshes(doc):
+    """The meshes carrying FACE materials, which is where the head lives.
+
+    Exactly one mesh on each of the sixteen local bodies carries one, and on
+    fifteen of them it is also the only mesh with morph targets; the sixteenth
+    is mika-milfy-12, one of this pipeline's own outputs, whose imported
+    garment carries six of its own. So the morph targets corroborate the answer
+    and the FACE category gives it -- see evidence/partition-0912-meshes.log.
+    """
+    mats = [m.get('name', f'#{i}') for i, m in enumerate(doc['materials'])]
+    return [mesh for mesh in doc['meshes']
+            if any(vroid_category(mats[p['material']])[1] == FACE_CATEGORY
+                   for p in mesh['primitives'])]
 
 
 def recognise(doc):
@@ -137,27 +184,39 @@ def recognise(doc):
     there, because the useful thing to a person holding a strange body is which
     assumption broke, not that one did.
     """
-    meshes = {m.get('name'): m for m in doc['meshes']}
+    mats = [m.get('name', f'#{i}') for i, m in enumerate(doc['materials'])]
+    faces = face_meshes(doc)
     reasons = []
-    if FACE_MESH not in meshes:
-        reasons.append(f'沒有名為 {FACE_MESH} 的 mesh（有的是：'
-                       f'{", ".join(sorted(str(n) for n in meshes))}）')
-    body = meshes.get(BODY_MESH)
-    if body is None:
-        reasons.append(f'沒有名為 {BODY_MESH} 的 mesh，身體的部件無從命名')
-    else:
-        mats = [m.get('name', f'#{i}') for i, m in enumerate(doc['materials'])]
-        # The primitive COUNT used to be the check here, and it asked the wrong
-        # question: HairSample_Female exports six, Sendagaya_Shibu nine, and
-        # both are ordinary VRoid bodies. What this step actually needs is that
-        # every body primitive carries a category token it has a name for.
-        unnamed = sorted({mats[p['material']] for p in body['primitives']
-                          if body_name(mats[p['material']]) is None})
-        if unnamed:
-            reasons.append(
-                f'{BODY_MESH} 有 {len(unnamed)} 個材質不帶 VRoid 的類別後綴'
-                f'（{"、".join(CATEGORIES)}），推不出部件名稱：'
-                f'{"、".join(unnamed)}')
+    if len(faces) != 1:
+        found = ', '.join(str(m.get('name')) for m in faces) or '沒有'
+        reasons.append(
+            f'帶 {FACE_CATEGORY} 材質的 mesh 應該剛好一個，這裡有 {len(faces)} 個'
+            f'（{found}）。mesh 有：'
+            f'{", ".join(sorted(str(m.get("name")) for m in doc["meshes"]))}')
+    elif not any(p.get('targets') for p in faces[0]['primitives']):
+        # The reason Face is locked is that blendShapeMaster binds expressions
+        # into it by morph index. A face mesh with no morphs is not the thing
+        # that rule protects, so the naming below is answering about something
+        # else.
+        reasons.append(f'{faces[0].get("name")} 帶 {FACE_CATEGORY} 材質但沒有 '
+                       'morph target，那不是 blendShapeMaster 綁定的那個 mesh')
+
+    # The primitive COUNT used to be the check here, and it asked the wrong
+    # question: HairSample_Female exports six body primitives and
+    # Sendagaya_Shibu nine, and both are ordinary VRoid bodies. What this step
+    # actually needs is that every primitive outside the face either carries a
+    # category token it has a name for, or is a strand for hair_name to place.
+    ids = {id(m) for m in faces}
+    unnamed = sorted({mats[p['material']]
+                      for mesh in doc['meshes'] if id(mesh) not in ids
+                      for p in mesh['primitives']
+                      if body_name(mats[p['material']]) is None
+                      and not is_strand(mats[p['material']])})
+    if unnamed:
+        reasons.append(
+            f'有 {len(unnamed)} 個材質不帶 VRoid 的類別後綴'
+            f'（{"、".join(CATEGORIES)}），推不出部件名稱：'
+            f'{"、".join(unnamed)}')
     return reasons
 
 
@@ -215,15 +274,16 @@ def partition(src, dst, parts_path):
         raise SystemExit(
             f'{src} 不是這一步認得的 VRoid 匯出，拒絕命名：\n'
             + '\n'.join(f'  - {r}' for r in reasons)
-            + '\n  這一步的部件名稱來自 VRoid 的 mesh 名、primitive 編號與髮絲位置，'
+            + '\n  這一步的部件名稱來自 VRoid 的材質文法與髮絲的絕對座標，'
               '換一具身體推不出來。硬跑會產生一份讀起來合理但是虛構的 parts.json，'
               '後面每一步都會相信它。')
 
     manifest = {'source': src, 'parts': {}}
+    faces = {id(m) for m in face_meshes(doc)}
 
     for mesh in doc['meshes']:
         name = mesh.get('name')
-        if name == FACE_MESH:
+        if id(mesh) in faces:
             manifest['parts']['Face'] = {
                 'mesh': name,
                 'primitives': list(range(len(mesh['primitives']))),
@@ -237,14 +297,17 @@ def partition(src, dst, parts_path):
             continue
 
         rebuilt, labels = [], []
-        for i, prim in enumerate(mesh['primitives']):
-            if name == BODY_MESH:
-                label = body_name(mats[prim['material']])
-            else:
+        for prim in mesh['primitives']:
+            material = mats[prim['material']]
+            label = body_name(material)
+            if label is None:
+                # recognise() has already refused every material the grammar
+                # cannot place, so what reaches here unnamed is a strand, and
+                # a strand is the one thing left that needs geometry.
                 pos = glb.read_accessor(doc, views, prim['attributes']['POSITION'])
                 used = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
                 p = pos[used]
-                label = hair_name(mats[prim['material']], p.mean(axis=0), p[:, 1].min())
+                label = hair_name(material, p.mean(axis=0), p[:, 1].min())
             new = split_primitive(doc, views, prim)
             new.setdefault('extras', {})['part'] = label
             rebuilt.append(new)

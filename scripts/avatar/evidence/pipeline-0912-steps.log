@@ -34,3 +34,49 @@ mika-pink.vrm
   1 partition ok  13 parts: Acc_HairClip_Base, Acc_HairOrnament, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Hair_Twintail_L, Hair_Twintail_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   2 strip     ok  21 primitives removed, replacing Acc_HairClip_Base, Acc_HairOrnament, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 36.5%
+==================================================================
+vrm1-twist-sample.vrm
+   vrm1-twist-sample.vrm 是 VRM 1.0，轉成 0.x 寫到 base-vrm0.vrm（10784188 bytes）
+   捨棄：表情 happy 的 overrideBlink=blend，0.x 沒有 override
+   捨棄：表情 happy 的 overrideMouth=blend，0.x 沒有 override
+   捨棄：表情 sad 的 overrideMouth=blend，0.x 沒有 override
+   捨棄：表情 surprised 的 overrideMouth=blend，0.x 沒有 override
+   捨棄：meta.copyrightInformation='(c) 2022 pixiv Inc.'，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowPoliticalOrReligiousUsage=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowAntisocialOrHateUsage=False，0.x 的 meta 沒有這個欄位
+   捨棄：meta.creditNotation='unnecessary'，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowRedistribution=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.modification='allowModificationRedistribution'，0.x 的 meta 沒有這個欄位
+   捨棄：14 個節點的 VRMC_node_constraint，0.x 沒有 constraint
+   近似：節點 23 的 capsule 改成 3 顆球
+   近似：節點 96 的 capsule 改成 4 顆球
+   近似：節點 97 的 capsule 改成 7 顆球
+   近似：節點 130 的 capsule 改成 4 顆球
+   近似：節點 131 的 capsule 改成 7 顆球
+   近似：節點 160 的 capsule 改成 4 顆球
+   近似：節點 165 的 capsule 改成 4 顆球
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperLeg 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperArm 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperArm 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperArm 的 hitRadius 逐關節不同，取根關節的
+   近似：spring TopsUpperArm 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
+  1 partition ok  7 parts: Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  2 strip     ok  3 primitives removed, replacing Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  3 skin      ok  repainted 4.7%

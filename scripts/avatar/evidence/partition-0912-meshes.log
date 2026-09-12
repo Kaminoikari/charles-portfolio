@@ -1,0 +1,85 @@
+
+AvatarSample_A_webp.vrm
+   Face.baked                                10 prim   56 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx3 SKINx4
+   Hair001.baked                             73 prim    0 morph  HAIRx73
+
+AvatarSample_B_webp.vrm
+   Face.baked                                10 prim   56 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx3 SKINx4
+   Hair001.baked                             77 prim    0 morph  HAIRx77
+
+AvatarSample_C_webp.vrm
+   Face.baked                                10 prim   54 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx3 SKINx4
+   Hair001.baked                            118 prim    0 morph  HAIRx118
+
+Darkness_Shibu_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx2 HAIRx1 SKINx4
+   Hair001.baked                             46 prim    0 morph  HAIRx46
+
+HairSample_Female_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 6 prim    0 morph  CLOTHx2 SKINx4
+   Hair001.baked                            108 prim    0 morph  HAIRx108
+
+HairSample_Male_webp.vrm
+   Face.baked                                10 prim   39 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx3 SKINx4
+   Hair001.baked                            114 prim    0 morph  HAIRx114
+
+Sakurada_Fumiriya_webp.vrm
+   Face.baked                                10 prim   39 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 9 prim    0 morph  CLOTHx4 HAIRx1 SKINx4
+   Hair001.baked                             83 prim    0 morph  HAIRx83
+
+Sendagaya_Shibu_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 9 prim    0 morph  CLOTHx4 HAIRx1 SKINx4
+   Hair001.baked                             46 prim    0 morph  HAIRx46
+
+Sendagaya_Shino_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 9 prim    0 morph  CLOTHx4 HAIRx1 SKINx4
+   Hair001.baked                             48 prim    0 morph  HAIRx48
+
+Victoria_Rubin_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx2 HAIRx1 SKINx4
+   Hair001.baked                             60 prim    0 morph  HAIRx60
+
+Vita_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx2 HAIRx1 SKINx4
+   Hair001.baked                             65 prim    0 morph  HAIRx65
+
+Vivi_webp.vrm
+   Face.baked                                10 prim   41 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx2 HAIRx1 SKINx4
+   Hair001.baked                             78 prim    0 morph  HAIRx78
+
+mika-milfy-12.vrm
+   Face.baked                                10 prim   56 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                23 prim    6 morph  ?x19 SKINx4
+   Hair001.baked                             72 prim    0 morph  ?x9 HAIRx63
+
+mika-pink.vrm
+   Face.baked                                10 prim   56 morph  EYEx4 FACEx4 SKINx2
+   Body.baked                                 7 prim    0 morph  CLOTHx3 SKINx4
+   Hair001.baked                             77 prim    0 morph  HAIRx77
+
+vrm1-twist-sample.vrm
+   Body                                       5 prim    0 morph  CLOTHx3 HAIRx1 SKINx1
+   Face                                       7 prim   57 morph  EYEx3 FACEx3 SKINx1
+   Hair                                       1 prim    0 morph  HAIRx1
+
+vroid-studio-dressup.vrm
+   Face (merged)(Clone).baked.baked           7 prim   57 morph  EYEx3 FACEx3 SKINx1
+   Body (merged).baked(copy).baked            3 prim    0 morph  CLOTHx1 HAIRx1 SKINx1
+   Tops.baked                                 1 prim    0 morph  CLOTHx1
+   InnerBottom.baked                          1 prim    0 morph  SKINx1
+   InnerTop.baked                             1 prim    0 morph  SKINx1
+   Bottoms.baked                              1 prim    0 morph  CLOTHx1
+   Shoes.baked                                1 prim    0 morph  CLOTHx1
+   Glasses_0.baked                            2 prim    0 morph  MATCAPx2
