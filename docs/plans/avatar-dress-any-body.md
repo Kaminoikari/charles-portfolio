@@ -311,6 +311,8 @@ mika-pink         13 parts   removes 的正是原本那五個                   
 
 `Outfit_AccessoryNeck` 是這條管線沒見過的部件，前綴照樣認得它。
 
+撐住這件事的位置數出來是五個，不是改動看起來的那一個：make.py 的呼叫點、`replaced()` 裡的 `deletable` 檢查、比對述詞與排序，以及服裝契約裡的前綴值。五道 mutation 逐一拆，各自的 must-fail 集合全部照預期轉紅，收據在 [mutations-replaces-0912.md](../../scripts/avatar/evidence/mutations-replaces-0912.md)。
+
 **2b. mesh 找法與頭髮命名（未做）。** partition 仍然靠 mesh 名字找 `Face.baked` 與
 `Body.baked`，頭髮仍然靠這具身體的絕對世界座標分。`vrm1-twist-sample`（mesh 叫
 `Body`）與 `vroid-studio-dressup`（`Body (merged).baked(copy).baked`）就卡在這裡。
