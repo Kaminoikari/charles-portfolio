@@ -12,10 +12,10 @@ Run against these blobs (check one with `git rev-parse HEAD:<path>`; a commit
 id would not survive the next comment edit, which is how two earlier receipts
 in this directory came to name a blob that no longer existed):
 
-    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
-    gate_test.py           789ffe9d8deb8a28c87013020706d33a43a55515
+    partition.py           d78714d89162ef4675d8b50197c22115f7bf51cd
+    gate_test.py           4a61cd6926441696ef1d5615fdf189844c41d2d8
 
-Baseline: 60 tests, green. The loader collects 60 as well, so nothing after
+Baseline: 61 tests, green. The loader collects 61 as well, so nothing after
 `unittest.main()` is going unrun (memory:
 project_test_entry_guard_silently_skips).
 

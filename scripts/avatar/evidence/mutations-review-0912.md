@@ -9,11 +9,11 @@ restore byte-for-byte, and clears `__pycache__` before every run. Raw output in
 Run against these blobs (check one with `git rev-parse HEAD:<path>`; a commit id
 would not survive the next comment edit):
 
-    partition.py           4cd4bba35fec9a7c900f93737aafea332f063754
+    partition.py           d78714d89162ef4675d8b50197c22115f7bf51cd
     pose.py                079a766c18bbc382e7f5e3d8646c4da5a55d47c8
 
-Baseline: 64 tests green across `gate_test` and `pose_test`, and the loader
-collects 60 and 4.
+Baseline: 65 tests green across `gate_test` and `pose_test`, and the loader
+collects 61 and 4.
 
 Four positions, one per silent wrong answer the review found.
 

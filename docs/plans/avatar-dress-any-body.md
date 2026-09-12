@@ -503,9 +503,9 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   review 抓到的三條靜默錯誤路徑加上拒絕理由的拆分）。
 - **階段 2c-i（已達成）**：本機 16 具能命名的從 14 具變成 15 具；兩個名稱衝突都由
   `resolve_clashes` 解掉，平名給垂直跨度最大的主張，其餘依文件順序編號，而且不讀 mesh
-  名。收據
+  名，而 partition 寫進幾何的標籤與 manifest 的名字逐一相符。收據
   [partition-0912-clashes.log](../../scripts/avatar/evidence/partition-0912-clashes.log)，
-  mutation 見
+  mutation 十道見
   [mutations-clashes-0912.md](../../scripts/avatar/evidence/mutations-clashes-0912.md)。
 - **階段 2c**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
   會紅。

@@ -89,6 +89,17 @@ MUTATIONS = [
      "a claim reaches as far as its mesh's whole POSITION buffer",
      '            drawn.append(p)', '            drawn.append(rest[(name, index)])'),
 
+    ('C7', ['a_resolver_that_repeats_a_name_is_refused_rather_than_believed'],
+     'a name arriving twice is written twice, and the second wins in silence',
+     "            if label in manifest['parts']:\n"
+     "                # resolve_clashes owes every claim a name of its own. If two\n"
+     "                # arrive here alike the manifest keeps the second in silence,\n"
+     "                # and half the geometry the name covers is gone from every step\n"
+     "                # that reads it.\n"
+     "                raise SystemExit(\n"
+     "                    f'{src}：{name} 與 {manifest[\"parts\"][label][\"mesh\"]} '\n"
+     "                    f'都拿到部件名稱 {label}，resolve_clashes 沒有把它們分開。')\n",
+     ''),
     ('C8', ['the_label_written_into_the_geometry_is_the_manifests'],
      'the geometry is stamped with the name the grammar gave, while the '
      'manifest lists the name the resolver gave',
@@ -107,17 +118,6 @@ MUTATIONS = [
      '        names[keeper] = label\n        n = 2',
      '        names[keeper] = label\n        n = 1'),
 
-    ('C7', ['a_resolver_that_repeats_a_name_is_refused_rather_than_believed'],
-     'a name arriving twice is written twice, and the second wins in silence',
-     "            if label in manifest['parts']:\n"
-     "                # resolve_clashes owes every claim a name of its own. If two\n"
-     "                # arrive here alike the manifest keeps the second in silence,\n"
-     "                # and half the geometry the name covers is gone from every step\n"
-     "                # that reads it.\n"
-     "                raise SystemExit(\n"
-     "                    f'{src}：{name} 與 {manifest[\"parts\"][label][\"mesh\"]} '\n"
-     "                    f'都拿到部件名稱 {label}，resolve_clashes 沒有把它們分開。')\n",
-     ''),
 ]
 
 
