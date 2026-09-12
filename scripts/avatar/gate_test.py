@@ -517,6 +517,22 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
         self.assertEqual(sorted(partitioned(path)['parts']),
                          sorted(self.manifest['parts']))
 
+    def test_lifting_the_whole_body_does_not_move_its_hair(self):
+        # The other half of the same space question. A 180 degree turn leaves
+        # every Y alone, so it cannot see the frame's own face measurement
+        # being taken from raw POSITION; a translation can. Both halves have to
+        # be in the rest world or the crown ends up half a metre below the head
+        # it belongs to.
+        doc, binary = glb.load(self.OTHER)
+        scene = doc['scenes'][doc.get('scene', 0)]
+        doc['nodes'].append({'name': 'lift', 'translation': [0, 0.5, 0],
+                             'children': list(scene['nodes'])})
+        scene['nodes'] = [len(doc['nodes']) - 1]
+        path = os.path.join(tempfile.mkdtemp(), 'lifted.vrm')
+        glb.save(path, doc, binary)
+        self.assertEqual(sorted(partitioned(path)['parts']),
+                         sorted(self.manifest['parts']))
+
     def test_the_strand_mesh_is_placed_by_geometry(self):
         # Its whole head of hair is one primitive, and it is behind the eyes:
         # this is a VRM 1.0 export, where the model faces +Z, so the strand at
