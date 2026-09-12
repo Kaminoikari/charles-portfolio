@@ -370,6 +370,60 @@ def split_primitive(doc, views, prim):
     return new
 
 
+def resolve_clashes(claims):
+    """Give every claim on a part name a name of its own, in claim order.
+
+    `claims` is one row per group of primitives that a mesh reads the same
+    name out of the material grammar for, carrying that `label` and the
+    group's `extent`, its vertical reach in metres. A manifest keys parts by
+    name and a part belongs to one mesh, so when two meshes claim one name a
+    second name has to come from somewhere. The plain name goes to the claim
+    reaching furthest; the rest trail it with a number, in document order.
+
+    Ranked on reach. VRoid Studio's dress-up export draws its skin
+    in three layers: the body, and one unmasked copy of the torso under each
+    garment. On that file before cover.trim cut the covered triangles away
+    (git 6ae5189) each inner layer was 5,970 triangles against the body's
+    4,139, so ranking on size hands `Body_Skin` to a patch with no head and no
+    feet, which humanoid.body_skin, envelope.leg_vertices, garment.body_pool
+    and measure.py would all then read as the body. Reach picks the body on
+    either file, because masking hollows a body without shortening it: 1.578
+    metres against the layers' 1.261.
+
+    The number carries no meaning, because nothing measurable here does. The
+    layer the hoodie sits on and the layer the jeans sit on hold the same 298
+    vertices at the same coordinates and their materials carry the same name;
+    only their meshes differ. Naming them after their meshes is what
+    springsim's deriveManifest does and what the hand-written manifest for
+    this body does (`Body_Skin_Inner_Top`), but this step stopped reading mesh
+    names at stage 2b-i, and one of the names it would have to write is
+    `Outfit_Shoes_Body (merged).baked(copy).baked`. Consumers read these by
+    the prefix rather than the suffix: pierce.skin_parts takes every
+    `Body_Skin_*` and `Face_*` as skin, cover.cloth_parts takes the rest.
+    """
+    rows = {}
+    for i, claim in enumerate(claims):
+        rows.setdefault(claim['label'], []).append(i)
+    names, taken = [None] * len(claims), {c['label'] for c in claims}
+    for label, group in rows.items():
+        # Ties fall to document order, at both ends: rows are built in it, and
+        # max returns the first maximal claim it meets.
+        keeper = max(group, key=lambda i: claims[i]['extent'])
+        names[keeper] = label
+        n = 2
+        for i in group:
+            if i == keeper:
+                continue
+            # `label_2` can be a name the grammar already produced on its own,
+            # and taking it would trade one collision for another.
+            while f'{label}_{n}' in taken:
+                n += 1
+            names[i] = f'{label}_{n}'
+            taken.add(names[i])
+            n += 1
+    return names
+
+
 def partition(src, dst, parts_path):
     doc, binary = glb.load(src)
     views = glb.views_of(doc, binary)
@@ -391,6 +445,41 @@ def partition(src, dst, parts_path):
     # are keyed by the primitive indices the loop below is about to replace.
     rest = pose.skinned(doc, views)
 
+    # Read every name before writing any of them down. Which of two meshes
+    # claiming one name keeps it cannot be decided from either mesh alone.
+    claims, by_mesh = [], {}
+    for mesh in doc['meshes']:
+        if id(mesh) in faces:
+            continue
+        name = mesh.get('name')
+        labels, drawn = [], []
+        for index, prim in enumerate(mesh['primitives']):
+            used = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
+            # The vertices this primitive draws, read through its indices.
+            # A VRoid mesh shares one accessor across all of its primitives
+            # (mika-pink's body mesh: seven primitives, one POSITION), so a raw
+            # read gives the 20 triangles of shoe baked into the body mesh the
+            # reach of the entire body, and they take `Outfit_Shoes` from the
+            # shoes.
+            p = rest[(name, index)][used]
+            drawn.append(p)
+            material = mats[prim['material']]
+            label = body_name(material)
+            if label is None:
+                # recognise() has already refused every material the grammar
+                # cannot place, so what reaches here unnamed is a strand, and
+                # a strand is the one thing left that needs geometry.
+                label = hair_name(material, p.mean(axis=0), p[:, 1].min(), frame)
+            labels.append(label)
+        for label in dict.fromkeys(labels):
+            members = [i for i, l in enumerate(labels) if l == label]
+            ys = np.concatenate([drawn[i][:, 1] for i in members])
+            by_mesh.setdefault(id(mesh), []).append(len(claims))
+            claims.append({'label': label, 'members': members,
+                           'extent': float(ys.max() - ys.min())})
+
+    resolved = resolve_clashes(claims)
+
     for mesh in doc['meshes']:
         name = mesh.get('name')
         if id(mesh) in faces:
@@ -406,34 +495,22 @@ def partition(src, dst, parts_path):
             }
             continue
 
-        rebuilt, labels = [], []
-        for index, prim in enumerate(mesh['primitives']):
-            material = mats[prim['material']]
-            label = body_name(material)
-            if label is None:
-                # recognise() has already refused every material the grammar
-                # cannot place, so what reaches here unnamed is a strand, and
-                # a strand is the one thing left that needs geometry.
-                used = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
-                p = rest[(name, index)][used]
-                label = hair_name(material, p.mean(axis=0), p[:, 1].min(), frame)
-            new = split_primitive(doc, views, prim)
-            new.setdefault('extras', {})['part'] = label
-            rebuilt.append(new)
-            labels.append(label)
+        rebuilt = [split_primitive(doc, views, prim) for prim in mesh['primitives']]
+        for c in by_mesh.get(id(mesh), []):
+            for i in claims[c]['members']:
+                rebuilt[i].setdefault('extras', {})['part'] = resolved[c]
         mesh['primitives'] = rebuilt
 
-        for label in dict.fromkeys(labels):
+        for c in by_mesh.get(id(mesh), []):
+            label, members = resolved[c], claims[c]['members']
             if label in manifest['parts']:
-                # parts are keyed by label, so the second mesh to claim one
-                # used to replace the first without a word: the manifest still
-                # loads, the part still has a mesh, and half the geometry it
-                # names is gone from every step that reads it.
+                # resolve_clashes owes every claim a name of its own. If two
+                # arrive here alike the manifest keeps the second in silence,
+                # and half the geometry the name covers is gone from every step
+                # that reads it.
                 raise SystemExit(
                     f'{src}：{name} 與 {manifest["parts"][label]["mesh"]} '
-                    f'都主張部件名稱 {label}，manifest 以名稱為鍵，'
-                    f'後者會無聲蓋掉前者。')
-            members = [i for i, l in enumerate(labels) if l == label]
+                    f'都拿到部件名稱 {label}，resolve_clashes 沒有把它們分開。')
             manifest['parts'][label] = {
                 'mesh': name,
                 'primitives': members,

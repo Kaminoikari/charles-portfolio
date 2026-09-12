@@ -9,8 +9,10 @@ real make.gate on JSON-perturbed copies of the shipped base body written to a
 temporary directory; the binary chunk is carried over untouched.
 """
 import copy
+import hashlib
 import os
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -22,6 +24,7 @@ import glb  # noqa: E402
 import humanoid  # noqa: E402
 import make  # noqa: E402
 import partition  # noqa: E402
+import pierce  # noqa: E402
 import vrm1to0  # noqa: E402
 
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
@@ -238,20 +241,68 @@ class PartitionRecognises(unittest.TestCase):
         self.assertTrue(partition.is_strand('F00_000_Hair_00_HAIR_01'))
         self.assertFalse(partition.is_strand('Milfy_Ink'))
 
-    def test_two_meshes_cannot_claim_the_same_part_name(self):
-        # parts are keyed by label, so the second mesh to claim one used to
-        # replace the first in silence. hair_name is stubbed only to create
-        # the collision; the guard under test runs for real, inside the real
-        # partition() on the real body.
-        out = tempfile.mkdtemp()
+    def claiming(self, label, out=None):
+        """partition() with every hair strand claiming `label` as its part."""
+        out = out or tempfile.mkdtemp()
         original = partition.hair_name
-        partition.hair_name = lambda *a, **kw: 'Body_Skin'
+        partition.hair_name = (label if callable(label)
+                               else lambda *a, **kw: label)
         try:
-            with self.assertRaises(SystemExit) as caught:
-                partition.partition(BODY, os.path.join(out, 'o.vrm'),
-                                    os.path.join(out, 'p.json'))
+            return partition.partition(BODY, os.path.join(out, 'o.vrm'),
+                                       os.path.join(out, 'p.json'))[0]['parts']
         finally:
             partition.hair_name = original
+
+    def test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest(self):
+        # parts are keyed by label and a part belongs to one mesh, so the
+        # second mesh to claim a name used to replace the first in silence.
+        # hair_name is stubbed only to make the collision; the resolver under
+        # test runs for real, inside the real partition() on the real body.
+        parts = self.claiming('Body_Skin')
+        self.assertEqual(parts['Body_Skin']['mesh'], 'Body.baked')
+        self.assertEqual(parts['Body_Skin_2']['mesh'], 'Hair001.baked')
+        # Both meshes keep every primitive they claimed: 4 skin primitives on
+        # the body, 77 strands on the hair.
+        self.assertEqual(len(parts['Body_Skin']['primitives']), 4)
+        self.assertEqual(len(parts['Body_Skin_2']['primitives']), 77)
+
+    def test_a_claims_reach_is_measured_on_the_vertices_it_draws(self):
+        # Every primitive of a VRoid mesh shares one POSITION accessor: this
+        # body's 7 body primitives and its 77 strands are 2 buffers. Read raw,
+        # the shoes baked into the body mesh reach 1.51m rather than their own
+        # 0.16m and take the name from a claim that really is taller.
+        parts = self.claiming('Outfit_Shoes')
+        self.assertEqual(parts['Outfit_Shoes']['mesh'], 'Hair001.baked')
+        self.assertEqual(parts['Outfit_Shoes_2']['mesh'], 'Body.baked')
+
+    def test_the_number_skips_a_name_the_grammar_already_wrote(self):
+        # Body_Skin_2 is a name the grammar can reach on its own, and handing
+        # it to a second claim would trade one collision for another.
+        half = [0]
+
+        def alternate(*a, **kw):
+            half[0] += 1
+            return 'Body_Skin' if half[0] % 2 else 'Body_Skin_2'
+
+        parts = self.claiming(alternate)
+        self.assertEqual(parts['Body_Skin']['mesh'], 'Body.baked')
+        self.assertEqual(
+            {n: parts[n]['mesh'] for n in parts if n.startswith('Body_Skin_')},
+            {'Body_Skin_2': 'Hair001.baked', 'Body_Skin_3': 'Hair001.baked'})
+
+    def test_a_resolver_that_repeats_a_name_is_refused_rather_than_believed(self):
+        # The invariant behind the rename. resolve_clashes owes every claim a
+        # name of its own; if two arrive alike the manifest keeps the second
+        # and half the geometry the name covers is gone from every step that
+        # reads it, with nothing said.
+        out = tempfile.mkdtemp()
+        original = partition.resolve_clashes
+        partition.resolve_clashes = lambda claims: [c['label'] for c in claims]
+        try:
+            with self.assertRaises(SystemExit) as caught:
+                self.claiming('Body_Skin', out)
+        finally:
+            partition.resolve_clashes = original
         self.assertIn('Body_Skin', str(caught.exception))
         self.assertFalse(os.path.exists(os.path.join(out, 'o.vrm')))
 
@@ -586,6 +637,106 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
         strands = {n: p for n, p in self.manifest['parts'].items()
                    if p['mesh'] == 'Hair'}
         self.assertEqual(list(strands), ['Hair_Side_R'])
+
+
+class BodyDrawingItsSkinInThreeLayers(unittest.TestCase):
+    """VRoid Studio's dress-up export, whose skin is three meshes.
+
+    It draws the body once, and then an unmasked copy of the torso under each
+    garment so the garment has something to sit on. All three read SKIN out of
+    the material grammar, so all three claim `Body_Skin`; the sole left behind
+    in the body mesh and the shoes claim `Outfit_Shoes`. Two collisions, and
+    resolving only the first would stop the body at the second.
+    """
+
+    OTHER = os.path.join(HERE, '..', '..', 'public', 'avatar',
+                         'vroid-studio-dressup.vrm')
+    # The same export before cover.trim cut the covered triangles away, read
+    # out of git the way cover_test reads it. It is the one file on which
+    # reach and size disagree about which layer is the body.
+    EXPORT_BLOB = '6ae5189:public/avatar/vroid-studio-dressup.vrm'
+    EXPORT_SHA = ('241a5803504144849c0ecbbfcac8e816fc9fe798907'
+                  'af935bd8d372fdf8a805a')
+
+    @classmethod
+    def setUpClass(cls):
+        if not os.path.exists(cls.OTHER):
+            raise unittest.SkipTest('public/avatar/vroid-studio-dressup.vrm 不在')
+        cls.doc = glb.load(cls.OTHER)[0]
+        cls.manifest = partitioned(cls.OTHER)
+
+    @classmethod
+    def export(cls):
+        out = os.path.join(tempfile.mkdtemp(), 'export.vrm')
+        with open(out, 'wb') as handle:
+            subprocess.run(['git', '-C', os.path.join(HERE, '..', '..'),
+                            'show', cls.EXPORT_BLOB], stdout=handle, check=True)
+        digest = hashlib.sha256(open(out, 'rb').read()).hexdigest()
+        if digest != cls.EXPORT_SHA:
+            raise AssertionError(f'{cls.EXPORT_BLOB} is {digest}')
+        return out
+
+    def test_three_of_its_meshes_read_skin_out_of_the_grammar(self):
+        # If this ever fails the fixture stopped being the case under test.
+        mats = [m.get('name', f'#{i}')
+                for i, m in enumerate(self.doc['materials'])]
+        skin = [mesh.get('name') for mesh in self.doc['meshes']
+                for p in mesh['primitives']
+                if partition.vroid_category(mats[p['material']])[1] == 'SKIN']
+        self.assertEqual(sorted(skin), ['Body (merged).baked(copy).baked',
+                                        'Face (merged)(Clone).baked.baked',
+                                        'InnerBottom.baked', 'InnerTop.baked'])
+
+    def test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name(self):
+        parts = self.manifest['parts']
+        self.assertEqual(parts['Body_Skin']['mesh'],
+                         'Body (merged).baked(copy).baked')
+        self.assertEqual(parts['Body_Skin']['tris'], 3579)
+        self.assertEqual([parts[n]['tris'] for n in
+                          ('Body_Skin_2', 'Body_Skin_3')], [304, 304])
+
+    def test_the_numbers_follow_document_order(self):
+        # The two inner layers hold the same 298 vertices at the same
+        # coordinates under materials of the same name, so nothing measurable
+        # separates them and only a stable tie-break keeps the manifest from
+        # changing between runs of the same file.
+        order = [m.get('name') for m in self.doc['meshes']]
+        self.assertLess(order.index('InnerBottom.baked'),
+                        order.index('InnerTop.baked'))
+        self.assertEqual(self.manifest['parts']['Body_Skin_2']['mesh'],
+                         'InnerBottom.baked')
+        self.assertEqual(self.manifest['parts']['Body_Skin_3']['mesh'],
+                         'InnerTop.baked')
+
+    def test_all_three_layers_stay_skin_for_the_steps_that_read_them(self):
+        # The suffix carries no meaning; the prefix does. A layer read as a
+        # garment would be deleted by the strip and would count as clothing
+        # showing through in pierce.
+        parts = self.manifest['parts']
+        for name in ('Body_Skin', 'Body_Skin_2', 'Body_Skin_3'):
+            self.assertFalse(parts[name]['deletable'], name)
+        self.assertEqual(sorted(pierce.skin_parts(parts)),
+                         ['Body_Skin', 'Body_Skin_2', 'Body_Skin_3', 'Face'])
+
+    def test_the_sole_left_in_the_body_mesh_trails_the_shoes(self):
+        parts = self.manifest['parts']
+        self.assertEqual(parts['Outfit_Shoes']['mesh'], 'Shoes.baked')
+        self.assertEqual(parts['Outfit_Shoes_2']['mesh'],
+                         'Body (merged).baked(copy).baked')
+        self.assertEqual(parts['Outfit_Shoes_2']['tris'], 20)
+
+    def test_reach_rather_than_size_says_which_layer_is_the_body(self):
+        # On the export before the cut the two rankings disagree: each inner
+        # layer is 5,970 triangles against the body's 4,139, so ranking on
+        # size hands Body_Skin to a torso patch with no head and no feet, and
+        # humanoid.body_skin, envelope.leg_vertices, garment.body_pool and
+        # measure.py all read whatever holds that name as the body.
+        parts = partitioned(self.export())['parts']
+        self.assertEqual(parts['Body_Skin']['mesh'],
+                         'Body (merged).baked(copy).baked')
+        self.assertEqual(parts['Body_Skin']['tris'], 4139)
+        self.assertEqual([parts[n]['tris'] for n in
+                          ('Body_Skin_2', 'Body_Skin_3')], [5970, 5970])
 
 
 class Wiring(unittest.TestCase):

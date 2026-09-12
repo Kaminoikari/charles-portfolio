@@ -23,7 +23,7 @@ from outfits import mellowheart  # noqa: E402
 BODIES = ('AvatarSample_C_webp.vrm', 'Vivi_webp.vrm',
           'Sendagaya_Shibu_webp.vrm', 'Darkness_Shibu_webp.vrm',
           'HairSample_Female_webp.vrm', 'mika-pink.vrm',
-          'vrm1-twist-sample.vrm')
+          'vrm1-twist-sample.vrm', 'vroid-studio-dressup.vrm')
 
 for name in BODIES:
     src = os.path.join(HERE, '..', '..', '..', 'public', 'avatar', name)

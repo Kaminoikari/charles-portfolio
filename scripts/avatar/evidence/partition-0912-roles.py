@@ -12,8 +12,10 @@ name:
 
 Printed per body: whether exactly one mesh carries FACE, whether that mesh is
 the only one with morph targets, every label the rules produce, and any label
-two different meshes would both claim (the manifest is keyed by label, so that
-is a refusal rather than a merge).
+two different meshes would both claim. A claim two meshes make was a refusal
+when this ran, because the manifest is keyed by label and one part belongs to
+one mesh; partition.resolve_clashes now renames instead, and what it does with
+these same two clashes is in partition-0912-clashes.log.
 """
 import collections
 import pathlib

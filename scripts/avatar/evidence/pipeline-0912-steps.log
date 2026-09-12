@@ -80,3 +80,26 @@ vrm1-twist-sample.vrm
   1 partition ok  7 parts: Body_Skin, Face, Hair_BodyBack, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   2 strip     ok  3 primitives removed, replacing Outfit_Bottom, Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 4.7%
+==================================================================
+vroid-studio-dressup.vrm
+   vroid-studio-dressup.vrm 是 VRM 1.0，轉成 0.x 寫到 base-vrm0.vrm（14594052 bytes）
+   捨棄：meta.allowPoliticalOrReligiousUsage=False，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowAntisocialOrHateUsage=False，0.x 的 meta 沒有這個欄位
+   捨棄：meta.creditNotation='required'，0.x 的 meta 沒有這個欄位
+   捨棄：meta.allowRedistribution=True，0.x 的 meta 沒有這個欄位
+   捨棄：meta.modification='allowModificationRedistribution'，0.x 的 meta 沒有這個欄位
+   近似：spring Bust 的 hitRadius 逐關節不同，取根關節的
+   近似：spring Bust 的 hitRadius 逐關節不同，取根關節的
+   近似：spring 8b45640ee2c57ef9cc3f31d5c59769f891f65e95.transferable_HairJoint-e22969dd-7b95-42cf-bf2e-ee23d7a11db1-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring 8b45640ee2c57ef9cc3f31d5c59769f891f65e95.transferable_HairJoint-a8402804-36ba-4e01-a80a-58929aed1997-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring 8b45640ee2c57ef9cc3f31d5c59769f891f65e95.transferable_HairJoint-8f3a95f44a144e40a128e2bc3cf3ef46-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring 8b45640ee2c57ef9cc3f31d5c59769f891f65e95.transferable_HairJoint-970567d895554c87a26795e64d18a25b-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring e41019634e5bb19ff9be3d3fc34991b15e75ba10.transferable_HairJoint-f0a15daa094e46feae4c150a2c540e5c-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring e41019634e5bb19ff9be3d3fc34991b15e75ba10.transferable_HairJoint-f6dae7fddd7b4a1caa52efb82e9e7a79-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring e41019634e5bb19ff9be3d3fc34991b15e75ba10.transferable_HairJoint-1ffbea9fb000427e94e6decd79e286d4-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring e41019634e5bb19ff9be3d3fc34991b15e75ba10.transferable_HairJoint-e429d0b8a44d4b4a84124d8f9bb9ab1a-1 的 hitRadius 逐關節不同，取根關節的
+   近似：spring e41019634e5bb19ff9be3d3fc34991b15e75ba10.transferable_HairJoint-ab758f2895da4b6993a9c556ad9dec0b-1 的 hitRadius 逐關節不同，取根關節的
+   近似：材質 N00_000_00_HairBack_00_HAIR (Instance) (Instance) 的 matcapFactor [0, 0, 0]，0.x 的 _SphereAdd 沒有顏色，當作白
+  1 partition ok  11 parts: Acc_GlassesHiFrame, Acc_GlassesHiLens, Body_Skin, Body_Skin_2, Body_Skin_3, Face, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Shoes_2, Outfit_Top
+  2 strip     ok  6 primitives removed, replacing Acc_GlassesHiFrame, Acc_GlassesHiLens, Outfit_Bottom, Outfit_Shoes, Outfit_Shoes_2, Outfit_Top
+  3 skin      ok  repainted 8.8%

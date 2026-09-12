@@ -1,0 +1,58 @@
+
+AvatarSample_A_webp.vrm
+   named, 9 parts
+
+AvatarSample_B_webp.vrm
+   named, 13 parts
+
+AvatarSample_C_webp.vrm
+   named, 9 parts
+
+Darkness_Shibu_webp.vrm
+   named, 9 parts
+
+HairSample_Female_webp.vrm
+   named, 8 parts
+
+HairSample_Male_webp.vrm
+   named, 9 parts
+
+Sakurada_Fumiriya_webp.vrm
+   named, 11 parts
+
+Sendagaya_Shibu_webp.vrm
+   named, 11 parts
+
+Sendagaya_Shino_webp.vrm
+   named, 10 parts
+
+Victoria_Rubin_webp.vrm
+   named, 11 parts
+
+Vita_webp.vrm
+   named, 9 parts
+
+Vivi_webp.vrm
+   named, 9 parts
+
+mika-milfy-12.vrm
+   REFUSED
+   - 有 20 個材質不帶 VRoid 的類別後綴（SKIN、CLOTH、HAIR、FACE、EYE、MATCAP），推不出部件名稱：Mellow_Belt_Acc、Mellow_Inner、Mellow_Inner_Sub、Mellow_Jewel、Mellow_Lace、Mellow_Leg_Acc、Mellow_Outer、Mellow_Shoes、Mellow_Skirt_Cloth、Mellow_Sub_Acc、Mellow_Underwear、Milfy_Bear、Milfy_EarInner、Milfy_Gold、Milfy_GoldInner、Milfy_Ink、Milfy_Mint、Milfy_MintDark、Milfy_Plaster、Milfy_White
+
+mika-pink.vrm
+   named, 13 parts
+
+vrm1-twist-sample.vrm
+   named, 7 parts
+
+vroid-studio-dressup.vrm
+   named, 11 parts
+   CLASH Body_Skin wanted by 3
+      reach 1.5464 m  -> Body_Skin  (Body (merged).baked(copy).baked, 3579 tris)
+      reach 0.6193 m  -> Body_Skin_2  (InnerBottom.baked, 304 tris)
+      reach 0.6193 m  -> Body_Skin_3  (InnerTop.baked, 304 tris)
+   CLASH Outfit_Shoes wanted by 2
+      reach 0.0027 m  -> Outfit_Shoes_2  (Body (merged).baked(copy).baked, 20 tris)
+      reach 0.1597 m  -> Outfit_Shoes  (Shoes.baked, 760 tris)
+
+15 of 16 named

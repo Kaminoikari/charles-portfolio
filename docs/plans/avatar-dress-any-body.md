@@ -338,8 +338,7 @@ vrm1-twist-sample  7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top    
 
 仍被拒絕的兩具，理由都換成了真正的結構問題：`mika-milfy-12` 的 20 個材質不帶類別
 token（它是我們自己的產出，partition 本來就不對它跑），`vroid-studio-dressup` 是三個
-mesh 都主張 `Body_Skin`。後者正是 2c 要解的那件事，manifest 目前一個部件只能屬於一個
-mesh。
+mesh 都主張 `Body_Skin`。後者由下面的 2c-i 解掉。
 
 八道 mutation 逐一拆四個決定的八個位置，全部照預期轉紅，收據在
 [mutations-meshes-0912.md](../../scripts/avatar/evidence/mutations-meshes-0912.md)。
@@ -398,22 +397,53 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 帶號距離，而射線規則答的是「站在前面的人看不看得到這塊皮膚」，未必是 winding number
 答的那個問題。**要先量再決定。**
 
-**已知的第一個擋路點也不是遮蔽。** `vroid-studio-dressup` 現在被 partition 擋在
-`Body_Skin` 名稱衝突上：`Body (merged)`、`InnerTop`、`InnerBottom` 三個 mesh 的材質
-文法都推出同一個名字（前兩者的材質名連字串都一樣，只有 material index 不同），而
-manifest 一個部件只能屬於一個 mesh。手寫的
-`public/avatar/vroid-studio-dressup.parts.json` 早就示範了答案的形狀：`Body_Skin`、
-`Body_Skin_Inner_Top`、`Body_Skin_Inner_Bottom`，而 `pierce.skin_parts` 與
-`cover.cloth_parts` 已經照前綴收。**衝突不只一個**：
-[partition-0912-roles.log](../../scripts/avatar/evidence/partition-0912-roles.log)
-還記著第二個 `CLASH Outfit_Shoes`（`Body (merged)` 的鞋底與 `Shoes.baked` 的鞋），手寫
-manifest 把它們叫成 `Outfit_Shoes_Sole` 與 `Outfit_Shoes`。只解掉皮膚那一個，
-`vroid-studio-dressup` 會停在下一個。要決定的是命名衝突時怎麼取名（mesh 名會把 2b 剛
-拿掉的東西放回來），以及 `'Body_Skin'` 這個字面量的擴散。口徑：`scripts/avatar` 底下的 `.py` 與 `.ts`
+**2c-i. 名稱衝突 — 已完成。** 第一個擋路點是命名衝突。`vroid-studio-dressup` 被 partition
+擋在兩個上面：這個匯出把身體畫成三層（身體本身，加上每件衣服底下一份沒有挖空的軀幹讓
+衣服有東西可以坐），三層的材質文法都推出 `Body_Skin`；另外 `Body (merged)` 裡剩下的鞋底
+與 `Shoes.baked` 都推出 `Outfit_Shoes`。manifest 以名字為鍵、一個部件屬於一
+個 mesh，所以第二個主張者本來會無聲蓋掉第一個。
+
+`resolve_clashes` 把平名給**垂直跨度最大**的那一份主張，其餘依文件順序編號：
+
+| 主張 | 跨度 | 三角形 | 拿到 |
+|---|---|---|---|
+| `Body (merged)` p0 | 1.5464 m | 3,579 | `Body_Skin` |
+| `InnerBottom` p0 | 0.6193 m | 304 | `Body_Skin_2` |
+| `InnerTop` p0 | 0.6193 m | 304 | `Body_Skin_3` |
+| `Shoes.baked` p0 | 0.1597 m | 760 | `Outfit_Shoes` |
+| `Body (merged)` p1 | 0.0027 m | 20 | `Outfit_Shoes_2` |
+
+**排法用垂直跨度。** 大小與跨度兩種排法在出貨的檔上同意，在 `cover.trim` 切掉被遮蓋的
+三角形之前（git `6ae5189`）不同意：那時每層內襯是 5,970 個三角形、身體是 4,139，照大小排會把
+`Body_Skin` 交給一塊沒有頭也沒有腳的軀幹補片，而 `humanoid.body_skin`、
+`envelope.leg_vertices`、`garment.body_pool`、`measure.py` 都會把拿著那個名字的東西當成
+身體。挖空讓身體變空心，高度照舊，所以跨度在兩個檔上都選中身體，而那個舊檔正是釘住
+這個判準的夾具（`gate_test` 從 git blob 讀它，sha256 綁死）。
+
+**跨度量在這個 primitive 畫到的頂點上。** VRoid 的一個 mesh 所有 primitive 共用一個
+POSITION accessor（mika-pink 的身體 mesh 七個 primitive 一個），照整個 buffer 量的話，
+baked 進身體 mesh 的那 20 個三角形鞋底會量到整具身體的 1.51 公尺。
+
+**編號只是編號。** 兩層內襯持有同樣的 298 個頂點、同樣的座標，材質名也一樣，只有 mesh 名
+不同，所以沒有任何可量的東西分得開它們。手寫 manifest 叫它們 `Body_Skin_Inner_Top` 與
+`Body_Skin_Inner_Bottom`，springsim 的 `deriveManifest` 用 `<role>_<mesh>`，而這一步在 2b-i
+之後不拿 mesh 名決定任何部件叫什麼，真要寫的話其中一個會是
+`Outfit_Shoes_Body (merged).baked(copy).baked`。下游本來就照前綴收：`pierce.skin_parts`
+收所有 `Body_Skin_*` 與 `Face_*`，`cover.cloth_parts` 收其餘。
+
+收據 [partition-0912-clashes.log](../../scripts/avatar/evidence/partition-0912-clashes.log)：
+本機 16 具**只有這一具**有衝突，能命名的從 14 具變成 15 具，剩下那一具是
+`mika-milfy-12`。`vroid-studio-dressup` 現在也一路走完第 1 到第 3 步（11 parts、脫掉 6 個
+primitive、重繪 8.8%，見
+[pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)），Mika
+底模的 `parted.vrm` 仍然逐位元組不變。
+
+**這一步沒有動 `'Body_Skin'` 字面量的擴散。** 口徑：`scripts/avatar` 底下的 `.py` 與 `.ts`
 原始碼，排除 `*_test.py`、`*.test.ts` 與 `evidence/`，數**出現次數**（`rg -o`）而不是
 行數：16 次、10 個模組（`springsim.ts` 4、`envelope.py` 3、`build.py` 2，其餘七個各
 1）。扣掉產生這個名字的 `partition.py` 與唯一前綴式的 `pierce.py`，還有 14 處、8 個
-模組只會看到三層皮膚的第一層。
+模組只會看到三層皮膚的第一層。真正的遮蔽工作要不要讓皮膚集合變成複數，是在那 14 處上
+決定的。
 
 ### 3. 服裝對位與權重
 
@@ -460,9 +490,14 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   [mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)（八道）、
   [mutations-review-0912.md](../../scripts/avatar/evidence/mutations-review-0912.md)（四道，
   review 抓到的三條靜默錯誤路徑加上拒絕理由的拆分）。
+- **階段 2c-i（已達成）**：本機 16 具能命名的從 14 具變成 15 具；兩個名稱衝突都由
+  `resolve_clashes` 解掉，平名給垂直跨度最大的主張，其餘依文件順序編號，而且不讀 mesh
+  名。收據
+  [partition-0912-clashes.log](../../scripts/avatar/evidence/partition-0912-clashes.log)，
+  mutation 見
+  [mutations-clashes-0912.md](../../scripts/avatar/evidence/mutations-clashes-0912.md)。
 - **階段 2c**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
-  會紅。第一個已知的擋路點不是遮蔽而是 manifest 的形狀：`vroid-studio-dressup` 有三個
-  mesh 都帶皮膚，而一個部件目前只能屬於一個 mesh。
+  會紅。
 - **階段 3**：Mika 自己跑一遍與階段 1 之後的產出相同（回歸關；階段 1 已經動過她的
   皮膚貼圖，所以基準是那一版而不是 `9b09611`）；換一具身體後每個部件對身體的最近
   距離不得為負；**主導骨指派在 source 上算一次就固定，斷言同一件服裝解碼到各家族時
