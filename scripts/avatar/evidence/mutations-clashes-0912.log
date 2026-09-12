@@ -1,0 +1,27 @@
+partition.py  blob 0ba2745b2f0c0db127955f3ed2d1cd4e926ebefe
+baseline  Ran 59 tests in 5.886s  green
+
+C1  there is no resolution: every claim keeps the name the grammar gave it, which is where this step stood before
+    Ran 53 tests in 5.384s  RED  as expected
+    also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)']
+
+C2  the plain name goes to the claim reaching least
+    Ran 59 tests in 6.324s  RED  as expected
+    also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)']
+
+C3  claims are ranked on size, the way springsim ranks its own derivation
+    Ran 59 tests in 6.426s  RED  as expected
+    also red: ['test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest (gate_test.PartitionRecognises.test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest)']
+
+C4  the claims that lose a name are numbered back to front
+    Ran 59 tests in 5.493s  RED  as expected
+
+C5  the number is taken without asking whether the grammar wrote it already
+    Ran 59 tests in 6.836s  RED  as expected
+
+C6  a claim reaches as far as its mesh's whole POSITION buffer
+    Ran 59 tests in 4.537s  RED  as expected
+
+C7  a name arriving twice is written twice, and the second wins in silence
+    Ran 59 tests in 4.591s  RED  as expected
+

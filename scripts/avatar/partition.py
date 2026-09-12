@@ -24,7 +24,10 @@ guessing. That is exact on any VRoid export, and it replaced a table from
 primitive index to part name that was right here and silently wrong elsewhere.
 Which mesh a primitive sits in is not asked either: the face is the mesh
 carrying FACE materials, and the two kinds of hair are told apart by the part
-name VRoid writes, HairBack against Hair.
+name VRoid writes, HairBack against Hair. Two meshes can still read one name
+out of the grammar, which a manifest keyed by name cannot hold;
+`resolve_clashes` gives the plain name to the claim reaching furthest
+vertically and numbers the rest.
 
 One rule here is still Mika's own and cannot be read off the body in hand:
 CLIP_DECALS, which costs two other bodies some hair. So this remains the one
@@ -380,15 +383,15 @@ def resolve_clashes(claims):
     second name has to come from somewhere. The plain name goes to the claim
     reaching furthest; the rest trail it with a number, in document order.
 
-    Ranked on reach. VRoid Studio's dress-up export draws its skin
-    in three layers: the body, and one unmasked copy of the torso under each
-    garment. On that file before cover.trim cut the covered triangles away
-    (git 6ae5189) each inner layer was 5,970 triangles against the body's
-    4,139, so ranking on size hands `Body_Skin` to a patch with no head and no
-    feet, which humanoid.body_skin, envelope.leg_vertices, garment.body_pool
-    and measure.py would all then read as the body. Reach picks the body on
-    either file, because masking hollows a body without shortening it: 1.578
-    metres against the layers' 1.261.
+    Ranked on reach. VRoid Studio's dress-up export draws its skin in three
+    layers: the body, and one unmasked copy of the torso under each garment.
+    On that file before cover.trim cut the covered triangles away (git
+    6ae5189) each inner layer was 5,970 triangles against the body's 4,139, so
+    ranking on size hands `Body_Skin` to a patch with no head and no feet,
+    which humanoid.body_skin, envelope.leg_vertices, garment.body_pool and
+    measure.py would all then read as the body. Reach picks the body on either
+    file, because masking hollows a body without shortening it: 1.578 metres
+    against the layers' 1.261.
 
     The number carries no meaning, because nothing measurable here does. The
     layer the hoodie sits on and the layer the jeans sit on hold the same 298
