@@ -72,7 +72,7 @@ sequence, and then exactly the two rows with more than one name in them go red.
 
 ## The census this rests on
 
-`evidence/pipeline-0912-steps.log`, six bodies through steps 1 to 3:
+`evidence/pipeline-0912-steps.log`, seven bodies through steps 1 to 3:
 
     AvatarSample_C     9 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top
     Vivi               9 parts   removes Outfit_Shoes, Outfit_Top
@@ -82,7 +82,7 @@ sequence, and then exactly the two rows with more than one name in them go red.
     mika-pink         13 parts   removes exactly the original five
     vrm1-twist-sample  7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top
 
-Four of the seven have no lower garment, and one carries a garment name that was
+Three of the seven have no lower garment, and one carries a garment name that was
 not in the written-down list. Under R1 each of those is a refusal rather than a
 dressed body. (The part counts are higher than when this table was first written
 because stage 2b started naming `Hair_Side_L` and `Hair_Side_R` on these bodies;

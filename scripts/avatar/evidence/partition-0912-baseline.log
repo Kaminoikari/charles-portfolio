@@ -6,3 +6,17 @@ parts.json sha256 79aa95bd5956f2fff7581b1a48ea6eea4f9a0d2ece8e9fd5623220ad4ec9e8
 
 stage 0 recorded  1d4e3a37d33d91d08b7f26c1edf82332a405ebc0a936ce80ad1936533896e8dd / 6739132 bytes / 79aa95bd5956f2ff...
 IDENTICAL
+
+hair frame, full precision
+   waist    0.878242433
+   front    -0.024627935230000002
+   crown    1.4401936504667234
+   midline  0.09179062396287095
+   forward  -1
+   left     -1.0
+
+with every mesh renamed to one name, and the check removed:
+   pose.skinned keys  94 -> 77
+   midline            0.0918 -> 0.2309
+   crown              1.4402 -> 1.4504
+   refused            True

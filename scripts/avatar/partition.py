@@ -12,9 +12,11 @@ them is a way to silently break every expression while the file still loads. It
 is found by the FACE materials it carries, and the morph targets that make it
 worth locking are then required rather than assumed.
 
-The hair strands are named from geometry: the long ones that fall below the
-waist are the twintails, the ones sitting in front of the face at negative Z are
-the bangs, and HAIR_06 is the ornament pair the reference does not have.
+The hair strands are named from geometry, measured against this body's own
+skeleton rather than against numbers taken off one export: the long ones that
+fall below its hips are the twintails, the ones in front of its eyes are the
+bangs, and HAIR_06 is the ornament pair the reference does not have. See
+hair_frame() for the four places and what they replaced.
 
 The body's own parts do not come from geometry at all: VRoid spells the
 category into every material name, so `body_name()` reads it off rather than
@@ -24,11 +26,12 @@ Which mesh a primitive sits in is not asked either: the face is the mesh
 carrying FACE materials, and the two kinds of hair are told apart by the part
 name VRoid writes, HairBack against Hair.
 
-The strand rules above are still this body's absolute coordinates, so this
-remains the one step in the pipeline that admits to needing a particular export.
-`recognise()` says so out loud and `partition()` refuses rather than naming a
-stranger's primitives by these rules -- see the comment above face_meshes() for
-what that produced before the check existed.
+One rule here is still Mika's own and cannot be read off the body in hand:
+CLIP_DECALS, which costs two other bodies some hair. So this remains the one
+step in the pipeline that admits to needing a particular export. `recognise()`
+says so out loud and `partition()` refuses rather than naming a stranger's
+primitives by these rules -- see the comment above face_meshes() for what that
+produced before the check existed.
 """
 import json
 import re
@@ -267,23 +270,21 @@ def hair_frame(doc, views):
 
     They used to be four numbers taken off Mika: below the waist at y 0.90, in
     front of the face at z -0.03, above y 1.44 for the back of the head, and
-    further from the midline than 0.12. Each is now read from this body, and on
-    Mika each lands where the written number was -- exactly so, in the case of
-    the crown, which is the midpoint of the eyes and the top of the face mesh
-    and comes out at 1.4400 against the 1.44 that was written down. Not one of
-    Mika's 77 strands changes label; every other body's do, which is the point,
-    since their old labels were Mika's numbers applied to a different skull.
+    further from the midline than 0.12. Each is now read from this body. Three
+    of the four land near the number they replaced and one does not: on Mika the
+    crown is 1.4402 against 1.44, the front -0.0246 against -0.03, the waist
+    0.8782 against 0.90, and the midline 0.0918 against 0.12, which is 23%
+    narrower. Not one of her 77 strands changes label anyway, because no strand
+    sits in any of those gaps.
+
+    Twelve of the other bodies do move strands, between 1 and 56 of them, which
+    is the point: their old labels were Mika's numbers applied to a different
+    skull. vroid-studio-dressup moves none because it has no strands at all.
     See evidence/hair-0912-relative.log.
 
     `left` is read off the eye bone rather than from the VRM version: the
     character's left is -X on a 0.x export and +X on a 1.0 one, and the bone
     says which without this having to know.
-
-    On Mika three of the four land near the numbers they replaced and one does
-    not: the crown at 1.4402 against 1.44, the front at -0.0246 against -0.03,
-    the waist at 0.8782 against 0.90, and the midline at 0.0918 against 0.12,
-    which is 23% narrower. Not one of her 77 strands changes label anyway,
-    because no strand sits in any of those gaps.
 
     Everything here is in the REST WORLD, which is why partition measures its
     strands with pose.skinned rather than reading POSITION straight. The two
@@ -295,11 +296,13 @@ def hair_frame(doc, views):
     """
     bones, world = humanoid.bones(doc), humanoid.rest_world(doc)
     # No fallback to the head bone. It sits on the midline, so its x is
-    # numerical noise -- +0.000042 on Mika, and positive on thirteen of the
-    # sixteen -- and `left` would come out +1 on a 0.x body whose left is -X:
-    # 34 of Mika's 77 strands swap hands, the twintails and the side hair
-    # mirrored. Its z is 30mm behind the eyes as well. recognise() requires the
-    # bone instead, which is a refusal that names what it wanted.
+    # numerical noise -- 4.2e-05 on Mika, and positive on fifteen of the
+    # sixteen -- and `left` would come out +1 on a 0.x body whose left is -X.
+    # Its z is 29.7mm behind the eyes as well. Together they move 34 of Mika's
+    # 77 strands, 32 from the side alone with the twintails and the side hair
+    # mirrored and 2 more from the front. recognise() requires the bone
+    # instead, which is a refusal that names what it wanted. Measured in
+    # evidence/hair-0912-headbone.log.
     eye = np.asarray(world[bones['leftEye']])[:3, 3]
     rest, head = pose.skinned(doc, views), face_meshes(doc)[0]
     face = np.concatenate([

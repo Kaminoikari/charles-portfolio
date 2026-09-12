@@ -1,0 +1,24 @@
+body                                   head.x      eye.x   head.z - eye.z
+AvatarSample_A_webp.vrm             2.102e-05    -0.0178          31.3mm
+AvatarSample_B_webp.vrm             4.168e-05    -0.0177          29.7mm
+AvatarSample_C_webp.vrm             5.171e-04    -0.0198          30.5mm
+Darkness_Shibu_webp.vrm             3.379e-04    -0.0205          28.4mm
+HairSample_Female_webp.vrm          3.379e-04    -0.0205          28.4mm
+HairSample_Male_webp.vrm            5.088e-04    -0.0221          30.8mm
+Sakurada_Fumiriya_webp.vrm          7.614e-04    -0.0202          30.1mm
+Sendagaya_Shibu_webp.vrm            2.555e-04    -0.0206          28.4mm
+Sendagaya_Shino_webp.vrm            3.091e-04    -0.0204          28.8mm
+Victoria_Rubin_webp.vrm             4.777e-04    -0.0208          28.7mm
+Vita_webp.vrm                       4.206e-04    -0.0212          28.4mm
+Vivi_webp.vrm                       2.392e-04    -0.0201          25.2mm
+mika-milfy-12.vrm                   4.168e-05    -0.0177          29.7mm
+mika-pink.vrm                       4.168e-05    -0.0177          29.7mm
+vrm1-twist-sample.vrm              -1.678e-16    +0.0173         -21.4mm
+vroid-studio-dressup.vrm            1.577e-10    +0.0173         -21.4mm
+
+head.x positive on 15 of 16
+
+mika-pink.vrm: reading the frame off the head bone instead of the eye, out of 77 strands
+   left only            moves 32
+   front only           moves 2
+   the whole fallback   moves 34

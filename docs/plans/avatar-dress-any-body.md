@@ -404,9 +404,16 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 manifest 一個部件只能屬於一個 mesh。手寫的
 `public/avatar/vroid-studio-dressup.parts.json` 早就示範了答案的形狀：`Body_Skin`、
 `Body_Skin_Inner_Top`、`Body_Skin_Inner_Bottom`，而 `pierce.skin_parts` 與
-`cover.cloth_parts` 已經照前綴收。要決定的是命名衝突時怎麼取名（mesh 名會把 2b 剛
-拿掉的東西放回來），以及 `'Body_Skin'` 這個字面量寫死在 9 個模組共 11 處，其中只有
-`pierce.py` 是前綴式的，其餘每一處都只會看到三層皮膚的第一層。
+`cover.cloth_parts` 已經照前綴收。**衝突不只一個**：
+[partition-0912-roles.log](../../scripts/avatar/evidence/partition-0912-roles.log)
+還記著第二個 `CLASH Outfit_Shoes`（`Body (merged)` 的鞋底與 `Shoes.baked` 的鞋），手寫
+manifest 把它們叫成 `Outfit_Shoes_Sole` 與 `Outfit_Shoes`。只解掉皮膚那一個，
+`vroid-studio-dressup` 會停在下一個。要決定的是命名衝突時怎麼取名（mesh 名會把 2b 剛
+拿掉的東西放回來），以及 `'Body_Skin'` 這個字面量的擴散。口徑：`scripts/avatar` 底下的 `.py` 與 `.ts`
+原始碼，排除 `*_test.py`、`*.test.ts` 與 `evidence/`，數**出現次數**（`rg -o`）而不是
+行數：16 次、10 個模組（`springsim.ts` 4、`envelope.py` 3、`build.py` 2，其餘七個各
+1）。扣掉產生這個名字的 `partition.py` 與唯一前綴式的 `pierce.py`，還有 14 處、8 個
+模組只會看到三層皮膚的第一層。
 
 ### 3. 服裝對位與權重
 
@@ -439,8 +446,10 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，
   mutation 五道見
   [mutations-replaces-0912.md](../../scripts/avatar/evidence/mutations-replaces-0912.md)。
-- **階段 2b（已達成）**：本機 16 具能命名的從 13 具變成 14 具；partition 不再讀任何
-  mesh 名字；髮絲的四個判準全部從這具身體量出來，而 Mika 的 77 條髮絲一條都沒換手，
+- **階段 2b（已達成）**：本機 16 具能命名的從 13 具變成 14 具；partition 不再期待任何
+  **特定**的 mesh 名字（名字仍須存在且唯一，因為 manifest 以 mesh 名記錄部件所在，
+  `pose.skinned` 也以它為鍵，`recognise()` 會檢查）；髮絲的四個判準全部從這具身體量
+  出來，而 Mika 的 77 條髮絲一條都沒換手，
   `baseline.vrm` 的 `parted.vrm` 逐位元組不變。收據
   [partition-0912-bymesh.log](../../scripts/avatar/evidence/partition-0912-bymesh.log)
   與 [hair-0912-relative.log](../../scripts/avatar/evidence/hair-0912-relative.log)。
