@@ -202,14 +202,14 @@ CATEGORY ∈ {SKIN, CLOTH, HAIR, FACE, EYE, MATCAP}
 匯出 9 個，它們都是普通的 VRoid 身體。
 
 本機 16 具通過 `recognise()` 的從 9 具變成 13 具，13 具全部跑完 `partition()` 並產出
-`parts.json`。三具仍被拒絕：`mika-milfy-12.vrm` 是我們自己的產出（材質叫 `Milfy_*`／
+`parts.json`。當時三具仍被拒絕：`mika-milfy-12.vrm` 是我們自己的產出（材質叫 `Milfy_*`／
 `Mellow_*`，不帶 token），`vrm1-twist-sample.vrm` 與 `vroid-studio-dressup.vrm` 的
 mesh 不叫 `Face.baked`。
 
-**這一步沒有解決的**：mesh 仍然靠名字找，頭髮仍然靠這具身體的絕對世界座標分。所以
-partition 從「需要**這一具**匯出」變成「需要**一具** mesh 名字沒被改過的 VRoid 匯出」，
-身體部件精確、頭髮部件仍是這具身體的。mesh 的找法在階段 2b 解掉了，答案不是
-containment 而是同一套材質文法。
+**這一步當時沒有解決的兩件事，後來都在階段 2b 解掉了**：mesh 曾經靠名字找，答案不是
+containment 而是同一套材質文法（2b-i）；髮絲曾經靠這具身體的絕對世界座標分，改成從
+骨架讀（2b-ii）。所以 partition 在階段 0 收尾時是「需要**一具** mesh 名字沒被改過的
+VRoid 匯出」，現在連那個限制也沒有了，最新狀態見下面的 2b。
 
 順手補了一道防禦：manifest 以部件名稱為鍵，第二個 mesh 主張同一個名稱時原本會無聲蓋掉
 第一個。現在會拒絕。這正是把 HAIR 允許進 `Body.baked` 所帶出來的風險，所以那個部件叫
@@ -297,16 +297,19 @@ drop = customise.replaced(m, mellowheart.REPLACES)
 ```
 
 前綴是服裝的事實（這套服裝取代身體的哪些部件），解析成名字是身體的事實。收據
-[pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，六具
-身體第 1 到第 3 步全部走完：
+[pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，現在是
+七具身體第 1 到第 3 步全部走完（2a 交付時是六具，`vrm1-twist-sample` 由 2b-i 加入；
+parts 數也比 2a 當時高，因為 2b 開始在這些身體上命名 `Hair_Side_L`／`Hair_Side_R`，
+脫掉的清單一件沒變）：
 
 ```
-AvatarSample_C     7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin 72.0%
-Vivi               8 parts   removes Outfit_Shoes, Outfit_Top                         skin 13.1%
-Sendagaya_Shibu    9 parts   removes Outfit_AccessoryNeck, Outfit_Bottom, ...          skin 36.7%
-Darkness_Shibu     7 parts   removes Outfit_Shoes, Outfit_Top                         skin 77.7%
-HairSample_Female  6 parts   removes Outfit_Shoes, Outfit_Top                         skin  3.0%
+AvatarSample_C     9 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin 72.0%
+Vivi               9 parts   removes Outfit_Shoes, Outfit_Top                         skin 13.1%
+Sendagaya_Shibu   11 parts   removes Outfit_AccessoryNeck, Outfit_Bottom, ...          skin 36.7%
+Darkness_Shibu     9 parts   removes Outfit_Shoes, Outfit_Top                         skin 77.7%
+HairSample_Female  8 parts   removes Outfit_Shoes, Outfit_Top                         skin  3.0%
 mika-pink         13 parts   removes 的正是原本那五個                                  skin 36.5%
+vrm1-twist-sample  7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin  4.7%
 ```
 
 `Outfit_AccessoryNeck` 是這條管線沒見過的部件，前綴照樣認得它。
@@ -354,9 +357,11 @@ Sakurada_Fumiriya（髖部高 27cm）身上，「腰線以下」指的是她的�
 左右也改由眼睛骨的 x 正負決定，因為角色的左在 0.x 是 -X、在 1.0 是 +X。
 
 收據 [hair-0912-relative.log](../../scripts/avatar/evidence/hair-0912-relative.log)：
-**Mika 的 77 條髮絲一條都沒換手**（`mika-pink` 與 `AvatarSample_B` 各 0 移動），其餘每一
-具都有變動（8 到 56 條不等），那正是原本的標籤在說謊的量。`baseline.vrm` 的
-`parted.vrm` 逐位元組不變。
+**Mika 的 77 條髮絲一條都沒換手**（`mika-pink` 與 `AvatarSample_B` 各 0 移動）。其餘
+十二具動了 1 到 56 條，那正是原本的標籤在說謊的量；動 1 條的是
+`vrm1-twist-sample`，它整顆頭的頭髮只有一個 primitive，而 `vroid-studio-dressup` 一條
+髮絲都沒有所以不動。`baseline.vrm` 的 `parted.vrm` 逐位元組不變，收據
+[partition-0912-baseline.log](../../scripts/avatar/evidence/partition-0912-baseline.log)。
 
 **順帶抓到一個座標系缺陷。** 骨頭的世界座標與 mesh 的 POSITION 在 `vrm1to0` 跑過之後
 不是同一個空間：它把整個 scene 掛到一個轉了 180 度的節點底下，骨頭全部移動、頂點
@@ -366,11 +371,12 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 得到同一組部件」釘住。
 
 **這一步沒有解決的**：`CLIP_DECALS`（`HAIR_03`／`HAIR_05` 是髮夾貼花）仍然是 Mika 的
-事實。它在另外兩具身上是錯的：AvatarSample_A 有 9 條、Victoria_Rubin 有 2 條普通髮絲
+事實。它在另外兩具身上是錯的：AvatarSample_A 有 9 條、Victoria_Rubin 有 3 條普通髮絲
 剛好用這兩個材質變體又落在眼睛前面，被歸成飾品，然後被 `mellowheart.REPLACES` 刪掉
 （改成身體相對之前是 7 條與 1 條，所以這一步讓它略為變差）。三角形數分不開兩者
-（Mika 的夾子 6 到 128 個，那些髮絲 38 到 194 個），沒有便宜的通則；貼花偵測屬於
-2c 的遮蔽工作。
+（Mika 的 18 片夾子 6 到 128 個，那 12 條髮絲 24 到 194 個），沒有便宜的通則；貼花
+偵測屬於 2c 的遮蔽工作。逐身體的計數與三角形分布見
+[hair-0912-clips.log](../../scripts/avatar/evidence/hair-0912-clips.log)。
 
 八道 mutation（六個數字加座標系的兩端）全部照預期轉紅，收據在
 [mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)。
@@ -382,9 +388,25 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 2. 哪些身體幾何在新衣服裡面（containment，`cover.py` 已經在做）
 3. 哪個材質帶皮膚貼圖（階段 1 已完成）
 
-containment 從自推的帶號距離升級成 generalized winding number。這一步讓「Alicia 的
-`body_top` 是皮膚還是制服」這個解不掉的問題不必問：要問的是「這塊身體是不是在新衣服
-底下」。
+這一步讓「Alicia 的 `body_top` 是皮膚還是制服」這個解不掉的問題不必問：要問的是
+「這塊身體是不是在新衣服底下」。
+
+**這一段原本寫「containment 從自推的帶號距離升級成 generalized winding number」，
+寫的時候沒讀 `cover.py`。** 帶號距離那一版早就被換掉了：現在問的是沿著頂點自己的外法線
+射一條 150mm 的射線，並且要求衣服比任何其他皮膚都先被射到（`cover.covered` 的 docstring
+記了前兩版各錯在哪、各差幾個像素）。所以 winding number 要比的對象是這條射線規則，不是
+帶號距離，而射線規則答的是「站在前面的人看不看得到這塊皮膚」，未必是 winding number
+答的那個問題。**要先量再決定。**
+
+**已知的第一個擋路點也不是遮蔽。** `vroid-studio-dressup` 現在被 partition 擋在
+`Body_Skin` 名稱衝突上：`Body (merged)`、`InnerTop`、`InnerBottom` 三個 mesh 的材質
+文法都推出同一個名字（前兩者的材質名連字串都一樣，只有 material index 不同），而
+manifest 一個部件只能屬於一個 mesh。手寫的
+`public/avatar/vroid-studio-dressup.parts.json` 早就示範了答案的形狀：`Body_Skin`、
+`Body_Skin_Inner_Top`、`Body_Skin_Inner_Bottom`，而 `pierce.skin_parts` 與
+`cover.cloth_parts` 已經照前綴收。要決定的是命名衝突時怎麼取名（mesh 名會把 2b 剛
+拿掉的東西放回來），以及 `'Body_Skin'` 這個字面量寫死在 9 個模組共 11 處，其中只有
+`pierce.py` 是前綴式的，其餘每一處都只會看到三層皮膚的第一層。
 
 ### 3. 服裝對位與權重
 
@@ -412,17 +434,23 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   [mutations-skin-0912.md](../../scripts/avatar/evidence/mutations-skin-0912.md)，
   每一條宣告**哪幾條測試該紅**而不只是「有東西紅了」；S3 證明夾具必須是陌生身體，
   同一個 mutation 換成 mika-pink 就不會紅。
-- **階段 2a（已達成）**：六具身體走完 make.py 的第 1 到第 3 步；Mika 解析出來的清單
-  與原本寫死的五個名字逐項相同。收據
-  [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)。
+- **階段 2a（已達成）**：六具身體走完 make.py 的第 1 到第 3 步（階段 2b 之後是七具）；
+  Mika 解析出來的清單與原本寫死的五個名字逐項相同。收據
+  [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，
+  mutation 五道見
+  [mutations-replaces-0912.md](../../scripts/avatar/evidence/mutations-replaces-0912.md)。
 - **階段 2b（已達成）**：本機 16 具能命名的從 13 具變成 14 具；partition 不再讀任何
   mesh 名字；髮絲的四個判準全部從這具身體量出來，而 Mika 的 77 條髮絲一條都沒換手，
   `baseline.vrm` 的 `parted.vrm` 逐位元組不變。收據
   [partition-0912-bymesh.log](../../scripts/avatar/evidence/partition-0912-bymesh.log)
   與 [hair-0912-relative.log](../../scripts/avatar/evidence/hair-0912-relative.log)。
-  mutation 十六道，見
-  [mutations-meshes-0912.md](../../scripts/avatar/evidence/mutations-meshes-0912.md)
-  與 [mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)。
+  逐位元組那一條有自己的收據
+  [partition-0912-baseline.log](../../scripts/avatar/evidence/partition-0912-baseline.log)。
+  mutation 二十道，全部量在出貨的 blob 上：
+  [mutations-meshes-0912.md](../../scripts/avatar/evidence/mutations-meshes-0912.md)（八道）、
+  [mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)（八道）、
+  [mutations-review-0912.md](../../scripts/avatar/evidence/mutations-review-0912.md)（四道，
+  review 抓到的三條靜默錯誤路徑加上拒絕理由的拆分）。
 - **階段 2c**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
   會紅。第一個已知的擋路點不是遮蔽而是 manifest 的形狀：`vroid-studio-dressup` 有三個
   mesh 都帶皮膚，而一個部件目前只能屬於一個 mesh。
