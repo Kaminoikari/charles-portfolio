@@ -67,9 +67,23 @@ def skin_matrices(doc, views, rotations=None, replace=False):
 
 
 def skinned(doc, views, rotations=None, replace=False):
-    """Every primitive's vertices in the posed world, keyed by (mesh, prim)."""
+    """Every primitive's vertices in the posed world, keyed by (mesh, prim).
+
+    A primitive with no skin is placed by the node that draws it, which is what
+    glTF says and what "in the posed world" has to mean if the answer is going
+    to be compared against a bone. Returning its POSITION untouched was right
+    for every file on the disk, because every one of them is skinned
+    throughout, and wrong the moment a file is not: vrm1to0 faces a 1.0 body
+    the 0.x way by parenting the scene to a node rotated 180 degrees, so an
+    unskinned mesh under it would have come back facing the other way.
+    """
+    world = joint_matrices(doc, rotations, replace)
     by_skin = skin_matrices(doc, views, rotations, replace)
     skin_of = humanoid.mesh_skin(doc)
+    node_of_mesh = {}
+    for i, n in enumerate(doc.get('nodes') or []):
+        if 'mesh' in n:
+            node_of_mesh.setdefault(n['mesh'], i)
 
     out = {}
     for mi, mesh in enumerate(doc['meshes']):
@@ -77,7 +91,11 @@ def skinned(doc, views, rotations=None, replace=False):
             a = pr['attributes']
             p = glb.read_accessor(doc, views, a['POSITION']).astype(np.float64)
             if 'JOINTS_0' not in a or mi not in skin_of:
-                out[(mesh.get('name'), pi)] = p
+                node = node_of_mesh.get(mi)
+                hom = np.concatenate([p, np.ones((len(p), 1))], axis=1)
+                out[(mesh.get('name'), pi)] = (
+                    p if node is None
+                    else (hom @ np.asarray(world[node], dtype=np.float64).T)[:, :3])
                 continue
             mats = by_skin[skin_of[mi]]
             j = glb.read_accessor(doc, views, a['JOINTS_0']).astype(np.int64)

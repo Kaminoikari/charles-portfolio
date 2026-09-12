@@ -145,11 +145,12 @@ def is_strand(material):
 # This is the one rule in this file still measured on Mika rather than on the
 # body in hand, and it is wrong on two other bodies: AvatarSample_A and
 # Victoria_Rubin use HAIR_03 for ordinary strands that happen to sit in front of
-# the eyes, so 9 and 2 of their strands respectively are binned as clips and
+# the eyes, so 9 and 3 of their strands respectively are binned as clips and
 # then deleted by mellowheart.REPLACES. Triangle count does not separate the two
-# cases -- Mika's clips run 6 to 128 triangles and those strands 38 to 194 --
-# so there is no cheap general signal, and a decal detector belongs with the
-# masking work in stage 2c rather than here.
+# cases -- Mika's 18 clips run 6 to 128 triangles and those 12 strands 24 to 194
+# -- so there is no cheap general signal, and a decal detector belongs with the
+# masking work in stage 2c rather than here. Counted in
+# evidence/hair-0912-clips.log.
 CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 
 # What is left that this step reads off THIS body: where a hair strand sits in
@@ -157,8 +158,10 @@ CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 # by the mesh names `Face.baked` and `Body.baked`, and two of the sixteen local
 # bodies do not use them: vrm1-twist-sample exports `Face`, `Body` and `Hair`,
 # and the dress-up export splits the body over seven meshes with names like
-# `Body (merged).baked(copy).baked`. Both are now found by content, so a mesh
-# name is no longer an assumption anywhere in this file.
+# `Body (merged).baked(copy).baked`. Both are now found by content, so no
+# PARTICULAR mesh name is expected anywhere in this file. Names still have to
+# exist and be unique, because the manifest records a part's mesh by name and
+# pose.skinned keys the rest world the same way; recognise() checks that.
 #
 # This step is still the one place in the pipeline allowed to require a
 # particular export, and recognise() is where it says so. Everything upstream of
@@ -204,7 +207,22 @@ def recognise(doc):
             f'帶 {FACE_CATEGORY} 材質的 mesh 應該剛好一個，這裡有 {len(faces)} 個'
             f'（{found}）。mesh 有：'
             f'{", ".join(sorted(str(m.get("name")) for m in doc["meshes"]))}')
-    elif not any(p.get('targets') for p in faces[0]['primitives']):
+    named = [m.get('name') for m in doc['meshes']]
+    if len(set(named)) != len(named) or any(n is None for n in named):
+        # Not a leftover of finding meshes by name: the manifest records which
+        # mesh a part lives in BY NAME, and pose.skinned keys its rest world
+        # the same way, so two meshes sharing one is a part pointing at the
+        # wrong geometry and a frame measured off the wrong vertices. Renaming
+        # mika-pink's three meshes to one name collapses pose.skinned from 94
+        # keys to 77 and takes the face's half-width from 0.0918 to 0.2309,
+        # because the hair's x range answers instead.
+        reasons.append(f'mesh 名稱必須存在且互不重複，這裡有 {len(named)} 個 mesh、'
+                       f'{len(set(named))} 個相異名稱：'
+                       f'{", ".join(str(n) for n in named)}')
+    if 'leftEye' not in humanoid.bones(doc):
+        reasons.append('沒有 leftEye 骨，髮絲的左右與臉前判準無從量起'
+                       '（VRM 規格裡眼睛骨是選配的，所以上游的骨架關卡放行）')
+    if len(faces) == 1 and not any(p.get('targets') for p in faces[0]['primitives']):
         # The reason Face is locked is that blendShapeMaster binds expressions
         # into it by morph index. A face mesh with no morphs is not the thing
         # that rule protects, so the naming below is answering about something
@@ -223,11 +241,24 @@ def recognise(doc):
                       for p in mesh['primitives']
                       if body_name(mats[p['material']]) is None
                       and not is_strand(mats[p['material']])})
-    if unnamed:
+    # Two different complaints, because a refusal naming the wrong broken
+    # assumption is little better than no reason at all. A material with no
+    # token is somebody's hand-authored name; a material carrying EYE or FACE
+    # outside the face mesh has a perfectly good token and no part name to go
+    # with it, and saying it lacked the token it plainly has sent the reader
+    # looking in the wrong place.
+    tokenless = [m for m in unnamed if vroid_category(m)[1] is None]
+    placeless = [m for m in unnamed if vroid_category(m)[1] is not None]
+    if tokenless:
         reasons.append(
-            f'有 {len(unnamed)} 個材質不帶 VRoid 的類別後綴'
+            f'有 {len(tokenless)} 個材質不帶 VRoid 的類別後綴'
             f'（{"、".join(CATEGORIES)}），推不出部件名稱：'
-            f'{"、".join(unnamed)}')
+            f'{"、".join(tokenless)}')
+    if placeless:
+        reasons.append(
+            f'有 {len(placeless)} 個材質帶著這一步沒有部件名稱可給的類別'
+            f'（{"、".join(sorted({str(vroid_category(m)[1]) for m in placeless}))}）'
+            f'，而且不在臉的 mesh 裡：{"、".join(placeless)}')
     return reasons
 
 
@@ -248,6 +279,12 @@ def hair_frame(doc, views):
     character's left is -X on a 0.x export and +X on a 1.0 one, and the bone
     says which without this having to know.
 
+    On Mika three of the four land near the numbers they replaced and one does
+    not: the crown at 1.4402 against 1.44, the front at -0.0246 against -0.03,
+    the waist at 0.8782 against 0.90, and the midline at 0.0918 against 0.12,
+    which is 23% narrower. Not one of her 77 strands changes label anyway,
+    because no strand sits in any of those gaps.
+
     Everything here is in the REST WORLD, which is why partition measures its
     strands with pose.skinned rather than reading POSITION straight. The two
     are the same file for file until vrm1to0 runs: it turns a 1.0 export around
@@ -257,7 +294,13 @@ def hair_frame(doc, views):
     its eyes and labelled it a fringe.
     """
     bones, world = humanoid.bones(doc), humanoid.rest_world(doc)
-    eye = np.asarray(world[bones.get('leftEye', bones['head'])])[:3, 3]
+    # No fallback to the head bone. It sits on the midline, so its x is
+    # numerical noise -- +0.000042 on Mika, and positive on thirteen of the
+    # sixteen -- and `left` would come out +1 on a 0.x body whose left is -X:
+    # 34 of Mika's 77 strands swap hands, the twintails and the side hair
+    # mirrored. Its z is 30mm behind the eyes as well. recognise() requires the
+    # bone instead, which is a refusal that names what it wanted.
+    eye = np.asarray(world[bones['leftEye']])[:3, 3]
     rest, head = pose.skinned(doc, views), face_meshes(doc)[0]
     face = np.concatenate([
         rest[(head.get('name'), i)][

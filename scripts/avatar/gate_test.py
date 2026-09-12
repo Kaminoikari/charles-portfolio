@@ -185,6 +185,51 @@ class PartitionRecognises(unittest.TestCase):
         reasons = partition.recognise(doc)
         self.assertTrue(any('Milfy_Ink' in r for r in reasons), reasons)
 
+    def test_two_meshes_sharing_one_name_is_refused(self):
+        # The manifest records a part's mesh BY NAME and pose.skinned keys its
+        # rest world the same way, so a repeated name is a part pointing at the
+        # wrong geometry and a frame measured off the wrong vertices. With
+        # mika-pink's three meshes all called the same thing, pose.skinned
+        # returns 77 keys instead of 94 and the face's half-width comes out
+        # 0.2309 instead of 0.0918, because the hair's x range answers instead.
+        doc = copy.deepcopy(self.doc)
+        for m in doc['meshes']:
+            m['name'] = 'Merged'
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('Merged' in r for r in reasons), reasons)
+
+    def test_a_mesh_with_no_name_at_all_is_refused(self):
+        doc = copy.deepcopy(self.doc)
+        doc['meshes'][-1].pop('name', None)
+        self.assertTrue(partition.recognise(doc), 'a nameless mesh was accepted')
+
+    def test_a_body_with_no_eye_bone_is_refused(self):
+        # VRM makes the eye bones optional, so the skeleton gate upstream lets
+        # a body without them through. Falling back to the head bone reads
+        # `left` off numerical noise on the midline: on mika-pink the head sits
+        # at x +0.000042, so the whole body reads as facing the other way and
+        # 34 of her 77 strands swap hands.
+        doc = copy.deepcopy(self.doc)
+        bones = doc['extensions']['VRM']['humanoid']['humanBones']
+        doc['extensions']['VRM']['humanoid']['humanBones'] = [
+            b for b in bones if b['bone'] not in ('leftEye', 'rightEye')]
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('leftEye' in r for r in reasons), reasons)
+
+    def test_a_material_with_a_token_and_no_part_says_so(self):
+        # EYE and FACE are in the grammar and this step has no part name for
+        # them, which is a different complaint from a hand-authored name. It
+        # used to report both as "carries no category suffix", naming a broken
+        # assumption that was not the broken one.
+        doc = copy.deepcopy(self.doc)
+        face = partition.face_meshes(doc)[0]
+        eye = next(p for p in face['primitives']
+                   if partition.vroid_category(
+                       doc['materials'][p['material']]['name'])[1] == 'EYE')
+        doc['meshes'].append({'name': 'stray', 'primitives': [eye]})
+        reasons = partition.recognise(doc)
+        self.assertTrue(any('EYE' in r and '不帶' not in r for r in reasons), reasons)
+
     def test_a_hair_strand_is_not_a_material_it_cannot_name(self):
         # body_name answers None for a strand and None for a stranger, and
         # only the second is a reason to refuse; without is_strand every VRoid

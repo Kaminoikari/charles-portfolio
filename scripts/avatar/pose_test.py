@@ -70,5 +70,43 @@ class OwnSkin(unittest.TestCase):
         np.testing.assert_allclose(normals[('M1', 0)][0], [-1.0, 0.0, 0.0], atol=1e-9)
 
 
+class AMeshWithNoSkin(unittest.TestCase):
+    """A primitive with no JOINTS_0 is placed by the node that draws it.
+
+    It used to come back as its raw POSITION, which is right only while the
+    node above it is the identity. vrm1to0 faces a 1.0 body the 0.x way by
+    parenting the whole scene to a node rotated 180 degrees, so an unskinned
+    mesh under that would have come back facing the other way while every
+    skinned mesh in the same file turned. Every VRM on the disk is skinned
+    throughout, which is why nothing caught this.
+    """
+
+    def doc(self, turn):
+        doc = {'asset': {'version': '2.0'}, 'scene': 0, 'scenes': [{'nodes': [0]}],
+               'nodes': [{'name': 'root', 'rotation': turn, 'children': [1]},
+                         {'name': 'plain', 'mesh': 0}],
+               'bufferViews': [], 'accessors': [], 'meshes': [], 'skins': [],
+               'extensions': {'VRM': {'humanoid': {'humanBones': [
+                   {'bone': 'hips', 'node': 0}]}}}}
+        views = []
+        att = {'POSITION': glb.add_accessor(
+            doc, views, np.array([[0.0, 1.0, 2.0]], np.float32), 34962)}
+        doc['meshes'].append({'name': 'plain', 'primitives': [
+            {'attributes': att,
+             'indices': glb.add_accessor(doc, views, np.array([0, 0, 0], np.uint16), 34963)}]})
+        return doc, views
+
+    def test_it_is_where_the_node_puts_it(self):
+        # The same 180 degree turn about Y that vrm1to0 inserts.
+        doc, views = self.doc([0, 1, 0, 0])
+        np.testing.assert_allclose(
+            pose.skinned(doc, views)[('plain', 0)][0], [0.0, 1.0, -2.0], atol=1e-6)
+
+    def test_an_untransformed_node_leaves_it_where_it_was(self):
+        doc, views = self.doc([0, 0, 0, 1])
+        np.testing.assert_allclose(
+            pose.skinned(doc, views)[('plain', 0)][0], [0.0, 1.0, 2.0], atol=1e-6)
+
+
 if __name__ == '__main__':
     unittest.main()

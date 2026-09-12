@@ -1,0 +1,8 @@
+source     /Users/charles/portfolio/scripts/avatar/baseline.vrm
+parted.vrm sha256 1d4e3a37d33d91d08b7f26c1edf82332a405ebc0a936ce80ad1936533896e8dd
+           bytes  6739132
+parts.json sha256 79aa95bd5956f2fff7581b1a48ea6eea4f9a0d2ece8e9fd5623220ad4ec9e876
+           parts  13: Acc_HairClip_Base, Acc_HairOrnament, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Hair_Twintail_L, Hair_Twintail_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+
+stage 0 recorded  1d4e3a37d33d91d08b7f26c1edf82332a405ebc0a936ce80ad1936533896e8dd / 6739132 bytes / 79aa95bd5956f2ff...
+IDENTICAL
