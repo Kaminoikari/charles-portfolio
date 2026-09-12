@@ -438,6 +438,12 @@ primitive、重繪 8.8%，見
 [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)），Mika
 底模的 `parted.vrm` 仍然逐位元組不變。
 
+**出貨的那份 sidecar 沒有換掉。** `public/avatar/vroid-studio-dressup.parts.json` 仍是
+手寫的那份，網站讀的也是它，而 partition 現在會為同一具身體產出一份名字不同的
+manifest（`Body_Skin_2` 對 `Body_Skin_Inner_Top`）。兩份沒有人對帳，因為沒有一步同時
+讀它們：手寫的那份服務訪客，partition 那份只在 `make.py --base` 跑這具身體時才存在。
+要換的話是 3 之後的事，換之前得先確認 `springsim.ts` 量到的 clearance 不因改名而失效。
+
 **這一步沒有動 `'Body_Skin'` 字面量的擴散。** 口徑：`scripts/avatar` 底下的 `.py` 與 `.ts`
 原始碼，排除 `*_test.py`、`*.test.ts` 與 `evidence/`，數**出現次數**（`rg -o`）而不是
 行數：16 次、10 個模組（`springsim.ts` 4、`envelope.py` 3、`build.py` 2，其餘七個各
