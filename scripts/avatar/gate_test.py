@@ -22,12 +22,14 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+import customise  # noqa: E402
 import glb  # noqa: E402
 import humanoid  # noqa: E402
 import make  # noqa: E402
 import partition  # noqa: E402
 import pierce  # noqa: E402
 import vrm1to0  # noqa: E402
+from outfits import mellowheart  # noqa: E402
 
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
@@ -733,6 +735,15 @@ class BodyDrawingItsSkinInThreeLayers(unittest.TestCase):
             self.assertFalse(parts[name]['deletable'], name)
         self.assertEqual(sorted(pierce.skin_parts(parts)),
                          ['Body_Skin', 'Body_Skin_2', 'Body_Skin_3', 'Face'])
+
+    def test_a_numbered_garment_is_stripped_with_the_one_it_trails(self):
+        # The other half of the prefix property, on the side where getting it
+        # wrong leaves a garment on the body. An outfit contract names the
+        # roles it takes the place of as prefixes, so a trailing name is
+        # replaced for the same reason the plain one is.
+        drop = customise.replaced(self.manifest, mellowheart.REPLACES)
+        self.assertEqual(sorted(n for n in drop if n.startswith('Outfit_Shoes')),
+                         ['Outfit_Shoes', 'Outfit_Shoes_2'])
 
     def test_the_sole_left_in_the_body_mesh_trails_the_shoes(self):
         parts = self.manifest['parts']
