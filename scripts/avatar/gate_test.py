@@ -26,6 +26,24 @@ import partition  # noqa: E402
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
 
+def partitioned(src):
+    """partition() with its refusal turned into an ordinary test error.
+
+    partition() refuses by raising SystemExit, and unittest's setUpClass
+    handler catches Exception, which SystemExit is not: one refusal there ends
+    the whole run with a traceback and no results at all. That reads as a
+    crash rather than as a failing class, and under a mutation it hides which
+    tests the mutation actually broke.
+    """
+    out = tempfile.mkdtemp()
+    try:
+        return partition.partition(src, os.path.join(out, 'o.vrm'),
+                                   os.path.join(out, 'p.json'))[0]
+    except SystemExit as refusal:
+        raise AssertionError(
+            f'partition 拒絕了 {os.path.basename(src)}：{refusal}') from None
+
+
 def perturbed(drop=()):
     """A copy of BODY with the named humanoid bones removed from the map."""
     doc, binary = glb.load(BODY)
@@ -298,10 +316,7 @@ class BodyPartsFromTheExportGrammar(unittest.TestCase):
     def setUpClass(cls):
         if not os.path.exists(cls.OTHER):
             raise unittest.SkipTest('public/avatar/Vivi_webp.vrm 不在')
-        out = tempfile.mkdtemp()
-        cls.manifest = partition.partition(cls.OTHER,
-                                           os.path.join(out, 'o.vrm'),
-                                           os.path.join(out, 'p.json'))[0]
+        cls.manifest = partitioned(cls.OTHER)
         cls.body = {n: p for n, p in cls.manifest['parts'].items()
                     if p['mesh'] == 'Body.baked'}
 
@@ -354,11 +369,8 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
     def setUpClass(cls):
         if not os.path.exists(cls.OTHER):
             raise unittest.SkipTest('public/avatar/vrm1-twist-sample.vrm 不在')
-        out = tempfile.mkdtemp()
         cls.doc = glb.load(cls.OTHER)[0]
-        cls.manifest = partition.partition(cls.OTHER,
-                                           os.path.join(out, 'o.vrm'),
-                                           os.path.join(out, 'p.json'))[0]
+        cls.manifest = partitioned(cls.OTHER)
 
     def test_none_of_its_meshes_carry_the_name_this_step_required(self):
         # If this ever fails the fixture stopped being the case under test.
