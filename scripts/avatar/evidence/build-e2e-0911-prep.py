@@ -7,7 +7,8 @@ HERE = '/Users/charles/portfolio/scripts/avatar'
 sys.path.insert(0, HERE)
 os.chdir(HERE)
 import customise, partition, proportion, skin, vrm1to0
-from make import DROP, HEAD_FACTOR
+from make import HEAD_FACTOR
+from outfits import mellowheart
 
 OUT = sys.argv[1]
 p = lambda n: os.path.join(OUT, n)
@@ -15,7 +16,8 @@ base = vrm1to0.ensure_vrm0(os.path.join(HERE, 'baseline.vrm'), p('base-vrm0.vrm'
 m, _ = partition.partition(base, p('parted.vrm'), p('parts.json'))
 print('partition', len(m['parts']), 'parts')
 r = customise.apply(p('parted.vrm'), p('stripped.vrm'), p('parts.json'),
-                    drop=DROP, manifest_out=p('parts.json'))
+                    drop=customise.replaced(m, mellowheart.REPLACES),
+                    manifest_out=p('parts.json'))
 print('strip', r['primitives_removed'], 'primitives')
 share, _ = skin.apply(p('stripped.vrm'), p('bare.vrm'))
 print(f'skin {share*100:.1f}%')

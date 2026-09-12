@@ -134,6 +134,21 @@ def median_hue(doc, views, image_names):
     return np.median(stacked, axis=0)
 
 
+def replaced(manifest, prefixes):
+    """Which of this body's parts an outfit takes the place of.
+
+    The prefixes come from the outfit contract, because which of the body's
+    parts an outfit replaces is a fact about the outfit. Turning them into
+    names has to happen against THIS body's manifest: a written-down list is
+    right about one body and refused on the rest, since drop_parts rejects a
+    name the manifest does not have (deliberately, so a typo cannot silently
+    leave a garment on).
+    """
+    return sorted(name for name, part in manifest['parts'].items()
+                  if name.startswith(tuple(prefixes))
+                  and part.get('deletable', True))
+
+
 def drop_parts(doc, views, manifest, names):
     """Remove named parts, located by their label rather than by index.
 

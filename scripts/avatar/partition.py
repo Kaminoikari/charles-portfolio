@@ -181,7 +181,7 @@ def hair_name(material, centroid, ymin):
         # is labelled Hair_Back, so after the split it hangs in mid-air beside
         # the head -- plainly visible in a three-vrm close-up and in nothing the
         # flat renders frame. The reference has no such star, so it goes to the
-        # ornament bin that make.DROP already empties.
+        # ornament bin that mellowheart.REPLACES already empties.
         return 'Acc_HairOrnament'
     if centroid[1] > 1.44:
         return 'Hair_Back'

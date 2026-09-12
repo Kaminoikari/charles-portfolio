@@ -29,6 +29,17 @@ import os
 # than two names, because the next outfit may ship one file or three.
 FILES = ('blender/mellow.glb', 'blender/mellow_outer.glb')
 
+# Which of the BASE BODY's parts this outfit takes the place of, by the prefix
+# partition gives them. Hair and face are untouched because the package ships
+# neither, and the body itself is not deletable.
+#
+# A prefix rather than a list of names: make.py used to hold five names, which
+# are the five Mika's base happens to have. AvatarSample_C has three of them,
+# Vivi two, and Sendagaya_Shibu four including one this pipeline had never seen
+# (Outfit_AccessoryNeck), so drop_parts refused every body but hers before the
+# first primitive was removed.
+REPLACES = ('Outfit_', 'Acc_')
+
 # The vendor's bonemap file: the one name the generic table cannot read (the
 # thumb) and, more importantly, the ignore list that keeps the cardigan's
 # forearm, hand and thumb OFF the fit anchors. Emptying that ignore list

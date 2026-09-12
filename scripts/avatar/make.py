@@ -59,19 +59,20 @@ import skin  # noqa: E402
 import verify  # noqa: E402
 import humanoid  # noqa: E402
 import vrm1to0  # noqa: E402
+from outfits import mellowheart  # noqa: E402
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(BASE, 'out')
 BASELINE = os.path.join(BASE, 'baseline.vrm')
 
-# Acc_HairClip_Base is the base model's own fringe clips, the crossed bars and
-# the outlined stars, which are painted decals on their own primitives rather
-# than accessory geometry. The fringe they sit on is kept: cutting a
-# replacement off the face surface, which is what an earlier version did, gives
-# a smooth 178-triangle shell that renders as a swim cap, and the VRoid fringe
-# is real hair with strand shading that the hue pass recolours with the rest.
-DROP = ['Outfit_Top', 'Outfit_Bottom', 'Outfit_Shoes', 'Acc_HairOrnament',
-        'Acc_HairClip_Base']
+# What comes off the base body is computed per body from mellowheart.REPLACES,
+# not written down here. Acc_HairClip_Base, one of the names it resolves to on
+# Mika's base, is that model's own fringe clips: painted decals on their own
+# primitives rather than accessory geometry. The fringe they sit on is kept,
+# because cutting a replacement off the face surface, which is what an earlier
+# version did, gives a smooth 178-triangle shell that renders as a swim cap,
+# and the VRoid fringe is real hair with strand shading that the hue pass
+# recolours with the rest.
 HEAD_FACTOR = 1.06
 
 # The geometry authored in Blender rather than by formula: ribbons and bows,
@@ -209,8 +210,10 @@ def main(base=BASELINE):
         gate('partition', p('parted.vrm'), base)
 
     with step('2. strip the VRoid outfit'):
+        drop = customise.replaced(m, mellowheart.REPLACES)
+        print(f'   replacing {len(drop)}: {", ".join(drop)}')
         r = customise.apply(p('parted.vrm'), p('stripped.vrm'), p('parts.json'),
-                            drop=DROP, manifest_out=p('parts.json'))
+                            drop=drop, manifest_out=p('parts.json'))
         print(f'   removed {r["primitives_removed"]} primitives, '
               f'{r["accessors_dropped"]} accessors swept')
         # The strip strands the VRoid outfit's own materials, and apply now

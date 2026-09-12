@@ -1200,7 +1200,7 @@ def build(src, dst, manifest_path, out_manifest, character=mika,
     # 瀏海用基底 VRoid 的原生髮束，不再從臉部曲面切一片外推。外推那版是一片
     # 178 面的光滑殼，在臉部特寫裡看起來是泳帽而不是頭髮；原生瀏海本來就有
     # 分束與髮絲明暗，只是把烘在上面的髮夾貼片切成 Acc_HairClip_Base 丟掉
-    # （見 partition.hair_name 與 make.DROP）。
+    # （見 partition.hair_name 與 outfits.mellowheart.REPLACES）。
 
     # Plaster clip: two crossed bars. Bear clip: a head and two round ears.
     # z 由 -0.062 移到 -0.136：髮夾別在瀏海「上面」，不是夾在瀏海和額頭中間。

@@ -211,5 +211,52 @@ class PaintWeightsTest(unittest.TestCase):
         self.assertTrue(np.all(weight[outside] == 0), '邊緣以外的權重應該恆為 0')
 
 
+class ReplacedTest(unittest.TestCase):
+    """Which of the base body's parts an outfit takes off, resolved per body.
+
+    make.py held five names, which are the five Mika's base has. drop_parts
+    rejects a name the manifest does not have, deliberately, so a typo cannot
+    quietly leave a garment on; that same refusal stopped step 2 dead on every
+    body but hers. AvatarSample_C has three of the five, Vivi two, and
+    Sendagaya_Shibu four including Outfit_AccessoryNeck, which this pipeline had
+    never seen.
+    """
+
+    def manifest(self, **parts):
+        return {'parts': {name: {'deletable': deletable}
+                          for name, deletable in parts.items()}}
+
+    def test_the_five_names_make_py_used_to_hold(self):
+        m = self.manifest(Body_Skin=False, Face=False, Outfit_Top=True,
+                          Outfit_Bottom=True, Outfit_Shoes=True,
+                          Acc_HairOrnament=True, Acc_HairClip_Base=True,
+                          Hair_Bangs=True, Hair_Back=True)
+        self.assertEqual(customise.replaced(m, ('Outfit_', 'Acc_')),
+                         ['Acc_HairClip_Base', 'Acc_HairOrnament',
+                          'Outfit_Bottom', 'Outfit_Shoes', 'Outfit_Top'])
+
+    def test_a_body_without_a_lower_garment_is_not_asked_for_one(self):
+        # Vivi's Body.baked carries Tops and Shoes and no Bottoms at all.
+        m = self.manifest(Body_Skin=False, Outfit_Top=True, Outfit_Shoes=True)
+        self.assertEqual(customise.replaced(m, ('Outfit_', 'Acc_')),
+                         ['Outfit_Shoes', 'Outfit_Top'])
+
+    def test_a_garment_this_pipeline_has_never_seen_still_comes_off(self):
+        m = self.manifest(Body_Skin=False, Outfit_AccessoryNeck=True)
+        self.assertEqual(customise.replaced(m, ('Outfit_',)),
+                         ['Outfit_AccessoryNeck'])
+
+    def test_a_part_the_manifest_locks_is_never_asked_for(self):
+        # drop_parts raises on a locked part, so handing it one turns a body
+        # this step could have dressed into a refusal.
+        m = self.manifest(Outfit_Top=True, Outfit_Skin=False)
+        self.assertEqual(customise.replaced(m, ('Outfit_',)), ['Outfit_Top'])
+
+    def test_hair_and_face_are_left_alone(self):
+        m = self.manifest(Face=False, Hair_Bangs=True, Hair_BodyBack=True,
+                          Outfit_Top=True)
+        self.assertEqual(customise.replaced(m, ('Outfit_', 'Acc_')), ['Outfit_Top'])
+
+
 if __name__ == '__main__':
     unittest.main()

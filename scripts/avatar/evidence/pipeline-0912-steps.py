@@ -15,13 +15,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 
 import customise   # noqa: E402
-import make        # noqa: E402
 import partition   # noqa: E402
 import skin        # noqa: E402
 import vrm1to0     # noqa: E402
+from outfits import mellowheart  # noqa: E402
 
 BODIES = ('AvatarSample_C_webp.vrm', 'Vivi_webp.vrm',
-          'Sendagaya_Shibu_webp.vrm', 'mika-pink.vrm')
+          'Sendagaya_Shibu_webp.vrm', 'Darkness_Shibu_webp.vrm',
+          'HairSample_Female_webp.vrm', 'mika-pink.vrm')
 
 for name in BODIES:
     src = os.path.join(HERE, '..', '..', '..', 'public', 'avatar', name)
@@ -44,9 +45,11 @@ for name in BODIES:
         print(f'  1 partition STOPPED: {str(stop)[:160]}')
         continue
     try:
+        drop = customise.replaced(manifest, mellowheart.REPLACES)
         result = customise.apply(p('parted.vrm'), p('stripped.vrm'), p('parts.json'),
-                                 drop=make.DROP, manifest_out=p('parts.json'))
-        print(f'  2 strip     ok  {result["primitives_removed"]} primitives removed')
+                                 drop=drop, manifest_out=p('parts.json'))
+        print(f'  2 strip     ok  {result["primitives_removed"]} primitives removed, '
+              f'replacing {", ".join(drop)}')
     except SystemExit as stop:
         print(f'  2 strip     STOPPED: {str(stop)[:160]}')
         continue

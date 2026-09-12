@@ -14,12 +14,15 @@ loses its label is a section the next person merges into the rest.
 import ast
 import os
 import sys
+import tempfile
 import types
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import build  # noqa: E402
+import customise  # noqa: E402
+import partition  # noqa: E402
 from outfits import mellowheart  # noqa: E402
 
 # The names build.py used before the move. A revert would bring these back, and
@@ -66,9 +69,38 @@ class Contract(unittest.TestCase):
         self.assertRegex(source(), r'\n          outfit_pack=mellowheart, ')
 
     def test_every_value_in_the_contract_is_read_somewhere(self):
-        src = source()
-        unread = sorted(n for n in names_of(mellowheart) if f'outfit_pack.{n}' not in src)
-        self.assertEqual(unread, [], f'declared but never read through outfit_pack: {unread}')
+        """Read through the contract by SOME consumer, not only by build().
+
+        build() puts garments on. Which of the BASE BODY's own parts come off
+        is decided three steps earlier, in make.py, and REPLACES is the outfit
+        answering that: it is a fact about the outfit and it has no business
+        being read by build(). The defence this test exists for is unchanged,
+        which is that a value nobody reads is a value that can drift.
+        """
+        with open(os.path.join(HERE, 'make.py'), encoding='utf-8') as fh:
+            make_src = fh.read()
+        readers = ((source(), 'outfit_pack.{}'), (make_src, 'mellowheart.{}'))
+        unread = sorted(n for n in names_of(mellowheart)
+                        if not any(pattern.format(n) in text
+                                   for text, pattern in readers))
+        self.assertEqual(unread, [], f'declared but never read: {unread}')
+
+    def test_what_comes_off_the_base_body_is_asked_of_the_contract(self):
+        """make.py held five part names, which are the five Mika's base has.
+
+        A written-down list is right about one body and refused on every other,
+        because drop_parts rejects a name the manifest does not have. Read the
+        source: step 2 resolves the prefixes against the manifest step 1 just
+        produced, and no part name is typed into make.py at all.
+        """
+        with open(os.path.join(HERE, 'make.py'), encoding='utf-8') as fh:
+            make_src = fh.read()
+        self.assertRegex(make_src,
+                         r'drop = customise\.replaced\(m, mellowheart\.REPLACES\)')
+        for name in ('Outfit_Top', 'Outfit_Bottom', 'Outfit_Shoes',
+                     'Acc_HairOrnament'):
+            self.assertNotIn(f"'{name}'", make_src,
+                             f'make.py names {name} again')
 
     def test_the_fit_section_is_still_labelled_as_one_body(self):
         """Five of these are the package on THIS body, and only a banner says so."""
@@ -101,6 +133,25 @@ class Contract(unittest.TestCase):
         stamped = mellowheart.MATERIAL_PREFIX
         self.assertEqual(importer.count(f"f'{stamped}{{name}}'"), 2)
         self.assertEqual(importer.count(f"f'{stamped}{{snames[i]}}'"), 1)
+
+    def test_the_prefixes_resolve_to_what_the_written_down_list_held(self):
+        """The contract value, against the real manifest rather than a mock.
+
+        Two prefixes are a smaller thing to get wrong than five names, and this
+        is the end that says they are the RIGHT two: partition the base body
+        this outfit was fitted to, and what comes off has to be what came off
+        before.
+        """
+        base = os.path.join(HERE, 'baseline.vrm')
+        if not os.path.exists(base):
+            self.skipTest('scripts/avatar/baseline.vrm 不在')
+        scratch = tempfile.mkdtemp()
+        manifest, _ = partition.partition(base,
+                                          os.path.join(scratch, 'parted.vrm'),
+                                          os.path.join(scratch, 'parts.json'))
+        self.assertEqual(customise.replaced(manifest, mellowheart.REPLACES),
+                         ['Acc_HairClip_Base', 'Acc_HairOrnament',
+                          'Outfit_Bottom', 'Outfit_Shoes', 'Outfit_Top'])
 
     def test_the_bonemap_resolves_from_the_contracts_own_location(self):
         """It is built from __file__, which moved a directory deeper."""

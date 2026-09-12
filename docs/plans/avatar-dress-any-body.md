@@ -277,37 +277,55 @@ atlas 上，重繪到它會把填色蓋到眼睛上，那是部件名回答而�
 順帶：VRoid 的 body atlas UV layout 對 10/16 具身體逐 texel 相同（IoU 1.0000），另外
 4 具 ≥ 0.989。所以「哪個 texel 是身體的哪個部位」可以查表，不必猜。
 
-### 2. 遮蔽取代脫衣
+### 2. 脫衣層：清單改成契約，其餘留給遮蔽
 
-**現在卡在這裡。** 階段 0 與 1 之後跑 `make.py` 的第 0b 到第 3 步，四具身體的結果
-（收據 [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)）：
+原本這一階段寫成「遮蔽取代脫衣」，量過之後拆成三件事，因為 VRoid 家族根本不需要遮蔽：
+它的材質文法已經精確答出哪些 primitive 是衣服。遮蔽要解的是**分不出衣服的身體**。
+
+**2a. 服裝清單由契約推導 — 已完成。** `make.DROP` 是五個部件名，也就是 Mika 底模剛好
+有的那五個。`drop_parts` 對名單裡不存在的部件會 `SystemExit`，那是刻意的（默默跳過一個
+拼錯的名字等於默默留下一件衣服），於是它把第 2 步在其他每一具身體上擋死。
+
+改成由服裝契約宣告前綴、對這具身體的 manifest 解析：
+
+```python
+# outfits/mellowheart.py
+REPLACES = ('Outfit_', 'Acc_')
+
+# make.py 第 2 步
+drop = customise.replaced(m, mellowheart.REPLACES)
+```
+
+前綴是服裝的事實（這套服裝取代身體的哪些部件），解析成名字是身體的事實。收據
+[pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)，六具
+身體第 1 到第 3 步全部走完：
 
 ```
-AvatarSample_C    1 partition ok  7 parts
-                  2 strip STOPPED: 清單裡沒有這些部件：['Acc_HairClip_Base', 'Acc_HairOrnament']
-Vivi              1 partition ok  8 parts
-                  2 strip STOPPED: 清單裡沒有這些部件：['Acc_HairClip_Base', 'Acc_HairOrnament', 'Outfit_Bottom']
-Sendagaya_Shibu   1 partition ok  9 parts
-                  2 strip STOPPED: 清單裡沒有這些部件：['Acc_HairClip_Base', 'Acc_HairOrnament']
-mika-pink         1 partition ok 13 parts
-                  2 strip ok  21 primitives removed
-                  3 skin  ok  repainted 36.5%
+AvatarSample_C     7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top          skin 72.0%
+Vivi               8 parts   removes Outfit_Shoes, Outfit_Top                         skin 13.1%
+Sendagaya_Shibu    9 parts   removes Outfit_AccessoryNeck, Outfit_Bottom, ...          skin 36.7%
+Darkness_Shibu     7 parts   removes Outfit_Shoes, Outfit_Top                         skin 77.7%
+HairSample_Female  6 parts   removes Outfit_Shoes, Outfit_Top                         skin  3.0%
+mika-pink         13 parts   removes 的正是原本那五個                                  skin 36.5%
 ```
 
-`make.DROP` 是一份手寫的部件名單，寫的是 Mika 底模有哪些部件。`drop_parts` 對名單裡
-不存在的部件會 `SystemExit`，這是刻意的：默默跳過一個拼錯的名字，等於默默留下一件
-衣服。所以問題不是這道防禦，而是名單本身要換成一個可量的問題。
+`Outfit_AccessoryNeck` 是這條管線沒見過的部件，前綴照樣認得它。
 
-partition 的契約從「標記每個部件」縮成三個**可量**的問題：
+**2b. mesh 找法與頭髮命名（未做）。** partition 仍然靠 mesh 名字找 `Face.baked` 與
+`Body.baked`，頭髮仍然靠這具身體的絕對世界座標分。`vrm1-twist-sample`（mesh 叫
+`Body`）與 `vroid-studio-dressup`（`Body (merged).baked(copy).baked`）就卡在這裡。
+頭髮命名對已經通過的 13 具其實也是虛構的，只是後面的步驟目前不讀它。
+
+**2c. 遮蔽（未做）。** 給的是 Alicia 與 Seed-san 那一類：衣服與皮膚在同一片曲面上，
+刪不掉。partition 的契約縮成三個**可量**的問題：
 
 1. 哪些 primitive 絕不能動（臉＝morph 綁定；頭髮＝非人形骨＋在頭底下＋彈簧）
 2. 哪些身體幾何在新衣服裡面（containment，`cover.py` 已經在做）
-3. 哪個材質帶皮膚貼圖（步驟 1 的 per-body 參考）
+3. 哪個材質帶皮膚貼圖（階段 1 已完成）
 
-containment 從自推的帶號距離升級成 generalized winding number。
-
-這一步讓「Alicia 的 `body_top` 是皮膚還是制服」這個解不掉的問題不必問：要問的是「這塊
-身體是不是在新衣服底下」。
+containment 從自推的帶號距離升級成 generalized winding number。這一步讓「Alicia 的
+`body_top` 是皮膚還是制服」這個解不掉的問題不必問：要問的是「這塊身體是不是在新衣服
+底下」。
 
 ### 3. 服裝對位與權重
 
@@ -335,7 +353,10 @@ target body shape」。而且單一主導骨正是 LoBoFit 點名 IFGR 的失敗
   [mutations-skin-0912.md](../../scripts/avatar/evidence/mutations-skin-0912.md)，
   每一條宣告**哪幾條測試該紅**而不只是「有東西紅了」；S3 證明夾具必須是陌生身體，
   同一個 mutation 換成 mika-pink 就不會紅。
-- **階段 2**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
+- **階段 2a（已達成）**：六具身體走完 make.py 的第 1 到第 3 步；Mika 解析出來的清單
+  與原本寫死的五個名字逐項相同。收據
+  [pipeline-0912-steps.log](../../scripts/avatar/evidence/pipeline-0912-steps.log)。
+- **階段 2c**：約定機位算圖，斷言「原本是皮膚的像素」零洩漏。三個問題各自 mutation
   會紅。
 - **階段 3**：Mika 自己跑一遍與階段 1 之後的產出相同（回歸關；階段 1 已經動過她的
   皮膚貼圖，所以基準是那一版而不是 `9b09611`）；換一具身體後每個部件對身體的最近
