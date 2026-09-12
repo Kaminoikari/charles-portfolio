@@ -13,15 +13,23 @@ a commit id would not survive the next comment edit):
 
 Baseline: 61 tests green in `gate_test`, and the loader collects 61.
 
-Ten positions, counted by asking of each line whether changing it changes a
-name. Six of them decide what a name comes out as: whether a clash is noticed
-at all (C1), which claim keeps the plain one (C2), what the ranking measures
-(C3) and reads it off (C6), which trailing claim is numbered first (C4), and
-where the numbering starts (C10). Two keep a number from landing on a name
-that is already spoken for, and they are separate lines: the loop that steps
-past a taken name (C5) and the set it consults (C9). One catches a resolver
-that answered wrongly anyway (C7). One writes the answer into the geometry
-(C8), which is a second place the name has to arrive.
+Eleven positions, counted by asking of each line whether a different
+plausible value there would change which name a part comes out with, or would
+let two parts share one. Seven decide what a name comes out as: whether a
+clash is noticed at all (C1), which claim keeps the plain one (C2), which
+claims are exempt from being numbered (C11), what the ranking measures (C3)
+and reads it off (C6), which trailing claim is numbered first (C4), and where
+the numbering starts (C10). Two keep a number from landing on a name already
+spoken for, and they are separate lines: the loop that steps past a taken name
+(C5) and the set it consults (C9). One catches a resolver that answered wrongly
+anyway (C7). One writes the answer into the geometry (C8), which is the second
+place the name has to arrive.
+
+Three lines were walked and given no row, because changing them changes
+nothing: the order `rows.items()` is walked (every name the grammar wrote is
+in `taken` from the start, and two groups cannot invent the same trailing
+name), and `taken.add` and `n += 1`, which mask each other because `n` only
+ever climbs within a group.
 
 | # | what the mutation puts back | must go red | result |
 |---|---|---|---|
@@ -35,6 +43,7 @@ that answered wrongly anyway (C7). One writes the answer into the geometry
 | C8 | the geometry keeps the grammar's name while the manifest keeps the resolver's | the label-in-the-geometry row | **as expected** |
 | C9 | the names already spoken for start out empty | the number-skips row | **as expected** |
 | C10 | the numbering starts at one | the two-meshes-one-name row | **as expected** |
+| C11 | the claim keeping the plain name is numbered along with the rest | the two-meshes-one-name row and the sole-trails-the-shoes row | **as expected** |
 
 ## Why C3 needs a second body
 

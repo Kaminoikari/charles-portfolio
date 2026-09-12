@@ -1,37 +1,41 @@
 partition.py  blob d78714d89162ef4675d8b50197c22115f7bf51cd
-baseline  Ran 61 tests in 4.641s  green
+baseline  Ran 61 tests in 6.579s  green
 
 C1  there is no resolution: every claim keeps the name the grammar gave it, which is where this step stood before
-    Ran 53 tests in 4.385s  RED  as expected
+    Ran 53 tests in 5.384s  RED  as expected
     also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)']
 
 C2  the plain name goes to the claim reaching least
-    Ran 61 tests in 4.567s  RED  as expected
+    Ran 61 tests in 5.528s  RED  as expected
     also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)']
 
 C3  claims are ranked on size, the way springsim ranks its own derivation
-    Ran 61 tests in 5.347s  RED  as expected
+    Ran 61 tests in 7.243s  RED  as expected
     also red: ['test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest (gate_test.PartitionRecognises.test_a_name_two_meshes_claim_goes_to_the_one_reaching_furthest)']
 
 C4  the claims that lose a name are numbered back to front
-    Ran 61 tests in 5.006s  RED  as expected
+    Ran 61 tests in 6.323s  RED  as expected
 
 C5  the number is taken without asking whether the grammar wrote it already
-    Ran 61 tests in 4.498s  RED  as expected
+    Ran 61 tests in 8.887s  RED  as expected
 
 C6  a claim reaches as far as its mesh's whole POSITION buffer
-    Ran 61 tests in 7.100s  RED  as expected
+    Ran 61 tests in 7.430s  RED  as expected
 
 C7  a name arriving twice is written twice, and the second wins in silence
-    Ran 61 tests in 4.749s  RED  as expected
+    Ran 61 tests in 7.413s  RED  as expected
 
 C8  the geometry is stamped with the name the grammar gave, while the manifest lists the name the resolver gave
-    Ran 61 tests in 5.040s  RED  as expected
+    Ran 61 tests in 6.209s  RED  as expected
 
 C9  the names already taken start out empty, so only the ones this run invents are avoided
-    Ran 61 tests in 4.918s  RED  as expected
+    Ran 61 tests in 7.819s  RED  as expected
 
 C10  the numbering starts at one, so the first trailing claim is `_1`
-    Ran 61 tests in 3.791s  RED  as expected
+    Ran 61 tests in 6.469s  RED  as expected
     also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_a_numbered_garment_is_stripped_with_the_one_it_trails (gate_test.BodyDrawingItsSkinInThreeLayers.test_a_numbered_garment_is_stripped_with_the_one_it_trails)', 'test_all_three_layers_stay_skin_for_the_steps_that_read_them (gate_test.BodyDrawingItsSkinInThreeLayers.test_all_three_layers_stay_skin_for_the_steps_that_read_them)', 'test_reach_rather_than_size_says_which_layer_is_the_body (gate_test.BodyDrawingItsSkinInThreeLayers.test_reach_rather_than_size_says_which_layer_is_the_body)', 'test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)', 'test_the_numbers_follow_document_order (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_numbers_follow_document_order)', 'test_the_sole_left_in_the_body_mesh_trails_the_shoes (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_sole_left_in_the_body_mesh_trails_the_shoes)']
+
+C11  the claim that keeps the plain name is numbered along with the rest
+    Ran 61 tests in 5.666s  RED  as expected
+    also red: ['test_a_claims_reach_is_measured_on_the_vertices_it_draws (gate_test.PartitionRecognises.test_a_claims_reach_is_measured_on_the_vertices_it_draws)', 'test_a_numbered_garment_is_stripped_with_the_one_it_trails (gate_test.BodyDrawingItsSkinInThreeLayers.test_a_numbered_garment_is_stripped_with_the_one_it_trails)', 'test_all_three_layers_stay_skin_for_the_steps_that_read_them (gate_test.BodyDrawingItsSkinInThreeLayers.test_all_three_layers_stay_skin_for_the_steps_that_read_them)', 'test_its_garments_and_skin_are_named_from_the_same_grammar (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_its_garments_and_skin_are_named_from_the_same_grammar)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_reach_rather_than_size_says_which_layer_is_the_body (gate_test.BodyDrawingItsSkinInThreeLayers.test_reach_rather_than_size_says_which_layer_is_the_body)', 'test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyPartsFromTheExportGrammar.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)', 'test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_back_hair_baked_into_the_body_mesh_is_named_as_hair)', 'test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_layer_running_floor_to_crown_keeps_the_plain_skin_name)', 'test_the_number_skips_a_name_the_grammar_already_wrote (gate_test.PartitionRecognises.test_the_number_skips_a_name_the_grammar_already_wrote)', 'test_the_numbers_follow_document_order (gate_test.BodyDrawingItsSkinInThreeLayers.test_the_numbers_follow_document_order)', 'test_the_shoes_part_holds_the_shoes (gate_test.BodyPartsFromTheExportGrammar.test_the_shoes_part_holds_the_shoes)', 'test_the_skin_is_the_skin_and_stays_locked (gate_test.BodyPartsFromTheExportGrammar.test_the_skin_is_the_skin_and_stays_locked)', 'test_the_strand_mesh_is_placed_by_geometry (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_strand_mesh_is_placed_by_geometry)']
 

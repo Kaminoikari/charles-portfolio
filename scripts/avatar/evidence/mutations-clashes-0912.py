@@ -118,6 +118,12 @@ MUTATIONS = [
      '        names[keeper] = label\n        n = 2',
      '        names[keeper] = label\n        n = 1'),
 
+
+    ('C11', ['a_name_two_meshes_claim_goes_to_the_one_reaching_furthest',
+             'the_sole_left_in_the_body_mesh_trails_the_shoes'],
+     'the claim that keeps the plain name is numbered along with the rest',
+     '        for i in group:\n            if i == keeper:\n                continue\n',
+     '        for i in group:\n'),
 ]
 
 
