@@ -1,22 +1,22 @@
 make.py          blob 3ecafe175224fa8d7ff129c04c58455bce337d4e
 customise.py     blob 9ff14c8e2b8282edf937e659234e3af616e3644b
 mellowheart.py   blob 50432ca0dbfac7757aa49be43babb95db46e0103
-baseline  Ran 32 tests in 1.461s  green
+baseline  Ran 32 tests in 1.187s  green
 
 R1  make.py holds the five names it used to hold  [make.py]
-    Ran 32 tests in 0.668s  RED  as expected
+    Ran 32 tests in 1.197s  RED  as expected
 
 R2  a part the manifest locks is asked for anyway  [customise.py]
-    Ran 32 tests in 1.084s  RED  as expected
+    Ran 32 tests in 1.745s  RED  as expected
 
 R3  the outfit replaces garments but leaves the base body's hair clips on  [mellowheart.py]
-    Ran 32 tests in 0.689s  RED  as expected
+    Ran 32 tests in 1.354s  RED  as expected
 
 R4  the prefixes are matched as whole names again  [customise.py]
-    Ran 32 tests in 1.061s  RED  as expected
+    Ran 32 tests in 1.905s  RED  as expected
     also red: ['test_a_part_the_manifest_locks_is_never_asked_for', 'test_hair_and_face_are_left_alone', 'test_the_five_names_make_py_used_to_hold', 'test_the_prefixes_resolve_to_what_the_written_down_list_held']
 
 R5  the list comes out in whatever order the manifest happened to store  [customise.py]
-    Ran 32 tests in 0.998s  RED  as expected
+    Ran 32 tests in 1.259s  RED  as expected
     also red: ['test_the_prefixes_resolve_to_what_the_written_down_list_held']
 

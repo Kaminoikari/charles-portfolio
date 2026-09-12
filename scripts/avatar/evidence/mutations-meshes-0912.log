@@ -1,30 +1,31 @@
-partition.py  blob 86dc878440fbb88af1a887daea19be90d88b9ef8
-baseline  Ran 36 tests in 0.381s  green
+partition.py  blob c52c7b68e89e07cb2eadc022f03ffba1a1afab2e
+baseline  Ran 50 tests in 3.009s  green
 
 M1  the face is the mesh literally called Face.baked again
-    Ran 31 tests in 0.371s  RED  as expected
+    Ran 43 tests in 1.956s  RED  as expected
     also red: ['test_a_body_with_no_face_material_anywhere_is_refused (gate_test.PartitionRecognises.test_a_body_with_no_face_material_anywhere_is_refused)', 'test_two_meshes_carrying_face_materials_are_refused (gate_test.PartitionRecognises.test_two_meshes_carrying_face_materials_are_refused)']
 
 M2  any number of face meshes will do, as long as there is one
-    Ran 36 tests in 0.546s  RED  as expected
+    Ran 50 tests in 3.488s  RED  as expected
 
 M3  the face mesh is not asked for the morph targets it is locked for
-    Ran 36 tests in 0.528s  RED  as expected
+    Ran 50 tests in 4.052s  RED  as expected
 
 M4  only the mesh called Body.baked is checked for names it cannot read
-    Ran 36 tests in 0.587s  RED  as expected
+    Ran 50 tests in 4.813s  RED  as expected
+    also red: ['test_a_material_with_a_token_and_no_part_says_so (gate_test.PartitionRecognises.test_a_material_with_a_token_and_no_part_says_so)']
 
 M5  a hair strand counts as a material the grammar cannot place
-    Ran 26 tests in 0.353s  RED  as expected
-    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_a_body_mesh_with_a_different_primitive_count_is_recognised (gate_test.PartitionRecognises.test_a_body_mesh_with_a_different_primitive_count_is_recognised)', 'test_the_face_mesh_is_found_by_its_materials_not_its_name (gate_test.PartitionRecognises.test_the_face_mesh_is_found_by_its_materials_not_its_name)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
+    Ran 38 tests in 0.638s  RED  as expected
+    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_a_body_mesh_with_a_different_primitive_count_is_recognised (gate_test.PartitionRecognises.test_a_body_mesh_with_a_different_primitive_count_is_recognised)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_the_face_mesh_is_found_by_its_materials_not_its_name (gate_test.PartitionRecognises.test_the_face_mesh_is_found_by_its_materials_not_its_name)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
 
 M6  every HAIR material is the one baked-in back-hair object again
-    Ran 26 tests in 0.323s  RED  as expected
-    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
+    Ran 38 tests in 3.962s  RED  as expected
+    also red: ['setUpClass (gate_test.BodyWhoseMeshesAreNotNamedBaked)', 'test_not_one_of_mikas_own_strands_changes_hands (gate_test.HairPlacedOnThisBodysSkeleton.test_not_one_of_mikas_own_strands_changes_hands)', 'test_two_meshes_cannot_claim_the_same_part_name (gate_test.PartitionRecognises.test_two_meshes_cannot_claim_the_same_part_name)']
 
 M7  a MATCAP accessory has no name, so its body is refused
-    Ran 36 tests in 0.666s  RED  as expected
+    Ran 50 tests in 4.130s  RED  as expected
 
 M8  the grammar is consulted only inside a mesh called Body.baked
-    Ran 31 tests in 0.398s  RED  as expected
+    Ran 50 tests in 4.115s  RED  as expected
 

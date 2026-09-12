@@ -9,10 +9,11 @@ byte-for-byte, and clears `__pycache__` before every run. Raw output in
 Run against this blob (check it with `git rev-parse HEAD:scripts/avatar/partition.py`;
 a commit id would not survive the next comment edit):
 
-    partition.py           a3442dac3509963989f2385707e3b93fe3eae688
+    partition.py           c52c7b68e89e07cb2eadc022f03ffba1a1afab2e
 
-Baseline: 46 tests green in `gate_test`, and the loader collects 46, so nothing
-after a misplaced `unittest.main()` is being skipped.
+Baseline: 50 tests green in `gate_test`, and the loader collects 50, so nothing
+after a misplaced `unittest.main()` is being skipped. Re-run at `c52c7b6` after
+the review fix; every pattern still hit exactly once.
 
 Six of the eight positions are the numbers themselves, plus the two ends of the
 coordinate space they are measured in.

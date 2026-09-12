@@ -39,8 +39,9 @@ MUTATIONS = [
 
     ('M3', ['a_face_mesh_carrying_no_morph_targets_is_refused'],
      'the face mesh is not asked for the morph targets it is locked for',
-     "    elif not any(p.get('targets') for p in faces[0]['primitives']):",
-     '    elif False:'),
+     "    if len(faces) == 1 and not any(p.get('targets') "
+     "for p in faces[0]['primitives']):",
+     '    if False:'),
 
     ('M4', ['a_hand_authored_material_in_any_mesh_is_refused'],
      'only the mesh called Body.baked is checked for names it cannot read',

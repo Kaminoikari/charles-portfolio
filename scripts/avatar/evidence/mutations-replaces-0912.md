@@ -74,13 +74,16 @@ sequence, and then exactly the two rows with more than one name in them go red.
 
 `evidence/pipeline-0912-steps.log`, six bodies through steps 1 to 3:
 
-    AvatarSample_C     7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top
-    Vivi               8 parts   removes Outfit_Shoes, Outfit_Top
-    Sendagaya_Shibu    9 parts   removes Outfit_AccessoryNeck, Outfit_Bottom, ...
-    Darkness_Shibu     7 parts   removes Outfit_Shoes, Outfit_Top
-    HairSample_Female  6 parts   removes Outfit_Shoes, Outfit_Top
+    AvatarSample_C     9 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top
+    Vivi               9 parts   removes Outfit_Shoes, Outfit_Top
+    Sendagaya_Shibu   11 parts   removes Outfit_AccessoryNeck, Outfit_Bottom, ...
+    Darkness_Shibu     9 parts   removes Outfit_Shoes, Outfit_Top
+    HairSample_Female  8 parts   removes Outfit_Shoes, Outfit_Top
     mika-pink         13 parts   removes exactly the original five
+    vrm1-twist-sample  7 parts   removes Outfit_Bottom, Outfit_Shoes, Outfit_Top
 
-Three of the six have no lower garment, and one carries a garment name that was
+Four of the seven have no lower garment, and one carries a garment name that was
 not in the written-down list. Under R1 each of those is a refusal rather than a
-dressed body.
+dressed body. (The part counts are higher than when this table was first written
+because stage 2b started naming `Hair_Side_L` and `Hair_Side_R` on these bodies;
+the drop lists are unchanged, and `vrm1-twist-sample` is the body 2b added.)

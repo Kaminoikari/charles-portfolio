@@ -1,31 +1,31 @@
-partition.py  blob a3442dac3509963989f2385707e3b93fe3eae688
-baseline  Ran 46 tests in 8.275s  green
+partition.py  blob c52c7b68e89e07cb2eadc022f03ffba1a1afab2e
+baseline  Ran 50 tests in 2.337s  green
 
 H1  the waist is Mika's y 0.90 on every body
-    Ran 46 tests in 5.697s  RED  as expected
+    Ran 50 tests in 2.294s  RED  as expected
 
 H2  the front of the face is Mika's z -0.03 on every body
-    Ran 46 tests in 10.175s  RED  as expected
+    Ran 50 tests in 3.211s  RED  as expected
     also red: ['test_the_strand_mesh_is_placed_by_geometry (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_strand_mesh_is_placed_by_geometry)', 'test_turning_the_export_around_does_not_move_its_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_turning_the_export_around_does_not_move_its_hair)', 'test_which_way_is_forward_comes_from_the_export (gate_test.HairPlacedOnThisBodysSkeleton.test_which_way_is_forward_comes_from_the_export)']
 
 H3  forward is always -Z, the way a 0.x export has it
-    Ran 46 tests in 5.706s  RED  as expected
+    Ran 50 tests in 7.065s  RED  as expected
     also red: ['test_the_strand_mesh_is_placed_by_geometry (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_strand_mesh_is_placed_by_geometry)', 'test_which_side_is_left_comes_from_the_eye_bone (gate_test.HairPlacedOnThisBodysSkeleton.test_which_side_is_left_comes_from_the_eye_bone)']
 
 H4  the back of the head starts at Mika's y 1.44 on every body
-    Ran 46 tests in 4.693s  RED  as expected
+    Ran 50 tests in 7.381s  RED  as expected
     also red: ['test_lifting_the_whole_body_does_not_move_its_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_lifting_the_whole_body_does_not_move_its_hair)']
 
 H5  off the midline is Mika's 0.12 on every body
-    Ran 46 tests in 5.987s  RED  as expected
+    Ran 50 tests in 6.667s  RED  as expected
 
 H6  left is -X, the way a 0.x export has it
-    Ran 46 tests in 5.692s  RED  as expected
+    Ran 50 tests in 5.480s  RED  as expected
     also red: ['test_the_strand_mesh_is_placed_by_geometry (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_the_strand_mesh_is_placed_by_geometry)', 'test_turning_the_export_around_does_not_move_its_hair (gate_test.BodyWhoseMeshesAreNotNamedBaked.test_turning_the_export_around_does_not_move_its_hair)', 'test_which_way_is_forward_comes_from_the_export (gate_test.HairPlacedOnThisBodysSkeleton.test_which_way_is_forward_comes_from_the_export)']
 
 H7  a strand is measured where its vertex buffer says, not in the rest world
-    Ran 46 tests in 6.071s  RED  as expected
+    Ran 50 tests in 5.023s  RED  as expected
 
 H8  the frame measures the face where its vertex buffer says
-    Ran 46 tests in 4.978s  RED  as expected
+    Ran 50 tests in 2.350s  RED  as expected
 
