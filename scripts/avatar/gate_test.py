@@ -8,10 +8,12 @@ the VRM spec requires (humanoid.required_missing). Every test here drives the
 real make.gate on JSON-perturbed copies of the shipped base body written to a
 temporary directory; the binary chunk is carried over untouched.
 """
+import atexit
 import copy
 import hashlib
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,6 +31,20 @@ import vrm1to0  # noqa: E402
 
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
+# Every partition() here writes a whole VRM, 6.7MB for mika-pink and 14MB for
+# the dress-up export read out of git, and this file drives partition dozens of
+# times. Left in tempfile's own directory they are never collected, and a
+# mutation table that runs this module eight times over filled the disk on
+# 2026-09-12: the run died with ENOSPC and left a mutated partition.py behind.
+# One root per process, removed when the process ends.
+_ROOT = tempfile.mkdtemp(prefix='gate_test.')
+atexit.register(shutil.rmtree, _ROOT, True)
+
+
+def scratch():
+    """A fresh directory under this run's own root."""
+    return tempfile.mkdtemp(dir=_ROOT)
+
 
 def partitioned(src):
     """partition() with its refusal turned into an ordinary test error.
@@ -39,7 +55,7 @@ def partitioned(src):
     crash rather than as a failing class, and under a mutation it hides which
     tests the mutation actually broke.
     """
-    out = tempfile.mkdtemp()
+    out = scratch()
     try:
         return partition.partition(src, os.path.join(out, 'o.vrm'),
                                    os.path.join(out, 'p.json'))[0]
@@ -54,7 +70,7 @@ def perturbed(drop=()):
     bones = doc['extensions']['VRM']['humanoid']['humanBones']
     doc['extensions']['VRM']['humanoid']['humanBones'] = [
         b for b in bones if b['bone'] not in drop]
-    path = os.path.join(tempfile.mkdtemp(), 'body.vrm')
+    path = os.path.join(scratch(), 'body.vrm')
     glb.save(path, doc, binary)
     return path
 
@@ -243,7 +259,7 @@ class PartitionRecognises(unittest.TestCase):
 
     def claiming(self, label, out=None):
         """partition() with every hair strand claiming `label` as its part."""
-        out = out or tempfile.mkdtemp()
+        out = out or scratch()
         original = partition.hair_name
         partition.hair_name = (label if callable(label)
                                else lambda *a, **kw: label)
@@ -295,7 +311,7 @@ class PartitionRecognises(unittest.TestCase):
         # name of its own; if two arrive alike the manifest keeps the second
         # and half the geometry the name covers is gone from every step that
         # reads it, with nothing said.
-        out = tempfile.mkdtemp()
+        out = scratch()
         original = partition.resolve_clashes
         partition.resolve_clashes = lambda claims: [c['label'] for c in claims]
         try:
@@ -324,9 +340,9 @@ class PartitionRecognises(unittest.TestCase):
         doc = copy.deepcopy(self.doc)
         for i, material in enumerate(doc['materials']):
             material['name'] = f'hand_authored_{i}'
-        path = os.path.join(tempfile.mkdtemp(), 'stranger.vrm')
+        path = os.path.join(scratch(), 'stranger.vrm')
         glb.save(path, doc, glb.load(BODY)[1])
-        out = os.path.join(tempfile.mkdtemp(), 'parted.vrm')
+        out = os.path.join(scratch(), 'parted.vrm')
         with self.assertRaises(SystemExit) as caught:
             partition.partition(path, out, out + '.json')
         self.assertIn('拒絕命名', str(caught.exception))
@@ -608,7 +624,7 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
         # whole head of hair as sitting in front of its eyes, and the pipeline
         # runs that conversion before partition on every 1.0 file it is given.
         doc, binary = glb.load(self.OTHER)
-        path = os.path.join(tempfile.mkdtemp(), 'v0.vrm')
+        path = os.path.join(scratch(), 'v0.vrm')
         glb.save(path, vrm1to0.convert(doc)[0], binary)
         self.assertEqual(sorted(partitioned(path)['parts']),
                          sorted(self.manifest['parts']))
@@ -624,7 +640,7 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
         doc['nodes'].append({'name': 'lift', 'translation': [0, 0.5, 0],
                              'children': list(scene['nodes'])})
         scene['nodes'] = [len(doc['nodes']) - 1]
-        path = os.path.join(tempfile.mkdtemp(), 'lifted.vrm')
+        path = os.path.join(scratch(), 'lifted.vrm')
         glb.save(path, doc, binary)
         self.assertEqual(sorted(partitioned(path)['parts']),
                          sorted(self.manifest['parts']))
@@ -667,7 +683,7 @@ class BodyDrawingItsSkinInThreeLayers(unittest.TestCase):
 
     @classmethod
     def export(cls):
-        out = os.path.join(tempfile.mkdtemp(), 'export.vrm')
+        out = os.path.join(scratch(), 'export.vrm')
         with open(out, 'wb') as handle:
             subprocess.run(['git', '-C', os.path.join(HERE, '..', '..'),
                             'show', cls.EXPORT_BLOB], stdout=handle, check=True)
