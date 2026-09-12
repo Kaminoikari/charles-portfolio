@@ -1,0 +1,159 @@
+
+AvatarSample_A_webp.vrm  73 strands, 25 move   waist 0.896 front -0.026 crown 1.477 midline 0.095
+   Hair001.baked#9   F00_000_Hair_00_HAIR_03      c (-0.069,1.447,-0.027) ymin 1.305  Hair_Back -> Acc_HairClip_Base
+   Hair001.baked#10  F00_000_Hair_00_HAIR_03      c (-0.071,1.451,-0.011) ymin 1.316  Hair_Back -> Hair_Side_L
+   Hair001.baked#11  F00_000_Hair_00_HAIR_03      c (-0.069,1.447,+0.004) ymin 1.309  Hair_Back -> Hair_Side_L
+   Hair001.baked#12  F00_000_Hair_00_HAIR_03      c (-0.070,1.449,+0.032) ymin 1.310  Hair_Back -> Hair_Side_L
+   Hair001.baked#13  F00_000_Hair_00_HAIR_03      c (-0.064,1.452,+0.048) ymin 1.311  Hair_Back -> Hair_Side_L
+   Hair001.baked#14  F00_000_Hair_00_HAIR_03      c (-0.053,1.452,+0.066) ymin 1.309  Hair_Back -> Hair_Side_L
+   Hair001.baked#15  F00_000_Hair_00_HAIR_03      c (-0.041,1.454,+0.081) ymin 1.311  Hair_Back -> Hair_Side_L
+   Hair001.baked#16  F00_000_Hair_00_HAIR_03      c (-0.028,1.457,+0.088) ymin 1.316  Hair_Back -> Hair_Side_L
+   Hair001.baked#17  F00_000_Hair_00_HAIR_03      c (-0.013,1.458,+0.094) ymin 1.315  Hair_Back -> Hair_Side_L
+   Hair001.baked#18  F00_000_Hair_00_HAIR_03      c (-0.002,1.458,+0.096) ymin 1.319  Hair_Back -> Hair_Side_L
+   Hair001.baked#22  F00_000_Hair_00_HAIR_03      c (+0.069,1.453,-0.028) ymin 1.315  Hair_Back -> Acc_HairClip_Base
+   Hair001.baked#23  F00_000_Hair_00_HAIR_03      c (+0.067,1.452,-0.010) ymin 1.312  Hair_Back -> Hair_Side_R
+   ... and 13 more
+
+AvatarSample_B_webp.vrm  77 strands, 0 move   waist 0.878 front -0.025 crown 1.440 midline 0.092
+
+AvatarSample_C_webp.vrm  118 strands, 49 move   waist 1.018 front -0.039 crown 1.670 midline 0.099
+   Hair001.baked#25  F00_000_Hair_00_HAIR         c (+0.074,1.676,-0.032) ymin 1.568  Hair_Bangs -> Hair_Back
+   Hair001.baked#51  F00_000_Hair_00_HAIR         c (-0.067,1.576,+0.044) ymin 1.525  Hair_Back -> Hair_Side_L
+   Hair001.baked#52  F00_000_Hair_00_HAIR         c (-0.062,1.569,+0.051) ymin 1.518  Hair_Back -> Hair_Side_L
+   Hair001.baked#53  F00_000_Hair_00_HAIR         c (-0.054,1.560,+0.054) ymin 1.505  Hair_Back -> Hair_Side_L
+   Hair001.baked#54  F00_000_Hair_00_HAIR         c (-0.042,1.555,+0.063) ymin 1.505  Hair_Back -> Hair_Side_L
+   Hair001.baked#55  F00_000_Hair_00_HAIR         c (-0.032,1.566,+0.070) ymin 1.505  Hair_Back -> Hair_Side_L
+   Hair001.baked#56  F00_000_Hair_00_HAIR         c (-0.016,1.570,+0.077) ymin 1.508  Hair_Back -> Hair_Side_L
+   Hair001.baked#57  F00_000_Hair_00_HAIR         c (+0.068,1.583,+0.041) ymin 1.529  Hair_Back -> Hair_Side_R
+   Hair001.baked#58  F00_000_Hair_00_HAIR         c (+0.065,1.575,+0.044) ymin 1.520  Hair_Back -> Hair_Side_R
+   Hair001.baked#59  F00_000_Hair_00_HAIR         c (+0.056,1.567,+0.048) ymin 1.511  Hair_Back -> Hair_Side_R
+   Hair001.baked#60  F00_000_Hair_00_HAIR         c (+0.043,1.559,+0.057) ymin 1.505  Hair_Back -> Hair_Side_R
+   Hair001.baked#61  F00_000_Hair_00_HAIR         c (+0.058,1.567,+0.042) ymin 1.517  Hair_Back -> Hair_Side_R
+   ... and 37 more
+
+Darkness_Shibu_webp.vrm  46 strands, 8 move   waist 0.944 front -0.020 crown 1.552 midline 0.107
+   Hair001.baked#0   F00_000_Hair_00_HAIR_01      c (-0.084,1.549,+0.010) ymin 1.407  Hair_Back -> Hair_Side_L
+   Hair001.baked#17  F00_000_Hair_00_HAIR_01      c (+0.081,1.552,+0.014) ymin 1.412  Hair_Back -> Hair_Side_R
+   Hair001.baked#18  F00_000_Hair_00_HAIR_01      c (+0.082,1.548,-0.001) ymin 1.409  Hair_Back -> Hair_Side_R
+   Hair001.baked#19  F00_000_Hair_00_HAIR_01      c (+0.081,1.543,-0.015) ymin 1.405  Hair_Back -> Hair_Side_R
+   Hair001.baked#29  F00_000_Hair_00_HAIR_01      c (+0.098,1.497,-0.013) ymin 1.399  Hair_Back -> Hair_Side_R
+   Hair001.baked#31  F00_000_Hair_00_HAIR_01      c (-0.067,1.576,-0.021) ymin 1.497  Hair_Back -> Hair_Bangs
+   Hair001.baked#33  F00_000_Hair_00_HAIR_01      c (-0.069,1.557,-0.026) ymin 1.493  Hair_Back -> Hair_Bangs
+   Hair001.baked#43  F00_000_Hair_00_HAIR_01      c (-0.086,1.544,+0.010) ymin 1.405  Hair_Back -> Hair_Side_L
+
+HairSample_Female_webp.vrm  108 strands, 56 move   waist 0.944 front -0.020 crown 1.552 midline 0.109
+   Hair001.baked#20  F00_000_Hair_00_HAIR_01      c (-0.079,1.538,-0.025) ymin 1.397  Hair_Back -> Hair_Bangs
+   Hair001.baked#21  F00_000_Hair_00_HAIR_01      c (+0.080,1.538,-0.025) ymin 1.397  Hair_Back -> Hair_Bangs
+   Hair001.baked#28  F00_000_Hair_00_HAIR_01      c (+0.057,1.552,+0.092) ymin 1.503  Hair_Back -> Hair_Side_R
+   Hair001.baked#29  F00_000_Hair_00_HAIR_01      c (+0.061,1.528,+0.084) ymin 1.489  Hair_Back -> Hair_Side_R
+   Hair001.baked#32  F00_000_Hair_00_HAIR_01      c (+0.080,1.590,-0.022) ymin 1.575  Hair_Back -> Hair_Bangs
+   Hair001.baked#33  F00_000_Hair_00_HAIR_01      c (+0.086,1.576,-0.021) ymin 1.561  Hair_Back -> Hair_Bangs
+   Hair001.baked#42  F00_000_Hair_00_HAIR_01      c (-0.056,1.551,+0.092) ymin 1.502  Hair_Back -> Hair_Side_L
+   Hair001.baked#43  F00_000_Hair_00_HAIR_01      c (-0.059,1.529,+0.086) ymin 1.489  Hair_Back -> Hair_Side_L
+   Hair001.baked#46  F00_000_Hair_00_HAIR_01      c (-0.078,1.590,-0.022) ymin 1.575  Hair_Back -> Hair_Bangs
+   Hair001.baked#47  F00_000_Hair_00_HAIR_01      c (-0.085,1.576,-0.021) ymin 1.561  Hair_Back -> Hair_Bangs
+   Hair001.baked#50  F00_000_Hair_00_HAIR_01      c (-0.132,1.488,+0.005) ymin 1.346  Hair_Back -> Hair_Side_L
+   Hair001.baked#51  F00_000_Hair_00_HAIR_01      c (-0.136,1.476,+0.026) ymin 1.321  Hair_Back -> Hair_Side_L
+   ... and 44 more
+
+HairSample_Male_webp.vrm  114 strands, 36 move   waist 1.008 front -0.037 crown 1.674 midline 0.112
+   Hair001.baked#9   F00_000_Hair_00_HAIR         c (+0.081,1.702,-0.034) ymin 1.617  Hair_Bangs -> Hair_Back
+   Hair001.baked#23  F00_000_Hair_00_HAIR         c (+0.029,1.792,-0.034) ymin 1.772  Hair_Bangs -> Hair_Back
+   Hair001.baked#26  F00_000_Hair_00_HAIR         c (-0.073,1.735,-0.034) ymin 1.671  Hair_Bangs -> Hair_Back
+   Hair001.baked#71  F00_000_Hair_00_HAIR         c (-0.067,1.703,-0.036) ymin 1.677  Hair_Bangs -> Hair_Back
+   Hair001.baked#73  F00_000_Hair_00_HAIR         c (-0.087,1.652,-0.000) ymin 1.623  Hair_Back -> Hair_Side_L
+   Hair001.baked#74  F00_000_Hair_00_HAIR         c (-0.071,1.610,+0.032) ymin 1.543  Hair_Back -> Hair_Side_L
+   Hair001.baked#75  F00_000_Hair_00_HAIR         c (-0.034,1.575,+0.058) ymin 1.520  Hair_Back -> Hair_Side_L
+   Hair001.baked#76  F00_000_Hair_00_HAIR         c (-0.021,1.569,+0.062) ymin 1.515  Hair_Back -> Hair_Side_L
+   Hair001.baked#77  F00_000_Hair_00_HAIR         c (-0.011,1.578,+0.068) ymin 1.519  Hair_Back -> Hair_Side_L
+   Hair001.baked#78  F00_000_Hair_00_HAIR         c (-0.008,1.560,+0.061) ymin 1.513  Hair_Back -> Hair_Side_L
+   Hair001.baked#79  F00_000_Hair_00_HAIR         c (-0.003,1.547,+0.053) ymin 1.517  Hair_Back -> Hair_Side_L
+   Hair001.baked#80  F00_000_Hair_00_HAIR         c (-0.046,1.585,+0.053) ymin 1.530  Hair_Back -> Hair_Side_L
+   ... and 24 more
+
+Sakurada_Fumiriya_webp.vrm  83 strands, 23 move   waist 1.147 front -0.039 crown 1.808 midline 0.108
+   Hair001.baked#41  F00_000_Hair_00_HAIR_02      c (-0.078,1.747,+0.016) ymin 1.691  Hair_Back -> Hair_Side_L
+   Hair001.baked#42  F00_000_Hair_00_HAIR_02      c (-0.064,1.735,+0.036) ymin 1.674  Hair_Back -> Hair_Side_L
+   Hair001.baked#43  F00_000_Hair_00_HAIR_02      c (-0.050,1.739,+0.056) ymin 1.690  Hair_Back -> Hair_Side_L
+   Hair001.baked#44  F00_000_Hair_00_HAIR_02      c (-0.028,1.718,+0.062) ymin 1.659  Hair_Back -> Hair_Side_L
+   Hair001.baked#45  F00_000_Hair_00_HAIR_02      c (+0.010,1.732,+0.076) ymin 1.678  Hair_Back -> Hair_Side_R
+   Hair001.baked#46  F00_000_Hair_00_HAIR_02      c (+0.034,1.727,+0.066) ymin 1.669  Hair_Back -> Hair_Side_R
+   Hair001.baked#47  F00_000_Hair_00_HAIR_02      c (+0.059,1.741,+0.054) ymin 1.683  Hair_Back -> Hair_Side_R
+   Hair001.baked#48  F00_000_Hair_00_HAIR_02      c (+0.072,1.742,+0.034) ymin 1.680  Hair_Back -> Hair_Side_R
+   Hair001.baked#49  F00_000_Hair_00_HAIR_02      c (+0.083,1.746,+0.016) ymin 1.694  Hair_Back -> Hair_Side_R
+   Hair001.baked#59  F00_000_Hair_00_HAIR_02      c (-0.067,1.749,+0.035) ymin 1.714  Hair_Back -> Hair_Side_L
+   Hair001.baked#60  F00_000_Hair_00_HAIR_02      c (-0.059,1.752,+0.065) ymin 1.716  Hair_Back -> Hair_Side_L
+   Hair001.baked#61  F00_000_Hair_00_HAIR_02      c (-0.040,1.748,+0.083) ymin 1.713  Hair_Back -> Hair_Side_L
+   ... and 11 more
+
+Sendagaya_Shibu_webp.vrm  46 strands, 8 move   waist 0.910 front -0.020 crown 1.518 midline 0.107
+   Hair001.baked#0   F00_000_Hair_00_HAIR_01      c (-0.084,1.515,+0.010) ymin 1.373  Hair_Back -> Hair_Side_L
+   Hair001.baked#17  F00_000_Hair_00_HAIR_01      c (+0.081,1.518,+0.014) ymin 1.378  Hair_Back -> Hair_Side_R
+   Hair001.baked#18  F00_000_Hair_00_HAIR_01      c (+0.082,1.513,-0.001) ymin 1.374  Hair_Back -> Hair_Side_R
+   Hair001.baked#19  F00_000_Hair_00_HAIR_01      c (+0.081,1.509,-0.015) ymin 1.371  Hair_Back -> Hair_Side_R
+   Hair001.baked#29  F00_000_Hair_00_HAIR_01      c (+0.098,1.462,-0.013) ymin 1.365  Hair_Back -> Hair_Side_R
+   Hair001.baked#31  F00_000_Hair_00_HAIR_01      c (-0.067,1.542,-0.021) ymin 1.463  Hair_Back -> Hair_Bangs
+   Hair001.baked#33  F00_000_Hair_00_HAIR_01      c (-0.069,1.522,-0.025) ymin 1.458  Hair_Back -> Hair_Bangs
+   Hair001.baked#43  F00_000_Hair_00_HAIR_01      c (-0.086,1.510,+0.010) ymin 1.371  Hair_Back -> Hair_Side_L
+
+Sendagaya_Shino_webp.vrm  48 strands, 8 move   waist 0.935 front -0.022 crown 1.549 midline 0.109
+   Hair001.baked#13  F00_000_Hair_00_HAIR_01      c (+0.079,1.514,-0.015) ymin 1.369  Hair_Back -> Hair_Side_R
+   Hair001.baked#14  F00_000_Hair_00_HAIR_01      c (+0.085,1.472,-0.016) ymin 1.309  Hair_Back -> Hair_Side_R
+   Hair001.baked#18  F00_000_Hair_00_HAIR_01      c (-0.073,1.502,-0.021) ymin 1.333  Hair_Back -> Hair_Side_L
+   Hair001.baked#19  F00_000_Hair_00_HAIR_01      c (-0.114,1.447,+0.021) ymin 1.210  Hair_Back -> Hair_Side_L
+   Hair001.baked#29  F00_000_Hair_00_HAIR_01      c (+0.108,1.441,+0.060) ymin 1.205  Hair_Back -> Hair_Side_R
+   Hair001.baked#43  F00_000_Hair_00_HAIR_01      c (+0.107,1.455,+0.073) ymin 1.304  Hair_Back -> Hair_Side_R
+   Hair001.baked#44  F00_000_Hair_00_HAIR_01      c (+0.094,1.522,+0.013) ymin 1.376  Hair_Back -> Hair_Side_R
+   Hair001.baked#45  F00_000_Hair_00_HAIR_01      c (-0.094,1.532,+0.010) ymin 1.403  Hair_Back -> Hair_Side_L
+
+Victoria_Rubin_webp.vrm  60 strands, 39 move   waist 1.010 front -0.023 crown 1.632 midline 0.109
+   Hair001.baked#0   F00_000_Hair_00_HAIR_01      c (-0.078,1.574,+0.039) ymin 1.357  Hair_Back -> Hair_Side_L
+   Hair001.baked#1   F00_000_Hair_00_HAIR_01      c (-0.063,1.573,+0.058) ymin 1.346  Hair_Back -> Hair_Side_L
+   Hair001.baked#2   F00_000_Hair_00_HAIR_01      c (-0.046,1.569,+0.073) ymin 1.343  Hair_Back -> Hair_Side_L
+   Hair001.baked#3   F00_000_Hair_00_HAIR_01      c (-0.033,1.565,+0.082) ymin 1.347  Hair_Back -> Hair_Side_L
+   Hair001.baked#4   F00_000_Hair_00_HAIR_01      c (-0.023,1.560,+0.088) ymin 1.343  Hair_Back -> Hair_Side_L
+   Hair001.baked#5   F00_000_Hair_00_HAIR_01      c (-0.013,1.559,+0.091) ymin 1.346  Hair_Back -> Hair_Side_L
+   Hair001.baked#6   F00_000_Hair_00_HAIR_01      c (+0.012,1.556,+0.092) ymin 1.341  Hair_Back -> Hair_Side_R
+   Hair001.baked#7   F00_000_Hair_00_HAIR_01      c (+0.046,1.556,+0.079) ymin 1.340  Hair_Back -> Hair_Side_R
+   Hair001.baked#8   F00_000_Hair_00_HAIR_01      c (+0.064,1.559,+0.063) ymin 1.348  Hair_Back -> Hair_Side_R
+   Hair001.baked#9   F00_000_Hair_00_HAIR_01      c (+0.074,1.561,+0.048) ymin 1.343  Hair_Back -> Hair_Side_R
+   Hair001.baked#10  F00_000_Hair_00_HAIR_01      c (+0.080,1.566,+0.035) ymin 1.351  Hair_Back -> Hair_Side_R
+   Hair001.baked#26  F00_000_Hair_00_HAIR_01      c (+0.095,1.568,-0.015) ymin 1.414  Hair_Back -> Hair_Side_R
+   ... and 27 more
+
+Vita_webp.vrm  65 strands, 28 move   waist 0.983 front -0.022 crown 1.599 midline 0.108
+   Hair001.baked#0   F00_000_Hair_00_HAIR_01      c (-0.081,1.575,-0.023) ymin 1.437  Hair_Back -> Hair_Bangs
+   Hair001.baked#1   F00_000_Hair_00_HAIR_01      c (-0.084,1.575,-0.010) ymin 1.430  Hair_Back -> Hair_Side_L
+   Hair001.baked#2   F00_000_Hair_00_HAIR_01      c (-0.083,1.581,+0.006) ymin 1.434  Hair_Back -> Hair_Side_L
+   Hair001.baked#3   F00_000_Hair_00_HAIR_01      c (-0.079,1.584,+0.025) ymin 1.430  Hair_Back -> Hair_Side_L
+   Hair001.baked#4   F00_000_Hair_00_HAIR_01      c (-0.073,1.586,+0.037) ymin 1.430  Hair_Back -> Hair_Side_L
+   Hair001.baked#5   F00_000_Hair_00_HAIR_01      c (-0.068,1.590,+0.044) ymin 1.434  Hair_Back -> Hair_Side_L
+   Hair001.baked#6   F00_000_Hair_00_HAIR_01      c (-0.059,1.591,+0.056) ymin 1.430  Hair_Back -> Hair_Side_L
+   Hair001.baked#7   F00_000_Hair_00_HAIR_01      c (-0.045,1.595,+0.066) ymin 1.434  Hair_Back -> Hair_Side_L
+   Hair001.baked#8   F00_000_Hair_00_HAIR_01      c (-0.025,1.595,+0.075) ymin 1.430  Hair_Back -> Hair_Side_L
+   Hair001.baked#9   F00_000_Hair_00_HAIR_01      c (-0.008,1.597,+0.079) ymin 1.433  Hair_Back -> Hair_Side_L
+   Hair001.baked#10  F00_000_Hair_00_HAIR_01      c (+0.001,1.595,+0.079) ymin 1.430  Hair_Back -> Hair_Side_R
+   Hair001.baked#11  F00_000_Hair_00_HAIR_01      c (+0.011,1.596,+0.078) ymin 1.434  Hair_Back -> Hair_Side_R
+   ... and 16 more
+
+Vivi_webp.vrm  78 strands, 30 move   waist 0.776 front -0.019 crown 1.312 midline 0.097
+   Hair001.baked#8   F00_000_Hair_00_HAIR_01      c (-0.008,1.312,+0.077) ymin 1.175  Hair_Side_L -> Hair_Back
+   Hair001.baked#9   F00_000_Hair_00_HAIR_01      c (+0.009,1.312,+0.077) ymin 1.175  Hair_Side_R -> Hair_Back
+   Hair001.baked#10  F00_000_Hair_00_HAIR_01      c (+0.018,1.312,+0.075) ymin 1.175  Hair_Side_R -> Hair_Back
+   Hair001.baked#21  F00_000_Hair_00_HAIR_01      c (-0.077,1.284,-0.026) ymin 1.174  Hair_Side_L -> Hair_Bangs
+   Hair001.baked#24  F00_000_Hair_00_HAIR_01      c (-0.078,1.284,-0.023) ymin 1.173  Hair_Side_L -> Hair_Bangs
+   Hair001.baked#25  F00_000_Hair_00_HAIR_01      c (-0.078,1.289,-0.029) ymin 1.176  Hair_Side_L -> Hair_Bangs
+   Hair001.baked#26  F00_000_Hair_00_HAIR_01      c (+0.077,1.288,-0.029) ymin 1.175  Hair_Side_R -> Hair_Bangs
+   Hair001.baked#28  F00_000_Hair_00_HAIR_01      c (+0.076,1.283,-0.026) ymin 1.174  Hair_Side_R -> Hair_Bangs
+   Hair001.baked#29  F00_000_Hair_00_HAIR_01      c (+0.078,1.284,-0.023) ymin 1.173  Hair_Side_R -> Hair_Bangs
+   Hair001.baked#52  F00_000_Hair_00_HAIR_02      c (-0.110,1.314,+0.009) ymin 1.253  Hair_Side_L -> Hair_Back
+   Hair001.baked#53  F00_000_Hair_00_HAIR_02      c (-0.110,1.315,+0.003) ymin 1.254  Hair_Side_L -> Hair_Back
+   Hair001.baked#54  F00_000_Hair_00_HAIR_02      c (-0.108,1.316,-0.003) ymin 1.257  Hair_Side_L -> Hair_Back
+   ... and 18 more
+
+mika-pink.vrm  77 strands, 0 move   waist 0.878 front -0.025 crown 1.440 midline 0.092
+
+vrm1-twist-sample.vrm  1 strands, 1 move   waist 0.908 front -0.003 crown 1.517 midline 0.109
+   Hair#0   Hair_00_HAIR                 c (-0.004,1.368,-0.061) ymin 1.028  Hair_Bangs -> Hair_Side_R
+
+vroid-studio-dressup.vrm  0 strands, 0 move   waist 0.908 front -0.003 crown 1.517 midline 0.109

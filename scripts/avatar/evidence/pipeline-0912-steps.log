@@ -1,31 +1,31 @@
 ==================================================================
 AvatarSample_C_webp.vrm
    AvatarSample_C_webp.vrm 已是 VRM 0.x
-  1 partition ok  7 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  1 partition ok  9 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   2 strip     ok  3 primitives removed, replacing Outfit_Bottom, Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 72.0%
 ==================================================================
 Vivi_webp.vrm
    Vivi_webp.vrm 已是 VRM 0.x
-  1 partition ok  8 parts: Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+  1 partition ok  9 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
   2 strip     ok  2 primitives removed, replacing Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 13.1%
 ==================================================================
 Sendagaya_Shibu_webp.vrm
    Sendagaya_Shibu_webp.vrm 已是 VRM 0.x
-  1 partition ok  9 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  1 partition ok  11 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   2 strip     ok  4 primitives removed, replacing Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 36.7%
 ==================================================================
 Darkness_Shibu_webp.vrm
    Darkness_Shibu_webp.vrm 已是 VRM 0.x
-  1 partition ok  7 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_Shoes, Outfit_Top
+  1 partition ok  9 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
   2 strip     ok  2 primitives removed, replacing Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 77.7%
 ==================================================================
 HairSample_Female_webp.vrm
    HairSample_Female_webp.vrm 已是 VRM 0.x
-  1 partition ok  6 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Outfit_Shoes, Outfit_Top
+  1 partition ok  8 parts: Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
   2 strip     ok  2 primitives removed, replacing Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 3.0%
 ==================================================================
@@ -77,6 +77,6 @@ vrm1-twist-sample.vrm
    近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
    近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
    近似：spring Hair 的 hitRadius 逐關節不同，取根關節的
-  1 partition ok  7 parts: Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+  1 partition ok  7 parts: Body_Skin, Face, Hair_BodyBack, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
   2 strip     ok  3 primitives removed, replacing Outfit_Bottom, Outfit_Shoes, Outfit_Top
   3 skin      ok  repainted 4.7%

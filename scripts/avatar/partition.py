@@ -38,6 +38,8 @@ import numpy as np
 
 import binding
 import glb
+import humanoid
+import pose
 
 VERTEX_ATTRS = ('POSITION', 'NORMAL', 'TANGENT', 'TEXCOORD_0', 'TEXCOORD_1',
                 'COLOR_0', 'JOINTS_0', 'WEIGHTS_0')
@@ -139,6 +141,15 @@ def is_strand(material):
 # fringe itself be kept: the reference wears a different set of clips, and
 # dropping the whole fringe to be rid of these left a smooth offset shell over
 # the forehead that read as a swim cap.
+#
+# This is the one rule in this file still measured on Mika rather than on the
+# body in hand, and it is wrong on two other bodies: AvatarSample_A and
+# Victoria_Rubin use HAIR_03 for ordinary strands that happen to sit in front of
+# the eyes, so 9 and 2 of their strands respectively are binned as clips and
+# then deleted by mellowheart.REPLACES. Triangle count does not separate the two
+# cases -- Mika's clips run 6 to 128 triangles and those strands 38 to 194 --
+# so there is no cheap general signal, and a decal detector belongs with the
+# masking work in stage 2c rather than here.
 CLIP_DECALS = ('HAIR_03', 'HAIR_05')
 
 # What is left that this step reads off THIS body: where a hair strand sits in
@@ -220,31 +231,80 @@ def recognise(doc):
     return reasons
 
 
-def hair_name(material, centroid, ymin):
-    """Which part a hair strand belongs to, from where it sits in space."""
+def hair_frame(doc, views):
+    """The four places on THIS body that hair_name measures a strand against.
+
+    They used to be four numbers taken off Mika: below the waist at y 0.90, in
+    front of the face at z -0.03, above y 1.44 for the back of the head, and
+    further from the midline than 0.12. Each is now read from this body, and on
+    Mika each lands where the written number was -- exactly so, in the case of
+    the crown, which is the midpoint of the eyes and the top of the face mesh
+    and comes out at 1.4400 against the 1.44 that was written down. Not one of
+    Mika's 77 strands changes label; every other body's do, which is the point,
+    since their old labels were Mika's numbers applied to a different skull.
+    See evidence/hair-0912-relative.log.
+
+    `left` is read off the eye bone rather than from the VRM version: the
+    character's left is -X on a 0.x export and +X on a 1.0 one, and the bone
+    says which without this having to know.
+
+    Everything here is in the REST WORLD, which is why partition measures its
+    strands with pose.skinned rather than reading POSITION straight. The two
+    are the same file for file until vrm1to0 runs: it turns a 1.0 export around
+    by parenting the scene to a node rotated 180 degrees, which moves every
+    bone and leaves the vertex buffers alone. Comparing a bone against a raw
+    POSITION after that put vrm1-twist-sample's entire head of hair in front of
+    its eyes and labelled it a fringe.
+    """
+    bones, world = humanoid.bones(doc), humanoid.rest_world(doc)
+    eye = np.asarray(world[bones.get('leftEye', bones['head'])])[:3, 3]
+    rest, head = pose.skinned(doc, views), face_meshes(doc)[0]
+    face = np.concatenate([
+        rest[(head.get('name'), i)][
+            np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())]
+        for i, prim in enumerate(head['primitives'])])
+    return {
+        'waist': float(np.asarray(world[bones['hips']])[:3, 3][1]),
+        'front': float(eye[2]),
+        'crown': float((eye[1] + face[:, 1].max()) / 2),
+        'midline': float(np.abs(face[:, 0]).max()),
+        'forward': humanoid.forward_z(doc),
+        'left': -1.0 if eye[0] < 0 else 1.0,
+    }
+
+
+def hair_name(material, centroid, ymin, frame):
+    """Which part a hair strand belongs to, from where it sits on this body.
+
+    CLIP_DECALS is the one thing here still measured on Mika rather than on the
+    body in hand, and it costs two other bodies some hair: see the comment above
+    it.
+    """
     if material.endswith('HAIR_06'):
         return 'Acc_HairOrnament'
-    if ymin < 0.90:                       # falls below the waist
-        return 'Hair_Twintail_L' if centroid[0] < 0 else 'Hair_Twintail_R'
-    if centroid[2] < -0.03:               # in front of the face (model faces -Z)
+    side = 'L' if centroid[0] * frame['left'] > 0 else 'R'
+    if ymin < frame['waist']:             # falls below the waist
+        return f'Hair_Twintail_{side}'
+    if (centroid[2] - frame['front']) * frame['forward'] > 0:   # in front of the eyes
         # Only in front of the face: HAIR_03 and HAIR_05 also carry ordinary
         # strands in the back and side hair, which must stay hair.
         return ('Acc_HairClip_Base' if material.endswith(CLIP_DECALS)
                 else 'Hair_Bangs')
-    if material.endswith(CLIP_DECALS) and abs(centroid[0]) > 0.12:
+    if material.endswith(CLIP_DECALS) and abs(centroid[0]) > frame['midline']:
         # A lone star decal painted on the back hair. This rule runs before
         # proportion, so it sees x=+0.144; the shipped model scales the head
         # by 1.06 and it lands at +0.153. Either way it is further from the
-        # midline than the skull itself. twintail.apply moves the strands
-        # under it and not this primitive, because it moves parts and this one
-        # is labelled Hair_Back, so after the split it hangs in mid-air beside
-        # the head -- plainly visible in a three-vrm close-up and in nothing the
-        # flat renders frame. The reference has no such star, so it goes to the
-        # ornament bin that mellowheart.REPLACES already empties.
+        # midline than the skull itself, which is what `midline` measures.
+        # twintail.apply moves the strands under it and not this primitive,
+        # because it moves parts and this one is labelled Hair_Back, so after
+        # the split it hangs in mid-air beside the head -- plainly visible in a
+        # three-vrm close-up and in nothing the flat renders frame. The
+        # reference has no such star, so it goes to the ornament bin that
+        # mellowheart.REPLACES already empties.
         return 'Acc_HairOrnament'
-    if centroid[1] > 1.44:
+    if centroid[1] > frame['crown']:
         return 'Hair_Back'
-    return 'Hair_Side_L' if centroid[0] < 0 else 'Hair_Side_R'
+    return f'Hair_Side_{side}'
 
 
 def split_primitive(doc, views, prim):
@@ -280,6 +340,10 @@ def partition(src, dst, parts_path):
 
     manifest = {'source': src, 'parts': {}}
     faces = {id(m) for m in face_meshes(doc)}
+    frame = hair_frame(doc, views)
+    # Before anything is rebuilt: split_primitive appends accessors, and these
+    # are keyed by the primitive indices the loop below is about to replace.
+    rest = pose.skinned(doc, views)
 
     for mesh in doc['meshes']:
         name = mesh.get('name')
@@ -297,17 +361,16 @@ def partition(src, dst, parts_path):
             continue
 
         rebuilt, labels = [], []
-        for prim in mesh['primitives']:
+        for index, prim in enumerate(mesh['primitives']):
             material = mats[prim['material']]
             label = body_name(material)
             if label is None:
                 # recognise() has already refused every material the grammar
                 # cannot place, so what reaches here unnamed is a strand, and
                 # a strand is the one thing left that needs geometry.
-                pos = glb.read_accessor(doc, views, prim['attributes']['POSITION'])
                 used = np.unique(glb.read_accessor(doc, views, prim['indices']).ravel())
-                p = pos[used]
-                label = hair_name(material, p.mean(axis=0), p[:, 1].min())
+                p = rest[(name, index)][used]
+                label = hair_name(material, p.mean(axis=0), p[:, 1].min(), frame)
             new = split_primitive(doc, views, prim)
             new.setdefault('extras', {})['part'] = label
             rebuilt.append(new)

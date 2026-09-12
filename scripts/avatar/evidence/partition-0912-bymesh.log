@@ -1,21 +1,21 @@
-AvatarSample_A_webp.vrm        10 parts  Acc_HairClip_Base, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+AvatarSample_A_webp.vrm         9 parts  Acc_HairClip_Base, Body_Skin, Face, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
 AvatarSample_B_webp.vrm        13 parts  Acc_HairClip_Base, Acc_HairOrnament, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Hair_Twintail_L, Hair_Twintail_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-AvatarSample_C_webp.vrm         7 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-Darkness_Shibu_webp.vrm         7 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_Shoes, Outfit_Top
-HairSample_Female_webp.vrm      6 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Outfit_Shoes, Outfit_Top
-HairSample_Male_webp.vrm        7 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-Sakurada_Fumiriya_webp.vrm      9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-Sendagaya_Shibu_webp.vrm        9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-Sendagaya_Shino_webp.vrm       11 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-Victoria_Rubin_webp.vrm         8 parts  Acc_HairClip_Base, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_Shoes, Outfit_Top
-Vita_webp.vrm                   7 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Outfit_Shoes, Outfit_Top
-Vivi_webp.vrm                   8 parts  Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+AvatarSample_C_webp.vrm         9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+Darkness_Shibu_webp.vrm         9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+HairSample_Female_webp.vrm      8 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+HairSample_Male_webp.vrm        9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+Sakurada_Fumiriya_webp.vrm     11 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+Sendagaya_Shibu_webp.vrm       11 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+Sendagaya_Shino_webp.vrm       10 parts  Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_AccessoryNeck, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+Victoria_Rubin_webp.vrm        11 parts  Acc_HairClip_Base, Acc_HairOrnament, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+Vita_webp.vrm                   9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
+Vivi_webp.vrm                   9 parts  Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_BodyBack, Hair_Side_L, Hair_Side_R, Outfit_Shoes, Outfit_Top
 mika-milfy-12.vrm              REFUSED
       /Users/charles/portfolio/public/avatar/mika-milfy-12.vrm 不是這一步認得的 VRoid 匯出，拒絕命名：
       - 有 20 個材質不帶 VRoid 的類別後綴（SKIN、CLOTH、HAIR、FACE、EYE、MATCAP），推不出部件名稱：Mellow_Belt_Acc、Mellow_Inner、Mellow_Inner_Sub、Mellow_Jewel、Mellow_Lace、Mellow_Leg_Acc、Mellow_Outer、Mellow_Shoes、Mellow_Skirt_Cloth、Mellow_Sub_Acc、Mellow_Underwear、Milfy_Bear、Milfy_EarInner、Milfy_Gold、Milfy_GoldInner、Milfy_Ink、Milfy_Mint、Milfy_MintDark、Milfy_Plaster、Milfy_White
       這一步的部件名稱來自 VRoid 的材質文法與髮絲的絕對座標，換一具身體推不出來。硬跑會產生一份讀起來合理但是虛構的 parts.json，後面每一步都會相信它。
 mika-pink.vrm                  13 parts  Acc_HairClip_Base, Acc_HairOrnament, Body_Skin, Face, Hair_Back, Hair_Bangs, Hair_Side_L, Hair_Side_R, Hair_Twintail_L, Hair_Twintail_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
-vrm1-twist-sample.vrm           7 parts  Body_Skin, Face, Hair_Bangs, Hair_BodyBack, Outfit_Bottom, Outfit_Shoes, Outfit_Top
+vrm1-twist-sample.vrm           7 parts  Body_Skin, Face, Hair_BodyBack, Hair_Side_R, Outfit_Bottom, Outfit_Shoes, Outfit_Top
 vroid-studio-dressup.vrm       REFUSED
       /Users/charles/portfolio/public/avatar/vroid-studio-dressup.vrm：InnerBottom.baked 與 Body (merged).baked(copy).baked 都主張部件名稱 Body_Skin，manifest 以名稱為鍵，後者會無聲蓋掉前者。
 

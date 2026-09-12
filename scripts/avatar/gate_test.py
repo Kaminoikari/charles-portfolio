@@ -22,6 +22,7 @@ import glb  # noqa: E402
 import humanoid  # noqa: E402
 import make  # noqa: E402
 import partition  # noqa: E402
+import vrm1to0  # noqa: E402
 
 BODY = os.path.join(HERE, '..', '..', 'public', 'avatar', 'mika-pink.vrm')
 
@@ -351,6 +352,113 @@ class BodyPartsFromTheExportGrammar(unittest.TestCase):
         self.assertFalse(self.body['Body_Skin']['deletable'])
 
 
+class HairPlacedOnThisBodysSkeleton(unittest.TestCase):
+    """The four numbers hair_name measures against, read off the body in hand.
+
+    They were Mika's: below the waist at y 0.90, in front of the face at
+    z -0.03, above y 1.44 for the back of the head, further from the midline
+    than 0.12. Applied to Sakurada_Fumiriya, whose hips are 27cm higher, "below
+    the waist" pointed at her knees.
+
+    The two frames below are measured, not invented: partition.hair_frame reads
+    them off those two files. Every case drives the real hair_name.
+    """
+
+    # Mika's base, where the four written-down numbers came from.
+    MIKA = {'waist': 0.8782, 'front': -0.0246, 'crown': 1.4402,
+            'midline': 0.0918, 'forward': -1, 'left': -1.0}
+    # Sakurada_Fumiriya, the tallest of the sixteen.
+    TALL = {'waist': 1.1470, 'front': -0.0390, 'crown': 1.8083,
+            'midline': 0.1085, 'forward': -1, 'left': -1.0}
+    # vrm1-twist-sample, a VRM 1.0 export: it faces +Z and its left is +X.
+    VRM1 = {'waist': 0.9081, 'front': -0.0033, 'crown': 1.5172,
+            'midline': 0.1088, 'forward': 1, 'left': 1.0}
+
+    STRAND = 'F00_000_Hair_00_HAIR_01'
+    DECAL = 'F00_000_Hair_00_HAIR_03'
+
+    def test_below_the_waist_is_below_this_bodys_own_hips(self):
+        # A strand reaching y 1.05 hangs past Sakurada's hips and stops well
+        # above Mika's.
+        low = (0.0, 1.30, 0.05)
+        self.assertEqual(partition.hair_name(self.STRAND, low, 1.05, self.TALL),
+                         'Hair_Twintail_R')
+        self.assertNotIn('Twintail',
+                         partition.hair_name(self.STRAND, low, 1.05, self.MIKA))
+
+    def test_in_front_of_the_face_is_in_front_of_this_bodys_own_eyes(self):
+        # z -0.030 is in front of Mika's eyes at -0.0246 and behind
+        # Sakurada's at -0.039.
+        c = (0.0, 1.40, -0.030)
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.35, self.MIKA),
+                         'Hair_Bangs')
+        self.assertNotEqual(partition.hair_name(self.STRAND, c, 1.35, self.TALL),
+                            'Hair_Bangs')
+
+    def test_which_way_is_forward_comes_from_the_export(self):
+        # vrm1-twist-sample's single strand: z -0.061 against an eye at
+        # -0.0033. On a 0.x body that reads as a fringe; on this one the model
+        # faces +Z, so it is behind the eyes and is ordinary hair.
+        c = (-0.004, 1.368, -0.061)
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.028, self.VRM1),
+                         'Hair_Side_R')
+        flipped = dict(self.VRM1, forward=-1)
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.028, flipped),
+                         'Hair_Bangs')
+
+    def test_the_back_of_the_head_starts_at_this_bodys_own_crown(self):
+        # y 1.50 is above Mika's crown at 1.4402 and below Sakurada's at
+        # 1.8083.
+        c = (-0.06, 1.50, 0.04)
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.45, self.MIKA),
+                         'Hair_Back')
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.45, self.TALL),
+                         'Hair_Side_L')
+
+    def test_off_the_midline_is_wider_than_this_bodys_own_skull(self):
+        # |x| 0.10 is outside Mika's skull at 0.0918 and inside Sakurada's at
+        # 0.1085. Only a clip decal is asked the question.
+        c = (0.10, 1.40, 0.04)
+        self.assertEqual(partition.hair_name(self.DECAL, c, 1.35, self.MIKA),
+                         'Acc_HairOrnament')
+        self.assertNotEqual(partition.hair_name(self.DECAL, c, 1.35, self.TALL),
+                            'Acc_HairOrnament')
+
+    def test_which_side_is_left_comes_from_the_eye_bone(self):
+        # The character's left is -X on a 0.x export and +X on a 1.0 one, and
+        # the eye bone says which without this having to know the version.
+        # z -0.01 is behind the eyes on both frames, so both reach the side.
+        c = (0.05, 1.40, -0.01)
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.35, self.MIKA),
+                         'Hair_Side_R')
+        self.assertEqual(partition.hair_name(self.STRAND, c, 1.35, self.VRM1),
+                         'Hair_Side_L')
+
+    def test_the_frame_is_read_off_the_body_and_lands_where_mikas_numbers_were(self):
+        if not os.path.exists(BODY):
+            raise unittest.SkipTest('public/avatar/mika-pink.vrm 不在')
+        doc, binary = glb.load(BODY)
+        f = partition.hair_frame(doc, glb.views_of(doc, binary))
+        # 0.90, -0.03, 1.44 and 0.12 were the four written-down numbers.
+        self.assertAlmostEqual(f['waist'], 0.878, places=3)
+        self.assertAlmostEqual(f['front'], -0.025, places=3)
+        self.assertAlmostEqual(f['crown'], 1.440, places=3)
+        self.assertAlmostEqual(f['midline'], 0.092, places=3)
+
+    def test_not_one_of_mikas_own_strands_changes_hands(self):
+        # The regression pin: these counts are what the four written-down
+        # numbers produced. 77 strands, and the body-relative frame moves none.
+        if not os.path.exists(BODY):
+            raise unittest.SkipTest('public/avatar/mika-pink.vrm 不在')
+        parts = partitioned(BODY)['parts']
+        self.assertEqual(
+            {n: len(p['primitives']) for n, p in parts.items()
+             if n.startswith(('Hair_', 'Acc_'))},
+            {'Acc_HairClip_Base': 13, 'Acc_HairOrnament': 5, 'Hair_Back': 16,
+             'Hair_Bangs': 11, 'Hair_Side_L': 9, 'Hair_Side_R': 9,
+             'Hair_Twintail_L': 7, 'Hair_Twintail_R': 7})
+
+
 class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
     """A VRoid export calling its meshes Body, Face and Hair, named correctly.
 
@@ -397,10 +505,26 @@ class BodyWhoseMeshesAreNotNamedBaked(unittest.TestCase):
             ['Body_Skin', 'Face', 'Outfit_Bottom', 'Outfit_Shoes', 'Outfit_Top'])
         self.assertFalse(self.manifest['parts']['Body_Skin']['deletable'])
 
+    def test_turning_the_export_around_does_not_move_its_hair(self):
+        # vrm1to0 faces a 1.0 body the 0.x way by parenting the scene to a node
+        # rotated 180 degrees. Every bone moves and the vertex buffers do not,
+        # so a rule comparing a bone against a raw POSITION reads this body's
+        # whole head of hair as sitting in front of its eyes, and the pipeline
+        # runs that conversion before partition on every 1.0 file it is given.
+        doc, binary = glb.load(self.OTHER)
+        path = os.path.join(tempfile.mkdtemp(), 'v0.vrm')
+        glb.save(path, vrm1to0.convert(doc)[0], binary)
+        self.assertEqual(sorted(partitioned(path)['parts']),
+                         sorted(self.manifest['parts']))
+
     def test_the_strand_mesh_is_placed_by_geometry(self):
+        # Its whole head of hair is one primitive, and it is behind the eyes:
+        # this is a VRM 1.0 export, where the model faces +Z, so the strand at
+        # z -0.061 sits behind an eye bone at -0.003. Reading front as "smaller
+        # z" the way a 0.x body needs called it a fringe.
         strands = {n: p for n, p in self.manifest['parts'].items()
                    if p['mesh'] == 'Hair'}
-        self.assertEqual(list(strands), ['Hair_Bangs'])
+        self.assertEqual(list(strands), ['Hair_Side_R'])
 
 
 class Wiring(unittest.TestCase):

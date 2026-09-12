@@ -33,7 +33,7 @@
 
 | 步驟 | 做什麼 | 當時綁在 VRoid 的什麼 | 現況 |
 |---|---|---|---|
-| 1 partition | 標記每個 primitive | mesh 名 `Face.baked`／`Body.baked`、primitive 索引、髮絲的絕對世界座標 | 索引已解（階段 0）；mesh 名已解（階段 2b）；髮絲座標仍在 |
+| 1 partition | 標記每個 primitive | mesh 名 `Face.baked`／`Body.baked`、primitive 索引、髮絲的絕對世界座標 | 三者皆已解（階段 0／2b-i／2b-ii）；剩 `CLIP_DECALS` 一條 |
 | 2 strip | 刪掉它自己的衣服 | 上一步的標籤 | 隨第 1 步 |
 | 3 skin | 把畫在身體貼圖上的衣服重繪成皮膚 | `is_skin` 的絕對色彩門檻、寫死的材質名 | 已解（階段 1） |
 
@@ -338,9 +338,36 @@ token（它是我們自己的產出，partition 本來就不對它跑），`vroi
 mesh 都主張 `Body_Skin`。後者正是 2c 要解的那件事，manifest 目前一個部件只能屬於一個
 mesh。
 
-**2b-ii. 頭髮命名（未做）。** 髮絲仍然靠這具身體的絕對世界座標分（腰線 0.90、臉前
--0.03、後腦 1.44、離中線 0.12）。這對已經通過的 14 具是虛構的，只是後面的步驟目前不
-讀它。
+**2b-ii. 頭髮命名 — 已完成。** 四個數字原本是量在 Mika 身上的絕對世界座標，換到
+Sakurada_Fumiriya（髖部高 27cm）身上，「腰線以下」指的是她的膝蓋。改成從這具身體讀：
+
+| 判準 | 原本 | 現在讀哪裡 | Mika 上量到 |
+|---|---|---|---|
+| 腰線以下 | y < 0.90 | `hips` 骨 | 0.878 |
+| 臉的前面 | z < -0.03 | `leftEye` 骨，沿 `forward_z` | -0.025 |
+| 後腦起點 | y > 1.44 | 眼睛到臉部 mesh 頂端的中點 | 1.4402 |
+| 離中線 | \|x\| > 0.12 | 臉部 mesh 自己的半寬 | 0.092 |
+
+左右也改由眼睛骨的 x 正負決定，因為角色的左在 0.x 是 -X、在 1.0 是 +X。
+
+收據 [hair-0912-relative.log](../../scripts/avatar/evidence/hair-0912-relative.log)：
+**Mika 的 77 條髮絲一條都沒換手**（`mika-pink` 與 `AvatarSample_B` 各 0 移動），其餘每一
+具都有變動（8 到 56 條不等），那正是原本的標籤在說謊的量。`baseline.vrm` 的
+`parted.vrm` 逐位元組不變。
+
+**順帶抓到一個座標系缺陷。** 骨頭的世界座標與 mesh 的 POSITION 在 `vrm1to0` 跑過之後
+不是同一個空間：它把整個 scene 掛到一個轉了 180 度的節點底下，骨頭全部移動、頂點
+buffer 一個字沒動。原本 hair_name 只讀 POSITION 所以看不見，加進骨頭之後
+`vrm1-twist-sample` 整顆頭的頭髮被判在眼睛前面，標成瀏海。改成用 `pose.skinned` 量
+rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把「轉過去再 partition 一次
+得到同一組部件」釘住。
+
+**這一步沒有解決的**：`CLIP_DECALS`（`HAIR_03`／`HAIR_05` 是髮夾貼花）仍然是 Mika 的
+事實。它在另外兩具身上是錯的：AvatarSample_A 有 9 條、Victoria_Rubin 有 2 條普通髮絲
+剛好用這兩個材質變體又落在眼睛前面，被歸成飾品，然後被 `mellowheart.REPLACES` 刪掉
+（改成身體相對之前是 7 條與 1 條，所以這一步讓它略為變差）。三角形數分不開兩者
+（Mika 的夾子 6 到 128 個，那些髮絲 38 到 194 個），沒有便宜的通則；貼花偵測屬於
+2c 的遮蔽工作。
 
 **2c. 遮蔽（未做）。** 給的是 Alicia 與 Seed-san 那一類：衣服與皮膚在同一片曲面上，
 刪不掉。partition 的契約縮成三個**可量**的問題：
