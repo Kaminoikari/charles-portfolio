@@ -338,6 +338,9 @@ token（它是我們自己的產出，partition 本來就不對它跑），`vroi
 mesh 都主張 `Body_Skin`。後者正是 2c 要解的那件事，manifest 目前一個部件只能屬於一個
 mesh。
 
+八道 mutation 逐一拆四個決定的八個位置，全部照預期轉紅，收據在
+[mutations-meshes-0912.md](../../scripts/avatar/evidence/mutations-meshes-0912.md)。
+
 **2b-ii. 頭髮命名 — 已完成。** 四個數字原本是量在 Mika 身上的絕對世界座標，換到
 Sakurada_Fumiriya（髖部高 27cm）身上，「腰線以下」指的是她的膝蓋。改成從這具身體讀：
 
@@ -368,6 +371,9 @@ rest world，轉換前後答案相同（`Hair_Side_R`），並有一條測試把
 （改成身體相對之前是 7 條與 1 條，所以這一步讓它略為變差）。三角形數分不開兩者
 （Mika 的夾子 6 到 128 個，那些髮絲 38 到 194 個），沒有便宜的通則；貼花偵測屬於
 2c 的遮蔽工作。
+
+八道 mutation（六個數字加座標系的兩端）全部照預期轉紅，收據在
+[mutations-hairframe-0912.md](../../scripts/avatar/evidence/mutations-hairframe-0912.md)。
 
 **2c. 遮蔽（未做）。** 給的是 Alicia 與 Seed-san 那一類：衣服與皮膚在同一片曲面上，
 刪不掉。partition 的契約縮成三個**可量**的問題：
