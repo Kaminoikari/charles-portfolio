@@ -47,6 +47,10 @@ describe('avatar variants', () => {
     expect(variantUrl()).toBe(active!.url)
   })
 
+  it('loads the corrected pink texture atlas under a fresh immutable URL', () => {
+    expect(variantUrl('pink')).toBe('/avatar/mika-pink-2.vrm')
+  })
+
   it('refuses an id it does not know instead of quietly using the default', () => {
     // A fallback here is the worst possible behaviour for the one workflow this
     // exists for: someone adds an outfit, mistypes the id, and sees the old

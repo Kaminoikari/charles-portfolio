@@ -38,6 +38,43 @@ const BODY = path.join('public', 'avatar', 'AvatarSample_B_webp.vrm')
 
 const sha256 = (s: string): string => createHash('sha256').update(s).digest('hex')
 
+interface RepaintDocument extends GltfJson {
+  images: { bufferView: number; mimeType?: string }[]
+  buffers: { byteLength: number }[]
+}
+
+function readRepaintBody(url: string) {
+  const raw = readFileSync(path.join(process.cwd(), 'public', url.replace(/^\//, '')))
+  return parseGlb<RepaintDocument>(new Uint8Array(raw))
+}
+
+// A texture repack moves buffer offsets and changes image encoding. Everything
+// else, including indices, weights, morphs, bind matrices and spring metadata,
+// must still describe the exact body the recorded simulation ran on.
+function simulationInputs(body: ReturnType<typeof readRepaintBody>) {
+  const { json, bin } = body
+  if (!bin || !json.bufferViews) throw new Error('simulation body has no binary buffer views')
+  const imageViews = new Set(json.images.map((image) => image.bufferView))
+  const bufferHashes = json.bufferViews.map((view, index) => {
+    if (imageViews.has(index)) return null
+    const offset = view.byteOffset ?? 0
+    return createHash('sha256').update(bin.subarray(offset, offset + view.byteLength)).digest('hex')
+  })
+  return {
+    metadata: {
+      ...json,
+      buffers: json.buffers.map((buffer) => ({ ...buffer, byteLength: 0 })),
+      images: json.images.map((image) => ({ ...image, mimeType: 'image/repacked' })),
+      bufferViews: json.bufferViews.map((view, index) => ({
+        ...view,
+        byteOffset: 0,
+        byteLength: imageViews.has(index) ? 0 : view.byteLength,
+      })),
+    },
+    bufferHashes,
+  }
+}
+
 /**
  * The shipped body with its scene roots scaled, written beside the test's
  * output: a body whose rig is NOT the family's, so a producer that wrote the
@@ -168,7 +205,36 @@ describe('every body of the family, not only the one that was simulated', () => 
     expect(pink && base, 'both VRoid variants are declared').toBeTruthy()
     expect(geometry(base!.url), `${base!.url} is no longer the same mesh as ${pink!.url}`)
       .toBe(geometry(pink!.url))
-    expect(PINK_SIMULATED.simulatedOn, 'and pink is the one that was simulated').toBe(pink!.url)
+  })
+
+  it('preserves the recorded simulation inputs when pink is repainted', () => {
+    const pink = AVATAR_VARIANTS.find((variant) => variant.id === 'pink')
+    expect(pink).toBeDefined()
+    expect(simulationInputs(readRepaintBody(pink!.url))).toEqual(
+      simulationInputs(readRepaintBody(PINK_SIMULATED.simulatedOn)),
+    )
+  })
+
+  it.each(['POSITION', 'WEIGHTS_0'])('detects a changed %s in a repainted body', (attribute) => {
+    const original = readRepaintBody(PINK_SIMULATED.simulatedOn)
+    const changed = structuredClone(original)
+    const accessorIndex = changed.json.meshes?.flatMap((mesh) => mesh.primitives)
+      .find((primitive) => primitive.attributes[attribute] !== undefined)?.attributes[attribute]
+    if (accessorIndex === undefined) throw new Error(`body has no ${attribute}`)
+    const accessor = changed.json.accessors?.[accessorIndex]
+    const view = accessor && changed.json.bufferViews?.[accessor.bufferView]
+    if (!accessor || !view || !changed.bin) throw new Error(`body has no ${attribute} bytes`)
+    changed.bin[(view.byteOffset ?? 0) + (accessor.byteOffset ?? 0)] ^= 1
+    expect(simulationInputs(changed)).not.toEqual(simulationInputs(original))
+  })
+
+  it('detects changed spring settings in a repainted body', () => {
+    const original = readRepaintBody(PINK_SIMULATED.simulatedOn)
+    const changed = structuredClone(original)
+    const spring = changed.json.extensions?.VRM?.secondaryAnimation?.boneGroups[0]
+    if (!spring) throw new Error('body has no spring settings')
+    spring.dragForce = (spring.dragForce ?? 0) + 1
+    expect(simulationInputs(changed)).not.toEqual(simulationInputs(original))
   })
 
   const ceilingOf = (clip: string, frame: MotionFrame): number => {

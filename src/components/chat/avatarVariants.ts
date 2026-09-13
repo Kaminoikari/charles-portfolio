@@ -213,7 +213,7 @@ export type AvatarVariant =
 // and forbid only redistributing the model file FOR A FEE. All three are served
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
-  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink.vrm', family: 'vroid-sample-b', offered: true },
+  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink-2.vrm', family: 'vroid-sample-b', offered: true },
   { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b', offered: true },
   { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', offered: true },
   // The second family, and the first body here that is not an export of the

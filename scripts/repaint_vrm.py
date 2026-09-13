@@ -200,17 +200,93 @@ PINK_PASS_2 = {  # absolute=False
 }
 
 
+# A skin atlas also holds the original hair paint. Match connected regions to
+# the face cap's measured colour so purple shirt prints and nails stay intact.
+# The smallest nape strip has 606 pixels; compression speckles have fewer than
+# 400. Both nape-core medians are within 19 RGB units of the cap; the
+# neighbouring nail region is 97 units away.
+HAIR_PAINT_MIN_AREA = 400
+HAIR_PAINT_RGB_DISTANCE = 55.0
+SKIN_ATLASES = ('F00_000_00_Face_00', 'F00_000_00_Body_00')
+
+
+def _hair_regions(rgba, reference=None):
+    import numpy as np
+    from scipy import ndimage
+    import customise
+    from bodies import mika_base
+
+    core, fringe = customise.hair_paint_pixels(
+        rgba[..., :3], rgba[..., 3], mika_base.SCALP_HUE,
+        mika_base.SCALP_WINDOW, fringe_to=mika_base.SCALP_FRINGE_TO,
+        fringe_min_sat=mika_base.SCALP_FRINGE_SAT)
+    labels, _ = ndimage.label(core | fringe)
+    if reference is None:
+        largest = np.argmax(np.bincount(labels[core]))
+        reference = np.median(rgba[..., :3][core & (labels == largest)], axis=0)
+    selected = np.zeros(core.shape, dtype=bool)
+    for label, region in enumerate(ndimage.find_objects(labels), start=1):
+        if region is None:
+            continue
+        component = labels[region] == label
+        if int(component.sum()) < HAIR_PAINT_MIN_AREA:
+            continue
+        median = np.median(rgba[region][..., :3][component & core[region]], axis=0)
+        if np.linalg.norm(median - reference) <= HAIR_PAINT_RGB_DISTANCE:
+            selected[region] |= component
+    return core & selected, fringe & selected, reference
+
+
+def repair_pink_hair_paint(src, dst):
+    """Repair both scalp atlases, preserving every other decoded texel and view.
+
+    Reuse the Milfy paint/fringe solver without its garment removal or geometry
+    passes. Pink keeps the nape hair paint, recoloured to the existing hair.
+    """
+    import numpy as np
+    avatar_scripts = os.path.join(os.path.dirname(__file__), 'avatar')
+    if avatar_scripts not in sys.path:
+        sys.path.insert(0, avatar_scripts)
+    import customise
+    import glb
+
+    doc, binary, *_ = load(src)
+    before = skeleton(doc)
+    views = glb.views_of(doc, binary)
+    hair = customise.median_hue(doc, views, HAIR_LAYERS)
+    reference = None
+    for name in SKIN_ATLASES:
+        original = customise.image_rgba(doc, views, name)
+        core, fringe, reference = _hair_regions(original, reference)
+        if not core.any():
+            raise ValueError(f'{name}: missing original scalp paint')
+        weight = customise.paint_weights(original[..., :3], original[..., 3], core, fringe)
+        customise.retone(doc, views, name, tuple(hair), stat=core, where=core)
+        customise.blend_fringe(doc, views, name, core, fringe, weight)
+        repaired = customise.image_rgba(doc, views, name)
+        # HLS round trips can lose 1 RGB unit even outside `where`. Preserve
+        # those pixels explicitly before lossless encoding the repaired atlas.
+        repaired[~(core | fringe)] = original[~(core | fringe)]
+        repaired[..., 3] = original[..., 3]
+        customise._put_rgba(doc, views, name, np.rint(repaired))
+    assert before == skeleton(doc), '骨架或網格被動到了，這個檔不合格'
+    size = glb.save(dst, doc, glb.rebuild(doc, views))
+    return str(dst), list(SKIN_ATLASES), size
+
+
 def build_pink(src, dst, workdir):
-    """Rebuild mika-pink.vrm. Reproduces the shipped file byte for byte."""
+    """Rebuild pink, including hair paint embedded in the skin atlases."""
     step = os.path.join(workdir, 'repaint-step1.vrm')
     repaint(src, step, PINK_PASS_1, absolute=True)
-    out = repaint(step, dst, PINK_PASS_2, absolute=False)
+    repaint(step, dst, PINK_PASS_2, absolute=False)
     os.remove(step)
-    return out
+    return repair_pink_hair_paint(dst, dst)
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'pink':
+    if sys.argv[1] == 'pink-repair':
+        print(repair_pink_hair_paint(sys.argv[2], sys.argv[3]))
+    elif sys.argv[1] == 'pink':
         print(build_pink(sys.argv[2], sys.argv[3], os.path.dirname(sys.argv[3]) or '.'))
     else:
         print(repaint(sys.argv[1], sys.argv[2], json.loads(sys.argv[3])))
