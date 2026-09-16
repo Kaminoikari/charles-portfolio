@@ -92,10 +92,24 @@ export interface RetrieveDeps {
 
 export const DEFAULT_RETRIEVE_DEPS: RetrieveDeps = { hybridRetrieve }
 
+// LangGraph invokes every node as fn(state, config), so the second parameter is
+// already taken: a `deps = DEFAULT` default only applies to an ABSENT argument,
+// and the RunnableConfig it actually receives is not absent. Binding `deps` to
+// that config made every live retrieval die on `deps.hybridRetrieve is not a
+// function`, which the outage handler below then reported as the store being
+// down — an injection seam that quietly replaced the production wiring rather
+// than sitting beside it. Same shape as resolveTiers/resolveGenerator: take
+// `unknown`, and accept it only if it carries what this node needs.
+export function resolveRetrieveDeps(candidate: unknown): RetrieveDeps {
+  const d = candidate as Partial<RetrieveDeps> | null | undefined
+  return typeof d?.hybridRetrieve === 'function' ? (d as RetrieveDeps) : DEFAULT_RETRIEVE_DEPS
+}
+
 export async function retrieve(
   state: RAGStateType,
-  deps: RetrieveDeps = DEFAULT_RETRIEVE_DEPS,
+  injected?: unknown,
 ): Promise<Partial<RAGStateType>> {
+  const deps = resolveRetrieveDeps(injected)
   const locale = state.language ?? config.defaultLocale
   const subs = state.subQuestions ?? []
 
@@ -125,6 +139,11 @@ export async function retrieve(
     // set would be worse, because grade would then spend an LLM call to conclude
     // "no data" and the visitor would be told the portfolio does not cover their
     // question. It does; we just could not look. Say that instead.
+    // A TypeError here is our own bug, not the supplier's. Reporting it as an
+    // outage is the worst available outcome: visitors are told the store is
+    // down, the incident metric agrees with them, and the logs stop pointing at
+    // the code. Let it crash instead — that is the signal that gets read.
+    if (err instanceof TypeError) throw err
     console.warn('retrieval unavailable:', (err as Error).message)
     return { documents: [], retrievalFailed: true }
   }

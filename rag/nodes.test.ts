@@ -703,6 +703,36 @@ test('retrieve: the default dependency is the real hybrid retrieval', () => {
   assert.equal(nodes.DEFAULT_RETRIEVE_DEPS.hybridRetrieve, hybridRetrieve)
 })
 
+// The assertion above passed while every live retrieval was broken, because it
+// checks what the default IS and not whether the default is ever reached.
+// LangGraph invokes a node as fn(state, config), and a default parameter only
+// applies to an absent argument — so `deps` bound to the RunnableConfig, and
+// `deps.hybridRetrieve is not a function` was caught by the outage handler and
+// reported to visitors as a store outage. Every eval run that was not already
+// served from the FAQ cache answered "I couldn't look that up", against a
+// perfectly healthy index.
+test('retrieve: the second argument the graph passes is a config, not a dependency set', () => {
+  const runnableConfig = { configurable: { thread_id: '1' }, callbacks: [], metadata: {}, tags: [] }
+  assert.equal(nodes.resolveRetrieveDeps(runnableConfig), nodes.DEFAULT_RETRIEVE_DEPS)
+  const injected = { hybridRetrieve: async () => [] }
+  assert.equal(nodes.resolveRetrieveDeps(injected), injected)
+})
+
+test('retrieve: a programming error is not dressed up as an outage', async () => {
+  // The outage handler exists to convert a supplier being unreachable into an
+  // honest reply. A TypeError is our own bug, and the one thing worse than it
+  // crashing is it quietly reporting that Qdrant is down — the logs then say
+  // "outage", the incident metric counts it, and nobody looks at the code.
+  await assert.rejects(
+    nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+      hybridRetrieve: (() => {
+        throw new TypeError('x is not a function')
+      }) as never,
+    }),
+    TypeError,
+  )
+})
+
 test('unavailable: answers in the visitor language and is labelled as an outage', async () => {
   for (const locale of ['en', 'zh-TW', 'ja'] as const) {
     const res = await nodes.unavailable({ language: locale } as never)
