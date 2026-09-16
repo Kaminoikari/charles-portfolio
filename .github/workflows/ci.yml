@@ -2,8 +2,8 @@ name: CI
 
 # The checks that need nothing but the checkout: lint, types, and both test
 # suites. They all ran locally before every commit and none of them ran here,
-# which is the gap this closes — an eval harness and 280 unit tests only stop a
-# regression if something runs them without being asked.
+# which is the gap this closes: a test only stops a regression if something runs
+# it without being asked.
 #
 # No secrets. Every suite is offline by construction: the rag tests stub their
 # suppliers, and the avatar tests read VRM fixtures out of public/avatar. The
@@ -51,5 +51,26 @@ jobs:
       - name: RAG tests
         run: npm run rag:test
 
+      # Gated on the reported result, not on the exit code. `npm test` exits 1 on
+      # a run where all 1,636 tests pass, because a worker misses vitest's birpc
+      # "onTaskUpdate" heartbeat during the avatar suites' long synchronous CPU
+      # sweeps. Measured on 2026-09-16: 3/3 runs at the configured 2 threads, and
+      # once each at --pool=forks and --maxWorkers=1, all exit 1 with all tests
+      # passing and exactly one such error. vitest exposes no knob for the birpc
+      # timeout, so there is nothing to configure around it.
+      #
+      # A step that is red by construction teaches everyone to ignore CI, and
+      # dropping the step would lose the coverage, so the summary line decides:
+      # vitest prints "Tests  N failed | M passed" when anything actually fails,
+      # and the line is absent entirely if the run never got that far. Both are
+      # failures here. Verified against a deliberately failing probe test, not
+      # only against green runs.
       - name: Frontend and tooling tests
-        run: npm test
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee vitest.log || echo "::warning::vitest exited non-zero; judging by the reported result"
+          if ! grep -qE '^ *Tests +[0-9]+ passed \(' vitest.log || grep -qE '^ *Tests .*failed' vitest.log; then
+            echo "::error::vitest reported failures, or did not report a result at all"
+            exit 1
+          fi
+          echo "vitest reported every test passing"
