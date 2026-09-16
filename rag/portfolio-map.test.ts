@@ -9,9 +9,11 @@
 // exists, so a renamed project or a new job leaves the map behind silently.
 //
 // These tests pin the facts that have a machine-checkable counterpart: which
-// projects and employers exist, and where the project links point. Prose (the
-// philosophy line, the framing of each role) stays hand-written on purpose —
-// there is nothing to compare it against.
+// projects and employers exist, where the project links point, and every number
+// the map quotes — the metrics are copied verbatim out of src/data, so a stale
+// one is findable by comparison rather than by reading. What stays unpinned is
+// genuinely unpinnable: how each role is characterised, the philosophy line, the
+// SITE paragraph. There is nothing to compare those against.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -19,6 +21,7 @@ import assert from 'node:assert/strict'
 import { portfolioMap } from './portfolio-map.js'
 import { projects, projectDetails } from '../src/data/projects.en.ts'
 import { experience } from '../src/data/experience.en.ts'
+import { aboutContent } from '../src/data/aboutContent.en.ts'
 
 // The map names employers the way a person would ("NUEIP"), not the way the
 // registry does ("NUEIP Technology Co., Ltd."). Compare on the distinctive part.
@@ -63,13 +66,29 @@ test('every project link in the map is a link src/data actually publishes', () =
 })
 
 test('the map names every employer in src/data', () => {
-  const missing = experience.map((e) => shortOrg(e.organization)).filter((o) => !portfolioMap.includes(o))
+  // Scoped to WORK: a name that only happens to appear in the PROJECTS or SITE
+  // prose is not an employment entry, and counting it would let a dropped job
+  // pass.
+  const listed = sectionEntries('WORK')
+  const missing = experience.map((e) => shortOrg(e.organization)).filter((o) => !listed.includes(o))
   assert.deepEqual(missing, [])
 })
 
 test('the map names no employer that src/data does not have', () => {
   const known = experience.map((e) => shortOrg(e.organization))
   assert.deepEqual(sectionEntries('WORK').filter((n) => !known.includes(n)), [])
+})
+
+test('every number the map quotes is a number src/data still records', () => {
+  // The metrics are the part of the "framing" that is not prose: "+40%
+  // data-driven decisions" is copied out of experience.en.ts word for word. The
+  // ingest rebuilds the index when that file changes and has no idea this map
+  // exists, so an edited metric leaves the map asserting the old one — into
+  // every single generated answer, above the retrieved chunks.
+  const corpus = JSON.stringify([projects, projectDetails, experience, aboutContent])
+  const quoted = [...new Set([...portfolioMap.matchAll(/[+-]?\d+(?:\.\d+)?%|\bteam of \d+/g)].map((m) => m[0]))]
+  assert.ok(quoted.length > 0, 'no numbers found in the map — the regex stopped matching')
+  assert.deepEqual(quoted.filter((n) => !corpus.includes(n)), [])
 })
 
 test('each employer entry in the map carries the start year src/data records', () => {
