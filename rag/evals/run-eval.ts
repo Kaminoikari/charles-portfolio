@@ -88,12 +88,40 @@ export function byCategory(
     .sort((a, b) => a.category.localeCompare(b.category))
 }
 
+// One record per question run. Every number the report prints is derived from
+// this list, which is the point: the headline correctness and the per-category
+// correctness used to be accumulated separately, so an arm could contribute to
+// one and not the other. It did — the corrective arm's category column read "—"
+// while its headline correctness was fine, and no test could see the difference.
+// A score that is absent here is absent everywhere, and present here is present
+// everywhere.
+export interface ItemResult {
+  category: EvalCategory
+  recall: number
+  mrr: number
+  correctness?: number // corrective arm only: retrieval arms generate no answer
+  faithfulness?: number
+}
+
+export function aggregate(items: ItemResult[]): Aggregate {
+  const present = (f: (i: ItemResult) => number | undefined) =>
+    items.map(f).filter((v): v is number => v !== undefined)
+  const corr = present((i) => i.correctness)
+  const faith = present((i) => i.faithfulness)
+  return {
+    recall: mean(items.map((i) => i.recall)),
+    mrr: mean(items.map((i) => i.mrr)),
+    // NaN, not 0: an arm that never generated has no correctness to report, and
+    // pct() renders it as the em dash the table needs.
+    correctness: corr.length ? mean(corr) : NaN,
+    faithfulness: faith.length ? mean(faith) : NaN,
+    n: items.length,
+    categories: byCategory(items),
+  }
+}
+
 async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
-  const recall: number[] = []
-  const mrr: number[] = []
-  const corr: number[] = []
-  const faith: number[] = []
-  const perItem: { category: EvalCategory; recall: number; correctness?: number }[] = []
+  const items: ItemResult[] = []
 
   for (const locale of locales) {
     for (const item of GOLDEN) {
@@ -113,26 +141,24 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const final = await graph.invoke({ question, language, queries: [question] })
         const answerText = final.answer ?? ''
         const ids = (final.sources ?? []).map((s) => s.id)
-        const r = recallAtK(ids, relevant)
-        const c = correctness(answerText, item)
-        recall.push(r)
-        perItem.push({ category: item.category, recall: r, correctness: c })
-        mrr.push(reciprocalRank(ids, relevant))
-        corr.push(c)
         const graded = final.graded ?? []
         const ctx = graded
           .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
           .join('\n\n')
-        faith.push((await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0)
+        items.push({
+          category: item.category,
+          recall: recallAtK(ids, relevant),
+          mrr: reciprocalRank(ids, relevant),
+          correctness: correctness(answerText, item),
+          faithfulness: (await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0,
+        })
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
         // correctness/faithfulness are not applicable (left out of their means).
         const docs = await retrieveWith(question, locale, arm.retrieval!)
         const ids = docs.map((d) => d.metadata.id as string)
         const r = recallAtK(ids, relevant)
-        recall.push(r)
-        perItem.push({ category: item.category, recall: r })
-        mrr.push(reciprocalRank(ids, relevant))
+        items.push({ category: item.category, recall: r, mrr: reciprocalRank(ids, relevant) })
         // Surface misses so a high aggregate can't hide a specific failing item
         // (e.g. the blog body-chunk questions we just added).
         if (r < 1) console.log(`    ✗ miss [${arm.name}/${locale}] ${item.id} — want ${relevant.join(',')}, got ${ids.slice(0, 6).join(',')}`)
@@ -140,14 +166,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
     }
   }
 
-  return {
-    recall: mean(recall),
-    mrr: mean(mrr),
-    correctness: corr.length ? mean(corr) : NaN,
-    faithfulness: faith.length ? mean(faith) : NaN,
-    n: recall.length,
-    categories: byCategory(perItem),
-  }
+  return aggregate(items)
 }
 
 // Every category present in any arm, in a stable order, so the table has the

@@ -9,7 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallFailures, recallGate, byCategory } from './run-eval.js'
+import { recallFailures, recallGate, byCategory, aggregate } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
 const rows = [
@@ -84,12 +84,33 @@ test('byCategory: correctness is split out too, because recall cannot see a near
 test('byCategory: an arm that generates no answer reports no correctness, not zero', () => {
   // The retrieval arms never generate, so they have nothing to be correct about.
   // Averaging their absent correctness as 0 would print three arms failing every
-  // category next to the one arm that actually answered.
+  // category next to the one arm that actually answered. The `global` row here
+  // carries no correctness at all — a category that has one cannot tell an empty
+  // average from a real one, which is why this needs both shapes.
   const out = byCategory([
     { category: 'global', recall: 1 },
-    { category: 'global', recall: 0, correctness: 1 },
+    { category: 'single-fact', recall: 0, correctness: 1 },
   ])
-  assert.deepEqual(out, [{ category: 'global', recall: 0.5, correctness: 1, n: 2 }])
+  assert.deepEqual(out, [
+    { category: 'global', recall: 1, correctness: null, n: 1 },
+    { category: 'single-fact', recall: 0, correctness: 1, n: 1 },
+  ])
+})
+
+test('aggregate: the headline correctness and the category column come from one field', () => {
+  // Nothing pinned that runArm actually hands correctness to byCategory: the
+  // function was unit-tested, the wiring was not, and dropping `correctness` from
+  // the record it pushes left every test green while the column silently read
+  // "—" for the only arm that answers. Deriving both numbers from one per-item
+  // record is what makes that unexpressible, and this is the assertion that says
+  // so: they move together or not at all.
+  const agg = aggregate([
+    { category: 'near-miss', recall: 1, mrr: 1, correctness: 0 },
+    { category: 'near-miss', recall: 1, mrr: 1, correctness: 1 },
+  ])
+  assert.equal(agg.correctness, 0.5)
+  assert.equal(agg.categories[0].correctness, 0.5)
+  assert.equal(agg.n, 2)
 })
 
 test('byCategory: a category that collapses does not hide inside the overall mean', () => {
