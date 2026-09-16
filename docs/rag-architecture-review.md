@@ -491,11 +491,22 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
 - FAQ margin 的 0.02 現在有分佈了（見 §4.1），但**沒有證據說 0.02 是最佳值**：
   只知道它擋掉 41 分之 13，不知道那 13 次若放行會不會答錯。要回答那個問題，得把
   被擋下的那些 (query, entry) 配對變成 golden 題目。
-- `local` 66.7%、`global` 77.8% 的 correctness 是最弱的兩格，這一輪沒有任何改動
-  針對它們，原因未查。
-- corrective arm 的 recall 分不出「FAQ 快取答掉了」與「檢索沒找到」（該次 123 題
-  裡 28 題由快取回答，快取答案沒有 sources，被記成 recall miss）。檢索品質要看
-  三個檢索 arm。
+- corrective arm 的 recall 分不出「FAQ 快取答掉了」與「檢索沒找到」（最近一次
+  123 題裡 23 題由快取回答，快取答案沒有 sources，被記成 recall miss）。檢索品質
+  要看三個檢索 arm。
+- **faithfulness 的分母會隨快取命中率浮動。** `judgeFaithfulness` 對空 context 直接回
+  `grounded: true`（vacuously faithful），而 FAQ 命中、拒答、故障通知都沒有
+  retrieved context，於是全部免試計 1 分。lexical veto 把免試數從 28 降到 23，
+  headline 就從 91.9% 掉到 85.4%，而答案品質沒有變差。在那幾題改成「不計入」
+  之前，這個數字不能當品質趨勢讀。
+- **英文問題有時會拿到中文或日文的答案。** 2026-09-16 對
+  「What skills does Charles list on his site?」探測 5 次，3 次漂移（2 次中文、
+  1 次日文），每一次 `language` 都正確偵測成 `en`、六個來源也都是 `:en`。
+  漂移的句子是逐字取自 `rag/persona.ts` 的 CJK 示範句（`お、それ聞いちゃう？`、
+  `整理給你`、`超級`）：`MIKA_VOICE` 把三個語系的示範無條件寫進每一次 generate，
+  而指定語言的 `languageRule` 埋在 prompt 中段，後面還壓著整個 context、
+  portfolio map 與對話記錄。同一天對另一個英文題探測 3 次沒有漂移，所以不是
+  每一題都會。未修。
 - `rag/insights/collect.ts` 新增的 outage 計數沒有測試：`gatherInsights` 直接打
   Qdrant，沒有注入點，補 seam 的改動比這一輪該有的大。
 - `npm test` 的 birpc 心跳誤報是**繞過去的，不是修好的**。它先於這一輪存在（這輪
