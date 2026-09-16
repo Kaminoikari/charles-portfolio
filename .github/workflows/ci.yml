@@ -76,13 +76,21 @@ jobs:
       # dropping the step would lose the coverage, so the summary line decides:
       # vitest prints "Tests  N failed | M passed" when anything actually fails,
       # and the line is absent entirely if the run never got that far. Both are
-      # failures here. Verified against a deliberately failing probe test, not
-      # only against green runs.
+      # failures here.
+      #
+      # The summary is stripped of ANSI first. vitest colours it even writing to
+      # a pipe under CI, and the codes land BETWEEN the label and the count
+      # ("\e[2m  Tests \e[22m \e[1m\e[32m1636 passed"), so a pattern written
+      # against a plain local run matches nothing here — the gate then reports
+      # "no result line" and fails every run, green ones included. That is how
+      # this shipped broken: the discriminator was validated against macOS
+      # output, where nothing colours a redirect.
       - name: Frontend and tooling tests
         run: |
           set -o pipefail
           npm test 2>&1 | tee vitest.log || echo "::warning::vitest exited non-zero; judging by the reported result"
-          if ! grep -qE '^ *Tests +[0-9]+ passed \(' vitest.log || grep -qE '^ *Tests .*failed' vitest.log; then
+          sed -E $'s/\x1b\\[[0-9;]*m//g' vitest.log > vitest.plain
+          if ! grep -qE '^ *Tests +[0-9]+ passed \(' vitest.plain || grep -qE '^ *Tests .*failed' vitest.plain; then
             echo "::error::vitest reported failures, or did not report a result at all"
             exit 1
           fi
