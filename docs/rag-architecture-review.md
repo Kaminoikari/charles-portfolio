@@ -334,9 +334,15 @@ top-2 往往是**它自己的兩句改寫**，faq_id 相同、答案相同、分
 進不了比較；`rag/qdrant.test.ts` 有一條測試拿真實語料算出那個最大值來釘住窗口，
 所以往後替某則 entry 加改寫句不會悄悄追過窗口。
 
-門檻 `RAG_FAQ_MARGIN` 預設 0.02，是**未經線上分數分佈驗證的起始值**（本機沒有
-Voyage key）。`faqprobe` log 現在每次都印 top、rival、gap 與兩個門檻，調整時有
-實據可依。
+門檻 `RAG_FAQ_MARGIN` 預設 0.02。2026-09-16 的 eval（run 35059505617）給了它第一份
+線上分佈：**114 次探測、41 次過 0.7 的相似度門檻、其中 13 次被 margin 擋下**
+（41 − 13 = 28 次實際命中）。被擋下的 gap 全部落在 **0.001 到 0.018**，正是規則要
+擋的那種近乎同分的不同主題；整體 gap 範圍是 0.001 到 0.386，所以分佈不是擠在門檻
+附近。
+
+代價是量到的而不是猜的：**該擋的比例是 41 分之 13**，每一次都換成一次生成呼叫。
+這個成本值不值得，要看同一次 eval 的 correctness —— near-miss 100%、整體 88.6%。
+`faqprobe` log 每次都印 top、rival、gap 與兩個門檻，所以要調它隨時有新分佈可依。
 
 ## §4.2 檢索層 —— 只關掉一半，另一半是刻意留的
 
@@ -386,8 +392,11 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
 `EvalCategory` 因此多了 `near-miss`，而且 eval 報表多一張**分類 recall 表**，
 否則新分類只是註解、沒有證明面。
 
-**還沒做的是重新量。** 需要 Voyage 與 Qdrant 金鑰，得跑 `RAG Eval` workflow；
-在那之前，「新題目是否讓 benchmark 重新具備鑑別力」仍然是未驗證的假設。
+**已經量了（2026-09-16，run 35059505617）**：`hybrid+rerank` 的 recall 從 100%
+掉到 **96.7%**，也就是 benchmark 不再飽和 —— 擴題確實恢復了鑑別力。完整數字見
+`docs/rag-ablation-report.md`。
+
+那次 eval 同時揭穿三件這一輪自己造成或長期存在的缺陷，詳見下一節。
 
 ## §4.4 eval 沒有在守門 —— 兩層都補上
 
@@ -444,10 +453,49 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
 `workflow_dispatch` 全部留在原地，是規格 review 抓出來的。正確的做法是拿**底層
 的數字本身**（`\b309\b|\b52\b|\b755\b`）重掃，不是拿新措辭。同一句話常有雙胞胎。
 
+## eval 第一次真的跑起來之後找到的三件事
+
+這一輪把 eval 從「沒有在守門」變成「會跑」，而它跑起來的第一件事就是拆穿三個缺陷，
+其中兩個是我自己在這一輪造成的。
+
+1. **`retrieve` 拿不到它的依賴，整條線上檢索全掛。** LangGraph 呼叫節點的方式是
+   `fn(state, config)`，第二個參數已經被佔用；我寫的 `deps = DEFAULT_RETRIEVE_DEPS`
+   是預設參數，只在引數不存在時生效，於是 `deps` 綁到 RunnableConfig，
+   `deps.hybridRetrieve` 是 undefined。**而同一輪加的 outage handler 把這個
+   TypeError 接住，對訪客回報成「Qdrant 掛了」** —— 我方的 bug 穿上供應商故障的
+   衣服，log 說 outage、incident metric 同意、沒有任何東西指回程式碼。
+   非 FAQ 命中的題目全部回「我查不到」。修法是改用 repo 既有的
+   `resolveRetrieveDeps` 慣例，並讓 catch 對 `TypeError` 直接重拋。
+   我為這個接縫寫的測試（`DEFAULT_RETRIEVE_DEPS.hybridRetrieve === hybridRetrieve`）
+   全程綠燈：它驗的是「預設值是什麼」，從來沒驗「預設值有沒有被用到」。
+
+2. **near-miss 被放在看不見它的欄位。** §4.3 加了分類表，但只有 recall。
+   near-miss 的兄弟題 chunk 本來就在該題自己的 `relevantIds` 裡，取錯那一半照樣
+   滿分 recall，答案卻引用另一家公司的數字 —— 所以那張表對它唯一存在的理由是盲的。
+   補上 correctness 分類表後，near-miss 量到 100%。過程中 mutation 又抓到同一類
+   接線缺口（把 correctness 從 `runArm` 推進表格的那筆記錄裡拿掉，全綠），改成
+   每次執行產生一筆 `ItemResult`、所有數字從它推導。
+
+3. **out-of-corpus 的 correctness 從加進來就一直是 0%。** 行為是對的：triage 直接
+   擋下私人問題，回「那屬於私人問題，交給 Charles 本人」＋聯絡方式。但
+   `DECLINE_MARKERS` 是手抄的片語清單，**三種罐頭回覆一個都不命中它的十二個片語**，
+   包含 `genericFallback` —— 而那份清單的註解寫著「the fallback node and a faithful
+   generate both produce one of these」。改成從產生那些字串的函式取值，片語清單只
+   留給 LLM 自己措辭的拒答；故障回覆明確不算拒答。修完 0% → 100%。
+
+共同形狀是同一個：**純函式被測到了，接線沒有**。三件都是 mutation 或真實 eval 才
+拆穿，靜態閱讀與全綠測試都看不出來。
+
 ## 已知仍未覆蓋的缺口
 
-- FAQ margin 的 0.02 沒有線上分數分佈佐證。
-- 擴充後的 golden set 沒有跑過一次 eval，§4.3 是否真的恢復鑑別力未知。
+- FAQ margin 的 0.02 現在有分佈了（見 §4.1），但**沒有證據說 0.02 是最佳值**：
+  只知道它擋掉 41 分之 13，不知道那 13 次若放行會不會答錯。要回答那個問題，得把
+  被擋下的那些 (query, entry) 配對變成 golden 題目。
+- `local` 66.7%、`global` 77.8% 的 correctness 是最弱的兩格，這一輪沒有任何改動
+  針對它們，原因未查。
+- corrective arm 的 recall 分不出「FAQ 快取答掉了」與「檢索沒找到」（該次 123 題
+  裡 28 題由快取回答，快取答案沒有 sources，被記成 recall miss）。檢索品質要看
+  三個檢索 arm。
 - `rag/insights/collect.ts` 新增的 outage 計數沒有測試：`gatherInsights` 直接打
   Qdrant，沒有注入點，補 seam 的改動比這一輪該有的大。
 - `npm test` 的 birpc 心跳誤報是**繞過去的，不是修好的**。它先於這一輪存在（這輪
