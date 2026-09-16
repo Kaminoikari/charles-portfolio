@@ -9,9 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { readFileSync } from 'node:fs'
-
-import { recallFailures, byCategory } from './run-eval.js'
+import { recallFailures, recallGate, byCategory } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
 const rows = [
@@ -34,13 +32,24 @@ test('recallFailures: the floor is inclusive, so an arm exactly at it passes', (
   assert.deepEqual(recallFailures([{ arm: 'hybrid', recall: 0.92 }], 0.92), [])
 })
 
-test('recallFailures: zero rows produce zero failures, so the caller must catch it', () => {
-  // Documents the sharp edge rather than hiding it: the predicate cannot
-  // distinguish "nothing ran" from "everything passed", which is why main()
-  // rejects an empty row set before consulting it.
-  assert.deepEqual(recallFailures([], 0.95), [])
-  const source = readFileSync(new URL('./run-eval.ts', import.meta.url), 'utf8')
-  assert.match(source, /rows\.length === 0[\s\S]{0,200}process\.exit\(1\)/)
+test('recallGate: a run where no arm executed is a failure, not a pass', () => {
+  // The predicate alone cannot tell "everything passed" from "nothing ran": both
+  // produce an empty failure list. An arm table emptied by a bad --arm or a
+  // missing key would otherwise read as a clean gate.
+  assert.deepEqual(recallGate([], 0.95), { ok: false, reason: 'no-arms-ran' })
+})
+
+test('recallGate: an arm under the floor fails and names itself', () => {
+  const v = recallGate(rows, 0.95)
+  assert.equal(v.ok, false)
+  assert.deepEqual(v.ok === false && v.reason === 'below-floor' ? v.failures.map((f) => f.arm) : null, [
+    'hybrid',
+    'hybrid+rerank',
+  ])
+})
+
+test('recallGate: a healthy run passes', () => {
+  assert.deepEqual(recallGate(rows, 0.75), { ok: true })
 })
 
 test('byCategory: averages within a category and reports how many items it saw', () => {

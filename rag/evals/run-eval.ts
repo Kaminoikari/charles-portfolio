@@ -186,14 +186,27 @@ function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
   ].join('\n')
 }
 
-// Which arms fell below the floor. Pure so the gate can be tested without a live
-// index — the gate is the part that must not be wrong, because a silently
-// passing gate is indistinguishable from no gate at all.
+// Which arms fell below the floor.
 export function recallFailures(
   rows: { arm: string; recall: number }[],
   minRecall: number,
 ): { arm: string; recall: number }[] {
   return rows.filter((r) => r.recall < minRecall)
+}
+
+export type GateVerdict =
+  | { ok: true }
+  | { ok: false; reason: 'no-arms-ran' }
+  | { ok: false; reason: 'below-floor'; failures: { arm: string; recall: number }[] }
+
+// The whole gate decision, pure, so both ways it can fail are driven by data
+// rather than inferred from the shape of main(). The empty case is the one worth
+// stating out loud: a gate over zero arms is not a passing gate, it is an absent
+// one, and a filter alone cannot tell "everything passed" from "nothing ran".
+export function recallGate(rows: { arm: string; recall: number }[], minRecall: number): GateVerdict {
+  if (rows.length === 0) return { ok: false, reason: 'no-arms-ran' }
+  const failures = recallFailures(rows, minRecall)
+  return failures.length > 0 ? { ok: false, reason: 'below-floor', failures } : { ok: true }
 }
 
 async function main() {
@@ -246,19 +259,18 @@ async function main() {
   if (minRecall !== undefined) {
     const floor = Number.parseFloat(minRecall)
     if (!Number.isFinite(floor)) throw new Error(`--min-recall must be a number, got ${minRecall}`)
-    // A gate over zero arms is not a passing gate, it is an absent one: every
-    // arm being filtered out (a bad --arm, a missing key) would otherwise read
-    // as a clean run.
-    if (rows.length === 0) {
-      console.error('FAIL: --min-recall was requested but no arm ran')
-      process.exit(1)
-    }
-    const failures = recallFailures(
+    const verdict = recallGate(
       rows.map(({ arm, agg }) => ({ arm, recall: agg.recall })),
       floor,
     )
-    if (failures.length > 0) {
-      for (const f of failures) console.error(`FAIL ${f.arm}: recall ${pct(f.recall)} is below the ${pct(floor)} floor`)
+    if (!verdict.ok) {
+      if (verdict.reason === 'no-arms-ran') {
+        console.error('FAIL: --min-recall was requested but no arm ran')
+      } else {
+        for (const f of verdict.failures) {
+          console.error(`FAIL ${f.arm}: recall ${pct(f.recall)} is below the ${pct(floor)} floor`)
+        }
+      }
       process.exit(1)
     }
     console.log(`\nAll arms at or above the ${pct(floor)} recall floor.`)
