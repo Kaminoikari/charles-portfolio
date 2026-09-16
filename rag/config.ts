@@ -119,6 +119,24 @@ export const config = {
   // line prints top1, top2 and the gap on every lookup, so this can be retuned
   // from the real score distribution rather than from a guess.
   faqCacheMargin: float('RAG_FAQ_MARGIN', 0.02),
+  // How many neighbours the lookup fetches to find that runner-up. It is not 2:
+  // the cache stores one point per PARAPHRASE, so an entry's own rewordings
+  // occupy the first several results whenever it is the right answer. The window
+  // has to reach past the widest paraphrase set any single entry has, or the
+  // competing TOPIC never enters the comparison and the rule compares an entry
+  // against itself. A test in rag/qdrant.test.ts pins this against the real
+  // corpus, so growing an entry's paraphrases cannot silently outrun it.
+  faqCandidateK: int('RAG_FAQ_CANDIDATE_K', 16),
+
+  // --- query embedding cache ---
+  // A single visitor message is embedded at least twice on the hot path: once by
+  // triage to probe the FAQ cache, once by retrieve for the dense arm. Both are
+  // the same string with the same input_type, so the second round trip to Voyage
+  // buys nothing and costs the one timeout that can stall a request. This bounds
+  // the in-process memo; it is a memo and not a store, because a serverless
+  // instance is frozen on return and may vanish at any time. Small on purpose:
+  // the win is within a request, and anything beyond that is a bonus.
+  queryCacheMax: int('RAG_QUERY_CACHE_MAX', 64),
 
   // --- behavior ---
   defaultLocale: process.env.RAG_DEFAULT_LOCALE ?? 'en',

@@ -20,11 +20,17 @@ import assert from 'node:assert/strict'
 
 import { DEFAULT_FAQ_DEPS, faqLookup } from './qdrant.js'
 import { config } from './config.js'
+import { faqEntries } from './faq-cache.js'
 
 const hit = (faqId: string, score: number) => ({
   score,
   payload: { faq_id: faqId, answer: `answer for ${faqId}`, locale: 'en' },
 })
+
+// The cache stores one point per PARAPHRASE, so several neighbours of a query
+// routinely belong to the same entry (build-faq-cache.ts flatten()). Same id,
+// same answer, near-identical score.
+const paraphrases = (faqId: string, ...scores: number[]) => scores.map((s) => hit(faqId, s))
 
 // Drives the real faqLookup; only the Qdrant round-trip is stubbed.
 const lookupOver = (points: ReturnType<typeof hit>[], seen?: { body?: Record<string, unknown> }) =>
@@ -61,13 +67,36 @@ test('faqLookup: an empty collection returns null', async () => {
   assert.equal(await lookupOver([]), null)
 })
 
-// The margin rule is only reachable if the query actually asks for a runner-up.
-// With limit 1 every lookup looks like the lone-candidate case above and the
-// rule silently never fires.
-test('faqLookup: the query asks Qdrant for a runner-up', async () => {
+test('faqLookup: two paraphrases of the SAME entry are not a tie to be broken', async () => {
+  // The regression this rule nearly introduced. An entry earns its paraphrases by
+  // being asked in many ways, so its best-covered questions return several of its
+  // own points at almost identical scores. Reading that as ambiguity would make
+  // the cache refuse precisely the entries it covers best — the opposite of the
+  // rule's purpose, which is to catch a question sitting BETWEEN two topics.
+  const res = await lookupOver([...paraphrases('best-project', 0.88, 0.879, 0.877), hit('ai-usage', 0.4)])
+  assert.equal(res?.id, 'best-project')
+})
+
+test('faqLookup: the runner-up that counts is the best one from another entry', async () => {
+  // Same shape as above, except a different topic is genuinely close behind. The
+  // near-identical sibling must not hide it.
+  const res = await lookupOver([...paraphrases('uspace-role', 0.82, 0.819), hit('nueip-role', 0.81)])
+  assert.equal(res, null)
+})
+
+test('faqLookup: a window of same-entry paraphrases does not hide the rival', async () => {
+  // Sized against the real corpus: the window has to reach past the largest
+  // paraphrase set an entry can have, or the rival never enters the comparison.
+  const widest = Math.max(
+    ...faqEntries.flatMap((e) => (['en', 'zh-TW', 'ja'] as const).map((l) => e.questions[l].length)),
+  )
+  assert.ok(
+    config.faqCandidateK > widest,
+    `faqCandidateK (${config.faqCandidateK}) must exceed the widest paraphrase set (${widest})`,
+  )
   const seen: { body?: Record<string, unknown> } = {}
-  await lookupOver([hit('uspace-role', 0.91), hit('nueip-role', 0.71)], seen)
-  assert.ok((seen.body?.limit as number) >= 2, `limit was ${seen.body?.limit}`)
+  await lookupOver([hit('a', 0.9), hit('b', 0.5)], seen)
+  assert.equal(seen.body?.limit, config.faqCandidateK)
 })
 
 test('faqLookup: the margin is a real threshold, not zero', () => {

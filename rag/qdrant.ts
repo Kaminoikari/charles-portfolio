@@ -129,6 +129,9 @@ export interface FaqSearchDeps {
   ) => Promise<{ points: { score?: number; payload?: Record<string, unknown> | null }[] }>
 }
 
+const faqIdOf = (p?: { payload?: Record<string, unknown> | null }): string | undefined =>
+  ((p?.payload ?? {}) as { faq_id?: string }).faq_id
+
 export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
   search: (collection, body) => qdrant().query(collection, body as never),
 }
@@ -139,14 +142,21 @@ export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
 // each language matches its own paraphrases. Dense-only, single round-trip — no
 // generation LLM involved.
 //
-// Two candidates, not one, because a hit here bypasses every grounding check the
+// The margin exists because a hit here bypasses every grounding check the
 // pipeline has: no grading, no generation, no sources shown. The cache holds
 // many paraphrases whose wording is near-identical across topics that differ
 // only in the fact being asked for, and those land close together in embedding
-// space. When the top two are effectively tied, the question sits between topics
+// space. When two TOPICS are effectively tied, the question sits between them
 // and the winner is decided by noise — so the safe move is to hand it to RAG,
 // which retrieves, grades, and cites. A single global threshold cannot express
 // that: both candidates clear it.
+//
+// The runner-up must come from a different entry. Points are one per paraphrase
+// (ingest/build-faq-cache.ts), so an entry that is asked in many ways returns
+// several of its own points, at almost identical scores, exactly when it is the
+// right answer. Treating those as a tie would make the cache refuse the entries
+// it covers best. Hence the window: it is sized to reach past the widest
+// paraphrase set rather than to the next result.
 export async function faqLookup(
   queryVec: number[],
   locale: string,
@@ -156,28 +166,33 @@ export async function faqLookup(
     query: queryVec,
     using: DENSE,
     filter: { must: [{ key: 'locale', match: { value: locale } }] },
-    limit: 2,
+    limit: config.faqCandidateK,
     with_payload: true,
   })
-  const [top, runnerUp] = res.points
+  const [top, ...rest] = res.points
   const topScore = top?.score ?? 0
-  // A lone candidate cannot be confused with anything, so it faces the threshold
-  // alone. Infinity keeps that case out of the margin comparison entirely.
-  const margin = runnerUp ? topScore - (runnerUp.score ?? 0) : Number.POSITIVE_INFINITY
+  const topId = faqIdOf(top)
+  // The best candidate belonging to some OTHER entry; points come back ordered,
+  // so the first one is it. Nothing to compare against — a lone entry, or a
+  // window filled entirely by its own paraphrases — cannot be confused with
+  // anything, so Infinity keeps it out of the margin comparison entirely.
+  const rival = rest.find((p) => faqIdOf(p) !== topId)
+  const margin = rival ? topScore - (rival.score ?? 0) : Number.POSITIVE_INFINITY
   // Diagnostic: always log both candidates and the gap, so both knobs stay
   // tunable from logs (e.g. "top=0.820 next=0.810 gap=0.010" names a near-tie;
   // "top=0.690 next=0.300" names a threshold that is merely too high).
   const payload = (top?.payload ?? {}) as { answer?: string; faq_id?: string }
-  const nextPayload = (runnerUp?.payload ?? {}) as { faq_id?: string }
   console.log(
-    `[chat] faqprobe top=${topScore.toFixed(3)} id=${payload.faq_id ?? '-'} ` +
-      `next=${(runnerUp?.score ?? 0).toFixed(3)} next_id=${nextPayload.faq_id ?? '-'} ` +
+    `[chat] faqprobe top=${topScore.toFixed(3)} id=${topId ?? '-'} ` +
+      `rival=${(rival?.score ?? 0).toFixed(3)} rival_id=${faqIdOf(rival) ?? '-'} ` +
       `gap=${Number.isFinite(margin) ? margin.toFixed(3) : 'none'} ` +
       `thr=${config.faqCacheThreshold} min_gap=${config.faqCacheMargin} ` +
       `hits=${res.points.length} locale=${locale}`,
   )
   if (!top || topScore < config.faqCacheThreshold) return null
-  if (margin < config.faqCacheMargin) return null
+  // Strictly greater, per the rule as specified: a gap that only equals the
+  // minimum has not cleared it.
+  if (margin <= config.faqCacheMargin) return null
   if (!payload.answer) return null
-  return { answer: payload.answer, id: payload.faq_id ?? '', score: topScore }
+  return { answer: payload.answer, id: topId ?? '', score: topScore }
 }
