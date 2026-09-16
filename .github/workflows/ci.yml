@@ -1,0 +1,55 @@
+name: CI
+
+# The checks that need nothing but the checkout: lint, types, and both test
+# suites. They all ran locally before every commit and none of them ran here,
+# which is the gap this closes — an eval harness and 280 unit tests only stop a
+# regression if something runs them without being asked.
+#
+# No secrets. Every suite is offline by construction: the rag tests stub their
+# suppliers, and the avatar tests read VRM fixtures out of public/avatar. The
+# eval, which does need Voyage and Qdrant, stays in its own workflow.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to the same branch supersedes an in-flight run: only the tip
+# matters, and the avatar fixtures make each run a ~110MB checkout.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # `tsc -b` is the real type gate and it covers the test files too. Running
+      # it through `npm run build` also proves the bundle still builds, which is
+      # what Vercel will do on deploy anyway.
+      - name: Types and build
+        run: npm run build
+
+      # Ordered cheapest-first so a broken pipeline fails in ~10s rather than
+      # after the avatar suites finish replaying motion clips frame by frame.
+      - name: RAG tests
+        run: npm run rag:test
+
+      - name: Frontend and tooling tests
+        run: npm test

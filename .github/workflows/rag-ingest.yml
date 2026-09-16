@@ -74,6 +74,8 @@ permissions:
 jobs:
   ingest:
     runs-on: ubuntu-latest
+    outputs:
+      collection: ${{ inputs.collection || 'doc_chunks' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -152,3 +154,46 @@ jobs:
             # Explicit token auth (checkout ran with persist-credentials: false).
             git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" "HEAD:${{ inputs.ref || github.ref_name }}"
           fi
+
+  # The index this workflow just rebuilt is the one production retrieves from,
+  # and until now nothing looked at the result: a content edit that wrecked
+  # retrieval shipped on the same push that made it and stayed shipped. This runs
+  # the deterministic retrieval arms against the freshly built index and fails
+  # the run if recall falls off a cliff.
+  #
+  # The floor is 0.95 against a set where all three arms measure 100%
+  # (docs/rag-ablation-report.md). That is room for one flaky item out of the
+  # golden set and no room for a collapse, which is the failure worth paging on.
+  # It is a floor, not a diff: catching a 2% slide is what the manual RAG Eval
+  # workflow and its ablation table are for.
+  eval-gate:
+    needs: ingest
+    # Only guard the production collection, and only a real build: an A/B ingest
+    # into a throwaway collection is an experiment, and a dry run wrote nothing.
+    if: ${{ needs.ingest.outputs.collection == 'doc_chunks' && inputs.dry_run != true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Retrieval regression gate
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          QDRANT_COLLECTION: doc_chunks
+        run: |
+          npm run rag:eval -- --retrieval-only --min-recall 0.95 --out eval-report.md
+          {
+            echo "### Post-ingest retrieval gate"
+            echo ""
+            cat eval-report.md
+          } >> "$GITHUB_STEP_SUMMARY"
