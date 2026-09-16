@@ -25,6 +25,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: '我為什麼敢讓 AI 寫的程式碼進公司 Production？',
+    subtitle: '測試會騙人，AI 也會忘記規則。讓我敢放行部署的，是一套不容許它跳過驗證的工程機制。',
+    url: 'https://charlestychen.substack.com/p/ai-production',
+    platform: 'Substack',
+    date: '2026-09-14',
+    cover: 'https://substackcdn.com/image/fetch/$s_!cD8J!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5c054a1e-9833-466a-a96c-602d7b2e92a4_1672x941.png',
+  },
+  {
     title: '為什麼 99.9% 努力的人依然無法成功？從盲目收集戰術，到設計我的人生戰略',
     subtitle: '從盲目焦慮到成功轉職：我如何透過「戰略思考」打破平庸循環。',
     url: 'https://charlestychen.substack.com/p/999',

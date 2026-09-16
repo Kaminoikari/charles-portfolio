@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'なぜ私は AI が書いたコードを会社の Production に出せるのか？',
+    subtitle: 'テストは嘘をつくことがあり、AI はルールを忘れる。デプロイを承認できるのは、検証を飛ばせないエンジニアリングの仕組みがあるからだ。',
+    url: 'https://charlestychen.substack.com/p/ai-production',
+    platform: 'Substack',
+    date: '2026-09-14',
+    cover: 'https://substackcdn.com/image/fetch/$s_!cD8J!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5c054a1e-9833-466a-a96c-602d7b2e92a4_1672x941.png',
+  },
+  {
     title: 'なぜ 99.9% の努力する人は成功できないのか？戦術のやみくもな収集から、人生の戦略を設計するまで',
     subtitle: '漠然とした不安から転職成功へ：「戦略思考」で凡庸のループを断ち切った方法。',
     url: 'https://charlestychen.substack.com/p/999',

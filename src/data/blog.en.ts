@@ -33,6 +33,14 @@ export const blogArticles: BlogArticle[] = [
   },
   // ── Chronological (newest first) ──
   {
+    title: 'Why I Trust AI-Written Code in Company Production',
+    subtitle: 'Tests can lie, and AI forgets the rules. What makes me comfortable approving a deployment is an engineering system that refuses to let validation be skipped.',
+    url: 'https://charlestychen.substack.com/p/ai-production',
+    platform: 'Substack',
+    date: '2026-09-14',
+    cover: 'https://substackcdn.com/image/fetch/$s_!cD8J!,w_1456,c_limit,f_webp,q_auto:good,fl_progressive:steep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F5c054a1e-9833-466a-a96c-602d7b2e92a4_1672x941.png',
+  },
+  {
     title: 'Why Do 99.9% of Hard-Working People Still Fail? From Hoarding Tactics to Designing a Life Strategy',
     subtitle:
       'From blind anxiety to a successful career switch: how strategic thinking broke my cycle of mediocrity.',
