@@ -8,6 +8,9 @@ name: CI
 # No secrets. Every suite is offline by construction: the rag tests stub their
 # suppliers, and the avatar tests read VRM fixtures out of public/avatar. The
 # eval, which does need Voyage and Qdrant, stays in its own workflow.
+#
+# Offline does not mean Node-only: one avatar test shells out to python3, which
+# is why the toolchain below is set up before the suites run.
 
 on:
   pull_request:
@@ -34,6 +37,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      # scripts/avatar/springsim.test.ts builds a VRM 1.0 twin of its fixture by
+      # shelling out to python3, and that path imports glb.py, which needs numpy.
+      # The runner ships python3 and no packages, so without this the test fails
+      # on ModuleNotFoundError while every other suite passes.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - run: pip install numpy
 
       - run: npm ci
 
