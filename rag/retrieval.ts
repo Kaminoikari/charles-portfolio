@@ -29,6 +29,12 @@ export interface RetrievalConfig {
   dense: boolean
   sparse: boolean
   rerank: boolean
+  // Measurement mode: re-throw a rerank failure instead of degrading to RRF.
+  // Serving prefers a degraded answer to no answer, but an eval arm that
+  // silently reports the `hybrid` ranking under the `hybrid+rerank` label is
+  // worse than a failed run — the number survives into a report and nobody can
+  // tell. Off in production; the ablation turns it on.
+  strictRerank?: boolean
 }
 
 export const DEFAULT_RETRIEVAL: RetrievalConfig = {
@@ -179,14 +185,19 @@ export async function retrieveWith(
   const points = await deps.fetchCandidates(query, locale, cfg)
 
   if (cfg.rerank && points.length > 0) {
+    // Only the supplier call is guarded. Ranking the response is our own code,
+    // and a bug there (an out-of-range index, say) must not spend the rest of
+    // its life logged as somebody else's outage.
+    let ranked: { index: number; score: number }[] | null = null
     try {
       // Rerank the full candidate set (not just top-k) so source weighting can
       // still pull a lower-ranked first-party chunk into the final top-k.
-      const ranked = await deps.rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
-      return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
+      ranked = await deps.rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
     } catch (err) {
+      if (cfg.strictRerank) throw err
       console.warn('rerank failed, falling back to RRF order:', (err as Error).message)
     }
+    if (ranked) return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
   }
   return weightAndTrim(points.map((p) => ({ point: p, base: p.score ?? 0 })))
 }

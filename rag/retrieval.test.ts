@@ -7,8 +7,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { DEFAULT_RETRIEVAL_DEPS, fetchCandidates, mergeInterleaved, retrieveWith } from './retrieval.js'
+import { DEFAULT_RETRIEVAL, DEFAULT_RETRIEVAL_DEPS, fetchCandidates, mergeInterleaved, retrieveWith } from './retrieval.js'
 import { rerank } from './embeddings.js'
+import { config } from './config.js'
 
 const doc = (id: string) => new Document({ pageContent: id, metadata: { id } })
 const ids = (docs: Document[]) => docs.map((d) => d.metadata.id)
@@ -113,4 +114,58 @@ test('retrieveWith: a failed candidate fetch still throws', async () => {
     }),
     /qdrant unreachable/,
   )
+})
+
+test('retrieveWith: the degraded path still trims to topK', async () => {
+  // Separate from the boost test: that one has fewer candidates than topK, so it
+  // would pass with no slice at all. The fallback must hand generation the same
+  // bounded context the reranked path does, or an outage quietly triples the
+  // prompt.
+  const points = Array.from({ length: config.topK + 5 }, (_, i) => point(`c${i}`, 'blog', 1 - i / 100))
+  const docs = await retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
+    fetchCandidates: async () => points,
+    rerank: async () => {
+      throw new Error('voyage 503')
+    },
+  })
+  assert.equal(docs.length, config.topK)
+})
+
+test('retrieveWith: a bug inside the ranking is not disguised as a supplier outage', async () => {
+  // Only the supplier call belongs in the try. An out-of-range index from a
+  // reranker response is our bug, and swallowing it would log "rerank failed"
+  // while quietly serving degraded results forever.
+  await assert.rejects(
+    retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
+      fetchCandidates: async () => [point('only', 'blog', 0.9)],
+      rerank: async () => [{ index: 7, score: 1 }],
+    }),
+  )
+})
+
+test('retrieveWith: strictRerank makes a rerank failure fail loudly', async () => {
+  // Measurement, not production. The eval's `hybrid+rerank` arm must never
+  // silently report the `hybrid` arm's ranking because Voyage blipped mid-run.
+  await assert.rejects(
+    retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true, strictRerank: true }, {
+      fetchCandidates: async () => [point('a', 'blog', 0.9), point('b', 'blog', 0.8)],
+      rerank: async () => {
+        throw new Error('voyage 503')
+      },
+    }),
+    /voyage 503/,
+  )
+})
+
+test('retrieveWith: production retrieval does not run in strict mode', () => {
+  assert.notEqual(DEFAULT_RETRIEVAL.strictRerank, true)
+})
+
+test('retrieveWith: the ablation arm that measures rerank runs strict', async () => {
+  // Pins the wiring, not the flag: the eval is the one caller that must not
+  // inherit the serving default, and a test on DEFAULT_RETRIEVAL alone would not
+  // notice if run-eval stopped asking for it.
+  const { ARMS } = await import('./evals/run-eval.js')
+  const arm = ARMS.find((a) => a.name === 'hybrid+rerank')
+  assert.equal(arm?.retrieval?.strictRerank, true)
 })

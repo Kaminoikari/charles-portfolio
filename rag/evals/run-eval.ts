@@ -15,11 +15,12 @@
 // arm's runs as a traced experiment (no code change — the SDK auto-instruments).
 
 import { writeFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
 import { detectLanguage, type Locale } from '../language.js'
-import { GOLDEN } from './golden.js'
+import { GOLDEN, type EvalCategory } from './golden.js'
 import { judgeFaithfulness } from './judge.js'
 import {
   recallAtK,
@@ -32,16 +33,20 @@ import {
 // ── arms ────────────────────────────────────────────────────────────────
 // Each arm is a retrieval config; the final "corrective" arm runs the full
 // graph (retrieve → grade → rewrite → generate) instead of one-shot retrieval.
-interface Arm {
+export interface Arm {
   name: string
   retrieval?: RetrievalConfig // present for retrieval-only arms
   corrective?: boolean // present for the full-graph arm
 }
 
-const ARMS: Arm[] = [
+export const ARMS: Arm[] = [
   { name: 'dense-only', retrieval: { dense: true, sparse: false, rerank: false } },
   { name: 'hybrid', retrieval: { dense: true, sparse: true, rerank: false } },
-  { name: 'hybrid+rerank', retrieval: { dense: true, sparse: true, rerank: true } },
+  // strictRerank: serving degrades a failed rerank to the RRF order on purpose
+  // (retrieval.ts), which for an ablation would mean this arm quietly reporting
+  // the `hybrid` arm's ranking under its own name. A measurement run must fail
+  // instead of publishing a number nobody can trace back.
+  { name: 'hybrid+rerank', retrieval: { dense: true, sparse: true, rerank: true, strictRerank: true } },
   { name: 'corrective', corrective: true },
 ]
 
@@ -52,11 +57,31 @@ function arg(flag: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 
+// Per-category recall, so a category that regresses cannot be absorbed by the
+// mean. It exists for `near-miss`: those items are answerable, so a retriever
+// that returns the SIBLING question's chunk still looks fine in the overall
+// number while answering the wrong question. Split out, they are the column that
+// moves when the index gets confusable.
+export function byCategory(
+  hits: { category: EvalCategory; recall: number }[],
+): { category: EvalCategory; recall: number; n: number }[] {
+  const groups = new Map<EvalCategory, number[]>()
+  for (const h of hits) {
+    const g = groups.get(h.category) ?? []
+    g.push(h.recall)
+    groups.set(h.category, g)
+  }
+  return [...groups.entries()]
+    .map(([category, rs]) => ({ category, recall: rs.reduce((a, b) => a + b, 0) / rs.length, n: rs.length }))
+    .sort((a, b) => a.category.localeCompare(b.category))
+}
+
 async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
   const recall: number[] = []
   const mrr: number[] = []
   const corr: number[] = []
   const faith: number[] = []
+  const perItem: { category: EvalCategory; recall: number }[] = []
 
   for (const locale of locales) {
     for (const item of GOLDEN) {
@@ -77,6 +102,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const answerText = final.answer ?? ''
         const ids = (final.sources ?? []).map((s) => s.id)
         recall.push(recallAtK(ids, relevant))
+        perItem.push({ category: item.category, recall: recallAtK(ids, relevant) })
         mrr.push(reciprocalRank(ids, relevant))
         corr.push(correctness(answerText, item))
         const graded = final.graded ?? []
@@ -91,6 +117,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const ids = docs.map((d) => d.metadata.id as string)
         const r = recallAtK(ids, relevant)
         recall.push(r)
+        perItem.push({ category: item.category, recall: r })
         mrr.push(reciprocalRank(ids, relevant))
         // Surface misses so a high aggregate can't hide a specific failing item
         // (e.g. the blog body-chunk questions we just added).
@@ -105,7 +132,14 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
     correctness: corr.length ? mean(corr) : NaN,
     faithfulness: faith.length ? mean(faith) : NaN,
     n: recall.length,
+    categories: byCategory(perItem),
   }
+}
+
+// Every category present in any arm, in a stable order, so the table has the
+// same columns on every row even when one arm measured fewer items.
+function categoriesOf(rows: { agg: Aggregate }[]): string[] {
+  return [...new Set(rows.flatMap((r) => r.agg.categories.map((c) => c.category)))].sort()
 }
 
 function pct(x: number): string {
@@ -132,7 +166,34 @@ function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
     '',
     '> recall@k / MRR are deterministic (id matching). correctness/faithfulness',
     '> apply only to the corrective arm (the one that generates an answer).',
+    '',
+    '### Recall by category',
+    '',
+    '| Arm | ' + categoriesOf(rows).join(' | ') + ' |',
+    '|---|' + categoriesOf(rows).map(() => '---').join('|') + '|',
+    ...rows.map(({ arm, agg }) => {
+      const byName = new Map(agg.categories.map((c) => [c.category, c]))
+      const cells = categoriesOf(rows).map((c) => {
+        const hit = byName.get(c)
+        return hit ? `${pct(hit.recall)} (${hit.n})` : '—'
+      })
+      return `| ${arm} | ${cells.join(' | ')} |`
+    }),
+    '',
+    '> `near-miss` items have a sibling question with the same shape and a',
+    '> different fact. They are the column that moves when retrieval starts',
+    '> confusing the two; the overall recall above cannot show it.',
   ].join('\n')
+}
+
+// Which arms fell below the floor. Pure so the gate can be tested without a live
+// index — the gate is the part that must not be wrong, because a silently
+// passing gate is indistinguishable from no gate at all.
+export function recallFailures(
+  rows: { arm: string; recall: number }[],
+  minRecall: number,
+): { arm: string; recall: number }[] {
+  return rows.filter((r) => r.recall < minRecall)
 }
 
 async function main() {
@@ -175,9 +236,41 @@ async function main() {
     writeFileSync(out, report + '\n')
     console.log(`\nWrote ${out}`)
   }
+
+  // Regression gate. The ingest rebuilds the production index on every content
+  // push with nothing checking the result, so a content edit that wrecks
+  // retrieval has, until now, shipped silently and stayed shipped. A floor is
+  // crude, but "recall fell off a cliff" is the failure it has to catch, and
+  // that one is loud.
+  const minRecall = arg('--min-recall')
+  if (minRecall !== undefined) {
+    const floor = Number.parseFloat(minRecall)
+    if (!Number.isFinite(floor)) throw new Error(`--min-recall must be a number, got ${minRecall}`)
+    // A gate over zero arms is not a passing gate, it is an absent one: every
+    // arm being filtered out (a bad --arm, a missing key) would otherwise read
+    // as a clean run.
+    if (rows.length === 0) {
+      console.error('FAIL: --min-recall was requested but no arm ran')
+      process.exit(1)
+    }
+    const failures = recallFailures(
+      rows.map(({ arm, agg }) => ({ arm, recall: agg.recall })),
+      floor,
+    )
+    if (failures.length > 0) {
+      for (const f of failures) console.error(`FAIL ${f.arm}: recall ${pct(f.recall)} is below the ${pct(floor)} floor`)
+      process.exit(1)
+    }
+    console.log(`\nAll arms at or above the ${pct(floor)} recall floor.`)
+  }
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+// Run only when invoked as the CLI. Importing this module (the arm table is the
+// single definition of what each arm measures, so a test pins it there rather
+// than restating it) must not kick off a live eval against Qdrant and Voyage.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
