@@ -355,6 +355,15 @@ arm 量過的那個排序（`docs/rag-ablation-report.md`：MRR 0.721 對 0.880�
 三語）。新的 outcome `unavailable` 與 `fallback` 分開記進 chat_logs：後者是語料
 缺口，屬於 backlog；前者是事故，不屬於任何人的 backlog。
 
+加這個節點時踩到一個只有 mutation 才看得見的坑：節點名字原本手工維護在三份清單
+裡（`NodeSet` 型別、`GraphNodeId` union、決定哪些 chain event 進得了訪客 pipeline
+trace 的允許清單），而 `unavailable` 只進了兩份。它照樣執行、照樣回答正確，只是
+在 trace 上完全不存在 —— 少接一條軌不會讓任何東西失敗。現在三者都從
+`GRAPH_NODES` 這一份清單推導。**測試也補了第二道**：原本那條測試叫「every one is
+traceable」，實際只比對了「圖裡接了哪些節點」，把 `unavailable` 從允許清單拿掉
+整個 rag suite 照樣全綠。新測試走 `streamAnswer` 的真實串流路徑、讀它吐出來的
+trace，而不是直接對允許清單做斷言（一個沒人呼叫的過濾器也能滿足後者）。
+
 附帶做掉的是評審提到的 query embedding 快取：一則訪客訊息在熱路徑上至少被 embed
 兩次（triage 探 FAQ 一次、retrieve 的 dense arm 一次），同字串同 input_type。
 `rag/embeddings.ts` 加了一個上限 64 的行程內 memo，以 input_type 為 key 的一部分
