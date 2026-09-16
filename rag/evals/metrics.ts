@@ -3,6 +3,8 @@
 // (faithfulness, correctness) are computed by the runner: faithfulness via an
 // LLM judge, correctness via the golden item's mustInclude/mustDecline rules.
 
+import { personalRedirect, genericFallback, serviceUnavailable } from '../triage.js'
+
 // recall@k: did at least one relevant chunk surface in the top-k retrieved?
 // (Binary per query — averaged across the set it becomes "hit rate", the
 // metric that actually matters for a RAG answer: was the evidence present?)
@@ -29,18 +31,19 @@ export function correctness(
   answer: string,
   rules: { mustInclude?: string[]; mustDecline?: boolean },
 ): number {
-  const a = answer.toLowerCase()
   if (rules.mustDecline) {
-    return DECLINE_MARKERS.some((m) => a.includes(m)) ? 1 : 0
+    return declinesAnswer(answer) ? 1 : 0
   }
+  const a = answer.toLowerCase()
   if (rules.mustInclude && rules.mustInclude.length > 0) {
     return rules.mustInclude.every((s) => a.includes(s.toLowerCase())) ? 1 : 0
   }
   return 1
 }
 
-// Phrases that count as an honest decline, across the three locales. The
-// fallback node and a faithful generate both produce one of these.
+// Wordings that count as an honest decline when the answer was GENERATED. The
+// deterministic replies are not in this list and must not be: they are taken
+// from the functions that produce them, just below.
 export const DECLINE_MARKERS = [
   "couldn't find",
   'could not find',
@@ -56,16 +59,44 @@ export const DECLINE_MARKERS = [
   'わかりません',
 ]
 
+// The deterministic declines, taken from the functions that emit them instead of
+// transcribed into the list above. Transcription is what went stale: that list's
+// own comment claimed the fallback node produced one of its phrases, and
+// genericFallback matched none. Triage's personal redirect, which is what
+// actually answers the out-of-corpus items, matched none either — so the
+// category read 0% correctness for as long as it existed, and the per-category
+// correctness table was what finally showed it.
+const DECLINE_LOCALES = ['en', 'zh-TW', 'ja'] as const
+const cannedDeclines = () =>
+  DECLINE_LOCALES.flatMap((l) => [personalRedirect(l), genericFallback(l)])
+const outageReplies = () => DECLINE_LOCALES.map((l) => serviceUnavailable(l))
+
+// Did the answer honestly say the portfolio does not cover this?
+export function declinesAnswer(answer: string): boolean {
+  const a = answer.trim()
+  // An outage is not a decline. "I could not look" says nothing about whether
+  // the portfolio covers the question, and the run where every retrieval failed
+  // is the run where EVERY answer is that reply — scoring it as a decline would
+  // report a total outage as perfect out-of-corpus handling.
+  if (outageReplies().some((r) => a === r.trim())) return false
+  if (cannedDeclines().some((r) => a === r.trim())) return true
+  const lower = a.toLowerCase()
+  return DECLINE_MARKERS.some((m) => lower.includes(m))
+}
+
 export interface Aggregate {
   recall: number
   mrr: number
   correctness: number
   faithfulness: number
   n: number
-  // Recall split by golden-set category. The mean alone hides the case this
-  // whole split exists for: a near-miss item is answerable, so retrieving its
-  // SIBLING still counts as a hit and the aggregate stays flat while the index
-  // quietly becomes confusable.
+  // Recall AND correctness split by golden-set category. The mean alone hides
+  // the case this whole split exists for: a near-miss item is answerable, so
+  // retrieving its SIBLING still counts as a hit and recall stays flat while the
+  // index quietly becomes confusable. Which is why correctness is here too —
+  // recall cannot see that failure, so a recall-only split could not report on
+  // the one category it was added for. Correctness is null for a category no
+  // arm answered; the retrieval arms never generate.
   categories: { category: string; recall: number; correctness: number | null; n: number }[]
 }
 
