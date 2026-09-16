@@ -13,10 +13,11 @@ lift of each is visible.
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-09-16**. The three retrieval arms are from run 35059505617;
-  the `corrective` row and the correctness figures are from run 35110389098, a
-  corrective-only re-run with the FAQ lexical veto on and the skills chunk
-  rebuilt. Both with blog full-text indexing on (`RAG_BLOG_BODY=1`) and
-  first-party weighting at `RAG_FIRST_PARTY_BOOST=1.2`.
+  the `corrective` row and the correctness figures are from run 35124733398, a
+  corrective-only re-run with the FAQ lexical veto on, the skills chunk rebuilt,
+  and the faithfulness judge given the same evidence as the generator. Both with
+  blog full-text indexing on (`RAG_BLOG_BODY=1`) and first-party weighting at
+  `RAG_FIRST_PARTY_BOOST=1.2`.
 
 ## Current results
 
@@ -25,7 +26,7 @@ lift of each is visible.
 | dense-only | 97.6% | 0.821 | — | — |
 | hybrid | 92.7% | 0.649 | — | — |
 | hybrid+rerank | 96.7% | 0.873 | — | — |
-| corrective | 80.5% | 0.724 | 100.0% | 85.4% |
+| corrective | 80.5% | 0.724 | 100.0% | 95.6% |
 
 Recall stopped being 100% when the set grew from 29 to 41 questions, which is
 the point of having grown it: the old set could not fail. The added items are
@@ -39,16 +40,41 @@ which the harness scores as a recall miss. 80.5% + 18.7% = 99.2%, in line with
 recovers a few). The metric cannot separate "the cache answered" from "retrieval
 found nothing"; read the retrieval arms for retrieval quality.
 
-**Faithfulness moved from 91.9% to 85.4% with no answer getting worse, because
-the denominator changed.** The judge is only meaningful for an answer that HAS
-retrieved context: an empty context short-circuits to `grounded: true` as
-vacuously faithful (`rag/evals/judge.ts`), and a FAQ cache hit, a decline, and
-an outage notice all have one. Those free passes fell from 28 to 23 when the
-lexical veto sent five more questions to generation, so the judged answers now
-carry more of the mean. The two figures are not measured over the same set, and
-the headline rises whenever the cache answers more often. Read it as a quality
-trend only once the vacuous passes are dropped from the mean instead of scored
-as 1.
+**Faithfulness is now measured over the 91 runs a judge could actually read, and
+it took two fixes to mean anything.** Three figures, none of them comparable to
+the next, and the reason each moved is the measurement rather than the answers:
+
+| Run | Reported | Measured over |
+|---|---|---|
+| 35110389098 | 85.4% | all 123 runs, with every unjudgeable one scored as a pass |
+| 35122775710 | 82.4% | the 91 runs with retrieved context, judged against the chunks alone |
+| 35124733398 | 95.6% | the same 91 runs, judged against everything the generator was given |
+
+The first was inflated by its own denominator. A FAQ cache hit, a canned decline
+and an outage notice reach the visitor with no retrieved context, and the judge
+called that vacuously faithful and returned a pass. So the headline rose with the
+cache hit rate: the lexical veto sent five more questions to generation, the free
+passes fell from 28 to 23, and the number dropped without an answer changing.
+Those runs are absent from the mean now, the same way a retrieval arm's
+correctness is absent.
+
+The second was the honest denominator over the wrong evidence, and it is the one
+worth reading twice. Sixteen answers came back ungrounded, and the judge was
+right about what it saw: it named PXPay Plus, NUEIP, FLUX, Plutus Trade and
+every metric it could not find. All of them are in `rag/portfolio-map.ts`, which
+the generator is given and the judge was not. The pipeline grounds a claim in
+three things, the numbered chunks, the portfolio map and the entity
+relationships, and only the first carries a citation number, so the other two are
+the two that get forgotten. They were forgotten here for the same reason the bot
+once cited `[Charles Chen description]`: each reader built its own list.
+`evidenceBlock` in `rag/nodes.ts` is that list now, and the prompt, the link
+filter and the judge all read it.
+
+Four ungrounded answers are left, which is what 95.6% is. One of them is the
+judge arguing with itself: it quotes the answer and the context saying the same
+words and calls the answer unsupported. That one is worth a look anyway, because
+the words it quotes are 「ChatGPT 的共同創造者 Liam Fedis」, and the name is
+misspelled in the source article, so the bot repeats it faithfully.
 
 ### By category
 

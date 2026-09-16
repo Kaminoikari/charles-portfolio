@@ -511,6 +511,38 @@ his site?」探測 5 次，3 次漂移（2 次中文、1 次日文），每一�
 材料**，包括那些寫給別的語系看的。接線還是要釘：四道防禦（persona 兩個 locale
 索引、兩個節點的呼叫）各跑一次 mutation，四次全紅。
 
+## 第五件：faithfulness 一直在量別的東西
+
+要求重跑 faithfulness 拿最新數字時抳到的，而且是兩層：先是分母錯了，修完之後
+真正的數字才浮出來，而它揭穿第二層：judge 看到的材料比 generator 少。
+
+三個數字，彼此不可比，而且每一次變動都是量法變了、不是答案變了：
+
+| Run | 數字 | 量在什麼上面 |
+|---|---|---|
+| 35110389098 | 85.4% | 全部 123 題，判不動的那幾題一律計 1 分 |
+| 35122775710 | 82.4% | 有 retrieved context 的 91 題，judge 只看 graded chunks |
+| 35124733398 | 95.6% | 同樣那 91 題，judge 看到 generator 看到的全部 |
+
+第一個是被自己的分母膰高的。FAQ 命中、罐頭拒答、故障通知都沒有 retrieved
+context，`judgeFaithfulness` 把這稱為 vacuously faithful 並回 `grounded: true`，於是
+headline 跟著快取命中率走：lexical veto 把五題送去生成，免試數從 28 降到 23，
+數字就揉下來，而沒有任何一個答案變差。現在那幾題是「不計入」，跟檢索 arm
+沒有 correctness 是同一個處理。
+
+第二個是正確的分母配錯誤的證據，也是真正有意思的那一個。它第一次印出逐題理由，
+16 條 ungrounded 裡 judge 指控「捧造」的是 PXPay Plus、NUEIP、FLUX、Plutus Trade
+與它找不到的每一個數字。這些全部在 `rag/portfolio-map.ts` 裡，generator 拿得到、
+judge 拿不到。這個 pipeline 的一個主張可以依據三種東西：編號的 chunk、portfolio map、
+entity 關係，而只有第一種有編號，所以被忘掉的永遠是另外兩種。這跟它曾經吐出
+`[Charles Chen description]` 當引用是同一個根因：兩個讀者各自列自己的清單。
+現在 `rag/nodes.ts` 的 `evidenceBlock` 是單一定義，prompt、連結過濾器、judge 三者共用。
+
+剩下的四條 ungrounded 就是 95.6% 的內容。其中一條是 judge 在跟自己吵架：它把答案與
+context 引成同一句話，然後判答案沒依據。不過它引的那句是「ChatGPT 的共同創造者
+Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），機器人只是忠實轉述。
+這屬於內容層，不在這份 review 的範圍內。
+
 ## 已知仍未覆蓋的缺口
 
 - FAQ margin 的 0.02 現在有分佈了（見 §4.1），但**沒有證據說 0.02 是最佳值**：
@@ -519,11 +551,6 @@ his site?」探測 5 次，3 次漂移（2 次中文、1 次日文），每一�
 - corrective arm 的 recall 分不出「FAQ 快取答掉了」與「檢索沒找到」（最近一次
   123 題裡 23 題由快取回答，快取答案沒有 sources，被記成 recall miss）。檢索品質
   要看三個檢索 arm。
-- **faithfulness 的分母會隨快取命中率浮動。** `judgeFaithfulness` 對空 context 直接回
-  `grounded: true`（vacuously faithful），而 FAQ 命中、拒答、故障通知都沒有
-  retrieved context，於是全部免試計 1 分。lexical veto 把免試數從 28 降到 23，
-  headline 就從 91.9% 掉到 85.4%，而答案品質沒有變差。在那幾題改成「不計入」
-  之前，這個數字不能當品質趨勢讀。
 - `rag/insights/collect.ts` 新增的 outage 計數沒有測試：`gatherInsights` 直接打
   Qdrant，沒有注入點，補 seam 的改動比這一輪該有的大。
 - `npm test` 的 birpc 心跳誤報是**繞過去的，不是修好的**。它先於這一輪存在（這輪
