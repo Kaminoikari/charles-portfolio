@@ -37,8 +37,44 @@ export async function embed(texts: string[], inputType: InputType = 'query'): Pr
   return json.data.map((d) => d.embedding)
 }
 
-export async function embedOne(text: string, inputType: InputType = 'query'): Promise<number[]> {
-  return (await embed([text], inputType))[0]
+// Bounded, insertion-ordered memo of single-text embeddings. A Map iterates in
+// insertion order, so the first key is the oldest — enough for a cache this size
+// without carrying an LRU implementation. Keyed by input_type as well as text:
+// Voyage encodes the same string differently for 'query' and 'document', and
+// serving one for the other would silently corrupt whichever side lost.
+const queryCache = new Map<string, number[]>()
+
+// Test-only: the cache outlives a module import, so a test that counts calls
+// must start from a known state.
+export function __resetQueryCache(): void {
+  queryCache.clear()
+}
+
+export interface EmbedDeps {
+  embed: (texts: string[], inputType: InputType) => Promise<number[][]>
+}
+
+export const DEFAULT_EMBED_DEPS: EmbedDeps = { embed }
+
+export async function embedOne(
+  text: string,
+  inputType: InputType = 'query',
+  deps: EmbedDeps = DEFAULT_EMBED_DEPS,
+): Promise<number[]> {
+  const key = `${inputType}\u0000${text}`
+  const cached = queryCache.get(key)
+  if (cached) return cached
+
+  // Awaited before the write, so a failed call leaves nothing behind: caching a
+  // rejection would turn one Voyage blip into a permanently broken query for as
+  // long as the instance lives.
+  const vec = (await deps.embed([text], inputType))[0]
+  queryCache.set(key, vec)
+  if (queryCache.size > config.queryCacheMax) {
+    const oldest = queryCache.keys().next().value
+    if (oldest !== undefined) queryCache.delete(oldest)
+  }
+  return vec
 }
 
 // Cross-encoder rerank: scores each document against the query directly. More
