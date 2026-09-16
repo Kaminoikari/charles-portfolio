@@ -52,6 +52,24 @@ export interface GoldenItem {
   mustDecline?: boolean
 }
 
+// Which mustInclude tokens the source cannot supply, per locale. Pure, and
+// separate from the test that runs it over the real corpus, because that test
+// has no negative case: every live rule passes, so narrowing the check to one
+// locale changes nothing and a mutation of it survives. The synthetic fixture in
+// golden.test.ts is what actually holds this logic.
+export function tokensMissingFromSource(
+  item: Pick<GoldenItem, 'id' | 'mustInclude'>,
+  locales: string[],
+  sourceFor: (locale: string) => string,
+): string[] {
+  const out: string[] = []
+  for (const token of item.mustInclude ?? []) {
+    const missing = locales.filter((loc) => !sourceFor(loc).toLowerCase().includes(token.toLowerCase()))
+    if (missing.length > 0) out.push(`${item.id}: "${token}" absent from the ${missing.join(', ')} source`)
+  }
+  return out
+}
+
 export const GOLDEN: GoldenItem[] = [
   // ── single-fact ─────────────────────────────────────────────────────────
   {

@@ -14,7 +14,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { GOLDEN } from './golden.js'
+import { GOLDEN, tokensMissingFromSource } from './golden.js'
 import { extractAll } from '../ingest/extract.js'
 
 const CHUNKS = await extractAll()
@@ -93,14 +93,30 @@ test('every mustInclude token exists in the source the answer is built from, in 
   // This is checked against the chunk BODIES, not titles: an English title on a
   // Japanese chunk would satisfy the token without the fact being sayable in
   // Japanese.
-  const impossible: string[] = []
-  for (const item of GOLDEN) {
-    for (const token of item.mustInclude ?? []) {
-      const missing = LOCALES.filter((loc) => !relevantText(item, loc).includes(token.toLowerCase()))
-      if (missing.length > 0) impossible.push(`${item.id}: "${token}" absent from the ${missing.join(', ')} source`)
-    }
-  }
+  const impossible = GOLDEN.flatMap((item) =>
+    tokensMissingFromSource(item, LOCALES, (loc) => relevantText(item, loc)),
+  )
   assert.deepEqual(impossible, [], `mustInclude tokens no answer in that locale can carry:\n  ${impossible.join('\n  ')}`)
+})
+
+test('tokensMissingFromSource: a token only the English copy carries is reported', () => {
+  // The test above runs over live data that now passes, so it has no negative
+  // case: restricting it to `en` leaves it green and a mutation survives. This
+  // is the negative case. The shape is the real one that was there for a year —
+  // "fubon" against copy that says 富邦.
+  const source: Record<string, string> = {
+    en: 'piloted with Fubon Insurance in the FSC sandbox',
+    'zh-TW': '與富邦產險合作，於 FSC 監理沙盒試辦',
+    ja: '富邦損保と組んで FSC のサンドボックスで試験導入',
+  }
+  assert.deepEqual(
+    tokensMissingFromSource({ id: 'x', mustInclude: ['fubon'] }, ['en', 'zh-TW', 'ja'], (l) => source[l]),
+    ['x: "fubon" absent from the zh-TW, ja source'],
+  )
+  assert.deepEqual(
+    tokensMissingFromSource({ id: 'x', mustInclude: ['fsc'] }, ['en', 'zh-TW', 'ja'], (l) => source[l]),
+    [],
+  )
 })
 
 test('every item states what it expects', () => {
