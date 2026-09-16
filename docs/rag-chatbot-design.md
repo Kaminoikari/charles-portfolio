@@ -131,7 +131,8 @@ export const RAGState = Annotation.Root({
   loops: Annotation<number>({ default: () => 0, reducer: (_, b) => b }),
   answer: Annotation<string>,
   sources: Annotation<Array<{ id: string; title: string; score: number; locale: string }>>,
-  route: Annotation<string>,                    // answered | generate | rewrite | off_topic
+  route: Annotation<string>,                    // answered | converse | generate | rewrite | off_topic
+  retrievalFailed: Annotation<boolean>,         // the store was unreachable, not merely unhelpful
 });
 ```
 
@@ -176,7 +177,7 @@ No SQL — collections are created in code by `ensureCollections()` (`rag/qdrant
 called at the top of every ingest run (idempotent).
 
 ```
-doc_chunks                              # the hybrid index — 309 chunks (en/zh-TW/ja)
+doc_chunks                              # the hybrid index — 1,074 chunks (en/zh-TW/ja)
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25 (Cloud Inference)
   payload index:  locale (keyword)                              # filtered on every query
@@ -275,8 +276,11 @@ Steps when we decide to do it:
 Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 
 - **Golden set** (`rag/evals/golden.ts`): single-fact / local / global /
-  out-of-corpus questions, each in all three locales, grounded in the real
-  corpus so expected ids and answer facts are verifiable.
+  near-miss / out-of-corpus questions, each in all three locales, grounded in the
+  real corpus so expected ids and answer facts are verifiable. A near-miss item
+  has a sibling with the same shape and a different fact, so retrieving the wrong
+  one of the pair still scores a hit on recall — which is what makes them the
+  items worth watching.
 - **Metrics** (`rag/evals/metrics.ts`, unit-tested): `recall@k` + `MRR`
   (deterministic id matching), `correctness` (golden mustInclude/mustDecline),
   `faithfulness` (LLM judge in `rag/evals/judge.ts`).
@@ -316,7 +320,7 @@ Reuse the product-playbook eval culture (ablation + lift numbers) on RAG:
 6. ✅ Post-launch hardening (shipped): semantic FAQ cache (`rag/faq-cache.ts`,
    `rag/triage.ts`, `rag/ingest/build-faq-cache.ts`), 3-way grade verdict,
    3-layer injection defense + input cap + region gate, two-tier Gemini→Claude
-   generation with per-call timeouts + `maxRetries=0`, and `workflow_dispatch`
+   generation with per-call timeouts + `maxRetries=0`, and push-triggered
    ingestion (`.github/workflows/rag-ingest.yml`).
 
 ---
@@ -330,8 +334,10 @@ sparse model). Optional: `LANGSMITH_API_KEY` (tracing / eval). `UPSTASH_REDIS_*`
 is reserved but unused — wired only if the §6 global rate-limit upgrade ships.
 
 The index is **not** built in the runtime container (it has no outbound
-network); it's built by the **`rag-ingest` GitHub Action** (`workflow_dispatch`,
-`.github/workflows/rag-ingest.yml`), which runs `npm run rag:ingest` then
+network); it's built by the **`rag-ingest` GitHub Action**
+(`.github/workflows/rag-ingest.yml`) — automatically on every push to main that
+touches a content source, and on demand via `workflow_dispatch`. It runs
+`npm run rag:ingest` then
 `npm run rag:faq` against the secrets above. Preview and Production share the
 same Qdrant index, so a re-index is not needed per deploy.
 
@@ -342,7 +348,7 @@ same Qdrant index, so a re-index is not needed per deploy.
 The headline post-launch feature. Goal: answer common questions at **zero
 generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
 
-- **Semantic FAQ cache** (`rag/faq-cache.ts`): 52 hand-written topics spanning 5
+- **Semantic FAQ cache** (`rag/faq-cache.ts`): 57 hand-written entries spanning 5
   personas (general visitor, PM/HR interviewer, tech enthusiast, red-teamer,
   founder/investor), expanded to **838 paraphrases** across en/zh-TW/ja. Each
   question is embedded once at build time (`npm run rag:faq`) into the
@@ -404,7 +410,7 @@ rag/
 ├── insights/
 │   └── report.ts             # chat_logs analytics (npm run rag:insights)
 └── evals/
-    ├── golden.ts             # eval set (single-fact/local/global/out-of-corpus)
+    ├── golden.ts             # eval set (single-fact/local/global/near-miss/out-of-corpus)
     ├── metrics.ts            # recall@k / MRR / correctness (unit-tested)
     ├── judge.ts              # LLM faithfulness judge
     └── run-eval.ts           # ablation runner + markdown report

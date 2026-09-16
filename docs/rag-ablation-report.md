@@ -4,7 +4,10 @@ Retrieval-ablation results from the golden set, run against the live Qdrant inde
 via the `RAG Eval` workflow. Each arm adds one retrieval layer, so the marginal
 lift of each is visible.
 
-- Golden set: 29 questions × 3 locales (en / zh-TW / ja) = 87 query runs.
+- Golden set **as it stood for this run**: 29 questions × 3 locales
+  (en / zh-TW / ja) = 87 query runs. It has since grown to 41 questions (123
+  runs) with a `near-miss` category, so the numbers below are not comparable to
+  a fresh run — re-run before quoting them as current.
 - `recall@k` is hit-rate: did at least one relevant chunk surface in the top-k?
   (binary per query, averaged). `MRR` is the reciprocal rank of the first
   relevant chunk — it rewards ranking the right chunk near the top.

@@ -385,6 +385,17 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
 - **PR CI**（`.github/workflows/ci.yml`）：pull_request 與 push to main 都跑
   lint、`npm run build`（`tsc -b`，涵蓋測試檔）、`npm run rag:test`、`npm test`。
   全部離線、不需要任何 secret。先前這些只在本機跑過。
+
+  最後一步是**依 vitest 印出的結果判定，不看 exit code**。`npm test` 在 1,636 條
+  全過的情況下仍然 exit 1：avatar 那幾份測試有長時間的同步 CPU 迴圈，worker 因此
+  錯過 vitest 內部 birpc 的 `onTaskUpdate` 心跳，印出一行
+  `[vitest-worker]: Timeout calling "onTaskUpdate"`。2026-09-16 量過五種組合
+  （預設 2 threads 連跑三次、`--pool=forks`、`--maxWorkers=1`），**五次全部 exit 1
+  且五次全部 1,636 條通過、各恰好一行該錯誤**；那個 timeout 是 vitest 內部常數
+  `DEFAULT_TIMEOUT`，沒有對外旗標可調。必紅的關卡會教會所有人忽略 CI，拿掉這步
+  則失去覆蓋，所以改判 summary 行：`Tests N failed | M passed` 或那行根本不存在
+  （run 沒跑到印結果）都算失敗。這個判別式是拿一條**故意寫壞的探針測試**驗過的，
+  不是只拿全綠的 run 驗。
 - **ingest 後的回歸閘門**（`rag-ingest.yml` 新增 `eval-gate` job）：內容 push 重建
   生產索引之後，對剛建好的索引跑 retrieval-only eval，`--min-recall 0.95` 不到就
   讓整個 run 失敗。門檻取 0.95 是因為三個 arm 現況都是 100%，留一題的容錯、不留
@@ -416,6 +427,13 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
   `309 doc chunks` 實際是 **1,074**（本 commit 量的）；ingest 早已改成 push 觸發，
   文件仍寫 `workflow_dispatch`。
 - `docs/portfolio-rag-roadmap.md` 的語意快取那列同樣只寫了門檻。
+- `docs/rag-ablation-report.md` 的 29 題數字標成了那次 run 的當下值，並註明現在是
+  41 題，避免它被當成可比較的現況。
+
+**這一段自己漏掃過一輪。** 第一次掃用的 pattern 是我剛改完的那幾個字面值，於是
+只找到自己已經修過的地方：`309 chunks`、`52 hand-written topics` 與兩處
+`workflow_dispatch` 全部留在原地，是規格 review 抓出來的。正確的做法是拿**底層
+的數字本身**（`\b309\b|\b52\b|\b755\b`）重掃，不是拿新措辭。同一句話常有雙胞胎。
 
 ## 已知仍未覆蓋的缺口
 
@@ -423,3 +441,7 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
 - 擴充後的 golden set 沒有跑過一次 eval，§4.3 是否真的恢復鑑別力未知。
 - `rag/insights/collect.ts` 新增的 outage 計數沒有測試：`gatherInsights` 直接打
   Qdrant，沒有注入點，補 seam 的改動比這一輪該有的大。
+- `npm test` 的 birpc 心跳誤報是**繞過去的，不是修好的**。它先於這一輪存在（這輪
+  沒有新增任何 `src/` 或 `scripts/` 測試），而 CI 的判別式只容忍「結果行說全過」
+  這一種情況。真正的修法是讓 avatar 那幾份測試不要長時間卡住 event loop，或等
+  vitest 把那個 timeout 開放設定。

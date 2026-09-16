@@ -79,9 +79,12 @@ test('the map names no employer that src/data does not have', () => {
   assert.deepEqual(sectionEntries('WORK').filter((n) => !known.includes(n)), [])
 })
 
-test('every number the map quotes is a number src/data still records', () => {
-  // The metrics are the part of the "framing" that is not prose: "+40%
-  // data-driven decisions" is copied out of experience.en.ts word for word. The
+test('every metric the map quotes is a metric src/data still records', () => {
+  // Metrics, not every numeral: the percentages and the team size are copied out
+  // of experience.en.ts and projects.en.ts word for word, so they can be compared
+  // word for word. Counts written in prose ("5+ yrs", "16 composable lenses")
+  // have no verbatim counterpart to compare against and are not covered here.
+  // "+40% data-driven decisions" is the shape this catches. The
   // ingest rebuilds the index when that file changes and has no idea this map
   // exists, so an edited metric leaves the map asserting the old one — into
   // every single generated answer, above the retrieved chunks.
