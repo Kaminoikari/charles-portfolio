@@ -110,6 +110,15 @@ export const config = {
   // only genuine matches hit; everything else falls through to RAG.
   faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
   faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.7),
+  // How far the best FAQ candidate must beat the runner-up before the cache is
+  // allowed to answer without any grounding check. The threshold above asks "is
+  // this similar enough"; this asks "is it unambiguously THIS topic", which is
+  // the question a corpus of structurally-identical paraphrases across dozens of
+  // topics actually raises. Deliberately tight: it should reject near-ties and
+  // nothing else, because every rejection costs a cache hit. The faqprobe log
+  // line prints top1, top2 and the gap on every lookup, so this can be retuned
+  // from the real score distribution rather than from a guess.
+  faqCacheMargin: float('RAG_FAQ_MARGIN', 0.02),
 
   // --- behavior ---
   defaultLocale: process.env.RAG_DEFAULT_LOCALE ?? 'en',

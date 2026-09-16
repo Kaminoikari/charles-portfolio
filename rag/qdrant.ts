@@ -120,31 +120,64 @@ export async function deleteByChunkIds(collection: string, chunkIds: string[]): 
   }
 }
 
+// The Qdrant round-trip behind faqLookup, injectable so the accept/reject rule
+// can be driven without a live collection. Production always uses the client.
+export interface FaqSearchDeps {
+  search: (
+    collection: string,
+    body: Record<string, unknown>,
+  ) => Promise<{ points: { score?: number; payload?: Record<string, unknown> | null }[] }>
+}
+
+export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
+  search: (collection, body) => qdrant().query(collection, body as never),
+}
+
 // Look up the closest pre-written FAQ answer for a query embedding. Returns the
-// cached answer when the top hit clears the similarity threshold, else null
-// (caller falls through to RAG). Locale-filtered so each language matches its
-// own paraphrases. Dense-only, single round-trip — no generation LLM involved.
+// cached answer when the top hit is BOTH similar enough and unambiguously ahead
+// of the runner-up, else null (caller falls through to RAG). Locale-filtered so
+// each language matches its own paraphrases. Dense-only, single round-trip — no
+// generation LLM involved.
+//
+// Two candidates, not one, because a hit here bypasses every grounding check the
+// pipeline has: no grading, no generation, no sources shown. The cache holds
+// many paraphrases whose wording is near-identical across topics that differ
+// only in the fact being asked for, and those land close together in embedding
+// space. When the top two are effectively tied, the question sits between topics
+// and the winner is decided by noise — so the safe move is to hand it to RAG,
+// which retrieves, grades, and cites. A single global threshold cannot express
+// that: both candidates clear it.
 export async function faqLookup(
   queryVec: number[],
   locale: string,
+  deps: FaqSearchDeps = DEFAULT_FAQ_DEPS,
 ): Promise<{ answer: string; id: string; score: number } | null> {
-  const db = qdrant()
-  const res = await db.query(config.qdrantFaqCollection, {
+  const res = await deps.search(config.qdrantFaqCollection, {
     query: queryVec,
     using: DENSE,
     filter: { must: [{ key: 'locale', match: { value: locale } }] },
-    limit: 1,
+    limit: 2,
     with_payload: true,
   })
-  const top = res.points[0]
-  // Diagnostic: always log the best candidate so a near-miss is tunable from
-  // logs (e.g. "score=0.79 id=remote" tells us the threshold is just too high).
+  const [top, runnerUp] = res.points
+  const topScore = top?.score ?? 0
+  // A lone candidate cannot be confused with anything, so it faces the threshold
+  // alone. Infinity keeps that case out of the margin comparison entirely.
+  const margin = runnerUp ? topScore - (runnerUp.score ?? 0) : Number.POSITIVE_INFINITY
+  // Diagnostic: always log both candidates and the gap, so both knobs stay
+  // tunable from logs (e.g. "top=0.820 next=0.810 gap=0.010" names a near-tie;
+  // "top=0.690 next=0.300" names a threshold that is merely too high).
   const payload = (top?.payload ?? {}) as { answer?: string; faq_id?: string }
+  const nextPayload = (runnerUp?.payload ?? {}) as { faq_id?: string }
   console.log(
-    `[chat] faqprobe score=${(top?.score ?? 0).toFixed(3)} thr=${config.faqCacheThreshold} ` +
-      `id=${payload.faq_id ?? '-'} hits=${res.points.length} locale=${locale}`,
+    `[chat] faqprobe top=${topScore.toFixed(3)} id=${payload.faq_id ?? '-'} ` +
+      `next=${(runnerUp?.score ?? 0).toFixed(3)} next_id=${nextPayload.faq_id ?? '-'} ` +
+      `gap=${Number.isFinite(margin) ? margin.toFixed(3) : 'none'} ` +
+      `thr=${config.faqCacheThreshold} min_gap=${config.faqCacheMargin} ` +
+      `hits=${res.points.length} locale=${locale}`,
   )
-  if (!top || (top.score ?? 0) < config.faqCacheThreshold) return null
+  if (!top || topScore < config.faqCacheThreshold) return null
+  if (margin < config.faqCacheMargin) return null
   if (!payload.answer) return null
-  return { answer: payload.answer, id: payload.faq_id ?? '', score: top.score ?? 0 }
+  return { answer: payload.answer, id: payload.faq_id ?? '', score: topScore }
 }
