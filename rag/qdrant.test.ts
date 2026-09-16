@@ -113,3 +113,22 @@ test('faqLookup: the margin is a real threshold, not zero', () => {
 test('faqLookup: the default search really goes to Qdrant', async () => {
   await assert.rejects(DEFAULT_FAQ_DEPS.search(config.qdrantFaqCollection, { query: [0.1], limit: 2 }))
 })
+
+// A point whose payload lost its faq_id is malformed, not a topic. Both
+// directions were previously undefined behaviour that no test described.
+test('faqLookup: a point with no faq_id is not evidence of a competing topic', async () => {
+  // Treating it as a rival would let one malformed point suppress a cache hit
+  // that is otherwise unambiguous, and the suppression would be invisible —
+  // the answer just quietly costs a generation from then on.
+  const malformed = { score: 0.88, payload: { answer: 'orphan', locale: 'en' } }
+  const res = await lookupOver([hit('best-project', 0.89), malformed as ReturnType<typeof hit>])
+  assert.equal(res?.id, 'best-project')
+})
+
+test('faqLookup: a top hit with no faq_id is not served', async () => {
+  // It would have come back with id '', which downstream logs as a cache hit
+  // from an entry nobody can look up.
+  const malformed = { score: 0.95, payload: { answer: 'orphan', locale: 'en' } }
+  const res = await lookupOver([malformed as ReturnType<typeof hit>, hit('nueip-role', 0.2)])
+  assert.equal(res, null)
+})

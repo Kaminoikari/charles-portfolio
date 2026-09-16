@@ -176,7 +176,11 @@ export async function faqLookup(
   // so the first one is it. Nothing to compare against — a lone entry, or a
   // window filled entirely by its own paraphrases — cannot be confused with
   // anything, so Infinity keeps it out of the margin comparison entirely.
-  const rival = rest.find((p) => faqIdOf(p) !== topId)
+  // Only points that name an entry can stand for a competing topic. A payload
+  // without a faq_id is malformed data, not a rival: counting it would let one
+  // bad point suppress an unambiguous hit, and the suppression is invisible —
+  // the answer simply costs a generation from then on.
+  const rival = rest.find((p) => faqIdOf(p) !== undefined && faqIdOf(p) !== topId)
   const margin = rival ? topScore - (rival.score ?? 0) : Number.POSITIVE_INFINITY
   // Diagnostic: always log both candidates and the gap, so both knobs stay
   // tunable from logs (e.g. "top=0.820 next=0.810 gap=0.010" names a near-tie;
@@ -190,9 +194,13 @@ export async function faqLookup(
       `hits=${res.points.length} locale=${locale}`,
   )
   if (!top || topScore < config.faqCacheThreshold) return null
+  // A top hit that names no entry would be served with id '', which the logs and
+  // the insights report would then carry as a hit from an entry nobody can look
+  // up. Let it fall through to RAG instead.
+  if (topId === undefined) return null
   // Strictly greater, per the rule as specified: a gap that only equals the
   // minimum has not cleared it.
   if (margin <= config.faqCacheMargin) return null
   if (!payload.answer) return null
-  return { answer: payload.answer, id: topId ?? '', score: topScore }
+  return { answer: payload.answer, id: topId, score: topScore }
 }
