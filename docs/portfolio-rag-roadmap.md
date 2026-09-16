@@ -17,7 +17,7 @@ The pipeline already matches the industry baseline on most layers:
 | RRF fusion, k=60 | ✅ `config.rrfK = 60` |
 | Cross-encoder rerank | ✅ Voyage `rerank-2.5`, `topK=6` from `candidateK=20` |
 | Corrective / agentic loop | ✅ triage → retrieve → grade → rewrite → generate (`graph.ts`, `maxLoops=2`) |
-| Semantic cache | ✅ FAQ cache at cosine ≥ 0.7 (answers common Qs for $0) |
+| Semantic cache | ✅ FAQ cache at cosine ≥ 0.7 plus a cross-entry margin (answers common Qs for $0) |
 | Parent-doc chunking | ✅ project chunks carry `parent_id` (`extract.ts`) |
 | Eval harness | ✅ golden set + ablation arms + recall@k / MRR / correctness / faithfulness judge + LangSmith (`rag/evals/`) |
 

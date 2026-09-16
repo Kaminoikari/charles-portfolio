@@ -35,9 +35,11 @@ operate. Aligns with the existing Vite + React + TS app.
 > - **Prompt-injection defense is 3 layers** (input regex, generate scope-lock,
 >   output slur filter); plus an input cap and a region gate (§6).
 > - **No API prompt caching** (deliberate — see §11).
-> - The index is built by a **GitHub Action** (`workflow_dispatch`) — the runtime
->   container has no outbound network. Real index: **309 doc chunks + 755 FAQ
->   paraphrases across 52 topics**, all in en/zh-TW/ja.
+> - The index is built by a **GitHub Action** — on every push to main that touches
+>   a content source, and on demand via `workflow_dispatch` — because the runtime
+>   container has no outbound network. Index at this commit: **1,074 doc chunks +
+>   838 FAQ paraphrases across 57 entries**, all in en/zh-TW/ja. (Counts come from
+>   `extractAll()` and `faqEntries`; re-measure rather than trusting this line.)
 
 ## 1. Architecture
 
@@ -181,11 +183,12 @@ doc_chunks                              # the hybrid index — 309 chunks (en/zh
   payload:        { chunk_id, parent_id, source_type, project_id, locale, title, content }
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
-faq_cache                               # semantic cache — 755 paraphrases / 52 topics
+faq_cache                               # semantic cache — 838 paraphrases / 57 entries
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large (query-encoded)
   payload index:  locale (keyword)
   payload:        { topic_id, locale, question, answer }        # answer is pre-written, returned verbatim
-  matched at:     cosine ≥ 0.7 (RAG_FAQ_THRESHOLD), locale-filtered → 0 generation LLM
+  matched at:     cosine ≥ 0.7 (RAG_FAQ_THRESHOLD) AND a gap > 0.02 (RAG_FAQ_MARGIN)
+                  over the best candidate from another entry, locale-filtered → 0 generation LLM
 
 chat_logs                               # free product insight: what recruiters ask
   vectors:        { dense: { size: 1, distance: Cosine } }      # size-1 dummy [1] — never searched, only scrolled
@@ -341,12 +344,18 @@ generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
 
 - **Semantic FAQ cache** (`rag/faq-cache.ts`): 52 hand-written topics spanning 5
   personas (general visitor, PM/HR interviewer, tech enthusiast, red-teamer,
-  founder/investor), expanded to **755 paraphrases** across en/zh-TW/ja. Each
+  founder/investor), expanded to **838 paraphrases** across en/zh-TW/ja. Each
   question is embedded once at build time (`npm run rag:faq`) into the
   `faq_cache` collection. At query time `triage` embeds the question, runs a
-  locale-filtered nearest-neighbour lookup, and on **cosine ≥ 0.7** returns the
-  pre-written answer verbatim — no retrieval, no generation LLM. Misses fall
-  through to the full RAG pipeline.
+  locale-filtered nearest-neighbour lookup, and returns the pre-written answer
+  verbatim — no retrieval, no generation LLM — when the best match clears **two**
+  bars: **cosine ≥ 0.7**, and a **gap > 0.02** over the best candidate belonging
+  to a *different* entry. The second bar exists because a cache hit is the only
+  answer that reaches a visitor with no grading, no generation and no sources: a
+  question sitting between two topics must not be settled by noise. It is scored
+  against another entry, not the next result, because points are one per
+  paraphrase, so an entry's own rewordings crowd the top of the list precisely
+  when it is the right answer. Misses fall through to the full RAG pipeline.
 - **Three-tier cost ladder:** (1) deterministic regex triage (injection /
   privacy) → canned reply; (2) semantic FAQ cache → pre-written reply ($0);
   (3) full RAG, where grade/rewrite ride Gemini's free tier and only a hard
@@ -375,7 +384,7 @@ rag/
 ├── state.ts                  # Annotation.Root state schema
 ├── nodes.ts                  # triage / retrieve / grade / rewrite / generate / fallback
 ├── triage.ts                 # regex injection+privacy detection, canned replies, contact block
-├── faq-cache.ts              # 52 topics / 755 paraphrases (en/zh-TW/ja) + answers
+├── faq-cache.ts              # 57 entries / 838 paraphrases (en/zh-TW/ja) + answers
 ├── retrieval.ts              # Qdrant hybrid (dense+sparse, server RRF) + rerank (retrieveWith)
 ├── qdrant.ts                 # Qdrant client + collection bootstrap + faqLookup + point-id hashing
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
