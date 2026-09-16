@@ -5,6 +5,13 @@
 //   - single-fact : one chunk answers it (recall@k is the key metric)
 //   - local       : needs a couple of related chunks (one project's sections)
 //   - global      : needs cross-corpus synthesis (the portfolio-map rescue path)
+//   - near-miss  : answerable, but a sibling question with the SAME shape and a
+//                  DIFFERENT fact sits next to it in the corpus. These are the
+//                  hard negatives: recall alone looks fine when the retriever
+//                  brings back the sibling, so they are the items that tell a
+//                  confusable index from a precise one — and the benchmark for
+//                  the FAQ cache's cross-entry margin (rag/qdrant.ts), whose
+//                  whole job is refusing to answer between two of them.
 //   - out-of-corpus: NOT answerable — the bot must decline (faithfulness test)
 //
 // `relevantIds` are chunk-id PREFIXES (the stored ids carry a `:<locale>`
@@ -20,7 +27,7 @@
 // (591, 104, 22) — which survive translation; avoid English common nouns that a
 // zh-TW / ja answer would localize.
 
-export type EvalCategory = 'single-fact' | 'local' | 'global' | 'out-of-corpus'
+export type EvalCategory = 'single-fact' | 'local' | 'global' | 'near-miss' | 'out-of-corpus'
 
 export interface GoldenItem {
   id: string
@@ -202,6 +209,166 @@ export const GOLDEN: GoldenItem[] = [
     },
     relevantIds: ['blog:langgraph-ai:'],
     mustInclude: ['langgraph'],
+  },
+
+  // ── fragment-dependent (the answer lives in a blog BODY slice) ───────────
+  // Body chunks are two thirds of the corpus and had five items between them,
+  // all of which the article's title chunk alone could satisfy. These cannot:
+  // the fact is inside the text, so the prefix pins `…:body:` and a title-only
+  // hit scores zero. Pinned at the body level rather than at a numbered slice,
+  // because re-chunking moves the boundaries and must not fail the eval.
+  {
+    id: 'uber-case-prep',
+    category: 'single-fact',
+    question: {
+      en: 'How long did Charles get to prepare the Uber case study?',
+      'zh-TW': 'Charles 準備 Uber 的 case study 有多少時間?',
+      ja: 'Charles は Uber のケーススタディの準備にどれだけ時間がありましたか?',
+    },
+    relevantIds: ['blog:uber-l4-offer-pm-ai:body:'],
+    mustInclude: ['72'],
+  },
+  {
+    id: 'cs153-scale',
+    category: 'single-fact',
+    question: {
+      en: 'How many students take Stanford CS153 now?',
+      'zh-TW': '史丹佛 CS153 現在有多少學生修?',
+      ja: 'スタンフォードの CS153 は今どれくらいの学生が受講していますか?',
+    },
+    relevantIds: ['blog:cs153-ai:body:'],
+    mustInclude: ['500'],
+  },
+  {
+    id: 'shazam-author',
+    category: 'single-fact',
+    question: {
+      en: 'Who wrote the paper behind the Shazam algorithm?',
+      'zh-TW': 'Shazam 演算法背後那篇論文是誰寫的?',
+      ja: 'Shazam のアルゴリズムの元になった論文は誰が書きましたか?',
+    },
+    relevantIds: ['blog:shazam:body:'],
+    mustInclude: ['avery wang'],
+  },
+
+  // ── agentic design patterns (sourceType 'knowledge') ─────────────────────
+  // Twenty-two chunks with no golden item at all. They are chatbot-only — no
+  // page on the site renders them — so retrieval is the ONLY way a visitor can
+  // reach them, and nothing was checking that they are reachable.
+  {
+    id: 'pattern-reflection',
+    category: 'single-fact',
+    question: {
+      en: 'Where does Charles use the reflection pattern?',
+      'zh-TW': 'Charles 在哪裡用到 reflection 這個模式?',
+      ja: 'Charles は reflection パターンをどこで使っていますか?',
+    },
+    relevantIds: ['pattern:reflection:'],
+    mustInclude: ['playbook'],
+  },
+  {
+    id: 'pattern-rag',
+    category: 'single-fact',
+    question: {
+      en: 'How does Charles describe the retrieval-augmented generation pattern?',
+      'zh-TW': 'Charles 怎麼描述 RAG 這個檢索增強生成模式?',
+      ja: 'Charles は RAG（検索拡張生成）パターンをどう説明していますか?',
+    },
+    relevantIds: ['pattern:knowledge-retrieval-rag:'],
+    mustInclude: ['qdrant'],
+  },
+  {
+    id: 'pattern-human-loop',
+    category: 'single-fact',
+    question: {
+      en: 'What role does a human play in Charles\'s agent loops?',
+      'zh-TW': 'Charles 的 agent 流程裡，人扮演什麼角色?',
+      ja: 'Charles のエージェントのループで、人はどんな役割を担っていますか?',
+    },
+    relevantIds: ['pattern:human-in-the-loop:'],
+    mustInclude: ['codex'],
+  },
+  {
+    id: 'patterns-known',
+    category: 'global',
+    question: {
+      en: 'Does Charles actually know agentic design patterns?',
+      'zh-TW': 'Charles 真的懂 agentic design patterns 嗎?',
+      ja: 'Charles は本当に agentic design patterns を理解していますか?',
+    },
+    // The overview is the canonical answer; the two named patterns below are
+    // legitimate evidence for the same question because each one says where he
+    // applies it. A bare 'pattern:' prefix would have been a wildcard over the
+    // whole source type, scoring a hit on any of the twenty-two and measuring
+    // nothing.
+    relevantIds: ['pattern:overview:', 'pattern:reflection:', 'pattern:multi-agent-collaboration:'],
+    mustInclude: ['playbook'],
+  },
+
+  // ── skills chunk ─────────────────────────────────────────────────────────
+  // One chunk, previously unreachable by any golden item. No mustInclude: the
+  // entries are deliberately playful one-liners that each locale rewrites, so
+  // there is no language-neutral token to assert. Recall is the whole test.
+  {
+    id: 'skills-listed',
+    category: 'single-fact',
+    question: {
+      en: 'What skills does Charles list on his site?',
+      'zh-TW': 'Charles 在網站上列了哪些技能?',
+      ja: 'Charles はサイトにどんなスキルを挙げていますか?',
+    },
+    relevantIds: ['skills:all:'],
+  },
+
+  // ── near-miss pairs (hard negatives) ─────────────────────────────────────
+  // Each pair is the same sentence with one noun changed, and the answers are
+  // different numbers. A retriever that returns the sibling scores a hit on
+  // recall@k while answering the wrong question, so these are the items where
+  // correctness and recall come apart — which is exactly the failure a single
+  // similarity threshold cannot see.
+  {
+    id: 'nueip-metric',
+    category: 'near-miss',
+    question: {
+      en: 'By how much did data-driven decisions improve at NUEIP?',
+      'zh-TW': 'NUEIP 的數據驅動決策提升了多少?',
+      ja: 'NUEIP ではデータ駆動の意思決定がどれだけ向上しましたか?',
+    },
+    relevantIds: ['experience:nueip-technology-co-ltd:'],
+    mustInclude: ['40'],
+  },
+  {
+    id: 'pxpay-metric',
+    category: 'near-miss',
+    question: {
+      en: 'By how much did sign-up conversion improve at PXPay Plus?',
+      'zh-TW': 'PXPay Plus 的註冊轉換率提升了多少?',
+      ja: 'PXPay Plus では登録コンバージョンがどれだけ向上しましたか?',
+    },
+    relevantIds: ['experience:pxpay-plus-co-ltd:'],
+    mustInclude: ['25'],
+  },
+  {
+    id: 'flux-team-size',
+    category: 'near-miss',
+    question: {
+      en: 'How many people did Charles direct at FLUX?',
+      'zh-TW': 'Charles 在 FLUX 帶了多少人?',
+      ja: 'Charles は FLUX で何人を率いていましたか?',
+    },
+    relevantIds: ['experience:flux-technology-inc:'],
+    mustInclude: ['10'],
+  },
+  {
+    id: 'uspace-team-size',
+    category: 'near-miss',
+    question: {
+      en: 'How big was the Scrum team Charles led at USPACE?',
+      'zh-TW': 'Charles 在 USPACE 帶的 Scrum 團隊有多大?',
+      ja: 'Charles が USPACE で率いた Scrum チームは何人でしたか?',
+    },
+    relevantIds: ['experience:uspace-tech-co-ltd:'],
+    mustInclude: ['15'],
   },
 
   // ── local (one project, multiple sections) ───────────────────────────────
