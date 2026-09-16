@@ -46,7 +46,7 @@ function sparseQuery(query: string) {
   return { text: query, model: config.sparseModel }
 }
 
-interface ScoredPoint {
+export interface ScoredPoint {
   payload?: Record<string, unknown> | null
   score?: number
 }
@@ -92,17 +92,20 @@ function toDocument(p: ScoredPoint): Document {
   })
 }
 
-// One round of retrieval for a single query string. Layers are configurable so
-// the same code path serves both production (full hybrid) and the ablation:
+// The Qdrant half of a retrieval round: the candidate set, before any rerank.
+// Layers are configurable so the same code path serves both production (full
+// hybrid) and the ablation:
 //   dense+sparse → prefetch both arms, fuse with RRF server-side
 //   dense only / sparse only → a single-arm query (the ablation's isolation)
-export async function retrieveWith(
+// Split out from retrieveWith so the rerank's failure handling is testable
+// without a live Qdrant or Voyage key — the two suppliers it guards against.
+export async function fetchCandidates(
   query: string,
   locale: string,
   cfg: RetrievalConfig,
-): Promise<Document[]> {
+): Promise<ScoredPoint[]> {
   if (!cfg.dense && !cfg.sparse) {
-    throw new Error('retrieveWith: at least one of dense/sparse must be enabled')
+    throw new Error('fetchCandidates: at least one of dense/sparse must be enabled')
   }
 
   const db = qdrant()
@@ -144,11 +147,46 @@ export async function retrieveWith(
     points = res.points
   }
 
+  return points
+}
+
+// The two external suppliers a retrieval round depends on, injectable so a test
+// can drive the failure paths. Production always uses DEFAULT_RETRIEVAL_DEPS.
+export interface RetrievalDeps {
+  fetchCandidates: typeof fetchCandidates
+  rerank: typeof rerank
+}
+
+export const DEFAULT_RETRIEVAL_DEPS: RetrievalDeps = { fetchCandidates, rerank }
+
+// One round of retrieval for a single query string: candidates, then rerank.
+//
+// The rerank is allowed to fail. Voyage is the single supplier of both the query
+// embedding and the rerank, each called once with no retry (see embeddings.ts),
+// so a Voyage blip used to propagate out of here, past the retrieve node's
+// unguarded single-query path, and out as a generic SSE error — taking the whole
+// bot down to regex triage while a usable RRF-fused candidate set sat in
+// `points`. Degrading to that RRF order costs ranking quality that the ablation
+// has actually measured (the `hybrid` arm), which is a far better answer than no
+// answer. A failed CANDIDATE fetch still throws: with no points there is nothing
+// to degrade to.
+export async function retrieveWith(
+  query: string,
+  locale: string,
+  cfg: RetrievalConfig,
+  deps: RetrievalDeps = DEFAULT_RETRIEVAL_DEPS,
+): Promise<Document[]> {
+  const points = await deps.fetchCandidates(query, locale, cfg)
+
   if (cfg.rerank && points.length > 0) {
-    // Rerank the full candidate set (not just top-k) so source weighting can
-    // still pull a lower-ranked first-party chunk into the final top-k.
-    const ranked = await rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
-    return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
+    try {
+      // Rerank the full candidate set (not just top-k) so source weighting can
+      // still pull a lower-ranked first-party chunk into the final top-k.
+      const ranked = await deps.rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
+      return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
+    } catch (err) {
+      console.warn('rerank failed, falling back to RRF order:', (err as Error).message)
+    }
   }
   return weightAndTrim(points.map((p) => ({ point: p, base: p.score ?? 0 })))
 }
