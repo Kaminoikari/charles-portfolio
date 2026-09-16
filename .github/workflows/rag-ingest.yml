@@ -190,8 +190,18 @@ jobs:
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
           QDRANT_COLLECTION: doc_chunks
+        # Gate the arm visitors are actually served, not every ablation arm.
+        # `hybrid` (dense + BM25, no rerank) exists to measure what the reranker
+        # buys; nothing is answered from it. Gating on it blocked this ingest at
+        # 92.7% for a configuration nobody runs.
+        #
+        # The 0.95 floor was set when all three arms read 100% on the 29-question
+        # golden set. That set could not fail, which is why it grew to 41; on the
+        # current set the served arm reads 96.7% (run 35059505617), so the floor
+        # keeps about two points of headroom. It is a floor, not a diff: a slow
+        # 2% slide is for the manual RAG Eval and the ablation table to catch.
         run: |
-          npm run rag:eval -- --retrieval-only --min-recall 0.95 --out eval-report.md
+          npm run rag:eval -- --retrieval-only --arm hybrid+rerank --min-recall 0.95 --out eval-report.md
           {
             echo "### Post-ingest retrieval gate"
             echo ""
