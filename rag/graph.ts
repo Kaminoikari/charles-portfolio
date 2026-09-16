@@ -28,16 +28,24 @@ import * as defaultNodes from './nodes.js'
 // A node is an (async) function from state to a partial state update.
 export type Node = (state: RAGStateType) => Promise<Partial<RAGStateType>>
 
-export interface NodeSet {
-  triage: Node
-  converse: Node
-  retrieve: Node
-  gradeDocuments: Node
-  rewriteQuery: Node
-  generate: Node
-  fallback: Node
-  unavailable: Node
-}
+// The graph's nodes, named once. Everything downstream derives from this list:
+// the NodeSet a caller must supply, the GraphNodeId union, and the allow-list
+// that decides which chain events reach the visitor's pipeline trace. They used
+// to be three hand-kept lists, and `unavailable` shipped in two of them —
+// running and answering correctly while never appearing in the trace, because
+// nothing fails when a rail stops one box short.
+export const GRAPH_NODES = [
+  'triage',
+  'converse',
+  'retrieve',
+  'gradeDocuments',
+  'rewriteQuery',
+  'generate',
+  'fallback',
+  'unavailable',
+] as const
+
+export type NodeSet = Record<(typeof GRAPH_NODES)[number], Node>
 
 // Conditional edge: triage either answered the question (deterministically, no
 // LLM) or passes it on to retrieval.
@@ -153,21 +161,14 @@ export type StreamEvent =
   | { type: 'sources'; sources: Source[] }
   | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome }
 
-export type GraphNodeId = keyof NodeSet
+export type GraphNodeId = (typeof GRAPH_NODES)[number]
 
-// Only these names are reported as pipeline steps. streamEvents also fires
-// chain events for the graph itself and for inner runnables (prompts, models,
-// parsers); without this allow-list the trace would fill with implementation
-// detail nobody asked to see.
-const GRAPH_NODE_IDS = new Set<string>([
-  'triage',
-  'converse',
-  'retrieve',
-  'gradeDocuments',
-  'rewriteQuery',
-  'generate',
-  'fallback',
-])
+// Which names are reported as pipeline steps. streamEvents also fires chain
+// events for the graph itself and for inner runnables (prompts, models,
+// parsers); without this filter the trace would fill with implementation detail
+// nobody asked to see. Derived from GRAPH_NODES, so a new node is traced by
+// construction rather than by anyone remembering.
+const GRAPH_NODE_IDS = new Set<string>(GRAPH_NODES)
 
 function asGraphNodeId(value: unknown): GraphNodeId | null {
   return typeof value === 'string' && GRAPH_NODE_IDS.has(value) ? (value as GraphNodeId) : null

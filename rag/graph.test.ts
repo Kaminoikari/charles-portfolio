@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { buildGraph, answer, streamAnswer, routeAfterRetrieve, type NodeSet, type StreamEvent } from './graph.js'
+import { buildGraph, answer, streamAnswer, routeAfterRetrieve, GRAPH_NODES, type NodeSet, type StreamEvent } from './graph.js'
 import * as realNodes from './nodes.js'
 import { serviceUnavailable } from './triage.js'
 import { shouldAnswerFromHistory } from './history.js'
@@ -382,4 +382,15 @@ test('a healthy retrieval still goes to grading', () => {
   // always return 'unavailable' and this is the test that notices.
   assert.equal(routeAfterRetrieve({ retrievalFailed: false } as never), 'gradeDocuments')
   assert.equal(routeAfterRetrieve({ retrievalFailed: true } as never), 'unavailable')
+})
+
+test('the graph builds exactly the nodes it declares, and every one is traceable', () => {
+  // GRAPH_NODES is the single definition the NodeSet type, the GraphNodeId union
+  // and the trace allow-list all derive from, so the three cannot drift apart.
+  // What a list cannot enforce is that buildGraph actually wires each of them —
+  // that part is still hand-written, and this is where a forgotten addNode shows.
+  const wired = Object.keys(buildGraph(makeNodes(['generate']).nodes).nodes ?? {})
+  for (const id of GRAPH_NODES) {
+    assert.ok(wired.includes(id), `${id} is declared but never added to the graph`)
+  }
 })
