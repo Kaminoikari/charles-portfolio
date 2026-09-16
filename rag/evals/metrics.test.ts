@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallAtK, reciprocalRank, correctness, declinesAnswer } from './metrics.js'
+import { recallAtK, reciprocalRank, correctness, declinesAnswer, DECLINE_MARKERS } from './metrics.js'
 import { personalRedirect, genericFallback, serviceUnavailable } from '../triage.js'
 
 test('recallAtK: hit when a relevant prefix matches', () => {
@@ -61,6 +61,23 @@ test('declinesAnswer: an outage reply is NOT a decline', () => {
   // out-of-corpus handling — the one run shape where every answer is that reply.
   for (const locale of ['en', 'zh-TW', 'ja'] as const) {
     assert.equal(declinesAnswer(serviceUnavailable(locale)), false, locale)
+  }
+})
+
+test('the outage copy carries no generated-decline wording, which is what makes the guard idle', () => {
+  // Deleting the outage guard in declinesAnswer leaves this file green, because
+  // today's copy matches no phrase in DECLINE_MARKERS and so falls through to
+  // the same answer. The guard is not pointless — it is one rewording away from
+  // load-bearing, and the wordings are close: en says "I can't look that up"
+  // where "could not find" would match, zh says 查不到 where 找不到 would, ja
+  // says 調べられない where わかりません would. This pins the premise instead, so
+  // an edit to that copy fails here and names the guard that then starts
+  // carrying the rule, rather than silently scoring an outage as a clean
+  // decline.
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const copy = serviceUnavailable(locale).toLowerCase()
+    const matched = DECLINE_MARKERS.filter((m) => copy.includes(m))
+    assert.deepEqual(matched, [], `the ${locale} outage reply now reads as a decline: ${matched.join(', ')}`)
   }
 })
 
