@@ -47,7 +47,7 @@ emoji 那條在 2026-08-27 由「每則最多 1 個」收緊成「一個都不�
 
 ## 角色設定原文（使用者 2026-08-27 交付）
 
-`rag/persona.ts` 的 `MIKA_VOICE` 引用「the character spec」時，指的就是下面這一份。它原本只
+`rag/persona.ts` 的 `VOICE_PER_LANGUAGE` 引用「the character spec」時，指的就是下面這一份。它原本只
 存在於一次對話裡，reviewer 因此查不到出處，所以逐字抄錄於此。中文語域的每一個標記
 （開頭招呼、語氣詞、句尾 ～、動詞替換、紅線）都以這份為準。
 

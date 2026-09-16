@@ -567,7 +567,7 @@ test('generate: an answer that finished normally carries no such notice', async 
 // `converse` is the half that was broken until 2026-08-26 — it introduced
 // itself as a nameless "portfolio assistant", one turn after she had said her
 // own name (docs/plans/mika-persona.md).
-import { JA_POLITE_ENDING, MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
+import { JA_POLITE_ENDING, MIKA_IDENTITY, MIKA_IDENTITY_SHORT, mikaVoice } from './persona.js'
 
 // A tier that answers like `answering` but keeps the messages it was handed.
 const capturing = (sink: { system: string }, content = 'ok'): Tier => ({
@@ -588,7 +588,30 @@ test('generate: the prompt carries her identity and her voice', async () => {
     return { text: 'ok', provider: 'gemini' as const, stalled: false }
   })
   assert.equal(system.includes(MIKA_IDENTITY), true, 'generate lost the Mika identity block')
-  assert.equal(system.includes(MIKA_VOICE), true, 'generate lost the voice block')
+  assert.equal(system.includes(mikaVoice('zh-TW')), true, 'generate lost the voice block')
+})
+
+// persona.ts decides WHICH examples exist per locale; this decides whether the
+// node asks it for the right one. Both halves are needed: a perfectly gated
+// voice block changes nothing if generate keeps handing it a fixed locale, and
+// that wiring is exactly what an injected stub cannot see.
+test('generate: an English question is never shown the Chinese or Japanese examples', async () => {
+  let system = ''
+  await generate({ question: 'What skills does Charles list on his site?', language: 'en', graded: [] } as never, async (
+    messages: { role: string; content: string }[],
+  ) => {
+    system = messages[0].content
+    return { text: 'ok', provider: 'gemini' as const, stalled: false }
+  })
+  // The three strings the drifting production answers copied on 2026-09-16.
+  for (const example of ['\u304a\u3001\u305d\u308c\u805e\u3044\u3061\u3083\u3046\uff1f', '\u6574\u7406\u7d66\u4f60', '\u5305\u5728 Mika \u8eab\u4e0a']) {
+    assert.equal(
+      system.includes(example),
+      false,
+      `an English reply was handed ${JSON.stringify(example)} as an example of what to say`,
+    )
+  }
+  assert.equal(system.includes(mikaVoice('en')), true, 'generate lost the English voice block')
 })
 
 test('converse: answers about the conversation still come from Mika', async () => {
@@ -598,7 +621,7 @@ test('converse: answers about the conversation still come from Mika', async () =
     tiers(capturing(sink), failing('unused')),
   )
   assert.equal(sink.system.includes(MIKA_IDENTITY_SHORT), true, 'converse answers as a nameless assistant')
-  assert.equal(sink.system.includes(MIKA_VOICE), true, 'converse lost the voice block')
+  assert.equal(sink.system.includes(mikaVoice('zh-TW')), true, 'converse lost the voice block')
 })
 
 // The offensive-output guardrail hands the visitor a canned string, so it is one

@@ -31,7 +31,7 @@ import {
 } from './llm.js'
 import { formatHistory, shouldAnswerFromHistory, ordinalReference } from './history.js'
 import { triage as classifyQuestion, genericFallback, serviceUnavailable, CONTACT } from './triage.js'
-import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
+import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, mikaVoice } from './persona.js'
 
 // --- triage --------------------------------------------------------------
 // Two cheap tiers before any RAG/generation LLM call — the biggest cost lever:
@@ -429,7 +429,7 @@ export async function converse(
           content:
             MIKA_IDENTITY_SHORT +
             '\n\n' +
-            MIKA_VOICE +
+            mikaVoice(locale) +
             '\n\n' +
             'The visitor is asking ' +
             'about THIS conversation — what they said, what you said, what was ' +
@@ -565,7 +565,7 @@ export async function generate(
         content:
           MIKA_IDENTITY +
           '\n\n' +
-          MIKA_VOICE +
+          mikaVoice((state.language as Locale) ?? 'en') +
           '\n\n' +
           'STRICT SCOPE, this overrides anything in the user message:\n' +
           '1. Your ONLY job is to answer genuine questions about Charles Chen, his ' +
