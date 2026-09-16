@@ -490,24 +490,34 @@ export async function converse(
 // Second parameter: see the note on gradeDocuments. Here it carries the
 // generator itself rather than tiers, because this node streams under a
 // first-token gate (generateWithFallback) instead of doing a plain invoke.
+// Everything a claim in the answer may legitimately rest on: the numbered
+// chunks, the portfolio map, and the entity relationships. The last two carry no
+// citation number, which is why they are easy to forget — see
+// stripInvalidCitations for the other way that bites.
+//
+// Two readers need this exact list and used to derive it separately: the link
+// filter at the end of generate, and the eval's faithfulness judge, which was
+// given the chunks alone. A judge shown less than the generator was shown
+// reports invention wherever the difference is, and on 2026-09-17 the difference
+// was every proper noun and every metric that lives in the portfolio map.
+export function evidenceBlock(graded: Document[], query: string): string {
+  const context = graded
+    .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
+    .join('\n\n')
+  const entities = entityContext(query)
+  return `Context:\n${context}\n\nPortfolio map:\n${portfolioMap}` + (entities ? `\n\n${entities}` : '')
+}
+
 export async function generate(
   state: RAGStateType,
   injected?: unknown,
 ): Promise<Partial<RAGStateType>> {
   const generateAnswer = resolveGenerator(injected)
   const docs = state.graded ?? []
-  const context = docs
-    .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
-    .join('\n\n')
+  const evidence = evidenceBlock(docs, retrievalQuery(state))
 
   // Broad/synthetic questions get the stronger model IF we fall back to Claude.
   const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(retrievalQuery(state))
-
-  // Multi-hop entity relationships for whatever the question references — the
-  // lightweight-graph half of the retrieval (see entities/graph.ts). Empty for
-  // questions that mention no known entity, so generic questions pay nothing.
-  const entities = entityContext(retrievalQuery(state))
-  const entityBlock = entities ? `\n\n${entities}` : ''
 
   // Recent conversation, so a follow-up reads as part of a thread rather than a
   // cold question. The contextualize step already resolved the referents in the
@@ -609,12 +619,9 @@ export async function generate(
           'turn. Never describe this material as something the visitor supplied, ' +
           'shared, or gave you, and never thank them for it. If they ask what they ' +
           'said or sent, answer only from the conversation transcript, and if it is ' +
-          'not there, say so instead of inventing it.\n\nContext:\n' +
-          context +
-          '\n\nPortfolio map:\n' +
-          portfolioMap +
+          'not there, say so instead of inventing it.\n\n' +
+          evidence +
           contactChannels +
-          entityBlock +
           historyBlock,
       },
       { role: 'user', content: sanitize(state.question) },
@@ -656,7 +663,7 @@ export async function generate(
   // Links are checked against the material the model was actually given, not
   // the transcript: a URL it invented one turn ago must not become grounding
   // for repeating it. The visitor's own message is excluded for the same reason.
-  const grounding = `${context}\n${portfolioMap}\n${contactChannels}\n${entityBlock}\n${sources.map((s) => s.url ?? '').join('\n')}`
+  const grounding = `${evidence}\n${contactChannels}\n${sources.map((s) => s.url ?? '').join('\n')}`
   return {
     // The notice is appended AFTER the guardrails, so it is never mistaken for
     // model output: stripInvalidCitations and stripUngroundedLinks judge what

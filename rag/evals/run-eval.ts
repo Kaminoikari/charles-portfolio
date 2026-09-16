@@ -19,6 +19,7 @@ import { pathToFileURL } from 'node:url'
 
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
+import { evidenceBlock } from '../nodes.js'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory } from './golden.js'
 import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
@@ -152,9 +153,11 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const answerText = final.answer ?? ''
         const ids = (final.sources ?? []).map((s) => s.id)
         const graded = final.graded ?? []
-        const ctx = graded
-          .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
-          .join('\n\n')
+        // The SAME list the generator was given (nodes.ts). Judging against the
+        // chunks alone reported every claim resting on the portfolio map or the
+        // entity block as invention, which on 2026-09-17 was most of the
+        // ungrounded verdicts in a full run.
+        const ctx = graded.length === 0 ? '' : evidenceBlock(graded, final.queries?.at(-1) ?? question)
         // A claim is judged in whatever language the answer is written, so the
         // same one declaration serves all three locales. scoreCorrectness throws
         // if an item carries a claim and this is still null, which is the only

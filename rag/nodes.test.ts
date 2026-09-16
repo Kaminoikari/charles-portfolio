@@ -568,6 +568,7 @@ test('generate: an answer that finished normally carries no such notice', async 
 // itself as a nameless "portfolio assistant", one turn after she had said her
 // own name (docs/plans/mika-persona.md).
 import { JA_POLITE_ENDING, MIKA_IDENTITY, MIKA_IDENTITY_SHORT, mikaVoice } from './persona.js'
+import { evidenceBlock } from './nodes.js'
 
 // A tier that answers like `answering` but keeps the messages it was handed.
 const capturing = (sink: { system: string }, content = 'ok'): Tier => ({
@@ -763,4 +764,42 @@ test('unavailable: answers in the visitor language and is labelled as an outage'
     assert.equal(res.answer, serviceUnavailable(locale))
     assert.notEqual(res.answer, genericFallback(locale), `outage reply equals the corpus-gap reply in ${locale}`)
   }
+})
+
+// --- one definition of what a claim may rest on -----------------------------
+// The generator is handed three kinds of evidence: the numbered chunks, the
+// portfolio map, and the entity relationships. The eval's faithfulness judge was
+// handed only the first, so every claim resting on the other two read as
+// invention. On 2026-09-17 that was most of the ungrounded verdicts in a full
+// run: the employer names and every metric the verdicts called invented are all
+// in rag/portfolio-map.ts, which the generator gets and the judge did not.
+//
+// So the list has one definition now. These two tests are the halves that used
+// to drift: what the definition contains, and that generate is actually built
+// from it rather than assembling its own copy.
+
+test('evidenceBlock: carries the chunks and the portfolio map', () => {
+  const block = evidenceBlock(
+    [new Document({ pageContent: 'he led the parking product', metadata: { sourceType: 'experience' } })],
+    'what did he do at USPACE',
+  )
+  assert.match(block, /\[1\] \(experience\) he led the parking product/)
+  assert.match(block, /Portfolio map:/)
+  assert.match(block, /Charles Chen/, 'the portfolio map itself must be in the block, not just its heading')
+})
+
+test('generate: the prompt is built from that one definition', async () => {
+  const docs = [new Document({ pageContent: 'USPACE for Business', metadata: { sourceType: 'project' } })]
+  let system = ''
+  await generate({ question: 'what is USPACE for Business?', language: 'en', graded: docs, queries: ['USPACE for Business'] } as never, async (
+    messages: { role: string; content: string }[],
+  ) => {
+    system = messages[0].content
+    return { text: 'ok', provider: 'gemini' as const, stalled: false }
+  })
+  assert.equal(
+    system.includes(evidenceBlock(docs, 'USPACE for Business')),
+    true,
+    'generate assembles its own evidence instead of the shared definition, so the judge can drift from it',
+  )
 })
