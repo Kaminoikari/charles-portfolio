@@ -132,10 +132,19 @@ export const config = {
   // sentence FRAME, so 「Charles 在 NUEIP 做什麼?」 landed on the general career
   // summary rather than the NUEIP entry — the proper noun that is the entire
   // difference between those two questions barely moves a sentence embedding,
-  // while it is exactly what IDF weights. OFF until an eval run shows it removes
-  // those misfires without costing cache hits, the same bar contextual retrieval
-  // was held to. Requires the FAQ collection to carry sparse vectors.
-  faqSparseVeto: bool('RAG_FAQ_SPARSE_VETO', false),
+  // while it is exactly what IDF weights.
+  //
+  // ON since 2026-09-16, on the measurement it was gated behind (corrective arm,
+  // 123 questions: run 35077918161 off, run 35082510355 on). It fired 5 times,
+  // the first two being exactly the known misfires; it removed the wrong answer
+  // about NUEIP, introduced no new one, and lifted correctness from 96.7% to
+  // 97.6%. The cost is real and it is cache hits: 28 → 23, so about one in six
+  // cached answers now pays for a generation instead. That trade is deliberate —
+  // a confident wrong answer costs more than a cache miss, which still answers
+  // correctly through RAG. Flip it back if generation cost becomes the binding
+  // constraint, or if the faqveto log starts naming entries that were right.
+  // Requires the FAQ collection to carry sparse vectors.
+  faqSparseVeto: bool('RAG_FAQ_SPARSE_VETO', true),
   faqVetoK: int('RAG_FAQ_VETO_K', 5),
 
   // --- query embedding cache ---

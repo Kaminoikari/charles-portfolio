@@ -186,10 +186,12 @@ doc_chunks                              # the hybrid index — 1,074 chunks (en/
 
 faq_cache                               # semantic cache — 838 paraphrases / 57 entries
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large (query-encoded)
+  sparse_vectors: { sparse: { modifier: idf } }                 # BM25, consulted as a veto
   payload index:  locale (keyword)
-  payload:        { topic_id, locale, question, answer }        # answer is pre-written, returned verbatim
+  payload:        { faq_id, locale, question, answer }          # answer is pre-written, returned verbatim
   matched at:     cosine ≥ 0.7 (RAG_FAQ_THRESHOLD) AND a gap > 0.02 (RAG_FAQ_MARGIN)
                   over the best candidate from another entry, locale-filtered → 0 generation LLM
+                  AND the BM25 arm ranks that entry at all (RAG_FAQ_SPARSE_VETO)
 
 chat_logs                               # free product insight: what recruiters ask
   vectors:        { dense: { size: 1, distance: Cosine } }      # size-1 dummy [1] — never searched, only scrolled

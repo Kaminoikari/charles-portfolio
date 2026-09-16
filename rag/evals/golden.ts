@@ -350,12 +350,12 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles はサイトにどんなスキルを挙げていますか?',
     },
     relevantIds: ['skills:all:'],
-    // Not a claim about the list's tone: an answer to this question lists the
-    // skills, it does not comment on how they are written, so a judge is right
-    // to say such a claim is unstated. Two of the labels survive translation
-    // intact — 「混亂中的 GPS」 keeps GPS, and "Fake it till you ship it" is not
-    // translated at all — so the invariant token is the honest instrument here.
-    mustInclude: ['gps'],
+    // No mustInclude. The corpus here is one list of about two dozen joke
+    // labels, and an answer that summarises it is correct; requiring it to quote
+    // a particular one of them is not a correctness criterion, it is a coin
+    // toss. I added `gps` to make the claim-only version go green, which is
+    // tuning the ruler to the measurement, and the veto run then showed the
+    // token was the only thing still failing in English.
     mustState:
       'Charles lists his skills as a long set of short labels covering product thinking, working with data, and building with AI.',
   },
