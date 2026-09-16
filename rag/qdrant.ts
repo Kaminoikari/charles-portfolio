@@ -86,6 +86,20 @@ export async function ensureCollections(): Promise<void> {
       field_name: 'locale',
       field_schema: 'keyword',
     })
+  } else {
+    // The collection predates the sparse arm. createCollection above only runs
+    // for a collection that does not exist, so without this the config change
+    // would apply to a fresh index and to nobody's production one — the veto
+    // would query a vector field that is not there and quietly find nothing,
+    // which reads exactly like "the lexical arm had no opinion".
+    const info = await db.getCollection(config.qdrantFaqCollection)
+    const sparse = info.config?.params?.sparse_vectors ?? {}
+    if (!(SPARSE in sparse)) {
+      console.log(`Adding the ${SPARSE} vector to ${config.qdrantFaqCollection} …`)
+      await db.updateCollection(config.qdrantFaqCollection, {
+        sparse_vectors: { [SPARSE]: { modifier: 'idf' } },
+      })
+    }
   }
 }
 
