@@ -59,9 +59,37 @@ test('byCategory: averages within a category and reports how many items it saw',
     { category: 'single-fact', recall: 1 },
   ])
   assert.deepEqual(out, [
-    { category: 'near-miss', recall: 0.5, n: 2 },
-    { category: 'single-fact', recall: 1, n: 1 },
+    { category: 'near-miss', recall: 0.5, correctness: null, n: 2 },
+    { category: 'single-fact', recall: 1, correctness: null, n: 1 },
   ])
+})
+
+test('byCategory: correctness is split out too, because recall cannot see a near-miss', () => {
+  // The whole point of the near-miss pairs, and the live run proved it: the
+  // sibling's chunk IS a relevant id, so retrieving the wrong one of the pair
+  // scores full recall while the answer states the other company's number.
+  // Correctness is the only column where that shows, so a table without it
+  // cannot report on the category it was added for.
+  const out = byCategory([
+    { category: 'near-miss', recall: 1, correctness: 1 },
+    { category: 'near-miss', recall: 1, correctness: 0 },
+    { category: 'single-fact', recall: 1, correctness: 1 },
+  ])
+  assert.deepEqual(out, [
+    { category: 'near-miss', recall: 1, correctness: 0.5, n: 2 },
+    { category: 'single-fact', recall: 1, correctness: 1, n: 1 },
+  ])
+})
+
+test('byCategory: an arm that generates no answer reports no correctness, not zero', () => {
+  // The retrieval arms never generate, so they have nothing to be correct about.
+  // Averaging their absent correctness as 0 would print three arms failing every
+  // category next to the one arm that actually answered.
+  const out = byCategory([
+    { category: 'global', recall: 1 },
+    { category: 'global', recall: 0, correctness: 1 },
+  ])
+  assert.deepEqual(out, [{ category: 'global', recall: 0.5, correctness: 1, n: 2 }])
 })
 
 test('byCategory: a category that collapses does not hide inside the overall mean', () => {

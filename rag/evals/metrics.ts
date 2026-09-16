@@ -66,7 +66,7 @@ export interface Aggregate {
   // whole split exists for: a near-miss item is answerable, so retrieving its
   // SIBLING still counts as a hit and the aggregate stays flat while the index
   // quietly becomes confusable.
-  categories: { category: string; recall: number; n: number }[]
+  categories: { category: string; recall: number; correctness: number | null; n: number }[]
 }
 
 export function mean(xs: number[]): number {

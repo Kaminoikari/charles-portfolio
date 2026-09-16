@@ -57,22 +57,34 @@ function arg(flag: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 
-// Per-category recall, so a category that regresses cannot be absorbed by the
-// mean. It exists for `near-miss`: those items are answerable, so a retriever
-// that returns the SIBLING question's chunk still looks fine in the overall
-// number while answering the wrong question. Split out, they are the column that
-// moves when the index gets confusable.
+// Per-category scores, so a category that regresses cannot be absorbed by the
+// mean. It exists for `near-miss`, and the 2026-09-16 run showed that recall
+// alone cannot serve it: the sibling's chunk IS one of the item's relevant ids,
+// so retrieving the wrong one of the pair scores 100% recall while the answer
+// quotes the other company's number. Correctness is the column where that shows,
+// which is why it is split out alongside recall rather than left to the mean.
+//
+// Correctness is null, not 0, for a category no arm answered. The retrieval arms
+// never generate, so averaging their absence as failure would print three arms
+// flunking every category beside the one arm that actually answered.
 export function byCategory(
-  hits: { category: EvalCategory; recall: number }[],
-): { category: EvalCategory; recall: number; n: number }[] {
-  const groups = new Map<EvalCategory, number[]>()
+  hits: { category: EvalCategory; recall: number; correctness?: number }[],
+): { category: EvalCategory; recall: number; correctness: number | null; n: number }[] {
+  const groups = new Map<EvalCategory, { recall: number[]; correctness: number[] }>()
   for (const h of hits) {
-    const g = groups.get(h.category) ?? []
-    g.push(h.recall)
+    const g = groups.get(h.category) ?? { recall: [], correctness: [] }
+    g.recall.push(h.recall)
+    if (h.correctness !== undefined) g.correctness.push(h.correctness)
     groups.set(h.category, g)
   }
+  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
   return [...groups.entries()]
-    .map(([category, rs]) => ({ category, recall: rs.reduce((a, b) => a + b, 0) / rs.length, n: rs.length }))
+    .map(([category, g]) => ({
+      category,
+      recall: avg(g.recall),
+      correctness: g.correctness.length > 0 ? avg(g.correctness) : null,
+      n: g.recall.length,
+    }))
     .sort((a, b) => a.category.localeCompare(b.category))
 }
 
@@ -81,7 +93,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
   const mrr: number[] = []
   const corr: number[] = []
   const faith: number[] = []
-  const perItem: { category: EvalCategory; recall: number }[] = []
+  const perItem: { category: EvalCategory; recall: number; correctness?: number }[] = []
 
   for (const locale of locales) {
     for (const item of GOLDEN) {
@@ -101,10 +113,12 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const final = await graph.invoke({ question, language, queries: [question] })
         const answerText = final.answer ?? ''
         const ids = (final.sources ?? []).map((s) => s.id)
-        recall.push(recallAtK(ids, relevant))
-        perItem.push({ category: item.category, recall: recallAtK(ids, relevant) })
+        const r = recallAtK(ids, relevant)
+        const c = correctness(answerText, item)
+        recall.push(r)
+        perItem.push({ category: item.category, recall: r, correctness: c })
         mrr.push(reciprocalRank(ids, relevant))
-        corr.push(correctness(answerText, item))
+        corr.push(c)
         const graded = final.graded ?? []
         const ctx = graded
           .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
@@ -180,9 +194,24 @@ function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
       return `| ${arm} | ${cells.join(' | ')} |`
     }),
     '',
+    '### Correctness by category',
+    '',
+    '| Arm | ' + categoriesOf(rows).join(' | ') + ' |',
+    '|---|' + categoriesOf(rows).map(() => '---').join('|') + '|',
+    ...rows.map(({ arm, agg }) => {
+      const byName = new Map(agg.categories.map((c) => [c.category, c]))
+      const cells = categoriesOf(rows).map((c) => {
+        const hit = byName.get(c)
+        return hit && hit.correctness !== null ? `${pct(hit.correctness)} (${hit.n})` : '—'
+      })
+      return `| ${arm} | ${cells.join(' | ')} |`
+    }),
+    '',
     '> `near-miss` items have a sibling question with the same shape and a',
-    '> different fact. They are the column that moves when retrieval starts',
-    '> confusing the two; the overall recall above cannot show it.',
+    '> different fact. Watch them in THIS table, not the one above: the sibling',
+    '> chunk is one of the item\'s own relevant ids, so retrieving the wrong one',
+    '> of the pair still scores full recall while the answer quotes the other',
+    '> company\'s number. Correctness is where the confusion surfaces.',
   ].join('\n')
 }
 
