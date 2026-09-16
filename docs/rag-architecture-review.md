@@ -298,3 +298,128 @@ LLM-as-judge faithfulness）· LangSmith 選配 · `rag/insights/`（chat_logs �
 prompt caching · 無 LangChain VectorStore/Retriever 包裝（直接用 Qdrant client
 取伺服器端 RRF）· 無 tokenizer（以字元計長）· 無 SPLADE++（付費；BM25 對
 多語長 chunk 更合適）
+
+---
+
+# 後續處置（2026-09-16）
+
+本節記錄依上述評審所做的修改。評審本身維持 2026-09-15 的原貌，不回頭改寫：
+它是那天的判斷，而下面是對它的回應。實作 commit 範圍 `ceafc7a..HEAD`。
+
+## §7 建議優先序
+
+| # | 建議 | 狀態 | 落點 |
+|---|---|---|---|
+| 1 | rerank 失敗降級為純 RRF | 已修 | `rag/retrieval.ts` `retrieveWith` |
+| 2 | FAQ cache 加 margin check | 已修，但**不是** top-2 | `rag/qdrant.ts` `faqLookup` |
+| 3 | portfolio-map ↔ src/data 一致性測試 | 已修 | `rag/portfolio-map.test.ts` |
+
+次一階四項（PR CI、golden set hard negatives、query embedding LRU、
+`nodes.ts:retrieve` 的 catch）也一併做完，見下。
+
+## §4.1 FAQ cache —— 建議本身有一個會反噬的前提
+
+評審寫的是「`limit: 2` 並加 margin check：`top1.score - top2.score > δ`」。
+照字面實作會**擋掉覆蓋最好的那些 FAQ**。
+
+原因在寫入端：`rag/ingest/build-faq-cache.ts` 是 **每個 (entry × locale ×
+paraphrase) 一個 point**，57 則 entry 攤成 838 個 point，單一 entry 最多有 14
+句改寫（`exp-history` 的 zh-TW）。所以一則 FAQ 被問到最對口的問法時，回來的
+top-2 往往是**它自己的兩句改寫**，faq_id 相同、答案相同、分數只差千分之幾。
+把那當成 ambiguity，等於 paraphrase 寫得越多的 entry 越容易自我封鎖，而 paraphrase
+多正是為了提高覆蓋率。
+
+實際採用的規則：**跟「不同 faq_id 的最佳候選」比**。窗口因此不是 2 而是
+`config.faqCandidateK = 16`，必須大於單一 entry 的最大改寫數，否則競爭主題根本
+進不了比較；`rag/qdrant.test.ts` 有一條測試拿真實語料算出那個最大值來釘住窗口，
+所以往後替某則 entry 加改寫句不會悄悄追過窗口。
+
+門檻 `RAG_FAQ_MARGIN` 預設 0.02，是**未經線上分數分佈驗證的起始值**（本機沒有
+Voyage key）。`faqprobe` log 現在每次都印 top、rival、gap 與兩個門檻，調整時有
+實據可依。
+
+## §4.2 檢索層 —— 只關掉一半，另一半是刻意留的
+
+`retrieveWith` 的 rerank 失敗現在降級成純 RRF 排序，也就是 ablation 的 `hybrid`
+arm 量過的那個排序（`docs/rag-ablation-report.md`：MRR 0.721 對 0.880，recall 都
+是 100%），所以降級的代價是量過的，不是猜的。
+
+**embedding 那條路徑仍然是單點**：`embedOne` 在 `fetchCandidates` 裡，Voyage 整體
+中斷時 `retrieveWith` 依然會拋。這是刻意的 —— 候選集是空的時候沒有東西可降級，
+回傳空集合會讓 grade 花一次 LLM 呼叫去得到「沒有資料」，訪客會被告知作品集裡
+沒有這題的內容。那是一句關於 Charles 的假話，而且會留在對話記錄裡被下一輪引用。
+
+那個例外改由 graph 處理：`retrieve` 節點捕捉失敗並設 `retrievalFailed`，
+`routeAfterRetrieve` 直接繞過 grade 與 corrective loop 走到新的 `unavailable`
+節點，回一句承認是我方故障、請稍後再試的話（`rag/triage.ts` `serviceUnavailable`，
+三語）。新的 outcome `unavailable` 與 `fallback` 分開記進 chat_logs：後者是語料
+缺口，屬於 backlog；前者是事故，不屬於任何人的 backlog。
+
+附帶做掉的是評審提到的 query embedding 快取：一則訪客訊息在熱路徑上至少被 embed
+兩次（triage 探 FAQ 一次、retrieve 的 dense arm 一次），同字串同 input_type。
+`rag/embeddings.ts` 加了一個上限 64 的行程內 memo，以 input_type 為 key 的一部分
+（Voyage 對 query 與 document 的編碼不同，共用會靜默污染索引），失敗不入快取。
+
+## §4.3 golden set 飽和 —— 加了題，但還沒有新的量測
+
+golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在評審指出的方向：
+
+- **fragment-dependent**：3 題釘 `blog:<slug>:body:`，標題 chunk 滿足不了，
+  逼出正文檢索。部落格正文佔語料三分之二，先前 5 題全都是標題 chunk 就能中的。
+- **agentic design patterns**：4 題。22 個 chunk 先前**一題都沒有**，而它們
+  只有 chatbot 讀得到（站上沒有頁面渲染），檢索是唯一入口。
+- **skills chunk**：1 題。先前不可達。
+- **near-miss 配對（hard negatives）**：4 題，兩組。同一個句型換一個名詞、答案是
+  不同的數字（NUEIP +40% 對 PXPay +25%；FLUX 帶 10 人對 USPACE 帶 15 人）。
+  這類題目的意義在於 recall 看不出問題：檢索回「兄弟題」的 chunk 照樣算命中，
+  於是 correctness 與 recall 在這裡才會分開。它同時是 §4.1 那道 margin 的量測基準。
+
+`EvalCategory` 因此多了 `near-miss`，而且 eval 報表多一張**分類 recall 表**，
+否則新分類只是註解、沒有證明面。
+
+**還沒做的是重新量。** 需要 Voyage 與 Qdrant 金鑰，得跑 `RAG Eval` workflow；
+在那之前，「新題目是否讓 benchmark 重新具備鑑別力」仍然是未驗證的假設。
+
+## §4.4 eval 沒有在守門 —— 兩層都補上
+
+- **PR CI**（`.github/workflows/ci.yml`）：pull_request 與 push to main 都跑
+  lint、`npm run build`（`tsc -b`，涵蓋測試檔）、`npm run rag:test`、`npm test`。
+  全部離線、不需要任何 secret。先前這些只在本機跑過。
+- **ingest 後的回歸閘門**（`rag-ingest.yml` 新增 `eval-gate` job）：內容 push 重建
+  生產索引之後，對剛建好的索引跑 retrieval-only eval，`--min-recall 0.95` 不到就
+  讓整個 run 失敗。門檻取 0.95 是因為三個 arm 現況都是 100%，留一題的容錯、不留
+  崩盤的空間。它是地板不是差分：2% 的緩慢滑落要靠手動 `RAG Eval` 與 ablation 表看。
+  只守 `doc_chunks`，A/B 用的實驗 collection 與 dry run 都跳過。
+
+## §4.5 手工同步面 —— 四處裡釘住一處
+
+`rag/portfolio-map.ts` 已由 `rag/portfolio-map.test.ts` 綁回 `src/data`：專案與
+雇主的存在與不存在、每條連結、每個雇主的起始年份，以及**map 引用的每一個數字**
+（7 個百分比與「team of N」全是從 `src/data` 逐字抄來的，所以可以逐字比對）。
+評審在這點上是對的：先前那份測試的註解宣稱「役割的描述無從比對」，而承載數字的
+正是那幾行。
+
+**另外三處仍未釘住**：`rag/entities/relations.json`、`rag/faq-cache.ts` 的 838 條
+答案、`rag/triage.ts` 的 `CONTACT`。這三個沒有現成的逐字對應可比，要釘得先決定
+「什麼算一致」，不在這一輪。
+
+## §4.6 RateLimiter
+
+未動。評審的判斷（此流量規模下不構成風險，且程式碼已誠實註記限制）成立。
+
+## 順手更正的過期敘述
+
+改了行為就會讓描述它的散文變假，所以同一輪掃了一次：
+
+- `docs/rag-chatbot-design.md` 三處把 FAQ 命中寫成單一 cosine 門檻，已補上 margin。
+- 同一份文件的語料計數過期：`755 paraphrases / 52 topics` 實際是 **838 / 57**，
+  `309 doc chunks` 實際是 **1,074**（本 commit 量的）；ingest 早已改成 push 觸發，
+  文件仍寫 `workflow_dispatch`。
+- `docs/portfolio-rag-roadmap.md` 的語意快取那列同樣只寫了門檻。
+
+## 已知仍未覆蓋的缺口
+
+- FAQ margin 的 0.02 沒有線上分數分佈佐證。
+- 擴充後的 golden set 沒有跑過一次 eval，§4.3 是否真的恢復鑑別力未知。
+- `rag/insights/collect.ts` 新增的 outage 計數沒有測試：`gatherInsights` 直接打
+  Qdrant，沒有注入點，補 seam 的改動比這一輪該有的大。
