@@ -26,6 +26,7 @@ import {
   recallAtK,
   reciprocalRank,
   correctness,
+  correctnessMiss,
   mean,
   type Aggregate,
 } from './metrics.js'
@@ -152,6 +153,11 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
           correctness: correctness(answerText, item),
           faithfulness: (await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0,
         })
+        // Say why, next to the miss. Without this the only debuggable number
+        // this arm produced was the category mean, and a mean cannot tell a bad
+        // answer from a rule that asks an English word of a Japanese answer.
+        const why = correctnessMiss(answerText, item)
+        if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why}`)
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
         // correctness/faithfulness are not applicable (left out of their means).

@@ -71,6 +71,23 @@ const cannedDeclines = () =>
   DECLINE_LOCALES.flatMap((l) => [personalRedirect(l), genericFallback(l)])
 const outageReplies = () => DECLINE_LOCALES.map((l) => serviceUnavailable(l))
 
+// Why an item scored 0, in the form the eval log prints. The corrective arm used
+// to print nothing per item, so a category resting at 66% could only be
+// explained by re-deriving the failures by hand — and the explanation turned out
+// to be about the RULES, not the answers: a mustInclude of one English word is
+// checked against answers generated in three languages, so 「結果重於產出」, a
+// correct rendering of "outcomes over outputs", scores as wrong.
+export function correctnessMiss(
+  answer: string,
+  rules: { mustInclude?: string[]; mustDecline?: boolean },
+): string | null {
+  if (rules.mustDecline) return declinesAnswer(answer) ? null : 'did not decline'
+  if (!rules.mustInclude || rules.mustInclude.length === 0) return null
+  const a = answer.toLowerCase()
+  const absent = rules.mustInclude.filter((sub) => !a.includes(sub.toLowerCase()))
+  return absent.length > 0 ? `missing: ${absent.join(', ')}` : null
+}
+
 // Did the answer honestly say the portfolio does not cover this?
 export function declinesAnswer(answer: string): boolean {
   const a = answer.trim()

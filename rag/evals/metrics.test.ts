@@ -4,7 +4,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallAtK, reciprocalRank, correctness, declinesAnswer, DECLINE_MARKERS } from './metrics.js'
+import {
+  recallAtK,
+  reciprocalRank,
+  correctness,
+  declinesAnswer,
+  correctnessMiss,
+  DECLINE_MARKERS,
+} from './metrics.js'
 import { personalRedirect, genericFallback, serviceUnavailable } from '../triage.js'
 
 test('recallAtK: hit when a relevant prefix matches', () => {
@@ -89,4 +96,28 @@ test('declinesAnswer: a generated decline still counts, and a real answer does n
 test('correctness: a mustDecline item is scored by the same rule', () => {
   assert.equal(correctness(personalRedirect('en'), { mustDecline: true }), 1)
   assert.equal(correctness(serviceUnavailable('en'), { mustDecline: true }), 0)
+})
+
+test('correctnessMiss: names the substrings that were absent', () => {
+  // The corrective arm printed no per-item detail, so a category sitting at 66%
+  // could not be debugged without re-deriving which items failed by hand. The
+  // reason belongs next to the miss.
+  assert.equal(correctnessMiss('He led a 15-person team.', { mustInclude: ['15'] }), null)
+  assert.equal(
+    correctnessMiss('結果重於產出。', { mustInclude: ['outcome'] }),
+    'missing: outcome',
+  )
+  assert.equal(
+    correctnessMiss('nothing relevant', { mustInclude: ['alpha', 'beta'] }),
+    'missing: alpha, beta',
+  )
+})
+
+test('correctnessMiss: a mustDecline item that answered says so', () => {
+  assert.equal(correctnessMiss(personalRedirect('en'), { mustDecline: true }), null)
+  assert.equal(correctnessMiss('He is 34.', { mustDecline: true }), 'did not decline')
+})
+
+test('correctnessMiss: an item with no rule can never miss', () => {
+  assert.equal(correctnessMiss('anything', {}), null)
 })
