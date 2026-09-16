@@ -224,6 +224,14 @@ export function experienceChunks(items: ExperienceInput[], locale: string): Chun
   })
 }
 
+// The skills list has no heading in src/data, so one is supplied here, per
+// locale: a visitor asking in Japanese needs スキル in the text, not Skills.
+const SKILLS_HEADING: Record<string, string> = {
+  en: 'Skills Charles lists on his site',
+  'zh-TW': 'Charles 在網站上列出的技能',
+  ja: 'Charles がサイトに挙げているスキル',
+}
+
 export async function extractAll(): Promise<ChunkRecord[]> {
   const out: ChunkRecord[] = []
 
@@ -277,7 +285,21 @@ export async function extractAll(): Promise<ChunkRecord[]> {
     out.push(...experienceChunks(experience.experience, locale))
 
     // ── skills (single rolled-up chunk — each item is tiny) ──
-    out.push({ id: `skills:all:${locale}`, parentId: null, sourceType: 'skill', projectId: null, locale, title: 'Skills', content: skills.skills.map((s: { name: string }) => s.name).join('; ') })
+    // The heading is part of the CONTENT, not just the title, because content is
+    // what gets embedded and what BM25 indexes. The labels are jokes — "GPS for
+    // chaos", "Professional cat herding" — so without a line saying what they
+    // are, the chunk contains the word for its own topic in no language, and
+    // neither retrieval arm can reach it. It could not, and the bot told
+    // visitors the site has no skills section.
+    out.push({
+      id: `skills:all:${locale}`,
+      parentId: null,
+      sourceType: 'skill',
+      projectId: null,
+      locale,
+      title: SKILLS_HEADING[locale] ?? SKILLS_HEADING.en,
+      content: `${SKILLS_HEADING[locale] ?? SKILLS_HEADING.en}\n${skills.skills.map((s: { name: string }) => s.name).join('; ')}`,
+    })
 
     // ── changelog (one chunk per entry) ──
     changelog.changelog.forEach((c: { id: string; date: string; title: string; body: unknown[] }) =>

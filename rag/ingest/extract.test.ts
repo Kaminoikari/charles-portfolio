@@ -13,6 +13,7 @@ import assert from 'node:assert/strict'
 
 import {
   aboutChunks,
+  extractAll,
   blogChunks,
   blogSlug,
   experienceChunks,
@@ -20,6 +21,8 @@ import {
   type BlogArticleInput,
   type ExperienceInput,
 } from './extract.js'
+
+const CHUNKS = await extractAll()
 import { blogArticles } from '../../src/data/blog.en.ts'
 import { aboutContent } from '../../src/data/aboutContent.en.ts'
 import { aboutContent as aboutContentZh } from '../../src/data/aboutContent.zh-TW.ts'
@@ -159,4 +162,27 @@ test('a URL with no usable slug characters still yields a stable non-empty id', 
   assert.ok(slug.length > 0)
   assert.equal(slug, blogSlug(url))
   assert.notEqual(slug, blogSlug('https://example.com/%E6%97%A5%E6%9C%AC%E8%AA%9E'))
+})
+
+test('every chunk names its own topic in the text that gets embedded', () => {
+  // The skills chunk was a bare list of jokes — "GPS for chaos; Professional cat
+  // herding" — with the word skills nowhere in it. Every other chunk type folds
+  // its title into the content; that one did not, so neither retrieval arm could
+  // reach it: the dense arm had no topic to be near and BM25 had no term to
+  // weigh. Asked "what skills does Charles list on his site?", the bot retrieved
+  // about/changelog chunks instead and answered that the site has no skills
+  // section, which is false and was live.
+  const topic: Record<string, string[]> = {
+    en: ['skill'],
+    'zh-TW': ['技能'],
+    ja: ['スキル'],
+  }
+  const missing: string[] = []
+  for (const c of CHUNKS.filter((x) => x.sourceType === 'skill')) {
+    const words = topic[c.locale] ?? []
+    if (!words.some((w) => c.content.toLowerCase().includes(w.toLowerCase()))) {
+      missing.push(`${c.id}: content never says ${words.join('/')}`)
+    }
+  }
+  assert.deepEqual(missing, [])
 })
