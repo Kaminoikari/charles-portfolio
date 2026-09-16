@@ -21,6 +21,7 @@ import { config } from './config.js'
 function makeNodes(
   grades: Array<'generate' | 'rewrite' | 'off_topic'>,
   triageRoute = 'retrieve',
+  retrievalFails = false,
 ): {
   nodes: NodeSet
   counts: {
@@ -48,7 +49,9 @@ function makeNodes(
     },
     retrieve: async () => {
       counts.retrieve++
-      return { documents: [doc], retrievalFailed: false }
+      return retrievalFails
+        ? { documents: [], retrievalFailed: true }
+        : { documents: [doc], retrievalFailed: false }
     },
     unavailable: async () => {
       counts.unavailable++
@@ -384,7 +387,7 @@ test('a healthy retrieval still goes to grading', () => {
   assert.equal(routeAfterRetrieve({ retrievalFailed: true } as never), 'unavailable')
 })
 
-test('the graph builds exactly the nodes it declares, and every one is traceable', () => {
+test('the graph wires every node it declares', () => {
   // GRAPH_NODES is the single definition the NodeSet type, the GraphNodeId union
   // and the trace allow-list all derive from, so the three cannot drift apart.
   // What a list cannot enforce is that buildGraph actually wires each of them —
@@ -393,4 +396,22 @@ test('the graph builds exactly the nodes it declares, and every one is traceable
   for (const id of GRAPH_NODES) {
     assert.ok(wired.includes(id), `${id} is declared but never added to the graph`)
   }
+})
+
+test('trace: a node that only runs on the outage route still reports itself', async () => {
+  // The allow-list deriving from GRAPH_NODES is only half the guarantee; the
+  // other half is that the streaming path consults it, and that half is what
+  // shipped broken last time — `unavailable` ran and answered correctly while
+  // never appearing in the trace. Every other trace test takes the happy route,
+  // so this is the only place a node reachable solely through the outage branch
+  // is watched. It drives streamAnswer, not the allow-list directly, because a
+  // filter nobody calls would satisfy an assertion made against the set itself.
+  const { nodes, counts } = makeNodes(['generate'], 'retrieve', true)
+  const events = await drain(streamAnswer('What did he do at USPACE?', [], buildGraph(nodes), stubDeps().deps))
+  const starts = nodeEvents(events)
+    .filter((e) => e.status === 'start')
+    .map((e) => e.id)
+
+  assert.equal(counts.unavailable, 1, 'the outage route did not reach the node')
+  assert.deepEqual(starts, ['triage', 'retrieve', 'unavailable'])
 })
