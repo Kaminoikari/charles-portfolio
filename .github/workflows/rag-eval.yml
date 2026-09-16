@@ -40,6 +40,10 @@ on:
         description: 'Run only the deterministic retrieval arms (skip the corrective/LLM arm)'
         type: boolean
         default: false
+      faq_sparse_veto:
+        description: 'Ask BM25 for a second opinion before serving a FAQ cache hit (RAG_FAQ_SPARSE_VETO)'
+        type: boolean
+        default: false
 
 # Eval only reads the checkout and calls external APIs — no repo write needed.
 # Pin the token to read so it stays minimal regardless of the org-level default.
@@ -72,6 +76,10 @@ jobs:
           # by Gemini's free-tier 5-req/min quota. EVAL-ONLY; production keeps the
           # Gemini-first cost cascade (this flag stays unset there).
           RAG_FORCE_CLAUDE: '1'
+          # Measured before it ships: this is the switch the corrective arm runs
+          # the FAQ cache under, so one run with it on and one with it off are
+          # directly comparable.
+          RAG_FAQ_SPARSE_VETO: ${{ inputs.faq_sparse_veto && '1' || '0' }}
           QDRANT_COLLECTION: ${{ inputs.collection || 'doc_chunks' }}
           # Inputs passed via env (not interpolated into the script) to avoid
           # shell injection from workflow_dispatch fields.
