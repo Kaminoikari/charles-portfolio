@@ -66,11 +66,21 @@ export async function ensureCollections(): Promise<void> {
     })
   }
 
-  // Semantic FAQ cache: one dense vector per pre-written question paraphrase.
-  // Dense-only (no sparse) — matching is pure embedding similarity.
+  // Semantic FAQ cache: one point per pre-written question paraphrase, carrying
+  // both a dense vector and a BM25 sparse vector.
+  //
+  // It was dense-only until 2026-09-16, and that is a ranking bias, not a
+  // saving: a sentence embedding scores the FRAME of a question, so
+  // 「Charles 在 NUEIP 做什麼?」 landed on the general career summary's
+  // 「Charles 是做什麼的」 ahead of the NUEIP entry's 「他在 NUEIP 做什麼」. The
+  // proper noun that is the entire difference between those two questions is
+  // what IDF weights and what a sentence embedding averages away. The sparse
+  // arm is consulted as a veto rather than fused, so the cosine threshold and
+  // the cross-entry margin keep meaning what they say (see faqLookup).
   if (!(await db.collectionExists(config.qdrantFaqCollection)).exists) {
     await db.createCollection(config.qdrantFaqCollection, {
       vectors: { [DENSE]: { size: config.embedDim, distance: 'Cosine' } },
+      sparse_vectors: { [SPARSE]: { modifier: 'idf' } },
     })
     await db.createPayloadIndex(config.qdrantFaqCollection, {
       field_name: 'locale',
@@ -157,15 +167,28 @@ export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
 // right answer. Treating those as a tie would make the cache refuse the entries
 // it covers best. Hence the window: it is sized to reach past the widest
 // paraphrase set rather than to the next result.
+export interface FaqLookupOptions {
+  // The visitor's question as text. The dense arm only ever sees its embedding;
+  // the lexical arm needs the words.
+  queryText: string
+  // Both fields are REQUIRED on purpose. Reading config in here would let a
+  // caller silently run without the veto, and every seam in this pipeline that
+  // could be forgotten has been forgotten at least once. Omitting it is a type
+  // error instead.
+  sparseVeto: boolean
+}
+
 export async function faqLookup(
   queryVec: number[],
   locale: string,
+  opts: FaqLookupOptions,
   deps: FaqSearchDeps = DEFAULT_FAQ_DEPS,
 ): Promise<{ answer: string; id: string; score: number } | null> {
+  const filter = { must: [{ key: 'locale', match: { value: locale } }] }
   const res = await deps.search(config.qdrantFaqCollection, {
     query: queryVec,
     using: DENSE,
-    filter: { must: [{ key: 'locale', match: { value: locale } }] },
+    filter,
     limit: config.faqCandidateK,
     with_payload: true,
   })
@@ -202,5 +225,31 @@ export async function faqLookup(
   // minimum has not cleared it.
   if (margin <= config.faqCacheMargin) return null
   if (!payload.answer) return null
+
+  // A second, purely lexical opinion on the same question. The dense arm ranks
+  // by sentence frame: 「Charles 在 NUEIP 做什麼?」 sits almost on top of
+  // overall-summary's 「Charles 是做什麼的」, and the proper noun that is the
+  // whole difference between the two questions barely moves a sentence
+  // embedding. BM25 with IDF weights precisely that noun. So when the lexical
+  // arm has an opinion and the dense winner is not in it, the frame won over the
+  // subject and the cache should not answer.
+  //
+  // An empty lexical result is silence, not dissent: a short or generic question
+  // gives BM25 nothing to weigh, and refusing on that would cost the cache the
+  // very questions it exists to answer.
+  if (opts.sparseVeto) {
+    const lex = await deps.search(config.qdrantFaqCollection, {
+      query: { text: opts.queryText, model: config.sparseModel },
+      using: SPARSE,
+      filter,
+      limit: config.faqVetoK,
+      with_payload: true,
+    })
+    const ranked = lex.points.map(faqIdOf).filter((id): id is string => id !== undefined)
+    if (ranked.length > 0 && !ranked.includes(topId)) {
+      console.log(`[chat] faqveto top=${topId} lexical=${ranked.slice(0, 3).join(',')} locale=${locale}`)
+      return null
+    }
+  }
   return { answer: payload.answer, id: topId, score: topScore }
 }

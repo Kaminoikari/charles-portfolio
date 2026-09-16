@@ -49,7 +49,7 @@ async function reconstruct(row: LogPoint): Promise<Outcome> {
   const q = row.question ?? ''
   if (triage(q, locale).kind !== 'pass') return 'canned'
   try {
-    const hit = await faqLookup(await embedOne(q, 'query'), locale)
+    const hit = await faqLookup(await embedOne(q, 'query'), locale, { queryText: q, sparseVeto: config.faqSparseVeto })
     if (hit) return 'faq'
   } catch (err) {
     console.warn(`faq lookup failed for "${q.slice(0, 40)}":`, (err as Error).message)

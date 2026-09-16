@@ -64,7 +64,7 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
   if (config.faqCacheEnabled) {
     try {
       const vec = await embedOne(retrievalQuery(state), 'query')
-      const hit = await faqLookup(vec, locale)
+      const hit = await faqLookup(vec, locale, { queryText: retrievalQuery(state), sparseVeto: config.faqSparseVeto })
       if (hit) {
         console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)}`)
         return { answer: hit.answer, sources: [], route: 'answered', outcome: 'faq' }

@@ -23,6 +23,7 @@ import {
   scrollHashes,
   deleteByChunkIds,
   DENSE,
+  SPARSE,
 } from '../qdrant.js'
 import { chunkHash, reconcile, isPruneSafe, type DesiredChunk } from './reconcile.js'
 import { faqEntries, type Locale } from '../faq-cache.js'
@@ -31,7 +32,7 @@ const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH = 32
 const UPSERT_PAGE = 64
 const LOCALES: Locale[] = ['en', 'zh-TW', 'ja']
-const EMBED_MODELS = [config.embedModel, String(config.embedDim)]
+const EMBED_MODELS = [config.embedModel, String(config.embedDim), config.sparseModel]
 
 interface Row {
   chunkId: string // logical id, stable across runs — the reconcile key
@@ -108,7 +109,11 @@ async function main() {
   }
 
   const build = plan.toBuild.map((id) => byId.get(id)).filter((r): r is Row => Boolean(r))
-  type Point = { id: string; vector: { [DENSE]: number[] }; payload: Record<string, unknown> }
+  type Point = {
+    id: string
+    vector: { [DENSE]: number[]; [SPARSE]: { text: string; model: string } }
+    payload: Record<string, unknown>
+  }
   if (build.length === 0) {
     console.log('Nothing to embed — FAQ cache already current.')
   } else {
@@ -120,7 +125,9 @@ async function main() {
       batch.forEach((r, j) => {
         points.push({
           id: r.pointId,
-          vector: { [DENSE]: vectors[j] },
+          // BM25 runs server-side on the paraphrase text (Qdrant Cloud Inference),
+          // same as the document index.
+          vector: { [DENSE]: vectors[j], [SPARSE]: { text: r.text, model: config.sparseModel } },
           payload: {
             chunk_id: r.chunkId,
             chunk_hash: r.hash,

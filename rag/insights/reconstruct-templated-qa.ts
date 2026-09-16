@@ -115,7 +115,7 @@ async function reconstruct(
   // Tier 2: semantic FAQ cache — re-embed + lookup when a key is available.
   if (hasEmbedKey) {
     try {
-      const hit = await faqLookup(await embedOne(q, 'query'), locale)
+      const hit = await faqLookup(await embedOne(q, 'query'), locale, { queryText: q, sparseVeto: config.faqSparseVeto })
       if (hit) return { route: 'faq', kind: '', answer: hit.answer }
     } catch (err) {
       console.warn(`faq lookup failed for "${q.slice(0, 40)}":`, (err as Error).message)

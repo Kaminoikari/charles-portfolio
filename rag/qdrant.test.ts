@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { DEFAULT_FAQ_DEPS, faqLookup } from './qdrant.js'
+import { DEFAULT_FAQ_DEPS, faqLookup, type FaqSearchDeps } from './qdrant.js'
 import { config } from './config.js'
 import { faqEntries } from './faq-cache.js'
 
@@ -34,12 +34,20 @@ const paraphrases = (faqId: string, ...scores: number[]) => scores.map((s) => hi
 
 // Drives the real faqLookup; only the Qdrant round-trip is stubbed.
 const lookupOver = (points: ReturnType<typeof hit>[], seen?: { body?: Record<string, unknown> }) =>
-  faqLookup([0.1, 0.2], 'en', {
-    search: async (_collection, body) => {
-      if (seen) seen.body = body
-      return { points }
+  faqLookup(
+    [0.1, 0.2],
+    'en',
+    // These cases are about the dense accept/reject rule, so the lexical veto is
+    // off: with it on, every one of them would need a second stubbed round-trip
+    // to say something they are not testing.
+    { queryText: 'q', sparseVeto: false },
+    {
+      search: async (_collection, body) => {
+        if (seen) seen.body = body
+        return { points }
+      },
     },
-  })
+  )
 
 test('faqLookup: a clear winner is served from cache', async () => {
   const res = await lookupOver([hit('uspace-role', 0.91), hit('nueip-role', 0.71)])
@@ -131,4 +139,65 @@ test('faqLookup: a top hit with no faq_id is not served', async () => {
   const malformed = { score: 0.95, payload: { answer: 'orphan', locale: 'en' } }
   const res = await lookupOver([malformed as ReturnType<typeof hit>, hit('nueip-role', 0.2)])
   assert.equal(res, null)
+})
+
+// --- the sparse veto -----------------------------------------------------
+// The dense arm matches sentence FRAME. 「Charles 在 NUEIP 做什麼?」 is nearly
+// identical to overall-summary's 「Charles 是做什麼的」, and the proper noun that
+// makes the two questions different carries almost no weight in a sentence
+// embedding — so the broad entry won, and the visitor asking about NUEIP got a
+// career summary that never named it. BM25 with IDF weights exactly that noun,
+// which is why the second opinion is lexical and not another embedding.
+//
+// sparseVeto is a REQUIRED option rather than a config read inside this module,
+// so the caller cannot forget to pass it: omitting it is a type error, which is
+// a harder guarantee than a test that someone has to remember to write.
+
+const P = (faq_id: string, score: number, answer = 'a') => ({ score, payload: { faq_id, answer, locale: 'en' } })
+
+function twoArmDeps(dense: ReturnType<typeof P>[], sparse: ReturnType<typeof P>[]) {
+  const seen: string[] = []
+  return {
+    seen,
+    deps: {
+      search: async (_c: string, body: Record<string, unknown>) => {
+        const using = String(body.using)
+        seen.push(using)
+        return { points: using === 'sparse' ? sparse : dense }
+      },
+    },
+  }
+}
+
+const ask = (q: string, sparseVeto: boolean, deps: FaqSearchDeps) =>
+  faqLookup([0.1], 'en', { queryText: q, sparseVeto }, deps)
+
+test('faqLookup: the cache declines when the lexical arm does not rank the winner at all', async () => {
+  const { deps } = twoArmDeps(
+    [P('overall-summary', 0.9), P('exp-nueip', 0.5)],
+    [P('exp-nueip', 8), P('exp-history', 3)],
+  )
+  assert.equal(await ask('Charles 在 NUEIP 做什麼?', true, deps), null)
+})
+
+test('faqLookup: the veto stays out of the way when both arms agree', async () => {
+  const { deps } = twoArmDeps(
+    [P('exp-nueip', 0.9, 'the NUEIP answer'), P('overall-summary', 0.5)],
+    [P('exp-nueip', 8), P('exp-history', 3)],
+  )
+  assert.equal((await ask('Charles 在 NUEIP 做什麼?', true, deps))?.id, 'exp-nueip')
+})
+
+test('faqLookup: an empty lexical result vetoes nothing', async () => {
+  // A short or generic question gives BM25 nothing to say. Silence is not
+  // evidence against the dense winner, and treating it as such would refuse the
+  // cache on exactly the questions it exists to answer.
+  const { deps } = twoArmDeps([P('overall-summary', 0.9)], [])
+  assert.equal((await ask('?', true, deps))?.id, 'overall-summary')
+})
+
+test('faqLookup: with the veto off the lexical arm is never queried', async () => {
+  const { deps, seen } = twoArmDeps([P('overall-summary', 0.9)], [P('exp-nueip', 8)])
+  assert.equal((await ask('Charles 在 NUEIP 做什麼?', false, deps))?.id, 'overall-summary')
+  assert.deepEqual(seen, ['dense'], 'the lexical arm must not be queried while the veto is off')
 })

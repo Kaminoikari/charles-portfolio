@@ -127,6 +127,16 @@ export const config = {
   // against itself. A test in rag/qdrant.test.ts pins this against the real
   // corpus, so growing an entry's paraphrases cannot silently outrun it.
   faqCandidateK: int('RAG_FAQ_CANDIDATE_K', 16),
+  // Ask BM25 for a second opinion before serving a cache hit, and decline when
+  // the lexical arm does not rank the dense winner at all. The dense arm matches
+  // sentence FRAME, so 「Charles 在 NUEIP 做什麼?」 landed on the general career
+  // summary rather than the NUEIP entry — the proper noun that is the entire
+  // difference between those two questions barely moves a sentence embedding,
+  // while it is exactly what IDF weights. OFF until an eval run shows it removes
+  // those misfires without costing cache hits, the same bar contextual retrieval
+  // was held to. Requires the FAQ collection to carry sparse vectors.
+  faqSparseVeto: bool('RAG_FAQ_SPARSE_VETO', false),
+  faqVetoK: int('RAG_FAQ_VETO_K', 5),
 
   // --- query embedding cache ---
   // A single visitor message is embedded at least twice on the hot path: once by
