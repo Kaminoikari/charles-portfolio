@@ -99,9 +99,10 @@ export default async function handler(req: IncomingMessage & { method?: string; 
           // (the `done` event above), captured here before the instance freezes.
           answer: ev.answer,
           language: ev.language,
-          // The graph's own terminal outcome (canned | faq | generate | blocked
-          // | fallback) — NOT re-derived from sources.length, which mislabeled
-          // every canned/FAQ answer (sources: []) as a fallback.
+          // The graph's own terminal outcome (canned | faq | converse | generate
+          // | blocked | fallback | unavailable) — NOT re-derived from
+          // sources.length, which mislabeled every canned/FAQ answer
+          // (sources: []) as a fallback.
           route: ev.outcome,
           loops: ev.loops,
           latency_ms: Date.now() - started,

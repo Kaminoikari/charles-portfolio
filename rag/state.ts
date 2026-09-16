@@ -43,6 +43,12 @@ export const RAGState = Annotation.Root({
   // NOT be re-derived from sources.length downstream, because canned/FAQ answers
   // legitimately carry no sources yet are NOT fallbacks.
   outcome: Annotation<Outcome>,
+  // Set by retrieve when the vector store or the embedder could not be reached
+  // at all. Distinct from "retrieved nothing relevant": one is our outage, the
+  // other is an honest gap in the corpus, and telling a visitor the second when
+  // the first is true is a lie the transcript keeps. Reset on every pass so a
+  // recovered corrective retry is not still wearing the earlier failure.
+  retrievalFailed: Annotation<boolean>({ reducer: (_a, b) => b, default: () => false }),
 })
 
 // Terminal answer paths, distinct for analytics:
@@ -51,7 +57,15 @@ export const RAGState = Annotation.Root({
 //   generate — full RAG generation grounded in retrieved chunks
 //   converse — answered from the conversation transcript, no retrieval
 //   blocked  — generation produced offensive output, dropped by the guardrail
-//   fallback — retrieval failed after the corrective loop; honest refusal
-export type Outcome = 'canned' | 'faq' | 'generate' | 'converse' | 'blocked' | 'fallback'
+//   fallback — retrieval found nothing usable after the corrective loop; honest refusal
+//   unavailable — retrieval could not run (Qdrant/Voyage unreachable); our fault, said so
+export type Outcome =
+  | 'canned'
+  | 'faq'
+  | 'generate'
+  | 'converse'
+  | 'blocked'
+  | 'fallback'
+  | 'unavailable'
 
 export type RAGStateType = typeof RAGState.State

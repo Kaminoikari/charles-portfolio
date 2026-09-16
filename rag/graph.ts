@@ -36,6 +36,7 @@ export interface NodeSet {
   rewriteQuery: Node
   generate: Node
   fallback: Node
+  unavailable: Node
 }
 
 // Conditional edge: triage either answered the question (deterministically, no
@@ -54,6 +55,14 @@ function routeAfterTriage(state: RAGStateType): 'answered' | 'converse' | 'retri
 //                 (skip the rewrite loop; rewriting an off-topic question never
 //                 finds Charles data and just burns LLM calls)
 //   else        — on-topic but weak retrieval → rewrite and retry, capped
+// An outage skips grading entirely. Grading an empty set costs an LLM call to
+// reach a verdict we already know is wrong — the documents are missing because
+// we could not fetch them, not because the corpus lacks them — and the corrective
+// loop would then re-query a store that is still down.
+export function routeAfterRetrieve(state: RAGStateType): 'gradeDocuments' | 'unavailable' {
+  return state.retrievalFailed ? 'unavailable' : 'gradeDocuments'
+}
+
 function routeAfterGrade(state: RAGStateType): 'generate' | 'rewriteQuery' | 'fallback' {
   if (state.route === 'generate') return 'generate'
   if (state.route === 'off_topic') return 'fallback'
@@ -70,6 +79,7 @@ export function buildGraph(nodes: NodeSet = defaultNodes) {
     .addNode('rewriteQuery', nodes.rewriteQuery)
     .addNode('generate', nodes.generate)
     .addNode('fallback', nodes.fallback)
+    .addNode('unavailable', nodes.unavailable)
     .addEdge(START, 'triage')
     .addConditionalEdges('triage', routeAfterTriage, {
       answered: END,
@@ -77,7 +87,10 @@ export function buildGraph(nodes: NodeSet = defaultNodes) {
       retrieve: 'retrieve',
     })
     .addEdge('converse', END)
-    .addEdge('retrieve', 'gradeDocuments')
+    .addConditionalEdges('retrieve', routeAfterRetrieve, {
+      gradeDocuments: 'gradeDocuments',
+      unavailable: 'unavailable',
+    })
     .addConditionalEdges('gradeDocuments', routeAfterGrade, {
       generate: 'generate',
       rewriteQuery: 'rewriteQuery',
@@ -86,6 +99,7 @@ export function buildGraph(nodes: NodeSet = defaultNodes) {
     .addEdge('rewriteQuery', 'retrieve') // corrective loop
     .addEdge('generate', END)
     .addEdge('fallback', END)
+    .addEdge('unavailable', END)
     .compile()
 }
 

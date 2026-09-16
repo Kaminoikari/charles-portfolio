@@ -73,6 +73,11 @@ async function main() {
   console.log('## Coverage')
   console.log(`  ${padR('Fallback (no answer)', LABEL_WIDTH)}${padL(ins.fallbacks, 5)}   ${padL(pct1(ins.fallbackPct), 6)}`)
   console.log(`  ${padR('Corrective rewrite', LABEL_WIDTH)}${padL(ins.corrective, 5)}   ${padL(pct1(ins.correctivePct), 6)}`)
+  // Printed only when it happened: a permanent "Outage 0 0.0%" line trains the
+  // reader to skip it, which is the opposite of what an incident counter is for.
+  if (ins.outages > 0) {
+    console.log(`  ${padR('Outage (could not look up)', LABEL_WIDTH)}${padL(ins.outages, 5)}   ${padL(pct1(ins.outagePct), 6)}`)
+  }
   console.log(`  ${padR('Median latency', LABEL_WIDTH)}${padL(`${ins.medianLatencyMs} ms`, 8)}`)
   console.log()
 

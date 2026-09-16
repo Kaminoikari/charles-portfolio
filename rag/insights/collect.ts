@@ -60,6 +60,13 @@ export interface Insights {
   newSchema: boolean
   fallbacks: number
   fallbackPct: number
+  // Questions the bot could not even look up because Qdrant or the embedder was
+  // unreachable (the `unavailable` outcome). Counted apart from fallbacks on
+  // purpose: a fallback is a gap in the corpus and belongs in the backlog, an
+  // outage is an incident and belongs in nobody's backlog. Folding them together
+  // would have made a bad afternoon look like a content problem.
+  outages: number
+  outagePct: number
   corrective: number
   correctivePct: number
   medianLatencyMs: number
@@ -164,6 +171,7 @@ export async function gatherInsights(options: GatherInsightsOptions = {}): Promi
   const perDay = (n: number) => n / Math.max(spanDays, 1)
 
   const fallbacks = questionRows.filter((r) => r.route === 'fallback').length
+  const outages = questionRows.filter((r) => r.route === 'unavailable').length
   const corrective = questionRows.filter((r) => (r.loops ?? 0) > 0).length
   const latencies = questionRows.map((r) => r.latency_ms).filter((x): x is number => x != null)
   const newSchema = questionRows.some(
@@ -232,6 +240,8 @@ export async function gatherInsights(options: GatherInsightsOptions = {}): Promi
     newSchema,
     fallbacks,
     fallbackPct: (fallbacks / qCount) * 100,
+    outages,
+    outagePct: (outages / qCount) * 100,
     corrective,
     correctivePct: (corrective / qCount) * 100,
     medianLatencyMs: median(latencies),

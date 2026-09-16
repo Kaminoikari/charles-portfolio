@@ -30,7 +30,7 @@ import {
   resolveGenerator,
 } from './llm.js'
 import { formatHistory, shouldAnswerFromHistory, ordinalReference } from './history.js'
-import { triage as classifyQuestion, genericFallback, CONTACT } from './triage.js'
+import { triage as classifyQuestion, genericFallback, serviceUnavailable, CONTACT } from './triage.js'
 import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, MIKA_VOICE } from './persona.js'
 
 // --- triage --------------------------------------------------------------
@@ -86,7 +86,16 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
 // independently and interleave the results, so every part gets representation
 // instead of being crowded out of a single top-k. The corrective loop (loops>0)
 // refines ONE rewritten query, so it always takes the single-retrieval path.
-export async function retrieve(state: RAGStateType): Promise<Partial<RAGStateType>> {
+export interface RetrieveDeps {
+  hybridRetrieve: typeof hybridRetrieve
+}
+
+export const DEFAULT_RETRIEVE_DEPS: RetrieveDeps = { hybridRetrieve }
+
+export async function retrieve(
+  state: RAGStateType,
+  deps: RetrieveDeps = DEFAULT_RETRIEVE_DEPS,
+): Promise<Partial<RAGStateType>> {
   const locale = state.language ?? config.defaultLocale
   const subs = state.subQuestions ?? []
 
@@ -95,20 +104,42 @@ export async function retrieve(state: RAGStateType): Promise<Partial<RAGStateTyp
     // sinking the whole request (mirrors grade/rewrite's graceful degradation).
     const perSub = await Promise.all(
       subs.map((s) =>
-        hybridRetrieve(s, locale).catch((err) => {
+        deps.hybridRetrieve(s, locale).catch((err) => {
           console.warn('sub-question retrieval failed:', (err as Error).message)
           return [] as Document[]
         }),
       ),
     )
     const merged = mergeInterleaved(perSub, config.multiMergeK)
-    if (merged.length) return { documents: merged }
-    // All sub-retrievals empty/failed → fall through to the single-query path.
+    if (merged.length) return { documents: merged, retrievalFailed: false }
+    // All sub-retrievals empty/failed → fall through to the single-query path,
+    // which is also where a total outage gets recognised as one.
   }
 
   const query = retrievalQuery(state)
-  const documents = await hybridRetrieve(query, locale)
-  return { documents }
+  try {
+    return { documents: await deps.hybridRetrieve(query, locale), retrievalFailed: false }
+  } catch (err) {
+    // The store or the embedder is unreachable. Letting this throw ended the
+    // request as a generic stream error; letting it pass as an empty document
+    // set would be worse, because grade would then spend an LLM call to conclude
+    // "no data" and the visitor would be told the portfolio does not cover their
+    // question. It does; we just could not look. Say that instead.
+    console.warn('retrieval unavailable:', (err as Error).message)
+    return { documents: [], retrievalFailed: true }
+  }
+}
+
+// --- unavailable ---------------------------------------------------------
+// Terminal node for the outage above. Separate from `fallback` so the analytics
+// can tell "we were down" from "the corpus has a gap" — the second is a backlog
+// item, the first is an incident, and chat_logs is where either gets noticed.
+export async function unavailable(state: RAGStateType): Promise<Partial<RAGStateType>> {
+  return {
+    answer: serviceUnavailable((state.language as Locale) ?? 'en'),
+    sources: [],
+    outcome: 'unavailable',
+  }
 }
 
 // --- gradeDocuments ------------------------------------------------------

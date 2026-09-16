@@ -261,8 +261,38 @@ export function triage(question: string, locale: Locale): TriageResult {
   return { kind: 'pass' }
 }
 
+// Said when retrieval could not RUN — Qdrant or the embedder unreachable — as
+// opposed to running and finding nothing. The distinction matters to the person
+// reading it: "the portfolio does not cover that" is a fact about Charles, and
+// saying it during an outage puts a false fact in a transcript she will quote
+// back later. This one owns the failure and invites a retry. Same voice, same
+// no-emoji rule, same contact CTA as the gap reply.
+export function serviceUnavailable(locale: Locale): string {
+  if (locale === 'zh-TW') {
+    return (
+      '欸，抱歉，我的資料庫剛剛連不上，這題我現在查不到東西。等一下再問我一次應該就好了。\n\n' +
+      '如果你趕時間，直接找 Charles 最快：\n\n' +
+      contactBlock(locale)
+    )
+  }
+  if (locale === 'ja') {
+    return (
+      'ごめん、いま資料のデータベースに繋がらなくて、この質問は調べられないんだ。' +
+      'ちょっとしてからもう一回聞いてくれたら、たぶん大丈夫。\n\n' +
+      '急ぎなら Charles に直接聞くのが早いよ：\n\n' +
+      contactBlock(locale)
+    )
+  }
+  return (
+    "Sorry, I can't reach my knowledge base right now, so I can't look that up. " +
+    'Give it a moment and ask me again and it should work.\n\n' +
+    'If you need an answer now, Charles is the faster route:\n\n' +
+    contactBlock(locale)
+  )
+}
+
 // Generic "not enough info" fallback (used by the RAG fallback node when
-// retrieval fails for a non-personal question). Localized, with a contact CTA.
+// retrieval runs but turns up nothing usable). Localized, with a contact CTA.
 export function genericFallback(locale: Locale): string {
   if (locale === 'zh-TW') {
     return (

@@ -12,8 +12,11 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { gradeDocuments, rewriteQuery, converse, triage, generate } from './nodes.js'
+import * as nodes from './nodes.js'
 import { resolveTiers, DEFAULT_TIERS, type Tier, type Tiers } from './llm.js'
-import { CONTACT } from './triage.js'
+import { CONTACT, genericFallback, serviceUnavailable } from './triage.js'
+import { hybridRetrieve } from './retrieval.js'
+import { Document } from '@langchain/core/documents'
 
 // A tier that fails the way a quota-exhausted Gemini does.
 const failing = (message: string): Tier => ({
@@ -663,5 +666,48 @@ test('the stall notice is appended in her voice, in every locale', async () => {
         `stall notice is 敬体, which is not the register she is recorded in: ${notice}`,
       )
     }
+  }
+})
+
+// --- retrieve: an outage is not a gap in the corpus -----------------------
+// Voyage and Qdrant are both single-supplier and single-attempt. When one is
+// unreachable the honest answer is "I could not look", and the pipeline used to
+// have no way to say it: the exception ended the request as a generic stream
+// error. Passing an empty document set on instead would be worse — grade would
+// buy an LLM call to conclude "no data" and the visitor would be told the
+// portfolio does not cover their question, which is a false statement about
+// Charles that the transcript then carries into the next turn.
+
+test('retrieve: an unreachable store is reported as an outage, not as an empty corpus', async () => {
+  const res = await nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+    hybridRetrieve: async () => {
+      throw new Error('qdrant unreachable')
+    },
+  })
+  assert.deepEqual(res.documents, [])
+  assert.equal(res.retrievalFailed, true)
+})
+
+test('retrieve: a healthy retrieval clears the outage flag', async () => {
+  // Without the explicit false, a corrective retry after a recovered blip would
+  // still be wearing the earlier failure and route to the outage reply.
+  const doc = new Document({ pageContent: 'x', metadata: { id: 'a' } })
+  const res = await nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+    hybridRetrieve: async () => [doc],
+  })
+  assert.equal(res.retrievalFailed, false)
+  assert.equal(res.documents?.length, 1)
+})
+
+test('retrieve: the default dependency is the real hybrid retrieval', () => {
+  assert.equal(nodes.DEFAULT_RETRIEVE_DEPS.hybridRetrieve, hybridRetrieve)
+})
+
+test('unavailable: answers in the visitor language and is labelled as an outage', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const res = await nodes.unavailable({ language: locale } as never)
+    assert.equal(res.outcome, 'unavailable')
+    assert.equal(res.answer, serviceUnavailable(locale))
+    assert.notEqual(res.answer, genericFallback(locale), `outage reply equals the corpus-gap reply in ${locale}`)
   }
 })

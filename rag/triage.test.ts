@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { triage, personalRedirect, genericFallback, CONTACT } from './triage.js'
+import { triage, personalRedirect, genericFallback, serviceUnavailable, CONTACT } from './triage.js'
 
 test('personal/privacy questions are redirected, not passed to RAG', () => {
   for (const q of [
@@ -198,5 +198,16 @@ test('the privacy handover is first-person and carries no emoji', () => {
       `privacy reply carries an emoji in ${locale}`,
     )
     assert.ok(reply.includes(CONTACT.email), `privacy reply drops the contact CTA in ${locale}`)
+  }
+})
+
+test('the outage reply is first-person, carries no emoji, and is not the gap reply', () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const reply = serviceUnavailable(locale)
+    assert.match(reply, /\bI\b|我|あたし|ごめん/, `outage reply is not first-person in ${locale}`)
+    assert.equal(reply.match(EMOJI)?.length ?? 0, 0, `outage reply carries an emoji in ${locale}`)
+    assert.ok(reply.includes(CONTACT.email), `outage reply drops the contact CTA in ${locale}`)
+    // The whole point of the node: it must not claim the portfolio lacks the answer.
+    assert.notEqual(reply, genericFallback(locale), `outage reply equals the gap reply in ${locale}`)
   }
 })

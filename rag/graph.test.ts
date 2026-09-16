@@ -8,7 +8,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { buildGraph, answer, streamAnswer, type NodeSet, type StreamEvent } from './graph.js'
+import { buildGraph, answer, streamAnswer, routeAfterRetrieve, type NodeSet, type StreamEvent } from './graph.js'
+import * as realNodes from './nodes.js'
+import { serviceUnavailable } from './triage.js'
 import { shouldAnswerFromHistory } from './history.js'
 import type { ChatTurn } from './api-helpers.js'
 import { detectLanguage } from './language.js'
@@ -21,9 +23,16 @@ function makeNodes(
   triageRoute = 'retrieve',
 ): {
   nodes: NodeSet
-  counts: { retrieve: number; rewrite: number; generate: number; fallback: number; converse: number }
+  counts: {
+    retrieve: number
+    rewrite: number
+    generate: number
+    fallback: number
+    converse: number
+    unavailable: number
+  }
 } {
-  const counts = { retrieve: 0, rewrite: 0, generate: 0, fallback: 0, converse: 0 }
+  const counts = { retrieve: 0, rewrite: 0, generate: 0, fallback: 0, converse: 0, unavailable: 0 }
   let gradeCall = 0
   const doc = new Document({
     pageContent: 'stub',
@@ -39,7 +48,11 @@ function makeNodes(
     },
     retrieve: async () => {
       counts.retrieve++
-      return { documents: [doc] }
+      return { documents: [doc], retrievalFailed: false }
+    },
+    unavailable: async () => {
+      counts.unavailable++
+      return { answer: 'stub outage reply', sources: [], outcome: 'unavailable' }
     },
     gradeDocuments: async () => {
       const route = grades[Math.min(gradeCall, grades.length - 1)]
@@ -180,8 +193,9 @@ function recordingNodes() {
     },
     retrieve: async () => {
       counts.retrieve++
-      return { documents: [] }
+      return { documents: [], retrievalFailed: false }
     },
+    unavailable: async () => ({ answer: 'stub outage reply', sources: [], outcome: 'unavailable' }),
     gradeDocuments: async () => ({ graded: [], route: 'generate' }),
     rewriteQuery: async () => ({}),
     generate: async () => ({ answer: 'grounded answer', sources: [], outcome: 'generate' }),
@@ -316,4 +330,56 @@ test('trace: emits sources before the answer finishes', async () => {
 
   const early = events[sourcesIdx]
   assert.equal(early.type === 'sources' ? early.sources.length : -1, 1)
+})
+
+// --- an outage short-circuits the grade/rewrite loop ----------------------
+// Grading an empty set is an LLM call spent to reach a verdict we already know
+// is wrong, and the corrective loop would then re-query a store that is still
+// down — up to maxLoops times, each with its own rewrite call. Routing on the
+// outage flag skips all of it. The real retrieve node runs here (only its
+// supplier is stubbed) so the catch inside it is what produces the flag.
+test('a retrieval outage answers with the outage reply and never grades or rewrites', async () => {
+  const counts = { grade: 0, rewrite: 0, generate: 0, fallback: 0, unavailable: 0 }
+  const nodes: NodeSet = {
+    triage: async () => ({ route: 'retrieve' }),
+    converse: async () => ({}),
+    retrieve: (state) =>
+      realNodes.retrieve(state, {
+        hybridRetrieve: async () => {
+          throw new Error('qdrant unreachable')
+        },
+      }),
+    gradeDocuments: async () => {
+      counts.grade++
+      return { graded: [], route: 'generate' }
+    },
+    rewriteQuery: async () => {
+      counts.rewrite++
+      return { queries: ['again'], loops: 1 }
+    },
+    generate: async () => {
+      counts.generate++
+      return { answer: 'generated', sources: [], outcome: 'generate' }
+    },
+    fallback: async () => {
+      counts.fallback++
+      return { answer: 'gap reply', sources: [], outcome: 'fallback' }
+    },
+    unavailable: async (state) => {
+      counts.unavailable++
+      return realNodes.unavailable(state)
+    },
+  }
+
+  const out = await answer('what does he do?', buildGraph(nodes))
+  assert.equal(out.outcome, 'unavailable')
+  assert.equal(out.answer, serviceUnavailable('en'))
+  assert.deepEqual(counts, { grade: 0, rewrite: 0, generate: 0, fallback: 0, unavailable: 1 })
+})
+
+test('a healthy retrieval still goes to grading', () => {
+  // The flag must gate the route, not replace it: mutate routeAfterRetrieve to
+  // always return 'unavailable' and this is the test that notices.
+  assert.equal(routeAfterRetrieve({ retrievalFailed: false } as never), 'gradeDocuments')
+  assert.equal(routeAfterRetrieve({ retrievalFailed: true } as never), 'unavailable')
 })
