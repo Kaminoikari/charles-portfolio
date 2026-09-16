@@ -350,8 +350,14 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles はサイトにどんなスキルを挙げていますか?',
     },
     relevantIds: ['skills:all:'],
+    // Not a claim about the list's tone: an answer to this question lists the
+    // skills, it does not comment on how they are written, so a judge is right
+    // to say such a claim is unstated. Two of the labels survive translation
+    // intact — 「混亂中的 GPS」 keeps GPS, and "Fake it till you ship it" is not
+    // translated at all — so the invariant token is the honest instrument here.
+    mustInclude: ['gps'],
     mustState:
-      'The skills Charles lists on his site are written as tongue-in-cheek one-liners about product work, along the lines of a GPS for chaos or professional cat herding.',
+      'Charles lists his skills as a long set of short labels covering product thinking, working with data, and building with AI.',
   },
 
   // ── near-miss pairs (hard negatives) ─────────────────────────────────────
@@ -461,8 +467,11 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'House Ops はどの物件が最適かをどう判断しますか?',
     },
     relevantIds: ['project:house-ops:solution', 'project:house-ops:impact'],
+    // The question asks how it DECIDES. The earlier claim led with the LLM
+    // field extraction, which is how it parses; an answer that correctly
+    // described the scoring model did not assert it.
     mustState:
-      'House Ops turns the free-form text of a property listing into structured fields with an LLM, and then scores and ranks the listings automatically.',
+      'House Ops decides by scoring each listing across five weighted dimensions covering price, space, location, condition and risk, with weights the visitor can switch by buyer type.',
   },
 
   // ── global (cross-corpus synthesis; portfolio-map rescue) ─────────────────
