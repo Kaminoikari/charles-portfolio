@@ -79,13 +79,45 @@ const outageReplies = () => DECLINE_LOCALES.map((l) => serviceUnavailable(l))
 // correct rendering of "outcomes over outputs", scores as wrong.
 export function correctnessMiss(
   answer: string,
-  rules: { mustInclude?: string[]; mustDecline?: boolean },
+  rules: CorrectnessRules,
+  judged: boolean | null = null,
 ): string | null {
   if (rules.mustDecline) return declinesAnswer(answer) ? null : 'did not decline'
-  if (!rules.mustInclude || rules.mustInclude.length === 0) return null
-  const a = answer.toLowerCase()
-  const absent = rules.mustInclude.filter((sub) => !a.includes(sub.toLowerCase()))
-  return absent.length > 0 ? `missing: ${absent.join(', ')}` : null
+  const reasons: string[] = []
+  if (rules.mustInclude?.length) {
+    const a = answer.toLowerCase()
+    const absent = rules.mustInclude.filter((sub) => !a.includes(sub.toLowerCase()))
+    if (absent.length > 0) reasons.push(`missing: ${absent.join(', ')}`)
+  }
+  if (rules.mustState && judged === false) reasons.push('claim not stated')
+  return reasons.length > 0 ? reasons.join('; ') : null
+}
+
+export interface CorrectnessRules {
+  mustInclude?: string[]
+  mustState?: string
+  mustDecline?: boolean
+}
+
+// The whole correctness verdict: the deterministic rules AND the judged claim.
+//
+// `judged` is REQUIRED rather than optional, and an item carrying a mustState
+// refuses to be scored without one. Every injection seam in this eval has broken
+// at least once by being declared and never called — the retrieve node's deps,
+// the per-category correctness, the decline check — and each time the symptom
+// was a number that looked plausible. Forgetting the judge call here would score
+// every claim-bearing item 1 and read as correctness improving.
+export function scoreCorrectness(
+  answer: string,
+  rules: CorrectnessRules,
+  judged: boolean | null,
+): number {
+  if (rules.mustState && judged === null) {
+    throw new Error(`a judged verdict is required for an item with mustState: ${rules.mustState}`)
+  }
+  if (rules.mustDecline) return declinesAnswer(answer) ? 1 : 0
+  if (rules.mustState && judged === false) return 0
+  return correctness(answer, rules)
 }
 
 // Did the answer honestly say the portfolio does not cover this?

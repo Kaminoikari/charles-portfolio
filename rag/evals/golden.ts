@@ -37,9 +37,18 @@ export interface GoldenItem {
   question: { en: string; 'zh-TW': string; ja: string }
   // Chunk-id prefixes that SHOULD be retrieved (empty for out-of-corpus).
   relevantIds: string[]
-  // Facts the answer must contain (lowercased substring checks in correctness).
-  // For out-of-corpus, the answer must instead signal a decline.
+  // Locale-INVARIANT tokens the answer must contain (lowercased substring
+  // checks). Names, numbers, APIs and acronyms only: anything the site renders
+  // differently per locale belongs in mustState, because a token the zh/ja copy
+  // translates makes the item permanently unscoreable in those locales. The
+  // structural test in golden.test.ts refuses a token the corpus cannot supply
+  // in all three.
   mustInclude?: string[]
+  // One claim, in English, judged against the answer in whatever language it is
+  // written (rag/evals/judge.ts:judgeStatement). This is where a fact whose
+  // wording is translated belongs — "he prioritises outcomes over outputs" holds
+  // whether the answer says that or 「結果重於產出」.
+  mustState?: string
   mustDecline?: boolean
 }
 
@@ -54,7 +63,9 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles の USPACE での役職は何ですか?',
     },
     relevantIds: ['experience:uspace-tech-co-ltd:'],
-    mustInclude: ['product manager', 'uspace'],
+    mustInclude: ['uspace'],
+    mustState:
+      'Charles is a Product Manager at USPACE, who started as the USPACE app owner leading a 15-person cross-functional team.',
   },
   {
     id: 'path-stack',
@@ -175,7 +186,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles は USPACE でどんな保険商品を立ち上げましたか?',
     },
     relevantIds: ['experience:uspace-tech-co-ltd:'],
-    mustInclude: ['fubon'],
+    mustInclude: ['fsc'],
+    mustState: 'Charles launched a subscription parking-insurance product at USPACE with Fubon Insurance, piloted in the FSC regulatory sandbox.',
   },
   {
     id: 'nueip-role',
@@ -275,7 +287,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles は RAG（検索拡張生成）パターンをどう説明していますか?',
     },
     relevantIds: ['pattern:knowledge-retrieval-rag:'],
-    mustInclude: ['qdrant'],
+    mustState:
+      'Charles describes RAG as grounding answers in external data the model never trained on, and his own system fuses dense and sparse retrieval and then reranks before generating with citations.',
   },
   {
     id: 'pattern-human-loop',
@@ -286,7 +299,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles のエージェントのループで、人はどんな役割を担っていますか?',
     },
     relevantIds: ['pattern:human-in-the-loop:'],
-    mustInclude: ['codex'],
+    mustState:
+      'Charles is himself the human in the loop, reviewing and steering what his coding agents produce before anything goes live.',
   },
   {
     id: 'patterns-known',
@@ -318,6 +332,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles はサイトにどんなスキルを挙げていますか?',
     },
     relevantIds: ['skills:all:'],
+    mustState:
+      'The skills Charles lists on his site are written as tongue-in-cheek one-liners about product work, along the lines of a GPS for chaos or professional cat herding.',
   },
 
   // ── near-miss pairs (hard negatives) ─────────────────────────────────────
@@ -381,7 +397,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Path はどんな問題をどう解決しますか?',
     },
     relevantIds: ['project:path:problem', 'project:path:solution'],
-    mustInclude: ['offline'],
+    mustInclude: ['indexeddb'],
+    mustState: 'Path solves the problem of needing to record and read data without a network connection, by working offline first and syncing later.',
   },
   {
     id: 'playbook-what',
@@ -392,7 +409,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Product Playbook とは何で、何ができますか?',
     },
     relevantIds: ['project:product-playbook', 'changelog:product-playbook'],
-    mustInclude: ['framework'],
+    mustState:
+      'Product Playbook is an AI product-manager partner for Claude Code that turns a rough idea into a plan an engineer can build.',
   },
   {
     id: 'plutus-quant',
@@ -425,6 +443,8 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'House Ops はどの物件が最適かをどう判断しますか?',
     },
     relevantIds: ['project:house-ops:solution', 'project:house-ops:impact'],
+    mustState:
+      'House Ops turns the free-form text of a property listing into structured fields with an LLM, and then scores and ranks the listings automatically.',
   },
 
   // ── global (cross-corpus synthesis; portfolio-map rescue) ─────────────────
@@ -440,7 +460,8 @@ export const GOLDEN: GoldenItem[] = [
     // project and product-philosophy articles are equally valid evidence — once
     // blog bodies are indexed they legitimately rank here, so they count too.
     relevantIds: ['about:philosophy', 'project:product-playbook:', 'blog:product-sense:'],
-    mustInclude: ['outcome'],
+    mustState:
+      'Charles judges a product by whether user behaviour and business metrics actually changed, and holds strong hypotheses that he lets data overturn.',
   },
   {
     id: 'ai-workflow',
@@ -454,7 +475,8 @@ export const GOLDEN: GoldenItem[] = [
     // builds with AI (the LangGraph twin, this RAG chatbot, Claude Code as an
     // agent OS) are valid evidence for "how he uses AI across his work".
     relevantIds: ['about:ai', 'blog:langgraph-ai:', 'blog:claude-code-agent-os:', 'changelog:rag-chatbot:'],
-    mustInclude: ['prototyp'],
+    mustState:
+      'Charles uses AI across discovery, spec writing and prototyping, building working prototypes himself with Claude Code and Codex.',
   },
   {
     id: 'builder-identity',

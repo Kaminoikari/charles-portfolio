@@ -68,3 +68,46 @@ test('every item asks the question in all three locales', () => {
     }
   }
 })
+
+const TEXT_BY_LOCALE = new Map<string, Map<string, string>>(
+  LOCALES.map((loc) => [
+    loc,
+    new Map(CHUNKS.filter((c) => c.locale === loc).map((c) => [c.id, c.content])),
+  ]),
+)
+
+const relevantText = (item: { relevantIds: string[] }, locale: string) =>
+  [...TEXT_BY_LOCALE.get(locale)!.entries()]
+    .filter(([id]) => item.relevantIds.some((p) => id.startsWith(p)))
+    .map(([, content]) => content)
+    .join(' ')
+    .toLowerCase()
+
+test('every mustInclude token exists in the source the answer is built from, in every locale', () => {
+  // A mustInclude the corpus cannot supply in a locale is not a strict test, it
+  // is an impossible one: the item scores 0 on that locale forever and the
+  // category mean reads as an answer-quality problem. Two rules were exactly
+  // this — "fubon" where the zh/ja copy says 富邦, and "offline" where it says
+  // 離線 / オフライン — and the correctness column carried the blame for a year.
+  //
+  // This is checked against the chunk BODIES, not titles: an English title on a
+  // Japanese chunk would satisfy the token without the fact being sayable in
+  // Japanese.
+  const impossible: string[] = []
+  for (const item of GOLDEN) {
+    for (const token of item.mustInclude ?? []) {
+      const missing = LOCALES.filter((loc) => !relevantText(item, loc).includes(token.toLowerCase()))
+      if (missing.length > 0) impossible.push(`${item.id}: "${token}" absent from the ${missing.join(', ')} source`)
+    }
+  }
+  assert.deepEqual(impossible, [], `mustInclude tokens no answer in that locale can carry:\n  ${impossible.join('\n  ')}`)
+})
+
+test('every item states what it expects', () => {
+  // An item with no rule at all scores 1 unconditionally, which inflates its
+  // category and can never regress.
+  const ruleless = GOLDEN.filter(
+    (i) => !i.mustDecline && !i.mustState && (i.mustInclude ?? []).length === 0,
+  ).map((i) => i.id)
+  assert.deepEqual(ruleless, [])
+})

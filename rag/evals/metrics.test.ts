@@ -10,6 +10,7 @@ import {
   correctness,
   declinesAnswer,
   correctnessMiss,
+  scoreCorrectness,
   DECLINE_MARKERS,
 } from './metrics.js'
 import { personalRedirect, genericFallback, serviceUnavailable } from '../triage.js'
@@ -120,4 +121,44 @@ test('correctnessMiss: a mustDecline item that answered says so', () => {
 
 test('correctnessMiss: an item with no rule can never miss', () => {
   assert.equal(correctnessMiss('anything', {}), null)
+})
+
+// --- scoreCorrectness: the deterministic rules AND the judged claim ------
+// mustState is checked by an LLM, so the verdict arrives from the runner rather
+// than from this module. That is a wiring seam, and every wiring seam in this
+// eval has broken at least once today by being declared and never called. So
+// the verdict is a REQUIRED argument and an item carrying a claim refuses to be
+// scored without one.
+
+test('scoreCorrectness: a judged claim must hold, on top of the deterministic rules', () => {
+  const item = { mustInclude: ['uspace'], mustState: 'he is a product manager there' }
+  assert.equal(scoreCorrectness('He is a PM at USPACE.', item, true), 1)
+  assert.equal(scoreCorrectness('He is a PM at USPACE.', item, false), 0)
+  // the deterministic half still binds even when the claim holds
+  assert.equal(scoreCorrectness('He is a PM somewhere.', item, true), 0)
+})
+
+test('scoreCorrectness: an item with a claim refuses to be scored without a verdict', () => {
+  // This is the guard. Without it, forgetting the judge call in runArm would
+  // score every mustState item 1 and read as a jump in correctness.
+  assert.throws(
+    () => scoreCorrectness('anything', { mustState: 'some claim' }, null),
+    /judged verdict/i,
+  )
+})
+
+test('scoreCorrectness: an item with no claim is scored without a verdict', () => {
+  assert.equal(scoreCorrectness('He led 15 people.', { mustInclude: ['15'] }, null), 1)
+  assert.equal(scoreCorrectness(personalRedirect('en'), { mustDecline: true }, null), 1)
+})
+
+test('correctnessMiss: an unstated claim says so', () => {
+  assert.equal(correctnessMiss('unrelated', { mustState: 'X' }, false), 'claim not stated')
+  assert.equal(correctnessMiss('unrelated', { mustState: 'X' }, true), null)
+  // 'zzz' rather than a short token: 'unrelated' contains the letter a, so the
+  // first draft of this fixture asserted a miss the rule never had.
+  assert.equal(
+    correctnessMiss('unrelated', { mustInclude: ['zzz'], mustState: 'X' }, false),
+    'missing: zzz; claim not stated',
+  )
 })

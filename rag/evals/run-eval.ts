@@ -21,12 +21,12 @@ import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory } from './golden.js'
-import { judgeFaithfulness } from './judge.js'
+import { judgeFaithfulness, judgeStatement } from './judge.js'
 import {
   recallAtK,
   reciprocalRank,
-  correctness,
   correctnessMiss,
+  scoreCorrectness,
   mean,
   type Aggregate,
 } from './metrics.js'
@@ -146,17 +146,22 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const ctx = graded
           .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
           .join('\n\n')
+        // A claim is judged in whatever language the answer is written, so the
+        // same one declaration serves all three locales. scoreCorrectness throws
+        // if an item carries a claim and this is still null, which is the only
+        // reason the call cannot be quietly dropped later.
+        const judged = item.mustState ? (await judgeStatement(answerText, item.mustState)).states : null
         items.push({
           category: item.category,
           recall: recallAtK(ids, relevant),
           mrr: reciprocalRank(ids, relevant),
-          correctness: correctness(answerText, item),
+          correctness: scoreCorrectness(answerText, item, judged),
           faithfulness: (await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0,
         })
         // Say why, next to the miss. Without this the only debuggable number
         // this arm produced was the category mean, and a mean cannot tell a bad
         // answer from a rule that asks an English word of a Japanese answer.
-        const why = correctnessMiss(answerText, item)
+        const why = correctnessMiss(answerText, item, judged)
         if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why}`)
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
