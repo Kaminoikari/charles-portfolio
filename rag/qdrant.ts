@@ -87,17 +87,32 @@ export async function ensureCollections(): Promise<void> {
       field_schema: 'keyword',
     })
   } else {
-    // The collection predates the sparse arm. createCollection above only runs
-    // for a collection that does not exist, so without this the config change
-    // would apply to a fresh index and to nobody's production one — the veto
-    // would query a vector field that is not there and quietly find nothing,
-    // which reads exactly like "the lexical arm had no opinion".
+    // The collection predates the sparse arm, and createCollection above runs
+    // only for one that does not exist — so without this the config change would
+    // apply to a fresh index and to nobody's production one. The veto would
+    // query a vector field that is not there, find nothing, and read exactly
+    // like "the lexical arm had no opinion".
+    //
+    // update_collection cannot do it: it tunes the parameters of sparse vectors
+    // that already exist and answers `Not existing vector name error: sparse`
+    // for a new one. So the collection is rebuilt. That is safe here in a way it
+    // would not be for doc_chunks: every point is derived from
+    // rag/faq-cache.ts, the caller re-embeds all of them in the same run, and
+    // the triage probe is wrapped in a try/catch that falls through to RAG — so
+    // the window costs cache hits, never an answer.
     const info = await db.getCollection(config.qdrantFaqCollection)
-    const sparse = info.config?.params?.sparse_vectors ?? {}
-    if (!(SPARSE in sparse)) {
-      console.log(`Adding the ${SPARSE} vector to ${config.qdrantFaqCollection} …`)
-      await db.updateCollection(config.qdrantFaqCollection, {
+    if (!(SPARSE in (info.config?.params?.sparse_vectors ?? {}))) {
+      console.log(
+        `${config.qdrantFaqCollection} has no ${SPARSE} vector; recreating it (every point is rebuilt from source in this run) …`,
+      )
+      await db.deleteCollection(config.qdrantFaqCollection)
+      await db.createCollection(config.qdrantFaqCollection, {
+        vectors: { [DENSE]: { size: config.embedDim, distance: 'Cosine' } },
         sparse_vectors: { [SPARSE]: { modifier: 'idf' } },
+      })
+      await db.createPayloadIndex(config.qdrantFaqCollection, {
+        field_name: 'locale',
+        field_schema: 'keyword',
       })
     }
   }
