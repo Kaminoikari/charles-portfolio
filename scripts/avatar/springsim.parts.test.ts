@@ -198,7 +198,6 @@ describe('a part is what its primitives draw, whichever way the file is laid out
 
   it('counts every vertex of a primitive that carries no index list', () => {
     const g = load('mika-milfy-12.vrm')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prim = g.json.meshes[0].primitives[0] as GltfPrimitive
     const count = g.json.accessors[prim.attributes.POSITION].count as number
     const bare: GltfPrimitive = { attributes: prim.attributes }

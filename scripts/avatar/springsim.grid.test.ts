@@ -170,8 +170,8 @@ describe('the nearest-vertex query, against a brute-force scan', () => {
     const face = real().face
     const grid = new Grid(face)
     const P = face.outPos
-    let lo = [Infinity, Infinity, Infinity]
-    let hi = [-Infinity, -Infinity, -Infinity]
+    const lo = [Infinity, Infinity, Infinity]
+    const hi = [-Infinity, -Infinity, -Infinity]
     for (const i of face.keep)
       for (let a = 0; a < 3; a++) {
         lo[a] = Math.min(lo[a], P[i * 3 + a])
