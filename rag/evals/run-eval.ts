@@ -21,7 +21,7 @@ import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory } from './golden.js'
-import { judgeFaithfulness, judgeStatement } from './judge.js'
+import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
 import {
   recallAtK,
   reciprocalRank,
@@ -104,6 +104,15 @@ export interface ItemResult {
   faithfulness?: number
 }
 
+// A run the judge could not read produces no faithfulness datum, the same way a
+// retrieval-only arm produces no correctness. Scoring it 1 made the headline a
+// function of how often the FAQ cache answered: the lexical veto sent five more
+// questions to generation, the free passes fell 28 → 23, and the reported figure
+// fell 91.9% → 85.4% with no answer getting worse (judge.test.ts).
+export function scoreFaithfulness(verdict: FaithfulnessVerdict): number | undefined {
+  return verdict.judged ? (verdict.grounded ? 1 : 0) : undefined
+}
+
 export function aggregate(items: ItemResult[]): Aggregate {
   const present = (f: (i: ItemResult) => number | undefined) =>
     items.map(f).filter((v): v is number => v !== undefined)
@@ -151,13 +160,19 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         // if an item carries a claim and this is still null, which is the only
         // reason the call cannot be quietly dropped later.
         const judged = item.mustState ? (await judgeStatement(answerText, item.mustState)).states : null
+        const faith = await judgeFaithfulness(answerText, ctx)
         items.push({
           category: item.category,
           recall: recallAtK(ids, relevant),
           mrr: reciprocalRank(ids, relevant),
           correctness: scoreCorrectness(answerText, item, judged),
-          faithfulness: (await judgeFaithfulness(answerText, ctx)).grounded ? 1 : 0,
+          faithfulness: scoreFaithfulness(faith),
         })
+        // The same reason correctness prints its misses: a mean cannot tell an
+        // invented fact from an answer the judge simply could not read.
+        if (faith.judged && !faith.grounded) {
+          console.log(`    \u2717 ungrounded [${arm.name}/${locale}] ${item.id} \u2014 ${faith.reason}`)
+        }
         // Say why, next to the miss. Without this the only debuggable number
         // this arm produced was the category mean, and a mean cannot tell a bad
         // answer from a rule that asks an English word of a Japanese answer.

@@ -9,7 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallFailures, recallGate, byCategory, aggregate } from './run-eval.js'
+import { recallFailures, recallGate, byCategory, aggregate, scoreFaithfulness } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
 const rows = [
@@ -129,4 +129,29 @@ test('byCategory: a category that collapses does not hide inside the overall mea
 test('byCategory: the golden set really has near-miss items to measure', () => {
   // The column is only worth a table if something populates it.
   assert.ok(GOLDEN.filter((g) => g.category === 'near-miss').length >= 4)
+})
+
+// --- faithfulness is scored only where there was something to judge ----------
+// See judge.test.ts for why. The mapping lives here because the runner is what
+// turns a verdict into a datum, and `undefined` is what aggregate() already
+// treats as "this arm produced no such score" for correctness.
+
+test('scoreFaithfulness: an unjudged verdict is absent, not a pass', () => {
+  assert.equal(scoreFaithfulness({ judged: false, reason: 'no context' }), undefined)
+})
+
+test('scoreFaithfulness: a judged verdict scores 1 or 0', () => {
+  assert.equal(scoreFaithfulness({ judged: true, grounded: true, reason: 'ok' }), 1)
+  assert.equal(scoreFaithfulness({ judged: true, grounded: false, reason: 'invented' }), 0)
+})
+
+test('aggregate: cached answers do not lift faithfulness by being unjudgeable', () => {
+  // Three runs the judge could read, one of them unfaithful, plus two that were
+  // served from the FAQ cache and carry no context. The honest figure is 2/3.
+  // Counting the cache hits as passes would report 4/5 and would rise further
+  // every time the cache answered more often.
+  const item = (faithfulness?: number) => ({ category: 'single-fact' as const, recall: 1, mrr: 1, faithfulness })
+  const agg = aggregate([item(1), item(0), item(1), item(undefined), item(undefined)])
+  assert.equal(agg.faithfulness, 2 / 3)
+  assert.equal(agg.n, 5, 'the cached runs still count as runs everywhere else')
 })

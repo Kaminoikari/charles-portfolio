@@ -16,19 +16,25 @@ const faithfulnessSchema = z.object({
   reason: z.string().describe('one short sentence explaining the verdict'),
 })
 
-export interface FaithfulnessVerdict {
-  grounded: boolean
-  reason: string
-}
+// A union rather than an optional field, so `grounded` cannot be read off a run
+// that never had one. That is the whole guard on the caller: `judged: false` used
+// to be `grounded: true`, the caller scored it 1, and nothing in the types or
+// the tests could see the difference between "the judge approved this" and
+// "there was nothing to approve".
+export type FaithfulnessVerdict =
+  | { judged: false; reason: string }
+  | { judged: true; grounded: boolean; reason: string }
 
-// A faithful "I couldn't find that" decline is trivially grounded — guard it
-// before spending a judge call.
+// An answer with no retrieved context is not a faithful answer and not an
+// unfaithful one: a FAQ cache hit, a canned decline and an outage notice all
+// arrive this way, and the judge has nothing to compare them against. Say so,
+// and skip the model call.
 export async function judgeFaithfulness(
   answer: string,
   context: string,
 ): Promise<FaithfulnessVerdict> {
   if (context.trim().length === 0) {
-    return { grounded: true, reason: 'no context — decline is vacuously faithful' }
+    return { judged: false, reason: 'no retrieved context, so there is nothing to judge' }
   }
 
   const judge = new ChatAnthropic({ model: config.modelFast, temperature: 0 }).withStructuredOutput(
@@ -36,7 +42,7 @@ export async function judgeFaithfulness(
     { name: 'faithfulness' },
   )
 
-  return judge.invoke([
+  const verdict = await judge.invoke([
     {
       role: 'system',
       content:
@@ -48,6 +54,7 @@ export async function judgeFaithfulness(
     },
     { role: 'user', content: `CONTEXT:\n${context}\n\nANSWER:\n${answer}` },
   ])
+  return { judged: true, ...verdict }
 }
 
 const statementSchema = z.object({
