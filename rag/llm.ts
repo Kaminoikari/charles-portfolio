@@ -163,23 +163,34 @@ function claude(strong: boolean, temperature: number): ChatAnthropic {
   })
 }
 
-// Per-call deadlines (ms). Both Gemini windows are per-chunk, not caps on total
+// Per-call deadlines (ms). Every window here is per-chunk, not a cap on total
 // generation — a steadily streaming answer runs to completion regardless of
-// length, staying under the 60s function limit. GEMINI_FIRST_TOKEN_MS gates the
-// fallback-to-Claude decision (time to the first visible token); GEMINI_STALL_MS
-// bounds an inter-token gap AFTER the stream has committed (ends with the partial
-// answer, never falls back). CLAUDE_TIMEOUT_MS caps the .invoke fallback.
+// length, staying under the 60s function limit. *_FIRST_TOKEN_MS gates the
+// decision to give up on that tier (time to the first visible token);
+// *_STALL_MS bounds an inter-token gap AFTER the stream has committed (ends
+// with the partial answer, never falls back).
+//
+// Claude used to be asked with a plain invoke under a 15s cap on the WHOLE
+// answer, which made the deadline a function of answer length: on 2026-09-17,
+// with Gemini's free tier exhausted, a 1,184-character answer finished in
+// 14.8s and the same question a minute earlier died on the cap. Streaming it
+// under the same gate as Gemini removes length from the equation.
+//
+// The old RAG_CLAUDE_TIMEOUT_MS is gone rather than aliased: the deadline it
+// reported in production on 2026-09-17 was 15000ms, the default, so nothing
+// anywhere was overriding it and a compatibility branch would guard nothing.
 const GEMINI_FIRST_TOKEN_MS = Number.parseInt(process.env.RAG_GEMINI_TIMEOUT_MS ?? '8000', 10)
 const GEMINI_STALL_MS = Number.parseInt(process.env.RAG_GEMINI_STALL_MS ?? '8000', 10)
-const CLAUDE_TIMEOUT_MS = Number.parseInt(process.env.RAG_CLAUDE_TIMEOUT_MS ?? '15000', 10)
+const CLAUDE_FIRST_TOKEN_MS = Number.parseInt(process.env.RAG_CLAUDE_FIRST_TOKEN_MS ?? '15000', 10)
+const CLAUDE_STALL_MS = Number.parseInt(process.env.RAG_CLAUDE_STALL_MS ?? '8000', 10)
 
 export interface GenerateResult {
   text: string
   provider: 'gemini' | 'claude'
   /**
-   * The answer stopped arriving rather than finishing. Only tier 1 can report
-   * this: the Claude fallback is a plain invoke, which either returns a whole
-   * answer or throws. See GatedResult for why it travels with the text.
+   * The answer stopped arriving rather than finishing. Either tier can report
+   * it: both are streamed under the same gate. See GatedResult for why it
+   * travels with the text.
    */
   stalled: boolean
 }
@@ -192,8 +203,14 @@ export interface GenerateResult {
 // emits a visible token we commit to it; a later stall ends with the partial
 // answer rather than swapping providers. `strong` picks Sonnet over Haiku for
 // the fallback when the question is broad/synthetic.
-// The slice of tier 1 this function uses: one streaming call. Structural, and
-// injectable for the same reason `Tier` is — the tier-1-to-caller wiring needs a
+//
+// Claude is streamed through the same gate. It is the last tier, so its gate
+// has nothing left to fall back to and a breach fails the request; what it buys
+// is that a long answer can no longer breach it by being long. Its tokens also
+// reach the visitor as they arrive, because graph.ts forwards every
+// on_chat_model_stream chunk the generate node produces.
+// The slice of a tier this function uses: one streaming call. Structural, and
+// injectable for the same reason `Tier` is — the tier-to-caller wiring needs a
 // test of its own. Without one, a stub generator injected at the node layer
 // (resolveGenerator) skips this function entirely, and dropping the stall signal
 // here would be invisible: exactly the gap that let the ceilings in nodes.ts go
@@ -206,6 +223,7 @@ export async function generateWithFallback(
   messages: BaseMessageLike[],
   opts: { strong?: boolean; temperature?: number } = {},
   primary: (temperature: number) => StreamTier = gemini,
+  fallback: (strong: boolean, temperature: number) => StreamTier = claude,
 ): Promise<GenerateResult> {
   const temperature = opts.temperature ?? 0.2
   try {
@@ -218,12 +236,13 @@ export async function generateWithFallback(
     return { text, provider: 'gemini', stalled }
   } catch (err) {
     console.warn('Gemini generation failed before first token, falling back to Claude:', (err as Error).message)
-    const res = await withTimeout(
-      claude(opts.strong ?? false, temperature).invoke(messages),
-      CLAUDE_TIMEOUT_MS,
-      'Claude',
-    )
-    return { text: String(res.content), provider: 'claude', stalled: false }
+    const stream = await fallback(opts.strong ?? false, temperature).stream(messages)
+    const { text, stalled } = await consumeGated(stream, {
+      firstTokenMs: CLAUDE_FIRST_TOKEN_MS,
+      stallMs: CLAUDE_STALL_MS,
+      label: 'Claude',
+    })
+    return { text, provider: 'claude', stalled }
   }
 }
 

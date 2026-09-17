@@ -374,9 +374,13 @@ generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
   bursty (hits usually > 5 min apart, past the cache TTL), most requests never
   reach Claude at all, and the system prefix is below the cache minimum — so
   `cache_control` would mostly incur the 1.25× write premium with ~0 reads.
-- **Two-tier generation** (`generateWithFallback`): Gemini 2.5 Flash first
-  (8s timeout) → Claude on any error (15s timeout); `maxRetries=0` so a provider
-  429 fails over immediately instead of stacking LangChain's default six retries
+- **Two-tier generation** (`generateWithFallback`): Gemini 2.5 Flash first,
+  Claude on any error, both streamed under the same first-token gate (8s for
+  Gemini, 15s for Claude) with a per-chunk stall window of 8s after that. Every
+  deadline is per chunk, so answer length never decides whether a request
+  survives. That was the shape of the 2026-09-17 failure, when Claude was still
+  asked with one invoke under a cap on the whole answer. `maxRetries=0` so a
+  provider 429 fails over immediately instead of stacking LangChain's six retries
   (which had caused intermittent 504s).
 
 ---
