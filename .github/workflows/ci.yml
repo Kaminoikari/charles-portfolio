@@ -6,11 +6,12 @@ name: CI
 # it without being asked.
 #
 # No secrets. Every suite is offline by construction: the rag tests stub their
-# suppliers, and the avatar tests read VRM fixtures out of public/avatar. The
-# eval, which does need Voyage and Qdrant, stays in its own workflow.
+# suppliers. The eval, which does need Voyage and Qdrant, stays in its own
+# workflow.
 #
-# Offline does not mean Node-only: one avatar test shells out to python3, which
-# is why the toolchain below is set up before the suites run.
+# Node-only since 2026-09-17. The Python toolchain that used to be set up here
+# was for the avatar pipeline, which now lives in the vtuber-kit repo and runs
+# its own CI.
 
 on:
   pull_request:
@@ -19,7 +20,8 @@ on:
   workflow_dispatch:
 
 # A newer push to the same branch supersedes an in-flight run: only the tip
-# matters, and the avatar fixtures make each run a ~110MB checkout.
+# matters, and the VRM bodies under public/avatar make each run a ~110MB
+# checkout. They stay here because the site serves them to visitors.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -38,16 +40,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      # scripts/avatar/springsim.test.ts builds a VRM 1.0 twin of its fixture by
-      # shelling out to python3, and that path imports glb.py, which needs numpy.
-      # The runner ships python3 and no packages, so without this the test fails
-      # on ModuleNotFoundError while every other suite passes.
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-
-      - run: pip install numpy
-
       - run: npm ci
 
       - name: Lint
@@ -64,13 +56,18 @@ jobs:
       - name: RAG tests
         run: npm run rag:test
 
-      # Gated on the reported result, not on the exit code. `npm test` exits 1 on
-      # a run where all 1,636 tests pass, because a worker misses vitest's birpc
-      # "onTaskUpdate" heartbeat during the avatar suites' long synchronous CPU
-      # sweeps. Measured on 2026-09-16: 3/3 runs at the configured 2 threads, and
-      # once each at --pool=forks and --maxWorkers=1, all exit 1 with all tests
-      # passing and exactly one such error. vitest exposes no knob for the birpc
-      # timeout, so there is nothing to configure around it.
+      # Gated on the reported result, not on the exit code. A worker can miss
+      # vitest's birpc "onTaskUpdate" heartbeat during a long synchronous CPU
+      # sweep, which exits 1 on a run where every test passed. Measured on
+      # 2026-09-16, when the avatar pipeline was still here and the suite was
+      # 1,636 tests: 3/3 runs at the configured 2 threads, and once each at
+      # --pool=forks and --maxWorkers=1, all exit 1 with all tests passing and
+      # exactly one such error. vitest exposes no knob for the birpc timeout.
+      #
+      # The pipeline's 48 tests left on 2026-09-17 and rigProbe is now the only
+      # sweep, so this may no longer fire. The gate stays because it fails
+      # closed: it reads the summary line, so a real failure is still a
+      # failure.
       #
       # A step that is red by construction teaches everyone to ignore CI, and
       # dropping the step would lose the coverage, so the summary line decides:

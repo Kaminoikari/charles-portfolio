@@ -36,22 +36,7 @@ docs/shot-*.png
 build/
 scripts/__pycache__/
 
-# Milfy 復刻管線（scripts/avatar）。只有原始碼進版控：
-#   out/          建置產物，96MB，跑 make.py 就會重生
-#   baseline.vrm  與已進版控的 public/avatar/mika-pink.vrm 位元組相同
-#   mika-milfy.parts.json  建置用的部件對照表，執行期用不到
-scripts/avatar/out/*
-# ...除了這一個：它不是 make.py 產的，是手動跑 envelope.py 掃十支 .vrma 掃出
-# 來的（而且要先有完成的模型才掃得動）。缺了它 envelope.load 回 None、裙子
-# 少掉貼腿的外框，建置照樣成功不會警告。
-!scripts/avatar/out/leg-envelope.json
-scripts/avatar/__pycache__/
-scripts/avatar/blender/__pycache__/
-scripts/avatar/evidence/__pycache__/
-scripts/avatar/bodies/__pycache__/
-scripts/avatar/characters/__pycache__/
-scripts/avatar/outfits/__pycache__/
-scripts/avatar/baseline.vrm
+# scripts/avatar 的規則在 2026-09-17 隨管線一起移到 vtuber-kit repo。
 # public/avatar/mika-milfy-*.vrm 從 2026-09-03 起進版控並上線（現行 -12）：它是網站的第三個
 # 造型（avatarVariants.ts）。2026-08-31 曾決定只留本機，理由是「逆向復刻的模型
 # 不該被公開下載」；使用者在 2026-09-03 推翻該決定，依據是管線的輸入端只有
@@ -59,8 +44,6 @@ scripts/avatar/baseline.vrm
 # 裡沒有任何可還原成原作資料的東西。檔名帶版號是因為 /avatar/* 快取一年不可變，
 # 位元組換了就得換名字（-2 同日第二版：頭皮、共用膚色解、頸部帶；-3 2026-09-04：
 # 雙馬尾披到外套外面並與外套碰撞；-4 同日：表情位移跟著頭一起放大，>< 眼不再沉進臉裡；
-# -5 同日：金髮，頭皮蓋邊緣與後頸兩條髮根條不再透出紫線）。旁邊的 .parts.json 從 -3 起也進版控：
-# scripts/avatar/springsim.test.ts 靠它找出雙馬尾的 primitive，CI 沒有它就紅。
-
-# delivery-record evidence for scripts/avatar (RESULT.txt cites these)
-!scripts/avatar/evidence/*.log
+# -5 同日：金髮，頭皮蓋邊緣與後頸兩條髮根條不再透出紫線）。旁邊的 .parts.json 也留著：
+# 它原本是給 springsim.test.ts 找雙馬尾 primitive 用的，那支測試 2026-09-17 隨管線
+# 移走了，現在這裡沒有程式碼讀它；留下的理由換成它記著這份資產的來源與 sha256。

@@ -18,6 +18,12 @@
 //                              three-vrm's spring solver: the crown every
 //                              clip throws the hair to, the coat, the body,
 //                              the skirt, the tail joints
+//
+// BOTH PRODUCERS LEFT THIS REPO on 2026-09-17, along with the rest of the
+// avatar pipeline, for the vtuber-kit repo. The paths in the generated files'
+// headers are still written relative to a repo root, and that root is now
+// vtuber-kit's: run them there, then copy the two .gen.ts files back here.
+// Nothing turns red if you forget, which is the part worth watching.
 //   <family>.ts                by hand: the browser's fringe, the worst crown
 //                              a browser sweep has drawn, the waivers, the
 //                              excluded clips, and the combine() call that
