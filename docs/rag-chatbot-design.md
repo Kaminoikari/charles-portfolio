@@ -379,7 +379,9 @@ generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
   Gemini, 15s for Claude) with a per-chunk stall window of 8s after that. Every
   deadline is per chunk, so answer length never decides whether a request
   survives. That was the shape of the 2026-09-17 failure, when Claude was still
-  asked with one invoke under a cap on the whole answer. `maxRetries=0` so a
+  asked with one invoke under a cap on the whole answer. `converse` answers the
+  visitor too, so it comes through the same function; the internal steps keep
+  their whole-invoke caps, whose outputs are a verdict or a rewritten query. `maxRetries=0` so a
   provider 429 fails over immediately instead of stacking LangChain's six retries
   (which had caused intermittent 504s).
 

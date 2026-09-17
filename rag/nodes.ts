@@ -2,8 +2,10 @@
 //
 // LLM routing (see llm.ts): every step runs on Gemini's free tier first and
 // falls back to Claude when it fails. grade + rewrite use withTierFallback /
-// invokeWithFallback and still degrade to their no-op if both tiers are down;
-// generate (the user-facing answer) falls back under a first-token gate.
+// invokeWithFallback and still degrade to their no-op if both tiers are down.
+// The two nodes that write an answer the visitor reads, generate and converse,
+// are streamed under a first-token gate, so no deadline they carry is a
+// function of how long the answer turns out to be.
 
 import { Document } from '@langchain/core/documents'
 import { z } from 'zod'
@@ -391,7 +393,13 @@ export async function converse(
   state: RAGStateType,
   injected?: unknown,
 ): Promise<Partial<RAGStateType>> {
-  const tiers = resolveTiers(injected)
+  // Same streamed, first-token-gated cascade as generate, and for the same
+  // reason: this answer is one the visitor reads, so its length must not be
+  // what decides whether the request survives. Under the plain invoke this node
+  // used to make, both tiers capped the WHOLE reply at 8s, and the failure was
+  // silent by design — the catch below returns the canned reply, so a long
+  // answer came back as a stock sentence with nothing on screen saying why.
+  const converseAnswer = resolveGenerator(injected)
   const locale = (state.language as Locale) ?? 'en'
   const transcript = formatHistory(state.history ?? [], {
     maxTurns: HISTORY_MAX_TURNS,
@@ -422,7 +430,7 @@ export async function converse(
           'plainly instead of answering about a different one.\n\n'
 
   try {
-    const answer = await invokeWithFallback(
+    const { text: answer, stalled } = await converseAnswer(
       [
         {
           role: 'system',
@@ -463,8 +471,7 @@ export async function converse(
         },
         { role: 'user', content: sanitize(state.question) },
       ],
-      { timeoutMs: 8000, label: 'converse', temperature: 0.2 },
-      tiers,
+      { strong: false, temperature: 0.2 },
     )
     const clean = answer.trim()
     if (!clean) throw new Error('converse produced no text')
@@ -476,7 +483,13 @@ export async function converse(
     }
     // The transcript is this node's only source, so it is also the only place a
     // link may come from. Anything else is invented (see stripUngroundedLinks).
-    return { answer: stripUngroundedLinks(clean, transcript), sources: [], outcome: 'converse' }
+    // The stall notice goes after that filter for the reason generate states:
+    // the guardrails judge what the model wrote, and this sentence is ours.
+    return {
+      answer: stripUngroundedLinks(clean, transcript) + (stalled ? STALL_NOTICE[locale] : ''),
+      sources: [],
+      outcome: 'converse',
+    }
   } catch (err) {
     console.warn('converse failed, falling back to the generic reply:', (err as Error).message)
     return { answer: genericFallback(locale), sources: [], outcome: 'fallback' }

@@ -138,20 +138,22 @@ test('triage: the same message with no history takes the normal path', async () 
   assert.notEqual(out.route, 'converse')
 })
 
-test('converse: answers from the transcript, falling back to Claude', async () => {
+test('converse: answers from the transcript', async () => {
   const out = await converse(
     { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
-    tiers(failing('[429] quota exceeded'), answering('你剛剛問的是他在 USPACE 做什麼。')),
+    async () => ({ text: '你剛剛問的是他在 USPACE 做什麼。', provider: 'claude' as const, stalled: false }),
   )
   assert.equal(out.answer, '你剛剛問的是他在 USPACE 做什麼。')
   assert.equal(out.outcome, 'converse')
   assert.deepEqual(out.sources, [])
 })
 
-test('converse: both tiers down still answers, without inventing anything', async () => {
+test('converse: a generation that fails still answers, without inventing anything', async () => {
   const out = await converse(
     { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
-    tiers(failing('gemini 429'), failing('claude 529')),
+    async () => {
+      throw new Error('both tiers down')
+    },
   )
   assert.equal(out.outcome, 'fallback')
   assert.equal(typeof out.answer, 'string')
@@ -271,10 +273,30 @@ test('generate: the prompt hands the model the contact URLs to link to', async (
   assert.equal(system.includes(CONTACT.email), true)
 })
 
+// Haiku, not Sonnet: this node summarises a transcript that is already in its
+// own prompt, so the broad-question escalation generate makes would buy nothing
+// and cost per token. Nothing else reads these two values, so a slip here is a
+// silently more expensive answer.
+test('converse: asks for the cheap model, at the same temperature as generate', async () => {
+  let opts: unknown
+  await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    async (_messages: unknown, received: unknown) => {
+      opts = received
+      return { text: 'ok', provider: 'claude' as const, stalled: false }
+    },
+  )
+  assert.deepEqual(opts, { strong: false, temperature: 0.2 })
+})
+
 test('converse: an invented link is demoted there too', async () => {
   const out = await converse(
     { question: '我剛剛說了什麼?', language: 'zh-TW', history: HISTORY } as never,
-    tiers(failing('429'), answering('你剛剛問了 [這個](https://charleschen.tw)。')),
+    async () => ({
+      text: '你剛剛問了 [這個](https://charleschen.tw)。',
+      provider: 'claude' as const,
+      stalled: false,
+    }),
   )
   assert.equal((out.answer ?? '').includes('charleschen.tw'), false)
 })
@@ -322,20 +344,10 @@ test('gradeDocuments: grades against the retrieval query, which is what was sear
 // does not make the other answers improper. Confessing to a fault that did not
 // happen is still telling a recruiter something untrue.
 test('converse: is told that earlier grounded answers were legitimate', async () => {
-  let system = ''
-  const capture: Tier = {
-    invoke: (m) => {
-      system = String((m[0] as { content: unknown }).content)
-      return Promise.resolve({ content: 'ok' })
-    },
-    withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error('unused')) }),
-  }
-  await converse({ question: '我剛剛說了什麼?', language: 'zh-TW', history: HISTORY } as never, {
-    primary: () => capture,
-    fallback: () => capture,
-  })
-  assert.match(system, /earlier answers|previous answers/i)
-  assert.match(system, /portfolio the visitor cannot see|were properly grounded|not a fault/i)
+  const { gen, system } = capturingConverse()
+  await converse({ question: '我剛剛說了什麼?', language: 'zh-TW', history: HISTORY } as never, gen)
+  assert.match(system(), /earlier answers|previous answers/i)
+  assert.match(system(), /portfolio the visitor cannot see|were properly grounded|not a fault/i)
 })
 
 // Counting the visitor's turns is arithmetic, and converse was left to do it by
@@ -353,23 +365,34 @@ const FOUR_QUESTIONS = [
   { role: 'assistant' as const, content: 'Playbook …' },
 ]
 
-function capturingTier(): { tier: Tier; system: () => string } {
+// converse streams under the same first-token gate as generate, so what its
+// second slot takes is a generator, not a pair of tiers. That is also what
+// holds the wiring: a generator is a function, which resolveTiers rejects, so
+// a converse rebuilt on invokeWithFallback would run these tests against the
+// real providers and fail rather than quietly pass.
+function capturingConverse(reply = 'ok'): {
+  gen: (messages: Array<{ role: string; content: string }>) => Promise<{
+    text: string
+    provider: 'claude'
+    stalled: boolean
+  }>
+  system: () => string
+} {
   let system = ''
-  const tier: Tier = {
-    invoke: (m) => {
-      system = String((m[0] as { content: unknown }).content)
-      return Promise.resolve({ content: 'ok' })
+  return {
+    gen: async (messages) => {
+      system = String(messages[0]?.content ?? '')
+      return { text: reply, provider: 'claude' as const, stalled: false }
     },
-    withStructuredOutput: () => ({ invoke: () => Promise.reject(new Error('unused')) }),
+    system: () => system,
   }
-  return { tier, system: () => system }
 }
 
 test('converse: is pointed at the resolved transcript line when the visitor names a position', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.match(system(), /pointing at the transcript line labelled "User \(question 2\)"/)
   // The line it names has to be in the transcript, or the hint is a dead pointer.
@@ -380,10 +403,10 @@ test('converse: is pointed at the resolved transcript line when the visitor name
 // declares to be data — and it must carry no visitor text, or a transcript line
 // reading "ignore the rules above" would arrive unfenced and unsanitized.
 test('converse: the hint precedes the transcript and quotes nothing from it', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   const hintAt = system().indexOf('pointing at the transcript line')
   const transcriptAt = system().indexOf('Transcript:')
@@ -392,10 +415,10 @@ test('converse: the hint precedes the transcript and quotes nothing from it', as
 })
 
 test('converse: a position that was never asked is reported, not silently swapped', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '第十個問題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.match(system(), /a question 10 that they never asked/)
 })
@@ -408,20 +431,20 @@ test('converse: a position older than the rendered window is called out of view'
     role: (i % 2 === 0 ? 'user' : 'assistant') as 'user' | 'assistant',
     content: `t${i}`,
   }))
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '我剛剛問你的第二個問題是什麼?', language: 'zh-TW', history: long } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.match(system(), /earlier than the part of the transcript you can see/)
   assert.equal(system().includes('never asked'), false)
 })
 
 test('converse: no positional reference leaves the prompt alone', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '我剛剛說了什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.equal(/pointing at question/.test(system()), false)
 })
@@ -461,10 +484,10 @@ test('generate: is told an excerpt marker means shortened storage, not a failed 
 })
 
 test('converse: is told the same, since a question about the conversation lands here', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '你剛剛說的第8題是什麼?', language: 'zh-TW', history: FOUR_QUESTIONS } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.match(system(), /"Assistant:" turn whose text\s+ends in "\[excerpt: first N of M chars\]"/)
   assert.match(system(), /received it complete/i)
@@ -501,7 +524,7 @@ test('generate: a long recent answer reaches the model whole, not clamped at 300
 })
 
 test('converse: the same, since a question about the conversation is answered here', async () => {
-  const { tier, system } = capturingTier()
+  const { gen, system } = capturingConverse()
   await converse(
     {
       question: '你剛剛列的第8題是什麼?',
@@ -511,7 +534,7 @@ test('converse: the same, since a question about the conversation is answered he
         { role: 'assistant', content: LONG_ANSWER },
       ],
     } as never,
-    { primary: () => tier, fallback: () => tier },
+    gen,
   )
   assert.equal(system().includes(LONG_ANSWER), true, 'the whole answer must be in the prompt')
   assert.equal(system().includes('excerpt: first 300'), false, 'a recent answer must not be clamped')
@@ -552,6 +575,20 @@ test('generate: an answer that stopped arriving says so, in the visitor’s lang
   }
 })
 
+// converse is streamed now too, so the same half sentence can arrive from this
+// node, and it is the node that has to explain it: the visitor reading a reply
+// about their own conversation has even less to compare it against.
+test('converse: an answer that stopped arriving says so here as well', async () => {
+  const out = await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    async () => ({ text: '你剛剛問的是他在 USPA', provider: 'claude' as const, stalled: true }),
+  )
+  const answer = String(out.answer)
+  assert.equal(answer.startsWith('你剛剛問的是他在 USPA'), true, 'the partial text must survive')
+  assert.equal(answer.includes('生成在這裡卡住了'), true, 'missing the notice')
+  assert.equal(out.outcome, 'converse')
+})
+
 test('generate: an answer that finished normally carries no such notice', async () => {
   const out = await promptWith(
     { question: 'q', language: 'zh-TW', graded: [DOC] },
@@ -569,16 +606,6 @@ test('generate: an answer that finished normally carries no such notice', async 
 // own name (docs/plans/mika-persona.md).
 import { JA_POLITE_ENDING, MIKA_IDENTITY, MIKA_IDENTITY_SHORT, mikaVoice } from './persona.js'
 import { evidenceBlock } from './nodes.js'
-
-// A tier that answers like `answering` but keeps the messages it was handed.
-const capturing = (sink: { system: string }, content = 'ok'): Tier => ({
-  invoke: (messages: unknown) => {
-    const first = (messages as { content: string }[])[0]
-    sink.system = first?.content ?? ''
-    return Promise.resolve({ content })
-  },
-  withStructuredOutput: <T>() => ({ invoke: () => Promise.resolve({} as T) }),
-})
 
 test('generate: the prompt carries her identity and her voice', async () => {
   let system = ''
@@ -616,13 +643,13 @@ test('generate: an English question is never shown the Chinese or Japanese examp
 })
 
 test('converse: answers about the conversation still come from Mika', async () => {
-  const sink = { system: '' }
+  const { gen, system } = capturingConverse()
   await converse(
     { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
-    tiers(capturing(sink), failing('unused')),
+    gen,
   )
-  assert.equal(sink.system.includes(MIKA_IDENTITY_SHORT), true, 'converse answers as a nameless assistant')
-  assert.equal(sink.system.includes(mikaVoice('zh-TW')), true, 'converse lost the voice block')
+  assert.equal(system().includes(MIKA_IDENTITY_SHORT), true, 'converse answers as a nameless assistant')
+  assert.equal(system().includes(mikaVoice('zh-TW')), true, 'converse lost the voice block')
 })
 
 // The offensive-output guardrail hands the visitor a canned string, so it is one

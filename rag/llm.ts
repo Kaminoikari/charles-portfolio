@@ -2,8 +2,8 @@
 //
 //   contextualize / grade / rewrite / → Gemini free tier, falling back to
 //   decompose (internal steps)          Claude Haiku (see withTierFallback)
-//   generate (the user-facing answer) → Gemini free tier, falling back to
-//                                       Claude Haiku or Sonnet, under a
+//   generate + converse (the answers  → Gemini free tier, falling back to
+//   a visitor reads)                    Claude Haiku or Sonnet, under a
 //                                       first-token gate (generateWithFallback)
 //
 // Rationale: Gemini's free tier is the first choice everywhere, so a normal day
@@ -209,6 +209,11 @@ export interface GenerateResult {
 // is that a long answer can no longer breach it by being long. Its tokens also
 // reach the visitor as they arrive, because graph.ts forwards every
 // on_chat_model_stream chunk the generate node produces.
+//
+// Both nodes that write an answer the visitor reads come through here: generate
+// and, since converse was moved off its whole-reply invoke, converse. Only
+// generate's tokens are forwarded to the browser; graph.ts matches on the node
+// name, and converse's reply is short enough that it arrives with `done`.
 // The slice of a tier this function uses: one streaming call. Structural, and
 // injectable for the same reason `Tier` is — the tier-to-caller wiring needs a
 // test of its own. Without one, a stub generator injected at the node layer
