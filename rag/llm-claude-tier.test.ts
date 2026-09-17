@@ -82,6 +82,25 @@ test('Claude fallback: a stall after the first token keeps what arrived', async 
   assert.equal(res.stalled, true)
 })
 
+// The stall window needs a test that can only pass on the Claude constant.
+// The test above reaches Phase 2 by throwing, which is the error branch, so it
+// stays green no matter which window the call passes; and both defaults are
+// 8000, so swapping CLAUDE_STALL_MS for GEMINI_STALL_MS changes nothing in
+// production either. Only an idle gap between two real tokens, timed against
+// the 60ms this file sets and the 8000ms it does not, tells them apart.
+test('Claude fallback: the stall window is the Claude one, not the Gemini one', async () => {
+  const res = await generateWithFallback([{ role: 'user', content: 'q' }], {}, geminiDown, () => ({
+    stream: async () =>
+      chunks([
+        { content: 'arrived', afterMs: 1 },
+        { content: ' eventually', afterMs: 300 },
+      ]),
+  }))
+  assert.equal(res.provider, 'claude')
+  assert.equal(res.text, 'arrived')
+  assert.equal(res.stalled, true)
+})
+
 // `strong` picks Sonnet over Haiku for broad questions. It reaches the factory
 // as an argument now rather than being read off a closure, so a wiring slip
 // would silently downgrade every broad answer to Haiku with nothing failing.
