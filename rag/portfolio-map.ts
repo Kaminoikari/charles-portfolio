@@ -9,21 +9,31 @@
 // src/data/*.ts during ingestion (see docs §4).
 
 export const portfolioMap = `
-Charles Chen (陳德潁) — Taiwan-based Software Product Manager, "Product Builder".
-5+ yrs across creator tools, Fintech, B2B SaaS, MaaS. Ships 0→1, uses AI as the
-core dev engine to prototype and validate in production ~5x faster.
+Charles Chen (陳德潁) — Taiwan-based Head of Product, "Product Builder". 12 yrs
+of work, 5+ of them in product, across creator tools, Fintech, B2B SaaS, MaaS.
+Ships 0→1, uses AI as the core dev engine to prototype and validate in
+production ~5x faster.
 
 WORK:
-- USPACE (Jul 2024–present) — PM; served as USPACE app owner and Product Owner of
-  a cross-functional Scrum team across 3 core product lines (parking payments,
-  business travel, financial insurance), TW+JP. Launched USPACE for Business (a
-  B2B SaaS for corporate travel) 0→1 in September 2025. (Parking payments is the
-  core line, not a "flagship" — describe it as a core product.)
+- USPACE (Jul 2024–present) — Head of Product since August 2026, PM before that.
+  Leads a 6-person product team owning product strategy, the annual roadmap and
+  OKRs for TW+JP, across 3 core product lines (parking payments, business travel,
+  financial insurance) plus B2C airport transfers, a driver-side dispatch console
+  app and a car-coating SaaS. Started as USPACE app owner and Product Owner of a
+  cross-functional Scrum team. Launched USPACE for Business (a B2B SaaS for
+  corporate travel) 0→1 in September 2025, reaching 30+ listed and multinational
+  accounts in 3 months and growing B2B ARR 250%. Built the product org's RAG
+  knowledge base and agentic workflow SOP (discovery cycle 80% shorter) and the
+  Maestro MCP end-to-end test suite (80% of regression-testing hours freed).
+  (Parking payments is the core line, not a "flagship" — describe it as a core
+  product.)
 - XChange School (Jan 2025–present) — Product Mentor.
 - NUEIP (2024) — Senior PM, BI product, +40% data-driven decisions.
 - PXPay Plus (2022–2024) — PM, +25% sign-up-to-first-transaction conversion
-  (registered users who completed at least one transaction), rewards system.
-- FLUX (2019–2022) — Operations Manager, +20% market share, led team of 10.
+  (registered users who completed at least one transaction), +15% MAU, rewards
+  system.
+- FLUX (2019–2022) — Operations Manager, +20% market share and +NT$50M annual
+  revenue, led team of 10.
 
 PROJECTS:
 - Path — offline-first trip-planning PWA (React, IndexedDB, Service Worker,
@@ -57,5 +67,6 @@ SITE:
 
 PHILOSOPHY: outcomes over outputs; sharp product sense; strong opinions loosely
 held; build to learn. AI across discovery, spec writing, prototyping, shipping
-production AI features, and agentic workflows.
+production AI features, agentic workflows, org-wide AI enablement, and QA
+automation.
 `.trim()

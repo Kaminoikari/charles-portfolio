@@ -4,7 +4,7 @@
 
 ## What Is an AI Product Manager Who Builds?
 
-An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An AI Product Builder goes further — they prototype and ship using AI tools. Charles Chen is both: an AI Product Manager and AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
+An AI Product Manager defines strategy, roadmaps, and stakeholder alignment. An AI Product Builder goes further — they prototype and ship using AI tools. Charles Chen is both: now Head of Product at USPACE, he is an AI Product Manager and AI Product Builder from Taiwan who combines product strategy with hands-on generative AI development.
 
 ## Key Metrics
 
@@ -36,7 +36,7 @@ URL: https://github.com/Kaminoikari/product-playbook
 
 ## Experience as AI Product Manager
 
-- AI Product Manager, USPACE (2024–Present) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch
+- Head of Product, USPACE (2024–Present, promoted from Product Manager in August 2026) — AI SaaS builder, 85%+ revenue, 0→1 B2B SaaS launch, 250% B2B ARR growth, leads a 6-person product team across Taiwan and Japan
 - Product Mentor, XChange School (2025–Present) — Coaching aspiring AI product managers in Taiwan
 - Senior AI Product Manager, NUEIP (2024) — AI-powered BI product, +40% data-driven decisions
 - Product Manager, PXPay Plus (2022–2024) — +25% sign-up-to-first-transaction conversion, +50% efficiency
