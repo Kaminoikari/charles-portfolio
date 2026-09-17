@@ -37,9 +37,10 @@ operate. Aligns with the existing Vite + React + TS app.
 > - **No API prompt caching** (deliberate — see §11).
 > - The index is built by a **GitHub Action** — on every push to main that touches
 >   a content source, and on demand via `workflow_dispatch` — because the runtime
->   container has no outbound network. Index at this commit: **1,074 doc chunks +
+>   container has no outbound network. Index at this commit: **1,095 doc chunks +
 >   838 FAQ paraphrases across 57 entries**, all in en/zh-TW/ja. (Counts come from
->   `extractAll()` and `faqEntries`; re-measure rather than trusting this line.)
+>   `extractAll()` and `faqEntries`; re-measure rather than trusting this line —
+>   `npm run rag:ingest:dry` and `npm run rag:faq:dry` print both without creds.)
 
 ## 1. Architecture
 
@@ -177,7 +178,7 @@ No SQL — collections are created in code by `ensureCollections()` (`rag/qdrant
 called at the top of every ingest run (idempotent).
 
 ```
-doc_chunks                              # the hybrid index — 1,074 chunks (en/zh-TW/ja)
+doc_chunks                              # the hybrid index — 1,095 chunks (en/zh-TW/ja)
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25 (Cloud Inference)
   payload index:  locale (keyword)                              # filtered on every query
@@ -416,6 +417,7 @@ rag/
 ├── ingest/
 │   ├── extract.ts            # parse src/data/*.ts → records (no regex drift)
 │   ├── build-index.ts        # chunk → voyage embed → upsert Qdrant (sparse via Cloud Inference)
+│   ├── payload.ts            # chunk → Qdrant payload + the hashed subset of it
 │   └── build-faq-cache.ts    # embed FAQ paraphrases → upsert faq_cache collection
 ├── insights/
 │   └── report.ts             # chat_logs analytics (npm run rag:insights)

@@ -10,7 +10,7 @@ import { config } from './config.js'
 import { embedOne, rerank } from './embeddings.js'
 import { qdrant, DENSE, SPARSE } from './qdrant.js'
 
-// Payload stored per chunk at ingest (see ingest/build-index.ts).
+// Payload stored per chunk at ingest (see ingest/payload.ts, which writes it).
 interface Payload {
   chunk_id: string
   parent_id: string | null
