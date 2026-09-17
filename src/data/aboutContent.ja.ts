@@ -32,9 +32,9 @@ export interface AboutContent {
 
 export const aboutContent: AboutContent = {
   whoIAm: [
-    '私は陳德潁（Charles Chen）、「実装こそが検証」だと信じる、台湾出身の Software Product Manager です。プロダクト戦略と AI 開発ツールを組み合わせ、コンセプトからローンチまでをエンドツーエンドで届ける、0→1 のソフトウェアプロダクトづくりを得意としています。',
-    'この 5 年間、ユーザー行動を変えるプロダクトづくりにフォーカスし、クリエイターツール、Fintech、B2B SaaS、MaaS（モビリティサービス）にまたがる経験を積んできました。累計 700 万人以上に届くプロダクトの企画に関わってきました。現在は USPACE で、駐車場決済、出張プラットフォーム、金融保険という 3 つの中核プロダクトラインを主導し、台湾と日本市場をカバーしています。USPACE app のオーナー、そしてクロスファンクショナルな Scrum チームの Product Owner を務め、エンジニアリング・デザイン・オペレーションをまとめ、プロダクトの方向性と優先順位を決めてきました。',
-    'これからの最強のプロダクト実務者は Product Builder の形になると確信しています。私のワークフローにおいて、AI は開発の中核エンジンです。これにより、要件の集約と PRD 執筆にとどまる従来 PM の枠を超え、自ら AI ツールを使って素早くプロトタイプを作り、本番で検証することができます。この「Builder モード」によって、従来のフローより 5 倍速くイテレーションでき、大規模なリソース投入の前に、リアルな市場の支持をプロダクトが獲得できる状態を担保します。',
+    '私は陳德潁（Charles Chen）、「実装こそが検証」だと信じる、台湾出身の Head of Product です。プロダクト戦略と AI 開発ツールを組み合わせ、コンセプトからローンチまでをエンドツーエンドで届ける、0→1 のソフトウェアプロダクトづくりを得意としています。',
+    '12 年のキャリアのうち 5 年以上をプロダクトマネジメントに費やし、ユーザー行動を変えるプロダクトづくりにフォーカスしてきました。クリエイターツール、Fintech、B2B SaaS、MaaS（モビリティサービス）にまたがる経験を積み、累計 700 万人以上に届くプロダクトの企画に関わってきました。現在は USPACE の Head of Product として 6 名のプロダクトチームを率い、台湾・日本両市場のプロダクト戦略、年間 Roadmap と OKR を担当しています。駐車場決済、出張プラットフォーム、金融保険という 3 つの中核プロダクトラインを引き続き主導しつつ、B2C 空港送迎、ドライバー向け配車管制アプリ、車体コーティング SaaS も統括しています。USPACE app のオーナー、そしてクロスファンクショナルな Scrum チームの Product Owner を務め、エンジニアリング・デザイン・オペレーションをまとめ、プロダクトの方向性と優先順位を決めてきました。',
+    'これからの最強のプロダクト実務者は Product Builder の形になると確信しています。私のワークフローにおいて、AI は開発の中核エンジンです。これにより、要件の集約と PRD 執筆にとどまる従来 PM の枠を超え、自ら AI ツールを使って素早くプロトタイプを作り、本番で検証することができます。この「Builder モード」によって、従来のフローより 5 倍速くイテレーションでき、大規模なリソース投入の前に、リアルな市場の支持をプロダクトが獲得できる状態を担保します。今は同じやり方を組織レベルに広げ、USPACE でプロダクト部門の RAG ナレッジベースと Agentic Workflow の標準プロセスを構築し、要件調査と競合分析のサイクルを 80% 短縮しました。',
   ],
   philosophyBullets: [
     {
@@ -84,17 +84,27 @@ export const aboutContent: AboutContent = {
       label: 'Agentic Workflows',
       body: 'タスクを自動で処理できる AI Agent を構築します。仕様作成から開発引き渡しまでの反復作業を AI に任せることで、チーム全体の実行効率を大きく引き上げます。',
     },
+    {
+      id: 'ai-enablement',
+      label: 'AI Enablement',
+      body: 'AI を個人の生産性から組織の能力へとスケールさせます。USPACE ではプロダクト部門の RAG ナレッジベースと Agentic Workflow の標準プロセスを構築し、チーム全体が同じ調査・分析パイプラインを共有できるようにして、要件調査と競合分析のサイクルを 80% 短縮しました。',
+    },
+    {
+      id: 'qa-automation',
+      label: 'QA Automation',
+      body: 'アプリ再構築プロジェクトでは Maestro MCP による E2E 自動テスト一式を単独で設計し、リグレッションテストを手動のクリック確認から毎リリース走る自動パイプラインに変え、工数の 80% を解放しました。',
+    },
   ],
   skillsTable: [
     {
       id: 'product-strategy',
       label: 'Product Strategy',
-      body: 'JTBD、Persona、User Journey Map、Empathy Map、Opportunity Solution Tree、User Story Mapping、North Star Metric、OKRs、RICE Prioritization、AARRR（Pirate Metrics）、Competitive Analysis',
+      body: 'JTBD、Persona、User Journey Map、Empathy Map、Opportunity Solution Tree、User Story Mapping、North Star Metric、OKRs、RICE Prioritization、AARRR（Pirate Metrics）、Competitive Analysis、JIRA、Figma、Axure RP',
     },
     {
       id: 'ai-llm',
       label: 'AI / LLM',
-      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems',
+      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems、MCP Servers',
     },
     {
       id: 'ai-engineering',
@@ -104,7 +114,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'engineering',
       label: 'Engineering',
-      body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io',
+      body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io、Maestro（E2E テスト自動化）',
     },
     {
       id: 'data-analytics',
@@ -114,7 +124,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'leadership',
       label: 'Leadership',
-      body: 'クロスファンクショナルチームのリード、Stakeholder Management、Agile / Scrum、Mentoring',
+      body: 'クロスファンクショナルチームのリード、台湾・日本市場のプロダクト戦略、年間 Roadmap と OKR、プロダクト部門の AI トランスフォーメーション、Stakeholder Management、Agile / Scrum、Mentoring',
     },
   ],
 }

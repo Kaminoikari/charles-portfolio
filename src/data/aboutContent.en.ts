@@ -28,9 +28,9 @@ export interface AboutContent {
 
 export const aboutContent: AboutContent = {
   whoIAm: [
-    "I'm Charles Chen (陳德潁), a Taiwan-based Software Product Manager who treats shipping as the truest form of validation. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.",
-    "Over the past 5 years I've focused on building products that change user behavior, with experience spanning creator tools, Fintech, B2B SaaS, and MaaS (Mobility-as-a-Service). I've contributed to product planning that has reached over 7 million people. I currently lead three core product lines at USPACE (parking payments, business travel platform, and financial insurance), covering Taiwan and Japan. I served as the USPACE app owner and as Product Owner of a cross-functional Scrum team, aligning engineering, design, and operations while setting product direction and priorities.",
-    "I'm convinced the strongest product people of the future will be Product Builders. In my workflow, AI is the core engine of development. That lets me move past the traditional PM frame of synthesizing requirements and writing PRDs, and personally use AI tools to ship prototypes quickly and validate them in production. This 'Builder mode' lets me iterate 5x faster than traditional workflows, so a product earns real market validation before any large-scale resource commitment.",
+    "I'm Charles Chen (陳德潁), a Taiwan-based Head of Product who treats shipping as the truest form of validation. I specialize in building software products from 0 to 1, combining product strategy with AI development tools to deliver end-to-end from concept to launch.",
+    "Across 12 years of work, more than 5 of them in product management, I've built products that change user behavior, with experience spanning creator tools, Fintech, B2B SaaS, and MaaS (Mobility-as-a-Service). I've contributed to product planning that has reached over 7 million people. I'm now Head of Product at USPACE, leading a 6-person product team and owning product strategy, the annual roadmap and OKRs across Taiwan and Japan. I still drive the three core product lines (parking payments, business travel platform, and financial insurance), and now also oversee B2C airport transfers, a driver-side dispatch console app, and a car-coating SaaS. I served as the USPACE app owner and as Product Owner of a cross-functional Scrum team, aligning engineering, design, and operations while setting product direction and priorities.",
+    "I'm convinced the strongest product people of the future will be Product Builders. In my workflow, AI is the core engine of development. That lets me move past the traditional PM frame of synthesizing requirements and writing PRDs, and personally use AI tools to ship prototypes quickly and validate them in production. This 'Builder mode' lets me iterate 5x faster than traditional workflows, so a product earns real market validation before any large-scale resource commitment. I now run the same play at the org level: at USPACE I built the product org's RAG knowledge base and agentic workflow SOP, cutting the discovery and competitive-analysis cycle by 80%.",
   ],
   philosophyBullets: [
     {
@@ -80,17 +80,27 @@ export const aboutContent: AboutContent = {
       label: 'Agentic Workflows',
       body: "I build AI agents that handle tasks autonomously, delegating repetitive work spanning spec generation through dev handoff to AI and lifting the team's overall execution efficiency.",
     },
+    {
+      id: 'ai-enablement',
+      label: 'AI Enablement',
+      body: 'I scale AI from personal productivity into an organizational capability. At USPACE I built the product org\'s RAG knowledge base and agentic workflow SOP, putting the whole team on one research-and-analysis pipeline and cutting the discovery and competitive-analysis cycle by 80%.',
+    },
+    {
+      id: 'qa-automation',
+      label: 'QA Automation',
+      body: 'For the app rewrite I architected the full Maestro MCP end-to-end test suite single-handedly, turning regression testing from manual click-through into a run-every-release pipeline and freeing 80% of regression-testing hours.',
+    },
   ],
   skillsTable: [
     {
       id: 'product-strategy',
       label: 'Product Strategy',
-      body: 'JTBD, Persona, User Journey Map, Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE Prioritization, AARRR (Pirate Metrics), Competitive Analysis',
+      body: 'JTBD, Persona, User Journey Map, Empathy Map, Opportunity Solution Tree, User Story Mapping, North Star Metric, OKRs, RICE Prioritization, AARRR (Pirate Metrics), Competitive Analysis, JIRA, Figma, Axure RP',
     },
     {
       id: 'ai-llm',
       label: 'AI / LLM',
-      body: 'Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, Agentic Workflows, Multi-Agent Systems',
+      body: 'Claude Code, Codex, Gemini AI, LLM Orchestration, Prompt Engineering, AI Agent Development, Agentic Workflows, Multi-Agent Systems, MCP Servers',
     },
     {
       id: 'ai-engineering',
@@ -100,7 +110,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'engineering',
       label: 'Engineering',
-      body: 'React, TypeScript, Flutter, Canvas 2D, three.js (WebGL), Node.js, Python (FastAPI), PHP (Laravel), PostgreSQL, SQLite, Redis, Supabase, Vercel, Fly.io',
+      body: 'React, TypeScript, Flutter, Canvas 2D, three.js (WebGL), Node.js, Python (FastAPI), PHP (Laravel), PostgreSQL, SQLite, Redis, Supabase, Vercel, Fly.io, Maestro (E2E test automation)',
     },
     {
       id: 'data-analytics',
@@ -110,7 +120,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'leadership',
       label: 'Leadership',
-      body: 'Cross-Functional Team Leadership, Stakeholder Management, Agile / Scrum, Mentoring',
+      body: 'Cross-Functional Team Leadership, Taiwan / Japan Product Strategy, Annual Roadmap & OKRs, Product Org AI Transformation, Stakeholder Management, Agile / Scrum, Mentoring',
     },
   ],
 }

@@ -33,9 +33,9 @@ export interface AboutContent {
 
 export const aboutContent: AboutContent = {
   whoIAm: [
-    '我是陳德潁（Charles Chen），一位來自台灣並深信「實作即驗證」的 Software Product Manager。我擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，完成從概念到上線的端到端交付。',
-    '過去 5 年，我專注於打造能改變使用者行為的產品，經歷橫跨創作者工具、Fintech、B2B SaaS 與 MaaS（移動服務）。我曾參與影響超過 700 萬人的產品規劃。目前在 USPACE 主導停車支付、企業差旅平台與金融保險三大核心產品線，業務涵蓋台灣與日本市場。我曾任 USPACE app 負責人，也擔任過跨職能 Scrum 團隊的 Product Owner，協調工程、設計與營運，並決定產品方向與優先序。',
-    '我深信未來最強大的產品人會是 Product Builder。在我的工作流中，AI 不只是輔助工具，更是開發的核心引擎。這讓我能超越傳統 PM 僅止於收斂需求與撰寫 PRD 的框架，並親手利用 AI 工具快速產出原型、完成上線驗證。這種「Builder 模式」讓我能以比傳統流程快 5 倍的速度進行迭代，確保產品在投入大規模資源前，就已經獲得真實市場的認可。',
+    '我是陳德潁（Charles Chen），一位來自台灣並深信「實作即驗證」的 Head of Product。我擅長從 0 到 1 打造軟體產品，結合產品策略與 AI 開發工具，完成從概念到上線的端到端交付。',
+    '我有 12 年工作資歷，其中 5 年以上專注於產品管理，打造能改變使用者行為的產品，經歷橫跨創作者工具、Fintech、B2B SaaS 與 MaaS（移動服務）。我曾參與影響超過 700 萬人的產品規劃。目前在 USPACE 擔任 Head of Product，帶領 6 人產品團隊，負責跨台日市場的產品策略、年度 Roadmap 與 OKR，主導停車支付、企業差旅平台與金融保險三大核心產品線，並延伸統籌 B2C 機場接送、司機端調度中控平台 App 與車體鍍膜 SaaS。我曾任 USPACE app 負責人，也擔任過跨職能 Scrum 團隊的 Product Owner，協調工程、設計與營運，並決定產品方向與優先序。',
+    '我深信未來最強大的產品人會是 Product Builder。在我的工作流中，AI 不只是輔助工具，更是開發的核心引擎。這讓我能超越傳統 PM 僅止於收斂需求與撰寫 PRD 的框架，並親手利用 AI 工具快速產出原型、完成上線驗證。這種「Builder 模式」讓我能以比傳統流程快 5 倍的速度進行迭代，確保產品在投入大規模資源前，就已經獲得真實市場的認可。現在我把同一套做法放大到組織層級：在 USPACE 建構產品部門的 RAG 知識庫與 Agentic Workflow 標準作業流程，把需求調研與競品分析的週期縮短 80%。',
   ],
   philosophyBullets: [
     {
@@ -85,17 +85,27 @@ export const aboutContent: AboutContent = {
       label: 'Agentic Workflows',
       body: '建立能自動處理任務的 AI Agent。我讓 AI 協助從規格產出到開發交付的重複性工作，大幅提升團隊整體的執行效率。',
     },
+    {
+      id: 'ai-enablement',
+      label: 'AI Enablement',
+      body: '把 AI 從個人生產力放大成組織能力。我在 USPACE 建構產品部門的 RAG 知識庫與 Agentic Workflow 標準作業流程，讓整個團隊共用同一套調研與分析管線，需求調研與競品分析的週期縮短 80%。',
+    },
+    {
+      id: 'qa-automation',
+      label: 'QA Automation',
+      body: '在 App 重構專案中獨立架構 Maestro MCP 的全套 E2E 自動化測試腳本，把回歸測試從人工逐頁點擊變成每次交付都會跑的自動流程，釋放 80% 回歸測試工時。',
+    },
   ],
   skillsTable: [
     {
       id: 'product-strategy',
       label: 'Product Strategy',
-      body: 'JTBD、Persona、User Journey Map、Empathy Map、Opportunity Solution Tree、User Story Mapping、North Star Metric、OKRs、RICE Prioritization、AARRR（Pirate Metrics）、Competitive Analysis',
+      body: 'JTBD、Persona、User Journey Map、Empathy Map、Opportunity Solution Tree、User Story Mapping、North Star Metric、OKRs、RICE Prioritization、AARRR（Pirate Metrics）、Competitive Analysis、JIRA、Figma、Axure RP',
     },
     {
       id: 'ai-llm',
       label: 'AI / LLM',
-      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems',
+      body: 'Claude Code、Codex、Gemini AI、LLM Orchestration、Prompt Engineering、AI Agent Development、Agentic Workflows、Multi-Agent Systems、MCP Servers',
     },
     {
       id: 'ai-engineering',
@@ -105,7 +115,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'engineering',
       label: 'Engineering',
-      body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io',
+      body: 'React、TypeScript、Flutter、Canvas 2D、three.js (WebGL)、Node.js、Python (FastAPI)、PHP (Laravel)、PostgreSQL、SQLite、Redis、Supabase、Vercel、Fly.io、Maestro（E2E 測試自動化）',
     },
     {
       id: 'data-analytics',
@@ -115,7 +125,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'leadership',
       label: 'Leadership',
-      body: '跨部門團隊領導、Stakeholder Management、Agile / Scrum、Mentoring',
+      body: '跨部門團隊領導、跨台日市場產品策略、年度 Roadmap 與 OKR、產品部門 AI 轉型、Stakeholder Management、Agile / Scrum、Mentoring',
     },
   ],
 }
