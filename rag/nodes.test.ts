@@ -13,7 +13,14 @@ import assert from 'node:assert/strict'
 
 import { gradeDocuments, rewriteQuery, converse, triage, generate } from './nodes.js'
 import * as nodes from './nodes.js'
-import { resolveTiers, DEFAULT_TIERS, type Tier, type Tiers } from './llm.js'
+import {
+  resolveTiers,
+  resolveGenerator,
+  generateWithFallback,
+  DEFAULT_TIERS,
+  type Tier,
+  type Tiers,
+} from './llm.js'
 import { CONTACT, genericFallback, serviceUnavailable } from './triage.js'
 import { hybridRetrieve } from './retrieval.js'
 import { Document } from '@langchain/core/documents'
@@ -53,6 +60,18 @@ test('resolveTiers: a LangGraph RunnableConfig never passes for tiers', () => {
 
   const real = tiers(failing('a'), failing('b'))
   assert.equal(resolveTiers(real), real)
+})
+
+// The same guard on the other seam, which had none. Two nodes read it now, and
+// they fail differently if a config gets through: generate throws, while
+// converse catches and hands back the canned reply, which is the silent shape
+// this file's converse tests exist to keep out.
+test('resolveGenerator: a LangGraph RunnableConfig never passes for a generator', () => {
+  const config = { configurable: {}, signal: new AbortController().signal, writer: () => {} }
+  assert.equal(resolveGenerator(config), generateWithFallback)
+  assert.equal(resolveGenerator(undefined), generateWithFallback)
+  const stub = async () => ({ text: 'x', provider: 'claude' as const, stalled: false })
+  assert.equal(resolveGenerator(stub), stub)
 })
 
 // The fallback tier answers in plain text, not through withStructuredOutput.
@@ -287,6 +306,20 @@ test('converse: asks for the cheap model, at the same temperature as generate', 
     },
   )
   assert.deepEqual(opts, { strong: false, temperature: 0.2 })
+})
+
+// The output-side guardrail has a branch here as well, and nothing was reading
+// it: deleting these three lines from converse turned no test red. Reported by
+// review while checking this round's changes, and outside the round's scope,
+// so it is pinned here without touching the node.
+test('converse: an offensive reply is blocked there too', async () => {
+  const out = await converse(
+    { question: '我剛剛問了你什麼?', language: 'zh-TW', history: HISTORY } as never,
+    async () => ({ text: 'you retard', provider: 'claude' as const, stalled: false }),
+  )
+  assert.equal(out.outcome, 'blocked')
+  assert.deepEqual(out.sources, [])
+  assert.equal((out.answer ?? '').includes('retard'), false)
 })
 
 test('converse: an invented link is demoted there too', async () => {

@@ -3,8 +3,9 @@
 //   contextualize / grade / rewrite / → Gemini free tier, falling back to
 //   decompose (internal steps)          Claude Haiku (see withTierFallback)
 //   generate + converse (the answers  → Gemini free tier, falling back to
-//   a visitor reads)                    Claude Haiku or Sonnet, under a
-//                                       first-token gate (generateWithFallback)
+//   a visitor reads)                    Claude under a first-token gate
+//                                       (generateWithFallback). Sonnet serves a
+//                                       broad generate; everything else Haiku.
 //
 // Rationale: Gemini's free tier is the first choice everywhere, so a normal day
 // costs nothing. What it is NOT is a single point of failure: that tier is
@@ -144,7 +145,9 @@ export function gemini(temperature = 0): BaseChatModel {
   })
 }
 
-// Anthropic factory — tier 2 (paid fallback) of generate only.
+// Anthropic factory — the paid tier wherever one is reached: generate and
+// converse through generateWithFallback, and every internal step through
+// `claudeFast` below.
 //
 // Deliberately NO prompt caching here. Anthropic prompt caching pays off for
 // high-frequency apps that resend a large, fixed prompt prefix within the 5-min
