@@ -30,8 +30,9 @@ test('toPoint stores the publication date the chunk carries', () => {
 })
 
 test('toPoint leaves the date key off a chunk that has none', () => {
-  const { date: _date, ...undated } = BLOG
-  assert.equal('date' in point(undated as ChunkRecord).payload, false)
+  const undated: ChunkRecord = { ...BLOG }
+  delete undated.date
+  assert.equal('date' in point(undated).payload, false)
 })
 
 test('hashPayload folds the date in, so correcting a date re-ingests the chunk', () => {
