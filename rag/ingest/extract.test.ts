@@ -186,3 +186,20 @@ test('every chunk names its own topic in the text that gets embedded', () => {
   }
   assert.deepEqual(missing, [])
 })
+
+// A body chunk's text is the article's prose and nothing else, so a sentence
+// like "nine months ago" inside it has no anchor once it is separated from the
+// feed entry. Asked on 2026-09-17 what that phrase meant, the bot answered that
+// the article "carries no publication date" — true of what it retrieved, false
+// of src/data/blog.*.ts, which has carried the date all along.
+test('every blog chunk carries its article publication date', () => {
+  const chunks = blogChunks(ARTICLES, 'en')
+  assert.ok(
+    chunks.some((c) => c.parentId),
+    'no body chunks were produced, so this test would pass without covering them',
+  )
+  const byUrl = new Map(ARTICLES.map((a) => [a.url, a.date]))
+  for (const c of chunks) {
+    assert.equal(c.date, byUrl.get(c.url ?? ''), `chunk ${c.id} lost its publication date`)
+  }
+})

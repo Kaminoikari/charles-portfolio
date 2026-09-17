@@ -496,6 +496,14 @@ export async function converse(
   }
 }
 
+// Today, in UTC. The model has no clock of its own, so without this line it
+// answers "when was that" from its training cutoff, and a relative phrase written
+// inside an article ("nine months ago") has nothing to resolve against. UTC is
+// close enough for month-level arithmetic and avoids picking a visitor timezone.
+export function todayISO(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10)
+}
+
 // --- generate ------------------------------------------------------------
 // Answer grounded ONLY in the graded chunks + the always-injected portfolio map
 // (which rescues global "what's his overall style?" questions that chunking
@@ -515,7 +523,10 @@ export async function converse(
 // was every proper noun and every metric that lives in the portfolio map.
 export function evidenceBlock(graded: Document[], query: string): string {
   const context = graded
-    .map((d, i) => `[${i + 1}] (${d.metadata.sourceType}) ${d.pageContent}`)
+    .map(
+      (d, i) =>
+        `[${i + 1}] (${d.metadata.sourceType}${d.metadata.date ? `, published ${d.metadata.date}` : ''}) ${d.pageContent}`,
+    )
     .join('\n\n')
   const entities = entityContext(query)
   return `Context:\n${context}\n\nPortfolio map:\n${portfolioMap}` + (entities ? `\n\n${entities}` : '')
@@ -633,6 +644,11 @@ export async function generate(
           'shared, or gave you, and never thank them for it. If they ask what they ' +
           'said or sent, answer only from the conversation transcript, and if it is ' +
           'not there, say so instead of inventing it.\n\n' +
+          `Today's date is ${todayISO()}. A context item tagged "published ` +
+          '<date>" carries that article\'s publication date: when such an item ' +
+          'uses a relative phrase like "nine months ago", work out which month ' +
+          'that lands on from the publication date and say so, instead of ' +
+          'claiming the date is unknown.\n\n' +
           evidence +
           contactChannels +
           historyBlock,

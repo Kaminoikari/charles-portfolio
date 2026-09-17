@@ -22,16 +22,9 @@
 
 import { config } from '../config.js'
 import { embed } from '../embeddings.js'
-import {
-  qdrant,
-  ensureCollections,
-  toPointId,
-  scrollHashes,
-  deleteByChunkIds,
-  DENSE,
-  SPARSE,
-} from '../qdrant.js'
+import { qdrant, ensureCollections, scrollHashes, deleteByChunkIds } from '../qdrant.js'
 import { extractAll, type ChunkRecord } from './extract.js'
+import { hashPayload, toPoint, type Point } from './payload.js'
 import { chunkHash, reconcile, isPruneSafe, type DesiredChunk } from './reconcile.js'
 import { contextualize, type ContextItem } from './contextualize.js'
 
@@ -48,12 +41,6 @@ const EMBED_MODELS = [config.embedModel, String(config.embedDim), config.sparseM
 // experience, skills, changelog entries, agent-pattern children) are left as-is.
 function needsContext(r: ChunkRecord): boolean {
   return config.contextualEnabled && r.parentId !== null && (r.sourceType === 'blog' || r.sourceType === 'project')
-}
-
-type Point = {
-  id: string
-  vector: { [DENSE]: number[]; [SPARSE]: { text: string; model: string } }
-  payload: Record<string, unknown>
 }
 
 function summarize(records: ChunkRecord[]): string {
@@ -88,20 +75,6 @@ function buildParentDocs(records: ChunkRecord[]): Map<string, string> {
   return docs
 }
 
-// The metadata subset folded into the hash: payload minus the volatile keys the
-// writer adds (chunk_hash, context) and content (hashed via its own field). A
-// displayed title / url changing is a real change even when the body didn't.
-function hashPayload(r: ChunkRecord): Record<string, unknown> {
-  return {
-    parent_id: r.parentId,
-    source_type: r.sourceType,
-    project_id: r.projectId,
-    locale: r.locale,
-    title: r.title,
-    ...(r.url ? { url: r.url } : {}),
-  }
-}
-
 // Hash of the NON-contextual state — the fingerprint a chunk gets when it is
 // stored raw (never contextualised, or context generation failed this run).
 function rawHash(r: ChunkRecord): string {
@@ -119,30 +92,6 @@ function desiredHash(r: ChunkRecord, parentDocs: Map<string, string>): string {
     models: [...EMBED_MODELS, config.contextModel],
     payload: hashPayload(r),
   })
-}
-
-function toPoint(r: ChunkRecord, vector: number[], hash: string, embedText: string, context: string): Point {
-  return {
-    id: toPointId(r.id),
-    vector: {
-      [DENSE]: vector,
-      // Sparse (BM25) sees the SAME context-prefixed text as the dense embedding
-      // — Anthropic's "contextual BM25" half of the technique.
-      [SPARSE]: { text: embedText, model: config.sparseModel },
-    },
-    payload: {
-      chunk_id: r.id,
-      chunk_hash: hash,
-      parent_id: r.parentId,
-      source_type: r.sourceType,
-      project_id: r.projectId,
-      locale: r.locale,
-      title: r.title,
-      content: r.content, // raw content stays for citation / display
-      ...(context ? { context } : {}), // the generated situating context, for transparency
-      ...(r.url ? { url: r.url } : {}),
-    },
-  }
 }
 
 async function main() {

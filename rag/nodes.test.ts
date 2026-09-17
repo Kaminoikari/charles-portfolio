@@ -11,7 +11,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { gradeDocuments, rewriteQuery, converse, triage, generate } from './nodes.js'
+import { gradeDocuments, rewriteQuery, converse, triage, generate, todayISO } from './nodes.js'
 import * as nodes from './nodes.js'
 import {
   resolveTiers,
@@ -862,4 +862,35 @@ test('generate: the prompt is built from that one definition', async () => {
     true,
     'generate assembles its own evidence instead of the shared definition, so the judge can drift from it',
   )
+})
+
+// --- dated sources --------------------------------------------------------
+// Asked on 2026-09-17 what the "nine months ago" in a blog post referred to, the
+// bot said the article had no publication date and told the visitor to email
+// Charles. The date was in src/data/blog.*.ts the whole time; it just never
+// reached the model. Two things have to arrive for that answer to be possible:
+// the date on the source line, and today's date as the model's clock.
+const DATED_DOC = {
+  pageContent: '九個月前，我開始讓 AI 寫的程式碼進 Production。',
+  metadata: { sourceType: 'blog', id: 'b-dated', title: 'AI in production', score: 1, locale: 'zh-TW', date: '2026-09-14' },
+}
+
+test('generate: a dated source is labelled with its publication date', async () => {
+  const { system } = await promptFor({ question: '九個月前是什麼時候?', language: 'zh-TW', graded: [DATED_DOC] })
+  assert.equal(system.includes('(blog, published 2026-09-14)'), true)
+})
+
+test('generate: an undated source is labelled without a date', async () => {
+  const { system } = await promptFor({ question: '他寫過什麼?', language: 'zh-TW', graded: [DOC] })
+  assert.equal(system.includes('(blog)'), true)
+  assert.equal(system.includes('published'), true, 'the date rule itself should still be stated')
+})
+
+test('generate: the prompt gives the model today’s date', async () => {
+  const { system } = await promptFor({ question: '最近在忙什麼?', language: 'zh-TW', graded: [DOC] })
+  assert.equal(system.includes(`Today's date is ${todayISO()}`), true)
+})
+
+test('todayISO: renders a calendar day, not a timestamp', () => {
+  assert.equal(todayISO(new Date('2026-09-14T23:30:00Z')), '2026-09-14')
 })

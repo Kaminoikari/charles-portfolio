@@ -27,6 +27,11 @@ export interface ChunkRecord {
   // External article URL — set only on blog chunks so the chat UI can link a
   // cited blog source straight to the original post.
   url?: string
+  // Publication date (YYYY-MM-DD) — set only on blog chunks. It travels as
+  // metadata rather than inside the content so the generator can resolve a
+  // relative time reference written inside an article ("nine months ago") to a
+  // real month instead of saying it has no date to anchor on.
+  date?: string
 }
 
 const LOCALES: Locale[] = ['en', 'zh-TW', 'ja']
@@ -129,7 +134,7 @@ export function blogChunks(articles: BlogArticleInput[], locale: string): ChunkR
   articles.forEach((b) => {
     const slug = uniqueKey(seen, blogSlug(b.url), 'blog', b.url)
     const parentId = `blog:${slug}:${locale}`
-    out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url })
+    out.push({ id: parentId, parentId: null, sourceType: 'blog', projectId: null, locale, title: b.title, content: `${b.title}\n${b.subtitle}`, url: b.url, date: b.date })
 
     if (!config.blogBodyEnabled) return
     const body = getBlogBody(b.url)
@@ -145,6 +150,7 @@ export function blogChunks(articles: BlogArticleInput[], locale: string): ChunkR
         title: `${b.title} — part ${j + 1}`,
         content: piece,
         url: b.url,
+        date: b.date,
       }),
     )
   })

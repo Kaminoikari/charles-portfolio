@@ -169,3 +169,20 @@ test('retrieveWith: the ablation arm that measures rerank runs strict', async ()
   const arm = ARMS.find((a) => a.name === 'hybrid+rerank')
   assert.equal(arm?.retrieval?.strictRerank, true)
 })
+
+// The payload → Document half of the wiring. A field the ingest writes but
+// toDocument never copies is invisible to every downstream node, and nothing
+// fails: the metadata key just reads undefined.
+test('retrieveWith: a blog point carries its publication date into the document', async () => {
+  const dated = {
+    payload: { chunk_id: 'b1', content: 'nine months ago …', source_type: 'blog', locale: 'zh-TW', title: 'AI in production', parent_id: null, project_id: null, date: '2026-09-14' },
+    score: 0.9,
+  }
+  const docs = await retrieveWith('q', 'zh-TW', { dense: true, sparse: false, rerank: false }, {
+    fetchCandidates: async () => [dated],
+    rerank: async () => {
+      throw new Error('rerank is off in this arm')
+    },
+  })
+  assert.equal(docs[0].metadata.date, '2026-09-14')
+})

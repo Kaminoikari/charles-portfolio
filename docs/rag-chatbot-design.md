@@ -165,7 +165,7 @@ from `grade_documents`: `answerable → generate`,
   / one philosophy bullet). Use those boundaries as **parent** docs; split long
   case-study prose into **child** chunks (`RecursiveCharacterTextSplitter`,
   ~500 tok / 80 overlap) that point back to the parent for context expansion.
-- **Metadata per chunk:** `{id, source_type, project_id, locale, parent_id, title}`.
+- **Metadata per chunk:** `{id, source_type, project_id, locale, parent_id, title}`, plus `url` and `date` on blog chunks (the article link and its publication date, which is what lets an answer resolve a relative phrase like "nine months ago" written inside a post).
 - **Locale policy:** embed all three locales; filter by detected query language
   at retrieve time, fall back to EN. Mirrors the existing site i18n model.
 
@@ -181,7 +181,8 @@ doc_chunks                              # the hybrid index — 1,074 chunks (en/
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25 (Cloud Inference)
   payload index:  locale (keyword)                              # filtered on every query
-  payload:        { chunk_id, parent_id, source_type, project_id, locale, title, content }
+  payload:        { chunk_id, chunk_hash, parent_id, source_type, project_id, locale, title, content,
+                    context?, url?, date? }   # context: contextual-retrieval prefix; url/date: blog only
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
 faq_cache                               # semantic cache — 838 paraphrases / 57 entries
