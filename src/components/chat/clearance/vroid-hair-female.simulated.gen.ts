@@ -2,7 +2,8 @@
 // Body /avatar/HairSample_Female_webp.vrm through three-vrm's spring solver at 60 Hz, every clip in
 // public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the
 // same in bind pose, crownScreen/restCrownScreen those two through each frame's camera
-// (framings, recorded here as they were); depths are the worst frame. Regenerate:
+// (framings, recorded here as they were); depths are the worst frame.
+// Regenerate from a checkout of the vtuber-kit repo:
 //   npx tsx scripts/avatar/springsim.ts public/avatar/HairSample_Female_webp.vrm --clearance=src/components/chat/clearance/vroid-hair-female.simulated.gen.ts --family=vroid-hair-female
 import type { ClearanceSimulated } from '../clearance'
 

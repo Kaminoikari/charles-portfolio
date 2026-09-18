@@ -2,7 +2,8 @@
 // Body /avatar/mika-milfy-12.vrm through three-vrm's spring solver at 60 Hz, every clip in
 // public/avatar/animations. crownY is the topmost drawn vertex at any frame, restCrownY the
 // same in bind pose, crownScreen/restCrownScreen those two through each frame's camera
-// (framings, recorded here as they were); depths are the worst frame. Regenerate:
+// (framings, recorded here as they were); depths are the worst frame.
+// Regenerate from a checkout of the vtuber-kit repo:
 //   npx tsx scripts/avatar/springsim.ts public/avatar/mika-milfy-12.vrm --clearance=src/components/chat/clearance/vroid-sample-b.simulated.gen.ts --family=vroid-sample-b
 import type { ClearanceSimulated } from '../clearance'
 
