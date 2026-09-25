@@ -160,7 +160,29 @@ interface DeclaredBody {
    * a nudged skeleton cannot inherit numbers that were never measured on it.
    */
   family: AvatarFamilyId
+  /**
+   * Whose texture draws the inside of the mouth: the file's own, or Mika's
+   * (MIKA_MOUTH_URL says why seven bodies borrow hers).
+   */
+  mouth: 'own' | 'mika'
 }
+
+/**
+ * Mika's mouth texture, lifted byte for byte out of mika-pink-2.vrm.
+ *
+ * VRoid lays one texture over the inside of the mouth: teeth top-left, tongue
+ * top-right, throat below. Mika's, which Milfy and base carry too, paints the
+ * tongue quarter small and pale, and an open mouth reads as a plain pale mouth.
+ * Seven of the newer samples paint a full-size saturated tongue with a shaded
+ * rim; MToon never puts the inside of the mouth in shadow, so every "aa" and
+ * "oh" showed a bright tongue filling the lips, which reads as the tongue stuck
+ * out (the owner's report, 2026-09-25). Darkening their own texture still
+ * showed the tongue's outline, and the owner asked for Mika's and Milfy's mouth
+ * instead, so those seven load this over their own. It fits them because their
+ * mouth meshes are hers: 496 triangles each, spread over the three regions in
+ * the same proportions (measured 2026-09-25).
+ */
+export const MIKA_MOUTH_URL = '/avatar/mouth-mika.png'
 
 /**
  * A declared body, and whether a visitor is offered it.
@@ -212,9 +234,9 @@ export type AvatarVariant =
 // and forbid only redistributing the model file FOR A FEE. All three are served
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
-  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink-2.vrm', family: 'vroid-sample-b', offered: true },
-  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b', offered: true },
-  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', offered: true },
+  { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink-2.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
+  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
+  { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
   // The second family, and the first body here that is not an export of the
   // VRoid project the other three descend from: pixiv's VRM 1.0 constraint
   // sample, 54 humanoid bones of which 28 rest somewhere the VRoid family's do
@@ -233,7 +255,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // One thing it does NOT exercise, said here rather than assumed: the other
   // 56 tests in that file sit outside the per-family block and still read
   // AvatarSample_B only.
-  { id: 'twist', label: 'VRM1 樣本', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', offered: true },
+  { id: 'twist', label: 'VRM1 樣本', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', mouth: 'own', offered: true },
   // The third family, and the first body here that came back OUT of VRoid
   // Studio rather than out of this repo's own build: Mika's project taken
   // through Studio's dress-up path and re-exported as VRM 1.0 on 2026-09-09.
@@ -278,7 +300,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // version-aware since (avatarMode.armRestPins, rigProbe.test.ts's
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
-  { id: 'studio', label: 'Studio 換裝樣本', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: true },
+  { id: 'studio', label: 'Studio 換裝樣本', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', mouth: 'own', offered: true },
   // Eleven more rigs, measured on 2026-09-11 and none of them offered then. They are
   // VRoid's own official sample avatars, and what they are for is the same
   // thing `twist` and `studio` are for: the per-family paths in this repo
@@ -305,11 +327,11 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // well as a wardrobe now. The men, `hair-male` here and `sample-c` and
   // `sakurada-fumiriya` below, stay declared and measured but not offered: the
   // owner's call on the same day, the strip is for female characters.
-  { id: 'hair-female', label: 'VRoid 髮型樣本（女）', url: '/avatar/HairSample_Female_webp.vrm', family: 'vroid-hair-female', offered: true },
-  { id: 'hair-male', label: 'VRoid 髮型樣本（男）', url: '/avatar/HairSample_Male_webp.vrm', family: 'vroid-hair-male', offered: false },
-  { id: 'sendagaya-shibu', label: 'Sendagaya Shibu', url: '/avatar/Sendagaya_Shibu_webp.vrm', family: 'vroid-sendagaya-shibu', offered: true },
-  { id: 'victoria-rubin', label: 'Victoria Rubin', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', offered: true },
-  { id: 'vivi', label: 'Vivi', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', offered: true },
+  { id: 'hair-female', label: 'VRoid 髮型樣本（女）', url: '/avatar/HairSample_Female_webp.vrm', family: 'vroid-hair-female', mouth: 'mika', offered: true },
+  { id: 'hair-male', label: 'VRoid 髮型樣本（男）', url: '/avatar/HairSample_Male_webp.vrm', family: 'vroid-hair-male', mouth: 'own', offered: false },
+  { id: 'sendagaya-shibu', label: 'Sendagaya Shibu', url: '/avatar/Sendagaya_Shibu_webp.vrm', family: 'vroid-sendagaya-shibu', mouth: 'mika', offered: true },
+  { id: 'victoria-rubin', label: 'Victoria Rubin', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', mouth: 'mika', offered: true },
+  { id: 'vivi', label: 'Vivi', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', mouth: 'mika', offered: true },
   // And the six that were held back on the morning of 2026-09-11, registered
   // the same afternoon once the four rules above were fixed rather than worked
   // around: clearance.panHolds asks whether a declared pan is justified instead
@@ -319,12 +341,12 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // places its producer writes; and the two fit guards honour `excluded`. None
   // weakens a guard, and all eight families above pass all four unchanged.
   // Same terms as the five.
-  { id: 'sample-a', label: 'VRoid 官方樣本 A', url: '/avatar/AvatarSample_A_webp.vrm', family: 'vroid-sample-a', offered: true },
-  { id: 'sample-c', label: 'VRoid 官方樣本 C', url: '/avatar/AvatarSample_C_webp.vrm', family: 'vroid-sample-c', offered: false },
-  { id: 'darkness-shibu', label: 'Darkness Shibu', url: '/avatar/Darkness_Shibu_webp.vrm', family: 'vroid-darkness-shibu', offered: true },
-  { id: 'sakurada-fumiriya', label: 'Sakurada Fumiriya', url: '/avatar/Sakurada_Fumiriya_webp.vrm', family: 'vroid-sakurada-fumiriya', offered: false },
-  { id: 'sendagaya-shino', label: 'Sendagaya Shino', url: '/avatar/Sendagaya_Shino_webp.vrm', family: 'vroid-sendagaya-shino', offered: true },
-  { id: 'vita', label: 'Vita', url: '/avatar/Vita_webp.vrm', family: 'vroid-vita', offered: true },
+  { id: 'sample-a', label: 'VRoid 官方樣本 A', url: '/avatar/AvatarSample_A_webp.vrm', family: 'vroid-sample-a', mouth: 'own', offered: true },
+  { id: 'sample-c', label: 'VRoid 官方樣本 C', url: '/avatar/AvatarSample_C_webp.vrm', family: 'vroid-sample-c', mouth: 'own', offered: false },
+  { id: 'darkness-shibu', label: 'Darkness Shibu', url: '/avatar/Darkness_Shibu_webp.vrm', family: 'vroid-darkness-shibu', mouth: 'mika', offered: true },
+  { id: 'sakurada-fumiriya', label: 'Sakurada Fumiriya', url: '/avatar/Sakurada_Fumiriya_webp.vrm', family: 'vroid-sakurada-fumiriya', mouth: 'own', offered: false },
+  { id: 'sendagaya-shino', label: 'Sendagaya Shino', url: '/avatar/Sendagaya_Shino_webp.vrm', family: 'vroid-sendagaya-shino', mouth: 'mika', offered: true },
+  { id: 'vita', label: 'Vita', url: '/avatar/Vita_webp.vrm', family: 'vroid-vita', mouth: 'mika', offered: true },
 ]
 
 /**
@@ -409,4 +431,14 @@ export function familyOf(id: string = ACTIVE_VARIANT): AvatarFamilyId {
  */
 export function familyOfUrl(url: string): AvatarFamilyId | null {
   return AVATAR_VARIANTS.find((v) => v.url === url)?.family ?? null
+}
+
+/**
+ * The mouth texture to load over the body at this URL, or null to keep its own.
+ *
+ * Null for a body nothing declares: a freshly built body in live-preview
+ * should be seen as its file draws it.
+ */
+export function borrowedMouthOfUrl(url: string): string | null {
+  return AVATAR_VARIANTS.find((v) => v.url === url)?.mouth === 'mika' ? MIKA_MOUTH_URL : null
 }

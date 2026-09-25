@@ -76,7 +76,7 @@ import {
   settleWeight,
   type AvatarMotionName,
 } from './avatarMotions'
-import { familyOfUrl, type AvatarFamilyId } from './avatarVariants'
+import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   armRestPins,
   aimPitchPose,
@@ -435,6 +435,21 @@ export function rimBase(stated: THREE.Color | undefined): THREE.Color {
   return new THREE.Color(RIM_FALLBACK)
 }
 
+// One fetch per mouth texture for the life of the page: every swap to a body
+// that borrows it reuses the same decoded image.
+const borrowedMouths = new Map<string, Promise<HTMLImageElement>>()
+
+function loadBorrowedMouth(url: string): Promise<HTMLImageElement> {
+  let pending = borrowedMouths.get(url)
+  if (!pending) {
+    pending = new THREE.ImageLoader().loadAsync(url)
+    // A failed fetch is not remembered, so the next body to ask tries again.
+    pending.catch(() => borrowedMouths.delete(url))
+    borrowedMouths.set(url, pending)
+  }
+  return pending
+}
+
 export function initAvatarGuide(
   canvas: HTMLCanvasElement,
   vrmUrl: string,
@@ -776,12 +791,20 @@ export function initAvatarGuide(
       loaded.scene.add(proxy)
     }
     const seen = new Set<THREE.Material>()
+    const mouthUrl = borrowedMouthOfUrl(url)
+    const mouthTextures: THREE.Texture[] = []
     loaded.scene.traverse((o) => {
       const material = (o as THREE.Mesh).material
       if (!material) return
       for (const m of Array.isArray(material) ? material : [material]) {
         if (seen.has(m)) continue // shared materials must be tinted once, not once per mesh
         seen.add(m)
+        if (mouthUrl && /FaceMouth/.test(m.name)) {
+          // MToon draws the lit side from `map` and the shaded side from its
+          // shade texture; VRoid binds the same image to both.
+          const textured = m as THREE.Material & { map?: THREE.Texture | null; shadeMultiplyTexture?: THREE.Texture | null }
+          for (const t of [textured.map, textured.shadeMultiplyTexture]) if (t) mouthTextures.push(t)
+        }
         const withColor = m as THREE.Material & { color?: THREE.Color }
         if (withColor.color) {
           mats.push({
@@ -806,6 +829,19 @@ export function initAvatarGuide(
         }
       }
     })
+    // The image lands after the body is on screen, while her mouth is still
+    // shut from the entrance. If it never lands she keeps her own mouth.
+    if (mouthUrl && mouthTextures.length > 0)
+      loadBorrowedMouth(mouthUrl).then(
+        (image) => {
+          if (vrm !== loaded) return
+          for (const t of mouthTextures) {
+            t.image = image
+            t.needsUpdate = true
+          }
+        },
+        () => {},
+      )
     // Which emotion presets this model actually ships (VRM0 naming trap:
     // check the manager, never assume — see module header).
     availableEmotions = new Set(
