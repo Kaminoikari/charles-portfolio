@@ -1,5 +1,5 @@
 // The clearance of the VRM1_Constraint_Twist_Sample family: one body, declared
-// in avatarVariants.ts as `twist` and not offered to visitors.
+// in avatarVariants.ts as `twist` and offered to visitors since 2026-09-25.
 //
 // Provenance, licence and why this body rather than Seed-san:
 // docs/plans/avatar-family-vrm1-twist-sample.md.
@@ -27,16 +27,20 @@ const DECISIONS: ClearanceDecisions = {
   // body in the same engine at the same framing. What that assumes is that the
   // renderer's outline and alpha behave the same on this body's MToon 1.0
   // materials as on the other family's VRM0 ones, which nobody has checked. The
-  // error it can carry is a millimetre or two, and it lands on a body no
-  // visitor sees.
+  // error it can carry is a millimetre or two.
   //
-  // STRIP THIS the moment `twist` is offered: measure it the way the recipe
-  // says (live-preview.html?mikadebug=1, column, topmost pixel above alpha 8
-  // against the simulator's projected resting crown) and replace both fields.
+  // It was offered on 2026-09-25 without that measurement. What the fringe
+  // protects was checked instead: every clip, both frames, in the site, with
+  // the canvas's top two rows read on every frame. At most 6 pixels crossed,
+  // the same order as the 5 Mika's owner-accepted spin crosses by
+  // (evidence/offer-0925-topedge.log). Measure it the way the recipe says
+  // (live-preview.html?mikadebug=1, column, topmost pixel above alpha 8
+  // against the simulator's projected resting crown) before trusting a pan
+  // that rests on it.
   crownFringe: 0.0015,
   crownFringeMeasured:
-    'CARRIED from vroid-sample-b (2026-09-06, 1.5mm), not measured on this body: nothing renders it. Re-measure before offering it.',
-  // No browser has drawn this body, so there is nothing a sweep could have seen
+    'CARRIED from vroid-sample-b (2026-09-06, 1.5mm), not measured on this body. Offered 2026-09-25 on a top-edge sweep of every clip instead (evidence/offer-0925-topedge.log).',
+  // No browser sweep has recorded a crown on this body, so there is nothing it could have seen
   // that the simulator did not. The field exists to let a rendering beat a
   // derivation; here there is no rendering.
   crownSeen: {},

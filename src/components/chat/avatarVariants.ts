@@ -279,7 +279,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
   { id: 'studio', label: 'Studio 換裝樣本', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', offered: true },
-  // Eleven more rigs, measured on 2026-09-11 and none of them offered. They are
+  // Eleven more rigs, measured on 2026-09-11 and none of them offered then. They are
   // VRoid's own official sample avatars, and what they are for is the same
   // thing `twist` and `studio` are for: the per-family paths in this repo
   // — motionPan, crownBound, panHolds, the per-family block of

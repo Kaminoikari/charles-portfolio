@@ -1,8 +1,8 @@
 // The clearance of the Darkness Shibu family: one body, declared in avatarVariants.ts
-// as `darkness-shibu` and not offered to visitors.
+// as `darkness-shibu` and offered to visitors since 2026-09-25.
 //
 // One of eleven VRoid official sample avatars registered together on
-// 2026-09-11. What they are, why they are registered and not offered, what the
+// 2026-09-11. What they are, why they were registered and held back, what the
 // eleven share and what each had to be measured for on its own:
 // docs/plans/avatar-families-vroid-samples.md.
 //
@@ -16,15 +16,16 @@ import { SIMULATED } from './vroid-darkness-shibu.simulated.gen'
 const DECISIONS: ClearanceDecisions = {
   // NOT measured on this body. The fringe is the gap between the topmost DRAWN
   // pixel and the topmost vertex, and reading it means rendering the body and
-  // looking at it; nothing renders this one. It carries the VRoid family's
+  // looking at it, and nothing rendered this one before it was offered. It carries the VRoid family's
   // 1.5mm, measured 2026-09-06 on the Milfy body in the same engine at the same
-  // framing, on the same grounds the `twist` family carries it. STRIP THIS
-  // before offering `darkness-shibu`: measure it the way the recipe says and replace
-  // both fields.
+  // framing, on the same grounds the `twist` family carries it. It was offered on
+  // 2026-09-25 without that measurement, on a top-edge sweep of every clip in
+  // both frames instead (evidence/offer-0925-topedge.log). Measure it the way
+  // the recipe says before trusting a pan that rests on it.
   crownFringe: 0.0015,
   crownFringeMeasured:
-    'CARRIED from vroid-sample-b (2026-09-06, 1.5mm), not measured on this body: nothing renders it. Re-measure before offering it.',
-  // No browser has drawn this body, so there is nothing a sweep could have seen
+    'CARRIED from vroid-sample-b (2026-09-06, 1.5mm), not measured on this body. Offered 2026-09-25 on a top-edge sweep of every clip instead (evidence/offer-0925-topedge.log).',
+  // No browser sweep has recorded a crown on this body, so there is nothing it could have seen
   // that the simulator did not.
   crownSeen: {},
   // Derived by scripts/derive-pans.ts from this family's own crown and hips, re-run
