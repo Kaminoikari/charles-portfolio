@@ -98,6 +98,7 @@ import {
 } from './avatarMode'
 import { sampleViseme } from './visemeTrack'
 import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
+import { restSprings } from './springRest'
 
 // The emotion vocabulary and its channel recipes live in avatarMode (pure data,
 // unit-tested); this re-export keeps the engine the import point for callers.
@@ -758,6 +759,9 @@ export function initAvatarGuide(
     loaded.scene.updateMatrixWorld(true)
     loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWristL)
     loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWristR)
+    // The springs caught their tails before the turn and the arm pin; without
+    // this the first second whips every chain across (see springRest.test.ts).
+    restSprings(loaded)
     // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
     // and builds this itself, with a console warning, if the scene has none.
     // None of the bundled clips carries such a track, so this exists purely
