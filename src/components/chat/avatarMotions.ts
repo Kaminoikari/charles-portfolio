@@ -408,9 +408,7 @@ export function restPan(frame: MotionFrame | null, family: AvatarFamilyId): numb
   const f = AVATAR_FAMILIES[family]
   const top = avatarViewSpan(f.framings.frames[frame], f.framings.fov).top
   const least = f.restCrownY + f.crownFringe + REST_AIR - top
-  // Rounded off the recording noise before the ceiling, so Mika's own
-  // family, whose least is 0 up to float error, does not rise a centimetre.
-  return least <= 1e-9 ? 0 : Math.ceil(Math.round(least * 1e6) / 1e4) / 100
+  return Math.max(0, Math.ceil(least * 100) / 100)
 }
 
 /**
