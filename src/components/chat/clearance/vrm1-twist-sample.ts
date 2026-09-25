@@ -31,8 +31,8 @@ const DECISIONS: ClearanceDecisions = {
   //
   // It was offered on 2026-09-25 without that measurement. What the fringe
   // protects was checked instead: every clip, both frames, in the site, with
-  // the canvas's top two rows read on every frame. At most 6 pixels crossed,
-  // the same order as the 5 Mika's owner-accepted spin crosses by
+  // the canvas's top two rows read on every frame. At most 3 pixels crossed,
+  // fewer than the 5 to 6 Mika's owner-accepted spin crosses by
   // (evidence/offer-0925-topedge.log). Measure it the way the recipe says
   // (live-preview.html?mikadebug=1, column, topmost pixel above alpha 8
   // against the simulator's projected resting crown) before trusting a pan
