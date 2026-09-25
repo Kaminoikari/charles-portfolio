@@ -20,6 +20,26 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'mika-thirteen-looks',
+    date: '2026-09-25',
+    title: `The look strip now offers thirteen characters`,
+    tags: ['feature', 'technical'],
+    body: [
+      `The strip above the composer used to hold Mika's three looks. It now holds thirteen: her three, plus ten more VRoid characters that were measured against every motion clip earlier this month and kept off the strip until now. Tap one and she swaps in place, the same way the first three always did. All ten are female characters; the three male bodies measured alongside them stay off the strip.`,
+      { kind: 'heading', text: `Taller characters keep their heads in frame` },
+      `The fullscreen view was composed 25mm above Mika's hair, and only a playing clip could raise the camera. Eight of the new characters are taller than her, and on three of them standing still put the top of the head through the top edge. The camera now rests with the same room above each character's own head that Mika has, and while a clip plays it stays at least that high. Mika's own framing is unchanged.`,
+      `To check it, every clip was played on every new character in both views while the top two rows of the canvas were read on every frame. Nothing crosses at rest. During clips the most left is a hairline at the peak of one character's dance.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '13', label: `looks on offer` },
+          { value: '10', label: `new characters` },
+          { value: '0', label: `heads cut at rest` },
+        ],
+      },
+    ],
+  },
+  {
     id: 'mika-look-switch',
     date: '2026-09-03',
     title: `Mika can change her look, and the site remembers which one you chose`,
