@@ -331,7 +331,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'hair-male', label: 'VRoid 髮型樣本（男）', url: '/avatar/HairSample_Male_webp.vrm', family: 'vroid-hair-male', mouth: 'own', offered: false },
   { id: 'sendagaya-shibu', label: 'Sendagaya Shibu', url: '/avatar/Sendagaya_Shibu_webp.vrm', family: 'vroid-sendagaya-shibu', mouth: 'mika', offered: true },
   { id: 'victoria-rubin', label: 'Victoria Rubin', url: '/avatar/Victoria_Rubin_webp.vrm', family: 'vroid-victoria-rubin', mouth: 'mika', offered: true },
-  { id: 'vivi', label: 'Vivi', url: '/avatar/Vivi_webp.vrm', family: 'vroid-vivi', mouth: 'mika', offered: true },
+  { id: 'vivi', label: 'Vivi', url: '/avatar/Vivi_webp-2.vrm', family: 'vroid-vivi', mouth: 'mika', offered: true },
   // And the six that were held back on the morning of 2026-09-11, registered
   // the same afternoon once the four rules above were fixed rather than worked
   // around: clearance.panHolds asks whether a declared pan is justified instead

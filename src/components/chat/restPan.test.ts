@@ -47,9 +47,11 @@ describe('restPan', () => {
       expect(restPan('column', family), family).toBeGreaterThan(0)
   })
 
+  // Sample A is the shortest offered body (crown 1.5582). Vivi held this role
+  // until 2026-09-26, when she was scaled to Mika's height.
   it('never lowers the camera for a shorter body', () => {
-    expect(restPan('column', 'vroid-vivi')).toBe(0)
-    expect(restPan('waistUp', 'vroid-vivi')).toBe(0)
+    expect(restPan('column', 'vroid-sample-a')).toBe(0)
+    expect(restPan('waistUp', 'vroid-sample-a')).toBe(0)
   })
 })
 
