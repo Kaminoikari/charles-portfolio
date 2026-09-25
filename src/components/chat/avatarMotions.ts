@@ -397,7 +397,7 @@ export const REST_AIR = (() => {
  *
  * The compositions were cut around Mika, and the column only 25mm over her
  * hair. A taller body stood with its crown through the top edge whenever
- * nothing was playing (2026-09-25, the day eleven more bodies were offered),
+ * nothing was playing (2026-09-25, the day ten more bodies were offered),
  * because a pan existed only for clips. This is the least rise, on the
  * centimetre the pans are dialled in, that gives her crown the same air as
  * Mika's. Never negative: a shorter body keeps the composition as cut, and
@@ -409,6 +409,28 @@ export function restPan(frame: MotionFrame | null, family: AvatarFamilyId): numb
   const top = avatarViewSpan(f.framings.frames[frame], f.framings.fov).top
   const least = f.restCrownY + f.crownFringe + REST_AIR - top
   return Math.max(0, Math.ceil(least * 100) / 100)
+}
+
+/**
+ * Where the camera stands for this body: restPan between clips, the clip's
+ * own pan while one plays, and never below restPan on a body that has one.
+ *
+ * A clip's pan is derived with no air over its crown, so on a body taller
+ * than Mika's it sat below restPan. Standing back up at the end of a clip put
+ * her crown through the column's top edge while the camera was still easing
+ * up to rest (2026-09-25, peaceSign on three bodies). Where restPan is 0 the
+ * clip's pan stands as derived, including the negative ones that lower the
+ * waist-up frame to keep a clip's hips in it.
+ */
+export function cameraPan(
+  name: AvatarMotionName | null,
+  frame: MotionFrame | null,
+  family: AvatarFamilyId,
+): number {
+  const rest = restPan(frame, family)
+  if (!name) return rest
+  const clip = motionPan(name, frame, family)
+  return rest > 0 ? Math.max(clip, rest) : clip
 }
 
 /**

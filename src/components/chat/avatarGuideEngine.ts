@@ -70,8 +70,7 @@ import {
   nextIdleMotion,
   MOTION_URL,
   motionFrame,
-  motionPan,
-  restPan,
+  cameraPan,
   motionsFor,
   settleSeconds,
   settleWeight,
@@ -533,8 +532,8 @@ export function initAvatarGuide(
     if (!shownFamily) return 0
     // Between clips the frame rests where this body's crown clears the top
     // edge, which for Mika's family is 0 and for a taller body is higher.
-    if (!motionAction || settleDur > 0) return restPan(motionFrame(placement), shownFamily)
-    return motionPan(motionName, motionFrame(placement), shownFamily)
+    if (!motionAction || settleDur > 0) return cameraPan(null, motionFrame(placement), shownFamily)
+    return cameraPan(motionName, motionFrame(placement), shownFamily)
   }
   function aimCamera(): void {
     const y = framingLookAtY + framePan

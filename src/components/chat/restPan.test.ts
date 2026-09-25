@@ -1,13 +1,14 @@
 // Where the camera rests on a body taller than Mika's. The column is composed
-// 25mm over her resting hair, so on 2026-09-25, the day twelve more bodies
+// 25mm over her resting hair, so on 2026-09-25, the day ten more bodies
 // were offered, three of them stood with their crowns through the top edge of
 // the fullscreen frame at rest: Cat ears 1.668, Dark Shibu 1.650, Shibu 1.616.
 import { describe, expect, it } from 'vitest'
 
 import { avatarViewSpan } from './avatarMode'
-import { REST_AIR, restPan } from './avatarMotions'
+import { AVATAR_MOTIONS, cameraPan, REST_AIR, restPan, type AvatarMotionName } from './avatarMotions'
 import { AVATAR_FAMILIES, OFFERED_VARIANTS, type AvatarFamilyId } from './avatarVariants'
 import type { MotionFrame } from './avatarMotions'
+import { panRange } from './clearance'
 
 const FRAMES: readonly MotionFrame[] = ['waistUp', 'column']
 const OFFERED = [...new Set(OFFERED_VARIANTS.map((v) => v.family))]
@@ -49,5 +50,41 @@ describe('restPan', () => {
   it('never lowers the camera for a shorter body', () => {
     expect(restPan('column', 'vroid-vivi')).toBe(0)
     expect(restPan('waistUp', 'vroid-vivi')).toBe(0)
+  })
+})
+
+// A clip's pan is derived with no air over its crown, so on a tall body it sat
+// below restPan: when the clip ended and she stood back up, the camera was
+// still easing toward the rest pan and her crown crossed the top edge for a
+// few frames (2026-09-25, the column's peaceSign on Shino, Dark Shibu and
+// Vita, 86 to 122 pixels in the canvas's top two rows).
+describe('cameraPan', () => {
+  it('rests where restPan says when nothing plays', () => {
+    for (const family of OFFERED) for (const frame of FRAMES)
+      expect(cameraPan(null, frame, family)).toBe(restPan(frame, family))
+  })
+
+  it('keeps a clip at or above the rest pan on a body that needs one', () => {
+    expect(cameraPan('peaceSign', 'column', 'vroid-sendagaya-shino')).toBe(restPan('column', 'vroid-sendagaya-shino'))
+    expect(restPan('column', 'vroid-sendagaya-shino')).toBeGreaterThan(0)
+  })
+
+  it("leaves a clip's own lowering alone where the body needs no rest pan", () => {
+    // Mika's dance drops the waist-up frame 70mm to keep her hips in it.
+    expect(cameraPan('dance', 'waistUp', 'vroid-sample-b')).toBe(-0.07)
+  })
+
+  it("never lifts a clip's lowest hips out of the frame", () => {
+    for (const family of OFFERED) {
+      const f = AVATAR_FAMILIES[family]
+      for (const [name, def] of Object.entries(AVATAR_MOTIONS))
+        for (const frame of def.placements) {
+          if (name in f.excluded) continue
+          const pan = cameraPan(name as AvatarMotionName, frame, family)
+          if (pan === 0) continue
+          const { most } = panRange(f, name, frame, f.restCrownY, def.placements)
+          expect(pan, `${family} ${name} ${frame}`).toBeLessThanOrEqual(most + 5e-5)
+        }
+    }
   })
 })
