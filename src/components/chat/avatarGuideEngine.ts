@@ -520,8 +520,9 @@ export function initAvatarGuide(
   let framingLookAtY = AVATAR_FRAMING_DEFAULT.lookAtY
   // Where the current clip wants the frame, and where it is on the way there.
   let framePan = 0
-  // What the running clip is asking for RIGHT NOW. Zero while nothing is playing
-  // and from the moment a settle starts, so the camera comes home with her arms.
+  // What the running clip is asking for RIGHT NOW. The body's rest pan while
+  // nothing is playing and from the moment a settle starts, so the camera comes
+  // home with her arms; that is 0 on Mika's family and higher on a taller body.
   // One definition, because three callers read it and they must not disagree:
   // the render loop eases toward it, and setPlacement and setFraming land on it
   // when the composition cuts.
