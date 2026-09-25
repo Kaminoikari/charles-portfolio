@@ -49,14 +49,22 @@ describe('initialVariantId', () => {
     expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=never-declared`, storage)).toBe(ACTIVE_VARIANT)
   })
 
+  it('lets a visitor pick every body the strip offers', () => {
+    // Thirteen since 2026-09-25, from a link and from a remembered pick.
+    for (const v of OFFERED_VARIANTS) {
+      expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=${v.id}`, memory()), `link to ${v.id}`).toBe(v.id)
+      expect(initialVariantId('', memory({ [VARIANT_STORAGE_KEY]: v.id })), `remembered ${v.id}`).toBe(v.id)
+    }
+  })
+
   it('refuses a body the registry declares but does not offer', () => {
     // Not a typo and not a stale link: a real, loadable, measured body that a
     // visitor is not allowed to ask for. The test above cannot stand in for
     // this one, because `never-declared` is refused whether the gate reads the
     // whole registry or only the offered half of it — which is the difference
-    // this is here to pin. Both entry points are checked: since 2026-09-07 an
-    // unoffered id could otherwise arrive from a hand-written link OR from
-    // storage written before the id stopped being offered.
+    // this is here to pin. Both entry points are checked: an unoffered id
+    // could otherwise arrive from a hand-written link OR from storage written
+    // before the id stopped being offered.
     expect(
       HELD_BACK,
       'the registry now offers every body it declares, so this guard measures nothing',

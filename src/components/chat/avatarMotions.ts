@@ -17,7 +17,7 @@
 // owner holds permission for. See docs/plans/avatar-motion-capture.md for the
 // hashes and terms. CREDIT below is that pack's required attribution and
 // names that pack only.
-import type { AvatarPlacement } from './avatarMode'
+import { avatarViewSpan, type AvatarPlacement } from './avatarMode'
 import { AVATAR_FAMILIES, type AvatarFamilyId } from './avatarVariants'
 
 export type AvatarMotionName =
@@ -379,6 +379,38 @@ export function motionPan(
 ): number {
   if (!name || !frame) return 0
   return AVATAR_FAMILIES[family].pans[name]?.[frame] ?? 0
+}
+
+/**
+ * How far above Mika's resting crown the column's top edge sits: the air her
+ * composition leaves over her hair, and the air every other body is given.
+ * Read off her family rather than written down, so re-measuring her crown
+ * moves it with the frame.
+ */
+export const REST_AIR = (() => {
+  const f = AVATAR_FAMILIES['vroid-sample-b']
+  return avatarViewSpan(f.framings.frames.column, f.framings.fov).top - (f.restCrownY + f.crownFringe)
+})()
+
+/**
+ * Where the camera rests, between clips, ON A BODY OF THIS FAMILY.
+ *
+ * The compositions were cut around Mika, and the column only 25mm over her
+ * hair. A taller body stood with its crown through the top edge whenever
+ * nothing was playing (2026-09-25, the day eleven more bodies were offered),
+ * because a pan existed only for clips. This is the least rise, on the
+ * centimetre the pans are dialled in, that gives her crown the same air as
+ * Mika's. Never negative: a shorter body keeps the composition as cut, and
+ * Mika's own family answers 0, so nothing she was composed in moves.
+ */
+export function restPan(frame: MotionFrame | null, family: AvatarFamilyId): number {
+  if (!frame) return 0
+  const f = AVATAR_FAMILIES[family]
+  const top = avatarViewSpan(f.framings.frames[frame], f.framings.fov).top
+  const least = f.restCrownY + f.crownFringe + REST_AIR - top
+  // Rounded off the recording noise before the ceiling, so Mika's own
+  // family, whose least is 0 up to float error, does not rise a centimetre.
+  return least <= 1e-9 ? 0 : Math.ceil(Math.round(least * 1e6) / 1e4) / 100
 }
 
 /**

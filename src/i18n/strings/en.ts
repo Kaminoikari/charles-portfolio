@@ -71,11 +71,23 @@ interface Strings {
     }
     // The look strip above the motions. Keyed by OfferedVariantId -- an
     // OFFERED body without a label here fails to compile. A body the registry
-    // declares without offering (avatarVariants `offered: false`) is deliberately
-    // absent: the strip never shows it, so it has nothing to be called.
+    // declares without offering (avatarVariants `offered: false`) needs none:
+    // the strip never shows it.
     looksLabel: string
     looksAriaLabel: string
-    looks: { pink: string; milfy: string; base: string }
+    looks: {
+      pink: string; milfy: string; base: string
+      twist: string
+      studio: string
+      'hair-female': string
+      'sendagaya-shibu': string
+      'victoria-rubin': string
+      vivi: string
+      'sample-a': string
+      'darkness-shibu': string
+      'sendagaya-shino': string
+      vita: string
+    }
   }
   defaults: { documentTitle: string }
 }
@@ -235,6 +247,16 @@ const en: Strings = {
       pink: 'Pink hair',
       milfy: 'Twin tails',
       base: 'Purple hair',
+      twist: 'Brown hair',
+      studio: 'Glasses',
+      'hair-female': 'Cat ears',
+      'sendagaya-shibu': 'Shibu',
+      'victoria-rubin': 'Victoria',
+      vivi: 'Vivi',
+      'sample-a': 'Short bob',
+      'darkness-shibu': 'Dark Shibu',
+      'sendagaya-shino': 'Shino',
+      vita: 'Vita',
     },
   },
   defaults: {

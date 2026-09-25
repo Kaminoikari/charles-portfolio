@@ -71,6 +71,7 @@ import {
   MOTION_URL,
   motionFrame,
   motionPan,
+  restPan,
   motionsFor,
   settleSeconds,
   settleWeight,
@@ -529,7 +530,10 @@ export function initAvatarGuide(
     // No family means no body on screen, and nothing to pan for. Since
     // 2026-09-07 the pan is per family: the same clip moves the camera
     // differently on a body whose hair sits higher.
-    if (!motionAction || settleDur > 0 || !shownFamily) return 0
+    if (!shownFamily) return 0
+    // Between clips the frame rests where this body's crown clears the top
+    // edge, which for Mika's family is 0 and for a taller body is higher.
+    if (!motionAction || settleDur > 0) return restPan(motionFrame(placement), shownFamily)
     return motionPan(motionName, motionFrame(placement), shownFamily)
   }
   function aimCamera(): void {

@@ -79,7 +79,12 @@ describe('the pan reaches the camera', () => {
     // down, which is what returns the camera at every exit.
     // `|| !shownFamily` since 2026-09-07: the pan is per family, and no family
     // means no body on screen.
-    expect(SOURCE).toMatch(/if \(!motionAction \|\| settleDur > 0 \|\| !shownFamily\) return 0/)
+    // Since 2026-09-25 the resting composition is per family too: a body
+    // taller than Mika's rests with the camera raised by restPan.
+    expect(SOURCE).toMatch(/if \(!shownFamily\) return 0/)
+    expect(SOURCE).toMatch(
+      /if \(!motionAction \|\| settleDur > 0\) return restPan\(motionFrame\(placement\), shownFamily\)/,
+    )
   })
 
   it('eases toward that target every frame', () => {
