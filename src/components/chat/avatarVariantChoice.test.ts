@@ -49,6 +49,18 @@ describe('initialVariantId', () => {
     expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=never-declared`, storage)).toBe(ACTIVE_VARIANT)
   })
 
+  it("offers the owner's thirteen and holds back the three men", () => {
+    // 2026-09-25: every female body the registry measured, the male ones kept
+    // declared and measured but off the strip.
+    expect(OFFERED_VARIANTS.map((v) => v.id)).toEqual([
+      'pink', 'milfy', 'base', 'twist', 'studio', 'hair-female', 'sendagaya-shibu',
+      'victoria-rubin', 'vivi', 'sample-a', 'darkness-shibu', 'sendagaya-shino', 'vita',
+    ])
+    expect(AVATAR_VARIANTS.filter((v) => !v.offered).map((v) => v.id)).toEqual([
+      'hair-male', 'sample-c', 'sakurada-fumiriya',
+    ])
+  })
+
   it('lets a visitor pick every body the strip offers', () => {
     // Thirteen since 2026-09-25, from a link and from a remembered pick.
     for (const v of OFFERED_VARIANTS) {
