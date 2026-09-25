@@ -163,7 +163,7 @@ const zhTW: Strings = {
       milfy: '雙馬尾',
       base: '紫髮',
       twist: '棕髮',
-      studio: '眼鏡',
+      studio: '眼鏡上班族',
       'hair-female': '貓耳',
       'sendagaya-shibu': 'Shibu',
       'victoria-rubin': 'Victoria',

@@ -248,7 +248,7 @@ const en: Strings = {
       milfy: 'Twin tails',
       base: 'Purple hair',
       twist: 'Brown hair',
-      studio: 'Glasses',
+      studio: 'Office glasses',
       'hair-female': 'Cat ears',
       'sendagaya-shibu': 'Shibu',
       'victoria-rubin': 'Victoria',

@@ -50,6 +50,7 @@ import { CLEARANCE as VROID_DARKNESS_SHIBU } from './clearance/vroid-darkness-sh
 import { CLEARANCE as VROID_SAKURADA_FUMIRIYA } from './clearance/vroid-sakurada-fumiriya'
 import { CLEARANCE as VROID_SENDAGAYA_SHINO } from './clearance/vroid-sendagaya-shino'
 import { CLEARANCE as VROID_VITA } from './clearance/vroid-vita'
+import { CLEARANCE as VROID_MIKA_GLASSES } from './clearance/vroid-mika-glasses'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -81,7 +82,7 @@ export type OfferedVariantId =
  * stops being one global fact and becomes a fact per rig, with the guards to
  * prove it. The body that proves it does not have to be a look.
  */
-export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya'
+export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya' | 'studio-hoodie'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -108,6 +109,7 @@ export type AvatarFamilyId =
   | 'vroid-sakurada-fumiriya'
   | 'vroid-sendagaya-shino'
   | 'vroid-vita'
+  | 'vroid-mika-glasses'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -133,6 +135,7 @@ export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sakurada-fumiriya': VROID_SAKURADA_FUMIRIYA,
   'vroid-sendagaya-shino': VROID_SENDAGAYA_SHINO,
   'vroid-vita': VROID_VITA,
+  'vroid-mika-glasses': VROID_MIKA_GLASSES,
 }
 
 /**
@@ -300,7 +303,24 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // version-aware since (avatarMode.armRestPins, rigProbe.test.ts's
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
-  { id: 'studio', label: 'Studio 換裝樣本', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', mouth: 'own', offered: true },
+  // Retired from the strip on 2026-09-26, the owner's call: `studio` now names
+  // the office-wear restyle below. Kept declared and measured so the third
+  // family's guards keep running against a VRM 1.0 rig.
+  { id: 'studio-hoodie', label: 'Studio 換裝樣本（舊）', url: '/avatar/vroid-studio-dressup.vrm', family: 'vroid-studio-dressup', mouth: 'own', offered: false },
+  // `studio` since 2026-09-26: Mika's VRoid project restyled in VRoid Studio
+  // 2.14.0 at the owner's direction as a glasses-wearing office look (copper
+  // high ponytail, black double-breasted jacket over a shirt and flared skirt,
+  // chest 0.6) and exported as VRM 0.0. Studio stamps an export
+  // `allowedUserName: OnlyAuthor` and `licenseName: Redistribution_Prohibited`,
+  // which a served file cannot say; at the owner's direction those two were relaxed to
+  // `Everyone` and `Other` (VRM 0.x has no separate modification key, the licence
+  // carries it), the same three permissions the 2026-09-09 export had
+  // relaxed. Violent, sexual and commercial use stay Disallow. Checked by putting
+  // the two values back and comparing the JSON and binary chunk against the
+  // export: scripts/avatar/evidence/mika-glasses-0926.log. Its mouth texture
+  // paints the tongue quarter soft and pale like the old `studio` body's, and the
+  // open mouth reads as a plain pale mouth on screen, so it keeps its own.
+  { id: 'studio', label: '眼鏡上班族', url: '/avatar/mika-glasses_webp.vrm', family: 'vroid-mika-glasses', mouth: 'own', offered: true },
   // Eleven more rigs, measured on 2026-09-11 and none of them offered then. They are
   // VRoid's own official sample avatars, and what they are for is the same
   // thing `twist` and `studio` are for: the per-family paths in this repo

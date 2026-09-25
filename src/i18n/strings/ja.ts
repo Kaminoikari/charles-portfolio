@@ -166,7 +166,7 @@ const ja: Strings = {
       milfy: 'ツインテール',
       base: '紫髪',
       twist: '茶髪',
-      studio: 'メガネ',
+      studio: 'メガネOL',
       'hair-female': '猫耳',
       'sendagaya-shibu': 'Shibu',
       'victoria-rubin': 'Victoria',
