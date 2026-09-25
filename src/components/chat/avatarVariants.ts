@@ -174,8 +174,8 @@ interface DeclaredBody {
  * top-right, throat below. Mika's, which Milfy and base carry too, paints the
  * tongue quarter small and pale, and an open mouth reads as a plain pale mouth.
  * Seven of the newer samples paint a full-size saturated tongue with a shaded
- * rim; MToon never puts the inside of the mouth in shadow, so every "aa" and
- * "oh" showed a bright tongue filling the lips, which reads as the tongue stuck
+ * rim, and on the site it renders as brightly as the lips around it, so every
+ * "aa" and "oh" showed a tongue filling the mouth, which reads as the tongue stuck
  * out (the owner's report, 2026-09-25). Darkening their own texture still
  * showed the tongue's outline, and the owner asked for Mika's and Milfy's mouth
  * instead, so those seven load this over their own. It fits them because their
