@@ -47,16 +47,16 @@ function mouthImageBytes(url: string): Buffer {
   return bin.subarray(view.byteOffset ?? 0, (view.byteOffset ?? 0) + view.byteLength)
 }
 
-/** Width and height from a PNG or WebP header, without decoding the pixels. */
+/**
+ * Width and height from a PNG or WebP header, without decoding the pixels.
+ * Only the containers the served mouths use (three VP8, four VP8X); anything
+ * else throws rather than being guessed at.
+ */
 function imageSize(bytes: Buffer): [number, number] {
   if (bytes.subarray(1, 4).toString('latin1') === 'PNG') return [bytes.readUInt32BE(16), bytes.readUInt32BE(20)]
   if (bytes.subarray(8, 12).toString('latin1') !== 'WEBP') throw new Error('neither PNG nor WebP')
   const chunk = bytes.subarray(12, 16).toString('latin1')
   if (chunk === 'VP8 ') return [bytes.readUInt16LE(26) & 0x3fff, bytes.readUInt16LE(28) & 0x3fff]
-  if (chunk === 'VP8L') {
-    const bits = bytes.readUInt32LE(21)
-    return [(bits & 0x3fff) + 1, ((bits >> 14) & 0x3fff) + 1]
-  }
   if (chunk === 'VP8X') return [bytes.readUIntLE(24, 3) + 1, bytes.readUIntLE(27, 3) + 1]
   throw new Error(`unknown WebP chunk ${chunk}`)
 }
