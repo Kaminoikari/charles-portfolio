@@ -6,8 +6,10 @@
 // double-breasted jacket over a shirt and flared skirt, chest 0.6. Exported as
 // VRM 0.0, two meta fields relaxed so the site may serve it (see the variant's
 // comment), and repacked with scripts/compress_vrm_webp.py. The Studio restyle
-// moved bones, so rigOf hashes differently from every other family and every
-// number was measured again on this file.
+// moved bones, so rigOf hashes differently from every other family. The export
+// stood at crown 1.6172, 3.5cm above Mika, so the served file is scaled to
+// crown 1.582 with scripts/avatar/scalebody.py (x0.97823) and every number
+// below was measured on that scaled file: evidence/mika-glasses-height-0926.log.
 //
 // Same three modules as every family (see clearance.ts): two generated halves
 // that are measurements, and this one, which is decisions. Only the fringe
@@ -25,25 +27,20 @@ const DECISIONS: ClearanceDecisions = {
     'CARRIED from vroid-sample-b (2026-09-06, 1.5mm), not measured on this body.',
   crownSeen: {},
   // Derived by scripts/derive-pans.ts, re-run against a re-simulated body until
-  // a pass changed nothing: evidence/mika-glasses-0926.log.
+  // a pass changed nothing: evidence/mika-glasses-height-0926.log.
   pans: {
-    modelPose: { column: 0.02 },
-    spin: { column: 0.06 },
-    squat: { column: 0.03 },
-    akimbo: { column: 0.03 },
-    playFingers: { column: 0.03 },
-    scratchHead: { column: 0.07 },
-    idleLoop: { column: 0.03 },
-    stretch: { waistUp: 0.08 },
-    dance: { column: 0.16 },
+    spin: { column: 0.03 },
+    scratchHead: { column: 0.03 },
+    dance: { column: 0.12 },
   },
   // Properties of the CLIP as this rig wears it; each budget is the
   // measurement with a hair of room, and rigProbe.test.ts reddens on any the
   // clip stops needing.
-  // Measured 2026-09-26: dance fingertip 0.4058 of the head volume, dance
-  // hips drift 0.1463, dance end wrist 1.2440, idleLoop hips drift 0.1588.
+  // Measured 2026-09-26 on the scaled file: dance fingertip 0.4058 of the head
+  // volume, dance hips drift 0.1431, dance end wrist 1.2169, idleLoop hips
+  // drift 0.1553.
   waivers: {
-    dance: { handInHead: 0.4, hipsDrift: 0.15, endWrist: 1.25 },
+    dance: { handInHead: 0.4, hipsDrift: 0.15, endWrist: 1.22 },
     idleLoop: { hipsDrift: 0.16 },
   },
   excluded: {},

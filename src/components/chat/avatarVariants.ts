@@ -320,7 +320,10 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // export: scripts/avatar/evidence/mika-glasses-0926.log. Its mouth texture
   // paints the tongue quarter soft and pale like the old `studio` body's, and the
   // open mouth reads as a plain pale mouth on screen, so it keeps its own.
-  { id: 'studio', label: '眼鏡上班族', url: '/avatar/mika-glasses_webp.vrm', family: 'vroid-mika-glasses', mouth: 'own', offered: true },
+  // Served scaled to Mika's crown (1.6172 to 1.582, the same scalebody step as
+  // Vivi), so the strip's looks stand at one height; the unscaled pack stays
+  // at /avatar/mika-glasses_webp.vrm.
+  { id: 'studio', label: '眼鏡上班族', url: '/avatar/mika-glasses_webp-2.vrm', family: 'vroid-mika-glasses', mouth: 'own', offered: true },
   // Eleven more rigs, measured on 2026-09-11 and none of them offered then. They are
   // VRoid's own official sample avatars, and what they are for is the same
   // thing `twist` and `studio` are for: the per-family paths in this repo
