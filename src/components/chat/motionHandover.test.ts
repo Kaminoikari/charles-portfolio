@@ -61,11 +61,11 @@ describe('a clip taking the bones over from one still playing', () => {
   it('moves no bone further than the fade allows in one frame', () => {
     const r = rig()
     const outgoing: OutgoingMotion[] = []
-    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
     run(r, outgoing, 1.5)
     expect(r.hips.position.y).toBeCloseTo(0.12, 3)
     const shown = r.hips.position.y
-    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE, outgoing)
     if (next.outgoing) outgoing.push(next.outgoing)
     expect(run(r, outgoing, 1, shown)).toBeLessThan(MAX_STEP)
     expect(r.hips.position.y).toBeCloseTo(0, 3)
@@ -76,21 +76,58 @@ describe('a clip taking the bones over from one still playing', () => {
     // resetting it would be the same one-frame jump from 12cm back to 0.
     const r = rig()
     const outgoing: OutgoingMotion[] = []
-    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
     run(r, outgoing, 1.5)
     const shown = r.hips.position.y
-    const again = takeOverMotion(r.mixer, RISE, first.action, FADE)
+    const again = takeOverMotion(r.mixer, RISE, first.action, FADE, outgoing)
     expect(again.action).not.toBe(first.action)
     if (again.outgoing) outgoing.push(again.outgoing)
     expect(run(r, outgoing, 0.5, shown)).toBeLessThan(MAX_STEP)
   })
 
+  it('plays a clip asked for again while it is still letting go', () => {
+    // Dance, Spin, Dance inside one fade: the first Dance is still giving its
+    // weight back when it is asked for again, and reusing that action handed
+    // the new play to the release, which stopped it; she settled to rest
+    // with the button still showing Dance.
+    const r = rig()
+    const outgoing: OutgoingMotion[] = []
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
+    run(r, outgoing, 1.5)
+    const spin = takeOverMotion(r.mixer, STILL, first.action, FADE, outgoing)
+    if (spin.outgoing) outgoing.push(spin.outgoing)
+    run(r, outgoing, FADE / 2)
+    const shown = r.hips.position.y
+    const again = takeOverMotion(r.mixer, RISE, spin.action, FADE, outgoing)
+    if (again.outgoing) outgoing.push(again.outgoing)
+    expect(run(r, outgoing, 0.5, shown)).toBeLessThan(MAX_STEP)
+    expect(again.action.isRunning()).toBe(true)
+    expect(again.action.getEffectiveWeight()).toBe(1)
+    expect(outgoing).toHaveLength(0)
+  })
+
+  it('plays a clip restarted three times inside one fade', () => {
+    const r = rig()
+    const outgoing: OutgoingMotion[] = []
+    let last = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
+    run(r, outgoing, 1.5)
+    for (let i = 0; i < 2; i++) {
+      last = takeOverMotion(r.mixer, RISE, last.action, FADE, outgoing)
+      if (last.outgoing) outgoing.push(last.outgoing)
+      run(r, outgoing, FADE / 4)
+    }
+    run(r, outgoing, FADE)
+    expect(last.action.isRunning()).toBe(true)
+    expect(last.action.getEffectiveWeight()).toBe(1)
+    expect(outgoing).toHaveLength(0)
+  })
+
   it('lets the old clip go once the new one holds the bones', () => {
     const r = rig()
     const outgoing: OutgoingMotion[] = []
-    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
     run(r, outgoing, 1.5)
-    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE, outgoing)
     if (next.outgoing) outgoing.push(next.outgoing)
     run(r, outgoing, FADE + 0.1)
     expect(outgoing).toHaveLength(0)
@@ -103,13 +140,13 @@ describe('a clip taking the bones over from one still playing', () => {
     // middle of it must give back what the clip held then, not a full weight.
     const r = rig()
     const outgoing: OutgoingMotion[] = []
-    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
     run(r, outgoing, 1.5)
     first.action.setEffectiveWeight(0.5)
     r.mixer.update(DT)
     const shown = r.hips.position.y
     expect(shown).toBeCloseTo(0.06, 3)
-    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE, outgoing)
     if (next.outgoing) outgoing.push(next.outgoing)
     expect(run(r, outgoing, 1, shown)).toBeLessThan(MAX_STEP)
   })
@@ -121,9 +158,9 @@ describe('a clip taking the bones over from one still playing', () => {
     // pose on the first frame of every switch.
     const r = rig()
     const outgoing: OutgoingMotion[] = []
-    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    const first = takeOverMotion(r.mixer, RISE, null, FADE, outgoing)
     run(r, outgoing, 1.5)
-    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE, outgoing)
     if (next.outgoing) outgoing.push(next.outgoing)
     let least = clipShare(next.action, outgoing)
     for (let t = 0; t < FADE + 0.1; t += DT) {

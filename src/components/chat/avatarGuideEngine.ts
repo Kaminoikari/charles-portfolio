@@ -443,23 +443,37 @@ export interface OutgoingMotion {
   t: number
 }
 
-// The second action a clip plays through when it restarts over itself:
-// mixer.clipAction hands back ONE action per clip, and resetting the one that
-// is playing is the hard cut this avoids. Two are enough, because a restart
-// takes the bones in MOTION_FADE and the outgoing one is free again after it.
-const twins = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>()
-function twinOf(clip: THREE.AnimationClip): THREE.AnimationClip {
-  let twin = twins.get(clip)
-  if (!twin) {
-    twin = clip.clone()
-    twins.set(clip, twin)
+// Copies a clip plays through while its own action is busy: mixer.clipAction
+// hands back ONE action per clip, and resetting it while it plays is the hard
+// cut takeOverMotion avoids, while resetting it as it lets go hands the new
+// play to releaseMotion, which stops it (Dance, Spin, Dance inside one fade
+// played nothing). One copy covers a restart; clicks faster than the fade
+// can need more, so the list grows to what they need and is reused after.
+const twins = new WeakMap<THREE.AnimationClip, THREE.AnimationClip[]>()
+function freeAction(
+  mixer: THREE.AnimationMixer,
+  clip: THREE.AnimationClip,
+  busy: (action: THREE.AnimationAction) => boolean,
+): THREE.AnimationAction {
+  const own = mixer.clipAction(clip)
+  if (!busy(own)) return own
+  let list = twins.get(clip)
+  if (!list) {
+    list = []
+    twins.set(clip, list)
   }
-  return twin
+  for (const twin of list) {
+    const action = mixer.clipAction(twin)
+    if (!busy(action)) return action
+  }
+  const twin = clip.clone()
+  list.push(twin)
+  return mixer.clipAction(twin)
 }
 
 /**
  * Start `clip` on `mixer`, taking the bones over from `playing` (null when
- * nothing plays).
+ * nothing plays) while `releasing` still let go of theirs.
  *
  * The clip that is playing is NOT stopped. Stopping it hands every bone it held
  * back to rest inside stop() itself, in one frame, and the new clip only fades
@@ -474,9 +488,13 @@ export function takeOverMotion(
   clip: THREE.AnimationClip,
   playing: THREE.AnimationAction | null,
   fade: number,
+  releasing: readonly OutgoingMotion[],
 ): { action: THREE.AnimationAction; outgoing: OutgoingMotion | null } {
-  let action = mixer.clipAction(clip)
-  if (action === playing) action = mixer.clipAction(twinOf(clip))
+  const action = freeAction(
+    mixer,
+    clip,
+    (a) => a === playing || releasing.some((out) => out.action === a),
+  )
   let outgoing: OutgoingMotion | null = null
   if (playing) {
     // A settle or a fade may be under way on it; from here its weight is
@@ -1168,7 +1186,7 @@ export function initAvatarGuide(
     motionAction = null
     settleDur = 0
     settleT = 0
-    const { action, outgoing: out } = takeOverMotion(mixer, clip, playing, MOTION_FADE)
+    const { action, outgoing: out } = takeOverMotion(mixer, clip, playing, MOTION_FADE, outgoing)
     if (out) outgoing.push(out)
     motionAction = action
     motionName = name
