@@ -98,6 +98,22 @@ describe('a clip taking the bones over from one still playing', () => {
     expect(next.action.getEffectiveWeight()).toBe(1)
   })
 
+  it('hands over from the weight a settling clip had got down to', () => {
+    // The settle lowers a finished clip's weight by hand; a switch in the
+    // middle of it must give back what the clip held then, not a full weight.
+    const r = rig()
+    const outgoing: OutgoingMotion[] = []
+    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    run(r, outgoing, 1.5)
+    first.action.setEffectiveWeight(0.5)
+    r.mixer.update(DT)
+    const shown = r.hips.position.y
+    expect(shown).toBeCloseTo(0.06, 3)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    if (next.outgoing) outgoing.push(next.outgoing)
+    expect(run(r, outgoing, 1, shown)).toBeLessThan(MAX_STEP)
+  })
+
   it('leaves the procedural layer no share of the body while clips hand over', () => {
     // The engine lerps chest, hips and head toward its own pose by
     // 1 - clipShare. The incoming clip starts at weight 0, so a share that
