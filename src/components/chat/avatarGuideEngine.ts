@@ -435,6 +435,87 @@ export function rimBase(stated: THREE.Color | undefined): THREE.Color {
   return new THREE.Color(RIM_FALLBACK)
 }
 
+/** A clip still holding some of the bones after another one took them over. */
+export interface OutgoingMotion {
+  action: THREE.AnimationAction
+  /** Its weight when it was taken over, which is what it gives back. */
+  from: number
+  t: number
+}
+
+// The second action a clip plays through when it restarts over itself:
+// mixer.clipAction hands back ONE action per clip, and resetting the one that
+// is playing is the hard cut this avoids. Two are enough, because a restart
+// takes the bones in MOTION_FADE and the outgoing one is free again after it.
+const twins = new WeakMap<THREE.AnimationClip, THREE.AnimationClip>()
+function twinOf(clip: THREE.AnimationClip): THREE.AnimationClip {
+  let twin = twins.get(clip)
+  if (!twin) {
+    twin = clip.clone()
+    twins.set(clip, twin)
+  }
+  return twin
+}
+
+/**
+ * Start `clip` on `mixer`, taking the bones over from `playing` (null when
+ * nothing plays).
+ *
+ * The clip that is playing is NOT stopped. Stopping it hands every bone it held
+ * back to rest inside stop() itself, in one frame, and the new clip only fades
+ * in from there: on 2026-09-27 a Dance-to-Spin switch moved Gishin's chest
+ * 126mm between two frames, and the bust springs read that as speed and swung
+ * 72 degrees (motionHandover.test.ts). Instead the old clip keeps playing and
+ * gives its weight back over the same `fade` the new one takes to arrive; the
+ * caller advances it with releaseMotion until it lets go.
+ */
+export function takeOverMotion(
+  mixer: THREE.AnimationMixer,
+  clip: THREE.AnimationClip,
+  playing: THREE.AnimationAction | null,
+  fade: number,
+): { action: THREE.AnimationAction; outgoing: OutgoingMotion | null } {
+  let action = mixer.clipAction(clip)
+  if (action === playing) action = mixer.clipAction(twinOf(clip))
+  let outgoing: OutgoingMotion | null = null
+  if (playing) {
+    // A settle or a fade may be under way on it; from here its weight is
+    // written by hand, and the two kinds compound (see beginSettle).
+    const from = playing.getEffectiveWeight()
+    playing.stopFading()
+    playing.setEffectiveWeight(from)
+    outgoing = { action: playing, from, t: 0 }
+  }
+  action.reset()
+  // clipAction hands back the SAME action object every time this clip plays,
+  // and `weight` is not one of the fields reset() clears. The settle leaves it
+  // at 0, and fadeIn MULTIPLIES its ramp by it, so without this the second
+  // play of any clip runs to completion at weight 0: she stands still for
+  // eleven seconds and then settles out of a pose she never struck.
+  action.setEffectiveWeight(1)
+  action.setLoop(THREE.LoopOnce, 1)
+  action.clampWhenFinished = true
+  action.fadeIn(fade)
+  action.play()
+  return { action, outgoing }
+}
+
+/**
+ * Advance an outgoing clip by `dt`: it gives back what the incoming one takes,
+ * on the same linear ramp as its fadeIn, so the two always sum to its weight at
+ * the take-over. False once it has let go (and been stopped).
+ */
+export function releaseMotion(out: OutgoingMotion, dt: number, fade: number): boolean {
+  out.t += dt
+  const w = out.from * (1 - Math.min(1, fade > 0 ? out.t / fade : 1))
+  if (w <= 0) {
+    out.action.stop()
+    return false
+  }
+  out.action.setEffectiveWeight(w)
+  return true
+}
+
 // One fetch per mouth texture for the life of the page: every swap to a body
 // that borrows it reuses the same decoded image.
 const borrowedMouths = new Map<string, Promise<HTMLImageElement>>()
@@ -874,6 +955,8 @@ export function initAvatarGuide(
   function uninstallVrm(): void {
     if (!vrm) return
     stopMotion()
+    for (const out of outgoing) out.action.stop()
+    outgoing.length = 0
     mixer = null
     motionClips.clear()
     scene.remove(vrm.scene)
@@ -947,6 +1030,10 @@ export function initAvatarGuide(
   let mixer: THREE.AnimationMixer | null = null
   let motionAction: THREE.AnimationAction | null = null
   let motionName: AvatarMotionName | null = null
+  // Clips a newer one took the bones over from mid-play, still giving their
+  // weight back (see takeOverMotion). Usually empty; one entry for MOTION_FADE
+  // after a switch.
+  const outgoing: OutgoingMotion[] = []
   const motionClips = new Map<AvatarMotionName, THREE.AnimationClip>()
   // The parsed VRMA behind each clip. A clip is bound to ONE body's bones, so
   // a body swap rebuilds every clip from here rather than fetching again.
@@ -1057,22 +1144,17 @@ export function initAvatarGuide(
     const clip = motionClips.get(name)
     if (!clip || !vrm) return false
     if (!mixer) mixer = new THREE.AnimationMixer(vrm.scene)
-    stopMotion()
-    const action = mixer.clipAction(clip)
-    action.reset()
-    // clipAction hands back the SAME action object every time this clip plays,
-    // and `weight` is not one of the fields reset() clears. The settle leaves it
-    // at 0, and fadeIn MULTIPLIES its ramp by it, so without this the second
-    // play of any clip runs to completion at weight 0: she stands still for
-    // eleven seconds and then settles out of a pose she never struck.
-    action.setEffectiveWeight(1)
-    action.setLoop(THREE.LoopOnce, 1)
-    action.clampWhenFinished = true
-    // Both ends of every bundled clip are a standing rest pose (pinned by
-    // rigProbe.test.ts), so this fade only has to cover the head turn the
-    // procedural layer may be mid-way through.
-    action.fadeIn(MOTION_FADE)
-    action.play()
+    // A clip still playing is handed over, not stopped: stopMotion would pin
+    // every bone it holds to rest in one frame. From rest, both ends of every
+    // bundled clip are a standing rest pose (pinned by rigProbe.test.ts), so
+    // the fade only has to cover the head turn the procedural layer may be
+    // mid-way through; from a clip, it covers the whole way between the two.
+    const playing = motionAction
+    motionAction = null
+    settleDur = 0
+    settleT = 0
+    const { action, outgoing: out } = takeOverMotion(mixer, clip, playing, MOTION_FADE)
+    if (out) outgoing.push(out)
     motionAction = action
     motionName = name
     return true
@@ -1253,7 +1335,7 @@ export function initAvatarGuide(
       // A running clip owns the humanoid bones. It is advanced before anything
       // procedural reads or writes them, and `motionActive` gates every write
       // below that would otherwise be applied on top of the capture.
-      if (motionAction && mixer) {
+      if (mixer && (motionAction || outgoing.length > 0)) {
         // Finishing was the one exit that was a hard cut. A clip's last frame
         // leaves her wrists 0.060m (`squat`) to 0.540m (`dance`) from the pinned
         // rest pose (rigProbe.test.ts measures both ends on the VRoid body),
@@ -1274,13 +1356,19 @@ export function initAvatarGuide(
         // the last weight a settle computes is 0 and the pose the pin lands on
         // is already rest. Written after, every settle would end on a one-frame
         // cut of whatever weight was still standing.
-        if (settleDur > 0) {
+        if (motionAction && settleDur > 0) {
           settleT += dt
           motionAction.setEffectiveWeight(settleWeight(settleT, settleDur))
         }
+        // A clip taken over mid-play gives its weight back on the same terms.
+        for (let i = outgoing.length - 1; i >= 0; i--) {
+          if (!releaseMotion(outgoing[i], dt, MOTION_FADE)) outgoing.splice(i, 1)
+        }
         mixer.update(dt)
-        if (settleDur === 0 && !motionAction.isRunning()) beginSettle()
-        else if (settleDur > 0 && settleT >= settleDur) stopMotion()
+        if (motionAction) {
+          if (settleDur === 0 && !motionAction.isRunning()) beginSettle()
+          else if (settleDur > 0 && settleT >= settleDur) stopMotion()
+        }
       }
       const motionActive = motionAction !== null
 
@@ -1417,7 +1505,12 @@ export function initAvatarGuide(
       // them back in step, so a gesture that interrupted a clip is visible from
       // its first frame instead of after the fade. With no clip this is 1 and
       // every lerp below collapses to a plain assignment.
-      const proceduralW = motionAction ? 1 - motionAction.getEffectiveWeight() : 1
+      // A clip handing over still holds its share, so both count: counting
+      // only the incoming one gave the procedural layer the chest back at the
+      // instant of a switch, the jump takeOverMotion exists to remove.
+      let clipW = motionAction ? motionAction.getEffectiveWeight() : 0
+      for (const out of outgoing) clipW += out.action.getEffectiveWeight()
+      const proceduralW = 1 - Math.min(1, clipW)
       if (proceduralW > 0.001) {
         const blend = (current: number, target: number): number =>
           THREE.MathUtils.lerp(current, target, proceduralW)
