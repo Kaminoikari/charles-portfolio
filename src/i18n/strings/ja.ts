@@ -165,7 +165,7 @@ const ja: Strings = {
       pink: 'ピンク髪',
       milfy: 'ツインテール',
       base: '紫髪',
-      rosa: 'Rosa',
+      gishin: 'Gishin',
       studio: 'メガネOL',
       'hair-female': '猫耳',
       'sendagaya-shibu': 'Shibu',

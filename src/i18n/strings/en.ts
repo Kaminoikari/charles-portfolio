@@ -77,7 +77,7 @@ interface Strings {
     looksAriaLabel: string
     looks: {
       pink: string; milfy: string; base: string
-      rosa: string
+      gishin: string
       studio: string
       'hair-female': string
       'sendagaya-shibu': string
@@ -247,7 +247,7 @@ const en: Strings = {
       pink: 'Pink hair',
       milfy: 'Twin tails',
       base: 'Purple hair',
-      rosa: 'Rosa',
+      gishin: 'Gishin',
       studio: 'Office glasses',
       'hair-female': 'Cat ears',
       'sendagaya-shibu': 'Shibu',

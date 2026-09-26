@@ -52,6 +52,7 @@ import { CLEARANCE as VROID_SENDAGAYA_SHINO } from './clearance/vroid-sendagaya-
 import { CLEARANCE as VROID_VITA } from './clearance/vroid-vita'
 import { CLEARANCE as VROID_MIKA_GLASSES } from './clearance/vroid-mika-glasses'
 import { CLEARANCE as VROID_ROSA } from './clearance/vroid-rosa'
+import { CLEARANCE as VROID_GISHIN } from './clearance/vroid-gishin'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -64,7 +65,7 @@ export type OfferedVariantId =
   | 'pink'
   | 'milfy'
   | 'base'
-  | 'rosa'
+  | 'gishin'
   | 'studio'
   | 'hair-female'
   | 'sendagaya-shibu'
@@ -83,7 +84,7 @@ export type OfferedVariantId =
  * stops being one global fact and becomes a fact per rig, with the guards to
  * prove it. The body that proves it does not have to be a look.
  */
-export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya' | 'studio-hoodie' | 'twist'
+export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya' | 'studio-hoodie' | 'twist' | 'rosa'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -112,6 +113,7 @@ export type AvatarFamilyId =
   | 'vroid-vita'
   | 'vroid-mika-glasses'
   | 'vroid-rosa'
+  | 'vroid-gishin'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -139,6 +141,7 @@ export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-vita': VROID_VITA,
   'vroid-mika-glasses': VROID_MIKA_GLASSES,
   'vroid-rosa': VROID_ROSA,
+  'vroid-gishin': VROID_GISHIN,
 }
 
 /**
@@ -276,7 +279,22 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // chunk against the export, then packed as webp and scaled from crown 1.6199
   // to Mika's 1.582: scripts/avatar/evidence/rosa-0926.log. Its mouth texture
   // is pixel-identical to `studio`'s, so it keeps its own.
-  { id: 'rosa', label: 'Rosa', url: '/avatar/rosa_webp.vrm', family: 'vroid-rosa', mouth: 'own', offered: true },
+  //
+  // Retired from the strip on 2026-09-26, the owner's call: Gishin below, her
+  // re-dressed successor, took its place. Kept declared and measured so the
+  // per-family guards keep running against the restyled rig.
+  { id: 'rosa', label: 'Rosa', url: '/avatar/rosa_webp.vrm', family: 'vroid-rosa', mouth: 'own', offered: false },
+  // `gishin` since 2026-09-26, in the strip slot `rosa` held: Rosa's VRoid
+  // project re-dressed in Blender to the owner's reference picture (a brick-red
+  // wrap dress, gold cuffs, a teal pendant, a newer VRoid face) and named
+  // Gishin by the owner. The export carried the same two restrictive meta
+  // fields as Rosa's, relaxed the same way, and its title was renamed to Gishin;
+  // violent, sexual and commercial use stay Disallow. Checked by putting the
+  // three values back and comparing the JSON and binary chunk against the
+  // export, then packed as webp and scaled from crown 1.6199 to Mika's 1.582:
+  // scripts/avatar/evidence/gishin-0926.log. Its mouth texture is
+  // pixel-identical to Rosa's, so it keeps its own.
+  { id: 'gishin', label: 'Gishin', url: '/avatar/gishin_webp.vrm', family: 'vroid-gishin', mouth: 'own', offered: true },
   // The third family, and the first body here that came back OUT of VRoid
   // Studio rather than out of this repo's own build: Mika's project taken
   // through Studio's dress-up path and re-exported as VRM 1.0 on 2026-09-09.
