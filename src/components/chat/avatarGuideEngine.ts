@@ -516,6 +516,21 @@ export function releaseMotion(out: OutgoingMotion, dt: number, fade: number): bo
   return true
 }
 
+/**
+ * How much of the body the clips hold this frame, 0 to 1; the procedural layer
+ * owns the rest. A clip handing over still holds its share, so both count:
+ * counting only the incoming one gave the procedural layer the chest back at
+ * the instant of a switch, the jump takeOverMotion exists to remove.
+ */
+export function clipShare(
+  playing: THREE.AnimationAction | null,
+  outgoing: readonly OutgoingMotion[],
+): number {
+  let w = playing ? playing.getEffectiveWeight() : 0
+  for (const out of outgoing) w += out.action.getEffectiveWeight()
+  return Math.min(1, w)
+}
+
 // One fetch per mouth texture for the life of the page: every swap to a body
 // that borrows it reuses the same decoded image.
 const borrowedMouths = new Map<string, Promise<HTMLImageElement>>()
@@ -1505,12 +1520,7 @@ export function initAvatarGuide(
       // them back in step, so a gesture that interrupted a clip is visible from
       // its first frame instead of after the fade. With no clip this is 1 and
       // every lerp below collapses to a plain assignment.
-      // A clip handing over still holds its share, so both count: counting
-      // only the incoming one gave the procedural layer the chest back at the
-      // instant of a switch, the jump takeOverMotion exists to remove.
-      let clipW = motionAction ? motionAction.getEffectiveWeight() : 0
-      for (const out of outgoing) clipW += out.action.getEffectiveWeight()
-      const proceduralW = 1 - Math.min(1, clipW)
+      const proceduralW = 1 - clipShare(motionAction, outgoing)
       if (proceduralW > 0.001) {
         const blend = (current: number, target: number): number =>
           THREE.MathUtils.lerp(current, target, proceduralW)

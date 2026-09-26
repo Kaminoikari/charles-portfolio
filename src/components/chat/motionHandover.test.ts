@@ -9,7 +9,7 @@
 // 12cm off rest, which is the size of the jump measured on the site.
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { releaseMotion, takeOverMotion, type OutgoingMotion } from './avatarGuideEngine'
+import { clipShare, releaseMotion, takeOverMotion, type OutgoingMotion } from './avatarGuideEngine'
 
 const FADE = 0.25
 const DT = 1 / 60
@@ -96,5 +96,24 @@ describe('a clip taking the bones over from one still playing', () => {
     expect(outgoing).toHaveLength(0)
     expect(first.action.isRunning()).toBe(false)
     expect(next.action.getEffectiveWeight()).toBe(1)
+  })
+
+  it('leaves the procedural layer no share of the body while clips hand over', () => {
+    // The engine lerps chest, hips and head toward its own pose by
+    // 1 - clipShare. The incoming clip starts at weight 0, so a share that
+    // missed the outgoing one would hand the whole chest to the procedural
+    // pose on the first frame of every switch.
+    const r = rig()
+    const outgoing: OutgoingMotion[] = []
+    const first = takeOverMotion(r.mixer, RISE, null, FADE)
+    run(r, outgoing, 1.5)
+    const next = takeOverMotion(r.mixer, STILL, first.action, FADE)
+    if (next.outgoing) outgoing.push(next.outgoing)
+    let least = clipShare(next.action, outgoing)
+    for (let t = 0; t < FADE + 0.1; t += DT) {
+      run(r, outgoing, DT)
+      least = Math.min(least, clipShare(next.action, outgoing))
+    }
+    expect(least).toBeGreaterThan(0.95)
   })
 })
