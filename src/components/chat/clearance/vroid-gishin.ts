@@ -1,5 +1,5 @@
 // The clearance of the Gishin family: one body, declared in avatarVariants.ts
-// as `gishin` and offered to visitors since 2026-09-26 in the place `rosa` held.
+// as `gishin` and offered to visitors since 2026-09-27 in the place `rosa` held.
 //
 // Rosa's VRoid project re-dressed in Blender on 2026-09-26 to the owner's
 // reference picture and named Gishin by the owner. Three meta fields changed so

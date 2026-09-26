@@ -280,11 +280,11 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // to Mika's 1.582: scripts/avatar/evidence/rosa-0926.log. Its mouth texture
   // is pixel-identical to `studio`'s, so it keeps its own.
   //
-  // Retired from the strip on 2026-09-26, the owner's call: Gishin below, her
+  // Retired from the strip on 2026-09-27, the owner's call: Gishin below, her
   // re-dressed successor, took its place. Kept declared and measured so the
   // per-family guards keep running against the restyled rig.
   { id: 'rosa', label: 'Rosa', url: '/avatar/rosa_webp.vrm', family: 'vroid-rosa', mouth: 'own', offered: false },
-  // `gishin` since 2026-09-26, in the strip slot `rosa` held: Rosa's VRoid
+  // `gishin` since 2026-09-27, in the strip slot `rosa` held: Rosa's VRoid
   // project re-dressed in Blender to the owner's reference picture (a brick-red
   // wrap dress, gold cuffs, a teal pendant, a newer VRoid face) and named
   // Gishin by the owner. The export carried the same two restrictive meta

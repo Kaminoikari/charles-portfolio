@@ -53,8 +53,8 @@ describe('initialVariantId', () => {
     // 2026-09-25: every female body the registry measured, the male ones kept
     // declared and measured but off the strip. 2026-09-26: `studio` became the
     // office-wear restyle and the hoodie it used to name stepped off the strip,
-    // and Rosa took `twist`'s slot while `twist` stayed declared; later that
-    // day Gishin, Rosa re-dressed, took Rosa's slot and Rosa stayed declared.
+    // and Rosa took `twist`'s slot while `twist` stayed declared. 2026-09-27:
+    // Gishin, Rosa re-dressed, took Rosa's slot and Rosa stayed declared.
     expect(OFFERED_VARIANTS.map((v) => v.id)).toEqual([
       'pink', 'milfy', 'base', 'gishin', 'studio', 'hair-female', 'sendagaya-shibu',
       'victoria-rubin', 'vivi', 'sample-a', 'darkness-shibu', 'sendagaya-shino', 'vita',
