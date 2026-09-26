@@ -51,6 +51,7 @@ import { CLEARANCE as VROID_SAKURADA_FUMIRIYA } from './clearance/vroid-sakurada
 import { CLEARANCE as VROID_SENDAGAYA_SHINO } from './clearance/vroid-sendagaya-shino'
 import { CLEARANCE as VROID_VITA } from './clearance/vroid-vita'
 import { CLEARANCE as VROID_MIKA_GLASSES } from './clearance/vroid-mika-glasses'
+import { CLEARANCE as VROID_ROSA } from './clearance/vroid-rosa'
 
 /**
  * A body the look strip offers and a visitor may choose.
@@ -63,7 +64,7 @@ export type OfferedVariantId =
   | 'pink'
   | 'milfy'
   | 'base'
-  | 'twist'
+  | 'rosa'
   | 'studio'
   | 'hair-female'
   | 'sendagaya-shibu'
@@ -82,7 +83,7 @@ export type OfferedVariantId =
  * stops being one global fact and becomes a fact per rig, with the guards to
  * prove it. The body that proves it does not have to be a look.
  */
-export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya' | 'studio-hoodie'
+export type AvatarVariantId = OfferedVariantId | 'hair-male' | 'sample-c' | 'sakurada-fumiriya' | 'studio-hoodie' | 'twist'
 
 /**
  * A group of bodies that share a humanoid rig, and therefore share one set of
@@ -110,6 +111,7 @@ export type AvatarFamilyId =
   | 'vroid-sendagaya-shino'
   | 'vroid-vita'
   | 'vroid-mika-glasses'
+  | 'vroid-rosa'
 
 /**
  * Each family's measurements, as produced and decided in
@@ -136,6 +138,7 @@ export const AVATAR_FAMILIES: Record<AvatarFamilyId, ClearanceFile> = {
   'vroid-sendagaya-shino': VROID_SENDAGAYA_SHINO,
   'vroid-vita': VROID_VITA,
   'vroid-mika-glasses': VROID_MIKA_GLASSES,
+  'vroid-rosa': VROID_ROSA,
 }
 
 /**
@@ -258,7 +261,22 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // One thing it does NOT exercise, said here rather than assumed: the other
   // 56 tests in that file sit outside the per-family block and still read
   // AvatarSample_B only.
-  { id: 'twist', label: 'VRM1 樣本', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', mouth: 'own', offered: true },
+  //
+  // Retired from the strip on 2026-09-26, the owner's call: Rosa below took its
+  // place. Kept declared and measured so the per-family guards keep running
+  // against the VRM 1.0 constraint rig.
+  { id: 'twist', label: 'VRM1 樣本', url: '/avatar/vrm1-twist-sample.vrm', family: 'vrm1-twist-sample', mouth: 'own', offered: false },
+  // `rosa` since 2026-09-26, in the strip slot `twist` held: Mika's VRoid
+  // project restyled in VRoid Studio 2.14.0 at the owner's direction as Rosa
+  // (chest raised to 1.0) and exported as VRM 0.0. The export carried the same
+  // `allowedUserName: OnlyAuthor` and `licenseName: Redistribution_Prohibited`
+  // as `studio`'s, and at the owner's direction the same two were relaxed to
+  // `Everyone` and `Other`; violent, sexual and commercial use stay Disallow.
+  // Checked by putting the two values back and comparing the JSON and binary
+  // chunk against the export, then packed as webp and scaled from crown 1.6199
+  // to Mika's 1.582: scripts/avatar/evidence/rosa-0926.log. Its mouth texture
+  // is pixel-identical to `studio`'s, so it keeps its own.
+  { id: 'rosa', label: 'Rosa', url: '/avatar/rosa_webp.vrm', family: 'vroid-rosa', mouth: 'own', offered: true },
   // The third family, and the first body here that came back OUT of VRoid
   // Studio rather than out of this repo's own build: Mika's project taken
   // through Studio's dress-up path and re-exported as VRM 1.0 on 2026-09-09.

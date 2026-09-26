@@ -49,16 +49,17 @@ describe('initialVariantId', () => {
     expect(initialVariantId(`?${VARIANT_QUERY_PARAM}=never-declared`, storage)).toBe(ACTIVE_VARIANT)
   })
 
-  it("offers the owner's thirteen and holds back the three men and the old studio look", () => {
+  it("offers the owner's thirteen and holds back the three men and the two retired looks", () => {
     // 2026-09-25: every female body the registry measured, the male ones kept
     // declared and measured but off the strip. 2026-09-26: `studio` became the
-    // office-wear restyle and the hoodie it used to name stepped off the strip.
+    // office-wear restyle and the hoodie it used to name stepped off the strip,
+    // and Rosa took `twist`'s slot while `twist` stayed declared.
     expect(OFFERED_VARIANTS.map((v) => v.id)).toEqual([
-      'pink', 'milfy', 'base', 'twist', 'studio', 'hair-female', 'sendagaya-shibu',
+      'pink', 'milfy', 'base', 'rosa', 'studio', 'hair-female', 'sendagaya-shibu',
       'victoria-rubin', 'vivi', 'sample-a', 'darkness-shibu', 'sendagaya-shino', 'vita',
     ])
     expect(AVATAR_VARIANTS.filter((v) => !v.offered).map((v) => v.id)).toEqual([
-      'studio-hoodie', 'hair-male', 'sample-c', 'sakurada-fumiriya',
+      'twist', 'studio-hoodie', 'hair-male', 'sample-c', 'sakurada-fumiriya',
     ])
   })
 

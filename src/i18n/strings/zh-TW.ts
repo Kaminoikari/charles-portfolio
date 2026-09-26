@@ -162,7 +162,7 @@ const zhTW: Strings = {
       pink: '粉髮',
       milfy: '雙馬尾',
       base: '紫髮',
-      twist: '棕髮',
+      rosa: 'Rosa',
       studio: '眼鏡上班族',
       'hair-female': '貓耳',
       'sendagaya-shibu': 'Shibu',
