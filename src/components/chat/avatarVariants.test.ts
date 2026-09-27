@@ -47,7 +47,7 @@ describe('avatar variants', () => {
     expect(variantUrl()).toBe(active!.url)
   })
 
-  it('loads the corrected pink texture atlas under a fresh immutable URL', () => {
+  it('loads the corrected pink texture atlas under a fresh URL', () => {
     expect(variantUrl('pink')).toBe('/avatar/mika-pink-2.vrm')
   })
 
@@ -60,9 +60,9 @@ describe('avatar variants', () => {
   })
 
   it('declares only files that are actually served', () => {
-    // /avatar/* is cache-immutable, so a variant pointing at a path that does
-    // not exist is a body that never loads and a launcher that never becomes a
-    // character. Cheap to check here, invisible until someone opens the site.
+    // A variant pointing at a path that does not exist is a body that never
+    // loads and a launcher that never becomes a character. Cheap to check
+    // here, invisible until someone opens the site.
     for (const v of AVATAR_VARIANTS) {
       expect(v.url, `${v.id} must be served from /avatar/`).toMatch(/^\/avatar\/.+\.vrm$/)
       const onDisk = path.join(process.cwd(), 'public', v.url.replace(/^\//, ''))

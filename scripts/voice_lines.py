@@ -15,8 +15,9 @@
 #
 import re
 
-# CLIP KEYS ARE CACHE KEYS. /avatar/* is served immutable, so changing what a
-# clip SAYS means changing its key, not just its bytes (avatar-guide.md).
+# CLIP KEYS ARE CACHE KEYS. Browsers that fetched /avatar/* before 2026-09-27
+# hold it as immutable until 2027-09-27, so changing what a clip SAYS means
+# changing its key, not just its bytes (avatar-guide.md).
 
 # Japanese, the original set. ja locale ships these; zh-TW used to borrow them
 # for want of anything better, which is the gap this table exists to close.

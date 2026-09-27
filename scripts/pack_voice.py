@@ -24,9 +24,10 @@
 # reads afinfo for the same reason. If you ever DO re-time from a shipped m4a,
 # measure the offset again rather than assuming either number.
 #
-# /avatar/* is served with an immutable cache, so a clip's NAME is its cache
-# key: re-encoding a clip under a name that has shipped leaves visitors on the
-# old bytes forever. That is why the new English set is `-en2` rather than a
+# A clip's NAME is its cache key. Until 2026-09-27 /avatar/* was served
+# immutable for a year, and a browser that fetched a clip before then keeps it
+# without asking until 2027-09-27: re-encoding a clip under a name that has
+# shipped leaves those visitors on the old bytes. That is why the new English set is `-en2` rather than a
 # second pass over `-en` (avatarVoice.ts carries the same warning).
 #
 # Usage:
@@ -71,7 +72,7 @@ def main() -> None:
         if os.path.exists(out):
             # Never silently rewrite a name that has already been served.
             sys.exit(f'{out} already exists — pick a new clip key, do not rewrite '
-                     f'a cached one (see the immutable-cache note above)')
+                     f'a cached one (see the cache note above)')
         if args.dry_run:
             print(f'  would write {out}')
             continue

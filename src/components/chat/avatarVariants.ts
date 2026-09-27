@@ -32,8 +32,10 @@
 //
 // scripts/repaint_vrm.py made the pink one, recipe included.
 //
-// /avatar/* is served cache-immutable, so any content change MUST arrive under
-// a new filename. Renaming is the invalidation.
+// Until 2026-09-27 /avatar/* was served immutable for a year, and a browser
+// that fetched a body before then keeps it without asking until 2027-09-27,
+// so a body that shipped before then still needs a new filename when its bytes
+// change. Renaming is the invalidation (gishin-2.vrm is one).
 
 import type { ClearanceFile } from './clearance'
 import { CLEARANCE as VROID_SAMPLE_B } from './clearance/vroid-sample-b'
@@ -294,7 +296,7 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // export, then packed as webp and scaled from crown 1.6199 to Mika's 1.582:
   // scripts/avatar/evidence/gishin-0926.log. Its mouth texture is
   // pixel-identical to Rosa's, so it keeps its own.
-  { id: 'gishin', label: 'Gishin', url: '/avatar/gishin_webp.vrm', family: 'vroid-gishin', mouth: 'own', offered: true },
+  { id: 'gishin', label: 'Gishin', url: '/avatar/gishin-2.vrm', family: 'vroid-gishin', mouth: 'own', offered: true },
   // The third family, and the first body here that came back OUT of VRoid
   // Studio rather than out of this repo's own build: Mika's project taken
   // through Studio's dress-up path and re-exported as VRM 1.0 on 2026-09-09.

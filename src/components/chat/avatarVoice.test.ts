@@ -56,8 +56,9 @@ describe('voiceLinesFor', () => {
     // Every localised clip carries a generation number: -en2 because the
     // English was re-recorded on 2026-08-21, -zh2 because the Mandarin was
     // re-recorded later the same day once its tones turned out to be broken.
-    // /avatar/* is immutable-cached, so reusing either old name would have
-    // served the old audio to everyone who had already heard it.
+    // /avatar/* was immutable-cached for a year until 2026-09-27, so reusing
+    // either old name would have served the old audio to everyone who had
+    // already heard it.
     //
     // The generation is per CLIP, not per locale: the Mandarin lines listed
     // below were re-cut after the set shipped, while the rest stayed on the
@@ -131,7 +132,7 @@ describe('pickVoiceLine', () => {
     for (const cue of cues) expect(VOICE_LINES[cue].length).toBeGreaterThan(0)
   })
 
-  it('every catalogued clip lives under the immutable-cached /avatar/ path', () => {
+  it('every catalogued clip lives under the /avatar/ path', () => {
     for (const table of [VOICE_LINES, VOICE_LINES_EN, VOICE_LINES_ZH]) {
       for (const clips of Object.values(table)) {
         for (const clip of clips) expect(clip.startsWith('/avatar/voice/')).toBe(true)

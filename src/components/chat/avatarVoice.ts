@@ -123,8 +123,9 @@ export const VOICE_LINES: Record<VoiceCue, string[]> = {
 // the licence position.
 //
 // Both sets carry a generation number — `-en2` and `-zh2`, never `-en` or
-// `-zh`. /avatar/* is served immutable, so a clip's NAME is its cache key and
-// re-recording under a shipped name leaves visitors on the old audio forever.
+// `-zh`. A clip's NAME is its cache key: /avatar/* was served immutable for a
+// year until 2026-09-27, so re-recording under a shipped name leaves visitors
+// who fetched it before then on the old audio until 2027-09-27.
 // The `-en` and `-zh` files are gone; nothing points at them. That rule is also
 // why the Mandarin set spans several generation numbers at once: the generation
 // is per clip, not per locale (see ZH_REGEN below).
@@ -171,8 +172,8 @@ const LOCALE_NEUTRAL_CUES: readonly VoiceCue[] = ['giggle']
 // the current spread; it is the thing to read, not a count in prose.
 //
 // intro-1 is the one at -zh4. Its wording never changed; what changed was the
-// take and the pitch, and /avatar/* being immutable-cached means new bytes
-// need a new name just as much as new words do.
+// take and the pitch, and browsers that cached /avatar/* as immutable before
+// 2026-09-27 mean new bytes need a new name just as much as new words do.
 //
 // Keyed on the base clip name, which is the part that survives both the
 // directory and the generation suffix.

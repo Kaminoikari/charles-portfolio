@@ -1,10 +1,11 @@
 // Warms the HTTP cache for a body the visitor is about to pick.
 //
-// /avatar/* is served immutable, so a plain GET here is what the engine's own
-// loader finds when the tap lands: the swap then costs a parse, not a
-// download. It fires on hover or focus of a look chip rather than for everyone
-// on page load, because a body is 5.5MB (and an outfit can be twice that) and
-// most visitors never touch the strip.
+// A plain GET here puts the body in the HTTP cache, and the engine's own
+// loader finds it there when the tap lands: /avatar/* is revalidated on each
+// use, so the swap then costs a 304 and a parse, not a download. It fires on
+// hover or focus of a look chip rather than for everyone on page load,
+// because a body is 5.5MB (and an outfit can be twice that) and most visitors
+// never touch the strip.
 const warmed = new Set<string>()
 
 export function prefetchBody(url: string, fetchFn: typeof fetch | undefined = globalThis.fetch): void {
