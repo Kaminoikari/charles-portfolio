@@ -11,7 +11,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-gishin",
   "rigSha": "0b931951c9cf18b3269c72941cb1f557edef03f782027b3a691b83dbd52fbecf",
   "simulatedOn": "/avatar/gishin-2.vrm",
-  "producedBy": "048ea32",
+  "producedBy": "9ad3469",
   "restCrownY": 1.582,
   "restCrownScreen": {
     "waistUp": 1.5814,
@@ -52,7 +52,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5914
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 46.7,
+      "bodyDepthMm": 41.8,
       "jumpDeg": 2.8,
       "skirtDepthMm": 0
     },
@@ -76,7 +76,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5933
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 40.7,
+      "bodyDepthMm": 11.2,
       "jumpDeg": 0.4,
       "skirtDepthMm": 0
     },
@@ -100,7 +100,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5564
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 49,
+      "bodyDepthMm": 45.7,
       "jumpDeg": 2.1,
       "skirtDepthMm": 0
     },
@@ -112,7 +112,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5931
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 19.5,
+      "bodyDepthMm": 18.8,
       "jumpDeg": 1.8,
       "skirtDepthMm": 0
     },
@@ -124,7 +124,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.6229
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 49.2,
+      "bodyDepthMm": 45.7,
       "jumpDeg": 3.1,
       "skirtDepthMm": 0
     },
@@ -148,7 +148,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5924
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 50,
+      "bodyDepthMm": 49.8,
       "jumpDeg": 4.5,
       "skirtDepthMm": 0
     },
@@ -160,7 +160,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.8517
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 45.9,
+      "bodyDepthMm": 41.9,
       "jumpDeg": 4.6,
       "skirtDepthMm": 0
     }
