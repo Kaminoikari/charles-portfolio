@@ -47,6 +47,7 @@ import {
   MAX_HIPS_SINK,
   motionPan,
   motionsFor,
+  motionsWornBy,
   nextIdleMotion,
   OPENING_MOTION,
   settleSeconds,
@@ -490,7 +491,10 @@ describe('guard sensitivity', () => {
 // far it reaches, where its hair goes, whether it stays in frame -- so it is
 // exactly the block that stops being one global fact when a second rig arrives.
 describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
-  const names = Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]
+  // The clips this family wears: a clip made for another body (`wornBy`) is
+  // neither measured nor offered here, and every guard below asks only these.
+  const names = motionsWornBy(fam.id)
+  const WORN = Object.entries(AVATAR_MOTIONS).filter(([name]) => names.includes(name as AvatarMotionName))
   const CLEARANCE = fam.clearance
   const FAMILY = fam.id
   const rig = (): Rig => rigOfBody(fam.body)
@@ -511,7 +515,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // LOCAL rest rotation, its hips a ~120° axis permutation, and once those
   // accumulate down the chain all 52 rest in a non-identity WORLD orientation,
   // which is the frame the rebase actually divides out.
-  it.each(Object.keys(AVATAR_MOTIONS))('%s decodes to an upright body', (name) => {
+  it.each(names)('%s decodes to an upright body', (name) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
     const y = (bone: string): number =>
@@ -603,7 +607,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     // pan: the equality has no solution on the centimetre grid for three of
     // these families. clearance.panHolds carries the derivation and the
     // measurements that forced it.
-    for (const [name, def] of Object.entries(AVATAR_MOTIONS)) {
+    for (const [name, def] of WORN) {
       // A clip this family has written down that it cannot wear is not asked
       // whether it fits. `excluded` is the answer to that question already, and
       // `vroid-sakurada-fumiriya` is the body that makes the difference real:
@@ -630,7 +634,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     }
   })
 
-  it.each(Object.entries(AVATAR_MOTIONS))(
+  it.each(WORN)(
     '%s keeps her fingertips out of her own head',
     (name, def) => {
       const r = rig()
@@ -668,7 +672,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // Screen sides, not hers: a 0.x body is mirrored to face the
   // viewer, so her right hand renders on the viewer's left; a 1.0 body is not.
   // Either way the sides here are the viewer's. See rigProbe's screenX.
-  it.each(Object.entries(AVATAR_MOTIONS))('%s stays inside every frame it declares', (name, def) => {
+  it.each(WORN)('%s stays inside every frame it declares', (name, def) => {
     // Same reason the pan guard skips these: a clip the family has written down
     // that it cannot wear is never played on it, and asking whether it stays in
     // a frame it never appears in is what a waiver would have to lie about.
@@ -809,6 +813,11 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
     }
     for (const name of IDLE_MOTIONS) {
       if (name in CLEARANCE.excluded) continue
+      if (!names.includes(name)) {
+        // Made for another body: never offered on this one.
+        expect(reachable.has(name), `${name} is not worn by ${FAMILY} but is offered`).toBe(false)
+        continue
+      }
       expect(reachable.has(name), `${name} is in the rotation but ${FAMILY} offers it nowhere`).toBe(true)
     }
   })
@@ -824,7 +833,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // measured crown out of the top (why it pans UP in the column). Those are the
   // three edges the guards above measure, so those are the three this can
   // honestly claim to have checked.
-  it.each(Object.entries(AVATAR_MOTIONS))('%s declares no pan it does not need', (name, def) => {
+  it.each(WORN)('%s declares no pan it does not need', (name, def) => {
     for (const [frame, pan] of Object.entries(CLEARANCE.pans[name] ?? {}) as [MotionFrame, number][]) {
       // A pan for a frame the clip is never played in is dead configuration:
       // nothing applies it and nothing measures against it.
@@ -868,7 +877,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
 
 
   it.each(
-    Object.entries(AVATAR_MOTIONS).filter(([, def]) => def.showsPalm),
+    WORN.filter(([, def]) => def.showsPalm),
   )('%s turns a palm to the viewer at some point', (name) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
@@ -888,7 +897,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // cap. Her hips at rest are 0.878, the waist-up frame ends at 0.768, and the
   // column's at 0.430; squat's deepest is 0.660, which is why it plays in the
   // column only.
-  it.each(Object.entries(AVATAR_MOTIONS))('%s keeps her hips inside the crop', (name, def) => {
+  it.each(WORN)('%s keeps her hips inside the crop', (name, def) => {
     const r = rig()
     const m = motion(name as AvatarMotionName)
     let lowest = Infinity
@@ -909,7 +918,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   // MAX_HIPS_SINK: measure-motions.ts prints a candidate body's numbers against
   // the same three, and one copy of a threshold is the only kind that cannot go
   // stale on one side.
-  it.each(Object.entries(AVATAR_MOTIONS))(
+  it.each(WORN)(
     '%s opens and closes on a standing pose',
     (name) => {
       const r = rig()
@@ -1084,6 +1093,12 @@ describe('the idle pool', () => {
         expect(reachable.has(name), `${name} is excluded on ${FAMILY} but still offered`).toBe(false)
         continue
       }
+      if (!motionsWornBy(FAMILY).includes(name)) {
+        // Made for another body (wornBy): unreachable here, reached on its own
+        // body by gishinWave.test.ts and the per-family block.
+        expect(reachable.has(name), `${name} is not worn by ${FAMILY} but is offered`).toBe(false)
+        continue
+      }
       expect(reachable.has(name), `${name} is in the rotation but no placement offers it`).toBe(true)
     }
   })
@@ -1117,9 +1132,15 @@ describe('returning to rest', () => {
     }
   }
 
-  /** How far the settle has to carry her wrists after this clip's last frame. */
+  /**
+   * How far the settle has to carry her wrists after this clip's last frame,
+   * on the VRoid rig, or for a clip made for another body on the first body
+   * that wears it.
+   */
   function endDistance(name: AvatarMotionName): number {
-    const r = rig()
+    const wearer = FAMILIES.find((f) => f.id === FAMILY && motionsWornBy(f.id).includes(name))
+      ?? FAMILIES.find((f) => motionsWornBy(f.id).includes(name))!
+    const r = rigOfBody(wearer.body)
     const rest = pinnedRest(r)
     const m = motion(name)
     applyMotion(r, m, m.duration)

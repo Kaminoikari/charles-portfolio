@@ -65,6 +65,7 @@ import {
   type VRMAnimation,
 } from '@pixiv/three-vrm-animation'
 import {
+  AVATAR_MOTIONS,
   IDLE_MOTIONS,
   IDLE_ROTATION_START,
   nextIdleMotion,
@@ -80,6 +81,7 @@ import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVa
 import {
   armRestPins,
   aimPitchPose,
+  blinkMayStart,
   aimYawPose,
   facingSign,
   EMOTION_RECIPES,
@@ -1595,9 +1597,13 @@ export function initAvatarGuide(
       // read as robotic). New blinks hold while a strong emotion is posing the
       // lids — a blink on top of happy's closed-eye smile reads as a glitch.
       // Gate on the DISPLAYED weight: during speech the cap keeps the lids
-      // only partly posed, so blinking may continue (R1 review #2).
+      // only partly posed, so blinking may continue (R1 review #2). A clip
+      // that writes its own face (Gishin's wink) holds blinks off the same
+      // way, on the weight its track has set.
       blinkTimer -= dt
-      if (blinkTimer <= 0 && blinkPhase < 0 && emoShown <= 0.5) blinkPhase = 0
+      const clipFace = motionName ? AVATAR_MOTIONS[motionName].face : undefined
+      const clipFaceShown = clipFace ? (vrm.expressionManager?.getValue(clipFace) ?? 0) : 0
+      if (blinkTimer <= 0 && blinkPhase < 0 && blinkMayStart(emoShown, clipFaceShown)) blinkPhase = 0
       if (blinkPhase >= 0) {
         blinkPhase += dt
         const w = blinkPhase < 0.06 ? blinkPhase / 0.06 : Math.max(0, 1 - (blinkPhase - 0.06) / 0.08)

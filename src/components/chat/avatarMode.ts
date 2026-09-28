@@ -456,6 +456,16 @@ export function armRestPins(version: '0' | '1'): ReadonlyArray<readonly [ArmPinB
   ]
 }
 
+// Whether the engine may start one of its own blinks. It holds off while
+// something else is posing the lids past half weight: a strong emotion (a
+// blink over happy's closed-eye smile reads as a glitch), or the expression a
+// playing clip writes (AvatarMotionDef.face; a blink over a wink closes the
+// eye that is meant to stay open). The displayed weights, so the speech cap
+// that keeps an emotion partly posed lets blinking continue.
+export function blinkMayStart(emotionShown: number, clipFace: number): boolean {
+  return emotionShown <= 0.5 && clipFace <= 0.5
+}
+
 // How far into a gesture the body is, from 0 at rest to 1 at the full pose.
 // `dur` is the movement time, split evenly between the rise and the fall, and
 // `hold` parks the body at the full pose in between. A named pose needs that

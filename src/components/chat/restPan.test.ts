@@ -5,7 +5,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { avatarViewSpan } from './avatarMode'
-import { AVATAR_MOTIONS, cameraPan, REST_AIR, restPan, type AvatarMotionName } from './avatarMotions'
+import { AVATAR_MOTIONS, cameraPan, motionsWornBy, REST_AIR, restPan, type AvatarMotionName } from './avatarMotions'
 import { AVATAR_FAMILIES, OFFERED_VARIANTS, type AvatarFamilyId } from './avatarVariants'
 import type { MotionFrame } from './avatarMotions'
 import { panRange } from './clearance'
@@ -82,6 +82,7 @@ describe('cameraPan', () => {
       for (const [name, def] of Object.entries(AVATAR_MOTIONS))
         for (const frame of def.placements) {
           if (name in f.excluded) continue
+          if (!motionsWornBy(family).includes(name as AvatarMotionName)) continue
           const pan = cameraPan(name as AvatarMotionName, frame, family)
           if (pan === 0) continue
           const { most } = panRange(f, name, frame, f.restCrownY, def.placements)

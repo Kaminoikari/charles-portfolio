@@ -147,6 +147,7 @@ const zhTW: Strings = {
     motions: {
       dance: '跳舞',
       peaceSign: '比耶',
+      waveWink: '揮手眨眼',
       modelPose: '擺姿勢',
       spin: '轉圈',
       squat: '蹲下',

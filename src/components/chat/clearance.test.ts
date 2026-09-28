@@ -27,11 +27,15 @@ import {
 } from './clearance'
 import { CLEARANCE } from './clearance/vroid-sample-b'
 import { SIMULATED as PINK_SIMULATED } from './clearance/vroid-sample-b.pink.simulated.gen'
-import { AVATAR_MOTIONS } from './avatarMotions'
+import { AVATAR_MOTIONS, motionsWornBy, type AvatarMotionName } from './avatarMotions'
 import { avatarViewSpan, stepFramePan } from './avatarMode'
 import type { MotionFrame } from './avatarMotions'
 import { parseGlb, readAccessorRows, type GltfJson } from './vrmHumanoid'
-import { AVATAR_VARIANTS } from './avatarVariants'
+import { AVATAR_VARIANTS, type AvatarFamilyId } from './avatarVariants'
+
+// The clips this file's family wears (a clip made for another body has no numbers here).
+const WORN = Object.entries(AVATAR_MOTIONS).filter(([clip]) =>
+  motionsWornBy(CLEARANCE.family as AvatarFamilyId).includes(clip as AvatarMotionName))
 
 interface RepaintDocument extends GltfJson {
   images: { bufferView: number; mimeType?: string }[]
@@ -184,7 +188,7 @@ describe('every body of the family, not only the one that was simulated', () => 
     // is that the bound the FILE hands out is at least what each body it names
     // actually draws.
     const missed: string[] = []
-    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+    for (const [clip, def] of WORN) {
       for (const frame of def.placements) {
         const bound = crownBound(CLEARANCE, clip, frame, REST_CROWN)
         for (const body of CLEARANCE.alsoSimulated) {
@@ -217,7 +221,7 @@ describe('every body of the family, not only the one that was simulated', () => 
       return v
     }
     const late: string[] = []
-    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+    for (const [clip, def] of WORN) {
       for (const frame of def.placements) {
         const pan = CLEARANCE.pans[clip]?.[frame] ?? 0
         if (pan <= 0) continue // a downward pan buys headroom at the top from the first frame
@@ -243,7 +247,7 @@ describe('every body of the family, not only the one that was simulated', () => 
 
   it('keeps every declared body inside the frame it is filmed in', () => {
     const over: string[] = []
-    for (const [clip, def] of Object.entries(AVATAR_MOTIONS)) {
+    for (const [clip, def] of WORN) {
       for (const frame of def.placements) {
         const bound = crownBound(CLEARANCE, clip, frame, REST_CROWN)
         const ceiling = ceilingOf(clip, frame)

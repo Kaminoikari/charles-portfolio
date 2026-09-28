@@ -11,7 +11,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { IDLE_MOTIONS } from './avatarMotions'
+import { IDLE_MOTIONS, motionsWornBy } from './avatarMotions'
 import { ACTIVE_VARIANT, AVATAR_FAMILIES, AVATAR_VARIANTS, variantUrl, type AvatarFamilyId } from './avatarVariants'
 import { readExpressions, readHumanoid, rigOf, type GltfJson } from './vrmHumanoid'
 
@@ -151,6 +151,8 @@ describe('avatar variants', () => {
     // nobody checked, which is a hand through a face.
     for (const [id, clearance] of Object.entries(AVATAR_FAMILIES)) {
       for (const name of IDLE_MOTIONS) {
+        // A clip made for another body (wornBy) owes this family nothing.
+        if (!motionsWornBy(id as AvatarFamilyId).includes(name)) continue
         const answered = name in clearance.clips || name in clearance.excluded
         expect(answered, `family ${id} has neither a measurement nor a reason for ${name}`).toBe(true)
       }

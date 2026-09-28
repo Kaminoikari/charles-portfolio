@@ -31,6 +31,7 @@ export type AvatarMotionName =
   | 'idleLoop'
   | 'stretch'
   | 'dance'
+  | 'waveWink'
 
 // Which composed frame a motion has been measured against. The launcher and the
 // docked canvas share a framing and an aspect ratio, so they share a budget;
@@ -141,6 +142,20 @@ export interface AvatarMotionDef {
    * whole life on the site.
    */
   showsPalm: boolean
+  /**
+   * The bodies that wear this clip, when not every body does. Left out, every
+   * family wears it and every family measures it; listed, only those families
+   * are offered it, and only their clearance files carry its numbers
+   * (motionsWornBy). For a clip made for one character, which is what
+   * `waveWink` is: it drives an expression only Gishin's file declares.
+   */
+  wornBy?: readonly AvatarFamilyId[]
+  /**
+   * The custom expression the clip itself writes, when it poses her face. The
+   * engine holds its own blink off while that expression is past half weight
+   * (avatarMode.blinkMayStart), the same rule a strong emotion gets.
+   */
+  face?: string
 }
 
 // Three clips of the pack are kept out on purpose, and the measurements that
@@ -233,6 +248,26 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   //             t=12.05 and t=19.46 show it flat. This shipped.
   //
   dance: { placements: ['waistUp', 'column'], showsPalm: true },
+  // Gishin's wave and wink, from the owner's screenshot of her (2026-09-28):
+  // right hand up beside her face, palm out, a small wave, her right eye shut
+  // in a smile. Authored, not captured: scripts/avatar/author-wave.ts writes
+  // the file, and gishinWave.test.ts holds the served file to its output. The
+  // wink is a track in the clip on her custom `Wink` expression, so it rises
+  // and falls with the arm and fades with the clip's own weight.
+  waveWink: {
+    placements: ['waistUp', 'column'],
+    showsPalm: true,
+    wornBy: ['vroid-gishin'],
+    face: 'Wink',
+  },
+}
+
+/** The clips a family wears: every clip, less those made for other bodies. */
+export function motionsWornBy(family: AvatarFamilyId): AvatarMotionName[] {
+  return (Object.keys(AVATAR_MOTIONS) as AvatarMotionName[]).filter((name) => {
+    const wornBy = AVATAR_MOTIONS[name].wornBy
+    return !wornBy || wornBy.includes(family)
+  })
 }
 
 // How far a clip's FIRST AND LAST frames may sit below her rest height. Motion
@@ -337,6 +372,7 @@ export const MOTION_URL = (name: AvatarMotionName): string => `/avatar/animation
 export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
   'dance',
   'peaceSign',
+  'waveWink',
   'modelPose',
   'spin',
   'squat',
@@ -462,8 +498,9 @@ export function motionsFor(placement: AvatarPlacement, family: AvatarFamilyId): 
   const frame = motionFrame(placement)
   if (!frame) return []
   const excluded = AVATAR_FAMILIES[family].excluded
+  const worn = motionsWornBy(family)
   return IDLE_MOTIONS.filter(
-    (name) => AVATAR_MOTIONS[name].placements.includes(frame) && !(name in excluded),
+    (name) => AVATAR_MOTIONS[name].placements.includes(frame) && !(name in excluded) && worn.includes(name),
   )
 }
 

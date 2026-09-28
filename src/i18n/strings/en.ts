@@ -66,7 +66,7 @@ interface Strings {
     motionsLabel: string
     motionsAriaLabel: string
     motions: {
-      dance: string; peaceSign: string; modelPose: string; spin: string; squat: string
+      dance: string; peaceSign: string; waveWink: string; modelPose: string; spin: string; squat: string
       akimbo: string; playFingers: string; scratchHead: string; idleLoop: string; stretch: string
     }
     // The look strip above the motions. Keyed by OfferedVariantId -- an
@@ -232,6 +232,7 @@ const en: Strings = {
     motions: {
       dance: 'Dance',
       peaceSign: 'Peace sign',
+      waveWink: 'Wave & wink',
       modelPose: 'Model pose',
       spin: 'Spin',
       squat: 'Squat',

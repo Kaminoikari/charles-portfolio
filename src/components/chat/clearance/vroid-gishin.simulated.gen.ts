@@ -11,7 +11,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-gishin",
   "rigSha": "0b931951c9cf18b3269c72941cb1f557edef03f782027b3a691b83dbd52fbecf",
   "simulatedOn": "/avatar/gishin-2.vrm",
-  "producedBy": "9ad3469",
+  "producedBy": "2b2755a",
   "restCrownY": 1.582,
   "restCrownScreen": {
     "waistUp": 1.5814,
@@ -162,6 +162,18 @@ export const SIMULATED: ClearanceSimulated = {
       "coatDepthMm": 0,
       "bodyDepthMm": 41.9,
       "jumpDeg": 4.6,
+      "skirtDepthMm": 0
+    },
+    "waveWink": {
+      "crownY": 1.582,
+      "crownT": 0,
+      "crownScreen": {
+        "waistUp": 1.5814,
+        "column": 1.5859
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 5,
+      "jumpDeg": 0,
       "skirtDepthMm": 0
     }
   }

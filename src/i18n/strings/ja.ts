@@ -150,6 +150,7 @@ const ja: Strings = {
     motions: {
       dance: 'ダンス',
       peaceSign: 'ピース',
+      waveWink: 'ウインク',
       modelPose: 'ポーズ',
       spin: 'ターン',
       squat: 'しゃがむ',
