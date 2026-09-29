@@ -201,14 +201,27 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'project-playbook',
     questions: {
-      en: ['What is Product Playbook?', 'Tell me about Product Playbook', 'the multi-agent project', 'his AI agent project'],
-      'zh-TW': ['Product Playbook 是什麼', '介紹一下 Product Playbook', '那個 multi-agent 專案', '他的 AI agent 專案'],
-      ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト'],
+      en: ['What is Product Playbook?', 'Tell me about Product Playbook', 'the multi-agent project', 'his AI agent project', 'what is the latest Product Playbook version', 'is Product Playbook up to date'],
+      'zh-TW': ['Product Playbook 是什麼', '介紹一下 Product Playbook', '那個 multi-agent 專案', '他的 AI agent 專案', 'Product Playbook 最新版本', 'Product Playbook 有更新到最新版嗎'],
+      ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト', 'Product Playbook の最新バージョン', '最新版に更新されていますか'],
     },
     answers: {
       en: 'Ahh, this one! This is the one I show off.\n\n**Product Playbook** is a free, open-source tool Charles built that plugs into Claude Code and gives the AI the instincts of a seasoned product manager.\n\nThe problem it solves: turning a rough idea into a solid, build-ready product plan normally takes a skilled PM days of work, and general-purpose AI can write text without really reasoning about product decisions.\n\nHere is what it actually does:\n\n- You say what you want to achieve, and it thinks the idea through the way a senior PM would: what users really need, what to build first, where the strategy is weak, and what could go wrong.\n- For the hardest calls it brings in two specialist helpers: one argues against your strategy to expose blind spots, and the other imagines how the product could fail.\n- Once you move from planning into building, it keeps the AI honest: tests first, reviews its own code, and no cut corners before anything ships.\n\nIt is built from the playbooks of respected product leaders, open-sourced under the MIT license, and already used by other PMs and engineers.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\nIt\'s the one I\'d shove at a hiring manager first, honestly.',
       'zh-TW': '啊～這個！這就是 Mika 最拿手、最愛拿來炫耀的專案啦！\n\n**Product Playbook** 是 Charles 做出的一個免費開源工具，接在 Claude Code 上，能讓 AI 直接具備資深產品經理的直覺喔！\n\n它要解決的問題是：要把一個粗略的想法變成一份紮實、可以直接開發的產品計畫，通常得讓有經驗的 PM 花上好幾天，而一般 AI 雖然會寫字，卻不太會像產品人一樣思考。\n\n它實際上會幫忙做這些：\n\n- 只要說出想達成什麼，它就會用資深 PM 的方式幫你重新思考一遍：使用者真正需要什麼、該先做哪些、策略哪裡站不住腳、可能會出什麼錯。\n- 遇到最難的判斷，它會找來兩個專門的幫手：一個對策略唱反調、把盲點戳出來，另一個專門想像產品會怎麼失敗。\n- 等你從規劃進到實際開發，它還會讓 AI 守規矩：先寫測試、審查自己寫的程式，上線前絕不偷工減料！\n\n這個工具整理自幾位受敬重的產品前輩的方法，以 MIT 授權開源，現在已經有其他 PM 跟工程師在用囉～\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\n老實說，如果要給招募主管看，我絕對會第一時間推薦這個啦！',
       ja: 'あー、これこれ！これがあたしの自慢の一本。\n\n**Product Playbook** は Charles が作った無料のオープンソースツールで、Claude Code に組み込んで AI にベテランプロダクトマネージャーの勘を持たせます。\n\n解決したい課題はこうです：ざっくりしたアイデアを、そのまま開発に入れる堅実なプロダクト計画に変えるには、経験ある PM でも数日かかり、汎用の AI は文章は書けてもプロダクトの意思決定を本当の意味で考えるのは苦手です。\n\n実際にやってくれるのはこんなことです：\n\n- 達成したいことを伝えるだけで、ベテラン PM のやり方でアイデアを最初から考え抜きます：ユーザーが本当に必要としているもの、まず何を作るか、戦略のどこが弱いか、何がうまくいかない可能性があるか。\n- いちばん難しい判断では、2 人の専門の助っ人が加わります：1 人はあなたの戦略にわざと反対して盲点をあぶり出し、もう 1 人はプロダクトがどう失敗するかを想像します。\n- 計画から実際の開発に移ると、AI に規律を守らせます：先にテストを書き、自分のコードをレビューし、リリース前に手を抜きません。\n\nこれは尊敬される何人かのプロダクトリーダーの方法論から整理したもので、MIT ライセンスでオープンソース公開され、すでに他の PM やエンジニアにも使われています。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\n正直、採用担当に見せるならあたしはこれを最初に出すね。',
+    },
+  },
+  {
+    id: 'project-playbook-current',
+    questions: {
+      en: ['What is the current Product Playbook version?', 'What changed in Product Playbook 2.4.0?', 'Is Product Playbook updated to the latest version?'],
+      'zh-TW': ['Product Playbook 目前是什麼版本', 'Product Playbook 2.4.0 更新了什麼', 'Product Playbook 有更新到最新版本嗎'],
+      ja: ['Product Playbook の現在のバージョンは', 'Product Playbook 2.4.0 の変更点', '最新版に更新されていますか'],
+    },
+    answers: {
+      en: 'Ooh, current version check!\n\nThis chatbot corpus now tracks the current **Product Playbook 2.4.0** release from GitHub. The product architecture is the outcome-first lens system: 16 composable lenses, two read-only specialist agents, optional recipes, provenance tags, and the lightweight dev-discipline layer.\n\nThe 2.4.0 release adds an operator switch for unattended runs: setting `PRODUCT_PLAYBOOK_SECRET_GUARD=off` keeps secret findings visible in stderr while removing the interactive pause. The default guard behavior stays enabled.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\nWant me to unpack any part?',
+      'zh-TW': '嘿～這題我來解釋喔！\n\n這份 chatbot corpus 現在追蹤 GitHub 上最新的 **Product Playbook 2.4.0**。目前的產品架構是 outcome-first lens 系統：16 個可組合 lens、2 個唯讀專家代理、選配 recipes、provenance 標籤，以及輕量的 dev-discipline 層。\n\n2.4.0 新增了給 unattended run 使用的 operator 開關：設定 `PRODUCT_PLAYBOOK_SECRET_GUARD=off` 後，secret finding 仍會寫到 stderr，但不再互動暫停；預設的 guard 行為維持啟用。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\n想知道哪一塊，Mika 再拆給你喔！',
+      ja: 'うん、最新版を確認したよ。\n\nこの chatbot corpus は GitHub の最新 **Product Playbook 2.4.0** を追跡しています。現在の構成は outcome-first lens システムで、16 個の組み合わせ可能な lens、2 つの読み取り専用専門エージェント、任意の recipe、provenance タグ、軽量な dev-discipline レイヤーを備えています。\n\n2.4.0 では unattended run 向けの operator スイッチが追加されました。`PRODUCT_PLAYBOOK_SECRET_GUARD=off` を設定すると、secret の検出は stderr に残しながら対話的な一時停止を外せます。既定の guard 動作は有効なままです。\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\n気になるところがあれば聞いてね。',
     },
   },
   {

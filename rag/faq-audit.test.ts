@@ -150,7 +150,7 @@ test('the answers to "who are you" name her, in every locale', () => {
 // and is invisible in review once it is one of sixty.
 //
 // What they do NOT catch, measured rather than guessed: deleting an opener goes
-// undetected in 51 of 171 answer/locale pairs and deleting a closer in 30,
+// undetected in 51 of 174 answer/locale pairs and deleting a closer in 31,
 // because the paragraph that would become the edge is itself short or carries a
 // first-person token. `philosophy`'s "Charles works by four principles:" is 33
 // characters, well under the English ceiling. The ceilings separate her lines
@@ -234,7 +234,7 @@ test('the Japanese answers never say 私', () => {
 // without a human noticing.
 //
 // Closing lines only, and the reason is the openers, not the entries. Measured
-// against these two regexes, 4 of 57 ja openers and 19 of 57 zh openers would
+// against these two regexes, 4 of 58 ja openers and 19 of 58 zh openers would
 // fail. All four ja ones are identity answers that correctly open on their own
 // content (「あたしは**ミカ**、…」). The zh ones are her own spoken lines that end
 // on something other than a particle: most trail off on a bare ～ (「快聽 Mika 娓娓
@@ -380,7 +380,7 @@ test('a particle wearing a ～ is still seen as stacked mid-line', () => {
 // Her Japanese openers get the same 常体 rule her closers do, read two ways,
 // because each selector alone leaves a hole the other covers.
 //
-// By position: the FIRST sentence of every ja opener. That is her line in the 53
+// By position: the FIRST sentence of every ja opener. That is her line in the 54
 // answers whose opener is nothing but a voice line, and mutating one of them to
 // 敬体 (`philosophy`'s 「…ここから読むといいですよ。」) is caught here. The counts test
 // below reddens for it too, by arithmetic (4 becomes 5) rather than by saying what
@@ -433,8 +433,8 @@ test('the counts quoted in the comments above are still the measured ones', () =
   const zhOpenersFailing = faqEntries.filter(
     (e) => !ZH_SPOKEN_ENDING.test(e.answers['zh-TW'].split('\n\n')[0].trim()),
   ).length
-  assert.equal(jaOpenersFailing, 4, 'the comment above says 4 of 57 ja openers would fail')
-  assert.equal(zhOpenersFailing, 19, 'the comment above says 19 of 57 zh openers would fail')
+  assert.equal(jaOpenersFailing, 4, 'the comment above says 4 of 58 ja openers would fail')
+  assert.equal(zhOpenersFailing, 19, 'the comment above says 19 of 58 zh openers would fail')
 
   // The blind spots the opener/closer guards knowingly have: deleting the edge
   // leaves a paragraph that still clears the ceiling or carries a pronoun.
@@ -452,7 +452,7 @@ test('the counts quoted in the comments above are still the measured ones', () =
     }
   }
   assert.equal(openerBlind, 51, 'the comment above says deleting an opener goes undetected in 51 pairs')
-  assert.equal(closerBlind, 30, 'the comment above says deleting a closer goes undetected in 30 pairs')
+  assert.equal(closerBlind, 31, 'the comment above says deleting a closer goes undetected in 31 pairs')
 
   // The longest edge the ceiling actually governs, per language.
   const longest: Record<string, number> = { en: 0, 'zh-TW': 0, ja: 0 }

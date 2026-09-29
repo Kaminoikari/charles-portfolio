@@ -215,6 +215,7 @@ export const projectDetails: ProjectDetail[] = [
       '溝通落差引發重工：當 PM 為了趕進度而跳過文件對齊時，後續的開發誤解與重工成本將成倍增加。',
     ],
     solution: [
+      '目前版本：Product Playbook 2.4.0。最新版本加入 unattended run 的 operator 開關，預設的 secret guard 仍維持啟用。',
       'Outcome-first 的 lens 系統：Product Playbook 2.0 是一個 meta-skill，讀取你要的結果，選出能帶你抵達的產品思考 lens，並在決策需要多重視角時融合成一份整合答案。四步骨架每次都一致：讀取結果、選擇 lens、產出交付物、標註 provenance。',
       '16 個可組合的 lens：每個成熟框架都是獨立的 lens skill（JTBD、Positioning、PR-FAQ、RICE 式排序、North Star 指標、MVP scoping、PMF／GTM、strategy kernel 等），能單獨運作也能彼此組合，讓工具只帶上問題真正需要的思考。',
       '專家 Sub-agent 在獨立 Context 運作：兩個唯讀專家在遠離擁擠主線的環境各自分析。strategy-critic 扮演嚴厲但公正的策略批判者；pre-mortem-runner 全力投入產品失敗的悲觀推演。探索所需的同理心，如今住在 persona-journey 與 jtbd 這兩個 lens 裡。',

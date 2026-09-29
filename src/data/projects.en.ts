@@ -203,6 +203,7 @@ export const projectDetails: ProjectDetail[] = [
       'Communication gaps cause rework: when PMs skip documentation alignment to chase a deadline, downstream development misunderstanding and rework costs scale up multiplicatively.',
     ],
     solution: [
+      'Current release: Product Playbook 2.4.0. The latest release adds an operator switch for unattended runs, while the default secret guard remains enabled.',
       'Outcome-first lens system: Product Playbook 2.0 is a meta-skill that reads the outcome you want, selects the product-thinking lens that gets you there, and blends several into one integrated answer when the decision needs more than one perspective. The four-step spine holds every time: read the outcome, select the lens(es), produce the deliverable, tag the provenance.',
       '16 composable lenses: each mature framework ships as an independent lens skill (JTBD, positioning, PR-FAQ, RICE-style prioritization, North Star metrics, MVP scoping, PMF/GTM, strategy kernel, and more) that stands alone or composes with the rest, so the tool brings only the thinking a question actually needs.',
       'Specialist sub-agents in isolated context: two read-only specialists run their analysis away from the crowded main thread. strategy-critic plays a tough but fair strategy critic; pre-mortem-runner commits fully to pessimistic scenarios of product failure. The empathy of discovery now lives inside the persona-journey and jtbd lenses.',

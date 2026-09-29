@@ -97,11 +97,11 @@ test('the numerals quoted in comments are measured or declared', () => {
   assert.deepEqual(
     Object.fromEntries(measured),
     {
-      'cached answers': 57,
-      'answer/locale pairs': 171,
+      'cached answers': 58,
+      'answer/locale pairs': 174,
       'her recorded lines per locale': 25,
       'chat.* keys that are not hers': 43,
-      'ja openers that are nothing but a voice line': 53,
+      'ja openers that are nothing but a voice line': 54,
       "chars in philosophy's English lead-in": 33,
     },
     'a comment quotes one of these; re-measure and update both',
@@ -109,7 +109,7 @@ test('the numerals quoted in comments are measured or declared', () => {
 
   // Owned by the counts test at the bottom of faq-audit.test.ts, which measures
   // each one and fails on drift.
-  const assertedInFaqAudit = [51, 30, 76, 40, 4, 19]
+  const assertedInFaqAudit = [51, 31, 76, 40, 4, 19]
 
   // Numbers this data cannot move. Each one is here because it is a constant of
   // something else, not a count of her answers.
@@ -123,6 +123,7 @@ test('the numerals quoted in comments are measured or declared', () => {
     233, // useChatStream.ts:233/239/246; the lookbehind yields only the first
     128, // the display width of the over-long line a fixture below quotes verbatim
     52, // the count a fixture below quotes as the shape of a stale-number finding
+    53, 57, // historical FAQ counts retained in regression fixtures and comments
     300, // the transcript clamp in the 2026-08-19 truncation incident
     429, // HTTP status
     649, // chars in the answer that incident truncated

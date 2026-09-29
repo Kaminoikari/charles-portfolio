@@ -216,6 +216,7 @@ export const projectDetails: ProjectDetail[] = [
       'コミュニケーションギャップが手戻りを誘発する：PM が進捗を優先しドキュメントの整合を飛ばすと、後段の開発における誤解と手戻りコストが指数的に増大する。',
     ],
     solution: [
+      '現在のリリースは Product Playbook 2.4.0。最新版では unattended run 向けの operator スイッチを追加し、既定の secret guard は有効なままです。',
       'outcome-first な lens システム：Product Playbook 2.0 は meta-skill で、欲しい成果を読み取り、そこへ導くプロダクト思考の lens を選び、意思決定が複数の視点を要するときは 1 つの統合された答えへ融合する。4 ステップの背骨は毎回同じ：成果を読む、lens を選ぶ、成果物を作る、provenance を明記する。',
       '16 個の組み合わせ可能な lens：成熟した各フレームワークが独立した lens skill として提供され（JTBD、Positioning、PR-FAQ、RICE 式の優先順位付け、North Star 指標、MVP scoping、PMF／GTM、strategy kernel など）、単独でも他と組み合わせても動くため、ツールは問いが本当に必要とする思考だけを持ち込む。',
       '独立 Context で動く専門 Sub-agent：2 つの読み取り専用の専門家が混雑したメインスレッドから離れて各自分析する。strategy-critic は厳しくも公正な戦略批判者を務め、pre-mortem-runner はプロダクト失敗の悲観的シナリオに全力を注ぐ。ディスカバリーに必要な共感は、いまや persona-journey と jtbd の lens の中に宿る。',
