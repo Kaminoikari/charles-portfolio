@@ -11,7 +11,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-gishin",
   "rigSha": "c300afebc90f10a9b44e61a917a75721854d7126468b7f511ada55d70da9d351",
   "simulatedOn": "/avatar/gishin-2.vrm",
-  "producedBy": "4b010f5",
+  "producedBy": "c053a6b",
   "restCrownY": 1.582,
   "restCrownScreen": {
     "waistUp": 1.5814,

@@ -10,7 +10,7 @@ export const MEASURED: ClearanceMeasured = {
   "family": "vroid-gishin",
   "rigSha": "c300afebc90f10a9b44e61a917a75721854d7126468b7f511ada55d70da9d351",
   "measuredOn": "/avatar/gishin-2.vrm",
-  "producedBy": "4b010f5",
+  "producedBy": "c053a6b",
   "faceBox": {
     "min": [
       -0.1028,
