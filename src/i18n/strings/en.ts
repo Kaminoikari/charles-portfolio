@@ -101,7 +101,12 @@ interface Strings {
       happy: string; relaxed: string; nagomi: string; surprised: string
       excited: string; sad: string; angry: string; pale: string
     }
-    scenes: { 'night-room': string; 'idol-stage': string; 'sunset-rooftop': string; none: string }
+    scenes: {
+      bedroom: string; clubroom: string; hallway: string; library: string; courtyard: string; station: string
+      festival: string; park: string; onsen: string; shrine: string; beach: string; none: string
+    }
+    lightsAriaLabel: string
+    lights: { day: string; sunset: string; night: string; 'night-lit': string }
     loading: string; loadFailed: string
     noWebgl: string; reducedMotion: string; showAnyway: string
   }
@@ -294,7 +299,22 @@ const en: Strings = {
       angry: 'Angry',
       pale: 'Pale',
     },
-    scenes: { 'night-room': 'Night room', 'idol-stage': 'Idol stage', 'sunset-rooftop': 'Sunset rooftop', none: 'None' },
+    scenes: {
+      bedroom: 'Bedroom',
+      clubroom: 'Club room',
+      hallway: 'School hallway',
+      library: 'Library',
+      courtyard: 'School courtyard',
+      station: 'Station',
+      festival: 'Summer festival',
+      park: 'Autumn park',
+      onsen: 'Hot spring',
+      shrine: 'Shrine',
+      beach: 'Beach',
+      none: 'None',
+    },
+    lightsAriaLabel: 'Time of day',
+    lights: { day: 'Day', sunset: 'Sunset', night: 'Night', 'night-lit': 'Night, lights on' },
     loading: 'Loading…',
     loadFailed: 'This look could not be loaded. Try another one.',
     noWebgl: 'This device cannot show the 3D character (WebGL 2 is not available).',

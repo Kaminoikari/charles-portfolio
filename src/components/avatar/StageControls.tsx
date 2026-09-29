@@ -7,7 +7,7 @@ import type { EmotionName } from '../chat/avatarMode'
 import type { OfferedVariantId } from '../chat/avatarVariants'
 import { prefetchBody } from '../chat/avatarPrefetch'
 import { useT } from '../../i18n/useT'
-import { lookThumb, type StageScene, type StageSceneId } from './stageContent'
+import { lookThumb, sceneLight, type StageLightId, type StageScene, type StageSceneId } from './stageContent'
 
 type Variant = 'row' | 'grid'
 
@@ -169,41 +169,72 @@ export function ExpressionPicker({
 export function ScenePicker({
   scenes,
   shown,
+  light,
   onPick,
+  onLight,
   variant,
 }: {
   scenes: readonly StageScene[]
   shown: StageSceneId
+  /** The time of day the visitor chose; each tile previews its scene at it. */
+  light: StageLightId
   onPick: (id: StageSceneId) => void
+  onLight: (id: StageLightId) => void
   variant: Variant
 }) {
   const t = useT()
+  const current = scenes.find((s) => s.id === shown)
+  const shownLight = current ? sceneLight(current, light) : null
   return (
-    <div
-      role="group"
-      aria-label={t('stage.tabs.scenes')}
-      className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-2 gap-2'}
-    >
-      {scenes.map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          aria-pressed={s.id === shown}
-          onClick={() => onPick(s.id)}
-          className={
-            'relative flex-none cursor-pointer overflow-hidden rounded-lg border bg-bg-primary transition-colors ' +
-            (s.id === shown ? 'border-accent-cyan ' : 'border-white/15 hover:border-white/40 ') +
-            (variant === 'row' ? 'h-[92px] w-[120px]' : 'aspect-video w-full')
-          }
+    <div className={variant === 'row' ? 'space-y-1.5' : 'space-y-3'}>
+      <div
+        role="group"
+        aria-label={t('stage.tabs.scenes')}
+        className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-3 gap-1.5'}
+      >
+        {scenes.map((s) => {
+          const preview = sceneLight(s, light)
+          return (
+            <button
+              key={s.id}
+              type="button"
+              aria-pressed={s.id === shown}
+              onClick={() => onPick(s.id)}
+              className={
+                'relative flex-none cursor-pointer overflow-hidden rounded-lg border bg-bg-primary transition-colors ' +
+                (s.id === shown ? 'border-accent-cyan ' : 'border-white/15 hover:border-white/40 ') +
+                (variant === 'row' ? 'h-[56px] w-[100px]' : 'aspect-video w-full')
+              }
+            >
+              {preview ? (
+                <img src={preview.thumb} alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
+              ) : null}
+              <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/85 to-transparent px-1 pt-3 pb-0.5 text-center text-[11px] text-white">
+                {t(`stage.scenes.${s.id}`)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {current && current.lights.length > 1 ? (
+        <div
+          role="group"
+          aria-label={t('stage.lightsAriaLabel')}
+          className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'flex flex-wrap gap-2'}
         >
-          {s.src ? (
-            <img src={s.src} alt="" loading="lazy" draggable={false} className="absolute inset-0 h-full w-full object-cover" />
-          ) : null}
-          <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/85 to-transparent px-1 pt-3 pb-1 text-center text-[11px] text-white">
-            {t(`stage.scenes.${s.id}`)}
-          </span>
-        </button>
-      ))}
+          {current.lights.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              aria-pressed={l.id === shownLight?.id}
+              onClick={() => onLight(l.id)}
+              className={CHIP + ' flex-none !px-3 !py-1.5 !text-[12px]'}
+            >
+              {t(`stage.lights.${l.id}`)}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

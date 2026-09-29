@@ -40,7 +40,7 @@ export const changelog: ChangelogEntry[] = [
     title: `Mika 在 /avatar 有了自己的舞台`,
     tags: ['feature', 'design'],
     body: [
-      `新頁面 \`/avatar\` 把網站的 VTuber 導覽員從頭到腳放在一個佔滿畫面的舞台上。聊天視窗造型列裡的每一個造型都在這裡，另外還有她的動作、八種表情和可切換的場景背景。這一頁不顯示聊天視窗，畫面上只會有一個她。`,
+      `新頁面 \`/avatar\` 把網站的 VTuber 導覽員從頭到腳放在一個佔滿畫面的舞台上。聊天視窗造型列裡的每一個造型都在這裡，另外還有她的動作、八種表情，以及十一張手繪背景，從臥室、學校圖書館到神社和海灘都有。有多個時段版本的場景可以切換白天、黃昏、夜晚和夜晚・開燈。同一構圖的不同時段會以淡入淡出切換，角色的亮度和色溫也會跟著畫面調整，不會在夜空前面發光。這一頁不顯示聊天視窗，畫面上只會有一個她。`,
       { kind: 'heading', text: `兩種版面` },
       {
         kind: 'list',
@@ -57,6 +57,7 @@ export const changelog: ChangelogEntry[] = [
         items: [
           { value: '13', label: `造型` },
           { value: '8', label: `表情` },
+          { value: '11', label: `場景` },
           { value: '2', label: `版面` },
         ],
       },

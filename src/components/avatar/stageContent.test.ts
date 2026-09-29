@@ -4,19 +4,24 @@
 // face a body gained (a new export, a face transplant) should not stay hidden
 // behind a stale entry. So UNSUPPORTED_EXPRESSIONS is held to the files here,
 // both ways, by reading each offered body's expression groups.
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { EMOTION_RECIPES } from '../chat/avatarMode'
 import { OFFERED_VARIANTS, type OfferedVariantId } from '../chat/avatarVariants'
 import type { GltfJson } from '../chat/vrmHumanoid'
 import {
+  DEFAULT_LIGHT,
   DEFAULT_SCENE,
+  FIGURE_LIGHT,
   STAGE_EXPRESSIONS,
+  STAGE_LIGHTS,
   STAGE_SCENES,
   UNSUPPORTED_EXPRESSIONS,
   expressionsFor,
   lookThumb,
+  sceneById,
+  sceneLight,
 } from './stageContent'
 
 const publicFile = (url: string) => path.join(process.cwd(), 'public', url.replace(/^\//, ''))
@@ -94,9 +99,53 @@ describe('stage assets', () => {
     }
   })
 
-  it('serves every scene it lists and defaults to one of them', () => {
+  it('serves every picture and tile it lists, one per time of day', () => {
     expect(new Set(STAGE_SCENES.map((s) => s.id)).size).toBe(STAGE_SCENES.length)
-    expect(STAGE_SCENES.some((s) => s.id === DEFAULT_SCENE)).toBe(true)
-    for (const s of STAGE_SCENES) if (s.src) expect(existsSync(publicFile(s.src)), s.src).toBe(true)
+    for (const s of STAGE_SCENES) {
+      expect(new Set(s.lights.map((l) => l.id)).size, s.id).toBe(s.lights.length)
+      for (const l of s.lights) {
+        expect(existsSync(publicFile(l.src)), l.src).toBe(true)
+        expect(existsSync(publicFile(l.thumb)), l.thumb).toBe(true)
+      }
+      expect(s.focusX, s.id).toBeGreaterThanOrEqual(0)
+      expect(s.focusX, s.id).toBeLessThanOrEqual(100)
+    }
+    // Only `none` goes without a picture.
+    expect(STAGE_SCENES.filter((s) => s.lights.length === 0).map((s) => s.id)).toEqual(['none'])
+  })
+
+  it('ships no picture it does not list', () => {
+    const listed = new Set(STAGE_SCENES.flatMap((s) => s.lights.flatMap((l) => [l.src, l.thumb])))
+    const dir = publicFile('/avatar/scenes')
+    const served = [
+      ...readdirSync(dir).filter((f) => f.endsWith('.webp')).map((f) => `/avatar/scenes/${f}`),
+      ...readdirSync(path.join(dir, 'thumbs')).map((f) => `/avatar/scenes/thumbs/${f}`),
+    ]
+    for (const f of served) expect(listed.has(f), `${f} is served but no scene lists it`).toBe(true)
+  })
+
+  it('opens on a scene with a picture at the default time of day', () => {
+    const light = sceneLight(sceneById(DEFAULT_SCENE), DEFAULT_LIGHT)
+    expect(light?.id).toBe(DEFAULT_LIGHT)
+  })
+})
+
+describe('sceneLight', () => {
+  const shrine = sceneById('shrine')
+  const beach = sceneById('beach')
+
+  it('keeps the chosen time of day where the scene has it', () => {
+    for (const id of STAGE_LIGHTS) {
+      if (shrine.lights.some((l) => l.id === id)) expect(sceneLight(shrine, id)?.id).toBe(id)
+    }
+  })
+
+  it("falls back to the scene's own picture where it does not", () => {
+    expect(sceneLight(beach, 'night')?.id).toBe(beach.lights[0].id)
+    expect(sceneLight(sceneById('none'), 'day')).toBeNull()
+  })
+
+  it('has a figure filter for every time of day', () => {
+    for (const id of STAGE_LIGHTS) expect(FIGURE_LIGHT[id], id).toBeTruthy()
   })
 })

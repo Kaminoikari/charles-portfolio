@@ -25,7 +25,7 @@ export const changelog: ChangelogEntry[] = [
     title: `Mika gets a stage of her own at /avatar`,
     tags: ['feature', 'design'],
     body: [
-      `A new page, \`/avatar\`, shows the site's VTuber guide head to toe on a stage that fills the screen. Every look in the chat widget's look strip is there, along with her motions, eight expressions and a choice of backdrops. The chat widget stays off this page so there is only one of her on it.`,
+      `A new page, \`/avatar\`, shows the site's VTuber guide head to toe on a stage that fills the screen. Every look in the chat widget's look strip is there, along with her motions, eight expressions and eleven illustrated backdrops, from a bedroom and a school library to a shrine and a beach. Scenes painted at more than one time of day get a switch between day, sunset, night and night with the lights on. Relighting crossfades between paintings of the same composition, and the figure dims and warms with the painting so she doesn't glow against a night sky. The chat widget stays off this page so there is only one of her on it.`,
       { kind: 'heading', text: `Two layouts` },
       {
         kind: 'list',
@@ -42,6 +42,7 @@ export const changelog: ChangelogEntry[] = [
         items: [
           { value: '13', label: 'looks' },
           { value: '8', label: 'expressions' },
+          { value: '11', label: 'scenes' },
           { value: '2', label: 'layouts' },
         ],
       },

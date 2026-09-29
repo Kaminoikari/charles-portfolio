@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AvatarGuide from '../chat/AvatarGuide'
 import type { AvatarGuideHandle } from '../chat/avatarGuideEngine'
-import { avatarGuideEnabledInBrowser, type EmotionName } from '../chat/avatarMode'
+import { AVATAR_FOV, avatarGuideEnabledInBrowser, type EmotionName } from '../chat/avatarMode'
 import { motionsFor, type AvatarMotionName } from '../chat/avatarMotions'
 import {
   ACTIVE_VARIANT,
@@ -31,11 +31,16 @@ import { useDocumentMeta } from '../../i18n/useDocumentMeta'
 import { useT } from '../../i18n/useT'
 import { ExpressionPicker, LookPicker, MotionPicker, ScenePicker } from './StageControls'
 import {
+  DEFAULT_LIGHT,
   DEFAULT_SCENE,
   EXPRESSION_HOLD_SEC,
+  FIGURE_LIGHT,
   STAGE_SCENES,
   STAGE_TABS,
   expressionsFor,
+  sceneById,
+  sceneLight,
+  type StageLightId,
   type StageSceneId,
   type StageTab,
 } from './stageContent'
@@ -165,7 +170,15 @@ export default function AvatarStagePage() {
   )
 
   const [scene, setScene] = useState<StageSceneId>(DEFAULT_SCENE)
-  const sceneSrc = STAGE_SCENES.find((s) => s.id === scene)?.src ?? null
+  const [lightPref, setLightPref] = useState<StageLightId>(DEFAULT_LIGHT)
+  // Every scene shown so far keeps its pictures mounted under the current one,
+  // so going back to it, or relighting it, is a crossfade rather than a load.
+  const [visited, setVisited] = useState<readonly StageSceneId[]>([DEFAULT_SCENE])
+  const light = sceneLight(sceneById(scene), lightPref)
+  const pickScene = (id: StageSceneId) => {
+    setScene(id)
+    setVisited((v) => (v.includes(id) ? v : [...v, id]))
+  }
   const [tab, setTab] = useState<StageTab>('looks')
 
   // The dock's real height, so her feet land on top of it whatever the phone's
@@ -193,6 +206,10 @@ export default function AvatarStagePage() {
           width: view.w - ROSTER_W - OPTIONS_W - 4 * AIR,
         }
   const framing = stageFraming(band, family)
+  // Where her soles meet the floor, in canvas pixels, for the contact shadow
+  // that sets her on the painted ground rather than in front of it.
+  const pxPerMetre = view.h / (2 * framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180)))
+  const floorRow = view.h / 2 - (0 - framing.lookAtY) * pxPerMetre
 
   const looks = OFFERED_VARIANTS.map((v) => ({ id: v.id, url: v.url }))
 
@@ -208,7 +225,16 @@ export default function AvatarStagePage() {
         variant={variant}
       />
     ),
-    scenes: <ScenePicker scenes={STAGE_SCENES} shown={scene} onPick={setScene} variant={variant} />,
+    scenes: (
+      <ScenePicker
+        scenes={STAGE_SCENES}
+        shown={scene}
+        light={lightPref}
+        onPick={pickScene}
+        onLight={setLightPref}
+        variant={variant}
+      />
+    ),
   })
 
   return (
@@ -218,17 +244,44 @@ export default function AvatarStagePage() {
       {/* The backdrop, then her, then the controls over both. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-cover bg-bottom transition-[background-image] duration-300"
-        style={
-          sceneSrc
-            ? { backgroundImage: `url(${sceneSrc})` }
-            : { background: 'radial-gradient(ellipse at 50% 85%, #1c1f2b 0%, var(--color-bg-primary) 70%)' }
-        }
+        className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 85%, #1c1f2b 0%, var(--color-bg-primary) 70%)' }}
       />
+      {visited.flatMap((id) => {
+        const { lights, focusX } = sceneById(id)
+        return lights.map((l) => (
+          <div
+            key={l.src}
+            aria-hidden="true"
+            className="absolute inset-0 bg-cover transition-opacity duration-700"
+            style={{
+              backgroundImage: `url(${l.src})`,
+              backgroundPosition: `${focusX}% 70%`,
+              opacity: l.src === light?.src ? 1 : 0,
+            }}
+          />
+        ))
+      })}
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/25" />
 
+      {gate === 'on' && loaded && light ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%]"
+          style={{
+            left: view.w / 2,
+            top: floorRow,
+            width: 0.62 * pxPerMetre,
+            height: 0.1 * pxPerMetre,
+            background: 'radial-gradient(closest-side, rgba(0,0,0,0.5), rgba(0,0,0,0.22) 55%, transparent)',
+          }}
+        />
+      ) : null}
       {gate === 'on' ? (
-        <div className="absolute inset-0">
+        <div
+          className="absolute inset-0 transition-[filter] duration-700"
+          style={{ filter: FIGURE_LIGHT[light?.id ?? 'day'] }}
+        >
           <AvatarGuide
             mode="idle"
             vrmUrl={variantUrl(wanted)}
