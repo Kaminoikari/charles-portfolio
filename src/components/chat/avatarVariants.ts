@@ -294,8 +294,10 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // violent, sexual and commercial use stay Disallow. Checked by putting the
   // three values back and comparing the JSON and binary chunk against the
   // export, then packed as webp and scaled from crown 1.6199 to Mika's 1.582:
-  // scripts/avatar/evidence/gishin-0926.log. Its mouth texture is
-  // pixel-identical to Rosa's, so it keeps its own.
+  // scripts/avatar/evidence/gishin-0926.log. Since 2026-09-29 the inside of
+  // her mouth is Mika's, carried into the file (teeth, tongue and throat
+  // meshes, their morphs and Mika's mouth texture), so it keeps its own:
+  // scripts/avatar/evidence/gishin-0929.log.
   { id: 'gishin', label: 'Gishin', url: '/avatar/gishin-2.vrm', family: 'vroid-gishin', mouth: 'own', offered: true },
   // The third family, and the first body here that came back OUT of VRoid
   // Studio rather than out of this repo's own build: Mika's project taken
