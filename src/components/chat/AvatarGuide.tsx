@@ -51,6 +51,7 @@ export default function AvatarGuide({
   onContextLost,
   onLoadFailed,
   onVariantSettled,
+  fade = true,
 }: {
   mode: AvatarMode
   // The body to show, from avatarVariants.variantUrl(). Changing it swaps her.
@@ -97,6 +98,10 @@ export default function AvatarGuide({
   // body (fetch failed, or a newer swap overtook this one), so the widget can
   // put its selection back where the body actually is.
   onVariantSettled?: (url: string, ok: boolean) => void
+  // Dissolve the canvas's bottom into the page. On by default for the widget's
+  // waist-up crops; the /avatar stage frames her feet inside the canvas and
+  // turns it off, or her shoes would fade out.
+  fade?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const handleRef = useRef<AvatarGuideHandle | null>(null)
@@ -351,7 +356,10 @@ export default function AvatarGuide({
       // a hard cut across her legs. The gradient dissolves the last 16% of the
       // canvas into the page instead.
       className={
-        'pointer-events-none select-none [-webkit-mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] [mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] ' +
+        'pointer-events-none select-none ' +
+        (fade
+          ? '[-webkit-mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] [mask-image:linear-gradient(to_bottom,#000_84%,transparent_100%)] '
+          : '') +
         (sizeStyle ? '' : sizeClass)
       }
       style={sizeStyle}

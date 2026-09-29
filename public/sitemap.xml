@@ -19,6 +19,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://charles-chen.com/avatar</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://charles-chen.com/projects/path</loc>
     <lastmod>2026-04-11</lastmod>
     <changefreq>monthly</changefreq>

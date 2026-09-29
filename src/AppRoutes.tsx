@@ -1,14 +1,16 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import App from './App'
 import Nav from './components/Nav'
 import ChatWidget from './components/chat/ChatWidget'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { LOCALE_URL_PREFIX, useInitialLocaleRestore } from './i18n'
+import { STAGE_PATH, isStagePath } from './components/avatar/stageLayout'
 
 const AboutPage = lazy(() => import('./components/AboutPage'))
 const ChangelogPage = lazy(() => import('./components/ChangelogPage'))
 const ProjectDetailPage = lazy(() => import('./components/ProjectDetailPage'))
+const AvatarStagePage = lazy(() => import('./components/avatar/AvatarStagePage'))
 
 function Loading() {
   return <div className="flex h-screen items-center justify-center bg-bg-primary" />
@@ -46,6 +48,14 @@ const PAGES: { path: string; element: React.ReactNode }[] = [
       </Suspense>
     ),
   },
+  {
+    path: STAGE_PATH,
+    element: (
+      <Suspense fallback={<Loading />}>
+        <AvatarStagePage />
+      </Suspense>
+    ),
+  },
 ]
 
 const PREFIXES = Object.values(LOCALE_URL_PREFIX) // ['', '/zh-TW', '/ja']
@@ -60,6 +70,8 @@ export default function AppRoutes() {
   // Restore user's previously-chosen locale on first visit to the English
   // (unprefixed) entry. No-op for locale-prefixed branches.
   useInitialLocaleRestore()
+  const { pathname } = useLocation()
+  const onStage = isStagePath(pathname, PREFIXES)
 
   return (
     <>
@@ -75,9 +87,11 @@ export default function AppRoutes() {
           )),
         )}
       </Routes>
-      <ErrorBoundary fallback={null}>
-        <ChatWidget />
-      </ErrorBoundary>
+      {onStage ? null : (
+        <ErrorBoundary fallback={null}>
+          <ChatWidget />
+        </ErrorBoundary>
+      )}
     </>
   )
 }

@@ -28,7 +28,10 @@ export function deriveAvatarMode(input: string, status: ChatStatus): AvatarMode 
 //  column        fullscreen — she stands full height in a column of her own on
 //                the right, at whatever size the window can pay for
 //  hidden        fullscreen on a phone, or a docked panel covering one
-export type AvatarPlacement = 'launcher' | 'beside-panel' | 'column' | 'hidden'
+//  stage         the /avatar page (src/components/avatar): the whole figure,
+//                head to feet, on a canvas that fills the page. Not a widget
+//                placement, so avatarPlacement() never returns it.
+export type AvatarPlacement = 'launcher' | 'beside-panel' | 'column' | 'hidden' | 'stage'
 
 // `md` (≥768px) is the pipeline rail's own breakpoint (the aside is
 // max-md:hidden) and doubles as the floor for the column: below it the panel

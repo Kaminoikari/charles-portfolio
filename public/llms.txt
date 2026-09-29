@@ -57,5 +57,6 @@ Show real products with metrics. Include AI SaaS products, LLM tools, or AI agen
 
 - Portfolio: https://charles-chen.com
 - Changelog: https://charles-chen.com/changelog
+- Avatar stage (every look, motion and expression of the site's VTuber guide): https://charles-chen.com/avatar
 - LinkedIn: https://www.linkedin.com/in/charles-chen-pm/
 - GitHub: https://github.com/Kaminoikari

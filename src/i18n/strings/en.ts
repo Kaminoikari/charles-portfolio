@@ -89,6 +89,22 @@ interface Strings {
       vita: string
     }
   }
+  // The /avatar page (src/components/avatar). Expressions are keyed by the
+  // engine's EmotionName and scenes by StageSceneId, so one added there without
+  // a label here fails to compile.
+  stage: {
+    metaTitle: string; metaDescription: string
+    selectTitle: string; selectedLabel: string
+    tabsAriaLabel: string
+    tabs: { looks: string; motions: string; expressions: string; scenes: string }
+    expressions: {
+      happy: string; relaxed: string; nagomi: string; surprised: string
+      excited: string; sad: string; angry: string; pale: string
+    }
+    scenes: { 'night-room': string; 'idol-stage': string; 'sunset-rooftop': string; none: string }
+    loading: string; loadFailed: string
+    noWebgl: string; reducedMotion: string; showAnyway: string
+  }
   defaults: { documentTitle: string }
 }
 
@@ -259,6 +275,31 @@ const en: Strings = {
       'sendagaya-shino': 'Shino',
       vita: 'Vita',
     },
+  },
+  stage: {
+    metaTitle: 'Avatar Stage | Charles Chen',
+    metaDescription:
+      'Meet Mika head to toe: every look, her motion-captured moves and her expressions, on a stage of your choosing.',
+    selectTitle: 'SELECT CHARACTER',
+    selectedLabel: 'On stage',
+    tabsAriaLabel: 'Stage controls',
+    tabs: { looks: 'Look', motions: 'Motion', expressions: 'Expression', scenes: 'Scene' },
+    expressions: {
+      happy: 'Happy',
+      relaxed: 'Relaxed',
+      nagomi: 'Serene',
+      surprised: 'Surprised',
+      excited: 'Excited',
+      sad: 'Sad',
+      angry: 'Angry',
+      pale: 'Pale',
+    },
+    scenes: { 'night-room': 'Night room', 'idol-stage': 'Idol stage', 'sunset-rooftop': 'Sunset rooftop', none: 'None' },
+    loading: 'Loading…',
+    loadFailed: 'This look could not be loaded. Try another one.',
+    noWebgl: 'This device cannot show the 3D character (WebGL 2 is not available).',
+    reducedMotion: 'You have asked your device to reduce motion, so the character is not playing.',
+    showAnyway: 'Show her anyway',
   },
   defaults: {
     documentTitle: 'AI Product Manager in Taiwan | Charles Chen Portfolio',

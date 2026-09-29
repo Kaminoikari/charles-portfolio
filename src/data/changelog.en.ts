@@ -20,6 +20,34 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-stage',
+    date: '2026-09-29',
+    title: `Mika gets a stage of her own at /avatar`,
+    tags: ['feature', 'design'],
+    body: [
+      `A new page, \`/avatar\`, shows the site's VTuber guide head to toe on a stage that fills the screen. Every look in the chat widget's look strip is there, along with her motions, eight expressions and a choice of backdrops. The chat widget stays off this page so there is only one of her on it.`,
+      { kind: 'heading', text: `Two layouts` },
+      {
+        kind: 'list',
+        items: [
+          `**Phone: stage HUD.** She fills the screen. A dock at the bottom switches looks, motions, expressions and scenes in four tabs, all reachable with one thumb.`,
+          `**Desktop: character select.** Laid out like a fighting-game select screen: the roster of portraits on the left, motions, expressions and scenes on the right, and her name under her feet, so every option is in view at once.`,
+        ],
+      },
+      { kind: 'heading', text: `Always the whole figure` },
+      `The camera isn't set per screen size. It is solved from the space the controls leave free and from each body's own measured crown height, so a 360px phone and a 2560px monitor both show her from hair to shoes, and a taller character gets the headroom she needs. A test checks this, in canvas rows, for every look against six screen sizes.`,
+      `The expressions tab only lists faces the chosen body can actually make. Two bodies have no ><-face, so theirs lists seven. Another test reads every body's file and checks the list against it both ways.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '13', label: 'looks' },
+          { value: '8', label: 'expressions' },
+          { value: '2', label: 'layouts' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'mika-thirteen-looks',
     date: '2026-09-25',
     title: `The look strip now offers thirteen characters`,

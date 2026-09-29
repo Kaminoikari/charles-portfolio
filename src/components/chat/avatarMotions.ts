@@ -383,9 +383,17 @@ export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
   'stretch',
 ]
 
-/** The frame a placement composes to, or null where no avatar renders. */
+/**
+ * The frame a placement composes to, or null where there is none to fit.
+ *
+ * Null for `hidden`, where no avatar renders, and for `stage`, where the frame
+ * is the whole figure and the page frames it per body (src/components/avatar/
+ * stageLayout.ts): no measured frame, so no clip-driven pan and no idle clip
+ * rotation. The page plays the clips a visitor asks for through playMotion,
+ * which does not consult the placement, and lists them with readyMotions('column').
+ */
 export function motionFrame(placement: AvatarPlacement): MotionFrame | null {
-  if (placement === 'hidden') return null
+  if (placement === 'hidden' || placement === 'stage') return null
   return placement === 'column' ? 'column' : 'waistUp'
 }
 

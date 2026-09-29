@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <!-- Original placeholder for the /avatar stage (2026-09-29): a rooftop by the sea at sunset. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2a6b"/>
+      <stop offset="0.38" stop-color="#8a4f9e"/>
+      <stop offset="0.62" stop-color="#f08a7a"/>
+      <stop offset="0.8" stop-color="#ffc07a"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e98a86"/>
+      <stop offset="1" stop-color="#4b3a7a"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="0.35" stop-color="#ffd48a" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#ffb07a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a5a8a"/>
+      <stop offset="1" stop-color="#3a2f55"/>
+    </linearGradient>
+    <filter id="cloud" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <circle cx="960" cy="560" r="230" fill="url(#sun)"/>
+  <circle cx="960" cy="560" r="70" fill="#fff3c4"/>
+
+  <!-- clouds -->
+  <g fill="#ffd9d2" opacity="0.85" filter="url(#cloud)">
+    <path d="M140 300 q 60 -60 130 -20 q 50 -50 120 -10 q 70 -20 90 40 q -170 30 -340 -10 Z"/>
+    <path d="M1380 240 q 70 -70 150 -20 q 60 -50 130 0 q 60 -10 80 40 q -200 25 -360 -20 Z"/>
+    <path d="M620 180 q 40 -40 100 -15 q 50 -40 110 0 q -110 25 -210 15 Z"/>
+    <path d="M1180 400 q 50 -40 110 -10 q 40 -30 90 5 q -100 20 -200 5 Z"/>
+  </g>
+  <g fill="#b98fd0" opacity="0.6" filter="url(#cloud)">
+    <path d="M0 420 q 120 -40 260 -5 q 90 -30 190 10 q -230 35 -450 -5 Z"/>
+    <path d="M1500 460 q 120 -40 250 -5 q 90 -25 170 10 q -210 30 -420 -5 Z"/>
+  </g>
+
+  <!-- sea and horizon -->
+  <rect y="620" width="1920" height="200" fill="url(#sea)"/>
+  <g fill="#fff0c8" opacity="0.7">
+    <rect x="900" y="640" width="120" height="4" rx="2"/><rect x="870" y="662" width="180" height="4" rx="2"/>
+    <rect x="910" y="686" width="100" height="4" rx="2"/><rect x="850" y="712" width="220" height="4" rx="2"/>
+    <rect x="890" y="740" width="140" height="4" rx="2"/>
+  </g>
+  <!-- distant islands -->
+  <path d="M0 620 q 120 -40 240 0 q 90 -30 180 0 Z" fill="#5a3d7a" opacity="0.8"/>
+  <path d="M1540 620 q 110 -50 240 -10 q 70 -20 140 10 Z" fill="#5a3d7a" opacity="0.8"/>
+
+  <!-- rooftop floor -->
+  <rect y="780" width="1920" height="300" fill="url(#roof)"/>
+  <rect y="772" width="1920" height="12" fill="#2d2446"/>
+  <g stroke="#554776" stroke-width="3" opacity="0.8">
+    <line x1="0" y1="860" x2="1920" y2="860"/><line x1="0" y1="960" x2="1920" y2="960"/>
+    <line x1="480" y1="780" x2="300" y2="1080"/><line x1="960" y1="780" x2="960" y2="1080"/><line x1="1440" y1="780" x2="1620" y2="1080"/>
+  </g>
+  <!-- railing -->
+  <g stroke="#2d2446" stroke-width="8">
+    <line x1="0" y1="690" x2="1920" y2="690"/>
+  </g>
+  <g stroke="#2d2446" stroke-width="5">
+    <line x1="60" y1="690" x2="60" y2="780"/><line x1="200" y1="690" x2="200" y2="780"/><line x1="340" y1="690" x2="340" y2="780"/>
+    <line x1="480" y1="690" x2="480" y2="780"/><line x1="620" y1="690" x2="620" y2="780"/><line x1="1300" y1="690" x2="1300" y2="780"/>
+    <line x1="1440" y1="690" x2="1440" y2="780"/><line x1="1580" y1="690" x2="1580" y2="780"/><line x1="1720" y1="690" x2="1720" y2="780"/>
+    <line x1="1860" y1="690" x2="1860" y2="780"/>
+  </g>
+  <ellipse cx="960" cy="960" rx="360" ry="60" fill="#1e1733" opacity="0.35"/>
+</svg>
