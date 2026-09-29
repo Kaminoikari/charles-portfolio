@@ -9,9 +9,9 @@ import type { ClearanceSimulated } from '../clearance'
 
 export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-gishin",
-  "rigSha": "c300afebc90f10a9b44e61a917a75721854d7126468b7f511ada55d70da9d351",
+  "rigSha": "df0054aa866f68a8b95510bad358a5d43bced092ee396e35415068614d29b1ba",
   "simulatedOn": "/avatar/gishin-2.vrm",
-  "producedBy": "c053a6b",
+  "producedBy": "afc79f2",
   "restCrownY": 1.582,
   "restCrownScreen": {
     "waistUp": 1.5814,
@@ -38,6 +38,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 0.04
       },
       "dance": {
+        "waistUp": -0.08,
         "column": 0.12
       }
     }
@@ -48,23 +49,23 @@ export const SIMULATED: ClearanceSimulated = {
       "crownT": 10.1,
       "crownScreen": {
         "waistUp": 1.5861,
-        "column": 1.5915
+        "column": 1.5914
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 42.1,
+      "bodyDepthMm": 41,
       "jumpDeg": 2.8,
       "skirtDepthMm": 0
     },
     "dance": {
-      "crownY": 1.6579,
+      "crownY": 1.6569,
       "crownT": 11.97,
       "crownScreen": {
-        "waistUp": 1.6842,
-        "column": 1.7042
+        "waistUp": 1.6932,
+        "column": 1.7032
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,
-      "jumpDeg": 22,
+      "jumpDeg": 22.1,
       "skirtDepthMm": 0
     },
     "idleLoop": {
@@ -75,64 +76,64 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5933
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 11.2,
+      "bodyDepthMm": 21,
       "jumpDeg": 0.4,
       "skirtDepthMm": 0
     },
     "modelPose": {
-      "crownY": 1.581,
+      "crownY": 1.5809,
       "crownT": 0.43,
       "crownScreen": {
-        "waistUp": 1.5768,
-        "column": 1.5766
+        "waistUp": 1.5766,
+        "column": 1.5765
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,
-      "jumpDeg": 3.9,
+      "jumpDeg": 2.3,
       "skirtDepthMm": 0
     },
     "peaceSign": {
-      "crownY": 1.5484,
+      "crownY": 1.5486,
       "crownT": 0.67,
       "crownScreen": {
-        "waistUp": 1.549,
-        "column": 1.5561
+        "waistUp": 1.5492,
+        "column": 1.5564
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 50,
-      "jumpDeg": 2.5,
+      "bodyDepthMm": 40.8,
+      "jumpDeg": 2.1,
       "skirtDepthMm": 0
     },
     "playFingers": {
       "crownY": 1.5895,
       "crownT": 0.37,
       "crownScreen": {
-        "waistUp": 1.589,
+        "waistUp": 1.5889,
         "column": 1.5931
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 11.1,
+      "bodyDepthMm": 21.4,
       "jumpDeg": 1.8,
       "skirtDepthMm": 0
     },
     "scratchHead": {
-      "crownY": 1.6297,
+      "crownY": 1.6194,
       "crownT": 0.7,
       "crownScreen": {
-        "waistUp": 1.63,
-        "column": 1.6332
+        "waistUp": 1.6196,
+        "column": 1.6227
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 46,
+      "bodyDepthMm": 44.8,
       "jumpDeg": 3.1,
       "skirtDepthMm": 0
     },
     "spin": {
-      "crownY": 1.593,
+      "crownY": 1.5929,
       "crownT": 6.83,
       "crownScreen": {
-        "waistUp": 1.5983,
-        "column": 1.6284
+        "waistUp": 1.5982,
+        "column": 1.6151
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,
@@ -140,11 +141,11 @@ export const SIMULATED: ClearanceSimulated = {
       "skirtDepthMm": 0
     },
     "squat": {
-      "crownY": 1.5956,
-      "crownT": 8.17,
+      "crownY": 1.5955,
+      "crownT": 8.2,
       "crownScreen": {
         "waistUp": 1.5921,
-        "column": 1.5923
+        "column": 1.5924
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 50,
@@ -152,15 +153,15 @@ export const SIMULATED: ClearanceSimulated = {
       "skirtDepthMm": 0
     },
     "stretch": {
-      "crownY": 1.8425,
+      "crownY": 1.8309,
       "crownT": 1.6,
       "crownScreen": {
-        "waistUp": 1.8517,
-        "column": 1.864
+        "waistUp": 1.8396,
+        "column": 1.8517
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 50,
-      "jumpDeg": 4.5,
+      "bodyDepthMm": 34.7,
+      "jumpDeg": 4.6,
       "skirtDepthMm": 0
     },
     "waveWink": {
@@ -171,7 +172,7 @@ export const SIMULATED: ClearanceSimulated = {
         "column": 1.5859
       },
       "coatDepthMm": 0,
-      "bodyDepthMm": 4.9,
+      "bodyDepthMm": 5,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     }

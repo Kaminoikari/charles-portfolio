@@ -8,166 +8,166 @@ import type { ClearanceMeasured } from '../clearance'
 
 export const MEASURED: ClearanceMeasured = {
   "family": "vroid-gishin",
-  "rigSha": "c300afebc90f10a9b44e61a917a75721854d7126468b7f511ada55d70da9d351",
+  "rigSha": "df0054aa866f68a8b95510bad358a5d43bced092ee396e35415068614d29b1ba",
   "measuredOn": "/avatar/gishin-2.vrm",
-  "producedBy": "c053a6b",
+  "producedBy": "afc79f2",
   "faceBox": {
     "min": [
-      -0.1028,
-      1.3386,
-      -0.0878
+      -0.1029,
+      1.3314,
+      -0.0869
     ],
     "max": [
-      0.1028,
-      1.5566,
-      0.0542
+      0.1035,
+      1.5528,
+      0.0541
     ]
   },
-  "handSkinPastTip": 0.0194,
+  "handSkinPastTip": 0.0193,
   "restCrownY": 1.582,
   "clips": {
     "peaceSign": {
       "reach": {
-        "left": 0.6411,
-        "right": 0.4989
+        "left": 0.6371,
+        "right": 0.4957
       },
-      "skinTop": 1.4738,
-      "hipsLow": 0.8437,
-      "faceRatio": 1.5919,
+      "skinTop": 1.4646,
+      "hipsLow": 0.8384,
+      "faceRatio": 1.5659,
       "faceRatioAt": 9.45,
-      "endSink": 0.037,
-      "hipsDrift": 0.0146,
-      "endWrist": 0.8113
+      "endSink": 0.0368,
+      "hipsDrift": 0.0145,
+      "endWrist": 0.8062
     },
     "modelPose": {
       "reach": {
-        "left": 0.3783,
-        "right": 0.3424
+        "left": 0.3759,
+        "right": 0.3402
       },
-      "skinTop": 1.2935,
-      "hipsLow": 0.8812,
-      "faceRatio": 13.0246,
-      "faceRatioAt": 3.92,
-      "endSink": 0.0085,
-      "hipsDrift": 0.0267,
-      "endWrist": 0.8567
+      "skinTop": 1.2854,
+      "hipsLow": 0.8756,
+      "faceRatio": 13.098,
+      "faceRatioAt": 3.93,
+      "endSink": 0.0084,
+      "hipsDrift": 0.0265,
+      "endWrist": 0.8513
     },
     "spin": {
       "reach": {
-        "left": 0.6922,
-        "right": 0.5448
+        "left": 0.6878,
+        "right": 0.5413
       },
-      "skinTop": 1.5176,
-      "hipsLow": 0.8514,
-      "faceRatio": 6.6188,
+      "skinTop": 1.5081,
+      "hipsLow": 0.846,
+      "faceRatio": 6.62,
       "faceRatioAt": 2.45,
       "endSink": 0,
-      "hipsDrift": 0.0131,
-      "endWrist": 0.853
+      "hipsDrift": 0.013,
+      "endWrist": 0.8476
     },
     "squat": {
       "reach": {
-        "left": 0.655,
-        "right": 0.6503
+        "left": 0.6509,
+        "right": 0.6462
       },
-      "skinTop": 1.415,
-      "hipsLow": 0.677,
-      "faceRatio": 1.7783,
-      "faceRatioAt": 6.07,
+      "skinTop": 1.4062,
+      "hipsLow": 0.6727,
+      "faceRatio": 1.752,
+      "faceRatioAt": 6.13,
       "endSink": 0,
-      "hipsDrift": 0.0105,
-      "endWrist": 0.8502
+      "hipsDrift": 0.0104,
+      "endWrist": 0.8448
     },
     "akimbo": {
       "reach": {
-        "left": 0.3064,
-        "right": 0.331
+        "left": 0.3045,
+        "right": 0.3289
       },
-      "skinTop": 1.0218,
-      "hipsLow": 0.9044,
-      "faceRatio": 18.3292,
-      "faceRatioAt": 2.18,
+      "skinTop": 1.0154,
+      "hipsLow": 0.8987,
+      "faceRatio": 17.8824,
+      "faceRatioAt": 6.4,
       "endSink": 0,
       "hipsDrift": 0.0007,
-      "endWrist": 0.8644
+      "endWrist": 0.859
     },
     "playFingers": {
       "reach": {
-        "left": 0.2922,
-        "right": 0.2935
+        "left": 0.2904,
+        "right": 0.2917
       },
-      "skinTop": 1.0643,
-      "hipsLow": 0.9046,
-      "faceRatio": 20.8137,
+      "skinTop": 1.0577,
+      "hipsLow": 0.8989,
+      "faceRatio": 20.7496,
       "faceRatioAt": 2.67,
       "endSink": 0,
       "hipsDrift": 0.0007,
-      "endWrist": 0.8644
+      "endWrist": 0.859
     },
     "scratchHead": {
       "reach": {
-        "left": 0.4043,
-        "right": 0.5411
+        "left": 0.4017,
+        "right": 0.5377
       },
-      "skinTop": 1.6192,
-      "hipsLow": 0.9001,
-      "faceRatio": 1.4666,
-      "faceRatioAt": 4.32,
+      "skinTop": 1.609,
+      "hipsLow": 0.8945,
+      "faceRatio": 1.3341,
+      "faceRatioAt": 4.3,
       "endSink": 0,
       "hipsDrift": 0.0007,
-      "endWrist": 0.8644
+      "endWrist": 0.859
     },
     "idleLoop": {
       "reach": {
-        "left": 0.4073,
-        "right": 0.0948
+        "left": 0.4047,
+        "right": 0.0942
       },
-      "skinTop": 0.8544,
-      "hipsLow": 0.8986,
-      "faceRatio": 34.3086,
+      "skinTop": 0.849,
+      "hipsLow": 0.893,
+      "faceRatio": 33.2717,
       "faceRatioAt": 1.5,
       "endSink": 0.0015,
-      "hipsDrift": 0.1561,
-      "endWrist": 0.8424
+      "hipsDrift": 0.1551,
+      "endWrist": 0.837
     },
     "stretch": {
       "reach": {
-        "left": 0.3582,
-        "right": 0.59
+        "left": 0.3559,
+        "right": 0.5863
       },
-      "skinTop": 1.8398,
-      "hipsLow": 0.9051,
-      "faceRatio": 2.5375,
+      "skinTop": 1.8282,
+      "hipsLow": 0.8994,
+      "faceRatio": 2.681,
       "faceRatioAt": 1.87,
       "endSink": 0,
       "hipsDrift": 0.0007,
-      "endWrist": 0.8644
+      "endWrist": 0.859
     },
     "dance": {
       "reach": {
-        "left": 0.7115,
-        "right": 0.5327
+        "left": 0.707,
+        "right": 0.5293
       },
-      "skinTop": 1.5359,
-      "hipsLow": 0.7719,
-      "faceRatio": 0.435,
+      "skinTop": 1.5262,
+      "hipsLow": 0.767,
+      "faceRatio": 0.4252,
       "faceRatioAt": 8.23,
-      "endSink": 0.0483,
-      "hipsDrift": 0.1438,
-      "endWrist": 1.2225
+      "endSink": 0.048,
+      "hipsDrift": 0.1429,
+      "endWrist": 1.2147
     },
     "waveWink": {
       "reach": {
-        "left": 0.3682,
-        "right": 0.2837
+        "left": 0.3659,
+        "right": 0.2819
       },
-      "skinTop": 1.427,
-      "hipsLow": 0.9009,
-      "faceRatio": 3.2824,
+      "skinTop": 1.4181,
+      "hipsLow": 0.8952,
+      "faceRatio": 3.2636,
       "faceRatioAt": 1.6,
       "endSink": 0,
       "hipsDrift": 0,
-      "endWrist": 0.8556
+      "endWrist": 0.8502
     }
   }
 }
