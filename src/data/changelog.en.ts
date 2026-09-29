@@ -34,8 +34,8 @@ export const changelog: ChangelogEntry[] = [
           `**Desktop: character select.** Laid out like a fighting-game select screen: the roster of portraits on the left, motions, expressions and scenes on the right, and her name under her feet, so every option is in view at once.`,
         ],
       },
-      { kind: 'heading', text: `Always the whole figure` },
-      `The camera isn't set per screen size. It is solved from the space the controls leave free and from each body's own measured crown height, so a 360px phone and a 2560px monitor both show her from hair to shoes, and a taller character gets the headroom she needs. A test checks this, in canvas rows, for every look against six screen sizes.`,
+      { kind: 'heading', text: `Framed from each body's measurements` },
+      `The camera isn't set per screen size. It is solved from each body's own measured crown and chin. On a phone her head is sized and placed like a character in a mobile game's dressing room, crown 19% of the way down the screen and head 16% of its height, with her legs running on under the dock. In the character select she stands head to toe in the space between the panels. So a 360px phone and a 2560px monitor compose the same way, and a taller character gets the room she needs. Tests check both compositions, in canvas rows, for every look.`,
       `The expressions tab only lists faces the chosen body can actually make. Two bodies have no ><-face, so theirs lists seven. Another test reads every body's file and checks the list against it both ways.`,
       {
         kind: 'stats',

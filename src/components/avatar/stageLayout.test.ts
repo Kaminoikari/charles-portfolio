@@ -1,8 +1,8 @@
-// The /avatar page's promise is "always the whole figure". These hold the
-// framing to it in canvas rows, for every body a visitor can pick and for the
-// bands both layouts actually leave free, so a taller body, a new phone size
-// or a thicker dock that would crop her head or feet fails here rather than on
-// a screen.
+// The /avatar page's two compositions, held in canvas rows for every body a
+// visitor can pick: on a phone her head at the size and height of the owner's
+// reference, in the character select the whole figure inside the band the
+// panels leave free. A taller body, a new screen size or a moved panel that
+// would break either fails here rather than on a screen.
 import { describe, expect, it } from 'vitest'
 import { AVATAR_FOV } from '../chat/avatarMode'
 import { motionFrame } from '../chat/avatarMotions'
@@ -10,8 +10,12 @@ import { OFFERED_VARIANTS, familyOf } from '../chat/avatarVariants'
 import {
   FEET_Y,
   HEAD_AIR,
+  HUD_CROWN_ROW,
+  HUD_HEAD_SHARE,
   REST_HALF_WIDTH,
   SELECT_MIN_WIDTH,
+  headHeight,
+  hudFraming,
   isStagePath,
   restCrown,
   rowToWorldY,
@@ -22,16 +26,13 @@ import {
 
 const families = [...new Set(OFFERED_VARIANTS.map((v) => familyOf(v.id)))]
 
-// The bands AvatarStagePage computes, at the sizes that matter: the smallest
-// phone the site supports, a common one, a tablet held upright (still the
-// HUD), a laptop and a large monitor (the character select).
+// The bands AvatarStagePage computes for the character select: its narrowest
+// screen, a laptop, a common desktop and a large monitor.
 const BANDS: Record<string, StageBand> = {
-  'phone 360x640': { w: 360, h: 640, top: 60 + 12, bottom: 640 - 180 - 12, width: 360 - 24 },
-  'phone 390x844': { w: 390, h: 844, top: 68 + 12, bottom: 844 - 190 - 12, width: 390 - 24 },
-  'tablet 820x1180': { w: 820, h: 1180, top: 72 + 12, bottom: 1180 - 190 - 12, width: 820 - 24 },
-  'laptop 1280x720': { w: 1280, h: 720, top: 72 + 24, bottom: 720 - 112, width: 1280 - 380 - 300 - 48 },
-  'desktop 1440x900': { w: 1440, h: 900, top: 72 + 24, bottom: 900 - 112, width: 1440 - 380 - 300 - 48 },
-  'monitor 2560x1440': { w: 2560, h: 1440, top: 72 + 24, bottom: 1440 - 112, width: 2560 - 380 - 300 - 48 },
+  'narrow 1024x768': { w: 1024, h: 768, top: 72 + 12, bottom: 768 - 24, width: 1024 - 380 - 300 - 48 },
+  'laptop 1280x720': { w: 1280, h: 720, top: 72 + 12, bottom: 720 - 24, width: 1280 - 380 - 300 - 48 },
+  'desktop 1440x900': { w: 1440, h: 900, top: 72 + 12, bottom: 900 - 24, width: 1440 - 380 - 300 - 48 },
+  'monitor 2560x1440': { w: 2560, h: 1440, top: 72 + 12, bottom: 1440 - 24, width: 2560 - 380 - 300 - 48 },
 }
 
 /** Half the world width visible at the subject plane across `px` pixels, centred. */
@@ -65,16 +66,6 @@ describe('stageFraming', () => {
     }
   }
 
-  it('fills a phone by height, not by width', () => {
-    // The HUD exists so she fills the screen; if the width rule decided on an
-    // ordinary phone she would stand small in the middle of it.
-    const band = BANDS['phone 390x844']
-    for (const family of families) {
-      const f = stageFraming(band, family)
-      expect(rowToWorldY(f, band.h, band.top)).toBeCloseTo(restCrown(family) + HEAD_AIR, 4)
-    }
-  })
-
   it('reads each body its own crown', () => {
     const band = BANDS['desktop 1440x900']
     const crowns = families.map((f) => restCrown(f))
@@ -90,6 +81,38 @@ describe('stageFraming', () => {
     const f = stageFraming({ w: 300, h: 200, top: 150, bottom: 150, width: 0 }, families[0])
     expect(Number.isFinite(f.distance)).toBe(true)
     expect(Number.isFinite(f.lookAtY)).toBe(true)
+  })
+})
+
+describe('hudFraming', () => {
+  // Phones held upright, from the smallest the site supports to a tablet.
+  const HEIGHTS = [640, 740, 844, 932, 1180]
+
+  for (const family of families) {
+    it(`puts ${family}'s crown and chin where the reference has them`, () => {
+      for (const h of HEIGHTS) {
+        const f = hudFraming(h, family)
+        const crownRow = HUD_CROWN_ROW * h
+        const chinRow = (HUD_CROWN_ROW + HUD_HEAD_SHARE) * h
+        expect(rowToWorldY(f, h, crownRow), `${h}px crown`).toBeCloseTo(restCrown(family), 4)
+        expect(rowToWorldY(f, h, chinRow), `${h}px chin`).toBeCloseTo(restCrown(family) - headHeight(family), 4)
+      }
+    })
+  }
+
+  it('shows her larger than the whole-figure framing would', () => {
+    // The reason it exists: head to toe on a phone left her face too small.
+    for (const family of families) {
+      const whole = stageFraming({ w: 390, h: 844, top: 80, bottom: 844 - 200, width: 366 }, family)
+      expect(hudFraming(844, family).distance).toBeLessThan(whole.distance * 0.8)
+    }
+  })
+
+  it('measures a head for every body, in the range a VRoid head falls in', () => {
+    for (const family of families) {
+      expect(headHeight(family), family).toBeGreaterThan(0.2)
+      expect(headHeight(family), family).toBeLessThan(0.35)
+    }
   })
 })
 

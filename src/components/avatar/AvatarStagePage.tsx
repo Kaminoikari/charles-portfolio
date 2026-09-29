@@ -1,5 +1,5 @@
-// /avatar: Mika on a stage of her own, whole figure, every look, her moves,
-// her expressions and a backdrop.
+// /avatar: Mika on a stage of her own, every look, her moves, her expressions
+// and a backdrop.
 //
 // Two layouts, agreed with the owner on 2026-09-29 (stageLayout.ts):
 //   phone   A, the stage HUD: she fills the screen and a dock at the bottom
@@ -10,8 +10,9 @@
 //
 // The figure is the chat widget's own engine (AvatarGuide over
 // avatarGuideEngine) in the `stage` placement: the canvas fills the page, the
-// controls float over it, and stageFraming() puts her head-to-toe in the band
-// they leave free. Nothing about her is re-implemented here; this page decides
+// controls float over it. On a phone hudFraming() sizes her head to the
+// owner's reference; in the character select stageFraming() puts her
+// head-to-toe in the band the panels leave free. Nothing about her is re-implemented here; this page decides
 // only what is offered and where it sits.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import AvatarGuide from '../chat/AvatarGuide'
@@ -44,13 +45,11 @@ import {
   type StageSceneId,
   type StageTab,
 } from './stageContent'
-import { STAGE_PATH, stageFraming, stageLayout, type StageBand } from './stageLayout'
+import { STAGE_PATH, hudFraming, stageFraming, stageLayout } from './stageLayout'
 
 /** Widths of the character select's two panels, px. */
 const ROSTER_W = 380
 const OPTIONS_W = 300
-/** Room under her feet in the character select, px: her name plate stands there. */
-const PLATE_H = 112
 /** Gaps between her and whatever floats over the canvas, px. */
 const AIR = 12
 
@@ -181,31 +180,21 @@ export default function AvatarStagePage() {
   }
   const [tab, setTab] = useState<StageTab>('looks')
 
-  // The dock's real height, so her feet land on top of it whatever the phone's
-  // safe area or the tab's content makes it.
-  const dockRef = useRef<HTMLDivElement>(null)
-  const [dockH, setDockH] = useState(190)
-  useEffect(() => {
-    const el = dockRef.current
-    if (!el) return
-    const measure = () => setDockH(el.getBoundingClientRect().height)
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [layout, gate])
-
-  const band: StageBand =
+  // Phones frame her at the reference's size, legs running on under the dock;
+  // the character select fits her whole between the panels.
+  const framing =
     layout === 'hud'
-      ? { w: view.w, h: view.h, top: navH + AIR, bottom: view.h - dockH - AIR, width: view.w - 2 * AIR }
-      : {
-          w: view.w,
-          h: view.h,
-          top: navH + 2 * AIR,
-          bottom: view.h - PLATE_H,
-          width: view.w - ROSTER_W - OPTIONS_W - 4 * AIR,
-        }
-  const framing = stageFraming(band, family)
+      ? hudFraming(view.h, family)
+      : stageFraming(
+          {
+            w: view.w,
+            h: view.h,
+            top: navH + AIR,
+            bottom: view.h - 2 * AIR,
+            width: view.w - ROSTER_W - OPTIONS_W - 4 * AIR,
+          },
+          family,
+        )
   // Where her soles meet the floor, in canvas pixels, for the contact shadow
   // that sets her on the painted ground rather than in front of it.
   const pxPerMetre = view.h / (2 * framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180)))
@@ -331,7 +320,7 @@ export default function AvatarStagePage() {
       ) : null}
 
       {layout === 'hud' ? (
-        <HudDock ref={dockRef} tab={tab} onTab={setTab} pickers={pickers('row')} />
+        <HudDock tab={tab} onTab={setTab} pickers={pickers('row')} />
       ) : (
         <SelectPanels
           navH={navH}
@@ -345,12 +334,10 @@ export default function AvatarStagePage() {
 
 // Layout A. A tab row over one picker row, glass over the stage, under a thumb.
 function HudDock({
-  ref,
   tab,
   onTab,
   pickers,
 }: {
-  ref: React.Ref<HTMLDivElement>
   tab: StageTab
   onTab: (tab: StageTab) => void
   pickers: Record<StageTab, React.ReactNode>
@@ -358,7 +345,6 @@ function HudDock({
   const t = useT()
   return (
     <div
-      ref={ref}
       className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-black/55 pt-2 backdrop-blur-md"
       style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
     >
@@ -401,7 +387,7 @@ function SelectPanels({
 }) {
   const t = useT()
   const panel = 'absolute bottom-6 overflow-y-auto rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur-md'
-  const heading = 'mb-3 font-mono text-[11px] uppercase tracking-[2px] text-white/55'
+  const heading = 'mb-2 font-mono text-[11px] uppercase tracking-[2px] text-white/55'
   return (
     <>
       <section className={panel + ' left-6'} style={{ top: navH + 16, width: ROSTER_W }} aria-label={t('chat.looksAriaLabel')}>
@@ -412,7 +398,7 @@ function SelectPanels({
         {pickers.looks}
       </section>
 
-      <section className={panel + ' right-6 space-y-6'} style={{ top: navH + 16, width: OPTIONS_W }} aria-label={t('stage.tabsAriaLabel')}>
+      <section className={panel + ' right-6 space-y-4'} style={{ top: navH + 16, width: OPTIONS_W }} aria-label={t('stage.tabsAriaLabel')}>
         <div>
           <h2 className={heading}>{t('stage.tabs.motions')}</h2>
           {pickers.motions}
@@ -427,10 +413,11 @@ function SelectPanels({
         </div>
       </section>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
-        <div className="flex flex-col items-center">
+      {/* Her name at the stage's bottom-left corner, clear of her feet. */}
+      <div className="pointer-events-none absolute bottom-6" style={{ left: ROSTER_W + 48 }}>
+        <div className="flex flex-col items-start">
           <span className="font-mono text-[10px] uppercase tracking-[3px] text-accent-cyan">{t('stage.selectedLabel')}</span>
-          <span className="mt-1 border-b-2 border-accent-mars px-4 pb-1 text-[28px] font-bold tracking-[4px] text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.6)]">
+          <span className="mt-1 border-b-2 border-accent-mars pr-4 pb-1 text-[28px] font-bold tracking-[4px] text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.6)]">
             {shownName.toUpperCase()}
           </span>
         </div>

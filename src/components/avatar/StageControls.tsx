@@ -112,7 +112,7 @@ export function MotionPicker({
     <div
       role="group"
       aria-label={t('chat.motionsAriaLabel')}
-      className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-2 gap-2'}
+      className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-2 gap-1.5'}
     >
       {motions.map((name) => (
         <button
@@ -120,7 +120,7 @@ export function MotionPicker({
           type="button"
           disabled={!canPlay.has(name)}
           onClick={() => onPlay(name)}
-          className={CHIP + (variant === 'row' ? ' flex-none' : ' w-full')}
+          className={CHIP + (variant === 'row' ? ' flex-none' : ' w-full !py-1.5')}
         >
           {t(`chat.motions.${name}`)}
         </button>
@@ -148,7 +148,7 @@ export function ExpressionPicker({
     <div
       role="group"
       aria-label={t('stage.tabs.expressions')}
-      className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-2 gap-2'}
+      className={variant === 'row' ? 'flex gap-2 overflow-x-auto px-3 pb-1' : 'grid grid-cols-2 gap-1.5'}
     >
       {expressions.map((name) => (
         <button
@@ -157,7 +157,7 @@ export function ExpressionPicker({
           aria-pressed={name === active}
           disabled={disabled}
           onClick={() => onPick(name)}
-          className={CHIP + (variant === 'row' ? ' flex-none' : ' w-full')}
+          className={CHIP + (variant === 'row' ? ' flex-none' : ' w-full !py-1.5')}
         >
           {t(`stage.expressions.${name}`)}
         </button>

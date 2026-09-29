@@ -1,13 +1,15 @@
 // The /avatar page's composition: which layout a viewport gets, and where the
-// camera stands so the whole figure lands in the part of the canvas the page
-// leaves free for it.
+// camera stands so the figure lands where the page wants her.
 //
-// The canvas fills the page and the controls float over it (the phone's dock,
-// the desktop's two panels), so "full body" means the figure fits the band
-// between them, not the canvas. The framing is solved from that band rather
-// than written down per viewport: the same arithmetic serves a 390x844 phone
-// and a 2560x1440 monitor, and a body with a higher crown gets the headroom it
-// needs from its own clearance file instead of a shared constant.
+// The two layouts frame her differently, both at the owner's direction:
+//   hud     her head at the size and height of the owner's reference (a gacha
+//           dressing room on a phone, 2026-09-29): big enough to read her face,
+//           her legs running on under the dock
+//   select  the whole figure, head to toe, in the band between the panels
+// Both are solved from the viewport and the body's own measurements (its
+// clearance file's resting crown and chin) rather than written down per
+// screen, so a 360x640 phone, a 2560x1440 monitor and a taller body all get
+// the same composition.
 //
 // Pure functions of their inputs, so the test can hold the numbers without a
 // browser or a GL context.
@@ -45,8 +47,8 @@ export const FEET_Y = -0.02
  * Half the width the resting figure needs, in metres: arms down, a bob or a
  * skirt, and a few centimetres either side. A band narrower than this in world
  * terms makes the figure smaller rather than cutting her sides off. Clips reach
- * further (a dance throws a hand 0.71m out); on a phone held upright those
- * hands leave the screen for a moment, which is the price of her filling it.
+ * further (a dance throws a hand 0.71m out); those pass behind a panel for a
+ * moment, which is the price of her filling the stage.
  */
 export const REST_HALF_WIDTH = 0.36
 
@@ -65,6 +67,35 @@ export interface StageBand {
 /** The resting crown of a family's bodies, from its clearance file. */
 export function restCrown(family: AvatarFamilyId): number {
   return AVATAR_FAMILIES[family].restCrownY
+}
+
+/**
+ * The phone framing, off the owner's reference screenshot (2026-09-29, a
+ * 920x2000 capture): the top of her hair 18.8% of the way down the screen, and
+ * crown to chin 16.2% of its height. Fractions of the height, so any phone
+ * held upright composes the same.
+ */
+export const HUD_CROWN_ROW = 0.188
+export const HUD_HEAD_SHARE = 0.162
+
+/** Crown to chin of a family's resting body, in metres, from its clearance file. */
+export function headHeight(family: AvatarFamilyId): number {
+  const f = AVATAR_FAMILIES[family]
+  return f.restCrownY - f.faceBox.min[1]
+}
+
+/**
+ * Camera distance and look-at height that put the family's resting crown at
+ * HUD_CROWN_ROW of an `h`-pixel canvas and its head HUD_HEAD_SHARE of it tall.
+ */
+export function hudFraming(h: number, family: AvatarFamilyId): AvatarFraming {
+  const k = Math.tan((AVATAR_FOV / 2) * (Math.PI / 180))
+  const pxPerMetre = (HUD_HEAD_SHARE * h) / headHeight(family)
+  const span = h / pxPerMetre
+  return {
+    distance: span / (2 * k),
+    lookAtY: restCrown(family) - ((0.5 - HUD_CROWN_ROW) * h) / pxPerMetre,
+  }
 }
 
 /**
