@@ -127,17 +127,34 @@ show this.
 - Both arms of the clasp are placed by two-bone IK. The held wrist sits
   behind the hips (across and back scaled by hip width); its height is
   whatever bends the held elbow to 65°, so long-armed bodies clasp lower.
-  The holding palm lands 25mm behind the held wrist on every offered body.
+  The holding hand takes the held wrist from her side of it, palm back,
+  its palm 25mm in front of the wrist on every offered body.
+- The arms are jointed the way arms are (`hinged` in `idlePose.ts`): the
+  elbow bends only toward its crook, the upper arm's roll is whatever aims
+  the crook at the forearm, and the forearm rolls for the hand so the wrist
+  does not twist. Built segment by segment from guessed palm normals, the
+  first version bent both elbows about 60° backwards and rolled the left
+  forearm 166° ("both arms would break", owner, 2026-09-30); the unsigned
+  elbow angle the tests read then counted a backwards elbow as a bent one.
+  `rigProbe.probeArmJoints` now reads each joint in its parent's frame and
+  the tests hold every look to human ranges: elbow 0–150° and within the
+  carrying angle, shoulder and forearm rotation within 90°, no wrist roll.
+  Measured: elbows 61–74°, shoulder rotation 69–85°, forearm roll 80–85°,
+  wrist roll at most 5.4°.
+- The crossfade keeps the elbows jointed too: each forearm's bend and roll
+  are blended apart (slerped whole, an elbow bent 18–19° sideways part way),
+  and the upper arms swing out up to 12° mid-fade so the hands go round her
+  hips (straight across, they cut 47mm into them).
 - Owner's notes on the way, each now a test in `idlePose.test.ts`:
-  "the arms behind are too straight" (elbows were 32–49°, now 65–67°),
+  "the arms behind are too straight" (elbows were 32–49°, now 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood
   5–15cm past the shoulder joints and read as hands on hips; they now bend
-  back, the collarbones swing back 15°, and no elbow stands more than 1cm
-  past its shoulder joint; the test allows 3cm).
+  back, the collarbones swing back 15°, and every elbow stands 6–34mm
+  inside its shoulder joint; the test allows 3cm past it).
 - Clipping is measured against capsules inscribed in the torso and thigh
   skin (`rigProbe.torsoCapsules`). A first try counted ray crossings, and
   real exports are not closed meshes: it read a hand behind Gishin's dress
-  as 217mm inside her. Limit 8mm; milfy is waived to 25mm (measured 23.2mm
+  as 217mm inside her. Limit 8mm; milfy is waived to 25mm (measured 15.2mm
   behind her back, 10.7mm with open hands: sleeve on the hem of a
   bell-shaped hoodie, cloth on cloth).
 - The open pose was narrowed from the prototype (upper arm 22°→16°,

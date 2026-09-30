@@ -122,7 +122,7 @@ const MAX_DEPTH = 0.008
  * milfy's hoodie hangs in a bell over her hips, and its hem is skinned to the
  * hips bone, so her hips capsule comes out 107mm in radius against 89mm on the
  * same skeleton in pink's clothes. Both poses lay the hoodie's own sleeves on
- * that hem: 23.2mm behind her back and 10.7mm with open hands by this measure,
+ * that hem: 15.2mm behind her back and 10.7mm with open hands by this measure,
  * cloth on cloth, and it reads as a sleeve resting on a hoodie in the render
  * (2026-09-30). Every other offered look is held to MAX_DEPTH.
  */
