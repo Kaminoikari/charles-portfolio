@@ -511,6 +511,10 @@ describe('sweepPoses', () => {
     const fastest = Math.max(...at60.speed)
     const middle = at60.speed.slice(Math.round(at60.n * 0.2), Math.round(at60.n * 0.8))
     expect(Math.min(...middle) / fastest, 'slowest between 20% and 80% of the fade, of the fastest').toBeGreaterThan(0.3)
+    // It sets off from rest and comes to rest: 2% of the top speed in the
+    // first and last frames, where an unshaped sweep starts and stops at 74–88%.
+    expect(at60.speed[0] / fastest, 'first frame, of the fastest').toBeLessThan(0.1)
+    expect(at60.speed[at60.n - 1] / fastest, 'last frame, of the fastest').toBeLessThan(0.1)
     // A corner turns as far in a frame at any frame rate; a curve turns half
     // as far at twice the rate.
     expect(frames(120).turn / at60.turn, 'sharpest turn per frame at 120fps against 60fps').toBeLessThan(0.6)
