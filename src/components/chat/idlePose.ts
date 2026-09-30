@@ -655,6 +655,8 @@ export function blendPoses(
  * The wrist's skin takes all of it cleanly, and the elbow takes the upper
  * arm's roll too: it is a turn about the line through shoulder and elbow,
  * which the elbow's ring of skin turns with.
+ * A notch at a deeply bent elbow is another thing, the outline's hull
+ * coming through folded skin; elbowOutline.ts takes that one.
  *
  * So each upper arm's roll moves onto its forearm, and each forearm's onto its
  * hand. Nothing moves or turns but skin: bone · child = swing · roll · child,

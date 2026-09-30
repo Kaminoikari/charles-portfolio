@@ -220,3 +220,21 @@ show this.
   roll onto its forearm and each forearm's onto its hand for the skinning
   only, just before `vrm.update`, and puts them back after: no joint moves,
   and the wrist takes the whole roll cleanly.
+- A bent elbow's notch (same evening, owner: "the notch lines at the elbows
+  are still there", on Gishin's wave). This one is not the roll: bent 125°,
+  the elbow shows it with or without `armRollsToWrist`, and hiding the
+  outline takes it away. It is MToon's inverted hull coming through where the
+  bent elbow folds her skin through itself, 2.5–4cm from the joint.
+  `elbowOutline.thinOutlinesAtElbows` tapers the outline to nothing within
+  3.5cm of each elbow (bind pose) and leaves it whole from 7cm; a taper from
+  1.5cm to 4cm left the notch and one from 2.5cm to 6cm left a dotted trace.
+- A clip over the idle pose (same evening, owner: "the wave pose is broken").
+  `waveWink` turns only her arms and hands. The idle pose was blended from
+  each bone's last value, which walks a bone no clip turns all the way to the
+  pose at any share, so over the hands-behind pose she waved with its
+  shoulders swung back 20° and its fist. `idlePose.writeIdlePose` eases such a
+  bone from the rest the clips were made on (arms down, the rest at
+  identity). Of the other clips, nine turn 51–53 bones, shoulders and
+  fingers included, and are unaffected; `idleLoop` turns 22, none of them
+  fingers, so under it her fingers now ease straight as they did before the
+  idle poses (2026-09-30 morning) instead of holding the idle pose's curl.
