@@ -250,8 +250,9 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   dance: { placements: ['waistUp', 'column'], showsPalm: true },
   // Gishin's wave and wink, from the owner's screenshot of her (2026-09-28):
   // right hand up beside her face, palm out, a small wave, her right eye shut
-  // in a smile. Authored, not captured: scripts/avatar/author-wave.ts writes
-  // the file, and gishinWave.test.ts holds the served file to its output. The
+  // in a smile. Made from peaceSign's mocap (since 2026-10-01): its raise and
+  // hold, with the wave laid over the hand. vtuber-kit's author-wave.ts writes
+  // the file, and its gishinWave.test.ts holds this file to that output. The
   // wink is a track in the clip on her custom `Wink` expression, so it rises
   // and falls with the arm and fades with the clip's own weight.
   waveWink: {
