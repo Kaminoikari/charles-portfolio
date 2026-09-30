@@ -355,6 +355,26 @@ describe('blendPoses', () => {
     expect(idlePoseNow({ current: 'behind', from: null, blend: 1, hold: 18 }, poses)).toBe(poses.behind)
   })
 
+  it("swings each upper arm out about the body's own axis, whatever the collarbone is doing", () => {
+    // The lift is written on a rotation local to the collarbone, which is
+    // turned back up to 15° mid-fade. Seen in the model frame it must be
+    // exactly the lift about the arm's out-swing axis; an angle alone cannot
+    // tell which axis it turned about.
+    const { rig } = looks[0]
+    const poses = solveIdlePoses({ version: rig.version, rest: (b: string) => rig.restPosition[b] })
+    const s = 0.3
+    const now = idlePoseNow({ current: 'behind', from: 'open', blend: s, hold: 18 }, poses)
+    const plain = blendPoses(poses.open, poses.behind, s, poses.rollAxes)
+    for (const [bone, axis] of poses.arcAxes) {
+      const collar = now.get(bone.replace('UpperArm', 'Shoulder'))!
+      const got = collar.clone().multiply(now.get(bone)!)
+      const want = new THREE.Quaternion()
+        .setFromAxisAngle(axis, THREE.MathUtils.degToRad(IDLE_POSE_ARC.deg * Math.sin(Math.PI * s)))
+        .multiply(collar.clone().multiply(plain.get(bone)!))
+      expect(THREE.MathUtils.radToDeg(got.angleTo(want)), bone).toBeLessThan(0.01)
+    }
+  })
+
   it('keeps the elbow a hinge part way, where a whole-bone slerp bends it sideways', () => {
     // The premise of rollAxes, on the solver's own rotations: without it the
     // forearm leaves its hinge plane mid-fade.

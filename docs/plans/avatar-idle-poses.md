@@ -138,7 +138,7 @@ show this.
   elbow angle the tests read then counted a backwards elbow as a bent one.
   `rigProbe.probeArmJoints` now reads each joint in its parent's frame and
   the tests hold every look to human ranges: elbow 0–150° and within the
-  carrying angle, shoulder and forearm rotation within 90°, no wrist roll.
+  carrying angle, shoulder and forearm rotation within 90°, wrist roll within 10°.
   Measured: elbows 61–74°, shoulder rotation 69–85°, forearm roll 80–85°,
   wrist roll at most 5.4°.
 - The crossfade keeps the elbows jointed too: each forearm's bend and roll
@@ -148,7 +148,7 @@ show this.
 - Owner's notes on the way, each now a test in `idlePose.test.ts`:
   "the arms behind are too straight" (elbows were 32–49°, now 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood
-  5–15cm past the shoulder joints and read as hands on hips; they now bend
+  5–15cm past the shoulder joints and read as hands on hips; they now point
   back, the collarbones swing back 15°, and every elbow stands 6–34mm
   inside its shoulder joint; the test allows 3cm past it).
 - Clipping is measured against capsules inscribed in the torso and thigh
