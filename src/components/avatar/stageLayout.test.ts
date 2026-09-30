@@ -8,6 +8,7 @@ import { AVATAR_FOV } from '../chat/avatarMode'
 import { motionFrame } from '../chat/avatarMotions'
 import { OFFERED_VARIANTS, familyOf } from '../chat/avatarVariants'
 import {
+  BACKDROP_HEIGHT,
   FEET_Y,
   HEAD_AIR,
   HUD_CROWN_ROW,
@@ -147,5 +148,19 @@ describe('the stage placement', () => {
     // The widget's frames pan up to 0.28m to follow a clip; on the stage that
     // would lift her feet off the bottom of the band stageFraming fits.
     expect(motionFrame('stage')).toBeNull()
+  })
+})
+
+describe('the backdrop on a phone', () => {
+  // A 16:9 picture covering a box shows box width / (box height x 16/9) of
+  // its own width. The owner found the full-height cover too close
+  // (2026-09-30); the character select keeps it.
+  const shown = (w: number, h: number, share: number) => w / (h * share * (16 / 9))
+  it('shows more of the scene than covering the whole screen would', () => {
+    expect(shown(390, 844, BACKDROP_HEIGHT.hud)).toBeGreaterThan(0.3)
+    expect(shown(390, 844, 1)).toBeLessThan(0.27)
+  })
+  it('keeps the whole height on the character select', () => {
+    expect(BACKDROP_HEIGHT.select).toBe(1)
   })
 })

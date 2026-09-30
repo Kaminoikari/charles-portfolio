@@ -45,7 +45,7 @@ import {
   type StageSceneId,
   type StageTab,
 } from './stageContent'
-import { STAGE_PATH, hudFraming, stageFraming, stageLayout } from './stageLayout'
+import { BACKDROP_HEIGHT, STAGE_PATH, hudFraming, stageFraming, stageLayout } from './stageLayout'
 
 /** Widths of the character select's two panels, px. */
 const ROSTER_W = 380
@@ -240,22 +240,19 @@ export default function AvatarStagePage() {
       />
       {visited.flatMap((id) => {
         const { lights, focusX } = sceneById(id)
-        return lights.map((l) =>
-          l.video ? (
-            <SceneClip key={l.src} poster={l.src} video={l.video} focusX={focusX} on={l.src === light?.src} />
-          ) : (
-            <div
-              key={l.src}
-              aria-hidden="true"
-              className="absolute inset-0 bg-cover transition-opacity duration-700"
-              style={{
-                backgroundImage: `url(${l.src})`,
-                backgroundPosition: `${focusX}% 70%`,
-                opacity: l.src === light?.src ? 1 : 0,
-              }}
-            />
-          ),
-        )
+        return lights.map((l) => (
+          <SceneLayer key={l.src} poster={l.src} focusX={focusX} on={l.src === light?.src} height={BACKDROP_HEIGHT[layout]}>
+            {l.video ? (
+              <SceneClip poster={l.src} video={l.video} focusX={focusX} on={l.src === light?.src} />
+            ) : (
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-cover"
+                style={{ backgroundImage: `url(${l.src})`, backgroundPosition: `${focusX}% 70%` }}
+              />
+            )}
+          </SceneLayer>
+        ))
       })}
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/25" />
 
@@ -338,6 +335,44 @@ export default function AvatarStagePage() {
   )
 }
 
+/**
+ * One backdrop: the picture covering the bottom `height` of the stage, and
+ * above it the same picture blurred and dimmed, faded into it, so a phone sees
+ * more of the scene without a bare band over it (BACKDROP_HEIGHT). At height 1
+ * the blurred copy is hidden behind the picture.
+ */
+function SceneLayer({
+  poster,
+  focusX,
+  on,
+  height,
+  children,
+}: {
+  poster: string
+  focusX: number
+  on: boolean
+  height: number
+  children: React.ReactNode
+}) {
+  const fade = height < 1 ? 'linear-gradient(to bottom, transparent, #000 18%)' : undefined
+  return (
+    <div aria-hidden="true" className="absolute inset-0 transition-opacity duration-700" style={{ opacity: on ? 1 : 0 }}>
+      {height < 1 ? (
+        <div
+          className="absolute inset-0 scale-110 bg-cover"
+          style={{ backgroundImage: `url(${poster})`, backgroundPosition: `${focusX}% 30%`, filter: 'blur(24px) brightness(0.7)' }}
+        />
+      ) : null}
+      <div
+        className="absolute inset-x-0 bottom-0"
+        style={{ height: `${height * 100}%`, maskImage: fade, WebkitMaskImage: fade }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 /** How long a scene's crossfade runs; a clip fading out keeps playing until it is gone. */
 const SCENE_FADE_MS = 700
 
@@ -374,8 +409,8 @@ function SceneClip({ poster, video, focusX, on }: { poster: string; video: strin
       loop
       playsInline
       preload={still ? 'none' : on ? 'auto' : 'metadata'}
-      className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
-      style={{ objectPosition: `${focusX}% 70%`, opacity: on ? 1 : 0 }}
+      className="absolute inset-0 h-full w-full object-cover"
+      style={{ objectPosition: `${focusX}% 70%` }}
     />
   )
 }

@@ -33,6 +33,20 @@ export function stageLayout(viewportWidth: number): StageLayout {
 }
 
 /**
+ * How much of the screen's height the sharp backdrop takes, from the bottom,
+ * per layout; above it a blurred copy of the same picture fills in.
+ *
+ * The backdrops are 16:9 and cover the stage. On a phone held upright that
+ * crops them to about a quarter of their width, the picture scaled to the
+ * screen's full height: the owner, 2026-09-30, "the background looks too
+ * close, so she looks too tall against it". Covering a box 0.8 of the
+ * screen's height shows a third of the width instead (26% to 32% on a
+ * 390x844 phone). The character select's band is wide enough to keep the
+ * whole picture at full height.
+ */
+export const BACKDROP_HEIGHT: Record<StageLayout, number> = { hud: 0.8, select: 1 }
+
+/**
  * Air over the resting crown, in metres. A standing figure with no room over
  * its hair reads as cropped even when nothing is; 6cm is roughly a hand's
  * breadth on a 1.58m figure.
