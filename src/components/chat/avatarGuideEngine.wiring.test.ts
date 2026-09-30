@@ -249,9 +249,9 @@ describe('she stands on the floor', () => {
   it('sways from the waist up and never turns the hips or a leg', () => {
     // Every leg is a child of the hips, so a roll on the hips swings both feet
     // across the floor with it. Until 2026-09-30 the idle weight shift was
-    // exactly that, a hips roll: on the milfy body her feet slid 30.4mm side
-    // to side while her head moved 28.9mm, so the whole figure drifted as one
-    // piece and read as floating. The sway lives on the spine now, where it
+    // exactly that, a hips roll: on the pink look /avatar opens with, her feet
+    // slid 30.4mm side to side while her head moved 28.9mm, so the whole figure
+    // drifted as one piece and read as floating. The sway lives on the spine now, where it
     // moves her head and leaves her feet where they stand.
     const body = frameBody()
     expect(body).not.toMatch(/hips\.rotation\.\w+\s*=/)

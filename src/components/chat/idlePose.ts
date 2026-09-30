@@ -622,7 +622,7 @@ export function idlePoseNow(s: IdlePoseState, poses: IdlePoses): PoseRotations {
 
 // ---- the life in her hands ------------------------------------------------------
 //
-// The plan's life layer: breathing, the weight shift and the idle beats move
+// The plan's life layer: breathing, the upper-body sway and the idle beats move
 // her body, and this keeps the fingers from standing like a mannequin's. Each
 // finger's base joint curls and uncurls a few degrees on its own slow period.
 

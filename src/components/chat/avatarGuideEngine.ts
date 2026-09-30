@@ -16,7 +16,7 @@
 //     speaking falls back to the original uneven random viseme loop
 //   - emotion layer: VRM expression presets per cue, smooth in/hold/out
 //   - gestures: procedural bow/nod, additive over the mode pose
-//   - life: breathing, slow weight shift, eye saccades, 12% double blinks
+//   - life: breathing, slow upper-body sway, eye saccades, 12% double blinks
 //
 // Perception & idle life (Batch 3, rebuilt 2026-08-19):
 //   - head-pat: AvatarGuide detects a tap on her head, or a mouse stroke
@@ -1077,7 +1077,7 @@ export function initAvatarGuide(
   // The arm half of her performance is motion capture now (see avatarMotions.ts
   // for why, and rigProbe.ts for what keeps it honest). A clip drives the
   // humanoid bones through an AnimationMixer, so while one is running the
-  // procedural writes to head/neck/spine/chest/hips have to stand down or they
+  // procedural writes to head/neck/spine/chest have to stand down or they
   // fight the capture for the same bones. Expressions are a separate channel
   // and keep running throughout: she still blinks, lip-syncs and emotes mid-clip.
   let mixer: THREE.AnimationMixer | null = null
@@ -1093,7 +1093,7 @@ export function initAvatarGuide(
   const motionSources = new Map<AvatarMotionName, VRMAnimation>()
   let motionsRequested = false
   // Where the hips sit at rest. A clip animates hips POSITION, and the
-  // procedural layer only ever writes hips rotation, so without restoring this
+  // procedural layer never writes the hips at all, so without restoring this
   // by hand she would keep whatever offset the clip ended on for the life of
   // the page.
   const restHips = new THREE.Vector3()
