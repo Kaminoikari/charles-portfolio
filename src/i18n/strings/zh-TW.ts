@@ -219,7 +219,6 @@ const zhTW: Strings = {
       'beach-shop': '海邊小店',
       'blue-cafe': '藍色咖啡廳',
       library: '圖書館',
-      none: '無背景',
     },
     lightsAriaLabel: '時段',
     lights: { day: '白天', sunset: '黃昏', night: '夜晚', 'night-lit': '夜晚・開燈' },

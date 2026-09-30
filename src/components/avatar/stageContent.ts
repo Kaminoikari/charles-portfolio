@@ -65,7 +65,6 @@ export type StageSceneId =
   | 'beach-shop'
   | 'blue-cafe'
   | 'library'
-  | 'none'
 
 /**
  * The times of day a backdrop can be painted at. A scene may come in several,
@@ -88,7 +87,7 @@ export interface StageLight {
 
 export interface StageScene {
   id: StageSceneId
-  /** Empty for `none`, the page's own dark ground. */
+  /** At least one: every scene she can stand in has a picture. */
   lights: readonly StageLight[]
   /**
    * Horizontal background-position, in percent, for a screen narrower than
@@ -143,7 +142,6 @@ export const STAGE_SCENES: readonly StageScene[] = [
   { id: 'beach-shop', lights: clip('beach-shop', 'day'), focusX: 45 },
   { id: 'blue-cafe', lights: clip('blue-cafe', 'day'), focusX: 50 },
   { id: 'library', lights: lit('library', 'night-lit'), focusX: 45 },
-  { id: 'none', lights: [], focusX: 50 },
 ]
 
 export const DEFAULT_SCENE: StageSceneId = 'old-house'

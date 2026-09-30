@@ -222,7 +222,6 @@ const ja: Strings = {
       'beach-shop': '海辺のお店',
       'blue-cafe': '青いカフェ',
       library: '図書館',
-      none: 'なし',
     },
     lightsAriaLabel: '時間帯',
     lights: { day: '昼', sunset: '夕方', night: '夜', 'night-lit': '夜・点灯' },

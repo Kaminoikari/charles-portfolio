@@ -123,7 +123,6 @@ interface Strings {
       'beach-shop': string
       'blue-cafe': string
       library: string
-      none: string
     }
     lightsAriaLabel: string
     lights: { day: string; sunset: string; night: string; 'night-lit': string }
@@ -346,7 +345,6 @@ const en: Strings = {
       'beach-shop': 'Beachside shop',
       'blue-cafe': 'Blue café',
       library: 'Library',
-      none: 'None',
     },
     lightsAriaLabel: 'Time of day',
     lights: { day: 'Day', sunset: 'Sunset', night: 'Night', 'night-lit': 'Night, lights on' },

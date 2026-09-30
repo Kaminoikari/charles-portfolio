@@ -111,8 +111,8 @@ describe('stage assets', () => {
       expect(s.focusX, s.id).toBeGreaterThanOrEqual(0)
       expect(s.focusX, s.id).toBeLessThanOrEqual(100)
     }
-    // Only `none` goes without a picture.
-    expect(STAGE_SCENES.filter((s) => s.lights.length === 0).map((s) => s.id)).toEqual(['none'])
+    // Every scene has a picture: the bare dark ground was dropped on 2026-09-30.
+    expect(STAGE_SCENES.filter((s) => s.lights.length === 0).map((s) => s.id)).toEqual([])
   })
 
   it('ships no picture it does not list', () => {
@@ -161,7 +161,6 @@ describe('sceneLight', () => {
   it("falls back to the scene's own picture where it does not", () => {
     expect(sceneLight(relit, 'sunset')?.id).toBe('day')
     expect(sceneLight(sceneById('library'), 'day')?.id).toBe('night-lit')
-    expect(sceneLight(sceneById('none'), 'day')).toBeNull()
   })
 
   it('has a figure filter for every time of day', () => {
