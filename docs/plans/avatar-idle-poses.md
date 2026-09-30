@@ -125,8 +125,9 @@ show this.
   positions and VRM version. The engine solves them at load; `rigProbe`
   applies the same solver, so the tests measure what the engine draws.
 - Both arms of the clasp are placed by two-bone IK. The held wrist sits
-  behind the hips (across and back scaled by hip width); its height is
-  whatever bends the held elbow to 65°, so long-armed bodies clasp lower.
+  behind the hips, across by hip width and 4cm behind her surface (at most
+  1.5 hip widths back; see "The clasp rests on her" below); its height is
+  whatever bends the held elbow to 40°, so long-armed bodies clasp lower.
   The holding hand takes the held wrist from her side of it, palm back,
   its palm 25mm in front of the wrist on every offered body.
 - The arms are jointed the way arms are (`hinged` in `idlePose.ts`): the
@@ -172,8 +173,8 @@ show this.
   "the arms behind are too straight" (elbows were 32–49°, then 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood
   5–15cm past the shoulder joints and read as hands on hips; they now point
-  back, and every elbow stands 22–59mm inside its shoulder joint; the test
-  allows 3cm past it). The clasp resting on her (above) brought the elbows
+  back, and every elbow stood 22–59mm inside its shoulder joint, measured
+  before the clasp moved; the test allows 3cm past it). The clasp resting on her (above) brought the elbows
   back to 36–54°, the owner's choice once the upper arms stopped reaching.
 - Clipping is measured against capsules inscribed in the torso and thigh
   skin (`rigProbe.torsoCapsules`). A first try counted ray crossings, and
