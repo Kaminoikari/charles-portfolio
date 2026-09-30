@@ -97,6 +97,7 @@ interface Strings {
     metaTitle: string; metaDescription: string
     selectTitle: string; selectedLabel: string
     tabsAriaLabel: string
+    hideControls: string; showControls: string; controlsLabel: string
     tabs: { looks: string; motions: string; expressions: string; scenes: string }
     expressions: {
       happy: string; relaxed: string; nagomi: string; surprised: string
@@ -290,6 +291,9 @@ const en: Strings = {
     selectTitle: 'SELECT CHARACTER',
     selectedLabel: 'On stage',
     tabsAriaLabel: 'Stage controls',
+    hideControls: 'Hide controls',
+    showControls: 'Show controls',
+    controlsLabel: 'Menu',
     tabs: { looks: 'Look', motions: 'Motion', expressions: 'Expression', scenes: 'Scene' },
     expressions: {
       happy: 'Happy',

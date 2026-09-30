@@ -182,6 +182,9 @@ const zhTW: Strings = {
     selectTitle: 'SELECT CHARACTER',
     selectedLabel: '登場中',
     tabsAriaLabel: '舞台控制',
+    hideControls: '隱藏選單',
+    showControls: '顯示選單',
+    controlsLabel: '選單',
     tabs: { looks: '造型', motions: '動作', expressions: '表情', scenes: '場景' },
     expressions: {
       happy: '開心',

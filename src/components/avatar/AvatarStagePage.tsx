@@ -30,6 +30,7 @@ import {
 import { initialVariantId, rememberVariant } from '../chat/avatarVariantChoice'
 import { useDocumentMeta } from '../../i18n/useDocumentMeta'
 import { useT } from '../../i18n/useT'
+import { HudDock } from './HudDock'
 import { ExpressionPicker, LookPicker, MotionPicker, ScenePicker } from './StageControls'
 import {
   DEFAULT_LIGHT,
@@ -37,7 +38,6 @@ import {
   EXPRESSION_HOLD_SEC,
   FIGURE_LIGHT,
   STAGE_SCENES,
-  STAGE_TABS,
   expressionsFor,
   sceneById,
   sceneLight,
@@ -179,6 +179,8 @@ export default function AvatarStagePage() {
     setVisited((v) => (v.includes(id) ? v : [...v, id]))
   }
   const [tab, setTab] = useState<StageTab>('looks')
+  // The dock covers her legs at the reference framing; a visitor can put it away.
+  const [dockHidden, setDockHidden] = useState(false)
 
   // Phones frame her at the reference's size, legs running on under the dock;
   // the character select fits her whole between the panels.
@@ -320,7 +322,7 @@ export default function AvatarStagePage() {
       ) : null}
 
       {layout === 'hud' ? (
-        <HudDock tab={tab} onTab={setTab} pickers={pickers('row')} />
+        <HudDock tab={tab} onTab={setTab} pickers={pickers('row')} hidden={dockHidden} onHidden={setDockHidden} />
       ) : (
         <SelectPanels
           navH={navH}
@@ -329,48 +331,6 @@ export default function AvatarStagePage() {
         />
       )}
     </main>
-  )
-}
-
-// Layout A. A tab row over one picker row, glass over the stage, under a thumb.
-function HudDock({
-  tab,
-  onTab,
-  pickers,
-}: {
-  tab: StageTab
-  onTab: (tab: StageTab) => void
-  pickers: Record<StageTab, React.ReactNode>
-}) {
-  const t = useT()
-  return (
-    <div
-      className="absolute inset-x-0 bottom-0 border-t border-white/10 bg-black/55 pt-2 backdrop-blur-md"
-      style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
-    >
-      <div role="tablist" aria-label={t('stage.tabsAriaLabel')} className="mx-3 mb-2 grid grid-cols-4 gap-1 rounded-full bg-white/5 p-1">
-        {STAGE_TABS.map((id) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`stage-tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls="stage-tabpanel"
-            onClick={() => onTab(id)}
-            className={
-              'min-h-[36px] cursor-pointer rounded-full text-[13px] transition-colors ' +
-              (tab === id ? 'bg-white/15 text-white' : 'text-white/55 hover:text-white')
-            }
-          >
-            {t(`stage.tabs.${id}`)}
-          </button>
-        ))}
-      </div>
-      <div id="stage-tabpanel" role="tabpanel" aria-labelledby={`stage-tab-${tab}`} className="flex min-h-[96px] items-center">
-        <div className="w-full">{pickers[tab]}</div>
-      </div>
-    </div>
   )
 }
 

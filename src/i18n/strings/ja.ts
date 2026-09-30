@@ -185,6 +185,9 @@ const ja: Strings = {
     selectTitle: 'SELECT CHARACTER',
     selectedLabel: '出演中',
     tabsAriaLabel: 'ステージ操作',
+    hideControls: 'メニューを隠す',
+    showControls: 'メニューを表示',
+    controlsLabel: 'メニュー',
     tabs: { looks: 'ルック', motions: 'モーション', expressions: '表情', scenes: 'シーン' },
     expressions: {
       happy: '喜び',
