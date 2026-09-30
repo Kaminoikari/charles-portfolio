@@ -172,7 +172,7 @@ describe('a clip taking the bones over from one still playing', () => {
 })
 
 describe('the idle pose under a clip that does not turn every bone', () => {
-  // waveWink turns only the arms. Played while peaceSign (which turns the
+  // The waveWink of 2026-09-30 turned only the arms. Played while peaceSign (which turns the
   // shoulders too) still held her, the shoulders were handed back by the
   // mixer itself when peaceSign let go: restoreOriginalState puts back what
   // they were when peaceSign started, the idle pose's shoulders swung back,

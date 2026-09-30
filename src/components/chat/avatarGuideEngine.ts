@@ -593,7 +593,7 @@ export function takeOverMotion(
  * and it fills whatever weight its clips leave with that memory, down to
  * restoring it outright when the last clip holding the bone lets go.
  * Remembering the idle pose meant that a clip taken over by one that does not
- * turn some bone (waveWink turns only the arms) faded that bone back to the
+ * turn some bone (the arms-only waveWink of 2026-09-30) faded that bone back to the
  * idle pose the old clip started from: over the hands-behind pose, the
  * shoulders swung back and the grip. Remembering rest, it fades to rest,
  * which is where poseUnderClips then keeps it. The bones go back because the

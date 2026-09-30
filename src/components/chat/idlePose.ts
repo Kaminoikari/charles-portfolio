@@ -702,9 +702,9 @@ function swingTwist(q: THREE.Quaternion, axis: THREE.Vector3): [THREE.Quaternion
  * drives is blended from where the clip put it this frame. A bone no clip
  * drives has only last frame's value under it, and blending from that walks it
  * all the way to the pose at any share, so it is blended from its rest instead
- * (`rest`, identity where absent), the pose the clips were made on. waveWink
- * drives her arms and hands and nothing else; over the hands-behind pose it
- * waved with her shoulders swung back and the holding hand's fist (2026-09-30).
+ * (`rest`, identity where absent), the pose the clips were made on. The
+ * waveWink of 2026-09-30 drove her arms and hands and nothing else; over the
+ * hands-behind pose it waved with her shoulders swung back and the holding hand's fist (2026-09-30).
  */
 export function writeIdlePose(
   bone: (name: string) => THREE.Object3D | null | undefined,

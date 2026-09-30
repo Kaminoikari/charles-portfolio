@@ -230,8 +230,9 @@ show this.
   3.5cm of each elbow (bind pose) and leaves it whole from 7cm; a taper from
   1.5cm to 4cm left the notch and one from 2.5cm to 6cm left a dotted trace.
 - A clip over the idle pose (same evening, owner: "the wave pose is broken").
-  `waveWink` turns only her arms and hands, and over the hands-behind pose she
-  waved with its shoulders swung back 20° and its fist, by two routes. The
+  `waveWink` then turned only her arms and hands (it is cut from the peace
+  sign's mocap since 2026-10-01), and over the hands-behind pose she waved
+  with its shoulders swung back 20° and its fist, by two routes. The
   idle pose was blended from each bone's last value, which walks a bone no
   clip turns all the way to the pose at any share; and when the wave took
   over from a clip that did turn the shoulders, the mixer filled the weight

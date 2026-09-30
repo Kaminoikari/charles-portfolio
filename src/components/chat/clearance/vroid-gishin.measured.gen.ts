@@ -10,7 +10,7 @@ export const MEASURED: ClearanceMeasured = {
   "family": "vroid-gishin",
   "rigSha": "df0054aa866f68a8b95510bad358a5d43bced092ee396e35415068614d29b1ba",
   "measuredOn": "/avatar/gishin-2.vrm",
-  "producedBy": "afc79f2",
+  "producedBy": "a3ac1a0",
   "faceBox": {
     "min": [
       -0.1029,
@@ -158,16 +158,16 @@ export const MEASURED: ClearanceMeasured = {
     },
     "waveWink": {
       "reach": {
-        "left": 0.3659,
-        "right": 0.2819
+        "left": 0.6377,
+        "right": 0.4956
       },
-      "skinTop": 1.4181,
-      "hipsLow": 0.8952,
-      "faceRatio": 3.2636,
-      "faceRatioAt": 1.6,
-      "endSink": 0,
-      "hipsDrift": 0,
-      "endWrist": 0.8502
+      "skinTop": 1.4664,
+      "hipsLow": 0.8403,
+      "faceRatio": 1.1468,
+      "faceRatioAt": 2.05,
+      "endSink": 0.0368,
+      "hipsDrift": 0.0145,
+      "endWrist": 0.8062
     }
   }
 }

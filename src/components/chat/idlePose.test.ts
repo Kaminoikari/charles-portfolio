@@ -622,7 +622,9 @@ describe('the arm rolls go to the wrist', () => {
 })
 
 describe('the idle pose under a clip', () => {
-  // waveWink drives her arms and hands and nothing else. Blended from last
+  // waveWink drove her arms and hands and nothing else (until 2026-10-01, when
+  // it was cut from the peace sign's mocap; idleLoop still leaves the fingers
+  // to the pose). Blended from last
   // frame's value, a shoulder or finger no clip writes walks all the way to the
   // pose at any share, so she waved with the hands-behind pose's shoulders
   // swung back and its fist (2026-09-30).
