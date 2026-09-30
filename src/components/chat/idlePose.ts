@@ -694,6 +694,55 @@ function swingTwist(q: THREE.Quaternion, axis: THREE.Vector3): [THREE.Quaternion
   return [q.clone().multiply(roll.clone().invert()), roll]
 }
 
+/**
+ * Writes `pose` on the bones, `share` of the way from what is under it: 1 is
+ * the pose outright, less lets the clips keep the rest of her. A bone a clip
+ * drives is blended from where the clip put it this frame. A bone no clip
+ * drives has only last frame's value under it, and blending from that walks it
+ * all the way to the pose at any share, so it is blended from its rest instead
+ * (`rest`, identity where absent), the pose the clips were made on. waveWink
+ * drives her arms and hands and nothing else; over the hands-behind pose it
+ * waved with her shoulders swung back and the holding hand's fist (2026-09-30).
+ */
+export function writeIdlePose(
+  bone: (name: string) => THREE.Object3D | null | undefined,
+  pose: PoseRotations,
+  share: number,
+  driven: (node: THREE.Object3D) => boolean,
+  rest: PoseRotations,
+): void {
+  for (const [name, q] of pose) {
+    const b = bone(name)
+    if (!b) continue
+    if (share >= 1) {
+      b.quaternion.copy(q)
+      continue
+    }
+    if (!driven(b)) {
+      const r = rest.get(name)
+      if (r) b.quaternion.copy(r)
+      else b.quaternion.identity()
+    }
+    b.quaternion.slerp(q, share)
+  }
+}
+
+/**
+ * Whether any of `clips` turns a node, read off their track names. Only
+ * rotations count, the one thing the idle pose writes: a hips position track
+ * leaves the hips' turn to the pose.
+ */
+export function clipDriven(clips: readonly THREE.AnimationClip[]): (node: THREE.Object3D) => boolean {
+  const names = new Set<string>()
+  for (const clip of clips) {
+    for (const track of clip.tracks) {
+      const { nodeName, propertyName } = THREE.PropertyBinding.parseTrackName(track.name)
+      if (propertyName === 'quaternion') names.add(nodeName)
+    }
+  }
+  return (node) => names.has(node.name)
+}
+
 // ---- which pose, when ----------------------------------------------------------
 //
 // On /avatar (the `stage` placement) she alternates between the two poses on

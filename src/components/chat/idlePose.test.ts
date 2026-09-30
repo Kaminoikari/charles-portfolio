@@ -9,6 +9,7 @@ import {
   armRollsToWrist,
   blendPoses,
   CLASP_BEHIND,
+  clipDriven,
   FINGER_DRIFT,
   fingerDrift,
   holdingHandFree,
@@ -19,6 +20,7 @@ import {
   solveIdlePose,
   solveIdlePoses,
   stepIdlePose,
+  writeIdlePose,
   type IdlePoseName,
   type IdlePoseState,
 } from './idlePose'
@@ -616,5 +618,68 @@ describe('the arm rolls go to the wrist', () => {
     ;(['left', 'right'] as const).forEach((s, i) => {
       parts.forEach((k, j) => expect(sides[s][k].quaternion.equals(before[i][j].q)).toBe(true))
     })
+  })
+})
+
+describe('the idle pose under a clip', () => {
+  // waveWink drives her arms and hands and nothing else. Blended from last
+  // frame's value, a shoulder or finger no clip writes walks all the way to the
+  // pose at any share, so she waved with the hands-behind pose's shoulders
+  // swung back and its fist (2026-09-30).
+  const about = (deg: number, axis = new THREE.Vector3(0, 0, 1)) =>
+    new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(deg))
+  const rig = () => {
+    const bones = new Map(['leftUpperArm', 'leftShoulder', 'leftIndexProximal'].map((n) => {
+      const o = new THREE.Object3D()
+      o.name = `Normalized_${n}`
+      return [n, o] as const
+    }))
+    return { bones, bone: (n: string) => bones.get(n) }
+  }
+  const pose = new Map([
+    ['leftUpperArm', about(-60)],
+    ['leftShoulder', about(20, new THREE.Vector3(0, 1, 0))],
+    ['leftIndexProximal', about(80)],
+  ])
+  const rest = new Map([['leftUpperArm', about(-70)]])
+  const clipArm = about(40, new THREE.Vector3(1, 0, 0))
+
+  it('eases a bone no clip drives from its rest, not from where it was', () => {
+    const { bones, bone } = rig()
+    const driven = (node: THREE.Object3D) => node.name === 'Normalized_leftUpperArm'
+    for (let frame = 0; frame < 30; frame++) {
+      bones.get('leftUpperArm')!.quaternion.copy(clipArm) // the mixer's write
+      writeIdlePose(bone, pose, 0.2, driven, rest)
+    }
+    const at = (n: string) => bones.get(n)!.quaternion
+    expect(at('leftIndexProximal').angleTo(new THREE.Quaternion().slerp(pose.get('leftIndexProximal')!, 0.2))).toBeLessThan(1e-6)
+    expect(at('leftShoulder').angleTo(new THREE.Quaternion().slerp(pose.get('leftShoulder')!, 0.2))).toBeLessThan(1e-6)
+    expect(at('leftUpperArm').angleTo(clipArm.clone().slerp(pose.get('leftUpperArm')!, 0.2))).toBeLessThan(1e-6)
+  })
+
+  it('takes an undriven bone from its own rest where it has one', () => {
+    const { bones, bone } = rig()
+    bones.get('leftUpperArm')!.quaternion.copy(about(10))
+    writeIdlePose(bone, pose, 0.25, () => false, rest)
+    const want = rest.get('leftUpperArm')!.clone().slerp(pose.get('leftUpperArm')!, 0.25)
+    expect(bones.get('leftUpperArm')!.quaternion.angleTo(want)).toBeLessThan(1e-6)
+  })
+
+  it('writes the pose outright when no clip holds her', () => {
+    const { bones, bone } = rig()
+    writeIdlePose(bone, pose, 1, () => false, rest)
+    for (const [n, q] of pose) expect(bones.get(n)!.quaternion.angleTo(q)).toBeLessThan(1e-6)
+  })
+
+  it('reads which nodes a clip drives off its tracks', () => {
+    const clip = new THREE.AnimationClip('wave', 1, [
+      new THREE.QuaternionKeyframeTrack('Normalized_leftUpperArm.quaternion', [0], [0, 0, 0, 1]),
+      new THREE.VectorKeyframeTrack('Normalized_hips.position', [0], [0, 0, 0]),
+    ])
+    const drives = clipDriven([clip])
+    const node = (name: string) => Object.assign(new THREE.Object3D(), { name })
+    expect(drives(node('Normalized_leftUpperArm'))).toBe(true)
+    expect(drives(node('Normalized_hips'))).toBe(false)
+    expect(drives(node('Normalized_leftShoulder'))).toBe(false)
   })
 })

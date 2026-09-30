@@ -229,7 +229,7 @@ describe('the idle poses', () => {
 
   it('hands the arms back on the procedural share, fingers included', () => {
     expect(frameBody()).toMatch(/const share = 1 - clipShare\(motionAction, outgoing\)/)
-    expect(frameBody()).toMatch(/if \(share > 0\.001\) \{\s*writePose\(vrm, idlePoseNow\(poseState, poses\), share\)/)
+    expect(frameBody()).toMatch(/if \(share > 0\.001\) \{\s*const clips = [^\n]*\n[^\n]*\n\s*writePose\(vrm, idlePoseNow\(poseState, poses\), share, /)
   })
 
   it('drifts the fingers on the same share, and keeps the grip closed', () => {
@@ -266,6 +266,25 @@ describe('her shoulders and elbows keep their skin smooth', () => {
     expect(frameBody()).toMatch(
       /const unroll = armRollsToWrist\(\(bone\) => h\.getNormalizedBoneNode\(bone as BoneName\)\)\s*\n\s*vrm\.update\(dt\)[^\n]*\n\s*unroll\(\)/,
     )
+  })
+})
+
+describe('her elbows keep their outline clean', () => {
+  it('thins the outline at the elbows of every body it installs, after the skeletons are combined', () => {
+    // elbowOutline.test.ts proves the thinning; only this line puts it on her.
+    expect(SOURCE).toMatch(/VRMUtils\.combineSkeletons\(loaded\.scene\)[\s\S]*?thinOutlinesAtElbows\(loaded\)\s*\n\s*scene\.add\(loaded\.scene\)/)
+  })
+})
+
+describe('a clip that leaves bones to the idle pose', () => {
+  it('tells the pose which bones the playing and fading clips turn', () => {
+    // idlePose.test.ts proves the writer eases an undriven bone from its rest;
+    // only this line tells it which bones are undriven. Without it every bone
+    // counts as driven, and waveWink waves with the idle pose's fist.
+    const body = frameBody()
+    expect(body).toMatch(/const clips = outgoing\.map\(\(out\) => out\.action\.getClip\(\)\)\s*\n\s*if \(motionAction\) clips\.push\(motionAction\.getClip\(\)\)/)
+    expect(body).toMatch(/writePose\(vrm, idlePoseNow\(poseState, poses\), share, clipDriven\(clips\)\)/)
+    expect(SOURCE).toMatch(/writeIdlePose\(\(name\) => v\.humanoid\?\.getNormalizedBoneNode\(name as BoneName\), pose, share, driven, clipRest\(v\)\)/)
   })
 })
 

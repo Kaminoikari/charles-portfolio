@@ -80,6 +80,7 @@ import {
 import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   armRollsToWrist,
+  clipDriven,
   fingerDrift,
   holdingHandFree,
   idlePoseNow,
@@ -92,9 +93,11 @@ import {
   type IdlePoses,
   type IdlePoseState,
   type PoseRotations,
+  writeIdlePose,
 } from './idlePose'
 import {
   aimPitchPose,
+  armRestPins,
   blinkMayStart,
   aimYawPose,
   facingSign,
@@ -115,6 +118,7 @@ import {
 import { sampleViseme } from './visemeTrack'
 import { VISEME_NAMES, type VisemeTrack } from './voiceVisemes.gen'
 import { restSprings } from './springRest'
+import { thinOutlinesAtElbows } from './elbowOutline'
 
 // The emotion vocabulary and its channel recipes live in avatarMode (pure data,
 // unit-tested); this re-export keeps the engine the import point for callers.
@@ -259,17 +263,26 @@ function trunkSurface(v: VRM, root: THREE.Object3D): Float32Array {
 }
 
 /**
- * Writes `pose` on the normalized bones, `share` of the way from where they
- * are: 1 is the pose outright, and anything less lets a fading clip keep the
- * rest (see the frame loop).
+ * Writes `pose` on the normalized bones, `share` of it over what the clips
+ * leave: 1 is the pose outright, and anything less lets a fading clip keep the
+ * rest (see the frame loop). A bone no clip turns eases from the rest the
+ * clips were made on (idlePose.writeIdlePose).
  */
-function writePose(v: VRM, pose: PoseRotations, share = 1): void {
-  for (const [name, q] of pose) {
-    const b = v.humanoid?.getNormalizedBoneNode(name as BoneName)
-    if (!b) continue
-    if (share >= 1) b.quaternion.copy(q)
-    else b.quaternion.slerp(q, share)
+function writePose(v: VRM, pose: PoseRotations, share = 1, driven: (node: THREE.Object3D) => boolean = () => false): void {
+  writeIdlePose((name) => v.humanoid?.getNormalizedBoneNode(name as BoneName), pose, share, driven, clipRest(v))
+}
+
+// The rest the clips were made on: arms down (avatarMode.armRestPins),
+// everything else at identity. One map per body.
+const clipRests = new WeakMap<VRM, PoseRotations>()
+function clipRest(v: VRM): PoseRotations {
+  let rest = clipRests.get(v)
+  if (!rest) {
+    const z = new THREE.Vector3(0, 0, 1)
+    rest = new Map(armRestPins(v.meta.metaVersion).map(([bone, angle]) => [bone, new THREE.Quaternion().setFromAxisAngle(z, angle)]))
+    clipRests.set(v, rest)
   }
+  return rest
 }
 
 // ---- gesture / idle-act library --------------------------------------------
@@ -941,6 +954,8 @@ export function initAvatarGuide(
     // asymmetry is why rigProbe reads its forward sign off the version rather
     // than from a constant. Measured: evidence/family2-0907-space.log.
     VRMUtils.rotateVRM0(loaded)
+    // No black notch where a bent elbow folds her skin through itself (elbowOutline.ts).
+    thinOutlinesAtElbows(loaded)
     scene.add(loaded.scene)
     if (loaded.lookAt) loaded.lookAt.target = eyeTarget
     poses = solvePoses(loaded)
@@ -1497,7 +1512,9 @@ export function initAvatarGuide(
         const share = 1 - clipShare(motionAction, outgoing)
         poseState = stepIdlePose(poseState, dt, placement === 'stage', share < 1, Math.random)
         if (share > 0.001) {
-          writePose(vrm, idlePoseNow(poseState, poses), share)
+          const clips = outgoing.map((out) => out.action.getClip())
+          if (motionAction) clips.push(motionAction.getClip())
+          writePose(vrm, idlePoseNow(poseState, poses), share, clipDriven(clips))
           // The fingers' own drift, on top of the pose and on the same share.
           // The holding hand keeps its grip while it holds the other wrist.
           if (drift) {
