@@ -303,6 +303,44 @@ function twoBone(
 }
 
 /**
+ * An arm through `upper` and `fore` (the directions shoulder to elbow and
+ * elbow to wrist), built the way an arm is jointed, ending in the hand
+ * rotation `hand`.
+ *
+ * The elbow is a hinge that bends only toward the crook of the arm, which at
+ * rest faces forward (palms down). So the upper arm's roll is not free: it is
+ * whatever turns the crook toward the forearm. The forearm then swings about
+ * that hinge alone and rolls about its own length (pronation) as far as the
+ * hand needs, leaving the wrist to bend without twisting. 2026-09-30: built
+ * segment by segment from a guessed "palm normal" each, the behind-back pose
+ * bent both elbows about 60° backwards and rolled the left forearm 166°
+ * (the owner: "both arms would break").
+ */
+function hinged(
+  b: PoseBuilder,
+  side: Side,
+  upper: THREE.Vector3,
+  fore: THREE.Vector3,
+  hand: THREE.Quaternion,
+): Pick<ArmChain, 'upper' | 'lower' | 'hand'> {
+  const aU = b.axis(side, 'upper')
+  const aL = b.axis(side, 'lower')
+  const crook0 = b.ax.f.clone().addScaledVector(aU, -b.ax.f.dot(aU)).normalize()
+  const x = upper.clone().normalize()
+  const d = fore.clone().normalize()
+  // A straight arm has no crook to aim; any roll will do, so keep it forward.
+  const crook = d.clone().addScaledVector(x, -d.dot(x))
+  if (crook.lengthSq() < 1e-6) crook.copy(b.ax.f).addScaledVector(x, -b.ax.f.dot(x))
+  const qU = basisRotation(aU, crook0, x, crook)
+  const swung = new THREE.Quaternion().setFromUnitVectors(aL.clone().applyQuaternion(qU).normalize(), d).multiply(qU)
+  // The roll the hand asks of the wrist, handed to the forearm.
+  const rel = swung.clone().invert().multiply(hand)
+  const p = rel.x * aL.x + rel.y * aL.y + rel.z * aL.z
+  const roll = new THREE.Quaternion(aL.x * p, aL.y * p, aL.z * p, rel.w).normalize()
+  return { upper: qU, lower: swung.multiply(roll), hand }
+}
+
+/**
  * Where the clasp sits and how the elbows bend, in the body's own terms. The
  * clasp is placed against her hips and scaled by her hip width (the distance
  * between the two upper-leg joints), so a broader body clasps further out
@@ -310,7 +348,8 @@ function twoBone(
  *
  * - `across`: the held wrist's offset toward her left of the midline
  * - `flex`: how far the held elbow bends, in degrees; sets the clasp's height
- * - `back`: how far behind the hips joint it sits
+ * - `back`: how far behind the hips joint it sits. Far enough that the
+ *   holding hand, on the body side of the held wrist, clears her back.
  * - `pole`: how far back each elbow bends, against 1 straight out to the side.
  *   Mostly back: bent outward, the elbows stood 5–15cm past her shoulders
  *   and read from the front as hands on hips (owner, 2026-09-30: "the arms
@@ -322,8 +361,8 @@ function twoBone(
 export const CLASP = {
   across: 0.25,
   flex: 65,
-  back: 0.95,
-  pole: 4,
+  back: 1.2,
+  pole: 10,
   shoulderBack: 15,
   heldHand: [-0.35, 0.9, 0.1] as [number, number, number],
   holdingHand: [-0.8, 0.5, 0.15] as [number, number, number],
@@ -331,17 +370,18 @@ export const CLASP = {
 
 /** Where the palm's centre sits, as a fraction of the way from wrist to middle knuckle. */
 const PALM_CENTRE = 0.6
-/** How far behind the held wrist the holding palm closes: the wrist's own depth. */
+/** How far in front of the held wrist (on her side of it) the holding palm closes: the wrist's own depth. */
 export const CLASP_BEHIND = 0.025
 
 /**
  * Hands behind the back: the owner's second reference.
  *
  * Her left hand hangs relaxed against her lower back, palm back. Her right
- * hand holds it by the wrist, the way a person clasps their hands behind them:
- * its palm is placed CLASP_BEHIND behind the left wrist. Both arms are solved
- * by two-bone IK, the elbows bending back and held close to her sides, so
- * the pose is the same on a long-armed body and a short one.
+ * hand holds it by the wrist from her side of it, palm back too, the way a
+ * person clasps their hands behind them: its palm is placed CLASP_BEHIND in
+ * front of the left wrist. Both arms are placed by two-bone IK, the elbows
+ * bending back and held close to her sides, so the pose is the same on a
+ * long-armed body and a short one, and jointed by `hinged`.
  */
 function solveBehind(b: PoseBuilder): { error: number } {
   const { f } = b.ax
@@ -353,7 +393,7 @@ function solveBehind(b: PoseBuilder): { error: number } {
     new THREE.Quaternion().setFromAxisAngle(b.ax.u, rad(CLASP.shoulderBack) * (side === 'left' ? 1 : -1))
   const shoulderAt = (side: Side): THREE.Vector3 =>
     b.rest(`${side}Shoulder`).add(b.offset(`${side}Shoulder`, `${side}UpperArm`).applyQuaternion(collarOf(side)))
-  const place = (side: Side, wristTarget: THREE.Vector3, hand: THREE.Quaternion, normal: THREE.Vector3): { chain: ArmChain; error: number } => {
+  const place = (side: Side, wristTarget: THREE.Vector3, hand: THREE.Quaternion): { chain: ArmChain; error: number } => {
     const o = b.side(side)
     // The collarbone swings back, drawing the shoulder joint behind her the
     // way a person's does when they clasp their hands behind them; without it
@@ -364,13 +404,7 @@ function solveBehind(b: PoseBuilder): { error: number } {
     const foreLen = b.offset(`${side}LowerArm`, `${side}Hand`).length()
     const pole = o.clone().addScaledVector(back, CLASP.pole)
     const { elbow, wrist } = twoBone(shoulder, wristTarget, upperLen, foreLen, pole)
-    const chain: ArmChain = {
-      shoulder: collar,
-      upper: basisRotation(b.axis(side, 'upper'), b.palm0, elbow.clone().sub(shoulder), back.clone().addScaledVector(o, -0.3).negate()),
-      lower: basisRotation(b.axis(side, 'lower'), b.palm0, wrist.clone().sub(elbow), normal.clone().addScaledVector(o, -0.3)),
-      hand,
-    }
-    return { chain, error: wrist.distanceTo(wristTarget) }
+    return { chain: { shoulder: collar, ...hinged(b, side, elbow.clone().sub(shoulder), wrist.clone().sub(elbow), hand) }, error: wrist.distanceTo(wristTarget) }
   }
 
   // The held hand: palm back, hanging down and a little across.
@@ -390,20 +424,42 @@ function solveBehind(b: PoseBuilder): { error: number } {
     const drop = Math.sqrt(Math.max(0, reach * reach - level * level))
     wristL.addScaledVector(b.ax.u, -d.dot(b.ax.u) - drop)
   }
-  const held = place('left', wristL, heldHand, back)
+  const held = place('left', wristL, heldHand)
   b.arm('left', held.chain)
   b.fingers('left', HELD_GRIP)
 
-  // The holding hand points across toward her left and down, palm forward
-  // onto the other wrist.
+  // The holding hand points across toward her left and down and takes the
+  // other wrist from the body side, palm back, both palms facing away from
+  // her. Palm forward, closing over the wrist from outside, asked the right
+  // forearm to roll 107–110° past neutral, where a forearm stops at 80–90°.
   const oR = b.side('right')
-  const holdingHand = basisRotation(b.axis('right', 'hand'), b.palm0, mix(b.ax, oR, ...CLASP.holdingHand), f)
+  const holdingHand = basisRotation(b.axis('right', 'hand'), b.palm0, mix(b.ax, oR, ...CLASP.holdingHand), back)
   const palm = b.offset('rightHand', 'rightMiddleProximal').multiplyScalar(PALM_CENTRE).applyQuaternion(holdingHand)
-  const target = wristL.clone().addScaledVector(back, CLASP_BEHIND).sub(palm)
-  const holding = place('right', target, holdingHand, f)
+  const target = wristL.clone().addScaledVector(back, -CLASP_BEHIND).sub(palm)
+  const holding = place('right', target, holdingHand)
   b.arm('right', holding.chain)
   b.fingers('right', HOLDING_GRIP)
   return { error: Math.max(held.error, holding.error) }
+}
+
+/**
+ * Both poses for one body, with what a crossfade between them needs to keep
+ * her elbows jointed: each forearm's rest axis (see blendPoses).
+ */
+export interface IdlePoses extends Readonly<Record<IdlePoseName, PoseRotations>> {
+  rollAxes: ReadonlyMap<string, THREE.Vector3>
+  /** Per upper arm, the model-frame axis that lifts it out to her side (see IDLE_POSE_ARC). */
+  arcAxes: ReadonlyMap<string, THREE.Vector3>
+}
+
+export function solveIdlePoses(sk: PoseSkeleton): IdlePoses {
+  const b = new PoseBuilder(sk)
+  return {
+    open: solveIdlePose(sk, 'open').rotations,
+    behind: solveIdlePose(sk, 'behind').rotations,
+    rollAxes: new Map(SIDES.map((side) => [`${side}LowerArm`, b.axis(side, 'lower')])),
+    arcAxes: new Map(SIDES.map((side) => [`${side}UpperArm`, side === 'left' ? b.ax.f.clone() : b.ax.f.clone().negate()])),
+  }
 }
 
 export function solveIdlePose(sk: PoseSkeleton, name: IdlePoseName): SolvedPose {
@@ -441,16 +497,41 @@ export function normalizedRest(
 /**
  * A pose part way to another: every bone slerped by `s`, eased at both ends.
  * Bones only one side lists are carried as they are.
+ *
+ * A bone in `rollAxes` (the forearms, about their own rest axis) is split into
+ * its bend and its roll, and each is blended on its own. An elbow is a hinge
+ * plus the forearm's roll; slerped whole, the two mix part way and the elbow
+ * bends sideways, 18–19° at 30% from open hands to behind her back
+ * (2026-09-30), past what an elbow can do.
  */
-export function blendPoses(from: PoseRotations, to: PoseRotations, s: number): Map<string, THREE.Quaternion> {
+export function blendPoses(
+  from: PoseRotations,
+  to: PoseRotations,
+  s: number,
+  rollAxes?: ReadonlyMap<string, THREE.Vector3>,
+): Map<string, THREE.Quaternion> {
   const e = s * s * (3 - 2 * s)
   const out = new Map<string, THREE.Quaternion>()
   for (const [bone, q] of to) {
     const a = from.get(bone)
-    out.set(bone, a ? a.clone().slerp(q, e) : q.clone())
+    const axis = rollAxes?.get(bone)
+    if (a && axis) {
+      const [sa, ta] = swingTwist(a, axis)
+      const [sb, tb] = swingTwist(q, axis)
+      out.set(bone, sa.slerp(sb, e).multiply(ta.slerp(tb, e)))
+    } else out.set(bone, a ? a.clone().slerp(q, e) : q.clone())
   }
   for (const [bone, q] of from) if (!out.has(bone)) out.set(bone, q.clone())
   return out
+}
+
+/** `q` as a swing (about an axis square to `axis`) after a roll about `axis`: q = swing · roll. */
+function swingTwist(q: THREE.Quaternion, axis: THREE.Vector3): [THREE.Quaternion, THREE.Quaternion] {
+  const p = q.x * axis.x + q.y * axis.y + q.z * axis.z
+  const roll = new THREE.Quaternion(axis.x * p, axis.y * p, axis.z * p, q.w)
+  if (roll.lengthSq() < 1e-12) roll.set(0, 0, 0, 1)
+  roll.normalize()
+  return [q.clone().multiply(roll.clone().invert()), roll]
 }
 
 // ---- which pose, when ----------------------------------------------------------
@@ -513,9 +594,30 @@ export function stepIdlePose(
 }
 
 /** The rotations the clock asks for this frame. */
-export function idlePoseNow(s: IdlePoseState, poses: Readonly<Record<IdlePoseName, PoseRotations>>): PoseRotations {
+/**
+ * Degrees each upper arm swings out to her side at the middle of a crossfade.
+ * Straight from one pose to the other, her hands cut through her hips and
+ * thighs on the way (up to 53mm deep, 2026-09-30); a person's arms go round.
+ * 12° is the least that clears them on every offered body (5.5mm at the
+ * worst, against 47mm at 0°) while keeping her inside REST_HALF_WIDTH
+ * (0.354m at the widest; 14° reaches 0.362m).
+ */
+export const IDLE_POSE_ARC = { deg: 12 }
+
+export function idlePoseNow(s: IdlePoseState, poses: IdlePoses): PoseRotations {
   if (s.from === null) return poses[s.current]
-  return blendPoses(poses[s.from], poses[s.current], s.blend)
+  const out = blendPoses(poses[s.from], poses[s.current], s.blend, poses.rollAxes)
+  const lift = rad(IDLE_POSE_ARC.deg) * Math.sin(Math.PI * s.blend)
+  for (const [bone, axis] of poses.arcAxes) {
+    const upper = out.get(bone)
+    const collar = out.get(bone.replace('UpperArm', 'Shoulder'))
+    if (!upper || !collar) continue
+    // The lift is about a model-frame axis; the upper arm's rotation is local
+    // to the collarbone, so the axis is carried into that frame first.
+    const local = axis.clone().applyQuaternion(collar.clone().invert())
+    upper.premultiply(new THREE.Quaternion().setFromAxisAngle(local, lift))
+  }
+  return out
 }
 
 // ---- the life in her hands ------------------------------------------------------

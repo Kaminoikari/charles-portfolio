@@ -84,9 +84,10 @@ import {
   idlePoseNow,
   idlePoseStart,
   normalizedRest,
-  solveIdlePose,
+  solveIdlePoses,
   stepIdlePose,
   type IdlePoseName,
+  type IdlePoses,
   type IdlePoseState,
   type PoseRotations,
 } from './idlePose'
@@ -199,14 +200,14 @@ type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']
 // version (the first 1.0 body ever served stood with both arms straight up,
 // 2026-09-09), and the solver keeps that fact: it reads the facing off the
 // version too.
-function solvePoses(v: VRM): Record<IdlePoseName, PoseRotations> | null {
+function solvePoses(v: VRM): IdlePoses | null {
   const h = v.humanoid
   if (!h) return null
   const sk = {
     version: v.meta.metaVersion,
     rest: normalizedRest((bone) => h.getNormalizedBoneNode(bone as BoneName), h.normalizedHumanBonesRoot),
   }
-  return { open: solveIdlePose(sk, 'open').rotations, behind: solveIdlePose(sk, 'behind').rotations }
+  return solveIdlePoses(sk)
 }
 
 /**
@@ -1105,7 +1106,7 @@ export function initAvatarGuide(
   }
   // The two idle poses solved for the body on screen, and which of them she
   // is in (idlePose.ts). The clock only alternates on the stage.
-  let poses: Record<IdlePoseName, PoseRotations> | null = null
+  let poses: IdlePoses | null = null
   let drift: ReturnType<typeof fingerDrift> | null = null
   let poseState: IdlePoseState = idlePoseStart(Math.random)
   // Scratch for the settle's distance measurement, allocated once.

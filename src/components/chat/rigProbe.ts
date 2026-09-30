@@ -955,6 +955,79 @@ export function probeHand(rig: Rig, side: 'left' | 'right'): HandProbe {
   return { wrist, fingertip, palmToViewer: palm.dot(cameraDir(rig)), elbowFlex }
 }
 
+/**
+ * An arm's joints read the way a body's are: each one within what that joint
+ * can do. Degrees throughout, all taken in the parent segment's own frame, so
+ * they do not depend on where the arm points.
+ *
+ * - `hingeOff`: how far the forearm leaves the elbow's hinge plane. An elbow is
+ *   a hinge; anything past a few degrees is a joint bending sideways.
+ * - `flex`: the elbow's bend about that hinge, positive toward the crook of
+ *   the arm (the side that faces forward at rest, palms down). Negative is an
+ *   elbow bent backwards.
+ * - `upperTwist`: the upper arm's roll about its own length against the
+ *   collarbone (the shoulder's internal and external rotation).
+ * - `foreTwist`: the forearm's roll against the upper arm (pronation and
+ *   supination).
+ * - `wristTwist`: the hand's roll against the forearm. A wrist does not roll;
+ *   the forearm does it for the hand.
+ * - `wristBend`: how far the hand swings off the forearm's line.
+ */
+export interface ArmJoints {
+  hingeOff: number
+  flex: number
+  upperTwist: number
+  foreTwist: number
+  wristTwist: number
+  wristBend: number
+}
+
+const deg = THREE.MathUtils.radToDeg
+
+function worldQuat(rig: Rig, bone: string): THREE.Quaternion {
+  return new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().extractRotation(rig.bones[bone].matrixWorld))
+}
+
+/** The roll of `q` about `axis`, in degrees, from its swing-twist split. */
+function twistAbout(q: THREE.Quaternion, axis: THREE.Vector3): number {
+  const p = q.x * axis.x + q.y * axis.y + q.z * axis.z
+  let a = deg(2 * Math.atan2(p, q.w))
+  if (a > 180) a -= 360
+  if (a < -180) a += 360
+  return a
+}
+
+export function probeArmJoints(rig: Rig, side: 'left' | 'right'): ArmJoints {
+  const rest = rig.restPosition
+  const aU = rest[`${side}LowerArm`].clone().sub(rest[`${side}UpperArm`]).normalize()
+  const aL = rest[`${side}Hand`].clone().sub(rest[`${side}LowerArm`]).normalize()
+  const aH = rest[`${side}MiddleProximal`].clone().sub(rest[`${side}Hand`]).normalize()
+  const f = new THREE.Vector3(0, 0, rig.version === '0' ? -1 : 1)
+  const crook = f.clone().addScaledVector(aU, -f.dot(aU)).normalize()
+  const hinge = new THREE.Vector3().crossVectors(aU, crook)
+
+  const qS = worldQuat(rig, `${side}Shoulder`)
+  const qU = worldQuat(rig, `${side}UpperArm`)
+  const qL = worldQuat(rig, `${side}LowerArm`)
+  const qH = worldQuat(rig, `${side}Hand`)
+  const elbow = qU.clone().invert().multiply(qL)
+  const wrist = qL.clone().invert().multiply(qH)
+
+  const fore = aL.clone().applyQuaternion(elbow)
+  const hingeOff = deg(Math.asin(THREE.MathUtils.clamp(fore.dot(hinge), -1, 1)))
+  const inPlane = fore.clone().addScaledVector(hinge, -fore.dot(hinge))
+  const flex = deg(Math.atan2(new THREE.Vector3().crossVectors(aL, inPlane).dot(hinge), aL.dot(inPlane)))
+  const hand = aH.clone().applyQuaternion(wrist)
+  return {
+    hingeOff,
+    flex,
+    upperTwist: twistAbout(qS.clone().invert().multiply(qU), aU),
+    foreTwist: twistAbout(elbow, aL),
+    wristTwist: twistAbout(wrist, aH),
+    wristBend: deg(Math.acos(THREE.MathUtils.clamp(hand.dot(aH), -1, 1))),
+  }
+}
+
 // ---- her head, as a solid ---------------------------------------------------
 //
 // The check that matters most is a fingertip ending up inside her face, so the
