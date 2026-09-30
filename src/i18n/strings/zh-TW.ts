@@ -19,6 +19,7 @@ const zhTW: Strings = {
     projects: 'PROJECTS',
     blog: 'BLOG',
     changelog: 'CHANGELOG',
+    avatar: 'AVATAR',
     contact: 'CONTACT ↗',
     contactAriaLabel: '前往聯絡資訊',
     sectionAriaLabel: '前往 {{section}} 區段',

@@ -22,6 +22,7 @@ const ja: Strings = {
     projects: 'PROJECTS',
     blog: 'BLOG',
     changelog: 'CHANGELOG',
+    avatar: 'AVATAR',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'お問い合わせへスクロール',
     sectionAriaLabel: '{{section}} セクションへスクロール',

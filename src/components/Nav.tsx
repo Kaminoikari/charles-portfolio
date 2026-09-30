@@ -209,6 +209,13 @@ export default function Nav() {
             {t('nav.changelog')}
             <span className="absolute -bottom-1 left-0 h-px w-0 bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:w-full" />
           </button>
+          <button
+            onClick={() => navigate(localePath('/avatar'))}
+            className="group relative min-h-[44px] cursor-pointer border-none bg-transparent text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
+          >
+            {t('nav.avatar')}
+            <span className="absolute -bottom-1 left-0 h-px w-0 bg-white transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:w-full" />
+          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -319,6 +326,15 @@ export default function Nav() {
             className="min-h-[44px] cursor-pointer border-none bg-transparent text-left text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
           >
             {t('nav.changelog')}
+          </button>
+          <button
+            onClick={() => {
+              navigate(localePath('/avatar'))
+              setMenuOpen(false)
+            }}
+            className="min-h-[44px] cursor-pointer border-none bg-transparent text-left text-[13px] uppercase tracking-[1.5px] text-text-muted transition-colors duration-200 hover:text-white"
+          >
+            {t('nav.avatar')}
           </button>
 
           {/* Language switcher — mobile */}

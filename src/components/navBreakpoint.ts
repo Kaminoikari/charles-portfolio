@@ -2,9 +2,10 @@
 //
 // The breakpoint itself lives in exactly one place: the `xl:` classes in Nav.tsx
 // (Tailwind's `xl`, 80rem ≈ 1280px). Measured on the shipped design at 1280px, the
-// inline row needs 1248px: content 1119.5 (wordmark + 7 section links + 3 locale
-// pills + contact CTA) + 32 inter-group gaps + 96 px-12 gutters, rounded up. So `xl`
-// is the narrowest standard breakpoint that fits it, with 32px left over. The old
+// inline row needs 1263px: content 1135 (wordmark + 5 section links + CHANGELOG +
+// AVATAR + 3 locale pills + contact CTA) + 32 inter-group gaps + 96 px-12 gutters,
+// in all three locales (2026-09-30). So `xl` is the narrowest standard breakpoint
+// that fits it, with 17px left over: one more link will not fit at 1280. The old
 // `md` switch showed that row from 768px, where the CTA and the locale switcher fell
 // off the right edge and the wordmark wrapped onto two lines.
 //

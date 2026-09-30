@@ -7,6 +7,7 @@ interface Strings {
   nav: {
     about: string; skills: string; experience: string; projects: string; blog: string
     changelog: string
+    avatar: string
     contact: string; contactAriaLabel: string; sectionAriaLabel: string
     openMenu: string; closeMenu: string; mainAriaLabel: string; languageGroupLabel: string
   }
@@ -125,6 +126,7 @@ const en: Strings = {
     projects: 'PROJECTS',
     blog: 'BLOG',
     changelog: 'CHANGELOG',
+    avatar: 'AVATAR',
     contact: 'CONTACT ↗',
     contactAriaLabel: 'Scroll to contact section',
     sectionAriaLabel: 'Scroll to {{section}} section',
