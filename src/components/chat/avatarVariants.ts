@@ -340,7 +340,8 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // It also bought the one thing a declared-but-unrendered body cannot: SERVING
   // it put a VRM 1.0 rig in front of the engine for the first time, and the
   // engine's rest pose was 0.x-only. Her arms went straight up. The pins are
-  // version-aware since (avatarMode.armRestPins, rigProbe.test.ts's
+  // version-aware since (avatarMode.armRestPins then, idlePose.ts since
+  // 2026-09-30; rigProbe.test.ts's
   // "rests with her arms down"); the receipt with both screenshots is
   // scripts/avatar/evidence/armrest-0909.md.
   // Retired from the strip on 2026-09-26, the owner's call: `studio` now names

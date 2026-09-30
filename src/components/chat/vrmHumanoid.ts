@@ -147,7 +147,7 @@ export interface GltfJson {
   scene?: number
   scenes?: { nodes: number[] }[]
   nodes: GltfNode[]
-  meshes?: { name?: string; primitives: { attributes: Record<string, number>; material?: number }[] }[]
+  meshes?: { name?: string; primitives: { attributes: Record<string, number>; indices?: number; mode?: number; material?: number }[] }[]
   materials?: { name?: string }[]
   skins?: { joints: number[]; inverseBindMatrices?: number }[]
   accessors?: GltfAccessor[]

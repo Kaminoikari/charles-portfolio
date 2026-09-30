@@ -20,6 +20,29 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-idle-poses',
+    date: '2026-09-30',
+    title: `Mika stands in two idle poses of her own`,
+    tags: ['feature', 'design', 'technical'],
+    body: [
+      `Between motions she used to stand in one fixed pose, arms pinned out from her sides. She now has two idle poses. On \`/avatar\` she switches between them on her own, holding each for 15 to 20 seconds and crossfading over 1.8 seconds: one with her hands open just outside her thighs, palms toward you, and one with her hands clasped behind her back. Everywhere else, the chat widget included, she stands in the open-hands pose.`,
+      { kind: 'heading', text: `Solved for each body` },
+      `Both poses are written as positions relative to her own body: how far out from her thighs, how far behind her hips, how much the elbows bend. Each of the thirteen looks gets its own arm angles solved from its own skeleton when it loads, so a long-armed character and a short one strike the same pose. Behind her back, her right hand holds her left wrist, and her elbows bend back and stay close to her sides.`,
+      `Tests pose every look and measure the skinned mesh: the holding palm lands within 5mm of the other wrist, no hand vertex can be seen from the front, the elbows bend between 65° and 67°, and in either pose, and anywhere on the way between them, a hand or forearm sits at most 8mm into her body and clothes, a sleeve brushing a hem. The one exception is the hoodie look, whose hem hangs in a bell over her hips: there the sleeve rests on the hoodie, up to 25mm by this measure.`,
+      { kind: 'heading', text: `Smooth hand-offs` },
+      `A motion clip now blends out of the idle pose and back into it on the same curve as her head and torso, fingers included; before, every finger snapped straight in a single frame when a clip ended. While she stands, her fingers drift a little so her hands never look frozen. The small head turns and nods between motions also play on \`/avatar\` now.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '2', label: 'idle poses' },
+          { value: '13', label: 'looks solved' },
+          { value: '15–20s', label: 'per pose on /avatar' },
+          { value: '0', label: 'hand vertices seen from the front' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'avatar-stage',
     date: '2026-09-29',
     title: `Mika gets a stage of her own at /avatar`,

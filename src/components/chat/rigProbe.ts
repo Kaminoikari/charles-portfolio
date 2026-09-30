@@ -43,7 +43,7 @@
 import * as THREE from 'three'
 import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
-import { armRestPins } from './avatarMode'
+import { solveIdlePose, type IdlePoseName, type SolvedPose } from './idlePose'
 import {
   buildNodes,
   parseGlb,
@@ -247,22 +247,27 @@ export function resetRig(rig: Rig): void {
 }
 
 /**
- * The pose she stands in when no clip is driving her: the engine's own arm pins,
- * on the real skeleton.
+ * One of her two idle poses (idlePose.ts), on the real skeleton.
  *
- * The engine writes these at load and after every clip (avatarGuideEngine
- * pinArms), and this is the only way to LOOK at where they put her: the engine
- * needs a WebGL context, this needs a .vrm. The rotations come from
- * avatarMode.armRestPins so the two cannot drift, and the sign in there is the
- * version's — see the COORDINATE SPACE note at the top of this file.
+ * The engine solves the same pose from the same rest positions at load, so
+ * this is the way to LOOK at where it puts her hands: the engine needs a WebGL
+ * context, this needs a .vrm.
+ */
+export function applyIdlePose(rig: Rig, name: IdlePoseName): SolvedPose {
+  restNormalized(rig)
+  const solved = solveIdlePose({ version: rig.version, rest: (bone) => rig.restPosition[bone] }, name)
+  for (const [bone, q] of solved.rotations) rig.bones[bone]?.quaternion.copy(q)
+  sync(rig)
+  return solved
+}
+
+/**
+ * The pose she stands in when no clip is driving her: the open-hands idle pose,
+ * which the engine rests on everywhere (docs/plans/avatar-idle-poses.md). Every
+ * settle is measured against it.
  */
 export function applyArmRest(rig: Rig): void {
-  restNormalized(rig)
-  for (const [bone, z] of armRestPins(rig.version)) {
-    const node = rig.bones[bone]
-    if (node) node.rotation.set(0, 0, z)
-  }
-  sync(rig)
+  applyIdlePose(rig, 'open')
 }
 
 // ---- the mesh around the bones ------------------------------------------------
@@ -1000,4 +1005,296 @@ export function headPenetration(rig: Rig, volume: HeadVolume, point: THREE.Vecto
     (_local.y / volume.radii.y) ** 2 +
     (_local.z / volume.radii.z) ** 2
   )
+}
+
+// ---- her skin, posed ----------------------------------------------------------
+//
+// The idle poses put her hands where clips never hold them for long: against
+// her thighs, and behind her back. Whether a hand is INSIDE her or SHOWS from
+// the front is a question about the mesh, not the joints, so these skin every
+// vertex into the current pose and look at triangles.
+
+/** Every drawn vertex of every skinned mesh, in the rig's current pose. */
+export interface PosedMesh {
+  /** xyz per vertex. */
+  positions: Float32Array
+  /** The humanoid bone each vertex is mostly skinned to, or null (hair, skirt, other spring chains). */
+  owner: (string | null)[]
+  /** Three vertex indices per triangle. */
+  triangles: Uint32Array
+  /** The glTF mesh each triangle belongs to. */
+  triangleMesh: Uint32Array
+}
+
+export function posedMesh(glb: Glb, rig: Rig): PosedMesh {
+  const json = glb.json
+  const boneOfNode = new Map<number, string>()
+  for (const name of Object.keys(rig.bones)) {
+    if (name.endsWith('Tip')) continue
+    const node = rig.humanoid.getRawBoneNode(name as VRMHumanBoneName)
+    if (node) boneOfNode.set(rig.raw.indexOf(node), name)
+  }
+  const positions: number[] = []
+  const owner: (string | null)[] = []
+  const triangles: number[] = []
+  const triangleMesh: number[] = []
+  const v = new THREE.Vector3()
+  const acc = new THREE.Vector3()
+  for (const node of json.nodes) {
+    if (node.mesh === undefined || node.skin === undefined) continue
+    const mesh = json.meshes?.[node.mesh]
+    const skin = json.skins?.[node.skin]
+    if (!mesh || !skin) continue
+    const ibm = skin.inverseBindMatrices === undefined ? null : readAccessorRows(glb, skin.inverseBindMatrices).data
+    const jointMatrix = skin.joints.map((joint, k) => {
+      const m = rig.raw[joint].matrixWorld.clone()
+      if (ibm) m.multiply(new THREE.Matrix4().fromArray(ibm, k * 16))
+      return m
+    })
+    // Primitives of one mesh share their vertex buffer on every VRoid export;
+    // skin each buffer once and point every primitive's indices into it.
+    const base = new Map<string, number>()
+    for (const prim of mesh.primitives) {
+      if ((prim.mode ?? 4) !== 4) continue
+      const { POSITION, JOINTS_0, WEIGHTS_0 } = prim.attributes
+      if (POSITION === undefined || JOINTS_0 === undefined || WEIGHTS_0 === undefined) continue
+      const key = `${POSITION}/${JOINTS_0}/${WEIGHTS_0}`
+      let first = base.get(key)
+      const pos = readAccessorRows(glb, POSITION)
+      const count = pos.data.length / pos.ncomp
+      if (first === undefined) {
+        first = owner.length
+        base.set(key, first)
+        const jo = readAccessorRows(glb, JOINTS_0)
+        const we = readAccessorRows(glb, WEIGHTS_0)
+        for (let i = 0; i < count; i++) {
+          v.set(pos.data[i * pos.ncomp], pos.data[i * pos.ncomp + 1], pos.data[i * pos.ncomp + 2])
+          acc.set(0, 0, 0)
+          let best = 0
+          for (let k = 0; k < we.ncomp; k++) {
+            const w = we.data[i * we.ncomp + k]
+            if (w <= 0) continue
+            if (w > we.data[i * we.ncomp + best]) best = k
+            acc.addScaledVector(_skinned.copy(v).applyMatrix4(jointMatrix[jo.data[i * jo.ncomp + k]]), w)
+          }
+          positions.push(acc.x, acc.y, acc.z)
+          owner.push(boneOfNode.get(skin.joints[jo.data[i * jo.ncomp + best]]) ?? null)
+        }
+      }
+      const idx = prim.indices === undefined ? null : readAccessorRows(glb, prim.indices).data
+      const n = idx ? idx.length : count
+      for (let t = 0; t + 2 < n; t += 3) {
+        for (let c = 0; c < 3; c++) triangles.push(first + (idx ? idx[t + c] : t + c))
+        triangleMesh.push(node.mesh)
+      }
+    }
+  }
+  return {
+    positions: Float32Array.from(positions),
+    owner,
+    triangles: Uint32Array.from(triangles),
+    triangleMesh: Uint32Array.from(triangleMesh),
+  }
+}
+
+/**
+ * The triangles a caller picks, binned on a grid in the plane square to one
+ * axis, so a point can ask which of them a ray along that axis crosses. `z` is
+ * the viewer's axis: an orthographic front view, close enough to the site's
+ * 27° lenses at 2m and more for a question about her hips. `x` is her side.
+ */
+export interface AxisView {
+  axis: 'x' | 'z'
+  cell: number
+  cells: Map<number, number[]>
+  mesh: PosedMesh
+  /** +1 along the axis is toward the viewer (z) or toward +x. */
+  sign: -1 | 1
+}
+
+const cellKey = (i: number, j: number): number => i * 100003 + j
+
+export function axisView(
+  rig: Rig,
+  mesh: PosedMesh,
+  axis: 'x' | 'z',
+  accept: (triangle: number) => boolean,
+  cell = 0.01,
+): AxisView {
+  const a = axis === 'z' ? 0 : 2
+  const cells = new Map<number, number[]>()
+  const { positions: p, triangles: t } = mesh
+  for (let tri = 0; tri < t.length / 3; tri++) {
+    if (!accept(tri)) continue
+    let a0 = Infinity, a1 = -Infinity, y0 = Infinity, y1 = -Infinity
+    for (let c = 0; c < 3; c++) {
+      const k = t[tri * 3 + c] * 3
+      a0 = Math.min(a0, p[k + a]); a1 = Math.max(a1, p[k + a])
+      y0 = Math.min(y0, p[k + 1]); y1 = Math.max(y1, p[k + 1])
+    }
+    for (let i = Math.floor(a0 / cell); i <= Math.floor(a1 / cell); i++) {
+      for (let j = Math.floor(y0 / cell); j <= Math.floor(y1 / cell); j++) {
+        const key = cellKey(i, j)
+        const list = cells.get(key)
+        if (list) list.push(tri)
+        else cells.set(key, [tri])
+      }
+    }
+  }
+  return { axis, cell, cells, mesh, sign: axis === 'z' ? forwardZ(rig) : 1 }
+}
+
+export function frontView(rig: Rig, mesh: PosedMesh, accept: (triangle: number) => boolean): AxisView {
+  return axisView(rig, mesh, 'z', accept)
+}
+
+/**
+ * Every triangle of `view` a line along its axis through `point` crosses, with
+ * the signed distance from the point to the crossing (+ toward the viewer for
+ * `z`, toward +x for `x`).
+ */
+export function crossings(view: AxisView, point: THREE.Vector3): { tri: number; at: number }[] {
+  const a = view.axis === 'z' ? 0 : 2
+  const d = view.axis === 'z' ? 2 : 0
+  const pa = point.getComponent(a)
+  const py = point.y
+  const list = view.cells.get(cellKey(Math.floor(pa / view.cell), Math.floor(py / view.cell)))
+  if (!list) return []
+  const { positions: p, triangles: t } = view.mesh
+  const out: { tri: number; at: number }[] = []
+  for (const tri of list) {
+    const A = t[tri * 3] * 3, B = t[tri * 3 + 1] * 3, C = t[tri * 3 + 2] * 3
+    const det = (p[B + 1] - p[C + 1]) * (p[A + a] - p[C + a]) + (p[C + a] - p[B + a]) * (p[A + 1] - p[C + 1])
+    if (Math.abs(det) < 1e-12) continue
+    const wa = ((p[B + 1] - p[C + 1]) * (pa - p[C + a]) + (p[C + a] - p[B + a]) * (py - p[C + 1])) / det
+    const wb = ((p[C + 1] - p[A + 1]) * (pa - p[C + a]) + (p[A + a] - p[C + a]) * (py - p[C + 1])) / det
+    const wc = 1 - wa - wb
+    if (wa < 0 || wb < 0 || wc < 0) continue
+    const at = (wa * p[A + d] + wb * p[B + d] + wc * p[C + d] - point.getComponent(d)) * view.sign
+    out.push({ tri, at })
+  }
+  return out
+}
+
+/**
+ * The triangles of `view` that cover `point` from the front and lie in front
+ * of it, toward the viewer, by more than `eps` metres.
+ */
+export function trianglesInFront(view: AxisView, point: THREE.Vector3, eps = 0.001): number[] {
+  return crossings(view, point).filter((c) => c.at > eps).map((c) => c.tri)
+}
+
+const ARM_CHAIN = /^(left|right)(UpperArm|LowerArm|Hand|Thumb|Index|Middle|Ring|Little)/
+const HAND_BONE = /^(left|right)(Hand|Thumb|Index|Middle|Ring|Little)/
+const FOREARM_OR_HAND = /^(left|right)(LowerArm|Hand|Thumb|Index|Middle|Ring|Little)/
+
+function triangleOwner(mesh: PosedMesh, tri: number): string | null {
+  // By the triangle's first corner: a seam triangle between two bones is
+  // counted once, on whichever side its first vertex falls.
+  return mesh.owner[mesh.triangles[tri * 3]]
+}
+
+/**
+ * Her torso and thighs as solids a hand must stay out of: one capsule per
+ * bone segment, inscribed in that bone's own skin.
+ *
+ * Inscribed, the way `headVolume` is: the radius is a low percentile of how
+ * far the skin the bone drives sits from its segment, so the capsule lies
+ * inside her nearly everywhere and a point inside it is inside her. The first
+ * try here counted mesh crossings along a ray, and real exports are not closed
+ * surfaces: a dress skinned to the hips in front and to its skirt chain behind,
+ * a body with the arms cut away, read a hand resting 20mm behind Gishin's
+ * dress as 217mm inside her.
+ */
+export interface TorsoCapsule {
+  bone: string
+  from: THREE.Vector3
+  to: THREE.Vector3
+  radius: number
+}
+
+export const TORSO_SEGMENTS: readonly (readonly [string, string])[] = [
+  ['hips', 'spine'],
+  ['spine', 'chest'],
+  ['leftUpperLeg', 'leftLowerLeg'],
+  ['rightUpperLeg', 'rightLowerLeg'],
+]
+/** Which share of a bone's skin may sit INSIDE its capsule's surface. */
+export const TORSO_INSCRIBE_PERCENTILE = 0.2
+
+/** The capsules, measured on the pose the rig is in (the torso does not move between idle poses). */
+export function torsoCapsules(rig: Rig, mesh: PosedMesh): TorsoCapsule[] {
+  const out: TorsoCapsule[] = []
+  const seg = new THREE.Line3()
+  const at = new THREE.Vector3()
+  const p = new THREE.Vector3()
+  for (const [bone, child] of TORSO_SEGMENTS) {
+    if (!(bone in rig.bones) || !(child in rig.bones)) continue
+    seg.set(worldPosition(rig, bone), worldPosition(rig, child))
+    const d: number[] = []
+    for (let i = 0; i < mesh.owner.length; i++) {
+      if (mesh.owner[i] !== bone) continue
+      p.fromArray(mesh.positions, i * 3)
+      // The middle of the segment only: the ends are where a neighbour's skin
+      // takes over, and the caps are what this model is least true about.
+      const t = seg.closestPointToPointParameter(p, false)
+      if (t < 0.1 || t > 0.9) continue
+      seg.closestPointToPoint(p, true, at)
+      d.push(at.distanceTo(p))
+    }
+    if (d.length < 20) continue
+    d.sort((a, b) => a - b)
+    out.push({ bone, from: seg.start.clone(), to: seg.end.clone(), radius: d[Math.floor(d.length * TORSO_INSCRIBE_PERCENTILE)] })
+  }
+  return out
+}
+
+/** How deep `point` sits inside any capsule, in metres; 0 when outside all. */
+export function capsuleDepth(capsules: readonly TorsoCapsule[], point: THREE.Vector3): number {
+  const seg = new THREE.Line3()
+  const at = new THREE.Vector3()
+  let depth = 0
+  for (const c of capsules) {
+    seg.set(c.from, c.to)
+    seg.closestPointToPoint(point, true, at)
+    depth = Math.max(depth, c.radius - at.distanceTo(point))
+  }
+  return depth
+}
+
+export interface IdlePoseSkin {
+  /** The deepest any forearm or hand vertex sits inside her torso or thighs, in metres. */
+  depth: number
+  /** Hand vertices that nothing covers from the front. */
+  visible: number
+  /** Hand vertices measured. */
+  hand: number
+  /** Capsules built; fewer than TORSO_SEGMENTS means a segment's bone is missing or has too little skin, and that body part went unmeasured. */
+  capsules: number
+}
+
+/**
+ * Where the current pose leaves her hands against her own body: how deep any
+ * forearm or hand vertex sits inside the torso and thigh capsules, and how
+ * many hand vertices nothing covers from the front. Hair and skirts are spring
+ * chains and move at runtime, so they count as cover (at rest shape) but the
+ * capsules do not include them.
+ */
+export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
+  const capsules = torsoCapsules(rig, mesh)
+  const cover = frontView(rig, mesh, (tri) => !ARM_CHAIN.test(triangleOwner(mesh, tri) ?? ''))
+  const p = new THREE.Vector3()
+  let depth = 0
+  let visible = 0
+  let hand = 0
+  for (let i = 0; i < mesh.owner.length; i++) {
+    const bone = mesh.owner[i]
+    if (!bone || !FOREARM_OR_HAND.test(bone)) continue
+    p.fromArray(mesh.positions, i * 3)
+    depth = Math.max(depth, capsuleDepth(capsules, p))
+    if (!HAND_BONE.test(bone)) continue
+    hand++
+    if (trianglesInFront(cover, p).length === 0) visible++
+  }
+  return { depth, visible, hand, capsules: capsules.length }
 }

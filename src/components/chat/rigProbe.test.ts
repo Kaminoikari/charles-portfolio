@@ -333,9 +333,9 @@ describe('rigProbe', () => {
   })
 
   it('reports a resting arm as straight and a folded one as flexed', () => {
-    // Through applyArmRest rather than the two magnitudes, so this file holds no
-    // copy of the rest pose at all: the sign belongs to the version, and a
-    // literal here would be right only for the 0.x body it happens to run on.
+    // Through applyArmRest (the open idle pose) so this file holds no copy of
+    // the rest pose at all: the facing belongs to the version, and a literal
+    // here would be right only for the 0.x body it happens to run on.
     const r = rig()
     applyArmRest(r)
     const rest = probeHand(r, 'left').elbowFlex
@@ -536,7 +536,7 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
   it('rests with her arms down, on this body\'s own version', () => {
     // The pose the visitor sees whenever no clip is playing, and the pose every
     // settle is measured against. WHICH sign of a Z rotation lowers an arm is a
-    // fact about the VRM version (avatarMode.armRestPins): a 0.x body faces -Z
+    // fact about the VRM version (idlePose.ts reads it): a 0.x body faces -Z
     // so her left arm rests along -X, a 1.0 body faces +Z so it rests along +X,
     // and one rotation cannot serve both. Until 2026-09-09 the engine wrote the
     // 0.x sign for every body, and nothing saw it: the only 1.0 rig in the
@@ -1118,11 +1118,11 @@ describe('the idle pool', () => {
 })
 
 // The handover at the end of a clip. What the visitor sees is not the clip's
-// last frame, it is the trip from there back to the pinned rest pose, and that
+// last frame, it is the trip from there back to the rest pose, and that
 // trip was reported as "too fast, unnatural" on 2026-08-20.
 describe('returning to rest', () => {
-  // The pinned rest pose, through the same applyArmRest the per-family block
-  // uses and the same armRestPins the engine writes. Reading it from there is
+  // The rest pose, through the same applyArmRest the per-family block uses
+  // and the same idlePose solver the engine writes. Reading it from there is
   // the point: change the rest pose and the settle distances below move with it.
   function pinnedRest(r: Rig): { left: THREE.Vector3; right: THREE.Vector3 } {
     applyArmRest(r)

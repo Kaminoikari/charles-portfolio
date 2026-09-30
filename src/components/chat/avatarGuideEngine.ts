@@ -51,8 +51,8 @@
 //   - three-vrm normalises VRM0 blendshape names to VRM1: a/i/u/e/o become
 //     aa/ih/ou/ee/oh. `blink` keeps its name, which makes half-working
 //     expressions look like a mouth bug instead of a naming bug.
-//   - a VRM's rest pose is a T-pose; upper-arm Z rotation brings the arms down,
-//     in a direction that depends on the version (avatarMode.armRestPins).
+//   - a VRM's rest pose is a T-pose; bringing the arms down turns them in a
+//     direction that depends on the version (idlePose.ts reads the facing).
 //   - spring bones (hair, skirt) only advance inside vrm.update(dt).
 
 import * as THREE from 'three'
@@ -79,7 +79,18 @@ import {
 } from './avatarMotions'
 import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
-  armRestPins,
+  fingerDrift,
+  holdingHandFree,
+  idlePoseNow,
+  idlePoseStart,
+  normalizedRest,
+  solveIdlePose,
+  stepIdlePose,
+  type IdlePoseName,
+  type IdlePoseState,
+  type PoseRotations,
+} from './idlePose'
+import {
   aimPitchPose,
   blinkMayStart,
   aimYawPose,
@@ -178,39 +189,37 @@ const ANSWER_TINT = new THREE.Color(1.0, 0.62, 0.38)
 
 type BoneName = Parameters<NonNullable<VRM['humanoid']>['getNormalizedBoneNode']>[0]
 
-// Finger bones, all 30 of them (this model carries the full VRM0 set). They
-// rest at identity, and the motion-capture clips animate every one of them (a
-// peace sign is nothing without fingers), so the restore has to cover them:
-// `stopMotion` calls pinArms, and a bone it does not list keeps whatever the
-// clip left on it for the rest of the page.
-const FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Little'] as const
-const FINGER_SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
-type FingerName = (typeof FINGERS)[number]
-
-function fingerBones(side: 'left' | 'right', finger: FingerName): BoneName[] {
-  return FINGER_SEGMENTS.map((seg) => `${side}${finger}${seg}` as BoneName)
+// The rest pose is one of the two idle poses (idlePose.ts), solved for each
+// body at load: the arms, hands and all thirty finger bones. A bone the pose
+// does not list keeps whatever a clip left on it for the rest of the page, so
+// the pose covers every bone a clip can move below the shoulder.
+//
+// Until 2026-09-30 this was `pinArms`, two raw Z angles and identity fingers
+// for every body: an A-pose. The sign of those angles belonged to the VRM
+// version (the first 1.0 body ever served stood with both arms straight up,
+// 2026-09-09), and the solver keeps that fact: it reads the facing off the
+// version too.
+function solvePoses(v: VRM): Record<IdlePoseName, PoseRotations> | null {
+  const h = v.humanoid
+  if (!h) return null
+  const sk = {
+    version: v.meta.metaVersion,
+    rest: normalizedRest((bone) => h.getNormalizedBoneNode(bone as BoneName), h.normalizedHumanBonesRoot),
+  }
+  return { open: solveIdlePose(sk, 'open').rotations, behind: solveIdlePose(sk, 'behind').rotations }
 }
 
-// A VRM's rest pose is a T-pose; these Z rotations bring the arms down. Nothing
-// procedural touches the arms any more, but every motion-capture clip animates
-// them, so this has to put back the EXACT rest values, and the fingers with them.
-//
-// The rotations come from avatarMode.armRestPins, which takes the body's VRM
-// version, because WHICH sign brings an arm down belongs to the version: this
-// file used to write the 0.x sign as a literal and the first 1.0 body ever
-// served stood at rest with both arms straight up (2026-09-09).
-function pinArms(v: VRM) {
-  for (const [name, z] of armRestPins(v.meta.metaVersion)) {
-    const b = v.humanoid?.getNormalizedBoneNode(name)
-    if (b) b.rotation.set(0, 0, z)
-  }
-  for (const side of ['left', 'right'] as const) {
-    for (const finger of FINGERS) {
-      for (const name of fingerBones(side, finger)) {
-        const b = v.humanoid?.getNormalizedBoneNode(name)
-        if (b) b.rotation.set(0, 0, 0)
-      }
-    }
+/**
+ * Writes `pose` on the normalized bones, `share` of the way from where they
+ * are: 1 is the pose outright, and anything less lets a fading clip keep the
+ * rest (see the frame loop).
+ */
+function writePose(v: VRM, pose: PoseRotations, share = 1): void {
+  for (const [name, q] of pose) {
+    const b = v.humanoid?.getNormalizedBoneNode(name as BoneName)
+    if (!b) continue
+    if (share >= 1) b.quaternion.copy(q)
+    else b.quaternion.slerp(q, share)
   }
 }
 
@@ -841,7 +850,7 @@ export function initAvatarGuide(
   //
   // One loader path for the first body and for every swap after it
   // (loadVariant), so the two cannot drift apart: whatever the first load sets
-  // up — arm pins, material captures, expression names, rest positions, motion
+  // up — idle poses, material captures, expression names, rest positions, motion
   // clips — a swap sets up through the same function, and what a swap releases
   // is what dispose releases.
   const loader = new GLTFLoader()
@@ -885,16 +894,24 @@ export function initAvatarGuide(
     VRMUtils.rotateVRM0(loaded)
     scene.add(loaded.scene)
     if (loaded.lookAt) loaded.lookAt.target = eyeTarget
-    pinArms(loaded)
+    poses = solvePoses(loaded)
+    drift = fingerDrift(loaded.meta.metaVersion)
     const restHipsNode = loaded.humanoid?.getNormalizedBoneNode('hips')
     if (restHipsNode) restHips.copy(restHipsNode.position)
-    // Where the pinned rest pose puts her wrists. Every settle measures how
-    // far it has to travel against these, so it has to be read here, from the
-    // pose pinArms just wrote, before any clip has touched a bone.
-    loaded.scene.updateMatrixWorld(true)
-    loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWristL)
-    loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWristR)
-    // The springs caught their tails before the turn and the arm pin; without
+    // Where each idle pose puts her wrists. Every settle measures how far it
+    // has to travel against the pose she will settle into, so both are read
+    // here, before any clip has touched a bone; the pose she is standing in is
+    // written last.
+    if (poses) {
+      for (const name of ['behind', 'open'] as const) {
+        writePose(loaded, poses[name])
+        loaded.scene.updateMatrixWorld(true)
+        loaded.humanoid?.getNormalizedBoneNode('leftHand')?.getWorldPosition(restWrists[name].l)
+        loaded.humanoid?.getNormalizedBoneNode('rightHand')?.getWorldPosition(restWrists[name].r)
+      }
+      writePose(loaded, idlePoseNow(poseState, poses))
+    }
+    // The springs caught their tails before the turn and the pose; without
     // this the first second whips every chain across (see springRest.test.ts).
     restSprings(loaded)
     // createVRMAnimationClip() needs somewhere to bind a clip's look-at track
@@ -1079,11 +1096,18 @@ export function initAvatarGuide(
   // by hand she would keep whatever offset the clip ended on for the life of
   // the page.
   const restHips = new THREE.Vector3()
-  // Where the pinned rest pose puts each wrist, filled in at load. A settle's
+  // Where each idle pose puts each wrist, filled in at load. A settle's
   // duration is the distance from here, so a clip that ends with an arm out
   // takes longer to put it down than one that ends already standing.
-  const restWristL = new THREE.Vector3()
-  const restWristR = new THREE.Vector3()
+  const restWrists: Record<IdlePoseName, { l: THREE.Vector3; r: THREE.Vector3 }> = {
+    open: { l: new THREE.Vector3(), r: new THREE.Vector3() },
+    behind: { l: new THREE.Vector3(), r: new THREE.Vector3() },
+  }
+  // The two idle poses solved for the body on screen, and which of them she
+  // is in (idlePose.ts). The clock only alternates on the stage.
+  let poses: Record<IdlePoseName, PoseRotations> | null = null
+  let drift: ReturnType<typeof fingerDrift> | null = null
+  let poseState: IdlePoseState = idlePoseStart(Math.random)
   // Scratch for the settle's distance measurement, allocated once.
   const settleProbe = new THREE.Vector3()
   // Scratch for the ?mikadebug hips readout below; the tap runs every frame.
@@ -1134,7 +1158,7 @@ export function initAvatarGuide(
   const MOTION_FADE = 0.25
 
   /**
-   * Start handing the bones back to the pinned rest pose.
+   * Start handing the bones back to the idle pose she was standing in.
    *
    * Called at all three exits: the clip finishing, the visitor interrupting,
    * and a gesture outranking it. The duration comes from how far her wrists
@@ -1151,9 +1175,10 @@ export function initAvatarGuide(
     const h = vrm.humanoid
     let far = 0
     const l = h?.getNormalizedBoneNode('leftHand')
-    if (l) far = Math.max(far, l.getWorldPosition(settleProbe).distanceTo(restWristL))
+    const rest = restWrists[poseState.current]
+    if (l) far = Math.max(far, l.getWorldPosition(settleProbe).distanceTo(rest.l))
     const r = h?.getNormalizedBoneNode('rightHand')
-    if (r) far = Math.max(far, r.getWorldPosition(settleProbe).distanceTo(restWristR))
+    if (r) far = Math.max(far, r.getWorldPosition(settleProbe).distanceTo(rest.r))
     settleDur = settleSeconds(far)
     settleT = 0
   }
@@ -1167,9 +1192,11 @@ export function initAvatarGuide(
     settleT = 0
     if (vrm) {
       // The mixer leaves every bone it touched at the clip's last frame. The
-      // procedural layer rewrites head/neck/spine every frame, but nothing
-      // rewrites the arms or the hips offset, so those are restored here.
-      pinArms(vrm)
+      // procedural layer rewrites head/neck/spine and the idle pose rewrites
+      // the arms every frame, but nothing rewrites the hips offset, so that is
+      // restored here, and the pose is written at once so no frame shows the
+      // clip's last pose.
+      if (poses) writePose(vrm, idlePoseNow(poseState, poses))
       const hips = vrm.humanoid?.getNormalizedBoneNode('hips')
       if (hips) hips.position.copy(restHips)
     }
@@ -1384,12 +1411,15 @@ export function initAvatarGuide(
         //
         // What actually returns the bones is three's PropertyMixer: it lerps
         // toward the value each bone held before the action bound, which is the
-        // pinned rest pose, so weight 0 IS rest and stopMotion's pinArms below
-        // only re-affirms it.
+        // idle pose she was standing in (the pose hold is paused while a
+        // clip plays), so weight 0 returns her to the pose the clip began from and
+        // the pose layer below takes over from there. A fade already under way
+        // when the clip began keeps running underneath it, so the pose layer
+        // settles her into where that fade ends.
         //
         // Order matters: the weight is written BEFORE the mixer applies it, so
-        // the last weight a settle computes is 0 and the pose the pin lands on
-        // is already rest. Written after, every settle would end on a one-frame
+        // the last weight a settle computes is 0 and the pose stopMotion writes
+        // is already where she stands. Written after, every settle would end on a one-frame
         // cut of whatever weight was still standing.
         if (motionAction && settleDur > 0) {
           settleT += dt
@@ -1406,6 +1436,28 @@ export function initAvatarGuide(
         }
       }
       const motionActive = motionAction !== null
+
+      // The idle pose: arms, hands and fingers, whenever a clip does not hold
+      // them. On the stage the clock swaps the two poses every 15–20s; its
+      // hold is paused while any clip holds a share, so no swap starts under a
+      // clip (one already fading finishes). Written with the procedural layer's
+      // share of the body (1 minus the clips'), so a settle hands the arms
+      // back on the same curve as the head and torso, fingers included:
+      // stopMotion used to snap every finger straight in one frame.
+      if (vrm && poses) {
+        const share = 1 - clipShare(motionAction, outgoing)
+        poseState = stepIdlePose(poseState, dt, placement === 'stage', share < 1, Math.random)
+        if (share > 0.001) {
+          writePose(vrm, idlePoseNow(poseState, poses), share)
+          // The fingers' own drift, on top of the pose and on the same share.
+          // The holding hand keeps its grip while it holds the other wrist.
+          if (drift) {
+            for (const d of drift.at(t, share, share * holdingHandFree(poseState))) {
+              vrm.humanoid?.getNormalizedBoneNode(d.bone as BoneName)?.quaternion.multiply(d.q)
+            }
+          }
+        }
+      }
 
       // The clip-driven camera slide. A clip that does not fit the composition
       // it is played in declares how far the frame has to move to hold it:
@@ -1470,7 +1522,12 @@ export function initAvatarGuide(
           // The opening beat is never a gesture. The procedural acts are
           // punctuation between clips, and letting one win the first roll would
           // make her first move a shrug on two visits out of three.
-          const clipTurn = !rotation.opened || Math.random() < 0.66
+          //
+          // A placement that offers no clip at all (the stage, where the
+          // visitor picks them) takes the procedural beat every time: until
+          // 2026-09-30 it rolled a clip turn, found nothing, and sat in the
+          // opening wait for the life of the page, so she never moved her head.
+          const clipTurn = order.length > 0 && (!rotation.opened || Math.random() < 0.66)
           const { pick, next } = clipTurn
             ? nextIdleMotion(
                 order,
@@ -1505,13 +1562,13 @@ export function initAvatarGuide(
 
       // Gesture offsets ADD to the mode-driven head/spine pose (a nod during
       // listening still tracks the visitor). Nothing here touches an arm any
-      // more: arms are either pinned or driven by a clip. All the curves live
+      // more: arms are either in the idle pose or driven by a clip. All the curves live
       // in the GESTURES table.
 
       // The body's own version, read once and spent on BOTH layers that write a
       // pitch: the gesture table just below, and the mode-driven gaze further
-      // down. Writing the 0.x sign in as a literal is the mistake pinArms made
-      // and armrest-0909.md records.
+      // down. Writing the 0.x sign in as a literal is the mistake the old arm pin
+      // made and armrest-0909.md records.
       const fwd = facingSign(vrm?.meta.metaVersion ?? '1')
 
       OFF.hp = OFF.hy = OFF.hr = OFF.sx = OFF.sy = OFF.sz = OFF.cx = OFF.ex = OFF.ey = 0
@@ -1698,6 +1755,16 @@ export function initAvatarGuide(
           motionW: motionAction ? motionAction.getEffectiveWeight() : 0,
           motionClips: motionClips.size,
           placement,
+          // The idle pose clock, and where it has put her left wrist relative
+          // to her hips (world metres): behind her back it sits well behind.
+          pose: poseState.current,
+          poseFrom: poseState.from,
+          poseHold: poseState.hold,
+          wristBehindHips: (() => {
+            const w = bone(vrm, 'leftHand')?.getWorldPosition(new THREE.Vector3())
+            const h = bone(vrm, 'hips')?.getWorldPosition(new THREE.Vector3())
+            return w && h ? camera.position.z > h.z ? h.z - w.z : w.z - h.z : 0
+          })(),
           // Which file the body on screen came from, for the swap check.
           body: shownUrl,
           // Hips WORLD height: the one number that says whether a clip's hips

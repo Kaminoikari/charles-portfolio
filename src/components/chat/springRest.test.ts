@@ -1,5 +1,5 @@
 // A spring joint keeps its tail in world space, captured when the file loads.
-// rotateVRM0 then turns a 0.x body round (and pinArms lowers the arms the
+// rotateVRM0 then turns a 0.x body round (and the idle pose lowers the arms the
 // sleeve springs hang from), so on the first update every tail sits on the
 // far side of where its bone now points and the chain whips back across.
 // 2026-09-25: HairSample_Female's and AvatarSample_A's breasts swung out
@@ -47,7 +47,7 @@ function swingAfterTurn(rest: boolean) {
   return THREE.MathUtils.radToDeg(most)
 }
 
-// pinArms writes the normalized rig; three-vrm copies it onto the raw bones
+// The idle pose is written on the normalized rig; three-vrm copies it onto the raw bones
 // the springs hang from only in humanoid.update(), the first thing vrm.update()
 // does. A sleeve spring under a raw arm still in its T-pose caught its tail
 // there and whipped down on the first frame.
@@ -71,7 +71,7 @@ function sleeveAfterPin(rest: boolean) {
   let pinned = false
   const humanoid = { update: () => { if (pinned) arm.rotation.z = -1.2 } }
   const vrm = { scene, springBoneManager, humanoid }
-  pinned = true // pinArms: the normalized arm is down, the raw one not yet
+  pinned = true // the idle pose: the normalized arm is down, the raw one not yet
   if (rest) restSprings(vrm)
   let most = 0
   for (let i = 0; i < 60; i++) {
@@ -104,8 +104,8 @@ describe('restSprings', () => {
     const src = readFileSync(path.join(__dirname, 'avatarGuideEngine.ts'), 'utf8')
     const at = (s: string) => src.indexOf(s)
     expect(at('restSprings(loaded)')).toBeGreaterThan(at('VRMUtils.rotateVRM0(loaded)'))
-    expect(at('restSprings(loaded)')).toBeGreaterThan(at('pinArms(loaded)'))
+    expect(at('restSprings(loaded)')).toBeGreaterThan(at('writePose(loaded, idlePoseNow(poseState, poses))'))
     expect(at('VRMUtils.rotateVRM0(loaded)')).toBeGreaterThan(0)
-    expect(at('pinArms(loaded)')).toBeGreaterThan(0)
+    expect(at('writePose(loaded, idlePoseNow(poseState, poses))')).toBeGreaterThan(0)
   })
 })

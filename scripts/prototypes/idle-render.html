@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>idle pose render</title>
+<!--
+  Scratch render harness for docs/plans/avatar-idle-poses.md: poses each body
+  with src/components/chat/idlePose.ts (the engine's own solver) and draws a
+  grid of views. Dev server only:
+    /scripts/prototypes/idle-render.html?pose=behind&looks=pink,gishin&views=0,50,180&zoom=0
+-->
+<style>html,body{margin:0;background:#15171f;color:#ccc;font:12px monospace}canvas{display:block}</style>
+<canvas id="c"></canvas>
+<script type="module">
+import * as THREE from 'three'
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { solveIdlePose, normalizedRest, CLASP } from '/src/components/chat/idlePose.ts'
+import { OFFERED_VARIANTS } from '/src/components/chat/avatarVariants.ts'
+
+const q = new URLSearchParams(location.search)
+const pose = q.get('pose') || 'open'
+const looks = (q.get('looks') || OFFERED_VARIANTS.map((v) => v.id).join(',')).split(',')
+const views = (q.get('views') || '0').split(',').map(Number)
+const zoom = q.get('zoom') === '1' || q.get('zoom') === '2'
+if (q.get('clasp')) Object.assign(CLASP, JSON.parse(q.get('clasp')))
+const W = +(q.get('w') || 220), H = +(q.get('h') || (zoom ? 220 : 400))
+const canvas = document.getElementById('c')
+canvas.width = W * looks.length
+canvas.height = H * views.length
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true })
+renderer.setClearColor(0x2a2d3a, 1)
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 1.25
+renderer.setScissorTest(true)
+const loader = new GLTFLoader()
+loader.register((p) => new VRMLoaderPlugin(p))
+const rad = (d) => (d * Math.PI) / 180
+
+for (let row = 0; row < looks.length; row++) {
+  const look = OFFERED_VARIANTS.find((v) => v.id === looks[row])
+  const scene = new THREE.Scene()
+  scene.add(new THREE.AmbientLight(0xffffff, 1.1))
+  const key = new THREE.DirectionalLight(0xffffff, 1.4)
+  key.position.set(0.6, 1.6, 2.2)
+  scene.add(key)
+  const vrm = (await loader.loadAsync(look.url)).userData.vrm
+  VRMUtils.rotateVRM0(vrm)
+  scene.add(vrm.scene)
+  const h = vrm.humanoid
+  const solved = solveIdlePose(
+    { version: vrm.meta.metaVersion, rest: normalizedRest((b) => h.getNormalizedBoneNode(b), h.normalizedHumanBonesRoot) },
+    pose,
+  )
+  for (const [bone, rot] of solved.rotations) h.getNormalizedBoneNode(bone)?.quaternion.copy(rot)
+  vrm.scene.updateMatrixWorld(true)
+  vrm.springBoneManager?.reset()
+  for (let i = 0; i < 120; i++) vrm.update(1 / 60)
+  const hips = new THREE.Vector3()
+  h.getNormalizedBoneNode('hips').getWorldPosition(hips)
+  const head = new THREE.Vector3()
+  h.getNormalizedBoneNode('head').getWorldPosition(head)
+  views.forEach((yaw, col) => {
+    const arms = q.get('zoom') === '2'
+    const cam = new THREE.PerspectiveCamera(arms ? 16 : zoom ? 14 : 22, W / H, 0.1, 30)
+    const tgt = arms ? hips.clone().add(new THREE.Vector3(0, 0.12, 0)) : zoom ? hips.clone().add(new THREE.Vector3(0, -0.12, 0)) : new THREE.Vector3(0, head.y * 0.52, 0)
+    const d = zoom ? 2.2 : 5.2
+    cam.position.set(tgt.x + Math.sin(rad(yaw)) * d, tgt.y + 0.05, tgt.z + Math.cos(rad(yaw)) * d)
+    cam.lookAt(tgt)
+    const x = row * W, y = (views.length - 1 - col) * H
+    renderer.setViewport(x, y, W, H)
+    renderer.setScissor(x, y, W, H)
+    renderer.render(scene, cam)
+  })
+  console.log(look.id, 'clasp', solved.claspError)
+  VRMUtils.deepDispose(vrm.scene)
+}
+document.title = 'done'
+</script>

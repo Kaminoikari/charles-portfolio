@@ -375,11 +375,14 @@ export const AVATAR_FRAMING_DEFAULT: AvatarFraming = { distance: 2.3, lookAtY: 1
 // clip's real headroom is a rendered measurement and not this arithmetic.
 export const AVATAR_FRAMING_COLUMN: AvatarFraming = { distance: 2.441, lookAtY: 1.016 }
 
-// ---- arm rest pose ---------------------------------------------------------
-// The engine pins her arms here whenever nothing else is driving them: a VRM's
-// rest pose is a T-pose, and these Z rotations bring the arms down to her sides.
-// WHICH SIGN does that depends on the version — see armRestPins below, which is
-// what both the engine and rigProbe read; these two numbers are only magnitudes.
+// ---- arm rest pose (retired from the site) ------------------------------------
+// Until 2026-09-30 the engine pinned her arms here whenever nothing else drove
+// them: a VRM's rest pose is a T-pose, and these Z rotations brought the arms
+// down into an A-pose. The site now rests on the idle poses in idlePose.ts,
+// solved per body; nothing in the site reads these. They stay because the
+// vtuber-kit pipeline's author-wave script authors its clip against them.
+// WHICH SIGN does that depends on the version — see armRestPins below; these
+// two numbers are only magnitudes.
 //
 // This is all that is left of a much larger block. Until 2026-08-19 this file
 // also carried a forward-kinematic model of her arm — reach, elbow span, a peak
@@ -441,11 +444,11 @@ export function facingSign(version: '0' | '1'): -1 | 1 {
 }
 
 /**
- * The rest pose, as rotations to write on the normalized arm bones.
+ * The retired A-pose, as rotations to write on the normalized arm bones.
  *
- * The ONE definition: the engine pins these at load and after every clip, and
- * rigProbe.applyArmRest poses the real skeleton with them so a test can look at
- * where the wrists actually end up on each family's own body.
+ * The engine pinned these at load and after every clip until 2026-09-30; its
+ * rest pose is now idlePose.ts's open-hands pose, which rigProbe.applyArmRest
+ * applies. Kept for the kit's author-wave script (see the note above).
  */
 export function armRestPins(version: '0' | '1'): ReadonlyArray<readonly [ArmPinBone, number]> {
   const s = armRestSign(version)

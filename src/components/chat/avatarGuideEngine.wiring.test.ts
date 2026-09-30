@@ -124,13 +124,13 @@ describe('the pan reaches the camera', () => {
 })
 
 describe('the body version reaches everything that is posed with it', () => {
-  it('asks armRestPins for THIS body version', () => {
-    // rigProbe.test.ts proves the pins are right for each version by posing the
-    // real skeleton with them. It cannot see what the engine hands them, and a
-    // literal '0' here would restore exactly the bug that test now covers: every
-    // 1.0 body pinned with the 0.x sign, standing at rest with its arms up.
-    expect(SOURCE, 'pinArms does not read the version off the body').toMatch(
-      /for \(const \[name, z\] of armRestPins\(v\.meta\.metaVersion\)\)/,
+  it('solves the idle poses for THIS body version', () => {
+    // rigProbe.test.ts proves the poses are right for each version by posing
+    // the real skeleton with them. It cannot see what the engine hands the
+    // solver, and a literal '0' here would restore the bug of 2026-09-09: every
+    // 1.0 body posed with the 0.x facing, its arms turned the wrong way.
+    expect(SOURCE, 'solvePoses does not read the version off the body').toMatch(
+      /version: v\.meta\.metaVersion,\s*rest: normalizedRest\(/,
     )
   })
 
@@ -214,3 +214,33 @@ describe('the body version reaches everything that is posed with it', () => {
     )
   })
 })
+
+describe('the idle poses', () => {
+  it('alternates only on the stage, and never under a clip', () => {
+    // idlePose.test.ts proves the clock swaps when told to and holds when told
+    // to. What it is told comes from here: a clock that alternated in the chat
+    // widget would put her hands behind her back where the framing was measured
+    // for open hands, and one that started a swap under a clip would settle
+    // the clip into a pose she was not standing in when it began.
+    expect(frameBody()).toMatch(
+      /poseState = stepIdlePose\(poseState, dt, placement === 'stage', share < 1, Math\.random\)/,
+    )
+  })
+
+  it('hands the arms back on the procedural share, fingers included', () => {
+    expect(frameBody()).toMatch(/const share = 1 - clipShare\(motionAction, outgoing\)/)
+    expect(frameBody()).toMatch(/if \(share > 0\.001\) \{\s*writePose\(vrm, idlePoseNow\(poseState, poses\), share\)/)
+  })
+
+  it('drifts the fingers on the same share, and keeps the grip closed', () => {
+    expect(frameBody()).toMatch(/drift\.at\(t, share, share \* holdingHandFree\(poseState\)\)/)
+  })
+
+  it('lets a placement that offers no clip take the procedural beats', () => {
+    // The stage offers none (the visitor picks them). Rolling a clip turn
+    // there found nothing and parked the rotation in its opening wait for
+    // good, so on /avatar she never moved her head.
+    expect(frameBody()).toMatch(/const clipTurn = order\.length > 0 && /)
+  })
+})
+

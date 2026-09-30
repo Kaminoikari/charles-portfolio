@@ -304,8 +304,8 @@ export const MAX_END_WRIST = 1.05
 
 // ---- returning to rest -----------------------------------------------------
 //
-// Every clip hands the bones back to the engine's pinned rest pose (ARM_PINS in
-// avatarGuideEngine.ts), and until 2026-08-20 that handover was a 0.25s LINEAR
+// Every clip hands the bones back to the engine's rest pose (the idle pose she
+// was standing in, idlePose.ts), and until 2026-08-20 that handover was a 0.25s LINEAR
 // cross-fade for all ten of them. Two things were wrong with it, both measured
 // on the running page rather than guessed:
 //
@@ -315,7 +315,7 @@ export const MAX_END_WRIST = 1.05
 //    faster, in one frame — holds exactly that speed for fifteen frames, and
 //    stops dead. Nothing alive starts or stops like that.
 //  · A fixed duration over a variable distance. A clip's final pose is not the
-//    pinned rest pose, and how far apart they are is a property of the clip:
+//    rest pose, and how far apart they are is a property of the clip:
 //    from 0.060m of wrist travel (`squat`) to 0.540m (`dance`). At 0.25s flat
 //    that is a ninefold spread in speed, so the same settle reads as gentle
 //    after one clip and as a snap after another.
