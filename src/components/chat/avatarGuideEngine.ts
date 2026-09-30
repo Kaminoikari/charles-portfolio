@@ -86,6 +86,7 @@ import {
   normalizedRest,
   solveIdlePoses,
   stepIdlePose,
+  TRUNK_ANCHOR,
   type IdlePoseName,
   type IdlePoses,
   type IdlePoseState,
@@ -206,8 +207,54 @@ function solvePoses(v: VRM): IdlePoses | null {
   const sk = {
     version: v.meta.metaVersion,
     rest: normalizedRest((bone) => h.getNormalizedBoneNode(bone as BoneName), h.normalizedHumanBonesRoot),
+    surface: trunkSurface(v, h.normalizedHumanBonesRoot),
   }
   return solveIdlePoses(sk)
+}
+
+/**
+ * Her trunk's surface as the solver takes it (PoseSkeleton.surface): every
+ * skinned vertex whose heaviest joint is, or hangs from, a TRUNK_ANCHOR bone,
+ * skinned to the pose she stands in, in `root`'s frame. Read at load, while
+ * she still stands at rest. rigProbe.trunkSurface is the same rule read off
+ * the file, which is what the tests pose her with.
+ */
+function trunkSurface(v: VRM, root: THREE.Object3D): Float32Array {
+  const h = v.humanoid
+  const boneOf = new Map<THREE.Object3D, string>()
+  if (h) {
+    for (const name of Object.keys(h.humanBones)) {
+      const node = h.getRawBoneNode(name as BoneName)
+      if (node) boneOf.set(node, name)
+    }
+  }
+  const anchorOf = (o: THREE.Object3D): string | null => {
+    for (let n: THREE.Object3D | null = o; n; n = n.parent) {
+      const name = boneOf.get(n)
+      if (name) return name
+    }
+    return null
+  }
+  v.scene.updateMatrixWorld(true)
+  const out: number[] = []
+  const p = new THREE.Vector3()
+  v.scene.traverse((o) => {
+    const mesh = o as THREE.SkinnedMesh
+    if (!mesh.isSkinnedMesh) return
+    const joints = mesh.geometry.getAttribute('skinIndex')
+    const weights = mesh.geometry.getAttribute('skinWeight')
+    if (!joints || !weights) return
+    const trunk = mesh.skeleton.bones.map((bone) => TRUNK_ANCHOR.test(anchorOf(bone) ?? ''))
+    for (let i = 0; i < weights.count; i++) {
+      let best = 0
+      for (let k = 1; k < weights.itemSize; k++) if (weights.getComponent(i, k) > weights.getComponent(i, best)) best = k
+      if (!trunk[joints.getComponent(i, best)]) continue
+      mesh.getVertexPosition(i, p)
+      root.worldToLocal(mesh.localToWorld(p))
+      out.push(p.x, p.y, p.z)
+    }
+  })
+  return Float32Array.from(out)
 }
 
 /**

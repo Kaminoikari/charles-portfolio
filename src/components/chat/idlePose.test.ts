@@ -33,6 +33,7 @@ import {
   clothShell,
   TORSO_SEGMENTS,
   posedMesh,
+  poseSkeleton,
   probeHand,
   resetRig,
   silhouetteReach,
@@ -121,10 +122,11 @@ const MAX_DEPTH = 0.008
 /**
  * milfy's hoodie hangs in a bell over her hips, and its hem is skinned to the
  * hips bone, so her hips capsule comes out 107mm in radius against 89mm on the
- * same skeleton in pink's clothes. Both poses lay the hoodie's own sleeves on
- * that hem: 15.2mm behind her back and 10.7mm with open hands by this measure,
- * cloth on cloth, and it reads as a sleeve resting on a hoodie in the render
- * (2026-09-30). Every other offered look is held to MAX_DEPTH.
+ * same skeleton in pink's clothes. Open hands lay the hoodie's own sleeves on
+ * that hem, 10.7mm in by this measure, cloth on cloth, and it reads as a
+ * sleeve resting on a hoodie in the render (2026-09-30). Behind her back it
+ * read 15.2mm until the clasp moved to rest on her, 0mm since. Every other
+ * offered look is held to MAX_DEPTH.
  */
 const DEPTH_WAIVER: Record<string, number> = { milfy: 0.025 }
 const maxDepth = (id: string): number => DEPTH_WAIVER[id] ?? MAX_DEPTH
@@ -135,22 +137,38 @@ const maxDepth = (id: string): number => DEPTH_WAIVER[id] ?? MAX_DEPTH
  * bearing, skirts included, so a hand inside it is under or through a hem.
  */
 const MAX_CLOTH_DEPTH = 0
+
+/**
+ * How far back of hanging straight down an upper arm may swing behind her, in
+ * degrees. A shoulder extends about 50–60° at the end of its range; standing
+ * with the hands clasped behind, people hold it short of that. The pose the
+ * owner chose measured 44.9° at most (2026-09-30); this leaves 1° over it.
+ * Drawing the collarbones back 30° instead of 40° swings one arm to 47°.
+ */
+const MAX_UPPER_ARM_BACK = 46
 /**
  * Two looks whose clothes one set of body-relative numbers cannot clear, each
  * at what it measured on 2026-09-30, so neither can get worse unnoticed:
  *
- * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER). Behind her
- *   back her forearms pass through it and only her fingertips show under the
- *   hem, 88.6mm deep (88.8mm near the end of the fade); open hands sit 13.7mm
- *   into its flare. Clearing it would need the clasp about 90mm further back
- *   than any other look wants.
+ * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER). Resting
+ *   her hands on it threw her upper arms 51–57° back, so the clasp stops at
+ *   CLASP.deepest and her hands go under its hem, 91.5mm deep (87.4mm near the
+ *   end of the fade); open hands sit 13.7mm into its flare.
  * - studio's coat flares from the waist, and her open hands brush its skirt,
- *   20.0mm in. The fade starts there, which is its deepest point (14.4mm at 15%).
+ *   20.0mm in. The fade starts there, which is its deepest point (12.3mm at 10%).
  *
  * Both want the pose placed against the clothes each body wears, which the
  * solver does not see: it reads bones only.
  */
-const CLOTH_WAIVER: Record<string, number> = { milfy: 0.089, studio: 0.02 }
+const CLOTH_WAIVER: Record<string, number> = { milfy: 0.092, studio: 0.02 }
+
+/**
+ * The furthest her clasped hands may stand off her clothes, in metres: they
+ * rest on her. A clasp placed without her surface hung 4–9cm off Sendagaya
+ * Shibu's skirt with the upper arms thrown back to reach it (2026-09-30).
+ * Resting on her, every offered look measured 42.5mm or less.
+ */
+const MAX_CLOTH_GAP = 0.045
 const maxClothDepth = (id: string): number => CLOTH_WAIVER[id] ?? MAX_CLOTH_DEPTH
 
 function posed(look: Look, rotations: ReadonlyMap<string, THREE.Quaternion>): void {
@@ -235,12 +253,12 @@ describe.each(looks)('idle poses on $id', (look) => {
     // The envelope's floor, named: a negative flex is an elbow bent backwards.
     applyIdlePose(look.rig, 'behind')
     for (const side of ['left', 'right'] as const) {
-      expect(probeArmJoints(look.rig, side).flex, `${side} elbow`).toBeGreaterThan(40)
+      expect(probeArmJoints(look.rig, side).flex, `${side} elbow`).toBeGreaterThan(20)
     }
   })
 
   it('keeps the joints humanly possible on the way between the two poses', () => {
-    const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
     for (let i = 1; i < 10; i++) {
       posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 10, hold: 18 }, poses))
       expect(outsideLimits(look.rig), `${i * 10}%`).toEqual([])
@@ -286,7 +304,7 @@ describe.each(looks)('idle poses on $id', (look) => {
   })
 
   it('keeps them out on the way between the two poses', () => {
-    const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
     for (let i = 1; i < 10; i++) {
       posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 10, hold: 18 }, poses))
       const { depth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
@@ -298,6 +316,12 @@ describe.each(looks)('idle poses on $id', (look) => {
     applyIdlePose(look.rig, pose)
     const { clothDepth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
     expect(clothDepth, `${(clothDepth * 1000).toFixed(1)}mm into her clothes`).toBeLessThanOrEqual(maxClothDepth(look.id))
+  })
+
+  it('rests the clasped hands on her instead of holding them off her', () => {
+    applyIdlePose(look.rig, 'behind')
+    const { clothDepth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
+    expect(-clothDepth, `${(-clothDepth * 1000).toFixed(1)}mm off her clothes`).toBeLessThan(MAX_CLOTH_GAP)
   })
 
   it.runIf(look.id in CLOTH_WAIVER)('needs the clothes waiver it declares', () => {
@@ -317,7 +341,7 @@ describe.each(looks)('idle poses on $id', (look) => {
     // pleats (owner, 2026-09-30: "when the hands come in to her body they go
     // inside her clothes"). Twenty steps: the deepest point sat at 85–95% on
     // most bodies, between the tenths the capsule check samples.
-    const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
     for (let i = 1; i < 20; i++) {
       posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 20, hold: 18 }, poses))
       const { clothDepth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
@@ -325,16 +349,24 @@ describe.each(looks)('idle poses on $id', (look) => {
     }
   })
 
-  it('bends the elbows behind her and keeps them close to her body', () => {
-    // The owner, 2026-09-30, on two earlier versions: "the arms behind her
-    // are a little too straight" (elbows at 32–49°), then "they should sit
-    // closer to the body" (elbows bent outward to 5–15cm past the shoulder
-    // joints, which from the front camera reads as hands on hips).
+  it('hangs the arms behind her the way a person holds them, close to her body', () => {
+    // The owner, 2026-09-30, on four versions in turn: "the arms behind her
+    // are a little too straight" (elbows at 32–49°, hands hanging off her),
+    // then "they should sit closer to the body" (elbows bent outward to 5–15cm
+    // past the shoulder joints, which from the front camera reads as hands on
+    // hips), then "the arm pose behind her back is very unnatural": her upper
+    // arms were thrown 49–73° back, at the end of a shoulder's range, to reach
+    // a clasp that hung in the air behind her. Shown three heights, the owner
+    // chose the one resting on her with the elbows at 40°.
     applyIdlePose(look.rig, 'behind')
     const r = look.rig
     const shoulderOut = Math.abs(r.restPosition.leftUpperArm.x - r.restPosition.hips.x)
+    const back = new THREE.Vector3(0, 0, r.version === '0' ? 1 : -1)
     for (const side of ['left', 'right'] as const) {
-      expect(probeHand(r, side).elbowFlex, `${side} elbow`).toBeGreaterThan(60)
+      expect(probeHand(r, side).elbowFlex, `${side} elbow`).toBeGreaterThan(30)
+      const upper = worldPosition(r, `${side}LowerArm`).sub(worldPosition(r, `${side}UpperArm`))
+      const thrownBack = THREE.MathUtils.radToDeg(Math.atan2(upper.dot(back), -upper.y))
+      expect(thrownBack, `${side} upper arm, degrees back of hanging`).toBeLessThan(MAX_UPPER_ARM_BACK)
       const out = Math.abs(worldPosition(r, `${side}LowerArm`).x - worldPosition(r, 'spine').x) - shoulderOut
       expect(out, `${side} elbow past the shoulder`).toBeLessThan(0.03)
     }
@@ -354,7 +386,7 @@ describe.each(looks)('idle poses on $id', (look) => {
   it('fits the stage frame on the way between the two poses, by way of the waypoint', () => {
     resetRig(look.rig)
     const skin = deriveSilhouetteSkin(look.glb, look.rig)
-    const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
     for (let i = 1; i < 10; i++) {
       posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 10, hold: 18 }, poses))
       const reach = silhouetteReach(look.rig, skin)
@@ -379,7 +411,7 @@ describe('solveIdlePose', () => {
     // every later measurement in the file was taken on that drifted skeleton.
     const { rig } = looks[0]
     const before = Object.fromEntries(Object.entries(rig.restPosition).map(([k, v]) => [k, v.clone()]))
-    const sk = { version: rig.version, rest: (b: string) => rig.restPosition[b] }
+    const sk = poseSkeleton(rig)
     for (let i = 0; i < 3; i++) for (const pose of ['open', 'behind'] as const) solveIdlePose(sk, pose)
     for (const [k, v] of Object.entries(before)) expect(rig.restPosition[k].distanceTo(v), k).toBe(0)
   })
@@ -415,7 +447,7 @@ describe('clothShell', () => {
 describe('blendPoses', () => {
   it('starts on the first pose and ends on the second', () => {
     const { rig } = looks[0]
-    const sk = { version: rig.version, rest: (b: string) => rig.restPosition[b] }
+    const sk = poseSkeleton(rig)
     const open = solveIdlePose(sk, 'open').rotations
     const behind = solveIdlePose(sk, 'behind').rotations
     for (const [bone, q] of blendPoses(open, behind, 0)) expect(q.angleTo(open.get(bone)!)).toBeLessThan(1e-6)
@@ -424,7 +456,7 @@ describe('blendPoses', () => {
 
   it('is what the clock hands the engine mid-fade, by way of the waypoint', () => {
     const { rig } = looks[0]
-    const poses = solveIdlePoses({ version: rig.version, rest: (b: string) => rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(rig))
     // 0.3 and 0.8, not 0.5: the halfway point is the waypoint itself from
     // either end, so it cannot tell a fade that runs backwards.
     const early = idlePoseNow({ current: 'behind', from: 'open', blend: 0.3, hold: 18 }, poses)
@@ -438,7 +470,7 @@ describe('blendPoses', () => {
     // The premise of rollAxes, on the solver's own rotations: without it the
     // forearm leaves its hinge plane mid-fade.
     const { rig } = looks[0]
-    const poses = solveIdlePoses({ version: rig.version, rest: (b: string) => rig.restPosition[b] })
+    const poses = solveIdlePoses(poseSkeleton(rig))
     const hingeOff = (pose: ReadonlyMap<string, THREE.Quaternion>): number => {
       resetRig(rig)
       for (const [bone, q] of pose) rig.bones[bone]?.quaternion.copy(q)

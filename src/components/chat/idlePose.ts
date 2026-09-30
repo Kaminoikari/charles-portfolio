@@ -32,7 +32,21 @@ export const IDLE_POSES: readonly IdlePoseName[] = ['open', 'behind']
 export interface PoseSkeleton {
   version: '0' | '1'
   rest: (bone: string) => THREE.Vector3 | undefined
+  /**
+   * Her surface at rest, as xyz triples in the frame `rest` answers in: every
+   * vertex skinned to her trunk or legs (TRUNK_ANCHOR), clothes and skirts
+   * included, hair and arms left out. The clasp rests against it.
+   */
+  surface: ArrayLike<number>
 }
+
+/**
+ * The humanoid bones whose skin, and whatever hangs from them, counts as her
+ * trunk: what her hands rest against and must stay out of. A vertex belongs
+ * by the bone its heaviest joint is or hangs from, so a skirt on spring joints
+ * under the hips or thighs counts and hair under the head does not.
+ */
+export const TRUNK_ANCHOR = /^(hips|spine|chest|upperChest|(left|right)(UpperLeg|LowerLeg|Foot|Toes))$/
 
 /** A pose: local rotations for normalized bones, by VRM 1.0 bone name. */
 export type PoseRotations = ReadonlyMap<string, THREE.Quaternion>
@@ -341,36 +355,53 @@ function hinged(
 }
 
 /**
- * Where the clasp sits and how the elbows bend, in the body's own terms. The
- * clasp is placed against her hips and scaled by her hip width (the distance
- * between the two upper-leg joints), so a broader body clasps further out
- * behind a broader back.
+ * Where the clasp sits and how the elbows bend, in the body's own terms: the
+ * clasp rests against whatever she wears behind her, and its offsets are in
+ * hip widths (the distance between the two upper-leg joints).
  *
  * - `across`: the held wrist's offset toward her left of the midline
- * - `flex`: how far the held elbow bends, in degrees; sets the clasp's height
- * - `back`: how far behind the hips joint it sits. Far enough that the
- *   holding hand, on the body side of the held wrist, clears her back and
- *   whatever she wears over it: at 1.2 pink's fingers sank 25mm into her
- *   jacket's hem (rigProbe.clothShell, 2026-09-30); 1.4 leaves every offered
- *   look but milfy 15mm or more outside her clothes.
+ * - `flex`: how far the held elbow bends, in degrees; sets the clasp's height.
+ *   The owner chose 40 on 2026-09-30 from three heights shown resting on her:
+ *   at 65 her hands sat higher and her upper arms swung 53–58° back to reach
+ *   them; at 40 they swing 29–45° and her hands rest on her seat.
+ * - `clear`: how far behind her surface (PoseSkeleton.surface) the held
+ *   wrist sits, in metres, at the clasp's height and across the width of her
+ *   hands: far enough that the holding hand, on her side of that wrist, rests
+ *   on her instead of in her. Until 2026-09-30 the clasp sat a fixed 1.2 hip
+ *   widths behind her hips joint, whatever she wore: pink's fingers sank 25mm
+ *   into her jacket's hem, and Sendagaya Shibu's hands hung 4cm off her skirt
+ *   with the upper arms thrown back to reach there (owner: "the arm pose
+ *   behind her back is very unnatural").
+ * - `deepest`: the furthest behind her hips joint the held wrist may go, in
+ *   hip widths, whatever she wears. Every offered look clasps within 1.44;
+ *   milfy's hoodie stands out behind her far enough (2.05) that resting on it
+ *   threw her upper arms 51–57° back, at the end of a shoulder's range. Her
+ *   hands go under its hem instead (see idlePose.test.ts, CLOTH_WAIVER).
  * - `pole`: how far back each elbow bends, against 1 straight out to the side.
  *   Mostly back: bent outward, the elbows stood 5–15cm past her shoulders
  *   and read from the front as hands on hips (owner, 2026-09-30: "the arms
  *   behind her should sit closer to the body"). Bent back, they stay behind
- *   her sides. 16 rather than 10 since the clasp moved back to 1.4: at 10 the
- *   holding arm turned 91° at the shoulder, past what a shoulder turns.
- * - `shoulderBack`: degrees the collarbones swing back
+ *   her sides. 16 rather than 10: at 10 pink's hands brush her jacket's hem
+ *   near the end of the fade, 4.2mm in.
+ * - `shoulderBack`: degrees the collarbones swing back. Drawing the shoulders
+ *   back is what lets the arms reach behind her without swinging far back
+ *   themselves: at 30 the holding arm swung up to 47° on Victoria Rubin, at
+ *   40 no arm passes 45°.
  * - `heldHand`: the held hand's direction (outward, down, back)
  */
 export const CLASP = {
   across: 0.25,
-  flex: 65,
-  back: 1.4,
+  flex: 40,
+  clear: 0.04,
+  deepest: 1.5,
   pole: 16,
-  shoulderBack: 15,
+  shoulderBack: 40,
   heldHand: [-0.35, 0.9, 0.1] as [number, number, number],
   holdingHand: [-0.8, 0.5, 0.15] as [number, number, number],
 }
+
+/** The slab of her surface the clasp rests against: metres above and below its height, and either side of the held wrist. */
+const CLASP_BAND = { height: 0.05, width: 0.1 }
 
 /** Where the palm's centre sits, as a fraction of the way from wrist to middle knuckle. */
 const PALM_CENTRE = 0.6
@@ -418,15 +449,37 @@ function solveBehind(b: PoseBuilder): { error: number } {
   // the held elbow at CLASP.flex. A fixed height bent pink's long arms to 95°
   // and threw her elbows 14cm out past her shoulders while Vivi's bent 72°
   // (2026-09-30): a long-armed body clasps lower, as a person does.
-  const wristL = hips.clone().addScaledVector(oL, CLASP.across * hipWidth).addScaledVector(back, CLASP.back * hipWidth)
-  {
-    const upperLen = b.offset('leftUpperArm', 'leftLowerArm').length()
-    const foreLen = b.offset('leftLowerArm', 'leftHand').length()
-    const reach = Math.sqrt(upperLen ** 2 + foreLen ** 2 + 2 * upperLen * foreLen * Math.cos(rad(CLASP.flex)))
+  // How far back her surface reaches at a height (metres above the hips
+  // joint), across the width her two hands take up round the held wrist.
+  const across = CLASP.across * hipWidth
+  const surfaceBehind = (height: number): number => {
+    let most = -Infinity
+    const p = new THREE.Vector3()
+    for (let i = 0; i + 2 < b.sk.surface.length; i += 3) {
+      p.set(b.sk.surface[i], b.sk.surface[i + 1], b.sk.surface[i + 2]).sub(hips)
+      if (Math.abs(p.dot(b.ax.u) - height) > CLASP_BAND.height) continue
+      if (Math.abs(p.dot(oL) - across) > CLASP_BAND.width) continue
+      most = Math.max(most, p.dot(back))
+    }
+    return most
+  }
+  // The height is whatever bends the held elbow to CLASP.flex, and that
+  // depends on how far back the wrist is, which depends on the height; a few
+  // rounds settle both (the last changes it by well under a millimetre).
+  const upperLen = b.offset('leftUpperArm', 'leftLowerArm').length()
+  const foreLen = b.offset('leftLowerArm', 'leftHand').length()
+  const reach = Math.sqrt(upperLen ** 2 + foreLen ** 2 + 2 * upperLen * foreLen * Math.cos(rad(CLASP.flex)))
+  const wristL = new THREE.Vector3()
+  let depth = hipWidth
+  for (let round = 0; round < 4; round++) {
+    wristL.copy(hips).addScaledVector(oL, across).addScaledVector(back, depth)
     const d = wristL.clone().sub(shoulderAt('left'))
     const level = d.clone().projectOnPlane(b.ax.u).length()
     const drop = Math.sqrt(Math.max(0, reach * reach - level * level))
     wristL.addScaledVector(b.ax.u, -d.dot(b.ax.u) - drop)
+    const behind = surfaceBehind(wristL.clone().sub(hips).dot(b.ax.u))
+    if (behind === -Infinity) throw new Error('idlePose: no surface behind her where the clasp goes')
+    depth = Math.min(behind + CLASP.clear, CLASP.deepest * hipWidth)
   }
   const held = place('left', wristL, heldHand)
   b.arm('left', held.chain)
@@ -461,7 +514,7 @@ function solveBehind(b: PoseBuilder): { error: number } {
  * A waypoint solved like the clasp is an arm a person could hold, so both
  * halves of the fade run between two such arms.
  */
-export const IDLE_POSE_VIA = { out: 2.1, back: 1.3, down: 0.5, pole: 3, shoulderBack: 8 }
+export const IDLE_POSE_VIA = { out: 2.1, back: 1.9, down: 0.5, pole: 3, shoulderBack: 8 }
 
 function solveVia(b: PoseBuilder): PoseRotations {
   const { f, u } = b.ax

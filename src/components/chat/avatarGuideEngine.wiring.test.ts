@@ -245,6 +245,19 @@ describe('the idle poses', () => {
 })
 
 
+describe('the clasp rests on her', () => {
+  it("hands the solver her trunk's surface, in the frame her rest positions are in", () => {
+    // idlePose.test.ts poses her with rigProbe.trunkSurface, read off the file.
+    // What the engine hands over is only this code: points left in world space
+    // would sit wherever the scene stands, and the clasp would rest against
+    // the wrong place without a test anywhere noticing.
+    expect(SOURCE).toMatch(/surface: trunkSurface\(v, h\.normalizedHumanBonesRoot\)/)
+    expect(SOURCE).toMatch(/rest: normalizedRest\(\(bone\) => h\.getNormalizedBoneNode\(bone as BoneName\), h\.normalizedHumanBonesRoot\)/)
+    expect(SOURCE).toMatch(/root\.worldToLocal\(mesh\.localToWorld\(p\)\)/)
+    expect(SOURCE).toMatch(/if \(!trunk\[joints\.getComponent\(i, best\)\]\) continue/)
+  })
+})
+
 describe('she stands on the floor', () => {
   it('sways from the waist up and never turns the hips or a leg', () => {
     // Every leg is a child of the hips, so a roll on the hips swings both feet

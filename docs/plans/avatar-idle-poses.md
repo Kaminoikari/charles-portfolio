@@ -139,8 +139,8 @@ show this.
   `rigProbe.probeArmJoints` now reads each joint in its parent's frame and
   the tests hold every look to human ranges: elbow 0–150° and within the
   carrying angle, shoulder and forearm rotation within 90°, wrist roll within 10°.
-  Measured: elbows 61–75°, shoulder rotation 72–90°, forearm roll 84–87°,
-  wrist roll at most 5.7° (after the clothes fix below).
+  Measured then: elbows 61–74°, shoulder rotation 69–85°, forearm roll 80–85°,
+  wrist roll at most 5.4° (the clasp has since moved; see below).
 - The crossfade keeps the elbows jointed too: each forearm's bend and roll
   are blended apart (slerped whole, an elbow bent 18–19° sideways part way).
   It runs by way of a waypoint (`IDLE_POSE_VIA`): each wrist beside and
@@ -152,25 +152,35 @@ show this.
   when they come in to her body"): `rigProbe.clothShell` takes the outermost
   cloth anchored to her trunk and legs, skirt chains included, per 1cm band
   and 5° bearing round her hips, and the tests hold every hand outside it in
-  both poses and through the fade. The clasp moved back (`back` 1.2 to 1.4:
-  pink's fingers were 25mm into her jacket's hem) with the elbows bent further
-  back (`pole` 10 to 16, which keeps the shoulder inside 90°). Measured: every
-  offered look 5.5mm or more outside her clothes throughout, but two waived at
-  their measured depth, milfy (hoodie, 88.8mm) and studio (flared coat, open
-  hands 20.0mm): both want the pose placed against the clothes each body
-  wears, and the solver reads bones only.
+  both poses and through the fade.
+- The clasp rests on her (same day, owner: "the arm pose behind her back is
+  very unnatural"). It sat a fixed 1.2 hip widths behind her hips joint:
+  pink's fingers sank 25mm into her jacket, Sendagaya Shibu's hands hung 4cm
+  off her skirt, and every upper arm was thrown 49–73° back to reach. The
+  solver now takes her surface (`PoseSkeleton.surface`: every vertex anchored
+  to her trunk or legs, `TRUNK_ANCHOR`), the engine reading it off the loaded
+  meshes and the tests off the file, and puts the held wrist 4cm behind it.
+  Shown three heights, the owner chose the lowest (`flex` 40); the collarbones
+  swing back 40°. Measured: hands 0.8–42.5mm off her clothes, upper arms
+  29–45° back, elbows 36–54°, shoulder rotation at most 83.5°.
+  milfy's hoodie stands too far out to rest on (2.05 hip widths), so the clasp
+  stops at 1.5 and her hands go under its hem, waived at 91.5mm; studio's
+  flared coat takes her open hands 20.0mm in, waived too. The fade runs by
+  way of the waypoint above, and every other offered look stays 5.2mm or more
+  outside her clothes through it.
 - Owner's notes on the way, each now a test in `idlePose.test.ts`:
-  "the arms behind are too straight" (elbows were 32–49°, now 61–74°),
+  "the arms behind are too straight" (elbows were 32–49°, then 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood
   5–15cm past the shoulder joints and read as hands on hips; they now point
-  back, the collarbones swing back 15°, and every elbow stands 6–34mm
-  inside its shoulder joint; the test allows 3cm past it).
+  back, and every elbow stands 22–59mm inside its shoulder joint; the test
+  allows 3cm past it). The clasp resting on her (above) brought the elbows
+  back to 36–54°, the owner's choice once the upper arms stopped reaching.
 - Clipping is measured against capsules inscribed in the torso and thigh
   skin (`rigProbe.torsoCapsules`). A first try counted ray crossings, and
   real exports are not closed meshes: it read a hand behind Gishin's dress
   as 217mm inside her. Limit 8mm; milfy is waived to 25mm (measured 15.2mm
-  behind her back, 10.7mm with open hands: sleeve on the hem of a
-  bell-shaped hoodie, cloth on cloth).
+  behind her back before the clasp moved, 0mm since, and 10.7mm with open
+  hands: sleeve on the hem of a bell-shaped hoodie, cloth on cloth).
 - The open pose was narrowed from the prototype (upper arm 22°→16°,
   forearm 30°→24°, hand 58°→38° out): wrists 24–26cm from the midline
   (the test allows 20–28cm).

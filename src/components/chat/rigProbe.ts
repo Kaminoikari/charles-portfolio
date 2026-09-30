@@ -43,7 +43,7 @@
 import * as THREE from 'three'
 import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
-import { solveIdlePose, type IdlePoseName, type SolvedPose } from './idlePose'
+import { solveIdlePose, TRUNK_ANCHOR, type IdlePoseName, type PoseSkeleton, type SolvedPose } from './idlePose'
 import {
   buildNodes,
   parseGlb,
@@ -110,6 +110,23 @@ export interface Rig {
   scene: THREE.Group
   /** The rest bounding box of the meshes the expressions move, in the file's own space. See deriveFaceBox. */
   faceBox: FaceBox
+  /** Her trunk's surface at rest, as the engine hands it to the idle-pose solver (PoseSkeleton.surface). */
+  surface: Float32Array
+}
+
+/** What the idle-pose solver is handed for this body, built the way the engine builds it. */
+export function poseSkeleton(rig: Rig): PoseSkeleton {
+  return { version: rig.version, rest: (bone) => rig.restPosition[bone], surface: rig.surface }
+}
+
+/** Every vertex anchored to her trunk or legs, at the pose the rig is in (TRUNK_ANCHOR). */
+export function trunkSurface(mesh: PosedMesh): Float32Array {
+  const out: number[] = []
+  for (let i = 0; i < mesh.anchor.length; i++) {
+    const a = mesh.anchor[i]
+    if (a && TRUNK_ANCHOR.test(a)) out.push(mesh.positions[i * 3], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2])
+  }
+  return Float32Array.from(out)
 }
 
 function localMatrix(node: GltfNode): THREE.Matrix4 {
@@ -217,7 +234,10 @@ export function buildRigFrom(glb: Glb): Rig {
   if (headNode === undefined) throw new Error('the humanoid map has no head')
   const faceBox = deriveFaceBox(glb, raw, headNode)
 
-  return { bones, root, restPosition, humanoid, version: source.version, raw, scene, faceBox }
+  const rig: Rig = { bones, root, restPosition, humanoid, version: source.version, raw, scene, faceBox, surface: new Float32Array() }
+  scene.updateMatrixWorld(true)
+  rig.surface = trunkSurface(posedMesh(glb, rig))
+  return rig
 }
 
 export function buildRig(vrmData: Uint8Array): Rig {
@@ -255,7 +275,7 @@ export function resetRig(rig: Rig): void {
  */
 export function applyIdlePose(rig: Rig, name: IdlePoseName): SolvedPose {
   restNormalized(rig)
-  const solved = solveIdlePose({ version: rig.version, rest: (bone) => rig.restPosition[bone] }, name)
+  const solved = solveIdlePose(poseSkeleton(rig), name)
   for (const [bone, q] of solved.rotations) rig.bones[bone]?.quaternion.copy(q)
   sync(rig)
   return solved
@@ -1367,7 +1387,6 @@ export interface ClothShell {
   depth: (point: THREE.Vector3) => number
 }
 
-const TRUNK_ANCHOR = /^(hips|spine|chest|upperChest|(left|right)(UpperLeg|LowerLeg|Foot|Toes))$/
 /** Band height and bearing step of the shell, metres and radians. */
 export const CLOTH_SHELL_BAND = 0.01
 export const CLOTH_SHELL_BEARINGS = 72
