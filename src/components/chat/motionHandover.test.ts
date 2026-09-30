@@ -9,7 +9,7 @@
 // 12cm off rest, which is the size of the jump measured on the site.
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
-import { clipShare, releaseMotion, takeOverMotion, type OutgoingMotion } from './avatarGuideEngine'
+import { clipShare, poseUnderClips, releaseMotion, restUnderClip, takeOverMotion, type OutgoingMotion } from './avatarGuideEngine'
 
 const FADE = 0.25
 const DT = 1 / 60
@@ -168,5 +168,63 @@ describe('a clip taking the bones over from one still playing', () => {
       least = Math.min(least, clipShare(next.action, outgoing))
     }
     expect(least).toBeGreaterThan(0.95)
+  })
+})
+
+describe('the idle pose under a clip that takes over from another', () => {
+  // waveWink turns only the arms. Played while peaceSign (which turns the
+  // shoulders too) still held her, the shoulders were handed back by the
+  // mixer itself when peaceSign let go: restoreOriginalState puts back what
+  // they were when peaceSign started, the idle pose's shoulders swung back,
+  // and nothing wrote them again while the wave held the whole body.
+  const about = (deg: number, axis: THREE.Vector3) => new THREE.Quaternion().setFromAxisAngle(axis, THREE.MathUtils.degToRad(deg))
+  const X = new THREE.Vector3(1, 0, 0)
+  const Y = new THREE.Vector3(0, 1, 0)
+  const hold = (node: string, q: THREE.Quaternion) =>
+    new THREE.QuaternionKeyframeTrack(`${node}.quaternion`, [0, 3], [...q.toArray(), ...q.toArray()])
+  const PEACE = new THREE.AnimationClip('peace', 3, [hold('shoulder', about(10, X)), hold('arm', about(30, X))])
+  const WAVE = new THREE.AnimationClip('wave', 3, [hold('arm', about(-60, X))])
+  const REST: ReadonlyMap<string, THREE.Quaternion> = new Map()
+  const IDLE = new Map([
+    ['shoulder', about(20, Y)],
+    ['arm', about(-70, X)],
+  ])
+
+  it('keeps the shoulders the wave does not turn at rest, and never jumps them', () => {
+    const root = new THREE.Object3D()
+    const nodes = new Map(['shoulder', 'arm'].map((n) => [n, Object.assign(new THREE.Object3D(), { name: n })]))
+    for (const n of nodes.values()) root.add(n)
+    const mixer = new THREE.AnimationMixer(root)
+    const bone = (n: string) => nodes.get(n)
+    const shoulder = nodes.get('shoulder')!
+    const outgoing: OutgoingMotion[] = []
+    let playing: THREE.AnimationAction | null = null
+    let worst = 0
+    let before = shoulder.quaternion.clone()
+    const frames = (seconds: number) => {
+      for (let t = 0; t < seconds; t += DT) {
+        for (let i = outgoing.length - 1; i >= 0; i--) if (!releaseMotion(outgoing[i], DT, FADE)) outgoing.splice(i, 1)
+        mixer.update(DT)
+        poseUnderClips(bone, IDLE, 1 - clipShare(playing, outgoing), playing, outgoing, REST)
+        worst = Math.max(worst, THREE.MathUtils.radToDeg(shoulder.quaternion.angleTo(before)))
+        before = shoulder.quaternion.clone()
+      }
+    }
+    frames(0.5) // standing in the idle pose
+    worst = 0
+    restUnderClip(bone, IDLE, REST)
+    playing = takeOverMotion(mixer, PEACE, null, FADE, outgoing).action
+    frames(1)
+    restUnderClip(bone, IDLE, REST)
+    const next = takeOverMotion(mixer, WAVE, playing, FADE, outgoing)
+    if (next.outgoing) outgoing.push(next.outgoing)
+    playing = next.action
+    frames(1)
+    expect(outgoing).toHaveLength(0)
+    expect(THREE.MathUtils.radToDeg(shoulder.quaternion.angleTo(new THREE.Quaternion()))).toBeLessThan(0.01)
+    // Fading from the idle pose's 20° about one axis to the clip's 10° about
+    // another in FADE seconds steps at most 1.9° a frame; the mixer handing
+    // the idle pose back when the old clip let go moved 20° in one.
+    expect(worst).toBeLessThan(2.5)
   })
 })

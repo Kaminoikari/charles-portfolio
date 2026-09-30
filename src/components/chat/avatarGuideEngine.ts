@@ -262,14 +262,9 @@ function trunkSurface(v: VRM, root: THREE.Object3D): Float32Array {
   return Float32Array.from(out)
 }
 
-/**
- * Writes `pose` on the normalized bones, `share` of it over what the clips
- * leave: 1 is the pose outright, and anything less lets a fading clip keep the
- * rest (see the frame loop). A bone no clip turns eases from the rest the
- * clips were made on (idlePose.writeIdlePose).
- */
-function writePose(v: VRM, pose: PoseRotations, share = 1, driven: (node: THREE.Object3D) => boolean = () => false): void {
-  writeIdlePose((name) => v.humanoid?.getNormalizedBoneNode(name as BoneName), pose, share, driven, clipRest(v))
+/** Writes `pose` outright on the normalized bones; under a clip, poseUnderClips. */
+function writePose(v: VRM, pose: PoseRotations): void {
+  writeIdlePose((name) => v.humanoid?.getNormalizedBoneNode(name as BoneName), pose, 1, () => false, clipRest(v))
 }
 
 // The rest the clips were made on: arms down (avatarMode.armRestPins),
@@ -589,6 +584,47 @@ export function takeOverMotion(
   action.fadeIn(fade)
   action.play()
   return { action, outgoing }
+}
+
+/**
+ * Puts the idle pose's bones at their clip rest, just before a clip starts.
+ * Starting it is when the mixer remembers each bone it will turn
+ * (saveOriginalState), and it fills whatever weight its clips leave with that
+ * memory, down to restoring it outright when the last clip holding the bone
+ * lets go. Remembering the idle pose meant that a clip taken over by one that
+ * does not turn some bone (waveWink turns only the arms) faded that bone back
+ * to the idle pose the old clip started from: over the hands-behind pose, the
+ * shoulders swung back and the grip. Remembering rest, it fades to rest,
+ * which is where poseUnderClips then keeps it. Nothing is drawn in between:
+ * the next frame writes every one of these bones before it renders.
+ */
+export function restUnderClip(
+  bone: (name: string) => THREE.Object3D | null | undefined,
+  pose: PoseRotations,
+  rest: PoseRotations,
+): void {
+  writeIdlePose(bone, pose, 0, () => false, rest)
+}
+
+/**
+ * One frame of the idle pose under the clips, at `share` of the body (1 less
+ * the clips' weight). The bones a clip turns are blended from where it put
+ * them; the rest ease from their clip rest (idlePose.writeIdlePose). While
+ * the clips hold all of her it writes nothing: a bone they do not turn is
+ * then where the mixer left it, which restUnderClip makes rest.
+ */
+export function poseUnderClips(
+  bone: (name: string) => THREE.Object3D | null | undefined,
+  pose: PoseRotations,
+  share: number,
+  playing: THREE.AnimationAction | null,
+  outgoing: readonly OutgoingMotion[],
+  rest: PoseRotations,
+): void {
+  if (share <= 0.001) return
+  const clips = outgoing.map((out) => out.action.getClip())
+  if (playing) clips.push(playing.getClip())
+  writeIdlePose(bone, pose, share, clipDriven(clips), rest)
 }
 
 /**
@@ -1279,6 +1315,8 @@ export function initAvatarGuide(
     motionAction = null
     settleDur = 0
     settleT = 0
+    const h = vrm.humanoid
+    if (poses) restUnderClip((bone) => h?.getNormalizedBoneNode(bone as BoneName), poses.open, clipRest(vrm))
     const { action, outgoing: out } = takeOverMotion(mixer, clip, playing, MOTION_FADE, outgoing)
     if (out) outgoing.push(out)
     motionAction = action
@@ -1511,16 +1549,13 @@ export function initAvatarGuide(
       if (vrm && poses) {
         const share = 1 - clipShare(motionAction, outgoing)
         poseState = stepIdlePose(poseState, dt, placement === 'stage', share < 1, Math.random)
-        if (share > 0.001) {
-          const clips = outgoing.map((out) => out.action.getClip())
-          if (motionAction) clips.push(motionAction.getClip())
-          writePose(vrm, idlePoseNow(poseState, poses), share, clipDriven(clips))
-          // The fingers' own drift, on top of the pose and on the same share.
-          // The holding hand keeps its grip while it holds the other wrist.
-          if (drift) {
-            for (const d of drift.at(t, share, share * holdingHandFree(poseState))) {
-              vrm.humanoid?.getNormalizedBoneNode(d.bone as BoneName)?.quaternion.multiply(d.q)
-            }
+        const h = vrm.humanoid
+        poseUnderClips((bone) => h?.getNormalizedBoneNode(bone as BoneName), idlePoseNow(poseState, poses), share, motionAction, outgoing, clipRest(vrm))
+        // The fingers' own drift, on top of the pose and on the same share.
+        // The holding hand keeps its grip while it holds the other wrist.
+        if (share > 0.001 && drift) {
+          for (const d of drift.at(t, share, share * holdingHandFree(poseState))) {
+            h?.getNormalizedBoneNode(d.bone as BoneName)?.quaternion.multiply(d.q)
           }
         }
       }

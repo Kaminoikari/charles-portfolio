@@ -229,7 +229,7 @@ describe('the idle poses', () => {
 
   it('hands the arms back on the procedural share, fingers included', () => {
     expect(frameBody()).toMatch(/const share = 1 - clipShare\(motionAction, outgoing\)/)
-    expect(frameBody()).toMatch(/if \(share > 0\.001\) \{\s*const clips = [^\n]*\n[^\n]*\n\s*writePose\(vrm, idlePoseNow\(poseState, poses\), share, /)
+    expect(frameBody()).toMatch(/poseUnderClips\([^\n]*idlePoseNow\(poseState, poses\), share, /)
   })
 
   it('drifts the fingers on the same share, and keeps the grip closed', () => {
@@ -277,14 +277,18 @@ describe('her elbows keep their outline clean', () => {
 })
 
 describe('a clip that leaves bones to the idle pose', () => {
-  it('tells the pose which bones the playing and fading clips turn', () => {
-    // idlePose.test.ts proves the writer eases an undriven bone from its rest;
-    // only this line tells it which bones are undriven. Without it every bone
-    // counts as driven, and waveWink waves with the idle pose's fist.
-    const body = frameBody()
-    expect(body).toMatch(/const clips = outgoing\.map\(\(out\) => out\.action\.getClip\(\)\)\s*\n\s*if \(motionAction\) clips\.push\(motionAction\.getClip\(\)\)/)
-    expect(body).toMatch(/writePose\(vrm, idlePoseNow\(poseState, poses\), share, clipDriven\(clips\)\)/)
-    expect(SOURCE).toMatch(/writeIdlePose\(\(name\) => v\.humanoid\?\.getNormalizedBoneNode\(name as BoneName\), pose, share, driven, clipRest\(v\)\)/)
+  // motionHandover.test.ts drives poseUnderClips and restUnderClip through a
+  // real mixer; only these lines put them on her.
+  it('writes the idle pose under the clips through poseUnderClips', () => {
+    expect(frameBody()).toMatch(
+      /poseState = stepIdlePose\([^\n]*\n\s*const h = vrm\.humanoid\s*\n\s*poseUnderClips\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), idlePoseNow\(poseState, poses\), share, motionAction, outgoing, clipRest\(vrm\)\)/,
+    )
+  })
+
+  it('has the mixer remember rest, not the idle pose, for a clip it starts', () => {
+    expect(SOURCE).toMatch(
+      /restUnderClip\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), poses\.open, clipRest\(vrm\)\)\s*\n\s*const \{ action, outgoing: out \} = takeOverMotion\(/,
+    )
   })
 })
 

@@ -224,17 +224,24 @@ show this.
   are still there", on Gishin's wave). This one is not the roll: bent 125°,
   the elbow shows it with or without `armRollsToWrist`, and hiding the
   outline takes it away. It is MToon's inverted hull coming through where the
-  bent elbow folds her skin through itself, 2.5–4cm from the joint.
+  bent elbow folds her skin through itself, some centimetres from the joint
+  (bounded by the tapers below, not measured).
   `elbowOutline.thinOutlinesAtElbows` tapers the outline to nothing within
   3.5cm of each elbow (bind pose) and leaves it whole from 7cm; a taper from
   1.5cm to 4cm left the notch and one from 2.5cm to 6cm left a dotted trace.
 - A clip over the idle pose (same evening, owner: "the wave pose is broken").
-  `waveWink` turns only her arms and hands. The idle pose was blended from
-  each bone's last value, which walks a bone no clip turns all the way to the
-  pose at any share, so over the hands-behind pose she waved with its
-  shoulders swung back 20° and its fist. `idlePose.writeIdlePose` eases such a
-  bone from the rest the clips were made on (arms down, the rest at
-  identity). Of the other clips, nine turn 51–53 bones, shoulders and
-  fingers included, and are unaffected; `idleLoop` turns 22, none of them
-  fingers, so under it her fingers now ease straight as they did before the
-  idle poses (2026-09-30 morning) instead of holding the idle pose's curl.
+  `waveWink` turns only her arms and hands, and over the hands-behind pose she
+  waved with its shoulders swung back 20° and its fist, by two routes. The
+  idle pose was blended from each bone's last value, which walks a bone no
+  clip turns all the way to the pose at any share; and when the wave took
+  over from a clip that did turn the shoulders, the mixer filled the weight
+  that clip gave up with what it had remembered on starting it, the idle
+  pose, and restored exactly that when it let go. Now a bone no clip turns
+  eases from the rest the clips were made on (arms down, the rest at
+  identity; `idlePose.writeIdlePose` through `poseUnderClips`), and the
+  mixer remembers that rest (`restUnderClip`,
+  just before each clip starts), so a clip fades to rest where it once faded
+  to the idle pose. Nine of the other clips turn 51–53 bones, shoulders and
+  fingers included; `idleLoop` turns 22, none of them fingers, so under it
+  her fingers now ease straight as they did before the idle poses (2026-09-30
+  morning) instead of holding the idle pose's curl.

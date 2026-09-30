@@ -8,7 +8,8 @@
 // outline 0.8mm): hiding the outline takes the notch away and so does zeroing
 // the arm's own outline, rolls or no rolls (2026-09-30). Thinning only the
 // vertices the upper arm and forearm share did not: the skin that folds
-// through belongs to one bone or the other, 2.5–4cm from the joint.
+// through belongs to one bone or the other, farther from the joint than a
+// taper to 2.5cm reaches (the radii below bound it; it was not measured).
 //
 // So the outline tapers to nothing near each elbow, by distance in the bind
 // pose. At ELBOW_OUTLINE.full and beyond it is untouched. Inside
