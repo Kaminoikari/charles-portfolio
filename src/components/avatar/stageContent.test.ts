@@ -22,6 +22,7 @@ import {
   lookThumb,
   sceneById,
   sceneLight,
+  type StageScene,
 } from './stageContent'
 
 const publicFile = (url: string) => path.join(process.cwd(), 'public', url.replace(/^\//, ''))
@@ -124,6 +125,19 @@ describe('stage assets', () => {
     for (const f of served) expect(listed.has(f), `${f} is served but no scene lists it`).toBe(true)
   })
 
+  it('plays every clip it lists, each with its first frame as the poster', () => {
+    const clips = STAGE_SCENES.flatMap((s) => s.lights).filter((l) => l.video)
+    expect(clips.length).toBeGreaterThan(0)
+    for (const l of clips) expect(existsSync(publicFile(l.video!)), l.video).toBe(true)
+  })
+
+  it('ships no clip it does not list', () => {
+    const listed = new Set(STAGE_SCENES.flatMap((s) => s.lights.flatMap((l) => (l.video ? [l.video] : []))))
+    for (const f of readdirSync(publicFile('/avatar/scenes/video'))) {
+      expect(listed.has(`/avatar/scenes/video/${f}`), `${f} is served but no scene lists it`).toBe(true)
+    }
+  })
+
   it('opens on a scene with a picture at the default time of day', () => {
     const light = sceneLight(sceneById(DEFAULT_SCENE), DEFAULT_LIGHT)
     expect(light?.id).toBe(DEFAULT_LIGHT)
@@ -131,17 +145,22 @@ describe('stage assets', () => {
 })
 
 describe('sceneLight', () => {
-  const shrine = sceneById('shrine')
-  const beach = sceneById('beach')
+  // No shipped scene has more than one time of day now, so the rule is held
+  // on a scene built for it, out of the same parts the list uses.
+  const relit: StageScene = {
+    id: 'library',
+    focusX: 50,
+    lights: (['day', 'night'] as const).map((id) => ({ id, src: `/${id}.webp`, thumb: `/t-${id}.webp` })),
+  }
 
   it('keeps the chosen time of day where the scene has it', () => {
-    for (const id of STAGE_LIGHTS) {
-      if (shrine.lights.some((l) => l.id === id)) expect(sceneLight(shrine, id)?.id).toBe(id)
-    }
+    expect(sceneLight(relit, 'night')?.id).toBe('night')
+    expect(sceneLight(relit, 'day')?.id).toBe('day')
   })
 
   it("falls back to the scene's own picture where it does not", () => {
-    expect(sceneLight(beach, 'night')?.id).toBe(beach.lights[0].id)
+    expect(sceneLight(relit, 'sunset')?.id).toBe('day')
+    expect(sceneLight(sceneById('library'), 'day')?.id).toBe('night-lit')
     expect(sceneLight(sceneById('none'), 'day')).toBeNull()
   })
 

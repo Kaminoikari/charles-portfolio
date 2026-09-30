@@ -104,8 +104,34 @@ interface Strings {
       excited: string; sad: string; angry: string; pale: string
     }
     scenes: {
-      bedroom: string; clubroom: string; hallway: string; library: string; courtyard: string; station: string
-      festival: string; park: string; onsen: string; shrine: string; beach: string; none: string
+      'old-house': string
+      classroom: string
+      'sakura-station': string
+      crossing: string
+      'bus-stop': string
+      overpass: string
+      'rain-rails': string
+      'city-street': string
+      backstreet: string
+      'lantern-street': string
+      riverside: string
+      'lofi-house': string
+      veranda: string
+      'sakura-palace': string
+      'seaside-cafe': string
+      'forest-torii': string
+      'lake-torii': string
+      'fuji-torii': string
+      'moon-torii': string
+      'milky-way': string
+      'tatami-room': string
+      dormitory: string
+      'hot-spring': string
+      'moon-beach': string
+      'beach-shop': string
+      'blue-cafe': string
+      library: string
+      none: string
     }
     lightsAriaLabel: string
     lights: { day: string; sunset: string; night: string; 'night-lit': string }
@@ -306,17 +332,33 @@ const en: Strings = {
       pale: 'Pale',
     },
     scenes: {
-      bedroom: 'Bedroom',
-      clubroom: 'Club room',
-      hallway: 'School hallway',
+      'old-house': 'Old house',
+      classroom: 'Classroom at sunset',
+      'sakura-station': 'Sakura station',
+      crossing: 'Railway crossing',
+      'bus-stop': 'Seaside bus stop',
+      overpass: 'Station stairs',
+      'rain-rails': 'Rainy tracks',
+      'city-street': 'City street',
+      backstreet: 'Backstreet at night',
+      'lantern-street': 'Lantern street',
+      riverside: 'Riverside',
+      'lofi-house': 'House under falling stars',
+      veranda: 'Autumn veranda',
+      'sakura-palace': 'Sakura palace',
+      'seaside-cafe': 'Seaside café',
+      'forest-torii': 'Forest torii',
+      'lake-torii': 'Lake torii',
+      'fuji-torii': 'Fuji at sunset',
+      'moon-torii': 'Blood moon',
+      'milky-way': 'Milky Way',
+      'tatami-room': 'Tatami room',
+      dormitory: 'Dormitory',
+      'hot-spring': 'Hot spring',
+      'moon-beach': 'Moonlit beach',
+      'beach-shop': 'Beachside shop',
+      'blue-cafe': 'Blue café',
       library: 'Library',
-      courtyard: 'School courtyard',
-      station: 'Station',
-      festival: 'Summer festival',
-      park: 'Autumn park',
-      onsen: 'Hot spring',
-      shrine: 'Shrine',
-      beach: 'Beach',
       none: 'None',
     },
     lightsAriaLabel: 'Time of day',

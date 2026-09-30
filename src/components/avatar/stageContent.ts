@@ -47,33 +47,52 @@ export function expressionsFor(id: OfferedVariantId): readonly EmotionName[] {
 export const EXPRESSION_HOLD_SEC = 4
 
 export type StageSceneId =
-  | 'bedroom'
-  | 'clubroom'
-  | 'hallway'
+  | 'old-house'
+  | 'classroom'
+  | 'sakura-station'
+  | 'crossing'
+  | 'bus-stop'
+  | 'overpass'
+  | 'rain-rails'
+  | 'city-street'
+  | 'backstreet'
+  | 'lantern-street'
+  | 'riverside'
+  | 'lofi-house'
+  | 'veranda'
+  | 'sakura-palace'
+  | 'seaside-cafe'
+  | 'forest-torii'
+  | 'lake-torii'
+  | 'fuji-torii'
+  | 'moon-torii'
+  | 'milky-way'
+  | 'tatami-room'
+  | 'dormitory'
+  | 'hot-spring'
+  | 'moon-beach'
+  | 'beach-shop'
+  | 'blue-cafe'
   | 'library'
-  | 'courtyard'
-  | 'station'
-  | 'festival'
-  | 'park'
-  | 'onsen'
-  | 'shrine'
-  | 'beach'
   | 'none'
 
 /**
- * The times of day a backdrop can be painted at. One scene may come in several
- * (the shrine in all four): the same composition relit, so switching between
- * them is a crossfade, not a cut.
+ * The times of day a backdrop can be painted at. A scene may come in several,
+ * the same composition relit, so switching between them is a crossfade, not a
+ * cut. None does since the clips replaced the stills (2026-09-30); a clip's
+ * time of day sets the filter over her.
  */
 export type StageLightId = 'day' | 'sunset' | 'night' | 'night-lit'
 export const STAGE_LIGHTS: readonly StageLightId[] = ['day', 'sunset', 'night', 'night-lit']
 
 export interface StageLight {
   id: StageLightId
-  /** The backdrop, 1600x900. */
+  /** The backdrop, 1600x900; for a moving scene, its first frame, shown until the clip plays. */
   src: string
   /** Its tile in the picker, 320x180. */
   thumb: string
+  /** A moving scene's clip: 1920x1080, 30fps, H.264, no sound, looping. */
+  video?: string
 }
 
 export interface StageScene {
@@ -91,28 +110,57 @@ export interface StageScene {
 const lit = (scene: StageSceneId, ...ids: StageLightId[]): StageLight[] =>
   ids.map((id) => ({ id, src: `/avatar/scenes/${scene}-${id}.webp`, thumb: `/avatar/scenes/thumbs/${scene}-${id}.webp` }))
 
+/** A moving scene: one clip, lit at one time of day. */
+const clip = (scene: StageSceneId, light: StageLightId): StageLight[] => [
+  {
+    id: light,
+    src: `/avatar/scenes/${scene}-${light}.webp`,
+    thumb: `/avatar/scenes/thumbs/${scene}-${light}.webp`,
+    video: `/avatar/scenes/video/${scene}.mp4`,
+  },
+]
+
 /**
- * The backdrops: illustrated VTuber backgrounds the owner supplied on
- * 2026-09-29 (900x506 originals, upscaled to 1600x900 with Lanczos and a light
- * unsharp mask; public/avatar/scenes). Adding one is a file per time of day, a
- * line here and a label in stage.scenes.
+ * The backdrops. The moving ones are looping anime wallpapers the owner
+ * picked on 2026-09-30 (MoeWalls downloads, 4K and 1080p at 60fps,
+ * re-encoded to 1080p at 30fps; public/avatar/scenes/video). The still ones
+ * are the illustrated VTuber backgrounds the owner supplied on 2026-09-29
+ * (900x506 originals, upscaled to 1600x900 with Lanczos and a light unsharp
+ * mask), kept for the library, which no clip covers yet. Adding one is a clip or
+ * a picture per time of day, a line here and a label in stage.scenes.
  */
 export const STAGE_SCENES: readonly StageScene[] = [
-  { id: 'bedroom', lights: lit('bedroom', 'day'), focusX: 50 },
-  { id: 'clubroom', lights: lit('clubroom', 'day'), focusX: 50 },
-  { id: 'hallway', lights: lit('hallway', 'sunset'), focusX: 30 },
+  { id: 'old-house', lights: clip('old-house', 'day'), focusX: 55 },
+  { id: 'classroom', lights: clip('classroom', 'sunset'), focusX: 50 },
+  { id: 'sakura-station', lights: clip('sakura-station', 'sunset'), focusX: 40 },
+  { id: 'crossing', lights: clip('crossing', 'sunset'), focusX: 50 },
+  { id: 'bus-stop', lights: clip('bus-stop', 'sunset'), focusX: 45 },
+  { id: 'overpass', lights: clip('overpass', 'day'), focusX: 45 },
+  { id: 'rain-rails', lights: clip('rain-rails', 'day'), focusX: 50 },
+  { id: 'city-street', lights: clip('city-street', 'night'), focusX: 40 },
+  { id: 'backstreet', lights: clip('backstreet', 'night'), focusX: 50 },
+  { id: 'lantern-street', lights: clip('lantern-street', 'night-lit'), focusX: 50 },
+  { id: 'riverside', lights: clip('riverside', 'night-lit'), focusX: 45 },
+  { id: 'lofi-house', lights: clip('lofi-house', 'night-lit'), focusX: 50 },
+  { id: 'veranda', lights: clip('veranda', 'day'), focusX: 50 },
+  { id: 'sakura-palace', lights: clip('sakura-palace', 'day'), focusX: 50 },
+  { id: 'seaside-cafe', lights: clip('seaside-cafe', 'day'), focusX: 50 },
+  { id: 'forest-torii', lights: clip('forest-torii', 'day'), focusX: 45 },
+  { id: 'lake-torii', lights: clip('lake-torii', 'day'), focusX: 65 },
+  { id: 'fuji-torii', lights: clip('fuji-torii', 'sunset'), focusX: 60 },
+  { id: 'moon-torii', lights: clip('moon-torii', 'night'), focusX: 50 },
+  { id: 'milky-way', lights: clip('milky-way', 'night'), focusX: 50 },
+  { id: 'tatami-room', lights: clip('tatami-room', 'night-lit'), focusX: 45 },
+  { id: 'dormitory', lights: clip('dormitory', 'day'), focusX: 50 },
+  { id: 'hot-spring', lights: clip('hot-spring', 'night-lit'), focusX: 55 },
+  { id: 'moon-beach', lights: clip('moon-beach', 'night'), focusX: 50 },
+  { id: 'beach-shop', lights: clip('beach-shop', 'day'), focusX: 45 },
+  { id: 'blue-cafe', lights: clip('blue-cafe', 'day'), focusX: 50 },
   { id: 'library', lights: lit('library', 'night-lit'), focusX: 45 },
-  { id: 'courtyard', lights: lit('courtyard', 'day', 'night'), focusX: 50 },
-  { id: 'station', lights: lit('station', 'day'), focusX: 45 },
-  { id: 'festival', lights: lit('festival', 'day'), focusX: 50 },
-  { id: 'park', lights: lit('park', 'day'), focusX: 55 },
-  { id: 'onsen', lights: lit('onsen', 'day', 'night'), focusX: 62 },
-  { id: 'shrine', lights: lit('shrine', 'day', 'sunset', 'night-lit', 'night'), focusX: 50 },
-  { id: 'beach', lights: lit('beach', 'day'), focusX: 45 },
   { id: 'none', lights: [], focusX: 50 },
 ]
 
-export const DEFAULT_SCENE: StageSceneId = 'bedroom'
+export const DEFAULT_SCENE: StageSceneId = 'old-house'
 export const DEFAULT_LIGHT: StageLightId = 'day'
 
 export function sceneById(id: StageSceneId): StageScene {
@@ -122,7 +170,7 @@ export function sceneById(id: StageSceneId): StageScene {
 /**
  * The picture a scene shows for the time of day the visitor last chose: that
  * one where the scene has it, else the scene's first. The choice is kept
- * across scenes, so night stays night from the courtyard to the shrine, and a
+ * across scenes, and a
  * scene painted only by day shows day without forgetting it.
  */
 export function sceneLight(scene: StageScene, wanted: StageLightId): StageLight | null {

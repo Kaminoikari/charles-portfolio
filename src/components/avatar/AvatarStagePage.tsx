@@ -240,18 +240,22 @@ export default function AvatarStagePage() {
       />
       {visited.flatMap((id) => {
         const { lights, focusX } = sceneById(id)
-        return lights.map((l) => (
-          <div
-            key={l.src}
-            aria-hidden="true"
-            className="absolute inset-0 bg-cover transition-opacity duration-700"
-            style={{
-              backgroundImage: `url(${l.src})`,
-              backgroundPosition: `${focusX}% 70%`,
-              opacity: l.src === light?.src ? 1 : 0,
-            }}
-          />
-        ))
+        return lights.map((l) =>
+          l.video ? (
+            <SceneClip key={l.src} poster={l.src} video={l.video} focusX={focusX} on={l.src === light?.src} />
+          ) : (
+            <div
+              key={l.src}
+              aria-hidden="true"
+              className="absolute inset-0 bg-cover transition-opacity duration-700"
+              style={{
+                backgroundImage: `url(${l.src})`,
+                backgroundPosition: `${focusX}% 70%`,
+                opacity: l.src === light?.src ? 1 : 0,
+              }}
+            />
+          ),
+        )
       })}
       <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-black/35 via-transparent to-black/25" />
 
@@ -336,6 +340,46 @@ export default function AvatarStagePage() {
 
 // Layout B. The roster on the left, every other option on the right, her name
 // under her feet.
+/** How long a scene's crossfade runs; a clip fading out keeps playing until it is gone. */
+const SCENE_FADE_MS = 700
+
+/**
+ * A moving backdrop. Only the scene on show plays: a visited scene stays
+ * mounted so coming back is a crossfade, and a clip paused under it costs
+ * nothing. Its first frame is the poster, so the scene reads at once and a
+ * visitor who asks for reduced motion keeps a still picture.
+ */
+function SceneClip({ poster, video, focusX, on }: { poster: string; video: string; focusX: number; on: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (on) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      // Muted and inline, so every browser lets it start without a tap; a
+      // refusal (Low Power Mode) leaves the poster up, which is fine.
+      el.play().catch(() => {})
+      return
+    }
+    const stop = window.setTimeout(() => el.pause(), SCENE_FADE_MS)
+    return () => window.clearTimeout(stop)
+  }, [on])
+  return (
+    <video
+      ref={ref}
+      aria-hidden="true"
+      src={video}
+      poster={poster}
+      muted
+      loop
+      playsInline
+      preload={on ? 'auto' : 'metadata'}
+      className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+      style={{ objectPosition: `${focusX}% 70%`, opacity: on ? 1 : 0 }}
+    />
+  )
+}
+
 function SelectPanels({
   navH,
   shownName,
