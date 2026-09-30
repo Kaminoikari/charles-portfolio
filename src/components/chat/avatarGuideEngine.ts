@@ -80,6 +80,7 @@ import {
 import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
   fingerDrift,
+  forearmRollToHand,
   holdingHandFree,
   idlePoseNow,
   idlePoseStart,
@@ -1899,7 +1900,12 @@ export function initAvatarGuide(
         m.parametricRimColorFactor.copy(rimScratch.copy(base).multiplyScalar(rimScale))
 
       vrm.expressionManager?.update()
+      // The skin sees each forearm's roll on its hand, so the elbow is not
+      // wrung into a crease (idlePose.forearmRollToHand).
+      const h = vrm.humanoid
+      const unroll = forearmRollToHand((bone) => h.getNormalizedBoneNode(bone as BoneName))
       vrm.update(dt) // spring bones (hair, skirt) advance here
+      unroll()
     }
     // The canvas grows when the chat opens (ChatWidget hands the docked and
     // fullscreen placements a bigger box). Matching the drawing buffer to the

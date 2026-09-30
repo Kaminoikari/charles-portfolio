@@ -623,6 +623,39 @@ export function blendPoses(
   return out
 }
 
+/**
+ * Moves each forearm's roll onto its hand, and returns what puts both back.
+ *
+ * A VRoid arm has no twist bone: the skin round the elbow is blended between
+ * the upper arm and the forearm, so a forearm rolled about its own length
+ * wrings that skin into a spiral crease, and the outline drawn along the crease
+ * reads as a black notch across the elbow (owner's phone screenshots,
+ * 2026-09-30; a line shows from about 40° of roll, and the idle poses and the
+ * motion-capture clips both roll it 80° and more). The wrist's skin takes the
+ * same 80° without a crease. The hand ends up where and how it was: forearm ·
+ * hand = swing · roll · hand, and the roll is about the line to the wrist, so
+ * no joint moves.
+ *
+ * The engine calls it just before vrm.update copies the normalized bones onto
+ * the skinned ones, then undoes it, so every writer keeps reading the forearm
+ * it wrote.
+ */
+export function forearmRollToHand(bone: (name: string) => THREE.Object3D | null | undefined): () => void {
+  const undo: [THREE.Object3D, THREE.Quaternion][] = []
+  for (const side of ['left', 'right'] as const) {
+    const fore = bone(`${side}LowerArm`)
+    const hand = bone(`${side}Hand`)
+    if (!fore || !hand) continue
+    undo.push([fore, fore.quaternion.clone()], [hand, hand.quaternion.clone()])
+    const [swing, roll] = swingTwist(fore.quaternion, hand.position.clone().normalize())
+    fore.quaternion.copy(swing)
+    hand.quaternion.premultiply(roll)
+  }
+  return () => {
+    for (const [b, q] of undo) b.quaternion.copy(q)
+  }
+}
+
 /** `q` as a swing (about an axis square to `axis`) after a roll about `axis`: q = swing · roll. */
 function swingTwist(q: THREE.Quaternion, axis: THREE.Vector3): [THREE.Quaternion, THREE.Quaternion] {
   const p = q.x * axis.x + q.y * axis.y + q.z * axis.z

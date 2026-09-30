@@ -258,6 +258,17 @@ describe('the clasp rests on her', () => {
   })
 })
 
+describe('her elbows keep their skin smooth', () => {
+  it('moves the forearm roll onto the hand for the skinning, and back after', () => {
+    // idlePose.test.ts proves the move keeps every hand where it was; only
+    // this code makes the skin see it. Without the undo, a writer that blends
+    // from the bone's current value would fold the moved roll back in.
+    expect(frameBody()).toMatch(
+      /const unroll = forearmRollToHand\(\(bone\) => h\.getNormalizedBoneNode\(bone as BoneName\)\)\s*\n\s*vrm\.update\(dt\)[^\n]*\n\s*unroll\(\)/,
+    )
+  })
+})
+
 describe('she stands on the floor', () => {
   it('sways from the waist up and never turns the hips or a leg', () => {
     // Every leg is a child of the hips, so a roll on the hips swings both feet

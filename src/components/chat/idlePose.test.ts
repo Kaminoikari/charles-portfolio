@@ -8,6 +8,7 @@ import { REST_HALF_WIDTH } from '../avatar/stageLayout'
 import {
   blendPoses,
   CLASP_BEHIND,
+  forearmRollToHand,
   FINGER_DRIFT,
   fingerDrift,
   holdingHandFree,
@@ -521,3 +522,51 @@ describe('finger drift', () => {
   })
 })
 
+
+describe('the forearm roll goes to the hand', () => {
+  // upperArm > lowerArm > hand, the wrist 0.24m down the forearm's own +x.
+  function arm(side: 'left' | 'right') {
+    const upper = new THREE.Object3D()
+    const fore = new THREE.Object3D()
+    const hand = new THREE.Object3D()
+    fore.position.set(0.22, 0, 0)
+    hand.position.set(0.24, 0.01, 0)
+    upper.add(fore)
+    fore.add(hand)
+    upper.quaternion.setFromEuler(new THREE.Euler(0.3, -0.2, 1.1))
+    const axis = hand.position.clone().normalize()
+    const hinge = new THREE.Vector3(0, 0, 1).cross(axis).normalize()
+    const bend = new THREE.Quaternion().setFromAxisAngle(hinge, side === 'left' ? 0.9 : -0.9)
+    fore.quaternion.copy(bend).multiply(new THREE.Quaternion().setFromAxisAngle(axis, 1.45))
+    hand.quaternion.setFromEuler(new THREE.Euler(0.1, 0.35, -0.2))
+    return { upper, fore, hand, axis, bend }
+  }
+  const world = (o: THREE.Object3D) => {
+    o.updateWorldMatrix(true, false)
+    return { q: o.getWorldQuaternion(new THREE.Quaternion()), p: o.getWorldPosition(new THREE.Vector3()) }
+  }
+  const sides = { left: arm('left'), right: arm('right') }
+  const bone = (name: string) =>
+    name === 'leftLowerArm' ? sides.left.fore : name === 'leftHand' ? sides.left.hand
+      : name === 'rightLowerArm' ? sides.right.fore : name === 'rightHand' ? sides.right.hand : null
+
+  it('leaves the forearm only its bend, and every hand where and how it was', () => {
+    const before = (['left', 'right'] as const).map((s) => [world(sides[s].hand), sides[s].fore.quaternion.clone(), sides[s].hand.quaternion.clone()] as const)
+    const undo = forearmRollToHand(bone)
+    ;(['left', 'right'] as const).forEach((s, i) => {
+      const { fore, hand, axis, bend } = sides[s]
+      const after = world(hand)
+      expect(after.q.angleTo(before[i][0].q)).toBeLessThan(1e-6)
+      expect(after.p.distanceTo(before[i][0].p)).toBeLessThan(1e-9)
+      // What is left on the forearm turns nothing about its own length.
+      const p = fore.quaternion.x * axis.x + fore.quaternion.y * axis.y + fore.quaternion.z * axis.z
+      expect(Math.abs(p)).toBeLessThan(1e-9)
+      expect(fore.quaternion.angleTo(bend)).toBeLessThan(1e-6)
+    })
+    undo()
+    ;(['left', 'right'] as const).forEach((s, i) => {
+      expect(sides[s].fore.quaternion.equals(before[i][1])).toBe(true)
+      expect(sides[s].hand.quaternion.equals(before[i][2])).toBe(true)
+    })
+  })
+})
