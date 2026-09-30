@@ -147,12 +147,24 @@ show this.
 - The crossfade keeps the elbows jointed too: each forearm's bend and roll
   are blended apart (slerped whole, an elbow bent 18–19° sideways part way).
   It runs by way of a waypoint (`IDLE_POSE_VIA`): each wrist beside and
-  behind her hips, the arm solved by the same IK as the clasp, so both halves
-  of the fade run between two arms a person could hold. Straight across, the
+  behind her hips, the arm solved by the same IK as the clasp, so the fade
+  passes through an arm a person could hold. Straight across, the
   hands cut 47mm into her hips; the first fix, a fixed 12° swing out, cleared
   her skin but still swept them through every skirt and hem. The waypoint
   stands 2.5 hip widths behind her since the elbows moved out (at 1.9 the
   last fifth of the fade brushed three looks' hems, up to 8.7mm).
+- One sweep through the waypoint (2026-10-01, owner: the move behind her
+  back "is right but jerky"). The fade had run as two blends, each eased at
+  both ends, so her wrists stopped dead at the waypoint (3% of their top
+  speed) and went back 150° from the way they came. `sweepPoses` runs one
+  curve per bone through the three poses, eased only at the two ends; each
+  axis keeps moving through the waypoint where it lies between the poses and
+  turns there at rest where the waypoint is its far point. Tried first: a
+  squad (20° turn in one frame at the waypoint) and a curve that kept every
+  axis moving through it (bent the elbows backwards 3–8° and left the stage
+  frame). Now the wrist rounds the
+  waypoint at 39% of its top speed (Gishin), on a curve, and every look's
+  joint, frame and clothes checks still pass through the fade.
 - Clothes (added 2026-09-30, owner: "on Shibu the hands go inside her clothes
   when they come in to her body"): `rigProbe.clothShell` takes the outermost
   cloth anchored to her trunk and legs, skirt chains included, per 1cm band

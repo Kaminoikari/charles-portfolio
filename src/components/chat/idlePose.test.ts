@@ -7,7 +7,6 @@ import { OFFERED_VARIANTS } from './avatarVariants'
 import { REST_HALF_WIDTH } from '../avatar/stageLayout'
 import {
   armRollsToWrist,
-  blendPoses,
   CLASP_BEHIND,
   clipDriven,
   FINGER_DRIFT,
@@ -20,6 +19,7 @@ import {
   solveIdlePose,
   solveIdlePoses,
   stepIdlePose,
+  sweepPoses,
   writeIdlePose,
   type IdlePoseName,
   type IdlePoseState,
@@ -475,26 +475,45 @@ describe('clothShell', () => {
   })
 })
 
-describe('blendPoses', () => {
-  it('starts on the first pose and ends on the second', () => {
-    const { rig } = looks[0]
-    const sk = poseSkeleton(rig)
-    const open = solveIdlePose(sk, 'open').rotations
-    const behind = solveIdlePose(sk, 'behind').rotations
-    for (const [bone, q] of blendPoses(open, behind, 0)) expect(q.angleTo(open.get(bone)!)).toBeLessThan(1e-6)
-    for (const [bone, q] of blendPoses(open, behind, 1)) expect(q.angleTo(behind.get(bone)!)).toBeLessThan(1e-6)
-  })
-
-  it('is what the clock hands the engine mid-fade, by way of the waypoint', () => {
+describe('sweepPoses', () => {
+  it('is what the clock hands the engine: from one pose, by the waypoint, to the other', () => {
     const { rig } = looks[0]
     const poses = solveIdlePoses(poseSkeleton(rig))
-    // 0.3 and 0.8, not 0.5: the halfway point is the waypoint itself from
-    // either end, so it cannot tell a fade that runs backwards.
-    const early = idlePoseNow({ current: 'behind', from: 'open', blend: 0.3, hold: 18 }, poses)
-    for (const [bone, q] of blendPoses(poses.open, poses.via, 0.6, poses.rollAxes)) expect(q.angleTo(early.get(bone)!), bone).toBeLessThan(1e-6)
-    const late = idlePoseNow({ current: 'behind', from: 'open', blend: 0.8, hold: 18 }, poses)
-    for (const [bone, q] of blendPoses(poses.via, poses.behind, 0.6, poses.rollAxes)) expect(q.angleTo(late.get(bone)!), bone).toBeLessThan(1e-6)
+    const at = (blend: number) => idlePoseNow({ current: 'behind', from: 'open', blend, hold: 18 }, poses)
+    for (const [bone, q] of at(0)) expect(q.angleTo(poses.open.get(bone)!), bone).toBeLessThan(1e-6)
+    for (const [bone, q] of at(0.5)) expect(q.angleTo(poses.via.get(bone)!), bone).toBeLessThan(1e-6)
+    for (const [bone, q] of at(1)) expect(q.angleTo(poses.behind.get(bone)!), bone).toBeLessThan(1e-6)
+    // Backwards, the same road: open to behind at 0.3 is behind to open at 0.7.
+    const back = idlePoseNow({ current: 'open', from: 'behind', blend: 0.7, hold: 18 }, poses)
+    for (const [bone, q] of at(0.3)) expect(q.angleTo(back.get(bone)!), bone).toBeLessThan(1e-5)
     expect(idlePoseNow({ current: 'behind', from: null, blend: 1, hold: 18 }, poses)).toBe(poses.behind)
+  })
+
+  it.each(looks.map((l) => [l.id, l] as const))('takes her hands round the waypoint in one sweep on %s', (_, look) => {
+    // The owner, 2026-10-01: the move behind her back "is right but jerky".
+    // Eased at both ends of each half, the fade stopped her wrist dead at the
+    // waypoint (3% of its top speed, on every body) and sent it back out 150°
+    // from the way it came in: a corner. Now it turns there on a curve, at
+    // 39% of its top speed on Gishin.
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
+    const wrist = (blend: number) => {
+      posed(look, idlePoseNow({ current: 'behind', from: 'open', blend, hold: 18 }, poses))
+      return worldPosition(look.rig, 'rightHand')
+    }
+    const frames = (fps: number) => {
+      const n = Math.round(IDLE_POSE_FADE * fps)
+      const p = Array.from({ length: n + 1 }, (_, i) => wrist(i / n))
+      const v = p.slice(1).map((q, i) => q.clone().sub(p[i]))
+      const turn = Math.max(...v.slice(1).map((d, i) => d.angleTo(v[i])))
+      return { n, speed: v.map((d) => d.length()), turn }
+    }
+    const at60 = frames(60)
+    const fastest = Math.max(...at60.speed)
+    const middle = at60.speed.slice(Math.round(at60.n * 0.2), Math.round(at60.n * 0.8))
+    expect(Math.min(...middle) / fastest, 'slowest between 20% and 80% of the fade, of the fastest').toBeGreaterThan(0.3)
+    // A corner turns as far in a frame at any frame rate; a curve turns half
+    // as far at twice the rate.
+    expect(frames(120).turn / at60.turn, 'sharpest turn per frame at 120fps against 60fps').toBeLessThan(0.6)
   })
 
   it('keeps the elbow a hinge part way, where a whole-bone slerp bends it sideways', () => {
@@ -508,12 +527,14 @@ describe('blendPoses', () => {
       rig.root.updateMatrixWorld(true)
       return Math.max(...(['left', 'right'] as const).map((s) => Math.abs(probeArmJoints(rig, s).hingeOff)))
     }
-    // Worst of the fade either way: where the whole-bone slerp strays furthest
-    // moves as the poses change, and the premise is that it strays at all.
+    // From the waypoint in to behind her back, where both ends are true
+    // hinges: split, the elbow stays on its hinge (0.09° at most on the first
+    // look, 2026-10-01); whole, it strays 5.6°. The open pose is 7.8° off its
+    // hinge already, so the first half cannot tell the two apart.
     const worst = (axes?: ReadonlyMap<string, THREE.Vector3>) =>
-      Math.max(...[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((s) => hingeOff(blendPoses(poses.open, poses.behind, s, axes))))
-    expect(worst()).toBeGreaterThan(15)
-    expect(worst(poses.rollAxes)).toBeLessThan(10)
+      Math.max(...[0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95].map((s) => hingeOff(sweepPoses(poses.open, poses.via, poses.behind, s, axes))))
+    expect(worst()).toBeGreaterThan(4)
+    expect(worst(poses.rollAxes)).toBeLessThan(1)
   })
 })
 

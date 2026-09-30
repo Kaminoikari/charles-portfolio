@@ -526,8 +526,8 @@ function solveBehind(b: PoseBuilder): { error: number } {
  * Sendagaya Shibu's pleats, 92mm into Victoria Rubin's, by
  * rigProbe.clothShell, 2026-09-30); swung far enough to clear them, it either
  * turned her shoulders past what a shoulder turns or left the stage frame.
- * A waypoint solved like the clasp is an arm a person could hold, so both
- * halves of the fade run between two such arms.
+ * A waypoint solved like the clasp is an arm a person could hold, and the
+ * fade passes through it (sweepPoses).
  */
 // back 2.5 since the clasp moved to her sides (2026-09-30): at 1.9 the last
 // fifth of the fade brushed the hands through pink's, Victoria Rubin's and
@@ -560,7 +560,7 @@ function solveVia(b: PoseBuilder): PoseRotations {
 
 /**
  * Both poses for one body, with what a crossfade between them needs to keep
- * her elbows jointed: each forearm's rest axis (see blendPoses).
+ * her elbows jointed: each forearm's rest axis (see sweepPoses).
  */
 export interface IdlePoses extends Readonly<Record<IdlePoseName, PoseRotations>> {
   rollAxes: ReadonlyMap<string, THREE.Vector3>
@@ -608,37 +608,6 @@ export function normalizedRest(
     }
     return at
   }
-}
-
-/**
- * A pose part way to another: every bone slerped by `s`, eased at both ends.
- * Bones only one side lists are carried as they are.
- *
- * A bone in `rollAxes` (the forearms, about their own rest axis) is split into
- * its bend and its roll, and each is blended on its own. An elbow is a hinge
- * plus the forearm's roll; slerped whole, the two mix part way and the elbow
- * bends sideways, 18–19° at 30% from open hands to behind her back
- * (2026-09-30), past what an elbow can do.
- */
-export function blendPoses(
-  from: PoseRotations,
-  to: PoseRotations,
-  s: number,
-  rollAxes?: ReadonlyMap<string, THREE.Vector3>,
-): Map<string, THREE.Quaternion> {
-  const e = s * s * (3 - 2 * s)
-  const out = new Map<string, THREE.Quaternion>()
-  for (const [bone, q] of to) {
-    const a = from.get(bone)
-    const axis = rollAxes?.get(bone)
-    if (a && axis) {
-      const [sa, ta] = swingTwist(a, axis)
-      const [sb, tb] = swingTwist(q, axis)
-      out.set(bone, sa.slerp(sb, e).multiply(ta.slerp(tb, e)))
-    } else out.set(bone, a ? a.clone().slerp(q, e) : q.clone())
-  }
-  for (const [bone, q] of from) if (!out.has(bone)) out.set(bone, q.clone())
-  return out
 }
 
 /**
@@ -704,7 +673,8 @@ function swingTwist(q: THREE.Quaternion, axis: THREE.Vector3): [THREE.Quaternion
  * all the way to the pose at any share, so it is blended from its rest instead
  * (`rest`, identity where absent), the pose the clips were made on. The
  * waveWink of 2026-09-30 drove her arms and hands and nothing else; over the
- * hands-behind pose it waved with her shoulders swung back and the holding hand's fist (2026-09-30).
+ * hands-behind pose it waved with her shoulders swung back and the holding
+ * hand's fist.
  */
 export function writeIdlePose(
   bone: (name: string) => THREE.Object3D | null | undefined,
@@ -807,11 +777,116 @@ export function stepIdlePose(
 /** The rotations the clock asks for this frame. */
 export function idlePoseNow(s: IdlePoseState, poses: IdlePoses): PoseRotations {
   if (s.from === null) return poses[s.current]
-  // Through the waypoint beside her hips: the first half of the fade takes
-  // her hands out to it, the second in to the pose she is going to.
-  return s.blend < 0.5
-    ? blendPoses(poses[s.from], poses.via, s.blend * 2, poses.rollAxes)
-    : blendPoses(poses.via, poses[s.current], s.blend * 2 - 1, poses.rollAxes)
+  return sweepPoses(poses[s.from], poses.via, poses[s.current], s.blend, poses.rollAxes)
+}
+
+/**
+ * A pose part way along one sweep from `from` through `via` to `to`: at the
+ * waypoint halfway, eased only at the two ends. Each bone runs one curve
+ * through its three rotations. Bones only `from` lists are carried as they are.
+ *
+ * A bone in `rollAxes` (the forearms, about their own rest axis) is split into
+ * its bend and its roll, and each runs its own curve. An elbow is a hinge
+ * plus the forearm's roll; slerped whole, the two mix part way and the elbow
+ * bends sideways, 18–19° at 30% from open hands to behind her back
+ * (2026-09-30), past what an elbow can do.
+ *
+ * The fade ran as two blends, out to the waypoint and in from it, each eased
+ * at both ends. That stopped her hands dead at the waypoint, and from there
+ * they went back 150° from the way they came (Gishin's right wrist, 0.02 m/s
+ * there against 0.58 at its fastest): the owner saw it as jerky (2026-10-01).
+ * A squad through the same three still turned her wrist 20° in one frame at
+ * the waypoint, at a fifth of its top speed: the two poses and the waypoint
+ * sit near a triangle's corners (0.30, 0.32 and 0.31m apart), and a squad
+ * spends the whole turn beside the waypoint. A curve that kept every axis
+ * moving through the waypoint, at twice the pace of a parabola, bent her
+ * elbows backwards (flex −3° to −8° at 20%) and took the hands past the stage
+ * frame: on an axis where the waypoint is the far point, a curve still moving
+ * there carries past it. So each axis of each bone keeps moving through the
+ * waypoint only where it lies between the two poses (arcThrough); the wrist
+ * turns there in a tight curve, at 39% of its top speed, where it used to
+ * stop.
+ */
+export function sweepPoses(
+  from: PoseRotations,
+  via: PoseRotations,
+  to: PoseRotations,
+  s: number,
+  rollAxes?: ReadonlyMap<string, THREE.Vector3>,
+): Map<string, THREE.Quaternion> {
+  const e = s * s * (3 - 2 * s)
+  const out = new Map<string, THREE.Quaternion>()
+  for (const [bone, b] of to) {
+    const a = from.get(bone)
+    const v = via.get(bone)
+    if (!a || !v) {
+      out.set(bone, a ? a.clone().slerp(b, e) : b.clone())
+      continue
+    }
+    const axis = rollAxes?.get(bone)
+    if (axis) {
+      const [sa, ta] = swingTwist(a, axis)
+      const [sv, tv] = swingTwist(v, axis)
+      const [sb, tb] = swingTwist(b, axis)
+      out.set(bone, arcThrough(sa, sv, sb, e).multiply(arcThrough(ta, tv, tb, e)))
+    } else out.set(bone, arcThrough(a, v, b, e))
+  }
+  for (const [bone, q] of from) if (!out.has(bone)) out.set(bone, q.clone())
+  return out
+}
+
+/** q's rotation vector, half-angle scaled: log(q) for a unit quaternion. */
+function qlog(q: THREE.Quaternion): THREE.Vector3 {
+  const v = new THREE.Vector3(q.x, q.y, q.z)
+  const sin = v.length()
+  return sin < 1e-9 ? v.set(0, 0, 0) : v.multiplyScalar(Math.atan2(sin, q.w) / sin)
+}
+
+function qexp(v: THREE.Vector3): THREE.Quaternion {
+  const angle = v.length()
+  if (angle < 1e-9) return new THREE.Quaternion()
+  const k = Math.sin(angle) / angle
+  return new THREE.Quaternion(v.x * k, v.y * k, v.z * k, Math.cos(angle))
+}
+
+/**
+ * How fast a sweep passes its waypoint, as a multiple of the pace that crosses
+ * the whole a-to-b gap in one unit of t, before arcThrough caps it. On
+ * Gishin's right wrist at 60fps (2026-10-01), the slowest point between 20%
+ * and 80% of the fade against the fastest: 17% at 1, 34% at 2, 39% at 3.
+ */
+export const SWEEP_PACE = 3
+
+/**
+ * `t` along a curve through a (t=0), v (½) and b (1), drawn in the rotations
+ * about v, one axis at a time. On an axis where v lies between a and b the
+ * curve passes v at SWEEP_PACE, capped where it would overshoot (Fritsch and
+ * Carlson's limit, three times the slower side's slope); on an axis where v
+ * is the far point, it turns there at rest, as a swing turns at the top.
+ */
+function arcThrough(a: THREE.Quaternion, v: THREE.Quaternion, b: THREE.Quaternion, t: number): THREE.Quaternion {
+  const inv = v.clone().invert()
+  // Each end on v's side of the sphere, or its log takes the long way round.
+  const about = (q: THREE.Quaternion) => {
+    const r = inv.clone().multiply(q)
+    return qlog(r.w < 0 ? r.set(-r.x, -r.y, -r.z, -r.w) : r)
+  }
+  const la = about(a).toArray()
+  const lb = about(b).toArray()
+  const first = t < 0.5
+  const h = first ? t * 2 : t * 2 - 1
+  const h2 = h * h
+  const h3 = h2 * h
+  const at = [0, 1, 2].map((i) => {
+    // Slopes per half: a to v, then v to b.
+    const d1 = -la[i]
+    const d2 = lb[i]
+    const mv = d1 * d2 <= 0 ? 0 : Math.sign(d1) * Math.min((SWEEP_PACE * Math.abs(d1 + d2)) / 2, 3 * Math.abs(d1), 3 * Math.abs(d2))
+    // Cubic Hermite over the half, leaving its outer end along the half's own slope.
+    const [p0, m0, p1, m1] = first ? [la[i], d1, 0, mv] : [0, mv, lb[i], d2]
+    return (2 * h3 - 3 * h2 + 1) * p0 + (h3 - 2 * h2 + h) * m0 + (-2 * h3 + 3 * h2) * p1 + (h3 - h2) * m1
+  })
+  return v.clone().multiply(qexp(new THREE.Vector3().fromArray(at)))
 }
 
 // ---- the life in her hands ------------------------------------------------------
