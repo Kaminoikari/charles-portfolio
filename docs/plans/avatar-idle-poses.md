@@ -127,7 +127,8 @@ show this.
 - Both arms of the clasp are placed by two-bone IK. The held wrist sits
   behind the hips, across by hip width and 4cm behind her surface (at most
   1.5 hip widths back; see "The clasp rests on her" below); its height is
-  whatever bends the held elbow to 40°, so long-armed bodies clasp lower.
+  wherever the held forearm lands from an elbow hung beside her (see "Arms at
+  her sides" below), so long-armed bodies clasp lower.
   The holding hand takes the held wrist from her side of it, palm back,
   its palm 25mm in front of the wrist on every offered body.
 - The arms are jointed the way arms are (`hinged` in `idlePose.ts`): the
@@ -139,7 +140,8 @@ show this.
   elbow angle the tests read then counted a backwards elbow as a bent one.
   `rigProbe.probeArmJoints` now reads each joint in its parent's frame and
   the tests hold every look to human ranges: elbow 0–150° and within the
-  carrying angle, shoulder and forearm rotation within 90°, wrist roll within 10°.
+  carrying angle, forearm rotation within 90°, shoulder rotation within 90°
+  (103° since "Arms at her sides" below), wrist roll within 10°.
   Measured then: elbows 61–74°, shoulder rotation 69–85°, forearm roll 80–85°,
   wrist roll at most 5.4° (the clasp has since moved; see below).
 - The crossfade keeps the elbows jointed too: each forearm's bend and roll
@@ -148,7 +150,9 @@ show this.
   behind her hips, the arm solved by the same IK as the clasp, so both halves
   of the fade run between two arms a person could hold. Straight across, the
   hands cut 47mm into her hips; the first fix, a fixed 12° swing out, cleared
-  her skin but still swept them through every skirt and hem.
+  her skin but still swept them through every skirt and hem. The waypoint
+  stands 2.5 hip widths behind her since the elbows moved out (at 1.9 the
+  last fifth of the fade brushed three looks' hems, up to 8.7mm).
 - Clothes (added 2026-09-30, owner: "on Shibu the hands go inside her clothes
   when they come in to her body"): `rigProbe.clothShell` takes the outermost
   cloth anchored to her trunk and legs, skirt chains included, per 1cm band
@@ -161,14 +165,12 @@ show this.
   solver now takes her surface (`PoseSkeleton.surface`: every vertex anchored
   to her trunk or legs, `TRUNK_ANCHOR`), the engine reading it off the loaded
   meshes and the tests off the file, and puts the held wrist 4cm behind it.
-  Shown three heights, the owner chose the lowest (`flex` 40); the collarbones
-  swing back 40°. Measured: hands 0.8–42.5mm off her clothes, upper arms
-  29–45° back, elbows 36–54°, shoulder rotation at most 83.5°.
-  milfy's hoodie stands too far out to rest on (2.05 hip widths), so the clasp
-  stops at 1.5 and her hands go under its hem, waived at 91.5mm; studio's
-  flared coat takes her open hands 20.0mm in, waived too. The fade runs by
-  way of the waypoint above, and every other offered look stays 5.2mm or more
-  outside her clothes through it.
+  Shown three heights, the owner chose the lowest (elbows bent 40°), with
+  the collarbones swung back 40°. Measured then: hands 0.8–42.5mm off her
+  clothes, upper arms 29–45° back, elbows 36–54°, shoulder rotation at most
+  83.5°. milfy's hoodie stands too far out to rest on (2.05 hip widths), so
+  the clasp stops at 1.5 and her hands go under its hem; studio's flared
+  coat takes her open hands 20.0mm in. Both are waived (numbers below).
 - Owner's notes on the way, each now a test in `idlePose.test.ts`:
   "the arms behind are too straight" (elbows were 32–49°, then 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood
@@ -180,8 +182,9 @@ show this.
   skin (`rigProbe.torsoCapsules`). A first try counted ray crossings, and
   real exports are not closed meshes: it read a hand behind Gishin's dress
   as 217mm inside her. Limit 8mm; milfy is waived to 25mm (measured 15.2mm
-  behind her back before the clasp moved, 0mm since, and 10.7mm with open
-  hands: sleeve on the hem of a bell-shaped hoodie, cloth on cloth).
+  behind her back before the clasp moved, 0mm after, 0.9mm since the elbows
+  moved out, and 10.7mm with open hands: sleeve on the hem of a bell-shaped
+  hoodie, cloth on cloth).
 - The open pose was narrowed from the prototype (upper arm 22°→16°,
   forearm 30°→24°, hand 58°→38° out): wrists 24–26cm from the midline
   (the test allows 20–28cm).
@@ -194,4 +197,26 @@ show this.
 - The life layer's finger drift: each finger's base joint curls and opens
   up to 3° on its own 5–7s period; the holding hand keeps still while it
   grips.
-
+- Arms at her sides (same day, owner on a phone, with a game's dressing room
+  for reference: "from the front both arms have completely vanished"). The
+  collarbones swung back 40° and the elbows bent back and in behind her, so
+  0–17% of each upper arm's skin showed from the front. Now each upper arm
+  hangs 40° back with its elbow 3cm outside the shoulder joint
+  (`CLASP.upperBack`, `CLASP.elbowIn`), the collarbones swing back 20°, and
+  only the forearms go round her; the upper arms show 33–84% as much as with
+  open hands. Measured on every offered look: elbows 14–28mm past the
+  shoulder joints and bent 43–71°, hands 2.7–22.7mm off her clothes (milfy
+  88.0mm under her hoodie's hem, waived), shoulder rotation 89–102°. That
+  last is past the 90° the tests held: with the elbows out, the forearms
+  cross her back and the upper arms turn in to follow; turning them in no
+  further tucks the elbows back behind her.
+- Skin at the shoulders and elbows (same day, owner: "strange notch lines at
+  both elbows", and a hole in Sendagaya Shibu's sleeve). VRoid arms have no
+  twist bones, so a bone rolled about its own length wrings the skin blended
+  across its top joint: the forearm's roll (80° and more in the poses and the
+  motion-capture clips) put a crease with its outline across each elbow, and
+  the upper arm's (turned in to bring the hands behind her) tore the sleeve
+  open under the shoulder. `idlePose.armRollsToWrist` moves each upper arm's
+  roll onto its forearm and each forearm's onto its hand for the skinning
+  only, just before `vrm.update`, and puts them back after: no joint moves,
+  and the wrist takes the whole roll cleanly.

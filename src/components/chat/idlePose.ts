@@ -360,10 +360,12 @@ function hinged(
  * hip widths (the distance between the two upper-leg joints).
  *
  * - `across`: the held wrist's offset toward her left of the midline
- * - `flex`: how far the held elbow bends, in degrees; sets the clasp's height.
- *   The owner chose 40 on 2026-09-30 from three heights shown resting on her:
- *   at 65 her hands sat higher and her upper arms swung 53–58° back to reach
- *   them; at 40 they swing 29–45° and her hands rest on her seat.
+ * - `upperBack`: degrees each upper arm hangs back of straight down. The
+ *   forearms go round her from there, so the clasp's height is wherever the
+ *   held forearm's length lands (long-armed bodies clasp lower, as a person
+ *   does). 40 turns each upper arm in 89–102° to bring the forearm across her
+ *   back (idlePose.test.ts, ARM_LIMITS); hung straighter, the forearms run
+ *   back as well as across and the shoulders turn in past 115°.
  * - `clear`: how far behind her surface (PoseSkeleton.surface) the held
  *   wrist sits, in metres, at the clasp's height and across the width of her
  *   hands: far enough that the holding hand, on her side of that wrist, rests
@@ -373,29 +375,30 @@ function hinged(
  *   with the upper arms thrown back to reach there (owner: "the arm pose
  *   behind her back is very unnatural").
  * - `deepest`: the furthest behind her hips joint the held wrist may go, in
- *   hip widths, whatever she wears. Every offered look clasps within 1.44;
- *   milfy's hoodie stands out behind her far enough (2.05) that resting on it
- *   threw her upper arms 51–57° back, at the end of a shoulder's range. Her
- *   hands go under its hem instead (see idlePose.test.ts, CLOTH_WAIVER).
- * - `pole`: how far back each elbow bends, against 1 straight out to the side.
- *   Mostly back: bent outward, the elbows stood 5–15cm past her shoulders
- *   and read from the front as hands on hips (owner, 2026-09-30: "the arms
- *   behind her should sit closer to the body"). Bent back, they stay behind
- *   her sides. 16 rather than 10: at 10 pink's hands brush her jacket's hem
- *   near the end of the fade, 4.2mm in.
- * - `shoulderBack`: degrees the collarbones swing back. Drawing the shoulders
- *   back is what lets the arms reach behind her without swinging far back
- *   themselves: at 30 the holding arm swung up to 47° on Victoria Rubin, at
- *   40 no arm passes 45°.
+ *   hip widths, whatever she wears. Every other offered look clasps within
+ *   1.44; milfy's hoodie stands out behind her 2.05, and when the clasp rested
+ *   on it her upper arms swung 51–57° back, at the end of a shoulder's range.
+ *   Her hands go under its hem instead (see idlePose.test.ts, CLOTH_WAIVER).
+ * - `elbowIn`: how far inside the shoulder joint each elbow hangs, in
+ *   metres; negative is outside it. Out at her sides, where the owner's
+ *   reference has them (a game's dressing room, 2026-09-30), the upper arms
+ *   show from the front. Until then the elbows bent back and in behind her,
+ *   22–59mm inside the shoulders, and with the collarbones swung back 40°
+ *   the owner found "from the front both arms have completely vanished". Bent
+ *   outward 5–15cm past the shoulders, an earlier version read as hands on
+ *   hips; 3cm is as far as idlePose.test.ts lets them go.
+ * - `shoulderBack`: degrees the collarbones swing back, drawing the shoulder
+ *   joints a little behind her the way a person's go when they clasp their
+ *   hands behind them.
  * - `heldHand`: the held hand's direction (outward, down, back)
  */
 export const CLASP = {
   across: 0.25,
-  flex: 40,
+  upperBack: 40,
   clear: 0.04,
   deepest: 1.5,
-  pole: 16,
-  shoulderBack: 40,
+  elbowIn: -0.03,
+  shoulderBack: 20,
   heldHand: [-0.35, 0.9, 0.1] as [number, number, number],
   holdingHand: [-0.8, 0.5, 0.15] as [number, number, number],
 }
@@ -414,9 +417,10 @@ export const CLASP_BEHIND = 0.025
  * Her left hand hangs relaxed against her lower back, palm back. Her right
  * hand holds it by the wrist from her side of it, palm back too, the way a
  * person clasps their hands behind them: its palm is placed CLASP_BEHIND in
- * front of the left wrist. Both arms are placed by two-bone IK, the elbows
- * bending back and held close to her sides, so the pose is the same on a
- * long-armed body and a short one, and jointed by `hinged`.
+ * front of the left wrist. The upper arms hang down her sides and the
+ * forearms go round her (CLASP.upperBack, CLASP.elbowIn); both arms are placed
+ * by two-bone IK toward those elbows, so the pose is the same on a long-armed
+ * body and a short one, and jointed by `hinged`.
  */
 function solveBehind(b: PoseBuilder): { error: number } {
   const { f } = b.ax
@@ -428,27 +432,37 @@ function solveBehind(b: PoseBuilder): { error: number } {
     new THREE.Quaternion().setFromAxisAngle(b.ax.u, rad(CLASP.shoulderBack) * (side === 'left' ? 1 : -1))
   const shoulderAt = (side: Side): THREE.Vector3 =>
     b.rest(`${side}Shoulder`).add(b.offset(`${side}Shoulder`, `${side}UpperArm`).applyQuaternion(collarOf(side)))
+  // Where each elbow hangs: the upper arm CLASP.upperBack back from straight
+  // down, the elbow CLASP.elbowIn inside the shoulder joint, so from the
+  // front her arms run down her sides and only the forearms go round her.
+  const elbowAt = (side: Side): THREE.Vector3 => {
+    const upperLen = b.offset(`${side}UpperArm`, `${side}LowerArm`).length()
+    const inward = CLASP.elbowIn / upperLen
+    const hang = Math.sqrt(1 - inward * inward)
+    return shoulderAt(side).addScaledVector(
+      b.side(side).multiplyScalar(-inward)
+        .addScaledVector(b.ax.u, -hang * Math.cos(rad(CLASP.upperBack)))
+        .addScaledVector(back, hang * Math.sin(rad(CLASP.upperBack))),
+      upperLen,
+    )
+  }
   const place = (side: Side, wristTarget: THREE.Vector3, hand: THREE.Quaternion): { chain: ArmChain; error: number } => {
-    const o = b.side(side)
-    // The collarbone swings back, drawing the shoulder joint behind her the
-    // way a person's does when they clasp their hands behind them; without it
-    // the arm can only reach round her by throwing the elbow out sideways.
+    // The collarbone swings back CLASP.shoulderBack, drawing the shoulder
+    // joint a little behind her.
     const collar = collarOf(side)
     const shoulder = shoulderAt(side)
     const upperLen = b.offset(`${side}UpperArm`, `${side}LowerArm`).length()
     const foreLen = b.offset(`${side}LowerArm`, `${side}Hand`).length()
-    const pole = o.clone().addScaledVector(back, CLASP.pole)
-    const { elbow, wrist } = twoBone(shoulder, wristTarget, upperLen, foreLen, pole)
+    // The elbow bends toward where the upper arm hangs (elbowAt): exactly
+    // there for the held arm, whose wrist was placed from it, and as near as
+    // the holding arm's reach allows.
+    const { elbow, wrist } = twoBone(shoulder, wristTarget, upperLen, foreLen, elbowAt(side).sub(shoulder))
     return { chain: { shoulder: collar, ...hinged(b, side, elbow.clone().sub(shoulder), wrist.clone().sub(elbow), hand) }, error: wrist.distanceTo(wristTarget) }
   }
 
   // The held hand: palm back, hanging down and a little across.
   const oL = b.side('left')
   const heldHand = basisRotation(b.axis('left', 'hand'), b.palm0, mix(b.ax, oL, ...CLASP.heldHand), back)
-  // Across and back are placed against her hips; the HEIGHT is whatever puts
-  // the held elbow at CLASP.flex. A fixed height bent pink's long arms to 95°
-  // and threw her elbows 14cm out past her shoulders while Vivi's bent 72°
-  // (2026-09-30): a long-armed body clasps lower, as a person does.
   // How far back her surface reaches at a height (metres above the hips
   // joint), across the width her two hands take up round the held wrist.
   const across = CLASP.across * hipWidth
@@ -463,19 +477,20 @@ function solveBehind(b: PoseBuilder): { error: number } {
     }
     return most
   }
-  // The height is whatever bends the held elbow to CLASP.flex, and that
-  // depends on how far back the wrist is, which depends on the height; a few
-  // rounds settle both (the last changes it by well under a millimetre).
-  const upperLen = b.offset('leftUpperArm', 'leftLowerArm').length()
+  // The held upper arm hangs CLASP.upperBack back with its elbow
+  // CLASP.elbowIn inside the shoulder joint, and the forearm reaches down
+  // from there to the clasp: its height is wherever the forearm's length
+  // lands. That depends on how far back the wrist is, which depends on the
+  // height; a few rounds settle both.
   const foreLen = b.offset('leftLowerArm', 'leftHand').length()
-  const reach = Math.sqrt(upperLen ** 2 + foreLen ** 2 + 2 * upperLen * foreLen * Math.cos(rad(CLASP.flex)))
+  const elbowL = elbowAt('left')
   const wristL = new THREE.Vector3()
   let depth = hipWidth
   for (let round = 0; round < 4; round++) {
     wristL.copy(hips).addScaledVector(oL, across).addScaledVector(back, depth)
-    const d = wristL.clone().sub(shoulderAt('left'))
+    const d = wristL.clone().sub(elbowL)
     const level = d.clone().projectOnPlane(b.ax.u).length()
-    const drop = Math.sqrt(Math.max(0, reach * reach - level * level))
+    const drop = Math.sqrt(Math.max(0, foreLen * foreLen - level * level))
     wristL.addScaledVector(b.ax.u, -d.dot(b.ax.u) - drop)
     const behind = surfaceBehind(wristL.clone().sub(hips).dot(b.ax.u))
     if (behind === -Infinity) throw new Error('idlePose: no surface behind her where the clasp goes')
@@ -514,7 +529,10 @@ function solveBehind(b: PoseBuilder): { error: number } {
  * A waypoint solved like the clasp is an arm a person could hold, so both
  * halves of the fade run between two such arms.
  */
-export const IDLE_POSE_VIA = { out: 2.1, back: 1.9, down: 0.5, pole: 3, shoulderBack: 8 }
+// back 2.5 since the clasp moved to her sides (2026-09-30): at 1.9 the last
+// fifth of the fade brushed the hands through pink's, Victoria Rubin's and
+// Vivi's hems, up to 8.7mm; 2.4 was the least that cleared every look.
+export const IDLE_POSE_VIA = { out: 2.1, back: 2.5, down: 0.5, pole: 3, shoulderBack: 8 }
 
 function solveVia(b: PoseBuilder): PoseRotations {
   const { f, u } = b.ax
@@ -624,32 +642,43 @@ export function blendPoses(
 }
 
 /**
- * Moves each forearm's roll onto its hand, and returns what puts both back.
+ * Moves each arm's roll down to the wrist, and returns what puts it back.
  *
- * A VRoid arm has no twist bone: the skin round the elbow is blended between
- * the upper arm and the forearm, so a forearm rolled about its own length
- * wrings that skin into a spiral crease, and the outline drawn along the crease
- * reads as a black notch across the elbow (owner's phone screenshots,
- * 2026-09-30; a line shows from about 40° of roll, and the idle poses and the
- * motion-capture clips both roll it 80° and more). The wrist's skin takes the
- * same 80° without a crease. The hand ends up where and how it was: forearm ·
- * hand = swing · roll · hand, and the roll is about the line to the wrist, so
- * no joint moves.
+ * A VRoid arm has no twist bones: the skin at the shoulder is blended between
+ * the chest and the upper arm, and at the elbow between the upper arm and the
+ * forearm, so a bone rolled about its own length wrings the blended skin at
+ * its top. The owner saw both on 2026-09-30: a black notch across each elbow
+ * (the forearm's roll, a line from about 40°; the idle poses and the
+ * motion-capture clips roll it 80° and more) and a hole torn in Sendagaya
+ * Shibu's sleeve under the shoulder with her hands behind her (the upper arm
+ * turned in 69–85°, as a person's is to bring the forearms round behind).
+ * The wrist's skin takes all of it cleanly, and the elbow takes the upper
+ * arm's roll too: it is a turn about the line through shoulder and elbow,
+ * which the elbow's ring of skin turns with.
+ *
+ * So each upper arm's roll moves onto its forearm, and each forearm's onto its
+ * hand. Nothing moves or turns but skin: bone · child = swing · roll · child,
+ * and each roll is about the line to the next joint, so no joint moves.
  *
  * The engine calls it just before vrm.update copies the normalized bones onto
- * the skinned ones, then undoes it, so every writer keeps reading the forearm
- * it wrote.
+ * the skinned ones, then undoes it, so every writer keeps reading the arm it
+ * wrote.
  */
-export function forearmRollToHand(bone: (name: string) => THREE.Object3D | null | undefined): () => void {
+export function armRollsToWrist(bone: (name: string) => THREE.Object3D | null | undefined): () => void {
   const undo: [THREE.Object3D, THREE.Quaternion][] = []
+  const pass = (from: THREE.Object3D, to: THREE.Object3D) => {
+    const [swing, roll] = swingTwist(from.quaternion, to.position.clone().normalize())
+    from.quaternion.copy(swing)
+    to.quaternion.premultiply(roll)
+  }
   for (const side of ['left', 'right'] as const) {
+    const upper = bone(`${side}UpperArm`)
     const fore = bone(`${side}LowerArm`)
     const hand = bone(`${side}Hand`)
-    if (!fore || !hand) continue
-    undo.push([fore, fore.quaternion.clone()], [hand, hand.quaternion.clone()])
-    const [swing, roll] = swingTwist(fore.quaternion, hand.position.clone().normalize())
-    fore.quaternion.copy(swing)
-    hand.quaternion.premultiply(roll)
+    if (!upper || !fore || !hand) continue
+    for (const b of [upper, fore, hand]) undo.push([b, b.quaternion.clone()])
+    pass(upper, fore)
+    pass(fore, hand)
   }
   return () => {
     for (const [b, q] of undo) b.quaternion.copy(q)

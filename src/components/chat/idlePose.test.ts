@@ -6,9 +6,9 @@ import { parseGlb, type Glb } from './vrmHumanoid'
 import { OFFERED_VARIANTS } from './avatarVariants'
 import { REST_HALF_WIDTH } from '../avatar/stageLayout'
 import {
+  armRollsToWrist,
   blendPoses,
   CLASP_BEHIND,
-  forearmRollToHand,
   FINGER_DRIFT,
   fingerDrift,
   holdingHandFree,
@@ -126,8 +126,9 @@ const MAX_DEPTH = 0.008
  * same skeleton in pink's clothes. Open hands lay the hoodie's own sleeves on
  * that hem, 10.7mm in by this measure, cloth on cloth, and it reads as a
  * sleeve resting on a hoodie in the render (2026-09-30). Behind her back it
- * read 15.2mm until the clasp moved to rest on her, 0mm since. Every other
- * offered look is held to MAX_DEPTH.
+ * read 15.2mm until the clasp moved to rest on her, then 0mm, and 0.9mm since
+ * her elbows moved out to her sides (8.8mm at most through the fade). Every
+ * other offered look is held to MAX_DEPTH.
  */
 const DEPTH_WAIVER: Record<string, number> = { milfy: 0.025 }
 const maxDepth = (id: string): number => DEPTH_WAIVER[id] ?? MAX_DEPTH
@@ -142,34 +143,35 @@ const MAX_CLOTH_DEPTH = 0
 /**
  * How far back of hanging straight down an upper arm may swing behind her, in
  * degrees. A shoulder extends about 50–60° at the end of its range; standing
- * with the hands clasped behind, people hold it short of that. The pose the
- * owner chose measured 44.9° at most (2026-09-30); this leaves 1° over it.
- * Drawing the collarbones back 30° instead of 40° swings one arm to 47°.
+ * with the hands clasped behind, people hold it short of that. CLASP.upperBack
+ * hangs every offered look's upper arms 40.0–40.1° back (2026-09-30); this
+ * leaves 1° over it.
  */
-const MAX_UPPER_ARM_BACK = 46
+const MAX_UPPER_ARM_BACK = 41
 /**
  * Two looks whose clothes one set of body-relative numbers cannot clear, each
  * at what it measured on 2026-09-30, so neither can get worse unnoticed:
  *
- * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER). Resting
- *   her hands on it threw her upper arms 51–57° back, so the clasp stops at
- *   CLASP.deepest and her hands go under its hem, 91.5mm deep (87.4mm near the
- *   end of the fade); open hands sit 13.7mm into its flare.
+ * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER), 2.05 hip
+ *   widths behind her hips, so the clasp stops at CLASP.deepest and her hands
+ *   go under its hem, 88.0mm deep (86.0mm near the end of the fade); open
+ *   hands sit 13.7mm into its flare.
  * - studio's coat flares from the waist, and her open hands brush its skirt,
- *   20.0mm in. The fade starts there, which is its deepest point (12.3mm at 10%).
+ *   20.0mm in. The fade starts there, which is its deepest point (12.2mm at 10%).
  *
  * Both want the pose placed against the clothes each body wears, which the
  * solver does not see: it reads bones only.
  */
-const CLOTH_WAIVER: Record<string, number> = { milfy: 0.092, studio: 0.02 }
+const CLOTH_WAIVER: Record<string, number> = { milfy: 0.089, studio: 0.02 }
 
 /**
  * The furthest her clasped hands may stand off her clothes, in metres: they
  * rest on her. A clasp placed without her surface hung 4–9cm off Sendagaya
  * Shibu's skirt with the upper arms thrown back to reach it (2026-09-30).
- * Resting on her, every offered look measured 42.5mm or less.
+ * Resting on her, every offered look measures 2.7–22.7mm (2026-09-30, with
+ * her elbows out at her sides).
  */
-const MAX_CLOTH_GAP = 0.045
+const MAX_CLOTH_GAP = 0.024
 const maxClothDepth = (id: string): number => CLOTH_WAIVER[id] ?? MAX_CLOTH_DEPTH
 
 function posed(look: Look, rotations: ReadonlyMap<string, THREE.Quaternion>): void {
@@ -187,7 +189,13 @@ function posed(look: Look, rotations: ReadonlyMap<string, THREE.Quaternion>): vo
  * - elbow: bends 0–150° toward the crook, never backwards; its sideways
  *   angle stays within the carrying angle, about 10–15° in a straight arm
  * - shoulder: rotates about 80–90° either way (normal internal rotation
- *   80–90°; hand behind the back is its functional test)
+ *   80–90°; hand behind the back is its functional test). Held to 103 here:
+ *   with her hands behind her and her elbows out at her sides, where the
+ *   owner's reference has them so the arms show from the front (2026-09-30),
+ *   the forearms run in behind her and the upper arms turn in 89–102°
+ *   (vivi the most, 101.8°, still and through the fade). Turning them in no
+ *   further tucks the elbows in behind her back, where the previous version
+ *   had them at 83.5° and the arms vanished from the front.
  * - forearm: rolls 75–90° either way from neutral (pronation, supination)
  * - wrist: bends, but does not roll; the forearm rolls for it
  *
@@ -197,7 +205,7 @@ function posed(look: Look, rotations: ReadonlyMap<string, THREE.Quaternion>): vo
 const ARM_LIMITS: Record<keyof ArmJoints, [number, number]> = {
   flex: [0, 150],
   hingeOff: [-15, 15],
-  upperTwist: [-90, 90],
+  upperTwist: [-103, 103],
   foreTwist: [-90, 90],
   wristTwist: [-10, 10],
   wristBend: [0, 80],
@@ -288,6 +296,23 @@ describe.each(looks)('idle poses on $id', (look) => {
     expect(m.visible, `${m.visible} hand vertices show from the front`).toBe(0)
   })
 
+  it('shows her arms from the front when her hands are behind her', () => {
+    // The owner, 2026-09-30, on a phone, with a game's dressing room for
+    // reference: "from the front both arms have completely vanished". The
+    // collarbones swung back 40° and the elbows tucked in behind her, so 0–17%
+    // of each upper arm's skin showed from the front. Her elbows now stay out
+    // at her sides and only the forearms go round her: the upper arms show
+    // 33–84% as much as with her hands open (pink and base the least, under
+    // a jacket that covers their arms either way).
+    applyIdlePose(look.rig, 'open')
+    const open = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
+    applyIdlePose(look.rig, 'behind')
+    const behind = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
+    expect(open.upperArm).toBeGreaterThan(100)
+    const share = behind.upperArmVisible / behind.upperArm / (open.upperArmVisible / open.upperArm)
+    expect(share, 'upper arm seen behind, against open').toBeGreaterThan(0.3)
+  })
+
   it('sees the hands from the front when they are at her sides', () => {
     // The other half of the check above: the same measure on the open pose,
     // so a measure that never sees anything cannot pass it.
@@ -358,7 +383,10 @@ describe.each(looks)('idle poses on $id', (look) => {
     // hips), then "the arm pose behind her back is very unnatural": her upper
     // arms were thrown 49–73° back, at the end of a shoulder's range, to reach
     // a clasp that hung in the air behind her. Shown three heights, the owner
-    // chose the one resting on her with the elbows at 40°.
+    // chose the one resting on her with the elbows at 40°; then, with a
+    // game's dressing room for reference, "from the front both arms have
+    // completely vanished". The upper arms now hang 40° back with the elbows
+    // out at her sides (14–28mm past the shoulder joints) and bend 43–71°.
     applyIdlePose(look.rig, 'behind')
     const r = look.rig
     const shoulderOut = Math.abs(r.restPosition.leftUpperArm.x - r.restPosition.hips.x)
@@ -478,8 +506,12 @@ describe('blendPoses', () => {
       rig.root.updateMatrixWorld(true)
       return Math.max(...(['left', 'right'] as const).map((s) => Math.abs(probeArmJoints(rig, s).hingeOff)))
     }
-    expect(hingeOff(blendPoses(poses.open, poses.behind, 0.3))).toBeGreaterThan(15)
-    expect(hingeOff(blendPoses(poses.open, poses.behind, 0.3, poses.rollAxes))).toBeLessThan(10)
+    // Worst of the fade either way: where the whole-bone slerp strays furthest
+    // moves as the poses change, and the premise is that it strays at all.
+    const worst = (axes?: ReadonlyMap<string, THREE.Vector3>) =>
+      Math.max(...[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((s) => hingeOff(blendPoses(poses.open, poses.behind, s, axes))))
+    expect(worst()).toBeGreaterThan(15)
+    expect(worst(poses.rollAxes)).toBeLessThan(10)
   })
 })
 
@@ -523,50 +555,66 @@ describe('finger drift', () => {
 })
 
 
-describe('the forearm roll goes to the hand', () => {
-  // upperArm > lowerArm > hand, the wrist 0.24m down the forearm's own +x.
-  function arm(side: 'left' | 'right') {
+describe('the arm rolls go to the wrist', () => {
+  // chest > upperArm > lowerArm > hand, each joint a little off its parent's
+  // axes the way a real rig's are.
+  function arm(sign: 1 | -1) {
+    const chest = new THREE.Object3D()
     const upper = new THREE.Object3D()
     const fore = new THREE.Object3D()
     const hand = new THREE.Object3D()
-    fore.position.set(0.22, 0, 0)
-    hand.position.set(0.24, 0.01, 0)
+    upper.position.set(0.1 * sign, 0.3, 0)
+    fore.position.set(0.26 * sign, -0.012, 0.004)
+    hand.position.set(0.24 * sign, 0.01, -0.006)
+    chest.add(upper)
     upper.add(fore)
     fore.add(hand)
-    upper.quaternion.setFromEuler(new THREE.Euler(0.3, -0.2, 1.1))
-    const axis = hand.position.clone().normalize()
-    const hinge = new THREE.Vector3(0, 0, 1).cross(axis).normalize()
-    const bend = new THREE.Quaternion().setFromAxisAngle(hinge, side === 'left' ? 0.9 : -0.9)
-    fore.quaternion.copy(bend).multiply(new THREE.Quaternion().setFromAxisAngle(axis, 1.45))
+    chest.quaternion.setFromEuler(new THREE.Euler(0.05, 0.1, 0))
+    const roll = (o: THREE.Object3D, child: THREE.Object3D, bend: THREE.Quaternion, angle: number) =>
+      o.quaternion.copy(bend).multiply(new THREE.Quaternion().setFromAxisAngle(child.position.clone().normalize(), angle))
+    roll(upper, fore, new THREE.Quaternion().setFromEuler(new THREE.Euler(0.3, -0.2, 1.1 * sign)), 1.3 * sign)
+    roll(fore, hand, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1).cross(hand.position).normalize(), 0.9), 1.45)
     hand.quaternion.setFromEuler(new THREE.Euler(0.1, 0.35, -0.2))
-    return { upper, fore, hand, axis, bend }
+    return { chest, upper, fore, hand }
   }
   const world = (o: THREE.Object3D) => {
     o.updateWorldMatrix(true, false)
     return { q: o.getWorldQuaternion(new THREE.Quaternion()), p: o.getWorldPosition(new THREE.Vector3()) }
   }
-  const sides = { left: arm('left'), right: arm('right') }
-  const bone = (name: string) =>
-    name === 'leftLowerArm' ? sides.left.fore : name === 'leftHand' ? sides.left.hand
-      : name === 'rightLowerArm' ? sides.right.fore : name === 'rightHand' ? sides.right.hand : null
+  const rollAbout = (o: THREE.Object3D, child: THREE.Object3D) => {
+    const a = child.position.clone().normalize()
+    return Math.abs(o.quaternion.x * a.x + o.quaternion.y * a.y + o.quaternion.z * a.z)
+  }
 
-  it('leaves the forearm only its bend, and every hand where and how it was', () => {
-    const before = (['left', 'right'] as const).map((s) => [world(sides[s].hand), sides[s].fore.quaternion.clone(), sides[s].hand.quaternion.clone()] as const)
-    const undo = forearmRollToHand(bone)
+  it('leaves the upper arm and forearm no roll, and every joint and hand where and how it was', () => {
+    const sides = { left: arm(1), right: arm(-1) }
+    const bone = (name: string) => {
+      const side = name.startsWith('left') ? sides.left : name.startsWith('right') ? sides.right : null
+      if (!side) return null
+      return name.endsWith('UpperArm') ? side.upper : name.endsWith('LowerArm') ? side.fore : name.endsWith('Hand') ? side.hand : null
+    }
+    const parts = ['upper', 'fore', 'hand'] as const
+    const before = (['left', 'right'] as const).map((s) => parts.map((k) => ({ w: world(sides[s][k]), q: sides[s][k].quaternion.clone() })))
+    // Both rolls are really there to move.
+    for (const s of ['left', 'right'] as const) {
+      expect(rollAbout(sides[s].upper, sides[s].fore)).toBeGreaterThan(0.3)
+      expect(rollAbout(sides[s].fore, sides[s].hand)).toBeGreaterThan(0.3)
+    }
+    const undo = armRollsToWrist(bone)
     ;(['left', 'right'] as const).forEach((s, i) => {
-      const { fore, hand, axis, bend } = sides[s]
-      const after = world(hand)
-      expect(after.q.angleTo(before[i][0].q)).toBeLessThan(1e-6)
-      expect(after.p.distanceTo(before[i][0].p)).toBeLessThan(1e-9)
-      // What is left on the forearm turns nothing about its own length.
-      const p = fore.quaternion.x * axis.x + fore.quaternion.y * axis.y + fore.quaternion.z * axis.z
-      expect(Math.abs(p)).toBeLessThan(1e-9)
-      expect(fore.quaternion.angleTo(bend)).toBeLessThan(1e-6)
+      const { upper, fore, hand } = sides[s]
+      expect(rollAbout(upper, fore)).toBeLessThan(1e-9)
+      expect(rollAbout(fore, hand)).toBeLessThan(1e-9)
+      for (const [k, o] of [['fore', fore], ['hand', hand]] as const) {
+        const now = world(o)
+        const was = before[i][parts.indexOf(k)].w
+        expect(now.p.distanceTo(was.p)).toBeLessThan(1e-9)
+      }
+      expect(world(hand).q.angleTo(before[i][2].w.q)).toBeLessThan(1e-6)
     })
     undo()
     ;(['left', 'right'] as const).forEach((s, i) => {
-      expect(sides[s].fore.quaternion.equals(before[i][1])).toBe(true)
-      expect(sides[s].hand.quaternion.equals(before[i][2])).toBe(true)
+      parts.forEach((k, j) => expect(sides[s][k].quaternion.equals(before[i][j].q)).toBe(true))
     })
   })
 })

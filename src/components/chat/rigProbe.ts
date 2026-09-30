@@ -1296,6 +1296,7 @@ export function trianglesInFront(view: AxisView, point: THREE.Vector3, eps = 0.0
 const ARM_CHAIN = /^(left|right)(UpperArm|LowerArm|Hand|Thumb|Index|Middle|Ring|Little)/
 const HAND_BONE = /^(left|right)(Hand|Thumb|Index|Middle|Ring|Little)/
 const FOREARM_OR_HAND = /^(left|right)(LowerArm|Hand|Thumb|Index|Middle|Ring|Little)/
+const UPPER_ARM_BONE = /^(left|right)UpperArm$/
 
 function triangleOwner(mesh: PosedMesh, tri: number): string | null {
   // By the triangle's first corner: a seam triangle between two bones is
@@ -1424,6 +1425,10 @@ export interface IdlePoseSkin {
   visible: number
   /** Hand vertices measured. */
   hand: number
+  /** Upper-arm vertices (sleeves included) that nothing off her arms covers from the front. */
+  upperArmVisible: number
+  /** Upper-arm vertices measured. */
+  upperArm: number
   /** Capsules built; fewer than TORSO_SEGMENTS means a segment's bone is missing or has too little skin, and that body part went unmeasured. */
   capsules: number
 }
@@ -1444,8 +1449,15 @@ export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
   let visible = 0
   let hand = 0
   let clothDepth = -Infinity
+  let upperArm = 0
+  let upperArmVisible = 0
   for (let i = 0; i < mesh.owner.length; i++) {
     const bone = mesh.owner[i]
+    if (bone && UPPER_ARM_BONE.test(bone)) {
+      upperArm++
+      if (trianglesInFront(cover, p.fromArray(mesh.positions, i * 3)).length === 0) upperArmVisible++
+      continue
+    }
     if (!bone || !FOREARM_OR_HAND.test(bone)) continue
     p.fromArray(mesh.positions, i * 3)
     depth = Math.max(depth, capsuleDepth(capsules, p))
@@ -1454,5 +1466,5 @@ export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
     clothDepth = Math.max(clothDepth, shell.depth(p))
     if (trianglesInFront(cover, p).length === 0) visible++
   }
-  return { depth, clothDepth, visible, hand, capsules: capsules.length }
+  return { depth, clothDepth, visible, hand, upperArmVisible, upperArm, capsules: capsules.length }
 }

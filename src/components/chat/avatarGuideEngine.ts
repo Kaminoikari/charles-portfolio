@@ -79,8 +79,8 @@ import {
 } from './avatarMotions'
 import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
 import {
+  armRollsToWrist,
   fingerDrift,
-  forearmRollToHand,
   holdingHandFree,
   idlePoseNow,
   idlePoseStart,
@@ -1900,10 +1900,10 @@ export function initAvatarGuide(
         m.parametricRimColorFactor.copy(rimScratch.copy(base).multiplyScalar(rimScale))
 
       vrm.expressionManager?.update()
-      // The skin sees each forearm's roll on its hand, so the elbow is not
-      // wrung into a crease (idlePose.forearmRollToHand).
+      // The skin sees each arm's roll at the wrist, so neither the shoulder
+      // nor the elbow is wrung into a crease (idlePose.armRollsToWrist).
       const h = vrm.humanoid
-      const unroll = forearmRollToHand((bone) => h.getNormalizedBoneNode(bone as BoneName))
+      const unroll = armRollsToWrist((bone) => h.getNormalizedBoneNode(bone as BoneName))
       vrm.update(dt) // spring bones (hair, skirt) advance here
       unroll()
     }
