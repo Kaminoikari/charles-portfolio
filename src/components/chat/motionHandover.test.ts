@@ -171,7 +171,7 @@ describe('a clip taking the bones over from one still playing', () => {
   })
 })
 
-describe('the idle pose under a clip that takes over from another', () => {
+describe('the idle pose under a clip that does not turn every bone', () => {
   // waveWink turns only the arms. Played while peaceSign (which turns the
   // shoulders too) still held her, the shoulders were handed back by the
   // mixer itself when peaceSign let go: restoreOriginalState puts back what
@@ -189,8 +189,11 @@ describe('the idle pose under a clip that takes over from another', () => {
     ['shoulder', about(20, Y)],
     ['arm', about(-70, X)],
   ])
+  const fromRest = (q: THREE.Quaternion) => THREE.MathUtils.radToDeg(q.angleTo(new THREE.Quaternion()))
 
-  it('keeps the shoulders the wave does not turn at rest, and never jumps them', () => {
+  // She stands in the idle pose for half a second; `start` plays a clip the
+  // way playMotion does, and `frames` runs the engine's frame order.
+  function stage() {
     const root = new THREE.Object3D()
     const nodes = new Map(['shoulder', 'arm'].map((n) => [n, Object.assign(new THREE.Object3D(), { name: n })]))
     for (const n of nodes.values()) root.add(n)
@@ -210,21 +213,36 @@ describe('the idle pose under a clip that takes over from another', () => {
         before = shoulder.quaternion.clone()
       }
     }
-    frames(0.5) // standing in the idle pose
+    const start = (clip: THREE.AnimationClip) => {
+      restUnderClip(bone, IDLE, REST)
+      const next = takeOverMotion(mixer, clip, playing, FADE, outgoing)
+      if (next.outgoing) outgoing.push(next.outgoing)
+      playing = next.action
+    }
+    frames(0.5)
     worst = 0
-    restUnderClip(bone, IDLE, REST)
-    playing = takeOverMotion(mixer, PEACE, null, FADE, outgoing).action
+    return { shoulder, frames, start, outgoing, worst: () => worst }
+  }
+
+  it('keeps the shoulders at rest when the wave takes over from a clip that turns them, and never jumps them', () => {
+    const { shoulder, frames, start, outgoing, worst } = stage()
+    start(PEACE)
     frames(1)
-    restUnderClip(bone, IDLE, REST)
-    const next = takeOverMotion(mixer, WAVE, playing, FADE, outgoing)
-    if (next.outgoing) outgoing.push(next.outgoing)
-    playing = next.action
+    start(WAVE)
     frames(1)
     expect(outgoing).toHaveLength(0)
-    expect(THREE.MathUtils.radToDeg(shoulder.quaternion.angleTo(new THREE.Quaternion()))).toBeLessThan(0.01)
+    expect(fromRest(shoulder.quaternion)).toBeLessThan(0.01)
     // Fading from the idle pose's 20° about one axis to the clip's 10° about
     // another in FADE seconds steps at most 1.9° a frame; the mixer handing
     // the idle pose back when the old clip let go moved 20° in one.
-    expect(worst).toBeLessThan(2.5)
+    expect(worst()).toBeLessThan(2.5)
+  })
+
+  it('eases them to rest when the wave starts straight from the idle pose', () => {
+    const { shoulder, frames, start, worst } = stage()
+    start(WAVE)
+    frames(1)
+    expect(fromRest(shoulder.quaternion)).toBeLessThan(0.1)
+    expect(worst()).toBeLessThan(2.5)
   })
 })

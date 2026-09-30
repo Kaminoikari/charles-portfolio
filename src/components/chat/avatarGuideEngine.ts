@@ -609,9 +609,13 @@ export function restUnderClip(
 /**
  * One frame of the idle pose under the clips, at `share` of the body (1 less
  * the clips' weight). The bones a clip turns are blended from where it put
- * them; the rest ease from their clip rest (idlePose.writeIdlePose). While
- * the clips hold all of her it writes nothing: a bone they do not turn is
- * then where the mixer left it, which restUnderClip makes rest.
+ * them; the rest ease from their clip rest (idlePose.writeIdlePose).
+ *
+ * Written even when the clips hold all of her, where it puts a bone they do
+ * not turn exactly at rest. Skipped there, the last write was a fade step
+ * short of it: at 60 frames a second over MOTION_FADE, a wave straight from
+ * the hands-behind pose held 7% of it, the shoulders 1.3° back and the grip
+ * part closed.
  */
 export function poseUnderClips(
   bone: (name: string) => THREE.Object3D | null | undefined,
@@ -621,7 +625,6 @@ export function poseUnderClips(
   outgoing: readonly OutgoingMotion[],
   rest: PoseRotations,
 ): void {
-  if (share <= 0.001) return
   const clips = outgoing.map((out) => out.action.getClip())
   if (playing) clips.push(playing.getClip())
   writeIdlePose(bone, pose, share, clipDriven(clips), rest)

@@ -279,7 +279,7 @@ describe('her elbows keep their outline clean', () => {
 describe('a clip that leaves bones to the idle pose', () => {
   // motionHandover.test.ts drives poseUnderClips and restUnderClip through a
   // real mixer; only these lines put them on her.
-  it('writes the idle pose under the clips through poseUnderClips', () => {
+  it('writes the idle pose under the clips every frame, through poseUnderClips', () => {
     expect(frameBody()).toMatch(
       /poseState = stepIdlePose\([^\n]*\n\s*const h = vrm\.humanoid\s*\n\s*poseUnderClips\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), idlePoseNow\(poseState, poses\), share, motionAction, outgoing, clipRest\(vrm\)\)/,
     )
@@ -287,7 +287,7 @@ describe('a clip that leaves bones to the idle pose', () => {
 
   it('has the mixer remember rest, not the idle pose, for a clip it starts', () => {
     expect(SOURCE).toMatch(
-      /restUnderClip\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), poses\.open, clipRest\(vrm\)\)\s*\n\s*const \{ action, outgoing: out \} = takeOverMotion\(/,
+      /if \(poses\) restUnderClip\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), poses\.open, clipRest\(vrm\)\)\s*\n\s*const \{ action, outgoing: out \} = takeOverMotion\(/,
     )
   })
 })

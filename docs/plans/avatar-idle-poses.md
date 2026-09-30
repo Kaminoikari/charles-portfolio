@@ -238,8 +238,10 @@ show this.
   that clip gave up with what it had remembered on starting it, the idle
   pose, and restored exactly that when it let go. Now a bone no clip turns
   eases from the rest the clips were made on (arms down, the rest at
-  identity; `idlePose.writeIdlePose` through `poseUnderClips`), and the
-  mixer remembers that rest (`restUnderClip`,
+  identity; `idlePose.writeIdlePose` through `poseUnderClips`, every frame,
+  since skipping the frames where the clips hold all of her stopped the
+  fade a step short of rest), and the mixer remembers that rest
+  (`restUnderClip`,
   just before each clip starts), so a clip fades to rest where it once faded
   to the idle pose. Nine of the other clips turn 51–53 bones, shoulders and
   fingers included; `idleLoop` turns 22, none of them fingers, so under it
