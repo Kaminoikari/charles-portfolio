@@ -493,31 +493,33 @@ describe('sweepPoses', () => {
     // The owner, 2026-10-01: the move behind her back "is right but jerky".
     // Eased at both ends of each half, the fade stopped her wrist dead at the
     // waypoint (3% of its top speed, on every body) and sent it back out 150°
-    // from the way it came in: a corner. Now it turns there on a curve, at
+    // from the way it came in (Gishin's right wrist): a corner. Now it turns there on a curve, at
     // 39% of its top speed on Gishin.
     const poses = solveIdlePoses(poseSkeleton(look.rig))
-    const wrist = (blend: number) => {
-      posed(look, idlePoseNow({ current: 'behind', from: 'open', blend, hold: 18 }, poses))
-      return worldPosition(look.rig, 'rightHand')
+    for (const hand of ['rightHand', 'leftHand']) {
+      const wrist = (blend: number) => {
+        posed(look, idlePoseNow({ current: 'behind', from: 'open', blend, hold: 18 }, poses))
+        return worldPosition(look.rig, hand)
+      }
+      const frames = (fps: number) => {
+        const n = Math.round(IDLE_POSE_FADE * fps)
+        const p = Array.from({ length: n + 1 }, (_, i) => wrist(i / n))
+        const v = p.slice(1).map((q, i) => q.clone().sub(p[i]))
+        const turn = Math.max(...v.slice(1).map((d, i) => d.angleTo(v[i])))
+        return { n, speed: v.map((d) => d.length()), turn }
+      }
+      const at60 = frames(60)
+      const fastest = Math.max(...at60.speed)
+      const middle = at60.speed.slice(Math.round(at60.n * 0.2), Math.round(at60.n * 0.8))
+      expect(Math.min(...middle) / fastest, `${hand}: slowest between 20% and 80% of the fade, of the fastest`).toBeGreaterThan(0.3)
+      // It sets off from rest and comes to rest: 2% of the top speed in the
+      // first and last frames, where an unshaped sweep starts and stops at 74–88%.
+      expect(at60.speed[0] / fastest, `${hand}: first frame, of the fastest`).toBeLessThan(0.1)
+      expect(at60.speed[at60.n - 1] / fastest, `${hand}: last frame, of the fastest`).toBeLessThan(0.1)
+      // A corner turns as far in a frame at any frame rate; a curve turns half
+      // as far at twice the rate.
+      expect(frames(120).turn / at60.turn, `${hand}: sharpest turn per frame at 120fps against 60fps`).toBeLessThan(0.6)
     }
-    const frames = (fps: number) => {
-      const n = Math.round(IDLE_POSE_FADE * fps)
-      const p = Array.from({ length: n + 1 }, (_, i) => wrist(i / n))
-      const v = p.slice(1).map((q, i) => q.clone().sub(p[i]))
-      const turn = Math.max(...v.slice(1).map((d, i) => d.angleTo(v[i])))
-      return { n, speed: v.map((d) => d.length()), turn }
-    }
-    const at60 = frames(60)
-    const fastest = Math.max(...at60.speed)
-    const middle = at60.speed.slice(Math.round(at60.n * 0.2), Math.round(at60.n * 0.8))
-    expect(Math.min(...middle) / fastest, 'slowest between 20% and 80% of the fade, of the fastest').toBeGreaterThan(0.3)
-    // It sets off from rest and comes to rest: 2% of the top speed in the
-    // first and last frames, where an unshaped sweep starts and stops at 74–88%.
-    expect(at60.speed[0] / fastest, 'first frame, of the fastest').toBeLessThan(0.1)
-    expect(at60.speed[at60.n - 1] / fastest, 'last frame, of the fastest').toBeLessThan(0.1)
-    // A corner turns as far in a frame at any frame rate; a curve turns half
-    // as far at twice the rate.
-    expect(frames(120).turn / at60.turn, 'sharpest turn per frame at 120fps against 60fps').toBeLessThan(0.6)
   })
 
   it('keeps the elbow a hinge part way, where a whole-bone slerp bends it sideways', () => {

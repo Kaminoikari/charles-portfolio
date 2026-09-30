@@ -156,7 +156,7 @@ show this.
 - One sweep through the waypoint (2026-10-01, owner: the move behind her
   back "is right but jerky"). The fade had run as two blends, each eased at
   both ends, so her wrists stopped dead at the waypoint (3% of their top
-  speed) and went back 150° from the way they came. `sweepPoses` runs one
+  speed) and went back 150° from the way they came (Gishin's right wrist). `sweepPoses` runs one
   curve per bone through the three poses, eased only at the two ends; each
   axis keeps moving through the waypoint where it lies between the poses and
   turns there at rest where the waypoint is its far point. Tried first: a
