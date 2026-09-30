@@ -587,23 +587,35 @@ export function takeOverMotion(
 }
 
 /**
- * Puts the idle pose's bones at their clip rest, just before a clip starts.
- * Starting it is when the mixer remembers each bone it will turn
- * (saveOriginalState), and it fills whatever weight its clips leave with that
- * memory, down to restoring it outright when the last clip holding the bone
- * lets go. Remembering the idle pose meant that a clip taken over by one that
- * does not turn some bone (waveWink turns only the arms) faded that bone back
- * to the idle pose the old clip started from: over the hands-behind pose, the
+ * Runs `start` (the clip's play()) with the idle pose's bones at their clip
+ * rest, then puts them back where they were. Starting a clip is when the
+ * mixer remembers each bone it will turn (saveOriginalState, inside play()),
+ * and it fills whatever weight its clips leave with that memory, down to
+ * restoring it outright when the last clip holding the bone lets go.
+ * Remembering the idle pose meant that a clip taken over by one that does not
+ * turn some bone (waveWink turns only the arms) faded that bone back to the
+ * idle pose the old clip started from: over the hands-behind pose, the
  * shoulders swung back and the grip. Remembering rest, it fades to rest,
- * which is where poseUnderClips then keeps it. Nothing is drawn in between:
- * the next frame writes every one of these bones before it renders.
+ * which is where poseUnderClips then keeps it. The bones go back because the
+ * chat's idle rotation starts clips inside the frame, after the pose is
+ * written and before the render: left at rest, that frame drew her arms
+ * straight down and her fingers flat.
  */
-export function restUnderClip(
+export function restUnderClip<T>(
   bone: (name: string) => THREE.Object3D | null | undefined,
   pose: PoseRotations,
   rest: PoseRotations,
-): void {
+  start: () => T,
+): T {
+  const held: [THREE.Object3D, THREE.Quaternion][] = []
+  for (const name of pose.keys()) {
+    const b = bone(name)
+    if (b) held.push([b, b.quaternion.clone()])
+  }
   writeIdlePose(bone, pose, 0, () => false, rest)
+  const started = start()
+  for (const [b, q] of held) b.quaternion.copy(q)
+  return started
 }
 
 /**
@@ -1319,8 +1331,11 @@ export function initAvatarGuide(
     settleDur = 0
     settleT = 0
     const h = vrm.humanoid
-    if (poses) restUnderClip((bone) => h?.getNormalizedBoneNode(bone as BoneName), poses.open, clipRest(vrm))
-    const { action, outgoing: out } = takeOverMotion(mixer, clip, playing, MOTION_FADE, outgoing)
+    const m = mixer
+    const take = () => takeOverMotion(m, clip, playing, MOTION_FADE, outgoing)
+    const { action, outgoing: out } = poses
+      ? restUnderClip((bone) => h?.getNormalizedBoneNode(bone as BoneName), poses.open, clipRest(vrm), take)
+      : take()
     if (out) outgoing.push(out)
     motionAction = action
     motionName = name
@@ -1514,13 +1529,14 @@ export function initAvatarGuide(
         // performance plays and then she puts her arms down. Overlapping would
         // eat the tail of a 4.5s clip for a settle that can last 0.75s.
         //
-        // What actually returns the bones is three's PropertyMixer: it lerps
-        // toward the value each bone held before the action bound, which is the
-        // idle pose she was standing in (the pose hold is paused while a
-        // clip plays), so weight 0 returns her to the pose the clip began from and
-        // the pose layer below takes over from there. A fade already under way
-        // when the clip began keeps running underneath it, so the pose layer
-        // settles her into where that fade ends.
+        // Two things return the bones. Three's PropertyMixer lerps each one
+        // toward what it remembered when the clip started, which for the idle
+        // pose's bones is their clip rest (restUnderClip); and the pose layer
+        // below (poseUnderClips) slerps them toward the idle pose by the share
+        // the clips give up, so weight 0 is the idle pose outright (its hold is
+        // paused while a clip plays). A fade already under way when the clip
+        // began keeps running underneath it, so the pose layer settles her into
+        // where that fade ends.
         //
         // Order matters: the weight is written BEFORE the mixer applies it, so
         // the last weight a settle computes is 0 and the pose stopMotion writes

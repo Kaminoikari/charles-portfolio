@@ -287,7 +287,7 @@ describe('a clip that leaves bones to the idle pose', () => {
 
   it('has the mixer remember rest, not the idle pose, for a clip it starts', () => {
     expect(SOURCE).toMatch(
-      /if \(poses\) restUnderClip\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), poses\.open, clipRest\(vrm\)\)\s*\n\s*const \{ action, outgoing: out \} = takeOverMotion\(/,
+      /const take = \(\) => takeOverMotion\(m, clip, playing, MOTION_FADE, outgoing\)\s*\n\s*const \{ action, outgoing: out \} = poses\s*\n\s*\? restUnderClip\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), poses\.open, clipRest\(vrm\), take\)\s*\n\s*: take\(\)/,
     )
   })
 })

@@ -241,9 +241,10 @@ show this.
   identity; `idlePose.writeIdlePose` through `poseUnderClips`, every frame,
   since skipping the frames where the clips hold all of her stopped the
   fade a step short of rest), and the mixer remembers that rest
-  (`restUnderClip`,
-  just before each clip starts), so a clip fades to rest where it once faded
-  to the idle pose. Nine of the other clips turn 51–53 bones, shoulders and
+  (`restUnderClip` sets the bones to rest while a clip starts and puts them
+  back straight after, since the chat's idle rotation starts clips mid-frame,
+  before the render), so a clip fades to rest where it once faded to the
+  idle pose. Nine of the other clips turn 51–53 bones, shoulders and
   fingers included; `idleLoop` turns 22, none of them fingers, so under it
   her fingers now ease straight as they did before the idle poses (2026-09-30
   morning) instead of holding the idle pose's curl.

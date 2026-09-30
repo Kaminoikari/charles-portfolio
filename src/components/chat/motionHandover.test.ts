@@ -214,14 +214,13 @@ describe('the idle pose under a clip that does not turn every bone', () => {
       }
     }
     const start = (clip: THREE.AnimationClip) => {
-      restUnderClip(bone, IDLE, REST)
-      const next = takeOverMotion(mixer, clip, playing, FADE, outgoing)
+      const next = restUnderClip(bone, IDLE, REST, () => takeOverMotion(mixer, clip, playing, FADE, outgoing))
       if (next.outgoing) outgoing.push(next.outgoing)
       playing = next.action
     }
     frames(0.5)
     worst = 0
-    return { shoulder, frames, start, outgoing, worst: () => worst }
+    return { shoulder, arm: nodes.get('arm')!, frames, start, outgoing, worst: () => worst }
   }
 
   it('keeps the shoulders at rest when the wave takes over from a clip that turns them, and never jumps them', () => {
@@ -233,8 +232,10 @@ describe('the idle pose under a clip that does not turn every bone', () => {
     expect(outgoing).toHaveLength(0)
     expect(fromRest(shoulder.quaternion)).toBeLessThan(0.01)
     // Fading from the idle pose's 20° about one axis to the clip's 10° about
-    // another in FADE seconds steps at most 1.9° a frame; the mixer handing
-    // the idle pose back when the old clip let go moved 20° in one.
+    // another in FADE seconds steps at most 1.9° a frame. With the mixer
+    // remembering the idle pose, the old clip letting go handed the shoulder
+    // back to it and the next frame's pose layer put it at rest: about 19–20°
+    // in one frame.
     expect(worst()).toBeLessThan(2.5)
   })
 
@@ -244,5 +245,16 @@ describe('the idle pose under a clip that does not turn every bone', () => {
     frames(1)
     expect(fromRest(shoulder.quaternion)).toBeLessThan(0.1)
     expect(worst()).toBeLessThan(2.5)
+  })
+
+  it('leaves every bone where the frame put it when a clip starts inside the frame', () => {
+    // The chat's idle rotation starts its clips in the frame loop, after the
+    // pose is written and before the render: whatever the start leaves on a
+    // bone is what that frame draws.
+    const { shoulder, arm, start } = stage()
+    const was = [shoulder.quaternion.clone(), arm.quaternion.clone()]
+    start(WAVE)
+    expect(shoulder.quaternion.angleTo(was[0])).toBeLessThan(1e-6)
+    expect(arm.quaternion.angleTo(was[1])).toBeLessThan(1e-6)
   })
 })
