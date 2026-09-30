@@ -13,7 +13,7 @@
 //
 // Pure functions of their inputs, so the test can hold the numbers without a
 // browser or a GL context.
-import { AVATAR_FOV, type AvatarFraming } from '../chat/avatarMode'
+import { AVATAR_CAMERA_TILT, AVATAR_FOV, type AvatarFraming } from '../chat/avatarMode'
 import { AVATAR_FAMILIES, type AvatarFamilyId } from '../chat/avatarVariants'
 
 /**
@@ -33,18 +33,54 @@ export function stageLayout(viewportWidth: number): StageLayout {
 }
 
 /**
- * How much of the screen's height the sharp backdrop takes, from the bottom,
- * per layout; above it a blurred copy of the same picture fills in.
- *
- * The backdrops are 16:9 and cover the stage. On a phone held upright that
- * crops them to about a quarter of their width, the picture scaled to the
- * screen's full height: the owner, 2026-09-30, "the background looks too
- * close, so she looks too tall against it". Covering a box 0.8 of the
- * screen's height shows a third of the width instead (26% to 32% on a
- * 390x844 phone). The character select's band is wide enough to keep the
- * whole picture at full height.
+ * The phone dock's height, in CSS pixels (HudDock: a 44px tab row, a 96px
+ * picker row and their padding). The backdrop must reach down to it; under
+ * it the page may show the blurred fill, which the dock's glass blurs anyway.
  */
-export const BACKDROP_HEIGHT: Record<StageLayout, number> = { hud: 0.8, select: 1 }
+export const HUD_DOCK_H = 170
+
+/**
+ * The canvas row the camera's horizon crosses. The engine's camera stands
+ * AVATAR_CAMERA_TILT over the point it looks at, so it looks a little down
+ * and its horizon sits a little above the canvas's middle.
+ */
+export function horizonRow(framing: AvatarFraming, h: number): number {
+  const k = Math.tan((AVATAR_FOV / 2) * (Math.PI / 180))
+  return h / 2 - ((h / 2) * (AVATAR_CAMERA_TILT / framing.distance)) / k
+}
+
+/** Where a backdrop is drawn: its top edge and height, in CSS pixels. Its width follows at 16:9. */
+export interface BackdropBox {
+  top: number
+  height: number
+}
+
+/**
+ * The box a 16:9 backdrop whose eye level is `horizon` (StageScene.horizon)
+ * fills, so that eye level lands on the camera's horizon row.
+ *
+ * A painting's eye level is where its painter stood: anyone standing on its
+ * ground is cut by that line at the painter's eye height. Put anywhere else,
+ * she stands in the picture at another height than it was drawn from. The
+ * owner, 2026-09-30, against a game's dressing room whose horizon runs through
+ * the girl's shoulders: "the background and the figure are a perfect match
+ * there, in distance and focal length". Here the paintings' eye levels,
+ * 0.45–0.72 of the way down, lay at 56–78% of a 390x844 phone's height,
+ * cutting Sendagaya Shibu at 0.67–1.02m, thigh to hip, while the camera
+ * stood at 1.21m, at her waist, 44% of the way down: she stood in each scene
+ * like a giant.
+ *
+ * The box is as small as it can be while it covers the screen's width and
+ * top and reaches down to `floor`; below that the page shows a blurred copy.
+ * Small, because the owner found the pictures too close on a phone when they
+ * covered its whole height (2026-09-30): reaching down only to the dock, a
+ * phone draws them 0.80–0.97 of its height (moon-beach, whose eye level sits
+ * lowest, 1.29) and sees 27–32% of each one's width (20%).
+ */
+export function backdropBox(view: { w: number; h: number }, row: number, horizon: number, floor: number): BackdropBox {
+  const height = Math.max((view.w * 9) / 16, row / horizon, (floor - row) / (1 - horizon))
+  return { top: row - horizon * height, height }
+}
 
 /**
  * Air over the resting crown, in metres. A standing figure with no room over

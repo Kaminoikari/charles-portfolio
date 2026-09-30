@@ -150,6 +150,7 @@ describe('sceneLight', () => {
   const relit: StageScene = {
     id: 'library',
     focusX: 50,
+    horizon: 0.5,
     lights: (['day', 'night'] as const).map((id) => ({ id, src: `/${id}.webp`, thumb: `/t-${id}.webp` })),
   }
 

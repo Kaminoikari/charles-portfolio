@@ -95,6 +95,14 @@ export interface StageScene {
    * this picks the quarter she stands in (a floor, a path), not a wall.
    */
   focusX: number
+  /**
+   * The painting's eye level, as a fraction of its height from the top: where
+   * its ground and walls run to their vanishing point, or the sea meets the
+   * sky. The page puts this row on the camera's own horizon, so the scene's
+   * eye level cuts her where the camera stands (stageLayout.backdropBox).
+   * Read off each picture by eye, 2026-09-30, to within about 0.03.
+   */
+  horizon: number
 }
 
 const lit = (scene: StageSceneId, ...ids: StageLightId[]): StageLight[] =>
@@ -124,24 +132,24 @@ const clip = (scene: StageSceneId, light: StageLightId): StageLight[] => [
  * a picture per time of day, a line here and a label in stage.scenes.
  */
 export const STAGE_SCENES: readonly StageScene[] = [
-  { id: 'old-house', lights: clip('old-house', 'day'), focusX: 55 },
-  { id: 'crossing', lights: clip('crossing', 'sunset'), focusX: 50 },
-  { id: 'bus-stop', lights: clip('bus-stop', 'sunset'), focusX: 45 },
-  { id: 'overpass', lights: clip('overpass', 'day'), focusX: 45 },
-  { id: 'rain-rails', lights: clip('rain-rails', 'day'), focusX: 50 },
-  { id: 'city-street', lights: clip('city-street', 'night'), focusX: 40 },
-  { id: 'backstreet', lights: clip('backstreet', 'night'), focusX: 50 },
-  { id: 'lantern-street', lights: clip('lantern-street', 'night-lit'), focusX: 50 },
-  { id: 'riverside', lights: clip('riverside', 'night-lit'), focusX: 45 },
-  { id: 'lofi-house', lights: clip('lofi-house', 'night-lit'), focusX: 50 },
-  { id: 'seaside-cafe', lights: clip('seaside-cafe', 'day'), focusX: 50 },
-  { id: 'forest-torii', lights: clip('forest-torii', 'day'), focusX: 45 },
-  { id: 'tatami-room', lights: clip('tatami-room', 'night-lit'), focusX: 45 },
-  { id: 'dormitory', lights: clip('dormitory', 'day'), focusX: 50 },
-  { id: 'moon-beach', lights: clip('moon-beach', 'night'), focusX: 50 },
-  { id: 'beach-shop', lights: clip('beach-shop', 'day'), focusX: 45 },
-  { id: 'blue-cafe', lights: clip('blue-cafe', 'day'), focusX: 50 },
-  { id: 'library', lights: lit('library', 'night-lit'), focusX: 45 },
+  { id: 'old-house', lights: clip('old-house', 'day'), focusX: 55, horizon: 0.58 },
+  { id: 'crossing', lights: clip('crossing', 'sunset'), focusX: 50, horizon: 0.6 },
+  { id: 'bus-stop', lights: clip('bus-stop', 'sunset'), focusX: 45, horizon: 0.62 },
+  { id: 'overpass', lights: clip('overpass', 'day'), focusX: 45, horizon: 0.62 },
+  { id: 'rain-rails', lights: clip('rain-rails', 'day'), focusX: 50, horizon: 0.57 },
+  { id: 'city-street', lights: clip('city-street', 'night'), focusX: 40, horizon: 0.52 },
+  { id: 'backstreet', lights: clip('backstreet', 'night'), focusX: 50, horizon: 0.56 },
+  { id: 'lantern-street', lights: clip('lantern-street', 'night-lit'), focusX: 50, horizon: 0.62 },
+  { id: 'riverside', lights: clip('riverside', 'night-lit'), focusX: 45, horizon: 0.62 },
+  { id: 'lofi-house', lights: clip('lofi-house', 'night-lit'), focusX: 50, horizon: 0.55 },
+  { id: 'seaside-cafe', lights: clip('seaside-cafe', 'day'), focusX: 50, horizon: 0.48 },
+  { id: 'forest-torii', lights: clip('forest-torii', 'day'), focusX: 45, horizon: 0.55 },
+  { id: 'tatami-room', lights: clip('tatami-room', 'night-lit'), focusX: 45, horizon: 0.5 },
+  { id: 'dormitory', lights: clip('dormitory', 'day'), focusX: 50, horizon: 0.48 },
+  { id: 'moon-beach', lights: clip('moon-beach', 'night'), focusX: 50, horizon: 0.72 },
+  { id: 'beach-shop', lights: clip('beach-shop', 'day'), focusX: 45, horizon: 0.57 },
+  { id: 'blue-cafe', lights: clip('blue-cafe', 'day'), focusX: 50, horizon: 0.62 },
+  { id: 'library', lights: lit('library', 'night-lit'), focusX: 45, horizon: 0.45 },
 ]
 
 export const DEFAULT_SCENE: StageSceneId = 'old-house'

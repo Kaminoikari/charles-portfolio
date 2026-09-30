@@ -45,7 +45,16 @@ import {
   type StageSceneId,
   type StageTab,
 } from './stageContent'
-import { BACKDROP_HEIGHT, STAGE_PATH, hudFraming, stageFraming, stageLayout } from './stageLayout'
+import {
+  HUD_DOCK_H,
+  STAGE_PATH,
+  backdropBox,
+  horizonRow,
+  hudFraming,
+  stageFraming,
+  stageLayout,
+  type BackdropBox,
+} from './stageLayout'
 
 /** Widths of the character select's two panels, px. */
 const ROSTER_W = 380
@@ -201,6 +210,10 @@ export default function AvatarStagePage() {
   // that sets her on the painted ground rather than in front of it.
   const pxPerMetre = view.h / (2 * framing.distance * Math.tan((AVATAR_FOV / 2) * (Math.PI / 180)))
   const floorRow = view.h / 2 - (0 - framing.lookAtY) * pxPerMetre
+  // Each backdrop's eye level goes on the camera's horizon (backdropBox), and
+  // reaches down to the dock on a phone.
+  const eyeRow = horizonRow(framing, view.h)
+  const backdropFloor = layout === 'hud' ? view.h - HUD_DOCK_H : view.h
 
   const looks = OFFERED_VARIANTS.map((v) => ({ id: v.id, url: v.url }))
 
@@ -239,9 +252,10 @@ export default function AvatarStagePage() {
         style={{ background: 'radial-gradient(ellipse at 50% 85%, #1c1f2b 0%, var(--color-bg-primary) 70%)' }}
       />
       {visited.flatMap((id) => {
-        const { lights, focusX } = sceneById(id)
+        const { lights, focusX, horizon } = sceneById(id)
+        const box = backdropBox(view, eyeRow, horizon, backdropFloor)
         return lights.map((l) => (
-          <SceneLayer key={l.src} poster={l.src} focusX={focusX} on={l.src === light?.src} height={BACKDROP_HEIGHT[layout]}>
+          <SceneLayer key={l.src} poster={l.src} focusX={focusX} on={l.src === light?.src} box={box} viewH={view.h}>
             {l.video ? (
               <SceneClip poster={l.src} video={l.video} focusX={focusX} on={l.src === light?.src} />
             ) : (
@@ -336,37 +350,37 @@ export default function AvatarStagePage() {
 }
 
 /**
- * One backdrop: the picture covering the bottom `height` of the stage, and
- * above it the same picture blurred and dimmed, faded into it, so a phone sees
- * more of the scene without a bare band over it (BACKDROP_HEIGHT). At height 1
- * the blurred copy is hidden behind the picture.
+ * One backdrop, drawn in its box (stageLayout.backdropBox) so its eye level
+ * sits on the camera's horizon. Where the box stops short of the screen's
+ * bottom, the same picture blurred and dimmed fills in under it and the
+ * picture's lower edge fades into that.
  */
 function SceneLayer({
   poster,
   focusX,
   on,
-  height,
+  box,
+  viewH,
   children,
 }: {
   poster: string
   focusX: number
   on: boolean
-  height: number
+  box: BackdropBox
+  viewH: number
   children: React.ReactNode
 }) {
-  const fade = height < 1 ? 'linear-gradient(to bottom, transparent, #000 18%)' : undefined
+  const short = box.top + box.height < viewH - 0.5
+  const fade = short ? 'linear-gradient(to top, transparent, #000 12%)' : undefined
   return (
     <div aria-hidden="true" className="absolute inset-0 transition-opacity duration-700" style={{ opacity: on ? 1 : 0 }}>
-      {height < 1 ? (
+      {short ? (
         <div
           className="absolute inset-0 scale-110 bg-cover"
-          style={{ backgroundImage: `url(${poster})`, backgroundPosition: `${focusX}% 30%`, filter: 'blur(24px) brightness(0.7)' }}
+          style={{ backgroundImage: `url(${poster})`, backgroundPosition: `${focusX}% 100%`, filter: 'blur(24px) brightness(0.7)' }}
         />
       ) : null}
-      <div
-        className="absolute inset-x-0 bottom-0"
-        style={{ height: `${height * 100}%`, maskImage: fade, WebkitMaskImage: fade }}
-      >
+      <div className="absolute inset-x-0" style={{ top: box.top, height: box.height, maskImage: fade, WebkitMaskImage: fade }}>
         {children}
       </div>
     </div>

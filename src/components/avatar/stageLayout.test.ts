@@ -4,12 +4,16 @@
 // panels leave free. A taller body, a new screen size or a moved panel that
 // would break either fails here rather than on a screen.
 import { describe, expect, it } from 'vitest'
-import { AVATAR_FOV } from '../chat/avatarMode'
+import * as THREE from 'three'
+import { AVATAR_CAMERA_TILT, AVATAR_FOV } from '../chat/avatarMode'
 import { motionFrame } from '../chat/avatarMotions'
 import { OFFERED_VARIANTS, familyOf } from '../chat/avatarVariants'
+import { STAGE_SCENES } from './stageContent'
 import {
-  BACKDROP_HEIGHT,
   FEET_Y,
+  HUD_DOCK_H,
+  backdropBox,
+  horizonRow,
   HEAD_AIR,
   HUD_CROWN_ROW,
   HUD_HEAD_SHARE,
@@ -151,16 +155,77 @@ describe('the stage placement', () => {
   })
 })
 
-describe('the backdrop on a phone', () => {
-  // A 16:9 picture covering a box shows box width / (box height x 16/9) of
-  // its own width. The owner found the full-height cover too close
-  // (2026-09-30); the character select keeps it.
-  const shown = (w: number, h: number, share: number) => w / (h * share * (16 / 9))
-  it('shows more of the scene than covering the whole screen would', () => {
-    expect(shown(390, 844, BACKDROP_HEIGHT.hud)).toBeGreaterThan(0.3)
-    expect(shown(390, 844, 1)).toBeLessThan(0.27)
+describe('the backdrop against her', () => {
+  // Where a far point level with the camera lands, through a camera set up the
+  // way the engine sets its own (position over the look-at point, lookAt).
+  const drawnHorizon = (distance: number, lookAtY: number, w: number, h: number): number => {
+    const cam = new THREE.PerspectiveCamera(AVATAR_FOV, w / h, 0.1, 5000)
+    cam.position.set(0, lookAtY + AVATAR_CAMERA_TILT, distance)
+    cam.lookAt(0, lookAtY, 0)
+    cam.updateMatrixWorld()
+    const p = new THREE.Vector3(0, lookAtY + AVATAR_CAMERA_TILT, distance - 4000).project(cam)
+    return ((1 - p.y) / 2) * h
+  }
+  const phone = { w: 390, h: 844 }
+  const desk = { w: 1440, h: 900 }
+  // Wider than the pictures: only here does covering the width set the size.
+  const wide = { w: 2560, h: 1080 }
+  const wideBand: StageBand = { w: 2560, h: 1080, top: 72 + 12, bottom: 1080 - 24, width: 2560 - 380 - 300 - 48 }
+
+  it('finds the row the camera draws its horizon on', () => {
+    for (const family of families) {
+      const f = hudFraming(phone.h, family)
+      expect(Math.abs(horizonRow(f, phone.h) - drawnHorizon(f.distance, f.lookAtY, phone.w, phone.h))).toBeLessThan(0.5)
+    }
   })
-  it('keeps the whole height on the character select', () => {
-    expect(BACKDROP_HEIGHT.select).toBe(1)
+
+  it.each(families)("puts every scene's eye level on the camera's horizon, and covers the screen down to the dock, on %s", (family) => {
+    const setups = [
+      { view: phone, framing: hudFraming(phone.h, family), floor: phone.h - HUD_DOCK_H },
+      { view: desk, framing: stageFraming(BANDS['desktop 1440x900'], family), floor: desk.h },
+      { view: wide, framing: stageFraming(wideBand, family), floor: wide.h },
+    ]
+    for (const { view, framing, floor } of setups) {
+      const row = horizonRow(framing, view.h)
+      for (const scene of STAGE_SCENES) {
+        const box = backdropBox(view, row, scene.horizon, floor)
+        expect(box.top + scene.horizon * box.height, scene.id).toBeCloseTo(row, 6)
+        expect(box.top, `${scene.id} leaves the top bare`).toBeLessThanOrEqual(0)
+        expect(box.top + box.height, `${scene.id} stops short`).toBeGreaterThanOrEqual(floor - 1e-6)
+        expect((box.height * 16) / 9, `${scene.id} leaves the sides bare`).toBeGreaterThanOrEqual(view.w)
+      }
+    }
+  })
+
+  it('no longer leaves a scene looking up at her from her knees on a phone', () => {
+    // The owner's complaint, in her own terms: with the picture at the bottom
+    // 80% of the screen, every eye level cut Sendagaya Shibu at 0.67–1.02m
+    // while the camera stood at 1.21m. Now each cuts her where the camera is.
+    const f = hudFraming(phone.h, 'vroid-sendagaya-shibu')
+    const row = horizonRow(f, phone.h)
+    for (const scene of STAGE_SCENES) {
+      const old = phone.h * 0.2 + scene.horizon * 0.8 * phone.h
+      expect(rowToWorldY(f, phone.h, old), `${scene.id}, the old way`).toBeLessThan(1.05)
+      const box = backdropBox(phone, row, scene.horizon, phone.h - HUD_DOCK_H)
+      expect(rowToWorldY(f, phone.h, box.top + scene.horizon * box.height), scene.id).toBeCloseTo(rowToWorldY(f, phone.h, row), 6)
+      expect(rowToWorldY(f, phone.h, row)).toBeGreaterThan(1.15)
+    }
+  })
+
+  it('keeps the pictures pulled back on a phone', () => {
+    // The owner, 2026-09-30, before the horizon: "the background could zoom
+    // out a little on a phone, it looks too close". Covering the whole height,
+    // a phone saw 26% of a picture's width. The eye level now fixes where each
+    // picture sits, and reaching down only to the dock keeps them as far back
+    // as that allows: 27–32% of the width, and 20% of moon-beach, whose eye
+    // level sits lowest. Reaching down to the screen's foot would show 18–25%
+    // (13% of moon-beach).
+    const f = hudFraming(phone.h, 'vroid-sendagaya-shibu')
+    const row = horizonRow(f, phone.h)
+    for (const scene of STAGE_SCENES) {
+      const box = backdropBox(phone, row, scene.horizon, phone.h - HUD_DOCK_H)
+      const shown = phone.w / ((box.height * 16) / 9)
+      expect(shown, scene.id).toBeGreaterThan(scene.id === 'moon-beach' ? 0.19 : 0.25)
+    }
   })
 })
