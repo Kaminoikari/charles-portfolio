@@ -20,6 +20,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-moving-backdrops',
+    date: '2026-09-30',
+    title: `The /avatar stage now moves behind her`,
+    tags: ['feature', 'design'],
+    body: [
+      `The stage's backdrops are now looping anime scenes: a classroom at sunset, a sakura station, a lantern street at night, torii gates in a forest, on a lake and under a blood moon, a moonlit beach, a hot spring and more, twenty-six in all. Every still with a moving counterpart has been retired; the library keeps its painting until it gets one.`,
+      { kind: 'heading', text: `Only the scene on show plays` },
+      `Each clip is 1080p at 30fps with no sound, and starts from its first frame, so a scene reads the moment it is picked. A scene you leave fades out and pauses, and stays ready for a crossfade if you come back. Visitors who ask their system for reduced motion see each scene's first frame as a still and never download the clips.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '26', label: 'moving scenes' },
+          { value: '1080p', label: 'at 30fps' },
+          { value: '1', label: 'clip playing at a time' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'avatar-idle-poses',
     date: '2026-09-30',
     title: `Mika stands in two idle poses of her own`,

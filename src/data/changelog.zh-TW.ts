@@ -35,6 +35,25 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-moving-backdrops',
+    date: '2026-09-30',
+    title: `/avatar 舞台的背景動起來了`,
+    tags: ['feature', 'design'],
+    body: [
+      `舞台背景換成了會循環播放的動畫場景：黃昏教室、櫻花車站、夜晚的燈籠街、森林裡、湖上和血月下的鳥居、月夜海灘、溫泉等，一共二十六個。有動態版本的靜態背景都已經撤下，圖書館在找到動態版本之前先保留原本的插畫。`,
+      { kind: 'heading', text: `只有畫面上的場景在播放` },
+      `每段影片都是 1080p、30fps、沒有聲音，並以第一格畫面當封面，所以一選場景馬上就看得到。離開的場景會淡出並暫停，回來時直接淡入。系統設定了減少動態效果的訪客，看到的是每個場景的第一格靜態畫面，也不會下載影片。`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '26', label: '個動態場景' },
+          { value: '1080p', label: '30fps' },
+          { value: '1', label: '同時只播一段' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'avatar-idle-poses',
     date: '2026-09-30',
     title: `Mika 有了兩個自己的待機姿勢`,
