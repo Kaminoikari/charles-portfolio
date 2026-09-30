@@ -98,6 +98,7 @@ interface Strings {
     selectTitle: string; selectedLabel: string
     tabsAriaLabel: string
     hideControls: string; showControls: string; controlsLabel: string
+    hideRoster: string; showRoster: string; hideOptions: string; showOptions: string
     tabs: { looks: string; motions: string; expressions: string; scenes: string }
     expressions: {
       happy: string; relaxed: string; nagomi: string; surprised: string
@@ -105,8 +106,6 @@ interface Strings {
     }
     scenes: {
       'old-house': string
-      classroom: string
-      'sakura-station': string
       crossing: string
       'bus-stop': string
       overpass: string
@@ -116,17 +115,10 @@ interface Strings {
       'lantern-street': string
       riverside: string
       'lofi-house': string
-      veranda: string
-      'sakura-palace': string
       'seaside-cafe': string
       'forest-torii': string
-      'lake-torii': string
-      'fuji-torii': string
-      'moon-torii': string
-      'milky-way': string
       'tatami-room': string
       dormitory: string
-      'hot-spring': string
       'moon-beach': string
       'beach-shop': string
       'blue-cafe': string
@@ -320,6 +312,10 @@ const en: Strings = {
     hideControls: 'Hide controls',
     showControls: 'Show controls',
     controlsLabel: 'Menu',
+    hideRoster: 'Hide characters',
+    showRoster: 'Show characters',
+    hideOptions: 'Hide options',
+    showOptions: 'Show options',
     tabs: { looks: 'Look', motions: 'Motion', expressions: 'Expression', scenes: 'Scene' },
     expressions: {
       happy: 'Happy',
@@ -333,8 +329,6 @@ const en: Strings = {
     },
     scenes: {
       'old-house': 'Old house',
-      classroom: 'Classroom at sunset',
-      'sakura-station': 'Sakura station',
       crossing: 'Railway crossing',
       'bus-stop': 'Seaside bus stop',
       overpass: 'Station stairs',
@@ -344,17 +338,10 @@ const en: Strings = {
       'lantern-street': 'Lantern street',
       riverside: 'Riverside',
       'lofi-house': 'House under falling stars',
-      veranda: 'Autumn veranda',
-      'sakura-palace': 'Sakura palace',
       'seaside-cafe': 'Seaside café',
       'forest-torii': 'Forest torii',
-      'lake-torii': 'Lake torii',
-      'fuji-torii': 'Fuji at sunset',
-      'moon-torii': 'Blood moon',
-      'milky-way': 'Milky Way',
       'tatami-room': 'Tatami room',
       dormitory: 'Dormitory',
-      'hot-spring': 'Hot spring',
       'moon-beach': 'Moonlit beach',
       'beach-shop': 'Beachside shop',
       'blue-cafe': 'Blue café',

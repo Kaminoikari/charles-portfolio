@@ -25,13 +25,13 @@ export const changelog: ChangelogEntry[] = [
     title: `The /avatar stage now moves behind her`,
     tags: ['feature', 'design'],
     body: [
-      `The stage's backdrops are now looping anime scenes: a classroom at sunset, a sakura station, a lantern street at night, torii gates in a forest, on a lake and under a blood moon, a moonlit beach, a hot spring and more, twenty-six in all. Every still with a moving counterpart has been retired; the library keeps its painting until it gets one.`,
+      `The stage's backdrops are now looping anime scenes: a lantern street at night, a railway crossing at dusk, a seaside bus stop, a torii gate in a forest, a tatami room, a dormitory, a moonlit beach and more, seventeen in all. Each one keeps her feet on ground she could stand on; clips that put her on desks, on water or in the sky were left out. Every still with a moving counterpart has been retired; the library keeps its painting until it gets one.`,
       { kind: 'heading', text: `Only the scene on show plays` },
       `Each clip is 1080p at 30fps with no sound, and starts from its first frame, so a scene reads the moment it is picked. A scene you leave fades out and pauses, and stays ready for a crossfade if you come back. Visitors who ask their system for reduced motion see each scene's first frame as a still and never download the clips.`,
       {
         kind: 'stats',
         items: [
-          { value: '26', label: 'moving scenes' },
+          { value: '17', label: 'moving scenes' },
           { value: '1080p', label: 'at 30fps' },
           { value: '1', label: 'clip playing at a time' },
         ],

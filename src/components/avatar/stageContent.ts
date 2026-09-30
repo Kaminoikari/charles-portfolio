@@ -48,8 +48,6 @@ export const EXPRESSION_HOLD_SEC = 4
 
 export type StageSceneId =
   | 'old-house'
-  | 'classroom'
-  | 'sakura-station'
   | 'crossing'
   | 'bus-stop'
   | 'overpass'
@@ -59,17 +57,10 @@ export type StageSceneId =
   | 'lantern-street'
   | 'riverside'
   | 'lofi-house'
-  | 'veranda'
-  | 'sakura-palace'
   | 'seaside-cafe'
   | 'forest-torii'
-  | 'lake-torii'
-  | 'fuji-torii'
-  | 'moon-torii'
-  | 'milky-way'
   | 'tatami-room'
   | 'dormitory'
-  | 'hot-spring'
   | 'moon-beach'
   | 'beach-shop'
   | 'blue-cafe'
@@ -123,7 +114,11 @@ const clip = (scene: StageSceneId, light: StageLightId): StageLight[] => [
 /**
  * The backdrops. The moving ones are looping anime wallpapers the owner
  * picked on 2026-09-30 (MoeWalls downloads, 4K and 1080p at 60fps,
- * re-encoded to 1080p at 30fps; public/avatar/scenes/video). The still ones
+ * re-encoded to 1080p at 30fps; public/avatar/scenes/video). Each one kept
+ * has ground where her feet land and a horizon about her chest: nine were
+ * dropped the same day for standing her on desks, in a rail pit, on water or
+ * in the sky (classroom, sakura station, veranda, sakura palace, hot spring,
+ * and the lake, blood-moon and Fuji torii, the Milky Way). The still ones
  * are the illustrated VTuber backgrounds the owner supplied on 2026-09-29
  * (900x506 originals, upscaled to 1600x900 with Lanczos and a light unsharp
  * mask), kept for the library, which no clip covers yet. Adding one is a clip or
@@ -131,8 +126,6 @@ const clip = (scene: StageSceneId, light: StageLightId): StageLight[] => [
  */
 export const STAGE_SCENES: readonly StageScene[] = [
   { id: 'old-house', lights: clip('old-house', 'day'), focusX: 55 },
-  { id: 'classroom', lights: clip('classroom', 'sunset'), focusX: 50 },
-  { id: 'sakura-station', lights: clip('sakura-station', 'sunset'), focusX: 40 },
   { id: 'crossing', lights: clip('crossing', 'sunset'), focusX: 50 },
   { id: 'bus-stop', lights: clip('bus-stop', 'sunset'), focusX: 45 },
   { id: 'overpass', lights: clip('overpass', 'day'), focusX: 45 },
@@ -142,17 +135,10 @@ export const STAGE_SCENES: readonly StageScene[] = [
   { id: 'lantern-street', lights: clip('lantern-street', 'night-lit'), focusX: 50 },
   { id: 'riverside', lights: clip('riverside', 'night-lit'), focusX: 45 },
   { id: 'lofi-house', lights: clip('lofi-house', 'night-lit'), focusX: 50 },
-  { id: 'veranda', lights: clip('veranda', 'day'), focusX: 50 },
-  { id: 'sakura-palace', lights: clip('sakura-palace', 'day'), focusX: 50 },
   { id: 'seaside-cafe', lights: clip('seaside-cafe', 'day'), focusX: 50 },
   { id: 'forest-torii', lights: clip('forest-torii', 'day'), focusX: 45 },
-  { id: 'lake-torii', lights: clip('lake-torii', 'day'), focusX: 65 },
-  { id: 'fuji-torii', lights: clip('fuji-torii', 'sunset'), focusX: 60 },
-  { id: 'moon-torii', lights: clip('moon-torii', 'night'), focusX: 50 },
-  { id: 'milky-way', lights: clip('milky-way', 'night'), focusX: 50 },
   { id: 'tatami-room', lights: clip('tatami-room', 'night-lit'), focusX: 45 },
   { id: 'dormitory', lights: clip('dormitory', 'day'), focusX: 50 },
-  { id: 'hot-spring', lights: clip('hot-spring', 'night-lit'), focusX: 55 },
   { id: 'moon-beach', lights: clip('moon-beach', 'night'), focusX: 50 },
   { id: 'beach-shop', lights: clip('beach-shop', 'day'), focusX: 45 },
   { id: 'blue-cafe', lights: clip('blue-cafe', 'day'), focusX: 50 },

@@ -381,7 +381,9 @@ function SceneClip({ poster, video, focusX, on }: { poster: string; video: strin
 }
 
 // Layout B. The roster on the left, every other option on the right, her name
-// under her feet.
+// under her feet. Either panel slides off its own edge on its tab, so a
+// visitor can clear the stage around her; the tab stays on screen to bring it
+// back.
 function SelectPanels({
   navH,
   shownName,
@@ -392,19 +394,51 @@ function SelectPanels({
   pickers: Record<StageTab, React.ReactNode>
 }) {
   const t = useT()
-  const panel = 'absolute bottom-6 overflow-y-auto rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur-md'
+  const [rosterHidden, setRosterHidden] = useState(false)
+  const [optionsHidden, setOptionsHidden] = useState(false)
+  const panel =
+    'absolute bottom-6 overflow-y-auto rounded-2xl border border-white/10 bg-black/55 p-4 backdrop-blur-md transition-transform duration-300 ease-out'
   const heading = 'mb-2 font-mono text-[11px] uppercase tracking-[2px] text-white/55'
+  // Out past its own margin (24px) and far enough that its shadow is gone too.
+  const away = (w: number) => w + 32
+  const tabBtn =
+    'absolute flex h-14 w-7 cursor-pointer items-center justify-center rounded-lg border border-white/15 bg-black/55 text-white/70 backdrop-blur-md transition-[transform,color] duration-300 ease-out hover:text-white'
   return (
     <>
-      <section className={panel + ' left-6'} style={{ top: navH + 16, width: ROSTER_W }} aria-label={t('chat.looksAriaLabel')}>
+      <section
+        id="stage-roster"
+        className={panel + ' left-6'}
+        style={{ top: navH + 16, width: ROSTER_W, transform: `translateX(${rosterHidden ? -away(ROSTER_W) : 0}px)` }}
+        aria-label={t('chat.looksAriaLabel')}
+        aria-hidden={rosterHidden}
+        inert={rosterHidden}
+      >
         <h2 className="mb-4 font-mono text-[13px] tracking-[3px] text-white">
           <span className="text-accent-mars">▍</span>
           {t('stage.selectTitle')}
         </h2>
         {pickers.looks}
       </section>
+      <button
+        type="button"
+        aria-controls="stage-roster"
+        aria-expanded={!rosterHidden}
+        aria-label={t(rosterHidden ? 'stage.showRoster' : 'stage.hideRoster')}
+        onClick={() => setRosterHidden((h) => !h)}
+        className={tabBtn}
+        style={{ top: navH + 32, left: 24 + ROSTER_W + 8, transform: `translateX(${rosterHidden ? -away(ROSTER_W) + 8 : 0}px)` }}
+      >
+        <Arrow left={!rosterHidden} />
+      </button>
 
-      <section className={panel + ' right-6 space-y-4'} style={{ top: navH + 16, width: OPTIONS_W }} aria-label={t('stage.tabsAriaLabel')}>
+      <section
+        id="stage-options"
+        className={panel + ' right-6 space-y-4'}
+        style={{ top: navH + 16, width: OPTIONS_W, transform: `translateX(${optionsHidden ? away(OPTIONS_W) : 0}px)` }}
+        aria-label={t('stage.tabsAriaLabel')}
+        aria-hidden={optionsHidden}
+        inert={optionsHidden}
+      >
         <div>
           <h2 className={heading}>{t('stage.tabs.motions')}</h2>
           {pickers.motions}
@@ -418,9 +452,23 @@ function SelectPanels({
           {pickers.scenes}
         </div>
       </section>
+      <button
+        type="button"
+        aria-controls="stage-options"
+        aria-expanded={!optionsHidden}
+        aria-label={t(optionsHidden ? 'stage.showOptions' : 'stage.hideOptions')}
+        onClick={() => setOptionsHidden((h) => !h)}
+        className={tabBtn}
+        style={{ top: navH + 32, right: 24 + OPTIONS_W + 8, transform: `translateX(${optionsHidden ? away(OPTIONS_W) - 8 : 0}px)` }}
+      >
+        <Arrow left={optionsHidden} />
+      </button>
 
       {/* Her name at the stage's bottom-left corner, clear of her feet. */}
-      <div className="pointer-events-none absolute bottom-6" style={{ left: ROSTER_W + 48 }}>
+      <div
+        className="pointer-events-none absolute bottom-6 transition-[left] duration-300 ease-out"
+        style={{ left: rosterHidden ? 24 : ROSTER_W + 48 }}
+      >
         <div className="flex flex-col items-start">
           <span className="font-mono text-[10px] uppercase tracking-[3px] text-accent-cyan">{t('stage.selectedLabel')}</span>
           <span className="mt-1 border-b-2 border-accent-mars pr-4 pb-1 text-[28px] font-bold tracking-[4px] text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.6)]">
@@ -429,6 +477,14 @@ function SelectPanels({
         </div>
       </div>
     </>
+  )
+}
+
+function Arrow({ left }: { left: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d={left ? 'M12.5 5 7.5 10l5 5' : 'M7.5 5l5 5-5 5'} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
