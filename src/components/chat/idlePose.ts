@@ -349,20 +349,24 @@ function hinged(
  * - `across`: the held wrist's offset toward her left of the midline
  * - `flex`: how far the held elbow bends, in degrees; sets the clasp's height
  * - `back`: how far behind the hips joint it sits. Far enough that the
- *   holding hand, on the body side of the held wrist, clears her back.
+ *   holding hand, on the body side of the held wrist, clears her back and
+ *   whatever she wears over it: at 1.2 pink's fingers sank 25mm into her
+ *   jacket's hem (rigProbe.clothShell, 2026-09-30); 1.4 leaves every offered
+ *   look but milfy 15mm or more outside her clothes.
  * - `pole`: how far back each elbow bends, against 1 straight out to the side.
  *   Mostly back: bent outward, the elbows stood 5–15cm past her shoulders
  *   and read from the front as hands on hips (owner, 2026-09-30: "the arms
  *   behind her should sit closer to the body"). Bent back, they stay behind
- *   her sides.
+ *   her sides. 16 rather than 10 since the clasp moved back to 1.4: at 10 the
+ *   holding arm turned 91° at the shoulder, past what a shoulder turns.
  * - `shoulderBack`: degrees the collarbones swing back
  * - `heldHand`: the held hand's direction (outward, down, back)
  */
 export const CLASP = {
   across: 0.25,
   flex: 65,
-  back: 1.2,
-  pole: 10,
+  back: 1.4,
+  pole: 16,
   shoulderBack: 15,
   heldHand: [-0.35, 0.9, 0.1] as [number, number, number],
   holdingHand: [-0.8, 0.5, 0.15] as [number, number, number],
@@ -443,13 +447,54 @@ function solveBehind(b: PoseBuilder): { error: number } {
 }
 
 /**
+ * Where her hands pass between the two poses, in the body's own terms: each
+ * wrist `out` hip widths to her side of the hips joint, `back` behind it and
+ * `down` below it, the elbow bent back toward it, the collarbone swung back
+ * `shoulderBack` degrees, the hand hanging, palm to her side.
+ *
+ * A person's arms go round her hips. Blended straight from one pose to the
+ * other they cut through them, and a fixed swing about the shoulder that went
+ * round her skin still swept her hands through every skirt and hem (46mm into
+ * Sendagaya Shibu's pleats, 92mm into Victoria Rubin's, by
+ * rigProbe.clothShell, 2026-09-30); swung far enough to clear them, it either
+ * turned her shoulders past what a shoulder turns or left the stage frame.
+ * A waypoint solved like the clasp is an arm a person could hold, so both
+ * halves of the fade run between two such arms.
+ */
+export const IDLE_POSE_VIA = { out: 2.1, back: 1.3, down: 0.5, pole: 3, shoulderBack: 8 }
+
+function solveVia(b: PoseBuilder): PoseRotations {
+  const { f, u } = b.ax
+  const back = f.clone().negate()
+  const hips = b.rest('hips')
+  const hipWidth = b.rest('leftUpperLeg').distanceTo(b.rest('rightUpperLeg'))
+  for (const side of SIDES) {
+    const o = b.side(side)
+    const collar = new THREE.Quaternion().setFromAxisAngle(u, rad(IDLE_POSE_VIA.shoulderBack) * (side === 'left' ? 1 : -1))
+    const shoulder = b.rest(`${side}Shoulder`).add(b.offset(`${side}Shoulder`, `${side}UpperArm`).applyQuaternion(collar))
+    const wrist = hips
+      .clone()
+      .addScaledVector(o, IDLE_POSE_VIA.out * hipWidth)
+      .addScaledVector(back, IDLE_POSE_VIA.back * hipWidth)
+      .addScaledVector(u, -IDLE_POSE_VIA.down * hipWidth)
+    const upperLen = b.offset(`${side}UpperArm`, `${side}LowerArm`).length()
+    const foreLen = b.offset(`${side}LowerArm`, `${side}Hand`).length()
+    const { elbow, wrist: reached } = twoBone(shoulder, wrist, upperLen, foreLen, o.clone().addScaledVector(back, IDLE_POSE_VIA.pole))
+    const hand = basisRotation(b.axis(side, 'hand'), b.palm0, mix(b.ax, o, 0.15, 1, 0.2), o.clone().negate())
+    b.arm(side, { shoulder: collar, ...hinged(b, side, elbow.clone().sub(shoulder), reached.clone().sub(elbow), hand) })
+    b.fingers(side, OPEN_GRIP)
+  }
+  return b.out
+}
+
+/**
  * Both poses for one body, with what a crossfade between them needs to keep
  * her elbows jointed: each forearm's rest axis (see blendPoses).
  */
 export interface IdlePoses extends Readonly<Record<IdlePoseName, PoseRotations>> {
   rollAxes: ReadonlyMap<string, THREE.Vector3>
-  /** Per upper arm, the model-frame axis that lifts it out to her side (see IDLE_POSE_ARC). */
-  arcAxes: ReadonlyMap<string, THREE.Vector3>
+  /** Where the hands pass on their way between the two poses (see IDLE_POSE_VIA). */
+  via: PoseRotations
 }
 
 export function solveIdlePoses(sk: PoseSkeleton): IdlePoses {
@@ -458,7 +503,7 @@ export function solveIdlePoses(sk: PoseSkeleton): IdlePoses {
     open: solveIdlePose(sk, 'open').rotations,
     behind: solveIdlePose(sk, 'behind').rotations,
     rollAxes: new Map(SIDES.map((side) => [`${side}LowerArm`, b.axis(side, 'lower')])),
-    arcAxes: new Map(SIDES.map((side) => [`${side}UpperArm`, side === 'left' ? b.ax.f.clone() : b.ax.f.clone().negate()])),
+    via: solveVia(new PoseBuilder(sk)),
   }
 }
 
@@ -594,30 +639,13 @@ export function stepIdlePose(
 }
 
 /** The rotations the clock asks for this frame. */
-/**
- * Degrees each upper arm swings out to her side at the middle of a crossfade.
- * Straight from one pose to the other, her hands cut through her hips and
- * thighs on the way (up to 53mm deep, 2026-09-30); a person's arms go round.
- * 12° is the least that clears them on every offered body (5.5mm at the
- * worst, against 47mm at 0°) while keeping her inside REST_HALF_WIDTH
- * (0.354m at the widest; 14° reaches 0.362m).
- */
-export const IDLE_POSE_ARC = { deg: 12 }
-
 export function idlePoseNow(s: IdlePoseState, poses: IdlePoses): PoseRotations {
   if (s.from === null) return poses[s.current]
-  const out = blendPoses(poses[s.from], poses[s.current], s.blend, poses.rollAxes)
-  const lift = rad(IDLE_POSE_ARC.deg) * Math.sin(Math.PI * s.blend)
-  for (const [bone, axis] of poses.arcAxes) {
-    const upper = out.get(bone)
-    const collar = out.get(bone.replace('UpperArm', 'Shoulder'))
-    if (!upper || !collar) continue
-    // The lift is about a model-frame axis; the upper arm's rotation is local
-    // to the collarbone, so the axis is carried into that frame first.
-    const local = axis.clone().applyQuaternion(collar.clone().invert())
-    upper.premultiply(new THREE.Quaternion().setFromAxisAngle(local, lift))
-  }
-  return out
+  // Through the waypoint beside her hips: the first half of the fade takes
+  // her hands out to it, the second in to the pose she is going to.
+  return s.blend < 0.5
+    ? blendPoses(poses[s.from], poses.via, s.blend * 2, poses.rollAxes)
+    : blendPoses(poses.via, poses[s.current], s.blend * 2 - 1, poses.rollAxes)
 }
 
 // ---- the life in her hands ------------------------------------------------------

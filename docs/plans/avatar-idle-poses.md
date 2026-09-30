@@ -139,12 +139,26 @@ show this.
   `rigProbe.probeArmJoints` now reads each joint in its parent's frame and
   the tests hold every look to human ranges: elbow 0–150° and within the
   carrying angle, shoulder and forearm rotation within 90°, wrist roll within 10°.
-  Measured: elbows 61–74°, shoulder rotation 69–85°, forearm roll 80–85°,
-  wrist roll at most 5.4°.
+  Measured: elbows 61–75°, shoulder rotation 72–90°, forearm roll 84–87°,
+  wrist roll at most 5.7° (after the clothes fix below).
 - The crossfade keeps the elbows jointed too: each forearm's bend and roll
-  are blended apart (slerped whole, an elbow bent 18–19° sideways part way),
-  and the upper arms swing out up to 12° mid-fade so the hands go round her
-  hips (straight across, they cut 47mm into them).
+  are blended apart (slerped whole, an elbow bent 18–19° sideways part way).
+  It runs by way of a waypoint (`IDLE_POSE_VIA`): each wrist beside and
+  behind her hips, the arm solved by the same IK as the clasp, so both halves
+  of the fade run between two arms a person could hold. Straight across, the
+  hands cut 47mm into her hips; the first fix, a fixed 12° swing out, cleared
+  her skin but still swept them through every skirt and hem.
+- Clothes (added 2026-09-30, owner: "on Shibu the hands go inside her clothes
+  when they come in to her body"): `rigProbe.clothShell` takes the outermost
+  cloth anchored to her trunk and legs, skirt chains included, per 1cm band
+  and 5° bearing round her hips, and the tests hold every hand outside it in
+  both poses and through the fade. The clasp moved back (`back` 1.2 to 1.4:
+  pink's fingers were 25mm into her jacket's hem) with the elbows bent further
+  back (`pole` 10 to 16, which keeps the shoulder inside 90°). Measured: every
+  offered look 5.5mm or more outside her clothes throughout, but two waived at
+  their measured depth, milfy (hoodie, 88.8mm) and studio (flared coat, open
+  hands 20.0mm): both want the pose placed against the clothes each body
+  wears, and the solver reads bones only.
 - Owner's notes on the way, each now a test in `idlePose.test.ts`:
   "the arms behind are too straight" (elbows were 32–49°, now 61–74°),
   then "they should sit closer to the body" (elbows bent outward stood

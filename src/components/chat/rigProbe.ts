@@ -1093,6 +1093,12 @@ export interface PosedMesh {
   positions: Float32Array
   /** The humanoid bone each vertex is mostly skinned to, or null (hair, skirt, other spring chains). */
   owner: (string | null)[]
+  /**
+   * The humanoid bone the same joint hangs from: itself for a humanoid bone,
+   * else the first humanoid ancestor. A skirt's spring chain anchors to the
+   * hips and hair to the head, which `owner` cannot tell apart.
+   */
+  anchor: (string | null)[]
   /** Three vertex indices per triangle. */
   triangles: Uint32Array
   /** The glTF mesh each triangle belongs to. */
@@ -1109,6 +1115,14 @@ export function posedMesh(glb: Glb, rig: Rig): PosedMesh {
   }
   const positions: number[] = []
   const owner: (string | null)[] = []
+  const anchor: (string | null)[] = []
+  const anchorOf = (joint: number): string | null => {
+    for (let o: THREE.Object3D | null = rig.raw[joint]; o; o = o.parent) {
+      const name = boneOfNode.get(rig.raw.indexOf(o))
+      if (name) return name
+    }
+    return null
+  }
   const triangles: number[] = []
   const triangleMesh: number[] = []
   const v = new THREE.Vector3()
@@ -1152,6 +1166,7 @@ export function posedMesh(glb: Glb, rig: Rig): PosedMesh {
           }
           positions.push(acc.x, acc.y, acc.z)
           owner.push(boneOfNode.get(skin.joints[jo.data[i * jo.ncomp + best]]) ?? null)
+          anchor.push(anchorOf(skin.joints[jo.data[i * jo.ncomp + best]]))
         }
       }
       const idx = prim.indices === undefined ? null : readAccessorRows(glb, prim.indices).data
@@ -1165,6 +1180,7 @@ export function posedMesh(glb: Glb, rig: Rig): PosedMesh {
   return {
     positions: Float32Array.from(positions),
     owner,
+    anchor,
     triangles: Uint32Array.from(triangles),
     triangleMesh: Uint32Array.from(triangleMesh),
   }
@@ -1335,9 +1351,56 @@ export function capsuleDepth(capsules: readonly TorsoCapsule[], point: THREE.Vec
   return depth
 }
 
+/**
+ * Her clothes as a shell a hand must stay outside: around the vertical line
+ * through her hips, the outermost radius any trunk-anchored vertex reaches in
+ * each band of height and bearing. Trunk-anchored takes in what hangs off her
+ * hips and legs, skirt spring chains included, and leaves out hair, which
+ * drapes over her arms at runtime, and the arms themselves.
+ *
+ * The capsules above are inscribed in the skin and skip spring chains, so a
+ * hand sunk into a pleated skirt reads 0mm there (Sendagaya Shibu's clasp,
+ * 2026-09-30, owner: "the hands go inside her clothes").
+ */
+export interface ClothShell {
+  /** How far `point` sits inside the shell, in metres, negative outside it; -Infinity where no cloth reaches its band. */
+  depth: (point: THREE.Vector3) => number
+}
+
+const TRUNK_ANCHOR = /^(hips|spine|chest|upperChest|(left|right)(UpperLeg|LowerLeg|Foot|Toes))$/
+/** Band height and bearing step of the shell, metres and radians. */
+export const CLOTH_SHELL_BAND = 0.01
+export const CLOTH_SHELL_BEARINGS = 72
+
+export function clothShell(rig: Rig, mesh: PosedMesh): ClothShell {
+  const centre = worldPosition(rig, 'hips')
+  const cell = (x: number, y: number, z: number): [string, number] => {
+    const dx = x - centre.x
+    const dz = z - centre.z
+    const b = Math.floor(((Math.atan2(dz, dx) + Math.PI) / (2 * Math.PI)) * CLOTH_SHELL_BEARINGS) % CLOTH_SHELL_BEARINGS
+    return [`${Math.floor(y / CLOTH_SHELL_BAND)}:${b}`, Math.hypot(dx, dz)]
+  }
+  const outer = new Map<string, number>()
+  for (let i = 0; i < mesh.anchor.length; i++) {
+    const a = mesh.anchor[i]
+    if (!a || !TRUNK_ANCHOR.test(a)) continue
+    const [k, r] = cell(mesh.positions[i * 3], mesh.positions[i * 3 + 1], mesh.positions[i * 3 + 2])
+    if (r > (outer.get(k) ?? 0)) outer.set(k, r)
+  }
+  return {
+    depth: (p) => {
+      const [k, r] = cell(p.x, p.y, p.z)
+      const o = outer.get(k)
+      return o === undefined ? -Infinity : o - r
+    },
+  }
+}
+
 export interface IdlePoseSkin {
   /** The deepest any forearm or hand vertex sits inside her torso or thighs, in metres. */
   depth: number
+  /** The deepest any hand vertex sits inside her clothes (clothShell), in metres; negative is the gap left outside them. */
+  clothDepth: number
   /** Hand vertices that nothing covers from the front. */
   visible: number
   /** Hand vertices measured. */
@@ -1355,11 +1418,13 @@ export interface IdlePoseSkin {
  */
 export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
   const capsules = torsoCapsules(rig, mesh)
+  const shell = clothShell(rig, mesh)
   const cover = frontView(rig, mesh, (tri) => !ARM_CHAIN.test(triangleOwner(mesh, tri) ?? ''))
   const p = new THREE.Vector3()
   let depth = 0
   let visible = 0
   let hand = 0
+  let clothDepth = -Infinity
   for (let i = 0; i < mesh.owner.length; i++) {
     const bone = mesh.owner[i]
     if (!bone || !FOREARM_OR_HAND.test(bone)) continue
@@ -1367,7 +1432,8 @@ export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
     depth = Math.max(depth, capsuleDepth(capsules, p))
     if (!HAND_BONE.test(bone)) continue
     hand++
+    clothDepth = Math.max(clothDepth, shell.depth(p))
     if (trianglesInFront(cover, p).length === 0) visible++
   }
-  return { depth, visible, hand, capsules: capsules.length }
+  return { depth, clothDepth, visible, hand, capsules: capsules.length }
 }

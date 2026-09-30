@@ -11,7 +11,6 @@ import {
   FINGER_DRIFT,
   fingerDrift,
   holdingHandFree,
-  IDLE_POSE_ARC,
   IDLE_POSE_FADE,
   IDLE_POSE_HOLD,
   idlePoseNow,
@@ -31,6 +30,7 @@ import {
   type ArmJoints,
   deriveSilhouetteSkin,
   measureIdleSkin,
+  clothShell,
   TORSO_SEGMENTS,
   posedMesh,
   probeHand,
@@ -128,6 +128,30 @@ const MAX_DEPTH = 0.008
  */
 const DEPTH_WAIVER: Record<string, number> = { milfy: 0.025 }
 const maxDepth = (id: string): number => DEPTH_WAIVER[id] ?? MAX_DEPTH
+
+/**
+ * How deep a hand may sit inside the shell of her clothes (rigProbe.clothShell):
+ * not at all. The shell is the outermost cloth in each band of height and
+ * bearing, skirts included, so a hand inside it is under or through a hem.
+ */
+const MAX_CLOTH_DEPTH = 0
+/**
+ * Two looks whose clothes one set of body-relative numbers cannot clear, each
+ * at what it measured on 2026-09-30, so neither can get worse unnoticed:
+ *
+ * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER). Behind her
+ *   back her forearms pass through it and only her fingertips show under the
+ *   hem, 88.6mm deep (88.8mm near the end of the fade); open hands sit 13.7mm
+ *   into its flare. Clearing it would need the clasp about 90mm further back
+ *   than any other look wants.
+ * - studio's coat flares from the waist, and her open hands brush its skirt,
+ *   20.0mm in. The fade starts there, which is its deepest point (14.4mm at 15%).
+ *
+ * Both want the pose placed against the clothes each body wears, which the
+ * solver does not see: it reads bones only.
+ */
+const CLOTH_WAIVER: Record<string, number> = { milfy: 0.089, studio: 0.02 }
+const maxClothDepth = (id: string): number => CLOTH_WAIVER[id] ?? MAX_CLOTH_DEPTH
 
 function posed(look: Look, rotations: ReadonlyMap<string, THREE.Quaternion>): void {
   resetRig(look.rig)
@@ -270,6 +294,37 @@ describe.each(looks)('idle poses on $id', (look) => {
     }
   })
 
+  it.each(['open', 'behind'] as const)('keeps her hands outside her clothes in the %s pose', (pose: IdlePoseName) => {
+    applyIdlePose(look.rig, pose)
+    const { clothDepth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
+    expect(clothDepth, `${(clothDepth * 1000).toFixed(1)}mm into her clothes`).toBeLessThanOrEqual(maxClothDepth(look.id))
+  })
+
+  it.runIf(look.id in CLOTH_WAIVER)('needs the clothes waiver it declares', () => {
+    // A waiver the measure no longer needs is stale, and a measure that reads
+    // nothing anywhere would pass every check above.
+    let deepest = -Infinity
+    for (const pose of ['open', 'behind'] as const) {
+      applyIdlePose(look.rig, pose)
+      deepest = Math.max(deepest, measureIdleSkin(look.rig, posedMesh(look.glb, look.rig)).clothDepth)
+    }
+    expect(deepest).toBeGreaterThan(MAX_CLOTH_DEPTH + 0.01)
+  })
+
+  it('keeps them outside her clothes on the way between the two poses', () => {
+    // The capsules above are inscribed in her skin and leave her skirt out, so
+    // the fade passed them while it swept both hands through Sendagaya Shibu's
+    // pleats (owner, 2026-09-30: "when the hands come in to her body they go
+    // inside her clothes"). Twenty steps: the deepest point sat at 85–95% on
+    // most bodies, between the tenths the capsule check samples.
+    const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
+    for (let i = 1; i < 20; i++) {
+      posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 20, hold: 18 }, poses))
+      const { clothDepth } = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
+      expect(clothDepth, `${(clothDepth * 1000).toFixed(1)}mm into her clothes at ${i * 5}%`).toBeLessThanOrEqual(maxClothDepth(look.id))
+    }
+  })
+
   it('bends the elbows behind her and keeps them close to her body', () => {
     // The owner, 2026-09-30, on two earlier versions: "the arms behind her
     // are a little too straight" (elbows at 32–49°), then "they should sit
@@ -296,7 +351,7 @@ describe.each(looks)('idle poses on $id', (look) => {
     }
   })
 
-  it('fits the stage frame on the way between the two poses, arms swung out', () => {
+  it('fits the stage frame on the way between the two poses, by way of the waypoint', () => {
     resetRig(look.rig)
     const skin = deriveSilhouetteSkin(look.glb, look.rig)
     const poses = solveIdlePoses({ version: look.rig.version, rest: (b: string) => look.rig.restPosition[b] })
@@ -330,6 +385,33 @@ describe('solveIdlePose', () => {
   })
 })
 
+describe('clothShell', () => {
+  it("counts her skirt, which hangs off spring bones and no humanoid bone", () => {
+    // The shell exists for what the capsules leave out. Part of Sendagaya
+    // Shibu's skirt is skinned to spring joints hung from her thighs (217
+    // vertices, 2026-09-30), so those vertices have no humanoid owner and only
+    // their anchor says they belong to her. Read the anchor off the owner
+    // instead and that part of the skirt drops out of the shell.
+    const look = looks.find((l) => l.id === 'sendagaya-shibu')!
+    resetRig(look.rig)
+    const mesh = posedMesh(look.glb, look.rig)
+    const shell = clothShell(look.rig, mesh)
+    const hips = worldPosition(look.rig, 'hips')
+    const skirt: number[] = []
+    for (let i = 0; i < mesh.owner.length; i++) if (mesh.owner[i] === null && /UpperLeg$/.test(mesh.anchor[i] ?? '')) skirt.push(i)
+    expect(skirt.length, 'spring-skinned vertices anchored to her thighs').toBeGreaterThan(200)
+    const p = new THREE.Vector3()
+    let inside = 0
+    for (const i of skirt) {
+      p.fromArray(mesh.positions, i * 3)
+      const r = new THREE.Vector3(p.x - hips.x, 0, p.z - hips.z)
+      p.addScaledVector(r.normalize(), -0.005)
+      if (shell.depth(p) > 0) inside++
+    }
+    expect(inside / skirt.length).toBeGreaterThan(0.95)
+  })
+})
+
 describe('blendPoses', () => {
   it('starts on the first pose and ends on the second', () => {
     const { rig } = looks[0]
@@ -340,39 +422,16 @@ describe('blendPoses', () => {
     for (const [bone, q] of blendPoses(open, behind, 1)) expect(q.angleTo(behind.get(bone)!)).toBeLessThan(1e-6)
   })
 
-  it('is what the clock hands the engine mid-fade, the upper arms swung out', () => {
+  it('is what the clock hands the engine mid-fade, by way of the waypoint', () => {
     const { rig } = looks[0]
     const poses = solveIdlePoses({ version: rig.version, rest: (b: string) => rig.restPosition[b] })
-    // 0.3, not 0.5: the eased halfway point is the same from either end, so
-    // it cannot tell a fade that runs backwards.
-    const now = idlePoseNow({ current: 'behind', from: 'open', blend: 0.3, hold: 18 }, poses)
-    const lift = IDLE_POSE_ARC.deg * Math.sin(Math.PI * 0.3)
-    for (const [bone, q] of blendPoses(poses.open, poses.behind, 0.3, poses.rollAxes)) {
-      const off = THREE.MathUtils.radToDeg(q.angleTo(now.get(bone)!))
-      if (bone.endsWith('UpperArm')) expect(off, bone).toBeCloseTo(lift, 3)
-      else expect(off, bone).toBeLessThan(1e-4)
-    }
+    // 0.3 and 0.8, not 0.5: the halfway point is the waypoint itself from
+    // either end, so it cannot tell a fade that runs backwards.
+    const early = idlePoseNow({ current: 'behind', from: 'open', blend: 0.3, hold: 18 }, poses)
+    for (const [bone, q] of blendPoses(poses.open, poses.via, 0.6, poses.rollAxes)) expect(q.angleTo(early.get(bone)!), bone).toBeLessThan(1e-6)
+    const late = idlePoseNow({ current: 'behind', from: 'open', blend: 0.8, hold: 18 }, poses)
+    for (const [bone, q] of blendPoses(poses.via, poses.behind, 0.6, poses.rollAxes)) expect(q.angleTo(late.get(bone)!), bone).toBeLessThan(1e-6)
     expect(idlePoseNow({ current: 'behind', from: null, blend: 1, hold: 18 }, poses)).toBe(poses.behind)
-  })
-
-  it("swings each upper arm out about the body's own axis, whatever the collarbone is doing", () => {
-    // The lift is written on a rotation local to the collarbone, which is
-    // turned back up to 15° mid-fade. Seen in the model frame it must be
-    // exactly the lift about the arm's out-swing axis; an angle alone cannot
-    // tell which axis it turned about.
-    const { rig } = looks[0]
-    const poses = solveIdlePoses({ version: rig.version, rest: (b: string) => rig.restPosition[b] })
-    const s = 0.3
-    const now = idlePoseNow({ current: 'behind', from: 'open', blend: s, hold: 18 }, poses)
-    const plain = blendPoses(poses.open, poses.behind, s, poses.rollAxes)
-    for (const [bone, axis] of poses.arcAxes) {
-      const collar = now.get(bone.replace('UpperArm', 'Shoulder'))!
-      const got = collar.clone().multiply(now.get(bone)!)
-      const want = new THREE.Quaternion()
-        .setFromAxisAngle(axis, THREE.MathUtils.degToRad(IDLE_POSE_ARC.deg * Math.sin(Math.PI * s)))
-        .multiply(collar.clone().multiply(plain.get(bone)!))
-      expect(THREE.MathUtils.radToDeg(got.angleTo(want)), bone).toBeLessThan(0.01)
-    }
   })
 
   it('keeps the elbow a hinge part way, where a whole-bone slerp bends it sideways', () => {
