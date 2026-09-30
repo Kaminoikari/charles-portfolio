@@ -338,24 +338,24 @@ export default function AvatarStagePage() {
   )
 }
 
-// Layout B. The roster on the left, every other option on the right, her name
-// under her feet.
 /** How long a scene's crossfade runs; a clip fading out keeps playing until it is gone. */
 const SCENE_FADE_MS = 700
 
 /**
  * A moving backdrop. Only the scene on show plays: a visited scene stays
- * mounted so coming back is a crossfade, and a clip paused under it costs
- * nothing. Its first frame is the poster, so the scene reads at once and a
- * visitor who asks for reduced motion keeps a still picture.
+ * mounted so coming back is a crossfade, and a clip paused under it decodes
+ * nothing (its buffered data stays until the page goes). Its first frame is
+ * the poster, so the scene reads at once, and a visitor who asks for reduced
+ * motion keeps that still picture and never downloads the clip.
  */
 function SceneClip({ poster, video, focusX, on }: { poster: string; video: string; focusX: number; on: boolean }) {
   const ref = useRef<HTMLVideoElement>(null)
+  const [still] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   useEffect(() => {
     const el = ref.current
     if (!el) return
     if (on) {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      if (still) return
       // Muted and inline, so every browser lets it start without a tap; a
       // refusal (Low Power Mode) leaves the poster up, which is fine.
       el.play().catch(() => {})
@@ -363,7 +363,7 @@ function SceneClip({ poster, video, focusX, on }: { poster: string; video: strin
     }
     const stop = window.setTimeout(() => el.pause(), SCENE_FADE_MS)
     return () => window.clearTimeout(stop)
-  }, [on])
+  }, [on, still])
   return (
     <video
       ref={ref}
@@ -373,13 +373,15 @@ function SceneClip({ poster, video, focusX, on }: { poster: string; video: strin
       muted
       loop
       playsInline
-      preload={on ? 'auto' : 'metadata'}
+      preload={still ? 'none' : on ? 'auto' : 'metadata'}
       className="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
       style={{ objectPosition: `${focusX}% 70%`, opacity: on ? 1 : 0 }}
     />
   )
 }
 
+// Layout B. The roster on the left, every other option on the right, her name
+// under her feet.
 function SelectPanels({
   navH,
   shownName,

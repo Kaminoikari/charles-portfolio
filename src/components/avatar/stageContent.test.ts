@@ -125,7 +125,7 @@ describe('stage assets', () => {
     for (const f of served) expect(listed.has(f), `${f} is served but no scene lists it`).toBe(true)
   })
 
-  it('plays every clip it lists, each with its first frame as the poster', () => {
+  it('serves every clip it lists', () => {
     const clips = STAGE_SCENES.flatMap((s) => s.lights).filter((l) => l.video)
     expect(clips.length).toBeGreaterThan(0)
     for (const l of clips) expect(existsSync(publicFile(l.video!)), l.video).toBe(true)
