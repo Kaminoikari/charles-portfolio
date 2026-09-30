@@ -1583,8 +1583,11 @@ export function initAvatarGuide(
         if (p >= 1) gesture = null
       }
 
-      // Breathing on the chest and a slow weight shift on the hips, with the
-      // spine countering so the head stays centred — the body never freezes.
+      // Breathing on the chest and a slow sway from the waist up, with the
+      // neck taking back half of it so her head stays nearly level: the body
+      // never freezes. The hips are left alone on purpose. Every leg hangs off
+      // them, so rolling the hips slid both feet 30.4mm across the floor and
+      // she read as floating (wiring test "she stands on the floor").
       // All of it stands down under a clip: the capture already carries its own
       // breathing and weight, and writing on top of it would both double the
       // motion and drag her head away from where the performance put it.
@@ -1609,7 +1612,6 @@ export function initAvatarGuide(
             Math.sin(t * ((2 * Math.PI) / 4.2)) * 0.012 + OFF.cx,
           )
         }
-        if (hips) hips.rotation.z = blend(hips.rotation.z, sway * 0.02)
         // Where she is looking, as rotations. The ratios live in avatarMode so
         // one definition serves the engine and the tests that pose a real
         // skeleton with them. Pitch is resolved against the body's facing for
@@ -1628,11 +1630,12 @@ export function initAvatarGuide(
         if (neck) {
           neck.rotation.y = blend(neck.rotation.y, aimY.neck)
           neck.rotation.x = blend(neck.rotation.x, aimP.neck)
+          neck.rotation.z = blend(neck.rotation.z, sway * -0.012)
         }
         if (spine) {
           spine.rotation.y = blend(spine.rotation.y, aimY.spine + OFF.sy)
           spine.rotation.x = blend(spine.rotation.x, OFF.sx)
-          spine.rotation.z = blend(spine.rotation.z, sway * -0.012 + OFF.sz)
+          spine.rotation.z = blend(spine.rotation.z, sway * 0.025 + OFF.sz)
         }
       }
 
@@ -1772,6 +1775,11 @@ export function initAvatarGuide(
           // translation track reached the model at all. `squat` is meant to
           // take her from 0.878 down to 0.660.
           hipsY: bone(vrm, 'hips')?.getWorldPosition(debugHips).y ?? 0,
+          // Feet and head WORLD x, metres: the feet should hold still while the
+          // head keeps a slow sway, which is what standing on the floor looks like.
+          footLX: bone(vrm, 'leftFoot')?.getWorldPosition(new THREE.Vector3()).x ?? 0,
+          footRX: bone(vrm, 'rightFoot')?.getWorldPosition(new THREE.Vector3()).x ?? 0,
+          headWX: bone(vrm, 'head')?.getWorldPosition(new THREE.Vector3()).x ?? 0,
           // The camera, read off the camera rather than echoed from `framePan`:
           // the pan is only real once aimCamera() has run. Its own tilt is
           // subtracted so this is the height the frame is centred on, which is
