@@ -49,7 +49,8 @@ async function loadLocale(locale: Locale) {
     import(`../../src/data/blog.${suffix}.ts`),
     import(`../../src/data/agentPatterns.${suffix}.ts`),
   ])
-  return { projects, about, experience, skills, changelog, blog, agentPatterns }
+  const strings = (await import(`../../src/i18n/strings/${locale}.ts`)).default
+  return { projects, about, experience, skills, changelog, blog, agentPatterns, strings }
 }
 
 // Flatten a changelog body (string | block objects) into plain text.
@@ -173,7 +174,11 @@ export interface AboutContentInput {
 // swapped point per copy edit (the reconciler's ordinary prune clears it, being
 // far under RAG_PRUNE_MAX) and in exchange an inserted paragraph never disturbs
 // the others. Give whoIAm real keys if it ever needs to be cited or eval-pinned.
-export function aboutChunks(about: AboutContentInput, locale: string): ChunkRecord[] {
+// `aiHeading` is the site's own heading for the AI table (src/i18n/strings,
+// about.sectionAi). Only content is embedded, so without it a row's topic lived
+// in the English title alone and a Japanese row never said it was about how
+// Charles uses AI.
+export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?: string): ChunkRecord[] {
   const out: ChunkRecord[] = []
   const base = { parentId: null, sourceType: 'about' as const, projectId: null, locale }
 
@@ -192,7 +197,7 @@ export function aboutChunks(about: AboutContentInput, locale: string): ChunkReco
   const rows = new Set<string>()
   about.aiTable.forEach((r) => {
     const key = uniqueKey(rows, r.id, 'about:ai', r.label)
-    out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${r.label}: ${r.body}` })
+    out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${aiHeading ? `${aiHeading}\n` : ''}${r.label}: ${r.body}` })
   })
 
   return out
@@ -329,7 +334,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
   const out: ChunkRecord[] = []
 
   for (const locale of LOCALES) {
-    const { projects, about, experience, skills, changelog, blog, agentPatterns } = await loadLocale(locale)
+    const { projects, about, experience, skills, changelog, blog, agentPatterns, strings } = await loadLocale(locale)
 
     // ── projects (one parent per project; one child chunk per section) ──
     for (const d of projects.projectDetails) {
@@ -372,7 +377,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
     }
 
     // ── about (who-I-am paras + philosophy + AI table; see aboutChunks) ──
-    out.push(...aboutChunks(about.aboutContent, locale))
+    out.push(...aboutChunks(about.aboutContent, locale, strings.about.sectionAi))
 
     // ── experience (one chunk per role; see experienceChunks) ──
     out.push(...experienceChunks(experience.experience, locale))

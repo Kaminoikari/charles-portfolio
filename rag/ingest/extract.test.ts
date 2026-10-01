@@ -117,6 +117,25 @@ test('two stints at one company fail loudly instead of overwriting each other', 
   assert.throws(() => experienceChunks([NEW_ROLE, again], 'en'), /duplicate experience/i)
 })
 
+// ── about: the AI table says what it is ───────────────────────────────────
+// Only chunk content is embedded and BM25-indexed; the title is not. The AI-table
+// rows carried their topic ("How I use AI") in the English title alone, so a
+// Japanese row read "Discovery: LLM を活用して…" with nothing saying it is how
+// Charles uses AI in his work. "Charles は仕事でどのように AI を活用していますか"
+// then sat on the edge: run 36875411341 retrieved an AI row and run 36875433215,
+// same code and question on the production index, retrieved none. Each row now
+// opens with the site's own section heading in its locale (src/i18n/strings,
+// about.sectionAi), the fix the skills chunk got for the same reason.
+
+test('every AI-table chunk opens with the site\'s AI section heading, in its own locale', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const heading = (await import(`../../src/i18n/strings/${locale}.ts`)).default.about.sectionAi as string
+    const rows = CHUNKS.filter((c) => c.locale === locale && c.id.startsWith('about:ai:'))
+    assert.ok(rows.length > 0, `no AI rows for ${locale}`)
+    for (const row of rows) assert.equal(row.content.split('\n')[0], heading, row.id)
+  }
+})
+
 // ── experience timeline ───────────────────────────────────────────────────
 // Each role chunk carries its own dates, and nothing else says where it falls.
 // Asked for the earliest role, retrieval had to land on the FLUX chunk with no
