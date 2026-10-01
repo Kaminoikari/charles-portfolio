@@ -103,7 +103,8 @@ Of the eleven ungrounded answers in run 36871169321:
   calls "+20% market share" ambiguous; `cs153-scale` (zh-TW) rejects "ChatGPT
   的共同創造者 Liam Fedis", which the blog body states word for word;
   `uber-blog` (ja) rejects "a high-level customer-service analyst", a
-  translation of the blog's 「高級版的客服營運分析師」.
+  translation of the blog's 「高級版的客服營運分析師」 (its second complaint,
+  about decision-making authority, cannot be checked from the log).
 - Not decidable from the log (5): `jobops-source` (en), `playbook-frameworks`
   (en, ja), `plutus-frontend` (ja), `shazam-author` (ja). The reasons describe a
   version or attribution mismatch without quoting enough of the answer to tell.
