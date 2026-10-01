@@ -20,18 +20,30 @@ export const SPARSE = 'sparse'
 // tokenizer splits on spaces and punctuation, so a Chinese or Japanese sentence
 // becomes a few long tokens no question repeats, and BM25 could only match the
 // Latin words in it ("Charles", "AI"). The multilingual tokenizer segments CJK,
-// and then every particle and function word (在, 什麼, は, で) is a token too;
-// without their stopword lists those outweighed the nouns and pulled unrelated
-// chunks into the candidates (run 36894380554). English stays in each list
-// because the CJK content is full of Latin words.
+// and then every particle and question word is a token too. The built-in
+// stopword lists stop particles but not the words a question is made of:
+// probed one at a time, 在 and は matched nothing while 什麼, 做什麼, 多大 and
+// いました matched dozens of blog and changelog chunks, and "Charles 在 NUEIP
+// 做什麼?" ranked the NUEIP chunk below five unrelated ones (run 36895598684).
+// The custom lists are general interrogatives and question endings, not words
+// picked from the questions that failed. English stays in each list because
+// the CJK content is full of Latin words.
 // Qdrant tokenises the stored text and the query separately, so both must ask
 // for the same options: ingest (ingest/payload.ts) and retrieval (retrieval.ts)
 // both build the sparse document here, and payload.ts folds the spec into each
 // chunk's hash so a change re-ingests that locale. The FAQ cache is a separate
 // collection that keeps the default on both of its sides.
+const ZH_QUESTION_WORDS = [
+  '什麼', '甚麼', '做什麼', '為什麼', '怎麼', '怎樣', '怎麼樣', '如何', '哪', '哪些', '哪個', '哪裡',
+  '多少', '多大', '多久', '幾', '誰', '嗎', '呢', '吧', '是否', '有沒有', '請問', '做',
+]
+const JA_QUESTION_WORDS = [
+  '何', 'なに', 'なん', 'どの', 'どれ', 'どこ', 'どう', 'どんな', 'どのくらい', 'どれくらい', 'いつ', '誰',
+  'なぜ', 'どうして', 'ですか', 'ますか', 'ました', 'いました', 'でした', 'です', 'ます', 'か', '教えて', 'ください',
+]
 const CHUNK_SPARSE_OPTIONS: Record<string, Record<string, unknown>> = {
-  'zh-TW': { tokenizer: 'multilingual', stopwords: { languages: ['english', 'chinese'] } },
-  ja: { tokenizer: 'multilingual', stopwords: { languages: ['english', 'japanese'] } },
+  'zh-TW': { tokenizer: 'multilingual', stopwords: { languages: ['english', 'chinese'], custom: ZH_QUESTION_WORDS } },
+  ja: { tokenizer: 'multilingual', stopwords: { languages: ['english', 'japanese'], custom: JA_QUESTION_WORDS } },
 }
 
 export interface SparseDoc {
