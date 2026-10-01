@@ -88,3 +88,11 @@ test('a question the deterministic tier answers first is counted nowhere', () =>
   assert.equal(o.served, 0)
   assert.equal(o.wrong, 0)
 })
+
+test('the harm budget is a share of what a setting serves', () => {
+  // 1 harmful in 120 served is under 1%; the same one harmful in 50 is not.
+  const clear = (n: number) => Array.from({ length: n }, (_, i) => obs(`e${i}`, [pt(`e${i}`, 0.95)]))
+  const bad = obs('x', [pt('y', 0.95)])
+  assert.equal(recommend(sweep([...clear(119), bad], false))?.served, 120)
+  assert.equal(recommend(sweep([...clear(49), bad], false)), null)
+})

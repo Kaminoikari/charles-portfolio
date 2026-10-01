@@ -102,14 +102,22 @@ export function sweep(observations: Observation[], veto: boolean, responsive?: M
   )
 }
 
-// The setting to run: nothing served that fails to answer the question (every
-// wrong serve when no judge ran), then the most answers that do. Ties go to the
-// stricter setting, since two settings serving the same answers differ only in
-// what they would do with a phrasing this set does not contain.
-export function recommend(outcomes: Outcome[]): Outcome | null {
+// The setting to run: at most `maxHarmRate` of what it serves fails to answer
+// the question (every wrong serve counts when no judge ran), then the most
+// answers that do. Ties go to the stricter setting, since two settings serving
+// the same answers differ only in what they would do with a phrasing this set
+// does not contain.
+//
+// Why a budget and not zero: on the 2026-10-01 data no setting in the grid
+// reaches zero, and the last one or two harmful serves at the strict end are
+// within what a single judge's misreading can account for. 1% keeps the rule
+// strict enough that the current production setting (5.7%) is nowhere near it.
+export const MAX_HARM_RATE = 0.01
+
+export function recommend(outcomes: Outcome[], maxHarmRate = MAX_HARM_RATE): Outcome | null {
   const bad = (o: Outcome) => o.harmful ?? o.wrong
   const good = (o: Outcome) => o.served - bad(o)
-  const safe = outcomes.filter((o) => bad(o) === 0)
+  const safe = outcomes.filter((o) => o.served > 0 && bad(o) <= maxHarmRate * o.served)
   if (safe.length === 0) return null
   return safe.reduce((best, o) =>
     good(o) > good(best) ||
@@ -158,8 +166,9 @@ export function report(observations: Observation[], current: FaqParams, responsi
     }
     lines.push(
       rec
-        ? `Recommended: threshold ${rec.threshold}, margin ${rec.margin}: serves ${rec.served}, ${rec.correct} correct, ${rec.wrong} wrong, ${rec.harmful ?? rec.wrong} harmful.`
-        : 'No setting in the grid serves without a harmful answer.',
+        ? `Recommended (harmful at most ${MAX_HARM_RATE * 100}% of serves): threshold ${rec.threshold}, margin ${rec.margin}: ` +
+            `serves ${rec.served}, ${rec.correct} correct, ${rec.wrong} wrong, ${rec.harmful ?? rec.wrong} harmful.`
+        : `No setting in the grid keeps harmful serves at or under ${MAX_HARM_RATE * 100}%.`,
       '',
     )
     if (cur && cur.confusions.length > 0) {

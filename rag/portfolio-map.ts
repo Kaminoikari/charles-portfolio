@@ -44,7 +44,7 @@ PROJECTS:
   data-grounded holdings strategy (real market context + per-stock
   fundamentals, emailed each evening), and audited win-rate/ROI tracking.
   Live demo: https://plutustrade.vercel.app/
-- Product Playbook — Claude Code skill / plugin (v2.3), outcome-first lens
+- Product Playbook — Claude Code skill / plugin (v2.4.0), outcome-first lens
   architecture: 16 composable product-thinking lenses routed by a meta-skill +
   2 read-only specialist sub-agents (strategy-critic, pre-mortem-runner),
   per-output provenance, non-blocking guardrails, plus a lightweight

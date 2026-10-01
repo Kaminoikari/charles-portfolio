@@ -29,12 +29,6 @@ export const OFF_CORPUS_FACTS: OffCorpusFact[] = [
       'src/data/experience records the role (JULY 2024 — PRESENT) but not the month of the promotion.',
   },
   {
-    fact: '2.3',
-    surfaces: ['portfolio-map'],
-    publishedIn: null,
-    reason: 'Product Playbook version quoted by the map; the project page does not state a version.',
-  },
-  {
     fact: '940',
     surfaces: ['faq:languages'],
     publishedIn: null,
