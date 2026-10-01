@@ -41,8 +41,9 @@ export const RAGState = Annotation.Root({
   route: Annotation<string>, // set by gradeDocuments: generate | rewrite
   // How the question was ultimately answered, set by whichever terminal node
   // produces the final answer. This is the analytics source of truth — it must
-  // NOT be re-derived from sources.length downstream, because canned/FAQ answers
-  // legitimately carry no sources yet are NOT fallbacks.
+  // NOT be re-derived from sources.length downstream, because a canned answer, and
+  // a FAQ answer whose text states no checkable fact, legitimately carry no
+  // sources yet are NOT fallbacks.
   outcome: Annotation<Outcome>,
   // Set by retrieve when the vector store or the embedder could not be reached
   // at all. Distinct from "retrieved nothing relevant": one is our outage, the

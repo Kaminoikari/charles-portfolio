@@ -178,11 +178,12 @@ export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
 // Look up the closest pre-written FAQ answer for a query embedding. Returns the
 // cached answer when the top hit is BOTH similar enough and unambiguously ahead
 // of the runner-up, else null (caller falls through to RAG). Locale-filtered so
-// each language matches its own paraphrases. Dense-only, single round-trip — no
-// generation LLM involved.
+// each language matches its own paraphrases. A dense round-trip, plus a lexical
+// one for the veto — no generation LLM involved.
 //
-// The margin exists because a hit here bypasses every grounding check the
-// pipeline has: no grading, no generation, no sources shown. The cache holds
+// The margin exists because a hit here bypasses the live grounding checks the
+// pipeline has: no grading, no generation. (Its facts are checked offline, and it
+// is served with the chunks that state them; see grounding.ts.) The cache holds
 // many paraphrases whose wording is near-identical across topics that differ
 // only in the fact being asked for, and those land close together in embedding
 // space. When two TOPICS are effectively tied, the question sits between them
