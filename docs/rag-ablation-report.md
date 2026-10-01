@@ -24,7 +24,8 @@ lift of each is visible.
 - Last run: **2026-10-01**, after the experience timeline chunk was added.
   The four retrieval arms are from run 36868407205 (commit cdf7b6f). The
   `corrective` row is from run 36871169321 (commit 7281602); the two commits
-  differ only in the faithfulness judge, which the retrieval arms never call.
+  differ only in the faithfulness judge, which the retrieval arms never call,
+  and in the committed recall baseline, which no eval run reads.
   Both runs query `doc_chunks_timeline`, an index built from the same branch.
 
 ## Current results
