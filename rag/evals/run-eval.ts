@@ -9,7 +9,7 @@
 //
 // Needs EMBEDDING_API_KEY + QDRANT_* (retrieval) and ANTHROPIC_API_KEY
 // (corrective arm + faithfulness judge). Retrieval-only arms skip the LLM, so
-// the first three arms run without an Anthropic key.
+// the four retrieval arms run without an Anthropic key.
 //
 // LangSmith: set LANGCHAIN_TRACING_V2=true + LANGCHAIN_API_KEY to capture every
 // arm's runs as a traced experiment (no code change — the SDK auto-instruments).

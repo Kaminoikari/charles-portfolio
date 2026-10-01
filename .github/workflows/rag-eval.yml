@@ -1,7 +1,7 @@
 name: RAG Eval
 
 # Manually triggered eval against the live Qdrant index. Runs the golden set
-# through the retrieval arms (dense-only → hybrid → hybrid+rerank) for
+# through the retrieval arms (sparse-only → dense-only → hybrid → hybrid+rerank) for
 # recall@k / MRR / Δrecall, plus the corrective arm: the full graph that
 # generates an answer and scores it with the faithfulness judge. Results print
 # to the job log.
