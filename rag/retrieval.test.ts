@@ -15,7 +15,8 @@ import {
   retrieveWith,
   type Degradation,
 } from './retrieval.js'
-import { SupplierError } from './supplier.js'
+import { SupplierError, callSupplier, __resetBreakers } from './supplier.js'
+import { hybridRetrieve } from './retrieval.js'
 import { rerank } from './embeddings.js'
 import { config } from './config.js'
 
@@ -294,4 +295,46 @@ test('the ablation measures the degraded ranking, and its other arms never fall 
   for (const name of ['hybrid', 'hybrid+rerank']) {
     assert.equal(ARMS.find((a) => a.name === name)?.retrieval?.strictDense, true, name)
   }
+})
+
+test('retrieveWith: the report reaches the candidate fetch', async () => {
+  const reported: Degradation[] = []
+  await retrieveWith(
+    'q',
+    'en',
+    { dense: true, sparse: true, rerank: false },
+    {
+      fetchCandidates: async (_q, _l, _c, report) => {
+        report?.('dense-unavailable')
+        return [point('a', 'blog', 0.9)]
+      },
+      rerank: async () => [],
+    },
+    (d) => reported.push(d),
+  )
+  assert.deepEqual(reported, ['dense-unavailable'])
+})
+
+test('hybridRetrieve: the production wiring degrades through the supplier boundary, without touching the network', async () => {
+  // Every layer above runs for real: hybridRetrieve → retrieveWith → the default
+  // fetchCandidates → embedOne → embed → the supplier boundary. Both circuits are
+  // opened first, so no request leaves the process: Voyage fails fast, the round
+  // reports the degradation and asks Qdrant for BM25, and Qdrant fails fast too.
+  // Unwrap any one supplier call and this either reaches the network (with no
+  // key, so it fails as something other than a SupplierError) or loses the report.
+  __resetBreakers()
+  const down = async () => {
+    throw Object.assign(new Error('down'), { name: 'TimeoutError' })
+  }
+  const real = { now: () => Date.now(), sleep: async () => {} }
+  await assert.rejects(callSupplier('voyage', down, real))
+  await assert.rejects(callSupplier('qdrant', down, real))
+  const reported: Degradation[] = []
+  await assert.rejects(hybridRetrieve(`wiring probe ${Date.now()}`, 'en', (d) => reported.push(d)), (err: unknown) => {
+    assert.ok(err instanceof SupplierError, String(err))
+    assert.equal(err.supplier, 'qdrant')
+    return true
+  })
+  assert.deepEqual(reported, ['dense-unavailable'])
+  __resetBreakers()
 })

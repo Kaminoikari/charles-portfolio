@@ -94,21 +94,23 @@ export async function callSupplier<T>(
   if (deps.now() < until) {
     throw new SupplierError(supplier, `circuit open for ${until - deps.now()}ms after a failure`, true)
   }
-  let last: unknown
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const out = await fn()
-      openUntil.delete(supplier)
-      return out
-    } catch (err) {
-      last = err
-      if (attempt === 0 && isTransient(err)) {
-        await deps.sleep(config.supplierRetryBackoffMs)
-        continue
-      }
-      break
-    }
+  const fail = (err: unknown): never => {
+    openUntil.set(supplier, deps.now() + config.supplierCooldownMs)
+    throw new SupplierError(supplier, (err as Error)?.message ?? String(err), isTransient(err), { cause: err })
   }
-  openUntil.set(supplier, deps.now() + config.supplierCooldownMs)
-  throw new SupplierError(supplier, (last as Error)?.message ?? String(last), isTransient(last), { cause: last })
+  try {
+    const out = await fn()
+    openUntil.delete(supplier)
+    return out
+  } catch (first) {
+    if (!isTransient(first)) return fail(first)
+  }
+  await deps.sleep(config.supplierRetryBackoffMs)
+  try {
+    const out = await fn()
+    openUntil.delete(supplier)
+    return out
+  } catch (second) {
+    return fail(second)
+  }
 }

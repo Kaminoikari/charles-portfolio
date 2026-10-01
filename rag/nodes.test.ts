@@ -968,3 +968,16 @@ test('triage: the second argument the graph passes is a config, not a dependency
   const injected = { embedOne: async () => [0], faqLookup: async () => null }
   assert.equal(nodes.resolveTriageDeps(injected), injected)
 })
+
+test('retrieve: a bug in one fanned-out sub-question is not swallowed as a supplier failure', async () => {
+  const doc = new Document({ pageContent: 'x', metadata: { id: 'a' } })
+  await assert.rejects(
+    nodes.retrieve({ question: 'q', language: 'en', queries: ['q'], subQuestions: ['a', 'b'] } as never, {
+      hybridRetrieve: async (q: string) => {
+        if (q === 'b') throw new RangeError('our bug')
+        return [doc]
+      },
+    }),
+    RangeError,
+  )
+})
