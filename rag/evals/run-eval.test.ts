@@ -229,3 +229,10 @@ test('parseBaseline: a file of the wrong shape is refused', () => {
   assert.throws(() => parseBaseline({ arm: 'x', recall: { 'a/en': 'yes' } }))
   assert.throws(() => parseBaseline({ recall: {} }))
 })
+
+test('baselineGate: losing one of two needed chunks is a regression too', () => {
+  // A comparison item scores the share of its chunks retrieved, so the smallest
+  // regression it can show is 1 → 0.5, not 1 → 0.
+  const baseline = toBaseline('hybrid+rerank', run([['compare/en', 1]]))
+  assert.equal(baselineGate(baseline, 'hybrid+rerank', run([['compare/en', 0.5]])).ok, false)
+})

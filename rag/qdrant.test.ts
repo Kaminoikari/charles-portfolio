@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { DEFAULT_FAQ_DEPS, faqLookup, citationsOf, type FaqSearchDeps } from './qdrant.js'
+import { DEFAULT_FAQ_DEPS, faqLookup, citationsOf, denseVerdict, type FaqSearchDeps } from './qdrant.js'
 import { config } from './config.js'
 import { faqEntries } from './faq-cache.js'
 
@@ -219,4 +219,14 @@ test('citationsOf: a malformed citation costs only itself', () => {
   assert.deepEqual(citationsOf({ sources: [good, { id: 'b' }, null, 'c', { ...good, url: 3 }] }), [good])
   assert.deepEqual(citationsOf({ sources: 'not a list' }), [])
   assert.deepEqual(citationsOf(null), [])
+})
+
+test('denseVerdict: a gap exactly at the margin has not cleared it', () => {
+  const top = { score: 0.82, payload: { faq_id: 'a', answer: 'x' } }
+  const rival = { score: 0.8, payload: { faq_id: 'b', answer: 'y' } }
+  // The margin is the gap itself, computed the same way, so the two are equal
+  // to the last bit rather than to a rounding of it.
+  const margin = top.score - rival.score
+  assert.equal(denseVerdict([top, rival], { threshold: 0.7, margin }).ok, false)
+  assert.equal(denseVerdict([top, rival], { threshold: 0.7, margin: margin - 1e-9 }).ok, true)
 })
