@@ -4,7 +4,15 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseChatRequest, sse, RateLimiter, clientId, clientCountry, isBlockedCountry } from './api-helpers.js'
+import {
+  parseChatRequest,
+  sse,
+  RateLimiter,
+  clientId,
+  clientCountry,
+  isBlockedCountry,
+  questionLogPayload,
+} from './api-helpers.js'
 
 test('parseChatRequest: accepts and trims a valid question', () => {
   const r = parseChatRequest({ question: '  hello?  ' })
@@ -199,4 +207,16 @@ test('parseChatRequest: the length bound is per role, since only user turns are 
   const kept = parseChatRequest({ question: 'hi', history: [{ role: 'assistant', content: answer }] })
   assert.equal(kept.ok, true)
   if (kept.ok) assert.equal(kept.history?.[0].content, answer)
+})
+
+test('questionLogPayload: the record carries the outcome and what retrieval gave up', () => {
+  const rec = questionLogPayload(
+    { sources: [], language: 'en', loops: 0, answer: 'a', outcome: 'generate', degraded: ['dense-unavailable'] },
+    { question: 'q', visitorId: 'v1' },
+    { latencyMs: 12, country: 'TW', ip: null },
+  )
+  assert.equal(rec.route, 'generate')
+  assert.deepEqual(rec.degraded, ['dense-unavailable'])
+  assert.equal(rec.visitor_id, 'v1')
+  assert.equal(rec.latency_ms, 12)
 })

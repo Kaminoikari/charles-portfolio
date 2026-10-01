@@ -42,13 +42,17 @@ export interface Arm {
 }
 
 export const ARMS: Arm[] = [
+  // BM25 alone. Nobody is served this on a good day; it is the ranking a visitor
+  // gets while Voyage is down (retrieval.ts fetchCandidates), so this arm is
+  // what that degradation costs.
+  { name: 'sparse-only', retrieval: { dense: false, sparse: true, rerank: false } },
   { name: 'dense-only', retrieval: { dense: true, sparse: false, rerank: false } },
-  { name: 'hybrid', retrieval: { dense: true, sparse: true, rerank: false } },
-  // strictRerank: serving degrades a failed rerank to the RRF order on purpose
-  // (retrieval.ts), which for an ablation would mean this arm quietly reporting
-  // the `hybrid` arm's ranking under its own name. A measurement run must fail
-  // instead of publishing a number nobody can trace back.
-  { name: 'hybrid+rerank', retrieval: { dense: true, sparse: true, rerank: true, strictRerank: true } },
+  // strictDense / strictRerank: serving degrades a failed embedding to BM25 and
+  // a failed rerank to the RRF order on purpose, which for an ablation would
+  // mean an arm quietly reporting another arm's ranking under its own name. A
+  // measurement run must fail instead of publishing a number nobody can trace.
+  { name: 'hybrid', retrieval: { dense: true, sparse: true, rerank: false, strictDense: true } },
+  { name: 'hybrid+rerank', retrieval: { dense: true, sparse: true, rerank: true, strictDense: true, strictRerank: true } },
   { name: 'corrective', corrective: true },
 ]
 

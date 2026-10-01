@@ -23,6 +23,7 @@ import { contextualizeQuestion } from './contextualize.js'
 import { shouldAnswerFromHistory, replayTarget } from './history.js'
 import { decomposeQuestion } from './decompose.js'
 import type { ChatTurn } from './api-helpers.js'
+import type { Degradation } from './retrieval.js'
 import * as defaultNodes from './nodes.js'
 
 // A node is an (async) function from state to a partial state update.
@@ -120,6 +121,7 @@ export interface AnswerResult {
   language: string
   loops: number
   outcome: Outcome
+  degraded: Degradation[]
 }
 
 // Public entry point. Detects the question's language up front (deterministic,
@@ -143,6 +145,7 @@ export async function answer(
     language: final.language ?? language,
     loops: final.loops ?? 0,
     outcome: final.outcome ?? 'fallback',
+    degraded: [...new Set(final.degraded ?? [])],
   }
 }
 
@@ -159,7 +162,7 @@ export type StreamEvent =
   // Sources as soon as a node produces them, ahead of the answer finishing.
   // They also still ride on `done`, which stays the authoritative copy.
   | { type: 'sources'; sources: Source[] }
-  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome }
+  | { type: 'done'; sources: Source[]; language: string; loops: number; answer: string; outcome: Outcome; degraded: Degradation[] }
 
 export type GraphNodeId = (typeof GRAPH_NODES)[number]
 
@@ -221,6 +224,7 @@ export async function* streamAnswer(
   let sources: Source[] = []
   let loops = 0
   let outcome: Outcome = 'fallback'
+  const degraded = new Set<Degradation>()
 
   // `question` carries words the visitor actually typed — this message, or the
   // earlier one they asked us to answer again — and `queries` carries the
@@ -285,6 +289,7 @@ export async function* streamAnswer(
       if (typeof out.loops === 'number') loops = out.loops
       if (typeof out.answer === 'string' && out.answer) answerText = out.answer
       if (out.outcome) outcome = out.outcome
+      if (Array.isArray(out.degraded)) for (const d of out.degraded) degraded.add(d)
 
       if (traced) {
         const began = startedAt.get(traced)
@@ -300,7 +305,10 @@ export async function* streamAnswer(
 
   // Diagnostic: surfaces in Vercel runtime logs so an empty answer is debuggable
   // without reproducing locally. Cheap (one line per request).
-  console.log(`[chat] done lang=${language} loops=${loops} outcome=${outcome} answerLen=${answerText.length} sources=${sources.length}`)
+  console.log(
+    `[chat] done lang=${language} loops=${loops} outcome=${outcome} answerLen=${answerText.length} sources=${sources.length}` +
+      (degraded.size ? ` degraded=${[...degraded].join(',')}` : ''),
+  )
 
-  yield { type: 'done', sources, language, loops, answer: answerText, outcome }
+  yield { type: 'done', sources, language, loops, answer: answerText, outcome, degraded: [...degraded] }
 }

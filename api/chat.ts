@@ -9,7 +9,15 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import { streamAnswer } from '../rag/graph.js'
 import { logChatEvent } from '../rag/chatlog.js'
-import { parseChatRequest, sse, RateLimiter, clientId, clientCountry, isBlockedCountry } from '../rag/api-helpers.js'
+import {
+  parseChatRequest,
+  sse,
+  RateLimiter,
+  clientId,
+  clientCountry,
+  isBlockedCountry,
+  questionLogPayload,
+} from '../rag/api-helpers.js'
 
 // One limiter per warm instance (see api-helpers note re: Upstash for global).
 const limiter = new RateLimiter(
@@ -91,28 +99,15 @@ export default async function handler(req: IncomingMessage & { method?: string; 
         res.write(sse('sources', { sources: ev.sources }))
       } else {
         res.write(sse('done', { sources: ev.sources, language: ev.language, answer: ev.answer }))
-        logged = logChatEvent({
-          type: 'question',
-          question: parsed.question,
-          // Persist the full answer so chat_logs holds complete Q&A transcripts,
-          // not just the questions. Same text already streamed to the visitor
-          // (the `done` event above), captured here before the instance freezes.
-          answer: ev.answer,
-          language: ev.language,
-          // The graph's own terminal outcome (canned | faq | converse | generate
-          // | blocked | fallback | unavailable) — NOT re-derived from
-          // sources.length, which mislabeled every canned/FAQ answer
-          // (sources: []) as a fallback.
-          route: ev.outcome,
-          loops: ev.loops,
-          latency_ms: Date.now() - started,
-          sources: ev.sources,
-          visitor_id: parsed.visitorId ?? null,
-          country: country || null,
-          // `id` is the client IP (clientId = first x-forwarded-for hop), already
-          // computed above for rate-limiting. 'unknown' in local dev → null.
-          ip: id === 'unknown' ? null : id,
-        })
+        logged = logChatEvent(
+          questionLogPayload(ev, parsed, {
+            latencyMs: Date.now() - started,
+            country: country || null,
+            // `id` is the client IP (clientId = first x-forwarded-for hop), already
+            // computed above for rate-limiting. 'unknown' in local dev → null.
+            ip: id === 'unknown' ? null : id,
+          }),
+        )
       }
     }
   } catch (err) {

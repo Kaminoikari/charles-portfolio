@@ -14,7 +14,8 @@ import { config } from './config.js'
 import type { Locale } from './language.js'
 import type { RAGStateType, Source } from './state.js'
 import { embedOne } from './embeddings.js'
-import { hybridRetrieve, mergeInterleaved } from './retrieval.js'
+import { hybridRetrieve, mergeInterleaved, type Degradation } from './retrieval.js'
+import { SupplierError } from './supplier.js'
 import { faqLookup } from './qdrant.js'
 import { portfolioMap } from './portfolio-map.js'
 import { entityContext } from './entities/graph.js'
@@ -134,40 +135,48 @@ export async function retrieve(
   const deps = resolveRetrieveDeps(injected)
   const locale = state.language ?? config.defaultLocale
   const subs = state.subQuestions ?? []
+  const degraded: Degradation[] = []
+  const report = (d: Degradation) => {
+    if (!degraded.includes(d)) degraded.push(d)
+  }
 
   if ((state.loops ?? 0) === 0 && subs.length > 1) {
     // Fan out in parallel; a failed sub-question degrades to [] rather than
     // sinking the whole request (mirrors grade/rewrite's graceful degradation).
     const perSub = await Promise.all(
       subs.map((s) =>
-        deps.hybridRetrieve(s, locale).catch((err) => {
-          console.warn('sub-question retrieval failed:', (err as Error).message)
+        deps.hybridRetrieve(s, locale, report).catch((err: unknown) => {
+          if (!(err instanceof SupplierError)) throw err
+          console.warn('sub-question retrieval failed:', err.message)
           return [] as Document[]
         }),
       ),
     )
     const merged = mergeInterleaved(perSub, config.multiMergeK)
-    if (merged.length) return { documents: merged, retrievalFailed: false }
+    if (merged.length) return { documents: merged, retrievalFailed: false, degraded }
     // All sub-retrievals empty/failed → fall through to the single-query path,
     // which is also where a total outage gets recognised as one.
   }
 
   const query = retrievalQuery(state)
   try {
-    return { documents: await deps.hybridRetrieve(query, locale), retrievalFailed: false }
+    return { documents: await deps.hybridRetrieve(query, locale, report), retrievalFailed: false, degraded }
   } catch (err) {
     // The store or the embedder is unreachable. Letting this throw ended the
     // request as a generic stream error; letting it pass as an empty document
     // set would be worse, because grade would then spend an LLM call to conclude
     // "no data" and the visitor would be told the portfolio does not cover their
     // question. It does; we just could not look. Say that instead.
-    // A TypeError here is our own bug, not the supplier's. Reporting it as an
-    // outage is the worst available outcome: visitors are told the store is
-    // down, the incident metric agrees with them, and the logs stop pointing at
-    // the code. Let it crash instead — that is the signal that gets read.
-    if (err instanceof TypeError) throw err
-    console.warn('retrieval unavailable:', (err as Error).message)
-    return { documents: [], retrievalFailed: true }
+    // Only a supplier's failure is an outage (supplier.ts classifies every call
+    // that leaves the process). Anything else is our own bug, and reporting it
+    // as an outage is the worst available outcome: visitors are told the store
+    // is down, the incident metric agrees with them, and the logs stop pointing
+    // at the code. Let it crash instead — that is the signal that gets read.
+    // This used to test for TypeError, which is also what Node's fetch throws
+    // when the store is unreachable, so the outage it was written for crashed.
+    if (!(err instanceof SupplierError)) throw err
+    console.warn('retrieval unavailable:', err.message)
+    return { documents: [], retrievalFailed: true, degraded }
   }
 }
 

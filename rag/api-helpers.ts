@@ -170,3 +170,44 @@ export function isBlockedCountry(country: string, blocklist: string): boolean {
     .filter(Boolean)
     .includes(code)
 }
+
+// The chat_logs record for one answered question. Pure, and out of the handler,
+// so the fields the analytics read are pinned by a test: a field dropped here
+// fails nothing at runtime, it just stops existing in every report from then on.
+export interface AnsweredEvent {
+  sources: unknown[]
+  language: string
+  loops: number
+  answer: string
+  outcome: string
+  degraded: string[]
+}
+
+export function questionLogPayload(
+  ev: AnsweredEvent,
+  req: Pick<ParsedRequest, 'question' | 'visitorId'>,
+  ctx: { latencyMs: number; country: string | null; ip: string | null },
+): Record<string, unknown> {
+  return {
+    type: 'question',
+    question: req.question,
+    // Persist the full answer so chat_logs holds complete Q&A transcripts, not
+    // just the questions. Same text already streamed to the visitor (the `done`
+    // event), captured before the instance freezes.
+    answer: ev.answer,
+    language: ev.language,
+    // The graph's own terminal outcome (canned | faq | converse | generate |
+    // blocked | fallback | unavailable) — NOT re-derived from sources.length,
+    // which mislabeled every canned/FAQ answer (sources: []) as a fallback.
+    route: ev.outcome,
+    // What retrieval gave up to answer (rag/retrieval.ts Degradation): [] on a
+    // healthy request, so a non-empty list is an incident signal.
+    degraded: ev.degraded,
+    loops: ev.loops,
+    latency_ms: ctx.latencyMs,
+    sources: ev.sources,
+    visitor_id: req.visitorId ?? null,
+    country: ctx.country,
+    ip: ctx.ip,
+  }
+}

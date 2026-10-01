@@ -15,6 +15,7 @@ import { shouldAnswerFromHistory } from './history.js'
 import type { ChatTurn } from './api-helpers.js'
 import { detectLanguage } from './language.js'
 import { config } from './config.js'
+import { SupplierError } from './supplier.js'
 
 // A stub node set whose `gradeDocuments` is scripted per-test. Counters let each
 // test assert how many times retrieve / rewrite actually ran.
@@ -349,7 +350,7 @@ test('a retrieval outage answers with the outage reply and never grades or rewri
     retrieve: (state) =>
       realNodes.retrieve(state, {
         hybridRetrieve: async () => {
-          throw new Error('qdrant unreachable')
+          throw new SupplierError('qdrant', 'unreachable', true)
         },
       }),
     gradeDocuments: async () => {
@@ -414,4 +415,32 @@ test('trace: a node that only runs on the outage route still reports itself', as
 
   assert.equal(counts.unavailable, 1, 'the outage route did not reach the node')
   assert.deepEqual(starts, ['triage', 'retrieve', 'unavailable'])
+})
+
+// --- a degraded answer is labelled as one --------------------------------------
+// The real retrieve node runs, so what reaches `done` is what the node reported,
+// through the state channel and the stream, not a value the test planted there.
+test('streamAnswer: what retrieval gave up reaches the done event, and answer() too', async () => {
+  const doc = new Document({ pageContent: 'x', metadata: { id: 'a', title: 'A', score: 1, locale: 'en', sourceType: 'about' } })
+  const base = makeNodes(['generate']).nodes
+  const nodes: NodeSet = {
+    ...base,
+    retrieve: (state) =>
+      realNodes.retrieve(state, {
+        hybridRetrieve: async (_q: string, _l: string, report?: (d: 'dense-unavailable' | 'rerank-unavailable') => void) => {
+          report?.('dense-unavailable')
+          return [doc]
+        },
+      }),
+  }
+  const events = await drain(streamAnswer('What did he do at USPACE?', [], buildGraph(nodes), stubDeps().deps))
+  const done = events.find((e) => e.type === 'done')
+  assert.deepEqual(done?.type === 'done' ? done.degraded : null, ['dense-unavailable'])
+  assert.deepEqual((await answer('What did he do at USPACE?', buildGraph(nodes))).degraded, ['dense-unavailable'])
+})
+
+test('streamAnswer: a healthy request is not labelled degraded', async () => {
+  const events = await drain(streamAnswer('What did he do at USPACE?', [], buildGraph(makeNodes(['generate']).nodes), stubDeps().deps))
+  const done = events.find((e) => e.type === 'done')
+  assert.deepEqual(done?.type === 'done' ? done.degraded : null, [])
 })

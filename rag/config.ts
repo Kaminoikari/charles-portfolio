@@ -81,6 +81,12 @@ export const config = {
   // the whole function (severing the SSE stream with no error event, no Claude
   // fallback). Kept well under the 60s Vercel function limit.
   embedTimeoutMs: int('RAG_EMBED_TIMEOUT_MS', 10_000),
+  // Supplier resilience (rag/supplier.ts). One retry for a failure a retry can
+  // fix, after this pause; then the supplier is skipped for the cooldown, so a
+  // request that has already watched Voyage fail goes straight to the degraded
+  // path instead of waiting out a second timeout on the same outage.
+  supplierRetryBackoffMs: int('RAG_SUPPLIER_RETRY_BACKOFF_MS', 200),
+  supplierCooldownMs: int('RAG_SUPPLIER_COOLDOWN_MS', 30_000),
   qdrantUrl: process.env.QDRANT_URL ?? '',
   qdrantCollection: process.env.QDRANT_COLLECTION ?? 'doc_chunks',
   qdrantLogsCollection: process.env.QDRANT_LOGS_COLLECTION ?? 'chat_logs',

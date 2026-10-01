@@ -10,6 +10,7 @@
 // query + corpus traffic on a US provider.)
 
 import { config } from './config.js'
+import { callSupplier, SupplierHttpError } from './supplier.js'
 
 const apiKey = () => process.env.VOYAGE_API_KEY ?? process.env.EMBEDDING_API_KEY ?? ''
 
@@ -18,23 +19,25 @@ export type InputType = 'document' | 'query'
 // Embed a batch of texts. `inputType` selects Voyage's asymmetric encoding:
 // 'document' for indexing (build-index.ts), 'query' for retrieval.
 export async function embed(texts: string[], inputType: InputType = 'query'): Promise<number[][]> {
-  const res = await fetch(`${config.embedBaseUrl}/embeddings`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey()}`,
-    },
-    body: JSON.stringify({
-      model: config.embedModel,
-      input: texts,
-      input_type: inputType,
-      output_dimension: config.embedDim,
-    }),
-    signal: AbortSignal.timeout(config.embedTimeoutMs),
+  return callSupplier('voyage', async () => {
+    const res = await fetch(`${config.embedBaseUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey()}`,
+      },
+      body: JSON.stringify({
+        model: config.embedModel,
+        input: texts,
+        input_type: inputType,
+        output_dimension: config.embedDim,
+      }),
+      signal: AbortSignal.timeout(config.embedTimeoutMs),
+    })
+    if (!res.ok) throw new SupplierHttpError(res.status, `embed failed: ${res.status} ${await res.text()}`)
+    const json = (await res.json()) as { data: { embedding: number[] }[] }
+    return json.data.map((d) => d.embedding)
   })
-  if (!res.ok) throw new Error(`embed failed: ${res.status} ${await res.text()}`)
-  const json = (await res.json()) as { data: { embedding: number[] }[] }
-  return json.data.map((d) => d.embedding)
 }
 
 // Bounded, insertion-ordered memo of single-text embeddings. A Map iterates in
@@ -88,23 +91,25 @@ export async function rerank(
   docs: string[],
   topN: number,
 ): Promise<{ index: number; score: number }[]> {
-  const res = await fetch(`${config.embedBaseUrl}/rerank`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey()}`,
-    },
-    body: JSON.stringify({
-      model: config.rerankModel,
-      query,
-      documents: docs,
-      top_k: topN,
-    }),
-    signal: AbortSignal.timeout(config.embedTimeoutMs),
+  return callSupplier('voyage', async () => {
+    const res = await fetch(`${config.embedBaseUrl}/rerank`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey()}`,
+      },
+      body: JSON.stringify({
+        model: config.rerankModel,
+        query,
+        documents: docs,
+        top_k: topN,
+      }),
+      signal: AbortSignal.timeout(config.embedTimeoutMs),
+    })
+    if (!res.ok) throw new SupplierHttpError(res.status, `rerank failed: ${res.status} ${await res.text()}`)
+    const json = (await res.json()) as {
+      data: { index: number; relevance_score: number }[]
+    }
+    return json.data.map((r) => ({ index: r.index, score: r.relevance_score }))
   })
-  if (!res.ok) throw new Error(`rerank failed: ${res.status} ${await res.text()}`)
-  const json = (await res.json()) as {
-    data: { index: number; relevance_score: number }[]
-  }
-  return json.data.map((r) => ({ index: r.index, score: r.relevance_score }))
 }

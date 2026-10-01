@@ -7,7 +7,15 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Document } from '@langchain/core/documents'
-import { DEFAULT_RETRIEVAL, DEFAULT_RETRIEVAL_DEPS, fetchCandidates, mergeInterleaved, retrieveWith } from './retrieval.js'
+import {
+  DEFAULT_RETRIEVAL,
+  DEFAULT_RETRIEVAL_DEPS,
+  fetchCandidates,
+  mergeInterleaved,
+  retrieveWith,
+  type Degradation,
+} from './retrieval.js'
+import { SupplierError } from './supplier.js'
 import { rerank } from './embeddings.js'
 import { config } from './config.js'
 
@@ -60,7 +68,7 @@ test('retrieveWith: a failed rerank degrades to RRF order instead of failing the
   const docs = await retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
     fetchCandidates: async () => points,
     rerank: async () => {
-      throw new Error('voyage 503')
+      throw new SupplierError('voyage', '503', true)
     },
   })
   assert.deepEqual(ids(docs), ['rrf-1', 'rrf-2', 'rrf-3'])
@@ -87,7 +95,7 @@ test('retrieveWith: the degraded path still applies the first-party boost', asyn
   const docs = await retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
     fetchCandidates: async () => points,
     rerank: async () => {
-      throw new Error('voyage 503')
+      throw new SupplierError('voyage', '503', true)
     },
   })
   assert.deepEqual(ids(docs), ['curated', 'blog-top']) // 0.8 × 1.2 = 0.96 > 0.9
@@ -125,7 +133,7 @@ test('retrieveWith: the degraded path still trims to topK', async () => {
   const docs = await retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
     fetchCandidates: async () => points,
     rerank: async () => {
-      throw new Error('voyage 503')
+      throw new SupplierError('voyage', '503', true)
     },
   })
   assert.equal(docs.length, config.topK)
@@ -150,10 +158,10 @@ test('retrieveWith: strictRerank makes a rerank failure fail loudly', async () =
     retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true, strictRerank: true }, {
       fetchCandidates: async () => [point('a', 'blog', 0.9), point('b', 'blog', 0.8)],
       rerank: async () => {
-        throw new Error('voyage 503')
+        throw new SupplierError('voyage', '503', true)
       },
     }),
-    /voyage 503/,
+    /voyage: 503/,
   )
 })
 
@@ -185,4 +193,105 @@ test('retrieveWith: a blog point carries its publication date into the document'
     },
   })
   assert.equal(docs[0].metadata.date, '2026-09-14')
+})
+
+// --- the embedding is no longer the single point ------------------------------
+// BM25 runs inside Qdrant, so a query whose embedding Voyage cannot produce can
+// still be ranked. Before this, the embed call was the one supplier call on the
+// hot path with no fallback.
+
+const voyageDown = async (): Promise<number[]> => {
+  throw new SupplierError('voyage', 'fetch failed', true)
+}
+
+function recordingQuery() {
+  const bodies: Record<string, unknown>[] = []
+  return {
+    bodies,
+    query: async (body: Record<string, unknown>) => {
+      bodies.push(body)
+      return { points: [point('bm25-hit', 'project', 12.5)] }
+    },
+  }
+}
+
+test('fetchCandidates: a hybrid round whose embedding fails is ranked by BM25 alone, and says so', async () => {
+  const q = recordingQuery()
+  const reported: Degradation[] = []
+  const points = await fetchCandidates('q', 'en', { dense: true, sparse: true, rerank: false }, (d) => reported.push(d), {
+    embedOne: voyageDown,
+    query: q.query,
+  })
+  assert.equal(points.length, 1)
+  assert.equal(q.bodies.length, 1)
+  assert.equal(q.bodies[0].using, 'sparse')
+  assert.equal('prefetch' in q.bodies[0], false)
+  assert.deepEqual(reported, ['dense-unavailable'])
+})
+
+test('fetchCandidates: a healthy round fuses both arms and reports nothing', async () => {
+  const q = recordingQuery()
+  const reported: Degradation[] = []
+  await fetchCandidates('q', 'en', { dense: true, sparse: true, rerank: false }, (d) => reported.push(d), {
+    embedOne: async () => [0.1],
+    query: q.query,
+  })
+  assert.ok(Array.isArray(q.bodies[0].prefetch))
+  assert.deepEqual(reported, [])
+})
+
+test('fetchCandidates: a bug in our own code is not mistaken for Voyage being down', async () => {
+  await assert.rejects(
+    fetchCandidates('q', 'en', { dense: true, sparse: true, rerank: false }, undefined, {
+      embedOne: async () => {
+        throw new TypeError('vec.map is not a function')
+      },
+      query: recordingQuery().query,
+    }),
+    TypeError,
+  )
+})
+
+test('fetchCandidates: a measurement arm never degrades, and a dense-only round has nothing to degrade to', async () => {
+  const deps = { embedOne: voyageDown, query: recordingQuery().query }
+  await assert.rejects(fetchCandidates('q', 'en', { dense: true, sparse: true, rerank: false, strictDense: true }, undefined, deps), SupplierError)
+  await assert.rejects(fetchCandidates('q', 'en', { dense: true, sparse: false, rerank: false }, undefined, deps), SupplierError)
+})
+
+test('retrieveWith: a rerank outage is reported as one', async () => {
+  const reported: Degradation[] = []
+  await retrieveWith(
+    'q',
+    'en',
+    { dense: true, sparse: true, rerank: true },
+    {
+      fetchCandidates: async () => [point('a', 'blog', 0.9)],
+      rerank: async () => {
+        throw new SupplierError('voyage', '503', true)
+      },
+    },
+    (d) => reported.push(d),
+  )
+  assert.deepEqual(reported, ['rerank-unavailable'])
+})
+
+test('retrieveWith: a rerank that fails for any reason but the supplier propagates', async () => {
+  await assert.rejects(
+    retrieveWith('q', 'en', { dense: true, sparse: true, rerank: true }, {
+      fetchCandidates: async () => [point('a', 'blog', 0.9)],
+      rerank: async () => {
+        throw new RangeError('our bug')
+      },
+    }),
+    RangeError,
+  )
+})
+
+test('the ablation measures the degraded ranking, and its other arms never fall into it', async () => {
+  const { ARMS } = await import('./evals/run-eval.js')
+  const sparse = ARMS.find((a) => a.name === 'sparse-only')
+  assert.deepEqual(sparse?.retrieval, { dense: false, sparse: true, rerank: false })
+  for (const name of ['hybrid', 'hybrid+rerank']) {
+    assert.equal(ARMS.find((a) => a.name === name)?.retrieval?.strictDense, true, name)
+  }
 })

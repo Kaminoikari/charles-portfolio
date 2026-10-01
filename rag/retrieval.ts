@@ -9,6 +9,7 @@ import { Document } from '@langchain/core/documents'
 import { config } from './config.js'
 import { embedOne, rerank } from './embeddings.js'
 import { qdrant, DENSE, SPARSE } from './qdrant.js'
+import { callSupplier, SupplierError } from './supplier.js'
 
 // Payload stored per chunk at ingest (see ingest/payload.ts, which writes it).
 interface Payload {
@@ -36,7 +37,19 @@ export interface RetrievalConfig {
   // worse than a failed run — the number survives into a report and nobody can
   // tell. Off in production; the ablation turns it on.
   strictRerank?: boolean
+  // The same, for the query embedding: serving degrades a hybrid query whose
+  // embedding failed to the sparse arm alone, and an ablation arm must not.
+  strictDense?: boolean
 }
+
+// What a retrieval round gave up to return anything at all. Reported rather than
+// hidden: a degraded answer is still an answer, but it is a lower-quality one,
+// and chat_logs is where somebody notices that an outage is going on.
+//   dense-unavailable  → Voyage could not embed the query; BM25 alone ranked it
+//   rerank-unavailable → Voyage could not rerank; RRF order was used
+export type Degradation = 'dense-unavailable' | 'rerank-unavailable'
+export type DegradationReport = (d: Degradation) => void
+const ignore: DegradationReport = () => {}
 
 export const DEFAULT_RETRIEVAL: RetrievalConfig = {
   dense: true,
@@ -107,23 +120,54 @@ function toDocument(p: ScoredPoint): Document {
 //   dense only / sparse only → a single-arm query (the ablation's isolation)
 // Split out from retrieveWith so the rerank's failure handling is testable
 // without a live Qdrant or Voyage key — the two suppliers it guards against.
+//
+// The hybrid path survives Voyage. The sparse arm is BM25 computed by Qdrant
+// Cloud Inference, so it needs nothing from Voyage, and when the query
+// embedding cannot be had the round runs on that arm alone. The ablation
+// measures that ranking as the `sparse-only` arm, so the cost of the
+// degradation is a number in docs/rag-ablation-report.md, not a guess. Before
+// this, the embedding was the one call with no fallback: Voyage down meant the
+// candidate set was empty and the request ended as an outage.
+export interface CandidateDeps {
+  embedOne: typeof embedOne
+  query: (body: Record<string, unknown>) => Promise<{ points: ScoredPoint[] }>
+}
+
+export const DEFAULT_CANDIDATE_DEPS: CandidateDeps = {
+  embedOne,
+  query: (body) => callSupplier('qdrant', () => qdrant().query(config.qdrantCollection, body as never)),
+}
+
 export async function fetchCandidates(
   query: string,
   locale: string,
   cfg: RetrievalConfig,
+  report: DegradationReport = ignore,
+  deps: CandidateDeps = DEFAULT_CANDIDATE_DEPS,
 ): Promise<ScoredPoint[]> {
   if (!cfg.dense && !cfg.sparse) {
     throw new Error('fetchCandidates: at least one of dense/sparse must be enabled')
   }
 
-  const db = qdrant()
   const filter = localeFilter(locale)
   let points: ScoredPoint[]
 
-  if (cfg.dense && cfg.sparse) {
+  let denseVec: number[] | null = null
+  if (cfg.dense) {
+    try {
+      denseVec = await deps.embedOne(query, 'query')
+    } catch (err) {
+      // Only a hybrid round has an arm left to answer with, and only a
+      // supplier's failure is a reason to use it. Our own bug propagates.
+      if (!(err instanceof SupplierError) || !cfg.sparse || cfg.strictDense) throw err
+      console.warn(`[chat] degraded dense-unavailable, ranking by BM25 alone: ${err.message}`)
+      report('dense-unavailable')
+    }
+  }
+
+  if (denseVec && cfg.sparse) {
     // Hybrid: both arms prefetched, fused with RRF inside Qdrant.
-    const denseVec = await embedOne(query, 'query')
-    const res = await db.query(config.qdrantCollection, {
+    const res = await deps.query({
       prefetch: [
         { query: denseVec, using: DENSE, filter, limit: config.candidateK },
         { query: sparseQuery(query), using: SPARSE, filter, limit: config.candidateK },
@@ -134,9 +178,8 @@ export async function fetchCandidates(
       with_payload: true,
     })
     points = res.points
-  } else if (cfg.dense) {
-    const denseVec = await embedOne(query, 'query')
-    const res = await db.query(config.qdrantCollection, {
+  } else if (denseVec) {
+    const res = await deps.query({
       query: denseVec,
       using: DENSE,
       filter,
@@ -145,7 +188,7 @@ export async function fetchCandidates(
     })
     points = res.points
   } else {
-    const res = await db.query(config.qdrantCollection, {
+    const res = await deps.query({
       query: sparseQuery(query),
       using: SPARSE,
       filter,
@@ -169,22 +212,23 @@ export const DEFAULT_RETRIEVAL_DEPS: RetrievalDeps = { fetchCandidates, rerank }
 
 // One round of retrieval for a single query string: candidates, then rerank.
 //
-// The rerank is allowed to fail. Voyage is the single supplier of both the query
-// embedding and the rerank, each called once with no retry (see embeddings.ts),
-// so a Voyage blip used to propagate out of here, past the retrieve node's
-// unguarded single-query path, and out as a generic SSE error — taking the whole
-// bot down to regex triage while a usable RRF-fused candidate set sat in
-// `points`. Degrading to that RRF order costs ranking quality that the ablation
-// has actually measured (the `hybrid` arm), which is a far better answer than no
-// answer. A failed CANDIDATE fetch still throws: with no points there is nothing
-// to degrade to.
+// The rerank is allowed to fail. Voyage supplies both the query embedding and
+// the rerank, so a Voyage blip used to propagate out of here as a generic SSE
+// error, taking the whole bot down to regex triage while a usable RRF-fused
+// candidate set sat in `points`. Degrading to that RRF order costs ranking
+// quality that the ablation has actually measured (the `hybrid` arm), which is a
+// far better answer than no answer. A failed embedding degrades one step
+// earlier, in fetchCandidates. What still throws is Qdrant itself being
+// unreachable: with no index there are no points, and the retrieve node turns
+// that into the honest outage reply.
 export async function retrieveWith(
   query: string,
   locale: string,
   cfg: RetrievalConfig,
   deps: RetrievalDeps = DEFAULT_RETRIEVAL_DEPS,
+  report: DegradationReport = ignore,
 ): Promise<Document[]> {
-  const points = await deps.fetchCandidates(query, locale, cfg)
+  const points = await deps.fetchCandidates(query, locale, cfg, report)
 
   if (cfg.rerank && points.length > 0) {
     // Only the supplier call is guarded. Ranking the response is our own code,
@@ -196,8 +240,9 @@ export async function retrieveWith(
       // still pull a lower-ranked first-party chunk into the final top-k.
       ranked = await deps.rerank(query, points.map(contentOf), Math.min(points.length, config.candidateK))
     } catch (err) {
-      if (cfg.strictRerank) throw err
-      console.warn('rerank failed, falling back to RRF order:', (err as Error).message)
+      if (!(err instanceof SupplierError) || cfg.strictRerank) throw err
+      console.warn(`[chat] degraded rerank-unavailable, keeping RRF order: ${err.message}`)
+      report('rerank-unavailable')
     }
     if (ranked) return weightAndTrim(ranked.map((r) => ({ point: points[r.index], base: r.score })))
   }
@@ -206,8 +251,8 @@ export async function retrieveWith(
 
 // Production entry point: full hybrid retrieval. Used by the graph's retrieve
 // node. Thin wrapper over retrieveWith so there is a single code path.
-export function hybridRetrieve(query: string, locale: string): Promise<Document[]> {
-  return retrieveWith(query, locale, DEFAULT_RETRIEVAL)
+export function hybridRetrieve(query: string, locale: string, report: DegradationReport = ignore): Promise<Document[]> {
+  return retrieveWith(query, locale, DEFAULT_RETRIEVAL, DEFAULT_RETRIEVAL_DEPS, report)
 }
 
 // Round-robin merge of per-sub-question retrievals for multi-question fan-out

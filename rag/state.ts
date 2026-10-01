@@ -6,6 +6,7 @@
 import { Annotation } from '@langchain/langgraph'
 import type { Document } from '@langchain/core/documents'
 import type { ChatTurn } from './api-helpers.js'
+import type { Degradation } from './retrieval.js'
 
 export interface Source {
   id: string
@@ -49,6 +50,10 @@ export const RAGState = Annotation.Root({
   // the first is true is a lie the transcript keeps. Reset on every pass so a
   // recovered corrective retry is not still wearing the earlier failure.
   retrievalFailed: Annotation<boolean>({ reducer: (_a, b) => b, default: () => false }),
+  // What retrieval gave up to answer at all (retrieval.ts Degradation), over
+  // every pass. An answer that came through a Voyage outage on BM25 alone looks
+  // like any other answer to the visitor; this is how chat_logs tells them apart.
+  degraded: Annotation<Degradation[]>({ reducer: (a, b) => a.concat(b), default: () => [] }),
 })
 
 // Terminal answer paths, distinct for analytics:

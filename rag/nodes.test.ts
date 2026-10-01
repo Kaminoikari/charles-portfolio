@@ -22,7 +22,8 @@ import {
   type Tiers,
 } from './llm.js'
 import { CONTACT, genericFallback, serviceUnavailable } from './triage.js'
-import { hybridRetrieve } from './retrieval.js'
+import { hybridRetrieve, type Degradation } from './retrieval.js'
+import { SupplierError, callSupplier } from './supplier.js'
 import { Document } from '@langchain/core/documents'
 
 // A tier that fails the way a quota-exhausted Gemini does.
@@ -765,11 +766,63 @@ test('the stall notice is appended in her voice, in every locale', async () => {
 test('retrieve: an unreachable store is reported as an outage, not as an empty corpus', async () => {
   const res = await nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
     hybridRetrieve: async () => {
-      throw new Error('qdrant unreachable')
+      throw new SupplierError('qdrant', 'fetch failed', true)
     },
   })
   assert.deepEqual(res.documents, [])
   assert.equal(res.retrievalFailed, true)
+})
+
+test('retrieve: a store that refused the connection is an outage, though fetch called it a TypeError', async () => {
+  // Measured: the Qdrant client and bare fetch both throw `TypeError: fetch
+  // failed` for a refused connection. The real supplier boundary is driven here,
+  // not a hand-built SupplierError, because the boundary is what turns one into
+  // the other.
+  const res = await nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+    hybridRetrieve: () =>
+      callSupplier('qdrant', async () => {
+        throw new TypeError('fetch failed')
+      }, { now: () => 0, sleep: async () => {} }),
+  })
+  assert.equal(res.retrievalFailed, true)
+})
+
+test('retrieve: an error that did not come from a supplier is not called an outage', async () => {
+  await assert.rejects(
+    nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+      hybridRetrieve: async () => {
+        throw new RangeError('our bug')
+      },
+    }),
+    RangeError,
+  )
+})
+
+test('retrieve: what retrieval gave up is handed to the state, once per kind', async () => {
+  const doc = new Document({ pageContent: 'x', metadata: { id: 'a' } })
+  const res = await nodes.retrieve({ question: 'q', language: 'en', queries: ['q'] } as never, {
+    hybridRetrieve: async (_q: string, _l: string, report?: (d: Degradation) => void) => {
+      report?.('dense-unavailable')
+      report?.('dense-unavailable')
+      report?.('rerank-unavailable')
+      return [doc]
+    },
+  })
+  assert.deepEqual(res.degraded, ['dense-unavailable', 'rerank-unavailable'])
+})
+
+test('retrieve: a fanned-out round reports what each sub-question gave up', async () => {
+  const doc = (id: string) => new Document({ pageContent: id, metadata: { id } })
+  const res = await nodes.retrieve(
+    { question: 'q', language: 'en', queries: ['q'], subQuestions: ['a', 'b'] } as never,
+    {
+      hybridRetrieve: async (q: string, _l: string, report?: (d: Degradation) => void) => {
+        if (q === 'b') report?.('rerank-unavailable')
+        return [doc(q)]
+      },
+    },
+  )
+  assert.deepEqual(res.degraded, ['rerank-unavailable'])
 })
 
 test('retrieve: a healthy retrieval clears the outage flag', async () => {
