@@ -4,7 +4,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { flatten } from './build-faq-cache.js'
+import { flatten, toPoint } from './build-faq-cache.js'
+import { citationsOf } from '../qdrant.js'
 import type { FaqEntry } from '../faq-cache.js'
 import type { GroundingChunk } from '../grounding.js'
 
@@ -38,4 +39,13 @@ test('a corpus edit that moves the citation re-upserts the point even though the
   const after = flatten([entry], [role('+45% data-driven decisions')]).find((r) => r.locale === 'en')!
   assert.deepEqual(after.sources, [])
   assert.notEqual(after.hash, before.hash)
+})
+
+test('the point written to Qdrant is one the serving path reads its citations back from', () => {
+  // Round trip: what ingest writes, through the guard faqLookup reads with.
+  const [row] = flatten([entry], [role('+40% data-driven decisions')]).filter((r) => r.locale === 'en')
+  const point = toPoint(row, [0.1, 0.2])
+  assert.deepEqual(citationsOf(point.payload), row.sources)
+  assert.equal(point.payload.faq_id, 'exp-nueip')
+  assert.equal(point.payload.answer, entry.answers.en)
 })

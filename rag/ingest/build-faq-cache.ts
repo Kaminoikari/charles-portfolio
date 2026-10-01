@@ -38,7 +38,7 @@ const UPSERT_PAGE = 64
 const LOCALES: Locale[] = ['en', 'zh-TW', 'ja']
 const EMBED_MODELS = [config.embedModel, String(config.embedDim), config.sparseModel]
 
-interface Row {
+export interface Row {
   chunkId: string // logical id, stable across runs — the reconcile key
   pointId: string // deterministic Qdrant point id (UUIDv5 of chunkId)
   text: string // the paraphrase to embed
@@ -88,6 +88,33 @@ export function flatten(entries: FaqEntry[], chunks: GroundingChunk[]): Row[] {
   return rows
 }
 
+export interface FaqPoint {
+  id: string
+  vector: { [DENSE]: number[]; [SPARSE]: { text: string; model: string } }
+  payload: Record<string, unknown>
+}
+
+// What is written to Qdrant for one row. Split out of main() so the payload the
+// serving path reads (qdrant.ts faqLookup, citationsOf) is checked by a test
+// rather than by the next ingest.
+export function toPoint(r: Row, dense: number[]): FaqPoint {
+  return {
+    id: r.pointId,
+    // BM25 runs server-side on the paraphrase text (Qdrant Cloud Inference),
+    // same as the document index.
+    vector: { [DENSE]: dense, [SPARSE]: { text: r.text, model: config.sparseModel } },
+    payload: {
+      chunk_id: r.chunkId,
+      chunk_hash: r.hash,
+      faq_id: r.faqId,
+      locale: r.locale,
+      question: r.text,
+      answer: r.answer,
+      sources: r.sources,
+    },
+  }
+}
+
 async function main() {
   const rows = flatten(faqEntries, await extractAll())
   console.log(
@@ -124,36 +151,15 @@ async function main() {
   }
 
   const build = plan.toBuild.map((id) => byId.get(id)).filter((r): r is Row => Boolean(r))
-  type Point = {
-    id: string
-    vector: { [DENSE]: number[]; [SPARSE]: { text: string; model: string } }
-    payload: Record<string, unknown>
-  }
   if (build.length === 0) {
     console.log('Nothing to embed — FAQ cache already current.')
   } else {
     console.log(`\nEmbedding ${build.length} new/changed paraphrase(s) with ${config.embedModel} (batch ${BATCH}) …`)
-    const points: Point[] = []
+    const points: FaqPoint[] = []
     for (let i = 0; i < build.length; i += BATCH) {
       const batch = build.slice(i, i + BATCH)
       const vectors = await embed(batch.map((r) => r.text), 'query')
-      batch.forEach((r, j) => {
-        points.push({
-          id: r.pointId,
-          // BM25 runs server-side on the paraphrase text (Qdrant Cloud Inference),
-          // same as the document index.
-          vector: { [DENSE]: vectors[j], [SPARSE]: { text: r.text, model: config.sparseModel } },
-          payload: {
-            chunk_id: r.chunkId,
-            chunk_hash: r.hash,
-            faq_id: r.faqId,
-            locale: r.locale,
-            question: r.text,
-            answer: r.answer,
-            sources: r.sources,
-          },
-        })
-      })
+      batch.forEach((r, j) => points.push(toPoint(r, vectors[j])))
       process.stdout.write(`\r  embedded ${Math.min(i + BATCH, build.length)}/${build.length}`)
     }
     console.log('')
