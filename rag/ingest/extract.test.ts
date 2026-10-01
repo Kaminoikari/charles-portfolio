@@ -117,23 +117,28 @@ test('two stints at one company fail loudly instead of overwriting each other', 
   assert.throws(() => experienceChunks([NEW_ROLE, again], 'en'), /duplicate experience/i)
 })
 
-// ── about: the AI table says what it is ───────────────────────────────────
-// Only chunk content is embedded and BM25-indexed; the title is not. The AI-table
-// rows carried their topic ("How I use AI") in the English title alone, so a
-// Japanese row read "Discovery: LLM を活用して…" with nothing saying it is how
-// Charles uses AI in his work. "Charles は仕事でどのように AI を活用していますか"
-// then sat on the edge: run 36875411341 retrieved an AI row and run 36875433215,
-// same code and question on the production index, retrieved none. Each row now
-// opens with the site's own section heading in its locale (src/i18n/strings,
-// about.sectionAi), the fix the skills chunk got for the same reason.
+// ── about: one chunk for the whole AI table ───────────────────────────────
+// "Charles は仕事でどのように AI を活用していますか" asks about the table as a
+// whole, and each row answers one narrow part of it. In Japanese none of the
+// four retrieval arms found any row (runs 36868407205, 36887255550); hybrid+rerank
+// reached one only when a row happened to enter its candidates, which is why the
+// experiment index passed the gate and the production index did not. The table is
+// now also indexed whole under the site's own section heading, as skills are.
 
-test('every AI-table chunk opens with the site\'s AI section heading, in its own locale', async () => {
+test('the AI table is also indexed whole, under the site\'s heading, in every locale', async () => {
   for (const locale of ['en', 'zh-TW', 'ja'] as const) {
     const heading = (await import(`../../src/i18n/strings/${locale}.ts`)).default.about.sectionAi as string
-    const rows = CHUNKS.filter((c) => c.locale === locale && c.id.startsWith('about:ai:'))
-    assert.ok(rows.length > 0, `no AI rows for ${locale}`)
-    for (const row of rows) assert.equal(row.content.split('\n')[0], heading, row.id)
+    const about = (await import(`../../src/data/aboutContent.${locale}.ts`)).aboutContent as AboutContentInput
+    const overview = CHUNKS.find((c) => c.id === `about:ai:overview:${locale}`)
+    assert.ok(overview, `no AI overview chunk for ${locale}`)
+    assert.equal(overview.content.split('\n')[0], heading, locale)
+    for (const row of about.aiTable) assert.ok(overview.content.includes(row.body), `${locale}: overview lacks ${row.id}`)
   }
+})
+
+test('an AI-table row cannot take the overview\'s id', () => {
+  const row = { id: 'overview', label: 'Overview', body: 'clash' }
+  assert.throws(() => aboutChunks({ whoIAm: [], philosophyBullets: [], aiTable: [row] }, 'en', 'How I use AI'), /duplicate/i)
 })
 
 // ── experience timeline ───────────────────────────────────────────────────

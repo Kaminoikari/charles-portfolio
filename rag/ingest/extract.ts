@@ -175,9 +175,12 @@ export interface AboutContentInput {
 // far under RAG_PRUNE_MAX) and in exchange an inserted paragraph never disturbs
 // the others. Give whoIAm real keys if it ever needs to be cited or eval-pinned.
 // `aiHeading` is the site's own heading for the AI table (src/i18n/strings,
-// about.sectionAi). Only content is embedded, so without it a row's topic lived
-// in the English title alone and a Japanese row never said it was about how
-// Charles uses AI.
+// about.sectionAi), and with it the table also gets one overview chunk holding
+// every row. Each row answers one narrow question; "how does he use AI across his
+// work" has no single row that answers it, and in Japanese none of the four
+// retrieval arms found any row for it (runs 36868407205, 36887255550): the rows
+// say 私, never Charles, and BM25 barely tokenises the rest. The skills table
+// is indexed whole (skills:all) for the same reason.
 export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?: string): ChunkRecord[] {
   const out: ChunkRecord[] = []
   const base = { parentId: null, sourceType: 'about' as const, projectId: null, locale }
@@ -197,8 +200,18 @@ export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?
   const rows = new Set<string>()
   about.aiTable.forEach((r) => {
     const key = uniqueKey(rows, r.id, 'about:ai', r.label)
-    out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${aiHeading ? `${aiHeading}\n` : ''}${r.label}: ${r.body}` })
+    out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${r.label}: ${r.body}` })
   })
+
+  if (aiHeading && about.aiTable.length > 0) {
+    uniqueKey(rows, 'overview', 'about:ai', aiHeading)
+    out.push({
+      ...base,
+      id: `about:ai:overview:${locale}`,
+      title: aiHeading,
+      content: [aiHeading, ...about.aiTable.map((r) => `${r.label}: ${r.body}`)].join('\n'),
+    })
+  }
 
   return out
 }
