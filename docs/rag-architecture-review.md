@@ -656,7 +656,7 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 
 **主題重疊的 entry**：三組各併成一則，保留 `who-is-charles`、`why-hire`、`who-is-mika`。entry 從 58 則變 53 則，paraphrase 從 845 句變 839 句，少掉的 6 句就是 TOEIC 題。合併後 `who-is-charles` 的 zh 有 21 句，超過 margin 規則讀取的 16 個鄰居，窗口測試當場轉紅，`faqCandidateK` 因此調到 32。
 
-校準跑了三次才拿到可用的數字。第一次（run 36818421587）作廢：scratch collection 沿用正式環境的刪除上限，拒刪 109 個舊點，量到的是新舊混雜的快取。現在 scratch 建置一律完整刪除，校準開始前也會比對 collection 與 `faqEntries`，對不上就直接失敗。第二次（run 36818795916）有 1 筆答非所問：ja「キャリアの選択」拿到一串職位清單，原因是合併時漏掉 `exp-history` 那句職涯主線，補回後第三次（run 36819029430）回到 0。
+校準跑了三次才拿到可用的數字。第一次（run 36818421587）作廢：scratch collection 沿用正式環境的刪除上限，拒刪 109 個舊點，量到的是新舊混雜的快取。現在 scratch 建置一律完整刪除，校準開始前也會比對 collection 與 `faqEntries`，對不上就直接失敗。第二次（run 36818795916）有 1 筆答非所問：ja「キャリアの選択」拿到一串職位清單，原因是合併時漏掉 `exp-history` 那句職涯主線，以及 `who-is-charles` 列的三條 USPACE 產品線，補回後第三次（run 36819029430）回到 0。
 
 | 0.8／0.08 | 合併前（run 36809386889） | 合併後（run 36819029430） |
 |---|---|---|

@@ -25,7 +25,7 @@ export const changelog: ChangelogEntry[] = [
     title: `The chatbot's cached replies now cite the site, and a Voyage outage no longer ends the answer`,
     tags: ['technical'],
     body: [
-      `An architecture review of the chatbot docked it five points: pre-written replies that cited nothing and were never compared with the site, one embedding provider whose outage ended every answer, a test set every configuration already aced, an eval that gated nothing, and hand-copied facts no test checked. I fixed all five.`,
+      `An architecture review of the chatbot listed six deductions, ranked by risk. I fixed the top five: pre-written replies that cited nothing and were never compared with the site, one embedding provider whose outage ended every answer, a test set every configuration already aced, an eval that gated nothing, and hand-copied facts no test checked.`,
       {
         kind: 'stats',
         items: [

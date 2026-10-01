@@ -40,7 +40,7 @@ export const changelog: ChangelogEntry[] = [
     title: `聊天機器人的快取回覆附上網站出處，Voyage 斷線時也照樣回答`,
     tags: ['technical'],
     body: [
-      `一份聊天機器人的架構評審扣了五分：快取回覆沒有出處、也從沒跟網站比對過；embedding 只靠一家供應商，它一斷線整個回答就停擺；golden set 每種設定都接近滿分；eval 沒有擋下任何東西；手抄的事實沒有測試檢查。這五項都已修好。`,
+      `一份聊天機器人的架構評審依風險排序列了六項扣分，這次修掉前五項：快取回覆沒有出處、也從沒跟網站比對過；embedding 只靠一家供應商，它一斷線整個回答就停擺；golden set 每種設定都接近滿分；eval 沒有擋下任何東西；手抄的事實沒有測試檢查。`,
       {
         kind: 'stats',
         items: [
