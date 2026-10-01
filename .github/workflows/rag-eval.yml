@@ -86,7 +86,7 @@ jobs:
           QDRANT_FAQ_COLLECTION: faq_cache_calibration
         run: |
           npm run rag:faq
-          npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json --judge
+          npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json --judge --verdicts faq-verdicts.json
           cat faq-calibration.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the calibration observations
@@ -97,6 +97,7 @@ jobs:
           path: |
             faq-calibration.md
             faq-observations.json
+            faq-verdicts.json
 
       - name: Run eval (retrieval arms + corrective / faithfulness)
         if: ${{ !inputs.faq_calibration }}

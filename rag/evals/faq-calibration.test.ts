@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { evaluate, recommend, sweep, confusionKey, type Observation } from './faq-calibration.js'
+import { evaluate, recommend, sweep, confusionKey, THRESHOLDS, MARGINS, type Observation } from './faq-calibration.js'
 
 const pt = (faq_id: string, score: number) => ({ score, payload: { faq_id, answer: `a:${faq_id}` } })
 
@@ -51,9 +51,10 @@ test('the recommendation is the setting with no wrong serves that serves the mos
   assert.ok(rec)
   assert.equal(rec.wrong, 0)
   assert.equal(rec.correct, 1)
-  // Ties go to the strictest setting that still serves as many.
-  assert.equal(rec.threshold, 0.85)
-  assert.equal(rec.margin, 0.08)
+  // Ties go to the strictest setting that still serves as many, which for this
+  // set (one clear hit at 0.92, 0.17 ahead) is the strictest in the grid.
+  assert.equal(rec.threshold, THRESHOLDS.at(-1))
+  assert.equal(rec.margin, MARGINS.at(-1))
 })
 
 test('no recommendation when every setting serves a wrong answer', () => {
@@ -79,4 +80,11 @@ test('with verdicts, the recommendation weighs harm, not every wrong serve', () 
   assert.equal(rec?.served, 2)
   assert.equal(rec?.harmful, 0)
   assert.equal(recommend(sweep([SET[0], near], false))?.served, 1)
+})
+
+test('a question the deterministic tier answers first is counted nowhere', () => {
+  const triaged = { ...obs('no-data-redirect', [pt('overall-summary', 0.9)]), triaged: true }
+  const o = evaluate([triaged], { threshold: 0.7, margin: 0 }, false)
+  assert.equal(o.served, 0)
+  assert.equal(o.wrong, 0)
 })

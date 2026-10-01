@@ -1,7 +1,7 @@
 // FAQ cache calibration: what each (threshold, margin) setting would serve, and
 // how often what it serves is the wrong entry.
 //
-//   npx tsx rag/evals/faq-calibration.ts [--out report.md] [--dump observations.json] [--judge]
+//   npx tsx rag/evals/faq-calibration.ts [--out report.md] [--dump observations.json] [--judge [--verdicts verdicts.json]]
 //
 // Needs QDRANT_* (and ANTHROPIC_API_KEY with --judge). No embedding call: every query is a paraphrase already in
 // the cache, re-asked with its own point excluded (leave-one-out), using the
@@ -23,6 +23,8 @@ import { pathToFileURL } from 'node:url'
 import { config } from '../config.js'
 import { qdrant, denseVerdict, lexicalVeto, DENSE, SPARSE, type FaqParams } from '../qdrant.js'
 import { judgeResponsive } from './judge.js'
+import { triage as classifyQuestion } from '../triage.js'
+import type { Locale } from '../language.js'
 
 // One leave-one-out query and what Qdrant returned for it. Stored as plain data
 // so the sweep below is pure and testable without a cluster.
@@ -30,6 +32,10 @@ export interface Observation {
   expected: string
   locale: string
   question: string
+  // The deterministic tier answers this question before the FAQ cache is asked
+  // (triage.ts: privacy, education, contact, greetings), so in production no
+  // FAQ setting can serve it. Left out of every count.
+  triaged?: boolean
   dense: { score: number; payload: Record<string, unknown> }[]
   lexicalIds: string[]
 }
@@ -70,6 +76,7 @@ export function evaluate(
 ): Outcome {
   const out: Outcome = { ...params, veto, served: 0, correct: 0, wrong: 0, harmful: responsive ? 0 : null, confusions: [] }
   for (const o of observations) {
+    if (o.triaged) continue
     const v = denseVerdict(o.dense, params)
     if (!v.ok) continue
     if (veto && lexicalVeto(v.topId, o.lexicalIds)) continue
@@ -86,8 +93,8 @@ export function evaluate(
   return out
 }
 
-export const THRESHOLDS = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85]
-export const MARGINS = [0, 0.01, 0.02, 0.03, 0.05, 0.08]
+export const THRESHOLDS = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
+export const MARGINS = [0, 0.01, 0.02, 0.03, 0.05, 0.08, 0.1, 0.12, 0.15]
 
 export function sweep(observations: Observation[], veto: boolean, responsive?: Map<string, boolean>): Outcome[] {
   return THRESHOLDS.flatMap((threshold) =>
@@ -115,11 +122,12 @@ export function recommend(outcomes: Outcome[]): Outcome | null {
 const pct = (n: number, d: number) => (d === 0 ? '—' : `${((n / d) * 100).toFixed(1)}%`)
 
 export function report(observations: Observation[], current: FaqParams, responsive?: Map<string, boolean>): string {
-  const answerable = observations.length
+  const answerable = observations.filter((o) => !o.triaged).length
   const lines: string[] = [
     '# FAQ cache calibration',
     '',
-    `${answerable} leave-one-out queries (every paraphrase in the cache, its own point excluded).`,
+    `${answerable} leave-one-out queries (every paraphrase in the cache, its own point excluded), ` +
+      `after ${observations.length - answerable} that the deterministic triage tier answers before the cache is asked.`,
     'A serve is **correct** when it names the entry the paraphrase belongs to, **wrong** otherwise.',
     responsive
       ? 'A wrong serve is **harmful** when a judge read the served answer as not answering the question (judge.ts judgeResponsive).'
@@ -212,6 +220,7 @@ async function collect(): Promise<Observation[]> {
         expected,
         locale,
         question,
+        triaged: classifyQuestion(question, locale as Locale).kind !== 'pass',
         dense: dense.points.map((x) => ({ score: x.score ?? 0, payload: x.payload ?? {} })),
         lexicalIds: lex.points.map((x) => idOf(x.payload)).filter((id): id is string => id !== undefined),
       })
@@ -249,6 +258,8 @@ async function main() {
     }
     await Promise.all(Array.from({ length: 4 }, worker))
   }
+  const verdicts = flag('--verdicts')
+  if (verdicts && responsive) writeFileSync(verdicts, JSON.stringify([...responsive.entries()]))
   const md = report(observations, { threshold: config.faqCacheThreshold, margin: config.faqCacheMargin }, responsive)
   console.log(md)
   if (out) writeFileSync(out, md + '\n')
