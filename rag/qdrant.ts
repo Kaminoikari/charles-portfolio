@@ -24,12 +24,14 @@ export const SPARSE = 'sparse'
 // stopword lists stop particles (在, は) but not the words a question is made
 // of, and those matched dozens of blog and changelog chunks: "Charles 在 NUEIP
 // 做什麼?" ranked the NUEIP chunk below five unrelated ones (run 36895598684).
-// The custom lists hold the tokens the tokenizer actually emits, found by
-// querying one at a time (run 36896446685): Traditional Chinese comes out one
-// character at a time (什麼 is 什 + 麼), and いました is い + まし + た. A
-// multi-character entry such as 什麼 never matches a token and stops nothing.
-// They are interrogatives and polite verb endings, not words picked from the
-// questions that failed. English stays in each list because the CJK content is
+// Querying one word at a time (run 36896446685) showed Traditional Chinese
+// coming out one character at a time (什麼 is 什 + 麼) and いました as
+// い + まし + た, so a multi-character entry such as 什麼 never matches a token
+// and stops nothing. The custom lists are interrogatives and polite verb
+// endings, not words picked from the questions that failed. Six entries were
+// probed and do stop (什 麼 做 まし でし くらい, run 36896974338); the other
+// Japanese entries were not, and one the tokenizer never emits is a no-op on
+// both sides. English stays in each list because the CJK content is
 // full of Latin words.
 // Qdrant tokenises the stored text and the query separately, so both must ask
 // for the same options: ingest (ingest/payload.ts) and retrieval (retrieval.ts)

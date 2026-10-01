@@ -545,11 +545,12 @@ export function todayISO(now: Date = new Date()): string {
 // citation number, which is why they are easy to forget — see
 // stripInvalidCitations for the other way that bites.
 //
-// Two readers need this exact list and used to derive it separately: the link
-// filter at the end of generate, and the eval's faithfulness judge, which was
-// given the chunks alone. A judge shown less than the generator was shown
-// reports invention wherever the difference is, and on 2026-09-17 the difference
-// was every proper noun and every metric that lives in the portfolio map.
+// The link filter at the end of generate and the eval's faithfulness judge both
+// read this list through answerContext below, which adds the contact channels.
+// They used to derive it separately, and the judge was given the chunks alone.
+// A judge shown less than the generator was shown reports invention wherever
+// the difference is, and on 2026-09-17 the difference was every proper noun and
+// every metric that lives in the portfolio map.
 export function evidenceBlock(graded: Document[], query: string): string {
   const context = graded
     .map(
