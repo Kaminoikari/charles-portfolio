@@ -97,11 +97,11 @@ test('the numerals quoted in comments are measured or declared', () => {
   assert.deepEqual(
     Object.fromEntries(measured),
     {
-      'cached answers': 53,
-      'answer/locale pairs': 159,
+      'cached answers': 50,
+      'answer/locale pairs': 150,
       'her recorded lines per locale': 25,
       'chat.* keys that are not hers': 43,
-      'ja openers that are nothing but a voice line': 51,
+      'ja openers that are nothing but a voice line': 48,
       "chars in philosophy's English lead-in": 33,
     },
     'a comment quotes one of these; re-measure and update both',
@@ -109,7 +109,7 @@ test('the numerals quoted in comments are measured or declared', () => {
 
   // Owned by the counts test at the bottom of faq-audit.test.ts, which measures
   // each one and fails on drift.
-  const assertedInFaqAudit = [52, 30, 76, 40, 35, 2, 17]
+  const assertedInFaqAudit = [47, 30, 76, 40, 35, 2, 15]
 
   // Numbers this data cannot move. Each one is here because it is a constant of
   // something else, not a count of her answers.
