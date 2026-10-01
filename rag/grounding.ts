@@ -14,10 +14,11 @@
 // "since August 2026". Prose claims have no verbatim counterpart to compare
 // against and are out of scope.
 //
-// Known weakness, stated so nobody mistakes the check for more than it is: a
+// Known weaknesses, stated so nobody mistakes the check for more than it is: a
 // bare two-digit number can be matched by an unrelated chunk that happens to
-// contain it. Facts that carry a unit (%, x, +, M, K) are matched with the unit,
-// which is where the claims that matter live.
+// contain it, and a single digit is not checked at all ("3 tiers", "(1)" would
+// match nearly every chunk). Facts that carry a unit (%, x, +, M, K) are matched
+// with the unit, which is where the claims that matter live.
 
 import { sourceUrl } from './source-url.js'
 

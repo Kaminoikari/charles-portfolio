@@ -5,6 +5,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { triage, personalRedirect, genericFallback, serviceUnavailable, CONTACT } from './triage.js'
+import { socialLinks, contactEmail } from '../src/data/social.ts'
+import { platformLinks } from '../src/data/blog.en.ts'
 
 test('personal/privacy questions are redirected, not passed to RAG', () => {
   for (const q of [
@@ -210,4 +212,14 @@ test('the outage reply is first-person, carries no emoji, and is not the gap rep
     // The whole point of the node: it must not claim the portfolio lacks the answer.
     assert.notEqual(reply, genericFallback(locale), `outage reply equals the gap reply in ${locale}`)
   }
+})
+
+test('the contact block quotes the links and the address the site footer renders', () => {
+  // CONTACT is derived from src/data/social.ts; a hand edit here would send a
+  // visitor somewhere the footer does not.
+  for (const platform of ['linkedin', 'github', 'threads', 'portaly'] as const) {
+    assert.equal(CONTACT[platform], socialLinks.find((l) => l.platform === platform)?.url, platform)
+  }
+  assert.equal(CONTACT.email, contactEmail)
+  assert.equal(CONTACT.substack, platformLinks.substack.replace(/\/$/, ''))
 })

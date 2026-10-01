@@ -79,6 +79,21 @@ test('an employed_by edge renders the title and dates src/data records, in the r
   }
 })
 
+test('an employed_by note names no job title of its own', () => {
+  // The title is rendered from the record; a note that carries one again is the
+  // hand copy this edge exists to remove, and it would sit beside the real title
+  // in the same line, contradicting it once either changes.
+  const titles = [...new Set(experience.map((r) => r.title)), 'PM']
+  const carrying = relations
+    .filter((r) => r.rel === 'employed_by')
+    .filter((r) => {
+      const note = (r as { note?: string }).note ?? ''
+      return titles.some((t) => new RegExp(`\\b${t}\\b`).test(note))
+    })
+    .map((r) => `${r.to}: ${(r as { note?: string }).note}`)
+  assert.deepEqual(carrying, [])
+})
+
 test('the role lookup refuses a company that matches no role, or more than one', () => {
   // The live data matches each company exactly once, so the live test above
   // cannot tell a lookup that checks from one that takes the first match.
