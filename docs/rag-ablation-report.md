@@ -21,8 +21,8 @@ lift of each is visible.
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-10-01**. The four retrieval arms are from run 36809275348
   (commit 90c6f48; nothing on the retrieval path changed between it and the
-  calibrated FAQ settings). The `corrective` row is from run 36811880858
-  (commit b2f8f11), a corrective-only re-run with the FAQ cache at the calibrated 0.8 / 0.08. Both
+  calibrated FAQ settings). The `corrective` row is from run 36857502362
+  (commit 15424ba), a corrective-only re-run after the two FAQ merges, with the cache at 0.8 / 0.08. Both
   runs query the live index, which is built from main.
 
 ## Current results
@@ -33,7 +33,7 @@ lift of each is visible.
 | dense-only | 93.8% | 0.734 | — | — | 0 of 144 |
 | hybrid | 88.9% | 0.645 | — | — | 0 of 144 |
 | hybrid+rerank | 92.4% | 0.842 | — | — | 0 of 144 |
-| corrective | 91.5% | 0.823 | 97.2% | 93.5% | 21 of 144 |
+| corrective | 92.2% | 0.830 | 97.2% | 91.0% | 22 of 144 |
 
 Recall by category (n = query runs):
 
@@ -72,35 +72,46 @@ hybrid+rerank's 92.4% equals the committed per-question baseline
 (`rag/evals/baseline.hybrid-rerank.json`, from run 36809268615), which is the
 post-ingest gate's reference.
 
-**corrective: 97.2% correct (4 of 144 wrong), 93.5% faithful (8 of 123 judged
-runs ungrounded).** The 21 runs answered without retrieval are FAQ hits and
-canned replies, which the faithfulness judge skips. At the old 0.7 / 0.02 the
-same arm answered 35 runs without retrieval (run 36809275348, commit 90c6f48).
+**corrective: 97.2% correct (4 of 144 wrong), 91.0% faithful (11 of 122 judged
+runs ungrounded).** Run 36857502362 on commit 15424ba, after the two FAQ
+merges. The 22 runs answered without retrieval are FAQ hits and canned replies,
+which the faithfulness judge skips. The previous corrective run (36811880858,
+before the merges) scored 97.2% and 93.5% (8 of 123), with 21 such runs; at the
+old 0.7 / 0.02 the arm answered 35 runs without retrieval (run 36809275348).
 
 The four wrong answers:
 
 - `first-role`, all three locales: the temporal retrieval gap above. The
   answer never names FLUX or 2019 because retrieval never returned them.
-- `uspace-role` (ja): the rule was wrong. It said "a Product Manager at
-  USPACE"; the answer said Head of Product, which is what the site records.
-  Fixed in a113bed, with a test that holds every "<title> at <employer>" in a
-  rule to `src/data/experience`. Not re-measured since.
+- `uspace-role` (en): the judge found the rule's claim not stated. The rule
+  asks for Head of Product plus the app-owner start with a 15-person team; the
+  answer text is not in the log, so which half was missing is not known.
 
-Of the eight ungrounded answers, two have a known cause outside generation,
-three share one, and three (`jobops-source` en, `compare-path-plutus-stack` en,
-`shazam-author` zh-TW) are generation errors not investigated here:
+Of the eleven ungrounded answers, the judge's own reasoning contradicts its
+verdict in five, and the other six include five generation errors:
 
-- `uspace-role` (zh-TW) states the August 2026 promotion, and the live index
-  did not contain it: `src/data/experience` gained the date in b2f8f11, after
-  the index was built. It should clear once that commit is ingested; not yet
-  verified.
-- `cs153-scale` (zh-TW) is the judge quoting the same words in the answer and
-  the context and calling them unsupported, as in the 2026-09-16 run.
-- `ai-spec` (zh-TW, ja) and `playbook-frameworks` (ja) say Product Playbook
-  has 22 frameworks. A changelog entry says so about the version it shipped;
-  the project page says 16 composable lenses now. Out of scope here: the
-  generator chose a dated changelog figure over the current page, a recency
-  problem in generation.
+- Judge misreads (5): `before-pxpay` (zh-TW) says the figures "are equivalent,
+  so this is actually grounded"; `plutus-frontend` (zh-TW) quotes the context
+  "Vercel (frontend)" and still rejects "the frontend is on Vercel";
+  `concurrent-roles` (en) calls "Head of Product since August 2026" a future
+  date, because the judge is not given today's date; `cs153-scale` (zh-TW)
+  quotes identical words in answer and context, as in the 2026-09-16 run;
+  `shazam-author` (ja) rejects 二十年以上前 against a context saying 二十多年前.
+- Mixed (1): `plutus-frontend` (en) repeats the Vercel misread, and also says
+  the same codebase ships to web, iOS and Android, which the context does not
+  state.
+- Generation errors (5): `ai-spec` (en) and `pattern-reflection` (en) reverse
+  the direction of Product Playbook's 59.1% to 100% and 100% to 22.2%;
+  `playbook-frameworks` (zh-TW) presents 22 frameworks as reduced to 16 lenses,
+  the dated changelog figure noted in the previous run; `pattern-human-loop`
+  (zh-TW) credits Product Playbook with an appeal feature the context does not
+  describe; `domains` (ja) reads "+NT$50M annual revenue" as a total.
+
+The previous run's `uspace-role` (zh-TW) failure, the August 2026 promotion
+missing from the index, did not recur: b2f8f11 has been ingested. Three more
+runs were judged ungrounded than last time, and at least five of the eleven
+are misreads by the judge's own account, so the difference between the runs
+is not evidence that generation got worse.
 
 ## Previous run (2026-09-16, 41-question set)
 

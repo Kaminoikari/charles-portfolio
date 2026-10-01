@@ -626,7 +626,7 @@ Qdrant 本身仍是儲存的唯一來源，斷線時回誠實的 outage 訊息�
 
 corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；FAQ 命中帶引用之後又會被算成檢索結果。現在檢索沒跑過的 run 不計入 recall 與 MRR，改列在獨立欄位。
 
-完整的 corrective arm 在校準後的 0.8／0.08 下（run 36811880858）：correctness 97.2%（144 次錯 4 次），faithfulness 93.5%。錯的 4 次裡 3 次是 `first-role`，就是上面 temporal 的檢索缺口；另 1 次是 golden 規則本身寫錯：`uspace-role` 要求答案說「a Product Manager at USPACE」，網站記的是 Head of Product，於是說對的答案被判錯。golden 規則同樣是手寫、被當成事實來判的面，現在有測試把規則裡每個「職稱 at 雇主」綁到 `src/data/experience`（a113bed）。逐項分析在 `docs/rag-ablation-report.md`。這次量測在 FAQ 合併之前，合併後沒有重跑 corrective arm。
+完整的 corrective arm 在校準後的 0.8／0.08 下（run 36811880858）：correctness 97.2%（144 次錯 4 次），faithfulness 93.5%。錯的 4 次裡 3 次是 `first-role`，就是上面 temporal 的檢索缺口；另 1 次是 golden 規則本身寫錯：`uspace-role` 要求答案說「a Product Manager at USPACE」，網站記的是 Head of Product，於是說對的答案被判錯。golden 規則同樣是手寫、被當成事實來判的面，現在有測試把規則裡每個「職稱 at 雇主」綁到 `src/data/experience`（a113bed）。逐項分析在 `docs/rag-ablation-report.md`。以上是 FAQ 合併前的量測；兩輪合併後重跑（run 36857502362，15424ba），correctness 仍是 97.2%（144 次錯 4 次，`first-role` 三語加 `uspace-role` en），faithfulness 91.0%（122 次判了 11 次沒依據）。11 次裡有 5 次 judge 自己的理由與判決矛盾，例如寫「兩者等價，其實有依據」卻仍判沒依據，或把「2026 年 8 月起」當成未來日期；另有 5 次是生成錯誤，例如把 Product Playbook 的 59.1% 到 100% 講反。上一輪的 `uspace-role` zh-TW 沒有再出現，升遷日期已經入庫。
 
 ## §4.4 守門：ingest 前與 ingest 後各一道
 
