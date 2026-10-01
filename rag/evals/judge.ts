@@ -13,9 +13,9 @@ import { todayISO } from '../nodes.js'
 // A boolean verdict and a reason. A list of unsupported claims was tried
 // (run 36868407205, cdf7b6f): asked to enumerate, the judge listed wording it
 // disliked ("a series of articles", "flagship"), ungrounded verdicts went from 11
-// to 29 of 122, and its outright misreads did not fall. The boolean stays; the
-// fixes that answered the 36857502362 misreads are the date and the equivalence
-// sentence in the prompt below.
+// to 29 of 122, and its outright misreads did not fall. The boolean stays. The
+// date and the equivalence sentence in the prompt below were aimed at the
+// 36857502362 misreads; run 36871169321 showed no measurable effect from them.
 const faithfulnessSchema = z.object({
   grounded: z
     .boolean()

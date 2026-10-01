@@ -188,6 +188,10 @@ test('itemRecall: retrieving a chunk that answers the whole item is full recall'
   assert.equal(itemRecall(['t:en'], { relevantIds: ['a:'] }), 0)
 })
 
+test('itemRecall: an empty answeredBy names no chunk, so it credits nothing', () => {
+  assert.equal(itemRecall(['x:en'], { relevantIds: ['a:'], answeredBy: [] }), 0)
+})
+
 test('itemReciprocalRank: an answering chunk counts as relevant for rank', () => {
   const item = { relevantIds: ['a:'], answeredBy: ['t:'] }
   assert.equal(itemReciprocalRank(['x:en', 't:en', 'a:en'], item), 0.5)

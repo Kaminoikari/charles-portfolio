@@ -94,15 +94,16 @@ disliked, and was reverted.
 
 Of the eleven ungrounded answers in run 36871169321:
 
-- Judge misreads by its own reasoning (5): `uspace-role` (zh-TW) calls August
+- Judge misreads (6), where the context states the claim or the judge's own
+  reason contradicts its verdict: `uspace-role` (zh-TW) calls August
   2026 a future date while quoting today as October 1, 2026; `plutus-frontend`
   (zh-TW) rejects "the frontend is on Vercel" in a reason that says the context
   puts the frontend on Vercel; `before-pxpay` (zh-TW) says "the value is
   correct"; `first-role` (ja) says the revenue figure "is correct" and then
-  calls "+20% market share" ambiguous; `cs153-scale` (zh-TW) is the same Liam
-  Fedis sentence as in earlier runs.
-- Generation error (1): `uber-blog` (ja) describes the role as a high-level
-  customer-service analyst, which the context does not say.
+  calls "+20% market share" ambiguous; `cs153-scale` (zh-TW) rejects "ChatGPT
+  的共同創造者 Liam Fedis", which the blog body states word for word;
+  `uber-blog` (ja) rejects "a high-level customer-service analyst", a
+  translation of the blog's 「高級版的客服營運分析師」.
 - Not decidable from the log (5): `jobops-source` (en), `playbook-frameworks`
   (en, ja), `plutus-frontend` (ja), `shazam-author` (ja). The reasons describe a
   version or attribution mismatch without quoting enough of the answer to tell.

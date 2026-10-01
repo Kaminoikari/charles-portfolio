@@ -28,7 +28,9 @@ type RecallItem = { relevantIds: string[]; needsEvery?: boolean; answeredBy?: st
 // A chunk named in answeredBy holds the whole answer on its own (golden.ts), so
 // retrieving it is full recall whatever else came back.
 export function itemRecall(retrievedIds: string[], item: RecallItem): number {
-  if (item.answeredBy && recallAtK(retrievedIds, item.answeredBy) === 1) return 1
+  // recallAtK scores an empty list 1 (out-of-corpus), so an empty answeredBy
+  // would credit every run; it names no chunk and is skipped.
+  if (item.answeredBy?.length && recallAtK(retrievedIds, item.answeredBy) === 1) return 1
   return item.needsEvery ? recallOfEvery(retrievedIds, item.relevantIds) : recallAtK(retrievedIds, item.relevantIds)
 }
 
