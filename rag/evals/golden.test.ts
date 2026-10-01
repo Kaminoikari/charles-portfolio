@@ -40,6 +40,17 @@ test('every relevantIds prefix matches a real chunk in every locale', () => {
   assert.deepEqual(dead, [], `golden prefixes matching no chunk:\n  ${dead.join('\n  ')}`)
 })
 
+test('every answeredBy prefix matches a real chunk in every locale', () => {
+  const dead = GOLDEN.flatMap((item) =>
+    (item.answeredBy ?? []).flatMap((prefix) =>
+      LOCALES.filter((loc) => !IDS_BY_LOCALE.get(loc)!.some((id) => id.startsWith(prefix))).map(
+        (loc) => `${item.id}: "${prefix}" missing in ${loc}`,
+      ),
+    ),
+  )
+  assert.deepEqual(dead, [], dead.join('\n'))
+})
+
 test('blog prefixes are pinned with a trailing colon', () => {
   // One slug can prefix another (`blog:ai` also matches `blog:ai-286`), so an
   // unpinned blog prefix credits the wrong article as a hit.
@@ -83,6 +94,21 @@ const relevantText = (item: { relevantIds: string[] }, locale: string) =>
     .map(([, content]) => content)
     .join(' ')
     .toLowerCase()
+
+// answeredBy says one chunk is enough on its own, and recall scores it as full
+// evidence. That is only true if the chunk can supply every token the answer is
+// held to, in every locale; checked chunk by chunk, so one answering chunk
+// cannot borrow a token from another.
+test('every answeredBy chunk alone carries every mustInclude token, in every locale', () => {
+  const short = GOLDEN.flatMap((item) =>
+    (item.answeredBy ?? []).flatMap((prefix) =>
+      tokensMissingFromSource(item, LOCALES, (loc) => relevantText({ relevantIds: [prefix] }, loc)).map(
+        (miss) => `${prefix} ${miss}`,
+      ),
+    ),
+  )
+  assert.deepEqual(short, [], short.join('\n'))
+})
 
 test('every mustInclude token exists in the source the answer is built from, in every locale', () => {
   // A mustInclude the corpus cannot supply in a locale is not a strict test, it

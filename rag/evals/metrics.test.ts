@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  itemReciprocalRank,
   recallOfEvery,
   itemRecall,
   recallAtK,
@@ -172,4 +173,24 @@ test('recallOfEvery: the share of the needed chunks retrieved', () => {
   // An item that needs both is scored by share; one that does not, by any hit.
   assert.equal(itemRecall(['a:en'], { relevantIds: ['a:', 'b:'], needsEvery: true }), 0.5)
   assert.equal(itemRecall(['a:en'], { relevantIds: ['a:', 'b:'] }), 1)
+})
+
+// A chunk that alone holds the whole answer (golden.ts answeredBy). The timeline
+// chunk names both current roles, so a run that retrieved it has the evidence
+// for `concurrent-roles` even when it pushed one role chunk out of the top k.
+// Run 36867137930 scored exactly that run 0, which the post-ingest gate would
+// have read as a regression.
+test('itemRecall: retrieving a chunk that answers the whole item is full recall', () => {
+  const item = { relevantIds: ['a:', 'b:'], needsEvery: true, answeredBy: ['t:'] }
+  assert.equal(itemRecall(['t:en'], item), 1)
+  assert.equal(itemRecall(['a:en'], item), 0.5)
+  assert.equal(itemRecall(['x:en'], item), 0)
+  assert.equal(itemRecall(['t:en'], { relevantIds: ['a:'] }), 0)
+})
+
+test('itemReciprocalRank: an answering chunk counts as relevant for rank', () => {
+  const item = { relevantIds: ['a:'], answeredBy: ['t:'] }
+  assert.equal(itemReciprocalRank(['x:en', 't:en', 'a:en'], item), 0.5)
+  assert.equal(itemReciprocalRank(['x:en', 'y:en', 'a:en'], item), 1 / 3)
+  assert.equal(itemReciprocalRank(['x:en', 't:en'], { relevantIds: ['a:'] }), 0)
 })

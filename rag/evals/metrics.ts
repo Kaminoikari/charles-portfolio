@@ -23,7 +23,12 @@ export function recallOfEvery(retrievedIds: string[], relevantPrefixes: string[]
   return found / relevantPrefixes.length
 }
 
-export function itemRecall(retrievedIds: string[], item: { relevantIds: string[]; needsEvery?: boolean }): number {
+type RecallItem = { relevantIds: string[]; needsEvery?: boolean; answeredBy?: string[] }
+
+// A chunk named in answeredBy holds the whole answer on its own (golden.ts), so
+// retrieving it is full recall whatever else came back.
+export function itemRecall(retrievedIds: string[], item: RecallItem): number {
+  if (item.answeredBy && recallAtK(retrievedIds, item.answeredBy) === 1) return 1
   return item.needsEvery ? recallOfEvery(retrievedIds, item.relevantIds) : recallAtK(retrievedIds, item.relevantIds)
 }
 
@@ -35,6 +40,11 @@ export function reciprocalRank(retrievedIds: string[], relevantPrefixes: string[
     if (relevantPrefixes.some((p) => retrievedIds[i].startsWith(p))) return 1 / (i + 1)
   }
   return 0
+}
+
+// Rank of the first chunk that is relevant OR answers the item outright.
+export function itemReciprocalRank(retrievedIds: string[], item: RecallItem): number {
+  return reciprocalRank(retrievedIds, [...item.relevantIds, ...(item.answeredBy ?? [])])
 }
 
 // Deterministic correctness check from the golden rules:

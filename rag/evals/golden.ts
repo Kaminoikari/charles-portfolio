@@ -60,6 +60,11 @@ export interface GoldenItem {
   // the share of relevantIds retrieved (metrics.ts recallOfEvery). A comparison
   // answered from one side has half its evidence, and "any hit" scores it 1.
   needsEvery?: boolean
+  // Chunk-id prefixes of a chunk that holds the WHOLE answer by itself, such as
+  // the experience timeline for a question about the order of roles. Retrieving
+  // one scores full recall even when it displaced a relevantIds chunk; a test in
+  // golden.test.ts holds each one to carrying every mustInclude token.
+  answeredBy?: string[]
 }
 
 // Which mustInclude tokens the source cannot supply, per locale. Pure, and
@@ -471,6 +476,7 @@ export const GOLDEN: GoldenItem[] = [
     },
     relevantIds: ['experience:flux-technology-inc:', 'experience:pxpay-plus-co-ltd:'],
     needsEvery: true,
+    answeredBy: ['experience-timeline:'],
     mustInclude: ['flux'],
     mustState: 'Before PXPay Plus, Charles was Operations Manager at FLUX.',
   },
@@ -484,6 +490,7 @@ export const GOLDEN: GoldenItem[] = [
     },
     relevantIds: ['experience:uspace-tech-co-ltd:', 'experience:xchange-school:'],
     needsEvery: true,
+    answeredBy: ['experience-timeline:'],
     mustInclude: ['uspace', 'xchange'],
     mustState: 'Charles currently works at USPACE and is also a mentor at XChange School.',
   },
@@ -507,9 +514,8 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 網站上最早的一份工作是什麼?',
       ja: 'Charles のサイトに載っている一番古い職歴は何ですか?',
     },
-    // Either chunk states the answer: the role itself, or the timeline that
-    // names it as the earliest (extract.ts timelineChunk). Any one is a hit.
-    relevantIds: ['experience:flux-technology-inc:', 'experience-timeline:'],
+    relevantIds: ['experience:flux-technology-inc:'],
+    answeredBy: ['experience-timeline:'],
     mustInclude: ['flux', '2019'],
   },
 

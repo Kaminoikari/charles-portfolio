@@ -25,7 +25,7 @@ import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
 import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
 import {
   itemRecall,
-  reciprocalRank,
+  itemReciprocalRank,
   correctnessMiss,
   scoreCorrectness,
   mean,
@@ -153,13 +153,22 @@ export function aggregate(items: ItemResult[]): Aggregate {
 // A run that retrieved through a supplier outage is flagged: the corrective arm
 // runs the production graph, which ranks by BM25 alone while Voyage is down, and
 // a mean over such runs measures the fallback without saying so.
+// One scorer for every arm, so the retrieval-only arms (and the post-ingest gate
+// that runs one) cannot drift from the corrective arm in what counts as a hit.
+export function idScores(
+  ids: string[],
+  item: Pick<GoldenItem, 'relevantIds' | 'needsEvery' | 'answeredBy'>,
+): { recall: number; mrr: number } {
+  return { recall: itemRecall(ids, item), mrr: itemReciprocalRank(ids, item) }
+}
+
 export function retrievalScores(
   final: { sources?: { id: string }[]; documents?: unknown[]; degraded?: unknown[] },
-  item: Pick<GoldenItem, 'relevantIds' | 'needsEvery'>,
+  item: Pick<GoldenItem, 'relevantIds' | 'needsEvery' | 'answeredBy'>,
 ): { recall?: number; mrr?: number; degraded?: true } {
   if (!Array.isArray(final.documents)) return {}
   const ids = (final.sources ?? []).map((s) => s.id)
-  const scores = { recall: itemRecall(ids, item), mrr: reciprocalRank(ids, item.relevantIds) }
+  const scores = idScores(ids, item)
   return (final.degraded ?? []).length > 0 ? { ...scores, degraded: true } : scores
 }
 
@@ -217,8 +226,8 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; it
         // correctness/faithfulness are not applicable (left out of their means).
         const docs = await retrieveWith(question, locale, arm.retrieval!)
         const ids = docs.map((d) => d.metadata.id as string)
-        const r = itemRecall(ids, item)
-        items.push({ key: `${item.id}/${locale}`, category: item.category, recall: r, mrr: reciprocalRank(ids, relevant) })
+        const { recall: r, mrr } = idScores(ids, item)
+        items.push({ key: `${item.id}/${locale}`, category: item.category, recall: r, mrr })
         // Surface misses so a high aggregate can't hide a specific failing item
         // (e.g. the blog body-chunk questions we just added).
         if (r < 1) console.log(`    ✗ miss [${arm.name}/${locale}] ${item.id} — want ${relevant.join(',')}, got ${ids.slice(0, 6).join(',')}`)

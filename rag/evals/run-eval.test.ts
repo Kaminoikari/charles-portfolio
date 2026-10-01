@@ -16,6 +16,7 @@ import {
   aggregate,
   scoreFaithfulness,
   retrievalScores,
+  idScores,
   toBaseline,
   baselineGate,
   parseBaseline,
@@ -289,4 +290,14 @@ test('the committed baseline is for the served arm and names only questions that
 test('parseBaseline: an empty baseline is refused, since it would let every regression through', () => {
   assert.throws(() => parseBaseline({ arm: 'hybrid+rerank', recall: {} }), /empty/)
   assert.throws(() => parseBaseline({ arm: 'hybrid+rerank', recall: [] }), /not \{ arm/)
+})
+
+// The timeline chunk names the order of roles outright (golden.ts answeredBy).
+// Both the corrective arm and the retrieval-only arms score through idScores,
+// so this holds the scorer the post-ingest gate uses as well.
+test('retrievalScores: a run that retrieved the answering chunk has full recall and rank', () => {
+  const item = { relevantIds: ['experience:uspace:', 'experience:xchange:'], needsEvery: true, answeredBy: ['experience-timeline:'] }
+  const scores = retrievalScores({ documents: [], sources: [{ id: 'experience-timeline:zh-TW' }, { id: 'experience:uspace:zh-TW' }] }, item)
+  assert.deepEqual(scores, { recall: 1, mrr: 1 })
+  assert.deepEqual(idScores(['x:en', 'experience-timeline:en'], item), { recall: 1, mrr: 0.5 })
 })
