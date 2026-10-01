@@ -53,6 +53,11 @@ export const config = {
   geminiModel: process.env.RAG_GEMINI_MODEL ?? 'gemini-2.5-flash',
   modelFast: process.env.RAG_MODEL_FAST ?? 'claude-haiku-4-5-20251001',
   modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-sonnet-4-6',
+  // The eval's judges (faithfulness, and whether an answer states a golden
+  // claim). Never on a visitor's path. Haiku misread long trilingual contexts:
+  // in run 36889773317 most of its 14 ungrounded verdicts quoted the supporting
+  // line in their own reason.
+  modelJudge: process.env.RAG_MODEL_JUDGE ?? 'claude-sonnet-5-5',
   embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',
   rerankModel: process.env.RAG_RERANK_MODEL ?? 'rerank-2.5',
   embedDim: int('RAG_EMBED_DIM', 1024),

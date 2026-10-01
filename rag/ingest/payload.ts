@@ -7,12 +7,13 @@
 // silently when a new field is added to one end only.
 
 import { config } from '../config.js'
-import { DENSE, SPARSE, toPointId } from '../qdrant.js'
+import { DENSE, SPARSE, chunkSparse, chunkSparseSpec, toPointId, type SparseDoc } from '../qdrant.js'
 import type { ChunkRecord } from './extract.js'
+import { chunkHash } from './reconcile.js'
 
 export type Point = {
   id: string
-  vector: { [DENSE]: number[]; [SPARSE]: { text: string; model: string } }
+  vector: { [DENSE]: number[]; [SPARSE]: SparseDoc }
   payload: Record<string, unknown>
 }
 
@@ -31,6 +32,18 @@ export function hashPayload(r: ChunkRecord): Record<string, unknown> {
   }
 }
 
+// Model identifiers folded into a chunk's hash, so a model, dimension or BM25
+// option change re-embeds the chunks it touches (see reconcile.ts).
+export function hashModels(locale: string): string[] {
+  return [config.embedModel, String(config.embedDim), chunkSparseSpec(locale)]
+}
+
+// Hash of the NON-contextual state — the fingerprint a chunk gets when it is
+// stored raw (never contextualised, or context generation failed this run).
+export function rawHash(r: ChunkRecord): string {
+  return chunkHash({ content: r.content, contextSource: '', models: hashModels(r.locale), payload: hashPayload(r) })
+}
+
 export function toPoint(
   r: ChunkRecord,
   vector: number[],
@@ -44,7 +57,7 @@ export function toPoint(
       [DENSE]: vector,
       // Sparse (BM25) sees the SAME context-prefixed text as the dense embedding
       // — Anthropic's "contextual BM25" half of the technique.
-      [SPARSE]: { text: embedText, model: config.sparseModel },
+      [SPARSE]: chunkSparse(embedText, r.locale),
     },
     payload: {
       chunk_id: r.id,

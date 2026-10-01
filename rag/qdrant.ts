@@ -16,6 +16,38 @@ import { callSupplier } from './supplier.js'
 export const DENSE = 'dense'
 export const SPARSE = 'sparse'
 
+// BM25 options for the doc_chunks sparse vector, by locale. The default `word`
+// tokenizer splits on spaces and punctuation, so a Chinese or Japanese sentence
+// becomes a few long tokens no question repeats, and BM25 could only match the
+// Latin words in it ("Charles", "AI"). The multilingual tokenizer segments CJK.
+// Qdrant tokenises the stored text and the query separately, so both must ask
+// for the same options: ingest (ingest/payload.ts) and retrieval (retrieval.ts)
+// both build the sparse document here, and payload.ts folds the spec into each
+// chunk's hash so a change re-ingests that locale. The FAQ cache is a separate
+// collection that keeps the default on both of its sides.
+const CHUNK_SPARSE_OPTIONS: Record<string, Record<string, unknown>> = {
+  'zh-TW': { tokenizer: 'multilingual' },
+  ja: { tokenizer: 'multilingual' },
+}
+
+export interface SparseDoc {
+  text: string
+  model: string
+  options?: Record<string, unknown>
+}
+
+export function chunkSparse(text: string, locale: string): SparseDoc {
+  const options = CHUNK_SPARSE_OPTIONS[locale]
+  return options ? { text, model: config.sparseModel, options } : { text, model: config.sparseModel }
+}
+
+// What the hash records about the sparse vector. English keeps the bare model
+// name it always had, so its chunks are not re-embedded.
+export function chunkSparseSpec(locale: string): string {
+  const options = CHUNK_SPARSE_OPTIONS[locale]
+  return options ? `${config.sparseModel}:${JSON.stringify(options)}` : config.sparseModel
+}
+
 export function qdrant(): QdrantClient {
   return new QdrantClient({
     url: config.qdrantUrl,

@@ -172,11 +172,11 @@ export function retrievalScores(
   return (final.degraded ?? []).length > 0 ? { ...scores, degraded: true } : scores
 }
 
-async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; items: ItemResult[] }> {
+async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN): Promise<{ agg: Aggregate; items: ItemResult[] }> {
   const items: ItemResult[] = []
 
   for (const locale of locales) {
-    for (const item of GOLDEN) {
+    for (const item of golden) {
       const question = item.question[locale]
       // relevantIds are locale-agnostic prefixes; recall/MRR do prefix matching
       // against the per-locale chunk ids, so no expansion is needed here.
@@ -224,7 +224,10 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; it
         // this arm produced was the category mean, and a mean cannot tell a bad
         // answer from a rule that asks an English word of a Japanese answer.
         const why = correctnessMiss(answerText, item, judged)
-        if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why}`)
+        // The answer itself, trimmed: a rule miss can be the answer or the rule
+        // (a number written １５ fails an includes('15')), and only the text
+        // tells which. It is the bot's own reply about public portfolio content.
+        if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why} | answer: ${answerText.replace(/\s+/g, ' ').slice(0, 400)}`)
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
         // correctness/faithfulness are not applicable (left out of their means).
@@ -402,6 +405,12 @@ async function main() {
   const retrievalOnly = process.argv.includes('--retrieval-only')
 
   const locales = onlyLocale ? [onlyLocale] : LOCALES
+  // One golden item, to re-run a single intermittent failure without paying for
+  // the other 47. A partial run must not write or judge a baseline.
+  const onlyItem = arg('--item')
+  const golden = onlyItem ? GOLDEN.filter((g) => g.id === onlyItem) : GOLDEN
+  if (golden.length === 0) throw new Error(`unknown --item ${onlyItem}`)
+  if (onlyItem && (arg('--baseline') || arg('--write-baseline'))) throw new Error('--item cannot be combined with a baseline')
   let arms = onlyArm ? ARMS.filter((a) => a.name === onlyArm) : ARMS
   if (arms.length === 0) throw new Error(`unknown --arm; choose from ${ARMS.map((a) => a.name).join(', ')}`)
   if (retrievalOnly) arms = arms.filter((a) => !a.corrective)
@@ -416,11 +425,11 @@ async function main() {
     if (dropped.length) console.log(`No ANTHROPIC_API_KEY — skipping ${dropped.join(', ')} (retrieval arms only).\n`)
   }
 
-  console.log(`Running ${arms.length} arm(s) × ${GOLDEN.length} questions × ${locales.length} locale(s)…\n`)
+  console.log(`Running ${arms.length} arm(s) × ${golden.length} questions × ${locales.length} locale(s)…\n`)
   const rows: { arm: string; agg: Aggregate; items: ItemResult[] }[] = []
   for (const arm of arms) {
     process.stdout.write(`  ${arm.name}… `)
-    const { agg, items } = await runArm(arm, locales)
+    const { agg, items } = await runArm(arm, locales, golden)
     rows.push({ arm: arm.name, agg, items })
     console.log(`recall=${pct(agg.recall)} mrr=${agg.mrr.toFixed(3)}`)
   }

@@ -24,17 +24,13 @@ import { config } from '../config.js'
 import { embed } from '../embeddings.js'
 import { qdrant, ensureCollections, scrollHashes, deleteByChunkIds } from '../qdrant.js'
 import { extractAll, type ChunkRecord } from './extract.js'
-import { hashPayload, toPoint, type Point } from './payload.js'
+import { hashModels, hashPayload, rawHash, toPoint, type Point } from './payload.js'
 import { chunkHash, reconcile, isPruneSafe, type DesiredChunk } from './reconcile.js'
 import { contextualize, type ContextItem } from './contextualize.js'
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH = 32 // embedding requests per call
 const UPSERT_PAGE = 64 // points per upsert page (stay under request-size limits)
-
-// Model identifiers folded into every chunk's hash so a model / dimension swap
-// invalidates the whole corpus and forces a re-embed (see reconcile.ts).
-const EMBED_MODELS = [config.embedModel, String(config.embedDim), config.sparseModel]
 
 // Only FRAGMENT chunks — a slice of a longer document that has lost its parent
 // context — benefit from contextualisation. Self-contained chunks (about paras,
@@ -75,12 +71,6 @@ function buildParentDocs(records: ChunkRecord[]): Map<string, string> {
   return docs
 }
 
-// Hash of the NON-contextual state — the fingerprint a chunk gets when it is
-// stored raw (never contextualised, or context generation failed this run).
-function rawHash(r: ChunkRecord): string {
-  return chunkHash({ content: r.content, contextSource: '', models: EMBED_MODELS, payload: hashPayload(r) })
-}
-
 // Hash of the INTENDED state used for the reconcile diff: contextual when the
 // chunk qualifies (so turning contextualisation on/off re-ingests exactly the
 // fragment chunks), else identical to rawHash.
@@ -89,7 +79,7 @@ function desiredHash(r: ChunkRecord, parentDocs: Map<string, string>): string {
   return chunkHash({
     content: r.content,
     contextSource: parentDocs.get(r.parentId!) ?? '',
-    models: [...EMBED_MODELS, config.contextModel],
+    models: [...hashModels(r.locale), config.contextModel],
     payload: hashPayload(r),
   })
 }

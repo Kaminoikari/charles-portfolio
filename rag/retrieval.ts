@@ -8,7 +8,7 @@ import { Document } from '@langchain/core/documents'
 
 import { config } from './config.js'
 import { embedOne, rerank } from './embeddings.js'
-import { qdrant, DENSE, SPARSE } from './qdrant.js'
+import { qdrant, chunkSparse, DENSE, SPARSE } from './qdrant.js'
 import { callSupplier, SupplierError } from './supplier.js'
 
 // Payload stored per chunk at ingest (see ingest/payload.ts, which writes it).
@@ -61,10 +61,9 @@ function localeFilter(locale: string) {
   return { must: [{ key: 'locale', match: { value: locale } }] }
 }
 
-// The sparse query is raw text; Qdrant Cloud Inference runs BM25 on it.
-function sparseQuery(query: string) {
-  return { text: query, model: config.sparseModel }
-}
+// The sparse query is raw text; Qdrant Cloud Inference runs BM25 on it with the
+// same options the locale's chunks were indexed with (qdrant.ts chunkSparse).
+const sparseQuery = chunkSparse
 
 export interface ScoredPoint {
   payload?: Record<string, unknown> | null
@@ -170,7 +169,7 @@ export async function fetchCandidates(
     const res = await deps.query({
       prefetch: [
         { query: denseVec, using: DENSE, filter, limit: config.candidateK },
-        { query: sparseQuery(query), using: SPARSE, filter, limit: config.candidateK },
+        { query: sparseQuery(query, locale), using: SPARSE, filter, limit: config.candidateK },
       ],
       query: { fusion: 'rrf' },
       filter,
@@ -189,7 +188,7 @@ export async function fetchCandidates(
     points = res.points
   } else {
     const res = await deps.query({
-      query: sparseQuery(query),
+      query: sparseQuery(query, locale),
       using: SPARSE,
       filter,
       limit: config.candidateK,

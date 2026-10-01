@@ -36,6 +36,10 @@ on:
         description: 'Single locale to run (blank = all: en, zh-TW, ja). e.g. en'
         type: string
         default: ''
+      item:
+        description: 'Single golden item id to run (blank = all). e.g. compare-team-sizes'
+        type: string
+        default: ''
       retrieval_only:
         description: 'Run only the deterministic retrieval arms (skip the corrective/LLM arm)'
         type: boolean
@@ -127,12 +131,14 @@ jobs:
           # shell injection from workflow_dispatch fields.
           ARM: ${{ inputs.arm }}
           LOCALE: ${{ inputs.locale }}
+          ITEM: ${{ inputs.item }}
           RETRIEVAL_ONLY: ${{ inputs.retrieval_only }}
           WRITE_BASELINE: ${{ inputs.write_baseline }}
         run: |
           ARGS="--out eval-report.md"
           [ -n "$ARM" ] && ARGS="$ARGS --arm $ARM"
           [ -n "$LOCALE" ] && ARGS="$ARGS --locale $LOCALE"
+          [ -n "$ITEM" ] && ARGS="$ARGS --item $ITEM"
           [ "$RETRIEVAL_ONLY" = "true" ] && ARGS="$ARGS --retrieval-only"
           [ "$WRITE_BASELINE" = "true" ] && ARGS="$ARGS --write-baseline eval-baseline.json"
           echo "running: npm run rag:eval -- $ARGS"

@@ -1,8 +1,8 @@
 // LLM-as-judge for answer faithfulness: does the answer stay grounded in the
 // retrieved context, without inventing facts? This is the metric that can't be
 // computed deterministically — it needs a model to read answer + context and
-// decide if every claim is supported. Uses the fast model with structured
-// output for a cheap, stable verdict.
+// decide if every claim is supported. Uses the judge model (config.modelJudge)
+// with structured output.
 
 import { ChatAnthropic } from '@langchain/anthropic'
 import { z } from 'zod'
@@ -43,7 +43,7 @@ export type FaithfulnessVerdict =
   | { judged: true; grounded: boolean; reason: string }
 
 const defaultInvoke = (messages: Message[]) =>
-  new ChatAnthropic({ model: config.modelFast, temperature: 0 })
+  new ChatAnthropic({ model: config.modelJudge, temperature: 0 })
     .withStructuredOutput(faithfulnessSchema, { name: 'faithfulness' })
     .invoke(messages)
 
@@ -111,7 +111,7 @@ export interface StatementVerdict {
 export async function judgeStatement(answer: string, claim: string): Promise<StatementVerdict> {
   if (answer.trim().length === 0) return { states: false, reason: 'empty answer' }
 
-  const judge = new ChatAnthropic({ model: config.modelFast, temperature: 0 }).withStructuredOutput(
+  const judge = new ChatAnthropic({ model: config.modelJudge, temperature: 0 }).withStructuredOutput(
     statementSchema,
     { name: 'statement' },
   )

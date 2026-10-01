@@ -18,6 +18,10 @@ import {
 import { SupplierError, callSupplier, __resetBreakers } from './supplier.js'
 import { hybridRetrieve } from './retrieval.js'
 import { rerank } from './embeddings.js'
+import { toPoint } from './ingest/payload.js'
+import type { ChunkRecord } from './ingest/extract.js'
+
+const CHUNK: ChunkRecord = { id: 'about:ai:overview:en', parentId: null, sourceType: 'about', projectId: null, locale: 'en', title: 't', content: 'x' }
 import { config } from './config.js'
 
 const doc = (id: string) => new Document({ pageContent: id, metadata: { id } })
@@ -257,6 +261,27 @@ test('fetchCandidates: a measurement arm never degrades, and a dense-only round 
   const deps = { embedOne: voyageDown, query: recordingQuery().query }
   await assert.rejects(fetchCandidates('q', 'en', { dense: true, sparse: true, rerank: false, strictDense: true }, undefined, deps), SupplierError)
   await assert.rejects(fetchCandidates('q', 'en', { dense: true, sparse: false, rerank: false }, undefined, deps), SupplierError)
+})
+
+// The query half of the BM25 tokenizer wiring (payload.test.ts pins the ingest
+// half). Both branches that send a sparse query must carry exactly the options
+// the stored points were built with, or the two sides tokenise differently.
+// Everything BM25 tokenises by, which is all of the document but its text.
+const settings = (d: { model?: unknown; options?: unknown }) => ({ model: d.model, options: d.options })
+
+test('fetchCandidates: the sparse query carries the same BM25 options the ingest wrote, per locale', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja']) {
+    const want = settings(toPoint({ ...CHUNK, locale }, [0.1], 'hash', 'x', '').vector.sparse)
+
+    const hybrid = recordingQuery()
+    await fetchCandidates('q', locale, { dense: true, sparse: true, rerank: false }, undefined, { embedOne: async () => [0.1], query: hybrid.query })
+    const prefetch = hybrid.bodies[0].prefetch as Array<{ using: string; query: Record<string, unknown> }>
+    assert.deepEqual(settings(prefetch.find((p) => p.using === 'sparse')!.query), want, `hybrid ${locale}`)
+
+    const alone = recordingQuery()
+    await fetchCandidates('q', locale, { dense: false, sparse: true, rerank: false }, undefined, { embedOne: voyageDown, query: alone.query })
+    assert.deepEqual(settings(alone.bodies[0].query as Record<string, unknown>), want, `sparse-only ${locale}`)
+  }
 })
 
 test('retrieveWith: a rerank outage is reported as one', async () => {

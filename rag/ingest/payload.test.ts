@@ -8,7 +8,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { hashPayload, toPoint } from './payload.js'
+import { hashModels, hashPayload, rawHash, toPoint } from './payload.js'
 import type { ChunkRecord } from './extract.js'
 
 const BLOG: ChunkRecord = {
@@ -37,4 +37,33 @@ test('toPoint leaves the date key off a chunk that has none', () => {
 
 test('hashPayload folds the date in, so correcting a date re-ingests the chunk', () => {
   assert.notDeepEqual(hashPayload(BLOG), hashPayload({ ...BLOG, date: '2026-09-15' }))
+})
+
+// BM25's default `word` tokenizer splits on spaces and punctuation, so a
+// Chinese or Japanese sentence reaches the index as a handful of long tokens
+// that no question will ever repeat. The CJK locales ask for the multilingual
+// tokenizer; the same options must reach the query (retrieval.test.ts pins that
+// half), or the two sides tokenise differently and match nothing.
+test('toPoint asks BM25 to segment Chinese and Japanese, and leaves English on the default', () => {
+  const sparse = (locale: string) => point({ ...BLOG, locale }).vector.sparse
+  assert.deepEqual(sparse('zh-TW').options, { tokenizer: 'multilingual' })
+  assert.deepEqual(sparse('ja').options, { tokenizer: 'multilingual' })
+  assert.equal('options' in sparse('en'), false)
+})
+
+test('hashModels changes for a CJK locale and not for English, so only CJK chunks re-ingest', () => {
+  assert.deepEqual(hashModels('en'), ['voyage-3-large', '1024', 'qdrant/bm25'])
+  assert.notDeepEqual(hashModels('ja'), hashModels('en'))
+  assert.notDeepEqual(hashModels('zh-TW'), hashModels('en'))
+})
+
+// Hashes this record had before the CJK tokenizer (computed on 2a17816 with the
+// hash inputs build-index used then). English must still match, or every
+// English chunk is re-embedded for nothing; zh-TW and ja must not, or their
+// points keep the old one-token-per-sentence sparse vectors forever.
+test('rawHash keeps English chunks as they were and re-ingests the CJK ones', () => {
+  const r = (locale: string): ChunkRecord => ({ id: 'about:ai:overview:x', parentId: null, sourceType: 'about', projectId: null, title: 't', content: 'AI の使い方', locale })
+  assert.equal(rawHash(r('en')), '7a315c9156c7cd8c0a6d50125f27a1110dd34454f0afcdfa8708c64acf361eff')
+  assert.notEqual(rawHash(r('zh-TW')), '9ad561f0e7a055fe8d664184987f2704d66cff339e79f3d06fa446ac070a692f')
+  assert.notEqual(rawHash(r('ja')), '68eb68c975e566c696bf91576d2b649b98ae9f6999c48c5992fbde3f1e5c5785')
 })
