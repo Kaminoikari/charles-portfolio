@@ -56,39 +56,13 @@ jobs:
       - name: RAG tests
         run: npm run rag:test
 
-      # Gated on the reported result, not on the exit code. A worker can miss
-      # vitest's birpc "onTaskUpdate" heartbeat during a long synchronous CPU
-      # sweep, which exits 1 on a run where every test passed. Measured on
-      # 2026-09-16, when the avatar pipeline was still here and the suite was
-      # 1,636 tests: 3/3 runs at the configured 2 threads, and once each at
-      # --pool=forks and --maxWorkers=1, all exit 1 with all tests passing and
-      # exactly one such error. vitest exposes no knob for the birpc timeout.
-      #
-      # The pipeline's 48 tests left on 2026-09-17 and rigProbe is now the only
-      # sweep, so this may no longer fire. The gate stays because it fails
-      # closed: it reads the summary line, so a real failure is still a
-      # failure.
-      #
-      # A step that is red by construction teaches everyone to ignore CI, and
-      # dropping the step would lose the coverage, so the summary line decides:
-      # vitest prints "Tests  N failed | M passed" when anything actually fails,
-      # and the line is absent entirely if the run never got that far. Both are
-      # failures here.
-      #
-      # The summary is stripped of ANSI first. vitest colours it even writing to
-      # a pipe under CI, and the codes land BETWEEN the label and the count
-      # ("\e[2m  Tests \e[22m \e[1m\e[32m1636 passed"), so a pattern written
-      # against a plain local run matches nothing here — the gate then reports
-      # "no result line" and fails every run, green ones included. That is how
-      # this shipped broken: the discriminator was validated against macOS
-      # output, where nothing colours a redirect.
+      # Judged by the exit code. Until 2026-10-01 this step read vitest's
+      # summary line instead, because every run exited 1 with all tests passing
+      # and one "Timeout calling onTaskUpdate" error. The cause was rigProbe's
+      # synchronous sweep holding the worker's event loop for minutes, so the
+      # RPC reply went unread past its 60s timer; src/test/setup.ts now yields
+      # a macrotask after each test. The summary gate went red on its own once
+      # idlePose gained it.runIf tests: "2335 passed | 11 skipped (" never
+      # matched its pattern.
       - name: Frontend and tooling tests
-        run: |
-          set -o pipefail
-          npm test 2>&1 | tee vitest.log || echo "::warning::vitest exited non-zero; judging by the reported result"
-          sed -E $'s/\x1b\\[[0-9;]*m//g' vitest.log > vitest.plain
-          if ! grep -qE '^ *Tests +[0-9]+ passed \(' vitest.plain || grep -qE '^ *Tests .*failed' vitest.plain; then
-            echo "::error::vitest reported failures, or did not report a result at all"
-            exit 1
-          fi
-          echo "vitest reported every test passing"
+        run: npm test

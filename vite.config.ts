@@ -16,9 +16,9 @@ export default defineConfig({
     // Two workers, not the eight this machine has. rigProbe is a CPU sweep
     // rather than a wait (it replays every clip frame by frame), and running
     // four of those beside the jsdom suites saturated the box: tests timed out,
-    // a different one each run, and vitest's own worker RPC ("Timeout calling
-    // onTaskUpdate") started failing too, which exits non-zero on a run where
-    // every test passed.
+    // a different one each run. (The "Timeout calling onTaskUpdate" error seen
+    // then was a separate fault, a synchronous file starving its own worker's
+    // event loop; src/test/setup.ts fixes that.)
     //
     // The timings behind this were measured in 2026-09 while the avatar
     // pipeline still lived here, so they cover a heavier run than today's:

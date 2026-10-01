@@ -404,16 +404,14 @@ golden set 從 29 題擴到 **41 題（123 次執行）**，新增的都落在�
   lint、`npm run build`（`tsc -b`，涵蓋測試檔）、`npm run rag:test`、`npm test`。
   全部離線、不需要任何 secret。先前這些只在本機跑過。
 
-  最後一步是**依 vitest 印出的結果判定，不看 exit code**。`npm test` 在 1,636 條
-  全過的情況下仍然 exit 1：avatar 那幾份測試有長時間的同步 CPU 迴圈，worker 因此
-  錯過 vitest 內部 birpc 的 `onTaskUpdate` 心跳，印出一行
-  `[vitest-worker]: Timeout calling "onTaskUpdate"`。2026-09-16 量過五種組合
-  （預設 2 threads 連跑三次、`--pool=forks`、`--maxWorkers=1`），**五次全部 exit 1
-  且五次全部 1,636 條通過、各恰好一行該錯誤**；那個 timeout 是 vitest 內部常數
-  `DEFAULT_TIMEOUT`，沒有對外旗標可調。必紅的關卡會教會所有人忽略 CI，拿掉這步
-  則失去覆蓋，所以改判 summary 行：`Tests N failed | M passed` 或那行根本不存在
-  （run 沒跑到印結果）都算失敗。這個判別式是拿一條**故意寫壞的探針測試**驗過的，
-  不是只拿全綠的 run 驗。
+  最後一步原本**依 vitest 印出的 summary 行判定，不看 exit code**，因為 `npm test`
+  在全過的情況下仍然 exit 1，印出一行 `[vitest-worker]: Timeout calling "onTaskUpdate"`。
+  2026-10-01 查出機制：vitest 在同一檔的測試之間只 await microtask，rigProbe 整檔
+  同步跑了三分鐘，worker 的 event loop 一直沒走到 poll phase，RPC 回應擱著沒讀，
+  60 秒計時器在 loop 終於轉動時先觸發。`src/test/setup.ts` 改成每個測試後讓出一次
+  macrotask（`setImmediate`）之後，該錯誤消失，CI 改回直接看 exit code。那個
+  summary 判別式在 idlePose 加入 `it.runIf` 之後自己就壞了：`2335 passed | 11 skipped (`
+  比對不到它的 pattern，全綠的 run 也判紅。
 - **ingest 後的回歸閘門**（`rag-ingest.yml` 新增 `eval-gate` job）：內容 push 重建
   生產索引之後，對剛建好的索引跑 retrieval-only eval，`--min-recall 0.95` 不到就
   讓整個 run 失敗。門檻取 0.95 是因為三個 arm 現況都是 100%，留一題的容錯、不留
