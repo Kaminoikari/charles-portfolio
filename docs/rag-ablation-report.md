@@ -99,8 +99,8 @@ three share one, and three (`jobops-source` en, `compare-path-plutus-stack` en,
 - `ai-spec` (zh-TW, ja) and `playbook-frameworks` (ja) say Product Playbook
   has 22 frameworks. A changelog entry says so about the version it shipped;
   the project page says 16 composable lenses now. Out of scope here: the
-  generator choosing a dated changelog figure over the current page is a
-  recency problem, not a hand-synced surface.
+  generator chose a dated changelog figure over the current page, a recency
+  problem in generation.
 
 ## Previous run (2026-09-16, 41-question set)
 
