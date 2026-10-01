@@ -10,3 +10,7 @@ export const socialLinks: SocialLink[] = [
   { platform: 'threads', url: 'https://www.threads.com/@charles_tychen', label: 'TH' },
   { platform: 'portaly', url: 'https://portaly.cc/charleschen', label: 'PT' },
 ]
+
+// The one address every surface quotes: the footer renders it, and the chatbot
+// hands it out in its contact block (rag/triage.ts reads it from here).
+export const contactEmail = 'charlestyc0527@gmail.com'

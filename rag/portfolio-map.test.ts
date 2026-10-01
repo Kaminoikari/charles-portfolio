@@ -22,6 +22,9 @@ import { portfolioMap } from './portfolio-map.js'
 import { projects, projectDetails } from '../src/data/projects.en.ts'
 import { experience } from '../src/data/experience.en.ts'
 import { aboutContent } from '../src/data/aboutContent.en.ts'
+import { groundFacts } from './grounding.js'
+import { OFF_CORPUS_FACTS } from './off-corpus-facts.js'
+import { extractAll } from './ingest/extract.js'
 
 // The map names employers the way a person would ("NUEIP"), not the way the
 // registry does ("NUEIP Technology Co., Ltd."). Compare on the distinctive part.
@@ -105,4 +108,18 @@ test('each employer entry in the map carries the start year src/data records', (
     const year = e.dateRange.match(/\d{4}/)?.[0]
     assert.ok(line.includes(year!), `${short}: map entry ${JSON.stringify(line)} omits start year ${year}`)
   }
+})
+
+test('every number and date the map states is one the English corpus states', async () => {
+  // Wider than the metric test above: the same grounding the FAQ answers and the
+  // entity notes are held to (grounding.ts), including month-and-year, which as
+  // a bare year is matched by any changelog entry from that year. Facts the
+  // corpus does not carry are listed, with where they ARE published, in
+  // off-corpus-facts.ts; faq-grounding.test.ts checks those entries stay true.
+  const chunks = await extractAll()
+  const exempt = new Set(OFF_CORPUS_FACTS.filter((o) => o.surfaces.includes('portfolio-map')).map((o) => o.fact))
+  assert.deepEqual(
+    groundFacts(portfolioMap, 'en', chunks).ungrounded.filter((f) => !exempt.has(f)),
+    [],
+  )
 })

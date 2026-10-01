@@ -19,7 +19,7 @@ test('one-hop: a project surfaces its edges', () => {
 })
 
 test('two-hop: a shared tool connects sibling projects', () => {
-  // "Claude" seeds multiple projects (Product Playbook, House Ops, Path proto).
+  // "Claude" seeds multiple projects (Product Playbook, House Ops).
   const ctx = entityContext('Which projects use Claude?')
   assert.match(ctx, /Claude/)
   assert.match(ctx, /Product Playbook/)

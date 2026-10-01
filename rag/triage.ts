@@ -11,19 +11,33 @@
 // be edited freely: add phrasings to the lists, or add new FAQ entries below.
 
 import type { Locale } from './language.js'
+import { socialLinks, contactEmail, type SocialLink } from '../src/data/social.js'
+import { platformLinks } from '../src/data/blog.en.js'
 
 // --- contact info -----------------------------------------------------------
-// A curated contact list for the bot. It is a SUPERSET of src/data/social.ts:
-// it intentionally adds Email and Substack (real, in-use channels) on top of the
-// links the site footer renders (LinkedIn/GitHub/Threads/Portaly). Keep the
-// shared links in sync with social.ts by hand.
+// The bot's contact list, derived from the same records the site renders: the
+// footer's social links (src/data/social.ts), its email, and the Substack
+// publication the blog page links to. It used to be a hand-copied superset
+// with a "keep in sync by hand" note, which is the arrangement that lets a
+// changed handle reach the footer and never the bot. An edited link now reaches
+// both in the same commit, and a link the site drops is an import-time error
+// rather than an `undefined` handed to a visitor.
+
+function socialUrl(platform: SocialLink['platform']): string {
+  const link = socialLinks.find((l) => l.platform === platform)
+  if (!link) throw new Error(`src/data/social.ts has no ${platform} link, and the chatbot's contact block quotes one`)
+  return link.url
+}
+
 export const CONTACT = {
-  email: 'charlestyc0527@gmail.com',
-  linkedin: 'https://www.linkedin.com/in/charles-chen-809a2043',
-  github: 'https://github.com/Kaminoikari',
-  threads: 'https://www.threads.com/@charles_tychen',
-  substack: 'https://charlestychen.substack.com',
-  portaly: 'https://portaly.cc/charleschen',
+  email: contactEmail,
+  linkedin: socialUrl('linkedin'),
+  github: socialUrl('github'),
+  threads: socialUrl('threads'),
+  // The blog page links the publication with a trailing slash; the bot has
+  // always quoted it without one, and the FAQ answers carry that form.
+  substack: platformLinks.substack.replace(/\/$/, ''),
+  portaly: socialUrl('portaly'),
 }
 
 // Reusable contact block (markdown; the chat renderer linkifies it). Includes

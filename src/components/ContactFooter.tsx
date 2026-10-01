@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { socialLinks } from '../data/social'
+import { socialLinks, contactEmail } from '../data/social'
 import { useT } from '../i18n'
 
 const SocialIcon = ({ platform }: { platform: string }) => {
@@ -106,8 +106,8 @@ export default function ContactFooter() {
             </a>
           ))}
         </div>
-        <a href="mailto:charlestyc0527@gmail.com" className="reveal text-base tracking-[1px] text-text-muted no-underline transition-colors duration-200 hover:text-white opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-600" style={{ transitionDelay: '700ms' }}>
-          charlestyc0527@gmail.com
+        <a href={`mailto:${contactEmail}`} className="reveal text-base tracking-[1px] text-text-muted no-underline transition-colors duration-200 hover:text-white opacity-0 [&.animate-in]:opacity-100 [&.animate-in]:transition-opacity [&.animate-in]:duration-600" style={{ transitionDelay: '700ms' }}>
+          {contactEmail}
         </a>
       </section>
       <footer className="border-t border-border-hover py-12 text-center">

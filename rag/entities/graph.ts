@@ -8,13 +8,14 @@
 // "what did he do across his fintech roles?") at zero infrastructure cost.
 
 import relationsData from './relations.json' with { type: 'json' }
+import { experience, type ExperienceItem } from '../../src/data/experience.en.js'
 
 interface Entity {
   id: string
   type: string
   label: string
 }
-interface Relation {
+export interface Relation {
   from: string
   rel: string
   to: string
@@ -25,6 +26,23 @@ const ENTITIES: Entity[] = relationsData.entities
 const RELATIONS: Relation[] = relationsData.relations
 
 const byId = new Map(ENTITIES.map((e) => [e.id, e]))
+
+// The role an employed_by edge stands for. The edge used to carry the title in
+// its note, hand-copied, and it went stale the way hand copies do: it called him
+// a Product Manager at USPACE for as long as the site called him Head of
+// Product. So the edge now names only the employer and the role is read from
+// the record the site renders. A company label is the start of the registered
+// name ("FLUX Technology" → "FLUX Technology Inc."); an edge that matches no
+// role, or more than one, throws at import, where a test sees it.
+export function roleFor(companyLabel: string, roles: ExperienceItem[] = experience): ExperienceItem {
+  const matches = roles.filter((r) => r.organization.startsWith(companyLabel))
+  if (matches.length !== 1) {
+    throw new Error(`entity "${companyLabel}" matches ${matches.length} roles in src/data/experience.en.ts; expected exactly 1`)
+  }
+  return matches[0]
+}
+
+for (const r of RELATIONS) if (r.rel === 'employed_by') roleFor(byId.get(r.to)?.label ?? r.to)
 
 // Find entity ids mentioned in the text. A label like "Claude / Claude Code"
 // or "USPACE for Business" should match the bare name the user actually types
@@ -53,9 +71,15 @@ function mentionedEntityIds(text: string): Set<string> {
 }
 
 // Render one edge as a readable line: "Charles —built→ Path (note)".
-function edgeLine(r: Relation): string {
+export function edgeLine(r: Relation): string {
   const from = byId.get(r.from)?.label ?? r.from
   const to = byId.get(r.to)?.label ?? r.to
+  if (r.rel === 'employed_by') {
+    const role = roleFor(to)
+    const verb = /present/i.test(role.dateRange) ? 'works at' : 'worked at'
+    const detail = [`${role.title}, ${role.dateRange}`, r.note].filter(Boolean).join('; ')
+    return `- ${from} ${verb} ${to} (${detail})`
+  }
   const rel = r.rel.replace(/_/g, ' ')
   return r.note ? `- ${from} ${rel} ${to} (${r.note})` : `- ${from} ${rel} ${to}`
 }

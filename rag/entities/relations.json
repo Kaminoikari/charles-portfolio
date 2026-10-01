@@ -1,5 +1,5 @@
 {
-  "_comment": "Lightweight entity graph for the portfolio — the deliberate alternative to GraphRAG/Neo4j. The relationships between Charles, his roles, projects, skills, and tools are a few dozen edges, so a hand-written adjacency list injected as text gives multi-hop, relationship-aware context at zero infra cost. Phase 5.",
+  "_comment": "Lightweight entity graph for the portfolio — the deliberate alternative to GraphRAG/Neo4j. The relationships between Charles, his roles, projects, skills, and tools are a few dozen edges, so a hand-written adjacency list injected as text gives multi-hop, relationship-aware context at zero infra cost. Phase 5. An employed_by edge names only the employer: the role, the dates and whether the job is current are read from src/data/experience.en.ts when the edge is rendered (graph.ts), and relations.test.ts binds every other edge back to src/data.",
   "entities": [
     { "id": "charles", "type": "person", "label": "Charles Chen" },
     { "id": "uspace", "type": "company", "label": "USPACE" },
@@ -24,11 +24,11 @@
     { "id": "ai-builder", "type": "concept", "label": "Product Builder / AI-driven development" }
   ],
   "relations": [
-    { "from": "charles", "rel": "works_at", "to": "uspace", "note": "Product Manager; served as USPACE app owner and Product Owner of a cross-functional Scrum team; 3 product lines, TW+JP" },
-    { "from": "charles", "rel": "mentors_at", "to": "xchange", "note": "Product Mentor" },
-    { "from": "charles", "rel": "worked_at", "to": "nueip", "note": "Senior PM, BI product" },
-    { "from": "charles", "rel": "worked_at", "to": "pxpay", "note": "PM, checkout + rewards" },
-    { "from": "charles", "rel": "worked_at", "to": "flux", "note": "Operations Manager" },
+    { "from": "charles", "rel": "employed_by", "to": "uspace", "note": "leads the product team across the Taiwan and Japan markets; earlier the USPACE app owner leading a cross-functional Scrum team" },
+    { "from": "charles", "rel": "employed_by", "to": "xchange", "note": "mentoring aspiring PMs" },
+    { "from": "charles", "rel": "employed_by", "to": "nueip", "note": "BI product" },
+    { "from": "charles", "rel": "employed_by", "to": "pxpay", "note": "sign-up, checkout and the reward points system" },
+    { "from": "charles", "rel": "employed_by", "to": "flux" },
     { "from": "charles", "rel": "built", "to": "path" },
     { "from": "charles", "rel": "built", "to": "plutus-trade" },
     { "from": "charles", "rel": "built", "to": "product-playbook" },
@@ -45,7 +45,7 @@
     { "from": "plutus-trade", "rel": "powered_by", "to": "gemini" },
     { "from": "product-playbook", "rel": "powered_by", "to": "claude" },
     { "from": "house-ops", "rel": "powered_by", "to": "claude" },
-    { "from": "product-playbook", "rel": "demonstrates", "to": "ai-builder" },
-    { "from": "path", "rel": "built_with", "to": "claude", "note": "prototyped with Claude Code" }
+    { "from": "job-ops", "rel": "powered_by", "to": "claude" },
+    { "from": "product-playbook", "rel": "demonstrates", "to": "ai-builder" }
   ]
 }
