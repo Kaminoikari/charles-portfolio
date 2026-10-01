@@ -561,13 +561,36 @@ export function evidenceBlock(graded: Document[], query: string): string {
   return `Context:\n${context}\n\nPortfolio map:\n${portfolioMap}` + (entities ? `\n\n${entities}` : '')
 }
 
+// Charles's own channels, so "the portfolio doesn't cover that, ask him" can
+// hand over links a visitor can click. They live in triage.ts and appear in no
+// retrieved chunk, so they have to be given here twice over: to the model, or
+// it writes bare channel names, and to the grounding below, or the link filter
+// reads them as invented and demotes them right back to plain text.
+const CONTACT_CHANNELS =
+  "\n\nCharles's contact channels — when you suggest contacting him, list these " +
+  'as markdown links so each one is clickable, and use these exact URLs, never ' +
+  'another address:\n' +
+  `* Email: mailto:${CONTACT.email}\n` +
+  `* LinkedIn: ${CONTACT.linkedin}\n` +
+  `* GitHub: ${CONTACT.github}\n` +
+  `* Threads: ${CONTACT.threads}\n` +
+  `* Substack: ${CONTACT.substack}\n` +
+  `* All links / Portaly: ${CONTACT.portaly}`
+
+// Everything the answer may rest on, as the generator is shown it. The eval's
+// faithfulness judge reads this same text (evals/run-eval.ts judgeContext); a
+// judge shown less calls the rest invented, as it did the contact links.
+export function answerContext(graded: Document[], query: string): string {
+  return evidenceBlock(graded, query) + CONTACT_CHANNELS
+}
+
 export async function generate(
   state: RAGStateType,
   injected?: unknown,
 ): Promise<Partial<RAGStateType>> {
   const generateAnswer = resolveGenerator(injected)
   const docs = state.graded ?? []
-  const evidence = evidenceBlock(docs, retrievalQuery(state))
+  const evidence = answerContext(docs, retrievalQuery(state))
 
   // Broad/synthetic questions get the stronger model IF we fall back to Claude.
   const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(retrievalQuery(state))
@@ -603,22 +626,6 @@ export async function generate(
       `about your replies.\n` +
       `Transcript:\n${transcript}`
     : ''
-
-  // Charles's own channels, so "the portfolio doesn't cover that, ask him" can
-  // hand over links a visitor can click. They live in triage.ts and appear in no
-  // retrieved chunk, so they have to be given here twice over: to the model, or
-  // it writes bare channel names, and to the grounding below, or the link filter
-  // reads them as invented and demotes them right back to plain text.
-  const contactChannels =
-    "\n\nCharles's contact channels — when you suggest contacting him, list these " +
-    'as markdown links so each one is clickable, and use these exact URLs, never ' +
-    'another address:\n' +
-    `* Email: mailto:${CONTACT.email}\n` +
-    `* LinkedIn: ${CONTACT.linkedin}\n` +
-    `* GitHub: ${CONTACT.github}\n` +
-    `* Threads: ${CONTACT.threads}\n` +
-    `* Substack: ${CONTACT.substack}\n` +
-    `* All links / Portaly: ${CONTACT.portaly}`
 
   // Tier 1 Gemini (free) → tier 2 Claude (paid) on any Gemini failure.
   const { text, stalled } = await generateAnswer(
@@ -679,7 +686,6 @@ export async function generate(
           'that lands on from the publication date and say so, instead of ' +
           'claiming the date is unknown.\n\n' +
           evidence +
-          contactChannels +
           historyBlock,
       },
       { role: 'user', content: sanitize(state.question) },
@@ -721,7 +727,7 @@ export async function generate(
   // Links are checked against the material the model was actually given, not
   // the transcript: a URL it invented one turn ago must not become grounding
   // for repeating it. The visitor's own message is excluded for the same reason.
-  const grounding = `${evidence}\n${contactChannels}\n${sources.map((s) => s.url ?? '').join('\n')}`
+  const grounding = `${evidence}\n${sources.map((s) => s.url ?? '').join('\n')}`
   return {
     // The notice is appended AFTER the guardrails, so it is never mistaken for
     // model output: stripInvalidCitations and stripUngroundedLinks judge what

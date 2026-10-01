@@ -21,8 +21,10 @@ import {
   baselineGate,
   parseBaseline,
   buildReport,
+  judgeContext,
 } from './run-eval.js'
 import { GOLDEN } from './golden.js'
+import { CONTACT } from '../triage.js'
 
 const rows = [
   { arm: 'dense-only', recall: 1 },
@@ -300,4 +302,14 @@ test('retrievalScores: a run that retrieved the answering chunk has full recall 
   const scores = retrievalScores({ documents: [], sources: [{ id: 'experience-timeline:zh-TW' }, { id: 'experience:uspace:zh-TW' }] }, item)
   assert.deepEqual(scores, { recall: 1, mrr: 1 })
   assert.deepEqual(idScores(['x:en', 'experience-timeline:en'], item), { recall: 1, mrr: 0.5 })
+})
+
+// What the judge is shown must be what the generator was shown (nodes.ts
+// answerContext), contact channels included.
+test('judgeContext: the judge sees the contact channels the generator was given', () => {
+  const doc = { pageContent: 'Charles leads product at USPACE.', metadata: { sourceType: 'experience', id: 'e1' } }
+  const ctx = judgeContext({ graded: [doc] as never, queries: ['q'] }, 'q')
+  assert.ok(ctx.includes('Charles leads product at USPACE.'))
+  assert.ok(ctx.includes(CONTACT.email))
+  assert.equal(judgeContext({ graded: [], queries: ['q'] }, 'q'), '')
 })

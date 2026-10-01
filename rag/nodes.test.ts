@@ -981,3 +981,15 @@ test('retrieve: a bug in one fanned-out sub-question is not swallowed as a suppl
     RangeError,
   )
 })
+
+// The eval's faithfulness judge reads answerContext; the generator must be
+// handed exactly the same text, or a claim the generator was told (Charles's
+// contact links live only in this prompt) is judged invented, which is what the
+// judge did to every answer that listed them before the two were joined.
+test('generate: the prompt carries answerContext whole, contact channels included', async () => {
+  const state = { question: '他寫過什麼?', language: 'zh-TW', graded: [DOC] }
+  const { system } = await promptFor(state)
+  const ctx = nodes.answerContext([DOC] as never, '他寫過什麼?')
+  assert.ok(ctx.includes(CONTACT.email))
+  assert.ok(system.includes(ctx))
+})

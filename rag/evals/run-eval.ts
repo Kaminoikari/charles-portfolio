@@ -19,7 +19,8 @@ import { pathToFileURL } from 'node:url'
 
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
-import { evidenceBlock } from '../nodes.js'
+import { answerContext } from '../nodes.js'
+import type { Document } from '@langchain/core/documents'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
 import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
@@ -162,6 +163,13 @@ export function idScores(
   return { recall: itemRecall(ids, item), mrr: itemReciprocalRank(ids, item) }
 }
 
+// What the faithfulness judge is shown: the generator's own context
+// (nodes.ts answerContext), or nothing when no chunk was graded.
+export function judgeContext(final: { graded?: Document[]; queries?: string[] }, question: string): string {
+  const graded = final.graded ?? []
+  return graded.length === 0 ? '' : answerContext(graded, final.queries?.at(-1) ?? question)
+}
+
 export function retrievalScores(
   final: { sources?: { id: string }[]; documents?: unknown[]; degraded?: unknown[] },
   item: Pick<GoldenItem, 'relevantIds' | 'needsEvery' | 'answeredBy'>,
@@ -192,12 +200,12 @@ async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN
         const language = detectLanguage(question)
         const final = await graph.invoke({ question, language, queries: [question] })
         const answerText = final.answer ?? ''
-        const graded = final.graded ?? []
-        // The SAME list the generator was given (nodes.ts). Judging against the
-        // chunks alone reported every claim resting on the portfolio map or the
-        // entity block as invention, which on 2026-09-17 was most of the
-        // ungrounded verdicts in a full run.
-        const ctx = graded.length === 0 ? '' : evidenceBlock(graded, final.queries?.at(-1) ?? question)
+        // The SAME text the generator was given (nodes.ts answerContext).
+        // Judging against the chunks alone reported every claim resting on the
+        // portfolio map or the entity block as invention, which on 2026-09-17
+        // was most of the ungrounded verdicts in a full run, and leaving out the
+        // contact channels did the same to the links (run 36897411888).
+        const ctx = judgeContext(final, question)
         // A claim is judged in whatever language the answer is written, so the
         // same one declaration serves all three locales. scoreCorrectness throws
         // if an item carries a claim and this is still null, which is the only
