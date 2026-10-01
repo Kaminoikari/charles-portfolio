@@ -560,7 +560,7 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 
 # 後續處置（2026-10-01）
 
-9-16 那一輪把 §7 的三件事做完，但 §4.1 到 §4.5 各自留下缺口（見上一節「已知仍未覆蓋的缺口」）。這一輪把五項都推到可以用證據說「關掉了」的程度。實作在 `rag-review-fixes` 分支，commit 範圍 `c2a0c27..HEAD`。
+9-16 那一輪把 §7 的三件事做完，但 §4.1 到 §4.5 各自留下缺口（見上一節「已知仍未覆蓋的缺口」）。這一輪把五項都推到可以用證據說「關掉了」的程度。實作已併入 main，commit 範圍 `c2a0c27..e2a8796`，含文末兩輪 FAQ 合併。
 
 | 項目 | 9-16 狀態 | 本輪 |
 |---|---|---|
@@ -572,7 +572,7 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 
 ## §4.5 手工同步面：四處全部釘住，而且一接上就抓到錯
 
-`rag/grounding.ts` 是唯一的定義，判斷一段手寫文字裡的數字與「年月」是否仍由同語系的語料陳述。FAQ 答案（174 則、384 個事實）、portfolio map（28 個）、entity graph 的 note 全部用它檢查。年月另列一類，只准由經歷、專案、About 這類策展紀錄佐證；單比數字時，「2026 年 8 月升任」這種 `src/data` 根本沒寫的日期，會被某則 2026 年的 changelog 碰巧對上。
+`rag/grounding.ts` 是唯一的定義，判斷一段手寫文字裡的數字與「年月」是否仍由同語系的語料陳述。FAQ 答案（當時 174 則、384 個事實；兩輪合併後 150 則、350 個事實）、portfolio map（28 個）、entity graph 的 note 全部用它檢查。年月另列一類，只准由經歷、專案、About 這類策展紀錄佐證；單比數字時，「2026 年 8 月升任」這種 `src/data` 根本沒寫的日期，會被某則 2026 年的 changelog 碰巧對上。
 
 第一次接上就找到 6 筆過期或無依據的事實：
 
@@ -583,7 +583,7 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 - 成本答案說快取有 52 個主題，實際 58 個
 - portfolio map 寫 Product Playbook `v2.3`，專案頁寫 `2.4.0`
 
-結構面的修法：employment 邊改成只寫雇主，職稱、日期、在職與否在渲染時從 `experience.en.ts` 讀；`CONTACT` 改由 footer 的 `social.ts` 推導，不再手抄。語料沒寫但其他頁面有寫的事實，登記在 `rag/off-corpus-facts.ts` 並註明出處，測試會檢查出處仍成立、豁免仍然必要。目前 2 筆（TOEIC 的分數與滿分），見文末待決事項。2026 年 8 月升任 Head of Product 原本也是一筆，經 Charles 確認後寫進三語的 `src/data/experience`，豁免隨之刪除；刪除前「豁免仍然必要」那條測試先轉紅，證明它認得出已經不需要的豁免。
+結構面的修法：employment 邊改成只寫雇主，職稱、日期、在職與否在渲染時從 `experience.en.ts` 讀；`CONTACT` 改由 footer 的 `social.ts` 推導，不再手抄。語料沒寫但其他頁面有寫的事實，登記在 `rag/off-corpus-facts.ts` 並註明出處，測試會檢查出處仍成立、豁免仍然必要。本節初稿時有 2 筆（TOEIC 的分數與滿分），後來 Charles 決定不把分數寫進網站，現已清空，見文末待決事項。2026 年 8 月升任 Head of Product 原本也是一筆，經 Charles 確認後寫進三語的 `src/data/experience`，豁免隨之刪除；刪除前「豁免仍然必要」那條測試先轉紅，證明它認得出已經不需要的豁免。
 
 ## §4.1 FAQ：問題出在 entry 重疊，margin 只是旋鈕
 
@@ -601,9 +601,9 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 | 0.7／0.02（舊） | 496 | 389 | 85 | 22（4.4%） |
 | 0.8／0.08（現行） | 263 | 230 | 33 | 0 |
 
-推薦規則是「有害 ≤ 命中的 1%，其中切題命中最多者」。margin 是真正起作用的旋鈕；只拉 threshold 時，好的命中與有害的命中幾乎同速減少。代價是覆蓋率：留一法查詢由快取答對的比例從 46.9% 降到 27.7%（命中比例從 59.8% 降到 31.7%），其餘改走檢索、評分、引用的完整路徑。
+推薦規則是「有害 ≤ 命中的 1%，其中切題命中最多者」。margin 是真正起作用的旋鈕；只拉 threshold 時，好的命中與有害的命中幾乎同速減少。代價是覆蓋率：留一法查詢由快取答對的比例從 46.9% 降到 27.7%（命中比例從 59.8% 降到 31.7%），其餘改走檢索、評分、引用的完整路徑。以上是合併 entry 之前的數字；兩輪合併後同一設定命中 283 次、判對 270 次（覆蓋率 32.8%）、判錯 13 次、答非所問 0 次，見文末。
 
-命中時現在會附上引用來源：入庫時用同一份 grounding 推導出陳述該答案事實的 chunk，存進 point 的 payload，triage 直接帶出。174 則答案裡 88 則帶引用；80 則不含可查核的數字或日期（自我介紹、聯絡方式這類）；6 則的事實只有語料外來源（快取主題數、TOEIC 分數）。
+命中時現在會附上引用來源：入庫時用同一份 grounding 推導出陳述該答案事實的 chunk，存進 point 的 payload，triage 直接帶出。兩輪合併後（e2a8796，以入庫時實際使用的 `citeFacts` 量），150 則答案裡 75 則帶引用，另 75 則不含可查核的數字或日期（自我介紹、聯絡方式這類），含事實卻沒有引用的是 0 則。TOEIC 分數移除前，`languages` 的三語答案是唯一一組事實只有語料外來源的答案。
 
 ## §4.2 檢索：embedding 也有退路了，並修掉一個讓真斷線變成崩潰的缺陷
 
@@ -626,7 +626,7 @@ Qdrant 本身仍是儲存的唯一來源，斷線時回誠實的 outage 訊息�
 
 corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；FAQ 命中帶引用之後又會被算成檢索結果。現在檢索沒跑過的 run 不計入 recall 與 MRR，改列在獨立欄位。
 
-完整的 corrective arm 在校準後的 0.8／0.08 下（run 36811880858）：correctness 97.2%（144 次錯 4 次），faithfulness 93.5%。錯的 4 次裡 3 次是 `first-role`，就是上面 temporal 的檢索缺口；另 1 次是 golden 規則本身寫錯：`uspace-role` 要求答案說「a Product Manager at USPACE」，網站記的是 Head of Product，於是說對的答案被判錯。golden 規則同樣是手寫、被當成事實來判的面，現在有測試把規則裡每個「職稱 at 雇主」綁到 `src/data/experience`（a113bed）。逐項分析在 `docs/rag-ablation-report.md`。
+完整的 corrective arm 在校準後的 0.8／0.08 下（run 36811880858）：correctness 97.2%（144 次錯 4 次），faithfulness 93.5%。錯的 4 次裡 3 次是 `first-role`，就是上面 temporal 的檢索缺口；另 1 次是 golden 規則本身寫錯：`uspace-role` 要求答案說「a Product Manager at USPACE」，網站記的是 Head of Product，於是說對的答案被判錯。golden 規則同樣是手寫、被當成事實來判的面，現在有測試把規則裡每個「職稱 at 雇主」綁到 `src/data/experience`（a113bed）。逐項分析在 `docs/rag-ablation-report.md`。這次量測在 FAQ 合併之前，合併後沒有重跑 corrective arm。
 
 ## §4.4 守門：ingest 前與 ingest 後各一道
 
@@ -647,6 +647,7 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 ## 驗證
 
 - 本機（7b47aac）：`npm run rag:test` 433／433 全綠，`npx vitest run` 2336／2336 全綠，`npm run build`（含 `tsc -b`）通過，lint 通過。
+- 本機（23f15e6，兩輪 FAQ 合併後）：`npm run rag:test` 445／445 全綠，`npx vitest run` 2336／2336 全綠，build 與 lint 通過。之後的 e2a8796 只改文件。
 - 新增的每一道防禦都做過 mutation，確認拿掉後測試會轉紅；三輪下來存活的 10 道都補了測試或改寫成單一結構後再驗一次，全部轉紅。
 - 線上：校準與基準檔都在 GitHub Actions 對真實 Qdrant 跑出，run id 已寫在各段。
 
@@ -672,7 +673,7 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 
 第二輪的報告推薦 0.8／0.05，條件是答非所問不超過命中的 1%，那一格有 3 筆答非所問。正式設定維持 0.8／0.08，這一格是 0。
 
-上線時有一件事要手動做：正式的 `faq_cache` 同樣受刪除上限保護，push 觸發的 ingest 會拒刪那 109 個舊點，所以 push 後要再帶 `prune=true` 跑一次 RAG Ingest。第一次照做時 `prune` 只傳到 doc_chunks 的建置步驟，FAQ 步驟照樣拒刪；d7c74e9 讓 FAQ 步驟也讀這個 input，重跑後刪掉 109 點，剩 839 點。
+上線時有一件事要手動做：正式的 `faq_cache` 同樣受刪除上限保護，push 觸發的 ingest 會拒刪那 109 個舊點，所以 push 後要再帶 `prune=true` 跑一次 RAG Ingest。第一次照做時 `prune` 只傳到 doc_chunks 的建置步驟，FAQ 步驟照樣拒刪；d7c74e9 讓 FAQ 步驟也讀這個 input，重跑後刪掉 109 點，剩 839 點。第二輪合併上線（23f15e6）時，push 觸發的 ingest 自動刪掉 53 個舊點，數量在刪除上限內，正式快取同樣是 839 點。
 
 ## 範圍外的發現
 
