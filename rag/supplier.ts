@@ -18,10 +18,11 @@
 //   2. Retries once, for failures that a second attempt can fix: the network
 //      dropped, or the supplier said 429/5xx. Not a timeout, which has already
 //      spent the whole budget, and not a 4xx, which will say the same again.
-//   3. Breaks the circuit. A supplier that has just failed is skipped for a
-//      cooldown, per instance. Without it one Voyage outage cost a visitor two
-//      full timeouts in a row: the FAQ probe's embed, then retrieve's embed of
-//      the same text, before the degraded path got a chance to run.
+//   3. Breaks the circuit. A supplier that has just failed to answer (timeout,
+//      network, 429/5xx) is skipped for a cooldown, per instance. Without it
+//      one Voyage outage cost a visitor two full timeouts in a row: the FAQ
+//      probe's embed, then retrieve's embed of the same text, before the
+//      degraded path got a chance to run.
 
 import { config } from './config.js'
 
@@ -98,7 +99,12 @@ export async function callSupplier<T>(
     throw new SupplierError(supplier, `circuit open for ${until - deps.now()}ms after a failure`, true)
   }
   const fail = (err: unknown): never => {
-    openUntil.set(supplier, deps.now() + config.supplierCooldownMs)
+    // Only a supplier that could not answer opens the circuit. A 4xx is an
+    // answer about that one request (a missing FAQ collection, a vector the
+    // collection lacks), and the circuit is shared by every call to the
+    // supplier: opening it on a FAQ 404 turned every visitor's retrieval into
+    // the outage reply.
+    if (isTimeout(err) || isTransient(err)) openUntil.set(supplier, deps.now() + config.supplierCooldownMs)
     throw new SupplierError(supplier, (err as Error)?.message ?? String(err), isTransient(err), { cause: err })
   }
   try {

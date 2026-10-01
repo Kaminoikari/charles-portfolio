@@ -98,3 +98,26 @@ test('the circuit closes once the cooldown has passed', async () => {
   c.advance(1)
   assert.equal(await callSupplier('voyage', calls<number>(42).fn, c.deps), 42)
 })
+
+test('a 4xx does not open the circuit: the supplier answered, only that request was wrong', async () => {
+  // The FAQ probe and retrieval share the qdrant circuit. A 404 from a missing
+  // FAQ collection, or a 400 from one built before its sparse vector, used to
+  // open it, so retrieve then failed fast and every visitor got the outage reply
+  // for as long as the FAQ side stayed broken.
+  const c = clock()
+  for (const status of [400, 404]) {
+    await assert.rejects(callSupplier('qdrant', calls<number>(new SupplierHttpError(status, 'no such collection')).fn, c.deps))
+    const next = calls<number>(42)
+    assert.equal(await callSupplier('qdrant', next.fn, c.deps), 42, `after a ${status}`)
+    assert.equal(next.count(), 1)
+  }
+})
+
+test('a supplier that cannot be reached opens the circuit, whether it timed out or the retry failed too', async () => {
+  for (const err of [timeout(), networkDown(), new SupplierHttpError(503, 'unavailable')]) {
+    __resetBreakers()
+    const c = clock()
+    await assert.rejects(callSupplier('voyage', calls<number>(err).fn, c.deps))
+    await assert.rejects(callSupplier('voyage', calls<number>(42).fn, c.deps), /circuit open/, err.message)
+  }
+})

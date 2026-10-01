@@ -613,10 +613,10 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 
 - 拋出的任何東西都分類成 `SupplierError`，outage 判斷改看這個型別
 - 網路失敗、429、5xx 重試一次；逾時與 4xx 不重試
-- 失敗後同一個 instance 內斷路 30 秒，避免同一則訊息在 FAQ 探測與檢索各等一次 10 秒逾時
+- 供應商答不出來（逾時、網路、429、5xx）時，同一個 instance 內斷路 30 秒，避免同一則訊息在 FAQ 探測與檢索各等一次 10 秒逾時；4xx 是對單一請求的回答，不斷路，否則 FAQ collection 的 404 會讓所有訪客的檢索都回 outage
 - Voyage 回 200 卻缺少某個輸入的向量，也算供應商失敗；以前檢索會拿到 `undefined`，靜默改用 BM25 且不回報降級
 
-降級種類（`dense-unavailable`、`rerank-unavailable`）沿 graph state 傳到 `done` 事件與 chat_logs 的 `degraded` 欄位，insights 報表新增計數。這類回答訪客照樣收到，以前在任何報表裡都看不出來。eval 的 corrective arm 跑的是正式 graph，所以 ablation 報告也新增 degraded 欄位，標出靠 BM25 作答的 run 數。
+降級種類（`dense-unavailable`、`rerank-unavailable`）沿 graph state 傳到 `done` 事件與 chat_logs 的 `degraded` 欄位，insights 報表新增計數。這類回答訪客照樣收到，以前在任何報表裡都看不出來。eval 的 corrective arm 跑的是正式 graph，所以 ablation 報告也新增 degraded 欄位，標出在 Voyage 斷線時檢索的 run 數（只靠 BM25，或少了 rerank 的融合排序）。
 
 Qdrant 本身仍是儲存的唯一來源，斷線時回誠實的 outage 訊息，這是刻意的終點。
 

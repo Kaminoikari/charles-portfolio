@@ -94,9 +94,10 @@ export function extractUrls(text: string): string[] {
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-// Whether `text` states `fact`. The number must stand alone (no digit glued to
-// either side, and no further digits after a point or comma on the right), and "N+" also reads as the corpus's own ways of saying it:
-// "more than N", 「N 年以上」, "N 年以上".
+// Whether `text` states `fact`. The number must stand alone: no digit glued to
+// either side, and no further digits after a point or comma on the right.
+// "N+" also reads as the corpus's own ways of saying it: "more than N",
+// 「N 年以上」, "N 年以上".
 export function mentionsFact(text: string, fact: string): boolean {
   const t = normalise(text)
   if (new RegExp(`(?<![\\d.,])${escape(fact)}(?![\\d]|[.,]\\d)`).test(t)) return true
