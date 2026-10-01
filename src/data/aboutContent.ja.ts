@@ -67,7 +67,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'spec-writing',
       label: 'Spec Writing',
-      body: '私自身が作った AI Agent「Product Playbook」。22 のプロダクトフレームワークを統合した Claude Skills として、状況ごとに論理的で専門性の高いプロダクト仕様書を生成し、従来数日を要した企画プロセスを数時間に短縮します。',
+      body: '私自身が作った AI Agent「Product Playbook」。16 の組み合わせ可能なプロダクト思考 lens で構成された Claude Code プラグインとして、状況ごとに論理的で専門性の高いプロダクト仕様書を生成し、従来数日を要した企画プロセスを数時間に短縮します。',
     },
     {
       id: 'prototyping',

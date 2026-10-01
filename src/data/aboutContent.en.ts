@@ -63,7 +63,7 @@ export const aboutContent: AboutContent = {
     {
       id: 'spec-writing',
       label: 'Spec Writing',
-      body: 'I built my own AI agent, "Product Playbook", a Claude Skills setup integrating 22 product frameworks. It produces rigorous, professional product spec documents tailored to each context, compressing what used to take days of planning into hours.',
+      body: 'I built my own AI agent, "Product Playbook", a Claude Code plugin built from 16 composable product-thinking lenses. It produces rigorous, professional product spec documents tailored to each context, compressing what used to take days of planning into hours.',
     },
     {
       id: 'prototyping',

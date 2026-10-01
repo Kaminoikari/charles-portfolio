@@ -208,7 +208,10 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Product Playbook はいくつのプロダクトフレームワークを使っていますか?',
     },
     relevantIds: ['project:product-playbook:solution', 'project:product-playbook:tech', 'about:ai:spec-writing:'],
-    mustInclude: ['22'],
+    // 2.0 ships each framework as one of 16 composable lenses (projects.*.ts,
+    // portfolio-map.ts). This asked for 22 while the About page still described
+    // v1.x, and answers that mixed the two numbers were judged ungrounded.
+    mustInclude: ['16'],
   },
   {
     id: 'uspace-insurance',
