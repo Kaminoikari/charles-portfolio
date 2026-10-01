@@ -56,12 +56,12 @@ test('privacy questions across personas redirect', () => {
 test('required FAQ topics exist for each persona', () => {
   const required = [
     // general
-    'who-is-charles', 'overall-summary', 'projects-list',
+    'who-is-charles', 'projects-list',
     // interviewer / HR
-    'strengths', 'weaknesses', 'achievement', 'why-hire', 'why-product',
+    'weaknesses', 'achievement', 'why-hire', 'why-product',
     'availability', 'prioritization', 'leadership', 'metrics-summary',
     // tech enthusiast
-    'bot-how-made', 'bot-who-are-you', 'tech-why-choices', 'open-source',
+    'bot-how-made', 'who-is-mika', 'tech-why-choices', 'open-source',
     'project-playbook-tech',
     // founder / investor
     'zero-to-one', 'cofounder', 'product-builder',
@@ -97,7 +97,6 @@ const IDENTITY_ENTRIES = [
   'who-is-charles',
   'who-is-mika',
   'bot-how-made',
-  'bot-who-are-you',
   'bot-why-qdrant',
   'bot-cost-control',
   'bot-why-designed',
@@ -107,13 +106,14 @@ const IDENTITY_ENTRIES = [
   'bot-design-patterns',
 ]
 
-// Two of those entries are the visitor asking who she IS, and only those two are
-// held to saying the name. The rest answer in the first person without needing to
-// repeat it, whether they are describing the architecture or Charles.
+// One of those entries is the visitor asking who she IS (who-is-mika, which since
+// 2026-10-01 also holds the "what are you" paraphrases of bot-who-are-you), and
+// only that one is held to saying the name. The rest answer in the first person
+// without needing to repeat it, whether they describe the architecture or Charles.
 // Splitting the two rules is what makes the naming one assertable: it used to
 // share a regex with the pronoun check, so an answer could drop the name, keep an
 // `I`, and pass a test called "name her".
-const NAMES_HER = ['who-is-mika', 'bot-who-are-you']
+const NAMES_HER = ['who-is-mika']
 
 const answerOf = (id: string) => {
   const entry = faqEntries.find((e) => e.id === id)
@@ -150,7 +150,7 @@ test('the answers to "who are you" name her, in every locale', () => {
 // and is invisible in review once it is one of sixty.
 //
 // What they do NOT catch, measured rather than guessed: deleting an opener goes
-// undetected in 51 of 174 answer/locale pairs and deleting a closer in 31,
+// undetected in 52 of 159 answer/locale pairs and deleting a closer in 30,
 // because the paragraph that would become the edge is itself short or carries a
 // first-person token. `philosophy`'s "Charles works by four principles:" is 33
 // characters, well under the English ceiling. The ceilings separate her lines
@@ -164,11 +164,11 @@ test('the answers to "who are you" name her, in every locale', () => {
 // is every answer's first and last paragraph rather than only the lines written
 // in this pass, and counting only the edges with no first-person token, since
 // those are the ones a ceiling actually governs: the longest is 76 characters in
-// English (`remote`'s closer), 40 in Chinese (`why-product`'s closer), and 40 in
-// Japanese (`who-is-charles`'s closing invitation).
-// Chinese now has no room left at all: its longest governed edge sits exactly on
-// its ceiling, so the next zh line written one character longer without a
-// first-person token fails here rather than shipping.
+// English (`remote`'s closer), 40 in Chinese (`why-product`'s closer), and 35 in
+// Japanese (`bot-cost-control`'s closer). Chinese now has no room left at all:
+// its longest governed edge sits exactly on its ceiling, so the next zh line
+// written one character longer without a first-person token fails here rather
+// than shipping.
 const VOICE_LINE_MAX: Record<'en' | 'zh-TW' | 'ja', number> = { en: 90, 'zh-TW': 40, ja: 45 }
 
 // An identity answer IS her talking about herself, and a closing invitation
@@ -234,9 +234,9 @@ test('the Japanese answers never say 私', () => {
 // without a human noticing.
 //
 // Closing lines only, and the reason is the openers, not the entries. Measured
-// against these two regexes, 4 of 58 ja openers and 19 of 58 zh openers would
-// fail. All four ja ones are identity answers that correctly open on their own
-// content (「あたしは**ミカ**、…」). The zh ones are her own spoken lines that end
+// against these two regexes, 2 of 53 ja openers and 17 of 53 zh openers would
+// fail. Both ja ones are identity answers that correctly open on their own
+// content (`who-is-mika`, `bot-how-made`). The zh ones are her own spoken lines that end
 // on something other than a particle: most trail off on a bare ～ (「快聽 Mika 娓娓
 // 道來～」), the rest stop on ！ or hand over on ： . A closing line is
 // always an invitation, so the marker is reliable there and noisy at the front.
@@ -380,17 +380,17 @@ test('a particle wearing a ～ is still seen as stacked mid-line', () => {
 // Her Japanese openers get the same 常体 rule her closers do, read two ways,
 // because each selector alone leaves a hole the other covers.
 //
-// By position: the FIRST sentence of every ja opener. That is her line in the 54
+// By position: the FIRST sentence of every ja opener. That is her line in the 51
 // answers whose opener is nothing but a voice line, and mutating one of them to
 // 敬体 (`philosophy`'s 「…ここから読むといいですよ。」) is caught here. The counts test
-// below reddens for it too, by arithmetic (4 becomes 5) rather than by saying what
+// below reddens for it too, by arithmetic (2 becomes 3) rather than by saying what
 // is wrong, which is why this one exists.
 //
-// By content: any sentence that says her NAME, wherever it sits. Four answers
-// open on content rather than on a voice line, and in `bot-who-are-you` the
-// self-introduction is the SECOND sentence (「あたしは Charles 本人じゃないよ。
-// **ミカ**なの。」), which the positional check reads straight past. It was 敬体
-// there for four rounds.
+// By content: any sentence that says her NAME, wherever it sits. Two answers
+// open on content rather than on a voice line, and in `who-is-mika` the
+// self-introduction is the SECOND sentence (「やっほー！あたしは**ミカ**（Mika）、
+// …だよ。」), which the positional check reads straight past. The answer it came
+// from, `bot-who-are-you`, was 敬体 there for four rounds.
 //
 // What neither reads is the rest of a content opener, which is body: 「…あたしの
 // 口が動き…色づきます。」 in `who-is-mika` is 敬体 by design.
@@ -433,8 +433,8 @@ test('the counts quoted in the comments above are still the measured ones', () =
   const zhOpenersFailing = faqEntries.filter(
     (e) => !ZH_SPOKEN_ENDING.test(e.answers['zh-TW'].split('\n\n')[0].trim()),
   ).length
-  assert.equal(jaOpenersFailing, 4, 'the comment above says 4 of 58 ja openers would fail')
-  assert.equal(zhOpenersFailing, 19, 'the comment above says 19 of 58 zh openers would fail')
+  assert.equal(jaOpenersFailing, 2, 'the comment above says 2 of 53 ja openers would fail')
+  assert.equal(zhOpenersFailing, 17, 'the comment above says 17 of 53 zh openers would fail')
 
   // The blind spots the opener/closer guards knowingly have: deleting the edge
   // leaves a paragraph that still clears the ceiling or carries a pronoun.
@@ -451,8 +451,8 @@ test('the counts quoted in the comments above are still the measured ones', () =
         closerBlind++
     }
   }
-  assert.equal(openerBlind, 51, 'the comment above says deleting an opener goes undetected in 51 pairs')
-  assert.equal(closerBlind, 31, 'the comment above says deleting a closer goes undetected in 31 pairs')
+  assert.equal(openerBlind, 52, 'the comment above says deleting an opener goes undetected in 52 pairs')
+  assert.equal(closerBlind, 30, 'the comment above says deleting a closer goes undetected in 30 pairs')
 
   // The longest edge the ceiling actually governs, per language.
   const longest: Record<string, number> = { en: 0, 'zh-TW': 0, ja: 0 }
@@ -466,7 +466,7 @@ test('the counts quoted in the comments above are still the measured ones', () =
   }
   assert.deepEqual(
     longest,
-    { en: 76, 'zh-TW': 40, ja: 40 },
-    'the comment above quotes en 76, zh 40, ja 40 as the longest edges the ceiling governs',
+    { en: 76, 'zh-TW': 40, ja: 35 },
+    'the comment above quotes en 76, zh 40, ja 35 as the longest edges the ceiling governs',
   )
 })

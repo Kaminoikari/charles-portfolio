@@ -135,8 +135,9 @@ export const config = {
   // has to reach past the widest paraphrase set any single entry has, or the
   // competing TOPIC never enters the comparison and the rule compares an entry
   // against itself. A test in rag/qdrant.test.ts pins this against the real
-  // corpus, so growing an entry's paraphrases cannot silently outrun it.
-  faqCandidateK: int('RAG_FAQ_CANDIDATE_K', 16),
+  // corpus, so growing an entry's paraphrases cannot silently outrun it. Raised
+  // from 16 when the 2026-10-01 merge gave who-is-charles 21 zh paraphrases.
+  faqCandidateK: int('RAG_FAQ_CANDIDATE_K', 32),
   // Ask BM25 for a second opinion before serving a cache hit, and decline when
   // the lexical arm does not rank the dense winner at all. The dense arm matches
   // sentence FRAME, so 「Charles 在 NUEIP 做什麼?」 landed on the general career

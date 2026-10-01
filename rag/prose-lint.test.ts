@@ -97,11 +97,11 @@ test('the numerals quoted in comments are measured or declared', () => {
   assert.deepEqual(
     Object.fromEntries(measured),
     {
-      'cached answers': 58,
-      'answer/locale pairs': 174,
+      'cached answers': 53,
+      'answer/locale pairs': 159,
       'her recorded lines per locale': 25,
       'chat.* keys that are not hers': 43,
-      'ja openers that are nothing but a voice line': 54,
+      'ja openers that are nothing but a voice line': 51,
       "chars in philosophy's English lead-in": 33,
     },
     'a comment quotes one of these; re-measure and update both',
@@ -109,13 +109,14 @@ test('the numerals quoted in comments are measured or declared', () => {
 
   // Owned by the counts test at the bottom of faq-audit.test.ts, which measures
   // each one and fails on drift.
-  const assertedInFaqAudit = [51, 31, 76, 40, 4, 19]
+  const assertedInFaqAudit = [52, 30, 76, 40, 35, 2, 17]
 
   // Numbers this data cannot move. Each one is here because it is a constant of
   // something else, not a count of her answers.
   const constants = [
     3, // ZH_INTERJECTION_MAX, and 「第 3 個問題」 inside a quoted example
-    5, // 「4 becomes 5」 in the ja-opener arithmetic, and 「item 5」 in a quoted incident
+    5, // 「item 5」 in a quoted incident
+    4, // 「第 3 和第 4 個問題」 inside a quoted example (nodes.test.ts)
     8, // 「第 8 題」 inside a quoted example
     20, // Gemini free tier, requests per day
     71, 114, // round 5: 71 of 114 zh voice lines were rewritten, a historical count

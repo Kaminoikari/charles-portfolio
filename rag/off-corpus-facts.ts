@@ -12,24 +12,14 @@
 export type Surface = 'portfolio-map' | `faq:${string}`
 
 export interface OffCorpusFact {
-  // As groundFacts reports it: '940', 'date:2026-08'.
+  // As groundFacts reports it: '1,000', 'date:2026-08'.
   fact: string
   surfaces: Surface[]
   publishedIn: { file: string; text: string } | null
   reason: string
 }
 
-export const OFF_CORPUS_FACTS: OffCorpusFact[] = [
-  {
-    fact: '940',
-    surfaces: ['faq:languages'],
-    publishedIn: null,
-    reason: 'TOEIC score. No page on the site states it.',
-  },
-  {
-    fact: '990',
-    surfaces: ['faq:languages'],
-    publishedIn: null,
-    reason: 'TOEIC maximum, quoted alongside the score.',
-  },
-]
+// Empty since 2026-10-01: the promotion date went into src/data/experience and
+// the TOEIC score came out of the FAQ answers. Kept so the next exception has a
+// place to be registered, and checked, instead of an inline skip.
+export const OFF_CORPUS_FACTS: OffCorpusFact[] = []
