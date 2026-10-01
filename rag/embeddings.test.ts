@@ -91,13 +91,18 @@ test('embed: a response that carries no vector for an input is the supplier fail
   // fetch is the network boundary; everything above it runs for real.
   __resetBreakers()
   const realFetch = globalThis.fetch
-  globalThis.fetch = async () => new Response(JSON.stringify({ data: [] }), { status: 200 })
   try {
-    await assert.rejects(embed(['probe'], 'query'), (err: unknown) => {
-      assert.ok(err instanceof SupplierError, String(err))
-      assert.match(err.message, /1 input/)
-      return true
-    })
+    // No entry at all, and an entry with no embedding: the count matches in the
+    // second, so only the per-vector check stops it.
+    for (const data of [[], [{}]]) {
+      globalThis.fetch = async () => new Response(JSON.stringify({ data }), { status: 200 })
+      __resetBreakers()
+      await assert.rejects(embed(['probe'], 'query'), (err: unknown) => {
+        assert.ok(err instanceof SupplierError, String(err))
+        assert.match(err.message, /1 input/)
+        return true
+      }, JSON.stringify(data))
+    }
   } finally {
     globalThis.fetch = realFetch
     __resetBreakers()
