@@ -40,6 +40,15 @@ test('a number glued to another digit is a different number', () => {
   assert.equal(mentionsFact('reached 50 accounts', '50'), true)
 })
 
+test('a number with more digits after its point or comma is a different number', () => {
+  // The left side alone was guarded: "25.5%" stated 25 and "1,000,000" stated
+  // 1,000, so a hand-written figure could be grounded by a larger one.
+  assert.equal(mentionsFact('grew 25.5%', '25'), false)
+  assert.equal(mentionsFact('1,000,000 members', '1,000'), false)
+  assert.equal(mentionsFact('grew 25. Then', '25'), true)
+  assert.equal(mentionsFact('25, then 30', '25'), true)
+})
+
 test('"N+" reads as the corpus says it, in each language', () => {
   assert.equal(mentionsFact('more than 5 of them in product', '5+'), true)
   assert.equal(mentionsFact('其中 5 年以上專注於產品', '5+'), true)
@@ -93,6 +102,13 @@ test('a link loses its trailing punctuation but nothing else', () => {
 test('a month and year reads the same in every way the copy writes it', () => {
   assert.deepEqual(extractDates('since August 2026, from JULY 2024, Jan. 2025'), ['2026-08', '2024-07', '2025-01'])
   assert.deepEqual(extractDates('2026 年 8 月起，2024年7月'), ['2026-08', '2024-07'])
+  assert.deepEqual(extractDates('Sept. 2025, Sep 2025, September 2025'), ['2025-09'])
+})
+
+test('a word that only begins like a month is not a month', () => {
+  // "Marketing 2024" read as March 2024: a false ungrounded fact in hand-written
+  // copy, and a curated chunk that grounds a month it never names.
+  assert.deepEqual(extractDates('Marketing 2024, Decision 2025, Mayday 2023, Junior 2022'), [])
 })
 
 test('a date is grounded by a curated record, never by a changelog that shares the year and month', () => {

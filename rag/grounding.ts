@@ -71,12 +71,16 @@ export function extractFacts(text: string): string[] {
 // publication date.
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 const pad = (m: number) => String(m).padStart(2, '0')
+// Every spelling the copy uses, and only those: a prefix match read "Marketing
+// 2024" as March 2024.
+const MONTH_YEAR_RE =
+  /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+(\d{4})\b/gi
 
 export function extractDates(text: string): string[] {
   const t = normalise(text)
   const out = new Set<string>()
-  for (const m of t.matchAll(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{4})\b/gi)) {
-    out.add(`${m[2]}-${pad(MONTHS.indexOf(m[1].toLowerCase()) + 1)}`)
+  for (const m of t.matchAll(MONTH_YEAR_RE)) {
+    out.add(`${m[2]}-${pad(MONTHS.indexOf(m[1].slice(0, 3).toLowerCase()) + 1)}`)
   }
   for (const m of t.matchAll(/(\d{4})\s*年\s*(\d{1,2})\s*月/g)) out.add(`${m[1]}-${pad(Number(m[2]))}`)
   return [...out]
@@ -91,11 +95,11 @@ export function extractUrls(text: string): string[] {
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 // Whether `text` states `fact`. The number must stand alone (no digit glued to
-// either side), and "N+" also reads as the corpus's own ways of saying it:
+// either side, and no further digits after a point or comma on the right), and "N+" also reads as the corpus's own ways of saying it:
 // "more than N", 「N 年以上」, "N 年以上".
 export function mentionsFact(text: string, fact: string): boolean {
   const t = normalise(text)
-  if (new RegExp(`(?<![\\d.,])${escape(fact)}(?!\\d)`).test(t)) return true
+  if (new RegExp(`(?<![\\d.,])${escape(fact)}(?![\\d]|[.,]\\d)`).test(t)) return true
   const plus = fact.match(/^(\d+)\+$/)
   if (plus) {
     const n = plus[1]
