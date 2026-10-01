@@ -56,8 +56,9 @@ export const config = {
   // The eval's judges (faithfulness, and whether an answer states a golden
   // claim). Never on a visitor's path. Haiku misread long trilingual contexts:
   // in run 36889773317 most of its 14 ungrounded verdicts quoted the supporting
-  // line in their own reason.
-  modelJudge: process.env.RAG_MODEL_JUDGE ?? 'claude-sonnet-5-5',
+  // line in their own reason. claude-sonnet-5-5 rejects the thinking:disabled
+  // that @langchain/anthropic sends with structured output (run 36894399333).
+  modelJudge: process.env.RAG_MODEL_JUDGE ?? 'claude-sonnet-4-6',
   embedModel: process.env.RAG_EMBED_MODEL ?? 'voyage-3-large',
   rerankModel: process.env.RAG_RERANK_MODEL ?? 'rerank-2.5',
   embedDim: int('RAG_EMBED_DIM', 1024),
