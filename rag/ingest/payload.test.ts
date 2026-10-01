@@ -52,9 +52,13 @@ test('toPoint asks BM25 to segment Chinese and Japanese, and leaves English on t
   assert.equal(ja.tokenizer, 'multilingual')
   assert.deepEqual(zh.stopwords.languages, ['english', 'chinese'])
   assert.deepEqual(ja.stopwords.languages, ['english', 'japanese'])
-  // The question words the built-in lists let through (run 36895598684).
-  for (const w of ['什麼', '做什麼', '多大']) assert.ok(zh.stopwords.custom.includes(w), w)
-  for (const w of ['いました', 'どのくらい']) assert.ok(ja.stopwords.custom.includes(w), w)
+  // Question tokens the built-in lists let through (runs 36895598684,
+  // 36896446685). Each entry must be one token as the tokenizer emits it:
+  // Traditional Chinese is split into single characters, so 什麼 would stop
+  // nothing.
+  for (const w of ['什', '麼', '做']) assert.ok(zh.stopwords.custom.includes(w), w)
+  for (const w of ['まし', 'でし', 'くらい']) assert.ok(ja.stopwords.custom.includes(w), w)
+  for (const w of zh.stopwords.custom) assert.equal([...w].length, 1, `${w} is not one Traditional Chinese token`)
   assert.equal('options' in sparse('en'), false)
 })
 
