@@ -682,3 +682,26 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 在同一分支建出的實驗索引上量：hybrid+rerank 的 recall 從 92.4% 升到 97.2%，時序題從 41.7% 升到 100%；逐題對照基準，沒有任何一題退步，9 題上升（run 36867760929），基準檔已更新到這次。corrective arm 的 correctness 從 97.2% 升到 99.3%，144 次只錯 1 次（run 36871169321）。沒有對訪客提供的 dense-only 與 hybrid 兩個 arm 在 single-fact 與 global 各掉了一點，對訪客提供的 hybrid+rerank 沒有。
 
 judge 這邊做了三件事，留下來且確定有用的只有一件。告訴 judge 今天的日期、以及「翻譯或等值數字算有依據」的規則，faithfulness 仍是 91.0%，`uspace-role` zh 在拿到日期的情況下照樣把 2026 年 8 月當成未來。改成「列出所有沒依據的主張」的版本讓沒依據的判定從 11 次變 29 次（run 36868407205），已撤回。有用的是第三件：judge 的輸出讀不出來時只略過那一題。run 36867749603 就是因為一次讀不出來，整個 eval 中斷；這個退路由單元測試驗證，之後的 run 沒有再遇到讀不出來的情況。要讓 faithfulness 可信，下一步得換更強的 judge 模型或多次判讀取多數，光改 prompt 不夠。
+
+## 正式索引上 ai-workflow（ja）撈不到
+
+時間軸上線（86e6ae2）後，push 觸發的 ingest 在回歸閘門紅了一題：日文的 `ai-workflow`，基準裡是命中，正式索引上是 0（run 36874601695）。同一份程式碼在實驗索引上是命中，所以這題原本就是靠運氣。
+
+原因在「How I Use AI」那張表的切法。它被切成 7 列，每列只答一個窄題（寫規格、agentic workflow 等），「他怎麼在工作裡用 AI」沒有任何一列能單獨回答。日文的 7 列裡沒有一列提到 Charles，BM25 又幾乎切不開日文，只剩 dense 能找，而每一列都不夠接近：日文的 sparse-only、dense-only、hybrid 三個 arm 全部沒撈到（run 36868407205）。hybrid+rerank 只在某一列剛好擠進送去 rerank 的 20 個候選時才命中，實驗索引剛好擠進，正式索引沒有。
+
+第一個修法是在每一列前面加上段落標題（871d3a9），日文照樣沒撈到（run 36887255550），已換掉。現在的修法是每個語系多一個總覽 chunk，第一行是網站自己的標題，下面是整張表（`about:ai:overview:<locale>`，在 `rag/ingest/extract.ts` 的 `aboutChunks`）。
+
+正式索引上的結果（6c37453）：
+
+| 量測 | 結果 |
+|---|---|
+| push 後的回歸閘門（run 36889248688） | 綠燈；hybrid+rerank recall 97.2%，144 題沒有一題低於基準 |
+| dense-only、hybrid+rerank 的 `ai-workflow`（run 36889761728） | 三個語系都命中 |
+| sparse-only、hybrid 的 `ai-workflow` | zh-TW 與 ja 仍沒撈到 |
+| corrective arm（run 36889773317） | correctness 99.3%，日文 `ai-workflow` 答對；唯一答錯的是日文 `compare-team-sizes`，兩個經歷 chunk 都撈到了，答案漏寫 15 |
+
+能說到多穩：修正前，日文 dense-only 在兩個索引上都撈不到這題，hybrid+rerank 命中與否取決於索引；修正後，dense-only 與 hybrid+rerank 在實驗索引（run 36888032321）與正式索引（run 36889761728）的三個語系都命中。這不是構造上的保證：dense 與 sparse 各取 20 個候選、以 RRF 融合後留 20 個，兩邊同時排得前面的 chunk 夠多時，只在 dense 排前面的 chunk 仍可能被擠出候選。擋住它的是每次內容 push 都會跑的回歸閘門，這題再掉一次就會紅。
+
+剩下的缺口是 BM25 對中日文的切詞。sparse-only 只在 Voyage 掛掉時對訪客提供；那時 zh-TW 與 ja 的這題還是撈不到。總覽 chunk 在實驗索引上也讓 sparse-only 在 zh-TW 多漏了 `uspace-role` 與 `uspace-insurance` 兩題。正式索引上 sparse-only 是 72.2%，同一份程式碼在實驗索引上是 76.0%，差距的原因沒有量。要補這一塊得換一個切得開中日文的 sparse 模型，目前沒有排進來。
+
+faithfulness 這次是 88.5%（122 次判讀裡 14 次沒依據），上一次在實驗索引上是 91.0%（11 次）。14 次還沒逐條分類，其中 `domains`（en）又把 2025 年 9 月當成未來。

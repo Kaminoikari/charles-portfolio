@@ -177,10 +177,11 @@ export interface AboutContentInput {
 // `aiHeading` is the site's own heading for the AI table (src/i18n/strings,
 // about.sectionAi), and with it the table also gets one overview chunk holding
 // every row. Each row answers one narrow question; "how does he use AI across his
-// work" has no single row that answers it, and in Japanese none of the four
-// retrieval arms found any row for it (runs 36868407205, 36887255550): the rows
-// say 私, never Charles, and BM25 barely tokenises the rest. The skills table
-// is indexed whole (skills:all) for the same reason.
+// work" has no single row that answers it. In Japanese, sparse-only, dense-only
+// and hybrid all missed every row (run 36868407205), and hybrid+rerank hit only
+// when a row fell inside its 20 candidates (production missed, run 36874601695):
+// no Japanese row names Charles, and BM25 barely tokenises the rest. The skills
+// table is indexed whole (skills:all) for the same reason.
 export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?: string): ChunkRecord[] {
   const out: ChunkRecord[] = []
   const base = { parentId: null, sourceType: 'about' as const, projectId: null, locale }

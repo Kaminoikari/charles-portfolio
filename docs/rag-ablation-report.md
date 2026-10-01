@@ -21,30 +21,27 @@ lift of each is visible.
 - The `corrective` arm runs the full graph and scores `correctness` and
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
-- Last run: **2026-10-01**, after the experience timeline chunk was added.
-  The four retrieval arms are from run 36868407205 (commit cdf7b6f). The
-  `corrective` row is from run 36871169321 (commit 7281602); the two commits
-  differ only in the faithfulness judge, which the retrieval arms never call,
-  and in the committed recall baseline, which no eval run reads.
-  Both runs query `doc_chunks_timeline`, an index built from the same branch.
+- Last run: **2026-10-02**, on the production `doc_chunks` index at commit
+  6c37453, after the AI overview chunk went live. The four retrieval arms are
+  from run 36889761728 and the `corrective` row from run 36889773317.
 
 ## Current results
 
 | Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
 |---|---|---|---|---|---|
-| sparse-only | 77.4% | 0.506 | — | — | 0 of 144 |
-| dense-only | 96.9% | 0.736 | — | — | 0 of 144 |
-| hybrid | 92.7% | 0.656 | — | — | 0 of 144 |
-| hybrid+rerank | 97.2% | 0.856 | — | — | 0 of 144 |
-| corrective | 96.7% | 0.838 | 99.3% | 91.0% | 22 of 144 |
+| sparse-only | 72.2% | 0.489 | — | — | 0 of 144 |
+| dense-only | 97.6% | 0.736 | — | — | 0 of 144 |
+| hybrid | 93.4% | 0.662 | — | — | 0 of 144 |
+| hybrid+rerank | 97.2% | 0.853 | — | — | 0 of 144 |
+| corrective | 96.7% | 0.835 | 99.3% | 88.5% | 22 of 144 |
 
 Recall by category (n = query runs):
 
 | Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
 |---|---|---|---|---|---|---|---|
-| sparse-only | 77.3% | 44.4% | 100.0% | 100.0% | 100.0% | 61.1% | 66.7% |
-| dense-only | 97.0% | 94.4% | 100.0% | 100.0% | 100.0% | 83.3% | 100.0% |
-| hybrid | 97.0% | 66.7% | 100.0% | 100.0% | 100.0% | 72.2% | 100.0% |
+| sparse-only | 71.2% | 44.4% | 93.3% | 91.7% | 100.0% | 55.6% | 58.3% |
+| dense-only | 97.0% | 100.0% | 100.0% | 100.0% | 100.0% | 83.3% | 100.0% |
+| hybrid | 97.0% | 72.2% | 100.0% | 100.0% | 100.0% | 72.2% | 100.0% |
 | hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 100.0% |
 
 **The timeline closed the temporal gap.** Before it, every experience chunk
@@ -58,18 +55,43 @@ baseline, hybrid+rerank dropped no question and raised nine (run 36867760929):
 `before-pxpay` and `concurrent-roles` in all three because the timeline answers
 them whole. The baseline was refreshed to that run.
 
-The arms nobody is served lost a little: dense-only single-fact 98.5% to
-97.0% and global 100.0% to 94.4%, hybrid single-fact 98.5% to 97.0% and global
-72.2% to 66.7%. The served arm, hybrid+rerank, kept 100.0% and 94.4% on those.
+On the experiment index the timeline cost the arms nobody is served a little:
+dense-only single-fact 98.5% to 97.0% and global 100.0% to 94.4%, hybrid
+single-fact 98.5% to 97.0% and global 72.2% to 66.7% (run 36868407205). With
+the AI overview chunk below, global is back to 100.0% and 72.2% on production;
+single-fact stays at 97.0%.
+
+**`ai-workflow` (ja) failed the production gate; dense-only and hybrid+rerank
+now retrieve it in every locale.** When the timeline went live (86e6ae2), the
+post-ingest gate went red on one question: `ai-workflow` in Japanese, which the baseline had as
+a hit (run 36874601695). The "How I Use AI" table was indexed as seven rows,
+each answering one narrow part (spec writing, agentic workflows, …), and none
+of the seven Japanese rows names Charles. BM25 barely splits Japanese, so only
+the dense half could find them, and no single row was close enough: in Japanese, sparse-only, dense-only
+and hybrid all missed it (run 36868407205). hybrid+rerank hit only when a row happened to fall inside
+the 20 candidates it reranks, which is why the experiment index passed the
+same code and production did not. Prefixing every row with the section heading
+(871d3a9) did not help: hybrid+rerank still missed it in Japanese
+(run 36887255550). What did is one more chunk per locale holding the whole
+table under the site's own heading (`about:ai:overview:<locale>`, in
+`aboutChunks`). On production, dense-only and hybrid+rerank now hit
+`ai-workflow` in all three locales, the gate passed with no question below its
+baseline (run 36889248688), and the corrective arm answers it correctly in
+Japanese. sparse-only and hybrid still miss it in zh-TW and ja: that is BM25
+failing on CJK, and it reaches a visitor only while Voyage is down.
 
 **sparse-only is what a visitor gets while Voyage is down.** Before 2026-10-01
 a Voyage outage ended the request with the outage notice (or, when the network
 call itself failed, a generic stream error); now retrieve falls back
 to the BM25 half of the hybrid query and reports `dense-unavailable`. It costs
-19.8 points of recall against hybrid+rerank (77.4% against 97.2%) and most of
-the ranking (MRR 0.506 against 0.856). The loss is concentrated where the
-question shares few words with the answer: global questions drop to 44.4%. A
-question that names its subject (local, near-miss) loses nothing.
+25.0 points of recall against hybrid+rerank (72.2% against 97.2%) and most of
+the ranking (MRR 0.489 against 0.853). The loss is concentrated where the
+question shares few words with the answer: global questions drop to 44.4%.
+Questions that name their subject lose less (local 93.3%, near-miss 91.7%).
+On the experiment index the overview chunk cost sparse-only two zh-TW
+questions (`uspace-role`, `uspace-insurance`): it now ranks in their top six
+and the experience chunk they need does not. The same code read 76.0% on the experiment index (run 36888032321); why
+sparse-only reads lower on production has not been measured.
 
 **Comparison is now the category that can fail.** At 66.7% it is one item
 scoring zero in all three locales: `compare-path-plutus-stack` retrieves each
@@ -77,16 +99,20 @@ project's solution chunk and changelog entries about the project pages, and
 neither tech chunk that lists the stacks. dense-only scores higher on this
 category (83.3%); why has not been measured.
 
-**corrective: 99.3% correct (1 of 144 wrong), 91.0% faithful (11 of 122 judged
-runs ungrounded).** The one wrong answer is `ai-workflow` (ja), where the judge
-found the rule's claim not stated; the answer text is not in the log. Before
-the timeline (run 36857502362, 15424ba) the arm scored 97.2% correct, and three
-of its four wrong answers were `first-role`.
+**corrective: 99.3% correct (1 of 144 wrong), 88.5% faithful (14 of 122 judged
+runs ungrounded).** The one wrong answer is `compare-team-sizes` (ja): both
+experience chunks were retrieved and the answer left out the 15. On the
+experiment index before the overview chunk (run 36871169321) it was also one
+wrong answer, `ai-workflow` (ja), which is now correct. Before the timeline
+(run 36857502362, 15424ba) the arm scored 97.2% correct, and three of its four
+wrong answers were `first-role`. The fourteen ungrounded answers in this run
+have not been classified; `domains` (en) calls September 2025 a future
+date, the same misread as `uspace-role` below.
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run
-36857502362. Neither had an effect that one run can show: the rate is the same
-91.0%, `concurrent-roles` (en) is no longer called a future date, but
+36857502362. Neither had an effect that one run can show: run 36871169321 read
+the same 91.0%, `concurrent-roles` (en) is no longer called a future date, but
 `uspace-role` (zh-TW) is, in a run where the judge was told the date. A
 variant that asked the judge to list every unsupported claim (run 36868407205)
 read 76.2%, with ungrounded verdicts rising from 11 to 29 on wording it
