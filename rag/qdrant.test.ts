@@ -20,6 +20,7 @@ import assert from 'node:assert/strict'
 
 import { DEFAULT_FAQ_DEPS, faqLookup, citationsOf, denseVerdict, type FaqSearchDeps } from './qdrant.js'
 import { config } from './config.js'
+import { callSupplier, SupplierError, __resetBreakers } from './supplier.js'
 import { faqEntries } from './faq-cache.js'
 
 const hit = (faqId: string, score: number) => ({
@@ -120,6 +121,23 @@ test('faqLookup: the margin is a real threshold, not zero', () => {
 // would happily resolve.
 test('faqLookup: the default search really goes to Qdrant', async () => {
   await assert.rejects(DEFAULT_FAQ_DEPS.search(config.qdrantFaqCollection, { query: [0.1], limit: 2 }))
+})
+
+test('faqLookup: the default search goes through the Qdrant supplier boundary', async () => {
+  // Through it, a Qdrant outage seen by the FAQ probe opens the circuit, and the
+  // retrieve that follows fails fast instead of waiting out its own attempts.
+  // With the circuit already open, only a wrapped call fails without a request.
+  __resetBreakers()
+  const down = async () => {
+    throw Object.assign(new Error('down'), { name: 'TimeoutError' })
+  }
+  await assert.rejects(callSupplier('qdrant', down))
+  await assert.rejects(DEFAULT_FAQ_DEPS.search(config.qdrantFaqCollection, { query: [0.1], limit: 2 }), (err: unknown) => {
+    assert.ok(err instanceof SupplierError, String(err))
+    assert.match(err.message, /circuit open/)
+    return true
+  })
+  __resetBreakers()
 })
 
 // A point whose payload lost its faq_id is malformed, not a topic. Both

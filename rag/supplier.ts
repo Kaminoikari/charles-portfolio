@@ -1,7 +1,10 @@
 // The boundary between this pipeline and the two services it cannot answer
 // without: Voyage (query embedding, rerank) and Qdrant (the index).
 //
-// Every call that leaves the process goes through callSupplier, which does
+// Every call that answers a visitor goes through callSupplier: the FAQ probe,
+// the query embedding, the candidate query and the rerank. The analytics write
+// in chatlog.ts does not, on purpose: a failed log write must not open the
+// circuit and turn the next visitor's answer into an outage. callSupplier does
 // three things the callers used to do inconsistently or not at all:
 //
 //   1. Classifies. Anything thrown inside the call is the supplier's failure

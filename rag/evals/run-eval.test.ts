@@ -19,6 +19,7 @@ import {
   toBaseline,
   baselineGate,
   parseBaseline,
+  buildReport,
 } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
@@ -34,6 +35,13 @@ test('recallFailures: names every arm under the floor', () => {
 
 test('recallFailures: a healthy run reports nothing', () => {
   assert.deepEqual(recallFailures(rows, 0.75), [])
+})
+
+test('recallFailures: an arm with no recall to report is under the floor', () => {
+  // aggregate() reports NaN when no run retrieved (every answer came from the
+  // FAQ or a canned reply), and NaN < floor is false: the floor passed an arm
+  // that measured nothing.
+  assert.deepEqual(recallFailures([{ arm: 'corrective', recall: NaN }], 0.85).map((r) => r.arm), ['corrective'])
 })
 
 test('recallFailures: the floor is inclusive, so an arm exactly at it passes', () => {
@@ -177,6 +185,25 @@ test('retrievalScores: a run that never retrieved is left out of recall, even wh
   })
 })
 
+test('retrievalScores: a run that retrieved through a supplier outage says so', () => {
+  // The corrective arm runs the production graph, which falls back to BM25 when
+  // Voyage is down. A run that did so measured the degraded ranking, and the
+  // report has to be able to say how many did.
+  const item = { relevantIds: ['experience:nueip-technology-co-ltd:'] }
+  const ok = { sources: [{ id: 'experience:nueip-technology-co-ltd:en' }], documents: [] }
+  assert.equal(retrievalScores({ ...ok, degraded: ['dense-unavailable'] }, item).degraded, true)
+  assert.equal(retrievalScores({ ...ok, degraded: [] }, item).degraded, undefined)
+})
+
+test('the report counts the degraded runs of each arm', () => {
+  const agg = aggregate([
+    { category: 'single-fact', recall: 1, mrr: 1, degraded: true },
+    { category: 'single-fact', recall: 1, mrr: 1 },
+  ])
+  assert.equal(agg.degraded, 1)
+  assert.match(buildReport([{ arm: 'corrective', agg }]), /\| corrective \|.*\| 1 of 2 \|$/m)
+})
+
 test('aggregate: runs answered without retrieval are counted, not scored as misses', () => {
   const agg = aggregate([
     { category: 'single-fact', recall: 1, mrr: 1 },
@@ -248,4 +275,18 @@ test('the committed baseline is for the served arm and names only questions that
     Object.keys(baseline.recall).filter((k) => !keys.has(k)),
     [],
   )
+  // And it covers every question it names in all three locales, so a baseline
+  // rewritten from a one-locale run cannot drop two thirds of the gate quietly.
+  // (A question added since is allowed to be missing entirely: the gate lists it
+  // as unbaselined until the next write_baseline.)
+  const ids = new Set(Object.keys(baseline.recall).map((k) => k.slice(0, k.lastIndexOf('/'))))
+  assert.deepEqual(
+    [...ids].flatMap((id) => ['en', 'zh-TW', 'ja'].map((l) => `${id}/${l}`)).filter((k) => !(k in baseline.recall)),
+    [],
+  )
+})
+
+test('parseBaseline: an empty baseline is refused, since it would let every regression through', () => {
+  assert.throws(() => parseBaseline({ arm: 'hybrid+rerank', recall: {} }), /empty/)
+  assert.throws(() => parseBaseline({ arm: 'hybrid+rerank', recall: [] }), /not \{ arm/)
 })

@@ -15,7 +15,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { embedOne, __resetQueryCache } from './embeddings.js'
+import { embed, embedOne, __resetQueryCache } from './embeddings.js'
+import { SupplierError, __resetBreakers } from './supplier.js'
 import { config } from './config.js'
 
 const counting = (vec = [0.1, 0.2]) => {
@@ -82,4 +83,23 @@ test('embedOne: a failed embed is not cached as a result', async () => {
   }
   await assert.rejects(embedOne('q', 'query', flaky))
   assert.deepEqual(await embedOne('q', 'query', flaky), [0.3])
+})
+
+test('embed: a response that carries no vector for an input is the supplier failing', async () => {
+  // A 200 with an empty data array used to resolve to [], so embedOne returned
+  // undefined and retrieval quietly ranked by BM25 without reporting it. The
+  // fetch is the network boundary; everything above it runs for real.
+  __resetBreakers()
+  const realFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response(JSON.stringify({ data: [] }), { status: 200 })
+  try {
+    await assert.rejects(embed(['probe'], 'query'), (err: unknown) => {
+      assert.ok(err instanceof SupplierError, String(err))
+      assert.match(err.message, /1 input/)
+      return true
+    })
+  } finally {
+    globalThis.fetch = realFetch
+    __resetBreakers()
+  }
 })

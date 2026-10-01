@@ -156,6 +156,8 @@ export interface Aggregate {
   // the transcript). They have no retrieval to score, so they are left out of
   // recall and MRR rather than counted as misses, and reported here instead.
   withoutRetrieval: number
+  // Runs that retrieved while a supplier was down, so measured the fallback.
+  degraded: number
   // Recall AND correctness split by golden-set category. The mean alone hides
   // the case this whole split exists for: a near-miss item is answerable, so
   // retrieving its SIBLING still counts as a hit and recall stays flat while the

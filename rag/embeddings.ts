@@ -35,8 +35,14 @@ export async function embed(texts: string[], inputType: InputType = 'query'): Pr
       signal: AbortSignal.timeout(config.embedTimeoutMs),
     })
     if (!res.ok) throw new SupplierHttpError(res.status, `embed failed: ${res.status} ${await res.text()}`)
-    const json = (await res.json()) as { data: { embedding: number[] }[] }
-    return json.data.map((d) => d.embedding)
+    const json = (await res.json()) as { data?: { embedding?: number[] }[] }
+    const vectors = (json.data ?? []).map((d) => d.embedding)
+    // A 200 that is missing a vector would hand retrieval `undefined`, which it
+    // reads as "no dense arm" and ranks by BM25 without reporting a degradation.
+    if (vectors.length !== texts.length || !vectors.every(Array.isArray)) {
+      throw new Error(`embed returned ${vectors.length} vectors for ${texts.length} input${texts.length === 1 ? '' : 's'}`)
+    }
+    return vectors as number[][]
   })
 }
 

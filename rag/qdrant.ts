@@ -10,6 +10,7 @@ import { QdrantClient } from '@qdrant/js-client-rest'
 import { createHash } from 'node:crypto'
 
 import { config } from './config.js'
+import { callSupplier } from './supplier.js'
 
 // Named-vector keys, referenced by every read/write path.
 export const DENSE = 'dense'
@@ -172,7 +173,7 @@ const faqIdOf = (p?: { payload?: Record<string, unknown> | null }): string | und
   ((p?.payload ?? {}) as { faq_id?: string }).faq_id
 
 export const DEFAULT_FAQ_DEPS: FaqSearchDeps = {
-  search: (collection, body) => qdrant().query(collection, body as never),
+  search: (collection, body) => callSupplier('qdrant', () => qdrant().query(collection, body as never)),
 }
 
 // Look up the closest pre-written FAQ answer for a query embedding. Returns the

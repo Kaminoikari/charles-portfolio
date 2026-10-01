@@ -609,13 +609,14 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 
 稀疏向量是 Qdrant Cloud Inference 在伺服器端算的 BM25，完全不需要 Voyage。所以 hybrid 查詢的 embedding 失敗時，改用 BM25 單臂排序；它的品質由新增的 `sparse-only` ablation arm 量測。hybrid 系列的 arm 開 `strictDense`，量測時不會悄悄退化。
 
-檢查斷線路徑時找到更嚴重的缺陷：Node 的 `fetch` 在連線被拒或 DNS 失敗時丟出 `TypeError: fetch failed`（Qdrant client 與裸 `fetch` 都實測過），而 retrieve 節點把所有 `TypeError` 當成我方 bug 重拋。結果 `unavailable` 節點本來要處理的那種斷線，實際上會讓請求崩潰成通用錯誤。現在所有對外呼叫都經過 `rag/supplier.ts`：
+檢查斷線路徑時找到更嚴重的缺陷：Node 的 `fetch` 在連線被拒或 DNS 失敗時丟出 `TypeError: fetch failed`（Qdrant client 與裸 `fetch` 都實測過），而 retrieve 節點把所有 `TypeError` 當成我方 bug 重拋。結果 `unavailable` 節點本來要處理的那種斷線，實際上會讓請求崩潰成通用錯誤。現在回答訪客需要的四種對外呼叫（FAQ 探測、query embedding、候選查詢、rerank）都經過 `rag/supplier.ts`；chat_logs 的寫入刻意不經過，記錄失敗不該讓下一位訪客收到 outage：
 
 - 拋出的任何東西都分類成 `SupplierError`，outage 判斷改看這個型別
 - 網路失敗、429、5xx 重試一次；逾時與 4xx 不重試
 - 失敗後同一個 instance 內斷路 30 秒，避免同一則訊息在 FAQ 探測與檢索各等一次 10 秒逾時
+- Voyage 回 200 卻缺少某個輸入的向量，也算供應商失敗；以前檢索會拿到 `undefined`，靜默改用 BM25 且不回報降級
 
-降級種類（`dense-unavailable`、`rerank-unavailable`）沿 graph state 傳到 `done` 事件與 chat_logs 的 `degraded` 欄位，insights 報表新增計數。這類回答訪客照樣收到，以前在任何報表裡都看不出來。
+降級種類（`dense-unavailable`、`rerank-unavailable`）沿 graph state 傳到 `done` 事件與 chat_logs 的 `degraded` 欄位，insights 報表新增計數。這類回答訪客照樣收到，以前在任何報表裡都看不出來。eval 的 corrective arm 跑的是正式 graph，所以 ablation 報告也新增 degraded 欄位，標出靠 BM25 作答的 run 數。
 
 Qdrant 本身仍是儲存的唯一來源，斷線時回誠實的 outage 訊息，這是刻意的終點。
 

@@ -112,6 +112,8 @@ export interface ItemResult {
   mrr?: number
   correctness?: number // corrective arm only: retrieval arms generate no answer
   faithfulness?: number
+  // Retrieved while a supplier was down (see retrievalScores).
+  degraded?: true
 }
 
 // A run the judge could not read produces no faithfulness datum, the same way a
@@ -134,6 +136,7 @@ export function aggregate(items: ItemResult[]): Aggregate {
     recall: recall.length ? mean(recall) : NaN,
     mrr: mrr.length ? mean(mrr) : NaN,
     withoutRetrieval: items.filter((i) => i.recall === undefined).length,
+    degraded: items.filter((i) => i.degraded).length,
     // NaN, not 0: an arm that never generated has no correctness to report, and
     // pct() renders it as the em dash the table needs.
     correctness: corr.length ? mean(corr) : NaN,
@@ -147,13 +150,17 @@ export function aggregate(items: ItemResult[]): Aggregate {
 // FAQ hit now carries citations, so its sources would otherwise be scored as a
 // retrieval result; before that it carried none and was scored as a miss. Either
 // way it measured the cache, not retrieval, and 23 of 123 runs were served so.
+// A run that retrieved through a supplier outage is flagged: the corrective arm
+// runs the production graph, which ranks by BM25 alone while Voyage is down, and
+// a mean over such runs measures the fallback without saying so.
 export function retrievalScores(
-  final: { sources?: { id: string }[]; documents?: unknown[] },
+  final: { sources?: { id: string }[]; documents?: unknown[]; degraded?: unknown[] },
   item: Pick<GoldenItem, 'relevantIds' | 'needsEvery'>,
-): { recall?: number; mrr?: number } {
+): { recall?: number; mrr?: number; degraded?: true } {
   if (!Array.isArray(final.documents)) return {}
   const ids = (final.sources ?? []).map((s) => s.id)
-  return { recall: itemRecall(ids, item), mrr: reciprocalRank(ids, item.relevantIds) }
+  const scores = { recall: itemRecall(ids, item), mrr: reciprocalRank(ids, item.relevantIds) }
+  return (final.degraded ?? []).length > 0 ? { ...scores, degraded: true } : scores
 }
 
 async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; items: ItemResult[] }> {
@@ -241,10 +248,13 @@ export function parseBaseline(raw: unknown): Baseline {
     typeof b?.arm !== 'string' ||
     typeof recall !== 'object' ||
     recall === null ||
+    Array.isArray(recall) ||
     !Object.values(recall).every((v) => typeof v === 'number')
   ) {
     throw new Error('baseline file is not { arm: string, recall: { [key]: number } }')
   }
+  // Every question would read as unbaselined, and the gate would pass anything.
+  if (Object.keys(recall).length === 0) throw new Error('baseline file is empty')
   return { arm: b.arm, recall: recall as Record<string, number> }
 }
 
@@ -283,16 +293,16 @@ function pct(x: number): string {
   return Number.isNaN(x) ? '—' : `${(x * 100).toFixed(1)}%`
 }
 
-function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
+export function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
   const header =
-    '| Arm | recall@k | MRR | correctness | faithfulness | Δ recall | answered without retrieval |\n' +
-    '|---|---|---|---|---|---|---|'
+    '| Arm | recall@k | MRR | correctness | faithfulness | Δ recall | answered without retrieval | degraded |\n' +
+    '|---|---|---|---|---|---|---|---|'
   let prev = NaN
   const lines = rows.map(({ arm, agg }) => {
     const delta = Number.isNaN(prev) ? '—' : `${((agg.recall - prev) * 100).toFixed(1)}pp`
     prev = agg.recall
     const mrr = Number.isNaN(agg.mrr) ? '—' : agg.mrr.toFixed(3)
-    return `| ${arm} | ${pct(agg.recall)} | ${mrr} | ${pct(agg.correctness)} | ${pct(agg.faithfulness)} | ${delta} | ${agg.withoutRetrieval} of ${agg.n} |`
+    return `| ${arm} | ${pct(agg.recall)} | ${mrr} | ${pct(agg.correctness)} | ${pct(agg.faithfulness)} | ${delta} | ${agg.withoutRetrieval} of ${agg.n} | ${agg.degraded} of ${agg.n} |`
   })
   return [
     '# RAG Ablation Report',
@@ -305,8 +315,9 @@ function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
     '> recall@k / MRR are deterministic (id matching). correctness/faithfulness',
     '> apply only to the corrective arm (the one that generates an answer).',
     '> recall/MRR cover only runs that retrieved: a FAQ hit or canned reply is',
-    '> counted in the last column instead of as a miss. comparison/temporal items',
+    '> counted in its own column instead of as a miss. comparison/temporal items',
     '> that need two chunks score the share of them retrieved.',
+    '> degraded: runs that retrieved by BM25 alone because Voyage was down.',
     '',
     '### Recall by category',
     '',
@@ -347,7 +358,8 @@ export function recallFailures(
   rows: { arm: string; recall: number }[],
   minRecall: number,
 ): { arm: string; recall: number }[] {
-  return rows.filter((r) => r.recall < minRecall)
+  // Written so NaN fails: an arm that retrieved nothing has measured nothing.
+  return rows.filter((r) => !(r.recall >= minRecall))
 }
 
 export type GateVerdict =
