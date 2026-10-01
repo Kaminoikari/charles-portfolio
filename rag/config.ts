@@ -126,7 +126,8 @@ export const config = {
   // and the rest cost a generation. The margin is the lever that does the work;
   // raising the threshold alone cuts good serves about as fast as bad ones.
   // Merging the entries that answered each other (run 36819029430) moved the same
-  // setting to 253 correct of 823 (30.7%) with 18 wrong serves and none harmful.
+  // setting to 253 correct of 823 (30.7%) with 18 wrong serves and none harmful,
+  // and a second round (run 36830100946) to 270 correct (32.8%) with 13 wrong.
   // Re-run the calibration (RAG Eval, faq_calibration) after editing entries.
   faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
   faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.8),

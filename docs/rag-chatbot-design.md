@@ -38,7 +38,7 @@ operate. Aligns with the existing Vite + React + TS app.
 > - The index is built by a **GitHub Action** — on every push to main that touches
 >   a content source, and on demand via `workflow_dispatch` — because the runtime
 >   container has no outbound network. Index at this commit: **1,110 doc chunks +
->   839 FAQ paraphrases across 53 entries**, all in en/zh-TW/ja. (Counts come from
+>   839 FAQ paraphrases across 50 entries**, all in en/zh-TW/ja. (Counts come from
 >   `extractAll()` and `faqEntries`; re-measure rather than trusting this line —
 >   `npm run rag:ingest:dry` and `npm run rag:faq:dry` print both without creds.)
 
@@ -186,7 +186,7 @@ doc_chunks                              # the hybrid index — 1,095 chunks (en/
                     context?, url?, date? }   # context: contextual-retrieval prefix; url/date: blog only
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
-faq_cache                               # semantic cache — 839 paraphrases / 53 entries
+faq_cache                               # semantic cache — 839 paraphrases / 50 entries
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large (query-encoded)
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25, consulted as a veto
   payload index:  locale (keyword)
@@ -353,7 +353,7 @@ same Qdrant index, so a re-index is not needed per deploy.
 The headline post-launch feature. Goal: answer common questions at **zero
 generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
 
-- **Semantic FAQ cache** (`rag/faq-cache.ts`): 53 hand-written entries spanning 5
+- **Semantic FAQ cache** (`rag/faq-cache.ts`): 50 hand-written entries spanning 5
   personas (general visitor, PM/HR interviewer, tech enthusiast, red-teamer,
   founder/investor), expanded to **839 paraphrases** across en/zh-TW/ja. Each
   question is embedded once at build time (`npm run rag:faq`) into the
@@ -406,7 +406,7 @@ rag/
 ├── state.ts                  # Annotation.Root state schema
 ├── nodes.ts                  # triage / retrieve / grade / rewrite / generate / fallback
 ├── triage.ts                 # regex injection+privacy detection, canned replies, contact block
-├── faq-cache.ts              # 53 entries / 839 paraphrases (en/zh-TW/ja) + answers
+├── faq-cache.ts              # 50 entries / 839 paraphrases (en/zh-TW/ja) + answers
 ├── retrieval.ts              # Qdrant hybrid (dense+sparse, server RRF) + rerank (retrieveWith)
 ├── qdrant.ts                 # Qdrant client + collection bootstrap + faqLookup + point-id hashing
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
