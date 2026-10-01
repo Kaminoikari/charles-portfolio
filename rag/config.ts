@@ -112,19 +112,23 @@ export const config = {
 
   // --- semantic FAQ cache ---
   // A query whose embedding is at least this cosine-similar to a pre-written FAQ
-  // question is answered from cache with NO generation LLM call. Tuned high so
-  // only genuine matches hit; everything else falls through to RAG.
+  // question, AND whose best entry beats the best OTHER entry by more than the
+  // margin, is answered from cache with NO generation LLM call. Everything else
+  // falls through to RAG, which retrieves, grades and cites.
+  //
+  // Both numbers come from rag/evals/faq-calibration.ts (run 36809386889): every
+  // cached paraphrase re-asked with its own point excluded, each wrong-entry
+  // serve read by a judge for whether it still answers the question. At the
+  // previous 0.7 / 0.02, 22 of 496 serves (4.4%) answered a different question
+  // than the one asked. At 0.8 / 0.08 none of 263 did, and of the settings with
+  // none it serves the most answers that do answer. The price is coverage: those
+  // leave-one-out queries were served from cache 27.7% of the time instead of
+  // 46.9%, and the rest cost a generation. The margin is the lever that does the
+  // work; raising the threshold alone cuts good serves about as fast as bad ones.
+  // Re-run the calibration (RAG Eval, faq_calibration) after editing entries.
   faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
-  faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.7),
-  // How far the best FAQ candidate must beat the runner-up before the cache is
-  // allowed to answer without any grounding check. The threshold above asks "is
-  // this similar enough"; this asks "is it unambiguously THIS topic", which is
-  // the question a corpus of structurally-identical paraphrases across dozens of
-  // topics actually raises. Deliberately tight: it should reject near-ties and
-  // nothing else, because every rejection costs a cache hit. The faqprobe log
-  // line prints top1, top2 and the gap on every lookup, so this can be retuned
-  // from the real score distribution rather than from a guess.
-  faqCacheMargin: float('RAG_FAQ_MARGIN', 0.02),
+  faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.8),
+  faqCacheMargin: float('RAG_FAQ_MARGIN', 0.08),
   // How many neighbours the lookup fetches to find that runner-up. It is not 2:
   // the cache stores one point per PARAPHRASE, so an entry's own rewordings
   // occupy the first several results whenever it is the right answer. The window
