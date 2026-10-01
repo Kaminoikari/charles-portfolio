@@ -187,7 +187,7 @@ jobs:
   # the deterministic retrieval arms against the freshly built index and fails
   # the run if recall falls off a cliff.
   #
-  # Two checks. A recall floor (0.95) catches a collapse. A per-question baseline
+  # Two checks. A recall floor (0.85) catches a collapse. A per-question baseline
   # (rag/evals/baseline.hybrid-rerank.json) catches anything smaller: any golden
   # question that now scores below the recall it had when the baseline was
   # written fails the run and is named in the log. The baseline is refreshed on
@@ -221,14 +221,14 @@ jobs:
         # buys; nothing is answered from it. Gating on it blocked this ingest at
         # 92.7% for a configuration nobody runs.
         #
-        # The 0.95 floor was set when all three arms read 100% on the 29-question
-        # golden set. That set could not fail, which is why it grew; the served arm
-        # read 96.7% on 41 questions (run 35059505617), so the floor alone kept
-        # about two points of headroom and let any two questions slip. The
-        # baseline is what catches a single question.
+        # The floor only has to catch a collapse now that the baseline catches a
+        # single question. It was 0.95 when the served arm read 96.7% on 41
+        # questions (run 35059505617); the comparison and temporal items took the
+        # same arm to 92.4% on 48 (run 36809268615), so 0.95 would have failed
+        # every ingest. 0.85 leaves room for the set to keep growing harder.
         run: |
           BASELINE=rag/evals/baseline.hybrid-rerank.json
-          ARGS="--retrieval-only --arm hybrid+rerank --min-recall 0.95 --out eval-report.md"
+          ARGS="--retrieval-only --arm hybrid+rerank --min-recall 0.85 --out eval-report.md"
           [ -f "$BASELINE" ] && ARGS="$ARGS --baseline $BASELINE"
           npm run rag:eval -- $ARGS
           {

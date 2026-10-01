@@ -236,3 +236,16 @@ test('baselineGate: losing one of two needed chunks is a regression too', () => 
   const baseline = toBaseline('hybrid+rerank', run([['compare/en', 1]]))
   assert.equal(baselineGate(baseline, 'hybrid+rerank', run([['compare/en', 0.5]])).ok, false)
 })
+
+test('the committed baseline is for the served arm and names only questions that exist', async () => {
+  // A renamed or deleted golden item leaves a baseline key nothing will ever
+  // compare against, which reads as coverage the gate no longer has.
+  const { readFileSync } = await import('node:fs')
+  const baseline = parseBaseline(JSON.parse(readFileSync(new URL('./baseline.hybrid-rerank.json', import.meta.url), 'utf8')))
+  assert.equal(baseline.arm, 'hybrid+rerank')
+  const keys = new Set(GOLDEN.flatMap((g) => ['en', 'zh-TW', 'ja'].map((l) => `${g.id}/${l}`)))
+  assert.deepEqual(
+    Object.keys(baseline.recall).filter((k) => !keys.has(k)),
+    [],
+  )
+})
