@@ -78,8 +78,17 @@ jobs:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
         run: |
-          npm run rag:faq:calibrate -- --out faq-calibration.md
+          npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json
           cat faq-calibration.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the calibration observations
+        if: ${{ inputs.faq_calibration }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: faq-calibration
+          path: |
+            faq-calibration.md
+            faq-observations.json
 
       - name: Run eval (retrieval arms + corrective / faithfulness)
         if: ${{ !inputs.faq_calibration }}

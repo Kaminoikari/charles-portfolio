@@ -1,7 +1,7 @@
 // FAQ cache calibration: what each (threshold, margin) setting would serve, and
 // how often what it serves is the wrong entry.
 //
-//   npx tsx rag/evals/faq-calibration.ts [--out report.md]
+//   npx tsx rag/evals/faq-calibration.ts [--out report.md] [--dump observations.json]
 //
 // Needs QDRANT_* only. No embedding call: every query is a paraphrase already in
 // the cache, re-asked with its own point excluded (leave-one-out), using the
@@ -184,9 +184,16 @@ async function collect(): Promise<Observation[]> {
 }
 
 async function main() {
-  const i = process.argv.indexOf('--out')
-  const out = i >= 0 ? process.argv[i + 1] : undefined
+  const flag = (name: string) => {
+    const i = process.argv.indexOf(name)
+    return i >= 0 ? process.argv[i + 1] : undefined
+  }
+  const out = flag('--out')
+  // The raw observations, so a rule change can be scored offline against the
+  // same queries without another pass over the cluster.
+  const dump = flag('--dump')
   const observations = await collect()
+  if (dump) writeFileSync(dump, JSON.stringify(observations))
   const md = report(observations, { threshold: config.faqCacheThreshold, margin: config.faqCacheMargin })
   console.log(md)
   if (out) writeFileSync(out, md + '\n')
