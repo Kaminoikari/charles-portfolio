@@ -43,7 +43,23 @@ import { MIKA_IDENTITY, MIKA_IDENTITY_SHORT, mikaVoice } from './persona.js'
 //      is embedded and matched against pre-written answers in faq_cache; a
 //      high-similarity hit returns the cached answer verbatim.
 // Anything that misses both falls through to the full RAG pipeline.
-export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>> {
+// The two suppliers the FAQ tier calls, injectable so a test can see what a hit
+// turns into. Resolved the same way as retrieve's (see resolveRetrieveDeps for
+// why a default parameter is not enough under LangGraph).
+export interface TriageDeps {
+  embedOne: typeof embedOne
+  faqLookup: typeof faqLookup
+}
+
+export const DEFAULT_TRIAGE_DEPS: TriageDeps = { embedOne, faqLookup }
+
+export function resolveTriageDeps(candidate: unknown): TriageDeps {
+  const d = candidate as Partial<TriageDeps> | null | undefined
+  return typeof d?.embedOne === 'function' && typeof d?.faqLookup === 'function' ? (d as TriageDeps) : DEFAULT_TRIAGE_DEPS
+}
+
+export async function triage(state: RAGStateType, injected?: unknown): Promise<Partial<RAGStateType>> {
+  const deps = resolveTriageDeps(injected)
   const locale = (state.language as Locale) ?? 'en'
 
   // Tier 1: deterministic. Runs first so injections and privacy questions are
@@ -65,11 +81,15 @@ export async function triage(state: RAGStateType): Promise<Partial<RAGStateType>
   // falls through to RAG rather than blocking the answer.
   if (config.faqCacheEnabled) {
     try {
-      const vec = await embedOne(retrievalQuery(state), 'query')
-      const hit = await faqLookup(vec, locale, { queryText: retrievalQuery(state), sparseVeto: config.faqSparseVeto })
+      const vec = await deps.embedOne(retrievalQuery(state), 'query')
+      const hit = await deps.faqLookup(vec, locale, { queryText: retrievalQuery(state), sparseVeto: config.faqSparseVeto })
       if (hit) {
-        console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)}`)
-        return { answer: hit.answer, sources: [], route: 'answered', outcome: 'faq' }
+        console.log(`[chat] faq-cache hit id=${hit.id} score=${hit.score.toFixed(3)} sources=${hit.sources.length}`)
+        // The chunks that state the answer's facts, derived offline at ingest
+        // (grounding.ts). Scored with the match score: the widget's bar shows how
+        // sure the cache was that this was the question it has an answer for.
+        const sources: Source[] = hit.sources.map((c) => ({ ...c, score: hit.score }))
+        return { answer: hit.answer, sources, route: 'answered', outcome: 'faq' }
       }
     } catch (err) {
       console.warn('faq cache lookup failed, falling through to RAG:', (err as Error).message)

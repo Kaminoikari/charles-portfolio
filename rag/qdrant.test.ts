@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { DEFAULT_FAQ_DEPS, faqLookup, type FaqSearchDeps } from './qdrant.js'
+import { DEFAULT_FAQ_DEPS, faqLookup, citationsOf, type FaqSearchDeps } from './qdrant.js'
 import { config } from './config.js'
 import { faqEntries } from './faq-cache.js'
 
@@ -200,4 +200,23 @@ test('faqLookup: with the veto off the lexical arm is never queried', async () =
   const { deps, seen } = twoArmDeps([P('overall-summary', 0.9)], [P('exp-nueip', 8)])
   assert.equal((await ask('Charles 在 NUEIP 做什麼?', false, deps))?.id, 'overall-summary')
   assert.deepEqual(seen, ['dense'], 'the lexical arm must not be queried while the veto is off')
+})
+
+test('faqLookup: a hit carries the citations its point was stored with', async () => {
+  const cited = { id: 'experience:nueip-technology-co-ltd:en', title: 'NUEIP', locale: 'en', url: '/#experience' }
+  const point = { score: 0.93, payload: { faq_id: 'exp-nueip', answer: 'a', locale: 'en', sources: [cited] } }
+  const res = await faqLookup([0.1], 'en', { queryText: 'q', sparseVeto: false }, { search: async () => ({ points: [point] }) })
+  assert.deepEqual(res?.sources, [cited])
+})
+
+test('faqLookup: a point stored before citations existed is served with none', async () => {
+  const res = await lookupOver([hit('uspace-role', 0.91)])
+  assert.deepEqual(res?.sources, [])
+})
+
+test('citationsOf: a malformed citation costs only itself', () => {
+  const good = { id: 'a', title: 'A', locale: 'en', url: null }
+  assert.deepEqual(citationsOf({ sources: [good, { id: 'b' }, null, 'c', { ...good, url: 3 }] }), [good])
+  assert.deepEqual(citationsOf({ sources: 'not a list' }), [])
+  assert.deepEqual(citationsOf(null), [])
 })

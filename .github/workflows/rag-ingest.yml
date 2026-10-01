@@ -29,6 +29,9 @@ on:
       - 'src/data/blog.*.ts'
       - 'src/data/agentPatterns.*.ts'
       - 'rag/faq-cache.ts'
+      # The FAQ points carry citations derived by these two (build-faq-cache.ts).
+      - 'rag/grounding.ts'
+      - 'rag/source-url.ts'
       - 'rag/portfolio-map.ts'
       - 'rag/entities/**'
       - 'rag/ingest/**'

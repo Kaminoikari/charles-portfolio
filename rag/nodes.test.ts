@@ -894,3 +894,24 @@ test('generate: the prompt gives the model today’s date', async () => {
 test('todayISO: renders a calendar day, not a timestamp', () => {
   assert.equal(todayISO(new Date('2026-09-14T23:30:00Z')), '2026-09-14')
 })
+
+// --- a FAQ hit is served with what grounds it --------------------------------
+// It used to be the one answer with no sources at all: no retrieval ran, so
+// nothing was left to cite, and a visitor had nothing to check it against.
+
+test('triage: a FAQ hit is served with the citations stored on its point, scored by the match', async () => {
+  const cited = { id: 'experience:nueip-technology-co-ltd:en', title: 'NUEIP', locale: 'en', url: '/#experience' }
+  const out = await triage({ question: 'What did he do at NUEIP?', language: 'en', queries: [] } as never, {
+    embedOne: async () => [0.1],
+    faqLookup: async () => ({ answer: 'BI product', id: 'exp-nueip', score: 0.91, sources: [cited] }),
+  })
+  assert.equal(out.outcome, 'faq')
+  assert.deepEqual(out.sources, [{ ...cited, score: 0.91 }])
+})
+
+test('triage: the second argument the graph passes is a config, not a dependency set', () => {
+  const runnableConfig = { configurable: { thread_id: '1' }, callbacks: [], metadata: {}, tags: [] }
+  assert.equal(nodes.resolveTriageDeps(runnableConfig), nodes.DEFAULT_TRIAGE_DEPS)
+  const injected = { embedOne: async () => [0], faqLookup: async () => null }
+  assert.equal(nodes.resolveTriageDeps(injected), injected)
+})

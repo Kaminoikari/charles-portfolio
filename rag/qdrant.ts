@@ -207,12 +207,45 @@ export interface FaqLookupOptions {
   sparseVeto: boolean
 }
 
+// The citations ingest/build-faq-cache.ts stored with the point. Read through a
+// guard, not a cast: a point written before citations existed has none, and a
+// malformed entry must cost that one citation rather than the whole answer.
+export interface FaqCitation {
+  id: string
+  title: string
+  locale: string
+  url: string | null
+}
+
+function isCitation(v: unknown): v is FaqCitation {
+  if (typeof v !== 'object' || v === null) return false
+  const c = v as Record<string, unknown>
+  return (
+    typeof c.id === 'string' &&
+    typeof c.title === 'string' &&
+    typeof c.locale === 'string' &&
+    (c.url === null || typeof c.url === 'string')
+  )
+}
+
+export function citationsOf(payload: Record<string, unknown> | null | undefined): FaqCitation[] {
+  const raw = payload?.sources
+  return Array.isArray(raw) ? raw.filter(isCitation) : []
+}
+
+export interface FaqHit {
+  answer: string
+  id: string
+  score: number
+  sources: FaqCitation[]
+}
+
 export async function faqLookup(
   queryVec: number[],
   locale: string,
   opts: FaqLookupOptions,
   deps: FaqSearchDeps = DEFAULT_FAQ_DEPS,
-): Promise<{ answer: string; id: string; score: number } | null> {
+): Promise<FaqHit | null> {
   const filter = { must: [{ key: 'locale', match: { value: locale } }] }
   const res = await deps.search(config.qdrantFaqCollection, {
     query: queryVec,
@@ -280,5 +313,5 @@ export async function faqLookup(
       return null
     }
   }
-  return { answer: payload.answer, id: topId, score: topScore }
+  return { answer: payload.answer, id: topId, score: topScore, sources: citationsOf(top.payload) }
 }

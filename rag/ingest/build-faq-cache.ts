@@ -14,6 +14,8 @@
 // manual re-run to propagate an answer edit). Deleting an entry reclaims its
 // points instead of orphaning them.
 
+import { pathToFileURL } from 'node:url'
+
 import { config } from '../config.js'
 import { embed } from '../embeddings.js'
 import {
@@ -26,7 +28,9 @@ import {
   SPARSE,
 } from '../qdrant.js'
 import { chunkHash, reconcile, isPruneSafe, type DesiredChunk } from './reconcile.js'
-import { faqEntries, type Locale } from '../faq-cache.js'
+import { faqEntries, type FaqEntry, type Locale } from '../faq-cache.js'
+import { citeFacts, type CitedSource, type GroundingChunk } from '../grounding.js'
+import { extractAll } from './extract.js'
 
 const DRY_RUN = process.argv.includes('--dry-run')
 const BATCH = 32
@@ -41,14 +45,23 @@ interface Row {
   faqId: string
   locale: Locale
   answer: string
+  // The corpus chunks that state this answer's facts (grounding.ts). A cache hit
+  // skips retrieval, so these are the only citations the visitor can check the
+  // answer against; without them a hit was the one answer shown with none.
+  sources: CitedSource[]
   hash: string
 }
 
-function flatten(): Row[] {
+// Pure over its inputs so a test can check what a point carries without Qdrant
+// or Voyage. The corpus comes in rather than being extracted here because the
+// citations are derived from it: an edit to src/data that moves a fact moves the
+// citation, and the hash below makes that re-upsert the point.
+export function flatten(entries: FaqEntry[], chunks: GroundingChunk[]): Row[] {
   const rows: Row[] = []
-  for (const entry of faqEntries) {
+  for (const entry of entries) {
     for (const locale of LOCALES) {
       const answer = entry.answers[locale]
+      const sources = citeFacts(answer, locale, chunks)
       entry.questions[locale].forEach((q, i) => {
         const chunkId = `faq:${entry.id}:${locale}:${i}`
         rows.push({
@@ -58,13 +71,15 @@ function flatten(): Row[] {
           faqId: entry.id,
           locale,
           answer,
-          // The answer is part of the stored state, so fold it in: an answer edit
-          // must re-upsert the point even though the embedded question is the same.
+          sources,
+          // The answer and its citations are part of the stored state, so fold
+          // them in: an edit to either must re-upsert the point even though the
+          // embedded question is the same.
           hash: chunkHash({
             content: q,
             contextSource: '',
             models: EMBED_MODELS,
-            payload: { faq_id: entry.id, locale, answer },
+            payload: { faq_id: entry.id, locale, answer, sources },
           }),
         })
       })
@@ -74,7 +89,7 @@ function flatten(): Row[] {
 }
 
 async function main() {
-  const rows = flatten()
+  const rows = flatten(faqEntries, await extractAll())
   console.log(
     `FAQ cache: ${faqEntries.length} entries → ${rows.length} question paraphrases ` +
       `(${LOCALES.map((l) => `${l}=${rows.filter((r) => r.locale === l).length}`).join(' ')})`,
@@ -135,6 +150,7 @@ async function main() {
             locale: r.locale,
             question: r.text,
             answer: r.answer,
+            sources: r.sources,
           },
         })
       })
@@ -168,7 +184,10 @@ async function main() {
   )
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+// Run only as the CLI, so a test can import flatten without starting an ingest.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}
