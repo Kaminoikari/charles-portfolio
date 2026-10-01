@@ -240,6 +240,65 @@ export interface FaqHit {
   sources: FaqCitation[]
 }
 
+// The accept/reject rule on its own, pure, so the calibration harness
+// (rag/evals/faq-calibration.ts) sweeps the very rule production applies rather
+// than a restatement of it. faqLookup is this plus the two round-trips.
+export interface FaqParams {
+  threshold: number
+  margin: number
+}
+
+type FaqPointLike = { score?: number; payload?: Record<string, unknown> | null }
+
+export type DenseVerdict =
+  | { ok: true; topId: string; topScore: number; gap: number; rivalId?: string; rivalScore: number; top: FaqPointLike & { payload: Record<string, unknown> }; answer: string }
+  | { ok: false; reason: 'empty' | 'below-threshold' | 'no-id' | 'tie' | 'no-answer'; topId?: string; topScore: number; gap: number; rivalId?: string; rivalScore: number }
+
+export function denseVerdict(points: FaqPointLike[], params: FaqParams): DenseVerdict {
+  const [top, ...rest] = points
+  const topScore = top?.score ?? 0
+  const topId = faqIdOf(top)
+  // The best candidate belonging to some OTHER entry; points come back ordered,
+  // so the first one is it. Nothing to compare against — a lone entry, or a
+  // window filled entirely by its own paraphrases — cannot be confused with
+  // anything, so Infinity keeps it out of the margin comparison entirely.
+  // Only points that name an entry can stand for a competing topic. A payload
+  // without a faq_id is malformed data, not a rival: counting it would let one
+  // bad point suppress an unambiguous hit, and the suppression is invisible —
+  // the answer simply costs a generation from then on.
+  const rival = rest.find((p) => faqIdOf(p) !== undefined && faqIdOf(p) !== topId)
+  const gap = rival ? topScore - (rival.score ?? 0) : Number.POSITIVE_INFINITY
+  const rivalId = faqIdOf(rival)
+  const rivalScore = rival?.score ?? 0
+  if (!top) return { ok: false, reason: 'empty', topScore, gap, rivalScore }
+  if (topScore < params.threshold) return { ok: false, reason: 'below-threshold', topId, topScore, gap, rivalId, rivalScore }
+  // A top hit that names no entry would be served with id '', which the logs and
+  // the insights report would then carry as a hit from an entry nobody can look
+  // up. Let it fall through to RAG instead.
+  if (topId === undefined) return { ok: false, reason: 'no-id', topScore, gap, rivalId, rivalScore }
+  // Strictly greater, per the rule as specified: a gap that only equals the
+  // minimum has not cleared it.
+  if (gap <= params.margin) return { ok: false, reason: 'tie', topId, topScore, gap, rivalId, rivalScore }
+  const answer = (top.payload ?? {}).answer
+  if (typeof answer !== 'string' || answer === '') return { ok: false, reason: 'no-answer', topId, topScore, gap, rivalId, rivalScore }
+  return { ok: true, topId, topScore, gap, rivalId, rivalScore, top: { ...top, payload: top.payload ?? {} }, answer }
+}
+
+// A second, purely lexical opinion on the same question. The dense arm ranks
+// by sentence frame: 「Charles 在 NUEIP 做什麼?」 sits almost on top of
+// overall-summary's 「Charles 是做什麼的」, and the proper noun that is the
+// whole difference between the two questions barely moves a sentence
+// embedding. BM25 with IDF weights precisely that noun. So when the lexical
+// arm has an opinion and the dense winner is not in it, the frame won over the
+// subject and the cache should not answer.
+//
+// An empty lexical result is silence, not dissent: a short or generic question
+// gives BM25 nothing to weigh, and refusing on that would cost the cache the
+// very questions it exists to answer.
+export function lexicalVeto(topId: string, lexicalIds: string[]): boolean {
+  return lexicalIds.length > 0 && !lexicalIds.includes(topId)
+}
+
 export async function faqLookup(
   queryVec: number[],
   locale: string,
@@ -254,51 +313,19 @@ export async function faqLookup(
     limit: config.faqCandidateK,
     with_payload: true,
   })
-  const [top, ...rest] = res.points
-  const topScore = top?.score ?? 0
-  const topId = faqIdOf(top)
-  // The best candidate belonging to some OTHER entry; points come back ordered,
-  // so the first one is it. Nothing to compare against — a lone entry, or a
-  // window filled entirely by its own paraphrases — cannot be confused with
-  // anything, so Infinity keeps it out of the margin comparison entirely.
-  // Only points that name an entry can stand for a competing topic. A payload
-  // without a faq_id is malformed data, not a rival: counting it would let one
-  // bad point suppress an unambiguous hit, and the suppression is invisible —
-  // the answer simply costs a generation from then on.
-  const rival = rest.find((p) => faqIdOf(p) !== undefined && faqIdOf(p) !== topId)
-  const margin = rival ? topScore - (rival.score ?? 0) : Number.POSITIVE_INFINITY
+  const v = denseVerdict(res.points, { threshold: config.faqCacheThreshold, margin: config.faqCacheMargin })
   // Diagnostic: always log both candidates and the gap, so both knobs stay
   // tunable from logs (e.g. "top=0.820 next=0.810 gap=0.010" names a near-tie;
   // "top=0.690 next=0.300" names a threshold that is merely too high).
-  const payload = (top?.payload ?? {}) as { answer?: string; faq_id?: string }
   console.log(
-    `[chat] faqprobe top=${topScore.toFixed(3)} id=${topId ?? '-'} ` +
-      `rival=${(rival?.score ?? 0).toFixed(3)} rival_id=${faqIdOf(rival) ?? '-'} ` +
-      `gap=${Number.isFinite(margin) ? margin.toFixed(3) : 'none'} ` +
+    `[chat] faqprobe top=${v.topScore.toFixed(3)} id=${v.topId ?? '-'} ` +
+      `rival=${v.rivalScore.toFixed(3)} rival_id=${v.rivalId ?? '-'} ` +
+      `gap=${Number.isFinite(v.gap) ? v.gap.toFixed(3) : 'none'} ` +
       `thr=${config.faqCacheThreshold} min_gap=${config.faqCacheMargin} ` +
       `hits=${res.points.length} locale=${locale}`,
   )
-  if (!top || topScore < config.faqCacheThreshold) return null
-  // A top hit that names no entry would be served with id '', which the logs and
-  // the insights report would then carry as a hit from an entry nobody can look
-  // up. Let it fall through to RAG instead.
-  if (topId === undefined) return null
-  // Strictly greater, per the rule as specified: a gap that only equals the
-  // minimum has not cleared it.
-  if (margin <= config.faqCacheMargin) return null
-  if (!payload.answer) return null
+  if (!v.ok) return null
 
-  // A second, purely lexical opinion on the same question. The dense arm ranks
-  // by sentence frame: 「Charles 在 NUEIP 做什麼?」 sits almost on top of
-  // overall-summary's 「Charles 是做什麼的」, and the proper noun that is the
-  // whole difference between the two questions barely moves a sentence
-  // embedding. BM25 with IDF weights precisely that noun. So when the lexical
-  // arm has an opinion and the dense winner is not in it, the frame won over the
-  // subject and the cache should not answer.
-  //
-  // An empty lexical result is silence, not dissent: a short or generic question
-  // gives BM25 nothing to weigh, and refusing on that would cost the cache the
-  // very questions it exists to answer.
   if (opts.sparseVeto) {
     const lex = await deps.search(config.qdrantFaqCollection, {
       query: { text: opts.queryText, model: config.sparseModel },
@@ -308,10 +335,10 @@ export async function faqLookup(
       with_payload: true,
     })
     const ranked = lex.points.map(faqIdOf).filter((id): id is string => id !== undefined)
-    if (ranked.length > 0 && !ranked.includes(topId)) {
-      console.log(`[chat] faqveto top=${topId} lexical=${ranked.slice(0, 3).join(',')} locale=${locale}`)
+    if (lexicalVeto(v.topId, ranked)) {
+      console.log(`[chat] faqveto top=${v.topId} lexical=${ranked.slice(0, 3).join(',')} locale=${locale}`)
       return null
     }
   }
-  return { answer: payload.answer, id: topId, score: topScore, sources: citationsOf(top.payload) }
+  return { answer: v.answer, id: v.topId, score: v.topScore, sources: citationsOf(v.top.payload) }
 }

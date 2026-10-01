@@ -43,6 +43,13 @@ on:
       faq_sparse_veto:
         description: 'Ask BM25 for a second opinion before serving a FAQ cache hit (RAG_FAQ_SPARSE_VETO)'
         type: boolean
+        # Production runs with the veto on (rag/config.ts), so that is what an
+        # eval measures unless asked otherwise. It defaulted to off here, which
+        # made every default run score a FAQ tier nobody is served.
+        default: true
+      faq_calibration:
+        description: 'Instead of the golden set, sweep the FAQ cache threshold x margin by leave-one-out (rag/evals/faq-calibration.ts)'
+        type: boolean
         default: false
 
 # Eval only reads the checkout and calls external APIs — no repo write needed.
@@ -65,7 +72,17 @@ jobs:
 
       - run: npm ci
 
+      - name: FAQ cache calibration
+        if: ${{ inputs.faq_calibration }}
+        env:
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+        run: |
+          npm run rag:faq:calibrate -- --out faq-calibration.md
+          cat faq-calibration.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Run eval (retrieval arms + corrective / faithfulness)
+        if: ${{ !inputs.faq_calibration }}
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
