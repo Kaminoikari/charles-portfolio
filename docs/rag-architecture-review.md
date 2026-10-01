@@ -233,7 +233,7 @@ query embedding LRU（§4.2 附帶）。
 | 元件 | 技術 |
 |---|---|
 | Dense embedding | Voyage AI `voyage-3-large`，1024 維，asymmetric `input_type`，裸 `fetch` 無 SDK |
-| Sparse | Qdrant `qdrant/bm25`，由 Qdrant Cloud Inference 伺服器端計算（`idf` modifier） |
+| Sparse | Qdrant `qdrant/bm25`，由 Qdrant Cloud Inference 伺服器端計算（`idf` modifier）；zh-TW 與 ja 用 `multilingual` tokenizer 加中日文與疑問詞 stopwords，選項定義在 `rag/qdrant.ts` 的 `chunkSparse`，ingest 與查詢共用 |
 | Fusion | RRF（`rrfK = 60`）在 Qdrant Query API 伺服器端完成，dense/sparse 雙 prefetch |
 | Rerank | Voyage `rerank-2.5` cross-encoder，`candidateK = 20` → `topK = 6` |
 | 加權 | first-party boost 1.2（about/project/experience/skill/changelog 壓過 blog） |
@@ -534,7 +534,7 @@ headline 跟著快取命中率走：lexical veto 把五題送去生成，免試�
 judge 拿不到。這個 pipeline 的一個主張可以依據三種東西：編號的 chunk、portfolio map、
 entity 關係，而只有第一種有編號，所以被忘掉的永遠是另外兩種。這跟它曾經吐出
 `[Charles Chen description]` 當引用是同一個根因：兩個讀者各自列自己的清單。
-現在 `rag/nodes.ts` 的 `evidenceBlock` 是單一定義，prompt、連結過濾器、judge 三者共用。
+現在 `rag/nodes.ts` 的 `answerContext`（`evidenceBlock` 加上聯絡方式）是單一定義，prompt、連結過濾器、judge 三者共用。
 
 剩下的四條 ungrounded 就是 95.6% 的內容。其中一條是 judge 在跟自己吵架：它把答案與
 context 引成同一句話，然後判答案沒依據。不過它引的那句是「ChatGPT 的共同創造者
@@ -702,6 +702,36 @@ judge 這邊做了三件事，留下來且確定有用的只有一件。告訴 j
 
 能說到多穩：修正前，日文 dense-only 在兩個索引上都撈不到這題，hybrid+rerank 命中與否取決於索引；修正後，dense-only 與 hybrid+rerank 在實驗索引（run 36888032321）與正式索引（run 36889761728）的三個語系都命中。這不是構造上的保證：dense 與 sparse 各取 20 個候選、以 RRF 融合後留 20 個，兩邊同時排得前面的 chunk 夠多時，只在 dense 排前面的 chunk 仍可能被擠出候選。擋住它的是每次內容 push 都會跑的回歸閘門，這題再掉一次就會紅。
 
-剩下的缺口是 BM25 對中日文的切詞。sparse-only 只在 Voyage 掛掉時對訪客提供；那時 zh-TW 與 ja 的這題還是撈不到。總覽 chunk 在實驗索引上也讓 sparse-only 在 zh-TW 多漏了 `uspace-role` 與 `uspace-insurance` 兩題。正式索引上 sparse-only 是 72.2%，同一份程式碼在實驗索引上是 76.0%，差距的原因沒有量。要補這一塊得換一個切得開中日文的 sparse 模型，目前沒有排進來。
+剩下的缺口是 BM25 對中日文的切詞。sparse-only 只在 Voyage 掛掉時對訪客提供；那時 zh-TW 與 ja 的這題還是撈不到。總覽 chunk 在實驗索引上也讓 sparse-only 在 zh-TW 多漏了 `uspace-role` 與 `uspace-insurance` 兩題。正式索引上 sparse-only 是 72.2%，同一份程式碼在實驗索引上是 76.0%，差距的原因沒有量。要補這一塊得換一個切得開中日文的 sparse 模型，目前沒有排進來。（這兩段是當時的狀態，下一節已處理。）
 
 faithfulness 這次是 88.5%（122 次判讀裡 14 次沒依據），上一次在實驗索引上是 91.0%（11 次）。14 次還沒逐條分類，其中 `domains`（en）又把 2025 年 9 月當成未來。
+
+## 中日文 BM25、judge 與內容的後續
+
+上一節留下三件事，處理結果如下。
+
+**一、sparse-only 與 hybrid 在 zh-TW、ja 撈不到 ai-workflow：已解決。** BM25 預設的 `word` tokenizer 以空白與標點切詞，一句中文或日文只會變成幾個長 token，沒有任何問句會重複。zh-TW 與 ja 改用 Qdrant 的 `multilingual` tokenizer，ingest 與查詢都經過 `rag/qdrant.ts` 的 `chunkSparse`，兩端送出的選項一定相同。這個選項也算進每個 chunk 的 hash，所以上線時只重建了 CJK 的點，英文點的 hash 與改動前一字不差（測試以舊版算出的 hash 釘住）。
+
+只開切詞反而更糟：每個助詞與疑問詞都變成 token，sparse-only 降到 70.1%，hybrid+rerank 在實驗索引上掉了 zh-TW 的 `nueip-role`（run 36894380554）。內建的中日文 stopword 清單擋得住「在」「は」這類助詞，擋不住「什麼」「多大」「いました」這類問句用詞。逐字查詢（run 36896446685）找出第一版自訂清單沒有作用的原因：繁體中文被切成單字，「什麼」是「什」加「麼」，所以清單裡寫「什麼」永遠比對不到 token。現在的清單寫的是實際切出來的單一 token，其中「什、麼、做、まし、でし、くらい」六個已確認會被擋（run 36896974338），其餘日文項目沒有逐一驗證，比對不到的項目在兩端都只是不起作用。
+
+正式索引上（92aded5）：
+
+| arm | 改動前（run 36889761728） | 改動後（run 36906401188） |
+|---|---|---|
+| sparse-only | 72.2% | 76.7% |
+| dense-only | 97.6% | 97.6% |
+| hybrid | 93.4% | 95.1% |
+| hybrid+rerank | 97.2% | 97.2% |
+
+`ai-workflow` 在四個 arm、三個語系都命中。push 後的回歸閘門（run 36905891432）144 題沒有一題低於基準；hybrid+rerank 的 MRR 從 0.853 變成 0.836。
+
+**二、compare-team-sizes（ja）漏寫 15：查過，機制不明，沒有修。** 正式那次 run（36889773317）兩個經歷 chunk 都有撈到，log 在這題前後沒有串流中斷、逾時或降級。單題重跑 20 次全對，之後的三次完整 run 也都答對。eval 現在答錯時會印出答案片段，也能用 `--item` 單獨重跑一題，下次再出現就看得到原文。
+
+**三、faithfulness 的 14 次沒依據：分類後修了三個原因。**
+
+- judge 看到的 context 少了聯絡方式。聯絡方式直接寫在生成的 prompt 裡，不在任何 chunk 中，所以凡是列出聯絡方式的答案都被判成捏造。現在生成與 judge 讀同一個 `answerContext`（`rag/nodes.ts`）。
+- About 頁還寫著 Product Playbook v1.x 的「整合 22 種產品框架」，專案頁與 portfolio map 寫的是 2.0 的「16 個可組合的 lens」，答案因此兩個數字都講。About 三語已改成 2.0 的說法，golden 的 `playbook-frameworks` 也改成 16。
+- judge 從 Haiku 換成 Sonnet 4.6（`config.modelJudge`）。Haiku 常在理由裡引出支持的那一句，卻照樣判沒依據；換模型後這類誤判沒再出現。`claude-sonnet-5-5` 不接受 `@langchain/anthropic` 的 structured output 請求（run 36894399333），所以用 4.6。
+
+正式索引上（run 36906411274）：faithfulness 93.4%（122 次判讀裡 8 次沒依據），correctness 97.9%（144 次錯 3 次）。因為 judge 換了模型，這兩個數字不能和先前的 88.5%、99.3% 直接比。correctness 的 3 次錯都是新 judge 判「claim not stated」：它要求答案講完 golden 規則的每一部分，例如 `uspace-role` 要講到起初帶 15 人團隊，Haiku 以前會放過。golden 規則沒有因此放寬。剩下 8 次沒依據，依 judge 的理由是生成時把兩件事混在一起、數錯清單、或引錯來源，這些理由沒有逐條回 context 核對。要再往下壓得改生成端，不在這次範圍內。
+

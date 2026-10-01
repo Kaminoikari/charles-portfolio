@@ -22,26 +22,27 @@ lift of each is visible.
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-10-02**, on the production `doc_chunks` index at commit
-  6c37453, after the AI overview chunk went live. The four retrieval arms are
-  from run 36889761728 and the `corrective` row from run 36889773317.
+  92aded5, after BM25 learned to segment Chinese and Japanese and the judge
+  moved to Sonnet 4.6. The four retrieval arms are from run 36906401188 and the
+  `corrective` row from run 36906411274.
 
 ## Current results
 
 | Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
 |---|---|---|---|---|---|
-| sparse-only | 72.2% | 0.489 | — | — | 0 of 144 |
-| dense-only | 97.6% | 0.736 | — | — | 0 of 144 |
-| hybrid | 93.4% | 0.662 | — | — | 0 of 144 |
-| hybrid+rerank | 97.2% | 0.853 | — | — | 0 of 144 |
-| corrective | 96.7% | 0.835 | 99.3% | 88.5% | 22 of 144 |
+| sparse-only | 76.7% | 0.567 | — | — | 0 of 144 |
+| dense-only | 97.6% | 0.738 | — | — | 0 of 144 |
+| hybrid | 95.1% | 0.692 | — | — | 0 of 144 |
+| hybrid+rerank | 97.2% | 0.836 | — | — | 0 of 144 |
+| corrective | 96.7% | 0.815 | 97.9% | 93.4% | 22 of 144 |
 
 Recall by category (n = query runs):
 
 | Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
 |---|---|---|---|---|---|---|---|
-| sparse-only | 71.2% | 44.4% | 93.3% | 91.7% | 100.0% | 55.6% | 58.3% |
+| sparse-only | 72.7% | 66.7% | 93.3% | 83.3% | 100.0% | 55.6% | 79.2% |
 | dense-only | 97.0% | 100.0% | 100.0% | 100.0% | 100.0% | 83.3% | 100.0% |
-| hybrid | 97.0% | 72.2% | 100.0% | 100.0% | 100.0% | 72.2% | 100.0% |
+| hybrid | 98.5% | 77.8% | 100.0% | 100.0% | 100.0% | 77.8% | 100.0% |
 | hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 100.0% |
 
 **The timeline closed the temporal gap.** Before it, every experience chunk
@@ -74,24 +75,43 @@ same code and production did not. Prefixing every row with the section heading
 (871d3a9) did not help: hybrid+rerank still missed it in Japanese
 (run 36887255550). What did is one more chunk per locale holding the whole
 table under the site's own heading (`about:ai:overview:<locale>`, in
-`aboutChunks`). On production, dense-only and hybrid+rerank now hit
+`aboutChunks`). On production, dense-only and hybrid+rerank then hit
 `ai-workflow` in all three locales, the gate passed with no question below its
-baseline (run 36889248688), and the corrective arm answers it correctly in
-Japanese. sparse-only and hybrid still miss it in zh-TW and ja: that is BM25
-failing on CJK, and it reaches a visitor only while Voyage is down.
+baseline (run 36889248688), and the corrective arm answered it correctly in
+Japanese. sparse-only and hybrid still missed it in zh-TW and ja until BM25
+could segment those languages (next section); since 92aded5 every arm hits it
+in every locale (run 36906401188).
+
+**BM25 now segments Chinese and Japanese.** Its default `word` tokenizer
+splits on spaces and punctuation, so a CJK sentence reached the index as a few
+long tokens that no question repeats, and the sparse arm could match only the
+Latin words in it. zh-TW and ja now ask Qdrant for the `multilingual`
+tokenizer, on ingest and on the query alike (`rag/qdrant.ts` chunkSparse), and
+the option is part of each chunk's hash, so the change rebuilt the CJK points
+and left the English ones alone. Segmenting alone made things worse: every
+particle and question word became a token, and sparse-only fell to 70.1% with
+hybrid+rerank losing `nueip-role` (zh-TW) on the experiment index (run
+36894380554). The built-in Chinese and Japanese stopword lists stopped the
+particles but not the question words. Probing one word at a time showed why a
+first custom list did nothing: Traditional Chinese is segmented one character
+at a time, so an entry like 什麼 never matches a token (run 36896446685). The
+list that works names single tokens (什, 麼, 做, まし, でし, くらい and other
+interrogatives); the six named here were probed and do stop (run
+36896974338). Against production before the change (run 36889761728),
+sparse-only rose from 72.2% to 76.7% and hybrid from 93.4% to 95.1%;
+hybrid+rerank kept 97.2% with no question below its baseline (run 36905891432)
+and its MRR moved from 0.853 to 0.836.
 
 **sparse-only is what a visitor gets while Voyage is down.** Before 2026-10-01
 a Voyage outage ended the request with the outage notice (or, when the network
 call itself failed, a generic stream error); now retrieve falls back
 to the BM25 half of the hybrid query and reports `dense-unavailable`. It costs
-25.0 points of recall against hybrid+rerank (72.2% against 97.2%) and most of
-the ranking (MRR 0.489 against 0.853). The loss is concentrated where the
-question shares few words with the answer: global questions drop to 44.4%.
-Questions that name their subject lose less (local 93.3%, near-miss 91.7%).
-On the experiment index the overview chunk cost sparse-only two zh-TW
-questions (`uspace-role`, `uspace-insurance`): it now ranks in their top six
-and the experience chunk they need does not. The same code read 76.0% on the experiment index (run 36888032321); why
-sparse-only reads lower on production has not been measured.
+20.5 points of recall against hybrid+rerank (76.7% against 97.2%) and most of
+the ranking (MRR 0.567 against 0.836). The loss is concentrated where the
+question shares few words with the answer: global questions drop to 66.7%.
+Questions that name their subject lose less (local 93.3%, near-miss 83.3%).
+The same code reads differently on two indexes built from the same branch
+(77.4% on the experiment index, run 36902404670); why has not been measured.
 
 **Comparison is now the category that can fail.** At 66.7% it is one item
 scoring zero in all three locales: `compare-path-plutus-stack` retrieves each
@@ -99,15 +119,39 @@ project's solution chunk and changelog entries about the project pages, and
 neither tech chunk that lists the stacks. dense-only scores higher on this
 category (83.3%); why has not been measured.
 
-**corrective: 99.3% correct (1 of 144 wrong), 88.5% faithful (14 of 122 judged
-runs ungrounded).** The one wrong answer is `compare-team-sizes` (ja): both
-experience chunks were retrieved and the answer left out the 15. On the
-experiment index before the overview chunk (run 36871169321) it was also one
-wrong answer, `ai-workflow` (ja), which is now correct. Before the timeline
-(run 36857502362, 15424ba) the arm scored 97.2% correct, and three of its four
-wrong answers were `first-role`. The fourteen ungrounded answers in this run
-have not been classified; `domains` (en) calls September 2025 a future
-date, the same misread as `uspace-role` below.
+**corrective: 97.9% correct (3 of 144 wrong), 93.4% faithful (8 of 122 judged
+runs ungrounded).** Both judges now run on Sonnet 4.6 (`config.modelJudge`);
+before 92aded5 they ran on Haiku, so these numbers are not comparable with the
+runs below. The three wrong answers (`pattern-rag` in zh-TW and ja,
+`uspace-role` in ja) are all `claim not stated`: the stronger judge asks for
+every part of a golden claim, for instance the 15-person team in
+`uspace-role`, where Haiku let a partial answer through. The golden claims
+were not loosened.
+
+Three causes of ungrounded verdicts were fixed. The judge was shown the
+retrieved chunks but not the contact channels written into the generation
+prompt, so every answer that listed them was called invented; generation and
+the judge now read one `answerContext` (`rag/nodes.ts`). The About page still
+described Product Playbook v1.x ("22 frameworks") while the project page and
+the portfolio map describe 2.0's 16 lenses, so answers carried both numbers;
+the About copy and the golden `playbook-frameworks` now say 16. And Haiku's
+misreads (a reason that quotes the supporting line and still says
+unsupported) stopped with the model change. In the last Haiku run on
+production (run 36889773317) the arm read 99.3% correct and 88.5% faithful.
+
+The eight ungrounded verdicts left, by the judge's own reasons: three answers
+join facts the context keeps apart (a 22-to-16 narrowing it never states,
+market figures listed as quant features, a pre-mortem statistic read
+backwards); two miscount or mislabel a list (the number of skills, the three
+core product lines); two attribute a fact to the wrong source (`shazam-author`
+and `before-pxpay`, both zh-TW); one renders a term wrongly (`shazam-author`,
+ja). These reasons were not each checked against the context.
+
+`compare-team-sizes` (ja) was wrong once, in run 36889773317: both experience
+chunks were retrieved and the answer left out the 15. It was answered
+correctly in twenty single-item reruns and in every full run since; the
+mechanism is not known. The eval now prints the answer beside a wrong
+verdict, so the next occurrence will show it.
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run
