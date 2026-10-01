@@ -158,6 +158,9 @@ jobs:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          # Same guard as the index: merging or retiring FAQ entries can orphan
+          # more than RAG_PRUNE_MAX points, and only a prune dispatch clears them.
+          RAG_PRUNE: ${{ inputs.prune && '1' || '' }}
         run: |
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             npm run rag:faq:dry
