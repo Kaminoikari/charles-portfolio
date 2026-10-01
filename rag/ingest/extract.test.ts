@@ -17,6 +17,7 @@ import {
   blogChunks,
   blogSlug,
   experienceChunks,
+  timelineChunk,
   type AboutContentInput,
   type BlogArticleInput,
   type ExperienceInput,
@@ -28,6 +29,7 @@ import { aboutContent } from '../../src/data/aboutContent.en.ts'
 import { aboutContent as aboutContentZh } from '../../src/data/aboutContent.zh-TW.ts'
 import { experience } from '../../src/data/experience.en.ts'
 import { experience as experienceZh } from '../../src/data/experience.zh-TW.ts'
+import { experience as experienceJa } from '../../src/data/experience.ja.ts'
 
 const ARTICLES = blogArticles as BlogArticleInput[]
 const ABOUT = aboutContent as AboutContentInput
@@ -113,6 +115,97 @@ test('a role keeps one id across locales even where the company name is localize
 test('two stints at one company fail loudly instead of overwriting each other', () => {
   const again: ExperienceInput = { ...NEW_ROLE, title: 'Promoted', dateRange: 'AUG 2027 — PRESENT' }
   assert.throws(() => experienceChunks([NEW_ROLE, again], 'en'), /duplicate experience/i)
+})
+
+// ── experience timeline ───────────────────────────────────────────────────
+// Each role chunk carries its own dates, and nothing else says where it falls.
+// Asked for the earliest role, retrieval had to land on the FLUX chunk with no
+// word in it meaning "earliest", and it did not: `first-role` failed in every
+// locale of two corrective runs (36811880858, 36857502362). The timeline chunk
+// states the order once, sorted by start date. The site lists roles by its own
+// choice (USPACE above XChange School, which started later), so position is
+// not the order.
+
+const lineOf = (content: string, needle: string) => content.split('\n').find((l) => l.includes(needle)) ?? ''
+
+test('the timeline lists roles by start date, earliest first, whatever order the site uses', () => {
+  const [chunk] = timelineChunk(ROLES, 'en')
+  const orgs = chunk.content.split('\n').filter((l) => /^\d+\. /.test(l)).map((l) => l.replace(/^.*? at /, '').replace(/ \(.*$/, ''))
+  assert.deepEqual(orgs, [
+    'FLUX Technology Inc.',
+    'PXPay Plus Co., Ltd.',
+    'NUEIP Technology Co., Ltd.',
+    'USPACE Tech Co., Ltd.',
+    'XChange School',
+  ])
+})
+
+test('the earliest role is named as the earliest, in every locale', () => {
+  const cases: [ExperienceInput[], string, string][] = [
+    [ROLES, 'en', 'earliest role on the site'],
+    [experienceZh as ExperienceInput[], 'zh-TW', '網站上最早的一份工作'],
+    [experienceJa as ExperienceInput[], 'ja', 'サイトで一番古い職歴'],
+  ]
+  for (const [roles, locale, marker] of cases) {
+    const [chunk] = timelineChunk(roles, locale)
+    assert.ok(chunk, `no timeline chunk for ${locale}`)
+    const line = lineOf(chunk.content, marker)
+    assert.match(line, /FLUX/, `${locale}: the earliest marker is on ${line || 'no line'}`)
+    assert.match(line, /2019/, locale)
+  }
+})
+
+test('the most recent start is the last line, not the first role the site lists', () => {
+  const [chunk] = timelineChunk(ROLES, 'en')
+  assert.match(lineOf(chunk.content, 'most recent start'), /XChange School/)
+})
+
+test('roles still running are listed together as current', () => {
+  const [chunk] = timelineChunk(ROLES, 'en')
+  const current = lineOf(chunk.content, 'Current roles')
+  assert.match(current, /USPACE/)
+  assert.match(current, /XChange School/)
+  assert.doesNotMatch(current, /NUEIP|PXPay|FLUX/)
+})
+
+test('one unreadable date range drops the whole timeline rather than misplacing a role', () => {
+  // Sorting around a role whose start is unknown would put it somewhere, and a
+  // wrong "earliest" reads exactly like a right one.
+  const odd = (dateRange: string): ExperienceInput => ({ ...NEW_ROLE, organization: `Odd ${dateRange}`, dateRange })
+  for (const bad of ['SPRING 2020 — PRESENT', 'JUNK 2020 — PRESENT', 'JA 2020 — PRESENT', '2020 — PRESENT', 'JAN 2020 — LATER', 'JAN 2020 — FOO 2021', 'JAN 2020']) {
+    assert.deepEqual(timelineChunk([...ROLES, odd(bad)], 'en'), [], bad)
+  }
+})
+
+test('roles that start the same month keep the order the site gives them', () => {
+  const first: ExperienceInput = { ...NEW_ROLE, organization: 'Listed First', dateRange: 'MAR 2010 — APR 2011' }
+  const second: ExperienceInput = { ...NEW_ROLE, organization: 'Listed Second', dateRange: 'MAR 2010 — MAY 2012' }
+  const [chunk] = timelineChunk([first, second, ...ROLES], 'en')
+  assert.ok(chunk.content.indexOf('Listed First') < chunk.content.indexOf('Listed Second'))
+  const [flipped] = timelineChunk([second, first, ...ROLES], 'en')
+  assert.ok(flipped.content.indexOf('Listed Second') < flipped.content.indexOf('Listed First'))
+})
+
+test('full and short month names both read', () => {
+  const a: ExperienceInput = { ...NEW_ROLE, organization: 'Full', dateRange: 'SEPTEMBER 2018 — JULY 2019' }
+  const [chunk] = timelineChunk([...ROLES, a], 'en')
+  assert.match(lineOf(chunk.content, 'earliest role on the site'), /Full/)
+})
+
+test('the real experience data reads in every locale, so a date format change fails here', () => {
+  for (const [roles, locale] of [[ROLES, 'en'], [experienceZh, 'zh-TW'], [experienceJa, 'ja']] as const) {
+    const [chunk] = timelineChunk(roles as ExperienceInput[], locale)
+    assert.ok(chunk, `${locale}: the timeline was dropped, so some dateRange no longer parses`)
+    assert.equal(chunk.content.split('\n').filter((l) => /^\d+\. /.test(l)).length, roles.length, locale)
+  }
+})
+
+test('the ingest indexes a timeline chunk for every locale', () => {
+  for (const locale of ['en', 'zh-TW', 'ja']) {
+    const chunk = CHUNKS.find((c) => c.id === `experience-timeline:${locale}`)
+    assert.ok(chunk, `no experience-timeline chunk for ${locale}`)
+    assert.equal(chunk.sourceType, 'experience')
+  }
 })
 
 // ── about ─────────────────────────────────────────────────────────────────

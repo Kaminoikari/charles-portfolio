@@ -19,6 +19,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { judgeFaithfulness } from './judge.js'
+import { todayISO } from '../nodes.js'
 
 test('judgeFaithfulness: an answer with no retrieved context is not judged', async () => {
   const verdict = await judgeFaithfulness('Charles led the parking product.', '')
@@ -28,4 +29,64 @@ test('judgeFaithfulness: an answer with no retrieved context is not judged', asy
 test('judgeFaithfulness: whitespace is not context either', async () => {
   const verdict = await judgeFaithfulness('anything', '  \n  ')
   assert.equal(verdict.judged, false)
+})
+
+// ── the verdict is the list, not a boolean beside it ──────────────────────
+// Run 36857502362 judged `before-pxpay` ungrounded with the reason "these are
+// equivalent, so this is actually grounded": the model filled a boolean and a
+// sentence independently, and they disagreed. The judge now names the claims
+// the context does not support, and the verdict is whether that list is empty,
+// so the two cannot disagree. The model is faked here, at the network boundary;
+// everything from the messages it receives to the verdict is the real code.
+
+type Messages = { role: string; content: string }[]
+const fakeModel = (out: { unsupported: string[]; reason: string }) => {
+  const seen: Messages[] = []
+  return { seen, invoke: async (messages: Messages) => (seen.push(messages), out) }
+}
+
+test('judgeFaithfulness: no unsupported claims is grounded, whatever the reason sentence says', async () => {
+  const model = fakeModel({ unsupported: [], reason: 'not grounded' })
+  const verdict = await judgeFaithfulness('answer', 'context', { invoke: model.invoke })
+  assert.deepEqual(verdict.judged && verdict.grounded, true)
+})
+
+test('judgeFaithfulness: a listed claim is ungrounded, and the claim is in the reason', async () => {
+  const model = fakeModel({ unsupported: ['Plutus has an appeal feature'], reason: 'one invented feature' })
+  const verdict = await judgeFaithfulness('answer', 'context', { invoke: model.invoke })
+  assert.equal(verdict.judged && verdict.grounded, false)
+  assert.match(verdict.reason, /appeal feature/)
+})
+
+test('judgeFaithfulness: blank entries in the list are not claims', async () => {
+  const model = fakeModel({ unsupported: ['', '  '], reason: 'all supported' })
+  const verdict = await judgeFaithfulness('answer', 'context', { invoke: model.invoke })
+  assert.equal(verdict.judged && verdict.grounded, true)
+})
+
+// Run 36857502362 also judged `concurrent-roles` ungrounded for "Head of Product
+// since August 2026", calling it a future date: the judge was never told what
+// day it is, while the generator is (nodes.ts todayISO).
+test('judgeFaithfulness: the judge is told the date it is judging on', async () => {
+  const model = fakeModel({ unsupported: [], reason: 'ok' })
+  // Not today's date, so a judge that ignores the injected one is caught.
+  await judgeFaithfulness('answer', 'context', { invoke: model.invoke, today: '2031-02-03' })
+  assert.match(model.seen[0].map((m) => m.content).join('\n'), /2031-02-03/)
+})
+
+test('judgeFaithfulness: without an injected date it uses the same clock as the generator', async () => {
+  const model = fakeModel({ unsupported: [], reason: 'ok' })
+  const before = todayISO()
+  await judgeFaithfulness('answer', 'context', { invoke: model.invoke })
+  const after = todayISO()
+  const text = model.seen[0].map((m) => m.content).join('\n')
+  assert.ok(text.includes(before) || text.includes(after), 'no date in the judge prompt')
+})
+
+test('judgeFaithfulness: the answer and the context both reach the model', async () => {
+  const model = fakeModel({ unsupported: [], reason: 'ok' })
+  await judgeFaithfulness('THE-ANSWER', 'THE-CONTEXT', { invoke: model.invoke })
+  const text = model.seen[0].map((m) => m.content).join('\n')
+  assert.match(text, /THE-ANSWER/)
+  assert.match(text, /THE-CONTEXT/)
 })

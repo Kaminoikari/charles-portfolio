@@ -230,6 +230,93 @@ export function experienceChunks(items: ExperienceInput[], locale: string): Chun
   })
 }
 
+// Where each role falls in time, stated once. Every role chunk carries its own
+// dates and nothing else, so "what was his earliest role?" had no chunk with a
+// word for "earliest" in it, and retrieval never reached FLUX. The order is by
+// start date: the site lists roles in its own order (USPACE above XChange
+// School, which started later).
+const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER']
+
+// A month token is a full name or a prefix of one at least three letters long
+// (SEP, SEPT, JULY), never a word that merely starts like one (JUNK).
+function monthIndex(token: string): number | null {
+  if (token.length < 3) return null
+  const i = MONTHS.findIndex((m) => m.startsWith(token))
+  return i === -1 ? null : i
+}
+
+function startOf(dateRange: string): number | null {
+  const m = /^([A-Z]+) (\d{4}) — (?:([A-Z]+) \d{4}|PRESENT)$/.exec(dateRange.trim())
+  if (!m) return null
+  const start = monthIndex(m[1])
+  if (start === null || (m[3] !== undefined && monthIndex(m[3]) === null)) return null
+  return Number(m[2]) * 12 + start
+}
+
+const TIMELINE_COPY: Record<string, {
+  title: string
+  header: (n: number) => string
+  line: (i: number, e: ExperienceInput) => string
+  earliest: string
+  latest: string
+  current: (roles: string[]) => string
+}> = {
+  en: {
+    title: "Charles's roles in order, earliest first",
+    header: (n) => `The ${n} roles on Charles's site, from the earliest start date to the most recent:`,
+    line: (i, e) => `${i}. ${e.dateRange}: ${e.title} at ${e.organization}`,
+    earliest: ' (earliest role on the site)',
+    latest: ' (most recent start)',
+    current: (roles) => `Current roles, held at the same time: ${roles.join('; ')}.`,
+  },
+  'zh-TW': {
+    title: 'Charles 的經歷時間軸（由早到晚）',
+    header: (n) => `Charles 網站上的 ${n} 份工作，依起始時間由早到晚排列：`,
+    line: (i, e) => `${i}. ${e.dateRange}：${e.organization} ${e.title}`,
+    earliest: '（網站上最早的一份工作）',
+    latest: '（最近開始的一份）',
+    current: (roles) => `目前同時在職：${roles.join('；')}。`,
+  },
+  ja: {
+    title: 'Charles の職歴（古い順）',
+    header: (n) => `Charles のサイトに載っている ${n} 件の職歴を、開始が古い順に並べたもの：`,
+    line: (i, e) => `${i}. ${e.dateRange}：${e.organization} ${e.title}`,
+    earliest: '（サイトで一番古い職歴）',
+    latest: '（最も新しく始まった職歴）',
+    current: (roles) => `現在も続いている職歴：${roles.join('、')}。`,
+  },
+}
+
+// Returns no chunk at all when any date range does not read: a role sorted
+// around an unknown start lands somewhere, and a wrong "earliest" reads exactly
+// like a right one. A test feeds every locale's real data through this, so a
+// format change on the site fails there instead of silently dropping the chunk.
+export function timelineChunk(items: ExperienceInput[], locale: string): ChunkRecord[] {
+  const copy = TIMELINE_COPY[locale]
+  if (!copy || items.length === 0) return []
+  const dated = items.map((e, pos) => ({ e, pos, start: startOf(e.dateRange) }))
+  if (dated.some((d) => d.start === null)) return []
+  const ordered = [...dated].sort((a, b) => (a.start as number) - (b.start as number) || a.pos - b.pos)
+  const lines = ordered.map((d, i) => {
+    let line = copy.line(i + 1, d.e)
+    if (i === 0) line += copy.earliest
+    if (i === ordered.length - 1) line += copy.latest
+    return line
+  })
+  const current = ordered.filter((d) => /PRESENT$/.test(d.e.dateRange.trim())).map((d) => `${d.e.title} @ ${d.e.organization}`)
+  return [
+    {
+      id: `experience-timeline:${locale}`,
+      parentId: null,
+      sourceType: 'experience' as const,
+      projectId: null,
+      locale,
+      title: copy.title,
+      content: [copy.header(ordered.length), ...lines, ...(current.length ? [copy.current(current)] : [])].join('\n'),
+    },
+  ]
+}
+
 // The skills list has no heading in src/data, so one is supplied here, per
 // locale: a visitor asking in Japanese needs スキル in the text, not Skills.
 const SKILLS_HEADING: Record<string, string> = {
@@ -289,6 +376,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
 
     // ── experience (one chunk per role; see experienceChunks) ──
     out.push(...experienceChunks(experience.experience, locale))
+    out.push(...timelineChunk(experience.experience, locale))
 
     // ── skills (single rolled-up chunk — each item is tiny) ──
     // The heading is part of the CONTENT, not just the title, because content is

@@ -507,7 +507,9 @@ export const GOLDEN: GoldenItem[] = [
       'zh-TW': 'Charles 網站上最早的一份工作是什麼?',
       ja: 'Charles のサイトに載っている一番古い職歴は何ですか?',
     },
-    relevantIds: ['experience:flux-technology-inc:'],
+    // Either chunk states the answer: the role itself, or the timeline that
+    // names it as the earliest (extract.ts timelineChunk). Any one is a hit.
+    relevantIds: ['experience:flux-technology-inc:', 'experience-timeline:'],
     mustInclude: ['flux', '2019'],
   },
 
