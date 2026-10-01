@@ -10,21 +10,16 @@ import { z } from 'zod'
 import { config } from '../config.js'
 import { todayISO } from '../nodes.js'
 
-// The judge names the claims the context does not support, and the verdict is
-// whether that list is empty. It used to return a `grounded` boolean beside a
-// reason sentence, and the two were filled independently: run 36857502362 judged
-// one answer ungrounded with the reason "these are equivalent, so this is
-// actually grounded". With the list as the only input to the verdict, they
-// cannot disagree.
+// A boolean verdict and a reason. A list of unsupported claims was tried
+// (run 36868407205, cdf7b6f): asked to enumerate, the judge listed wording it
+// disliked ("a series of articles", "flagship"), ungrounded verdicts went from 11
+// to 29 of 122, and its outright misreads did not fall. The boolean stays; the
+// fixes that answered the 36857502362 misreads are the date and the equivalence
+// sentence in the prompt below.
 const faithfulnessSchema = z.object({
-  // A list is asked for; a string is accepted because the model sometimes sends
-  // one (run 36867749603), and a schema that rejects it ends the whole eval.
-  unsupported: z
-    .union([z.array(z.string()), z.string()])
-    .describe(
-      'each factual claim in the answer that the context does not support, quoted or closely ' +
-        'paraphrased; an empty list when every claim is supported',
-    ),
+  grounded: z
+    .boolean()
+    .describe('true if every factual claim in the answer is supported by the context'),
   reason: z.string().describe('one short sentence explaining the verdict'),
 })
 
@@ -46,22 +41,6 @@ export interface FaithfulnessDeps {
 export type FaithfulnessVerdict =
   | { judged: false; reason: string }
   | { judged: true; grounded: boolean; reason: string }
-
-// The claims, from whichever shape the model sent. A string that parses as a list
-// of strings is that list; a blank one is none; any other string is one claim,
-// since it sits in the field that only holds claims.
-export function unsupportedClaims(raw: string[] | string): string[] {
-  let list: string[] = Array.isArray(raw) ? raw : [raw]
-  if (typeof raw === 'string') {
-    try {
-      const parsed: unknown = JSON.parse(raw)
-      if (Array.isArray(parsed) && parsed.every((c) => typeof c === 'string')) list = parsed
-    } catch {
-      // not JSON: the string itself is the claim
-    }
-  }
-  return list.map((c) => c.trim()).filter((c) => c.length > 0)
-}
 
 const defaultInvoke = (messages: Message[]) =>
   new ChatAnthropic({ model: config.modelFast, temperature: 0 })
@@ -92,12 +71,12 @@ export async function judgeFaithfulness(
         role: 'system',
         content:
           'You are a strict faithfulness judge for a RAG system. Given an ANSWER ' +
-          'and the CONTEXT it was generated from, list every factual claim in the ' +
-          'answer that the context does not support. An honest "I could not find ' +
-          'that" is not a claim. A claim the context states in other words, in ' +
-          'another language, or as an equivalent number or date counts as ' +
-          'supported. Inventing facts not in the context, or reversing what the ' +
-          `context says, is unsupported. Today's date is ${today}; a date on or ` +
+          'and the CONTEXT it was generated from, decide whether every factual ' +
+          'claim in the answer is supported by the context. An honest "I could ' +
+          'not find that" counts as grounded. A claim the context states in other ' +
+          'words, in another language, or as an equivalent number or date counts ' +
+          'as supported. Inventing facts not in the context, or reversing what the ' +
+          `context says, is NOT grounded. Today's date is ${today}; a date on or ` +
           'before it is not in the future.',
       },
       { role: 'user', content: `CONTEXT:\n${context}\n\nANSWER:\n${answer}` },
@@ -107,10 +86,7 @@ export async function judgeFaithfulness(
     // to throw out of the eval loop and lose every result after it.
     return { judged: false, reason: `judge failed: ${err instanceof Error ? err.message : String(err)}` }
   }
-  const unsupported = unsupportedClaims(out.unsupported)
-  return unsupported.length === 0
-    ? { judged: true, grounded: true, reason: out.reason }
-    : { judged: true, grounded: false, reason: `${unsupported.join(' | ')} (${out.reason})` }
+  return { judged: true, grounded: out.grounded, reason: out.reason }
 }
 
 const statementSchema = z.object({
