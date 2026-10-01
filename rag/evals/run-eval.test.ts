@@ -9,7 +9,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallFailures, recallGate, byCategory, aggregate, scoreFaithfulness } from './run-eval.js'
+import { recallFailures, recallGate, byCategory, aggregate, scoreFaithfulness, retrievalScores } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
 const rows = [
@@ -154,4 +154,29 @@ test('aggregate: cached answers do not lift faithfulness by being unjudgeable', 
   const agg = aggregate([item(1), item(0), item(1), item(undefined), item(undefined)])
   assert.equal(agg.faithfulness, 2 / 3)
   assert.equal(agg.n, 5, 'the cached runs still count as runs everywhere else')
+})
+
+test('retrievalScores: a run that never retrieved is left out of recall, even when it carries citations', () => {
+  const item = { relevantIds: ['experience:nueip-technology-co-ltd:'] }
+  // A FAQ hit: citations, but retrieve never ran (no documents channel).
+  assert.deepEqual(retrievalScores({ sources: [{ id: 'experience:nueip-technology-co-ltd:en' }] }, item), {})
+  // A retrieved run is scored as before.
+  assert.deepEqual(retrievalScores({ sources: [{ id: 'experience:nueip-technology-co-ltd:en' }], documents: [] }, item), {
+    recall: 1,
+    mrr: 1,
+  })
+})
+
+test('aggregate: runs answered without retrieval are counted, not scored as misses', () => {
+  const agg = aggregate([
+    { category: 'single-fact', recall: 1, mrr: 1 },
+    { category: 'single-fact' },
+    { category: 'global' },
+  ])
+  assert.equal(agg.recall, 1)
+  assert.equal(agg.withoutRetrieval, 2)
+  assert.equal(agg.n, 3)
+  const global = agg.categories.find((c) => c.category === 'global')
+  assert.equal(global?.n, 1)
+  assert.ok(Number.isNaN(global?.recall))
 })

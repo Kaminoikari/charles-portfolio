@@ -21,10 +21,10 @@ import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
 import { evidenceBlock } from '../nodes.js'
 import { detectLanguage, type Locale } from '../language.js'
-import { GOLDEN, type EvalCategory } from './golden.js'
+import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
 import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
 import {
-  recallAtK,
+  itemRecall,
   reciprocalRank,
   correctnessMiss,
   scoreCorrectness,
@@ -74,22 +74,24 @@ function arg(flag: string): string | undefined {
 // never generate, so averaging their absence as failure would print three arms
 // flunking every category beside the one arm that actually answered.
 export function byCategory(
-  hits: { category: EvalCategory; recall: number; correctness?: number }[],
+  hits: { category: EvalCategory; recall?: number; correctness?: number }[],
 ): { category: EvalCategory; recall: number; correctness: number | null; n: number }[] {
-  const groups = new Map<EvalCategory, { recall: number[]; correctness: number[] }>()
+  const groups = new Map<EvalCategory, { recall: number[]; correctness: number[]; n: number }>()
   for (const h of hits) {
-    const g = groups.get(h.category) ?? { recall: [], correctness: [] }
-    g.recall.push(h.recall)
+    const g = groups.get(h.category) ?? { recall: [], correctness: [], n: 0 }
+    g.n++
+    if (h.recall !== undefined) g.recall.push(h.recall)
     if (h.correctness !== undefined) g.correctness.push(h.correctness)
     groups.set(h.category, g)
   }
-  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+  // NaN for a category none of whose runs retrieved; pct() renders it as —.
+  const avg = (xs: number[]) => (xs.length === 0 ? NaN : xs.reduce((a, b) => a + b, 0) / xs.length)
   return [...groups.entries()]
     .map(([category, g]) => ({
       category,
       recall: avg(g.recall),
       correctness: g.correctness.length > 0 ? avg(g.correctness) : null,
-      n: g.recall.length,
+      n: g.n,
     }))
     .sort((a, b) => a.category.localeCompare(b.category))
 }
@@ -103,8 +105,9 @@ export function byCategory(
 // everywhere.
 export interface ItemResult {
   category: EvalCategory
-  recall: number
-  mrr: number
+  // Absent for a run that was answered without retrieving (see Aggregate).
+  recall?: number
+  mrr?: number
   correctness?: number // corrective arm only: retrieval arms generate no answer
   faithfulness?: number
 }
@@ -123,9 +126,12 @@ export function aggregate(items: ItemResult[]): Aggregate {
     items.map(f).filter((v): v is number => v !== undefined)
   const corr = present((i) => i.correctness)
   const faith = present((i) => i.faithfulness)
+  const recall = present((i) => i.recall)
+  const mrr = present((i) => i.mrr)
   return {
-    recall: mean(items.map((i) => i.recall)),
-    mrr: mean(items.map((i) => i.mrr)),
+    recall: recall.length ? mean(recall) : NaN,
+    mrr: mrr.length ? mean(mrr) : NaN,
+    withoutRetrieval: items.filter((i) => i.recall === undefined).length,
     // NaN, not 0: an arm that never generated has no correctness to report, and
     // pct() renders it as the em dash the table needs.
     correctness: corr.length ? mean(corr) : NaN,
@@ -133,6 +139,19 @@ export function aggregate(items: ItemResult[]): Aggregate {
     n: items.length,
     categories: byCategory(items),
   }
+}
+
+// Recall and MRR for one full-graph run, or neither when retrieve never ran. A
+// FAQ hit now carries citations, so its sources would otherwise be scored as a
+// retrieval result; before that it carried none and was scored as a miss. Either
+// way it measured the cache, not retrieval, and 23 of 123 runs were served so.
+export function retrievalScores(
+  final: { sources?: { id: string }[]; documents?: unknown[] },
+  item: Pick<GoldenItem, 'relevantIds' | 'needsEvery'>,
+): { recall?: number; mrr?: number } {
+  if (!Array.isArray(final.documents)) return {}
+  const ids = (final.sources ?? []).map((s) => s.id)
+  return { recall: itemRecall(ids, item), mrr: reciprocalRank(ids, item.relevantIds) }
 }
 
 async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
@@ -155,7 +174,6 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const language = detectLanguage(question)
         const final = await graph.invoke({ question, language, queries: [question] })
         const answerText = final.answer ?? ''
-        const ids = (final.sources ?? []).map((s) => s.id)
         const graded = final.graded ?? []
         // The SAME list the generator was given (nodes.ts). Judging against the
         // chunks alone reported every claim resting on the portfolio map or the
@@ -170,8 +188,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const faith = await judgeFaithfulness(answerText, ctx)
         items.push({
           category: item.category,
-          recall: recallAtK(ids, relevant),
-          mrr: reciprocalRank(ids, relevant),
+          ...retrievalScores(final, item),
           correctness: scoreCorrectness(answerText, item, judged),
           faithfulness: scoreFaithfulness(faith),
         })
@@ -190,7 +207,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         // correctness/faithfulness are not applicable (left out of their means).
         const docs = await retrieveWith(question, locale, arm.retrieval!)
         const ids = docs.map((d) => d.metadata.id as string)
-        const r = recallAtK(ids, relevant)
+        const r = itemRecall(ids, item)
         items.push({ category: item.category, recall: r, mrr: reciprocalRank(ids, relevant) })
         // Surface misses so a high aggregate can't hide a specific failing item
         // (e.g. the blog body-chunk questions we just added).
@@ -214,13 +231,14 @@ function pct(x: number): string {
 
 function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
   const header =
-    '| Arm | recall@k | MRR | correctness | faithfulness | Δ recall |\n' +
-    '|---|---|---|---|---|---|'
+    '| Arm | recall@k | MRR | correctness | faithfulness | Δ recall | answered without retrieval |\n' +
+    '|---|---|---|---|---|---|---|'
   let prev = NaN
   const lines = rows.map(({ arm, agg }) => {
     const delta = Number.isNaN(prev) ? '—' : `${((agg.recall - prev) * 100).toFixed(1)}pp`
     prev = agg.recall
-    return `| ${arm} | ${pct(agg.recall)} | ${agg.mrr.toFixed(3)} | ${pct(agg.correctness)} | ${pct(agg.faithfulness)} | ${delta} |`
+    const mrr = Number.isNaN(agg.mrr) ? '—' : agg.mrr.toFixed(3)
+    return `| ${arm} | ${pct(agg.recall)} | ${mrr} | ${pct(agg.correctness)} | ${pct(agg.faithfulness)} | ${delta} | ${agg.withoutRetrieval} of ${agg.n} |`
   })
   return [
     '# RAG Ablation Report',
@@ -232,6 +250,9 @@ function buildReport(rows: { arm: string; agg: Aggregate }[]): string {
     '',
     '> recall@k / MRR are deterministic (id matching). correctness/faithfulness',
     '> apply only to the corrective arm (the one that generates an answer).',
+    '> recall/MRR cover only runs that retrieved: a FAQ hit or canned reply is',
+    '> counted in the last column instead of as a miss. comparison/temporal items',
+    '> that need two chunks score the share of them retrieved.',
     '',
     '### Recall by category',
     '',

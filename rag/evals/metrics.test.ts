@@ -5,6 +5,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  recallOfEvery,
+  itemRecall,
   recallAtK,
   reciprocalRank,
   correctness,
@@ -161,4 +163,13 @@ test('correctnessMiss: an unstated claim says so', () => {
     correctnessMiss('unrelated', { mustInclude: ['zzz'], mustState: 'X' }, false),
     'missing: zzz; claim not stated',
   )
+})
+
+test('recallOfEvery: the share of the needed chunks retrieved', () => {
+  assert.equal(recallOfEvery(['a:en', 'x:en'], ['a:', 'b:']), 0.5)
+  assert.equal(recallOfEvery(['a:en', 'b:en'], ['a:', 'b:']), 1)
+  assert.equal(recallOfEvery([], []), 1)
+  // An item that needs both is scored by share; one that does not, by any hit.
+  assert.equal(itemRecall(['a:en'], { relevantIds: ['a:', 'b:'], needsEvery: true }), 0.5)
+  assert.equal(itemRecall(['a:en'], { relevantIds: ['a:', 'b:'] }), 1)
 })

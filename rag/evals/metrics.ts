@@ -14,6 +14,19 @@ export function recallAtK(retrievedIds: string[], relevantPrefixes: string[]): n
   return hit ? 1 : 0
 }
 
+// Recall for an item that needs every relevant chunk (golden.ts needsEvery): the
+// share of them retrieved. A comparison answered from one side has half its
+// evidence, which recallAtK would score as a full hit.
+export function recallOfEvery(retrievedIds: string[], relevantPrefixes: string[]): number {
+  if (relevantPrefixes.length === 0) return 1
+  const found = relevantPrefixes.filter((p) => retrievedIds.some((id) => id.startsWith(p))).length
+  return found / relevantPrefixes.length
+}
+
+export function itemRecall(retrievedIds: string[], item: { relevantIds: string[]; needsEvery?: boolean }): number {
+  return item.needsEvery ? recallOfEvery(retrievedIds, item.relevantIds) : recallAtK(retrievedIds, item.relevantIds)
+}
+
 // Mean Reciprocal Rank: 1/rank of the FIRST relevant chunk (0 if none). Rewards
 // putting the right chunk near the top, which is what the reranker is for.
 export function reciprocalRank(retrievedIds: string[], relevantPrefixes: string[]): number {
@@ -139,6 +152,10 @@ export interface Aggregate {
   correctness: number
   faithfulness: number
   n: number
+  // Runs answered without retrieval (a FAQ hit, a canned reply, an answer from
+  // the transcript). They have no retrieval to score, so they are left out of
+  // recall and MRR rather than counted as misses, and reported here instead.
+  withoutRetrieval: number
   // Recall AND correctness split by golden-set category. The mean alone hides
   // the case this whole split exists for: a near-miss item is answerable, so
   // retrieving its SIBLING still counts as a hit and recall stays flat while the

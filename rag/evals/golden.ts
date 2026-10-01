@@ -12,6 +12,12 @@
 //                  confusable index from a precise one — and the benchmark for
 //                  the FAQ cache's cross-entry margin (rag/qdrant.ts), whose
 //                  whole job is refusing to answer between two of them.
+//   - comparison : needs two chunks set side by side (two roles, two projects);
+//                  one of them alone answers half the question, so recall here
+//                  is the share of the needed chunks retrieved, not "any hit"
+//   - temporal   : needs dates read against each other (what came before what,
+//                  what overlapped, how long). The facts are in the chunks; the
+//                  ordering is the generator's to work out
 //   - out-of-corpus: NOT answerable — the bot must decline (faithfulness test)
 //
 // `relevantIds` are chunk-id PREFIXES (the stored ids carry a `:<locale>`
@@ -27,7 +33,7 @@
 // (591, 104, 22) — which survive translation; avoid English common nouns that a
 // zh-TW / ja answer would localize.
 
-export type EvalCategory = 'single-fact' | 'local' | 'global' | 'near-miss' | 'out-of-corpus'
+export type EvalCategory = 'single-fact' | 'local' | 'global' | 'near-miss' | 'comparison' | 'temporal' | 'out-of-corpus'
 
 export interface GoldenItem {
   id: string
@@ -50,6 +56,10 @@ export interface GoldenItem {
   // whether the answer says that or 「結果重於產出」.
   mustState?: string
   mustDecline?: boolean
+  // Recall for an item that needs every relevant chunk, not just one of them:
+  // the share of relevantIds retrieved (metrics.ts recallOfEvery). A comparison
+  // answered from one side has half its evidence, and "any hit" scores it 1.
+  needsEvery?: boolean
 }
 
 // Which mustInclude tokens the source cannot supply, per locale. Pure, and
@@ -409,6 +419,96 @@ export const GOLDEN: GoldenItem[] = [
     },
     relevantIds: ['experience:uspace-tech-co-ltd:'],
     mustInclude: ['15'],
+  },
+
+  // ── comparison (two chunks side by side) ─────────────────────────────────
+  {
+    id: 'compare-team-sizes',
+    category: 'comparison',
+    question: {
+      en: 'Which team was bigger: the one Charles led at FLUX, or his Scrum team at USPACE?',
+      'zh-TW': 'Charles 在 FLUX 帶的團隊和在 USPACE 帶的 Scrum 團隊，哪個比較大?',
+      ja: 'Charles が FLUX で率いたチームと USPACE の Scrum チーム、どちらが大きかったですか?',
+    },
+    relevantIds: ['experience:flux-technology-inc:', 'experience:uspace-tech-co-ltd:'],
+    needsEvery: true,
+    mustInclude: ['10', '15'],
+    mustState: 'The USPACE Scrum team (15 people) was bigger than the FLUX team (10 people).',
+  },
+  {
+    id: 'compare-path-plutus-stack',
+    category: 'comparison',
+    question: {
+      en: 'How do the tech stacks of Path and Plutus Trade differ?',
+      'zh-TW': 'Path 和 Plutus Trade 的技術棧有什麼不同?',
+      ja: 'Path と Plutus Trade の技術スタックはどう違いますか?',
+    },
+    relevantIds: ['project:path:tech:', 'project:plutus-trade:tech:'],
+    needsEvery: true,
+    mustInclude: ['react', 'flutter'],
+  },
+  {
+    id: 'compare-nueip-pxpay-metrics',
+    category: 'comparison',
+    question: {
+      en: 'Compare his headline result at NUEIP with his headline result at PXPay Plus.',
+      'zh-TW': '比較他在 NUEIP 和在 PXPay Plus 最主要的成果。',
+      ja: 'NUEIP と PXPay Plus での主な成果を比べてください。',
+    },
+    relevantIds: ['experience:nueip-technology-co-ltd:', 'experience:pxpay-plus-co-ltd:'],
+    needsEvery: true,
+    mustInclude: ['40', '25'],
+  },
+
+  // ── temporal (dates read against each other) ─────────────────────────────
+  {
+    id: 'before-pxpay',
+    category: 'temporal',
+    question: {
+      en: 'What was Charles doing right before he joined PXPay Plus?',
+      'zh-TW': 'Charles 加入 PXPay Plus 之前在做什麼?',
+      ja: 'Charles は PXPay Plus に入る直前、何をしていましたか?',
+    },
+    relevantIds: ['experience:flux-technology-inc:', 'experience:pxpay-plus-co-ltd:'],
+    needsEvery: true,
+    mustInclude: ['flux'],
+    mustState: 'Before PXPay Plus, Charles was Operations Manager at FLUX.',
+  },
+  {
+    id: 'concurrent-roles',
+    category: 'temporal',
+    question: {
+      en: 'Which roles does Charles hold at the same time right now?',
+      'zh-TW': 'Charles 目前同時擔任哪些角色?',
+      ja: 'Charles が今同時に務めている役割は何ですか?',
+    },
+    relevantIds: ['experience:uspace-tech-co-ltd:', 'experience:xchange-school:'],
+    needsEvery: true,
+    mustInclude: ['uspace', 'xchange'],
+    mustState: 'Charles currently works at USPACE and is also a mentor at XChange School.',
+  },
+  {
+    id: 'nueip-tenure',
+    category: 'temporal',
+    question: {
+      en: 'How long was Charles at NUEIP?',
+      'zh-TW': 'Charles 在 NUEIP 待了多久?',
+      ja: 'Charles は NUEIP にどれくらいいましたか?',
+    },
+    relevantIds: ['experience:nueip-technology-co-ltd:'],
+    mustInclude: ['2024'],
+    mustState: 'Charles was at NUEIP for a few months in 2024, from February to May.',
+  },
+  {
+    id: 'first-role',
+    category: 'temporal',
+    question: {
+      en: 'What is the earliest role on Charles\'s site?',
+      'zh-TW': 'Charles 網站上最早的一份工作是什麼?',
+      ja: 'Charles のサイトに載っている一番古い職歴は何ですか?',
+    },
+    relevantIds: ['experience:flux-technology-inc:'],
+    mustInclude: ['flux', '2019'],
   },
 
   // ── local (one project, multiple sections) ───────────────────────────────
