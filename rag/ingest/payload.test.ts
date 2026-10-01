@@ -46,8 +46,8 @@ test('hashPayload folds the date in, so correcting a date re-ingests the chunk',
 // half), or the two sides tokenise differently and match nothing.
 test('toPoint asks BM25 to segment Chinese and Japanese, and leaves English on the default', () => {
   const sparse = (locale: string) => point({ ...BLOG, locale }).vector.sparse
-  assert.deepEqual(sparse('zh-TW').options, { tokenizer: 'multilingual' })
-  assert.deepEqual(sparse('ja').options, { tokenizer: 'multilingual' })
+  assert.deepEqual(sparse('zh-TW').options, { tokenizer: 'multilingual', stopwords: { languages: ['english', 'chinese'] } })
+  assert.deepEqual(sparse('ja').options, { tokenizer: 'multilingual', stopwords: { languages: ['english', 'japanese'] } })
   assert.equal('options' in sparse('en'), false)
 })
 

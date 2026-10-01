@@ -19,15 +19,19 @@ export const SPARSE = 'sparse'
 // BM25 options for the doc_chunks sparse vector, by locale. The default `word`
 // tokenizer splits on spaces and punctuation, so a Chinese or Japanese sentence
 // becomes a few long tokens no question repeats, and BM25 could only match the
-// Latin words in it ("Charles", "AI"). The multilingual tokenizer segments CJK.
+// Latin words in it ("Charles", "AI"). The multilingual tokenizer segments CJK,
+// and then every particle and function word (在, 什麼, は, で) is a token too;
+// without their stopword lists those outweighed the nouns and pulled unrelated
+// chunks into the candidates (run 36894380554). English stays in each list
+// because the CJK content is full of Latin words.
 // Qdrant tokenises the stored text and the query separately, so both must ask
 // for the same options: ingest (ingest/payload.ts) and retrieval (retrieval.ts)
 // both build the sparse document here, and payload.ts folds the spec into each
 // chunk's hash so a change re-ingests that locale. The FAQ cache is a separate
 // collection that keeps the default on both of its sides.
 const CHUNK_SPARSE_OPTIONS: Record<string, Record<string, unknown>> = {
-  'zh-TW': { tokenizer: 'multilingual' },
-  ja: { tokenizer: 'multilingual' },
+  'zh-TW': { tokenizer: 'multilingual', stopwords: { languages: ['english', 'chinese'] } },
+  ja: { tokenizer: 'multilingual', stopwords: { languages: ['english', 'japanese'] } },
 }
 
 export interface SparseDoc {
