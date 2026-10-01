@@ -14,7 +14,7 @@
 // LangSmith: set LANGCHAIN_TRACING_V2=true + LANGCHAIN_API_KEY to capture every
 // arm's runs as a traced experiment (no code change — the SDK auto-instruments).
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
@@ -104,6 +104,8 @@ export function byCategory(
 // A score that is absent here is absent everywhere, and present here is present
 // everywhere.
 export interface ItemResult {
+  // `${golden id}/${locale}`: what a baseline is keyed by.
+  key?: string
   category: EvalCategory
   // Absent for a run that was answered without retrieving (see Aggregate).
   recall?: number
@@ -154,7 +156,7 @@ export function retrievalScores(
   return { recall: itemRecall(ids, item), mrr: reciprocalRank(ids, item.relevantIds) }
 }
 
-async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
+async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; items: ItemResult[] }> {
   const items: ItemResult[] = []
 
   for (const locale of locales) {
@@ -187,6 +189,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const judged = item.mustState ? (await judgeStatement(answerText, item.mustState)).states : null
         const faith = await judgeFaithfulness(answerText, ctx)
         items.push({
+          key: `${item.id}/${locale}`,
           category: item.category,
           ...retrievalScores(final, item),
           correctness: scoreCorrectness(answerText, item, judged),
@@ -208,7 +211,7 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
         const docs = await retrieveWith(question, locale, arm.retrieval!)
         const ids = docs.map((d) => d.metadata.id as string)
         const r = itemRecall(ids, item)
-        items.push({ category: item.category, recall: r, mrr: reciprocalRank(ids, relevant) })
+        items.push({ key: `${item.id}/${locale}`, category: item.category, recall: r, mrr: reciprocalRank(ids, relevant) })
         // Surface misses so a high aggregate can't hide a specific failing item
         // (e.g. the blog body-chunk questions we just added).
         if (r < 1) console.log(`    ✗ miss [${arm.name}/${locale}] ${item.id} — want ${relevant.join(',')}, got ${ids.slice(0, 6).join(',')}`)
@@ -216,7 +219,58 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<Aggregate> {
     }
   }
 
-  return aggregate(items)
+  return { agg: aggregate(items), items }
+}
+
+// ── per-item baseline ─────────────────────────────────────────────────────
+// The recall floor catches a collapse and nothing smaller: it was set with two
+// points of headroom, so a content edit could lose any two questions and pass.
+// A baseline records each question's recall per locale from a known-good run,
+// and the gate fails on any question that scores lower than it did, naming it.
+// Questions added since the baseline are reported, not judged; a baseline is
+// refreshed on purpose (--write-baseline), in a commit that says why.
+export interface Baseline {
+  arm: string
+  recall: Record<string, number>
+}
+
+export function parseBaseline(raw: unknown): Baseline {
+  const b = raw as { arm?: unknown; recall?: unknown } | null
+  const recall = b?.recall
+  if (
+    typeof b?.arm !== 'string' ||
+    typeof recall !== 'object' ||
+    recall === null ||
+    !Object.values(recall).every((v) => typeof v === 'number')
+  ) {
+    throw new Error('baseline file is not { arm: string, recall: { [key]: number } }')
+  }
+  return { arm: b.arm, recall: recall as Record<string, number> }
+}
+
+export function toBaseline(arm: string, items: ItemResult[]): Baseline {
+  const recall: Record<string, number> = {}
+  for (const i of items) if (i.key !== undefined && i.recall !== undefined) recall[i.key] = i.recall
+  return { arm, recall }
+}
+
+export interface BaselineVerdict {
+  ok: boolean
+  regressions: { key: string; was: number; now: number }[]
+  unbaselined: string[]
+}
+
+export function baselineGate(baseline: Baseline, arm: string, items: ItemResult[]): BaselineVerdict {
+  if (baseline.arm !== arm) throw new Error(`baseline is for arm ${baseline.arm}, this run is ${arm}`)
+  const regressions: BaselineVerdict['regressions'] = []
+  const unbaselined: string[] = []
+  for (const i of items) {
+    if (i.key === undefined || i.recall === undefined) continue
+    const was = baseline.recall[i.key]
+    if (was === undefined) unbaselined.push(i.key)
+    else if (i.recall < was) regressions.push({ key: i.key, was, now: i.recall })
+  }
+  return { ok: regressions.length === 0, regressions, unbaselined }
 }
 
 // Every category present in any arm, in a stable order, so the table has the
@@ -337,11 +391,11 @@ async function main() {
   }
 
   console.log(`Running ${arms.length} arm(s) × ${GOLDEN.length} questions × ${locales.length} locale(s)…\n`)
-  const rows: { arm: string; agg: Aggregate }[] = []
+  const rows: { arm: string; agg: Aggregate; items: ItemResult[] }[] = []
   for (const arm of arms) {
     process.stdout.write(`  ${arm.name}… `)
-    const agg = await runArm(arm, locales)
-    rows.push({ arm: arm.name, agg })
+    const { agg, items } = await runArm(arm, locales)
+    rows.push({ arm: arm.name, agg, items })
     console.log(`recall=${pct(agg.recall)} mrr=${agg.mrr.toFixed(3)}`)
   }
 
@@ -376,6 +430,30 @@ async function main() {
       process.exit(1)
     }
     console.log(`\nAll arms at or above the ${pct(floor)} recall floor.`)
+  }
+
+  // A baseline judges, or is written from, exactly one arm, so which one is
+  // never inferred.
+  const writeBaseline = arg('--write-baseline')
+  const baselinePath = arg('--baseline')
+  if ((writeBaseline || baselinePath) && rows.length !== 1) {
+    throw new Error('--baseline / --write-baseline need exactly one --arm')
+  }
+  if (writeBaseline) {
+    writeFileSync(writeBaseline, JSON.stringify(toBaseline(rows[0].arm, rows[0].items), null, 2) + '\n')
+    console.log(`\nWrote baseline ${writeBaseline}`)
+  }
+  if (baselinePath) {
+    const baseline = parseBaseline(JSON.parse(readFileSync(baselinePath, 'utf8')))
+    const verdict = baselineGate(baseline, rows[0].arm, rows[0].items)
+    if (verdict.unbaselined.length > 0) {
+      console.log(`\nNot in the baseline yet (not judged): ${verdict.unbaselined.join(', ')}`)
+    }
+    if (!verdict.ok) {
+      for (const r of verdict.regressions) console.error(`REGRESSED ${r.key}: recall ${r.was} → ${r.now}`)
+      process.exit(1)
+    }
+    console.log(`\nNo question scored below its baseline (${Object.keys(baseline.recall).length} baselined).`)
   }
 }
 

@@ -75,7 +75,30 @@ permissions:
   contents: write
 
 jobs:
+  # The production index is rebuilt from whatever this push contains, so the
+  # offline suite runs first and the ingest waits on it. That suite is where the
+  # hand-written surfaces are bound to src/data (grounding of the FAQ answers,
+  # the entity graph and the portfolio map), so a content edit that leaves one of
+  # them stating a fact the site no longer states stops here, before a visitor
+  # can be served it. Offline only: no secrets reach this job.
+  offline-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run rag:test
+
   ingest:
+    needs: offline-checks
     runs-on: ubuntu-latest
     outputs:
       collection: ${{ inputs.collection || 'doc_chunks' }}
@@ -164,11 +187,11 @@ jobs:
   # the deterministic retrieval arms against the freshly built index and fails
   # the run if recall falls off a cliff.
   #
-  # The floor is 0.95 against a set where all three arms measure 100%
-  # (docs/rag-ablation-report.md). That is room for one flaky item out of the
-  # golden set and no room for a collapse, which is the failure worth paging on.
-  # It is a floor, not a diff: catching a 2% slide is what the manual RAG Eval
-  # workflow and its ablation table are for.
+  # Two checks. A recall floor (0.95) catches a collapse. A per-question baseline
+  # (rag/evals/baseline.hybrid-rerank.json) catches anything smaller: any golden
+  # question that now scores below the recall it had when the baseline was
+  # written fails the run and is named in the log. The baseline is refreshed on
+  # purpose with the RAG Eval workflow's write_baseline input.
   eval-gate:
     needs: ingest
     # Only guard the production collection, and only a real build: an A/B ingest
@@ -199,12 +222,15 @@ jobs:
         # 92.7% for a configuration nobody runs.
         #
         # The 0.95 floor was set when all three arms read 100% on the 29-question
-        # golden set. That set could not fail, which is why it grew to 41; on the
-        # current set the served arm reads 96.7% (run 35059505617), so the floor
-        # keeps about two points of headroom. It is a floor, not a diff: a slow
-        # 2% slide is for the manual RAG Eval and the ablation table to catch.
+        # golden set. That set could not fail, which is why it grew; the served arm
+        # read 96.7% on 41 questions (run 35059505617), so the floor alone kept
+        # about two points of headroom and let any two questions slip. The
+        # baseline is what catches a single question.
         run: |
-          npm run rag:eval -- --retrieval-only --arm hybrid+rerank --min-recall 0.95 --out eval-report.md
+          BASELINE=rag/evals/baseline.hybrid-rerank.json
+          ARGS="--retrieval-only --arm hybrid+rerank --min-recall 0.95 --out eval-report.md"
+          [ -f "$BASELINE" ] && ARGS="$ARGS --baseline $BASELINE"
+          npm run rag:eval -- $ARGS
           {
             echo "### Post-ingest retrieval gate"
             echo ""

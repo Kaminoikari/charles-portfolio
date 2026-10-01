@@ -47,6 +47,10 @@ on:
         # eval measures unless asked otherwise. It defaulted to off here, which
         # made every default run score a FAQ tier nobody is served.
         default: true
+      write_baseline:
+        description: 'Write the per-question recall baseline the post-ingest gate compares against (needs a single arm, e.g. hybrid+rerank)'
+        type: boolean
+        default: false
       faq_calibration:
         description: 'Instead of the golden set, sweep the FAQ cache threshold x margin by leave-one-out (rag/evals/faq-calibration.ts)'
         type: boolean
@@ -121,11 +125,13 @@ jobs:
           ARM: ${{ inputs.arm }}
           LOCALE: ${{ inputs.locale }}
           RETRIEVAL_ONLY: ${{ inputs.retrieval_only }}
+          WRITE_BASELINE: ${{ inputs.write_baseline }}
         run: |
           ARGS="--out eval-report.md"
           [ -n "$ARM" ] && ARGS="$ARGS --arm $ARM"
           [ -n "$LOCALE" ] && ARGS="$ARGS --locale $LOCALE"
           [ "$RETRIEVAL_ONLY" = "true" ] && ARGS="$ARGS --retrieval-only"
+          [ "$WRITE_BASELINE" = "true" ] && ARGS="$ARGS --write-baseline eval-baseline.json"
           echo "running: npm run rag:eval -- $ARGS"
           npm run rag:eval -- $ARGS
           # Surface the ablation table in the run summary (and echo which collection).
@@ -134,3 +140,10 @@ jobs:
             echo ""
             cat eval-report.md
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the baseline
+        if: ${{ inputs.write_baseline && !inputs.faq_calibration }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-baseline
+          path: eval-baseline.json

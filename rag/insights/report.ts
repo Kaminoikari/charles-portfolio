@@ -78,6 +78,9 @@ async function main() {
   if (ins.outages > 0) {
     console.log(`  ${padR('Outage (could not look up)', LABEL_WIDTH)}${padL(ins.outages, 5)}   ${padL(pct1(ins.outagePct), 6)}`)
   }
+  if (ins.degradedAnswers > 0) {
+    console.log(`  ${padR('Degraded (supplier down)', LABEL_WIDTH)}${padL(ins.degradedAnswers, 5)}   ${padL(pct1(ins.degradedPct), 6)}`)
+  }
   console.log(`  ${padR('Median latency', LABEL_WIDTH)}${padL(`${ins.medianLatencyMs} ms`, 8)}`)
   console.log()
 

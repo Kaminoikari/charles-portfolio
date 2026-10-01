@@ -9,7 +9,17 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { recallFailures, recallGate, byCategory, aggregate, scoreFaithfulness, retrievalScores } from './run-eval.js'
+import {
+  recallFailures,
+  recallGate,
+  byCategory,
+  aggregate,
+  scoreFaithfulness,
+  retrievalScores,
+  toBaseline,
+  baselineGate,
+  parseBaseline,
+} from './run-eval.js'
 import { GOLDEN } from './golden.js'
 
 const rows = [
@@ -179,4 +189,43 @@ test('aggregate: runs answered without retrieval are counted, not scored as miss
   const global = agg.categories.find((c) => c.category === 'global')
   assert.equal(global?.n, 1)
   assert.ok(Number.isNaN(global?.recall))
+})
+
+// --- per-item baseline -------------------------------------------------------
+
+const run = (pairs: [string, number | undefined][]) =>
+  pairs.map(([key, recall]) => ({ key, category: 'single-fact' as const, recall }))
+
+test('baselineGate: a question that scores lower than its baseline fails the gate, by name', () => {
+  const baseline = toBaseline('hybrid+rerank', run([['a/en', 1], ['b/en', 1], ['c/en', 0.5]]))
+  const v = baselineGate(baseline, 'hybrid+rerank', run([['a/en', 1], ['b/en', 0], ['c/en', 1]]))
+  assert.equal(v.ok, false)
+  assert.deepEqual(v.regressions, [{ key: 'b/en', was: 1, now: 0 }])
+})
+
+test('baselineGate: improvements and an unchanged run pass', () => {
+  const baseline = toBaseline('hybrid+rerank', run([['a/en', 0.5]]))
+  assert.equal(baselineGate(baseline, 'hybrid+rerank', run([['a/en', 1]])).ok, true)
+  assert.equal(baselineGate(baseline, 'hybrid+rerank', run([['a/en', 0.5]])).ok, true)
+})
+
+test('baselineGate: a question added since the baseline is listed, not judged', () => {
+  const baseline = toBaseline('hybrid+rerank', run([['a/en', 1]]))
+  const v = baselineGate(baseline, 'hybrid+rerank', run([['a/en', 1], ['new/en', 0]]))
+  assert.equal(v.ok, true)
+  assert.deepEqual(v.unbaselined, ['new/en'])
+})
+
+test('baselineGate: a baseline from another arm is refused rather than compared', () => {
+  assert.throws(() => baselineGate(toBaseline('hybrid', []), 'hybrid+rerank', []), /baseline is for arm hybrid/)
+})
+
+test('toBaseline: a run that did not retrieve has no recall to baseline', () => {
+  assert.deepEqual(toBaseline('corrective', run([['a/en', undefined], ['b/en', 1]])).recall, { 'b/en': 1 })
+})
+
+test('parseBaseline: a file of the wrong shape is refused', () => {
+  assert.deepEqual(parseBaseline({ arm: 'x', recall: { 'a/en': 1 } }), { arm: 'x', recall: { 'a/en': 1 } })
+  assert.throws(() => parseBaseline({ arm: 'x', recall: { 'a/en': 'yes' } }))
+  assert.throws(() => parseBaseline({ recall: {} }))
 })

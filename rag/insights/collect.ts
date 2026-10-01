@@ -6,7 +6,7 @@ import { questionHash } from './records.js'
 
 export const TIME_ZONE = 'Asia/Taipei'
 
-interface LogRow {
+export interface LogRow {
   type: 'open' | 'question' | null
   question: string | null
   answer: string | null // stored since 2026-07-13; null on older rows
@@ -16,6 +16,9 @@ interface LogRow {
   latency_ms: number | null
   visitor_id: string | null
   country: string | null
+  // What retrieval gave up to answer (rag/retrieval.ts Degradation). Absent on
+  // rows written before 2026-10-01.
+  degraded?: string[] | null
   ts: string
 }
 
@@ -67,6 +70,12 @@ export interface Insights {
   // would have made a bad afternoon look like a content problem.
   outages: number
   outagePct: number
+  // Questions that WERE answered, but on a degraded retrieval: BM25 alone while
+  // Voyage could not embed, or RRF order while it could not rerank. The answer
+  // reached the visitor, so nothing else in the report shows it, and a run of
+  // them is the first sign of a supplier outage the fallbacks then absorb.
+  degradedAnswers: number
+  degradedPct: number
   corrective: number
   correctivePct: number
   medianLatencyMs: number
@@ -79,6 +88,9 @@ export interface Insights {
 
 export interface GatherInsightsOptions {
   questionHashes?: ReadonlySet<string>
+  // The chat_logs read, injectable so the counts can be checked against rows a
+  // test controls. Production always scrolls Qdrant.
+  load?: () => Promise<{ rows: LogRow[]; truncated: boolean }>
 }
 
 function median(xs: number[]): number {
@@ -141,7 +153,7 @@ function tallyMetric(
 export async function gatherInsights(options: GatherInsightsOptions = {}): Promise<Insights | null> {
   // The loader has already dropped anonymous rows and everything before the
   // report epoch, so what comes back is exactly what the report may show.
-  const { rows: identified, truncated } = await scrollReportableLogs<LogRow>()
+  const { rows: identified, truncated } = await (options.load ?? (() => scrollReportableLogs<LogRow>()))()
   if (identified.length === 0) return null
 
   const isDeltaReport = options.questionHashes !== undefined
@@ -172,6 +184,7 @@ export async function gatherInsights(options: GatherInsightsOptions = {}): Promi
 
   const fallbacks = questionRows.filter((r) => r.route === 'fallback').length
   const outages = questionRows.filter((r) => r.route === 'unavailable').length
+  const degradedAnswers = questionRows.filter((r) => Array.isArray(r.degraded) && r.degraded.length > 0).length
   const corrective = questionRows.filter((r) => (r.loops ?? 0) > 0).length
   const latencies = questionRows.map((r) => r.latency_ms).filter((x): x is number => x != null)
   const newSchema = questionRows.some(
@@ -242,6 +255,8 @@ export async function gatherInsights(options: GatherInsightsOptions = {}): Promi
     fallbackPct: (fallbacks / qCount) * 100,
     outages,
     outagePct: (outages / qCount) * 100,
+    degradedAnswers,
+    degradedPct: (degradedAnswers / qCount) * 100,
     corrective,
     correctivePct: (corrective / qCount) * 100,
     medianLatencyMs: median(latencies),
