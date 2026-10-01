@@ -16,6 +16,7 @@ import assert from 'node:assert/strict'
 
 import { GOLDEN, tokensMissingFromSource } from './golden.js'
 import { extractAll } from '../ingest/extract.js'
+import { experience } from '../../src/data/experience.en.ts'
 
 const CHUNKS = await extractAll()
 
@@ -126,4 +127,19 @@ test('every item states what it expects', () => {
     (i) => !i.mustDecline && !i.mustState && (i.mustInclude ?? []).length === 0,
   ).map((i) => i.id)
   assert.deepEqual(ruleless, [])
+})
+
+test('a job title a rule names is the title src/data records for that employer', () => {
+  // mustState is hand-written and judged as truth, so a stale title in it marks
+  // the correct answer wrong. `uspace-role` said "a Product Manager at USPACE"
+  // after the site had moved to Head of Product, and the eval scored the answer
+  // that said Head of Product as a miss.
+  const titles = [...new Set(experience.map((r) => r.title))]
+  const pattern = new RegExp(`\\b(${titles.join('|')}) at (\\w+)`, 'g')
+  const stale = GOLDEN.flatMap((i) =>
+    [...(i.mustState ?? '').matchAll(pattern)]
+      .filter(([, title, org]) => experience.find((r) => r.organization.startsWith(org))?.title !== title)
+      .map(([m]) => `${i.id}: "${m}"`),
+  )
+  assert.deepEqual(stale, [])
 })

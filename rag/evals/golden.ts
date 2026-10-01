@@ -93,7 +93,7 @@ export const GOLDEN: GoldenItem[] = [
     relevantIds: ['experience:uspace-tech-co-ltd:'],
     mustInclude: ['uspace'],
     mustState:
-      'Charles is a Product Manager at USPACE, who started as the USPACE app owner leading a 15-person cross-functional team.',
+      'Charles is Head of Product at USPACE, who started as the USPACE app owner leading a 15-person cross-functional team.',
   },
   {
     id: 'path-stack',
