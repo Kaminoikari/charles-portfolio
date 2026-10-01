@@ -4,22 +4,110 @@ Retrieval-ablation results from the golden set, run against the live Qdrant inde
 via the `RAG Eval` workflow. Each arm adds one retrieval layer, so the marginal
 lift of each is visible.
 
-- Golden set: **41 questions × 3 locales** (en / zh-TW / ja) = 123 query runs,
-  across five categories (single-fact, global, local, near-miss, out-of-corpus).
-- `recall@k` is hit-rate: did at least one relevant chunk surface in the top-k?
-  (binary per query, averaged). `MRR` is the reciprocal rank of the first
-  relevant chunk — it rewards ranking the right chunk near the top.
+- Golden set: **48 questions × 3 locales** (en / zh-TW / ja) = 144 query runs,
+  across seven categories (single-fact, global, local, near-miss, out-of-corpus,
+  comparison, temporal). The last two were added 2026-10-01 because the set had
+  saturated: every arm scored near 100% on the five older categories, so it
+  could no longer tell a better pipeline from a worse one.
+- `recall@k` is hit-rate: did a relevant chunk surface in the top-k? A
+  comparison or temporal item names every chunk it needs (`needsEvery`) and
+  scores the share of them retrieved, so finding one side of a comparison is
+  half credit. `MRR` is the reciprocal rank of the first relevant chunk.
+- recall and MRR average only the runs that retrieved. A FAQ hit or a canned
+  reply never reaches retrieval and is counted in the "answered without
+  retrieval" column; before 2026-10-01 those runs were scored as recall misses.
 - The `corrective` arm runs the full graph and scores `correctness` and
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
-- Last run: **2026-09-16**. The three retrieval arms are from run 35059505617;
-  the `corrective` row and the correctness figures are from run 35124733398, a
-  corrective-only re-run with the FAQ lexical veto on, the skills chunk rebuilt,
-  and the faithfulness judge given the same evidence as the generator. Both with
-  blog full-text indexing on (`RAG_BLOG_BODY=1`) and first-party weighting at
-  `RAG_FIRST_PARTY_BOOST=1.2`.
+- Last run: **2026-10-01**. The four retrieval arms are from run 36809275348
+  (commit 90c6f48; nothing on the retrieval path changed between it and the
+  calibrated FAQ settings). The `corrective` row is from run 36811880858
+  (commit b2f8f11), a corrective-only re-run with the FAQ cache at the calibrated 0.8 / 0.08. Both
+  runs query the live index, which is built from main.
 
 ## Current results
+
+| Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
+|---|---|---|---|---|---|
+| sparse-only | 74.3% | 0.519 | — | — | 0 of 144 |
+| dense-only | 93.8% | 0.734 | — | — | 0 of 144 |
+| hybrid | 88.9% | 0.645 | — | — | 0 of 144 |
+| hybrid+rerank | 92.4% | 0.842 | — | — | 0 of 144 |
+| corrective | 91.5% | 0.823 | 97.2% | 93.5% | 21 of 144 |
+
+Recall by category (n = query runs):
+
+| Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
+|---|---|---|---|---|---|---|---|
+| sparse-only | 75.8% | 44.4% | 100.0% | 100.0% | 100.0% | 61.1% | 37.5% |
+| dense-only | 98.5% | 100.0% | 100.0% | 100.0% | 100.0% | 83.3% | 45.8% |
+| hybrid | 98.5% | 72.2% | 100.0% | 100.0% | 100.0% | 72.2% | 37.5% |
+| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 41.7% |
+
+**sparse-only is what a visitor gets while Voyage is down.** Before 2026-10-01
+a Voyage outage ended the request with the outage notice (or, when the network
+call itself failed, a generic stream error); now retrieve falls back
+to the BM25 half of the hybrid query and reports `dense-unavailable`. It costs
+18.1 points of recall against hybrid+rerank (74.3% against 92.4%) and most of
+the ranking (MRR 0.519 against 0.842). The loss is concentrated where the
+question shares few words with the answer: global questions drop to 44.4%. A
+question that names its subject (local, near-miss) loses nothing.
+
+**The two new categories are where the set can fail again.** On the five older
+categories hybrid+rerank scores 100% everywhere except global (94.4%), so they
+can no longer separate a better pipeline from a worse one. Comparison and
+temporal questions need two or more chunks, and score the share retrieved:
+
+- comparison at 66.7% is one item scoring zero in all three locales:
+  `compare-path-plutus-stack` retrieves each project's solution chunk and
+  changelog entries about the project pages, and neither tech chunk that lists
+  the stacks. The other two comparison items score full recall. dense-only
+  scores higher on this category (83.3%); why has not been measured.
+- temporal at 41.7% is the gap recorded as out of scope in
+  `docs/rag-architecture-review.md`: "what was his first role" retrieves
+  `changelog:initial-launch` and similar entries in every locale, and no
+  experience chunk.
+
+hybrid+rerank's 92.4% equals the committed per-question baseline
+(`rag/evals/baseline.hybrid-rerank.json`, from run 36809268615), which is the
+post-ingest gate's reference.
+
+**corrective: 97.2% correct (4 of 144 wrong), 93.5% faithful (8 of 123 judged
+runs ungrounded).** The 21 runs answered without retrieval are FAQ hits and
+canned replies, which the faithfulness judge skips. At the old 0.7 / 0.02 the
+same arm answered 35 runs without retrieval (run 36809275348, commit 90c6f48).
+
+The four wrong answers:
+
+- `first-role`, all three locales: the temporal retrieval gap above. The
+  answer never names FLUX or 2019 because retrieval never returned them.
+- `uspace-role` (ja): the rule was wrong. It said "a Product Manager at
+  USPACE"; the answer said Head of Product, which is what the site records.
+  Fixed in a113bed, with a test that holds every "<title> at <employer>" in a
+  rule to `src/data/experience`. Not re-measured since.
+
+Of the eight ungrounded answers, two have a known cause outside generation,
+three share one, and three (`jobops-source` en, `compare-path-plutus-stack` en,
+`shazam-author` zh-TW) are generation errors not investigated here:
+
+- `uspace-role` (zh-TW) states the August 2026 promotion, and the live index
+  did not contain it: `src/data/experience` gained the date in b2f8f11, after
+  the index was built. It should clear once that commit is ingested; not yet
+  verified.
+- `cs153-scale` (zh-TW) is the judge quoting the same words in the answer and
+  the context and calling them unsupported, as in the 2026-09-16 run.
+- `ai-spec` (zh-TW, ja) and `playbook-frameworks` (ja) say Product Playbook
+  has 22 frameworks. A changelog entry says so about the version it shipped;
+  the project page says 16 composable lenses now. Out of scope here: the
+  generator choosing a dated changelog figure over the current page is a
+  recency problem, not a hand-synced surface.
+
+## Previous run (2026-09-16, 41-question set)
+
+Historical: every figure in this section was measured on the 41-question set
+with the FAQ cache at 0.7 / 0.02, and FAQ hits scored as recall misses. It is
+not comparable to the table above. Kept because it records how the faithfulness
+measurement and the near-miss rules were fixed.
 
 | Arm | recall@k | MRR | correctness | faithfulness |
 |---|---|---|---|---|
@@ -37,8 +125,9 @@ at all), and four near-miss pairs.
 answered 23 of its 123 runs, and a cached answer carries no retrieved sources,
 which the harness scores as a recall miss. 80.5% + 18.7% = 99.2%, in line with
 `hybrid+rerank`'s 96.7% (slightly above it because the corrective loop's rewrite
-recovers a few). The metric cannot separate "the cache answered" from "retrieval
-found nothing"; read the retrieval arms for retrieval quality.
+recovers a few). The metric could not separate "the cache answered" from
+"retrieval found nothing" at the time; the "answered without retrieval" column
+added on 2026-10-01 does.
 
 **Faithfulness is now measured over the 91 runs a judge could actually read, and
 it took two fixes to mean anything.** Three figures, none of them comparable to
@@ -172,7 +261,10 @@ returned to the front.
 ## Reproducing
 
 ```
-gh workflow run "RAG Eval" --ref main      # all four arms, all three locales
+gh workflow run "RAG Eval" --ref main      # all five arms, all three locales
+gh workflow run "RAG Eval" --ref <branch> -f ref=<branch>   # a branch: the
+                                           # job checks out the `ref` input,
+                                           # which defaults to main
 gh run view <run-id> --log                 # the three tables + per-item misses
 ```
 
