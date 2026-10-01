@@ -72,13 +72,21 @@ jobs:
 
       - run: npm ci
 
+      # Calibrates what THIS ref would ship, not what production currently holds:
+      # the ref's FAQ entries are built into a scratch collection first
+      # (incremental, so a re-run embeds only what changed), and the sweep and the
+      # judge run against that. The production faq_cache is never written.
       - name: FAQ cache calibration
         if: ${{ inputs.faq_calibration }}
         env:
           QDRANT_URL: ${{ secrets.QDRANT_URL }}
           QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          QDRANT_FAQ_COLLECTION: faq_cache_calibration
         run: |
-          npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json
+          npm run rag:faq
+          npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json --judge
           cat faq-calibration.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Keep the calibration observations

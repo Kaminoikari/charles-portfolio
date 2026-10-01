@@ -103,3 +103,33 @@ ANSWER:
 ${answer}` },
   ])
 }
+
+const responsiveSchema = z.object({
+  responsive: z.boolean().describe('true if the answer answers the question that was asked'),
+  reason: z.string().describe('one short sentence explaining the verdict'),
+})
+
+// Does a pre-written answer answer the question a visitor asked? Used by the
+// FAQ calibration on the serves that went to a different entry than the one the
+// question belongs to. Many of those are entries on overlapping topics, where
+// the other entry's answer still answers the question; the ones that do not are
+// the confident wrong answers the cache exists to avoid, and those are what the
+// margin has to be chosen against.
+export async function judgeResponsive(question: string, answer: string): Promise<{ responsive: boolean; reason: string }> {
+  const judge = new ChatAnthropic({ model: config.modelFast, temperature: 0 }).withStructuredOutput(responsiveSchema, {
+    name: 'responsive',
+  })
+  return judge.invoke([
+    {
+      role: 'system',
+      content:
+        'A visitor asked a portfolio chatbot a QUESTION and was shown a pre-written ANSWER. ' +
+        'Decide whether the ANSWER answers the QUESTION. Either may be in English, ' +
+        'Traditional Chinese or Japanese. true if the answer directly addresses what was ' +
+        'asked, even if it also says more. false if it answers a different question: a ' +
+        'different company, project, person, time or topic than the one asked about, or a ' +
+        'general overview when something specific was asked.',
+    },
+    { role: 'user', content: `QUESTION:\n${question}\n\nANSWER:\n${answer}` },
+  ])
+}

@@ -203,7 +203,7 @@ export const faqEntries: FaqEntry[] = [
     questions: {
       en: ['What is Product Playbook?', 'Tell me about Product Playbook', 'the multi-agent project', 'his AI agent project', 'what is the latest Product Playbook version', 'is Product Playbook up to date'],
       'zh-TW': ['Product Playbook 是什麼', '介紹一下 Product Playbook', '那個 multi-agent 專案', '他的 AI agent 專案', 'Product Playbook 最新版本', 'Product Playbook 有更新到最新版嗎'],
-      ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト', 'Product Playbook の最新バージョン', '最新版に更新されていますか'],
+      ja: ['Product Playbook とは', 'Product Playbook について教えて', 'マルチエージェントのプロジェクト', 'Product Playbook の最新バージョン'],
     },
     answers: {
       en: 'Ahh, this one! This is the one I show off.\n\n**Product Playbook** is a free, open-source tool Charles built that plugs into Claude Code and gives the AI the instincts of a seasoned product manager.\n\nThe problem it solves: turning a rough idea into a solid, build-ready product plan normally takes a skilled PM days of work, and general-purpose AI can write text without really reasoning about product decisions.\n\nHere is what it actually does:\n\n- You say what you want to achieve, and it thinks the idea through the way a senior PM would: what users really need, what to build first, where the strategy is weak, and what could go wrong.\n- For the hardest calls it brings in two specialist helpers: one argues against your strategy to expose blind spots, and the other imagines how the product could fail.\n- Once you move from planning into building, it keeps the AI honest: tests first, reviews its own code, and no cut corners before anything ships.\n\nIt is built from the playbooks of respected product leaders, open-sourced under the MIT license, and already used by other PMs and engineers.\n\n🔗 [GitHub](https://github.com/Kaminoikari/product-playbook)\n\nIt\'s the one I\'d shove at a hiring manager first, honestly.',
@@ -455,7 +455,7 @@ export const faqEntries: FaqEntry[] = [
     id: 'what-makes-him-different',
     questions: {
       en: ['What makes him different as an AI PM?', 'what makes him unique', 'what sets him apart', "what's his edge as a PM", 'why should we hire him', 'why hire him', "what's his unique value", 'how is he different from other PMs', 'what is his competitive advantage'],
-      'zh-TW': ['他作為 AI PM 的獨特之處是什麼', '他和其他 PM 有什麼不同', '他的差異化在哪', '他的獨特價值是什麼', '他的優勢是什麼', '為什麼該錄取他', '他憑什麼勝出', '他最大的賣點是什麼'],
+      'zh-TW': ['他作為 AI PM 的獨特之處是什麼', '他和其他 PM 有什麼不同', '他的差異化在哪', '他的獨特價值是什麼', '他憑什麼勝出', '他最大的賣點是什麼'],
       ja: ['AI PM としての彼の強みは', '他の PM とどう違う', '彼の差別化ポイントは', '彼独自の価値は', '彼の強みは何', 'なぜ彼を採用すべき', '彼の競争優位は'],
     },
     answers: {
@@ -573,8 +573,8 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'contact-direct',
     questions: {
-      en: ['What is his email?', 'his LinkedIn', 'his GitHub', 'social links', 'where can I find him online?'],
-      'zh-TW': ['他的 email 是什麼', '他的 LinkedIn', '他的 GitHub', '社群連結', '網路上哪裡找他'],
+      en: ['What is his email?', 'his LinkedIn', 'social links', 'where can I find him online?'],
+      'zh-TW': ['他的 email 是什麼', '他的 LinkedIn', '社群連結', '網路上哪裡找他'],
       ja: ['メールアドレスは', 'LinkedIn', 'GitHub', 'SNS リンク', 'オンラインでどこ'],
     },
     answers: {
@@ -733,9 +733,9 @@ export const faqEntries: FaqEntry[] = [
   {
     id: 'tech-why-choices',
     questions: {
-      en: ['Why did he choose these technologies?', 'his tech stack rationale', 'why Qdrant?', 'why Voyage?', 'why Claude?', 'why these tools?'],
-      'zh-TW': ['他為什麼選這些技術', '他的技術選型理由', '為什麼用 Qdrant', '為什麼用 Voyage', '為什麼選這些工具'],
-      ja: ['なぜこれらの技術を選んだ', '技術選定の理由', 'なぜ Qdrant', 'なぜ Claude'],
+      en: ['Why did he choose these technologies?', 'his tech stack rationale', 'why Voyage?', 'why Claude?', 'why these tools?'],
+      'zh-TW': ['他為什麼選這些技術', '他的技術選型理由', '為什麼用 Voyage', '為什麼選這些工具'],
+      ja: ['なぜこれらの技術を選んだ', '技術選定の理由', 'なぜ Claude'],
     },
     answers: {
       en: "Oh, there's a pattern to his choices.\n\nIn plain terms: every choice trades toward shipping fast and running near-free, and only adds infrastructure where it earns its keep. For this chatbot specifically:\n\n- **Qdrant** for the vector store: hybrid dense plus **BM25** with server-side **RRF**, and a generous free tier after Supabase's pgvector hit its **2-project cap**.\n- **Voyage voyage-3-large** for the embeddings: SOTA multilingual quality that handles zh, ja, and en cleanly.\n- **rerank-2.5** as a **cross-encoder** over the fused results, to sharpen the final ranking.\n- A **two-tier Gemini→Claude** generation stack: free tier first, paid fallback, to keep cost near zero.\n\nThe server-side fusion also keeps the **Vercel** function lean by shipping no sparse encoder. Across projects the same instinct shows up: ship fast with AI-native tooling (**Claude Code**, **Codex**) and lean managed services, and add infrastructure only where it earns its keep.\n\nAsk about any single choice and I'll give you the trade-off!",

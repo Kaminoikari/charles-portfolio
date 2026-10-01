@@ -1,9 +1,9 @@
 // FAQ cache calibration: what each (threshold, margin) setting would serve, and
 // how often what it serves is the wrong entry.
 //
-//   npx tsx rag/evals/faq-calibration.ts [--out report.md] [--dump observations.json]
+//   npx tsx rag/evals/faq-calibration.ts [--out report.md] [--dump observations.json] [--judge]
 //
-// Needs QDRANT_* only. No embedding call: every query is a paraphrase already in
+// Needs QDRANT_* (and ANTHROPIC_API_KEY with --judge). No embedding call: every query is a paraphrase already in
 // the cache, re-asked with its own point excluded (leave-one-out), using the
 // vector stored on that point. That makes the labels free and exact. The right
 // answer to a paraphrase of entry E is E. A setting that serves anything else
@@ -22,6 +22,7 @@ import { pathToFileURL } from 'node:url'
 
 import { config } from '../config.js'
 import { qdrant, denseVerdict, lexicalVeto, DENSE, SPARSE, type FaqParams } from '../qdrant.js'
+import { judgeResponsive } from './judge.js'
 
 // One leave-one-out query and what Qdrant returned for it. Stored as plain data
 // so the sweep below is pure and testable without a cluster.
@@ -33,6 +34,14 @@ export interface Observation {
   lexicalIds: string[]
 }
 
+export interface Confusion {
+  question: string
+  expected: string
+  served: string
+  locale: string
+  answer: string
+}
+
 export interface Outcome {
   threshold: number
   margin: number
@@ -40,12 +49,26 @@ export interface Outcome {
   served: number
   correct: number
   wrong: number
+  // Wrong serves whose answer a judge read as not answering the question
+  // (judge.ts judgeResponsive). A wrong entry on an overlapping topic often
+  // still answers; these are the ones that do not. null when no judge ran.
+  harmful: number | null
   // The wrong serves themselves, so a reader can see what the setting confuses.
-  confusions: { question: string; expected: string; served: string; locale: string }[]
+  confusions: Confusion[]
 }
 
-export function evaluate(observations: Observation[], params: FaqParams, veto: boolean): Outcome {
-  const out: Outcome = { ...params, veto, served: 0, correct: 0, wrong: 0, confusions: [] }
+// Verdicts are keyed by what was asked and what was served, so one judgement
+// covers that pair at every setting that serves it.
+export const confusionKey = (c: Pick<Confusion, 'locale' | 'question' | 'served'>) =>
+  `${c.locale}\u0000${c.question}\u0000${c.served}`
+
+export function evaluate(
+  observations: Observation[],
+  params: FaqParams,
+  veto: boolean,
+  responsive?: Map<string, boolean>,
+): Outcome {
+  const out: Outcome = { ...params, veto, served: 0, correct: 0, wrong: 0, harmful: responsive ? 0 : null, confusions: [] }
   for (const o of observations) {
     const v = denseVerdict(o.dense, params)
     if (!v.ok) continue
@@ -54,7 +77,10 @@ export function evaluate(observations: Observation[], params: FaqParams, veto: b
     if (v.topId === o.expected) out.correct++
     else {
       out.wrong++
-      out.confusions.push({ question: o.question, expected: o.expected, served: v.topId, locale: o.locale })
+      const c = { question: o.question, expected: o.expected, served: v.topId, locale: o.locale, answer: v.answer }
+      out.confusions.push(c)
+      // An unjudged pair counts as harmful: the safe reading of a missing verdict.
+      if (responsive && responsive.get(confusionKey(c)) !== true) out.harmful = (out.harmful ?? 0) + 1
     }
   }
   return out
@@ -63,19 +89,24 @@ export function evaluate(observations: Observation[], params: FaqParams, veto: b
 export const THRESHOLDS = [0.6, 0.65, 0.7, 0.75, 0.8, 0.85]
 export const MARGINS = [0, 0.01, 0.02, 0.03, 0.05, 0.08]
 
-export function sweep(observations: Observation[], veto: boolean): Outcome[] {
-  return THRESHOLDS.flatMap((threshold) => MARGINS.map((margin) => evaluate(observations, { threshold, margin }, veto)))
+export function sweep(observations: Observation[], veto: boolean, responsive?: Map<string, boolean>): Outcome[] {
+  return THRESHOLDS.flatMap((threshold) =>
+    MARGINS.map((margin) => evaluate(observations, { threshold, margin }, veto, responsive)),
+  )
 }
 
-// The setting to run: no wrong serves, then the most correct ones. Ties go to
-// the stricter setting, since two settings serving the same answers differ only
-// in what they would do with a phrasing this set does not contain.
+// The setting to run: nothing served that fails to answer the question (every
+// wrong serve when no judge ran), then the most answers that do. Ties go to the
+// stricter setting, since two settings serving the same answers differ only in
+// what they would do with a phrasing this set does not contain.
 export function recommend(outcomes: Outcome[]): Outcome | null {
-  const safe = outcomes.filter((o) => o.wrong === 0)
+  const bad = (o: Outcome) => o.harmful ?? o.wrong
+  const good = (o: Outcome) => o.served - bad(o)
+  const safe = outcomes.filter((o) => bad(o) === 0)
   if (safe.length === 0) return null
   return safe.reduce((best, o) =>
-    o.correct > best.correct ||
-    (o.correct === best.correct && (o.threshold > best.threshold || (o.threshold === best.threshold && o.margin > best.margin)))
+    good(o) > good(best) ||
+    (good(o) === good(best) && (o.threshold > best.threshold || (o.threshold === best.threshold && o.margin > best.margin)))
       ? o
       : best,
   )
@@ -83,17 +114,20 @@ export function recommend(outcomes: Outcome[]): Outcome | null {
 
 const pct = (n: number, d: number) => (d === 0 ? '—' : `${((n / d) * 100).toFixed(1)}%`)
 
-export function report(observations: Observation[], current: FaqParams): string {
+export function report(observations: Observation[], current: FaqParams, responsive?: Map<string, boolean>): string {
   const answerable = observations.length
   const lines: string[] = [
     '# FAQ cache calibration',
     '',
     `${answerable} leave-one-out queries (every paraphrase in the cache, its own point excluded).`,
     'A serve is **correct** when it names the entry the paraphrase belongs to, **wrong** otherwise.',
+    responsive
+      ? 'A wrong serve is **harmful** when a judge read the served answer as not answering the question (judge.ts judgeResponsive).'
+      : 'No judge ran, so every wrong serve is treated as harmful.',
     '',
   ]
   for (const veto of [true, false]) {
-    const outcomes = sweep(observations, veto)
+    const outcomes = sweep(observations, veto, responsive)
     const rec = recommend(outcomes)
     const cur = outcomes.find((o) => o.threshold === current.threshold && o.margin === current.margin)
     lines.push(`## Lexical veto ${veto ? 'on (production)' : 'off'}`, '')
@@ -102,7 +136,7 @@ export function report(observations: Observation[], current: FaqParams): string 
     for (const t of THRESHOLDS) {
       const row = MARGINS.map((m) => {
         const o = outcomes.find((x) => x.threshold === t && x.margin === m)!
-        return `${o.correct} ✓ / ${o.wrong} ✗`
+        return o.harmful === null ? `${o.correct} ✓ / ${o.wrong} ✗` : `${o.correct} ✓ / ${o.wrong} ✗ (${o.harmful} harmful)`
       })
       lines.push(`| ${t} | ${row.join(' | ')} |`)
     }
@@ -110,18 +144,22 @@ export function report(observations: Observation[], current: FaqParams): string 
     if (cur) {
       lines.push(
         `Current (${current.threshold} / ${current.margin}): serves ${cur.served}, ` +
-          `${cur.correct} correct (${pct(cur.correct, answerable)} coverage), ${cur.wrong} wrong (${pct(cur.wrong, cur.served)} of serves).`,
+          `${cur.correct} correct (${pct(cur.correct, answerable)} coverage), ${cur.wrong} wrong (${pct(cur.wrong, cur.served)} of serves)` +
+          (cur.harmful === null ? '.' : `, ${cur.harmful} harmful (${pct(cur.harmful, cur.served)} of serves).`),
       )
     }
     lines.push(
       rec
-        ? `Recommended: threshold ${rec.threshold}, margin ${rec.margin}: ${rec.correct} correct, 0 wrong.`
-        : 'No setting in the grid serves without a wrong answer.',
+        ? `Recommended: threshold ${rec.threshold}, margin ${rec.margin}: serves ${rec.served}, ${rec.correct} correct, ${rec.wrong} wrong, ${rec.harmful ?? rec.wrong} harmful.`
+        : 'No setting in the grid serves without a harmful answer.',
       '',
     )
     if (cur && cur.confusions.length > 0) {
       lines.push('Wrong serves at the current setting:', '')
-      for (const c of cur.confusions) lines.push(`- [${c.locale}] "${c.question}": wanted \`${c.expected}\`, served \`${c.served}\``)
+      for (const c of cur.confusions) {
+        const verdict = responsive ? (responsive.get(confusionKey(c)) === true ? ' (answers it)' : ' (**harmful**)') : ''
+        lines.push(`- [${c.locale}] "${c.question}": wanted \`${c.expected}\`, served \`${c.served}\`${verdict}`)
+      }
       lines.push('')
     }
   }
@@ -194,7 +232,24 @@ async function main() {
   const dump = flag('--dump')
   const observations = await collect()
   if (dump) writeFileSync(dump, JSON.stringify(observations))
-  const md = report(observations, { threshold: config.faqCacheThreshold, margin: config.faqCacheMargin })
+  // --judge: read every distinct wrong serve any production-veto setting makes,
+  // once, and score settings by the ones that fail to answer the question.
+  let responsive: Map<string, boolean> | undefined
+  if (process.argv.includes('--judge')) {
+    const pairs = new Map<string, Confusion>()
+    for (const o of sweep(observations, true)) for (const c of o.confusions) pairs.set(confusionKey(c), c)
+    console.log(`Judging ${pairs.size} distinct wrong serves …`)
+    responsive = new Map()
+    const queue = [...pairs.entries()]
+    const worker = async () => {
+      for (let next = queue.shift(); next; next = queue.shift()) {
+        const [key, c] = next
+        responsive!.set(key, (await judgeResponsive(c.question, c.answer)).responsive)
+      }
+    }
+    await Promise.all(Array.from({ length: 4 }, worker))
+  }
+  const md = report(observations, { threshold: config.faqCacheThreshold, margin: config.faqCacheMargin }, responsive)
   console.log(md)
   if (out) writeFileSync(out, md + '\n')
 }

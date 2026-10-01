@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { evaluate, recommend, sweep, type Observation } from './faq-calibration.js'
+import { evaluate, recommend, sweep, confusionKey, type Observation } from './faq-calibration.js'
 
 const pt = (faq_id: string, score: number) => ({ score, payload: { faq_id, answer: `a:${faq_id}` } })
 
@@ -59,4 +59,24 @@ test('the recommendation is the setting with no wrong serves that serves the mos
 test('no recommendation when every setting serves a wrong answer', () => {
   const hopeless = [obs('a', [pt('b', 0.99)])]
   assert.equal(recommend(sweep(hopeless, false)), null)
+})
+
+test('a wrong serve the judge read as answering the question is not harmful; an unjudged one is', () => {
+  const near = obs('nueip', [pt('pxpay', 0.84), pt('nueip', 0.7)])
+  const key = confusionKey({ locale: 'en', question: 'q:nueip', served: 'pxpay' })
+  assert.equal(evaluate([near], { threshold: 0.7, margin: 0 }, false, new Map([[key, true]])).harmful, 0)
+  assert.equal(evaluate([near], { threshold: 0.7, margin: 0 }, false, new Map([[key, false]])).harmful, 1)
+  assert.equal(evaluate([near], { threshold: 0.7, margin: 0 }, false, new Map()).harmful, 1)
+  assert.equal(evaluate([near], { threshold: 0.7, margin: 0 }, false).harmful, null)
+})
+
+test('with verdicts, the recommendation weighs harm, not every wrong serve', () => {
+  // The near tie serves the wrong entry but answers the question, so the most
+  // permissive safe setting is the one that keeps it.
+  const near = obs('nueip', [pt('pxpay', 0.84), pt('nueip', 0.83)])
+  const responsive = new Map([[confusionKey({ locale: 'en', question: 'q:nueip', served: 'pxpay' }), true]])
+  const rec = recommend(sweep([SET[0], near], false, responsive))
+  assert.equal(rec?.served, 2)
+  assert.equal(rec?.harmful, 0)
+  assert.equal(recommend(sweep([SET[0], near], false))?.served, 1)
 })
