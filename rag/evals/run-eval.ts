@@ -213,6 +213,10 @@ async function runArm(arm: Arm, locales: Locale[]): Promise<{ agg: Aggregate; it
         })
         // The same reason correctness prints its misses: a mean cannot tell an
         // invented fact from an answer the judge simply could not read.
+        // A judge failure is not an empty context; say which runs it dropped.
+        if (!faith.judged && ctx.trim().length > 0) {
+          console.log(`    \u2717 unjudged [${arm.name}/${locale}] ${item.id} \u2014 ${faith.reason}`)
+        }
         if (faith.judged && !faith.grounded) {
           console.log(`    \u2717 ungrounded [${arm.name}/${locale}] ${item.id} \u2014 ${faith.reason}`)
         }

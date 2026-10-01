@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { judgeFaithfulness } from './judge.js'
+import { judgeFaithfulness, unsupportedClaims } from './judge.js'
 import { todayISO } from '../nodes.js'
 
 test('judgeFaithfulness: an answer with no retrieved context is not judged', async () => {
@@ -89,4 +89,31 @@ test('judgeFaithfulness: the answer and the context both reach the model', async
   const text = model.seen[0].map((m) => m.content).join('\n')
   assert.match(text, /THE-ANSWER/)
   assert.match(text, /THE-CONTEXT/)
+})
+
+// Run 36867749603 died on the first ungrounded answer: the model put its one
+// claim in `unsupported` as a string, not a list, the structured-output parser
+// threw, and the whole eval stopped with nothing reported. A string is read as
+// claims; any other failure leaves that one run unjudged and says so.
+test('unsupportedClaims: a list, a JSON-encoded list, a bare string and an empty string', () => {
+  assert.deepEqual(unsupportedClaims(['a', ' ', 'b']), ['a', 'b'])
+  assert.deepEqual(unsupportedClaims('["a","b"]'), ['a', 'b'])
+  assert.deepEqual(unsupportedClaims('[]'), [])
+  assert.deepEqual(unsupportedClaims('  '), [])
+  const malformed = '["corporate travel" as three separate core product lines]'
+  assert.deepEqual(unsupportedClaims(malformed), [malformed])
+  assert.deepEqual(unsupportedClaims('[1, 2]'), ['[1, 2]'])
+})
+
+test('judgeFaithfulness: a string from the model is still a verdict', async () => {
+  const model = { invoke: async () => ({ unsupported: 'Plutus has an appeal feature', reason: 'r' }) }
+  const verdict = await judgeFaithfulness('answer', 'context', model)
+  assert.equal(verdict.judged && verdict.grounded, false)
+})
+
+test('judgeFaithfulness: a judge that cannot be read leaves the run unjudged instead of ending the eval', async () => {
+  const model = { invoke: async () => { throw new Error('Failed to parse') } }
+  const verdict = await judgeFaithfulness('answer', 'context', model)
+  assert.equal(verdict.judged, false)
+  assert.match(verdict.reason, /judge failed: Failed to parse/)
 })
