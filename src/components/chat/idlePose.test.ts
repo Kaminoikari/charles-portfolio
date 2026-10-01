@@ -250,6 +250,11 @@ function leastCapturedFlex(rig: Rig): number {
   return least
 }
 
+it('every waiver names a look', () => {
+  const ids = looks.map((l) => l.id)
+  expect([...Object.keys(DEPTH_WAIVER), ...Object.keys(CLOTH_WAIVER)].filter((id) => !ids.includes(id))).toEqual([])
+})
+
 describe.each(looks)('idle poses on $id', (look) => {
   it('reads the captured motions as elbows that bend forward', () => {
     expect(leastCapturedFlex(look.rig)).toBeGreaterThan(-3)
@@ -352,7 +357,10 @@ describe.each(looks)('idle poses on $id', (look) => {
     expect(-clothDepth, `${(-clothDepth * 1000).toFixed(1)}mm off her clothes`).toBeLessThan(MAX_CLOTH_GAP)
   })
 
-  it.runIf(look.id in CLOTH_WAIVER)('needs the clothes waiver it declares', () => {
+  // Registered only on a waived look, so the other looks report nothing
+  // rather than a skip each. 'every waiver names a look' keeps a key that
+  // matches no look from leaving this unregistered everywhere.
+  if (look.id in CLOTH_WAIVER) it('needs the clothes waiver it declares', () => {
     // A waiver the measure no longer needs is stale, and a measure that reads
     // nothing anywhere would pass every check above.
     let deepest = -Infinity
