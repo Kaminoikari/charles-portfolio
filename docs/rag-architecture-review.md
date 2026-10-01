@@ -555,3 +555,104 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
   沒有新增任何 `src/` 或 `scripts/` 測試），而 CI 的判別式只容忍「結果行說全過」
   這一種情況。真正的修法是讓 avatar 那幾份測試不要長時間卡住 event loop，或等
   vitest 把那個 timeout 開放設定。
+
+---
+
+# 後續處置（2026-10-01）
+
+9-16 那一輪把 §7 的三件事做完，但 §4.1 到 §4.5 各自留下缺口（見上一節「已知仍未覆蓋的缺口」）。這一輪把五項都推到可以用證據說「關掉了」的程度。實作在 `rag-review-fixes` 分支，commit 範圍 `c2a0c27..HEAD`。
+
+| 項目 | 9-16 狀態 | 本輪 |
+|---|---|---|
+| §4.1 FAQ 無 grounding | margin 0.02，無證據說它對 | 留一法校準加 judge，0.8／0.08 下答非所問 0 次；命中附引用 |
+| §4.2 檢索單點 | rerank 可降級，embedding 仍單點 | embedding 失敗改用 BM25；供應商邊界統一分類、重試、斷路 |
+| §4.3 golden 飽和 | 加題後 recall 不飽和，correctness 仍 100% | 加比較題與時序題，recall 92.4%，temporal 41.7% |
+| §4.4 eval 沒守門 | ingest 後只有 recall 地板 | ingest 前先跑離線測試；ingest 後逐題比對基準 |
+| §4.5 手工同步面 | 四處釘住一處 | 四處全部綁回 `src/data`，抓到 6 筆已過期的事實 |
+
+## §4.5 手工同步面：四處全部釘住，而且一接上就抓到錯
+
+`rag/grounding.ts` 是唯一的定義，判斷一段手寫文字裡的數字與「年月」是否仍由同語系的語料陳述。FAQ 答案（174 則、384 個事實）、portfolio map（28 個）、entity graph 的 note 全部用它檢查。年月另列一類，只准由經歷、專案、About 這類策展紀錄佐證；單比數字時，「2026 年 8 月升任」這種 `src/data` 根本沒寫的日期，會被某則 2026 年的 changelog 碰巧對上。
+
+第一次接上就找到 6 筆過期或無依據的事實：
+
+- `relations.json` 把 USPACE 職稱寫成 Product Manager（網站寫 Head of Product）
+- 同一條 note 寫「3 product lines」，沒有任何紀錄這樣寫
+- `path built_with claude`（prototyped with Claude Code），整個 `src/data` 沒有這句
+- zh-TW 的兩則 FAQ 答案寫 `1M+`，zh-TW 網站寫「100 萬+」
+- 成本答案說快取有 52 個主題，實際 58 個
+- portfolio map 寫 Product Playbook `v2.3`，專案頁寫 `2.4.0`
+
+結構面的修法：employment 邊改成只寫雇主，職稱、日期、在職與否在渲染時從 `experience.en.ts` 讀；`CONTACT` 改由 footer 的 `social.ts` 推導，不再手抄。語料沒寫但其他頁面有寫的事實，登記在 `rag/off-corpus-facts.ts` 並註明出處，測試會檢查出處仍成立、豁免仍然必要。目前 3 筆，見文末待決事項。
+
+## §4.1 FAQ：問題出在 entry 重疊，margin 只是旋鈕
+
+校準的做法是留一法：每句 paraphrase 拿掉自己那個點後重問一次，正確答案就是它所屬的 entry，所以每個查詢的標籤都是精確的。第一次跑（run 36807870107，當時 853 句）的結果推翻了預設：
+
+- 0.7／0.02 下命中 506 次，其中 128 次（25.3%）判給了別的 entry
+- 離線試過三種接受規則與整張門檻網格，判錯率都在 19% 到 27% 之間，幾乎不隨門檻變動
+
+所以問題在 entry 本身互相重疊，而且有一部分是資料錯誤：8 句 paraphrase 同時屬於兩個 entry（例如 `why Qdrant?`），5 句問版本的問題放在 Product Playbook 的一般介紹底下。兩者都已修正，前者有測試禁止。
+
+判錯不等於答錯。主題相近的 entry 常常仍然回答了問題，所以每一筆判錯都交給 judge 判斷「這個答案有沒有回答這個問題」，只把沒回答的算成有害。另外 16 句會先被 regex triage 攔下、根本問不到快取，不計入。資料修正後的結果（run 36809386889，829 句）：
+
+| 設定 | 命中 | 判對 | 判錯但切題 | 答非所問 |
+|---|---|---|---|---|
+| 0.7／0.02（舊） | 496 | 389 | 85 | 22（4.4%） |
+| 0.8／0.08（現行） | 263 | 230 | 33 | 0 |
+
+推薦規則是「有害 ≤ 命中的 1%，其中切題命中最多者」。margin 是真正起作用的旋鈕；只拉 threshold 時，好的命中與有害的命中幾乎同速減少。代價是覆蓋率：留一法查詢由快取回答的比例從 46.9% 降到 27.7%，其餘改走檢索、評分、引用的完整路徑。
+
+命中時現在會附上引用來源：入庫時用同一份 grounding 推導出陳述該答案事實的 chunk，存進 point 的 payload，triage 直接帶出。174 則答案裡 88 則帶引用；80 則不含可查核的數字或日期（自我介紹、聯絡方式這類）；6 則的事實只有語料外來源（快取主題數、TOEIC 分數）。
+
+## §4.2 檢索：embedding 也有退路了，並修掉一個讓真斷線變成崩潰的缺陷
+
+稀疏向量是 Qdrant Cloud Inference 在伺服器端算的 BM25，完全不需要 Voyage。所以 hybrid 查詢的 embedding 失敗時，改用 BM25 單臂排序；它的品質由新增的 `sparse-only` ablation arm 量測。hybrid 系列的 arm 開 `strictDense`，量測時不會悄悄退化。
+
+檢查斷線路徑時找到更嚴重的缺陷：Node 的 `fetch` 在連線被拒或 DNS 失敗時丟出 `TypeError: fetch failed`（Qdrant client 與裸 `fetch` 都實測過），而 retrieve 節點把所有 `TypeError` 當成我方 bug 重拋。結果 `unavailable` 節點本來要處理的那種斷線，實際上會讓請求崩潰成通用錯誤。現在所有對外呼叫都經過 `rag/supplier.ts`：
+
+- 拋出的任何東西都分類成 `SupplierError`，outage 判斷改看這個型別
+- 網路失敗、429、5xx 重試一次；逾時與 4xx 不重試
+- 失敗後同一個 instance 內斷路 30 秒，避免同一則訊息在 FAQ 探測與檢索各等一次 10 秒逾時
+
+降級種類（`dense-unavailable`、`rerank-unavailable`）沿 graph state 傳到 `done` 事件與 chat_logs 的 `degraded` 欄位，insights 報表新增計數。這類回答訪客照樣收到，以前在任何報表裡都看不出來。
+
+Qdrant 本身仍是儲存的唯一來源，斷線時回誠實的 outage 訊息，這是刻意的終點。
+
+## §4.3 golden set：補上評審點名的兩類題
+
+新增 3 題跨 chunk 比較題與 4 題時序題，golden set 變成 48 題。需要兩個 chunk 的題目改用「取回比例」計分，否則只取回一半的比較題也拿滿分。結果（run 36809268615，hybrid+rerank）：recall 從 96.7% 降到 92.4%，comparison 66.7%，temporal 41.7%。benchmark 重新有鑑別力了。
+
+corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；FAQ 命中帶引用之後又會被算成檢索結果。現在檢索沒跑過的 run 不計入 recall 與 MRR，改列在獨立欄位。
+
+## §4.4 守門：ingest 前與 ingest 後各一道
+
+- ingest 前：`rag-ingest.yml` 的 ingest job 依賴新的 `offline-checks` job（`npm run rag:test`）。§4.5 的 grounding 測試在這裡，內容改了卻讓 FAQ、map 或 graph 陳述網站已不再陳述的事實，就進不了 production 索引。
+- ingest 後：每題每語系的 recall 存成 `rag/evals/baseline.hybrid-rerank.json`（144 筆），任何一題比基準低就失敗並點名。recall 地板因此只需擋崩盤，從 0.95 降到 0.85；新題目讓 served arm 降到 92.4%，0.95 會擋下每一次 ingest。
+- eval workflow 的 `faq_sparse_veto` 預設原本是關，production 是開，預設的 eval 量的是一個沒上線的設定。已改成預設開。
+- insights 的 load 改成可注入，outage 與降級計數有測試了。
+
+## 上一節「已知仍未覆蓋的缺口」的狀態
+
+| 缺口 | 狀態 |
+|---|---|
+| margin 0.02 沒有證據 | 已校準，見 §4.1 |
+| corrective recall 分不出快取與檢索 | 已分開，見 §4.3 |
+| insights outage 計數沒有測試 | 已補 seam 與測試 |
+| `npm test` birpc 心跳誤報是繞過去的 | 已在 `531adcf` 修好（每個測試後讓出一次 macrotask），CI 改回看 exit code |
+
+## 驗證
+
+- 本機：`npm run rag:test` 432／432 全綠，`npm run build`（含 `tsc -b`）通過，lint 通過。
+- 新增的每一道防禦都做過 mutation，確認拿掉後測試會轉紅；三輪下來存活的 10 道都補了測試或改寫成單一結構後再驗一次，全部轉紅。
+- 線上：校準與基準檔都在 GitHub Actions 對真實 Qdrant 跑出，run id 已寫在各段。
+
+## 待決事項（需要 Charles 判斷）
+
+- **TOEIC 940／990**：只出現在 FAQ 答案裡，全站沒有任何頁面寫。要嘛寫進網站（例如 About），要嘛從答案拿掉。
+- **2026 年 8 月升任 Head of Product**：`index.html` 與 `llms.txt` 有寫，`src/data/experience` 沒寫（只寫 JULY 2024 — PRESENT）。寫進經歷資料後，FAQ 就能引用它。
+- **主題重疊的 entry**：`strengths`／`what-makes-him-different`／`why-hire`、`overall-summary`／`who-is-charles`／`exp-history`、`who-is-mika`／`bot-who-are-you` 這幾組是判錯的主要來源。合併後覆蓋率可以在不增加有害命中的前提下拉回來，但牽涉 Mika 的三語文案，屬於內容決策。
+
+## 範圍外的發現
+
+- 時序題檢索不到經歷 chunk：「網站上最早的工作」撈回的是 changelog，經歷 chunk 沒有日期以外的時序線索。一個列出所有職務與起訖的「經歷時間軸」chunk 大概就能解決，但那是檢索改進，不屬於這份評審的扣分項。

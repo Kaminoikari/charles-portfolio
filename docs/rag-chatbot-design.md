@@ -37,8 +37,8 @@ operate. Aligns with the existing Vite + React + TS app.
 > - **No API prompt caching** (deliberate — see §11).
 > - The index is built by a **GitHub Action** — on every push to main that touches
 >   a content source, and on demand via `workflow_dispatch` — because the runtime
->   container has no outbound network. Index at this commit: **1,095 doc chunks +
->   838 FAQ paraphrases across 57 entries**, all in en/zh-TW/ja. (Counts come from
+>   container has no outbound network. Index at this commit: **1,110 doc chunks +
+>   845 FAQ paraphrases across 58 entries**, all in en/zh-TW/ja. (Counts come from
 >   `extractAll()` and `faqEntries`; re-measure rather than trusting this line —
 >   `npm run rag:ingest:dry` and `npm run rag:faq:dry` print both without creds.)
 
@@ -186,12 +186,13 @@ doc_chunks                              # the hybrid index — 1,095 chunks (en/
                     context?, url?, date? }   # context: contextual-retrieval prefix; url/date: blog only
   point id:       UUIDv5(chunk_id)      # Qdrant needs uint/UUID; original kept in payload
 
-faq_cache                               # semantic cache — 838 paraphrases / 57 entries
+faq_cache                               # semantic cache — 845 paraphrases / 58 entries
   vectors:        { dense: { size: 1024, distance: Cosine } }   # voyage-3-large (query-encoded)
   sparse_vectors: { sparse: { modifier: idf } }                 # BM25, consulted as a veto
   payload index:  locale (keyword)
-  payload:        { faq_id, locale, question, answer }          # answer is pre-written, returned verbatim
-  matched at:     cosine ≥ 0.7 (RAG_FAQ_THRESHOLD) AND a gap > 0.02 (RAG_FAQ_MARGIN)
+  payload:        { faq_id, locale, question, answer, sources } # answer pre-written, returned verbatim;
+                                                                # sources = chunks that state its facts (grounding.ts)
+  matched at:     cosine ≥ 0.8 (RAG_FAQ_THRESHOLD) AND a gap > 0.08 (RAG_FAQ_MARGIN)
                   over the best candidate from another entry, locale-filtered → 0 generation LLM
                   AND the BM25 arm ranks that entry at all (RAG_FAQ_SPARSE_VETO)
 
@@ -354,15 +355,19 @@ generation-LLM cost** and decline off-topic ones fast, with no misfire risk.
 
 - **Semantic FAQ cache** (`rag/faq-cache.ts`): 57 hand-written entries spanning 5
   personas (general visitor, PM/HR interviewer, tech enthusiast, red-teamer,
-  founder/investor), expanded to **838 paraphrases** across en/zh-TW/ja. Each
+  founder/investor), expanded to **845 paraphrases** across en/zh-TW/ja. Each
   question is embedded once at build time (`npm run rag:faq`) into the
   `faq_cache` collection. At query time `triage` embeds the question, runs a
   locale-filtered nearest-neighbour lookup, and returns the pre-written answer
   verbatim — no retrieval, no generation LLM — when the best match clears **two**
-  bars: **cosine ≥ 0.7**, and a **gap > 0.02** over the best candidate belonging
-  to a *different* entry. The second bar exists because a cache hit is the only
-  answer that reaches a visitor with no grading, no generation and no sources: a
-  question sitting between two topics must not be settled by noise. It is scored
+  bars: **cosine ≥ 0.8**, and a **gap > 0.08** over the best candidate belonging
+  to a *different* entry (both set by `rag/evals/faq-calibration.ts`, which
+  re-asks every paraphrase with its own point excluded and has a judge read each
+  wrong-entry serve). The second bar exists because a cache hit reaches a visitor
+  with no grading and no generation: a question sitting between two topics must
+  not be settled by noise. The hit is served with the corpus chunks that state
+  its facts, derived offline by `rag/grounding.ts`, which the test suite also
+  uses to fail any answer whose numbers or dates `src/data` no longer states. It is scored
   against another entry, not the next result, because points are one per
   paraphrase, so an entry's own rewordings crowd the top of the list precisely
   when it is the right answer. Misses fall through to the full RAG pipeline.
@@ -401,7 +406,7 @@ rag/
 ├── state.ts                  # Annotation.Root state schema
 ├── nodes.ts                  # triage / retrieve / grade / rewrite / generate / fallback
 ├── triage.ts                 # regex injection+privacy detection, canned replies, contact block
-├── faq-cache.ts              # 57 entries / 838 paraphrases (en/zh-TW/ja) + answers
+├── faq-cache.ts              # 58 entries / 845 paraphrases (en/zh-TW/ja) + answers
 ├── retrieval.ts              # Qdrant hybrid (dense+sparse, server RRF) + rerank (retrieveWith)
 ├── qdrant.ts                 # Qdrant client + collection bootstrap + faqLookup + point-id hashing
 ├── embeddings.ts             # Voyage embed + rerank client (swappable)
