@@ -668,7 +668,7 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 | 判錯 | 33（命中的 12.5%） | 18（命中的 6.6%） | 13（命中的 4.6%） |
 | 答非所問 | 0 | 0 | 0 |
 
-第二輪消掉 6 筆判錯，新冒出 1 筆（zh「為什麼要僱用 Charles」拿到 `who-is-charles`，judge 判有回答到）。剩下 13 筆分兩類：問句本身有兩種讀法，例如「his fintech project」可指 Plutus 也可指 PXPay、「他用哪些語言」可指程式語言也可指外語；或範圍大的 entry 蓋過範圍小的，例如「where is Charles based?」拿到 `who-is-charles`。這兩類再合併 entry 也消不掉。要再往下壓，得把這類短問句從快取移出交給完整檢索，並用 chat_logs 的真實提問另建 held-out 測試集來量，校準用的題目就是 paraphrase 本身，改 paraphrase 等於改考題。
+第二輪消掉 6 筆判錯，新冒出 1 筆（zh「為什麼要僱用 Charles」拿到 `who-is-charles`，judge 判有回答到）。同一組問句與答案在第一輪的 veto 關閉段（run 36820036596）被同一個 judge 判成答非所問，兩輪之間 `who-is-charles` 的答案沒有改過。所以「0 筆答非所問」是單次判讀的結果，這類邊界案例 judge 的判讀會在兩次 run 之間翻轉。剩下 13 筆分兩類：問句本身有兩種讀法，例如「his fintech project」可指 Plutus 也可指 PXPay、「他用哪些語言」可指程式語言也可指外語；或範圍大的 entry 蓋過範圍小的，例如「where is Charles based?」拿到 `who-is-charles`。這兩類再合併 entry 也消不掉。要再往下壓，得把這類短問句從快取移出交給完整檢索，並用 chat_logs 的真實提問另建 held-out 測試集來量，校準用的題目就是 paraphrase 本身，改 paraphrase 等於改考題。
 
 第二輪的報告推薦 0.8／0.05，條件是答非所問不超過命中的 1%，那一格有 3 筆答非所問。正式設定維持 0.8／0.08，這一格是 0。
 
