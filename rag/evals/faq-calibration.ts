@@ -25,6 +25,7 @@ import { qdrant, denseVerdict, lexicalVeto, DENSE, SPARSE, type FaqParams } from
 import { judgeResponsive } from './judge.js'
 import { triage as classifyQuestion } from '../triage.js'
 import type { Locale } from '../language.js'
+import { faqEntries, type FaqEntry } from '../faq-cache.js'
 
 // One leave-one-out query and what Qdrant returned for it. Stored as plain data
 // so the sweep below is pure and testable without a cluster.
@@ -188,6 +189,27 @@ function idOf(payload: Record<string, unknown> | null | undefined): string | und
   return typeof id === 'string' ? id : undefined
 }
 
+// What the scratch collection holds that this ref's FAQ does not, and the
+// reverse. The build into it is incremental and prune-capped, so it can keep
+// another revision's points; a sweep over those measures entries that no longer
+// exist (2026-10-01: 109 stale points, refused by RAG_PRUNE_MAX).
+export function collectionDrift(
+  points: { faq_id?: unknown; locale?: unknown; question?: unknown }[],
+  entries: FaqEntry[],
+): { stale: string[]; missing: string[] } {
+  const key = (locale: unknown, id: unknown, question: unknown) => `${locale} ${id}: ${question}`
+  const want = new Set(
+    entries.flatMap((e) =>
+      (['en', 'zh-TW', 'ja'] as const).flatMap((l) => e.questions[l].map((q) => key(l, e.id, q))),
+    ),
+  )
+  const have = new Set(points.map((p) => key(p.locale, p.faq_id, p.question)))
+  return {
+    stale: [...have].filter((k) => !want.has(k)),
+    missing: [...want].filter((k) => !have.has(k)),
+  }
+}
+
 async function collect(): Promise<Observation[]> {
   const db = qdrant()
   const points: { id: string | number; vector: number[]; payload: Record<string, unknown> }[] = []
@@ -205,6 +227,18 @@ async function collect(): Promise<Observation[]> {
     }
     offset = res.next_page_offset as string | number | null | undefined
   } while (offset !== null && offset !== undefined)
+
+  const drift = collectionDrift(
+    points.map((p) => p.payload),
+    faqEntries,
+  )
+  if (drift.stale.length || drift.missing.length) {
+    throw new Error(
+      `${config.qdrantFaqCollection} is not this ref's FAQ: ${drift.stale.length} stale point(s), ` +
+        `${drift.missing.length} missing (first: ${[...drift.stale, ...drift.missing].slice(0, 3).join(' | ')}). ` +
+        'Rebuild it with RAG_PRUNE=1.',
+    )
+  }
 
   const observations: Observation[] = []
   const queue = [...points]

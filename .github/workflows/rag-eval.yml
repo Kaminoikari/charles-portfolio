@@ -88,6 +88,9 @@ jobs:
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           QDRANT_FAQ_COLLECTION: faq_cache_calibration
+          # A scratch copy has nothing to protect, and a capped prune leaves the
+          # previous revision's entries in it (the calibration then refuses to run).
+          RAG_PRUNE: '1'
         run: |
           npm run rag:faq
           npm run rag:faq:calibrate -- --out faq-calibration.md --dump faq-observations.json --judge --verdicts faq-verdicts.json

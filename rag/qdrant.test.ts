@@ -161,7 +161,7 @@ test('faqLookup: a top hit with no faq_id is not served', async () => {
 
 // --- the sparse veto -----------------------------------------------------
 // The dense arm matches sentence FRAME. 「Charles 在 NUEIP 做什麼?」 is nearly
-// identical to overall-summary's 「Charles 是做什麼的」, and the proper noun that
+// identical to the career overview's 「Charles 是做什麼的」, and the proper noun that
 // makes the two questions different carries almost no weight in a sentence
 // embedding — so the broad entry won, and the visitor asking about NUEIP got a
 // career summary that never named it. BM25 with IDF weights exactly that noun,

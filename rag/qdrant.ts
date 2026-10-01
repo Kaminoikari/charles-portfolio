@@ -288,7 +288,7 @@ export function denseVerdict(points: FaqPointLike[], params: FaqParams): DenseVe
 
 // A second, purely lexical opinion on the same question. The dense arm ranks
 // by sentence frame: 「Charles 在 NUEIP 做什麼?」 sits almost on top of
-// overall-summary's 「Charles 是做什麼的」, and the proper noun that is the
+// the career overview's 「Charles 是做什麼的」, and the proper noun that is the
 // whole difference between the two questions barely moves a sentence
 // embedding. BM25 with IDF weights precisely that noun. So when the lexical
 // arm has an opinion and the dense winner is not in it, the frame won over the
