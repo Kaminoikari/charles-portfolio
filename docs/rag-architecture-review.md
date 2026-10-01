@@ -583,7 +583,7 @@ Liam Fedis」，而這個名字在原文就拼錯了（應為 Liam Fedus），�
 - 成本答案說快取有 52 個主題，實際 58 個
 - portfolio map 寫 Product Playbook `v2.3`，專案頁寫 `2.4.0`
 
-結構面的修法：employment 邊改成只寫雇主，職稱、日期、在職與否在渲染時從 `experience.en.ts` 讀；`CONTACT` 改由 footer 的 `social.ts` 推導，不再手抄。語料沒寫但其他頁面有寫的事實，登記在 `rag/off-corpus-facts.ts` 並註明出處，測試會檢查出處仍成立、豁免仍然必要。目前 3 筆，見文末待決事項。
+結構面的修法：employment 邊改成只寫雇主，職稱、日期、在職與否在渲染時從 `experience.en.ts` 讀；`CONTACT` 改由 footer 的 `social.ts` 推導，不再手抄。語料沒寫但其他頁面有寫的事實，登記在 `rag/off-corpus-facts.ts` 並註明出處，測試會檢查出處仍成立、豁免仍然必要。目前 2 筆（TOEIC 的分數與滿分），見文末待決事項。2026 年 8 月升任 Head of Product 原本也是一筆，經 Charles 確認後寫進三語的 `src/data/experience`，豁免隨之刪除；刪除前「豁免仍然必要」那條測試先轉紅，證明它認得出已經不需要的豁免。
 
 ## §4.1 FAQ：問題出在 entry 重疊，margin 只是旋鈕
 
@@ -650,7 +650,6 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 ## 待決事項（需要 Charles 判斷）
 
 - **TOEIC 940／990**：只出現在 FAQ 答案裡，全站沒有任何頁面寫。要嘛寫進網站（例如 About），要嘛從答案拿掉。
-- **2026 年 8 月升任 Head of Product**：`index.html` 與 `llms.txt` 有寫，`src/data/experience` 沒寫（只寫 JULY 2024 — PRESENT）。寫進經歷資料後，FAQ 就能引用它。
 - **主題重疊的 entry**：`strengths`／`what-makes-him-different`／`why-hire`、`overall-summary`／`who-is-charles`／`exp-history`、`who-is-mika`／`bot-who-are-you` 這幾組是判錯的主要來源。合併後覆蓋率可以在不增加有害命中的前提下拉回來，但牽涉 Mika 的三語文案，屬於內容決策。
 
 ## 範圍外的發現

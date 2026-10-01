@@ -20,7 +20,7 @@ export const experience: ExperienceItem[] = [
       "Drove the product org's AI transformation: built a department-wide RAG knowledge base and an agentic workflow SOP, cutting the discovery and competitive-analysis cycle by 80%",
       '0→1 launched USPACE for Business (Sep 2025): a B2B SaaS for corporate travel management, owned end-to-end from sales discovery through spec, launch, payments & reconciliation, reaching 30+ listed and multinational accounts in 3 months and growing B2B ARR 250%',
       '5x faster iteration, zero added engineering headcount: redefined the AI Product Builder role, engineering the full stack via agentic workflows with Claude Code & Codex, and architected the Maestro MCP end-to-end test suite for the app rewrite, freeing 80% of regression-testing hours',
-      'Started as USPACE app owner leading a 15-person cross-functional Scrum team (PM, dev, design) at a 95%+ on-time release rate, doubling iteration velocity',
+      'Started as USPACE app owner leading a 15-person cross-functional Scrum team (PM, dev, design) at a 95%+ on-time release rate, doubling iteration velocity; promoted from Product Manager to Head of Product in August 2026',
       "Launched Taiwan's first subscription-based parking insurance: an FSC sandbox trial with Fubon Insurance, pay-as-you-park pricing embedded one-tap for 1M+ members",
     ],
   },

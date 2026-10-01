@@ -21,14 +21,6 @@ export interface OffCorpusFact {
 
 export const OFF_CORPUS_FACTS: OffCorpusFact[] = [
   {
-    fact: 'date:2026-08',
-    surfaces: ['portfolio-map', 'faq:overall-summary', 'faq:exp-uspace', 'faq:exp-history'],
-    publishedIn: { file: 'index.html', text: 'promoted to Head of Product in August 2026' },
-    reason:
-      'The promotion date is on the static résumé in index.html and in public/llms.txt; ' +
-      'src/data/experience records the role (JULY 2024 — PRESENT) but not the month of the promotion.',
-  },
-  {
     fact: '940',
     surfaces: ['faq:languages'],
     publishedIn: null,

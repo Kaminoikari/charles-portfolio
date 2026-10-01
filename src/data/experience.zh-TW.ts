@@ -31,7 +31,7 @@ export const experience: ExperienceItem[] = [
       '推動產品部門 AI 轉型：建構部門 RAG 知識庫與 Agentic Workflow 標準作業流程，需求調研與競品分析週期縮短 80%',
       '0→1 推出 USPACE for Business（2025 年 9 月）：企業差旅管理 B2B SaaS，從業務探索、規格、開發測試、上線到金流與財務對帳全生命週期獨力負責，3 個月內拓展 30+ 家上市櫃與跨國企業，帶動 B2B ARR 成長 250%',
       '5x 更快的迭代、零額外工程人力：重新定義 AI Product Builder 角色，以 Claude Code、Codex 的 agentic workflow 親手打造全端；App 重構專案獨立架構 Maestro MCP 全套 E2E 自動化測試腳本，釋放 80% 回歸測試工時',
-      '初期擔任 USPACE app 負責人，帶領 15 人跨職能 Scrum 團隊（PM、開發、設計），準時上線率 95%+，產品迭代速度翻倍',
+      '初期擔任 USPACE app 負責人，帶領 15 人跨職能 Scrum 團隊（PM、開發、設計），準時上線率 95%+，產品迭代速度翻倍；2026 年 8 月由產品經理升任 Head of Product',
       '推出全台首創訂閱制停車保險：與富邦產險合作的 FSC 監理沙盒試辦，pay-as-you-park 用量計價，一鍵嵌入結帳、觸及 100 萬+ 會員',
     ],
   },
