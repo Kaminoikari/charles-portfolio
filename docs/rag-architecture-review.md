@@ -675,6 +675,10 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 
 上線時有一件事要手動做：正式的 `faq_cache` 同樣受刪除上限保護，push 觸發的 ingest 會拒刪那 109 個舊點，所以 push 後要再帶 `prune=true` 跑一次 RAG Ingest。第一次照做時 `prune` 只傳到 doc_chunks 的建置步驟，FAQ 步驟照樣拒刪；d7c74e9 讓 FAQ 步驟也讀這個 input，重跑後刪掉 109 點，剩 839 點。第二輪合併上線（23f15e6）時，push 觸發的 ingest 自動刪掉 53 個舊點，數量在刪除上限內，正式快取同樣是 839 點。
 
-## 範圍外的發現
+## 時間軸 chunk 與 judge 的後續
 
-- 時序題檢索不到經歷 chunk：「網站上最早的工作」撈回的是 changelog，經歷 chunk 沒有日期以外的時序線索。一個列出所有職務與起訖的「經歷時間軸」chunk 大概就能解決，但那是檢索改進，不屬於這份評審的扣分項。
+上面列為範圍外的時序缺口已補：每個語系加一個依起始時間排序的經歷時間軸 chunk，標出最早的一份與目前同時在職的工作（`rag/ingest/extract.ts` 的 `timelineChunk`）。golden 新增 `answeredBy`，讓 `first-role`、`before-pxpay`、`concurrent-roles` 可以宣告「這個 chunk 單獨就答得完整」。
+
+在同一分支建出的實驗索引上量：hybrid+rerank 的 recall 從 92.4% 升到 97.2%，時序題從 41.7% 升到 100%；逐題對照基準，沒有任何一題退步，9 題上升（run 36867760929），基準檔已更新到這次。corrective arm 的 correctness 從 97.2% 升到 99.3%，144 次只錯 1 次（run 36871169321）。沒有對訪客提供的 dense-only 與 hybrid 兩個 arm 在 single-fact 與 global 各掉了一點，對訪客提供的 hybrid+rerank 沒有。
+
+judge 這邊做了三件事，只有一件量得到效果。告訴 judge 今天的日期、以及「翻譯或等值數字算有依據」的規則，faithfulness 仍是 91.0%，`uspace-role` zh 在拿到日期的情況下照樣把 2026 年 8 月當成未來。改成「列出所有沒依據的主張」的版本讓沒依據的判定從 11 次變 29 次（run 36868407205），已撤回。有效的是第三件：judge 的輸出讀不出來時只略過那一題；run 36867749603 就是因為一次讀不出來，整個 eval 中斷。要讓 faithfulness 可信，下一步得換更強的 judge 模型或多次判讀取多數，光改 prompt 不夠。

@@ -12,106 +12,103 @@ lift of each is visible.
 - `recall@k` is hit-rate: did a relevant chunk surface in the top-k? A
   comparison or temporal item names every chunk it needs (`needsEvery`) and
   scores the share of them retrieved, so finding one side of a comparison is
-  half credit. `MRR` is the reciprocal rank of the first relevant chunk.
+  half credit. An item may also name one chunk that answers it whole
+  (`answeredBy`, so far only the experience timeline): retrieving it scores
+  full recall. `MRR` is the reciprocal rank of the first relevant chunk.
 - recall and MRR average only the runs that retrieved. A FAQ hit or a canned
   reply never reaches retrieval and is counted in the "answered without
   retrieval" column; before 2026-10-01 those runs were scored as recall misses.
 - The `corrective` arm runs the full graph and scores `correctness` and
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
-- Last run: **2026-10-01**. The four retrieval arms are from run 36809275348
-  (commit 90c6f48; nothing on the retrieval path changed between it and the
-  calibrated FAQ settings). The `corrective` row is from run 36857502362
-  (commit 15424ba), a corrective-only re-run after the two FAQ merges, with the cache at 0.8 / 0.08. Both
-  runs query the live index, which is built from main.
+- Last run: **2026-10-01**, after the experience timeline chunk was added.
+  The four retrieval arms are from run 36868407205 (commit cdf7b6f). The
+  `corrective` row is from run 36871169321 (commit 7281602); the two commits
+  differ only in the faithfulness judge, which the retrieval arms never call.
+  Both runs query `doc_chunks_timeline`, an index built from the same branch.
 
 ## Current results
 
 | Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
 |---|---|---|---|---|---|
-| sparse-only | 74.3% | 0.519 | — | — | 0 of 144 |
-| dense-only | 93.8% | 0.734 | — | — | 0 of 144 |
-| hybrid | 88.9% | 0.645 | — | — | 0 of 144 |
-| hybrid+rerank | 92.4% | 0.842 | — | — | 0 of 144 |
-| corrective | 92.2% | 0.830 | 97.2% | 91.0% | 22 of 144 |
+| sparse-only | 77.4% | 0.506 | — | — | 0 of 144 |
+| dense-only | 96.9% | 0.736 | — | — | 0 of 144 |
+| hybrid | 92.7% | 0.656 | — | — | 0 of 144 |
+| hybrid+rerank | 97.2% | 0.856 | — | — | 0 of 144 |
+| corrective | 96.7% | 0.838 | 99.3% | 91.0% | 22 of 144 |
 
 Recall by category (n = query runs):
 
 | Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
 |---|---|---|---|---|---|---|---|
-| sparse-only | 75.8% | 44.4% | 100.0% | 100.0% | 100.0% | 61.1% | 37.5% |
-| dense-only | 98.5% | 100.0% | 100.0% | 100.0% | 100.0% | 83.3% | 45.8% |
-| hybrid | 98.5% | 72.2% | 100.0% | 100.0% | 100.0% | 72.2% | 37.5% |
-| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 41.7% |
+| sparse-only | 77.3% | 44.4% | 100.0% | 100.0% | 100.0% | 61.1% | 66.7% |
+| dense-only | 97.0% | 94.4% | 100.0% | 100.0% | 100.0% | 83.3% | 100.0% |
+| hybrid | 97.0% | 66.7% | 100.0% | 100.0% | 100.0% | 72.2% | 100.0% |
+| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 100.0% |
+
+**The timeline closed the temporal gap.** Before it, every experience chunk
+carried its own dates and nothing said where it fell, so "what was his first
+role" retrieved changelog entries in every locale and temporal recall for
+hybrid+rerank was 41.7% (run 36809275348). One chunk per locale now lists the
+roles by start date and names the earliest and the current ones
+(`rag/ingest/extract.ts` timelineChunk). Against the committed per-question
+baseline, hybrid+rerank dropped no question and raised nine (run 36867760929):
+`first-role` in all three locales because the timeline is now retrieved, and
+`before-pxpay` and `concurrent-roles` in all three because the timeline answers
+them whole. The baseline was refreshed to that run.
+
+The arms nobody is served lost a little: dense-only single-fact 98.5% to
+97.0% and global 100.0% to 94.4%, hybrid single-fact 98.5% to 97.0% and global
+72.2% to 66.7%. The served arm, hybrid+rerank, kept 100.0% and 94.4% on those.
 
 **sparse-only is what a visitor gets while Voyage is down.** Before 2026-10-01
 a Voyage outage ended the request with the outage notice (or, when the network
 call itself failed, a generic stream error); now retrieve falls back
 to the BM25 half of the hybrid query and reports `dense-unavailable`. It costs
-18.1 points of recall against hybrid+rerank (74.3% against 92.4%) and most of
-the ranking (MRR 0.519 against 0.842). The loss is concentrated where the
+19.8 points of recall against hybrid+rerank (77.4% against 97.2%) and most of
+the ranking (MRR 0.506 against 0.856). The loss is concentrated where the
 question shares few words with the answer: global questions drop to 44.4%. A
 question that names its subject (local, near-miss) loses nothing.
 
-**The two new categories are where the set can fail again.** On the five older
-categories hybrid+rerank scores 100% everywhere except global (94.4%), so they
-can no longer separate a better pipeline from a worse one. Comparison and
-temporal questions need two or more chunks, and score the share retrieved:
+**Comparison is now the category that can fail.** At 66.7% it is one item
+scoring zero in all three locales: `compare-path-plutus-stack` retrieves each
+project's solution chunk and changelog entries about the project pages, and
+neither tech chunk that lists the stacks. dense-only scores higher on this
+category (83.3%); why has not been measured.
 
-- comparison at 66.7% is one item scoring zero in all three locales:
-  `compare-path-plutus-stack` retrieves each project's solution chunk and
-  changelog entries about the project pages, and neither tech chunk that lists
-  the stacks. The other two comparison items score full recall. dense-only
-  scores higher on this category (83.3%); why has not been measured.
-- temporal at 41.7% is the gap recorded as out of scope in
-  `docs/rag-architecture-review.md`: "what was his first role" retrieves
-  `changelog:initial-launch` and similar entries in every locale, and no
-  experience chunk.
+**corrective: 99.3% correct (1 of 144 wrong), 91.0% faithful (11 of 122 judged
+runs ungrounded).** The one wrong answer is `ai-workflow` (ja), where the judge
+found the rule's claim not stated; the answer text is not in the log. Before
+the timeline (run 36857502362, 15424ba) the arm scored 97.2% correct, and three
+of its four wrong answers were `first-role`.
 
-hybrid+rerank's 92.4% equals the committed per-question baseline
-(`rag/evals/baseline.hybrid-rerank.json`, from run 36809268615), which is the
-post-ingest gate's reference.
+The faithfulness judge now gets today's date and a rule that a translation or
+an equivalent number counts as supported, both aimed at misreads in run
+36857502362. Neither had an effect that one run can show: the rate is the same
+91.0%, `concurrent-roles` (en) is no longer called a future date, but
+`uspace-role` (zh-TW) is, in a run where the judge was told the date. A
+variant that asked the judge to list every unsupported claim (run 36868407205)
+read 76.2%, with ungrounded verdicts rising from 11 to 29 on wording it
+disliked, and was reverted.
 
-**corrective: 97.2% correct (4 of 144 wrong), 91.0% faithful (11 of 122 judged
-runs ungrounded).** Run 36857502362 on commit 15424ba, after the two FAQ
-merges. The 22 runs answered without retrieval are FAQ hits and canned replies,
-which the faithfulness judge skips. The previous corrective run (36811880858,
-before the merges) scored 97.2% and 93.5% (8 of 123), with 21 such runs; at the
-old 0.7 / 0.02 the arm answered 35 runs without retrieval (run 36809275348).
+Of the eleven ungrounded answers in run 36871169321:
 
-The four wrong answers:
+- Judge misreads by its own reasoning (5): `uspace-role` (zh-TW) calls August
+  2026 a future date while quoting today as October 1, 2026; `plutus-frontend`
+  (zh-TW) rejects "the frontend is on Vercel" in a reason that says the context
+  puts the frontend on Vercel; `before-pxpay` (zh-TW) says "the value is
+  correct"; `first-role` (ja) says the revenue figure "is correct" and then
+  calls "+20% market share" ambiguous; `cs153-scale` (zh-TW) is the same Liam
+  Fedis sentence as in earlier runs.
+- Generation error (1): `uber-blog` (ja) describes the role as a high-level
+  customer-service analyst, which the context does not say.
+- Not decidable from the log (5): `jobops-source` (en), `playbook-frameworks`
+  (en, ja), `plutus-frontend` (ja), `shazam-author` (ja). The reasons describe a
+  version or attribution mismatch without quoting enough of the answer to tell.
 
-- `first-role`, all three locales: the temporal retrieval gap above. The
-  answer never names FLUX or 2019 because retrieval never returned them.
-- `uspace-role` (en): the judge found the rule's claim not stated. The rule
-  asks for Head of Product plus the app-owner start with a 15-person team; the
-  answer text is not in the log, so which half was missing is not known.
-
-Of the eleven ungrounded answers, the judge's own reasoning contradicts its
-verdict in five, and the other six include five generation errors:
-
-- Judge misreads (5): `before-pxpay` (zh-TW) says the figures "are equivalent,
-  so this is actually grounded"; `plutus-frontend` (zh-TW) quotes the context
-  "Vercel (frontend)" and still rejects "the frontend is on Vercel";
-  `concurrent-roles` (en) calls "Head of Product since August 2026" a future
-  date, because the judge is not given today's date; `cs153-scale` (zh-TW)
-  quotes identical words in answer and context, as in the 2026-09-16 run;
-  `shazam-author` (ja) rejects 二十年以上前 against a context saying 二十多年前.
-- Mixed (1): `plutus-frontend` (en) repeats the Vercel misread, and also says
-  the same codebase ships to web, iOS and Android, which the context does not
-  state.
-- Generation errors (5): `ai-spec` (en) and `pattern-reflection` (en) reverse
-  the direction of Product Playbook's 59.1% to 100% and 100% to 22.2%;
-  `playbook-frameworks` (zh-TW) presents 22 frameworks as reduced to 16 lenses,
-  the dated changelog figure noted in the previous run; `pattern-human-loop`
-  (zh-TW) credits Product Playbook with an appeal feature the context does not
-  describe; `domains` (ja) reads "+NT$50M annual revenue" as a total.
-
-The previous run's `uspace-role` (zh-TW) failure, the August 2026 promotion
-missing from the index, did not recur: b2f8f11 has been ingested. Three more
-runs were judged ungrounded than last time, and at least five of the eleven
-are misreads by the judge's own account, so the difference between the runs
-is not evidence that generation got worse.
+A judge that cannot be read no longer ends the eval: run 36867749603 stopped at
+the first verdict the parser rejected and lost every result after it. The same
+failure now costs one item, printed as unjudged.
 
 ## Previous run (2026-09-16, 41-question set)
 
