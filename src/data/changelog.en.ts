@@ -20,6 +20,35 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'rag-review-fixes',
+    date: '2026-10-01',
+    title: `The chatbot's cached replies now cite the site, and a Voyage outage no longer ends the answer`,
+    tags: ['technical'],
+    body: [
+      `An architecture review of the chatbot docked it five points: pre-written replies that cited nothing and were never compared with the site, one embedding provider whose outage ended every answer, a test set every configuration already aced, an eval that gated nothing, and hand-copied facts no test checked. I fixed all five.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: "22 → 0", label: "cached replies that answered a different question (threshold 0.7 → 0.8)" },
+          { value: "74.3%", label: "retrieval recall with Voyage down, against 92.4% with it up" },
+          { value: "41 → 48", label: "golden-set questions, adding comparisons and timelines" },
+          { value: "6", label: "stale or unsupported facts found in hand-written copy" },
+        ],
+      },
+      { kind: 'heading', text: `Cached replies cite the site` },
+      `A question close enough to one of 53 pre-written replies is answered from a cache, with no model in the loop. Those replies used to arrive without sources. Now, when the cache is built, every number and month in a reply has to appear on the site in the same language, and the pages that state them travel with the reply as citations.`,
+      `How close counts as close enough was a guess, a similarity of 0.7. I measured it by asking every cached question again with its own copy removed and having a judge read each wrong match. At 0.7, 22 of 496 matches answered a different question. The threshold is now 0.8, with a margin of 0.08 over the next-best reply, and none of 271 does.`,
+      `Merging three groups of replies that kept matching each other's questions took the cache from 58 entries to 53 and cut wrong-entry matches from 12.5% to 6.6%.`,
+      { kind: 'heading', text: `When Voyage is down` },
+      `The chat embeds each question with Voyage, and when Voyage failed the request ended with an outage notice. It now ranks by keyword search alone and records that the answer was degraded. On the same test set, recall drops from 92.4% to 74.3% in that mode. Each call that answers a visitor goes through one boundary that retries once, skips a supplier for 30 seconds after it fails, and tells a supplier outage apart from a bug in my own code.`,
+      { kind: 'heading', text: `A test set that can fail again` },
+      `The 41-question golden set scored near 100% on every configuration, so it could no longer tell a better pipeline from a worse one. Seven new questions compare two roles or projects, or ask about timing, and five of them need two records to answer. Recall now sits at 92.4%, and the timeline questions, at 41.7%, show where retrieval still falls short.`,
+      `Every content push runs the offline suite before it indexes anything, then checks each of the 144 question-and-language pairs against its recorded recall. One regression fails the run and names the question.`,
+      { kind: 'heading', text: `Hand-written copy, checked against the site` },
+      `The cached replies, the summary the model reads first and the relationship graph are all written by hand. Comparing them with the site turned up six stale or unsupported facts, among them a job title from before a promotion and a version number one release behind. Tests now fail whenever the copy and the site disagree.`,
+    ],
+  },
+  {
     id: 'avatar-idle-poses',
     date: '2026-09-30',
     title: `Mika stands in two idle poses of her own`,

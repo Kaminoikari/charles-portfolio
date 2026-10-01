@@ -121,10 +121,12 @@ export const config = {
   // serve read by a judge for whether it still answers the question. At the
   // previous 0.7 / 0.02, 22 of 496 serves (4.4%) answered a different question
   // than the one asked. At 0.8 / 0.08 none of 263 did, and of the settings with
-  // none it serves the most answers that do answer. The price is coverage: those
-  // leave-one-out queries were served from cache 27.7% of the time instead of
-  // 46.9%, and the rest cost a generation. The margin is the lever that does the
-  // work; raising the threshold alone cuts good serves about as fast as bad ones.
+  // none it serves the most answers that do answer. The price is coverage: the
+  // share of those queries the cache answered correctly fell from 46.9% to 27.7%,
+  // and the rest cost a generation. The margin is the lever that does the work;
+  // raising the threshold alone cuts good serves about as fast as bad ones.
+  // Merging the entries that answered each other (run 36819029430) moved the same
+  // setting to 253 correct of 823 (30.7%) with 18 wrong serves and none harmful.
   // Re-run the calibration (RAG Eval, faq_calibration) after editing entries.
   faqCacheEnabled: bool('RAG_FAQ_CACHE', true),
   faqCacheThreshold: float('RAG_FAQ_THRESHOLD', 0.8),

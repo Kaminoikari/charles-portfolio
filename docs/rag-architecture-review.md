@@ -650,10 +650,25 @@ corrective arm 以前把 FAQ 命中算成 recall miss（123 次裡 23 次）；F
 - 新增的每一道防禦都做過 mutation，確認拿掉後測試會轉紅；三輪下來存活的 10 道都補了測試或改寫成單一結構後再驗一次，全部轉紅。
 - 線上：校準與基準檔都在 GitHub Actions 對真實 Qdrant 跑出，run id 已寫在各段。
 
-## 待決事項（需要 Charles 判斷）
+## 待決事項的處置
 
-- **TOEIC 940／990**：只出現在 FAQ 答案裡，全站沒有任何頁面寫。要嘛寫進網站（例如 About），要嘛從答案拿掉。
-- **主題重疊的 entry**：`strengths`／`what-makes-him-different`／`why-hire`、`overall-summary`／`who-is-charles`／`exp-history`、`who-is-mika`／`bot-who-are-you` 這幾組是判錯的主要來源。合併後覆蓋率可以在不增加有害命中的前提下拉回來，但牽涉 Mika 的三語文案，屬於內容決策。
+**TOEIC 940／990**：Charles 決定不寫進網站，所以 `languages` 的三語答案拿掉了分數，只問分數的 6 句 paraphrase 也一併移除，這類問題改走檢索。`rag/off-corpus-facts.ts` 因此清空；檔案保留，下一筆例外仍有地方登記，也照樣受測試檢查。
+
+**主題重疊的 entry**：三組各併成一則，保留 `who-is-charles`、`why-hire`、`who-is-mika`。entry 從 58 則變 53 則，paraphrase 從 845 句變 839 句，少掉的 6 句就是 TOEIC 題。合併後 `who-is-charles` 的 zh 有 21 句，超過 margin 規則讀取的 16 個鄰居，窗口測試當場轉紅，`faqCandidateK` 因此調到 32。
+
+校準跑了三次才拿到可用的數字。第一次（run 36818421587）作廢：scratch collection 沿用正式環境的刪除上限，拒刪 109 個舊點，量到的是新舊混雜的快取。現在 scratch 建置一律完整刪除，校準開始前也會比對 collection 與 `faqEntries`，對不上就直接失敗。第二次（run 36818795916）有 1 筆答非所問：ja「キャリアの選択」拿到一串職位清單，原因是合併時漏掉 `exp-history` 那句職涯主線，補回後第三次（run 36819029430）回到 0。
+
+| 0.8／0.08 | 合併前（run 36809386889） | 合併後（run 36819029430） |
+|---|---|---|
+| 留一法查詢 | 829 | 823 |
+| 命中 | 263 | 271 |
+| 判對（覆蓋率） | 230（27.7%） | 253（30.7%） |
+| 判錯 | 33（命中的 12.5%） | 18（命中的 6.6%） |
+| 答非所問 | 0 | 0 |
+
+推薦設定仍是 0.8／0.08，門檻不必動。
+
+上線時有一件事要手動做：正式的 `faq_cache` 同樣受刪除上限保護，push 觸發的 ingest 會拒刪那 109 個舊點，所以 push 後要再帶 `prune=true` 跑一次 RAG Ingest。
 
 ## 範圍外的發現
 
