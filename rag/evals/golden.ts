@@ -331,10 +331,13 @@ export const GOLDEN: GoldenItem[] = [
     // it more than one way: answers built from his blog's walk-through (embed the
     // documents, retrieve the nearest, hand them to the model) were grounded and
     // scored wrong for not also describing this chatbot's hybrid retrieval and
-    // rerank (run 36906411274, zh-TW and ja). The claim keeps what any of his
-    // descriptions must contain.
+    // rerank (run 36906411274, zh-TW and ja), and then for not saying the
+    // documents are ones the model was never trained on (runs 36960776760,
+    // 36960791009): that is why RAG exists, which his blog gives as pain points
+    // (stale information, hallucination), not what it does. The claim keeps the
+    // mechanism, which any of his descriptions must contain.
     mustState:
-      'Charles describes RAG as retrieving relevant external documents that the model was not trained on and giving them to the model, so its answer is grounded in them.',
+      'Charles describes RAG as retrieving the documents relevant to a question and giving them to the model along with the question.',
   },
   {
     id: 'pattern-human-loop',
