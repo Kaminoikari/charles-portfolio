@@ -25,7 +25,8 @@ lift of each is visible.
   2a9b931, after the product philosophy got an overview chunk and two golden
   claims were narrowed. The four retrieval arms are from run 36964683250 and
   the `corrective` row from run 36963114882. Judges run on Sonnet 4.6 since
-  92aded5.
+  92aded5. The corpus fixes in d993a2b came later and have only partial runs;
+  see "Corpus fixes for repeated ungrounded verdicts" below.
 
 ## Current results
 
@@ -234,6 +235,67 @@ change carries a comment in `rag/evals/golden.ts` citing the runs that showed
 it. Ungrounded verdicts still move by a few points between runs with no code
 change; the reasons in these runs are the same kinds listed above (a skills
 count, three core product lines, 22 frameworks read as narrowed to 16).
+
+**Corpus fixes for repeated ungrounded verdicts (59ba850, d993a2b), measured
+only in part.** Of the 37 ungrounded verdicts in the three full runs above,
+24 fell in six groups that recurred across runs and locales, and each traced
+back to the corpus:
+
+- `playbook-frameworks` (6): answers said 2.0 narrowed 1.x's 22 frameworks to
+  16 lenses. That is true (Product Playbook's own design doc lists the
+  merges), but no page said it. The project page now does, in three locales.
+- the pre-mortem figure (4, `ai-workflow` and `pattern-reflection`): the
+  portfolio map split "pre-mortem alone 100%->22.2% when removed" across a
+  line break, so it read as pre-mortem causing the drop. It now says removing
+  pre-mortem dropped the risk step from 100% to 22.2%.
+- `houseops-decide` (4): the page said weights swap per persona and never
+  named the three bands, so answers borrowed Job Ops's labels and invented
+  per-persona weights. The pipeline has a renting set and a buying set
+  (`scripts/eval-591.mjs` and its README); the page now gives both sets and
+  the band thresholds (4.0 and above, 3.5 to 3.9, below 3.5).
+- `langgraph-blog` (4): reciprocal rank fusion, true of this system but absent
+  from the context the judge sees, and the blog's 755 paraphrases read as 755
+  answers. Not changed.
+- `uspace-role` (3): the English experience bullet folded two core product
+  lines into "corporate travel and insurance". It now lists them as the
+  zh-TW and ja bullets do.
+- `skills-listed` (3): answers counted 24 of 29 skills. The skills chunk's
+  heading line now states the count, taken from the list it prints.
+
+Ingest rebuilt 10 chunks and the post-ingest gate read hybrid+rerank 100.0%,
+MRR 0.863 (run 36967623212). The three full corrective runs that followed
+(36967984519, 36967987379, 36967990094) stopped about 13 minutes into a
+roughly 20-minute run when the Anthropic account ran out of credit, so none
+produced a summary table and there is no faithfulness percentage. The eval
+loops over locales in the order en, zh-TW, ja, and only one ja item shows up
+in their logs, so the comparison below covers en and zh-TW, inferred from the
+timing to be complete:
+
+| en + zh-TW, three runs | before (runs above) | after (partial runs) |
+|---|---|---|
+| ungrounded verdicts | 29 | 20 |
+| wrong answers | 0 | 4 |
+
+None of the targeted misreadings recurred (22-to-16 as unstated, invented
+persona weights or borrowed band labels, the pre-mortem direction, the USPACE
+lines, the skills count). Six verdicts remain in those groups in other forms:
+three `playbook-frameworks` (zh-TW) attribute 1.x's research or category
+breakdown to 2.0, one `houseops-decide`, one `uspace-role` on the promotion
+date, one `pattern-reflection` on a citation index. `langgraph-blog` (en)
+still names reciprocal rank fusion in all three.
+
+The four wrong answers are a regression on the earlier 144 of 144:
+`pattern-rag` (zh-TW) in all three runs, judged as never stating that the
+answer rests on external data while describing the embed, retrieve and
+prompt pipeline, and `nueip-role` (zh-TW) once, for not naming NUEIP. The
+pattern-rag claim's third wording passed nine single-item runs, three of
+them zh-TW, so it is not yet stable for that locale.
+
+**The Anthropic backstop answers with Haiku (5e59941).** After the credit ran
+out, `modelStrong` defaults to Haiku: visitors' broad questions took Sonnet
+only when Gemini gave no first token. The eval's generation follows the same
+setting; its judges stay on Sonnet. Until the account is topped up, the
+Claude backstop in production fails as well.
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run

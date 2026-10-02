@@ -754,3 +754,29 @@ corrective arm 在連續三次完整 run（36963114882、36963118089、369631210
 - `skills-listed`（zh-TW）：答案把網站上的技能原文分組列出，因為 claim 寫了「a long set of short labels」的格式，以及引用了「把試算表變成決策」卻被判沒講到資料，而判錯。claim 現在要求列出的技能涵蓋產品與 AI 兩塊。
 
 三次完整 run 之前，`pattern-rag` 三語各跑 3 次、`skills-listed`（zh-TW）跑 3 次，全部答對。每次收斂 claim 都在 `rag/evals/golden.ts` 留了註解，記下顯示問題的 run。faithfulness 在不改程式的情況下仍會在幾個百分點內浮動，剩下的沒依據判決是同幾類生成錯誤（技能數算錯、三條核心產品線、把 22 個框架講成收斂成 16 個）。
+
+## faithfulness：修語料（尚未完整量測）
+
+上一節三次完整 run 共 37 筆判「沒依據」，其中 24 筆集中在六群，跨 run、跨語系重複出現，每一群都能回推到語料（59ba850、d993a2b）：
+
+- `playbook-frameworks`（6 筆）：答案說 2.0 把 1.x 的 22 個框架收斂成 16 個 lens。這是事實，Product Playbook 的設計文件列了合併清單，但網站沒寫。現在三語專案頁都補上了。
+- pre-mortem 數字（4 筆，`ai-workflow` 與 `pattern-reflection`）：portfolio map 把「pre-mortem alone 100%->22.2% when removed」斷在兩行，讀起來像 pre-mortem 造成下降。現在寫成「移除 pre-mortem 後，風險步驟從 100% 掉到 22.2%」。
+- `houseops-decide`（4 筆）：頁面寫「依族群切換權重」，也沒寫出三段分數的名稱，答案就借用 Job Ops 的標籤，還編出各族群的權重。實際 pipeline 只有租屋與買屋兩組權重（`scripts/eval-591.mjs` 與 README），頁面現在寫明兩組權重與三段門檻（4.0 以上、3.5 到 3.9、低於 3.5）。
+- `langgraph-blog`（4 筆）：reciprocal rank fusion 是這套系統的事實，但 judge 看到的 context 裡沒有；部落格的 755 條同義問句被講成 755 個答案。這次沒改。
+- `uspace-role`（3 筆）：英文經歷把兩條核心產品線壓成「corporate travel and insurance」，現在改成和中日文一樣分開列。
+- `skills-listed`（3 筆）：答案把 29 項技能算成 24 項。技能 chunk 的標題行現在寫明項數，數字直接取自它列出的清單。
+
+重建索引動了 10 個 chunk，push 後的閘門 hybrid+rerank 100.0%、MRR 0.863（run 36967623212）。接著的三次完整 corrective run（36967984519、36967987379、36967990094）都在約 13 分鐘時因 Anthropic 帳戶額度用完而中斷（完整一次約 20 分鐘），沒有產出總表，所以沒有 faithfulness 百分比。eval 依 en、zh-TW、ja 的順序跑，log 裡只出現一題 ja，所以下表只比 en 與 zh-TW；這兩個語系跑完是由時間推算的。
+
+| en＋zh-TW，三次合計 | 修正前（上一節的 run） | 修正後（中斷的 run） |
+|---|---|---|
+| 判沒依據 | 29 | 20 |
+| 答錯 | 0 | 4 |
+
+這次針對的誤讀都沒有再出現（把 22→16 當成沒依據、編出族群權重或借用分段標籤、pre-mortem 方向、USPACE 產品線、技能數）。同幾群裡仍有 6 筆，但形式不同：中文 `playbook-frameworks` 3 筆把 1.x 的研究來源或分類套到 2.0 上，`houseops-decide` 1 筆，`uspace-role` 1 筆是升遷日期，`pattern-reflection` 1 筆是引用編號。英文 `langgraph-blog` 三次都仍提到 reciprocal rank fusion。
+
+答錯的 4 筆是相對先前 144 題全對的退步：中文 `pattern-rag` 三次都錯，judge 認為答案講了 embedding、檢索、組進 prompt 的流程，卻沒講到「答案依據交給模型的外部資料」；中文 `nueip-role` 錯一次，答案沒寫出 NUEIP。`pattern-rag` 的第三版 claim 先前單題跑了 9 次（其中中文 3 次）全對，看來在中文上還不穩。
+
+## Anthropic 備援改用 Haiku
+
+額度用完後，`modelStrong` 的預設值改成 Haiku（5e59941）。訪客的 broad 類問題只有在 Gemini 沒吐出第一個 token 時才會用到 Sonnet。eval 的生成也走同一個設定；judge 仍用 Sonnet。帳戶儲值之前，正式站的 Claude 備援同樣無法使用。
