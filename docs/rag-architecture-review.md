@@ -735,3 +735,11 @@ faithfulness 這次是 88.5%（122 次判讀裡 14 次沒依據），上一次�
 
 正式索引上（run 36906411274）：faithfulness 93.4%（122 次判讀裡 8 次沒依據），correctness 97.9%（144 次錯 3 次）。因為 judge 換了模型，這兩個數字不能和先前的 88.5%、99.3% 直接比。correctness 的 3 次錯都是新 judge 判「claim not stated」：它要求答案講完 golden 規則的每一部分，例如 `uspace-role` 要講到起初帶 15 人團隊，Haiku 以前會放過。golden 規則沒有因此放寬。剩下 8 次沒依據，依 judge 的理由是生成時把兩件事混在一起、數錯清單、或引錯來源，這些理由沒有逐條回 context 核對。要再往下壓得改生成端，不在這次範圍內。
 
+## compare-path-plutus-stack 與 correctness 的後續
+
+`compare-path-plutus-stack`（Path 與 Plutus Trade 的技術棧差在哪）三個語系都是 0。兩個 tech chunk 的內容只有技術清單本身，專案名稱和「tech stack」只寫在 title，而 title 不會被 embed，也不進 BM25。所以撈上來的是同時寫了兩個專案名與「Tech Stack」的 changelog「Product Pages — Tech Stack Refresh」。tech chunk 的內容第一行加上 title 之後（b4844cb），正式索引上（run 36954509072）hybrid+rerank 從 97.2% 升到 99.3%，comparison 類從 66.7% 升到 100%，四個 arm 全部上升。基準檔已更新到這題命中的那次，push 後的閘門（run 36954279258）沒有一題低於新基準。problem、impact、learnings 三種 project chunk 共 45 個也只在 title 寫專案名，目前沒有 golden 題因此失敗，沒有動。
+
+Voyage 在 2026-09-30 推出 rerank-3。只換模型名稱，正式索引上 hybrid+rerank 從 97.2% 降到 96.5%，一題退步、沒有一題進步（兩次 run 結果相同），所以沒有採用。
+
+correctness：`uspace-role` 與 `pattern-rag` 的 golden 規則原本要求題目沒問的細節，已收斂到題目問的內容（15986e4）。最新一次（run 36954515395）correctness 99.3%，唯一答錯的是日文 `pattern-rag`；faithfulness 90.2%（122 次判讀裡 12 次沒依據）。兩次 corrective run 之間在沒有改程式的情況下 faithfulness 可以差 5 個百分點，幾個百分點的差距不能單憑一次 run 判斷。
+

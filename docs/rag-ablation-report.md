@@ -22,28 +22,28 @@ lift of each is visible.
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-10-02**, on the production `doc_chunks` index at commit
-  92aded5, after BM25 learned to segment Chinese and Japanese and the judge
-  moved to Sonnet 4.6. The four retrieval arms are from run 36906401188 and the
-  `corrective` row from run 36906411274.
+  b4844cb, after the tech-stack chunks began naming their project. The four
+  retrieval arms are from run 36954509072 and the `corrective` row from run
+  36954515395. Judges run on Sonnet 4.6 since 92aded5.
 
 ## Current results
 
 | Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
 |---|---|---|---|---|---|
-| sparse-only | 76.7% | 0.567 | — | — | 0 of 144 |
-| dense-only | 97.6% | 0.738 | — | — | 0 of 144 |
-| hybrid | 95.1% | 0.692 | — | — | 0 of 144 |
-| hybrid+rerank | 97.2% | 0.836 | — | — | 0 of 144 |
-| corrective | 96.7% | 0.815 | 97.9% | 93.4% | 22 of 144 |
+| sparse-only | 82.3% | 0.609 | — | — | 0 of 144 |
+| dense-only | 98.3% | 0.756 | — | — | 0 of 144 |
+| hybrid | 95.8% | 0.734 | — | — | 0 of 144 |
+| hybrid+rerank | 99.3% | 0.849 | — | — | 0 of 144 |
+| corrective | 99.2% | 0.830 | 99.3% | 90.2% | 22 of 144 |
 
 Recall by category (n = query runs):
 
 | Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
 |---|---|---|---|---|---|---|---|
-| sparse-only | 72.7% | 66.7% | 93.3% | 83.3% | 100.0% | 55.6% | 79.2% |
-| dense-only | 97.0% | 100.0% | 100.0% | 100.0% | 100.0% | 83.3% | 100.0% |
-| hybrid | 98.5% | 77.8% | 100.0% | 100.0% | 100.0% | 77.8% | 100.0% |
-| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 66.7% | 100.0% |
+| sparse-only | 81.8% | 66.7% | 100.0% | 83.3% | 100.0% | 66.7% | 79.2% |
+| dense-only | 97.0% | 100.0% | 100.0% | 100.0% | 100.0% | 94.4% | 100.0% |
+| hybrid | 98.5% | 77.8% | 100.0% | 100.0% | 100.0% | 88.9% | 100.0% |
+| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 
 **The timeline closed the temporal gap.** Before it, every experience chunk
 carried its own dates and nothing said where it fell, so "what was his first
@@ -123,11 +123,24 @@ Voyage's published gains are largest on long documents and code, which this
 corpus has little of. Worth re-measuring when the corpus or rerank-2.5's
 availability changes.
 
-**Comparison is now the category that can fail.** At 66.7% it is one item
-scoring zero in all three locales: `compare-path-plutus-stack` retrieves each
-project's solution chunk and changelog entries about the project pages, and
-neither tech chunk that lists the stacks. dense-only scores higher on this
-category (83.3%); why has not been measured.
+**The tech-stack chunks name their project (b4844cb).** `compare-path-plutus-stack`
+scored zero in all three locales: asked how Path's and Plutus Trade's stacks
+differ, retrieval returned the changelog entry "Product Pages — Tech Stack
+Refresh", which names both projects and says tech stack, and neither stack
+table. Each table was the rows alone ("Frontend Framework: React 18, …"); the
+project's name and the words tech stack were only in its title, which is
+neither embedded nor indexed by BM25. Each tech chunk now opens with its
+title. On production (run 36954509072) hybrid+rerank went from 97.2% to 99.3%
+and comparison from 66.7% to 100%, every arm rose (sparse-only 76.7% to 82.3%,
+dense-only 97.6% to 98.3%, hybrid 95.1% to 95.8%), and the baseline was raised
+to the run where the item is found, so the gate now holds it (run 36954279258,
+no question below the new baseline). rerank-3 had not recovered this item
+either. The one hybrid+rerank miss left is `overall-style` (zh-TW).
+
+Forty-five more project chunks have the same gap: the problem, impact and
+learnings sections of every project carry the project's name only in their
+title (the solution sections happen to name it in the text). No golden
+question currently fails because of them; they have not been changed.
 
 **corrective: 97.9% correct (3 of 144 wrong), 93.4% faithful (8 of 122 judged
 runs ungrounded).** Both judges now run on Sonnet 4.6 (`config.modelJudge`);
@@ -167,6 +180,10 @@ Scrum チーム」 in full, 647 characters in, with nothing truncated on the way
 the prompt. So the generator was given the number and missed it. The eval
 generates with Haiku (`RAG_FORCE_CLAUDE`), while visitors get Gemini, so this
 rate says nothing direct about what visitors see.
+
+In the latest run (36954515395, b4844cb) the arm read 99.3% correct, the one
+wrong answer being `pattern-rag` (ja) again judged `claim not stated`, and
+90.2% faithful (12 of 122).
 
 Run 36951385380 also shows how much a single run moves. After the two golden
 claims were narrowed to what their questions ask (15986e4), it read 97.9%
