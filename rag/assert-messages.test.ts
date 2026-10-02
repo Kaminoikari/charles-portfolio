@@ -2,10 +2,10 @@
 // the source: it re-parses the file with acorn from every token before the call
 // site. Under tsx the call site arrives in transpiled coordinates, so Node reads
 // the TypeScript file at the wrong place, every parse attempt fails, and each
-// failure rescans the text. The cost is quadratic, so the test file spins at
-// full CPU and never exits. A red test then looks like a hung CI job. Passing a
-// message skips that path entirely, so every assert.ok and bare assert call in
-// the rag suite must carry one.
+// failure rescans the text. The cost grows with the square of the file, so
+// nodes.test.ts spun at full CPU for over 60 seconds without exiting, and a red
+// test looked like a hung CI job. Passing a message skips that path entirely,
+// so every assert.ok and bare assert call in the rag suite must carry one.
 
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
