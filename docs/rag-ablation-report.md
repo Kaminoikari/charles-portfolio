@@ -341,7 +341,9 @@ chunk that does not mention it), three generation errors (sub-agents called
 read-write, upgraders given their own weights, the Appeal example moved into
 Product Playbook), one context gap (`shazam-author` ja names Charles as the
 blog's author, which is true, since it is on charlestychen.substack.com, but
-the blog chunk never says who wrote it), and one judge error
+the blog chunk never says who wrote it; da53012 labels blog evidence "blog
+by Charles Chen" for the generator and the judge alike, unmeasured), and one
+judge error
 (`pattern-reflection` zh-TW: adding pre-mortem raising 22.2% to 100% is the
 same fact as removing it dropping 100% to 22.2%, which the judge's own reason
 calls logically equivalent). The judge's context gained the architecture
