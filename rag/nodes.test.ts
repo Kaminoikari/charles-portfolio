@@ -154,7 +154,8 @@ test('triage: a conversational message with history routes to converse', async (
 
 test('triage: the same message with no history takes the normal path', async () => {
   // Nothing to answer from, so it must not claim a memory it does not have.
-  const out = await triage({ question: '我剛剛問了你什麼?', language: 'zh-TW', history: [] } as never)
+  const offline = { embedOne: async () => [0], faqLookup: async () => null }
+  const out = await triage({ question: '我剛剛問了你什麼?', language: 'zh-TW', history: [] } as never, offline)
   assert.notEqual(out.route, 'converse')
 })
 
