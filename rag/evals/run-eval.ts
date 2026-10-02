@@ -210,7 +210,8 @@ async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN
         // same one declaration serves all three locales. scoreCorrectness throws
         // if an item carries a claim and this is still null, which is the only
         // reason the call cannot be quietly dropped later.
-        const judged = item.mustState ? (await judgeStatement(answerText, item.mustState)).states : null
+        const statement = item.mustState ? await judgeStatement(answerText, item.mustState) : null
+        const judged = statement ? statement.states : null
         const faith = await judgeFaithfulness(answerText, ctx)
         items.push({
           key: `${item.id}/${locale}`,
@@ -235,7 +236,11 @@ async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN
         // The answer itself, trimmed: a rule miss can be the answer or the rule
         // (a number written １５ fails an includes('15')), and only the text
         // tells which. It is the bot's own reply about public portfolio content.
-        if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why} | answer: ${answerText.replace(/\s+/g, ' ').slice(0, 400)}`)
+        // And the claim judge's own reason, so a `claim not stated` can be told
+        // apart: an answer that missed the fact, or a claim asking for more than
+        // its question does.
+        const judgeReason = statement && !statement.states ? ` (judge: ${statement.reason})` : ''
+        if (why) console.log(`    ✗ wrong [${arm.name}/${locale}] ${item.id} — ${why}${judgeReason} | answer: ${answerText.replace(/\s+/g, ' ').slice(0, 400)}`)
       } else {
         // Retrieval-only arm: measure recall/MRR directly. No generation, so
         // correctness/faithfulness are not applicable (left out of their means).
