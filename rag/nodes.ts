@@ -551,11 +551,16 @@ export function todayISO(now: Date = new Date()): string {
 // A judge shown less than the generator was shown reports invention wherever
 // the difference is, and on 2026-09-17 the difference was every proper noun and
 // every metric that lives in the portfolio map.
+// A blog chunk is the article body alone, so nothing in it says who wrote it;
+// every article on the site is Charles's own (nodes.test.ts holds the article
+// list to his two publishing hosts), and the label says so.
+const sourceLabel = (sourceType: string) => (sourceType === 'blog' ? 'blog by Charles Chen' : sourceType)
+
 export function evidenceBlock(graded: Document[], query: string): string {
   const context = graded
     .map(
       (d, i) =>
-        `[${i + 1}] (${d.metadata.sourceType}${d.metadata.date ? `, published ${d.metadata.date}` : ''}) ${d.pageContent}`,
+        `[${i + 1}] (${sourceLabel(d.metadata.sourceType)}${d.metadata.date ? `, published ${d.metadata.date}` : ''}) ${d.pageContent}`,
     )
     .join('\n\n')
   const entities = entityContext(query)

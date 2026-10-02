@@ -930,12 +930,12 @@ const DATED_DOC = {
 
 test('generate: a dated source is labelled with its publication date', async () => {
   const { system } = await promptFor({ question: '九個月前是什麼時候?', language: 'zh-TW', graded: [DATED_DOC] })
-  assert.equal(system.includes('(blog, published 2026-09-14)'), true)
+  assert.equal(system.includes('(blog by Charles Chen, published 2026-09-14)'), true)
 })
 
 test('generate: an undated source is labelled without a date', async () => {
   const { system } = await promptFor({ question: '他寫過什麼?', language: 'zh-TW', graded: [DOC] })
-  assert.equal(system.includes('(blog)'), true)
+  assert.equal(system.includes('(blog by Charles Chen)'), true)
   assert.equal(system.includes('published'), true, 'the date rule itself should still be stated')
 })
 
@@ -992,4 +992,30 @@ test('generate: the prompt carries answerContext whole, contact channels include
   const ctx = nodes.answerContext([DOC] as never, '他寫過什麼?')
   assert.ok(ctx.includes(CONTACT.email))
   assert.ok(system.includes(ctx))
+})
+
+// Blog chunks are the article body alone, so nothing in them says who wrote it,
+// and the judge called an answer naming Charles as the Shazam post's author
+// unsupported (shazam-author ja). The label carries the author.
+test('evidenceBlock: a blog chunk is labelled as written by Charles, other sources are not', () => {
+  const block = evidenceBlock(
+    [
+      new Document({ pageContent: 'Shazam fingerprints audio.', metadata: { sourceType: 'blog', id: 'b', date: '2026-01-05' } }),
+      new Document({ pageContent: 'Leads product at USPACE.', metadata: { sourceType: 'experience', id: 'e' } }),
+    ],
+    'q',
+  )
+  assert.ok(block.includes('[1] (blog by Charles Chen, published 2026-01-05) Shazam fingerprints audio.'))
+  assert.ok(block.includes('[2] (experience) Leads product at USPACE.'))
+})
+
+// The label above is only true while every article on the site is his own, so
+// the article list itself is held to his two publishing hosts.
+test('every blog article lives on one of Charles\'s own publishing hosts', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const { blogArticles } = await import(`../src/data/blog.${locale}.ts`)
+    const hosts = new Set((blogArticles as { url: string }[]).map((a) => new URL(a.url).host))
+    assert.deepEqual([...hosts].filter((h) => h !== 'charlestychen.substack.com' && h !== 'charleschen.medium.com'), [], locale)
+    assert.ok(hosts.size > 0, locale)
+  }
 })
