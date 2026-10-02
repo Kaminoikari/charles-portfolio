@@ -217,7 +217,7 @@ export const projectDetails: ProjectDetail[] = [
     solution: [
       '目前版本：Product Playbook 2.4.0。最新版本加入 unattended run 的 operator 開關，預設的 secret guard 仍維持啟用。',
       'Outcome-first 的 lens 系統：Product Playbook 2.0 是一個 meta-skill，讀取你要的結果，選出能帶你抵達的產品思考 lens，並在決策需要多重視角時融合成一份整合答案。四步骨架每次都一致：讀取結果、選擇 lens、產出交付物、標註 provenance。',
-      '16 個可組合的 lens：每個成熟框架都是獨立的 lens skill（JTBD、Positioning、PR-FAQ、RICE 式排序、North Star 指標、MVP scoping、PMF／GTM、strategy kernel 等），能單獨運作也能彼此組合，讓工具只帶上問題真正需要的思考。2.0 把 1.x 從 Lenny\'s Podcast 整理出的 22 個框架合併成這 16 個：三個 strategy 框架併為一個 strategy lens，persona 與 journey 併為 persona-journey，PRD、開發交接與 security checklist 併為 prd-and-handoff，HTML 報告與 PDF 匯出併為 document-export，每個被合併的框架都以獨立段落保留。',
+      '16 個可組合的 lens：每個成熟框架都是獨立的 lens skill，全部 16 個是：strategy-kernel、persona-journey、jtbd、opportunity-solution-tree、problem-framing、positioning、pr-faq、pre-mortem、solution-prioritization、mvp-scoping、success-metrics、pmf-gtm、prd-and-handoff、document-export、product-spec-summary、strategy-critic。每個 lens 都能單獨運作，也能彼此組合，讓工具只帶上問題真正需要的思考。2.0 把 1.x 從 Lenny\'s Podcast 整理出的 22 個框架合併成這 16 個：三個 strategy 框架併為一個 strategy lens，persona 與 journey 併為 persona-journey，PRD、開發交接與 security checklist 併為 prd-and-handoff，HTML 報告與 PDF 匯出併為 document-export，每個被合併的框架都以獨立段落保留。',
       '專家 Sub-agent 在獨立 Context 運作：兩個唯讀專家在遠離擁擠主線的環境各自分析。strategy-critic 扮演嚴厲但公正的策略批判者；pre-mortem-runner 全力投入產品失敗的悲觀推演。探索所需的同理心，如今住在 persona-journey 與 jtbd 這兩個 lens 裡。',
       '權責專一的工程化設計：每個專家都是唯讀，並內建拒絕路徑（out_of_scope），把越權請求交回對的負責人。規劃階段在工具層就碰不到檔案，決策所有權留在主 Agent。',
       'Relative guardrails：一小組 guardrail 預設休眠，只有在目前路徑會真正傷害結果時，才以單行、非阻斷的提示浮現。任何情況都不會硬性擋下你。',
