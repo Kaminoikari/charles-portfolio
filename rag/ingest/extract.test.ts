@@ -138,7 +138,33 @@ test('the AI table is also indexed whole, under the site\'s heading, in every lo
 
 test('an AI-table row cannot take the overview\'s id', () => {
   const row = { id: 'overview', label: 'Overview', body: 'clash' }
-  assert.throws(() => aboutChunks({ whoIAm: [], philosophyBullets: [], aiTable: [row] }, 'en', 'How I use AI'), /duplicate/i)
+  assert.throws(() => aboutChunks({ whoIAm: [], philosophyBullets: [], aiTable: [row] }, 'en', { ai: 'How I use AI' }), /duplicate/i)
+})
+
+// ── about: one chunk for the whole philosophy ───────────────────────────
+// "Charles 整體的產品哲學是什麼?" asks about the philosophy as a whole, and each
+// of the four bullets answers one part of it without saying 產品哲學. It was the
+// one question hybrid+rerank still missed (zh-TW, run 36954509072), the same
+// shape as the AI table above.
+
+test('the product philosophy is also indexed whole, under the site\'s heading, in every locale', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const strings = (await import(`../../src/i18n/strings/${locale}.ts`)).default.about
+    const about = (await import(`../../src/data/aboutContent.${locale}.ts`)).aboutContent as AboutContentInput
+    const overview = CHUNKS.find((c) => c.id === `about:philosophy:overview:${locale}`)
+    assert.ok(overview, `no philosophy overview chunk for ${locale}`)
+    assert.equal(overview.content.split('\n')[0], strings.sectionPhilosophy, locale)
+    assert.ok(overview.content.includes(strings.philosophyIntro), `${locale}: overview lacks the intro`)
+    for (const b of about.philosophyBullets) assert.ok(overview.content.includes(b.body), `${locale}: overview lacks ${b.id}`)
+  }
+})
+
+test('a philosophy bullet cannot take the overview\'s id', () => {
+  const bullet = { id: 'overview', title: 'Overview', body: 'clash' }
+  assert.throws(
+    () => aboutChunks({ whoIAm: [], philosophyBullets: [bullet], aiTable: [] }, 'en', { philosophy: 'Product philosophy', philosophyIntro: 'intro' }),
+    /duplicate/i,
+  )
 })
 
 // ── experience timeline ───────────────────────────────────────────────────

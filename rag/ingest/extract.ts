@@ -174,7 +174,7 @@ export interface AboutContentInput {
 // swapped point per copy edit (the reconciler's ordinary prune clears it, being
 // far under RAG_PRUNE_MAX) and in exchange an inserted paragraph never disturbs
 // the others. Give whoIAm real keys if it ever needs to be cited or eval-pinned.
-// `aiHeading` is the site's own heading for the AI table (src/i18n/strings,
+// `headings.ai` is the site's own heading for the AI table (src/i18n/strings,
 // about.sectionAi), and with it the table also gets one overview chunk holding
 // every row. Each row answers one narrow question; "how does he use AI across his
 // work" has no single row that answers it. In Japanese, sparse-only, dense-only
@@ -182,7 +182,17 @@ export interface AboutContentInput {
 // when a row fell inside its 20 candidates (production missed, run 36874601695):
 // no Japanese row names Charles, and BM25 barely tokenises the rest. The skills
 // table is indexed whole (skills:all) for the same reason.
-export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?: string): ChunkRecord[] {
+// `headings.philosophy` and `headings.philosophyIntro` do the same for the four
+// philosophy bullets: "what is his overall product philosophy" was the last
+// question hybrid+rerank missed (zh-TW, run 36954509072), and no bullet says
+// 產品哲學.
+export interface AboutHeadings {
+  ai?: string
+  philosophy?: string
+  philosophyIntro?: string
+}
+
+export function aboutChunks(about: AboutContentInput, locale: string, headings: AboutHeadings = {}): ChunkRecord[] {
   const out: ChunkRecord[] = []
   const base = { parentId: null, sourceType: 'about' as const, projectId: null, locale }
 
@@ -198,19 +208,33 @@ export function aboutChunks(about: AboutContentInput, locale: string, aiHeading?
     out.push({ ...base, id: `about:philosophy:${key}:${locale}`, title: `Product philosophy — ${b.title}`, content: `${b.title}: ${b.body}` })
   })
 
+  if (headings.philosophy && about.philosophyBullets.length > 0) {
+    uniqueKey(bullets, 'overview', 'about:philosophy', headings.philosophy)
+    out.push({
+      ...base,
+      id: `about:philosophy:overview:${locale}`,
+      title: headings.philosophy,
+      content: [
+        headings.philosophy,
+        ...(headings.philosophyIntro ? [headings.philosophyIntro] : []),
+        ...about.philosophyBullets.map((b) => `${b.title}: ${b.body}`),
+      ].join('\n'),
+    })
+  }
+
   const rows = new Set<string>()
   about.aiTable.forEach((r) => {
     const key = uniqueKey(rows, r.id, 'about:ai', r.label)
     out.push({ ...base, id: `about:ai:${key}:${locale}`, title: `How I use AI — ${r.label}`, content: `${r.label}: ${r.body}` })
   })
 
-  if (aiHeading && about.aiTable.length > 0) {
-    uniqueKey(rows, 'overview', 'about:ai', aiHeading)
+  if (headings.ai && about.aiTable.length > 0) {
+    uniqueKey(rows, 'overview', 'about:ai', headings.ai)
     out.push({
       ...base,
       id: `about:ai:overview:${locale}`,
-      title: aiHeading,
-      content: [aiHeading, ...about.aiTable.map((r) => `${r.label}: ${r.body}`)].join('\n'),
+      title: headings.ai,
+      content: [headings.ai, ...about.aiTable.map((r) => `${r.label}: ${r.body}`)].join('\n'),
     })
   }
 
@@ -396,7 +420,13 @@ export async function extractAll(): Promise<ChunkRecord[]> {
     }
 
     // ── about (who-I-am paras + philosophy + AI table; see aboutChunks) ──
-    out.push(...aboutChunks(about.aboutContent, locale, strings.about.sectionAi))
+    out.push(
+      ...aboutChunks(about.aboutContent, locale, {
+        ai: strings.about.sectionAi,
+        philosophy: strings.about.sectionPhilosophy,
+        philosophyIntro: strings.about.philosophyIntro,
+      }),
+    )
 
     // ── experience (one chunk per role; see experienceChunks) ──
     out.push(...experienceChunks(experience.experience, locale))
