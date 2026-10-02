@@ -368,6 +368,15 @@ const SKILLS_HEADING: Record<string, string> = {
   ja: 'Charles がサイトに挙げているスキル',
 }
 
+// The list is all the chunk holds, so a question about how many skills he lists
+// left generation to count them, and it miscounted. The count goes on the
+// heading line, taken from the list it introduces.
+const SKILLS_COUNT: Record<string, (n: number) => string> = {
+  en: (n) => ` (${n} in all)`,
+  'zh-TW': (n) => `（共 ${n} 項）`,
+  ja: (n) => `（全 ${n} 項目）`,
+}
+
 export async function extractAll(): Promise<ChunkRecord[]> {
   const out: ChunkRecord[] = []
 
@@ -446,7 +455,7 @@ export async function extractAll(): Promise<ChunkRecord[]> {
       projectId: null,
       locale,
       title: SKILLS_HEADING[locale] ?? SKILLS_HEADING.en,
-      content: `${SKILLS_HEADING[locale] ?? SKILLS_HEADING.en}\n${skills.skills.map((s: { name: string }) => s.name).join('; ')}`,
+      content: `${SKILLS_HEADING[locale] ?? SKILLS_HEADING.en}${(SKILLS_COUNT[locale] ?? SKILLS_COUNT.en)(skills.skills.length)}\n${skills.skills.map((s: { name: string }) => s.name).join('; ')}`,
     })
 
     // ── changelog (one chunk per entry) ──

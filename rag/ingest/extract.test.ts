@@ -358,3 +358,17 @@ test('every project tech chunk names its project in the text that gets embedded'
   const missing = tech.filter((c) => !c.content.includes(c.title.split(' — ')[0].trim())).map((c) => c.id)
   assert.deepEqual(missing, [])
 })
+
+// The skills chunk is a bare list, so an answer that says how many skills he
+// lists has to count them, and generation miscounted (24 for 29) in every
+// English run of a full eval. The chunk now states the count, taken from the
+// same list it prints.
+test('skills chunk states how many skills it lists', async () => {
+  for (const locale of ['en', 'zh-TW', 'ja'] as const) {
+    const { skills } = await import(`../../src/data/skills.${locale}.ts`)
+    const chunk = CHUNKS.find((c) => c.id === `skills:all:${locale}`)
+    assert.ok(chunk, `skills:all:${locale} missing`)
+    const firstLine = chunk.content.split('\n')[0]
+    assert.match(firstLine, new RegExp(`\\b${skills.length}\\b`), `${locale}: ${firstLine}`)
+  }
+})
