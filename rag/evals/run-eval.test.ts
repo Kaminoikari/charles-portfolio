@@ -22,6 +22,7 @@ import {
   parseBaseline,
   buildReport,
   judgeContext,
+  judgeItemStatement,
 } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 import { CONTACT } from '../triage.js'
@@ -325,4 +326,17 @@ test('judgeContext: the judge sees the architecture the generator is told', () =
   assert.ok(ctx.includes(MIKA_ARCHITECTURE))
   assert.ok(MIKA_IDENTITY.includes(MIKA_ARCHITECTURE))
   assert.match(MIKA_ARCHITECTURE, /reciprocal rank fusion/)
+})
+
+test('judgeItemStatement: every alternative of a claim reaches the judge', async () => {
+  const seen: unknown[] = []
+  const judge = async (_a: string, claims: string | readonly string[]) => {
+    seen.push(claims)
+    return { states: true, reason: '' }
+  }
+  const item = GOLDEN.find((i) => i.id === 'pattern-rag')!
+  assert.ok(Array.isArray(item.mustState) && item.mustState.length === 2)
+  await judgeItemStatement('ans', item, judge)
+  assert.deepEqual(seen, [item.mustState])
+  assert.equal(await judgeItemStatement('ans', { mustState: undefined }, judge), null)
 })

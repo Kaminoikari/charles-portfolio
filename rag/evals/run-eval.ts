@@ -24,7 +24,7 @@ import { MIKA_ARCHITECTURE } from '../persona.js'
 import type { Document } from '@langchain/core/documents'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
-import { judgeAnyStatement, judgeFaithfulness, type FaithfulnessVerdict } from './judge.js'
+import { judgeAnyStatement, judgeFaithfulness, type FaithfulnessVerdict, type StatementVerdict } from './judge.js'
 import {
   itemRecall,
   itemReciprocalRank,
@@ -177,6 +177,16 @@ export function judgeContext(final: { graded?: Document[]; queries?: string[] },
   )
 }
 
+// The runner's one call to the claim judge, kept out of the loop so a test can
+// see that every alternative reaches it.
+export function judgeItemStatement(
+  answer: string,
+  item: Pick<GoldenItem, 'mustState'>,
+  judge: typeof judgeAnyStatement = judgeAnyStatement,
+): Promise<StatementVerdict | null> {
+  return item.mustState ? judge(answer, item.mustState) : Promise.resolve(null)
+}
+
 export function retrievalScores(
   final: { sources?: { id: string }[]; documents?: unknown[]; degraded?: unknown[] },
   item: Pick<GoldenItem, 'relevantIds' | 'needsEvery' | 'answeredBy'>,
@@ -217,7 +227,7 @@ async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN
         // same one declaration serves all three locales. scoreCorrectness throws
         // if an item carries a claim and this is still null, which is the only
         // reason the call cannot be quietly dropped later.
-        const statement = item.mustState ? await judgeAnyStatement(answerText, item.mustState) : null
+        const statement = await judgeItemStatement(answerText, item)
         const judged = statement ? statement.states : null
         const faith = await judgeFaithfulness(answerText, ctx)
         items.push({
