@@ -49,10 +49,12 @@ export const config = {
   // --- models ---
   // Every LLM step is two-tier: Gemini free-tier first, Anthropic as the paid
   // backstop (see llm.ts). The internal steps take modelFast (Haiku); only the
-  // user-facing answer can escalate to modelStrong.
+  // user-facing answer can escalate to modelStrong. modelStrong is Haiku too:
+  // the backstop answers only when Gemini fails, and Sonnet's cost there was
+  // not worth it (2026-10-02). RAG_MODEL_STRONG brings Sonnet back.
   geminiModel: process.env.RAG_GEMINI_MODEL ?? 'gemini-2.5-flash',
   modelFast: process.env.RAG_MODEL_FAST ?? 'claude-haiku-4-5-20251001',
-  modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-sonnet-4-6',
+  modelStrong: process.env.RAG_MODEL_STRONG ?? 'claude-haiku-4-5-20251001',
   // The eval's judges (faithfulness, and whether an answer states a golden
   // claim). Never on a visitor's path. Haiku misread long trilingual contexts:
   // in run 36889773317 most of its 14 ungrounded verdicts quoted the supporting
