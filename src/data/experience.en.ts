@@ -16,7 +16,7 @@ export const experience: ExperienceItem[] = [
     title: 'Head of Product',
     organization: 'USPACE Tech Co., Ltd.',
     bullets: [
-      'Lead a 6-person product team owning product strategy, the annual roadmap and OKRs across the Taiwan and Japan markets, plus the mobility product-line matrix: parking payments, corporate travel and insurance, B2C airport transfers, a driver-side dispatch console app and a car-coating SaaS',
+      'Lead a 6-person product team owning product strategy, the annual roadmap and OKRs across the Taiwan and Japan markets, plus the mobility product-line matrix: parking payments, business travel and financial insurance, as well as B2C airport transfers, a driver-side dispatch console app and a car-coating SaaS',
       "Drove the product org's AI transformation: built a department-wide RAG knowledge base and an agentic workflow SOP, cutting the discovery and competitive-analysis cycle by 80%",
       '0→1 launched USPACE for Business (Sep 2025): a B2B SaaS for corporate travel management, owned end-to-end from sales discovery through spec, launch, payments & reconciliation, reaching 30+ listed and multinational accounts in 3 months and growing B2B ARR 250%',
       '5x faster iteration, zero added engineering headcount: redefined the AI Product Builder role, engineering the full stack via agentic workflows with Claude Code & Codex, and architected the Maestro MCP end-to-end test suite for the app rewrite, freeing 80% of regression-testing hours',

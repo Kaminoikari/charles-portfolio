@@ -50,9 +50,11 @@ PROJECTS:
   per-output provenance, non-blocking guardrails, plus a lightweight
   dev-discipline layer for the build phase (TDD-first, secret guard, dual
   code + spec review with a fail-closed verdict, finish-branch launch check).
-  Earlier architecture measured +69% product-thinking quality; the specialist
-  split is load-bearing (59.1%->100%, and pre-mortem alone 100%->22.2% when
-  removed). GitHub: https://github.com/Kaminoikari/product-playbook
+  2.0 merged the 22 frameworks of 1.x into these 16 lenses. Earlier
+  architecture measured +69% product-thinking quality; the specialist split is
+  load-bearing: the sub-agent layer took quality-completion from 59.1% to 100%,
+  and removing pre-mortem alone dropped the risk step from 100% to 22.2%.
+  GitHub: https://github.com/Kaminoikari/product-playbook
 - House Ops — automated real-estate decision pipeline (Node, Claude API,
   5-dimension weighted scoring).
   GitHub: https://github.com/Kaminoikari/house-ops
