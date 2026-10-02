@@ -113,6 +113,16 @@ Questions that name their subject lose less (local 93.3%, near-miss 83.3%).
 The same code reads differently on two indexes built from the same branch
 (77.4% on the experiment index, run 36902404670); why has not been measured.
 
+**rerank-3 was tried and not adopted (2026-10-02).** Voyage released it on
+2026-09-30 as a drop-in upgrade to rerank-2.5 at the same price. With only the
+model name changed, hybrid+rerank on production read 96.5% recall and MRR 0.828
+against rerank-2.5's 97.2% and 0.836, in two identical runs (36952253044,
+36952258587): one question fell below its baseline (`overall-style`, ja), none
+rose, and `degraded` was 0 of 144, so every rerank call went to the new model.
+Voyage's published gains are largest on long documents and code, which this
+corpus has little of. Worth re-measuring when the corpus or rerank-2.5's
+availability changes.
+
 **Comparison is now the category that can fail.** At 66.7% it is one item
 scoring zero in all three locales: `compare-path-plutus-stack` retrieves each
 project's solution chunk and changelog entries about the project pages, and
@@ -147,11 +157,24 @@ core product lines); two attribute a fact to the wrong source (`shazam-author`
 and `before-pxpay`, both zh-TW); one renders a term wrongly (`shazam-author`,
 ja). These reasons were not each checked against the context.
 
-`compare-team-sizes` (ja) was wrong once, in run 36889773317: both experience
-chunks were retrieved and the answer left out the 15. It was answered
-correctly in twenty single-item reruns and in every full run since; the
-mechanism is not known. The eval now prints the answer beside a wrong
-verdict, so the next occurrence will show it.
+`compare-team-sizes` (ja) was wrong in run 36889773317 and again in run
+36951385380, after twenty correct single-item reruns and three correct full
+runs. The second time the eval printed the answer: it gives the FLUX team as
+10 and says the USPACE Scrum team's size is not on record, citing the current
+six-person team instead. The USPACE chunk was among the sources (comparison
+recall was 100% for this item) and states 「15 名のクロスファンクショナル
+Scrum チーム」 in full, 647 characters in, with nothing truncated on the way to
+the prompt. So the generator was given the number and missed it. The eval
+generates with Haiku (`RAG_FORCE_CLAUDE`), while visitors get Gemini, so this
+rate says nothing direct about what visitors see.
+
+Run 36951385380 also shows how much a single run moves. After the two golden
+claims were narrowed to what their questions ask (15986e4), it read 97.9%
+correct and 88.5% faithful (14 of 122), against 97.9% and 93.4% (8 of 122) in
+run 36906411274 the day before. The wrong answers were different ones
+(`overall-style` zh-TW, `skills-listed` ja, `compare-team-sizes` ja), so the
+narrowing removed the three it targeted and three others failed. Differences
+of a few points between two corrective runs are within this spread.
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run
