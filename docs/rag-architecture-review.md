@@ -743,3 +743,14 @@ Voyage 在 2026-09-30 推出 rerank-3。只換模型名稱，正式索引上 hyb
 
 correctness：`uspace-role` 與 `pattern-rag` 的 golden 規則原本要求題目沒問的細節，已收斂到題目問的內容（15986e4）。最新一次（run 36954515395）correctness 99.3%，唯一答錯的是日文 `pattern-rag`；faithfulness 90.2%（122 次判讀裡 12 次沒依據）。兩次 corrective run 之間在沒有改程式的情況下 faithfulness 可以差 5 個百分點，幾個百分點的差距不能單憑一次 run 判斷。
 
+
+## recall 與 correctness 到 100%
+
+hybrid+rerank 最後一題漏掉的是中文 `overall-style`（他整體的產品哲學是什麼）。產品哲學每一條各自是一個 chunk，每條只回答一部分，也沒有一條寫到「產品哲學」。現在這些條目另外合成一個以網站自己的段落標題與引言開頭的 overview chunk（`about:philosophy:overview:<locale>`，66ef53d），做法與 AI 表格相同。run 36958623992 中 144 題全部命中，基準檔已更新到這次（080e730）。現行正式索引上（run 36964683250）四個 arm：sparse-only 83.7%、dense-only 98.3%、hybrid 97.9%、hybrid+rerank 100.0%（MRR 0.861）。
+
+corrective arm 在連續三次完整 run（36963114882、36963118089、36963121030，2a9b931）都是 correctness 100%（144 次全對），faithfulness 分別是 91.8%、88.5%、89.3%（122 次判讀裡 10、14、13 次沒依據）。做法分兩步：eval 在判錯時印出 claim judge 的理由（787bf3e），因為只看答案摘錄分不出是答案漏講，還是 claim 要求的比題目多；印出理由後，剩下的錯題都是答對了卻因措辭被判錯。
+
+- `pattern-rag`：先是沒講「模型沒訓練過這些文件」被判錯（那是 RAG 存在的理由，69157ca），再來英文答案因為沒用 claim 裡「along with the question」的說法被判錯，最後一次是答案直接引用該 pattern 自己的定義（「ground answers in external, up-to-date, or proprietary data」）、沒有逐步講流程而被判錯。claim 現在只要求他兩種描述共有的部分：答案依據交給模型的外部資料。
+- `skills-listed`（zh-TW）：答案把網站上的技能原文分組列出，因為 claim 寫了「a long set of short labels」的格式，以及引用了「把試算表變成決策」卻被判沒講到資料，而判錯。claim 現在要求列出的技能涵蓋產品與 AI 兩塊。
+
+三次完整 run 之前，`pattern-rag` 三語各跑 3 次、`skills-listed`（zh-TW）跑 3 次，全部答對。每次收斂 claim 都在 `rag/evals/golden.ts` 留了註解，記下顯示問題的 run。faithfulness 在不改程式的情況下仍會在幾個百分點內浮動，剩下的沒依據判決是同幾類生成錯誤（技能數算錯、三條核心產品線、把 22 個框架講成收斂成 16 個）。

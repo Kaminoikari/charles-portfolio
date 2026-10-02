@@ -22,28 +22,29 @@ lift of each is visible.
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-10-02**, on the production `doc_chunks` index at commit
-  b4844cb, after the tech-stack chunks began naming their project. The four
-  retrieval arms are from run 36954509072 and the `corrective` row from run
-  36954515395. Judges run on Sonnet 4.6 since 92aded5.
+  2a9b931, after the product philosophy got an overview chunk and three golden
+  claims were narrowed. The four retrieval arms are from run 36964683250 and
+  the `corrective` row from run 36963114882. Judges run on Sonnet 4.6 since
+  92aded5.
 
 ## Current results
 
 | Arm | recall@k | MRR | correctness | faithfulness | answered without retrieval |
 |---|---|---|---|---|---|
-| sparse-only | 82.3% | 0.609 | — | — | 0 of 144 |
-| dense-only | 98.3% | 0.756 | — | — | 0 of 144 |
-| hybrid | 95.8% | 0.734 | — | — | 0 of 144 |
-| hybrid+rerank | 99.3% | 0.849 | — | — | 0 of 144 |
-| corrective | 99.2% | 0.830 | 99.3% | 90.2% | 22 of 144 |
+| sparse-only | 83.7% | 0.618 | — | — | 0 of 144 |
+| dense-only | 98.3% | 0.760 | — | — | 0 of 144 |
+| hybrid | 97.9% | 0.738 | — | — | 0 of 144 |
+| hybrid+rerank | 100.0% | 0.861 | — | — | 0 of 144 |
+| corrective | 100.0% | 0.845 | 100.0% | 91.8% | 22 of 144 |
 
 Recall by category (n = query runs):
 
 | Arm | single-fact (66) | global (18) | local (15) | near-miss (12) | out-of-corpus (12) | comparison (9) | temporal (12) |
 |---|---|---|---|---|---|---|---|
-| sparse-only | 81.8% | 66.7% | 100.0% | 83.3% | 100.0% | 66.7% | 79.2% |
+| sparse-only | 81.8% | 77.8% | 100.0% | 83.3% | 100.0% | 66.7% | 79.2% |
 | dense-only | 97.0% | 100.0% | 100.0% | 100.0% | 100.0% | 94.4% | 100.0% |
-| hybrid | 98.5% | 77.8% | 100.0% | 100.0% | 100.0% | 88.9% | 100.0% |
-| hybrid+rerank | 100.0% | 94.4% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
+| hybrid | 98.5% | 94.4% | 100.0% | 100.0% | 100.0% | 88.9% | 100.0% |
+| hybrid+rerank | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 
 **The timeline closed the temporal gap.** Before it, every experience chunk
 carried its own dates and nothing said where it fell, so "what was his first
@@ -135,7 +136,8 @@ and comparison from 66.7% to 100%, every arm rose (sparse-only 76.7% to 82.3%,
 dense-only 97.6% to 98.3%, hybrid 95.1% to 95.8%), and the baseline was raised
 to the run where the item is found, so the gate now holds it (run 36954279258,
 no question below the new baseline). rerank-3 had not recovered this item
-either. The one hybrid+rerank miss left is `overall-style` (zh-TW).
+either. The one hybrid+rerank miss left after it was `overall-style` (zh-TW),
+closed by the philosophy overview below.
 
 Forty-five more project chunks have the same gap: the problem, impact and
 learnings sections of every project carry the project's name only in their
@@ -192,6 +194,46 @@ run 36906411274 the day before. The wrong answers were different ones
 (`overall-style` zh-TW, `skills-listed` ja, `compare-team-sizes` ja), so the
 narrowing removed the three it targeted and three others failed. Differences
 of a few points between two corrective runs are within this spread.
+
+**The product philosophy has an overview chunk (66ef53d).** "What is his
+overall product philosophy" was the last question hybrid+rerank missed
+(`overall-style`, zh-TW). Each philosophy bullet was its own chunk, each
+answers one part of the question, and none says 產品哲學. The bullets now also
+get one chunk headed by the site's own section heading and intro
+(`about:philosophy:overview:<locale>`), the same fix the AI table got. In run
+36958623992 every one of the 144 questions scored 1, and the baseline was
+raised to that run (080e730). On the current index (run 36964683250)
+hybrid+rerank reads 100.0% and the global category rose for every arm
+(sparse-only 66.7% to 77.8%, hybrid 77.8% to 94.4%, hybrid+rerank 94.4% to
+100%).
+
+**corrective: 100% correct in three consecutive full runs.** Runs
+36963114882, 36963118089 and 36963121030 (2a9b931) each read 144 of 144
+correct, with faithfulness 91.8%, 88.5% and 89.3% (10, 14 and 13 of 122 judged
+runs ungrounded). Getting there took two changes. The eval now prints the
+claim judge's reason beside a wrong verdict (787bf3e), since the answer excerpt
+alone did not show whether the answer left the fact out or the claim asked for
+more than the question. With the reasons printed, every remaining miss was a
+correct answer failed on wording:
+
+- `pattern-rag` failed first for not saying the documents are ones the model
+  never trained on, which is why RAG exists (69157ca), then in English for not
+  using the claim's phrase "along with the question", then once for quoting
+  the pattern's own definition ("ground answers in external, up-to-date, or
+  proprietary data") without walking through the steps. The claim now asks for
+  what both of his descriptions share: the answer rests on external data given
+  to the model.
+- `skills-listed` (zh-TW) quoted the site's entries under headings and was
+  failed for the claim's "a long set of short labels" shape, and for missing a
+  data area while quoting 把試算表變成決策. The claim now asks that the listed
+  skills span product work and building with AI.
+
+Before the three full runs, nine single-item runs of `pattern-rag` (three per
+locale) and three of `skills-listed` (zh-TW) were all correct. Each claim
+change carries a comment in `rag/evals/golden.ts` citing the runs that showed
+it. Ungrounded verdicts still move by a few points between runs with no code
+change; the reasons in these runs are the same kinds listed above (a skills
+count, three core product lines, 22 frameworks read as narrowed to 16).
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run
