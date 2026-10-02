@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { judgeFaithfulness } from './judge.js'
+import { judgeFaithfulness, statementSchema } from './judge.js'
 import { todayISO } from '../nodes.js'
 
 test('judgeFaithfulness: an answer with no retrieved context is not judged', async () => {
@@ -82,4 +82,12 @@ test('judgeFaithfulness: a judge that cannot be read leaves the run unjudged ins
   const verdict = await judgeFaithfulness('answer', 'context', model)
   assert.equal(verdict.judged, false)
   assert.match(verdict.reason, /judge failed: Failed to parse/)
+})
+
+// Structured output is written in key order, so with `states` first the judge
+// committed to a verdict before reading for it: a zh-TW pattern-rag answer that
+// said it retrieves the nearest documents and feeds them to the LLM was judged
+// as stating neither description in the claim. The quote has to come first.
+test('statement judge quotes the answer before it gives a verdict', () => {
+  assert.deepEqual(Object.keys(statementSchema.shape), ['quote', 'reason', 'states'])
 })

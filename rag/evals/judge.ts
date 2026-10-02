@@ -89,11 +89,19 @@ export async function judgeFaithfulness(
   return { judged: true, grounded: out.grounded, reason: out.reason }
 }
 
-const statementSchema = z.object({
+// Keys are generated in order, so the quote comes before the verdict: with
+// `states` first, a zh-TW answer that fed the retrieved documents to the LLM was
+// judged as not saying so (run 36979343295).
+export const statementSchema = z.object({
+  quote: z
+    .string()
+    .describe(
+      'the sentence or sentences in the answer that come closest to asserting the claim, copied verbatim in their original language; empty if none',
+    ),
+  reason: z.string().describe('one short sentence explaining the verdict'),
   states: z
     .boolean()
     .describe('true if the answer asserts the claim, in whatever language it is written'),
-  reason: z.string().describe('one short sentence explaining the verdict'),
 })
 
 export interface StatementVerdict {
@@ -126,7 +134,8 @@ export async function judgeStatement(answer: string, claim: string): Promise<Sta
         'paraphrase of the claim counts as asserting it, and so does stating the ' +
         'same fact in different words. Extra material in the answer is fine. ' +
         'Answer false only if the answer does not assert the claim at all, or ' +
-        'asserts something that contradicts it.',
+        'asserts something that contradicts it. Copy the closest sentences from ' +
+        'the answer first, then decide from what you copied.',
     },
     { role: 'user', content: `CLAIM:
 ${claim}
