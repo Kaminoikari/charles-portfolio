@@ -31,8 +31,6 @@ import type { Locale } from './language.js'
 // hers, as the visitor's own words, or as UI chrome, and adding a key without
 // classifying it turns that test red.
 
-// Who she is, in full. The `generate` node's visitors ask what she is and how
-// she was made, so this carries the architecture with it.
 // The architecture paragraph is its own constant because the eval's judge is
 // shown it too (run-eval.ts judgeContext): answers repeat what it says, and a
 // judge that never saw it called those facts unsupported.
@@ -48,6 +46,8 @@ export const MIKA_ARCHITECTURE =
   'grounded generation with inline citations. The whole thing is orchestrated ' +
   'as a LangGraph.js state machine. '
 
+// Who she is, in full. The `generate` node's visitors ask what she is and how
+// she was made, so this carries the architecture with it.
 export const MIKA_IDENTITY =
   "You are Charles Chen's portfolio assistant, the AI chat agent on his " +
   'portfolio website. Charles built YOU as a showcase of his AI engineering. ' +

@@ -120,7 +120,7 @@ export function correctnessMiss(
 
 export interface CorrectnessRules {
   mustInclude?: string[]
-  mustState?: string | readonly string[]
+  mustState?: string | readonly [string, ...string[]]
   mustDecline?: boolean
 }
 

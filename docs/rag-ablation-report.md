@@ -332,21 +332,27 @@ The one full run in this stretch, 36979747722 at 7c81fe6 (before a00a46d and
 within the 88.5% to 91.8% of the three full runs before the corpus fixes.
 `langgraph-blog` (en) was grounded. The two wrong answers were `pattern-rag`
 in zh-TW and ja, the either-or misreading fixed afterwards. By the judge's
-reasons, the ten ungrounded verdicts were two lens lists borrowed from 1.x
-(`playbook-frameworks` zh-TW and ja, addressed in 22a0c31), three citations
+reasons, the ten ungrounded verdicts were two lens lists the context did not
+support (`playbook-frameworks`: zh-TW listed 12 lenses in its own groups, ja
+named 1.x's HMW and GEM Model; both addressed in 22a0c31), three citations
 pointing at the wrong numbered source (`pattern-rag` en, `before-pxpay` zh-TW,
 and `langgraph-blog` zh-TW, which cites reciprocal rank fusion to a blog
-chunk that does not mention it), four generation errors (sub-agents called
+chunk that does not mention it), three generation errors (sub-agents called
 read-write, upgraders given their own weights, the Appeal example moved into
-Product Playbook, a term in `shazam-author` ja), and one judge error
+Product Playbook), one context gap (`shazam-author` ja names Charles as the
+blog's author, which is true, since it is on charlestychen.substack.com, but
+the blog chunk never says who wrote it), and one judge error
 (`pattern-reflection` zh-TW: adding pre-mortem raising 22.2% to 100% is the
 same fact as removing it dropping 100% to 22.2%, which the judge's own reason
-calls logically equivalent).
+calls logically equivalent). The judge's context gained the architecture
+paragraph in 7aae532, so 91.8% here and the earlier runs were not judged on
+the same context.
 
 Single-item runs after the last two fixes, at d15ea32: `pattern-rag` zh-TW and
 ja, and `playbook-frameworks` zh-TW and ja, all four correct and grounded. A
 full run at d15ea32 (36983327010) was cancelled partway at the user's request
 to stop API calls, so there is no full-run figure after a00a46d and 22a0c31.
+`nueip-role`'s claim as reworded in a00a46d has not been run at all.
 
 The faithfulness judge now gets today's date and a rule that a translation or
 an equivalent number counts as supported, both aimed at misreads in run

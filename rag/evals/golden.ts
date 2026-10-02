@@ -56,7 +56,7 @@ export interface GoldenItem {
   // whether the answer says that or 「結果重於產出」.
   // Alternatives, when there is more than one correct way to say it; any one
   // counts (judge.ts judgeAnyStatement).
-  mustState?: string | readonly string[]
+  mustState?: string | readonly [string, ...string[]]
   mustDecline?: boolean
   // Recall for an item that needs every relevant chunk, not just one of them:
   // the share of relevantIds retrieved (metrics.ts recallOfEvery). A comparison

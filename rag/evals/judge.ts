@@ -150,7 +150,7 @@ ${answer}` },
 // B" sentence, the judge read it as asking for both (run 36979747722).
 export async function judgeAnyStatement(
   answer: string,
-  claims: string | readonly string[],
+  claims: string | readonly [string, ...string[]],
   judge: (answer: string, claim: string) => Promise<StatementVerdict> = judgeStatement,
 ): Promise<StatementVerdict> {
   const reasons: string[] = []
