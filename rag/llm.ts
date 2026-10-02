@@ -4,8 +4,9 @@
 //   decompose (internal steps)          Claude Haiku (see withTierFallback)
 //   generate + converse (the answers  → Gemini free tier, falling back to
 //   a visitor reads)                    Claude under a first-token gate
-//                                       (generateWithFallback). Sonnet serves a
-//                                       broad generate; everything else Haiku.
+//                                       (generateWithFallback). A broad generate
+//                                       takes modelStrong, everything else
+//                                       modelFast (both Haiku by default).
 //
 // Rationale: Gemini's free tier is the first choice everywhere, so a normal day
 // costs nothing. What it is NOT is a single point of failure: that tier is
@@ -204,8 +205,9 @@ export interface GenerateResult {
 // shown nothing yet (no first token within the gate, a quota/5xx/empty error) —
 // so the visitor never sees one answer get replaced by another. Once Gemini
 // emits a visible token we commit to it; a later stall ends with the partial
-// answer rather than swapping providers. `strong` picks Sonnet over Haiku for
-// the fallback when the question is broad/synthetic.
+// answer rather than swapping providers. `strong` picks modelStrong over
+// modelFast for the fallback when the question is broad/synthetic; both are
+// Haiku unless RAG_MODEL_STRONG says otherwise.
 //
 // Claude is streamed through the same gate. It is the last tier, so its gate
 // has nothing left to fall back to and a breach fails the request; what it buys

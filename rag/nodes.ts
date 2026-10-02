@@ -593,7 +593,8 @@ export async function generate(
   const docs = state.graded ?? []
   const evidence = answerContext(docs, retrievalQuery(state))
 
-  // Broad/synthetic questions get the stronger model IF we fall back to Claude.
+  // Broad/synthetic questions get modelStrong IF we fall back to Claude (Haiku
+  // by default, like modelFast; RAG_MODEL_STRONG can raise it).
   const broad = /overall|philosophy|style|compare|風格|整體|哲学|全体/i.test(retrievalQuery(state))
 
   // Recent conversation, so a follow-up reads as part of a thread rather than a

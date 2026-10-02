@@ -101,9 +101,10 @@ test('Claude fallback: the stall window is the Claude one, not the Gemini one', 
   assert.equal(res.stalled, true)
 })
 
-// `strong` picks Sonnet over Haiku for broad questions. It reaches the factory
-// as an argument now rather than being read off a closure, so a wiring slip
-// would silently downgrade every broad answer to Haiku with nothing failing.
+// `strong` picks modelStrong over modelFast for broad questions. It reaches the
+// factory as an argument now rather than being read off a closure, so a wiring
+// slip would silently send every broad answer to modelFast, whatever
+// RAG_MODEL_STRONG names, with nothing failing.
 test('Claude fallback: passes `strong` through to the model factory', async () => {
   const seen: Array<boolean> = []
   await generateWithFallback([{ role: 'user', content: 'q' }], { strong: true }, geminiDown, (strong) => {

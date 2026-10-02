@@ -773,10 +773,10 @@ corrective arm 在連續三次完整 run（36963114882、36963118089、369631210
 | 判沒依據 | 29 | 20 |
 | 答錯 | 0 | 4 |
 
-這次針對的誤讀都沒有再出現（把 22→16 當成沒依據、編出族群權重或借用分段標籤、pre-mortem 方向、USPACE 產品線、技能數）。同幾群裡仍有 6 筆，但形式不同：中文 `playbook-frameworks` 3 筆把 1.x 的研究來源或分類套到 2.0 上，`houseops-decide` 1 筆，`uspace-role` 1 筆是升遷日期，`pattern-reflection` 1 筆是引用編號。英文 `langgraph-blog` 三次都仍提到 reciprocal rank fusion。
+在 en 與 zh-TW 上，這次針對的誤讀都沒有再出現（把 22→16 當成沒依據、編出族群權重或借用分段標籤、pre-mortem 方向、USPACE 產品線、技能數）。這六群原有 4 筆在 ja（pre-mortem 方向 2 筆、houseops 1 筆、playbook 1 筆），這輪沒有量到，ja 的效果尚未驗證。同幾群裡仍有 6 筆，但形式不同：中文 `playbook-frameworks` 3 筆把 1.x 的研究來源或分類套到 2.0 上，`houseops-decide` 1 筆，`uspace-role` 1 筆是升遷日期，`pattern-reflection` 1 筆是引用編號。英文 `langgraph-blog` 三次都仍提到 reciprocal rank fusion。
 
 答錯的 4 筆是相對先前 144 題全對的退步：中文 `pattern-rag` 三次都錯，judge 認為答案講了 embedding、檢索、組進 prompt 的流程，卻沒講到「答案依據交給模型的外部資料」；中文 `nueip-role` 錯一次，答案沒寫出 NUEIP。`pattern-rag` 的第三版 claim 先前單題跑了 9 次（其中中文 3 次）全對，看來在中文上還不穩。
 
 ## Anthropic 備援改用 Haiku
 
-額度用完後，`modelStrong` 的預設值改成 Haiku（5e59941）。訪客的 broad 類問題只有在 Gemini 沒吐出第一個 token 時才會用到 Sonnet。eval 的生成也走同一個設定；judge 仍用 Sonnet。帳戶儲值之前，正式站的 Claude 備援同樣無法使用。
+額度用完後，`modelStrong` 的預設值改成 Haiku（5e59941）。原本訪客的 broad 類問題只有在 Gemini 沒吐出第一個 token 時才會用到 Sonnet，現在這種情況也用 Haiku。eval 的生成也走同一個設定，judge 仍用 Sonnet；因此之後的 corrective run 中 broad 題由 Haiku 生成，和這之前用 Sonnet 生成的數字不能直接比。帳戶儲值之前，正式站的 Claude 備援同樣無法使用。
