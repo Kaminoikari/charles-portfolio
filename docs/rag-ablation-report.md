@@ -22,7 +22,7 @@ lift of each is visible.
   `faithfulness` too. It needs an Anthropic key, so it is skipped in the
   post-ingest gate, which has only the retrieval secrets.
 - Last run: **2026-10-02**, on the production `doc_chunks` index at commit
-  2a9b931, after the product philosophy got an overview chunk and three golden
+  2a9b931, after the product philosophy got an overview chunk and two golden
   claims were narrowed. The four retrieval arms are from run 36964683250 and
   the `corrective` row from run 36963114882. Judges run on Sonnet 4.6 since
   92aded5.
@@ -204,7 +204,7 @@ get one chunk headed by the site's own section heading and intro
 36958623992 every one of the 144 questions scored 1, and the baseline was
 raised to that run (080e730). On the current index (run 36964683250)
 hybrid+rerank reads 100.0% and the global category rose for every arm
-(sparse-only 66.7% to 77.8%, hybrid 77.8% to 94.4%, hybrid+rerank 94.4% to
+below 100% (sparse-only 66.7% to 77.8%, hybrid 77.8% to 94.4%, hybrid+rerank 94.4% to
 100%).
 
 **corrective: 100% correct in three consecutive full runs.** Runs
