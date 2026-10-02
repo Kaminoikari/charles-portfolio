@@ -335,9 +335,14 @@ export const GOLDEN: GoldenItem[] = [
     // documents are ones the model was never trained on (runs 36960776760,
     // 36960791009): that is why RAG exists, which his blog gives as pain points
     // (stale information, hallucination), not what it does. The claim keeps the
-    // mechanism, which any of his descriptions must contain.
+    // mechanism, which any of his descriptions must contain. Its first wording
+    // also fixed how the hand-off is phrased ("giving them to the model along
+    // with the question"), and English answers saying "look up relevant
+    // information first, then write the answer grounded in what you found"
+    // were scored wrong for that phrasing alone (runs 36961065312, 36961071629,
+    // 36961077905).
     mustState:
-      'Charles describes RAG as retrieving the documents relevant to a question and giving them to the model along with the question.',
+      'Charles describes RAG as first retrieving information relevant to the question and then generating the answer from what was retrieved.',
   },
   {
     id: 'pattern-human-loop',
@@ -386,9 +391,15 @@ export const GOLDEN: GoldenItem[] = [
     // a particular one of them is not a correctness criterion, it is a coin
     // toss. I added `gps` to make the claim-only version go green, which is
     // tuning the ruler to the measurement, and the veto run then showed the
-    // token was the only thing still failing in English.
+    // token was the only thing still failing in English. The claim once also
+    // fixed the list's shape ("a long set of short labels") and a data area:
+    // zh-TW answers that quoted the site's own entries under headings were
+    // scored wrong for being grouped, and for missing data while quoting
+    // 把試算表變成決策 (runs 36961065312, 36961077905). An answer naming some
+    // of the entries is still correct, so only the two areas most entries fall
+    // in remain.
     mustState:
-      'Charles lists his skills as a long set of short labels covering product thinking, working with data, and building with AI.',
+      'The skills Charles lists on his site span product work and building with AI.',
   },
 
   // ── near-miss pairs (hard negatives) ─────────────────────────────────────
