@@ -241,7 +241,7 @@ test('fetchCandidates: a healthy round fuses both arms and reports nothing', asy
     embedOne: async () => [0.1],
     query: q.query,
   })
-  assert.ok(Array.isArray(q.bodies[0].prefetch))
+  assert.ok(Array.isArray(q.bodies[0].prefetch), 'Array.isArray(q.bodies[0].prefetch)')
   assert.deepEqual(reported, [])
 })
 

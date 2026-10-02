@@ -111,7 +111,7 @@ test('faqLookup: a window of same-entry paraphrases does not hide the rival', as
 test('faqLookup: the margin is a real threshold, not zero', () => {
   // A zero margin would make the near-tie test above pass only by luck of float
   // comparison, and would ship the rule as a no-op.
-  assert.ok(config.faqCacheMargin > 0)
+  assert.ok(config.faqCacheMargin > 0, 'config.faqCacheMargin > 0')
 })
 
 // Every test above stubs the round-trip, so all of them would keep passing if

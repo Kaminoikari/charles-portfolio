@@ -48,7 +48,7 @@ test('a conversation at or after the epoch is shown', () => {
 // instant, not on a naive date string.
 test('the cut is applied on the instant, not the calendar-date text', () => {
   const justAfter = new Date(REPORT_EPOCH_MS + 1000).toISOString()
-  assert.ok(justAfter.endsWith('Z'))
+  assert.ok(justAfter.endsWith('Z'), 'justAfter.endsWith(\'Z\')')
   assert.equal(withinReportWindow(justAfter), true)
   assert.equal(withinReportWindow(new Date(REPORT_EPOCH_MS - 1000).toISOString()), false)
 })

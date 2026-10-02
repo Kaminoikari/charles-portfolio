@@ -151,7 +151,7 @@ test('byCategory: a category that collapses does not hide inside the overall mea
 
 test('byCategory: the golden set really has near-miss items to measure', () => {
   // The column is only worth a table if something populates it.
-  assert.ok(GOLDEN.filter((g) => g.category === 'near-miss').length >= 4)
+  assert.ok(GOLDEN.filter((g) => g.category === 'near-miss').length >= 4, 'GOLDEN.filter((g) => g.category === \'near-miss\').length >= 4')
 })
 
 // --- faithfulness is scored only where there was something to judge ----------
@@ -220,7 +220,7 @@ test('aggregate: runs answered without retrieval are counted, not scored as miss
   assert.equal(agg.n, 3)
   const global = agg.categories.find((c) => c.category === 'global')
   assert.equal(global?.n, 1)
-  assert.ok(Number.isNaN(global?.recall))
+  assert.ok(Number.isNaN(global?.recall), 'Number.isNaN(global?.recall)')
 })
 
 // --- per-item baseline -------------------------------------------------------
@@ -311,8 +311,8 @@ test('retrievalScores: a run that retrieved the answering chunk has full recall 
 test('judgeContext: the judge sees the contact channels the generator was given', () => {
   const doc = { pageContent: 'Charles leads product at USPACE.', metadata: { sourceType: 'experience', id: 'e1' } }
   const ctx = judgeContext({ graded: [doc] as never, queries: ['q'] }, 'q')
-  assert.ok(ctx.includes('Charles leads product at USPACE.'))
-  assert.ok(ctx.includes(CONTACT.email))
+  assert.ok(ctx.includes('Charles leads product at USPACE.'), 'ctx.includes(\'Charles leads product at USPACE.\')')
+  assert.ok(ctx.includes(CONTACT.email), 'ctx.includes(CONTACT.email)')
   assert.equal(judgeContext({ graded: [], queries: ['q'] }, 'q'), '')
 })
 
@@ -323,8 +323,8 @@ test('judgeContext: the judge sees the contact channels the generator was given'
 test('judgeContext: the judge sees the architecture the generator is told', () => {
   const doc = { pageContent: 'Charles leads product at USPACE.', metadata: { sourceType: 'experience', id: 'e1' } }
   const ctx = judgeContext({ graded: [doc] as never, queries: ['q'] }, 'q')
-  assert.ok(ctx.includes(MIKA_ARCHITECTURE))
-  assert.ok(MIKA_IDENTITY.includes(MIKA_ARCHITECTURE))
+  assert.ok(ctx.includes(MIKA_ARCHITECTURE), 'ctx.includes(MIKA_ARCHITECTURE)')
+  assert.ok(MIKA_IDENTITY.includes(MIKA_ARCHITECTURE), 'MIKA_IDENTITY.includes(MIKA_ARCHITECTURE)')
   assert.match(MIKA_ARCHITECTURE, /reciprocal rank fusion/)
 })
 
@@ -335,7 +335,7 @@ test('judgeItemStatement: every alternative of a claim reaches the judge', async
     return { states: true, reason: '' }
   }
   const item = GOLDEN.find((i) => i.id === 'pattern-rag')!
-  assert.ok(Array.isArray(item.mustState) && item.mustState.length === 2)
+  assert.ok(Array.isArray(item.mustState) && item.mustState.length === 2, 'Array.isArray(item.mustState) && item.mustState.length === 2')
   await judgeItemStatement('ans', item, judge)
   assert.deepEqual(seen, [item.mustState])
   assert.equal(await judgeItemStatement('ans', { mustState: undefined }, judge), null)

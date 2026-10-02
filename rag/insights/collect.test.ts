@@ -36,7 +36,7 @@ test('an outage and a degraded answer are counted apart, and apart from fallback
       row('fallback'),
     ]),
   })
-  assert.ok(ins)
+  assert.ok(ins, 'ins')
   assert.equal(ins.outages, 1)
   assert.equal(ins.degradedAnswers, 1)
   assert.equal(ins.fallbacks, 1)

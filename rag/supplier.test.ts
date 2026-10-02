@@ -41,7 +41,7 @@ test('a network-level failure comes out as the supplier\'s, not as a TypeError',
   // boundary an unreachable store skipped the outage reply entirely.
   const c = clock()
   const err = await callSupplier('qdrant', calls<number>(networkDown()).fn, c.deps).catch((e: unknown) => e)
-  assert.ok(err instanceof SupplierError)
+  assert.ok(err instanceof SupplierError, 'err instanceof SupplierError')
   assert.equal(err instanceof TypeError, false)
   assert.equal(err.supplier, 'qdrant')
 })

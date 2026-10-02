@@ -59,8 +59,8 @@ test('education match does not swallow skill / learning content questions', () =
 test('personal redirect replies in the question language and includes contact', () => {
   assert.match(triage('他單身嗎', 'zh-TW').kind === 'personal' ? personalRedirect('zh-TW') : '', /Email/)
   const ja = personalRedirect('ja')
-  assert.ok(ja.includes(CONTACT.email))
-  assert.ok(ja.includes('メール'))
+  assert.ok(ja.includes(CONTACT.email), 'ja.includes(CONTACT.email)')
+  assert.ok(ja.includes('メール'), 'ja.includes(\'メール\')')
 })
 
 test('greetings and contact questions are canned (zero-LLM)', () => {
@@ -121,9 +121,9 @@ test('injection / jailbreak attempts are still caught after loosening', () => {
 })
 
 test('generic fallback is localized and includes a contact CTA', () => {
-  assert.ok(genericFallback('zh-TW').includes(CONTACT.email))
+  assert.ok(genericFallback('zh-TW').includes(CONTACT.email), 'genericFallback(\'zh-TW\').includes(CONTACT.email)')
   assert.match(genericFallback('en'), /portfolio/i)
-  assert.ok(genericFallback('ja').includes('Charles'))
+  assert.ok(genericFallback('ja').includes('Charles'), 'genericFallback(\'ja\').includes(\'Charles\')')
 })
 
 // Live regression, 2026-07-31: "那團隊多大?" — a question about team size after

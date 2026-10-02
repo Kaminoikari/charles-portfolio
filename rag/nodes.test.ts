@@ -990,8 +990,8 @@ test('generate: the prompt carries answerContext whole, contact channels include
   const state = { question: '他寫過什麼?', language: 'zh-TW', graded: [DOC] }
   const { system } = await promptFor(state)
   const ctx = nodes.answerContext([DOC] as never, '他寫過什麼?')
-  assert.ok(ctx.includes(CONTACT.email))
-  assert.ok(system.includes(ctx))
+  assert.ok(ctx.includes(CONTACT.email), 'ctx.includes(CONTACT.email)')
+  assert.ok(system.includes(ctx), 'system.includes(ctx)')
 })
 
 // Blog chunks are the article body alone, so nothing in them says who wrote it,
@@ -1005,8 +1005,8 @@ test('evidenceBlock: a blog chunk is labelled as written by Charles, other sourc
     ],
     'q',
   )
-  assert.ok(block.includes('[1] (blog by Charles Chen, published 2026-01-05) Shazam fingerprints audio.'))
-  assert.ok(block.includes('[2] (experience) Leads product at USPACE.'))
+  assert.ok(block.includes('[1] (blog by Charles Chen, published 2026-01-05) Shazam fingerprints audio.'), 'block.includes(\'[1] (blog by Charles Chen, published 2026-01-05) Shazam fingerprints audio.\')')
+  assert.ok(block.includes('[2] (experience) Leads product at USPACE.'), 'block.includes(\'[2] (experience) Leads product at USPACE.\')')
 })
 
 // The label above is only true while every article on the site is his own, so

@@ -59,7 +59,7 @@ test('the sweep applies the lexical veto when asked, and only then', () => {
 
 test('the recommendation is the setting with no wrong serves that serves the most correct ones', () => {
   const rec = recommend(sweep(SET, false))
-  assert.ok(rec)
+  assert.ok(rec, 'rec')
   assert.equal(rec.wrong, 0)
   assert.equal(rec.correct, 1)
   // Ties go to the strictest setting that still serves as many, which for this

@@ -231,9 +231,9 @@ test('roles that start the same month keep the order the site gives them', () =>
   const first: ExperienceInput = { ...NEW_ROLE, organization: 'Listed First', dateRange: 'MAR 2010 — APR 2011' }
   const second: ExperienceInput = { ...NEW_ROLE, organization: 'Listed Second', dateRange: 'MAR 2010 — MAY 2012' }
   const [chunk] = timelineChunk([first, second, ...ROLES], 'en')
-  assert.ok(chunk.content.indexOf('Listed First') < chunk.content.indexOf('Listed Second'))
+  assert.ok(chunk.content.indexOf('Listed First') < chunk.content.indexOf('Listed Second'), 'chunk.content.indexOf(\'Listed First\') < chunk.content.indexOf(\'Listed Second\')')
   const [flipped] = timelineChunk([second, first, ...ROLES], 'en')
-  assert.ok(flipped.content.indexOf('Listed Second') < flipped.content.indexOf('Listed First'))
+  assert.ok(flipped.content.indexOf('Listed Second') < flipped.content.indexOf('Listed First'), 'flipped.content.indexOf(\'Listed Second\') < flipped.content.indexOf(\'Listed First\')')
 })
 
 test('full and short month names both read', () => {
@@ -302,7 +302,7 @@ test('two about entries sharing a key fail loudly instead of overwriting each ot
 test('a URL with no usable slug characters still yields a stable non-empty id', () => {
   const url = 'https://example.com/%E4%B8%AD%E6%96%87'
   const slug = blogSlug(url)
-  assert.ok(slug.length > 0)
+  assert.ok(slug.length > 0, 'slug.length > 0')
   assert.equal(slug, blogSlug(url))
   assert.notEqual(slug, blogSlug('https://example.com/%E6%97%A5%E6%9C%AC%E8%AA%9E'))
 })

@@ -121,7 +121,7 @@ test('RateLimiter: allows up to limit, then blocks within window', () => {
   assert.equal(rl.check('ip', t0 + 1).allowed, true)
   const blocked = rl.check('ip', t0 + 2)
   assert.equal(blocked.allowed, false)
-  assert.ok(blocked.retryAfter >= 1)
+  assert.ok(blocked.retryAfter >= 1, 'blocked.retryAfter >= 1')
 })
 
 test('RateLimiter: window slides — old hits expire', () => {
