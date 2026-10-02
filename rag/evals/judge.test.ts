@@ -18,7 +18,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { judgeFaithfulness, statementSchema } from './judge.js'
+import { judgeAnyStatement, judgeFaithfulness, statementSchema } from './judge.js'
 import { todayISO } from '../nodes.js'
 
 test('judgeFaithfulness: an answer with no retrieved context is not judged', async () => {
@@ -90,4 +90,23 @@ test('judgeFaithfulness: a judge that cannot be read leaves the run unjudged ins
 // as stating neither description in the claim. The quote has to come first.
 test('statement judge quotes the answer before it gives a verdict', () => {
   assert.deepEqual(Object.keys(statementSchema.shape), ['quote', 'reason', 'states'])
+})
+
+// A claim written as "either A or B" was read by the judge as asking for both
+// (run 36979747722, pattern-rag zh-TW and ja). Alternatives are now judged one
+// by one, so "any of them" is decided by code.
+test('judgeAnyStatement: one stated alternative is enough, and judging stops there', async () => {
+  const asked: string[] = []
+  const judge = async (_a: string, claim: string) => {
+    asked.push(claim)
+    return { states: claim === 'B', reason: `judged ${claim}` }
+  }
+  assert.deepEqual(await judgeAnyStatement('ans', ['A', 'B', 'C'], judge), { states: true, reason: 'judged B' })
+  assert.deepEqual(asked, ['A', 'B'])
+})
+
+test('judgeAnyStatement: not stated only when no alternative is', async () => {
+  const judge = async (_a: string, claim: string) => ({ states: false, reason: `no ${claim}` })
+  assert.deepEqual(await judgeAnyStatement('ans', ['A', 'B'], judge), { states: false, reason: 'no A; no B' })
+  assert.deepEqual(await judgeAnyStatement('ans', 'A', judge), { states: false, reason: 'no A' })
 })

@@ -145,6 +145,23 @@ ${answer}` },
   ])
 }
 
+// A claim can list alternatives, any one of which is a correct answer. Each is
+// judged on its own, in order, until one is stated: written as one "either A or
+// B" sentence, the judge read it as asking for both (run 36979747722).
+export async function judgeAnyStatement(
+  answer: string,
+  claims: string | readonly string[],
+  judge: (answer: string, claim: string) => Promise<StatementVerdict> = judgeStatement,
+): Promise<StatementVerdict> {
+  const reasons: string[] = []
+  for (const claim of typeof claims === 'string' ? [claims] : claims) {
+    const verdict = await judge(answer, claim)
+    if (verdict.states) return { states: true, reason: verdict.reason }
+    reasons.push(verdict.reason)
+  }
+  return { states: false, reason: reasons.join('; ') }
+}
+
 const responsiveSchema = z.object({
   responsive: z.boolean().describe('true if the answer answers the question that was asked'),
   reason: z.string().describe('one short sentence explaining the verdict'),

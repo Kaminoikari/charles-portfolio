@@ -54,7 +54,9 @@ export interface GoldenItem {
   // written (rag/evals/judge.ts:judgeStatement). This is where a fact whose
   // wording is translated belongs — "he prioritises outcomes over outputs" holds
   // whether the answer says that or 「結果重於產出」.
-  mustState?: string
+  // Alternatives, when there is more than one correct way to say it; any one
+  // counts (judge.ts judgeAnyStatement).
+  mustState?: string | readonly string[]
   mustDecline?: boolean
   // Recall for an item that needs every relevant chunk, not just one of them:
   // the share of relevantIds retrieved (metrics.ts recallOfEvery). A comparison
@@ -242,7 +244,7 @@ export const GOLDEN: GoldenItem[] = [
     // company: a zh-TW answer giving the title, the BI product and all three
     // results said 他在那邊 and was scored wrong for not repeating the name
     // (run 36967984519). The claim asks for what he did there.
-    mustState: 'At NUEIP, Charles was a Senior Product Manager building a business intelligence (BI) product.',
+    mustState: 'Charles was a Senior Product Manager at NUEIP, building a business intelligence (BI) product.',
   },
   {
     id: 'uber-blog',
@@ -351,9 +353,14 @@ export const GOLDEN: GoldenItem[] = [
     // both descriptions share, that the answer rests on external data handed to
     // the model, and zh-TW answers describing the embed, retrieve and prompt
     // pipeline failed it in three of three runs (36967984519, 36967987379,
-    // 36967990094). The claim now names the two descriptions he gives.
-    mustState:
-      'Charles describes RAG either as grounding the model\'s answers in external data, or as retrieving the documents relevant to a question and handing them to the model to answer from.',
+    // 36967990094). The fourth named both descriptions in one "either A or B"
+    // sentence, which the judge read as asking for both (run 36979747722, zh-TW
+    // and ja). They are now separate alternatives, and stating either one is a
+    // correct answer.
+    mustState: [
+      'Charles describes RAG as grounding the model\'s answers in external data.',
+      'Charles describes RAG as retrieving the documents relevant to a question and handing them to the model to answer from.',
+    ],
   },
   {
     id: 'pattern-human-loop',

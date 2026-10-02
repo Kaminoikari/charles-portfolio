@@ -24,7 +24,7 @@ import { MIKA_ARCHITECTURE } from '../persona.js'
 import type { Document } from '@langchain/core/documents'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
-import { judgeFaithfulness, judgeStatement, type FaithfulnessVerdict } from './judge.js'
+import { judgeAnyStatement, judgeFaithfulness, type FaithfulnessVerdict } from './judge.js'
 import {
   itemRecall,
   itemReciprocalRank,
@@ -217,7 +217,7 @@ async function runArm(arm: Arm, locales: Locale[], golden: GoldenItem[] = GOLDEN
         // same one declaration serves all three locales. scoreCorrectness throws
         // if an item carries a claim and this is still null, which is the only
         // reason the call cannot be quietly dropped later.
-        const statement = item.mustState ? await judgeStatement(answerText, item.mustState) : null
+        const statement = item.mustState ? await judgeAnyStatement(answerText, item.mustState) : null
         const judged = statement ? statement.states : null
         const faith = await judgeFaithfulness(answerText, ctx)
         items.push({

@@ -163,7 +163,7 @@ test('a job title a rule names is the title src/data records for that employer',
   const titles = [...new Set(experience.map((r) => r.title))]
   const pattern = new RegExp(`\\b(${titles.join('|')}) at (\\w+)`, 'g')
   const stale = GOLDEN.flatMap((i) =>
-    [...(i.mustState ?? '').matchAll(pattern)]
+    [...[i.mustState ?? []].flat().join('\n').matchAll(pattern)]
       .filter(([, title, org]) => experience.find((r) => r.organization.startsWith(org))?.title !== title)
       .map(([m]) => `${i.id}: "${m}"`),
   )
