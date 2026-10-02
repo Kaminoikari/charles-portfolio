@@ -340,9 +340,13 @@ export const GOLDEN: GoldenItem[] = [
     // with the question"), and English answers saying "look up relevant
     // information first, then write the answer grounded in what you found"
     // were scored wrong for that phrasing alone (runs 36961065312, 36961071629,
-    // 36961077905).
+    // 36961077905). Its second wording asked for retrieve-then-generate, and an
+    // answer quoting the pattern's own definition ("ground answers in external,
+    // up-to-date, or proprietary data") was scored wrong for not walking
+    // through the steps (run 36962783231). What both of his descriptions share
+    // is that the answer rests on external data handed to the model.
     mustState:
-      'Charles describes RAG as first retrieving information relevant to the question and then generating the answer from what was retrieved.',
+      'Charles describes RAG as basing the model\'s answers on external data that is supplied to it.',
   },
   {
     id: 'pattern-human-loop',
