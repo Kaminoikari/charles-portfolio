@@ -238,7 +238,11 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles は NUEIP で何をしていましたか?',
     },
     relevantIds: ['experience:nueip-technology-co-ltd:'],
-    mustInclude: ['nueip'],
+    // This was mustInclude ['nueip'], and the question already names the
+    // company: a zh-TW answer giving the title, the BI product and all three
+    // results said 他在那邊 and was scored wrong for not repeating the name
+    // (run 36967984519). The claim asks for what he did there.
+    mustState: 'At NUEIP, Charles was a Senior Product Manager building a business intelligence (BI) product.',
   },
   {
     id: 'uber-blog',
@@ -343,10 +347,13 @@ export const GOLDEN: GoldenItem[] = [
     // 36961077905). Its second wording asked for retrieve-then-generate, and an
     // answer quoting the pattern's own definition ("ground answers in external,
     // up-to-date, or proprietary data") was scored wrong for not walking
-    // through the steps (run 36962783231). What both of his descriptions share
-    // is that the answer rests on external data handed to the model.
+    // through the steps (run 36962783231). The third wording asked for what
+    // both descriptions share, that the answer rests on external data handed to
+    // the model, and zh-TW answers describing the embed, retrieve and prompt
+    // pipeline failed it in three of three runs (36967984519, 36967987379,
+    // 36967990094). The claim now names the two descriptions he gives.
     mustState:
-      'Charles describes RAG as basing the model\'s answers on external data that is supplied to it.',
+      'Charles describes RAG either as grounding the model\'s answers in external data, or as retrieving the documents relevant to a question and handing them to the model to answer from.',
   },
   {
     id: 'pattern-human-loop',
