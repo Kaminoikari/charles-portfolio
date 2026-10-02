@@ -51,7 +51,7 @@ test('bareAsserts: finds assert.ok and assert with one argument, and only those'
 
 test('every assert.ok and bare assert in the rag suite carries a message', () => {
   const files = testFiles()
-  assert.ok(files.length > 0, 'the scan must reach the rag test files')
+  assert.ok(files.includes('ingest/chunk.test.ts'), 'the scan must reach test files in subdirectories')
   const offenders = files.flatMap((f) =>
     bareAsserts(f, readFileSync(RAG_DIR + f, 'utf8')).map((line) => `rag/${f}:${line}`),
   )
