@@ -97,8 +97,12 @@ export const GOLDEN: GoldenItem[] = [
     },
     relevantIds: ['experience:uspace-tech-co-ltd:'],
     mustInclude: ['uspace'],
-    mustState:
-      'Charles is Head of Product at USPACE, who started as the USPACE app owner leading a 15-person cross-functional team.',
+    // A claim holds only what every correct answer to the question must say.
+    // The question asks for his role; the 15-person team he started with is a
+    // detail it does not ask, and once the judge became strict enough to require
+    // every part, answers naming the role correctly were scored wrong for leaving
+    // it out (run 36906411274, ja). uspace-team-size asks for the team.
+    mustState: 'Charles is Head of Product at USPACE.',
   },
   {
     id: 'path-stack',
@@ -323,8 +327,14 @@ export const GOLDEN: GoldenItem[] = [
       ja: 'Charles は RAG（検索拡張生成）パターンをどう説明していますか?',
     },
     relevantIds: ['pattern:knowledge-retrieval-rag:'],
+    // The question asks how he describes the pattern, and his writing describes
+    // it more than one way: answers built from his blog's walk-through (embed the
+    // documents, retrieve the nearest, hand them to the model) were grounded and
+    // scored wrong for not also describing this chatbot's hybrid retrieval and
+    // rerank (run 36906411274, zh-TW and ja). The claim keeps what any of his
+    // descriptions must contain.
     mustState:
-      'Charles describes RAG as grounding answers in external data the model never trained on, and his own system fuses dense and sparse retrieval and then reranks before generating with citations.',
+      'Charles describes RAG as retrieving relevant external documents that the model was not trained on and giving them to the model, so its answer is grounded in them.',
   },
   {
     id: 'pattern-human-loop',
