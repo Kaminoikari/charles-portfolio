@@ -25,6 +25,7 @@ import {
 } from './run-eval.js'
 import { GOLDEN } from './golden.js'
 import { CONTACT } from '../triage.js'
+import { MIKA_ARCHITECTURE, MIKA_IDENTITY } from '../persona.js'
 
 const rows = [
   { arm: 'dense-only', recall: 1 },
@@ -312,4 +313,16 @@ test('judgeContext: the judge sees the contact channels the generator was given'
   assert.ok(ctx.includes('Charles leads product at USPACE.'))
   assert.ok(ctx.includes(CONTACT.email))
   assert.equal(judgeContext({ graded: [], queries: ['q'] }, 'q'), '')
+})
+
+// The generator is told its own architecture in the system prompt (hybrid
+// retrieval fused with reciprocal rank fusion, rerank, the corrective loop), and
+// answers repeat it. The judge saw only the chunks, so in every English run of
+// langgraph-blog it called reciprocal rank fusion unsupported.
+test('judgeContext: the judge sees the architecture the generator is told', () => {
+  const doc = { pageContent: 'Charles leads product at USPACE.', metadata: { sourceType: 'experience', id: 'e1' } }
+  const ctx = judgeContext({ graded: [doc] as never, queries: ['q'] }, 'q')
+  assert.ok(ctx.includes(MIKA_ARCHITECTURE))
+  assert.ok(MIKA_IDENTITY.includes(MIKA_ARCHITECTURE))
+  assert.match(MIKA_ARCHITECTURE, /reciprocal rank fusion/)
 })

@@ -20,6 +20,7 @@ import { pathToFileURL } from 'node:url'
 import { retrieveWith, type RetrievalConfig } from '../retrieval.js'
 import { graph } from '../graph.js'
 import { answerContext } from '../nodes.js'
+import { MIKA_ARCHITECTURE } from '../persona.js'
 import type { Document } from '@langchain/core/documents'
 import { detectLanguage, type Locale } from '../language.js'
 import { GOLDEN, type EvalCategory, type GoldenItem } from './golden.js'
@@ -164,10 +165,16 @@ export function idScores(
 }
 
 // What the faithfulness judge is shown: the generator's own context
-// (nodes.ts answerContext), or nothing when no chunk was graded.
+// (nodes.ts answerContext) plus the architecture its system prompt states
+// (persona.ts), or nothing when no chunk was graded.
 export function judgeContext(final: { graded?: Document[]; queries?: string[] }, question: string): string {
   const graded = final.graded ?? []
-  return graded.length === 0 ? '' : answerContext(graded, final.queries?.at(-1) ?? question)
+  if (graded.length === 0) return ''
+  return (
+    answerContext(graded, final.queries?.at(-1) ?? question) +
+    '\n\nWhat the assistant\'s system prompt tells it about its own architecture (it is the assistant):\n' +
+    MIKA_ARCHITECTURE
+  )
 }
 
 export function retrievalScores(
