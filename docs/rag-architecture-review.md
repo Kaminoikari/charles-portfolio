@@ -779,4 +779,20 @@ corrective arm 在連續三次完整 run（36963114882、36963118089、369631210
 
 ## Anthropic 備援改用 Haiku
 
-額度用完後，`modelStrong` 的預設值改成 Haiku（5e59941）。原本訪客的 broad 類問題只有在 Gemini 沒吐出第一個 token 時才會用到 Sonnet，現在這種情況也用 Haiku。eval 的生成也走同一個設定，judge 仍用 Sonnet；因此之後的 corrective run 中 broad 題由 Haiku 生成，和這之前用 Sonnet 生成的數字不能直接比。帳戶儲值之前，正式站的 Claude 備援同樣無法使用。
+額度用完後，`modelStrong` 的預設值改成 Haiku（5e59941）。原本訪客的 broad 類問題只有在 Gemini 沒吐出第一個 token 時才會用到 Sonnet，現在這種情況也用 Haiku。eval 的生成也走同一個設定，judge 仍用 Sonnet；因此之後的 corrective run 中 broad 題由 Haiku 生成，和這之前用 Sonnet 生成的數字不能直接比。帳戶沒有額度的那段期間，正式站的 Claude 備援同樣無法使用。
+
+## 額度恢復後：judge 與規則的修正（7aae532 到 d15ea32）
+
+帳戶儲值後改成節制呼叫 API：只對有改動的題目跑單題，完整 run 只跑一次作確認。
+
+- 生成端的 system prompt 寫了助理自己的架構（hybrid retrieval 用 reciprocal rank fusion 融合、rerank、corrective loop），judge 卻看不到，所以英文 `langgraph-blog` 每次都因為提到 reciprocal rank fusion 被判沒依據。這段現在是一個常數（`rag/persona.ts` 的 MIKA_ARCHITECTURE），prompt 逐位元組維持原樣，judge 的 context 也附上它（7aae532）。
+- `nueip-role` 原本要求答案出現「nueip」字串，題目本身就點名公司，正確的中文答案沒重複公司名而被判錯；現在改成要求職稱與 BI 產品（7bf11a9，a00a46d 改寫成職稱守衛檢查得到的句型）。
+- claim judge 原本先寫判決再寫理由，現在先從答案逐字引用最接近的句子（7c81fe6）。
+- `pattern-rag` 第四版把他兩種描述寫進同一句「either A or B」，judge 讀成兩種都要講到。`mustState` 現在可以列出替代描述，逐一判斷，有一種成立就算對（a00a46d），runner 的接線有測試釘住（d15ea32）。
+- Product Playbook 專案頁補上 22 個框架來自 Lenny's Podcast（7a20701），並列出全部 16 個 lens，名單取自 plugin 本身的 meta-skill（22a0c31）；之前答案會拿 1.x 文章的框架補滿清單。
+
+兩次 push 後的閘門 hybrid+rerank 都是 100.0%，MRR 先後為 0.863、0.867（run 36979086203、36982913615）。
+
+這段期間唯一一次完整 run 是 36979747722（7c81fe6，在 a00a46d 與 22a0c31 之前）：correctness 98.6%，faithfulness 91.8%（122 次判讀裡 10 次沒依據），落在修語料前三次完整 run 的 88.5% 到 91.8% 之間。英文 `langgraph-blog` 判有依據。答錯的 2 題是中文與日文 `pattern-rag`，也就是之後修掉的 either-or 誤讀。依 judge 的理由，10 筆沒依據裡：2 筆是從 1.x 借來的 lens 清單（中文與日文 `playbook-frameworks`，22a0c31 處理），3 筆是引用編號指錯來源（英文 `pattern-rag`、中文 `before-pxpay`，以及中文 `langgraph-blog` 把 reciprocal rank fusion 標給一個沒提到它的部落格段落），4 筆是生成錯誤（把唯讀 sub-agent 說成讀寫、給換屋族另一組權重、把 Appeal 的例子搬到 Product Playbook、日文 `shazam-author` 的一個用詞），1 筆是 judge 誤判（中文 `pattern-reflection`：「加入 pre-mortem 從 22.2% 升到 100%」和「移除後從 100% 掉到 22.2%」是同一件事，judge 自己的理由也寫了兩者 logically equivalent）。
+
+最後兩項修正之後，在 d15ea32 上的單題 run：中文與日文 `pattern-rag`、中文與日文 `playbook-frameworks`，4 次全部答對且有依據。d15ea32 的完整 run（36983327010）依使用者要求停止呼叫 API，中途取消，所以 a00a46d 與 22a0c31 之後沒有完整 run 的數字。
