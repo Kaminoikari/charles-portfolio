@@ -218,7 +218,7 @@ export const projectDetails: ProjectDetail[] = [
     solution: [
       '現在のリリースは Product Playbook 2.4.0。最新版では unattended run 向けの operator スイッチを追加し、既定の secret guard は有効なままです。',
       'outcome-first な lens システム：Product Playbook 2.0 は meta-skill で、欲しい成果を読み取り、そこへ導くプロダクト思考の lens を選び、意思決定が複数の視点を要するときは 1 つの統合された答えへ融合する。4 ステップの背骨は毎回同じ：成果を読む、lens を選ぶ、成果物を作る、provenance を明記する。',
-      '16 個の組み合わせ可能な lens：成熟した各フレームワークが独立した lens skill として提供され（JTBD、Positioning、PR-FAQ、RICE 式の優先順位付け、North Star 指標、MVP scoping、PMF／GTM、strategy kernel など）、単独でも他と組み合わせても動くため、ツールは問いが本当に必要とする思考だけを持ち込む。2.0 では 1.x の 22 フレームワークをこの 16 個に統合した：strategy 系の 3 つを 1 つの strategy lens に、persona と journey を persona-journey に、PRD・開発引き継ぎ・security checklist を prd-and-handoff に、HTML レポートと PDF 出力を document-export にまとめ、統合された各フレームワークは独立したセクションとして残している。',
+      '16 個の組み合わせ可能な lens：成熟した各フレームワークが独立した lens skill として提供され（JTBD、Positioning、PR-FAQ、RICE 式の優先順位付け、North Star 指標、MVP scoping、PMF／GTM、strategy kernel など）、単独でも他と組み合わせても動くため、ツールは問いが本当に必要とする思考だけを持ち込む。2.0 では、1.x が Lenny\'s Podcast から厳選した 22 フレームワークをこの 16 個に統合した：strategy 系の 3 つを 1 つの strategy lens に、persona と journey を persona-journey に、PRD・開発引き継ぎ・security checklist を prd-and-handoff に、HTML レポートと PDF 出力を document-export にまとめ、統合された各フレームワークは独立したセクションとして残している。',
       '独立 Context で動く専門 Sub-agent：2 つの読み取り専用の専門家が混雑したメインスレッドから離れて各自分析する。strategy-critic は厳しくも公正な戦略批判者を務め、pre-mortem-runner はプロダクト失敗の悲観的シナリオに全力を注ぐ。ディスカバリーに必要な共感は、いまや persona-journey と jtbd の lens の中に宿る。',
       '責務専一の工程設計：各専門家は読み取り専用で、拒否パス（out_of_scope）を備え、範囲外の依頼を正しい担当者へ返す。計画段階はツール層でファイルに触れず、決定権はメイン Agent に残る。',
       'Relative guardrails：少数の guardrail は既定で休眠し、現在の進め方が成果を本当に損なうときだけ、単一の非ブロッキングな注意として現れる。どんな場合もあなたを強制停止させない。',
