@@ -379,14 +379,19 @@ export async function extractAll(): Promise<ChunkRecord[]> {
           content: lines.join('\n'),
         })
       }
+      // The title leads the content: the table alone never names the project or
+      // says "tech stack", and a title is neither embedded nor BM25-indexed, so a
+      // question comparing two projects' stacks retrieved a changelog entry that
+      // happened to name both instead (extract.test.ts).
+      const techTitle = `${d.title} — tech stack`
       out.push({
         id: `project:${d.id}:tech:${locale}`,
         parentId,
         sourceType: 'project',
         projectId: d.id,
         locale,
-        title: `${d.title} — tech stack`,
-        content: d.techStack.map((t: { category: string; items: string }) => `${t.category}: ${t.items}`).join('\n'),
+        title: techTitle,
+        content: [techTitle, ...d.techStack.map((t: { category: string; items: string }) => `${t.category}: ${t.items}`)].join('\n'),
       })
     }
 

@@ -320,3 +320,15 @@ test('every blog chunk carries its article publication date', () => {
     assert.equal(c.date, byUrl.get(c.url ?? ''), `chunk ${c.id} lost its publication date`)
   }
 })
+
+// A tech chunk was the stack table alone ("Frontend Framework: React 18, …"),
+// with the project's name only in its title, which is neither embedded nor
+// indexed by BM25. "How do the tech stacks of Path and Plutus Trade differ?"
+// then retrieved a changelog entry that names both projects and the words
+// "tech stack", and neither table, in every locale (run 36906401188).
+test('every project tech chunk names its project in the text that gets embedded', () => {
+  const tech = CHUNKS.filter((c) => c.sourceType === 'project' && /:tech:[^:]+$/.test(c.id))
+  assert.equal(tech.length > 0, true)
+  const missing = tech.filter((c) => !c.content.includes(c.title.split(' — ')[0].trim())).map((c) => c.id)
+  assert.deepEqual(missing, [])
+})
