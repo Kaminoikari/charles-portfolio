@@ -255,7 +255,8 @@ function restNormalized(rig: Rig): void {
 }
 
 /** Normalized pose → raw nodes → world matrices, in the order three-vrm does it. */
-function sync(rig: Rig): void {
+/** Carry the normalized pose onto the skeleton the mesh is skinned to. */
+export function syncRig(rig: Rig): void {
   rig.root.updateMatrixWorld(true)
   rig.humanoid.update()
   rig.scene.updateMatrixWorld(true)
@@ -263,7 +264,7 @@ function sync(rig: Rig): void {
 
 export function resetRig(rig: Rig): void {
   restNormalized(rig)
-  sync(rig)
+  syncRig(rig)
 }
 
 /**
@@ -277,7 +278,7 @@ export function applyIdlePose(rig: Rig, name: IdlePoseName): SolvedPose {
   restNormalized(rig)
   const solved = solveIdlePose(poseSkeleton(rig), name)
   for (const [bone, q] of solved.rotations) rig.bones[bone]?.quaternion.copy(q)
-  sync(rig)
+  syncRig(rig)
   return solved
 }
 
@@ -769,7 +770,7 @@ export function applyMotion(rig: Rig, motion: Motion, time: number): void {
     const scale = motion.restHipsY > 0 ? rig.restPosition.hips.y / motion.restHipsY : 1
     hips.position.set(flip * lerp(0) * scale, lerp(1) * scale, flip * lerp(2) * scale)
   }
-  sync(rig)
+  syncRig(rig)
 }
 
 // ---- measurements ----------------------------------------------------------
@@ -1467,4 +1468,95 @@ export function measureIdleSkin(rig: Rig, mesh: PosedMesh): IdlePoseSkin {
     if (trianglesInFront(cover, p).length === 0) visible++
   }
   return { depth, clothDepth, visible, hand, upperArmVisible, upperArm, capsules: capsules.length }
+}
+
+/**
+ * The triangles of one garment, in posedMesh's order: those drawn with
+ * `material` and skinned to her trunk. Its sleeves move with her arms, so a
+ * hand can never be inside them the way it can be inside the body of a coat.
+ */
+export function garmentTriangles(glb: Glb, mesh: PosedMesh, material: string): number[] {
+  const json = glb.json
+  const out: number[] = []
+  let tri = 0
+  for (const node of json.nodes) {
+    if (node.mesh === undefined || node.skin === undefined) continue
+    const m = json.meshes?.[node.mesh]
+    if (!m || !json.skins?.[node.skin]) continue
+    for (const prim of m.primitives) {
+      if ((prim.mode ?? 4) !== 4) continue
+      const { POSITION, JOINTS_0, WEIGHTS_0 } = prim.attributes
+      if (POSITION === undefined || JOINTS_0 === undefined || WEIGHTS_0 === undefined) continue
+      const accessor = json.accessors?.[prim.indices ?? POSITION]
+      if (!accessor) throw new Error(`garmentTriangles: no accessor ${prim.indices ?? POSITION}`)
+      const n = Math.floor(accessor.count / 3)
+      const ours = prim.material !== undefined && json.materials?.[prim.material]?.name === material
+      for (let k = 0; k < n; k++, tri++) {
+        if (!ours) continue
+        if ([0, 1, 2].some((c) => SHOULDER_OR_ARM.test(mesh.owner[mesh.triangles[tri * 3 + c]] ?? ''))) continue
+        out.push(tri)
+      }
+    }
+  }
+  if (tri !== mesh.triangleMesh.length) throw new Error(`garmentTriangles walked ${tri} triangles, posedMesh has ${mesh.triangleMesh.length}`)
+  return out
+}
+
+const SHOULDER_OR_ARM = /^(left|right)(Shoulder|UpperArm|LowerArm|Hand|Thumb|Index|Middle|Ring|Little)/
+
+/** How far out from a hand vertex a garment still counts as over it, in metres. */
+export const GARMENT_REACH = 0.3
+
+/**
+ * How deep her hands sit inside a garment, in metres: from each hand vertex,
+ * level and straight out from the line through her hips, the distance to the
+ * garment's surface, deepest over both hands; 0 where nothing of it is out
+ * there. A hand on her hip under a coat that bells out over her hips reads
+ * the width of the bell, and the coat hides the hand (milfy's catwalk,
+ * 2026-10-03, owner: "the hands go through the coat").
+ */
+export function handInGarment(rig: Rig, mesh: PosedMesh, garment: readonly number[]): number {
+  const hips = worldPosition(rig, 'hips')
+  // The ray is level, so only a triangle spanning the vertex's height can be
+  // crossed: file each one under every band its height covers.
+  const bands = new Map<number, number[]>()
+  const band = (y: number): number => Math.floor(y / CLOTH_SHELL_BAND)
+  for (const tri of garment) {
+    let lo = Infinity
+    let hi = -Infinity
+    for (let k = 0; k < 3; k++) {
+      const y = mesh.positions[mesh.triangles[tri * 3 + k] * 3 + 1]
+      lo = Math.min(lo, y)
+      hi = Math.max(hi, y)
+    }
+    for (let j = band(lo); j <= band(hi); j++) {
+      const list = bands.get(j)
+      if (list) list.push(tri)
+      else bands.set(j, [tri])
+    }
+  }
+  const p = new THREE.Vector3()
+  const a = new THREE.Vector3()
+  const b = new THREE.Vector3()
+  const c = new THREE.Vector3()
+  const out = new THREE.Vector3()
+  const hit = new THREE.Vector3()
+  const ray = new THREE.Ray()
+  let deepest = 0
+  for (let i = 0; i < mesh.owner.length; i++) {
+    if (!HAND_BONE.test(mesh.owner[i] ?? '')) continue
+    p.fromArray(mesh.positions, i * 3)
+    const near = bands.get(band(p.y))
+    if (!near) continue
+    ray.set(p, out.set(p.x - hips.x, 0, p.z - hips.z).normalize())
+    for (const tri of near) {
+      a.fromArray(mesh.positions, mesh.triangles[tri * 3] * 3)
+      b.fromArray(mesh.positions, mesh.triangles[tri * 3 + 1] * 3)
+      c.fromArray(mesh.positions, mesh.triangles[tri * 3 + 2] * 3)
+      if (!ray.intersectTriangle(a, b, c, false, hit)) continue
+      const d = hit.distanceTo(p)
+      if (d < GARMENT_REACH && d > deepest) deepest = d
+    }
+  }
+  return deepest
 }

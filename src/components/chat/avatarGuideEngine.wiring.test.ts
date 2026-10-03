@@ -292,6 +292,31 @@ describe('a clip that leaves bones to the idle pose', () => {
   })
 })
 
+describe('her arms turn out over a coat that would swallow her hands', () => {
+  // coatSwing.test.ts holds the curve to the coat by forward kinematics; only
+  // these lines put the curve on her.
+  function playBody(): string {
+    const start = SOURCE.indexOf('\n  function playMotion(')
+    if (start < 0) throw new Error('no playMotion in the engine')
+    const rest = SOURCE.slice(start + 1)
+    return rest.slice(0, rest.indexOf('\n  }\n'))
+  }
+
+  it('looks the curve up for the body on screen when a clip starts', () => {
+    expect(playBody()).toMatch(/const curve = coatSwingCurve\(shownUrl, name\)\s*\n\s*if \(curve\) coatSwings\.set\(action, curve\)/)
+  })
+
+  it('turns the arms every frame after the idle pose is written under the clips, on each clip\'s own weight', () => {
+    const body = frameBody()
+    const pose = body.indexOf('poseUnderClips(')
+    const turn = body.indexOf('swingArmsOut(')
+    expect(pose).toBeGreaterThan(0)
+    expect(turn).toBeGreaterThan(pose)
+    expect(body).toMatch(/degrees \+= coatSwingAt\(curve, action\.time\) \* action\.getEffectiveWeight\(\)/)
+    expect(body).toMatch(/swingArmsOut\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), vrm\.meta\.metaVersion, degrees\)/)
+  })
+})
+
 describe('she stands on the floor', () => {
   it('sways from the waist up and never turns the hips or a leg', () => {
     // Every leg is a child of the hips, so a roll on the hips swings both feet
