@@ -67,3 +67,27 @@ export function swingArmsOut(bone: (name: string) => THREE.Object3D | null | und
     bone(name)?.quaternion.premultiply(swing.setFromAxisAngle(forward, rad * side))
   }
 }
+
+/**
+ * swingArmsOut for a bone that is turned every frame. three's mixer writes a
+ * bone only when its blended value changed since the last frame
+ * (PropertyMixer.apply): a frame with no time step, or a clip holding a key,
+ * leaves the bone as this left it, turn included, and turning it again would
+ * pile one turn on another. So the turn put on last frame comes back off
+ * first wherever the bone still holds exactly what it was left at.
+ */
+export function armSwing(): (bone: (name: string) => THREE.Object3D | null | undefined, version: string, degrees: number) => void {
+  const left = new Map<THREE.Object3D, { before: THREE.Quaternion; after: THREE.Quaternion }>()
+  return (bone, version, degrees) => {
+    for (const [b, q] of left) if (b.quaternion.equals(q.after)) b.quaternion.copy(q.before)
+    left.clear()
+    if (degrees === 0) return
+    const before = new Map<THREE.Object3D, THREE.Quaternion>()
+    for (const name of ['leftUpperArm', 'rightUpperArm']) {
+      const b = bone(name)
+      if (b) before.set(b, b.quaternion.clone())
+    }
+    swingArmsOut(bone, version, degrees)
+    for (const [b, q] of before) left.set(b, { before: q, after: b.quaternion.clone() })
+  }
+}

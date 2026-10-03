@@ -309,11 +309,15 @@ describe('her arms turn out over a coat that would swallow her hands', () => {
   it('turns the arms every frame after the idle pose is written under the clips, on each clip\'s own weight', () => {
     const body = frameBody()
     const pose = body.indexOf('poseUnderClips(')
-    const turn = body.indexOf('swingArmsOut(')
+    const turn = body.indexOf('turnArms(')
     expect(pose).toBeGreaterThan(0)
     expect(turn).toBeGreaterThan(pose)
     expect(body).toMatch(/degrees \+= coatSwingAt\(curve, action\.time\) \* action\.getEffectiveWeight\(\)/)
-    expect(body).toMatch(/swingArmsOut\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), vrm\.meta\.metaVersion, degrees\)/)
+    expect(body).toMatch(/turnArms\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), vrm\.meta\.metaVersion, degrees\)/)
+    // Not behind `coatSwings.size > 0`: the frame after a clip lets go is the
+    // one that takes its last turn back off.
+    expect(body).not.toMatch(/if \(vrm && coatSwings\.size > 0\)/)
+    expect(SOURCE).toMatch(/const turnArms = armSwing\(\)/)
   })
 })
 

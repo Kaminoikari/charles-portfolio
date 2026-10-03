@@ -10,7 +10,8 @@ import {
   AVATAR_FRAMING_DEFAULT,
   avatarViewHalfWidth,
 } from './avatarMode'
-import { COAT_HAND_DEPTH, COAT_SWING_STEP, COAT_SWINGS, coatSwingAt, coatSwingCurve, swingArmsOut } from './coatSwing'
+import * as THREE from 'three'
+import { armSwing, COAT_HAND_DEPTH, COAT_SWING_STEP, COAT_SWINGS, coatSwingAt, coatSwingCurve, swingArmsOut } from './coatSwing'
 import { applyMotion, buildMotion, buildRigFrom, deriveSilhouetteSkin, garmentTriangles, handInGarment, posedMesh, resetRig, silhouetteReach, syncRig } from './rigProbe'
 import { parseGlb } from './vrmHumanoid'
 
@@ -31,6 +32,46 @@ describe('coatSwingAt', () => {
     expect(coatSwingAt(curve, COAT_SWING_STEP * 1.5)).toBeCloseTo(20)
     expect(coatSwingAt(curve, 99)).toBe(30)
     expect(coatSwingAt([], 1)).toBe(0)
+  })
+})
+
+describe('armSwing', () => {
+  // three's mixer writes a bone only when its blended value changed since the
+  // last frame (PropertyMixer.apply), so a frame it skips still holds the
+  // turn this one put on.
+  const arms = () => {
+    const bones: Record<string, THREE.Object3D> = { leftUpperArm: new THREE.Object3D(), rightUpperArm: new THREE.Object3D() }
+    bones.leftUpperArm.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 0), 0.3)
+    return bones
+  }
+  it('turns a bone nothing rewrote by the angle asked, not by that angle again', () => {
+    const once = arms()
+    swingArmsOut((n) => once[n], '1', 20)
+    const twice = arms()
+    const turn = armSwing()
+    turn((n) => twice[n], '1', 20)
+    turn((n) => twice[n], '1', 20)
+    expect(twice.leftUpperArm.quaternion.angleTo(once.leftUpperArm.quaternion)).toBeLessThan(1e-6)
+    expect(twice.rightUpperArm.quaternion.angleTo(once.rightUpperArm.quaternion)).toBeLessThan(1e-6)
+  })
+
+  it('turns what the mixer wrote when it did rewrite the bone', () => {
+    const bones = arms()
+    const turn = armSwing()
+    turn((n) => bones[n], '1', 20)
+    bones.leftUpperArm.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), 0.5)
+    const want = bones.leftUpperArm.quaternion.clone()
+    turn((n) => bones[n], '1', 0)
+    expect(bones.leftUpperArm.quaternion.angleTo(want)).toBeLessThan(1e-6)
+  })
+
+  it('takes its turn back off when the clip no longer asks for one', () => {
+    const bones = arms()
+    const rest = bones.leftUpperArm.quaternion.clone()
+    const turn = armSwing()
+    turn((n) => bones[n], '1', 20)
+    turn((n) => bones[n], '1', 0)
+    expect(bones.leftUpperArm.quaternion.angleTo(rest)).toBeLessThan(1e-6)
   })
 })
 

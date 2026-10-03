@@ -95,7 +95,7 @@ import {
   type PoseRotations,
   writeIdlePose,
 } from './idlePose'
-import { coatSwingAt, coatSwingCurve, swingArmsOut } from './coatSwing'
+import { armSwing, coatSwingAt, coatSwingCurve } from './coatSwing'
 import {
   aimPitchPose,
   armRestPins,
@@ -1202,6 +1202,7 @@ export function initAvatarGuide(
   // this body (coatSwing.ts). A clip handed over keeps its curve while it
   // fades, so the turn leaves with it instead of in one frame.
   const coatSwings = new Map<THREE.AnimationAction, readonly number[]>()
+  const turnArms = armSwing()
   // Clips a newer one took the bones over from mid-play, still giving their
   // weight back (see takeOverMotion). Usually empty; one entry for MOTION_FADE
   // after a switch.
@@ -1589,16 +1590,16 @@ export function initAvatarGuide(
 
       // Her arms out over a coat that would swallow her hands (coatSwing.ts),
       // after both layers above have written them, on the clip's own weight so
-      // a settle takes the turn back with the clip. The mixer rewrote the
-      // upper arms this frame, so the turn never piles up.
-      if (vrm && coatSwings.size > 0) {
+      // a settle takes the turn back with the clip. Every frame, at 0 too:
+      // armSwing takes last frame's turn off a bone the mixer left alone.
+      if (vrm) {
         let degrees = 0
         for (const [action, curve] of coatSwings) {
           if (action !== motionAction && !outgoing.some((o) => o.action === action)) coatSwings.delete(action)
           else degrees += coatSwingAt(curve, action.time) * action.getEffectiveWeight()
         }
         const h = vrm.humanoid
-        swingArmsOut((bone) => h?.getNormalizedBoneNode(bone as BoneName), vrm.meta.metaVersion, degrees)
+        turnArms((bone) => h?.getNormalizedBoneNode(bone as BoneName), vrm.meta.metaVersion, degrees)
       }
 
       // The clip-driven camera slide. A clip that does not fit the composition
