@@ -1,5 +1,5 @@
 {
-  "source": "/Users/charles/portfolio/scripts/avatar/baseline.vrm",
+  "source": "/Users/charles/vtuber-kit/scripts/avatar/baseline.vrm",
   "parts": {
     "Face": {
       "mesh": "Face.baked",
@@ -1021,7 +1021,7 @@
     }
   },
   "landmarks": {
-    "waist": 0.9600000000000001,
+    "waist": 0.9599999857493325,
     "waist_r": 0.1000041168057943,
     "foot": 0.0343145877122879,
     "hip": 0.8433834330000001,

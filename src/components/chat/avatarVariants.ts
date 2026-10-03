@@ -246,7 +246,7 @@ export type AvatarVariant =
 // free.
 export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   { id: 'pink', label: '粉髮藍眼', url: '/avatar/mika-pink-2.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
-  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-12.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
+  { id: 'milfy', label: 'Milfy 復刻', url: '/avatar/mika-milfy-13.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
   { id: 'base', label: '原紫髮', url: '/avatar/AvatarSample_B_webp.vrm', family: 'vroid-sample-b', mouth: 'own', offered: true },
   // The second family, and the first body here that is not an export of the
   // VRoid project the other three descend from: pixiv's VRM 1.0 constraint
@@ -363,8 +363,12 @@ export const AVATAR_VARIANTS: readonly AvatarVariant[] = [
   // open mouth reads as a plain pale mouth on screen, so it keeps its own.
   // Served scaled to Mika's crown (1.6172 to 1.582, the same scalebody step as
   // Vivi), so the strip's looks stand at one height; the unscaled pack stays
-  // at /avatar/mika-glasses_webp.vrm.
-  { id: 'studio', label: '眼鏡上班族', url: '/avatar/mika-glasses_webp-2.vrm', family: 'vroid-mika-glasses', mouth: 'own', offered: true },
+  // at /avatar/mika-glasses_webp.vrm. -3 (2026-10-03, the owner's call): her
+  // skin atlases scaled per channel by (0.9879, 0.8908, 0.838), the pack's pale
+  // near-grey skin onto the cat-ear body's, and the cat-ear body's white
+  // underwear painted over the pack's black pair (paint_from.py), both held in
+  // skin_match_test.py.
+  { id: 'studio', label: '眼鏡上班族', url: '/avatar/mika-glasses_webp-3.vrm', family: 'vroid-mika-glasses', mouth: 'own', offered: true },
   // Eleven more rigs, measured on 2026-09-11 and none of them offered then. They are
   // VRoid's own official sample avatars, and what they are for is the same
   // thing `twist` and `studio` are for: the per-family paths in this repo

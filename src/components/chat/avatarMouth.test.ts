@@ -69,7 +69,7 @@ describe("Mika's mouth", () => {
   })
 
   it('is the image Milfy carries too, which is why the owner could name both', () => {
-    expect(publicFile(MIKA_MOUTH_URL).equals(mouthImageBytes('/avatar/mika-milfy-12.vrm'))).toBe(true)
+    expect(publicFile(MIKA_MOUTH_URL).equals(mouthImageBytes('/avatar/mika-milfy-13.vrm'))).toBe(true)
   })
 
   it('is the image base carries as well, the export both of hers descend from', () => {
@@ -85,7 +85,7 @@ describe('which bodies borrow it', () => {
 
   it('leaves Mika and Milfy on their own', () => {
     expect(borrowedMouthOfUrl('/avatar/mika-pink-2.vrm')).toBeNull()
-    expect(borrowedMouthOfUrl('/avatar/mika-milfy-12.vrm')).toBeNull()
+    expect(borrowedMouthOfUrl('/avatar/mika-milfy-13.vrm')).toBeNull()
   })
 
   it('hands exactly the seven painted-tongue bodies her mouth', () => {
