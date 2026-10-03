@@ -72,6 +72,12 @@ const DECISIONS: ClearanceDecisions = {
     idleLoop: { column: 0.03 },
     stretch: { waistUp: 0.07 },
     dance: { column: 0.14 },
+    groove: { waistUp: -0.13, column: 0.05 },
+    macarena: { waistUp: -0.2, column: 0.05 },
+    catwalk: { column: 0.03 },
+    jumpAround: { waistUp: 0.1, column: 0.35 },
+    cheer: { column: 0.26 },
+    shyPose: { column: 0.02 },
   },
   // Four waivers, and none of them is an owner's acceptance of something ugly.
   // The two kinds are worth telling apart, because only one of them needs a
@@ -108,6 +114,9 @@ const DECISIONS: ClearanceDecisions = {
   waivers: {
     dance: { handInHead: 0.21, hipsDrift: 0.15, endWrist: 1.24 },
     idleLoop: { hipsDrift: 0.16 },
+    jumpAround: { hipsBelow: 0.046 },
+    cheer: { hipsBelow: 0.069 },
+    macarena: { handInHead: 0.46 },
   },
   // Nothing excluded: every clip in the pool clears this body's frames once its
   // pan is applied. A clip that could not would belong here with the

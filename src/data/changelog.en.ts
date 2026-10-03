@@ -20,6 +20,39 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    id: 'avatar-dance-clips',
+    date: '2026-10-03',
+    title: `Mika gets six new motions: groove, Macarena, catwalk, hop, cheer and shy`,
+    tags: ['feature', 'technical'],
+    body: [
+      `Her motions grow from 11 clips to 17, and the six new ones are dances and lively moves, playable from the chat widget and on \`/avatar\`. All six are VRM Animation files that other three-vrm projects publish, used without a format conversion.`,
+      {
+        kind: 'list',
+        items: [
+          `**Groove**: 8.3s. She turns from facing you to side-on for the dance and turns back at the end.`,
+          `**Macarena**: 8.2s, finishing on the dance's own low hip wiggle.`,
+          `**Catwalk**: 15.1s. She works a runway on the spot, turning at the end and walking back.`,
+          `**Hop**: 6.8s. She stands for 1.5s, then hops; one jump lifts both feet 0.31m off the floor.`,
+          `**Cheer**: 7.2s. She stands for 1.5s, crouches, then throws both arms overhead with a knee kicked up.`,
+          `**Shy**: 8.3s. She turns about 60° away, fidgets, and turns back.`,
+        ],
+      },
+      { kind: 'heading', text: `Two clips needed mending first` },
+      `The catwalk file walks four metres forward, so its horizontal movement is now pinned to the first frame and she walks on the spot. Catwalk and Macarena come from the same project, and their files declare a hip rest height of 1.071m while the standing hips sit near 0.82m. On Mika that put both feet about 15cm under the floor for the whole clip. The hips' vertical track is now raised as a whole, so her feet rest at the same 0.124m as every other clip.`,
+      { kind: 'heading', text: `Jumps taller than the frame` },
+      `Hop and Cheer throw her hair 14 to 37cm above where it hangs at rest, and both crouch before they rise. On most bodies no camera position holds both her crown and her hips. The call was to keep both clips: the camera follows her head up, and when she crouches her hips may drop below the bottom edge. The camera glides into place, so each clip now opens with 1.5s of standing still and the jump waits for it. That depth is measured and recorded for each body; on Mika, Hop in the waist-up frame takes her hips about 10cm past the edge at most. If the clip or the body changes, the number has to be measured again, and a test fails when it is exceeded or no longer needed.`,
+      {
+        kind: 'stats',
+        items: [
+          { value: '11 → 17', label: 'motions' },
+          { value: '17', label: 'bodies measured' },
+          { value: '15cm', label: 'feet below the floor, before the fix' },
+          { value: '0.31m', label: 'highest hop' },
+        ],
+      },
+    ],
+  },
+  {
     id: 'rag-review-fixes',
     date: '2026-10-01',
     title: `The chatbot's cached replies now cite the site, and a Voyage outage no longer ends the answer`,

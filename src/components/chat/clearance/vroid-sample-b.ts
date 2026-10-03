@@ -117,6 +117,9 @@ const DECISIONS: ClearanceDecisions = {
     // clearance.panFor derives. With the camera up, neither clip passes the
     // top edge at all, and rigProbe.test.ts refuses a waiver a clip does not
     // need -- which is how these two came out.
+    cheer: { hipsBelow: 0.022 },
+    jumpAround: { hipsBelow: 0.103 },
+    macarena: { handInHead: 0.3 },
   },
   // How far the camera slides while each clip plays on THIS family. Three of
   // the ten need it; the other family needs nine, which is why these moved off
@@ -192,6 +195,12 @@ const DECISIONS: ClearanceDecisions = {
     playFingers: { column: 0.02 },
     scratchHead: { column: 0.02 },
     dance: { waistUp: -0.07, column: 0.14 },
+    groove: { waistUp: -0.13, column: 0.08 },
+    macarena: { waistUp: -0.22, column: 0.03 },
+    catwalk: { column: 0.04 },
+    jumpAround: { waistUp: 0.13, column: 0.38 },
+    cheer: { waistUp: -0.07, column: 0.19 },
+    shyPose: { column: 0.03 },
   },
   // Measured 2026-08-19 by retargeting all the clips of the pack onto
   // AvatarSample_B_webp.vrm; kept here so nobody re-adds one on the assumption

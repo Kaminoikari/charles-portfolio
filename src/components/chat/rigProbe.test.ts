@@ -906,10 +906,17 @@ describe.each(FAMILIES)('bundled motions on $id', (fam: Family) => {
       const hips = new THREE.Vector3().setFromMatrixPosition(r.bones.hips.matrixWorld)
       lowest = Math.min(lowest, hips.y)
     }
+    // A hipsBelow waiver lowers every placement's edge by its depth, and has
+    // to be needed in at least one of them, the same rule crownTop keeps.
+    const below = waiverOf(name)?.hipsBelow
+    let past = -Infinity
     for (const placement of def.placements) {
-      expect(lowest, `${name} lowest hips in ${placement}`).toBeGreaterThan(
-        frameOf(name as AvatarMotionName, placement).span.bottom,
-      )
+      const bottom = frameOf(name as AvatarMotionName, placement).span.bottom
+      past = Math.max(past, bottom - lowest)
+      expect(lowest, `${name} lowest hips in ${placement}`).toBeGreaterThan(bottom - (below ?? 0))
+    }
+    if (below !== undefined) {
+      expect(past, `${name} declares a hipsBelow waiver it does not need`).toBeGreaterThan(0)
     }
   })
 

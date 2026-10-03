@@ -32,6 +32,12 @@ export type AvatarMotionName =
   | 'stretch'
   | 'dance'
   | 'waveWink'
+  | 'groove'
+  | 'macarena'
+  | 'catwalk'
+  | 'jumpAround'
+  | 'cheer'
+  | 'shyPose'
 
 // Which composed frame a motion has been measured against. The launcher and the
 // docked canvas share a framing and an aspect ratio, so they share a budget;
@@ -65,6 +71,18 @@ export interface MotionWaiver {
    * body's own simulation put them higher than anyone had accepted.
    */
   crownTop?: number
+  /**
+   * How far, in metres, her hips may drop below the bottom edge of the frame
+   * the clip is played in, pan included. The bottom-edge twin of crownTop, for
+   * a clip whose rise and dip together are taller than the frame: `jumpAround`
+   * and `cheer` throw her hair a quarter of a metre up and crouch before they
+   * do, and `macarena` ends in a squat. No pan holds both ends of those, and
+   * on 2026-10-03 the owner chose to keep them in the menu with her head in the
+   * frame and her hips allowed out, rather than exclude them. Unlike crownTop
+   * it is a depth relative to the panned edge, so clearance.panRange and the
+   * hips guard read it the same way at any pan.
+   */
+  hipsBelow?: number
   /** Deepest hand-against-face ellipsoid value, when it drops below 1. */
   handInHead?: number
   /** Widest sideways reach, in metres, when it passes the canvas half-width. */
@@ -261,6 +279,58 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
     wornBy: ['vroid-gishin'],
     face: 'Wink',
   },
+  // The six below joined on 2026-10-03, the owner's pick from VRM Animation
+  // files other three-vrm projects ship: groove, jumpAround, cheer and shyPose
+  // from reika's KA idle set (as chuckynuttys/timeline serves it), macarena and
+  // catwalk from gitphilosopher/MayaVE. The site is not a commercial product,
+  // and on that basis the owner cleared every one of them for use.
+  //
+  // reika's Dance02, 8.3s. She opens facing front, turns about 94° and dances
+  // side-on for most of the clip, and turns back before it ends: the side-on
+  // stretch is the choreography, not a mis-seated rig.
+  groove: { placements: ['waistUp', 'column'], showsPalm: false },
+  // 8.2s, ending in the dance's own low wiggle. The source declares a hips rest
+  // height of 1.071 and stands near 0.82, which seated her feet 0.15m under the
+  // floor; its vertical hips track is raised so her feet rest where akimbo's do.
+  //
+  // Every body but Sakurada Fumiriya's wears it. She stands 1.92m at the crown,
+  // and the clip opens with her hips 0.090 below her rest, past MAX_HIPS_SINK,
+  // which no waiver carries. She is not offered to visitors, so what this costs
+  // is a clip on a body nobody can pick.
+  macarena: {
+    placements: ['waistUp', 'column'],
+    showsPalm: false,
+    wornBy: [
+      'vroid-sample-b', 'vrm1-twist-sample', 'vroid-studio-dressup', 'vroid-hair-female',
+      'vroid-hair-male', 'vroid-sendagaya-shibu', 'vroid-victoria-rubin', 'vroid-vivi',
+      'vroid-sample-a', 'vroid-sample-c', 'vroid-darkness-shibu', 'vroid-sendagaya-shino',
+      'vroid-vita', 'vroid-mika-glasses', 'vroid-rosa', 'vroid-gishin',
+    ],
+  },
+  // 15.1s on the spot: the source walks four metres forward, so its horizontal
+  // hips track is pinned to the first frame and she works a runway that turns
+  // round and comes back without leaving it. Raised off the floor the same way
+  // as macarena, which shares its source rig.
+  catwalk: { placements: ['waistUp', 'column'], showsPalm: false },
+  // 6.8s: she stands for 1.5s, then hops, and at 2.7s one jump lifts both feet
+  // 0.31m off the floor on the VRoid body. With cheer below, the reason
+  // MotionWaiver has hipsBelow: the frame follows her hair up and lets her
+  // crouch out of the bottom edge.
+  //
+  // The 1.5s stand is added to the source, every track holding its first key.
+  // The camera eases onto a pan (stepFramePan, about 0.7s to cover two thirds
+  // of it), and both clips throw their hair high before it gets there: cheer's
+  // peaks at 0.47s into the source, when the column camera has covered 54% of
+  // its 0.19 pan on Mika, and clearance.test.ts's "has the pan it needs by the
+  // time the crown gets there" measured 77mm of hair past the edge it allows.
+  // A larger pan cannot buy it back without cropping her at the knees for the
+  // whole clip, so the clip waits for the camera instead.
+  jumpAround: { placements: ['waistUp', 'column'], showsPalm: false },
+  // 7.2s: she stands for 1.5s (see jumpAround), crouches to hips 0.677, then
+  // throws both arms overhead with a knee kicked up and settles happily.
+  cheer: { placements: ['waistUp', 'column'], showsPalm: false },
+  // 8.3s. She turns about 60° away and fidgets, then faces front again.
+  shyPose: { placements: ['waistUp', 'column'], showsPalm: false },
 }
 
 /** The clips a family wears: every clip, less those made for other bodies. */
@@ -372,6 +442,12 @@ export const MOTION_URL = (name: AvatarMotionName): string => `/avatar/animation
 // either way.
 export const IDLE_MOTIONS: readonly AvatarMotionName[] = [
   'dance',
+  'groove',
+  'macarena',
+  'catwalk',
+  'jumpAround',
+  'cheer',
+  'shyPose',
   'peaceSign',
   'waveWink',
   'modelPose',

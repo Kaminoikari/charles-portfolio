@@ -11,7 +11,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-studio-dressup",
   "rigSha": "ec3b9ab3648bcaea26792c0324d32f7fabda1245a58813a0139af5c00032491e",
   "simulatedOn": "/avatar/vroid-studio-dressup.vrm",
-  "producedBy": "0c4607f",
+  "producedBy": "d89982b",
   "rigidHair": true,
   "restCrownY": 1.5982,
   "restCrownScreen": {
@@ -55,6 +55,24 @@ export const SIMULATED: ClearanceSimulated = {
       },
       "dance": {
         "column": 0.12
+      },
+      "groove": {
+        "waistUp": -0.14,
+        "column": 0.03
+      },
+      "macarena": {
+        "waistUp": -0.19,
+        "column": 0.07
+      },
+      "catwalk": {
+        "column": 0.01
+      },
+      "jumpAround": {
+        "waistUp": 0.07,
+        "column": 0.33
+      },
+      "cheer": {
+        "column": 0.26
       }
     }
   },
@@ -71,6 +89,30 @@ export const SIMULATED: ClearanceSimulated = {
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
+    "catwalk": {
+      "crownY": 1.5891,
+      "crownT": 4.37,
+      "crownScreen": {
+        "waistUp": 1.5897,
+        "column": 1.6069
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 23.7,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
+    "cheer": {
+      "crownY": 1.7983,
+      "crownT": 1.97,
+      "crownScreen": {
+        "waistUp": 1.8551,
+        "column": 1.8579
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 16.4,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
     "dance": {
       "crownY": 1.6717,
       "crownT": 11.97,
@@ -83,6 +125,18 @@ export const SIMULATED: ClearanceSimulated = {
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
+    "groove": {
+      "crownY": 1.6241,
+      "crownT": 5.43,
+      "crownScreen": {
+        "waistUp": 1.6274,
+        "column": 1.63
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 23.8,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
     "idleLoop": {
       "crownY": 1.599,
       "crownT": 5.37,
@@ -92,6 +146,30 @@ export const SIMULATED: ClearanceSimulated = {
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 15.9,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
+    "jumpAround": {
+      "crownY": 1.8933,
+      "crownT": 3.63,
+      "crownScreen": {
+        "waistUp": 1.9215,
+        "column": 1.9228
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 19.1,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
+    "macarena": {
+      "crownY": 1.6051,
+      "crownT": 8.03,
+      "crownScreen": {
+        "waistUp": 1.6487,
+        "column": 1.6529
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 40.5,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },
@@ -140,6 +218,18 @@ export const SIMULATED: ClearanceSimulated = {
       },
       "coatDepthMm": 0,
       "bodyDepthMm": 16.2,
+      "jumpDeg": 0,
+      "skirtDepthMm": 0
+    },
+    "shyPose": {
+      "crownY": 1.5919,
+      "crownT": 7.9,
+      "crownScreen": {
+        "waistUp": 1.5933,
+        "column": 1.5998
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 16.7,
       "jumpDeg": 0,
       "skirtDepthMm": 0
     },

@@ -10,7 +10,7 @@ export const MEASURED: ClearanceMeasured = {
   "family": "vroid-sakurada-fumiriya",
   "rigSha": "513b2ce73d3c278c1c20d7ce959bc77d3ce6f1bf834ab99275052c86bca69bc8",
   "measuredOn": "/avatar/Sakurada_Fumiriya_webp.vrm",
-  "producedBy": "8f724ea",
+  "producedBy": "d89982b",
   "faceBox": {
     "min": [
       -0.107,
@@ -155,6 +155,71 @@ export const MEASURED: ClearanceMeasured = {
       "endSink": 0.0615,
       "hipsDrift": 0.1831,
       "endWrist": 1.5211
+    },
+    "groove": {
+      "reach": {
+        "left": 0.5241,
+        "right": 0.6861
+      },
+      "skinTop": 1.3798,
+      "hipsLow": 0.9136,
+      "faceRatio": 3.9861,
+      "faceRatioAt": 1.53,
+      "endSink": 0.0128,
+      "hipsDrift": 0.0002,
+      "endWrist": 1.0703
+    },
+    "catwalk": {
+      "reach": {
+        "left": 0.6368,
+        "right": 0.568
+      },
+      "skinTop": 1.4376,
+      "hipsLow": 1.0674,
+      "faceRatio": 15.7454,
+      "faceRatioAt": 6.57,
+      "endSink": 0.0459,
+      "hipsDrift": 0.0049,
+      "endWrist": 1.1359
+    },
+    "jumpAround": {
+      "reach": {
+        "left": 0.6523,
+        "right": 0.3952
+      },
+      "skinTop": 1.9243,
+      "hipsLow": 1.0403,
+      "faceRatio": 17.5881,
+      "faceRatioAt": 4.27,
+      "endSink": 0.0128,
+      "hipsDrift": 0.0002,
+      "endWrist": 1.0703
+    },
+    "cheer": {
+      "reach": {
+        "left": 0.4765,
+        "right": 0.6672
+      },
+      "skinTop": 2.144,
+      "hipsLow": 0.8841,
+      "faceRatio": 2.6802,
+      "faceRatioAt": 3.87,
+      "endSink": 0.0128,
+      "hipsDrift": 0.0002,
+      "endWrist": 1.0703
+    },
+    "shyPose": {
+      "reach": {
+        "left": 0.5154,
+        "right": 0.3419
+      },
+      "skinTop": 1.5949,
+      "hipsLow": 1.0661,
+      "faceRatio": 1.7281,
+      "faceRatioAt": 2.38,
+      "endSink": 0.0128,
+      "hipsDrift": 0.0002,
+      "endWrist": 1.0703
     }
   }
 }

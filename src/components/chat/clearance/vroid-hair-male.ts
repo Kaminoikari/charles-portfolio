@@ -44,6 +44,12 @@ const DECISIONS: ClearanceDecisions = {
     idleLoop: { column: 0.23 },
     stretch: { waistUp: 0.23 },
     dance: { waistUp: 0.08, column: 0.34 },
+    groove: { column: 0.24 },
+    macarena: { waistUp: -0.02, column: 0.23 },
+    catwalk: { column: 0.22 },
+    jumpAround: { waistUp: 0.32, column: 0.57 },
+    cheer: { waistUp: 0.2, column: 0.46 },
+    shyPose: { column: 0.23 },
   },
   // Properties of the CLIP as this rig wears it, not an owner accepting
   // something ugly: no one has watched this body, so it declares no crownTop
@@ -54,6 +60,9 @@ const DECISIONS: ClearanceDecisions = {
     dance: { handInHead: 0.18, reach: 0.838, hipsDrift: 0.17, endWrist: 1.39 },
     spin: { reach: 0.799 },
     idleLoop: { hipsDrift: 0.18 },
+    macarena: { hipsBelow: 0.088, handInHead: 0.33, endWrist: 1.14 },
+    jumpAround: { hipsBelow: 0.175 },
+    cheer: { hipsBelow: 0.192 },
   },
   // Nothing excluded: every clip clears this body's frames as they now stand.
   // `dance` did not, at one point, and it was excluded for a while on a real

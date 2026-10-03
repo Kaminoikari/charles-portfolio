@@ -10,7 +10,7 @@ export const MEASURED: ClearanceMeasured = {
   "family": "vroid-sample-b",
   "rigSha": "e2aad79ec6667a5529934359339a6a08a29f73fe8a51f5cc6d4d702e137c1b45",
   "measuredOn": "/avatar/mika-pink.vrm",
-  "producedBy": "571e711",
+  "producedBy": "d89982b",
   "faceBox": {
     "min": [
       -0.0917,
@@ -155,6 +155,84 @@ export const MEASURED: ClearanceMeasured = {
       "endSink": 0.0471,
       "hipsDrift": 0.1402,
       "endWrist": 1.1877
+    },
+    "groove": {
+      "reach": {
+        "left": 0.4143,
+        "right": 0.5862
+      },
+      "skinTop": 1.0461,
+      "hipsLow": 0.6995,
+      "faceRatio": 4.7008,
+      "faceRatioAt": 1.53,
+      "endSink": 0.0098,
+      "hipsDrift": 0.0002,
+      "endWrist": 0.7536
+    },
+    "macarena": {
+      "reach": {
+        "left": 0.4525,
+        "right": 0.445
+      },
+      "skinTop": 1.4598,
+      "hipsLow": 0.5759,
+      "faceRatio": 0.3011,
+      "faceRatioAt": 4.13,
+      "endSink": 0.069,
+      "hipsDrift": 0.0019,
+      "endWrist": 0.97
+    },
+    "catwalk": {
+      "reach": {
+        "left": 0.5222,
+        "right": 0.4609
+      },
+      "skinTop": 1.0966,
+      "hipsLow": 0.8173,
+      "faceRatio": 16.1155,
+      "faceRatioAt": 6.53,
+      "endSink": 0.0352,
+      "hipsDrift": 0.0038,
+      "endWrist": 0.8273
+    },
+    "jumpAround": {
+      "reach": {
+        "left": 0.513,
+        "right": 0.3265
+      },
+      "skinTop": 1.4648,
+      "hipsLow": 0.7965,
+      "faceRatio": 16.029,
+      "faceRatioAt": 4.27,
+      "endSink": 0.0098,
+      "hipsDrift": 0.0002,
+      "endWrist": 0.7536
+    },
+    "cheer": {
+      "reach": {
+        "left": 0.3926,
+        "right": 0.5442
+      },
+      "skinTop": 1.7421,
+      "hipsLow": 0.6769,
+      "faceRatio": 3.064,
+      "faceRatioAt": 3.87,
+      "endSink": 0.0098,
+      "hipsDrift": 0.0002,
+      "endWrist": 0.7536
+    },
+    "shyPose": {
+      "reach": {
+        "left": 0.4168,
+        "right": 0.2919
+      },
+      "skinTop": 1.2105,
+      "hipsLow": 0.8163,
+      "faceRatio": 2.3876,
+      "faceRatioAt": 2.47,
+      "endSink": 0.0098,
+      "hipsDrift": 0.0002,
+      "endWrist": 0.7536
     }
   }
 }

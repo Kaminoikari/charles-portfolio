@@ -32,6 +32,10 @@ const DECISIONS: ClearanceDecisions = {
     spin: { column: 0.03 },
     scratchHead: { column: 0.03 },
     dance: { column: 0.12 },
+    groove: { waistUp: -0.15, column: 0.04 },
+    macarena: { waistUp: -0.22, column: 0.01 },
+    jumpAround: { waistUp: 0.06, column: 0.32 },
+    cheer: { waistUp: -0.03, column: 0.23 },
   },
   // Properties of the CLIP as this rig wears it; each budget is the
   // measurement with a hair of room, and rigProbe.test.ts reddens on any the
@@ -42,6 +46,9 @@ const DECISIONS: ClearanceDecisions = {
   waivers: {
     dance: { handInHead: 0.4, hipsDrift: 0.15, endWrist: 1.22 },
     idleLoop: { hipsDrift: 0.16 },
+    cheer: { hipsBelow: 0.048 },
+    jumpAround: { hipsBelow: 0.016 },
+    macarena: { handInHead: 0.55 },
   },
   excluded: {},
 }

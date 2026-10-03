@@ -69,6 +69,7 @@ interface Strings {
     motions: {
       dance: string; peaceSign: string; waveWink: string; modelPose: string; spin: string; squat: string
       akimbo: string; playFingers: string; scratchHead: string; idleLoop: string; stretch: string
+      groove: string; macarena: string; catwalk: string; jumpAround: string; cheer: string; shyPose: string
     }
     // The look strip above the motions. Keyed by OfferedVariantId -- an
     // OFFERED body without a label here fails to compile. A body the registry
@@ -282,6 +283,12 @@ const en: Strings = {
       scratchHead: 'Scratch head',
       idleLoop: 'Idle',
       stretch: 'Stretch',
+      groove: 'Groove',
+      macarena: 'Macarena',
+      catwalk: 'Catwalk',
+      jumpAround: 'Hop',
+      cheer: 'Cheer',
+      shyPose: 'Shy',
     },
     looksLabel: 'Look',
     looksAriaLabel: 'Choose a look',

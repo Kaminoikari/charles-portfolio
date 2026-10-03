@@ -45,6 +45,12 @@ const DECISIONS: ClearanceDecisions = {
       idleLoop: { column: 0.13 },
       stretch: { waistUp: 0.15 },
       dance: { waistUp: 0.04, column: 0.28 },
+      groove: { column: 0.18 },
+      macarena: { waistUp: -0.11, column: 0.16 },
+      catwalk: { column: 0.14 },
+      jumpAround: { waistUp: 0.23, column: 0.49 },
+      cheer: { waistUp: 0.09, column: 0.34 },
+      shyPose: { column: 0.13 },
     },
   // Properties of the CLIP as this rig wears it, not an owner accepting
   // something ugly: no one has watched this body, so it declares no crownTop
@@ -54,6 +60,9 @@ const DECISIONS: ClearanceDecisions = {
       scratchHead: { handInHead: 0.71 },
       dance: { handInHead: 0.19, reach: 0.755, hipsDrift: 0.16, endWrist: 1.32 },
       idleLoop: { hipsDrift: 0.18 },
+      cheer: { hipsBelow: 0.102 },
+      macarena: { hipsBelow: 0.015, handInHead: 0.18, endWrist: 1.11 },
+      jumpAround: { hipsBelow: 0.108 },
     },
   // A clip here is one this body cannot wear: its crown cannot be brought into
   // the frame before its hips leave it, at any pan. `motionsFor` stops offering

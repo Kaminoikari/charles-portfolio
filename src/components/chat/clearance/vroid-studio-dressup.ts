@@ -121,6 +121,11 @@ const DECISIONS: ClearanceDecisions = {
     idleLoop: { column: 0.01 },
     stretch: { waistUp: 0.07 },
     dance: { column: 0.12 },
+    groove: { waistUp: -0.14, column: 0.03 },
+    macarena: { waistUp: -0.19, column: 0.07 },
+    catwalk: { column: 0.01 },
+    jumpAround: { waistUp: 0.07, column: 0.33 },
+    cheer: { column: 0.26 },
   },
   // Four waivers on two clips, and all four are properties of the CLIP measured
   // on this rig rather than an owner's acceptance of something ugly. No
@@ -153,6 +158,9 @@ const DECISIONS: ClearanceDecisions = {
   waivers: {
     dance: { handInHead: 0.4, hipsDrift: 0.15, endWrist: 1.24 },
     idleLoop: { hipsDrift: 0.16 },
+    cheer: { hipsBelow: 0.069 },
+    jumpAround: { hipsBelow: 0.016 },
+    macarena: { handInHead: 0.55 },
   },
   // Nothing excluded. Every clip in the pool clears this body's frames once its
   // pan is applied.

@@ -11,7 +11,7 @@ export const SIMULATED: ClearanceSimulated = {
   "family": "vroid-sakurada-fumiriya",
   "rigSha": "513b2ce73d3c278c1c20d7ce959bc77d3ce6f1bf834ab99275052c86bca69bc8",
   "simulatedOn": "/avatar/Sakurada_Fumiriya_webp.vrm",
-  "producedBy": "1602992",
+  "producedBy": "d89982b",
   "restCrownY": 1.9216,
   "restCrownScreen": {
     "waistUp": 1.9341,
@@ -67,6 +67,26 @@ export const SIMULATED: ClearanceSimulated = {
       },
       "dance": {
         "column": 0.51
+      },
+      "groove": {
+        "waistUp": 0.11,
+        "column": 0.36
+      },
+      "catwalk": {
+        "waistUp": 0.19,
+        "column": 0.33
+      },
+      "jumpAround": {
+        "waistUp": 0.48,
+        "column": 0.74
+      },
+      "cheer": {
+        "waistUp": 0.34,
+        "column": 0.61
+      },
+      "shyPose": {
+        "waistUp": 0.19,
+        "column": 0.33
       }
     }
   },
@@ -83,6 +103,30 @@ export const SIMULATED: ClearanceSimulated = {
       "jumpDeg": 4.4,
       "skirtDepthMm": 0
     },
+    "catwalk": {
+      "crownY": 1.9063,
+      "crownT": 3.8,
+      "crownScreen": {
+        "waistUp": 1.9181,
+        "column": 1.9284
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 50,
+      "jumpDeg": 17,
+      "skirtDepthMm": 0
+    },
+    "cheer": {
+      "crownY": 2.134,
+      "crownT": 1.97,
+      "crownScreen": {
+        "waistUp": 2.1895,
+        "column": 2.1912
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 49.7,
+      "jumpDeg": 163.5,
+      "skirtDepthMm": 0
+    },
     "dance": {
       "crownY": 2.0179,
       "crownT": 11.97,
@@ -95,6 +139,18 @@ export const SIMULATED: ClearanceSimulated = {
       "jumpDeg": 43.5,
       "skirtDepthMm": 0
     },
+    "groove": {
+      "crownY": 1.9278,
+      "crownT": 0.73,
+      "crownScreen": {
+        "waistUp": 1.9516,
+        "column": 1.9535
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 50,
+      "jumpDeg": 34.2,
+      "skirtDepthMm": 0
+    },
     "idleLoop": {
       "crownY": 1.9206,
       "crownT": 5.37,
@@ -105,6 +161,18 @@ export const SIMULATED: ClearanceSimulated = {
       "coatDepthMm": 0,
       "bodyDepthMm": 47.1,
       "jumpDeg": 0.6,
+      "skirtDepthMm": 0
+    },
+    "jumpAround": {
+      "crownY": 2.2875,
+      "crownT": 2.7,
+      "crownScreen": {
+        "waistUp": 2.3351,
+        "column": 2.3373
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 50,
+      "jumpDeg": 153.6,
       "skirtDepthMm": 0
     },
     "modelPose": {
@@ -153,6 +221,18 @@ export const SIMULATED: ClearanceSimulated = {
       "coatDepthMm": 0,
       "bodyDepthMm": 48.6,
       "jumpDeg": 5.5,
+      "skirtDepthMm": 0
+    },
+    "shyPose": {
+      "crownY": 1.9119,
+      "crownT": 7.9,
+      "crownScreen": {
+        "waistUp": 1.9203,
+        "column": 1.9262
+      },
+      "coatDepthMm": 0,
+      "bodyDepthMm": 50,
+      "jumpDeg": 11.3,
       "skirtDepthMm": 0
     },
     "spin": {

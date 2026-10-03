@@ -449,7 +449,10 @@ export function panRange(
   const ceiling = Math.max(view.top, c.waiver?.crownTop ?? -Infinity)
   return {
     least: crownWorst(file, clip, restCrownY, frames) - ceiling,
-    most: c.hipsLow - view.bottom,
+    // A hipsBelow waiver lowers the floor by its depth, at whatever pan the
+    // frame takes: the guard in rigProbe.test.ts holds the hips to the panned
+    // bottom edge less the same depth.
+    most: c.hipsLow - view.bottom + (c.waiver?.hipsBelow ?? 0),
   }
 }
 

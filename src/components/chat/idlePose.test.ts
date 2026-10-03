@@ -229,9 +229,18 @@ function outsideLimits(rig: Rig): string[] {
 
 /**
  * The measure itself, held to people: every frame of every motion-captured
- * clip the site ships (public/avatar/animations) reads an elbow flex of -2°
- * or more. Flip probeArmJoints' crook and the captures read as elbows bent
- * backwards, so the limits above would be measuring the wrong way round.
+ * clip the site ships (public/avatar/animations) reads an elbow flex no more
+ * than 10° past straight. Flip probeArmJoints' crook and the captures read as
+ * elbows bent backwards, so the limits above would be measuring the wrong way
+ * round.
+ *
+ * The floor is anatomy's. Until 2026-10-03 it was -3°, the shipped clips' own
+ * worst (-1.8°) with a degree spare; then jumpAround and cheer, arms thrown
+ * straight overhead, read -5.6° and -3.6°. Women's elbows commonly extend
+ * 10-15° past straight (Physiopedia, Goniometry: Elbow Extension), so those
+ * are a person's arms, and a flipped crook reads far below either: macarena's
+ * least flex is +19.8°, which flipped is -19.8°, and its deepest bend, 140.4°,
+ * reads -140.4°.
  */
 const CLIPS = readdirSync(path.join(process.cwd(), 'public/avatar/animations'))
   .filter((f) => f.endsWith('.vrma'))
@@ -257,7 +266,7 @@ it('every waiver names a look', () => {
 
 describe.each(looks)('idle poses on $id', (look) => {
   it('reads the captured motions as elbows that bend forward', () => {
-    expect(leastCapturedFlex(look.rig)).toBeGreaterThan(-3)
+    expect(leastCapturedFlex(look.rig)).toBeGreaterThan(-10)
   })
 
   it.each(['open', 'behind'] as const)('keeps every arm joint where a person can put it in the %s pose', (pose: IdlePoseName) => {
