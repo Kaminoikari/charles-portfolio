@@ -38,10 +38,10 @@ export function SceneClip({ poster, video, focusX, on }: { poster: string; video
     />
   )
   if (still || !live) return picture
-  return <LiveClip poster={poster} video={video} focusX={focusX} on={on} />
+  return <LiveClip poster={poster} video={video} focusX={focusX} />
 }
 
-function LiveClip({ poster, video, focusX, on }: { poster: string; video: string; focusX: number; on: boolean }) {
+function LiveClip({ poster, video, focusX }: { poster: string; video: string; focusX: number }) {
   const ref = useRef<HTMLVideoElement>(null)
   // The source is set here rather than in the markup, so the cleanup that
   // empties it is undone by the next mount (StrictMode mounts twice in
@@ -60,7 +60,7 @@ function LiveClip({ poster, video, focusX, on }: { poster: string; video: string
   }, [video])
   useEffect(() => {
     const el = ref.current
-    if (!el || !on) return
+    if (!el) return
     const kick = () => {
       if (el.paused) el.play().catch(() => {})
     }
@@ -78,7 +78,7 @@ function LiveClip({ poster, video, focusX, on }: { poster: string; video: string
       document.removeEventListener('visibilitychange', back)
       window.removeEventListener('pageshow', back)
     }
-  }, [on])
+  }, [])
   return (
     <video
       ref={ref}
