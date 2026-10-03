@@ -1,12 +1,13 @@
 import * as THREE from 'three'
-import type { AvatarMotionName } from './avatarMotions'
+import { motionsWornBy, type AvatarMotionName } from './avatarMotions'
 import { COAT_SWING_CURVES } from './coatSwing.gen'
 
 /**
  * A coat that bells out over her hips swallows her hands whenever a clip puts
  * them there: milfy's hoodie hangs up to 19cm outside where catwalk rests her
  * hands on her hips, so through three stretches of the clip her hands vanish
- * into it (owner, 2026-10-03: "the hands go through the coat"). The clip is
+ * into it (owner, 2026-10-03: "the hands go through the coat"), and every
+ * other clip she wears does the same somewhere. The clip is
  * the same file on every body; only this body's coat is in the way.
  *
  * While such a clip plays on such a body, both upper arms turn out from her
@@ -24,7 +25,12 @@ export interface CoatSwing {
   clips: readonly AvatarMotionName[]
 }
 
-export const COAT_SWINGS: readonly CoatSwing[] = [{ url: '/avatar/mika-milfy-13.vrm', material: 'Mellow_Outer', clips: ['catwalk'] }]
+// Every clip she wears: measured 2026-10-03, each one puts a hand more than
+// COAT_HAND_DEPTH into milfy's coat somewhere (squat least, 32mm; dance most,
+// 275mm), and the owner asked for all of them.
+export const COAT_SWINGS: readonly CoatSwing[] = [
+  { url: '/avatar/mika-milfy-13.vrm', material: 'Mellow_Outer', clips: motionsWornBy('vroid-sample-b') },
+]
 
 /**
  * How deep a hand may stay inside the coat, in metres (rigProbe.handInGarment).

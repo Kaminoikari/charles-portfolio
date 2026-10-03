@@ -76,6 +76,13 @@ describe('armSwing', () => {
 })
 
 describe('a coat that would swallow her hands', () => {
+  it('turns no arms on a body that wears no such coat', () => {
+    const coated = new Set(COAT_SWINGS.map((c) => c.url))
+    const bare = AVATAR_VARIANTS.filter((v) => !coated.has(v.url))
+    expect(bare.length).toBeGreaterThan(0)
+    for (const v of bare) for (const clip of Object.keys(AVATAR_MOTIONS) as (keyof typeof AVATAR_MOTIONS)[]) expect(coatSwingCurve(v.url, clip), `${v.url} ${clip}`).toBeNull()
+  })
+
   it('names bodies a visitor can be shown, and has a curve for every clip it lists', () => {
     for (const coat of COAT_SWINGS) {
       expect(AVATAR_VARIANTS.map((v) => v.url)).toContain(coat.url)
@@ -131,8 +138,8 @@ describe('a coat that would swallow her hands', () => {
       })
 
       it(`needs the turn: ${clip} alone puts her hands in the coat on ${coat.url}`, () => {
-        const { depth } = deepest(null, COAT_SWING_STEP)
-        expect(depth).toBeGreaterThan(0.1)
+        const { depth } = deepest(null, COAT_SWING_STEP / 8)
+        expect(depth).toBeGreaterThan(COAT_HAND_DEPTH)
       }, 120_000)
     }
   }
