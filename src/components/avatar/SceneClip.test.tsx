@@ -67,6 +67,27 @@ describe('SceneClip', () => {
     expect(played).toEqual([container.querySelector('video')])
   })
 
+  it('starts a refused clip on a completed touch, too', async () => {
+    refuse = true
+    render(clip(true))
+    await act(async () => {})
+    refuse = false
+    await act(async () => {
+      window.dispatchEvent(new Event('touchend'))
+    })
+    expect(played).toHaveLength(1)
+  })
+
+  it('starts it again when the page is restored from the back-forward cache', async () => {
+    const { container } = render(clip(true))
+    await act(async () => {})
+    container.querySelector('video')?.pause()
+    await act(async () => {
+      window.dispatchEvent(new Event('pageshow'))
+    })
+    expect(played).toHaveLength(2)
+  })
+
   it('starts it again when the page comes back to the front', async () => {
     const { container } = render(clip(true))
     await act(async () => {})
