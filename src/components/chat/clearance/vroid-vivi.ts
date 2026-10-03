@@ -56,10 +56,12 @@ const DECISIONS: ClearanceDecisions = {
     jumpAround: { waistUp: 0.05, column: 0.3 },
     cheer: { waistUp: -0.1, column: 0.17 },
   },
-  // Properties of the CLIP as this rig wears it, not an owner accepting
-  // something ugly: no one has watched this body, so it declares no crownTop
-  // framing waiver. Each budget is the measurement with a hair of room, and
-  // rigProbe.test.ts reddens on any the clip stops needing.
+  // Properties of the CLIP as this rig wears it. One is a framing call: on
+  // 2026-10-03 the owner chose to keep every new clip on every body even where
+  // it leaves the frame, and catwalk's hair tips pass the column frame's top
+  // edge by under 1mm here, while both pans the derivation tried broke another
+  // guard. That is the crownTop below. Each budget is the measurement with a
+  // hair of room, and rigProbe.test.ts reddens on any the clip stops needing.
   // hipsDrift and endWrist are metres, so the 1.12x scale of 2026-09-26 took
   // them up with the body. Measured now: idleLoop drift 0.1507, dance drift
   // 0.1388, dance end wrist 1.1899; the budgets were 0.14, 0.13 and 1.07.
