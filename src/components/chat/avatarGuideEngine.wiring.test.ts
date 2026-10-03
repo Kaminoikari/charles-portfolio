@@ -292,32 +292,136 @@ describe('a clip that leaves bones to the idle pose', () => {
   })
 })
 
-describe('her arms turn out over a coat that would swallow her hands', () => {
-  // coatSwing.test.ts holds the curve to the coat by forward kinematics; only
-  // these lines put the curve on her.
-  function playBody(): string {
-    const start = SOURCE.indexOf('\n  function playMotion(')
-    if (start < 0) throw new Error('no playMotion in the engine')
-    const rest = SOURCE.slice(start + 1)
-    return rest.slice(0, rest.indexOf('\n  }\n'))
-  }
-
-  it('looks the curve up for the body on screen when a clip starts', () => {
-    expect(playBody()).toMatch(/const curve = coatSwingCurve\(shownUrl, name\)\s*\n\s*if \(curve\) coatSwings\.set\(action, curve\)/)
+describe('a coat gives way to her hands', () => {
+  // coatDent.test.ts holds the dented coat clear of her hands on the CPU;
+  // only these lines put the dent on her.
+  it('dents the coat of the body being loaded, by its own file', () => {
+    expect(SOURCE).toMatch(/const coat = coatDentOf\(url\)/)
+    // At rest, before any frame poses her: the floor under the coat is measured there.
+    expect(SOURCE).toMatch(/coatDented = dentCoat\(loaded\.scene, coat, coatDent, \(bone\) => human\.get\(bone\) \?\? null, hips\.getWorldPosition\(new THREE\.Vector3\(\)\)\) > 0/)
   })
 
-  it('turns the arms every frame after the idle pose is written under the clips, on each clip\'s own weight', () => {
+  it('moves the dent with her hands every frame, after the skeleton the skin is drawn from has moved', () => {
+    const body = frameBody()
+    const update = body.indexOf('vrm.update(dt)')
+    const unroll = body.indexOf('unroll()', update)
+    const spheres = body.indexOf('handSpheres(raw, coatDent.coatDentSpheres.value)')
+    expect(update).toBeGreaterThan(0)
+    expect(unroll).toBeGreaterThan(update)
+    expect(spheres).toBeGreaterThan(unroll)
+    expect(body).toMatch(/const node = h\.getRawBoneNode\(bone as BoneName\)/)
+    expect(body).toMatch(/if \(hips\) coatDent\.coatDentHips\.value\.copy\(hips\)/)
+  })
+
+  it('never turns her arms: every clip plays as captured', () => {
+    expect(SOURCE).not.toMatch(/swingArmsOut|armSwing|coatSwing/)
+  })
+})
+
+describe('a clip that holds her fingers in its own grip', () => {
+  // fingerGrip.test.ts holds the grip to a hand; only these lines put it on her.
+  it('looks the grip up when a clip starts, for both hands', () => {
+    expect(SOURCE).toMatch(/const grip = AVATAR_MOTIONS\[name\]\.fingers\s*\n\s*if \(grip\) \{[\s\S]*?clipGrips\.set\(action, new Map\(\[\.\.\.fingerGrip\(version, 'left', grip\), \.\.\.fingerGrip\(version, 'right', grip\)\]\)\)/)
+  })
+
+  it('draws the fingers to it every frame after the idle pose is written under the clips, on the clip\u2019s own weight', () => {
     const body = frameBody()
     const pose = body.indexOf('poseUnderClips(')
-    const turn = body.indexOf('turnArms(')
+    const grip = body.indexOf('quaternion.slerp(q, w)')
     expect(pose).toBeGreaterThan(0)
-    expect(turn).toBeGreaterThan(pose)
-    expect(body).toMatch(/degrees \+= coatSwingAt\(curve, action\.time\) \* action\.getEffectiveWeight\(\)/)
-    expect(body).toMatch(/turnArms\(\(bone\) => h\?\.getNormalizedBoneNode\(bone as BoneName\), vrm\.meta\.metaVersion, degrees\)/)
-    // Not behind `coatSwings.size > 0`: the frame after a clip lets go is the
-    // one that takes its last turn back off.
-    expect(body).not.toMatch(/if \(vrm && coatSwings\.size > 0\)/)
-    expect(SOURCE).toMatch(/const turnArms = armSwing\(\)/)
+    expect(grip).toBeGreaterThan(pose)
+    expect(body).toMatch(/const w = action\.getEffectiveWeight\(\)/)
+  })
+})
+
+describe('a clip that holds her wrists inside their range', () => {
+  // wristLimit.test.ts holds the limit to a hand; only these lines put it on her.
+  it('looks the limit up when a clip starts', () => {
+    expect(SOURCE).toMatch(/const radialMax = AVATAR_MOTIONS\[name\]\.wristRadialMax\s*\n\s*if \(radialMax !== undefined\) clipWrists\.set\(action, radialMax\)/)
+  })
+
+  it('turns both wrists every frame after the clips and the idle pose are written, before the bones reach the skeleton, on the clip’s own weight', () => {
+    const body = frameBody()
+    const pose = body.indexOf('poseUnderClips(')
+    const limit = body.indexOf("for (const side of ['left', 'right'] as const) limitRadialDeviation((bone) => h?.getNormalizedBoneNode(bone as BoneName), side, limit, w)")
+    const update = body.indexOf('vrm.update(dt)')
+    expect(pose).toBeGreaterThan(0)
+    expect(limit).toBeGreaterThan(pose)
+    expect(update).toBeGreaterThan(limit)
+    expect(body.slice(body.indexOf('for (const [action, limit] of clipWrists)'), limit)).toMatch(/const w = action\.getEffectiveWeight\(\)/)
+  })
+
+  it('lets the limit go with its clip', () => {
+    expect(SOURCE).toMatch(/clipGrips\.clear\(\)\s*\n\s*clipWrists\.clear\(\)/)
+    expect(frameBody()).toMatch(/for \(const \[action, limit\] of clipWrists\) \{\s*\n\s*if \(action !== motionAction && !outgoing\.some\(\(o\) => o\.action === action\)\) \{\s*\n\s*clipWrists\.delete\(action\)/)
+  })
+})
+
+describe('a clip whose hands rest on her', () => {
+  // handRest.test.ts holds a hand to her surface; only these lines put it on her.
+  it('reads her surface at load, the coat that gives way left out', () => {
+    expect(SOURCE).toMatch(/bodyRest = restCloud\(loaded, coat\?\.material \?\? null\)\s*\n\s*bodyFiling = null/)
+    expect(SOURCE).toMatch(/return outerLayer\(bodyCloud\(points, triangles, \(i\) => owner\[i\]\)/)
+  })
+
+  it('looks the rest up when a clip starts, and lets it go with the clip', () => {
+    expect(SOURCE).toMatch(/if \(AVATAR_MOTIONS\[name\]\.handsRest\) handRests\.add\(action\)/)
+    expect(SOURCE).toMatch(/clipWrists\.clear\(\)\s*\n\s*handRests\.clear\(\)/)
+    expect(frameBody()).toMatch(/for \(const action of handRests\) \{\s*\n\s*if \(action !== motionAction && !outgoing\.some\(\(o\) => o\.action === action\)\) \{\s*\n\s*handRests\.delete\(action\)/)
+  })
+
+  it('rests both hands every frame after the wrist limit, before the bones reach the skeleton, on the clips’ weight', () => {
+    const body = frameBody()
+    const limit = body.indexOf('limitRadialDeviation((bone)')
+    const rest = body.indexOf("for (const side of ['left', 'right'] as const) handMemory[side] = restHand(node, side, on, Math.min(1, restWeight), handMemory[side])")
+    const update = body.indexOf('vrm.update(dt)')
+    expect(limit).toBeGreaterThan(0)
+    expect(rest).toBeGreaterThan(limit)
+    expect(update).toBeGreaterThan(rest)
+    expect(body).toMatch(/restWeight \+= action\.getEffectiveWeight\(\)/)
+    expect(body).toMatch(/const surface = surfaceOf\(bodyPosed, bodyRest\.triangles, hipsNode\.getWorldPosition\(new THREE\.Vector3\(\)\), near, HAND_REACH, bodyFiling\)\s*\n\s*bodyFiling = surface\.filing/)
+  })
+
+  it('starts each hand’s search afresh once no clip rests them', () => {
+    expect(frameBody()).toMatch(/\} else \{\s*\n\s*bodyFiling = null\s*\n\s*handMemory\.left = handMemory\.right = null/)
+  })
+
+  it('holds the coat out of what she wears as far as her hands rest on her', () => {
+    const body = frameBody()
+    const sum = body.indexOf('restWeight += action.getEffectiveWeight()')
+    const hold = body.indexOf('coatDent.coatDentHold.value = Math.min(1, restWeight)')
+    expect(sum).toBeGreaterThan(0)
+    expect(hold).toBeGreaterThan(sum)
+  })
+
+  it('gives a coat that gives way under her hands room there', () => {
+    expect(frameBody()).toMatch(/const on = coatDented \? \{ hips: surface\.hips, outside: \(p: THREE\.Vector3\) => surface\.outside\(p\) - COAT_UNDER_HAND \} : surface/)
+  })
+})
+
+describe('the layers that turn her hands start each frame from the clip', () => {
+  // clipUnderLayers.test.ts holds the restore to a bone; only these lines put
+  // it between three's mixer, which writes a bone only when the clip changed
+  // it, and the layers that turn her hands from where they stand.
+  it('puts the clip back right after the mixer, before the grip, the wrist limit and the rest, and remembers where they left her after', () => {
+    const body = frameBody()
+    const mixer = body.indexOf('mixer.update(dt)')
+    const begin = body.indexOf('clipLayers.begin(layeredBones())')
+    const grip = body.indexOf('quaternion.slerp(q, w)')
+    const rest = body.indexOf('handMemory[side] = restHand(')
+    const end = body.indexOf('clipLayers.end()')
+    const update = body.indexOf('vrm.update(dt)')
+    expect(mixer).toBeGreaterThan(0)
+    expect(begin).toBeGreaterThan(mixer)
+    expect(grip).toBeGreaterThan(begin)
+    expect(rest).toBeGreaterThan(grip)
+    expect(end).toBeGreaterThan(rest)
+    expect(update).toBeGreaterThan(end)
+  })
+
+  it('covers both hands, thumbs and every finger joint, and forgets them when no layer is on', () => {
+    expect(SOURCE).toMatch(/'Hand', 'ThumbMetacarpal', 'ThumbProximal', 'ThumbDistal',\s*\n\s*\.\.\.\['Index', 'Middle', 'Ring', 'Little'\]\.flatMap\(\(f\) => \[`\$\{f\}Proximal`, `\$\{f\}Intermediate`, `\$\{f\}Distal`\]\)/)
+    expect(frameBody()).toMatch(/if \(clipGrips\.size \+ clipWrists\.size \+ handRests\.size > 0\) clipLayers\.begin\(layeredBones\(\)\)\s*\n\s*else clipLayers\.clear\(\)/)
   })
 })
 

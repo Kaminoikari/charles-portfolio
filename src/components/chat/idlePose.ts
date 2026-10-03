@@ -63,7 +63,7 @@ export interface SolvedPose {
 }
 
 const SIDES = ['left', 'right'] as const
-type Side = (typeof SIDES)[number]
+export type Side = (typeof SIDES)[number]
 const FOUR_FINGERS = ['Index', 'Middle', 'Ring', 'Little'] as const
 const SEGMENTS = ['Proximal', 'Intermediate', 'Distal'] as const
 const THUMB = ['ThumbMetacarpal', 'ThumbProximal', 'ThumbDistal'] as const
@@ -121,7 +121,7 @@ function mix(ax: Axes, o: THREE.Vector3, outward: number, down: number, back: nu
 }
 
 /** Curl, in degrees per segment (proximal, intermediate, distal), plus the thumb. */
-interface Grip {
+export interface Grip {
   curl: readonly [number, number, number]
   thumb: number
   /** Degrees each of index, middle, ring, little fans away from the middle. */
@@ -139,6 +139,85 @@ const HELD_GRIP: Grip = { curl: [35, 45, 30], thumb: 15, spread: [-2, 0, 2, 4] }
 // The holding hand closes round the other wrist, far enough that the grip
 // reads past the wrist and bracelet it is partly hidden behind (plan).
 const HOLDING_GRIP: Grip = { curl: [55, 65, 45], thumb: 35, spread: [0, 0, 0, 0] }
+// A hand resting on her hip: the four fingers together and gently curled over
+// it, every joint taking a share. The capture's akimbo bends each finger at one
+// joint only, a different one per finger (index 44° at the middle joint alone,
+// little 53° at the knuckle alone), and reads as a claw (owner, 2026-10-03:
+// "the fingers look against how a hand works"). The thumb is not set here.
+export const HIP_GRIP: Grip = { curl: [12, 15, 8], thumb: 0, spread: [-1, 0, 1, 2] }
+
+/**
+ * The four fingers of one hand curled by `grip`, as normalized-bone locals:
+ * a finger runs out along her side and curls toward the palm, and fans about
+ * the palm's normal at its base joint only, the fan's sign per side so "away
+ * from the middle" means the same on both hands.
+ */
+export function fingerGrip(version: '0' | '1', side: Side, grip: Grip): Map<string, THREE.Quaternion> {
+  const ax = axesOf(version)
+  const o = side === 'left' ? ax.l.clone() : ax.l.clone().negate()
+  const palm = ax.u.clone().negate()
+  const curlAxis = new THREE.Vector3().crossVectors(o, palm).normalize()
+  const out = new Map<string, THREE.Quaternion>()
+  FOUR_FINGERS.forEach((finger, i) => {
+    SEGMENTS.forEach((seg, j) => {
+      const q = new THREE.Quaternion().setFromAxisAngle(curlAxis, rad(grip.curl[j]))
+      if (j === 0) {
+        // Per side only: the version's mirror is already in `o`. Signed by
+        // version as well, a 0.x hand fanned inward (index and little
+        // fingertips 50mm apart at rest, 20mm at a 20° spread; measured on
+        // milfy, 2026-10-03) where a 1.0 hand fanned out (48mm to 83mm).
+        const fan = new THREE.Quaternion().setFromAxisAngle(palm, rad(grip.spread[i] * (side === 'left' ? -1 : 1)))
+        q.premultiply(fan)
+      }
+      out.set(`${side}${finger}${seg}`, q)
+    })
+  })
+  return out
+}
+
+// How far a hand on her hip may bend toward the thumb, in degrees. A wrist
+// goes about 20° that way; akimbo's capture bends hers 34° at the waist and
+// 45° at the hip, and the hand reads as broken upward (owner, 2026-10-04:
+// "make sure both hands' angle on the hips is how a body works").
+export const HIP_RADIAL_MAX = 15
+
+/**
+ * Turns one hand back toward its little finger until it bends no more than
+ * `limit` degrees toward the thumb, on `weight` of the excess. The turn is
+ * about the palm's normal at the wrist, so the palm keeps its plane (a hand on
+ * her hip stays on it) and the forearm and the bend toward the back of the hand
+ * are the clip's. Normalized bones, with their world matrices current or not.
+ * Returns the degrees turned.
+ */
+export function limitRadialDeviation(
+  node: (bone: string) => THREE.Object3D | null | undefined,
+  side: Side,
+  limit: number,
+  weight: number,
+): number {
+  const lower = node(`${side}LowerArm`)
+  const hand = node(`${side}Hand`)
+  const middle = node(`${side}MiddleProximal`)
+  const index = node(`${side}IndexProximal`)
+  const little = node(`${side}LittleProximal`)
+  if (!lower || !hand?.parent || !middle || !index || !little) return 0
+  hand.updateWorldMatrix(true, true)
+  const at = (o: THREE.Object3D) => o.getWorldPosition(new THREE.Vector3())
+  const wrist = at(hand)
+  const forearm = wrist.clone().sub(at(lower)).normalize()
+  const along = at(middle).sub(wrist).normalize()
+  const thumbward = at(index).sub(at(little))
+  thumbward.addScaledVector(along, -thumbward.dot(along)).normalize()
+  const radial = Math.atan2(-forearm.dot(thumbward), forearm.dot(along))
+  const over = (radial - rad(limit)) * weight
+  if (!(over > 0)) return 0
+  // A positive turn about along × thumbward takes the hand toward the thumb.
+  const normal = new THREE.Vector3().crossVectors(along, thumbward).normalize()
+  const parent = hand.parent.getWorldQuaternion(new THREE.Quaternion())
+  const turn = new THREE.Quaternion().setFromAxisAngle(normal, -over)
+  hand.quaternion.premultiply(parent.clone().invert().multiply(turn).multiply(parent))
+  return THREE.MathUtils.radToDeg(over)
+}
 
 interface ArmChain {
   /** The shoulder (collarbone), when the pose moves it; identity otherwise. */
@@ -211,22 +290,7 @@ class PoseBuilder {
     // Finger locals are in the hand's rest frame, which is the model's: a
     // finger runs along `o` and curls toward the palm about o × palm.
     const curlAxis = new THREE.Vector3().crossVectors(o, this.palm0).normalize()
-    const fanAxis = this.palm0
-    FOUR_FINGERS.forEach((finger, i) => {
-      SEGMENTS.forEach((seg, j) => {
-        const q = new THREE.Quaternion().setFromAxisAngle(curlAxis, rad(grip.curl[j]))
-        // The fan belongs to the base joint only. Its sign is per side so
-        // "away from the middle" means the same on both hands.
-        if (j === 0) {
-          const fan = new THREE.Quaternion().setFromAxisAngle(
-            fanAxis,
-            rad(grip.spread[i] * (side === 'left' ? 1 : -1) * (this.sk.version === '0' ? 1 : -1)),
-          )
-          q.premultiply(fan)
-        }
-        this.out.set(`${side}${finger}${seg}`, q)
-      })
-    })
+    for (const [bone, q] of fingerGrip(this.sk.version, side, grip)) this.out.set(bone, q)
     // The thumb folds across the palm about the finger axis; which sign does
     // that depends on the side and on the version, as the prototype measured.
     const thumbSign = (side === 'left' ? 1 : -1) * (this.sk.version === '0' ? 1 : -1)

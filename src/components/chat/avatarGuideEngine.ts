@@ -78,13 +78,16 @@ import {
   type AvatarMotionName,
 } from './avatarMotions'
 import { borrowedMouthOfUrl, familyOfUrl, type AvatarFamilyId } from './avatarVariants'
+import { bodyCloud, clipUnderLayers, HAND_REACH, outerLayer, posedCloud, REST_BAND, restHand, surfaceOf, type BodyCloud, type HandRestMemory, type SurfaceFiling } from './handRest'
 import {
   armRollsToWrist,
   clipDriven,
   fingerDrift,
+  fingerGrip,
   holdingHandFree,
   idlePoseNow,
   idlePoseStart,
+  limitRadialDeviation,
   normalizedRest,
   solveIdlePoses,
   stepIdlePose,
@@ -95,7 +98,7 @@ import {
   type PoseRotations,
   writeIdlePose,
 } from './idlePose'
-import { armSwing, coatSwingAt, coatSwingCurve } from './coatSwing'
+import { COAT_UNDER_HAND, coatDentOf, coatDentUniforms, dentCoat, handSpheres } from './coatDent'
 import {
   aimPitchPose,
   armRestPins,
@@ -261,6 +264,74 @@ function trunkSurface(v: VRM, root: THREE.Object3D): Float32Array {
     }
   })
   return Float32Array.from(out)
+}
+
+/**
+ * Her surface her hands rest on (handRest.ts): every triangle whose corners
+ * all hang from a TRUNK_ANCHOR bone, as trunkSurface counts them, the coat
+ * that gives way to her hands (`coat`, a material) left out, within
+ * REST_BAND of her hips, each corner carried by the normalized bones it is
+ * skinned to, the
+ * layers under her clothes left out (outerLayer). Read at load, while she
+ * stands at rest.
+ */
+function restCloud(v: VRM, coat: string | null): BodyCloud | null {
+  const h = v.humanoid
+  if (!h) return null
+  const boneOf = new Map<THREE.Object3D, string>()
+  for (const name of Object.keys(h.humanBones)) {
+    const node = h.getRawBoneNode(name as BoneName)
+    if (node) boneOf.set(node, name)
+  }
+  const anchorOf = (o: THREE.Object3D): string | null => {
+    for (let n: THREE.Object3D | null = o; n; n = n.parent) {
+      const name = boneOf.get(n)
+      if (name) return name
+    }
+    return null
+  }
+  v.scene.updateMatrixWorld(true)
+  const hipsY = h.getRawBoneNode('hips')?.getWorldPosition(new THREE.Vector3()).y
+  if (hipsY === undefined) return null
+  const points: number[] = []
+  const triangles: number[] = []
+  const owner: ([THREE.Object3D, number][] | null)[] = []
+  const p = new THREE.Vector3()
+  v.scene.traverse((o) => {
+    const mesh = o as THREE.SkinnedMesh
+    if (!mesh.isSkinnedMesh) return
+    const joints = mesh.geometry.getAttribute('skinIndex')
+    const weights = mesh.geometry.getAttribute('skinWeight')
+    const index = mesh.geometry.getIndex()
+    if (!joints || !weights || !index) return
+    // Each joint's humanoid bone, normalized: what carries a point of her.
+    const carrier = mesh.skeleton.bones.map((bone) => {
+      const name = anchorOf(bone)
+      return name ? { node: h.getNormalizedBoneNode(name as BoneName) ?? null, trunk: TRUNK_ANCHOR.test(name) } : null
+    })
+    const base = owner.length
+    for (let i = 0; i < weights.count; i++) {
+      let best = 0
+      for (let k = 1; k < weights.itemSize; k++) if (weights.getComponent(i, k) > weights.getComponent(i, best)) best = k
+      mesh.getVertexPosition(i, p)
+      mesh.localToWorld(p)
+      points.push(p.x, p.y, p.z)
+      const by: [THREE.Object3D, number][] = []
+      for (let k = 0; k < weights.itemSize; k++) {
+        const node = carrier[joints.getComponent(i, k)]?.node
+        if (node) by.push([node, weights.getComponent(i, k)])
+      }
+      owner.push(carrier[joints.getComponent(i, best)]?.trunk && Math.abs(p.y - hipsY) <= REST_BAND ? by : null)
+    }
+    const mats = [mesh.material].flat()
+    const groups = mesh.geometry.groups.length ? mesh.geometry.groups : [{ start: 0, count: index.count, materialIndex: 0 }]
+    for (const g of groups) {
+      const name = mats[g.materialIndex ?? 0]?.name ?? ''
+      if (name === coat || /\(Outline\)$/.test(name)) continue
+      for (let t = g.start; t < g.start + g.count; t++) triangles.push(base + index.getX(t))
+    }
+  })
+  return outerLayer(bodyCloud(points, triangles, (i) => owner[i]), h.getNormalizedBoneNode('hips')?.getWorldPosition(new THREE.Vector3()) ?? new THREE.Vector3())
 }
 
 /** Writes `pose` outright on the normalized bones; under a clip, poseUnderClips. */
@@ -1009,6 +1080,20 @@ export function initAvatarGuide(
     // No black notch where a bent elbow folds her skin through itself (elbowOutline.ts).
     thinOutlinesAtElbows(loaded)
     scene.add(loaded.scene)
+    // Her hands press the coat in instead of passing through it (coatDent.ts).
+    coatDented = false
+    const coat = coatDentOf(url)
+    if (coat && loaded.humanoid) {
+      const human = new Map<THREE.Object3D, string>()
+      for (const [name, b] of Object.entries(loaded.humanoid.rawHumanBones)) if (b?.node) human.set(b.node, name)
+      const hips = loaded.humanoid.getRawBoneNode('hips')
+      if (hips) {
+        loaded.scene.updateMatrixWorld(true)
+        coatDented = dentCoat(loaded.scene, coat, coatDent, (bone) => human.get(bone) ?? null, hips.getWorldPosition(new THREE.Vector3())) > 0
+      }
+    }
+    bodyRest = restCloud(loaded, coat?.material ?? null)
+    bodyFiling = null
     if (loaded.lookAt) loaded.lookAt.target = eyeTarget
     poses = solvePoses(loaded)
     drift = fingerDrift(loaded.meta.metaVersion)
@@ -1198,15 +1283,46 @@ export function initAvatarGuide(
   let mixer: THREE.AnimationMixer | null = null
   let motionAction: THREE.AnimationAction | null = null
   let motionName: AvatarMotionName | null = null
-  // How far the arms turn out over a coat, per clip still holding weight on
-  // this body (coatSwing.ts). A clip handed over keeps its curve while it
-  // fades, so the turn leaves with it instead of in one frame.
-  const coatSwings = new Map<THREE.AnimationAction, readonly number[]>()
-  const turnArms = armSwing()
   // Clips a newer one took the bones over from mid-play, still giving their
   // weight back (see takeOverMotion). Usually empty; one entry for MOTION_FADE
   // after a switch.
   const outgoing: OutgoingMotion[] = []
+  // Finger grips, per clip still holding weight that has one (avatarMotions
+  // `fingers`). A clip handed over keeps its grip while it fades.
+  const clipGrips = new Map<THREE.AnimationAction, Map<string, THREE.Quaternion>>()
+  // Wrist limits, per clip still holding weight that has one (avatarMotions
+  // `wristRadialMax`), on the same terms.
+  const clipWrists = new Map<THREE.AnimationAction, number>()
+  // Clips still holding weight whose hands rest on her (avatarMotions
+  // `handsRest`), and her surface they rest on, read at load.
+  const handRests = new Set<THREE.AnimationAction>()
+  let bodyRest: BodyCloud | null = null
+  let bodyPosed: Float32Array | undefined
+  // Kept from frame to frame while her hands rest: the surface's filing and
+  // what each hand found, where the next frame's searches start.
+  let bodyFiling: SurfaceFiling | null = null
+  const handMemory: Record<'left' | 'right', HandRestMemory | null> = { left: null, right: null }
+  // Her hands' bones under the layers that turn them from where they stand.
+  const clipLayers = clipUnderLayers()
+  const layeredBones = () => {
+    const h = vrm?.humanoid
+    const out: THREE.Object3D[] = []
+    for (const side of ['left', 'right'] as const) {
+      for (const name of [
+        'Hand', 'ThumbMetacarpal', 'ThumbProximal', 'ThumbDistal',
+        ...['Index', 'Middle', 'Ring', 'Little'].flatMap((f) => [`${f}Proximal`, `${f}Intermediate`, `${f}Distal`]),
+      ]) {
+        const n = h?.getNormalizedBoneNode(`${side}${name}` as BoneName)
+        if (n) out.push(n)
+      }
+    }
+    return out
+  }
+  // Where her hands are, for the coat that gives way to them (coatDent.ts).
+  const coatDent = coatDentUniforms()
+  // One per bone: handSpheres holds several at once.
+  const dentScratch = new Map<string, THREE.Vector3>()
+  let coatDented = false
   const motionClips = new Map<AvatarMotionName, THREE.AnimationClip>()
   // The parsed VRMA behind each clip. A clip is bound to ONE body's bones, so
   // a body swap rebuilds every clip from here rather than fetching again.
@@ -1309,7 +1425,9 @@ export function initAvatarGuide(
     motionAction.stop()
     motionAction = null
     motionName = null
-    coatSwings.clear()
+    clipGrips.clear()
+    clipWrists.clear()
+    handRests.clear()
     settleDur = 0
     settleT = 0
     if (vrm) {
@@ -1346,8 +1464,14 @@ export function initAvatarGuide(
     if (out) outgoing.push(out)
     motionAction = action
     motionName = name
-    const curve = coatSwingCurve(shownUrl, name)
-    if (curve) coatSwings.set(action, curve)
+    const grip = AVATAR_MOTIONS[name].fingers
+    if (grip) {
+      const version = vrm.meta.metaVersion
+      clipGrips.set(action, new Map([...fingerGrip(version, 'left', grip), ...fingerGrip(version, 'right', grip)]))
+    }
+    const radialMax = AVATAR_MOTIONS[name].wristRadialMax
+    if (radialMax !== undefined) clipWrists.set(action, radialMax)
+    if (AVATAR_MOTIONS[name].handsRest) handRests.add(action)
     return true
   }
 
@@ -1560,6 +1684,10 @@ export function initAvatarGuide(
           if (!releaseMotion(outgoing[i], dt, MOTION_FADE)) outgoing.splice(i, 1)
         }
         mixer.update(dt)
+        // The layers below turn her hands from where they stand; put back the
+        // clip's own turn where the mixer left last frame's (clipUnderLayers).
+        if (clipGrips.size + clipWrists.size + handRests.size > 0) clipLayers.begin(layeredBones())
+        else clipLayers.clear()
         if (motionAction) {
           if (settleDur === 0 && !motionAction.isRunning()) beginSettle()
           else if (settleDur > 0 && settleT >= settleDur) stopMotion()
@@ -1588,18 +1716,57 @@ export function initAvatarGuide(
         }
       }
 
-      // Her arms out over a coat that would swallow her hands (coatSwing.ts),
-      // after both layers above have written them, on the clip's own weight so
-      // a settle takes the turn back with the clip. Every frame, at 0 too:
-      // armSwing takes last frame's turn off a bone the mixer left alone.
+      // A clip whose captured fingers do not read as a hand holds them in its
+      // own grip (avatarMotions `fingers`), after both layers above have
+      // written them, on the clip's own weight so a fade takes it back.
       if (vrm) {
-        let degrees = 0
-        for (const [action, curve] of coatSwings) {
-          if (action !== motionAction && !outgoing.some((o) => o.action === action)) coatSwings.delete(action)
-          else degrees += coatSwingAt(curve, action.time) * action.getEffectiveWeight()
-        }
         const h = vrm.humanoid
-        turnArms((bone) => h?.getNormalizedBoneNode(bone as BoneName), vrm.meta.metaVersion, degrees)
+        for (const [action, grip] of clipGrips) {
+          if (action !== motionAction && !outgoing.some((o) => o.action === action)) {
+            clipGrips.delete(action)
+            continue
+          }
+          const w = action.getEffectiveWeight()
+          for (const [bone, q] of grip) h?.getNormalizedBoneNode(bone as BoneName)?.quaternion.slerp(q, w)
+        }
+        // A clip that bends her wrists past where a wrist goes turns them back
+        // in the palm's plane (avatarMotions `wristRadialMax`), on its weight.
+        for (const [action, limit] of clipWrists) {
+          if (action !== motionAction && !outgoing.some((o) => o.action === action)) {
+            clipWrists.delete(action)
+            continue
+          }
+          const w = action.getEffectiveWeight()
+          for (const side of ['left', 'right'] as const) limitRadialDeviation((bone) => h?.getNormalizedBoneNode(bone as BoneName), side, limit, w)
+        }
+        // A clip whose hands rest on her lays them on her surface as it
+        // stands this frame (avatarMotions `handsRest`), on its weight.
+        let restWeight = 0
+        for (const action of handRests) {
+          if (action !== motionAction && !outgoing.some((o) => o.action === action)) {
+            handRests.delete(action)
+            continue
+          }
+          restWeight += action.getEffectiveWeight()
+        }
+        // Resting, her hands lie outside what she wears: the coat holds to it.
+        coatDent.coatDentHold.value = Math.min(1, restWeight)
+        const node = (bone: string) => h?.getNormalizedBoneNode(bone as BoneName)
+        const hipsNode = node('hips')
+        const hands = [node('leftHand'), node('rightHand')]
+        if (restWeight > 0 && bodyRest && hipsNode && hands[0] && hands[1]) {
+          bodyPosed = posedCloud(bodyRest, bodyPosed)
+          const near = hands.map((hand) => hand!.getWorldPosition(new THREE.Vector3()))
+          const surface = surfaceOf(bodyPosed, bodyRest.triangles, hipsNode.getWorldPosition(new THREE.Vector3()), near, HAND_REACH, bodyFiling)
+          bodyFiling = surface.filing
+          // A coat that gives way under her hands needs room there (coatDent.ts).
+          const on = coatDented ? { hips: surface.hips, outside: (p: THREE.Vector3) => surface.outside(p) - COAT_UNDER_HAND } : surface
+          for (const side of ['left', 'right'] as const) handMemory[side] = restHand(node, side, on, Math.min(1, restWeight), handMemory[side])
+        } else {
+          bodyFiling = null
+          handMemory.left = handMemory.right = null
+        }
+        clipLayers.end()
       }
 
       // The clip-driven camera slide. A clip that does not fit the composition
@@ -2000,6 +2167,21 @@ export function initAvatarGuide(
       const unroll = armRollsToWrist((bone) => h.getNormalizedBoneNode(bone as BoneName))
       vrm.update(dt) // spring bones (hair, skirt) advance here
       unroll()
+      // The coat gives way where her hands are (coatDent.ts), read off the
+      // skeleton the skin is drawn from, as it stands this frame.
+      if (coatDented) {
+        vrm.scene.updateMatrixWorld(true)
+        const raw = (bone: string) => {
+          const node = h.getRawBoneNode(bone as BoneName)
+          if (!node) return null
+          let at = dentScratch.get(bone)
+          if (!at) dentScratch.set(bone, (at = new THREE.Vector3()))
+          return at.setFromMatrixPosition(node.matrixWorld)
+        }
+        handSpheres(raw, coatDent.coatDentSpheres.value)
+        const hips = raw('hips')
+        if (hips) coatDent.coatDentHips.value.copy(hips)
+      }
     }
     // The canvas grows when the chat opens (ChatWidget hands the docked and
     // fullscreen placements a bigger box). Matching the drawing buffer to the

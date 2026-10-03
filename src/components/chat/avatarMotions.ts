@@ -19,6 +19,7 @@
 // names that pack only.
 import { avatarViewSpan, type AvatarPlacement } from './avatarMode'
 import { AVATAR_FAMILIES, type AvatarFamilyId } from './avatarVariants'
+import { HIP_GRIP, HIP_RADIAL_MAX, type Grip } from './idlePose'
 
 export type AvatarMotionName =
   | 'peaceSign'
@@ -174,6 +175,22 @@ export interface AvatarMotionDef {
    * (avatarMode.blinkMayStart), the same rule a strong emotion gets.
    */
   face?: string
+  /**
+   * The grip her four fingers hold while the clip plays, in place of the
+   * capture's own, when those do not read as a hand (idlePose.HIP_GRIP).
+   */
+  fingers?: Grip
+  /**
+   * How far, in degrees, her hands may bend toward the thumb while the clip
+   * plays, where the capture bends them past a wrist's range
+   * (idlePose.HIP_RADIAL_MAX).
+   */
+  wristRadialMax?: number
+  /**
+   * Her hands rest on her while the clip plays: palms laid on her, fingertips
+   * on her, thumbs out of her (handRest.ts), where the capture's are not.
+   */
+  handsRest?: boolean
 }
 
 // Three clips of the pack are kept out on purpose, and the measurements that
@@ -205,7 +222,7 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // 0.674 budget, hands never above y=0.938, hips flat at 0.882. Best
   // palm-to-viewer is -0.15, the backs of her hands, which is what hands on
   // hips look like from the front.
-  akimbo: { placements: ['waistUp', 'column'], showsPalm: false },
+  akimbo: { placements: ['waistUp', 'column'], showsPalm: false, fingers: HIP_GRIP, wristRadialMax: HIP_RADIAL_MAX, handsRest: true },
   // She turns her fingers over in front of her. The smallest of the ten:
   // 0.233 / 0.234 sideways, hands never above y=0.954. Palm -0.10.
   playFingers: { placements: ['waistUp', 'column'], showsPalm: false },

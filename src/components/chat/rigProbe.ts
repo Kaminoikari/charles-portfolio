@@ -44,6 +44,7 @@ import * as THREE from 'three'
 import { VRMHumanBoneParentMap, VRMHumanoid, type VRMHumanBoneName, type VRMHumanBones } from '@pixiv/three-vrm'
 
 import { solveIdlePose, TRUNK_ANCHOR, type IdlePoseName, type PoseSkeleton, type SolvedPose } from './idlePose'
+import { bodyCloud, outerLayer, REST_BAND, type BodyCloud } from './handRest'
 import {
   buildNodes,
   parseGlb,
@@ -1207,6 +1208,83 @@ export function posedMesh(glb: Glb, rig: Rig): PosedMesh {
 }
 
 /**
+ * The humanoid bones each vertex of `posedMesh` is skinned to, as `anchor`
+ * names them, and their weights: four per vertex, in posedMesh's vertex
+ * order, null and 0 where a slot is unused.
+ */
+export function skinAnchors(glb: Glb, rig: Rig): { anchor: (string | null)[]; weight: Float32Array } {
+  const json = glb.json
+  const boneOfNode = new Map<number, string>()
+  for (const name of Object.keys(rig.bones)) {
+    if (name.endsWith('Tip')) continue
+    const node = rig.humanoid.getRawBoneNode(name as VRMHumanBoneName)
+    if (node) boneOfNode.set(rig.raw.indexOf(node), name)
+  }
+  const anchorOf = (joint: number): string | null => {
+    for (let o: THREE.Object3D | null = rig.raw[joint]; o; o = o.parent) {
+      const name = boneOfNode.get(rig.raw.indexOf(o))
+      if (name) return name
+    }
+    return null
+  }
+  const anchor: (string | null)[] = []
+  const weight: number[] = []
+  for (const node of json.nodes) {
+    if (node.mesh === undefined || node.skin === undefined) continue
+    const mesh = json.meshes?.[node.mesh]
+    const skin = json.skins?.[node.skin]
+    if (!mesh || !skin) continue
+    const seen = new Set<string>()
+    for (const prim of mesh.primitives) {
+      if ((prim.mode ?? 4) !== 4) continue
+      const { POSITION, JOINTS_0, WEIGHTS_0 } = prim.attributes
+      if (POSITION === undefined || JOINTS_0 === undefined || WEIGHTS_0 === undefined) continue
+      // The same shared-buffer rule as posedMesh, so the vertices line up.
+      const key = `${POSITION}/${JOINTS_0}/${WEIGHTS_0}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const jo = readAccessorRows(glb, JOINTS_0)
+      const we = readAccessorRows(glb, WEIGHTS_0)
+      const count = we.data.length / we.ncomp
+      for (let i = 0; i < count; i++) {
+        for (let k = 0; k < 4; k++) {
+          const w = k < we.ncomp ? we.data[i * we.ncomp + k] : 0
+          anchor.push(w > 0 ? anchorOf(skin.joints[jo.data[i * jo.ncomp + k]]) : null)
+          weight.push(w > 0 ? w : 0)
+        }
+      }
+    }
+  }
+  return { anchor, weight: Float32Array.from(weight) }
+}
+
+/**
+ * Her surface her hands rest on (handRest.ts), read off the file as the
+ * engine reads it at load (avatarGuideEngine restCloud): trunk and legs
+ * within REST_BAND of her hips, carried by the bones they are skinned to,
+ * `coat` (a material that gives way to her hands) left out. Leaves the rig at rest.
+ */
+export function handRestCloud(glb: Glb, rig: Rig, coat: string | null): BodyCloud {
+  resetRig(rig)
+  const mesh = posedMesh(glb, rig)
+  const coated = new Set<number>()
+  if (coat) for (const tri of garmentTriangles(glb, mesh, coat)) for (let c = 0; c < 3; c++) coated.add(mesh.triangles[tri * 3 + c])
+  const hips = rig.restPosition.hips.y
+  const skin = skinAnchors(glb, rig)
+  const cloud = bodyCloud(mesh.positions, mesh.triangles, (i) => {
+    const a = mesh.anchor[i]
+    if (!a || !TRUNK_ANCHOR.test(a) || coated.has(i) || Math.abs(mesh.positions[i * 3 + 1] - hips) > REST_BAND) return null
+    const by: [THREE.Object3D, number][] = []
+    for (let k = 0; k < 4; k++) {
+      const bone = skin.anchor[i * 4 + k]
+      if (bone && rig.bones[bone]) by.push([rig.bones[bone], skin.weight[i * 4 + k]])
+    }
+    return by
+  })
+  return outerLayer(cloud, rig.bones.hips.getWorldPosition(new THREE.Vector3()))
+}
+
+/**
  * The triangles a caller picks, binned on a grid in the plane square to one
  * axis, so a point can ask which of them a ray along that axis crosses. `z` is
  * the viewer's axis: an orthographic front view, close enough to the site's
@@ -1513,27 +1591,38 @@ export const GARMENT_REACH = 0.3
  * there. A hand on her hip under a coat that bells out over her hips reads
  * the width of the bell, and the coat hides the hand (milfy's catwalk,
  * 2026-10-03, owner: "the hands go through the coat").
+ *
+ * A hand vertex whose ray crosses `under` (her body, or what she wears under
+ * the garment) before it reaches the garment is inside her or her clothes,
+ * hidden by them with or without the garment, and does not count: dance
+ * pushes a fingertip to 3mm from her hips' axis, 111mm inside her skin and
+ * 258mm inside the coat, and akimbo presses a thumb 5mm into her skirt.
  */
-export function handInGarment(rig: Rig, mesh: PosedMesh, garment: readonly number[]): number {
+export function handInGarment(rig: Rig, mesh: PosedMesh, garment: readonly number[], under: readonly number[] = []): number {
   const hips = worldPosition(rig, 'hips')
   // The ray is level, so only a triangle spanning the vertex's height can be
   // crossed: file each one under every band its height covers.
-  const bands = new Map<number, number[]>()
   const band = (y: number): number => Math.floor(y / CLOTH_SHELL_BAND)
-  for (const tri of garment) {
-    let lo = Infinity
-    let hi = -Infinity
-    for (let k = 0; k < 3; k++) {
-      const y = mesh.positions[mesh.triangles[tri * 3 + k] * 3 + 1]
-      lo = Math.min(lo, y)
-      hi = Math.max(hi, y)
+  const file = (tris: readonly number[]): Map<number, number[]> => {
+    const bands = new Map<number, number[]>()
+    for (const tri of tris) {
+      let lo = Infinity
+      let hi = -Infinity
+      for (let k = 0; k < 3; k++) {
+        const y = mesh.positions[mesh.triangles[tri * 3 + k] * 3 + 1]
+        lo = Math.min(lo, y)
+        hi = Math.max(hi, y)
+      }
+      for (let j = band(lo); j <= band(hi); j++) {
+        const list = bands.get(j)
+        if (list) list.push(tri)
+        else bands.set(j, [tri])
+      }
     }
-    for (let j = band(lo); j <= band(hi); j++) {
-      const list = bands.get(j)
-      if (list) list.push(tri)
-      else bands.set(j, [tri])
-    }
+    return bands
   }
+  const garmentBands = file(garment)
+  const underBands = file(under)
   const p = new THREE.Vector3()
   const a = new THREE.Vector3()
   const b = new THREE.Vector3()
@@ -1541,21 +1630,33 @@ export function handInGarment(rig: Rig, mesh: PosedMesh, garment: readonly numbe
   const out = new THREE.Vector3()
   const hit = new THREE.Vector3()
   const ray = new THREE.Ray()
-  let deepest = 0
-  for (let i = 0; i < mesh.owner.length; i++) {
-    if (!HAND_BONE.test(mesh.owner[i] ?? '')) continue
-    p.fromArray(mesh.positions, i * 3)
-    const near = bands.get(band(p.y))
-    if (!near) continue
-    ray.set(p, out.set(p.x - hips.x, 0, p.z - hips.z).normalize())
-    for (const tri of near) {
+  // Every crossing within `reach`, nearest and farthest.
+  const crossings = (tris: readonly number[] | undefined, reach: number): { near: number; far: number } => {
+    let near = Infinity
+    let far = 0
+    for (const tri of tris ?? []) {
       a.fromArray(mesh.positions, mesh.triangles[tri * 3] * 3)
       b.fromArray(mesh.positions, mesh.triangles[tri * 3 + 1] * 3)
       c.fromArray(mesh.positions, mesh.triangles[tri * 3 + 2] * 3)
       if (!ray.intersectTriangle(a, b, c, false, hit)) continue
       const d = hit.distanceTo(p)
-      if (d < GARMENT_REACH && d > deepest) deepest = d
+      if (d >= reach) continue
+      near = Math.min(near, d)
+      far = Math.max(far, d)
     }
+    return { near, far }
+  }
+  let deepest = 0
+  for (let i = 0; i < mesh.owner.length; i++) {
+    if (!HAND_BONE.test(mesh.owner[i] ?? '')) continue
+    p.fromArray(mesh.positions, i * 3)
+    const near = garmentBands.get(band(p.y))
+    if (!near) continue
+    ray.set(p, out.set(p.x - hips.x, 0, p.z - hips.z).normalize())
+    const { far } = crossings(near, GARMENT_REACH)
+    if (far <= deepest) continue
+    if (crossings(underBands.get(band(p.y)), far).near < far) continue
+    deepest = far
   }
   return deepest
 }
