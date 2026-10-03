@@ -293,9 +293,9 @@ export const AVATAR_MOTIONS: Record<AvatarMotionName, AvatarMotionDef> = {
   // height of 1.071 and stands near 0.82, which seated her feet 0.15m under the
   // floor; its vertical hips track is raised so her feet rest where akimbo's do.
   //
-  // Every body but Sakurada Fumiriya's wears it. She stands 1.92m at the crown,
-  // and the clip opens with her hips 0.090 below her rest, past MAX_HIPS_SINK,
-  // which no waiver carries. She is not offered to visitors, so what this costs
+  // Every body but Sakurada Fumiriya's wears it. He stands 1.92m at the crown,
+  // and the clip opens with his hips 0.090 below his rest, past MAX_HIPS_SINK,
+  // which no waiver carries. He is not offered to visitors, so what this costs
   // is a clip on a body nobody can pick.
   macarena: {
     placements: ['waistUp', 'column'],
