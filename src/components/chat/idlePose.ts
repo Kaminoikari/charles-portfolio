@@ -5,10 +5,11 @@
 // a mannequin. docs/plans/avatar-idle-poses.md has the owner's two reference
 // poses and the render prototype behind the numbers here.
 //
-// Both poses are written in BODY terms, which way each segment points and which
-// way its palm faces, and turned into joint rotations per body. That is what
-// lets one definition stand on a 0.x body facing -Z and a 1.0 body facing +Z,
-// on long arms and short ones. The clasp behind the back is solved rather than
+// The open pose is the first frame of the `cheer` clip since 2026-10-03
+// (CHEER_START). The hands-behind pose is written in BODY terms, which way each
+// segment points and which way its palm faces, and turned into joint rotations
+// per body. That is what lets one definition stand on a 0.x body facing -Z and
+// a 1.0 body facing +Z, on long arms and short ones. The clasp is solved rather than
 // authored: the holding hand's arm is placed by two-bone IK so its palm lands
 // on the other wrist on every body, instead of on the one body the angles were
 // tuned on.
@@ -114,20 +115,6 @@ export function basisRotation(
   return new THREE.Quaternion().setFromRotationMatrix(m)
 }
 
-/**
- * A direction out of the shoulder: `out` degrees away from hanging straight
- * down toward her side `o`, then `fwd` degrees toward the viewer (negative is
- * behind her).
- */
-function hang(ax: Axes, o: THREE.Vector3, out: number, fwd: number): THREE.Vector3 {
-  return o
-    .clone()
-    .multiplyScalar(Math.sin(rad(out)))
-    .addScaledVector(ax.u, -Math.cos(rad(out)))
-    .addScaledVector(ax.f, Math.sin(rad(fwd)))
-    .normalize()
-}
-
 /** A direction from three body-relative components: outward, down, back. */
 function mix(ax: Axes, o: THREE.Vector3, outward: number, down: number, back: number): THREE.Vector3 {
   return o.clone().multiplyScalar(outward).addScaledVector(ax.u, -down).addScaledVector(ax.f, -back).normalize()
@@ -141,7 +128,8 @@ interface Grip {
   spread: readonly [number, number, number, number]
 }
 
-// The owner's open hands: "fingers relaxed, loosely spread and slightly
+// The hands on the way between the two poses (solveVia), and until 2026-10-03
+// the open pose's too: the owner's "fingers relaxed, loosely spread and slightly
 // curled". The capture's own relaxed hands (spin, squat, modelPose, peaceSign
 // ends) bend the proximals 20–30°; this stays under that so the hand still
 // reads as open.
@@ -264,31 +252,145 @@ class PoseBuilder {
 }
 
 /**
- * Open hands: the owner's first reference and the rest pose everywhere.
+ * Open hands: the rest pose everywhere, and one of the two the stage takes
+ * turns with.
  *
- * Upper arms a little out and a touch forward, elbows nearly straight with
- * the forearm flaring a little further, wrists turned so the palms face forward
- * and down, hands just outside the thighs.
+ * Since 2026-10-03 it is the first frame of `cheer` and `jumpAround` (the two
+ * open on one stance), the owner's pick: arms hanging relaxed at her sides,
+ * elbows a little bent, fingers in their natural curl. Until then it was
+ * solved here in body terms (hands just outside the thighs, palms forward and
+ * down), the owner's first reference of 2026-09-30.
+ *
+ * A clip's rotations sit on the normalized rig, where every body rests at
+ * identity, so the same numbers stand every body in the stance the clip
+ * opens on. They are copied here because she stands in this pose before the
+ * clips have loaded; idlePose.test.ts reads both files' first frames and holds
+ * this table to them. The arms, hands and fingers only: her head is headAim's,
+ * and the clip's bent knees need the hips lowered with them, which nothing
+ * outside a clip writes.
  */
-/** Degrees out from hanging straight down, per segment. */
-export const OPEN_ARM = { upper: 16, fore: 24, hand: 38 }
+/** VRM 1.0 convention, as a .vrma carries them: x, y, z, w. */
+export const CHEER_START: readonly (readonly [string, readonly [number, number, number, number]])[] = [
+  ['leftShoulder', [0.000000, -0.000000, -0.000000, 1.000000]],
+  ['leftUpperArm', [0.123626, -0.102530, -0.617300, 0.770159]],
+  ['leftLowerArm', [0.061301, 0.056998, 0.005344, -0.996476]],
+  ['leftHand', [-0.072850, 0.038501, 0.028884, 0.996181]],
+  ['leftIndexProximal', [0.013198, 0.047399, -0.080368, 0.995550]],
+  ['leftIndexIntermediate', [-0.019822, 0.008481, -0.064071, 0.997713]],
+  ['leftIndexDistal', [-0.024535, 0.010498, -0.001658, 0.999643]],
+  ['leftMiddleProximal', [0.032251, 0.061348, -0.109353, 0.991584]],
+  ['leftMiddleIntermediate', [0.000001, -0.000001, -0.130876, 0.991399]],
+  ['leftMiddleDistal', [0.000002, -0.000001, -0.000202, 1.000001]],
+  ['leftRingProximal', [0.026632, 0.055497, -0.072223, 0.995487]],
+  ['leftRingIntermediate', [-0.004190, -0.001125, -0.198241, 0.980144]],
+  ['leftRingDistal', [0.008728, -0.003742, -0.000824, 0.999955]],
+  ['leftLittleProximal', [0.037549, 0.085401, -0.096427, 0.990959]],
+  ['leftLittleIntermediate', [-0.005220, -0.002867, -0.139441, 0.990213]],
+  ['leftLittleDistal', [0.013034, -0.005613, -0.001874, 0.999898]],
+  ['leftThumbMetacarpal', [0.034557, 0.042027, -0.112796, 0.992128]],
+  ['leftThumbProximal', [0.008709, 0.154056, 0.008989, 0.987983]],
+  ['leftThumbDistal', [-0.008017, 0.006366, -0.003298, 0.999942]],
+  ['rightShoulder', [0.000000, 0.000000, -0.000000, 1.000000]],
+  ['rightUpperArm', [0.081643, 0.101186, 0.623920, 0.770597]],
+  ['rightLowerArm', [-0.078027, 0.027702, -0.000995, 0.996566]],
+  ['rightHand', [-0.045753, 0.054596, 0.030896, 0.996981]],
+  ['rightIndexProximal', [-0.013130, 0.047262, -0.080288, -0.995564]],
+  ['rightIndexIntermediate', [0.019777, 0.008477, -0.064246, -0.997702]],
+  ['rightIndexDistal', [0.024503, 0.010503, -0.001559, -0.999644]],
+  ['rightMiddleProximal', [-0.032321, 0.061518, -0.109390, -0.991567]],
+  ['rightMiddleIntermediate', [-0.000003, -0.000001, -0.130826, -0.991405]],
+  ['rightMiddleDistal', [-0.000005, -0.000002, -0.000246, -1.000000]],
+  ['rightRingProximal', [-0.026621, 0.055455, -0.072202, -0.995491]],
+  ['rightRingIntermediate', [0.004183, -0.001126, -0.198274, -0.980137]],
+  ['rightRingDistal', [-0.008746, -0.003746, -0.000812, -0.999955]],
+  ['rightLittleProximal', [-0.037550, 0.085387, -0.096409, -0.990961]],
+  ['rightLittleIntermediate', [0.005210, -0.002870, -0.139450, -0.990211]],
+  ['rightLittleDistal', [-0.013061, -0.005621, -0.001800, -0.999898]],
+  ['rightThumbMetacarpal', [-0.034560, 0.042031, -0.112798, -0.992127]],
+  ['rightThumbProximal', [-0.008706, 0.154051, 0.008987, -0.987984]],
+  ['rightThumbDistal', [0.008019, 0.006376, -0.003299, -0.999942]],
+]
+
+/**
+ * How far the open pose keeps each arm's bone line from her surface, in
+ * metres: the lower half of the forearm, and the hand from wrist to fingertip.
+ * The elbow is left out, as a person's rests against her side. The clip's
+ * first frame alone hangs the hands where its own dancer's hips were: on the
+ * bodies a visitor picks that put them up to 97mm into a skirt and 38mm into
+ * the hips (2026-10-03), so each arm swings out from its shoulder, keeping the
+ * clip's elbow, wrist and fingers, until it clears.
+ *
+ * The two values come from a sweep on the offered looks (2026-10-03). With the
+ * hand under 0.04 the fade toward the clasp brushed two looks'
+ * skirts, hair-female's and Darkness Shibu's fingers 2.3mm in at 15%. One rule
+ * for the whole arm at 0.038 or more swung milfy's right arm 29.5° out round
+ * her hoodie's bell and out of the stage frame (0.42 against 0.36).
+ */
+export const OPEN_CLEAR = { fore: 0.035, hand: 0.04 }
+/** The largest outward swing the open pose will add, in degrees, and the step it searches in. */
+export const OPEN_SWING_MAX = 40
+const OPEN_SWING_STEP = 0.5
 
 function solveOpen(b: PoseBuilder): void {
-  const { f, u } = b.ax
+  // A 0.x body faces the other way, so three-vrm negates x and z of every
+  // clip rotation for it (createVRMAnimationHumanoidTracks); this does the same.
+  const flip = b.sk.version === '0' ? -1 : 1
+  for (const [bone, [x, y, z, w]] of CHEER_START) b.out.set(bone, new THREE.Quaternion(flip * x, y, flip * z, w).normalize())
   for (const side of SIDES) {
-    const o = b.side(side)
-    const chain = b.chain(
-      side,
-      [hang(b.ax, o, OPEN_ARM.upper, 4), hang(b.ax, o, OPEN_ARM.fore, 10), hang(b.ax, o, OPEN_ARM.hand, 14)],
-      [
-        o.clone().negate(),
-        o.clone().negate().addScaledVector(f, 0.8),
-        f.clone().multiplyScalar(0.8).addScaledVector(u, -0.6).addScaledVector(o, -0.2),
-      ],
-    )
-    b.arm(side, chain)
-    b.fingers(side, OPEN_GRIP)
+    const upper = b.out.get(`${side}UpperArm`)
+    if (!upper) continue
+    const swing = openSwing(b, side, upper)
+    upper.premultiply(new THREE.Quaternion().setFromAxisAngle(b.ax.f, rad(swing) * (side === 'left' ? 1 : -1)))
   }
+}
+
+/**
+ * The least outward swing, in degrees, that keeps this arm OPEN_CLEAR from her
+ * surface. Turning about her forward axis carries a hanging arm out toward her
+ * side; the shoulder and collar rest at identity in this pose, so the upper
+ * arm's local turn is its turn in her frame.
+ */
+function openSwing(b: PoseBuilder, side: Side, upper: THREE.Quaternion): number {
+  const q = (bone: string) => b.out.get(bone) ?? new THREE.Quaternion()
+  const shoulder = b.rest(`${side}UpperArm`)
+  const toElbow = b.offset(`${side}UpperArm`, `${side}LowerArm`)
+  const toWrist = b.offset(`${side}LowerArm`, `${side}Hand`)
+  const toKnuckle = b.offset(`${side}Hand`, `${side}MiddleProximal`)
+  const toTip = b.offset(`${side}MiddleProximal`, `${side}MiddleDistal`)
+  const lower = q(`${side}LowerArm`)
+  const hand = q(`${side}Hand`)
+  const finger = q(`${side}MiddleProximal`).clone().multiply(q(`${side}MiddleIntermediate`))
+  const points = (turn: THREE.Quaternion): Record<'fore' | 'hand', THREE.Vector3[]> => {
+    const qU = turn.clone().multiply(upper)
+    const qL = qU.clone().multiply(lower)
+    const qH = qL.clone().multiply(hand)
+    const elbow = shoulder.clone().add(toElbow.clone().applyQuaternion(qU))
+    const wrist = elbow.clone().add(toWrist.clone().applyQuaternion(qL))
+    const knuckle = wrist.clone().add(toKnuckle.clone().applyQuaternion(qH))
+    const tip = knuckle.clone().add(toTip.clone().applyQuaternion(qH.clone().multiply(finger)))
+    return {
+      fore: [0.5, 0.75, 1].map((t) => elbow.clone().lerp(wrist, t)),
+      hand: [wrist.clone().lerp(knuckle, 0.5), knuckle, tip],
+    }
+  }
+  const s = b.sk.surface
+  const p = new THREE.Vector3()
+  const clear = (pts: Record<'fore' | 'hand', THREE.Vector3[]>): boolean => {
+    for (let i = 0; i + 2 < s.length; i += 3) {
+      p.set(s[i], s[i + 1], s[i + 2])
+      for (const part of ['fore', 'hand'] as const) {
+        const r = OPEN_CLEAR[part]
+        for (const a of pts[part]) if (a.distanceToSquared(p) < r * r) return false
+      }
+    }
+    return true
+  }
+  const turn = new THREE.Quaternion()
+  for (let deg = 0; deg < OPEN_SWING_MAX; deg += OPEN_SWING_STEP) {
+    turn.setFromAxisAngle(b.ax.f, rad(deg) * (side === 'left' ? 1 : -1))
+    if (clear(points(turn))) return deg
+  }
+  return OPEN_SWING_MAX
 }
 
 /**

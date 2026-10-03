@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import * as THREE from 'three'
 import { parseGlb, type Glb } from './vrmHumanoid'
-import { OFFERED_VARIANTS } from './avatarVariants'
+import { AVATAR_VARIANTS, OFFERED_VARIANTS } from './avatarVariants'
 import { REST_HALF_WIDTH } from '../avatar/stageLayout'
 import {
   armRollsToWrist,
@@ -14,6 +14,8 @@ import {
   holdingHandFree,
   IDLE_POSE_FADE,
   IDLE_POSE_HOLD,
+  OPEN_SWING_MAX,
+  POSE_BONES,
   idlePoseNow,
   idlePoseStart,
   solveIdlePose,
@@ -127,7 +129,8 @@ const MAX_DEPTH = 0.008
  * hips bone, so her hips capsule comes out 107mm in radius against 89mm on the
  * same skeleton in pink's clothes. Open hands lay the hoodie's own sleeves on
  * that hem, 10.7mm in by this measure, cloth on cloth, and it reads as a
- * sleeve resting on a hoodie in the render (2026-09-30). Behind her back it
+ * sleeve resting on a hoodie in the render (2026-09-30); 7.4mm since the open
+ * pose became cheer's first frame (2026-10-03). Behind her back it
  * read 15.2mm until the clasp moved to rest on her, then 0mm, and 0.9mm since
  * her elbows moved out to her sides (8.8mm at most through the fade). Every
  * other offered look is held to MAX_DEPTH.
@@ -157,14 +160,17 @@ const MAX_UPPER_ARM_BACK = 41
  * - milfy's hoodie hangs in a bell to her thighs (see DEPTH_WAIVER), 2.05 hip
  *   widths behind her hips, so the clasp stops at CLASP.deepest and her hands
  *   go under its hem, 88.0mm deep (86.0mm near the end of the fade); open
- *   hands sit 13.7mm into its flare.
- * - studio's coat flares from the waist, and her open hands brush its skirt,
- *   20.0mm in. The fade starts there, which is its deepest point (12.2mm at 10%).
+ *   hands sat 13.7mm into its flare, and 41.2mm since the open pose became
+ *   cheer's first frame (2026-10-03): those arms hang closer to her sides.
+ * - studio's coat flares from the waist. Until 2026-10-03 her open hands
+ *   brushed its skirt 20.0mm in; the open pose now swings each arm clear of
+ *   her (idlePose.OPEN_CLEAR), and what is left is 0.1mm at 90% of the fade,
+ *   on the way into the clasp.
  *
  * Both want the pose placed against the clothes each body wears, which the
  * solver does not see: it reads bones only.
  */
-const CLOTH_WAIVER: Record<string, number> = { milfy: 0.089, studio: 0.02 }
+const CLOTH_WAIVER: Record<string, number> = { milfy: 0.089, studio: 0.001 }
 
 /**
  * The furthest her clasped hands may stand off her clothes, in metres: they
@@ -318,15 +324,18 @@ describe.each(looks)('idle poses on $id', (look) => {
     // collarbones swung back 40° and the elbows tucked in behind her, so 0–17%
     // of each upper arm's skin showed from the front. Her elbows now stay out
     // at her sides and only the forearms go round her: the upper arms show
-    // 33–84% as much as with her hands open (pink and base the least, under
-    // a jacket that covers their arms either way).
+    // 26–81% as much as with her hands open (pink and base the least, under
+    // a jacket that covers their arms either way). It was 33–84% and the floor
+    // 0.3 until 2026-10-03, when the open pose became cheer's first frame: the
+    // pose behind her did not move, but the open arms hang closer and show
+    // more of themselves, pink's 38% of its upper arm skin against 33%.
     applyIdlePose(look.rig, 'open')
     const open = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
     applyIdlePose(look.rig, 'behind')
     const behind = measureIdleSkin(look.rig, posedMesh(look.glb, look.rig))
     expect(open.upperArm).toBeGreaterThan(100)
     const share = behind.upperArmVisible / behind.upperArm / (open.upperArmVisible / open.upperArm)
-    expect(share, 'upper arm seen behind, against open').toBeGreaterThan(0.3)
+    expect(share, 'upper arm seen behind, against open').toBeGreaterThan(0.25)
   })
 
   it('sees the hands from the front when they are at her sides', () => {
@@ -372,12 +381,19 @@ describe.each(looks)('idle poses on $id', (look) => {
   if (look.id in CLOTH_WAIVER) it('needs the clothes waiver it declares', () => {
     // A waiver the measure no longer needs is stale, and a measure that reads
     // nothing anywhere would pass every check above.
+    // Read where the waiver is spent: both poses and the fade between them.
     let deepest = -Infinity
     for (const pose of ['open', 'behind'] as const) {
       applyIdlePose(look.rig, pose)
       deepest = Math.max(deepest, measureIdleSkin(look.rig, posedMesh(look.glb, look.rig)).clothDepth)
     }
-    expect(deepest).toBeGreaterThan(MAX_CLOTH_DEPTH + 0.01)
+    const poses = solveIdlePoses(poseSkeleton(look.rig))
+    for (let i = 1; i < 20; i++) {
+      posed(look, idlePoseNow({ current: 'behind', from: 'open', blend: i / 20, hold: 18 }, poses))
+      deepest = Math.max(deepest, measureIdleSkin(look.rig, posedMesh(look.glb, look.rig)).clothDepth)
+    }
+    expect(deepest).toBeGreaterThan(MAX_CLOTH_DEPTH)
+    expect(deepest, 'within 2mm of the waiver').toBeGreaterThan(maxClothDepth(look.id) - 0.002)
   })
 
   it('keeps them outside her clothes on the way between the two poses', () => {
@@ -420,13 +436,15 @@ describe.each(looks)('idle poses on $id', (look) => {
     }
   })
 
-  it('stands with open hands just outside her thighs, palms toward the viewer', () => {
+  it('hangs her open hands at her sides, elbows nearly straight', () => {
+    // cheer's first frame since 2026-10-03 (see 'the open pose'): palms to her
+    // thighs, which is why the palms-to-the-viewer check went. What keeps the
+    // hands out of her is the depth and clothes checks above.
     applyIdlePose(look.rig, 'open')
     for (const side of ['left', 'right'] as const) {
       const out = Math.abs(worldPosition(look.rig, `${side}Hand`).x - worldPosition(look.rig, 'hips').x)
-      expect(out, `${side} wrist from the midline`).toBeGreaterThan(0.2)
-      expect(out, `${side} wrist from the midline`).toBeLessThan(0.28)
-      expect(probeHand(look.rig, side).palmToViewer, `${side} palm`).toBeGreaterThan(0.5)
+      // studio's coat flare swings her right arm furthest, to 0.281.
+      expect(out, `${side} wrist from the midline`).toBeLessThan(0.29)
       expect(probeHand(look.rig, side).elbowFlex, `${side} elbow`).toBeLessThan(25)
     }
   })
@@ -462,6 +480,48 @@ describe('solveIdlePose', () => {
     const sk = poseSkeleton(rig)
     for (let i = 0; i < 3; i++) for (const pose of ['open', 'behind'] as const) solveIdlePose(sk, pose)
     for (const [k, v] of Object.entries(before)) expect(rig.restPosition[k].distanceTo(v), k).toBe(0)
+  })
+})
+
+describe('the open pose', () => {
+  // The owner, 2026-10-03: every look stands in the stance `cheer` and
+  // `jumpAround` open on. Posed the way the page poses her (applyIdlePose) and
+  // the way the clip does (applyMotion at 0s), on a 0.x body and a 1.0 one, so
+  // the table, its copy of the file and the 0.x flip are all on the line.
+  const twist = AVATAR_VARIANTS.find((v) => v.id === 'twist')
+  if (!twist) throw new Error('no twist body declared')
+  const bodies: [string, Rig][] = [
+    ...looks.map((l): [string, Rig] => [l.id, l.rig]),
+    ['twist', buildRigFrom(parseGlb(new Uint8Array(readFileSync(path.join(process.cwd(), 'public', twist.url)))))],
+  ]
+  it('covers a 1.0 body as well as 0.x ones', () => {
+    expect(new Set(bodies.map(([, r]) => r.version))).toEqual(new Set(['0', '1']))
+  })
+  it.each(['cheer', 'jumpAround'])('is the first frame of %s on every body', (clip) => {
+    const motion = buildMotion(new Uint8Array(readFileSync(path.join(process.cwd(), 'public/avatar/animations', `${clip}.vrma`))))
+    for (const [id, rig] of bodies) {
+      applyIdlePose(rig, 'open')
+      const pose = new Map(POSE_BONES.map((b) => [b, rig.bones[b]?.quaternion.clone()]))
+      applyMotion(rig, motion, 0)
+      for (const b of POSE_BONES) {
+        const q = pose.get(b)
+        const clipQ = rig.bones[b]?.quaternion
+        if (!q || !clipQ) continue
+        if (b.endsWith('UpperArm')) {
+          // Each upper arm may swing out from the clip's, about her forward
+          // axis only, to clear her (OPEN_CLEAR).
+          const turn = q.clone().multiply(clipQ.clone().invert())
+          const axis = new THREE.Vector3(turn.x, turn.y, turn.z)
+          if (axis.length() > 1e-6) {
+            expect(Math.abs(axis.normalize().z), `${id} ${b} swings about her forward axis`).toBeGreaterThan(0.9999)
+          }
+          expect(THREE.MathUtils.radToDeg(q.angleTo(clipQ)), `${id} ${b}`).toBeLessThan(OPEN_SWING_MAX)
+          continue
+        }
+        expect(THREE.MathUtils.radToDeg(q.angleTo(clipQ)), `${id} ${b}`).toBeLessThan(0.05)
+      }
+      resetRig(rig)
+    }
   })
 })
 
