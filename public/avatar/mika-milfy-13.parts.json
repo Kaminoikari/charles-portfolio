@@ -217,8 +217,8 @@
       "binding": {
         "strategy": "nearest",
         "lead": {
-          "rightFoot": 0.29,
           "leftFoot": 0.29,
+          "rightFoot": 0.29,
           "leftToes": 0.16
         },
         "reason": "copies the skin vertex nearest each vertex"
@@ -987,7 +987,7 @@
       "parts": {
         "Acc_Bandage_Thigh": {
           "vertices": 3839,
-          "mm": 3.75
+          "mm": 3.77
         }
       }
     },
@@ -997,7 +997,7 @@
       "parts": {
         "Acc_Bandage_Thigh": {
           "vertices": 3843,
-          "mm": 3.19
+          "mm": 3.2
         }
       }
     },
