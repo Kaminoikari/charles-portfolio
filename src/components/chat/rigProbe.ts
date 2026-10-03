@@ -254,7 +254,6 @@ function restNormalized(rig: Rig): void {
   if (hips) hips.position.copy(rig.restPosition.hips)
 }
 
-/** Normalized pose → raw nodes → world matrices, in the order three-vrm does it. */
 /** Carry the normalized pose onto the skeleton the mesh is skinned to. */
 export function syncRig(rig: Rig): void {
   rig.root.updateMatrixWorld(true)
