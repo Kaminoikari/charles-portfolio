@@ -152,7 +152,7 @@ export const STAGE_SCENES: readonly StageScene[] = [
   { id: 'library', lights: lit('library', 'night-lit'), focusX: 45, horizon: 0.45 },
 ]
 
-export const DEFAULT_SCENE: StageSceneId = 'old-house'
+export const DEFAULT_SCENE: StageSceneId = 'blue-cafe'
 export const DEFAULT_LIGHT: StageLightId = 'day'
 
 export function sceneById(id: StageSceneId): StageScene {
